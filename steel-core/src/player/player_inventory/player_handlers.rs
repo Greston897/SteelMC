@@ -19,15 +19,20 @@ use steel_math::trig;
 use steel_protocol::packets::game::SSeenAdvancement::Opened;
 use steel_protocol::packets::game::{
     CContainerClose, COpenScreen, CSetPlayerInventory, ClickType, SContainerButtonClick,
-    SContainerClick, SContainerClose, SContainerSlotStateChanged, SRenameItem, SSeenAdvancement,
-    SSetBeacon, SSetCarriedItem, SSetCreativeModeSlot, SoundSource,
+    SContainerClick, SContainerClose, SContainerSlotStateChanged, SEditBook, SRenameItem,
+    SSeenAdvancement, SSetBeacon, SSetCarriedItem, SSetCreativeModeSlot, SoundSource,
 };
-use steel_registry::data_components::vanilla_components::SwingAnimation;
+use steel_registry::data_components::components::{
+    Filterable, WritableBookContent, WrittenBookContent,
+};
+use steel_registry::data_components::vanilla_components::{
+    SwingAnimation, WRITABLE_BOOK_CONTENT, WRITTEN_BOOK_CONTENT,
+};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::mob_effect::MobEffectRef;
 use steel_registry::sound_events;
 use steel_registry::stat::vanilla_stat_types;
-use steel_registry::vanilla_custom_stats;
+use steel_registry::{vanilla_custom_stats, vanilla_items};
 use steel_registry::{REGISTRY, RegistryExt};
 use steel_utils::{
     Downcast as _,
@@ -42,6 +47,9 @@ use super::{
     OpenMenuUnavailable, PendingMenuOpen, PlayerInventory, Prediction, PreparedMenu,
     TerminalMenuRemoval,
 };
+
+/// Offhand inventory index, matching vanilla `PlayerInventory.OFF_HAND_SLOT`.
+const OFFHAND_INVENTORY_SLOT: i32 = 40;
 
 impl Player {
     fn take_open_menu_for_callback(
@@ -485,6 +493,72 @@ impl Player {
             }
             let _ = self.drop_item(item_stack, true, Prediction::Predicted);
         }
+    }
+
+    /// Handles a `play:edit_book` packet.
+    ///
+    /// Mirrors vanilla `ServerPlayNetworkHandler.onBookUpdate`: the edited
+    /// pages are stored on the writable book, and a packet carrying a title
+    /// signs the book into a written book authored by the player. Only hotbar
+    /// slots and the offhand slot may be edited, exactly like vanilla.
+    pub fn handle_edit_book(&self, packet: SEditBook) {
+        let slot = packet.slot;
+        if !((0..=8).contains(&slot) || slot == OFFHAND_INVENTORY_SLOT) {
+            return;
+        }
+        let slot_index = slot as usize;
+
+        let stack = {
+            let inventory = self.inventory.lock();
+            inventory.get_item(slot_index).clone()
+        };
+        if !stack.has(WRITABLE_BOOK_CONTENT) {
+            return;
+        }
+
+        // Vanilla filters the incoming texts through the chat filter first;
+        // Steel has no chat filtering, so every page stays pass-through.
+        let updated = if let Some(title) = packet.title {
+            let Ok(content) = WrittenBookContent::new(
+                Filterable::pass_through(title),
+                self.gameprofile.name().to_owned(),
+                0,
+                packet
+                    .pages
+                    .into_iter()
+                    .map(|page| Filterable::pass_through(TextComponent::plain(page)))
+                    .collect(),
+                true,
+            ) else {
+                return;
+            };
+
+            let mut written = stack.copy_with_count(stack.count());
+            written.set_item(&vanilla_items::WRITTEN_BOOK.key);
+            written.remove::<WritableBookContent>(WRITABLE_BOOK_CONTENT);
+            written.set(WRITTEN_BOOK_CONTENT, content);
+            written
+        } else {
+            let Ok(content) = WritableBookContent::new(
+                packet
+                    .pages
+                    .into_iter()
+                    .map(Filterable::pass_through)
+                    .collect(),
+            ) else {
+                return;
+            };
+
+            let mut editable = stack.clone();
+            editable.set(WRITABLE_BOOK_CONTENT, content);
+            editable
+        };
+
+        self.inventory.lock().set_item(slot_index, updated);
+        // Vanilla writes straight into the inventory and then calls
+        // `sendContentUpdates`, which is what `broadcast_changes` mirrors.
+        let mut menu = self.inventory_menu.lock();
+        menu.behavior_mut().broadcast_changes(&self.connection);
     }
 
     /// Sets selected slot

@@ -15,7 +15,8 @@ use steel_protocol::packets::game::{
     SAcceptTeleportation, SAttack, SChangeDifficulty, SChangeGameMode, SChat, SChatAck,
     SChatCommand, SChatSessionUpdate, SChunkBatchReceived, SClientCommand, SClientTickEnd,
     SCommandSuggestion, SContainerButtonClick, SContainerClick, SContainerClose,
-    SContainerSlotStateChanged, SInteract, SMovePlayer, SMovePlayerPos, SMovePlayerPosRot,
+    SContainerSlotStateChanged, SEditBook, SInteract, SMovePlayer, SMovePlayerPos,
+    SMovePlayerPosRot,
     SMovePlayerRot, SMovePlayerStatusOnly, SMoveVehicle, SPickItemFromBlock, SPlayerAbilities,
     SPlayerAction, SPlayerCommand, SPlayerInput, SPlayerLoad, SPunch, SRenameItem,
     SSeenAdvancement, SSetBeacon, SSetCarriedItem, SSetCreativeModeSlot, SSignUpdate,
@@ -98,6 +99,7 @@ enum ScheduledPlayPacketKind {
     ContainerClick(SContainerClick),
     ContainerClose(SContainerClose),
     ContainerSlotStateChanged(SContainerSlotStateChanged),
+    EditBook(SEditBook),
     SetCreativeModeSlot(SSetCreativeModeSlot),
     PlayerInput(SPlayerInput),
     PlayerCommand(SPlayerCommand),
@@ -213,6 +215,7 @@ impl ScheduledPlayPacket {
             | ScheduledPlayPacketKind::MoveVehicle(_)
             | ScheduledPlayPacketKind::ContainerClick(_)
             | ScheduledPlayPacketKind::RenameItem(_)
+            | ScheduledPlayPacketKind::EditBook(_)
             | ScheduledPlayPacketKind::UseItemOn(_)
             | ScheduledPlayPacketKind::UseItem(_)
             | ScheduledPlayPacketKind::SignUpdate(_)
@@ -328,6 +331,7 @@ impl ScheduledPlayPacket {
                 player.handle_player_abilities(packet);
             }
             ScheduledPlayPacketKind::RenameItem(packet) => player.handle_rename_item(packet),
+            ScheduledPlayPacketKind::EditBook(packet) => player.handle_edit_book(packet),
             ScheduledPlayPacketKind::UseItemOn(packet) => player.handle_use_item_on(packet),
             ScheduledPlayPacketKind::UseItem(packet) => player.handle_use_item(packet),
             ScheduledPlayPacketKind::SetCarriedItem(packet) => {
@@ -766,6 +770,9 @@ impl JavaConnection {
                     SContainerSlotStateChanged::read_packet(data)?,
                 ))
             }
+            play::S_EDIT_BOOK => scheduled(ScheduledPlayPacketKind::EditBook(
+                SEditBook::read_packet(data)?,
+            )),
             play::S_SET_CREATIVE_MODE_SLOT => {
                 scheduled(ScheduledPlayPacketKind::SetCreativeModeSlot(
                     SSetCreativeModeSlot::read_packet(data)?,

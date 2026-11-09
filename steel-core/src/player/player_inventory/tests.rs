@@ -25,8 +25,12 @@ use simdnbt::owned::{NbtList, NbtTag};
 use steel_protocol::{
     packet_traits::{CompressionInfo, EncodedPacket},
     packets::game::{
-        ClickType, HashedStack, SContainerButtonClick, SContainerClick, SSetCreativeModeSlot,
+        ClickType, HashedStack, SContainerButtonClick, SContainerClick, SEditBook,
+        SSetCreativeModeSlot,
     },
+};
+use steel_registry::data_components::vanilla_components::{
+    WRITABLE_BOOK_CONTENT, WRITTEN_BOOK_CONTENT,
 };
 use steel_registry::{
     RegistryEntry, init_vanilla_registry, item_stack::ItemStack, vanilla_entities, vanilla_items,
@@ -2035,4 +2039,103 @@ fn resolve_beacon_effect_separates_absent_from_unknown_ids() {
 
     assert_eq!(Player::resolve_beacon_effect(Some(9999)), Err(()));
     assert_eq!(Player::resolve_beacon_effect(Some(-1)), Err(()));
+}
+
+#[test]
+fn editing_a_writable_book_stores_the_pages() {
+    init_vanilla_registry();
+    let player = test_player(Arc::clone(test_world()));
+    player
+        .inventory
+        .lock()
+        .set_item(0, ItemStack::new(&vanilla_items::WRITABLE_BOOK));
+
+    player.handle_edit_book(SEditBook {
+        slot: 0,
+        pages: vec!["first page".to_owned(), "second page".to_owned()],
+        title: None,
+    });
+
+    let stack = player.inventory.lock().get_item(0).clone();
+    assert!(stack.is(&vanilla_items::WRITABLE_BOOK));
+    let contents = stack
+        .get(WRITABLE_BOOK_CONTENT)
+        .expect("edited pages are stored on the writable book");
+    assert_eq!(contents.pages().len(), 2);
+    assert_eq!(contents.pages()[0].raw(), "first page");
+    assert_eq!(contents.pages()[1].raw(), "second page");
+    assert!(stack.get(WRITTEN_BOOK_CONTENT).is_none());
+}
+
+#[test]
+fn signing_a_writable_book_creates_a_written_book() {
+    init_vanilla_registry();
+    let player = test_player(Arc::clone(test_world()));
+    player
+        .inventory
+        .lock()
+        .set_item(0, ItemStack::new(&vanilla_items::WRITABLE_BOOK));
+
+    player.handle_edit_book(SEditBook {
+        slot: 0,
+        pages: vec!["signed page".to_owned()],
+        title: Some("My Diary".to_owned()),
+    });
+
+    let stack = player.inventory.lock().get_item(0).clone();
+    assert!(stack.is(&vanilla_items::WRITTEN_BOOK));
+    assert!(stack.get(WRITABLE_BOOK_CONTENT).is_none());
+    let contents = stack
+        .get(WRITTEN_BOOK_CONTENT)
+        .expect("signing stores written book content");
+    assert_eq!(contents.title().raw(), "My Diary");
+    assert_eq!(contents.author(), "TestPlayer");
+    assert_eq!(contents.generation(), 0);
+    assert_eq!(contents.pages().len(), 1);
+}
+
+#[test]
+fn book_updates_outside_the_hotbar_and_offhand_are_ignored() {
+    init_vanilla_registry();
+    let player = test_player(Arc::clone(test_world()));
+    // Main inventory slot 9 is not editable through the book packet.
+    player
+        .inventory
+        .lock()
+        .set_item(9, ItemStack::new(&vanilla_items::WRITABLE_BOOK));
+
+    player.handle_edit_book(SEditBook {
+        slot: 9,
+        pages: vec!["ignored".to_owned()],
+        title: None,
+    });
+
+    assert!(
+        player
+            .inventory
+            .lock()
+            .get_item(9)
+            .get(WRITABLE_BOOK_CONTENT)
+            .is_none()
+    );
+}
+
+#[test]
+fn book_updates_on_a_non_book_slot_are_ignored() {
+    init_vanilla_registry();
+    let player = test_player(Arc::clone(test_world()));
+    player
+        .inventory
+        .lock()
+        .set_item(0, ItemStack::with_count(&vanilla_items::DIRT, 3));
+
+    player.handle_edit_book(SEditBook {
+        slot: 0,
+        pages: vec!["ignored".to_owned()],
+        title: Some("Nope".to_owned()),
+    });
+
+    let stack = player.inventory.lock().get_item(0).clone();
+    assert!(stack.is(&vanilla_items::DIRT));
+    assert_eq!(stack.count(), 3);
 }
