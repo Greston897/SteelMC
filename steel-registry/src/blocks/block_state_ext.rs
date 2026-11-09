@@ -248,7 +248,9 @@ impl BlockStateExt for BlockStateId {
             return false;
         }
         let bounds = blocks::shapes::bounding_box(shape);
-        bounds.size() >= 0.729_166_7 || bounds.height() >= 1.0
+        // Vanilla `calculateSolid`: the *volume* of the collision box must reach
+        // 35/48, or the box must be a full block tall.
+        bounds.width() * bounds.height() * bounds.depth() >= 0.729_166_7 || bounds.height() >= 1.0
     }
 
     fn blocks_motion(&self) -> bool {

@@ -68,7 +68,7 @@ pub struct MapDecoration {
     pub x: i8,
     /// Pixel Z in `-128..=127`.
     pub z: i8,
-    /// Rotation in units of `360 / 16` degrees, masked to `0..=15`.
+    /// Rotation in units of `360 / 16` degrees, stored as vanilla's signed byte.
     pub rotation: i8,
     /// Custom display name, stored as plain text (vanilla keeps a `Text`).
     pub name: Option<String>,
@@ -88,7 +88,7 @@ impl MapDecoration {
             kind,
             x,
             z,
-            rotation: rotation & 15,
+            rotation,
             name,
         }
     }
@@ -743,12 +743,8 @@ impl MapState {
             return (((hashed >> NETHER_ROTATION_SHIFT) & NETHER_ROTATION_MASK) & 0xFF) as u8 as i8;
         }
 
-        let adjusted = if rotation < 0.0 {
-            rotation - 8.0
-        } else {
-            rotation + 8.0
-        };
-        (adjusted * 16.0 / 360.0) as i8
+        // Vanilla `MapItemSavedData`: `(byte) MathHelper.floor(rotation * 16.0 / 360.0 + 0.5)`.
+        (rotation * 16.0 / 360.0 + 0.5).floor() as i8
     }
 
     /// Vanilla `MapState.removeDecoration(String)`.
@@ -1089,7 +1085,9 @@ mod tests {
         assert_eq!(state.scale(), 0);
 
         let (_, bounds) = MapState::of(200.0, -200.0, 0, true, false, overworld());
-        assert_eq!((bounds.center_x, bounds.center_z), (256, -320));
+        // Vanilla `MapItemSavedData.createFresh`: `blockSize = 128 << scale`,
+        // `grid = floor((coord + 64) / blockSize)`, snap = `grid * blockSize`.
+        assert_eq!((bounds.center_x, bounds.center_z), (256, -256));
 
         // Scale 1: 256-block grid.
         let (state, bounds) = MapState::of(200.0, 200.0, 1, true, false, overworld());

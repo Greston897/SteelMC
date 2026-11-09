@@ -376,6 +376,11 @@ mod tests {
         let cushion = spawn_cushion(&fixture.world, support);
         let player = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Sitter", 1).build();
         player.set_client_loaded(true);
+        // `Entity::start_riding` resolves the passenger through the entity manager.
+        fixture
+            .world
+            .try_add_entity(Arc::clone(&player) as SharedEntity)
+            .expect("the passenger enters the world");
 
         assert_eq!(
             cushion.interact(&player, InteractionHand::MainHand, DVec3::ZERO),

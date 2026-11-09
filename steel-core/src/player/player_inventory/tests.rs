@@ -2104,20 +2104,27 @@ fn book_updates_outside_the_hotbar_and_offhand_are_ignored() {
         .lock()
         .set_item(9, ItemStack::new(&vanilla_items::WRITABLE_BOOK));
 
+    let before = player
+        .inventory
+        .lock()
+        .get_item(9)
+        .get(WRITABLE_BOOK_CONTENT)
+        .cloned();
+
     player.handle_edit_book(SEditBook {
         slot: 9,
         pages: vec!["ignored".to_owned()],
         title: None,
     });
 
-    assert!(
-        player
-            .inventory
-            .lock()
-            .get_item(9)
-            .get(WRITABLE_BOOK_CONTENT)
-            .is_none()
-    );
+    // The book keeps its default (empty) content: the packet is ignored.
+    let after = player
+        .inventory
+        .lock()
+        .get_item(9)
+        .get(WRITABLE_BOOK_CONTENT)
+        .cloned();
+    assert_eq!(before, after);
 }
 
 #[test]
