@@ -407,3 +407,19 @@ PY
   - `release_using` не стреляет (отпускание только отменяет зарядку).
 - Тесты: 6 на арбалет (быстрая зарядка от Quick Charge, минимум 1 тик, `multishot` = 3 снаряда, симметричный разброс, круговой рейс компонента `charged_projectiles`, скорости стрелы/фейерверка) — всего по пакету 14 тестов.
 - Покрытие: **1329 / 1658 = 80,2 %**; не-`Item` без механик: 72 (11 классов).
+
+### Дополнение (кристалл Края, шаблоны кузнеца, фрагмент диска: `EndCrystalItem`, `SmithingTemplateItem` 19, `DiscFragmentItem`)
+- **`EndCrystalItem`** (`behavior/items/end_crystal.rs`) — ванильный `EndCrystalItem#useOnBlock` целиком:
+  - база только `obsidian` / `bedrock` (`is_valid_base`), иначе `FAIL`;
+  - блок над базой обязан быть воздухом (`isAir`), иначе `FAIL`;
+  - объём 1×2×1 должен быть свободен от сущностей (`has_entity_in_aabb_matching` по `WorldAabb::entity_box(...)`) — иначе `FAIL`, при этом предмет **не** расходуется;
+  - кристалл спавнится в центре блока с `show_bottom = false` (как в ванили: `crystal.setShowBottom(false)`), гейм-эвент `ENTITY_PLACE`, расход ровно одного предмета.
+  - **Честное ограничение**: `EnderDragonFight#respawnDragon` не вызывается — в Steel нет реализации боя с драконом; помечено `TODO` в коде.
+- **`SmithingTemplateItem`** (19 предметов: незеритовый апгрейд + 18 тримов) — в 26.3 у класса **нет серверных механик**: он только отдаёт тексты подсказок и текстуры пустых слотов кузнечного экрана, которые рисует ванильный клиент из своих ассетов. Поэтому пак закрывает класс регистрацией поведения + переносом ванильных таблиц слотов в код:
+  - `ARMOR_TRIM_EMPTY_BASE_SLOT_TEXTURES` (4), `ARMOR_TRIM_EMPTY_ADDITIONS_SLOT_TEXTURES` (7), `NETHERITE_UPGRADE_EMPTY_BASE_SLOT_TEXTURES` (11), `NETHERITE_UPGRADE_EMPTY_ADDITIONS_SLOT_TEXTURES` (1) — точные ванильные списки из `SmithingTemplateItem#get*Empty*SlotTextures`;
+  - ключи переводов `item.minecraft.smithing_template{,.applies_to,.ingredients,.armor_trim.base_slot_description,.netherite_upgrade.base_slot_description}`;
+  - геттеры `armor_trim_*` / `netherite_upgrade_*` для будущего экрана кузнечного стола.
+- **`DiscFragmentItem`** (1 предмет) — тоже чисто клиентский тултип; класс зарегистрирован, добавлен `description_translation_key` = `item.<ns>.<path>.desc` (ванильный `DiscFragmentItem#getDescription`).
+- Тесты: 4 на кристалл (успех на обсидиане + `show_bottom == false` + позиция + расход, успех на бедроке, отказ на камне без расхода, отказ при занятом блоке сверху), 4 на шаблоны (точные длины/содержимое списков слотов, ключи переводов, резолв трёх шаблонов в стеки) и 1 на фрагмент диска.
+- Покрытие: **1350 / 1658 = 81,4 %**; не-`Item` без механик: 51 (8 классов) — закрыты `EndCrystalItem`, `SmithingTemplateItem`, `DiscFragmentItem`.
+- Осталось четыре настоящие подсистемы: `BoatItem` 22 (нужна серверная физика `AbstractBoat` + пакет `paddle_boat`; исходники 26.3 уже скачаны, порт — отдельная задача), `MapItem`/`EmptyMapItem` 18 (состояние карты + пакет отрисовки), `MobBucketItem` 7 (нет сущностей рыб/аксолотля/головастика), `KnowledgeBookItem` 1 (книга рецептов), `ArmorStandItem` 1 (нет сущности стойки), `TridentItem` 1 (нет снаряда-трезубца), `WindChargeItem` 1 (нет сущности заряда ветра).
