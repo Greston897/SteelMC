@@ -16,7 +16,7 @@ use steel_utils::Direction;
 use crate::behavior::context::{InteractionResult, UseOnContext};
 use crate::behavior::item::ItemBehavior;
 use crate::entity::entities::ItemFrameEntity;
-use crate::entity::{Entity, SharedEntity, next_entity_id};
+use crate::entity::{ SharedEntity, next_entity_id};
 use crate::world::game_event::GameEventContext;
 
 /// Placement behavior shared by the item frame and the glow item frame.

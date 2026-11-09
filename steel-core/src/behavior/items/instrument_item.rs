@@ -94,7 +94,6 @@ mod tests {
     use crate::behavior::{
         ITEM_BEHAVIORS, InteractionResult, ItemUseAnimation, UseItemContext, init_behaviors,
     };
-    use crate::inventory::container::Container as _;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
 
     /// Vanilla `GoatHornItem.use`: the horn starts a `TOOT_HORN` use whose

@@ -64,7 +64,6 @@ mod tests {
     use steel_utils::types::InteractionHand;
 
     use crate::behavior::{InteractionResult, ITEM_BEHAVIORS, UseItemContext, init_behaviors};
-    use crate::inventory::container::Container as _;
     use crate::player::Player;
     use crate::test_support::{
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,

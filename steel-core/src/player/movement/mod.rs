@@ -25,7 +25,6 @@ use steel_registry::{vanilla_custom_stats, vanilla_entities, vanilla_mob_effects
 use steel_utils::types::GameType;
 use steel_utils::{TICKS_PER_SECOND, translations};
 
-use crate::entity::entities::objects::vehicles::AbstractBoat as _;
 use crate::entity::{
     AcceptedClientMovement, AcceptedClientMovementOutcome, Entity, EntityMoveError, LivingEntity,
     get_input_vector,

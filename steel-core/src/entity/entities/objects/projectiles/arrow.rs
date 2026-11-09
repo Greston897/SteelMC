@@ -26,7 +26,6 @@ use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::behavior::MOB_EFFECT_BEHAVIORS;
 use crate::entity::damage::DamageSource;
-use crate::entity::LivingEntity as _;
 use crate::entity::potion_contents::to_runtime_instance_icon_from_visibility;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, Player, Projectile, ProjectileBase, RemovalReason,

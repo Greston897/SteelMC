@@ -6,7 +6,6 @@
 //! itself.
 
 use std::sync::Arc;
-use std::sync::Weak;
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
@@ -17,7 +16,7 @@ use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::vanilla_entity_data::ExperienceBottleEntityData;
-use steel_registry::{vanilla_entities, vanilla_items};
+use steel_registry::vanilla_items;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
 

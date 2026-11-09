@@ -38,7 +38,7 @@ use steel_registry::vanilla_damage_types;
 use steel_utils::BlockPos;
 
 use crate::entity::damage::DamageSource;
-use crate::entity::{Entity, EntitySpawnReason, LivingEntity, SharedEntity};
+use crate::entity::{ EntitySpawnReason, LivingEntity, SharedEntity};
 use crate::physics::{MoveResult, MoverType};
 use crate::world::LevelReader;
 

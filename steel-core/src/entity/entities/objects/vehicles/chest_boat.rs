@@ -40,15 +40,7 @@ use crate::entity::{
     DamageSource, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData,
     Player, SharedEntity,
 };
-use crate::physics::MoverType;
-use crate::physics::collision::{WorldCollisionProvider, has_block_collision};
-use crate::world::Explosion;
-use steel_protocol::packets::game::SoundSource;
-use steel_registry::blocks::block_state_ext::BlockStateExt as _;
-use steel_registry::fluid::FluidStateExt as _;
-use steel_registry::items::ItemRef;
-use steel_registry::sound_event::SoundEventRef;
-use steel_registry::{REGISTRY, sound_events, vanilla_blocks, vanilla_items};
+use steel_registry::vanilla_items;
 use crate::inventory::container::{Container as _, SimpleContainer, load_all_items};
 use crate::inventory::menu::kinds::chest_boat;
 use crate::world::World;

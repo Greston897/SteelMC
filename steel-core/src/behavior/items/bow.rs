@@ -20,7 +20,7 @@ use crate::behavior::items::{ArrowItem, SpectralArrowItem};
 use crate::behavior::{ItemBehavior, ItemUseAnimation};
 use crate::entity::entities::{AbstractArrow, ArrowPickup};
 use crate::entity::LivingEntity;
-use crate::entity::{Entity, Projectile as _, SharedEntity};
+use crate::entity::{Entity, SharedEntity};
 use crate::player::Player;
 use crate::world::World;
 

@@ -25,7 +25,6 @@ use steel_registry::{
 };
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtNumeric as _;
-use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{BlockPos, Direction, DowncastType, DowncastTypeKey, WorldAabb};
 
 use crate::behavior::InteractionResult;

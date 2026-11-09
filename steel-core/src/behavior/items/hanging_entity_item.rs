@@ -113,7 +113,6 @@ mod tests {
     use crate::behavior::init_behaviors;
     use crate::entity::SharedEntity;
     use crate::entity::entities::PaintingEntity;
-    use crate::entity::Entity as _;
     use crate::test_support::{
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
     };

@@ -425,7 +425,6 @@ pub trait AbstractBoat: VehicleEntity {
     fn update_velocity(&self) {
         let mut gravity_y = -GRAVITY_IN_WATER;
         let mut buoyancy = 0.0_f64;
-        let mut drag = DRAG_BASE;
 
         let (location, last_location) = {
             let state = self.boat_state().lock();
@@ -462,6 +461,7 @@ pub trait AbstractBoat: VehicleEntity {
             }
             self.boat_state().lock().location = BoatLocation::InWater;
         } else {
+            let drag;
             match location {
                 BoatLocation::InWater => {
                     let (water_level, height) = {
