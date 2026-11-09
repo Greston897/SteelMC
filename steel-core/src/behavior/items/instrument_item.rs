@@ -40,20 +40,28 @@ impl ItemBehavior for InstrumentItem {
     /// Mirrors vanilla `GoatHornItem.use`: without an instrument component the
     /// use fails, otherwise the horn is played and the item goes on cooldown.
     fn use_item(&self, context: &mut UseItemContext) -> InteractionResult {
-        let component = context.inv.with_item(|stack| stack.get(INSTRUMENT).cloned());
-        let Some(component) = component else {
+        // One inventory lock: the plan copies the instrument's sound holder
+        // (a plain registry reference for vanilla instruments) instead of
+        // cloning the whole component and locking twice.
+        let plan = context.inv.with_item(|stack| {
+            let instrument = stack.get(INSTRUMENT)?.value();
+            Some((
+                stack.item(),
+                instrument.sound_event().clone(),
+                instrument.range(),
+                (instrument.use_duration() * TICKS_PER_SECOND).floor() as i32,
+            ))
+        });
+        let Some((item, sound, range, use_ticks)) = plan else {
             return InteractionResult::Fail;
         };
-        let instrument = component.value();
-        let use_ticks = (instrument.use_duration() * TICKS_PER_SECOND).floor() as i32;
-        let item = context.inv.with_item(ItemStack::item);
 
         context.player.start_using_item(context.hand);
         context.world.play_sound_holder_at(
-            instrument.sound_event(),
+            &sound,
             SoundSource::Records,
             context.player.position(),
-            instrument.range() / 16.0,
+            range / 16.0,
             1.0,
             None,
         );
