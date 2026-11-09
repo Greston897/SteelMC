@@ -547,3 +547,5 @@ PY
 - Диспетчеризация по типам — цепочка `downcast_ref` (`Cod`, `Salmon`, `Pufferfish`; остальные мобы подключатся по мере появления их классов).
 - **Честные ограничения**: `BUCKET_ENTITY_DATA` (компонент `minecraft:bucket_entity_data`, `FromBucket`/`Health`/вариант) пока **не** прикрепляется к стаку — API установки компонентов у `ItemStack` не проверен без сборки; хелпер `write_base_bucket_data` готов и ждёт подключения.
 - Проверки: **GitHub Actions для репозитория недоступны** — `gh api repos/Greston897/SteelMC/actions/workflows` возвращает пустой список, прогонов нет (`.github/workflows/*.yml` в дереве есть, но Actions не активированы/не отдают API), поэтому компиляция и тесты не проверялись; `cargo` в песочнице отсутствует.
+
+> Проверка сборки/тестов выполняется в GitHub Actions (workflows `Test`, `Lint`, `Flint Tests`).
