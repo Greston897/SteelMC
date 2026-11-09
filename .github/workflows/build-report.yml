@@ -40,7 +40,7 @@ jobs:
         run: |
           cargo test --workspace --all-targets --no-fail-fast \
             > /tmp/test.log 2>&1 || true
-          grep -E "^(error|FAILED|failures:)|panicked at|test result: FAILED" /tmp/test.log | head -80
+          grep -E -A4 "^(error|FAILED|failures:)|panicked at|test result: FAILED" /tmp/test.log | head -200
 
       - name: cargo clippy
         continue-on-error: true
@@ -81,7 +81,15 @@ jobs:
                   continue
               with open(path, "r", errors="replace") as handle:
                   log = handle.read().splitlines()
-              picked = [line for line in log if any(marker in line for marker in pattern)]
+              picked = []
+              index = 0
+              while index < len(log):
+                  line = log[index]
+                  if any(marker in line for marker in pattern):
+                      picked.extend(log[index:index + 4])
+                      index += 4
+                      continue
+                  index += 1
               if picked:
                   extra += [f"### {label}", "```"] + picked[:80] + ["```", ""]
 
