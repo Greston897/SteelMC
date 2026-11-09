@@ -2143,6 +2143,9 @@ impl LivingEntity for Player {
     fn ai_step(&self, entity: &SharedEntity) -> Option<MoveResult> {
         self.tick_regeneration();
         InventoryTickContext::tick_player_inventory(&self.get_world(), self);
+        // Vanilla `ServerPlayerEntity.playerTick` sends map updates for every
+        // carried map, independently of the per-item color update.
+        crate::behavior::items::filled_map::send_map_packets(self);
         if self.is_flying() && !self.is_passenger() {
             self.reset_fall_distance();
         }
