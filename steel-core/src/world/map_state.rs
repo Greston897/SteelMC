@@ -578,7 +578,7 @@ impl MapState {
                 let position = tracked_player.position();
                 let yaw = tracked_player.rotation().0;
                 self.add_decoration(
-                    vanilla_map_decoration_types::PLAYER,
+                    &vanilla_map_decoration_types::PLAYER,
                     &tracked_key,
                     position.x,
                     position.z,
@@ -725,10 +725,10 @@ impl MapState {
     fn player_marker(&self, dx: f32, dz: f32) -> Option<MapDecorationTypeRef> {
         let is_nearby = dx.abs() < PLAYER_OFF_MAP_RADIUS && dz.abs() < PLAYER_OFF_MAP_RADIUS;
         if is_nearby {
-            return Some(vanilla_map_decoration_types::PLAYER_OFF_MAP);
+            return Some(&vanilla_map_decoration_types::PLAYER_OFF_MAP);
         }
         self.unlimited_tracking
-            .then_some(vanilla_map_decoration_types::PLAYER_OFF_LIMITS)
+            .then_some(&vanilla_map_decoration_types::PLAYER_OFF_LIMITS)
     }
 
     /// Vanilla `MapState.getPlayerMarkerRotation`.

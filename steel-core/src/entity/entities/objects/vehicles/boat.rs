@@ -212,7 +212,7 @@ impl Default for BoatState {
 }
 
 /// Shared `AbstractBoatEntity` behaviour for the `Boat` and `Raft` classes.
-pub trait AbstractBoat: VehicleEntity + Sized {
+pub trait AbstractBoat: VehicleEntity {
     /// Returns the boat's non-synchronized state.
     fn boat_state(&self) -> &SyncMutex<BoatState>;
 

@@ -87,7 +87,7 @@ fn save_items(nbt: &mut NbtCompound, inventory: &steel_utils::locks::Shared<Simp
         if stack.is_empty() {
             continue;
         }
-        if let NbtTag::Compound(mut item_nbt) = stack.clone().to_nbt_tag() {
+        if let NbtTag::Compound(mut item_nbt) = stack.to_nbt_tag_ref() {
             item_nbt.insert("Slot", slot as i8);
             entries.push(item_nbt);
         }
@@ -129,7 +129,7 @@ fn open_chest(
 
     entity.game_event_with_source_entity(
         &vanilla_game_events::CONTAINER_OPEN,
-        Some(player.as_ref()),
+        Some(player as &dyn Entity),
     );
     InteractionResult::Success
 }
