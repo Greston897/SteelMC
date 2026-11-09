@@ -298,10 +298,11 @@ impl Menu {
             }
         }
 
-        let slot_item = slot.get_item(&guard).item();
-        if slot.get_item(&guard).is_empty() {
+        let slot_stack = slot.get_item(&guard);
+        if slot_stack.is_empty() {
             return false;
         }
+        let slot_item = slot_stack.item();
         ITEM_BEHAVIORS.get_behavior(slot_item).on_clicked(
             slot.as_ref(),
             button,

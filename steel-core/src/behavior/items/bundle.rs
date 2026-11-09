@@ -322,6 +322,20 @@ mod tests {
         ItemStack::with_count(&vanilla_items::DIRT, count)
     }
 
+    /// Fills the first hotbar slot with `stack`.
+    fn set_hotbar(player: &Arc<crate::player::Player>, stack: ItemStack) {
+        player.inventory.lock().set_item(0, stack);
+    }
+
+    /// Vanilla keeps a shulker box in the clicked slot instead of bundling it.
+    fn shulker_still_in_slot(player: &Arc<crate::player::Player>) -> bool {
+        player
+            .inventory
+            .lock()
+            .get_item(0)
+            .is(&vanilla_items::SHULKER_BOX)
+    }
+
     #[test]
     fn left_click_with_a_cursor_bundle_absorbs_the_clicked_slot() {
         init_vanilla_registry();
@@ -404,13 +418,7 @@ mod tests {
             &player,
         );
 
-        assert!(
-            player
-                .inventory
-                .lock()
-                .get_item(0)
-                .is(&vanilla_items::SHULKER_BOX)
-        );
+        assert!(shulker_still_in_slot(&player));
         assert!(contents_of(menu.behavior().carried()).is_empty());
     }
 
@@ -479,5 +487,62 @@ mod tests {
             },
         );
         assert_eq!(spilled.len(), 2);
+    }
+
+    #[test]
+    fn clicking_a_bundle_in_a_slot_pulls_the_cursor_stack_into_it() {
+        init_vanilla_registry();
+        init_behaviors();
+        let fixture = fresh_test_world("bundle_insert_from_cursor");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let player = TestPlayerBuilder::new(Arc::clone(world), "Bundler", 1).build();
+
+        set_hotbar(&player, bundle_stack(BundleContents::empty()));
+        let mut menu = inventory_menu(Arc::clone(&player.inventory));
+        *menu.behavior_mut().carried_mut() = dirt(32);
+
+        menu.clicked(
+            Click::Pickup {
+                slot: HOTBAR_SLOT,
+                button: MouseButton::Left,
+            },
+            &player,
+        );
+
+        assert!(menu.behavior().carried().is_empty());
+        let stack = player.inventory.lock().get_item(0).clone();
+        let contents = contents_of(&stack);
+        assert_eq!(contents.items().len(), 1);
+        assert_eq!(contents.items()[0].count(), 32);
+    }
+
+    #[test]
+    fn right_clicking_a_bundle_in_a_slot_moves_a_stack_to_the_cursor() {
+        init_vanilla_registry();
+        init_behaviors();
+        let fixture = fresh_test_world("bundle_extract_to_cursor");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let player = TestPlayerBuilder::new(Arc::clone(world), "Bundler", 1).build();
+
+        let mut contents = BundleContents::empty();
+        let mut seven = dirt(7);
+        assert_eq!(contents.add_stack(&mut seven), 7);
+        set_hotbar(&player, bundle_stack(contents));
+
+        let mut menu = inventory_menu(Arc::clone(&player.inventory));
+        menu.clicked(
+            Click::Pickup {
+                slot: HOTBAR_SLOT,
+                button: MouseButton::Right,
+            },
+            &player,
+        );
+
+        assert!(menu.behavior().carried().is(&vanilla_items::DIRT));
+        assert_eq!(menu.behavior().carried().count(), 7);
+        let stack = player.inventory.lock().get_item(0).clone();
+        assert!(contents_of(&stack).is_empty());
     }
 }
