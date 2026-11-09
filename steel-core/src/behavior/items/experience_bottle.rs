@@ -93,8 +93,17 @@ mod tests {
         };
         assert_eq!(remaining, 1);
 
+        let eye = player.position();
+        let search = WorldAabb::new(
+            eye.x - 4.0,
+            eye.y - 4.0,
+            eye.z - 4.0,
+            eye.x + 4.0,
+            eye.y + 4.0,
+            eye.z + 4.0,
+        );
         let bottles = world
-            .get_entities_in_aabb(&WorldAabb::new(-4.0, -4.0, -4.0, 4.0, 8.0, 4.0))
+            .get_entities_in_aabb(&search)
             .iter()
             .filter(|entity| {
                 entity
