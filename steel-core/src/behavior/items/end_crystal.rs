@@ -84,7 +84,7 @@ impl ItemBehavior for EndCrystalItem {
         context.world.game_event(
             &vanilla_game_events::ENTITY_PLACE,
             spawn,
-            &GameEventContext::new(Some(context.player), None),
+            &GameEventContext::new(Some(&**context.player as &dyn Entity), None),
         );
         // TODO: Trigger the ender dragon respawn (`EnderDragonFight#respawnDragon`)
         // once Steel has a dragon fight implementation.

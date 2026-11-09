@@ -122,7 +122,7 @@ impl ItemBehavior for CushionItem {
         context.world.game_event(
             &vanilla_game_events::ENTITY_PLACE,
             target,
-            &GameEventContext::new(Some(context.player), None),
+            &GameEventContext::new(Some(&**context.player as &dyn Entity), None),
         );
         context.inv.with_item(|stack| stack.consume_one(false));
 
