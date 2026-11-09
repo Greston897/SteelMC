@@ -23,7 +23,9 @@ use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::mob_effect::instance::MobEffectInstance;
 use steel_registry::sound_event::SoundEventRef;
+use steel_registry::items::ItemRef;
 use steel_registry::vanilla_attributes;
+use steel_registry::vanilla_items;
 use steel_registry::vanilla_entity_data::PufferfishEntityData;
 use steel_registry::vanilla_mob_effects::POISON;
 use steel_registry::sound_events;
@@ -38,6 +40,7 @@ use super::{
 };
 use crate::entity::ai::goal::{PanicGoal, RandomSwimmingGoal};
 use crate::entity::ai::path::PathType;
+use crate::entity::bucketable::Bucketable;
 use crate::entity::registry::SpawnRule;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData, LivingEntity,
@@ -453,5 +456,19 @@ mod tests {
         assert!((sting_damage(NOT_PUFFED) - 1.0).abs() < f32::EPSILON);
         assert!((sting_damage(SEMI_PUFFED) - 2.0).abs() < f32::EPSILON);
         assert!((sting_damage(FULLY_PUFFED) - 3.0).abs() < f32::EPSILON);
+    }
+}
+
+impl Bucketable for PufferfishEntity {
+    fn is_from_bucket(&self) -> bool {
+        *self.entity_data.lock().from_bucket.get()
+    }
+
+    fn set_from_bucket(&self, from_bucket: bool) {
+        self.entity_data.lock().from_bucket.set(from_bucket);
+    }
+
+    fn bucket_item(&self) -> ItemRef {
+        &vanilla_items::PUFFERFISH_BUCKET
     }
 }

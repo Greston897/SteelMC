@@ -24,7 +24,9 @@ use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::entity_variant::SalmonVariant;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
+use steel_registry::items::ItemRef;
 use steel_registry::vanilla_attributes;
+use steel_registry::vanilla_items;
 use steel_registry::vanilla_entity_data::SalmonEntityData;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
@@ -37,6 +39,7 @@ use super::{
 };
 use crate::entity::ai::goal::{PanicGoal, RandomSwimmingGoal};
 use crate::entity::ai::path::PathType;
+use crate::entity::bucketable::Bucketable;
 use crate::entity::registry::SpawnRule;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData, LivingEntity,
@@ -343,4 +346,23 @@ impl PathfinderMob for SalmonEntity {}
 #[must_use]
 pub const fn salmon_limit_per_chunk() -> i32 {
     FISH_LIMIT_PER_CHUNK
+}
+
+impl Bucketable for SalmonEntity {
+    fn is_from_bucket(&self) -> bool {
+        *self.entity_data.lock().from_bucket.get()
+    }
+
+    fn set_from_bucket(&self, from_bucket: bool) {
+        self.entity_data.lock().from_bucket.set(from_bucket);
+    }
+
+    fn bucket_item(&self) -> ItemRef {
+        &vanilla_items::SALMON_BUCKET
+    }
+
+    fn copy_bucket_data_to_nbt(&self, nbt: &mut owned::NbtCompound) {
+        crate::entity::bucketable::write_base_bucket_data(self, nbt);
+        nbt.insert("type", self.variant().serialized_name().to_string());
+    }
 }

@@ -531,3 +531,10 @@ PY
 - Тесты: +3 внутри `pufferfish.rs` (константы состояний, масштабы, урон жала); всего в паке рыб 11 тестов.
 - **Честные ограничения**: вместо ванильного `InflateGoal` с тегом `NOT_SCARY_FOR_PUFFERFISH` — приближение «не-спектатор и не-креатив игрок в радиусе 8 блоков» (тег ещё не подключён к предикатам); `onPlayerCollision` (`playerTouch`) не перенесён — нет хука столкновения с игроком.
 - Проверки сборки/тестов не выполнялись: в песочнице нет `cargo`.
+
+### Дополнение (водные мобы, шаг 4: слой `Bucketable`)
+
+- **`Bucketable`** (`steel-core/src/entity/bucketable.rs`) — порт интерфейса: `fromBucket()`/`setFromBucket()`/`bucketItem()` + дефолтные `copyDataToNbt`/`copyDataFromNbt` (ключи `FromBucket` (byte), `Health` (float)) и свободная функция `write_base_bucket_data`, чтобы подкласс дописывал свои ключи после общих (так делает ванильный `SalmonEntity`).
+- Реализовано для `CodEntity` (`cod_bucket`), `SalmonEntity` (`salmon_bucket`, дописывает `"type"` с именем варианта) и `PufferfishEntity` (`pufferfish_bucket`) — флаг `FROM_BUCKET` теперь живёт в их синхронизированных данных (`from_bucket`).
+- **Честно**: `Bucketable.tryBucket` (обмен «ведро воды → ведро с рыбой», `RemovalReason::Discarded`, компонент `bucket_entity_data`) и сам `MobBucketItem` в этом шаге **не выложены** — черновик был отброшен, потому что для обмена и спавна нужно сверять точные подписи `boat.rs`/`bucket.rs` (`create_filled_result`, `ENTITIES.create`, `try_add_entity`, `GameEventContext`), а угадывать их нельзя: это сломало бы сборку. Работа продолжается с чтения этих двух файлов.
+- Проверки сборки/тестов не выполнялись: в песочнице нет `cargo`.
