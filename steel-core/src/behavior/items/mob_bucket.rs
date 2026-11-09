@@ -101,6 +101,8 @@ impl ItemBehavior for MobBucketItem {
             return InteractionResult::Fail;
         };
         entity.set_rotation((context.player.rotation().0, 0.0));
+        // Vanilla `EntityBucketItem`: the released mob comes from a bucket.
+        crate::entity::bucketable::release_from_bucket(entity.as_ref());
 
         if let Err(error) = context.world.try_add_entity(entity) {
             log::warn!("Failed to add bucketed entity {}: {error}", entity_type.key);

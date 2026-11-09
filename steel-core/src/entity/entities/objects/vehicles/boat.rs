@@ -77,9 +77,6 @@ pub const DRAG_UNDER_WATER: f32 = 0.45;
 /// Vanilla `DRAG_IN_AIR`.
 pub const DRAG_IN_AIR: f32 = 0.9;
 
-/// Vanilla `DRAG_BASE`: the drag used when no location matched.
-pub const DRAG_BASE: f32 = 0.05;
-
 /// Vanilla `BUOYANCY_SCALE`.
 pub const BUOYANCY_SCALE: f64 = 0.65;
 
@@ -253,6 +250,51 @@ pub trait AbstractBoat: VehicleEntity {
     fn set_bubble_time(&self, ticks: i32) {
         let mut data = self.boat_data().lock();
         data.id_bubble_time.set(ticks);
+    }
+
+    /// Vanilla `AbstractBoatEntity.onAboveBubbleColumn`: remember the column the
+    /// boat floats above and arm the 60-tick bubble timer. Vanilla overrides the
+    /// generic entity push because a boat is thrown out of the column instead.
+    fn boat_above_bubble_column(&self, drag_down: bool, pos: BlockPos) {
+        {
+            let mut state = self.boat_state().lock();
+            state.on_bubble_column_surface = true;
+            state.bubble_column_is_drag = drag_down;
+        }
+        if self.bubble_time() <= 0 {
+            self.set_bubble_time(BUBBLE_WOBBLE_TICKS_MAX);
+        }
+        if let Some(world) = self.level() {
+            world.send_bubble_column_particles(pos);
+        }
+    }
+
+    /// Vanilla `AbstractBoatEntity.handleBubbleColumnEffect` (entity events 71/72):
+    /// a drag column pulls the boat down and lets the riders out, an up column
+    /// throws the boat.
+    fn boat_apply_bubble_column_effect(&self) {
+        let drag = self.boat_state().lock().bubble_column_is_drag;
+        if drag {
+            let velocity = self.velocity();
+            self.set_velocity(DVec3::new(
+                velocity.x,
+                velocity.y + BUBBLE_COLUMN_DRAG_VELOCITY,
+                velocity.z,
+            ));
+            self.eject_passengers();
+        } else {
+            let carries_player = self
+                .passengers()
+                .first()
+                .is_some_and(|passenger| passenger.as_player().is_some());
+            let launch = if carries_player {
+                BUBBLE_COLUMN_LAUNCH_VELOCITY_PLAYER
+            } else {
+                BUBBLE_COLUMN_LAUNCH_VELOCITY_NO_PLAYER
+            };
+            let velocity = self.velocity();
+            self.set_velocity(DVec3::new(velocity.x, launch, velocity.z));
+        }
     }
 
     /// Vanilla `getPaddleSound` for the boat's current location.
@@ -694,6 +736,8 @@ pub fn boat_tick<T: AbstractBoat + 'static>(boat: Arc<T>) {
     {
         let mut state = boat.boat_state().lock();
         state.last_location = state.location;
+        // Re-armed by `on_above_bubble_column` while the boat floats on a column.
+        state.on_bubble_column_surface = false;
     }
     let location = boat.check_location(world.as_ref());
     {
@@ -746,10 +790,16 @@ pub fn boat_tick<T: AbstractBoat + 'static>(boat: Arc<T>) {
     boat.tick_paddle_sounds(world.as_ref());
     push_nearby_entities(&boat, world.as_ref());
 
-    // TODO: Bubble column wobble once the bubble column block calls
-    // `onBubbleColumnSurfaceCollision`.
-    if boat.bubble_time() > 0 {
-        boat.set_bubble_time(boat.bubble_time() - 1);
+    // Vanilla `AbstractBoatEntity.tickBubbleColumn`: the timer only runs while
+    // the boat stays on a column surface; when it expires the boat is thrown.
+    if boat.boat_state().lock().on_bubble_column_surface {
+        let remaining = (boat.bubble_time() - 1).max(0);
+        boat.set_bubble_time(remaining);
+        if remaining == 0 {
+            boat.boat_apply_bubble_column_effect();
+        }
+    } else {
+        boat.set_bubble_time(0);
     }
 }
 
@@ -921,6 +971,15 @@ macro_rules! boat_entity_impl {
 
             fn entity_type(&self) -> EntityTypeRef {
                 self.entity_type
+            }
+
+            fn on_above_bubble_column(&self, drag_down: bool, pos: BlockPos) {
+                self.boat_above_bubble_column(drag_down, pos);
+            }
+
+            fn on_inside_bubble_column(&self, drag_down: bool) {
+                // Vanilla keeps the generic clamped push for boats inside a column.
+                self.default_on_inside_bubble_column(drag_down);
             }
 
             fn tick(self: Arc<Self>) {

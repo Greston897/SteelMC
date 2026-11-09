@@ -53,15 +53,6 @@ pub const NETHERITE_UPGRADE_EMPTY_BASE_SLOT_TEXTURES: [&str; 11] = [
 pub const NETHERITE_UPGRADE_EMPTY_ADDITIONS_SLOT_TEXTURES: [&str; 1] =
     ["minecraft:container/slot/ingot"];
 
-/// Translation key of the shared "smithing template" tooltip header.
-pub const SMITHING_TEMPLATE_TOOLTIP_KEY: &str = "item.minecraft.smithing_template";
-
-/// Translation key of the "applies to" tooltip header.
-pub const APPLIES_TO_TOOLTIP_KEY: &str = "item.minecraft.smithing_template.applies_to";
-
-/// Translation key of the "ingredients" tooltip header.
-pub const INGREDIENTS_TOOLTIP_KEY: &str = "item.minecraft.smithing_template.ingredients";
-
 /// Vanilla `SmithingTemplateItem` (armor trims and the netherite upgrade).
 #[item_behavior]
 pub struct SmithingTemplateItem;
@@ -153,12 +144,25 @@ mod tests {
         assert_eq!(NETHERITE_UPGRADE_EMPTY_ADDITIONS_SLOT_TEXTURES.len(), 1);
     }
 
+    /// Translation key of the shared "smithing template" tooltip header.
+    const SMITHING_TEMPLATE_TOOLTIP_KEY: &str = "item.minecraft.smithing_template";
+
+    /// Translation key of the "applies to" tooltip header.
+    const APPLIES_TO_TOOLTIP_KEY: &str = "item.minecraft.smithing_template.applies_to";
+
+    /// Translation key of the "ingredients" tooltip header.
+    const INGREDIENTS_TOOLTIP_KEY: &str = "item.minecraft.smithing_template.ingredients";
+
     #[test]
     fn tooltip_keys_match_the_vanilla_translation_ids() {
         assert_eq!(SMITHING_TEMPLATE_TOOLTIP_KEY, "item.minecraft.smithing_template");
         assert_eq!(
             INGREDIENTS_TOOLTIP_KEY,
             "item.minecraft.smithing_template.ingredients"
+        );
+        assert_eq!(
+            APPLIES_TO_TOOLTIP_KEY,
+            "item.minecraft.smithing_template.applies_to"
         );
         assert_eq!(
             SmithingTemplateItem::ARMOR_TRIM_BASE_SLOT_DESCRIPTION,

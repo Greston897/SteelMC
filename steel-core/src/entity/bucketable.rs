@@ -6,7 +6,9 @@
 //! skips the immediate-despawn check.
 
 use simdnbt::owned;
+use steel_registry::data_components::components::CustomData;
 use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_components;
 use steel_registry::items::ItemRef;
 use steel_registry::vanilla_items;
 use steel_utils::nbt::NbtValueInput as _;
@@ -82,7 +84,7 @@ where
 
     entity.make_sound(Mob::ambient_sound(entity));
 
-    let bucket_stack = ItemStack::new(entity.bucket_item());
+    let bucket_stack = bucket_stack_for(entity);
     let has_infinite_materials = player.has_infinite_materials();
     player
         .inventory
@@ -92,6 +94,48 @@ where
     Entity::set_removed(entity, RemovalReason::Discarded);
 
     Some(InteractionResult::Success)
+}
+
+/// Builds the bucket stack vanilla hands back after a catch: the mob item with
+/// its `minecraft:bucket_entity_data` payload (`Bucketable.copyDataToNbt`).
+fn bucket_stack_for<T>(entity: &T) -> ItemStack
+where
+    T: Bucketable + ?Sized,
+{
+    let mut nbt = owned::NbtCompound::new();
+    entity.copy_bucket_data_to_nbt(&mut nbt);
+
+    let mut stack = ItemStack::new(entity.bucket_item());
+    if let Some(data) = CustomData::try_from_compound(nbt) {
+        stack.set(vanilla_components::BUCKET_ENTITY_DATA, data);
+    }
+    stack
+}
+
+/// Vanilla `EntityBucketItem` release half: the freshly spawned mob is marked as
+/// coming from a bucket so it does not immediately despawn.
+fn restore_from_bucket<T>(entity: &T)
+where
+    T: Bucketable + ?Sized,
+{
+    if !entity.is_from_bucket() {
+        entity.set_from_bucket(true);
+    }
+}
+
+/// Dispatches [`restore_from_bucket`] for any entity implementing [`Bucketable`].
+pub fn release_from_bucket(entity: &dyn Entity) {
+    if let Some(cod) = entity.downcast_ref::<CodEntity>() {
+        restore_from_bucket(cod);
+        return;
+    }
+    if let Some(salmon) = entity.downcast_ref::<SalmonEntity>() {
+        restore_from_bucket(salmon);
+        return;
+    }
+    if let Some(pufferfish) = entity.downcast_ref::<PufferfishEntity>() {
+        restore_from_bucket(pufferfish);
+    }
 }
 
 /// Dispatches [`try_bucket`] for any entity that implements [`Bucketable`].
