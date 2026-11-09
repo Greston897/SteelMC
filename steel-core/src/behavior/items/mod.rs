@@ -4,11 +4,13 @@
 //! See `src/behavior/generated/items.rs` for the generated registration code.
 
 mod air;
+mod arrow;
 mod banner_item;
 mod block_item;
 pub(crate) mod block_transformer;
 mod bonemeal;
 mod books;
+mod bow;
 mod bottle;
 mod brush;
 mod bucket;
@@ -55,10 +57,12 @@ mod throwable_potion;
 mod tipped_arrow;
 
 pub use air::AirItem;
+pub use arrow::{ArrowItem, SpectralArrowItem};
 pub use banner_item::BannerItem;
 pub use block_item::{BlockItem, DoubleHighBlockItem};
 pub use bonemeal::BoneMealItem;
 pub use books::{WritableBookItem, WrittenBookItem};
+pub use bow::BowItem;
 pub use bottle::BottleItem;
 pub use brush::BrushItem;
 pub use bucket::BucketItem;

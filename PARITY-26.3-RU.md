@@ -382,3 +382,18 @@ PY
   - отсутствие варианта → `CONSUME`, успешное размещение → звук `entity.painting.place`, game event `ENTITY_PLACE`, расход 1 предмета, копирование `custom_name`.
 - Тесты: 4 на предмет (размещение + расход, отказ на вертикальной грани, отказ без стены, копирование имени) и 6 на сущность (AABB = размер варианта, жизнь при стене, дроп при разрушении стены, идемпотентность дропа, `placePainting` требует стену, сохранение/загрузка варианта и направления).
 - Покрытие: **1325 / 1658 = 79,9 %**; не-`Item` без механик: 76 (15 классов) — `HangingEntityItem` закрыт.
+
+### Дополнение (стрелы и лук: `Arrow`, `SpectralArrow`, `ArrowItem`, `SpectralArrowItem`, `BowItem`)
+- **Сущности** (`entity/entities/objects/projectiles/arrow.rs`, классы `Arrow` и `SpectralArrow`) на общем трейте `AbstractArrow`:
+  - ванильная физика: `gravity 0.05`, `drag 0.99` в воздухе / `0.6` в воде, поворот по вектору скорости, рейкаст `getHitResultOnMoveVector` с сортировкой попаданий (`Projectile`-слой);
+  - **застревание**: попадание в блок → `inGround`, скорость в ноль, звук `entity.arrow.hit`, предмет приводится к `count = 1`; в `inGround` работает только счётчик `life`, по `MAX_LIFE_TICKS = 1200` стрела удаляется;
+  - **урон**: `ceil(speed * damage)`, критический бонус `nextInt(raw/2 + 2)`, `DamageSource::arrow` с владельцем, отбрасывание живых (`knockback 0.6` по горизонтали), звуки `entity.arrow.hit` / `entity.arrow.hit_player`;
+  - **пробитие**: `pierceLevel`, список пронзённых сущностей, лимит `pierceLevel + 1`;
+  - **pickup**: `DISALLOWED / ALLOWED / CREATIVE_ONLY` с ванильными ординалами, подбор через `player_touch` с добавлением в инвентарь (`add_item_with_sound`) и удалением стрелы;
+  - **spectral**: тот же код + пометка `glowing` для поражённой сущности, урон 4.0;
+  - NBT: `damage`, `crit`, `PierceLevel`, `inGround`, `life`, `pickup`, `ShotFromCrossbow`, `item`, `weapon`.
+- **Предметы** (`behavior/items/arrow.rs`): `ArrowItem` и `SpectralArrowItem` — ванильные фабрики `createArrow` (тип снаряда, копия предмета, владелец, режим подбора); `ArrowItem::is_arrow` распознаёт обычные, спектральные и зельевые стрелы.
+- **Лук** (`behavior/items/bow.rs`): длительность использования `72000`, анимация `bow`, кривая силы `(f² + 2f) / 3`, минимум `0.1`, запуск `shootFromRotation(power * 3)`, крит на полном натяжении, расход одной стрелы (кроме креатива), 1 единица прочности, статистика `ITEM_USED`, звук `entity.arrow.shoot`; стрелы ищутся в слотах инвентаря (`ArrowItem::is_arrow`).
+- Тесты: 5 на сущность (ординалы pickup, деспавн на 1200 тиках, застревание в блоке + `count = 1`, флаг spectral и базовый урон 2/4, сохранение/загрузка `pierce/crit/inGround/pickup/crossbow`) и 3 на лук (кривая силы, creative-only подбор, распознавание всех трёх видов стрел).
+- **Известное ограничение**: зельевые стрелы (`TippedArrowItem`) летают и попадают, но применение эффектов зелья к цели не подключено — в коде пока нет переиспользуемого помощника «применить `PotionContents` к одной сущности» (в `thrown_potion` эффекты размазываются по площадной логике). Считаю это отдельной задачей, а не закрытым пунктом.
+- Покрытие: **1328 / 1658 = 80,1 %**; не-`Item` без механик: 73 (12 классов) — закрыты `ArrowItem`, `SpectralArrowItem`, `BowItem`.

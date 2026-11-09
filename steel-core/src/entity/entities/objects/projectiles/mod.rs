@@ -1,5 +1,6 @@
 //! Projectile entity implementations.
 
+mod arrow;
 mod ender_pearl;
 mod experience_bottle;
 mod eye_of_ender;
@@ -10,6 +11,7 @@ mod snowball;
 mod splash_potion;
 mod thrown_egg;
 
+pub use arrow::{AbstractArrow, ArrowEntity, ArrowHandle, ArrowPickup, SpectralArrowEntity};
 pub use ender_pearl::EnderPearlEntity;
 pub use experience_bottle::ExperienceBottleEntity;
 pub use eye_of_ender::EyeOfEnderEntity;
