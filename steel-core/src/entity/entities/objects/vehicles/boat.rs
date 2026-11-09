@@ -837,6 +837,9 @@ pub fn push_nearby_entities<T: AbstractBoat + 'static>(boat: &Arc<T>, world: &Wo
 /// shared part through [`ride_boat_interact`].
 macro_rules! boat_entity_impl {
     ($name:ident, $max_passengers:expr) => {
+        boat_entity_impl!($name, $max_passengers, ride_boat_interact);
+    };
+    ($name:ident, $max_passengers:expr, $interact:expr) => {
         impl VehicleEntity for $name {
             fn hurt_time(&self) -> i32 {
                 *self.entity_data.lock().vehicle_entity().id_hurt.get()
@@ -897,6 +900,15 @@ macro_rules! boat_entity_impl {
         impl Entity for $name {
             fn base(&self) -> &EntityBase {
                 &self.base
+            }
+
+            fn interact(
+                &self,
+                player: &Player,
+                _hand: InteractionHand,
+                _location: DVec3,
+            ) -> InteractionResult {
+                ($interact)(self, player)
             }
 
             fn entity_type(&self) -> EntityTypeRef {
@@ -1018,17 +1030,6 @@ impl BoatEntity {
 
 boat_entity_impl!(BoatEntity, MAX_PASSENGERS);
 
-impl Entity for BoatEntity {
-    fn interact(
-        &self,
-        player: &Player,
-        _hand: InteractionHand,
-        _location: DVec3,
-    ) -> InteractionResult {
-        ride_boat_interact(self, player)
-    }
-}
-
 /// A vanilla `Raft` (bamboo raft).
 #[entity_behavior(class = "Raft")]
 pub struct RaftEntity {
@@ -1068,17 +1069,6 @@ impl RaftEntity {
 }
 
 boat_entity_impl!(RaftEntity, MAX_PASSENGERS);
-
-impl Entity for RaftEntity {
-    fn interact(
-        &self,
-        player: &Player,
-        _hand: InteractionHand,
-        _location: DVec3,
-    ) -> InteractionResult {
-        ride_boat_interact(self, player)
-    }
-}
 
 #[cfg(test)]
 mod tests {

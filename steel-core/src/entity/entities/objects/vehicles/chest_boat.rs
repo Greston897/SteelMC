@@ -29,9 +29,24 @@ use steel_utils::locks::{IntoShared as _, SyncMutex};
 use steel_utils::types::InteractionHand;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
-use super::boat::{AbstractBoat, BoatState, boat_entity_impl, ride_boat_interact};
+use super::boat::{
+    AbstractBoat, BoatState, GRAVITY_IN_WATER, boat_entity_impl, boat_tick, ride_boat_interact,
+};
+use super::vehicle_entity::{VEHICLE_DIMENSION_CHANGING_DELAY, vehicle_ignores_explosion};
 use crate::behavior::InteractionResult;
-use crate::entity::{Entity, EntityBase, EntityBaseLoad, Player};
+use crate::entity::{
+    DamageSource, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData,
+    Player, SharedEntity,
+};
+use crate::physics::MoverType;
+use crate::physics::collision::{WorldCollisionProvider, has_block_collision};
+use crate::world::Explosion;
+use steel_protocol::packets::game::SoundSource;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::fluid::FluidStateExt as _;
+use steel_registry::items::ItemRef;
+use steel_registry::sound_event::SoundEventRef;
+use steel_registry::{REGISTRY, sound_events, vanilla_blocks, vanilla_items};
 use crate::inventory::container::{Container as _, SimpleContainer, load_all_items};
 use crate::inventory::menu::kinds::chest_boat;
 use crate::world::World;
@@ -155,17 +170,6 @@ macro_rules! chest_boat_impl {
                 load_items(nbt, &self.inventory);
             }
         }
-
-        impl Entity for $name {
-            fn interact(
-                &self,
-                player: &Player,
-                _hand: InteractionHand,
-                _location: DVec3,
-            ) -> InteractionResult {
-                chest_boat_interact(self, player, &self.inventory)
-            }
-        }
     };
 }
 
@@ -210,7 +214,11 @@ impl ChestBoatEntity {
     }
 }
 
-boat_entity_impl!(ChestBoatEntity, CHEST_BOAT_MAX_PASSENGERS);
+boat_entity_impl!(
+    ChestBoatEntity,
+    CHEST_BOAT_MAX_PASSENGERS,
+    |this: &ChestBoatEntity, player: &Player| chest_boat_interact(this, player, &this.inventory)
+);
 chest_boat_impl!(ChestBoatEntity);
 
 /// A bamboo chest raft.
@@ -254,7 +262,11 @@ impl ChestRaftEntity {
     }
 }
 
-boat_entity_impl!(ChestRaftEntity, CHEST_BOAT_MAX_PASSENGERS);
+boat_entity_impl!(
+    ChestRaftEntity,
+    CHEST_BOAT_MAX_PASSENGERS,
+    |this: &ChestRaftEntity, player: &Player| chest_boat_interact(this, player, &this.inventory)
+);
 chest_boat_impl!(ChestRaftEntity);
 
 #[cfg(test)]

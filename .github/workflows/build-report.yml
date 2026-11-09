@@ -48,7 +48,12 @@ jobs:
           with open("/tmp/check.log", "r", errors="replace") as handle:
               lines = handle.read().splitlines()
 
-          errors = [line for line in lines if ": error" in line or line.startswith("error")]
+          errors = []
+          for index, line in enumerate(lines):
+              if ": error" in line or line.startswith("error"):
+                  start = max(0, index - 4)
+                  errors.append("\n".join(lines[start:index + 2]))
+                  errors.append("-----")
           warnings = [line for line in lines if ": warning" in line or line.startswith("warning")]
 
           if not errors and not warnings:

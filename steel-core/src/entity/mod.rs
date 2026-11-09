@@ -746,7 +746,7 @@ mod animal;
 pub mod attribute;
 mod base;
 mod block_attached_entity;
-mod bucketable;
+pub(crate) mod bucketable;
 mod block_effects;
 mod callback;
 mod combat_rules;

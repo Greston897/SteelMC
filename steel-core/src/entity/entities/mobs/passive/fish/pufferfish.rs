@@ -14,7 +14,7 @@
 //! * `playerTouch` (`onPlayerCollision`) is not wired: Steel has no
 //!   `Entity.onPlayerCollision` hook for this entity class yet.
 
-use std::sync::{Arc, Weak};
+use std::sync::Weak;
 
 use glam::DVec3;
 use simdnbt::{borrow, owned};
@@ -409,10 +409,6 @@ impl Mob for PufferfishEntity {
 
     fn set_mob_flags(&self, flags: i8) {
         self.entity_data.lock().mob_mut().mob_flags.set(flags);
-    }
-
-    fn ambient_sound(&self) -> Option<SoundEventRef> {
-        Some(&sound_events::ENTITY_PUFFER_FISH_AMBIENT)
     }
 
     fn ambient_sound_interval(&self) -> i32 {

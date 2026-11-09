@@ -6,7 +6,7 @@
 //! group refresh is skipped entirely. That is why this entity only carries the
 //! `WaterAnimal` + `FishEntity` layers.
 
-use std::sync::{Arc, Weak};
+use std::sync::Weak;
 
 use glam::DVec3;
 use simdnbt::{borrow, owned};

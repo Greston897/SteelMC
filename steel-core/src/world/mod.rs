@@ -127,7 +127,7 @@ mod player_index;
 pub(crate) mod player_spawn_finder;
 mod portals;
 mod properties;
-mod raycast;
+pub(crate) mod raycast;
 mod redstone;
 mod signal_getter;
 mod sleep;

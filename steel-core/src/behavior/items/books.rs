@@ -9,7 +9,7 @@
 use steel_macros::item_behavior;
 use steel_protocol::packets::game::COpenBook;
 use steel_registry::data_components::vanilla_components::WRITTEN_BOOK_CONTENT;
-use steel_registry::vanilla_stat_types;
+use steel_registry::stat::vanilla_stat_types;
 
 use crate::behavior::context::{InteractionResult, UseItemContext};
 use crate::behavior::item::ItemBehavior;

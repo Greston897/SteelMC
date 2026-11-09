@@ -1064,8 +1064,8 @@ pub struct PersistentMapStates {
 #[cfg(test)]
 mod tests {
     use super::{
-        MAP_AREA, MAX_SCALE, MapDecoration, MapState, MapStates, PersistentDecoration,
-        PersistentMapStates, is_nether_dimension,
+        MAP_AREA, MAP_SIZE, MAP_SIZE_HALF, MAX_SCALE, MapDecoration, MapState, MapStates,
+        PersistentDecoration, PersistentMapStates, is_nether_dimension,
     };
     use steel_registry::{init_vanilla_registry, vanilla_map_decoration_types};
     use steel_utils::Identifier;
