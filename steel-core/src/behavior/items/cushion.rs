@@ -77,7 +77,7 @@ impl ItemBehavior for CushionItem {
         let target = context.hit_result.block_pos.offset(dx, dy, dz);
         let support = BlockPos::new(target.x(), target.y() - 1, target.z());
 
-        let stack = context.inv.with_item(ItemStack::clone);
+        let stack = context.inv.with_item(|stack: &mut ItemStack| stack.clone());
         let color = stack.get(CUSHION_COLOR).copied().unwrap_or(DyeColor::White);
 
         if !Self::can_place_on(context, &stack, side, target) {

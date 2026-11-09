@@ -171,7 +171,7 @@ mod tests {
 
     #[test]
     fn placing_on_obsidian_spawns_a_crystal_without_a_base_plate() {
-        let (fixture, player, pos) = base_fixture("crystal_obsidian", &vanilla_blocks::OBSIDIAN);
+        let (fixture, player, pos) = base_fixture("crystal_obsidian", &&vanilla_blocks::OBSIDIAN);
         let world = &fixture.world;
 
         let mut context = place_context(world, &player, pos);
@@ -194,7 +194,7 @@ mod tests {
 
     #[test]
     fn bedrock_is_also_a_valid_base() {
-        let (fixture, player, pos) = base_fixture("crystal_bedrock", &vanilla_blocks::BEDROCK);
+        let (fixture, player, pos) = base_fixture("crystal_bedrock", &&vanilla_blocks::BEDROCK);
         let world = &fixture.world;
 
         let mut context = place_context(world, &player, pos);
@@ -207,7 +207,7 @@ mod tests {
 
     #[test]
     fn other_blocks_reject_the_crystal() {
-        let (fixture, player, pos) = base_fixture("crystal_stone", &vanilla_blocks::STONE);
+        let (fixture, player, pos) = base_fixture("crystal_stone", &&vanilla_blocks::STONE);
         let world = &fixture.world;
 
         let mut context = place_context(world, &player, pos);
@@ -222,7 +222,7 @@ mod tests {
 
     #[test]
     fn a_blocked_block_above_rejects_the_crystal() {
-        let (fixture, player, pos) = base_fixture("crystal_blocked", &vanilla_blocks::OBSIDIAN);
+        let (fixture, player, pos) = base_fixture("crystal_blocked", &&vanilla_blocks::OBSIDIAN);
         let world = &fixture.world;
         assert!(world.set_block(
             pos.above(),

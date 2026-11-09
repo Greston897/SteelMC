@@ -112,7 +112,7 @@ impl CrossbowItem {
     ///
     /// Prefers arrows over firework rockets, draws one item per loaded
     /// projectile and leaves the inventory untouched in creative mode.
-    fn try_load_projectiles(stack: &mut ItemStack, player: &Arc<Player>, creative: bool) -> bool {
+    fn try_load_projectiles(stack: &mut ItemStack, player: &Player, creative: bool) -> bool {
         let count = usize::try_from(Self::projectile_count(stack)).unwrap_or(1);
         let mut templates: Vec<ItemStackTemplate> = Vec::with_capacity(count);
 

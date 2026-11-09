@@ -113,7 +113,7 @@ mod tests {
         assert_eq!(result, crate::behavior::InteractionResult::Success);
 
         let hand = player.inventory.lock().get_selected_item().clone();
-        assert_eq!(hand.item(), &vanilla_items::FILLED_MAP);
+        assert!(hand.is(&vanilla_items::FILLED_MAP));
         let map_id = hand
             .get(MAP_ID)
             .expect("filled map carries an id")

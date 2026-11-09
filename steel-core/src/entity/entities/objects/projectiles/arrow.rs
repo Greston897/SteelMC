@@ -458,7 +458,7 @@ pub trait AbstractArrow: Projectile + Sized {
 
         let mut stack = self.pickup_item();
         let inventory = Arc::clone(&player.inventory);
-        inventory.lock().add_item_with_sound(&mut stack);
+        let _ = inventory.lock().add(&mut stack);
         if stack.is_empty() {
             self.play_sound(&sound_events::ENTITY_ARROW_HIT_PLAYER, 0.2, 1.0);
         }
