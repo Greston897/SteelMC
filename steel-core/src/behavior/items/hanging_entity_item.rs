@@ -44,7 +44,7 @@ impl ItemBehavior for HangingEntityItem {
         let (dx, dy, dz) = side.offset();
         let target = context.hit_result.block_pos.offset(dx, dy, dz);
 
-        let stack = context.inv.with_item(ItemStack::clone);
+        let stack = context.inv.with_item(|stack: &mut steel_registry::item_stack::ItemStack| stack.clone());
 
         if !Self::can_place_on(context, &stack, side, target) {
             return InteractionResult::Fail;

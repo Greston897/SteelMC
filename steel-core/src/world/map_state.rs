@@ -696,7 +696,7 @@ impl MapState {
         let marker_x = offset_to_marker(dx);
         let marker_z = offset_to_marker(dz);
 
-        if kind.key == &vanilla_map_decoration_types::PLAYER.key {
+        if kind.key == vanilla_map_decoration_types::PLAYER.key {
             if is_in_bounds(dx, dz) {
                 return Some((
                     kind,
@@ -1208,7 +1208,7 @@ mod tests {
             0,
         );
         let (_, decoration) = state.decorations().next().expect("marker");
-        assert_eq!(decoration.kind.key, &vanilla_map_decoration_types::PLAYER_OFF_MAP.key);
+        assert_eq!(decoration.kind.key, vanilla_map_decoration_types::PLAYER_OFF_MAP.key);
         assert_eq!(decoration.rotation, 0);
 
         // Beyond the radius the marker disappears unless tracking is unlimited.
@@ -1240,7 +1240,7 @@ mod tests {
         let (_, decoration) = state.decorations().next().expect("marker");
         assert_eq!(
             decoration.kind.key,
-            &vanilla_map_decoration_types::PLAYER_OFF_LIMITS.key
+            vanilla_map_decoration_types::PLAYER_OFF_LIMITS.key
         );
     }
 
