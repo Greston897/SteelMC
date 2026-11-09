@@ -14,7 +14,7 @@ use steel_utils::{BlockPos, WorldAabb};
 use crate::behavior::context::{InteractionResult, UseOnContext};
 use crate::behavior::item::ItemBehavior;
 use crate::entity::entities::EndCrystalEntity;
-use crate::entity::{Entity as _, SharedEntity, next_entity_id};
+use crate::entity::{Entity, SharedEntity, next_entity_id};
 use crate::world::game_event::GameEventContext;
 
 /// Vanilla `EndCrystalItem`.
