@@ -209,7 +209,8 @@ mod tests {
             bytes,
             vec![
                 // VarInt 300 = 0xAC 0x02
-                0xAC, 0x02, // scale
+                0xAC, 0x02, // map id
+                1,    // scale
                 1,    // locked
                 1,    // decorations present
                 1,    // one decoration
