@@ -14,7 +14,6 @@ use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
-use crate::entity::block_attached_entity::BlockAttachedEntity;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
@@ -616,8 +615,8 @@ mod tests {
             kebab(),
         );
 
-        painting.drop_item(None);
-        painting.drop_item(None);
+        BlockAttachedEntity::drop_item(painting.as_ref(), None);
+        BlockAttachedEntity::drop_item(painting.as_ref(), None);
 
         assert_eq!(dropped_items(&fixture.world).len(), 1);
     }
