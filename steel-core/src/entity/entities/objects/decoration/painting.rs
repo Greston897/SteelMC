@@ -138,12 +138,12 @@ impl PaintingEntity {
     /// The currently synced variant.
     #[must_use]
     pub fn variant(&self) -> RegistryReference<PaintingVariant> {
-        *self.entity_data.lock().painting().painting_variant_id.get()
+        *self.entity_data.lock().painting().painting_variant.get()
     }
 
     /// Sets the synced variant.
     pub fn set_variant(&self, variant: RegistryReference<PaintingVariant>) {
-        self.entity_data.lock().painting_mut().painting_variant_id.set(variant);
+        self.entity_data.lock().painting_mut().painting_variant.set(variant);
     }
 
     /// The direction the painting faces (away from its wall).
@@ -398,7 +398,7 @@ impl Entity for PaintingEntity {
     fn save_additional(&self, nbt: &mut NbtCompound) {
         self.save_block_attached_entity(nbt);
         nbt.insert("facing", self.facing().get_3d_data_value() as i8);
-        nbt.insert("variant", self.variant().get().key.to_string());
+        nbt.insert("variant", self.variant().value().key.to_string());
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
@@ -422,7 +422,7 @@ impl Entity for PaintingEntity {
             .set_bounding_box(Self::painting_box(
                 self.block_attached_entity_base.pos(),
                 self.facing(),
-                self.variant().get(),
+                self.variant().value(),
             ));
     }
 }
@@ -453,7 +453,7 @@ impl BlockAttachedEntity for PaintingEntity {
         self.base.set_bounding_box(Self::painting_box(
             self.block_attached_entity_base.pos(),
             self.facing(),
-            self.variant().get(),
+            self.variant().value(),
         ));
         Ok(())
     }

@@ -310,7 +310,7 @@ mod tests {
         let pos = BlockPos::new(0, 64, 0);
         insert_ready_full_chunk(&world, ChunkPos::from_block_pos(pos));
 
-        let state = &vanilla_blocks::LEVER.default_state();
+        let state = vanilla_blocks::LEVER.default_state();
         assert!(world.set_block(pos, state, UpdateFlags::UPDATE_ALL));
 
         let player = TestPlayerBuilder::new(Arc::clone(&world), "DebugStickTester", 1).build();
@@ -482,7 +482,7 @@ mod tests {
     fn debug_stick_reports_blocks_without_properties() {
         let (fixture, player, pos, _state) = lever_fixture("debug_stick_no_properties");
         let world = &fixture.world;
-        let stone = &vanilla_blocks::STONE.default_state();
+        let stone = vanilla_blocks::STONE.default_state();
         assert!(world.set_block(pos, stone, UpdateFlags::UPDATE_ALL));
 
         assert!(!run_action(&player, world, pos, stone, true));
