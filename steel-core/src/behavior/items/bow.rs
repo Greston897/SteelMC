@@ -11,16 +11,16 @@ use std::sync::Arc;
 use glam::DVec3;
 use steel_macros::item_behavior;
 use steel_protocol::packets::game::SoundSource;
-
 use steel_registry::item_stack::ItemStack;
-use steel_registry::{sound_events, vanilla_items, vanilla_stat_types};
+use steel_registry::stat::vanilla_stat_types;
+use steel_registry::{sound_events, vanilla_items};
 use steel_utils::types::GameType;
 
-use crate::behavior::{ItemBehavior, ItemUseAnimation};
 use crate::behavior::items::{ArrowItem, SpectralArrowItem};
+use crate::behavior::{ItemBehavior, ItemUseAnimation};
 use crate::entity::entities::{AbstractArrow, ArrowPickup};
-use crate::entity::{Entity, Player, Projectile as _, SharedEntity};
 use crate::entity::LivingEntity;
+use crate::entity::{Entity, Player, Projectile as _, SharedEntity};
 use crate::world::World;
 
 /// Vanilla `BowItem` maximum draw duration.

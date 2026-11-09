@@ -14,7 +14,7 @@ use steel_registry::{vanilla_entities, vanilla_items};
 
 use crate::behavior::item::ItemBehavior;
 use crate::entity::entities::{AbstractArrow, ArrowEntity, ArrowPickup, SpectralArrowEntity};
-use crate::entity::{SharedEntity, next_entity_id};
+use crate::entity::{Entity as _, Projectile as _, SharedEntity, next_entity_id};
 use crate::world::World;
 
 /// Regular arrows (plain and tipped).

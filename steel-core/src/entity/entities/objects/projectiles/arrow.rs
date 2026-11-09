@@ -15,6 +15,7 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
+use steel_registry::data_components::{PotionContents, vanilla_components};
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::{sound_events, vanilla_damage_types, vanilla_items};
@@ -23,8 +24,10 @@ use steel_utils::nbt::NbtNumeric as _;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
+use crate::behavior::MOB_EFFECT_BEHAVIORS;
 use crate::entity::damage::DamageSource;
 use crate::entity::LivingEntity as _;
+use crate::entity::potion_contents::to_runtime_instance_icon_from_visibility;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, Player, Projectile, ProjectileBase, RemovalReason,
     SharedEntity,
@@ -367,10 +370,58 @@ pub trait AbstractArrow: Projectile + Sized {
         };
         self.play_sound(sound, 1.0, 1.2);
 
+        // Vanilla `Arrow#doPostHurtEffects`: tipped arrows apply their potion
+        // contents with an eighth of the configured duration (minimum 1 tick).
+        if !self.arrow_handle().spectral() {
+            self.apply_tipped_arrow_effects(world.as_ref(), entity);
+        }
+
         // Arrows without piercing stop at the entity they hit.
         if self.pierce_level() == 0 {
             self.set_velocity(self.velocity() * 0.0);
             self.set_removed(RemovalReason::Discarded);
+        }
+    }
+
+    /// Vanilla `Arrow#doPostHurtEffects`: applies the tipped arrow's potion
+    /// contents to the entity that was hit.
+    ///
+    /// Instantaneous effects are applied through their effect behavior;
+    /// everything else gets `duration / 8` ticks with a minimum of one tick.
+    fn apply_tipped_arrow_effects(self: &Arc<Self>, world: &World, entity: &SharedEntity) {
+        let item = self.arrow_item();
+        let contents =
+            item.get_or_default(vanilla_components::POTION_CONTENTS, PotionContents::empty());
+        let effects = contents.all_effects();
+        if effects.is_empty() {
+            return;
+        }
+        let Some(living) = entity.as_living_entity() else {
+            return;
+        };
+        if !living.is_affected_by_potions() {
+            return;
+        }
+
+        let owner = self.get_owner();
+        let this: SharedEntity = Arc::<Self>::clone(self);
+        for effect in &effects {
+            let behavior = MOB_EFFECT_BEHAVIORS.get_behavior(effect.effect());
+            if let Some(instantaneous) = behavior.as_instantaneous() {
+                instantaneous.apply_instantaneous(
+                    world,
+                    living,
+                    effect.amplifier(),
+                    Some(&this),
+                    owner.as_ref(),
+                    1.0,
+                );
+                continue;
+            }
+
+            let duration = effect.map_duration(|base_duration| (base_duration / 8).max(1));
+            let scaled_effect = to_runtime_instance_icon_from_visibility(effect, duration);
+            living.add_mob_effect_with_source(scaled_effect, Some(this.as_ref()));
         }
     }
 
@@ -647,7 +698,7 @@ mod tests {
     use std::sync::Weak;
 
     use glam::DVec3;
-    use simdnbt::borrow::read_compound;
+    use simdnbt::borrow::{NbtCompound as BorrowedNbtCompoundView, read_compound};
     use simdnbt::owned::NbtCompound;
     use std::io::Cursor;
     use steel_registry::{init_vanilla_registry, vanilla_entities};
@@ -716,7 +767,7 @@ mod tests {
             inside: false,
             world_border_hit: false,
         };
-        arrow.abstract_arrow_on_hit_block(&hit);
+        std::sync::Arc::clone(&arrow).abstract_arrow_on_hit_block(&hit);
 
         assert!(arrow.is_in_ground());
         assert_eq!(arrow.velocity(), DVec3::ZERO);
@@ -746,11 +797,12 @@ mod tests {
         arrow.save_arrow(&mut nbt);
         let mut bytes = Vec::new();
         nbt.write(&mut bytes);
-        let borrowed =
-            read_compound(&mut Cursor::new(bytes.as_slice())).expect("test NBT should reborrow");
+        let mut cursor = Cursor::new(bytes.as_slice());
+        let borrowed = read_compound(&mut cursor).expect("test NBT should reborrow");
+        let view: BorrowedNbtCompoundView<'_, '_> = (&borrowed).into();
 
         let fresh = arrow(8);
-        fresh.load_arrow((&borrowed).into());
+        fresh.load_arrow(view);
 
         assert_eq!(fresh.pierce_level(), 3);
         assert!(fresh.is_critical());
