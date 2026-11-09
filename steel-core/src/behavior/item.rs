@@ -831,9 +831,9 @@ mod tests {
 
         let remaining = finish_consuming_stack(&stack, world, player.as_ref());
 
-        // Vanilla turns the drunk bottle into its glass bottle (`USE_REMAINDER`).
-        assert!(remaining.is(&vanilla_items::GLASS_BOTTLE));
-        assert_eq!(remaining.count(), 1);
+        // Vanilla `ominous_bottle` carries no `use_remainder` component, so the
+        // bottle is simply consumed.
+        assert_eq!(remaining.count(), 0);
         let bad_omen = player
             .mob_effect(vanilla_mob_effects::BAD_OMEN)
             .expect("ominous bottle should apply Bad Omen");
