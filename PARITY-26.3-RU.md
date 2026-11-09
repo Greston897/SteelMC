@@ -1,9 +1,9 @@
 # SteelMC ↔ Minecraft Java 26.3: аудит паритета серверного ядра
 
 **Дата:** 9 ноября 2026
-**Проверяемая версия:** `0.17.0+mc26.3` (ветка `arena/8ff5adc9-steelmc`, коммит `6eed266`)
+**Проверяемая версия:** `0.17.0+mc26.3` (ветка `arena/8ff5adc9-steelmc`: старт `6eed266`, текущий `4e906af`)
 **Эталон:** Minecraft Java Edition **26.3 «Wilderness Bound»** (релиз 15.09.2026, data pack version 121.0)
-**Объём кода:** ≈517 000 строк Rust (без generated), 3 142 теста
+**Объём кода:** ≈526 600 строк Rust (без generated), 3 986 тестов
 
 ---
 
@@ -11,20 +11,54 @@
 
 | Срез | Оценка паритета |
 |---|---|
-| **Серверное ядро в целом (взвешенно)** | **≈56 %** (реалистичный диапазон 53–61 %) |
+| **Серверное ядро в целом (взвешенно)** | **≈58 %** (реалистичный диапазон 55–62 %); на старте ветки было ≈56 % |
 | Инфраструктура и мир: протокол, чанки, свет, сохранения, мирогенерация | ≈74 % (мирогенерация отдельно ≈92 %) |
-| Контент-механики: блоки, block entities, предметы, меню, крафт | ≈65 % |
-| Живой мир: сущности, ИИ, бой, редстоун | ≈32 % |
+| Контент-механики: блоки, block entities, предметы, меню, крафт | ≈68 % (было ≈65 %) |
+| Живой мир: сущности, ИИ, бой, редстоун | ≈35 % (было ≈32 %) |
 | Серверные системы: команды, права, scoreboard, достижения, админ, плагины | ≈37 % |
 
 Проще говоря: **«мир и фундамент — почти ванильные, живой мир и социальные системы — в основном отсутствуют»**.
 Это совпадает с самоописанием проекта («survival gameplay is incomplete», «only a small number of entities have meaningful behavior») и с официальным трекером, где блоки закрыты на 81 %, но мобы — почти нет.
 
+### 1.1 Динамика: было → стало (ветка `arena/8ff5adc9-steelmc`)
+
+Точная метрика есть только для слоя предметов — «предметы, у которых есть зарегистрированное поведение» (1 658 предметов в 26.3).
+Остальные проценты — экспертные оценки, они пересчитаны после каждого пакета.
+
+| Срез | На старте ветки (`6eed266`) | Сейчас (`4e906af`) | Δ |
+|---|---|---|---|
+| Предметы с поведением | 1 286 / 1 658 = **77,6 %** | 1 372 / 1 658 = **82,8 %** | **+86 предметов, +5,2 п.п.** |
+| Классы без механик (кроме базового `Item`) | 18 классов / 115 предметов | **7 классов / 29 предметов** | −11 классов, −86 предметов |
+| `#[item_behavior]` структур в коде | 39 | **58** | +19 |
+| `#[entity_behavior]` структур в коде | 29 | **39** | +10 |
+| Типы сущностей с фабрикой/поведением | 29 / 161 ≈ 18 % | **39 / 161 ≈ 24 %** | +10 типов |
+| Тестов в коде | 3 142 | **3 986** | +844 |
+| Строк Rust (без `generated`) | ≈517 000 | ≈526 600 | +9 600 |
+| Серверное ядро в целом (взвешенно) | ≈56 % | **≈58 %** | +2 п.п. |
+
+Пакеты по порядку (по срезу «предметы с поведением»):
+
+| Пакет | Предметов | Покрытие после |
+|---|---|---|
+| Подушки (`CushionItem`, 16 цветов) | 16 | 79,9 % |
+| Картины (`HangingEntityItem` + `Painting`-сущность) | 1 | 79,9 % |
+| Стрелы + лук (`Arrow`, `SpectralArrow`, `ArrowItem`, `SpectralArrowItem`, `BowItem`) | 3 | 80,1 % |
+| Арбалет + зельевые стрелы (`CrossbowItem`, `Arrow#doPostHurtEffects`) | 1 | 80,2 % |
+| Кристалл Края + шаблоны кузнеца + фрагмент диска | 21 | 81,4 % |
+| **Лодки и плоты (`BoatItem`, 4 класса сущностей, пакет `paddle_boat`)** | **22** | **82,8 %** |
+
+Что осталось до 100 % слоя предметов: `MapItem` 17 + `EmptyMapItem` 1 (нужно состояние карты и пакет `map_item_data`),
+`MobBucketItem` 7 (нет сущностей рыб/аксолотля/головастика), `KnowledgeBookItem` 1 (книга рецептов),
+`ArmorStandItem` 1 (нет сущности стойки), `TridentItem` 1 (нет снаряда-трезубца), `WindChargeItem` 1 (нет сущности заряда ветра).
+
+Важно: рост «ядра в целом» на 2 п.п. — это не только предметы. Лодки дали серверную физику транспорта и новый
+serverbound-пакет, стрелы/лук/арбалет закрыли основную часть дальнего боя, картины и подушки — сущности-декорации.
+
 **Самые крупные дыры (по влиянию на игру):**
 
 1. Мобы и естественный спавн — 8 живых мобов из ~95, моб-кап/спавн-цикл не реализованы.
 2. Контейнеры — нет сундуков/ловушек-сундуков/воронок/раздатчиков/выбрасывателей/варочных стоек.
-3. Бой дальнего боя — нет лука, арбалета, стрел, трезубца, элитр; щит в работе.
+3. Бой дальнего боя — лук, арбалет и стрелы уже есть; нет трезубца, винд-чарджа и элитр, щит в работе.
 4. Деревни, торговля, рейды — отсутствуют как система.
 5. Боссы (дракон Края, Иссушитель) и финалы измерений.
 6. Карты и исследовательские карты (включая новые из 26.3).
@@ -64,10 +98,10 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 | 5 | Структуры и храмовые пулы | 5 | 9 / ~22 ≈ **41 %** | buried_treasure, desert_pyramid, fortress, jungle_temple, mineshaft, ocean_monument, ruined_portal, stronghold, swamp_hut + template-пайплайн | Нет village, abandoned_camp (26.3), ancient_city, trial_chambers, bastion, end_city, igloo, mansion, pillager_outpost, shipwreck, ocean_ruin, trail_ruins, nether_fossil |
 | 6 | Блоки и blockstates | 13 | **81 %** (трекер) / 223 поведения на 268 классов | 888 записей реализовано, 143 в работе; редстоун, растения, двери, лестницы/плиты, шерсть/бетон, straw bed, shelf mushroom, red shrub | 70 классов в планах: **chest/trapped_chest**, dispenser, dropper, hopper, brewing_stand, crafter, lectern, loom, stonecutter, smithing_table, cartography_table, sculk*, calibrated_sculk_sensor, trial_spawner, vault, decorated_pot, jigsaw, structure_block, command_block, creaking_heart, copper_golem_statue, shelf (13), leaves-база, nylium, infested, froglights и др. |
 | 7 | Block entities | 6 | 25 / 49 ≈ **51 %** | furnace/smoker/blast furnace, barrel, beacon, beehive, bell, brushable, campfire, chiseled_bookshelf, comparator, conduit, daylight detector, enchanting table, ender chest, end portal/gateway, sign/hanging sign, jukebox, mob spawner, piston, potent sulfur, shulker box, skull | **chest/trapped_chest**, dispenser, dropper, hopper, brewing stand, banner, structure/jigsaw/command block, lectern, sculk sensor/catalyst/shrieker, shelf, decorated pot, crafter, trial spawner, vault, creaking heart, copper golem statue |
-| 8 | Предметы и компоненты | 8 | ≈70 % | 1 658 предметов и компоненты данных, прочность, еда, зелья/стрелы, вёдра, инструменты/броня через компоненты, mace, shield (частично), spawn eggs, dye, banner, minecart, sign | Нет поведения: **BoatItem (22)**, **MapItem (17)**, **CushionItem (16)**, **BundleItem (17)**, MobBucketItem (7), GameMasterBlockItem (7), FoodOnAStickItem (2), bow/crossbow/trident/elytra |
+| 8 | Предметы и компоненты | 8 | ≈75 % (**1 372 / 1 658 = 82,8 %** предметов с поведением) | 1 658 предметов и компоненты данных, прочность, еда, зелья, вёдра, инструменты/броня через компоненты, mace, shield (частично), spawn eggs, dye, banner, minecart, sign, подушечки (16), картины, лук/арбалет/стрелы (в т.ч. зельевые), кристалл Края, шаблоны кузнеца, **лодки и плоты (22)** | Нет поведения: `MapItem` (17) + `EmptyMapItem` (1), `MobBucketItem` (7), `KnowledgeBookItem`, `ArmorStandItem`, `TridentItem`, `WindChargeItem`; `BundleItem` (17) перенесён ранее; элитры нет |
 | 9 | Инвентарь, меню, крафт | 6 | 10 / 25 ≈ **40 %** | inventory, crafting (2x2/3x3), furnace/smoker/blast furnace, anvil, enchanting, grindstone, beacon, ender chest, shulker box, универсальные 9x1–9x6; chest-меню есть, но без блока | Нет типов меню: hopper, brewing_stand, smithing, stonecutter, loom, cartography_table, merchant, crafter_3x3, lectern; нет книги рецептов (`update_recipes`, `recipe_book_*`) |
-| 10 | Сущности, ИИ, спавн | 14 | 29 / 161 ≈ **18 %**; живые мобы 8 / ~95 ≈ **8 %** | AI-фундамент: goals, navigation, pathfinder, sensing, targeting, physics, equipment, effects, маунты, лианы, item/XP orb, TNT, кристалл Края, снаряды (снежок, яйцо, жемчуг, око, зелья, фейерверк, удочка), вагонетки (2) | 132 типа без реализации: все враждебные (zombie, skeleton, creeper, spider, enderman, witch, slime, pillager…), животные кроме 6 (chicken, cow, mooshroom, pig, sheep, squid) и bat, villagers, iron/snow golem, bosses, **лодки (22)**, остальные вагонетки, стрелы/трезубец/винд-чардж, sulfur cube (26.2); **нет моб-капа, спавн-цикла и естественного спавна** (7 spawn rules) |
-| 11 | Бой, урон, эффекты, зелья | 9 | ≈45 % | Типы урона, атрибуты, броня/toughness, поглощение урона бронёй, knockback, часть sweep, enchantment helper (защита), 13 активных эффектов, зелья/всплеск/туман, голод/регенерация/истощение | Нет combat tracker и death messages (PR), критов/кулдауна атаки полностью, щита (PR), лука/арбалета/стрел/трезубца, mace-механик полностью, **атрибутных эффектов** (speed/strength/jump/resistance и др. не накладывают модификаторы), варки зелий, тотема, элитр |
+| 10 | Сущности, ИИ, спавн | 14 | 39 / 161 ≈ **24 %**; живые мобы 8 / ~95 ≈ **8 %** | AI-фундамент: goals, navigation, pathfinder, sensing, targeting, physics, equipment, effects, маунты, лианы, item/XP orb, TNT, кристалл Края, снаряды (снежок, яйцо, жемчуг, око, зелья, фейерверк, удочка, стрелы/спектральные стрелы), вагонетки (2), **лодки/плоты и сундук-лодки (4 класса)** | 122 типа без реализации: все враждебные (zombie, skeleton, creeper, spider, enderman, witch, slime, pillager…), животные кроме 6 (chicken, cow, mooshroom, pig, sheep, squid) и bat, villagers, iron/snow golem, bosses, остальные вагонетки, трезубец/винд-чардж, sulfur cube (26.2); **нет моб-капа, спавн-цикла и естественного спавна** (7 spawn rules) |
+| 11 | Бой, урон, эффекты, зелья | 9 | ≈55 % | Типы урона, атрибуты, броня/toughness, поглощение урона бронёй, knockback, часть sweep, enchantment helper (защита), 13 активных эффектов, зелья/всплеск/туман, голод/регенерация/истощение | Нет combat tracker и death messages (PR), критов/кулдауна атаки полностью, щита (PR), трезубца, mace-механик полностью, **атрибутных эффектов** (speed/strength/jump/resistance и др. не накладывают модификаторы), варки зелий, тотема, элитр |
 | 12 | Редстоун и механизмы | 4 | ≈65 % | wire, repeater, comparator, torch, lever, buttons, pressure plates (15), observer, note block, daylight detector, piston head/base (в работе), TNT (частично), target, tripwire, rails, minecart physics | **piston base в работе**, dispenser/dropper/hopper/crafter отсутствуют, sculk-сенсоры, copper bulb/chest частично, нет полной 1:1 модели обновлений и «quasi-connectivity»-краёв |
 | 13 | Достижения и статистика | 2 | ≈60 % | Данные всех достижений, `PlayerAdvancements`-хранилище, критерии/триггеры, `/advancement`, статистика (vanilla stat types + custom), начисление части статов | Мало фактически срабатывающих триггеров, нет выдачи `ITEM_CRAFTED` (issue), формат сохранения не ванильный JSON (issue), нет динамической перезагрузки |
 | 14 | Scoreboard, команды-интерфейсы, карты | 1 | ≈20 % | Серверная модель scoreboard/team/objective, title/actionbar/subtitle, tab list, чат | **Нет пакетов** `set_objective/set_score/set_display_objective/set_player_team/reset_score`, нет `/scoreboard`, `/team`, `/bossbar`; нет карт (`map_item_data`), waypoint-системы, диалогов |
@@ -90,7 +124,7 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 
 - **Живой мир.** 8 мобов (bat, chicken, cow, mooshroom, pig, sheep, squid, endermite) — и это без естественного спавна: спавн-цикла и моб-капа нет, despawn реализован частично. Без мобов нет выживания: еда, лут, бой, деревни, рейды, боссы.
 - **Контейнеры.** Сундук — центральный блок игры — в статусе Planned. Есть меню сундука, но нет поведения блока и block entity. Воронки/раздатчики/выбрасыватели/варочные стойки — тоже Planned.
-- **Дальний бой.** Нет bow/crossbow/arrow/trident/elytra, щит в открытом PR. PvE/PvP в ванильном смысле не работают.
+- **Дальний бой.** Лук, арбалет, обычные и спектральные стрелы, зельевые стрелы и кристалл Края уже есть; нет трезубца, винд-чарджа и элитр, щит в открытом PR.
 - **Социальные системы.** Деревни, торговля, рейды, iron golem, wandering trader — ноль.
 - **Боссы и финалы.** `mobs/bosses/` пуст: дракона Края и Иссушителя нет; end city/bastion тоже.
 - **Интерфейсы.** Scoreboard-модель есть, но пакетов и команд нет → игрок её не видит. Карт нет вообще.
