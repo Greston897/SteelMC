@@ -675,6 +675,6 @@ mod tests {
 
         fresh.load_additional((&borrowed).into());
         assert_eq!(fresh.facing(), Direction::East);
-        assert_eq!(fresh.variant().get().key, kebab().get().key);
+        assert_eq!(fresh.variant().value().key, kebab().value().key);
     }
 }
