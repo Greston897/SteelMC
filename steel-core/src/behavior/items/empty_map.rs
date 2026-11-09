@@ -162,7 +162,7 @@ mod tests {
         let filled_maps = inventory
             .get_items()
             .iter()
-            .filter(|stack| stack.item() == &vanilla_items::FILLED_MAP)
+            .filter(|stack| stack.is(&vanilla_items::FILLED_MAP))
             .count();
         assert_eq!(filled_maps, 1);
     }
