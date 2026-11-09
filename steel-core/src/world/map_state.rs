@@ -696,7 +696,7 @@ impl MapState {
         let marker_x = offset_to_marker(dx);
         let marker_z = offset_to_marker(dz);
 
-        if kind.key == vanilla_map_decoration_types::PLAYER.key {
+        if kind.key == &vanilla_map_decoration_types::PLAYER.key {
             if is_in_bounds(dx, dz) {
                 return Some((
                     kind,
@@ -1064,7 +1064,7 @@ pub struct PersistentMapStates {
 #[cfg(test)]
 mod tests {
     use super::{
-        MAP_AREA, MAP_SIZE, MAP_SIZE_HALF, MAX_SCALE, MapDecoration, MapState, MapStates,
+        MAP_AREA, MAP_SIZE, MAX_SCALE, MapDecoration, MapState, MapStates,
         PersistentDecoration, PersistentMapStates, is_nether_dimension,
     };
     use steel_registry::{init_vanilla_registry, vanilla_map_decoration_types};
@@ -1172,7 +1172,7 @@ mod tests {
         assert!(state.take_packet(uuid).is_none());
 
         state.add_decoration(
-            vanilla_map_decoration_types::RED_MARKER,
+            &vanilla_map_decoration_types::RED_MARKER,
             "marker",
             0.0,
             0.0,
@@ -1199,7 +1199,7 @@ mod tests {
         // 200 blocks east of the center is outside the 63-block drawing area but
         // inside vanilla's 320-block tracking radius.
         state.add_decoration(
-            vanilla_map_decoration_types::PLAYER,
+            &vanilla_map_decoration_types::PLAYER,
             "p",
             200.0,
             0.0,
@@ -1208,12 +1208,12 @@ mod tests {
             0,
         );
         let (_, decoration) = state.decorations().next().expect("marker");
-        assert_eq!(decoration.kind.key, vanilla_map_decoration_types::PLAYER_OFF_MAP.key);
+        assert_eq!(decoration.kind.key, &vanilla_map_decoration_types::PLAYER_OFF_MAP.key);
         assert_eq!(decoration.rotation, 0);
 
         // Beyond the radius the marker disappears unless tracking is unlimited.
         state.add_decoration(
-            vanilla_map_decoration_types::PLAYER,
+            &vanilla_map_decoration_types::PLAYER,
             "p",
             400.0,
             0.0,
@@ -1229,7 +1229,7 @@ mod tests {
         init_vanilla_registry();
         let (mut state, _) = MapState::of(0.0, 0.0, 0, true, true, overworld());
         state.add_decoration(
-            vanilla_map_decoration_types::PLAYER,
+            &vanilla_map_decoration_types::PLAYER,
             "p",
             400.0,
             0.0,
@@ -1240,7 +1240,7 @@ mod tests {
         let (_, decoration) = state.decorations().next().expect("marker");
         assert_eq!(
             decoration.kind.key,
-            vanilla_map_decoration_types::PLAYER_OFF_LIMITS.key
+            &vanilla_map_decoration_types::PLAYER_OFF_LIMITS.key
         );
     }
 
@@ -1249,7 +1249,7 @@ mod tests {
         init_vanilla_registry();
         let mut state = state(0);
         state.add_decoration(
-            vanilla_map_decoration_types::PLAYER,
+            &vanilla_map_decoration_types::PLAYER,
             "p",
             0.0,
             0.0,
@@ -1262,7 +1262,7 @@ mod tests {
         assert_eq!(decoration.rotation, 4);
 
         state.add_decoration(
-            vanilla_map_decoration_types::PLAYER,
+            &vanilla_map_decoration_types::PLAYER,
             "p",
             0.0,
             0.0,
@@ -1282,7 +1282,7 @@ mod tests {
         let (mut state, _) = MapState::of(0.0, 0.0, 0, true, false, nether);
         // game_time 100 -> tick 10 -> wrapping hash -876253986 -> bits 10.
         state.add_decoration(
-            vanilla_map_decoration_types::PLAYER,
+            &vanilla_map_decoration_types::PLAYER,
             "p",
             0.0,
             0.0,
@@ -1299,7 +1299,7 @@ mod tests {
         init_vanilla_registry();
         let mut state = state(0);
         state.add_decoration(
-            vanilla_map_decoration_types::PLAYER,
+            &vanilla_map_decoration_types::PLAYER,
             "a",
             0.0,
             0.0,
@@ -1310,7 +1310,7 @@ mod tests {
         assert_eq!(state.decoration_count(), 1);
         // Re-adding the same key replaces instead of duplicating.
         state.add_decoration(
-            vanilla_map_decoration_types::PLAYER,
+            &vanilla_map_decoration_types::PLAYER,
             "a",
             10.0,
             0.0,
@@ -1331,8 +1331,8 @@ mod tests {
         init_vanilla_registry();
         let mut state = state(0);
         state.replace_decorations(vec![
-            MapDecoration::new(vanilla_map_decoration_types::RED_MARKER, 1, 2, 0, None),
-            MapDecoration::new(vanilla_map_decoration_types::BLUE_MARKER, 3, 4, 0, None),
+            MapDecoration::new(&vanilla_map_decoration_types::RED_MARKER, 1, 2, 0, None),
+            MapDecoration::new(&vanilla_map_decoration_types::BLUE_MARKER, 3, 4, 0, None),
         ]);
         let keys = state
             .decorations()
@@ -1348,7 +1348,7 @@ mod tests {
         let mut state = state(1);
         state.set_color(5, 6, 0x2A);
         state.add_decoration(
-            vanilla_map_decoration_types::PLAYER,
+            &vanilla_map_decoration_types::PLAYER,
             "Tester",
             0.0,
             0.0,
@@ -1473,7 +1473,7 @@ mod tests {
         assert!(!maps.is_dirty());
 
         maps.get_mut(id).expect("map exists").add_decoration(
-            vanilla_map_decoration_types::RED_MARKER,
+            &vanilla_map_decoration_types::RED_MARKER,
             "marker",
             0.0,
             0.0,

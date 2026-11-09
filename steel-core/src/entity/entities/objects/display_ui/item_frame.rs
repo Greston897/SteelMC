@@ -254,7 +254,7 @@ impl ItemFrameEntity {
     }
 
     /// Emits the vanilla `BLOCK_CHANGE` game event for the attached block.
-    fn emit_block_change(&self, player: Option<&Player>) {
+    fn emit_block_change(&self, player: Option<&dyn Entity>) {
         let Some(world) = self.base.level() else {
             return;
         };

@@ -192,7 +192,7 @@ pub fn travel_in_water(
     input: DVec3,
     navigation_idle: bool,
 ) -> Option<MoveResult> {
-    entity.move_relative(f64::from(FISH_WATER_ACCELERATION), input);
+    entity.move_relative(FISH_WATER_ACCELERATION, input);
     let result = Arc::clone(shared).move_entity(MoverType::SelfMovement, entity.velocity())?;
 
     entity.set_velocity(fish_water_drag(entity.velocity(), navigation_idle));

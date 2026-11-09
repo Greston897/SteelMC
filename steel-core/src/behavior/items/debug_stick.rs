@@ -310,7 +310,7 @@ mod tests {
         let pos = BlockPos::new(0, 64, 0);
         insert_ready_full_chunk(&world, ChunkPos::from_block_pos(pos));
 
-        let state = vanilla_blocks::LEVER.default_state();
+        let state = &vanilla_blocks::LEVER.default_state();
         assert!(world.set_block(pos, state, UpdateFlags::UPDATE_ALL));
 
         let player = TestPlayerBuilder::new(Arc::clone(&world), "DebugStickTester", 1).build();
@@ -354,7 +354,7 @@ mod tests {
 
         assert_eq!(world.get_block_state(pos), state);
         let stack = player.inventory.lock().get_selected_item().clone();
-        assert_eq!(selected_property(&stack, vanilla_blocks::LEVER), None);
+        assert_eq!(selected_property(&stack, &vanilla_blocks::LEVER), None);
     }
 
     #[test]
@@ -413,12 +413,12 @@ mod tests {
     fn debug_stick_selects_a_property_then_cycles_its_value() {
         let (fixture, player, pos, state) = lever_fixture("debug_stick_cycle_value");
         let world = &fixture.world;
-        let first = property_names(vanilla_blocks::LEVER)[0];
+        let first = property_names(&vanilla_blocks::LEVER)[0];
 
         // Left click selects the first property and leaves the world untouched.
         assert!(run_action(&player, world, pos, state, false));
         let stack = player.inventory.lock().get_selected_item().clone();
-        assert_eq!(selected_property(&stack, vanilla_blocks::LEVER), Some(first));
+        assert_eq!(selected_property(&stack, &vanilla_blocks::LEVER), Some(first));
         assert_eq!(world.get_block_state(pos), state);
 
         // Right click cycles that property to the next vanilla value.
@@ -427,7 +427,7 @@ mod tests {
             .get_property_str(state, first)
             .expect("the selected property has a value");
         let values = ordered_value_names(
-            find_property(vanilla_blocks::LEVER, first).expect("property exists"),
+            find_property(&vanilla_blocks::LEVER, first).expect("property exists"),
         );
         let index = values
             .iter()
@@ -440,7 +440,7 @@ mod tests {
         assert_eq!(REGISTRY.blocks.get_property_str(updated, first), Some(expected));
 
         // Unrelated properties keep their values.
-        let other = property_names(vanilla_blocks::LEVER)[1];
+        let other = property_names(&vanilla_blocks::LEVER)[1];
         assert_eq!(
             REGISTRY.blocks.get_property_str(updated, other),
             REGISTRY.blocks.get_property_str(state, other)
@@ -453,13 +453,13 @@ mod tests {
         let world = &fixture.world;
 
         assert!(run_action(&player, world, pos, state, false));
-        let first = property_names(vanilla_blocks::LEVER)[0];
+        let first = property_names(&vanilla_blocks::LEVER)[0];
         let current = REGISTRY
             .blocks
             .get_property_str(state, first)
             .expect("the selected property has a value");
         let values = ordered_value_names(
-            find_property(vanilla_blocks::LEVER, first).expect("property exists"),
+            find_property(&vanilla_blocks::LEVER, first).expect("property exists"),
         );
         let index = values
             .iter()
@@ -482,7 +482,7 @@ mod tests {
     fn debug_stick_reports_blocks_without_properties() {
         let (fixture, player, pos, _state) = lever_fixture("debug_stick_no_properties");
         let world = &fixture.world;
-        let stone = vanilla_blocks::STONE.default_state();
+        let stone = &vanilla_blocks::STONE.default_state();
         assert!(world.set_block(pos, stone, UpdateFlags::UPDATE_ALL));
 
         assert!(!run_action(&player, world, pos, stone, true));
@@ -494,7 +494,7 @@ mod tests {
     fn debug_stick_orders_boolean_values_like_vanilla() {
         init_vanilla_registry();
 
-        let powered = find_property(vanilla_blocks::LEVER, "powered")
+        let powered = find_property(&vanilla_blocks::LEVER, "powered")
             .expect("levers expose a powered property");
         assert_eq!(ordered_value_names(powered), vec!["false", "true"]);
     }
@@ -502,15 +502,15 @@ mod tests {
     #[test]
     fn debug_stick_state_remembers_and_replaces_selections() {
         let empty = DebugStickState::empty();
-        assert_eq!(empty.get(vanilla_blocks::LEVER), None);
+        assert_eq!(empty.get(&vanilla_blocks::LEVER), None);
 
-        let selected = empty.with(vanilla_blocks::LEVER, "powered");
-        assert_eq!(selected.get(vanilla_blocks::LEVER), Some("powered"));
-        assert_eq!(selected.get(vanilla_blocks::STONE), None);
+        let selected = empty.with(&vanilla_blocks::LEVER, "powered");
+        assert_eq!(selected.get(&vanilla_blocks::LEVER), Some("powered"));
+        assert_eq!(selected.get(&vanilla_blocks::STONE), None);
         assert_eq!(selected.properties().count(), 1);
 
-        let replaced = selected.with(vanilla_blocks::LEVER, "face");
-        assert_eq!(replaced.get(vanilla_blocks::LEVER), Some("face"));
+        let replaced = selected.with(&vanilla_blocks::LEVER, "face");
+        assert_eq!(replaced.get(&vanilla_blocks::LEVER), Some("face"));
         assert_eq!(replaced.properties().count(), 1);
     }
 }

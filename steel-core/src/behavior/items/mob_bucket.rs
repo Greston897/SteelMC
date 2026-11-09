@@ -56,7 +56,7 @@ impl MobBucketItem {
 impl ItemBehavior for MobBucketItem {
     fn use_item(&self, context: &mut UseItemContext) -> InteractionResult {
         // Vanilla `EntityBucketItem.use`: the bucket only works on a water source.
-        let held = context.inv.with_item(ItemStack::clone);
+        let held = context.inv.with_item(|stack: &mut ItemStack| stack.clone());
         let Some(entity_type) = MobBucketItem::entity_type_for_item(&held) else {
             return InteractionResult::Pass;
         };
