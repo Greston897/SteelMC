@@ -117,12 +117,12 @@ impl SalmonEntity {
     /// Vanilla `SalmonEntity.getVariant()`.
     #[must_use]
     pub fn variant(&self) -> SalmonVariant {
-        SalmonVariant::by_id(*self.entity_data.lock().variant_type.get())
+        SalmonVariant::by_id(*self.entity_data.lock().salmon().variant_type.get())
     }
 
     /// Vanilla `SalmonEntity.setVariant(SalmonVariant)`.
     pub fn set_variant(&self, variant: SalmonVariant) {
-        self.entity_data.lock().variant_type.set(variant.id());
+        self.entity_data.lock().salmon_mut().variant_type.set(variant.id());
     }
 
     /// Vanilla `SalmonEntity.getVariantScale()`.
@@ -157,7 +157,7 @@ impl SalmonEntity {
         let mut entity_data = SalmonEntityData::new();
         living_base.initialize_synced_data(&mut entity_data);
         // Vanilla `SalmonEntity.defineSynchedData`: default is `MEDIUM.index`.
-        entity_data.variant_type.set(SALMON_DEFAULT_VARIANT.id());
+        entity_data.salmon_mut().variant_type.set(SALMON_DEFAULT_VARIANT.id());
 
         {
             let mut goal_selector = mob_base.goal_selector().lock();
@@ -350,11 +350,11 @@ pub const fn salmon_limit_per_chunk() -> i32 {
 
 impl Bucketable for SalmonEntity {
     fn is_from_bucket(&self) -> bool {
-        *self.entity_data.lock().from_bucket.get()
+        *self.entity_data.lock().abstract_fish().from_bucket.get()
     }
 
     fn set_from_bucket(&self, from_bucket: bool) {
-        self.entity_data.lock().from_bucket.set(from_bucket);
+        self.entity_data.lock().abstract_fish_mut().from_bucket.set(from_bucket);
     }
 
     fn bucket_item(&self) -> ItemRef {

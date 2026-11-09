@@ -268,11 +268,11 @@ impl PathfinderMob for CodEntity {}
 
 impl Bucketable for CodEntity {
     fn is_from_bucket(&self) -> bool {
-        *self.entity_data.lock().from_bucket.get()
+        *self.entity_data.lock().abstract_fish().from_bucket.get()
     }
 
     fn set_from_bucket(&self, from_bucket: bool) {
-        self.entity_data.lock().from_bucket.set(from_bucket);
+        self.entity_data.lock().abstract_fish_mut().from_bucket.set(from_bucket);
     }
 
     fn bucket_item(&self) -> ItemRef {

@@ -13,7 +13,6 @@ use steel_macros::item_behavior;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
-use steel_registry::items::ItemRef;
 use steel_registry::vanilla_blocks;
 use steel_registry::vanilla_entities;
 use steel_registry::vanilla_game_events;
@@ -33,20 +32,20 @@ pub struct MobBucketItem;
 impl MobBucketItem {
     /// Maps a mob bucket item to the entity it carries.
     #[must_use]
-    pub fn entity_type_for_item(item: ItemRef) -> Option<EntityTypeRef> {
-        if item == &vanilla_items::COD_BUCKET {
+    pub fn entity_type_for_item(stack: &ItemStack) -> Option<EntityTypeRef> {
+        if stack.is(&vanilla_items::COD_BUCKET) {
             Some(&vanilla_entities::COD)
-        } else if item == &vanilla_items::SALMON_BUCKET {
+        } else if stack.is(&vanilla_items::SALMON_BUCKET) {
             Some(&vanilla_entities::SALMON)
-        } else if item == &vanilla_items::TROPICAL_FISH_BUCKET {
+        } else if stack.is(&vanilla_items::TROPICAL_FISH_BUCKET) {
             Some(&vanilla_entities::TROPICAL_FISH)
-        } else if item == &vanilla_items::PUFFERFISH_BUCKET {
+        } else if stack.is(&vanilla_items::PUFFERFISH_BUCKET) {
             Some(&vanilla_entities::PUFFERFISH)
-        } else if item == &vanilla_items::AXOLOTL_BUCKET {
+        } else if stack.is(&vanilla_items::AXOLOTL_BUCKET) {
             Some(&vanilla_entities::AXOLOTL)
-        } else if item == &vanilla_items::TADPOLE_BUCKET {
+        } else if stack.is(&vanilla_items::TADPOLE_BUCKET) {
             Some(&vanilla_entities::TADPOLE)
-        } else if item == &vanilla_items::SULFUR_CUBE_BUCKET {
+        } else if stack.is(&vanilla_items::SULFUR_CUBE_BUCKET) {
             Some(&vanilla_entities::SULFUR_CUBE)
         } else {
             None
@@ -57,8 +56,8 @@ impl MobBucketItem {
 impl ItemBehavior for MobBucketItem {
     fn use_item(&self, context: &mut UseItemContext) -> InteractionResult {
         // Vanilla `EntityBucketItem.use`: the bucket only works on a water source.
-        let held_item = context.inv.with_item(|stack| stack.item());
-        let Some(entity_type) = held_item.and_then(MobBucketItem::entity_type_for_item) else {
+        let held = context.inv.with_item(ItemStack::clone);
+        let Some(entity_type) = MobBucketItem::entity_type_for_item(&held) else {
             return InteractionResult::Pass;
         };
 

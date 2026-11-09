@@ -153,14 +153,14 @@ where
 /// impulse, clears the on-ground flag and plays the flop sound.
 pub fn flop<E>(entity: &E, flop_sound: SoundEventRef)
 where
-    E: Entity + ?Sized,
+    E: LivingEntity + ?Sized,
 {
     entity.set_velocity(flop_velocity(
         rand::random_range(-FISH_FLOP_HORIZONTAL..FISH_FLOP_HORIZONTAL),
         rand::random_range(-FISH_FLOP_HORIZONTAL..FISH_FLOP_HORIZONTAL),
     ));
     entity.set_on_ground(false);
-    entity.make_sound(Some(flop_sound));
+    LivingEntity::make_sound(entity, Some(flop_sound));
 }
 
 /// Vanilla `FishEntity.tickMovement` flop impulse: `(x, 0.4, z)` with the

@@ -142,12 +142,12 @@ impl PufferfishEntity {
     /// Vanilla `getPuffState()`.
     #[must_use]
     pub fn puff_state(&self) -> i32 {
-        *self.entity_data.lock().puff_state.get()
+        *self.entity_data.lock().pufferfish().puff_state.get()
     }
 
     /// Vanilla `setPuffState(int)`.
     pub fn set_puff_state(&self, state: i32) {
-        self.entity_data.lock().puff_state.set(state);
+        self.entity_data.lock().pufferfish_mut().puff_state.set(state);
     }
 
     fn new_with_base(base: EntityBase, entity_type: EntityTypeRef) -> Self {
@@ -169,7 +169,7 @@ impl PufferfishEntity {
 
         let mut entity_data = PufferfishEntityData::new();
         living_base.initialize_synced_data(&mut entity_data);
-        entity_data.puff_state.set(NOT_PUFFED);
+        entity_data.pufferfish_mut().puff_state.set(NOT_PUFFED);
 
         {
             let mut goal_selector = mob_base.goal_selector().lock();
@@ -211,7 +211,7 @@ impl PufferfishEntity {
         let Some(world) = self.level() else {
             return false;
         };
-        let search = self.base.bounding_box().expand(PUFFER_INFLATE_RADIUS);
+        let search = self.base.bounding_box().inflate(PUFFER_INFLATE_RADIUS);
         world.has_entity_in_aabb_matching(&search, |entity| {
             entity
                 .as_player()
@@ -265,7 +265,7 @@ impl PufferfishEntity {
         let Some(world) = self.level() else {
             return;
         };
-        let search = self.base.bounding_box().expand(PUFFER_STING_EXPANSION);
+        let search = self.base.bounding_box().inflate(PUFFER_STING_EXPANSION);
         let victims = world.get_entities_in_aabb_matching(&search, |entity| {
             entity.is_alive() && entity.as_living_entity().is_some()
         });
@@ -457,11 +457,11 @@ mod tests {
 
 impl Bucketable for PufferfishEntity {
     fn is_from_bucket(&self) -> bool {
-        *self.entity_data.lock().from_bucket.get()
+        *self.entity_data.lock().abstract_fish().from_bucket.get()
     }
 
     fn set_from_bucket(&self, from_bucket: bool) {
-        self.entity_data.lock().from_bucket.set(from_bucket);
+        self.entity_data.lock().abstract_fish_mut().from_bucket.set(from_bucket);
     }
 
     fn bucket_item(&self) -> ItemRef {
