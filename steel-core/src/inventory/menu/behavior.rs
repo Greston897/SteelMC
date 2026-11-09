@@ -120,6 +120,12 @@ impl MenuBehavior {
         &self.slots
     }
 
+    /// Disjoint borrows of the menu slots and the cursor stack, used by
+    /// item-level click overrides that need both at once.
+    pub(crate) fn slots_and_carried_mut(&mut self) -> (&[Box<dyn Slot>], &mut ItemStack) {
+        (&self.slots, &mut self.carried)
+    }
+
     /// The item carried by the cursor.
     #[must_use]
     pub const fn carried(&self) -> &ItemStack {

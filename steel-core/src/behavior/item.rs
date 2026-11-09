@@ -23,10 +23,14 @@ use steel_utils::types::{InteractionHand, SignTextSlot};
 use text_components::TextComponent;
 
 use crate::behavior::items::{DefaultItemBehavior, SpawnEggItem, block_transformer};
+use crate::inventory::click::MouseButton;
+use crate::inventory::lock::ContainerLockGuard;
+use crate::inventory::slots::Slot;
 use crate::behavior::{InteractionResult, InventoryTickContext, UseItemContext, UseOnContext};
 use crate::block_entity::entities::{SignBlockEntity, SignText};
 use crate::entity::consume_effect::apply_consume_effect;
 use crate::entity::damage::DamageSource;
+use crate::entity::entities::ItemEntity;
 use crate::entity::{Entity, LivingEntity, LivingEntityRef, MobEffectInstance, SharedEntity};
 use crate::player::{Player, player_inventory::EquipmentSwapResult};
 use crate::world::World;
@@ -173,6 +177,39 @@ pub trait ItemBehavior: Send + Sync {
             0
         }
     }
+
+    /// Vanilla `Item.onStackClicked`: called when this item is carried on the
+    /// cursor and the player clicks a menu slot.
+    ///
+    /// The implementation may move items between `stack`, the clicked `slot`
+    /// and its own contents while the menu's containers stay locked.
+    fn on_stack_clicked(
+        &self,
+        _stack: &mut ItemStack,
+        _slot: &dyn Slot,
+        _click: MouseButton,
+        _player: &Player,
+        _guard: &mut ContainerLockGuard,
+    ) -> bool {
+        false
+    }
+
+    /// Vanilla `Item.onClicked`: called when this item sits in the slot the
+    /// player clicked. `cursor` is the stack the player is carrying.
+    fn on_clicked(
+        &self,
+        _slot: &dyn Slot,
+        _click: MouseButton,
+        _player: &Player,
+        _guard: &mut ContainerLockGuard,
+        _cursor: &mut ItemStack,
+    ) -> bool {
+        false
+    }
+
+    /// Vanilla `Item.onItemEntityDestroyed`: runs right before an item entity
+    /// holding this item is discarded because it ran out of health.
+    fn on_item_entity_destroyed(&self, _entity: &ItemEntity) {}
 
     /// Called every tick while a living entity is actively using this item.
     fn on_use_tick(
