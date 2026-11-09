@@ -822,8 +822,11 @@ pub fn push_nearby_entities<T: AbstractBoat + Entity + 'static>(boat: &Arc<T>, w
             && entity.as_player().is_none();
 
         if pickup_candidate {
-            let shared: SharedEntity = Arc::clone(boat);
-            let _ = entity.start_riding(&shared);
+            // Reuse the manager's already-erased handle: unsizing `Arc<T>` to `Arc<dyn Entity>`
+            // is not possible for a `?Sized` generic parameter here.
+            if let Some(shared) = world.get_entity_by_id(boat.id()) {
+                let _ = entity.start_riding(&shared);
+            }
         } else {
             boat.push_entity(entity.as_ref());
         }
