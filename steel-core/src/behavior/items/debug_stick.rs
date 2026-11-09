@@ -231,7 +231,7 @@ fn ordered_value_names(property: &dyn Property) -> Vec<&str> {
 
 /// Vanilla `Util#next` / `Util#previous`: wraps around the ends and falls back to
 /// the first (or last) element when `current` is absent or unknown.
-fn cycle<T: PartialEq>(values: &[T], current: Option<&T>, inverse: bool) -> Option<&T> {
+fn cycle<'a, T: PartialEq>(values: &'a [T], current: Option<&'a T>, inverse: bool) -> Option<&'a T> {
     let first = values.first()?;
     let last = values.last()?;
 

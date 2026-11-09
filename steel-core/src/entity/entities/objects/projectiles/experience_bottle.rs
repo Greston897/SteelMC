@@ -23,7 +23,7 @@ use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
 
 use crate::entity::entities::ExperienceOrbEntity;
 use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, EntitySyncedData, Projectile, ProjectileBase,
+    Entity, EntityBase, EntityBaseLoad, EntitySyncedData, Projectile, ProjectileBase, SharedEntity,
     ProjectileHit, RemovalReason, ThrowableItemProjectile, ThrowableProjectile,
 };
 use crate::world::World;

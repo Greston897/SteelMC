@@ -32,7 +32,9 @@ use steel_utils::{DowncastType, DowncastTypeKey};
 use super::boat::{
     AbstractBoat, BoatState, GRAVITY_IN_WATER, boat_entity_impl, boat_tick, ride_boat_interact,
 };
-use super::vehicle_entity::{VEHICLE_DIMENSION_CHANGING_DELAY, vehicle_ignores_explosion};
+use super::vehicle_entity::{
+    VEHICLE_DIMENSION_CHANGING_DELAY, VehicleEntity, vehicle_ignores_explosion,
+};
 use crate::behavior::InteractionResult;
 use crate::entity::{
     DamageSource, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData,
@@ -151,28 +153,6 @@ fn chest_boat_interact(
 }
 
 /// Macro body shared by `ChestBoatEntity` and `ChestRaftEntity`.
-macro_rules! chest_boat_impl {
-    ($name:ident) => {
-        impl AbstractBoat for $name {
-            fn max_passengers(&self) -> usize {
-                CHEST_BOAT_MAX_PASSENGERS
-            }
-
-            fn scatter_boat_contents(&self, _world: &World) {
-                scatter(self, &self.inventory);
-            }
-
-            fn save_boat_extra(&self, nbt: &mut NbtCompound) {
-                save_items(nbt, &self.inventory);
-            }
-
-            fn load_boat_extra(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
-                load_items(nbt, &self.inventory);
-            }
-        }
-    };
-}
-
 /// A chest boat (any wood type).
 #[entity_behavior(class = "ChestBoat")]
 pub struct ChestBoatEntity {
@@ -217,9 +197,24 @@ impl ChestBoatEntity {
 boat_entity_impl!(
     ChestBoatEntity,
     CHEST_BOAT_MAX_PASSENGERS,
-    |this: &ChestBoatEntity, player: &Player| chest_boat_interact(this, player, &this.inventory)
+    |this: &ChestBoatEntity, player: &Player| chest_boat_interact(this, player, &this.inventory);
+    fn max_passengers(&self) -> usize {
+        CHEST_BOAT_MAX_PASSENGERS
+    }
+
+    fn scatter_boat_contents(&self, world: &World) {
+        let _ = world;
+        scatter(self, &self.inventory);
+    }
+
+    fn save_boat_extra(&self, nbt: &mut NbtCompound) {
+        save_items(nbt, &self.inventory);
+    }
+
+    fn load_boat_extra(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
+        load_items(nbt, &self.inventory);
+    }
 );
-chest_boat_impl!(ChestBoatEntity);
 
 /// A bamboo chest raft.
 #[entity_behavior(class = "ChestRaft")]
@@ -265,9 +260,24 @@ impl ChestRaftEntity {
 boat_entity_impl!(
     ChestRaftEntity,
     CHEST_BOAT_MAX_PASSENGERS,
-    |this: &ChestRaftEntity, player: &Player| chest_boat_interact(this, player, &this.inventory)
+    |this: &ChestRaftEntity, player: &Player| chest_boat_interact(this, player, &this.inventory);
+    fn max_passengers(&self) -> usize {
+        CHEST_BOAT_MAX_PASSENGERS
+    }
+
+    fn scatter_boat_contents(&self, world: &World) {
+        let _ = world;
+        scatter(self, &self.inventory);
+    }
+
+    fn save_boat_extra(&self, nbt: &mut NbtCompound) {
+        save_items(nbt, &self.inventory);
+    }
+
+    fn load_boat_extra(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
+        load_items(nbt, &self.inventory);
+    }
 );
-chest_boat_impl!(ChestRaftEntity);
 
 #[cfg(test)]
 mod tests {

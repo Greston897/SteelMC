@@ -13,7 +13,8 @@ use steel_registry::data_components::vanilla_components::BUNDLE_CONTENTS;
 use steel_registry::item_stack::ItemStack;
 use glam::DVec3;
 use steel_registry::sound_event::SoundEventRef;
-use steel_registry::{sound_events, vanilla_stat_types};
+use steel_registry::sound_events;
+use steel_registry::stat::vanilla_stat_types;
 
 use crate::behavior::context::{InteractionResult, UseItemContext};
 use crate::behavior::item::{ItemBehavior, ItemUseAnimation};

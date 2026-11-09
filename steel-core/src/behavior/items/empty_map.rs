@@ -7,7 +7,8 @@
 use steel_macros::item_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::item_stack::ItemStack;
-use steel_registry::{sound_events, vanilla_stat_types};
+use steel_registry::sound_events;
+use steel_registry::stat::vanilla_stat_types;
 
 use crate::behavior::items::filled_map::FilledMapItem;
 use crate::behavior::{InteractionResult, ItemBehavior, UseItemContext};

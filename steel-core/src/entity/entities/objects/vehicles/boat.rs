@@ -840,6 +840,9 @@ macro_rules! boat_entity_impl {
         boat_entity_impl!($name, $max_passengers, ride_boat_interact);
     };
     ($name:ident, $max_passengers:expr, $interact:expr) => {
+        boat_entity_impl!($name, $max_passengers, $interact;);
+    };
+    ($name:ident, $max_passengers:expr, $interact:expr; $($extra_boat:tt)*) => {
         impl VehicleEntity for $name {
             fn hurt_time(&self) -> i32 {
                 *self.entity_data.lock().vehicle_entity().id_hurt.get()
@@ -895,6 +898,8 @@ macro_rules! boat_entity_impl {
             fn boat_data(&self) -> &SyncMutex<AbstractBoatEntityData> {
                 &self.entity_data
             }
+
+            $($extra_boat)*
         }
 
         impl Entity for $name {
