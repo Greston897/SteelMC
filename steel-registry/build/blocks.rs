@@ -915,6 +915,17 @@ pub(crate) fn build() -> TokenStream {
                 quote! { StateBooleanOverwrite::new(#offset, #value) }
             })
             .collect::<Vec<_>>();
+        let map_color_default = block.map_color.default;
+        let map_color_overwrites = block
+            .map_color
+            .overwrites
+            .iter()
+            .map(|overwrite| {
+                let offset = overwrite.offset;
+                let value = overwrite.value;
+                quote! { StateByteOverwrite::new(#offset, #value) }
+            })
+            .collect::<Vec<_>>();
         let randomly_ticking_default = block.randomly_ticking.default;
         let randomly_ticking_overwrites = block
             .randomly_ticking
@@ -1043,6 +1054,11 @@ pub(crate) fn build() -> TokenStream {
                     #randomly_ticking_default,
                     &[#(#randomly_ticking_overwrites),*],
                 ),
+            ).with_map_color(
+                StateByteData::new(
+                    #map_color_default,
+                    &[#(#map_color_overwrites),*],
+                ),
             ) #shape_offsets #default_state;
         });
     }
@@ -1063,7 +1079,8 @@ pub(crate) fn build() -> TokenStream {
                 behavior::{BlockConfig, OffsetType, PushReaction},
                 shapes::ShapeOffsetFlags,
                 Block, BlockLightProperties, BlockRegistry, StateBooleanData,
-                StateBooleanOverwrite, StateFluidData, StateFluidOverwrite, offset,
+                StateBooleanOverwrite, StateByteData, StateByteOverwrite, StateFluidData,
+                StateFluidOverwrite, offset,
             },
             blocks::properties::{self, BlockStateProperties, NoteBlockInstrument},
             blocks::shapes::VoxelShape,

@@ -831,8 +831,8 @@ mod tests {
 
         let remaining = finish_consuming_stack(&stack, world, player.as_ref());
 
-        // Vanilla turns the eaten stew into its bowl (`USE_REMAINDER`) in place.
-        assert!(remaining.is(&vanilla_items::BOWL));
+        // Vanilla turns the drunk bottle into its glass bottle (`USE_REMAINDER`).
+        assert!(remaining.is(&vanilla_items::GLASS_BOTTLE));
         assert_eq!(remaining.count(), 1);
         let bad_omen = player
             .mob_effect(vanilla_mob_effects::BAD_OMEN)
