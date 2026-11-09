@@ -26,7 +26,9 @@ use crate::behavior::items::{DefaultItemBehavior, SpawnEggItem, block_transforme
 use crate::inventory::click::MouseButton;
 use crate::inventory::lock::ContainerLockGuard;
 use crate::inventory::slots::Slot;
-use crate::behavior::{InteractionResult, InventoryTickContext, UseItemContext, UseOnContext};
+use crate::behavior::{
+    CanMineContext, InteractionResult, InventoryTickContext, UseItemContext, UseOnContext,
+};
 use crate::block_entity::entities::{SignBlockEntity, SignText};
 use crate::entity::consume_effect::apply_consume_effect;
 use crate::entity::damage::DamageSource;
@@ -87,6 +89,16 @@ pub trait ItemBehavior: Send + Sync {
     /// Called when this item is used on a block.
     fn use_on(&self, context: &mut UseOnContext) -> InteractionResult {
         block_transformer::use_on(context)
+    }
+
+    /// Returns whether the held stack may destroy `context.state`
+    /// (vanilla `ItemStack#canMine`).
+    ///
+    /// Runs right before a block is removed; `false` leaves the block in place.
+    /// The debug stick overrides this to select block properties instead of
+    /// breaking anything.
+    fn can_mine(&self, _context: &CanMineContext<'_>) -> bool {
+        true
     }
 
     /// Called when this item is used (e.g. right click in air).
