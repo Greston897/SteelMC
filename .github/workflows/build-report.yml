@@ -1,0 +1,69 @@
+name: Build Report
+
+# Compile-check reporter.
+#
+# GitHub's log download endpoint (productionresultssa*.blob.core.windows.net) is
+# not reachable from every environment, so this workflow publishes the compiler
+# diagnostics as a *commit comment*, which the regular GitHub API can serve.
+
+on:
+  push:
+
+env:
+  CARGO_TERM_COLOR: never
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "build-report"
+
+      - name: cargo check
+        id: check
+        continue-on-error: true
+        timeout-minutes: 30
+        run: |
+          cargo check --workspace --all-targets --message-format=short \
+            > /tmp/check.log 2>&1 || true
+          tail -c 20000 /tmp/check.log
+
+      - name: Report diagnostics as a commit comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+
+          with open("/tmp/check.log", "r", errors="replace") as handle:
+              lines = handle.read().splitlines()
+
+          errors = [line for line in lines if ": error" in line or line.startswith("error")]
+          warnings = [line for line in lines if ": warning" in line or line.startswith("warning")]
+
+          if not errors and not warnings:
+              print("no diagnostics")
+              raise SystemExit(0)
+
+          body = ["### cargo check diagnostics", f"- errors: {len(errors)}", f"- warnings: {len(warnings)}", ""]
+          body += ["```"] + errors[:400] + ["```"]
+          if warnings:
+              body += ["", "<details><summary>warnings</summary>", "", "```"] + warnings[:200] + ["```", "</details>"]
+
+          text = "\n".join(body)[:60000]
+          payload = {"body": text}
+          repo = os.environ["GITHUB_REPOSITORY"]
+          sha = os.environ["GITHUB_SHA"]
+          subprocess.run(
+              ["gh", "api", f"repos/{repo}/commits/{sha}/comments", "--input", "-"],
+              input=json.dumps(payload),
+              text=True,
+              check=True,
+          )
+          print("posted")
+          PY
