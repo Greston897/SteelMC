@@ -25,6 +25,7 @@ use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::AbstractBoatEntityData;
 use steel_registry::{REGISTRY, sound_events, vanilla_blocks, vanilla_items};
 use steel_utils::locks::SyncMutex;
+use steel_utils::BlockPos;
 use steel_utils::types::InteractionHand;
 use steel_utils::{DowncastType, DowncastTypeKey};
 

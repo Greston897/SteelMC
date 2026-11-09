@@ -8,7 +8,7 @@
 use simdnbt::owned;
 use steel_registry::data_components::components::CustomData;
 use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_components;
+use steel_registry::data_components::vanilla_components;
 use steel_registry::items::ItemRef;
 use steel_registry::vanilla_items;
 use steel_utils::nbt::NbtValueInput as _;
