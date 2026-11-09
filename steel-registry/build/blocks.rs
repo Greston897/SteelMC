@@ -125,6 +125,18 @@ pub struct BooleanOverwrite {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct ByteOverwrite {
+    pub offset: u16,
+    pub value: u8,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct StateByteDataJson {
+    pub default: u8,
+    pub overwrites: Vec<ByteOverwrite>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct StateBooleanData {
     pub default: bool,
     pub overwrites: Vec<BooleanOverwrite>,
@@ -174,6 +186,7 @@ pub struct Block {
     pub randomly_ticking: StateBooleanData,
     pub suffocating: StateBooleanData,
     pub redstone_conductor: StateBooleanData,
+    pub map_color: StateByteDataJson,
 }
 
 #[derive(Deserialize, Clone, Debug)]
