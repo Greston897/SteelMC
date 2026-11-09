@@ -538,3 +538,12 @@ PY
 - Реализовано для `CodEntity` (`cod_bucket`), `SalmonEntity` (`salmon_bucket`, дописывает `"type"` с именем варианта) и `PufferfishEntity` (`pufferfish_bucket`) — флаг `FROM_BUCKET` теперь живёт в их синхронизированных данных (`from_bucket`).
 - **Честно**: `Bucketable.tryBucket` (обмен «ведро воды → ведро с рыбой», `RemovalReason::Discarded`, компонент `bucket_entity_data`) и сам `MobBucketItem` в этом шаге **не выложены** — черновик был отброшен, потому что для обмена и спавна нужно сверять точные подписи `boat.rs`/`bucket.rs` (`create_filled_result`, `ENTITIES.create`, `try_add_entity`, `GameEventContext`), а угадывать их нельзя: это сломало бы сборку. Работа продолжается с чтения этих двух файлов.
 - Проверки сборки/тестов не выполнялись: в песочнице нет `cargo`.
+
+### Дополнение (моб-вёдра: `MobBucketItem` + путь ловли, 7 предметов)
+
+- **`MobBucketItem`** (`behavior/items/mob_bucket.rs`) — один класс на 7 предметов (`cod_bucket`, `salmon_bucket`, `tropical_fish_bucket`, `pufferfish_bucket`, `axolotl_bucket`, `sulfur_cube_bucket`, `tadpole_bucket`), как ванильный `EntityBucketItem`; тип сущности берётся из предмета в руке (`entity_type_for_item`), а не из JSON-аргумента.
+- Установка: рейкаст по блокам/жидкостям, проверка источника воды, спавн через `ENTITIES.create` → `set_rotation` по рысканью игрока → `world.try_add_entity` → `game_event(ENTITY_PLACE)` → `create_filled_result(water_bucket)`, ошибки логируются и дают `Fail`/`Pass`.
+- **Ловля**: в `BucketItem::use_empty_bucket` добавлен ванильный путь `Bucketable`: `get_entity_hit_result` (сделан `pub(crate)` вместо приватного) по лучу взгляда с предикатом «жива и бакетируема», затем `try_bucket_entity` → `try_bucket`: звук `playAmbientSound`, обмен `apply_filled_result` (креатив не расходует ведро), `RemovalReason::Discarded`.
+- Диспетчеризация по типам — цепочка `downcast_ref` (`Cod`, `Salmon`, `Pufferfish`; остальные мобы подключатся по мере появления их классов).
+- **Честные ограничения**: `BUCKET_ENTITY_DATA` (компонент `minecraft:bucket_entity_data`, `FromBucket`/`Health`/вариант) пока **не** прикрепляется к стаку — API установки компонентов у `ItemStack` не проверен без сборки; хелпер `write_base_bucket_data` готов и ждёт подключения.
+- Проверки: **GitHub Actions для репозитория недоступны** — `gh api repos/Greston897/SteelMC/actions/workflows` возвращает пустой список, прогонов нет (`.github/workflows/*.yml` в дереве есть, но Actions не активированы/не отдают API), поэтому компиляция и тесты не проверялись; `cargo` в песочнице отсутствует.
