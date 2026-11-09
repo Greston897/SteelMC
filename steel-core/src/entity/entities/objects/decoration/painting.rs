@@ -90,7 +90,7 @@ impl PaintingEntity {
         variant: RegistryReference<PaintingVariant>,
         world: Weak<World>,
     ) -> Self {
-        let bounding_box = Self::painting_box(block_pos, facing, variant.get());
+        let bounding_box = Self::painting_box(block_pos, facing, variant.value());
         let entity = Self {
             base: EntityBase::new_with_state(
                 id,
@@ -138,12 +138,12 @@ impl PaintingEntity {
     /// The currently synced variant.
     #[must_use]
     pub fn variant(&self) -> RegistryReference<PaintingVariant> {
-        *self.entity_data.lock().painting_variant_id.get()
+        *self.entity_data.lock().painting().painting_variant_id.get()
     }
 
     /// Sets the synced variant.
     pub fn set_variant(&self, variant: RegistryReference<PaintingVariant>) {
-        self.entity_data.lock().painting_variant_id.set(variant);
+        self.entity_data.lock().painting_mut().painting_variant_id.set(variant);
     }
 
     /// The direction the painting faces (away from its wall).
@@ -541,7 +541,7 @@ mod tests {
     fn the_bounding_box_matches_the_variant_size() {
         let (fixture, wall) = wall_fixture("painting_bbox");
         let variant = kebab();
-        let value = variant.get().value();
+        let value = variant.value().value();
         let painting = PaintingEntity::new_attached(
             &vanilla_entities::PAINTING,
             1,
