@@ -4,6 +4,7 @@
 //! See `src/behavior/generated/items.rs` for the generated registration code.
 
 mod air;
+mod banner_item;
 mod block_item;
 pub(crate) mod block_transformer;
 mod bonemeal;
@@ -23,6 +24,7 @@ mod food_on_a_stick;
 mod hanging_sign_item;
 mod honeycomb;
 mod ink_sac;
+mod instrument_item;
 mod mace;
 mod minecart;
 mod name_tag;
@@ -46,6 +48,7 @@ mod flint_and_steel;
 mod lead;
 
 pub use air::AirItem;
+pub use banner_item::BannerItem;
 pub use block_item::{BlockItem, DoubleHighBlockItem};
 pub use bonemeal::BoneMealItem;
 pub use bottle::BottleItem;
@@ -64,6 +67,7 @@ pub use food_on_a_stick::FoodOnAStickItem;
 pub use hanging_sign_item::HangingSignItem;
 pub use honeycomb::HoneycombItem;
 pub use ink_sac::{GlowInkSacItem, InkSacItem};
+pub use instrument_item::InstrumentItem;
 pub use lead::LeadItem;
 pub use mace::MaceItem;
 pub use minecart::MinecartItem;

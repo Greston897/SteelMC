@@ -6,15 +6,19 @@ use std::sync::Arc;
 use std::borrow::Cow;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::data_components::Consumable;
+use steel_registry::data_components::components::OminousBottleAmplifier;
 use steel_registry::data_components::vanilla_components::{
-    BLOCKS_ATTACKS, CONSUMABLE, FOOD, KINETIC_WEAPON, USE_REMAINDER,
+    BLOCKS_ATTACKS, CONSUMABLE, FOOD, KINETIC_WEAPON, OMINOUS_BOTTLE_AMPLIFIER,
+    SUSPICIOUS_STEW_EFFECTS, USE_REMAINDER,
 };
 
 use steel_registry::data_components::vanilla_components::ITEM_NAME;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::stat::vanilla_stat_types;
-use steel_registry::{REGISTRY, RegistryEntry, RegistryExt, sound_events, vanilla_game_events};
+use steel_registry::{
+    REGISTRY, RegistryEntry, RegistryExt, sound_events, vanilla_game_events, vanilla_mob_effects,
+};
 use steel_utils::types::{InteractionHand, SignTextSlot};
 use text_components::TextComponent;
 
@@ -23,7 +27,7 @@ use crate::behavior::{InteractionResult, InventoryTickContext, UseItemContext, U
 use crate::block_entity::entities::{SignBlockEntity, SignText};
 use crate::entity::consume_effect::apply_consume_effect;
 use crate::entity::damage::DamageSource;
-use crate::entity::{Entity, LivingEntity, LivingEntityRef, SharedEntity};
+use crate::entity::{Entity, LivingEntity, LivingEntityRef, MobEffectInstance, SharedEntity};
 use crate::player::{Player, player_inventory::EquipmentSwapResult};
 use crate::world::World;
 
@@ -311,6 +315,42 @@ fn emit_consume_particles_and_sounds(consumable: &Consumable, user: &dyn LivingE
     }
 }
 
+/// Applies consume-time hooks contributed by components other than
+/// `minecraft:consumable`.
+///
+/// Vanilla `ConsumableComponent.finishConsumption` runs
+/// `stack.streamAll(Consumable.class)`, and components such as
+/// `SuspiciousStewEffectsComponent` and `OminousBottleAmplifierComponent`
+/// implement `Consumable` to add their own effects on top of the consumable's
+/// `on_consume_effects` list. Both are plain `Item`s in vanilla, so the hooks
+/// live here rather than in an item behavior.
+fn apply_component_consume_hooks(stack: &ItemStack, user: &dyn LivingEntity) {
+    if let Some(stew) = stack.get(SUSPICIOUS_STEW_EFFECTS) {
+        // `SuspiciousStewEffectsComponent.onConsume`: one default-visibility
+        // instance per stew effect.
+        for effect in stew.effects() {
+            user.add_mob_effect(MobEffectInstance::with_duration(
+                effect.effect(),
+                effect.duration(),
+                0,
+            ));
+        }
+    }
+
+    if let Some(amplifier) = stack.get(OMINOUS_BOTTLE_AMPLIFIER) {
+        // `OminousBottleAmplifierComponent.onConsume`: Bad Omen for two hours
+        // with the amplifier stored in the component, without particles.
+        user.add_mob_effect(
+            MobEffectInstance::with_duration(
+                vanilla_mob_effects::BAD_OMEN,
+                OminousBottleAmplifier::EFFECT_DURATION,
+                amplifier.value(),
+            )
+            .with_visible(false),
+        );
+    }
+}
+
 /// Applies vanilla `Consumable.onConsume`'s shared tail: runs
 /// `on_consume_effects`, plays the consume sound, then shrinks the stack by
 /// one (creative mode leaves it untouched).
@@ -353,6 +393,8 @@ pub(crate) fn finish_consuming_stack(
             );
         }
     }
+
+    apply_component_consume_hooks(stack, user);
 
     for effect in consumable.on_consume_effects() {
         apply_consume_effect(effect, world, user);
@@ -470,15 +512,22 @@ impl Default for ItemBehaviorRegistry {
 mod tests {
     use std::sync::Arc;
 
+    use steel_registry::data_components::components::{
+        OminousBottleAmplifier, SuspiciousStewEffect, SuspiciousStewEffects,
+    };
     use steel_registry::data_components::{Consumable, vanilla_components};
     use steel_registry::item_stack::ItemStack;
     use steel_registry::stat::vanilla_stat_types;
-    use steel_registry::{init_vanilla_registry, vanilla_entities, vanilla_items, vanilla_potions};
+    use steel_registry::{
+        init_vanilla_registry, vanilla_entities, vanilla_items, vanilla_mob_effects,
+        vanilla_potions,
+    };
     use steel_utils::types::InteractionHand;
     use steel_utils::{ChunkPos, Downcast as _, WorldAabb};
 
     use super::finish_consuming_stack;
     use crate::behavior::{ITEM_BEHAVIORS, InteractionResult, UseItemContext, init_behaviors};
+    use crate::entity::LivingEntity as _;
     use crate::entity::entities::ItemEntity;
     use crate::inventory::container::Container as _;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
@@ -680,5 +729,63 @@ mod tests {
                 .map(|(_, count)| count),
             Some(1)
         );
+    }
+
+    /// Vanilla `SuspiciousStewEffectsComponent` implements `Consumable`, so
+    /// eating the stew applies every effect stored in the component on top of
+    /// the consumable's own effects. Suspicious stew is a plain `Item` in
+    /// vanilla, which is why this lives in the shared consume path.
+    #[test]
+    fn eating_a_suspicious_stew_applies_its_component_effects() {
+        init_vanilla_registry();
+        init_behaviors();
+        let world_fixture = fresh_test_world("finish_consuming_suspicious_stew");
+        let world = &world_fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let player = TestPlayerBuilder::new(Arc::clone(world), "Test", 1).build();
+        player.set_client_loaded(true);
+
+        let stew_effect = SuspiciousStewEffect::new(vanilla_mob_effects::REGENERATION, 160);
+        let stew = SuspiciousStewEffects::new(vec![stew_effect]);
+        let mut stack = ItemStack::new(&vanilla_items::SUSPICIOUS_STEW);
+        stack.set(vanilla_components::SUSPICIOUS_STEW_EFFECTS, stew);
+
+        let remaining = finish_consuming_stack(&stack, world, player.as_ref());
+
+        assert_eq!(remaining.count(), 0);
+        let regeneration = player
+            .mob_effect(vanilla_mob_effects::REGENERATION)
+            .expect("stew effect should be applied");
+        assert_eq!(regeneration.duration(), 160);
+        assert_eq!(regeneration.amplifier(), 0);
+        assert!(regeneration.is_visible());
+    }
+
+    /// Vanilla `OminousBottleAmplifierComponent` implements `Consumable` and
+    /// grants Bad Omen for two hours with the amplifier stored in the
+    /// component. The bottle itself is a plain `Item` in vanilla.
+    #[test]
+    fn drinking_an_ominous_bottle_applies_bad_omen_with_its_amplifier() {
+        init_vanilla_registry();
+        init_behaviors();
+        let world_fixture = fresh_test_world("finish_consuming_ominous_bottle");
+        let world = &world_fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let player = TestPlayerBuilder::new(Arc::clone(world), "Test", 1).build();
+        player.set_client_loaded(true);
+
+        let amplifier = OminousBottleAmplifier::new(3);
+        let mut stack = ItemStack::new(&vanilla_items::OMINOUS_BOTTLE);
+        stack.set(vanilla_components::OMINOUS_BOTTLE_AMPLIFIER, amplifier);
+
+        let remaining = finish_consuming_stack(&stack, world, player.as_ref());
+
+        assert_eq!(remaining.count(), 0);
+        let bad_omen = player
+            .mob_effect(vanilla_mob_effects::BAD_OMEN)
+            .expect("ominous bottle should apply Bad Omen");
+        assert_eq!(bad_omen.duration(), OminousBottleAmplifier::EFFECT_DURATION);
+        assert_eq!(bad_omen.amplifier(), 3);
+        assert!(!bad_omen.is_visible());
     }
 }
