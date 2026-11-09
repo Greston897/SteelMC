@@ -43,6 +43,7 @@ use crate::entity::{
 use crate::inventory::container::{Container as _, SimpleContainer, load_all_items};
 use crate::inventory::menu::kinds::chest_boat;
 use crate::world::{Explosion, World};
+use steel_utils::BlockPos;
 use steel_registry::items::ItemRef;
 
 /// Vanilla `AbstractChestBoatEntity.INVENTORY_SIZE`.
