@@ -5,7 +5,7 @@
 //! scatters `3 + rand(5) + rand(5)` experience as orbs before discarding
 //! itself.
 
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
@@ -214,7 +214,6 @@ impl ThrowableItemProjectile for ExperienceBottleEntity {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Weak;
 
     use glam::DVec3;
     use steel_registry::vanilla_entities;

@@ -40,7 +40,6 @@ use crate::entity::{
     DamageSource, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData,
     Player, SharedEntity,
 };
-use steel_registry::vanilla_items;
 use crate::inventory::container::{Container as _, SimpleContainer, load_all_items};
 use crate::inventory::menu::kinds::chest_boat;
 use crate::world::World;
