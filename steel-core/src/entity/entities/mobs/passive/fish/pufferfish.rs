@@ -21,7 +21,7 @@ use simdnbt::{borrow, owned};
 use steel_macros::entity_behavior;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
-use steel_registry::mob_effect::instance::MobEffectInstance;
+use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::items::ItemRef;
 use steel_registry::vanilla_attributes;
@@ -257,7 +257,7 @@ impl PufferfishEntity {
     }
 
     /// Vanilla `PufferfishEntity.tickMovement` poison sting.
-    fn tick_sting(&self) {
+    fn tick_sting(&self, shared: &SharedEntity) {
         let state = self.puff_state();
         if !is_puffed(state) {
             return;
@@ -273,16 +273,15 @@ impl PufferfishEntity {
             return;
         }
 
-        let source = self.mob_attack_damage_source();
+        let source = Mob::mob_attack_damage_source(self, &ItemStack::empty(), shared);
         for victim in victims {
             if victim.hurt(&world, &source, sting_damage(state)) {
                 self.make_sound(Some(PUFFER_STING_SOUND));
                 if let Some(living) = victim.as_living_entity() {
-                    living.add_mob_effect(MobEffectInstance::simple(
-                        &POISON,
-                        PUFFER_POISON_TICKS_PER_STATE * state,
-                        0,
-                    ));
+                    living.add_mob_effect(
+                        crate::entity::living_base::MobEffectInstance::new(&POISON, 0)
+                            .with_duration(PUFFER_POISON_TICKS_PER_STATE * state),
+                    );
                 }
             }
         }
@@ -373,7 +372,7 @@ impl LivingEntity for PufferfishEntity {
     fn ai_step(&self, entity: &SharedEntity) -> Option<MoveResult> {
         let result = Mob::mob_ai_step(self, entity);
         self.tick_flopping();
-        self.tick_sting();
+        self.tick_sting(entity);
         result
     }
 
