@@ -11,6 +11,7 @@ mod squid;
 pub use chicken::ChickenEntity;
 pub use cow::CowEntity;
 pub use fish::cod::CodEntity;
+pub use fish::salmon::SalmonEntity;
 pub use mooshroom::MushroomCowEntity;
 pub use pig::PigEntity;
 pub use sheep::SheepEntity;

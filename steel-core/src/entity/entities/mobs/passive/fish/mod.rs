@@ -21,6 +21,7 @@
     reason = "the water-mob pack lands incrementally; helpers are consumed as each fish entity arrives"
 )]
 pub mod cod;
+pub mod salmon;
 #[cfg(test)]
 mod tests;
 
@@ -94,6 +95,9 @@ pub const SCHOOLING_GROUP_RADIUS: f64 = 8.0;
 pub const SCHOOLING_REFRESH_CHANCE: i32 = 200;
 /// Vanilla `SchoolingFish` follow-leader navigation speed.
 pub const SCHOOLING_FOLLOW_SPEED: f64 = 1.0;
+/// Vanilla `SchoolingFish` group-refresh interval (every tick, guarded by the
+/// `random.nextInt(200) == 1` roll).
+pub const SCHOOLING_GROUP_SIZE_DEFAULT: i32 = 1;
 
 /// Vanilla `WaterAnimal.canSpawn`.
 ///

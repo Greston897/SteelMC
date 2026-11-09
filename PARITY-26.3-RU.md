@@ -510,3 +510,13 @@ PY
 - Тесты: 5 модульных (`fish/tests.rs`) — окно спавна, `MAX_AIR`, импульс флопа, гашение скорости в воде, константы.
 - **Честные ограничения**: `FleeEntityGoal` (ванильный `FleeEntity<Player>` у рыб) в Steel отсутствует — цель не подключена, помечено как недостающая система; `FishMoveControl` (ванильный контроль движения с `+0.005` по Y при погружении и `lerp(0.125)`) не перенесён; `Bucketable`/`EntityBucketItem` ещё нет, поэтому `interactMob` пока `Pass`; `canImmediatelyDespawn`/`cannotDespawn` (учёт `FROM_BUCKET` и имени) не подключены.
 - Проверки сборки/тестов не выполнялись: в песочнице нет `cargo`.
+
+### Дополнение (водные мобы, шаг 2: `Salmon`)
+
+- **`Salmon` (`SalmonEntity`)** — `#[entity_behavior(class = "Salmon", spawn_rule)]`; атрибуты `MAX_HEALTH 3.0` / `MOVEMENT_SPEED 0.7`, malus воды `0.0`, цели `PanicGoal(1.25)@0`/`RandomSwimmingGoal(1.0, 40)@1`, флоп, лимит `8` на чанк.
+- **Вариант** — синхронизированное поле `type` (`SalmonVariant`, по умолчанию `MEDIUM = 1`), масштаб хитбокса `0.5 / 1.0 / 1.5` через `bounding_box_scale()`; в NBT сохраняется **именем** (`"type": "small|medium|large"`), при загрузке неизвестное имя откатывается к `MEDIUM`; масштаб применяется в `dimensions_for_pose` (`get_scale · variant_scale`).
+- **Спавн-вариант** — ванильный взвешенный пул `30 / 50 / 15` (всего 95) в `finalize_spawn` (`salmon_variant_for_roll(roll)` — чистая функция, покрыта тестами по границам 30/80).
+- **`SchoolingFish`** — `getMaxGroupSize() == 5` объявлен (`SALMON_MAX_GROUP_SIZE`), но лидер/группа пока не ведутся: нужен запрос соседей (`world.get_entities_in_aabb_matching`) и `FollowFlockLeaderGoal`, поэтому `has_self_control` остаётся `true`.
+- Звуки: `ENTITY_SALMON_{AMBIENT,HURT,DEATH,FLOP}`, интервал эмбиента `120`.
+- Тесты: +3 (веса и границы пула, дефолт/масштабы/размер группы, round-trip варианта через id и имя) — всего 8 в `fish/tests.rs`.
+- Проверки сборки/тестов не выполнялись: в песочнице нет `cargo`.
