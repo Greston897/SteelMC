@@ -111,7 +111,7 @@ mod tests {
     use crate::behavior::context::{InteractionResult, UseOnContext};
     use crate::behavior::init_behaviors;
     use crate::entity::entities::EndCrystalEntity;
-    use crate::entity::{Entity as _, SharedEntity};
+    use crate::entity::SharedEntity;
     use crate::test_support::{
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
     };

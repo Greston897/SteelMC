@@ -118,7 +118,7 @@ mod tests {
     use crate::behavior::ItemBehavior as _;
     use crate::behavior::context::{InteractionResult, UseOnContext};
     use crate::behavior::init_behaviors;
-    use crate::entity::{Entity as _, ItemFrame as _};
+
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
     use crate::world::World;
 
