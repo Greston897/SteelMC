@@ -45,6 +45,7 @@ pub(crate) use melee_attack::MeleeAttackGoal;
 pub(crate) use nearest_attackable_target::NearestAttackableTargetGoal;
 pub(crate) use panic_goal::PanicGoal;
 pub(crate) use random_look_around::RandomLookAroundGoal;
+pub(crate) use random_swimming::RandomSwimmingGoal;
 #[cfg(test)]
 pub(crate) use selector::GoalControls;
 pub(crate) use selector::{Goal, GoalControl, GoalSelector};
