@@ -38,7 +38,7 @@ pub trait Bucketable: Mob {
     }
 
     /// Vanilla `Bucketable.copyDataFromNbt` counterpart.
-    fn read_bucket_data_from_nbt(&self, nbt: &simdnbt::borrow::NbtCompound<'_, '_>) {
+    fn read_bucket_data_from_nbt(&self, nbt: &owned::NbtCompound) {
         self.set_from_bucket(nbt.byte_value("FromBucket").unwrap_or(1) != 0);
         if let Some(health) = nbt.float_value("Health") {
             LivingEntity::set_health(self, health);
@@ -114,27 +114,31 @@ where
 
 /// Vanilla `EntityBucketItem` release half: the freshly spawned mob is marked as
 /// coming from a bucket so it does not immediately despawn.
-fn restore_from_bucket<T>(entity: &T)
+fn restore_from_bucket<T>(entity: &T, data: Option<&CustomData>)
 where
     T: Bucketable + ?Sized,
 {
-    if !entity.is_from_bucket() {
-        entity.set_from_bucket(true);
+    match data {
+        // Vanilla `Bucketable.loadFromBucketTag`: the stored state wins.
+        Some(data) => entity.read_bucket_data_from_nbt(data.as_compound()),
+        None if !entity.is_from_bucket() => entity.set_from_bucket(true),
+        None => {}
     }
 }
 
 /// Dispatches [`restore_from_bucket`] for any entity implementing [`Bucketable`].
-pub fn release_from_bucket(entity: &dyn Entity) {
+pub fn release_from_bucket(entity: &dyn Entity, bucket: &ItemStack) {
+    let data = bucket.get(vanilla_components::BUCKET_ENTITY_DATA);
     if let Some(cod) = entity.downcast_ref::<CodEntity>() {
-        restore_from_bucket(cod);
+        restore_from_bucket(cod, data);
         return;
     }
     if let Some(salmon) = entity.downcast_ref::<SalmonEntity>() {
-        restore_from_bucket(salmon);
+        restore_from_bucket(salmon, data);
         return;
     }
     if let Some(pufferfish) = entity.downcast_ref::<PufferfishEntity>() {
-        restore_from_bucket(pufferfish);
+        restore_from_bucket(pufferfish, data);
     }
 }
 
