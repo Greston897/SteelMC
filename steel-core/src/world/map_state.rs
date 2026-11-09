@@ -1103,12 +1103,12 @@ mod tests {
 
     #[test]
     fn zoom_out_keeps_center_and_clears_pixels() {
-        let mut state = state(0);
-        state.set_color(1, 1, 0x2A);
-        let zoomed = state.zoom_out();
+        let mut map = state(0);
+        map.set_color(1, 1, 0x2A);
+        let zoomed = map.zoom_out();
         assert_eq!(zoomed.scale(), 1);
-        assert_eq!(zoomed.center_x(), state.center_x());
-        assert_eq!(zoomed.center_z(), state.center_z());
+        assert_eq!(zoomed.center_x(), map.center_x());
+        assert_eq!(zoomed.center_z(), map.center_z());
         assert_eq!(zoomed.colors()[1 + MAP_AREA / MAP_SIZE], 0);
         assert!(!zoomed.locked());
 

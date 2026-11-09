@@ -789,7 +789,7 @@ pub fn ride_boat_interact(entity: &dyn Entity, player: &Player) -> InteractionRe
 /// `#minecraft:cannot_be_pushed_onto_boats`; Steel's generated entity-type tags
 /// are not available here, so players are excluded explicitly (they are the
 /// only vanilla member of that tag).
-pub fn push_nearby_entities<T: AbstractBoat + 'static>(boat: &Arc<T>, world: &World) {
+pub fn push_nearby_entities<T: AbstractBoat + Entity + 'static>(boat: &Arc<T>, world: &World) {
     let box_with_margin = boat.bounding_box().inflate_xyz(
         ENTITY_PUSH_EXPAND_H,
         ENTITY_PUSH_EXPAND_V,
