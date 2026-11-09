@@ -157,7 +157,7 @@ mod tests {
         assert_eq!(result, crate::behavior::InteractionResult::Success);
 
         let inventory = player.inventory.lock();
-        assert_eq!(inventory.get_selected_item().item(), &vanilla_items::MAP);
+        assert!(inventory.get_selected_item().is(&vanilla_items::MAP));
         assert_eq!(inventory.get_selected_item().count(), 1);
         let filled_maps = inventory
             .get_items()
