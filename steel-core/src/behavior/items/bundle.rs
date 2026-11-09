@@ -443,7 +443,7 @@ mod tests {
 
         let search = WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 68.0, 2.0);
         let dropped = world.get_entities_in_aabb_matching(&search, |entity| {
-            entity.as_ref().downcast_ref::<ItemEntity>().is_some()
+            entity.downcast_ref::<ItemEntity>().is_some()
         });
         assert_eq!(dropped.len(), 1);
         let Some(item) = dropped[0].as_ref().downcast_ref::<ItemEntity>() else {
@@ -475,15 +475,13 @@ mod tests {
             .expect("bundle item entity spawns");
         assert_eq!(contents_of(&bundle.get_item()).items().len(), 2);
 
-        BundleItem.on_item_entity_destroyed(&bundle);
+        <BundleItem as crate::behavior::item::ItemBehavior>::on_item_entity_destroyed(&BundleItem, &bundle);
 
         assert!(contents_of(&bundle.get_item()).is_empty());
         let spilled = world.get_entities_in_aabb_matching(
             &WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 68.0, 2.0),
             |entity| {
-                entity
-                    .as_ref()
-                    .downcast_ref::<ItemEntity>()
+                entity.downcast_ref::<ItemEntity>()
                     .is_some_and(|item| item.id() != bundle.id())
             },
         );
