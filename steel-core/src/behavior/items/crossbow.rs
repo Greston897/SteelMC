@@ -419,7 +419,7 @@ mod tests {
     #[test]
     fn charged_projectiles_round_trip_through_the_component() {
         init_vanilla_registry();
-        let stack = ItemStack::new(&vanilla_items::CROSSBOW);
+        let mut stack = ItemStack::new(&vanilla_items::CROSSBOW);
         assert!(!CrossbowItem::is_charged(&stack));
 
         let arrow = ItemStackTemplate::new(&vanilla_items::ARROW);

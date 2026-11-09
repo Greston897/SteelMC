@@ -785,15 +785,15 @@ mod tests {
     #[test]
     fn pierce_level_survives_saving_and_loading() {
         init_vanilla_registry();
-        let arrow = arrow(7);
-        arrow.set_pierce_level(3);
-        arrow.set_critical(true);
-        arrow.set_in_ground(true);
-        arrow.set_pickup(ArrowPickup::Allowed);
-        arrow.set_shot_from_crossbow();
+        let shot = arrow(7);
+        shot.set_pierce_level(3);
+        shot.set_critical(true);
+        shot.set_in_ground(true);
+        shot.set_pickup(ArrowPickup::Allowed);
+        shot.set_shot_from_crossbow();
 
         let mut nbt = NbtCompound::new();
-        arrow.save_arrow(&mut nbt);
+        shot.save_arrow(&mut nbt);
         let mut bytes = Vec::new();
         nbt.write(&mut bytes);
         let mut cursor = Cursor::new(bytes.as_slice());

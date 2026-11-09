@@ -279,8 +279,11 @@ impl PufferfishEntity {
                 self.make_sound(Some(PUFFER_STING_SOUND));
                 if let Some(living) = victim.as_living_entity() {
                     living.add_mob_effect(
-                        crate::entity::living_base::MobEffectInstance::new(&POISON, 0)
-                            .with_duration(PUFFER_POISON_TICKS_PER_STATE * state),
+                        crate::entity::living_base::MobEffectInstance::with_duration(
+                            &POISON,
+                            PUFFER_POISON_TICKS_PER_STATE * state,
+                            0,
+                        ),
                     );
                 }
             }

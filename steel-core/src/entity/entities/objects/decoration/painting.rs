@@ -615,8 +615,8 @@ mod tests {
             kebab(),
         );
 
-        BlockAttachedEntity::drop_item(painting.as_ref(), None);
-        BlockAttachedEntity::drop_item(painting.as_ref(), None);
+        crate::entity::block_attached_entity::BlockAttachedEntity::drop_item(painting.as_ref(), None);
+        crate::entity::block_attached_entity::BlockAttachedEntity::drop_item(painting.as_ref(), None);
 
         assert_eq!(dropped_items(&fixture.world).len(), 1);
     }
