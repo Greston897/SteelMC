@@ -71,11 +71,14 @@ impl DebugStickState {
     }
 
     /// Returns the property name this debug stick remembers for `block`.
+    ///
+    /// A stick only ever stores a handful of blocks, so the linear scan avoids
+    /// allocating the string key on this hot path.
     #[must_use]
     pub fn get(&self, block: BlockRef) -> Option<&'static str> {
-        let key = block.key.to_string();
         self.properties
-            .get(key.as_str())
+            .values()
+            .find(|property| property.block.key == block.key)
             .map(|property| property.property)
     }
 

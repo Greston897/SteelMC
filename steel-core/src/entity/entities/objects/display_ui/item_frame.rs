@@ -1,5 +1,6 @@
 //! Minimal persistent item-frame entity used by structure generation.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Weak};
 
 use glam::DVec3;
@@ -46,6 +47,9 @@ pub struct ItemFrameEntity {
     entity_type: EntityTypeRef,
     entity_data: SyncMutex<ItemFrameEntityData>,
     block_attached_entity_base: BlockAttachedEntityBase,
+    /// Set once the frame has dropped its contents, so a second removal path
+    /// (hurt + survival tick) cannot duplicate the drops.
+    dropped: AtomicBool,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `ItemFrameEntity`.
@@ -93,6 +97,7 @@ impl ItemFrameEntity {
             entity_type,
             entity_data: SyncMutex::new(ItemFrameEntityData::new()),
             block_attached_entity_base: BlockAttachedEntityBase::new(block_pos),
+            dropped: AtomicBool::new(false),
         };
         entity
             .entity_data
@@ -116,6 +121,7 @@ impl ItemFrameEntity {
                 position.y.floor() as i32,
                 position.z.floor() as i32,
             )),
+            dropped: AtomicBool::new(false),
         }
     }
 
@@ -144,8 +150,8 @@ impl ItemFrameEntity {
 
     /// Vanilla `ItemFrameEntity#canStayAttached`.
     ///
-    /// The frame needs a solid support block behind it, free space for its own
-    /// volume and no other hanging entity facing the same way in its slot.
+    /// The frame needs free space for its own volume and a solid support block
+    /// directly behind it.
     #[must_use]
     pub fn can_stay_attached(&self) -> bool {
         let Some(world) = self.base.level() else {
@@ -157,25 +163,15 @@ impl ItemFrameEntity {
         if crate::physics::collision::has_block_collision(&collision, check_box) {
             return false;
         }
+        // Vanilla `isSpaceBlocked` rejects any other entity inside the frame's own
+        // box, which also covers `hasNoIntersectingDecoration` for frames.
         if world.has_entity_in_aabb_matching(&check_box, |entity| entity.id() != self.base.id()) {
             return false;
         }
 
-        let direction = self.direction();
-        let (dx, dy, dz) = direction.opposite().offset();
+        let (dx, dy, dz) = self.direction().opposite().offset();
         let support_pos = self.block_attached_entity_base.pos().offset(dx, dy, dz);
-        if !world.get_block_state(support_pos).is_solid() {
-            return false;
-        }
-
-        // Vanilla `hasNoIntersectingDecoration(true)`: another hanging entity with
-        // the same facing already occupies this wall slot.
-        !world.has_entity_in_aabb_matching(&check_box, |entity| {
-            entity.id() != self.base.id()
-                && entity
-                    .as_item_frame()
-                    .is_some_and(|frame| frame.direction() == direction)
-        })
+        world.get_block_state(support_pos).is_solid()
     }
 
     /// Returns whether this is a glow item frame.
@@ -540,6 +536,10 @@ impl BlockAttachedEntity for ItemFrameEntity {
     }
 
     fn drop_item(&self, _caused_by: Option<&dyn Entity>) {
+        if self.dropped.swap(true, Ordering::AcqRel) {
+            return;
+        }
+
         let Some(world) = self.base.level() else {
             return;
         };
@@ -552,7 +552,8 @@ impl BlockAttachedEntity for ItemFrameEntity {
             entity_data.item.get().clone()
         };
         if !framed.is_empty() {
-            self.set_item(ItemStack::empty());
+            // The frame is going away: skip the comparator notification.
+            self.set_item_with_update(ItemStack::empty(), false);
             world.drop_item_stack(pos, framed);
         }
 
@@ -764,6 +765,19 @@ mod tests {
             InteractionResult::Pass
         );
         assert!(frame.item().is_empty());
+    }
+
+    #[test]
+    fn dropping_the_frame_twice_does_not_duplicate_items() {
+        let (fixture, _player, support) = support_fixture("frame_drop_once");
+        let world = &fixture.world;
+        let frame = spawn_frame(world, support.offset(0, 1, 0), Direction::Up);
+        frame.set_item(ItemStack::new(&vanilla_items::DIAMOND));
+
+        frame.drop_item(None);
+        frame.drop_item(None);
+
+        assert_eq!(item_entity_count(world), 2);
     }
 
     #[test]
