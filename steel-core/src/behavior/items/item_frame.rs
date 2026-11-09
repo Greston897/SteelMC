@@ -138,7 +138,16 @@ mod tests {
         let world_fixture = fresh_test_world(name);
         let world = Arc::clone(&world_fixture.world);
         let wall = BlockPos::new(WALL_X, 64, 0);
-        insert_ready_full_chunk(&world, ChunkPos::from_block_pos(wall));
+        // A real server keeps the neighbouring chunks loaded; frames can be
+        // placed on any side of the support block, so load the 3x3 area.
+        for dx in -1..=1 {
+            for dz in -1..=1 {
+                insert_ready_full_chunk(
+                    &world,
+                    ChunkPos::from_block_pos(wall.offset(dx * 16, 0, dz * 16)),
+                );
+            }
+        }
         assert!(world.set_block(
             wall,
             vanilla_blocks::STONE.default_state(),

@@ -52,10 +52,10 @@ impl MapDecorationEntry {
 
 /// Optional map patch wrapper with vanilla's nonzero-width discriminator.
 ///
-/// Vanilla's `MapState.UpdateData.CODEC` writes a single `0` byte for "no
-/// update" and, when present, starts directly with the width byte. A plain
-/// `Option<MapPatch>` would emit an extra boolean before the width, so the
-/// discriminator is encoded by hand.
+/// Vanilla sends the patch through an `Optional`, so the wire format is a
+/// presence byte followed by the patch when present. `MapPatch` itself cannot
+/// start with `0` (its width is never zero), but the explicit flag keeps the
+/// stream unambiguous.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct OptionalMapPatch(pub Option<MapPatch>);
 
@@ -81,8 +81,13 @@ impl OptionalMapPatch {
 
 impl WriteTo for OptionalMapPatch {
     fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+        // Vanilla wraps the patch in an `Optional`: one presence byte, then the
+        // patch itself (`width, height, startX, startZ` + byte array).
         match &self.0 {
-            Some(patch) => patch.write(writer),
+            Some(patch) => {
+                1_u8.write(writer)?;
+                patch.write(writer)
+            }
             None => 0_u8.write(writer),
         }
     }
@@ -108,9 +113,6 @@ pub struct MapPatch {
 
 impl WriteTo for MapPatch {
     fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
-        // Vanilla writes the patch behind a `0` byte sentinel: zero means "no
-        // update data". `MapItemData` only writes this struct when a patch
-        // exists, so the discriminator lives there.
         self.width.write(writer)?;
         self.height.write(writer)?;
         self.start_x.write(writer)?;
@@ -216,7 +218,8 @@ mod tests {
                 5,    // z
                 12,   // rotation
                 0,    // no display name
-                2, 1, 3, 4, // width, height, startX, startZ (nonzero = present)
+                1,    // patch present
+                2, 1, 3, 4, // width, height, startX, startZ
                 2,    // VarInt color count
                 0x2A, 0x0B,
             ]
