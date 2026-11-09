@@ -9,6 +9,9 @@ name: Build Report
 on:
   push:
 
+permissions:
+  contents: write
+
 env:
   CARGO_TERM_COLOR: never
 
@@ -32,6 +35,8 @@ jobs:
           tail -c 20000 /tmp/check.log
 
       - name: Report diagnostics as a commit comment
+        if: always()
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
