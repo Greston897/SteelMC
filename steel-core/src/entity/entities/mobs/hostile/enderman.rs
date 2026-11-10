@@ -91,10 +91,7 @@ impl EndermanEntity {
 
             let mut target_selector = mob_base.target_selector().lock();
             target_selector.add_goal(1, HurtByTargetGoal::new().set_alert_others(empty()));
-            target_selector.add_goal(
-                2,
-                EndermanStareTargetGoal::new(Arc::clone(&entity_data)),
-            );
+            target_selector.add_goal(2, EndermanStareTargetGoal::new(Arc::clone(&entity_data)));
         }
 
         Self {
@@ -134,7 +131,9 @@ impl EndermanEntity {
     }
 
     fn teleport_away_from_projectile(&self) {
-        let Some(world) = self.level() else { return; };
+        let Some(world) = self.level() else {
+            return;
+        };
         let origin = self.position();
         for _ in 0..16 {
             let x = origin.x + rand::random_range(-16.0..16.0);
@@ -146,9 +145,7 @@ impl EndermanEntity {
             }
         }
     }
-
 }
-
 
 struct EndermanStareTargetGoal {
     entity_data: Arc<SyncMutex<EndermanEntityData>>,
@@ -157,7 +154,10 @@ struct EndermanStareTargetGoal {
 
 impl EndermanStareTargetGoal {
     fn new(entity_data: Arc<SyncMutex<EndermanEntityData>>) -> Self {
-        Self { entity_data, target: None }
+        Self {
+            entity_data,
+            target: None,
+        }
     }
 
     fn set_stare_flags(&self, stared_at: bool, creepy: bool) {
@@ -172,19 +172,33 @@ impl EndermanStareTargetGoal {
 }
 
 impl Goal for EndermanStareTargetGoal {
-    fn controls(&self) -> GoalControls { GoalControls::TARGET }
+    fn controls(&self) -> GoalControls {
+        GoalControls::TARGET
+    }
 
     fn can_use(&mut self, mob: &dyn PathfinderMob) -> bool {
-        let Some(world) = mob.level() else { return false; };
+        let Some(world) = mob.level() else {
+            return false;
+        };
         let position = mob.position();
         let eye = DVec3::new(position.x, mob.get_eye_y(), position.z);
-        let follow_range = mob.attributes().lock()
-            .get_value(vanilla_attributes::FOLLOW_RANGE).unwrap_or(64.0);
-        self.target = world.nearest_player(eye, follow_range, |player| {
-            !player.is_spectator()
-                && mob.has_line_of_sight_cached(player)
-                && is_staring_at(player.position(), player.get_eye_y(), player.look_angle(), eye)
-        }).map(|player| -> SharedEntity { player });
+        let follow_range = mob
+            .attributes()
+            .lock()
+            .get_value(vanilla_attributes::FOLLOW_RANGE)
+            .unwrap_or(64.0);
+        self.target = world
+            .nearest_player(eye, follow_range, |player| {
+                !player.is_spectator()
+                    && mob.has_line_of_sight_cached(player)
+                    && is_staring_at(
+                        player.position(),
+                        player.get_eye_y(),
+                        player.look_angle(),
+                        eye,
+                    )
+            })
+            .map(|player| -> SharedEntity { player });
         self.target.is_some()
     }
 
@@ -198,7 +212,11 @@ impl Goal for EndermanStareTargetGoal {
     }
 
     fn stop(&mut self, mob: &dyn PathfinderMob) {
-        if mob.target().is_some_and(|target| self.target.as_ref().is_some_and(|ours| target.uuid() == ours.uuid())) {
+        if mob.target().is_some_and(|target| {
+            self.target
+                .as_ref()
+                .is_some_and(|ours| target.uuid() == ours.uuid())
+        }) {
             let _ = mob.set_target(None);
         }
         self.target = None;
@@ -206,10 +224,17 @@ impl Goal for EndermanStareTargetGoal {
     }
 }
 
-fn is_staring_at(player_position: DVec3, player_eye_y: f64, look: DVec3, target_eye: DVec3) -> bool {
+fn is_staring_at(
+    player_position: DVec3,
+    player_eye_y: f64,
+    look: DVec3,
+    target_eye: DVec3,
+) -> bool {
     let toward = target_eye - DVec3::new(player_position.x, player_eye_y, player_position.z);
     let distance_sqr = toward.length_squared();
-    if distance_sqr <= f64::EPSILON { return true; }
+    if distance_sqr <= f64::EPSILON {
+        return true;
+    }
     let distance = distance_sqr.sqrt();
     look.dot(toward / distance) > 1.0 - STARE_THRESHOLD / distance
 }
@@ -243,7 +268,11 @@ impl Entity for EndermanEntity {
 
     fn hurt(&self, world: &World, source: &DamageSource, amount: f32) -> bool {
         let hurt = LivingEntity::hurt_server(self, world, source, amount);
-        if hurt && source.direct_entity().is_some_and(|entity| entity.as_projectile().is_some()) {
+        if hurt
+            && source
+                .direct_entity()
+                .is_some_and(|entity| entity.as_projectile().is_some())
+        {
             self.teleport_away_from_projectile();
         }
         hurt
@@ -427,8 +456,7 @@ mod tests {
         let mut nbt = NbtCompound::new();
         enderman.save_additional(&mut nbt);
 
-        let loaded =
-            EndermanEntity::new(&vanilla_entities::ENDERMAN, 2, DVec3::ZERO, Weak::new());
+        let loaded = EndermanEntity::new(&vanilla_entities::ENDERMAN, 2, DVec3::ZERO, Weak::new());
         let mut bytes = Vec::new();
         nbt.write(&mut bytes);
         let borrowed = read_compound(&mut Cursor::new(&bytes))
