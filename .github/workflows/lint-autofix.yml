@@ -7,6 +7,9 @@ name: Lint Autofix
 #
 # Run it manually: Actions -> Lint Autofix -> Run workflow.
 
+# NOTE: workflow_dispatch needs the workflow to exist on the repository's
+# default branch first, so this job is also wired to a marker file: touching
+# .ci/autofix-trigger on a feature branch runs it for that branch.
 on:
   workflow_dispatch:
     inputs:
@@ -14,6 +17,9 @@ on:
         description: "Branch to fix (pushed back to the same branch)"
         required: true
         default: "arena/8ff5adc9-steelmc"
+  push:
+    paths:
+      - ".ci/autofix-trigger"
 
 permissions:
   contents: write
@@ -28,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch }}
+          ref: ${{ inputs.branch || github.ref_name }}
           fetch-depth: 0
 
       - uses: Swatinem/rust-cache@v2
@@ -85,7 +91,7 @@ jobs:
             exit 0
           fi
           git commit -m "style: cargo fmt + machine-applicable clippy fixes"
-          git push origin "HEAD:${{ inputs.branch }}"
+          git push origin "HEAD:${{ inputs.branch || github.ref_name }}"
 
       - name: Remaining clippy findings
         continue-on-error: true
