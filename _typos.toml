@@ -11,6 +11,14 @@ strat = "strat"
 axe = "axe"
 BlockBehaviour = "BlockBehaviour"
 behaviour = "behaviour"
+# British spellings used across the shared docs/comments (project already allows
+# "behaviour"/"neighbour").
+colour = "colour"
+colours = "colours"
+coloured = "coloured"
+centre = "centre"
+centred = "centred"
+neighbouring = "neighbouring"
 interruptable = "interruptable"
 neighbour = "neighbour"
 # Vanilla stronghold piece-type IDs (shs, shsd, shrc, ...).

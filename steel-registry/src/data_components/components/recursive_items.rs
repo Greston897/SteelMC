@@ -253,11 +253,11 @@ impl BundleContents {
     #[must_use]
     pub fn is_full(&self) -> bool {
         self.compute_weight()
-            .map_or(true, |weight| weight.is_at_least_one())
+            .map_or(true, CheckedFraction::is_at_least_one)
     }
 
     #[must_use]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
 
