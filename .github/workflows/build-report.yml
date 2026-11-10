@@ -42,6 +42,12 @@ jobs:
             > /tmp/test.log 2>&1 || true
           grep -E -A4 "^(error|FAILED|failures:)|panicked at|test result: FAILED" /tmp/test.log | head -200
 
+      - name: cargo fmt
+        continue-on-error: true
+        run: |
+          cargo fmt --all --check > /tmp/fmt.log 2>&1 || true
+          grep -c "^Diff in " /tmp/fmt.log || true
+
       - name: cargo clippy
         continue-on-error: true
         timeout-minutes: 30
@@ -76,6 +82,7 @@ jobs:
           for label, path, pattern in (
               ("tests", "/tmp/test.log", ("test result: FAILED", "panicked at", "FAILED ", "error[E", "error: could not compile")),
               ("clippy", "/tmp/clippy.log", (": error",)),
+              ("rustfmt", "/tmp/fmt.log", ("Diff in ",)),
           ):
               if not os.path.exists(path):
                   continue
