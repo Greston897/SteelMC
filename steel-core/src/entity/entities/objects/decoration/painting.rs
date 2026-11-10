@@ -484,9 +484,11 @@ mod tests {
     use steel_utils::{BlockPos, ChunkPos, Direction, Downcast as _, WorldAabb};
 
     use super::PaintingEntity;
-    use crate::entity::block_attached_entity::{BlockAttachedEntity, CHECK_SURVIVAL_FREQUENCY_TICKS};
-    use crate::entity::next_entity_id;
+    use crate::entity::block_attached_entity::{
+        BlockAttachedEntity, CHECK_SURVIVAL_FREQUENCY_TICKS,
+    };
     use crate::entity::entities::ItemEntity;
+    use crate::entity::next_entity_id;
     use crate::entity::{Entity as _, SharedEntity};
     use crate::test_support::{TestWorld, fresh_test_world, insert_ready_full_chunk};
     use crate::world::World;
@@ -620,14 +622,8 @@ mod tests {
             kebab(),
         );
 
-        BlockAttachedEntity::drop_item(
-            painting.as_ref(),
-            None,
-        );
-        BlockAttachedEntity::drop_item(
-            painting.as_ref(),
-            None,
-        );
+        BlockAttachedEntity::drop_item(painting.as_ref(), None);
+        BlockAttachedEntity::drop_item(painting.as_ref(), None);
 
         assert_eq!(dropped_items(&fixture.world).len(), 1);
     }

@@ -295,8 +295,8 @@ mod tests {
     use steel_utils::{ChunkPos, Downcast as _, WorldAabb};
 
     use super::BundleItem;
-    use crate::behavior::item::ItemBehavior;
     use crate::behavior::init_behaviors;
+    use crate::behavior::item::ItemBehavior;
     use crate::entity::Entity as _;
     use crate::entity::entities::ItemEntity;
     use crate::inventory::click::{Click, MouseButton};
