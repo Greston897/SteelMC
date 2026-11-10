@@ -80,7 +80,7 @@ use crate::worldgen::registry::GeneratorOutput;
 use crossbeam::queue::SegQueue;
 use glam::DVec3;
 use rayon::{ThreadPool, ThreadPoolBuilder};
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::sync::atomic::{AtomicBool, AtomicI32};
 use std::{
     collections::BTreeSet,
@@ -251,7 +251,7 @@ pub async fn test_server_with_worlds_and_config(
         server_tick_changed: Notify::new(),
         tick_rate_manager: SyncRwLock::new(TickRateManager::new()),
         tps_bar_enabled: AtomicBool::new(false),
-        tps_bar_shown: SyncMutex::new(FxHashMap::default()),
+        tps_bar_shown: SyncMutex::new(FxHashSet::default()),
         scoreboards,
         command_storage,
         command_dispatcher: SyncRwLock::new(registered_commands.dispatcher),
@@ -491,7 +491,7 @@ pub struct Server {
     /// Whether the `/tpsbar` boss bar is enabled server-wide.
     pub tps_bar_enabled: AtomicBool,
     /// Players that already received the `add` action of the `/tpsbar` bar.
-    tps_bar_shown: SyncMutex<FxHashMap<Uuid, ()>>,
+    tps_bar_shown: SyncMutex<FxHashSet<Uuid>>,
     /// The number of minutes required for a player to be idle for them to be kicked (timed out) from the server.
     /// If this is equal to 0, no kicking will happen.
     pub player_idle_timeout: AtomicI32,
@@ -839,7 +839,7 @@ impl Server {
             registry_cache,
             tick_rate_manager: SyncRwLock::new(TickRateManager::new()),
             tps_bar_enabled: AtomicBool::new(false),
-            tps_bar_shown: SyncMutex::new(FxHashMap::default()),
+            tps_bar_shown: SyncMutex::new(FxHashSet::default()),
             player_idle_timeout: AtomicI32::new(0),
             scoreboards,
             command_storage,

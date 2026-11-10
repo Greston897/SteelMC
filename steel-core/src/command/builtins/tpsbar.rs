@@ -23,6 +23,10 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
 }
 
 /// Toggles the boss bar and reports the new state.
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "Command executors use a shared fallible callback signature."
+)]
 fn toggle_tps_bar(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let enabled = context.source().server().toggle_tps_bar();
     let message = if enabled {
@@ -36,6 +40,8 @@ fn toggle_tps_bar(context: &SteelCommandContext<CommandSource>) -> Result<i32, C
 
 #[cfg(test)]
 mod tests {
+    use crate::command::brigadier::node::CommandNode;
+
     use super::super::create_dispatcher;
 
     /// `/tpsbar` is part of the built-in graph and executable without arguments.
@@ -56,7 +62,7 @@ mod tests {
             panic!("tpsbar root should exist");
         };
         assert!(
-            dispatcher.node(tpsbar).is_some_and(|node| node.is_executable()),
+            dispatcher.node(tpsbar).is_some_and(CommandNode::is_executable),
             "tpsbar should be executable without arguments"
         );
     }

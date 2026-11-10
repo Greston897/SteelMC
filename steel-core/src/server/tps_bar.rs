@@ -5,6 +5,8 @@
 //! and the p95 MSPT. A single bar identity is shared by every player, so the
 //! client only ever updates one bar.
 
+use std::sync::atomic::Ordering;
+
 use steel_protocol::packets::game::{BossBarColor, BossBarOverlay, CBossEvent};
 use steel_utils::TICKS_PER_SECOND;
 use text_components::format::Color;
@@ -84,7 +86,7 @@ impl Server {
     /// Whether the `/tpsbar` boss bar is currently enabled.
     #[must_use]
     pub fn is_tps_bar_enabled(&self) -> bool {
-        self.tps_bar_enabled.load(std::sync::atomic::Ordering::Relaxed)
+        self.tps_bar_enabled.load(Ordering::Relaxed)
     }
 
     /// Flips the `/tpsbar` toggle and returns the new state.
@@ -94,7 +96,7 @@ impl Server {
     pub fn toggle_tps_bar(&self) -> bool {
         let enabled = !self.is_tps_bar_enabled();
         self.tps_bar_enabled
-            .store(enabled, std::sync::atomic::Ordering::Relaxed);
+            .store(enabled, Ordering::Relaxed);
         enabled
     }
 
@@ -102,7 +104,7 @@ impl Server {
     fn prune_tps_bar_players(&self) {
         let mut shown = self.tps_bar_shown.lock();
         let stale: Vec<Uuid> = shown
-            .keys()
+            .iter()
             .copied()
             .filter(|uuid| self.online_players.get_by_uuid(uuid).is_none())
             .collect();
@@ -120,7 +122,7 @@ impl Server {
         if !self.is_tps_bar_enabled() {
             let shown: Vec<Uuid> = {
                 let mut shown = self.tps_bar_shown.lock();
-                let uuids = shown.keys().copied().collect();
+                let uuids = shown.iter().copied().collect();
                 shown.clear();
                 uuids
             };
@@ -137,7 +139,7 @@ impl Server {
         let text = tps_bar_text(stats);
 
         self.online_players.iter_players(|uuid, player| {
-            let already_shown = self.tps_bar_shown.lock().contains_key(uuid);
+            let already_shown = self.tps_bar_shown.lock().contains(uuid);
             if already_shown {
                 player.send_packet(CBossEvent::update_progress(TPS_BAR_UUID, progress));
                 player.send_packet(CBossEvent::update_name(TPS_BAR_UUID, text.clone()));
@@ -150,7 +152,7 @@ impl Server {
                     BossBarOverlay::Progress,
                     0,
                 ));
-                self.tps_bar_shown.lock().insert(*uuid, ());
+                self.tps_bar_shown.lock().insert(*uuid);
             }
             true
         });
