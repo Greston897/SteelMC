@@ -11,7 +11,7 @@
 //!   while `Monster::check_monster_spawn_rules` needs `&World`, so the entity
 //!   type is registered without a spawn rule and only spawners/commands create it.
 //! * vanilla piglins are neutral unless provoked or the player wears no gold
-//!   armour, and barter with gold ingots; Steel registers them as always hostile
+//!   armor, and barter with gold ingots; Steel registers them as always hostile
 //!   and has no bartering.
 
 use std::iter::empty;
