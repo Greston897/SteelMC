@@ -258,7 +258,7 @@ impl Entity for PillagerEntity {
     }
 
     fn synced_data(&self) -> Option<&dyn EntitySyncedData> {
-        Some(&self.entity_data)
+        Some(self.entity_data.as_ref())
     }
 
     fn update_data_before_sync(&self) {
