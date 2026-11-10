@@ -640,3 +640,87 @@ PY
 4. `KnowledgeBookItem` (выдача рецептов из компонента `recipes`).
 5. Мобы для моб-вёдер: аксолотль, тропическая рыба, головастик, серный куб (`Bucketable` уже готов,
    не хватает самих сущностей).
+
+## 13. Линт-чистота и отметка о завершении (10 ноября 2026)
+
+### 13.1 Итог: все проверки зелёные
+
+Проверка на коммите `372f2c0` (ветка `arena/8ff5adc9-steelmc`), реальные запуски GitHub Actions:
+
+| Проверка | Результат |
+|---|---|
+| `Build Report` → `cargo check diagnostics` | **0 errors** (в warnings только сообщения сборочного скрипта `steel-utils` о распаковке jar) |
+| `Build Report` → `tests` | падений нет, 4 032 теста |
+| `Test` | **success** |
+| `Flint Tests` | **success** |
+| `Lint` (Spell Check → Format → Clippy) | **success** |
+
+До этого цикла `Lint` не проходил ни разу: сначала его маскировали 206 ошибок компиляции,
+затем — собственные замечания линтера в `steel-core` (педантичный набор включён в
+`[workspace.lints.clippy]` и проверяется с `RUSTFLAGS=-Dwarnings`).
+
+### 13.2 Что именно пришлось починить
+
+На момент, когда код начал компилироваться, `cargo clippy -r --workspace --all-targets --all-features`
+давал **112 уникальных замечаний** (232 сырых диагностики, т.к. `--all-targets` компилирует
+один и тот же файл несколько раз), плюс `cargo fmt --all --check` показывал расхождения
+в ~48 файлах, плюс `typos` находил британские написания.
+
+Разбивка 112 замечаний и способ исправления:
+
+| Категория | Кол-во | Что сделано |
+|---|---|---|
+| `clippy::absolute_paths` | 92 | добавлены `use`-импорты и пути сокращены (по файлу и по области видимости — в том числе внутри `mod tests`, где свой набор импортов) |
+| `clippy::disallowed_types` | 5 | `std::collections::HashMap` → `rustc_hash::FxHashMap` в `world/map_state.rs` (это требование `clippy.toml`, а не вкусовщина) |
+| `clippy::clone_on_ref_ptr` | 5 | `x.clone()` → `Arc::clone(&x)` / `Weak::clone(&x)`; в трёх местах результат приводится к `SharedEntity` через `as` — иначе `Arc<PaintingEntity>` не превращается в `Arc<dyn Entity>` |
+| `clippy::unused_self` | 2 | `PaintingEntity::as_item_stack` стал ассоциированной функцией (дроп не зависит от состояния); в `destroy_block` уже стоял `#[expect]` с причиной |
+| `clippy::too_many_lines` | 2 | `#[expect(..., reason = ...)]` — функции являются линейным портом одного ванильного метода (`tryBreakBlock`, инициализация `ServerWorld`) |
+| `clippy::fn_params_excessive_bools` | 1 | `#[expect(..., reason = ...)]` — сигнатура повторяет ванильный `setInputs(left, right, forward, back)` |
+| `clippy::unnecessary_wraps` | 1 | `sample_pixel_in_chunk` в `filled_map.rs` больше не возвращает `Option`, вызывающий код не делает `flatten()` |
+| `clippy::match_same_arms` | 1 | одинаковые ветки `Direction::South` и `Direction::Up`/`Down` объединены |
+| `clippy::assertions_on_constants` | 1 | `assert!` в тесте заменён на `const _: () = assert!(FIREWORK_SHOT_VELOCITY < ARROW_SHOT_VELOCITY);` — проверка теперь на этапе компиляции |
+| `clippy::case_sensitive_file_extension_comparisons` | 1 | `ends_with(".desc")` → сравнение последнего сегмента через `split('.').next_back()` |
+| `clippy::unwrap_used` | 1 | `u8::try_from(index).unwrap()` → сравнение с `Option` |
+| `clippy::items_after_statements` | 1 | `const`-утверждение перенесено из тела теста на уровень модуля |
+| `rustfmt` | ~48 файлов | применён `cargo fmt --all` |
+| `typos` | 8 слов | `colour/colours/coloured/centre/centred/neighbouring/modelled/initialisation` → либо американские написания, либо разрешение в `_typos.toml` (для британских названий в ванильных терминах) |
+
+Честная оговорка: три `#[expect]` (две «слишком длинные» функции и одна с четырьмя `bool`)
+не переписаны, а явно разрешены с причиной — обе функции дословно повторяют структуру
+ванильных методов, и дробление ухудшило бы сопоставимость с оригиналом. Это видимое
+исключение, а не тихое подавление: `clippy::allow_attributes_without_reason` включён,
+поэтому причину обязательно указывать.
+
+### 13.3 Как это было проверено без локального `cargo`
+
+В песочнице, где велась работа, нет `cargo`/`rustc`, поэтому единственный способ
+верифицировать — GitHub Actions. Для этого добавлен **опциональный** workflow
+`.github/workflows/lint-autofix.yml`:
+
+* запускается либо через `workflow_dispatch`, либо пушем в файл-маркер `.ci/autofix-trigger`
+  (так сделано потому, что `workflow_dispatch` требует наличия workflow в ветке по умолчанию);
+* ставит `nightly-2026-10-14` с `rustfmt` и `clippy`, прогоняет `cargo fmt --all` и
+  три прохода `cargo clippy --fix` (только машинно-применимые правки);
+* **проверяет, что после правок проект компилируется**; если нет — откатывает всё и ничего не пушит;
+* коммитит только форматирование и автоправки, затем публикует в комментарий к коммиту
+  полный список оставшихся замечаний (с дедупликацией и подсчётом по линтам).
+
+Последний прогон этого workflow на `74ac432`: `distinct findings: 0`, `rustfmt diffs: 0`.
+
+Важный побочный эффект: пуши, сделанные в Actions через `GITHUB_TOKEN`, **не запускают**
+новые workflow-раны (защита GitHub от рекурсии). Поэтому после автоправок нужен отдельный
+пуш обычным способом — именно так и был получен зелёный `Lint` на `372f2c0`.
+
+### 13.4 Отметка о завершении
+
+- [x] Проверить, что всё компилируется — 0 ошибок `cargo check` (было 206).
+- [x] Проверить, что всё работает — `Test`/`Flint Tests` зелёные, 4 032 теста без падений.
+- [x] Убедиться, что нет «тихих» багов — исправлены: `is_solid`, генерация `map_color`,
+      маска поворота маркера карты, формула сетки карты, байт наличия в `C_MAP_ITEM_DATA`,
+      пузырьковые колонки у лодок, NBT-раундтрип `Bucketable`.
+- [x] Довести линт до нуля — `Lint` (typos + rustfmt + clippy) зелёный.
+- [x] Описать готовность и сравнение с ванилью 26.3 — разделы 12.3–12.5 выше.
+
+Что осталось из функциональности (не баги, а незакрытые фичи): 4 класса предметов
+(`ArmorStandItem`, `TridentItem`, `WindChargeItem`, `KnowledgeBookItem`) и мобы для
+моб-вёдер (аксолотль, тропическая рыба, головастик, серный куб).
