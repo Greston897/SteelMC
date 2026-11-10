@@ -36,7 +36,7 @@ impl ItemBehavior for WindChargeItem {
         let world = context.world;
         let player = context.player;
 
-        let shooter: SharedEntity = Arc::clone(player);
+        let shooter: SharedEntity = Arc::clone(player) as SharedEntity;
         let charge: Option<SharedEntity> = spawn_projectile_from_rotation(
             world,
             &shooter,

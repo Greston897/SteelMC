@@ -920,7 +920,10 @@ impl Projectile for ThrownTridentEntity {
     }
 
     fn on_hit_entity(self: Arc<Self>, entity: &SharedEntity, _location: DVec3) {
-        self.abstract_arrow_on_hit_entity(entity);
+        // `abstract_arrow_on_hit_entity` consumes the handle, so keep one for
+        // the loyalty bookkeeping afterwards.
+        let handle = Arc::clone(&self);
+        handle.abstract_arrow_on_hit_entity(entity);
         self.mark_dealt_damage();
     }
 
