@@ -91,7 +91,7 @@ pub fn shoot_arrow(
     );
     arrow.set_has_been_shot(true);
 
-    let shared: SharedEntity = Arc::clone(&arrow);
+    let shared: SharedEntity = Arc::<ArrowEntity>::clone(&arrow);
     if let Err(error) = world.try_add_entity(shared) {
         log::debug!("failed to spawn mob arrow: {error}");
         return None;
