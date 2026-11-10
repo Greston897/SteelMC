@@ -13,7 +13,6 @@
 //! * vanilla spiders stop being hostile in bright light (they only retaliate);
 //!   Steel keeps the plain hostile target selector, so they always attack.
 
-
 use std::iter::empty;
 use std::sync::Weak;
 
@@ -30,8 +29,8 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal,
-    NearestAttackableTargetGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
+    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{

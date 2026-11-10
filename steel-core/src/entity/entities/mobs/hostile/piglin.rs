@@ -14,7 +14,6 @@
 //!   armour, and barter with gold ingots; Steel registers them as always hostile
 //!   and has no bartering.
 
-
 use std::iter::empty;
 use std::sync::Weak;
 
@@ -31,8 +30,8 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal,
-    NearestAttackableTargetGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
+    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{

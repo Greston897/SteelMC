@@ -11,7 +11,6 @@
 //!   while `Monster::check_monster_spawn_rules` needs `&World`, so the entity
 //!   type is registered without a spawn rule and only spawners/commands create it.
 
-
 use std::iter::empty;
 use std::sync::Weak;
 
@@ -28,8 +27,8 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal,
-    NearestAttackableTargetGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
+    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
@@ -283,13 +282,15 @@ mod tests {
     #[test]
     fn piglin_brute_uses_registry_attributes_and_round_trips_nbt() {
         init_vanilla_registry();
-        let piglin_brute = PiglinBruteEntity::new(&vanilla_entities::PIGLIN_BRUTE, 1, DVec3::ZERO, Weak::new());
+        let piglin_brute =
+            PiglinBruteEntity::new(&vanilla_entities::PIGLIN_BRUTE, 1, DVec3::ZERO, Weak::new());
         assert!((piglin_brute.get_max_health() - 50.0).abs() < 1e-4);
 
         let mut nbt = NbtCompound::new();
         piglin_brute.save_additional(&mut nbt);
 
-        let loaded = PiglinBruteEntity::new(&vanilla_entities::PIGLIN_BRUTE, 2, DVec3::ZERO, Weak::new());
+        let loaded =
+            PiglinBruteEntity::new(&vanilla_entities::PIGLIN_BRUTE, 2, DVec3::ZERO, Weak::new());
         let mut bytes = Vec::new();
         nbt.write(&mut bytes);
         let borrowed = read_compound(&mut Cursor::new(&bytes))

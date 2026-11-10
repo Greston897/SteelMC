@@ -73,7 +73,8 @@ pub fn tps_bar_text(stats: TabListTickStats) -> TextComponent {
         TextComponent::plain("TPS ").color(Color::Gray),
         TextComponent::plain(format!("{:.1}", stats.tps)).color(text_color_for(stats.tps)),
         TextComponent::plain("  MSPT ").color(Color::Gray),
-        TextComponent::plain(format!("{:.2}", stats.recent_mspt)).color(mspt_color(stats.recent_mspt)),
+        TextComponent::plain(format!("{:.2}", stats.recent_mspt))
+            .color(mspt_color(stats.recent_mspt)),
         TextComponent::plain(format!(
             " (5s {:.2}, p95 {:.2})",
             stats.average_mspt, stats.p95_mspt
@@ -95,8 +96,7 @@ impl Server {
     /// action per remembered player, so disabling never leaves a stale bar.
     pub fn toggle_tps_bar(&self) -> bool {
         let enabled = !self.is_tps_bar_enabled();
-        self.tps_bar_enabled
-            .store(enabled, Ordering::Relaxed);
+        self.tps_bar_enabled.store(enabled, Ordering::Relaxed);
         enabled
     }
 
@@ -200,8 +200,7 @@ mod tests {
 
     #[test]
     fn bar_text_reports_tps_and_all_mspt_views() {
-        let text = tps_bar_text(stats(19.98, 1.25, 1.5, 3.0))
-            .to_plain(&DisplayResolutor);
+        let text = tps_bar_text(stats(19.98, 1.25, 1.5, 3.0)).to_plain(&DisplayResolutor);
         assert!(text.contains("TPS 20.0"), "rounded tps: {text}");
         assert!(text.contains("MSPT 1.25"), "recent mspt: {text}");
         assert!(text.contains("5s 1.50"), "average mspt: {text}");

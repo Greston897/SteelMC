@@ -13,7 +13,6 @@
 //! * vanilla zoglins attack every living entity except other zoglins and creepers;
 //!   Steel's target selector only considers players.
 
-
 use std::iter::empty;
 use std::sync::Weak;
 
@@ -30,8 +29,8 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal,
-    NearestAttackableTargetGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
+    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
