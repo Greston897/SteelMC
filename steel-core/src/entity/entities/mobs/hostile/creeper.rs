@@ -234,10 +234,16 @@ impl CreeperEntity {
             return;
         }
 
+        // Vanilla `SwellGoal`: the fuse only *starts* within three blocks
+        // (`canUse`), but keeps burning out to seven blocks while the target
+        // stays visible (`canContinueToUse` + `tick`).
+        let already_swelling = self.swell_dir() > 0;
         let dir = match self.target() {
             Some(target)
                 if self.distance_to_sqr(target.position()) <= SWELL_DISTANCE_SQR
-                    && self.has_line_of_sight_cached(target.as_ref()) =>
+                    && self.has_line_of_sight_cached(target.as_ref())
+                    && (already_swelling
+                        || self.distance_to_sqr(target.position()) < SWELL_START_DISTANCE_SQR) =>
             {
                 1
             }
