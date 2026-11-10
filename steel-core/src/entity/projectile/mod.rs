@@ -695,6 +695,45 @@ pub fn spawn_throwable_item_projectile<E>(
 where
     E: Projectile + ThrowableItemProjectile + Entity + 'static,
 {
+    let item = item_stack.clone();
+    let entity = spawn_projectile_from_rotation(
+        world,
+        player,
+        pitch_offset,
+        power,
+        uncertainty,
+        create,
+        |entity| entity.set_item_clamped(item),
+    );
+    if let Some(entity) = &entity {
+        let owner: SharedEntity = Arc::<Player>::clone(player);
+        enchantment_helper::on_projectile_spawned(world, item_stack, entity.as_ref(), Some(&owner));
+    }
+    entity
+}
+
+/// Spawns any projectile from the source's eye along its look direction and
+/// registers it in the world.
+///
+/// Mirrors vanilla `Projectile.spawnProjectileFromRotation` + `spawnProjectile`:
+/// create the projectile at the eye minus 0.1, set its owner, let the caller
+/// finish configuring it (`configure`), shoot it with `shootFromRotation`, then
+/// add it to the world. `create` receives the spawn position and must return the
+/// concrete projectile type. Returns `None` when the world rejects the
+/// projectile so the caller can fail the use.
+#[must_use]
+pub fn spawn_projectile_from_rotation<E>(
+    world: &Arc<World>,
+    player: &Arc<Player>,
+    pitch_offset: f32,
+    power: f32,
+    uncertainty: f32,
+    create: impl FnOnce(DVec3) -> E,
+    configure: impl FnOnce(&E),
+) -> Option<SharedEntity>
+where
+    E: Projectile + Entity + 'static,
+{
     let player_pos = player.position();
     let spawn_pos = DVec3::new(
         player_pos.x,
@@ -705,7 +744,7 @@ where
     let entity = create(spawn_pos);
     let owner: SharedEntity = Arc::<Player>::clone(player);
     entity.set_owner_entity(Some(&owner));
-    entity.set_item_clamped(item_stack.clone());
+    configure(&entity);
 
     let (yaw, player_pitch) = player.rotation();
     entity.shoot_from_rotation(
@@ -719,10 +758,9 @@ where
 
     let entity: SharedEntity = Arc::new(entity);
     if let Err(error) = world.try_add_entity(Arc::clone(&entity)) {
-        log::debug!("failed to spawn throwable item projectile: {error}");
+        log::debug!("failed to spawn projectile: {error}");
         return None;
     }
-    enchantment_helper::on_projectile_spawned(world, item_stack, entity.as_ref(), Some(&owner));
 
     Some(entity)
 }
