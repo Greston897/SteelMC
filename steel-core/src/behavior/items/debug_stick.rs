@@ -23,6 +23,8 @@ use crate::behavior::context::{CanMineContext, InteractionResult, InventoryAcces
 use crate::behavior::item::ItemBehavior;
 use crate::player::Player;
 use crate::world::World;
+
+#[cfg(test)]
 use steel_registry::item_stack::ItemStack;
 
 /// Vanilla `DebugStickItem.BLOCK_UPDATE_FLAGS` (`NOTIFY_LISTENERS | FORCE_STATE`).

@@ -29,15 +29,20 @@ use steel_utils::{BlockPos, Direction, DowncastType, DowncastTypeKey, WorldAabb}
 
 use crate::behavior::InteractionResult;
 use crate::entity::block_attached_entity::{BlockAttachedEntity, BlockAttachedEntityBase};
+use crate::entity::block_effects;
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityBaseState, EntityMoveError, EntitySyncedData,
     SharedEntity,
 };
+use crate::physics::collision;
+use crate::physics::{MoveResult, MoverType};
 use crate::player::Player;
-use crate::world::World;
+use crate::world::{Explosion, World};
+use steel_registry::vanilla_painting_variant_tags::PaintingVariantTag;
 use steel_registry::vanilla_painting_variants::KEBAB;
 use steel_utils::axis::Axis;
+use steel_utils::types::InteractionHand;
 
 /// Vanilla `PaintingEntity.PIXEL_SIZE`: the thickness of a painting against the wall.
 pub const PIXEL_SIZE: f64 = 0.0625;
@@ -232,7 +237,7 @@ impl PaintingEntity {
     ) -> Option<Self> {
         let mut candidates: Vec<PaintingVariantRef> = REGISTRY
             .painting_variants
-            .iter_tag(&steel_registry::vanilla_painting_variant_tags::PaintingVariantTag::PLACEABLE)
+            .iter_tag(&PaintingVariantTag::PLACEABLE)
             .collect();
 
         if candidates.is_empty() {
@@ -286,7 +291,7 @@ impl PaintingEntity {
             .contract(DVec3::splat(1.0e-7));
 
         let mut blocks = Vec::new();
-        crate::entity::block_effects::for_each_block_in_aabb(box_, |pos| {
+        block_effects::for_each_block_in_aabb(box_, |pos| {
             blocks.push(pos);
             true
         });
@@ -301,8 +306,8 @@ impl PaintingEntity {
         };
 
         let check_box = self.base.bounding_box();
-        let collision = crate::physics::collision::WorldCollisionProvider::new(&world);
-        if crate::physics::collision::has_block_collision(&collision, check_box) {
+        let collision = collision::WorldCollisionProvider::new(&world);
+        if collision::has_block_collision(&collision, check_box) {
             return false;
         }
         if world.has_entity_in_aabb_matching(&check_box, |entity| entity.id() != self.base.id()) {
@@ -361,13 +366,13 @@ impl Entity for PaintingEntity {
     fn interact(
         &self,
         _player: &Player,
-        _hand: steel_utils::types::InteractionHand,
+        _hand: InteractionHand,
         _location: DVec3,
     ) -> InteractionResult {
         InteractionResult::Pass
     }
 
-    fn ignore_explosion(&self, explosion: &dyn crate::world::Explosion) -> bool {
+    fn ignore_explosion(&self, explosion: &dyn Explosion) -> bool {
         explosion
             .direct_source_entity()
             .is_some_and(Entity::is_in_water)
@@ -388,9 +393,9 @@ impl Entity for PaintingEntity {
 
     fn move_entity(
         self: Arc<Self>,
-        mover_type: crate::physics::MoverType,
+        mover_type: MoverType,
         delta: DVec3,
-    ) -> Option<crate::physics::MoveResult> {
+    ) -> Option<MoveResult> {
         self.move_entity_block_attached_entity(mover_type, delta)
     }
 
@@ -527,7 +532,7 @@ mod tests {
             variant,
             Arc::downgrade(world),
         ));
-        let shared: SharedEntity = Arc::clone(&painting);
+        let shared = Arc::clone(&painting) as SharedEntity;
         world
             .try_add_entity(shared)
             .expect("painting should enter a loaded chunk");

@@ -311,7 +311,7 @@ mod tests {
             DyeColor::Red,
             Arc::downgrade(world),
         ));
-        let shared: SharedEntity = Arc::clone(&cushion);
+        let shared = Arc::clone(&cushion) as SharedEntity;
         world
             .try_add_entity(shared)
             .expect("cushion should enter a loaded chunk");

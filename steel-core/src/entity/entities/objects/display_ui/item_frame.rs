@@ -661,7 +661,7 @@ mod tests {
             direction,
             Arc::downgrade(world),
         ));
-        let shared: SharedEntity = Arc::clone(&frame);
+        let shared = Arc::clone(&frame) as SharedEntity;
         world
             .try_add_entity(shared)
             .expect("frame should enter a loaded chunk");
