@@ -16,7 +16,9 @@ use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::types::InteractionHand;
 
 use crate::behavior::InteractionResult;
-use crate::entity::entities::mobs::passive::{CodEntity, PufferfishEntity, SalmonEntity};
+use crate::entity::entities::mobs::passive::{
+    CodEntity, PufferfishEntity, SalmonEntity, TropicalFishEntity,
+};
 use crate::entity::{Entity, LivingEntity, Mob, RemovalReason};
 use crate::player::Player;
 
@@ -35,12 +37,10 @@ pub trait Bucketable: Mob {
         write_base_bucket_data(self, nbt);
     }
 
-    /// Vanilla `Bucketable.copyDataFromNbt` counterpart.
+    /// Vanilla `Bucketable.copyDataFromNbt` counterpart. Subclasses extend this
+    /// with the keys they appended in [`Self::copy_bucket_data_to_nbt`].
     fn read_bucket_data_from_nbt(&self, nbt: &owned::NbtCompound) {
-        self.set_from_bucket(nbt.byte_value("FromBucket").unwrap_or(1) != 0);
-        if let Some(health) = nbt.float_value("Health") {
-            LivingEntity::set_health(self, health);
-        }
+        read_base_bucket_data(self, nbt);
     }
 }
 
@@ -59,6 +59,18 @@ where
 {
     nbt.insert("FromBucket", 1i8);
     nbt.insert("Health", LivingEntity::get_health(entity));
+}
+
+/// Base `Bucketable.copyDataFromNbt` counterpart; also callable from an
+/// override so a subclass can restore its own keys after the shared ones.
+pub fn read_base_bucket_data<T>(entity: &T, nbt: &owned::NbtCompound)
+where
+    T: Bucketable + ?Sized,
+{
+    entity.set_from_bucket(nbt.byte_value("FromBucket").unwrap_or(1) != 0);
+    if let Some(health) = nbt.float_value("Health") {
+        LivingEntity::set_health(entity, health);
+    }
 }
 
 /// Vanilla `Bucketable.tryBucket` for one concrete mob type.
@@ -137,6 +149,10 @@ pub fn release_from_bucket(entity: &dyn Entity, bucket: &ItemStack) {
     }
     if let Some(pufferfish) = entity.downcast_ref::<PufferfishEntity>() {
         restore_from_bucket(pufferfish, data);
+        return;
+    }
+    if let Some(tropical_fish) = entity.downcast_ref::<TropicalFishEntity>() {
+        restore_from_bucket(tropical_fish, data);
     }
 }
 
@@ -158,6 +174,9 @@ pub fn try_bucket_entity(
     if let Some(pufferfish) = entity.downcast_ref::<PufferfishEntity>() {
         return try_bucket(player, hand, pufferfish);
     }
+    if let Some(tropical_fish) = entity.downcast_ref::<TropicalFishEntity>() {
+        return try_bucket(player, hand, tropical_fish);
+    }
     None
 }
 
@@ -167,4 +186,5 @@ pub fn is_bucketable(entity: &dyn Entity) -> bool {
     entity.downcast_ref::<CodEntity>().is_some()
         || entity.downcast_ref::<SalmonEntity>().is_some()
         || entity.downcast_ref::<PufferfishEntity>().is_some()
+        || entity.downcast_ref::<TropicalFishEntity>().is_some()
 }

@@ -383,4 +383,15 @@ impl Bucketable for SalmonEntity {
         bucketable::write_base_bucket_data(self, nbt);
         nbt.insert("type", self.variant().serialized_name().to_string());
     }
+
+    fn read_bucket_data_from_nbt(&self, nbt: &owned::NbtCompound) {
+        bucketable::read_base_bucket_data(self, nbt);
+        // Vanilla `SalmonEntity.loadFromBucketTag` restores the variant.
+        if let Some(name) = nbt.string("type") {
+            let name = name.to_str();
+            self.set_variant(
+                SalmonVariant::from_serialized_name(name.as_ref()).unwrap_or(SALMON_DEFAULT_VARIANT),
+            );
+        }
+    }
 }
