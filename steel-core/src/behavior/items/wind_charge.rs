@@ -14,7 +14,7 @@ use steel_registry::{sound_events, vanilla_entities};
 use crate::behavior::context::{InteractionResult, UseItemContext};
 use crate::behavior::item::ItemBehavior;
 use crate::entity::entities::WindChargeEntity;
-use crate::entity::{SharedEntity, next_entity_id, spawn_projectile_from_rotation};
+use crate::entity::{Entity as _, SharedEntity, next_entity_id, spawn_projectile_from_rotation};
 use crate::player::Player;
 
 /// Vanilla `WindChargeItem` shoot power.
@@ -75,7 +75,7 @@ fn play_throw_sound(player: &Arc<Player>) {
     let pitch = 0.4 / (rand::random_range(0.0_f32..1.0) * 0.4 + 0.8);
     let world = player.get_world();
     world.play_sound_at(
-        &sound_events::WIND_CHARGE_THROW,
+        &sound_events::ITEM_WIND_CHARGE_THROW,
         SoundSource::Neutral,
         player.position(),
         0.5,

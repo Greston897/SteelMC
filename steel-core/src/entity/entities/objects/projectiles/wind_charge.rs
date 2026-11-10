@@ -27,7 +27,7 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::particle_type::ParticleData;
 use steel_registry::sound_event::SoundEventHolder;
-use steel_registry::{sound_events, vanilla_damage_types, vanilla_particle_types, vanilla_entities};
+use steel_registry::{sound_events, vanilla_damage_types, vanilla_particle_types};
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::damage::DamageSource;
@@ -101,7 +101,7 @@ impl WindChargeEntity {
             ParticleData::simple(&vanilla_particle_types::GUST_EMITTER_SMALL);
         options.large_explosion_particle =
             ParticleData::simple(&vanilla_particle_types::GUST_EMITTER_LARGE);
-        options.explosion_sound = SoundEventHolder::registry(&sound_events::WIND_CHARGE_BURST);
+        options.explosion_sound = SoundEventHolder::registry(&sound_events::ITEM_WIND_CHARGE_BURST);
         world.explode(options);
     }
 }
