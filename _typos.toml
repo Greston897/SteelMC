@@ -19,6 +19,7 @@ coloured = "coloured"
 centre = "centre"
 centred = "centred"
 neighbouring = "neighbouring"
+modelled = "modelled"
 interruptable = "interruptable"
 neighbour = "neighbour"
 # Vanilla stronghold piece-type IDs (shs, shsd, shrc, ...).

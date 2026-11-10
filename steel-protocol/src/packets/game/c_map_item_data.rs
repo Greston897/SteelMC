@@ -5,14 +5,14 @@
 //! optional rectangular patch of changed colors.
 //!
 //! Wire format (vanilla codecs):
-//! 1. map id — VarInt
-//! 2. scale — byte
-//! 3. locked — bool
-//! 4. decorations — optional list: bool prefix, then VarInt count of
+//! 1. `map_id` — `VarInt`
+//! 2. `scale` — byte
+//! 3. `locked` — bool
+//! 4. decorations — optional list: a presence byte, then a `VarInt` count of
 //!    `(type: VarInt, x: byte, z: byte, rot: byte, name: optional component)`
-//! 5. update data — `MapState.UpdateData.CODEC`: a single `0` byte when absent,
-//!    otherwise `width, height, startX, startZ` bytes followed by a
-//!    VarInt-prefixed color array.
+//! 5. update data (`MapState.UpdateData`): a presence byte, then when present
+//!    `width`, `height`, `start_x`, `start_z` bytes followed by a
+//!    `VarInt`-prefixed color array.
 
 use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_MAP_ITEM_DATA;
@@ -21,7 +21,7 @@ use steel_utils::serial::WriteTo;
 use text_components::TextComponent;
 
 /// One icon drawn on a map.
-#[derive(WriteTo, Clone, Debug, PartialEq)]
+#[derive(WriteTo, Clone, Debug, PartialEq, Eq)]
 pub struct MapDecorationEntry {
     /// Registry id of the decoration type (vanilla `MapDecorationType`).
     #[write(as = VarInt)]
