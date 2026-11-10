@@ -51,7 +51,6 @@ pub(crate) use random_look_around::RandomLookAroundGoal;
 pub(crate) use random_swimming::RandomSwimmingGoal;
 pub(crate) use ranged_attack::RangedAttackGoal;
 pub(crate) use restrict_sun::RestrictSunGoal;
-#[cfg(test)]
 pub(crate) use selector::GoalControls;
 pub(crate) use selector::{Goal, GoalControl, GoalSelector};
 pub(crate) use squid_flee_goal::SquidFleeGoal;

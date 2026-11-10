@@ -1,8 +1,7 @@
 # SteelMC — полный прогресс по подсистемам (замер 10 ноября 2026)
 
-Ветка `arena/8ff5adc9-steelmc`; последняя итерация — батч дальнобойного ИИ и
-семейства скелетов (`PARITY-26.3-RU.md` §19), CI зелёный
-(`Test`, `Flint Tests`, `Lint`, `Lint Autofix`, `Build Report`).
+Ветка `arena/8ff5adc9-steelmc`; последняя завершённая итерация — крипер (`PARITY-26.3-RU.md` §20), CI зелёный
+(`Test`, `Flint Tests`, `Lint`, `Build Report`). Текущая работа над Pillager ещё не прошла CI.
 Все числа ниже — машинный подсчёт по дереву репозитория и по извлечённым из
 ванильного 26.3 данным (`steel-registry/build_assets/*.json`,
 `steel-core/build/classes.json`), а не оценки «на глаз».
@@ -15,7 +14,7 @@
 | Предметы (по классам поведения) | 1 400 | 1 658 | 84,4 % |
 | Предметы (с учётом базового `Item`) | **1 657** | 1 658 | **99,94 %** |
 | Блоки (с собственным поведением) | 1 031 | 1 286 | 80,2 % |
-| Сущности (зарегистрированные фабрики) | **80** | 161 | **49,7 %** |
+| Сущности (зарегистрированные фабрики) | **81** | 161 | **50,3 %** |
 | Пакеты протокола (есть Rust-модуль) | 131 | 234 | 56,0 % |
 | Команды | 43 | ~50 ванильных + свои | ~85 % |
 | Тесты (`steel-core` lib, CI) | 3 213 | — | — |
@@ -72,7 +71,7 @@
 
 ## 5. Сущности
 
-**80 из 161 (49,7 %)** типов имеют зарегистрированную фабрику (62 класса):
+**81 из 161 (50,3 %)** типов имеют зарегистрированную фабрику (63 класса):
 
 * мобы: `Zombie`, `Husk`, `Drowned`, `ZombifiedPiglin`, `WitherSkeleton`,
   `Silverfish`, `CaveSpider`, `Spider`, `Piglin`, `PiglinBrute`, `Hoglin`, `Zoglin`,
@@ -81,6 +80,8 @@
 * дальнобойные (`RangedAttackGoal` + помощник стрельбы): `Skeleton`, `Stray`,
   `Bogged`, `Parched` (стрелы со `slowness`/`poison`/`weakness`, конверсия скелета
   в `Stray` в порошковом снегу, стрижка боггеда);
+* `Pillager`: арбалет в основной руке, синхронизируемая анимация зарядки, 25 тиков
+  на заряд и выстрел, перезарядка 20 тиков, цели — игроки/жители/железные големы;
 * уникальная механика: `Creeper` (ванильный фитиль `30` тиков, радиус `3`,
   `×2` при `is_powered`, взрыв `MOB` через существующий `ServerExplosion`,
   избегание кошек/оцелотов);
@@ -88,14 +89,14 @@
   примленный ТНТ, кристалл Края, опыт-орб, падающий блок, стрелы и снаряды
   (трезубец, жемчуг, глаз, бутылочки, фейерверк, рыболовный крючок, заряд ветра,
   снежок, яйцо), лодки и лодки с сундуком, вагонетки и вагонетка с сундуком.
-* Не сделано (81 класс): вся деревенская линия (`Villager`, `WanderingTrader`,
+* Не сделано (80 классов): вся деревенская линия (`Villager`, `WanderingTrader`,
   `ZombieVillager`, `IronGolem`, `SnowGolem`, `Cat`, `Wolf`, `Horse`+`Donkey`+`Mule`+
   `Llama`+`TraderLlama`, `PolarBear`, `Panda`, `Fox`, `Ocelot`, `Parrot`, `Rabbit`,
   `Goat`, `Camel`, `Turtle`, `Armadillo`, `Sniffer`, `Allay`, `Bee`, `Dolphin`,
   `GlowSquid`, `Frog`, `Tadpole`, `Axolotl`, `Nautilus`, `ZombieNautilus`,
   `CopperGolem`, `CamelHusk`, `Creaking`, `Mannequin`, `Strider`, `SulfurCube`),
   дальнобойные (`Blaze`, `Breeze`, `Ghast`, `Shulker`, `Guardian`, `ElderGuardian`,
-  `Witch`, `Evoker`, `Illusioner`, `Pillager`, `Vex`, `Phantom`, `WitherSkull`,
+  `Witch`, `Evoker`, `Illusioner`, `Vex`, `Phantom`, `WitherSkull`,
   `SmallFireball`, `LargeFireball`,
   `DragonFireball`, `ShulkerBullet`, `LlamaSpit`, `BreezeWindCharge`,
   `EvokerFangs`, `OminousItemSpawner`, `LightningBolt`), боссы (`EnderDragon`,
@@ -152,7 +153,7 @@
 
 1. ~~`RangedAttackGoal` + стрелы~~ — **сделано** (`PARITY-26.3-RU.md` §19):
    `Skeleton`, `Stray`, `Bogged`, `Parched`; следующими на этой базе идут
-   `Pillager` (арбалет) и `Illusioner`.
+   `Illusioner` (враждебная иллюзия) и разблокированные дальнобойные цели.
 2. Природный спавн: снять блокер `SpawnRule` ↔ `&World`, включить спавн
    враждебных мобов и биомные замещения (`Parched` в пустынях, `Stray` в снегах).
 3. Животные батчем (шаблон `Animal`/`AgeableMob` готов): `Rabbit`, `Fox`,
