@@ -97,8 +97,10 @@ jobs:
                       index += 4
                       continue
                   index += 1
+              if not picked and log:
+                  picked = log[-40:]
               if picked:
-                  extra += [f"### {label}", "```"] + picked[:80] + ["```", ""]
+                  extra += [f"### {label}", "```"] + picked[:120] + ["```", ""]
 
           if not errors and not warnings and not extra:
               print("no diagnostics")
