@@ -40,8 +40,6 @@ fn toggle_tps_bar(context: &SteelCommandContext<CommandSource>) -> Result<i32, C
 
 #[cfg(test)]
 mod tests {
-    use crate::command::brigadier::node::CommandNode;
-
     use super::super::create_dispatcher;
 
     /// `/tpsbar` is part of the built-in graph and executable without arguments.
@@ -61,8 +59,11 @@ mod tests {
         }) else {
             panic!("tpsbar root should exist");
         };
+        let Some(node) = dispatcher.node(tpsbar) else {
+            panic!("tpsbar node should exist");
+        };
         assert!(
-            dispatcher.node(tpsbar).is_some_and(CommandNode::is_executable),
+            node.is_executable(),
             "tpsbar should be executable without arguments"
         );
     }
