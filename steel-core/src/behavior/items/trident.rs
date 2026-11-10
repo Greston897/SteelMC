@@ -19,12 +19,12 @@ use steel_macros::item_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::stat::vanilla_stat_types;
-use steel_registry::{sound_events, vanilla_entities, vanilla_enchantments};
+use steel_registry::{sound_events, vanilla_enchantments, vanilla_entities};
 use steel_utils::types::GameType;
 
+use crate::behavior::ItemUseAnimation;
 use crate::behavior::context::{InteractionResult, UseItemContext};
 use crate::behavior::item::ItemBehavior;
-use crate::behavior::ItemUseAnimation;
 use crate::entity::entities::{AbstractArrow as _, ArrowPickup, ThrownTridentEntity};
 use crate::entity::{Entity, LivingEntity, next_entity_id, spawn_projectile_from_rotation};
 use crate::world::World;
@@ -79,7 +79,10 @@ impl ItemBehavior for TridentItem {
     fn use_item(&self, context: &mut UseItemContext) -> InteractionResult {
         // Vanilla `TridentItem.use`: a trident that would break on the next
         // durability point refuses to start charging.
-        if context.inv.with_item(|stack| stack.next_damage_will_break()) {
+        if context
+            .inv
+            .with_item(|stack| stack.next_damage_will_break())
+        {
             return InteractionResult::Fail;
         }
         context.player.start_using_item(context.hand);

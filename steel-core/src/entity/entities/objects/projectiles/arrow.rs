@@ -691,7 +691,6 @@ impl SpectralArrowEntity {
 
 arrow_entity_impl!(SpectralArrowEntity);
 
-
 /// Vanilla `ThrownTrident` base damage.
 pub const TRIDENT_DAMAGE: f64 = 8.0;
 
@@ -818,7 +817,8 @@ impl ThrownTridentEntity {
         // Vanilla ignores collisions while returning.
         self.base.set_no_physics(true);
 
-        let target = owner.position() + DVec3::new(0.0, owner.get_eye_y() - owner.position().y, 0.0);
+        let target =
+            owner.position() + DVec3::new(0.0, owner.get_eye_y() - owner.position().y, 0.0);
         let delta = target - self.position();
         if delta.length_squared() <= 1.0 {
             // Vanilla `tryReturnToOwner`: insert the trident into the owner's
@@ -851,7 +851,8 @@ impl ThrownTridentEntity {
     fn load_trident(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         *self.loyalty.lock() = i32::from(nbt.byte_value("Loyalty").unwrap_or(0));
         self.dealt_damage.store(
-            nbt.byte_value("DealtDamage").is_some_and(|value| value != 0),
+            nbt.byte_value("DealtDamage")
+                .is_some_and(|value| value != 0),
             Ordering::Release,
         );
     }

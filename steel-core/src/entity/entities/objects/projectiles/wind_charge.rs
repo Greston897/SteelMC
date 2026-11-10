@@ -90,18 +90,16 @@ impl WindChargeEntity {
     /// Vanilla `WindCharge.explode`: a trigger-only explosion plus the gust
     /// particles and burst sound.
     fn explode(self: &Arc<Self>, world: &Arc<World>) {
-        let mut options = ExplosionOptions::new(
-            self.position(),
-            EXPLOSION_POWER,
-            ExplosionInteraction::None,
-        );
+        let mut options =
+            ExplosionOptions::new(self.position(), EXPLOSION_POWER, ExplosionInteraction::None);
         options.source = Some(Arc::clone(self) as SharedEntity);
         options.damage_source = Some(self.wind_charge_damage_source());
         options.small_explosion_particle =
             ParticleData::simple(&vanilla_particle_types::GUST_EMITTER_SMALL);
         options.large_explosion_particle =
             ParticleData::simple(&vanilla_particle_types::GUST_EMITTER_LARGE);
-        options.explosion_sound = SoundEventHolder::registry(&sound_events::ENTITY_WIND_CHARGE_WIND_BURST);
+        options.explosion_sound =
+            SoundEventHolder::registry(&sound_events::ENTITY_WIND_CHARGE_WIND_BURST);
         world.explode(options);
     }
 }
