@@ -4,6 +4,7 @@
 //! See `src/behavior/generated/items.rs` for the generated registration code.
 
 mod air;
+mod armor_stand;
 mod arrow;
 mod banner_item;
 mod block_item;
@@ -67,6 +68,7 @@ mod trident;
 mod wind_charge;
 
 pub use air::AirItem;
+pub use armor_stand::ArmorStandItem;
 pub use arrow::{ArrowItem, SpectralArrowItem};
 pub use banner_item::BannerItem;
 pub use block_item::{BlockItem, DoubleHighBlockItem};
