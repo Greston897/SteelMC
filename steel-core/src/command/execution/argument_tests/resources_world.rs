@@ -359,7 +359,8 @@ fn summonable_entity_argument_suggests_only_registered_factories() {
         [
             "minecraft:pig",
             "minecraft:piglin",
-            "minecraft:piglin_brute"
+            "minecraft:piglin_brute",
+            "minecraft:pillager"
         ]
     );
 }

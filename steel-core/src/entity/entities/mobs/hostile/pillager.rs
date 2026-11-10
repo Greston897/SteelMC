@@ -38,6 +38,7 @@ use crate::entity::{
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
     SharedEntity, sync_dirty_mob_effects,
 };
+use crate::inventory::equipment::EquipmentSlot;
 use crate::physics::MoveResult;
 use crate::world::World;
 
@@ -91,7 +92,7 @@ impl PillagerEntity {
         living_base.initialize_synced_data(&mut entity_data);
         let entity_data = Arc::new(SyncMutex::new(entity_data));
         living_base.equipment().lock().set(
-            crate::inventory::equipment::EquipmentSlot::MainHand,
+            EquipmentSlot::MainHand,
             ItemStack::new(&vanilla_items::CROSSBOW),
         );
 
