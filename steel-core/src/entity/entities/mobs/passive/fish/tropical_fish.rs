@@ -451,6 +451,8 @@ impl Bucketable for TropicalFishEntity {
 
 #[cfg(test)]
 mod tests {
+    use steel_registry::entity_variant::TropicalFishBase;
+
     use super::*;
 
     #[test]
@@ -485,7 +487,7 @@ mod tests {
         assert_eq!(pattern_for_variant(packed), TropicalFishPattern::Clayfish);
         assert_eq!(
             pattern_for_variant(packed).base(),
-            steel_registry::entity_variant::TropicalFishBase::Large
+            TropicalFishBase::Large
         );
         assert_eq!(base_color_for_variant(packed), DyeColor::Blue);
         assert_eq!(pattern_color_for_variant(packed), DyeColor::Yellow);
