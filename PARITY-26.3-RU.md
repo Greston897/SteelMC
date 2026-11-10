@@ -870,3 +870,70 @@ PY
 невыделяемость маркерной стойки; установка стойки (расход стака, позиция), снап
 поворота к 180° при yaw = 10°, отказ при нижней грани и занятом блоке, копирование
 имени предмета.
+
+## 16. Тропическая рыба: сущность `TropicalFish` (10 ноября 2026)
+
+Четвёртый рыболовный моб и первый шаг к мобам из ведра после брони. В ванили
+`TropicalFish extends AbstractSchoolingFish` (та же цепочка `WaterAnimal → AbstractFish`),
+поэтому общие слои — воздух, всплытие на суше, плавание, паника — взяты из уже
+существующего модуля `mobs/passive/fish` без дублирования.
+
+### 16.1 Сущность `TropicalFish` (`entity/entities/mobs/passive/fish/tropical_fish.rs`)
+
+* Габариты и характеристики берутся из `entities.json`: 0,5 × 0,4, eye height 0,26,
+  health 3,0 (`FISH_MAX_HEALTH`), speed 0,7 (`FISH_MOVEMENT_SPEED`), лимит 8 рыб на чанк,
+  опыт `WATER_ANIMAL_EXPERIENCE_MIN..MAX`.
+* Цели ИИ — ванильные для рыбы: `PanicGoal(1.25)` в приоритете 0 и
+  `RandomSwimmingGoal(1.0, 40 тиков)` в приоритете 1; штраф пути по воде 0,0.
+* Синхронизируемый вариант — один `i32` (`DATA_ID_TYPE_VARIANT`), упакованный точно как
+  в ванили: биты 0..16 — `TropicalFishPattern` (базовый размер `base | индекс << 8`,
+  значения уже есть в `steel-registry/src/entity_variant.rs`), бит 16..24 — базовый цвет,
+  24..32 — цвет узора (`DyeColor::id()`, 0..15). Дефолт — `kob` + белый + белый, то есть
+  `0`, как у ванильного `DEFAULT_VARIANT`.
+* Публичный API: `packed_variant()`, `set_packed_variant()`, `pattern()`, `base_color()`,
+  `pattern_color()`, `set_variant(pattern, base, pattern_color)`, плюс свободные
+  `pack_variant`, `pattern_for_variant`, `base_color_for_variant`,
+  `pattern_color_for_variant` и `default_variant()`.
+* NBT: ключ `Variant` (packed int) в `save_additional`/`load_additional` — как ванильный
+  `TropicalFish.addAdditionalSaveData`.
+* Звуки: `entity.tropical_fish.ambient` (интервал `WATER_ANIMAL_AMBIENT_SOUND_INTERVAL`),
+  `.hurt`, `.death`, `.flop` при прыжках на суше.
+
+### 16.2 Ведро: `Bucketable` + `MobBucketItem`
+
+* `TropicalFishEntity` реализует `Bucketable`: `bucket_item()` → `tropical_fish_bucket`,
+  `copy_bucket_data_to_nbt` пишет `FromBucket`, `Health` и ванильный ключ
+  `BucketVariantTag` (packed int).
+* Исправлен молчаливый баг в общей части ведра: раньше `read_bucket_data_from_nbt`
+  не вызывался у лосося, поэтому вариант лосося терялся при «выпуске» из ведра
+  (в ведре лежал `type`, но при выпуске игнорировался). Теперь общий код вынесен в
+  `bucketable::read_base_bucket_data`, а `SalmonEntity` и `TropicalFishEntity`
+  дочитывают свои ключи (`type` / `BucketVariantTag`) поверх него.
+* Диспетчеризация `try_bucket_entity` / `release_from_bucket` / `is_bucketable`
+  расширена на `TropicalFishEntity` (у Steel пока нет трейт-объектной формы `Bucketable`,
+  диспетчер — цепочка `downcast_ref`).
+
+### 16.3 Осознанные отличия от ванили
+
+1. **Спавн-вариант не из ванильного списка.** Ванильная рыба выбирает вариант из
+   фиксированного списка 22 «обычных» упакованных значений (`COMMON_VARIANTS`); этого
+   списка нет в извлечённых данных, поэтому Steel равномерно тянет узор из
+   `TropicalFishPattern::VALUES` и два цвета из `DyeColor::VALUES`. Раскладка битов
+   остаётся ванильной, отличается только распределение.
+2. **Нет стайного вождения.** Механика вожака `AbstractSchoolingFish` не подключена
+   (как у кода и лосося): у тропической рыбы ванильный `getMaxGroupSize()` равен 1,
+   так что рыба не теряет ничего, кроме формальной связи с вожаком.
+3. **Один хитбокс на оба базовых размера.** В Java-издании у тропической рыбы один
+   хитбокс 0,5 × 0,4 (подтверждено и `entities.json`, и таблицей хитбоксов вики),
+   поэтому крупные узоры не увеличивают коллизию.
+
+### 16.4 Обновлённые числа
+
+| Реестр | Было | Стало | Всего | Готовность |
+|---|---|---|---|---|
+| Сущности | 57 | **58** | 161 | **36,0 %** |
+| Предметы (классы поведения) | 1 400 | 1 400 | 1 658 | **84,4 %** |
+
+Новые тесты: дефолтный вариант (`kob`, белый, белый → `0`), round-trip упаковки для
+всех 12 узоров × всех 16 базовых цветов, сохранение базового размера у крупных узоров
+(`clayfish` → `Large`), синий базовый + жёлтый узорный цвет.
