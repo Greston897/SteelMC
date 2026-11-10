@@ -41,6 +41,8 @@ use super::{
 use crate::entity::ai::goal::{PanicGoal, RandomSwimmingGoal};
 use crate::entity::ai::path::PathType;
 use crate::entity::bucketable::Bucketable;
+use crate::entity::damage::DamageSource;
+use crate::entity::living_base::MobEffectInstance;
 use crate::entity::registry::SpawnRule;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData, LivingEntity,
@@ -48,8 +50,6 @@ use crate::entity::{
 };
 use crate::physics::MoveResult;
 use crate::world::World;
-use crate::entity::damage::DamageSource;
-use crate::entity::living_base::MobEffectInstance;
 
 /// Vanilla `PufferfishEntity.PUFF_STATE_NOT_PUFFED`.
 pub const NOT_PUFFED: i32 = 0;
@@ -284,13 +284,11 @@ impl PufferfishEntity {
             if victim.hurt(&world, &source, sting_damage(state)) {
                 self.make_sound(Some(PUFFER_STING_SOUND));
                 if let Some(living) = victim.as_living_entity() {
-                    living.add_mob_effect(
-                        MobEffectInstance::with_duration(
-                            POISON,
-                            PUFFER_POISON_TICKS_PER_STATE * state,
-                            0,
-                        ),
-                    );
+                    living.add_mob_effect(MobEffectInstance::with_duration(
+                        POISON,
+                        PUFFER_POISON_TICKS_PER_STATE * state,
+                        0,
+                    ));
                 }
             }
         }

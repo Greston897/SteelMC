@@ -154,11 +154,11 @@ mod tests {
     use crate::entity::Entity as _;
     use crate::entity::SharedEntity;
     use crate::entity::entities::CushionEntity;
+    use crate::player::Player;
     use crate::test_support::{
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
     };
     use crate::world::World;
-    use crate::player::Player;
 
     /// Builds a world with a stone support at `(0, 64, 0)`.
     fn support_fixture(name: &str) -> (TestWorld, Arc<Player>, BlockPos) {

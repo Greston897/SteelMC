@@ -46,9 +46,7 @@ impl ItemBehavior for HangingEntityItem {
         let (dx, dy, dz) = side.offset();
         let target = context.hit_result.block_pos.offset(dx, dy, dz);
 
-        let stack = context
-            .inv
-            .with_item(|stack: &mut ItemStack| stack.clone());
+        let stack = context.inv.with_item(|stack: &mut ItemStack| stack.clone());
 
         if !Self::can_place_on(context, &stack, side, target) {
             return InteractionResult::Fail;
@@ -117,11 +115,11 @@ mod tests {
     use crate::behavior::init_behaviors;
     use crate::entity::SharedEntity;
     use crate::entity::entities::PaintingEntity;
+    use crate::player::Player;
     use crate::test_support::{
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
     };
     use crate::world::World;
-    use crate::player::Player;
 
     /// Builds a world with a stone wall at `(0, 64, 0)`.
     fn wall_fixture(name: &str) -> (TestWorld, Arc<Player>, BlockPos) {

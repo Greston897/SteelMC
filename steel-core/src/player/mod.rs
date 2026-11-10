@@ -165,6 +165,7 @@ static INTENTIONAL_GAME_DESIGN_STYLE: LazyLock<Interactivity> = LazyLock::new(||
     ..Interactivity::new()
 });
 
+use crate::behavior::items::filled_map;
 use crate::chunk::player_chunk_view::PlayerChunkView;
 use crate::entity::entities::objects::projectiles::FishingHookEntity;
 use crate::inventory::ender_chest::{PlayerEnderChestContainer, SyncPlayerEnderChest};
@@ -175,7 +176,6 @@ use crate::portal::{
     PortalTicketTarget, TeleportPostAction, TeleportPostTransition, TeleportTransition,
 };
 use crate::world::World;
-use crate::behavior::items::filled_map;
 
 /// A struct representing a player.
 pub struct Player {

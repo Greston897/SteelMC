@@ -43,9 +43,9 @@ use crate::entity::{
 use crate::inventory::container::{Container as _, SimpleContainer, load_all_items};
 use crate::inventory::menu::kinds::chest_boat;
 use crate::world::{Explosion, World};
+use std::mem;
 use steel_registry::items::ItemRef;
 use steel_utils::BlockPos;
-use std::mem;
 use steel_utils::locks::Shared;
 
 /// Vanilla `AbstractChestBoatEntity.INVENTORY_SIZE`.
@@ -90,10 +90,7 @@ fn save_items(nbt: &mut NbtCompound, inventory: &Shared<SimpleContainer>) {
     nbt.insert("Items", NbtList::Compound(entries));
 }
 
-fn load_items(
-    nbt: BorrowedNbtCompoundView<'_, '_>,
-    inventory: &Shared<SimpleContainer>,
-) {
+fn load_items(nbt: BorrowedNbtCompoundView<'_, '_>, inventory: &Shared<SimpleContainer>) {
     let mut container = inventory.lock();
     load_all_items(nbt, container.items_mut());
 }
@@ -321,10 +318,7 @@ mod tests {
             DVec3::ZERO,
             Weak::<World>::new(),
         );
-        assert_eq!(
-            boat.boat_drop_item().key,
-            OAK_CHEST_BOAT.key
-        );
+        assert_eq!(boat.boat_drop_item().key, OAK_CHEST_BOAT.key);
         assert!(!boat.boat_state().lock().location.is_water());
     }
 }

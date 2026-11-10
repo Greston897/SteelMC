@@ -991,10 +991,8 @@ impl MapStates {
     /// Restores every persisted map.
     #[must_use]
     pub fn from_persistent(persistent: PersistentMapStates) -> Self {
-        let mut states = FxHashMap::with_capacity_and_hasher(
-            persistent.maps.len(),
-            rustc_hash::FxBuildHasher,
-        );
+        let mut states =
+            FxHashMap::with_capacity_and_hasher(persistent.maps.len(), rustc_hash::FxBuildHasher);
         for saved in persistent.maps {
             let id = saved.id;
             states.insert(id, MapState::from_persistent(saved));

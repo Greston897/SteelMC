@@ -25,6 +25,7 @@ use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::behavior::MOB_EFFECT_BEHAVIORS;
+use crate::entity::LivingEntity;
 use crate::entity::damage::DamageSource;
 use crate::entity::potion_contents::to_runtime_instance_icon_from_visibility;
 use crate::entity::{
@@ -32,7 +33,6 @@ use crate::entity::{
     SharedEntity,
 };
 use crate::world::{ClipHitResult, World};
-use crate::entity::LivingEntity;
 use steel_utils::types::GameType;
 
 /// Vanilla `AbstractArrow.MAX_LIFE_TICKS`: a stuck arrow despawns after a minute.
@@ -445,9 +445,7 @@ pub trait AbstractArrow: Projectile + Sized {
 
         match self.pickup() {
             ArrowPickup::Disallowed => return,
-            ArrowPickup::CreativeOnly
-                if player.game_mode() != GameType::Creative =>
-            {
+            ArrowPickup::CreativeOnly if player.game_mode() != GameType::Creative => {
                 return;
             }
             ArrowPickup::Allowed | ArrowPickup::CreativeOnly => {}
@@ -705,8 +703,8 @@ mod tests {
 
     use super::{AbstractArrow, ArrowEntity, ArrowPickup, MAX_LIFE_TICKS, SpectralArrowEntity};
     use crate::entity::Entity as _;
-    use crate::world::World;
     use crate::world::ClipHitResult;
+    use crate::world::World;
     use std::sync::Arc;
 
     fn arrow(id: i32) -> ArrowEntity {

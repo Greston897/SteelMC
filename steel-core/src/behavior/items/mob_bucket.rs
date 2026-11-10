@@ -20,11 +20,11 @@ use steel_registry::vanilla_items;
 
 use crate::behavior::item_utils::create_filled_result;
 use crate::behavior::{InteractionResult, ItemBehavior, UseItemContext};
+use crate::entity::bucketable;
 use crate::entity::{ENTITIES, Entity, next_entity_id};
 use crate::fluid::is_water_fluid;
 use crate::world::RaytraceAction;
 use crate::world::game_event::GameEventContext;
-use crate::entity::bucketable;
 
 /// Vanilla `EntityBucketItem`.
 #[item_behavior(class = "MobBucketItem")]

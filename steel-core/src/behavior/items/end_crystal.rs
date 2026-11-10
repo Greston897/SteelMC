@@ -15,8 +15,8 @@ use crate::behavior::context::{InteractionResult, UseOnContext};
 use crate::behavior::item::ItemBehavior;
 use crate::entity::entities::EndCrystalEntity;
 use crate::entity::{Entity, SharedEntity, next_entity_id};
-use crate::world::game_event::GameEventContext;
 use crate::world::World;
+use crate::world::game_event::GameEventContext;
 
 /// Vanilla `EndCrystalItem`.
 #[item_behavior]
@@ -113,17 +113,14 @@ mod tests {
     use crate::behavior::init_behaviors;
     use crate::entity::SharedEntity;
     use crate::entity::entities::EndCrystalEntity;
+    use crate::player::Player;
     use crate::test_support::{
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
     };
     use crate::world::World;
-    use crate::player::Player;
     use steel_registry::blocks::BlockRef;
 
-    fn base_fixture(
-        name: &str,
-        base: BlockRef,
-    ) -> (TestWorld, Arc<Player>, BlockPos) {
+    fn base_fixture(name: &str, base: BlockRef) -> (TestWorld, Arc<Player>, BlockPos) {
         init_vanilla_registry();
         init_behaviors();
 

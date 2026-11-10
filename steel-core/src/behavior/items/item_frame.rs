@@ -117,22 +117,16 @@ mod tests {
     use crate::behavior::context::{InteractionResult, UseOnContext};
     use crate::behavior::init_behaviors;
 
-    use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
-    use crate::world::World;
     use crate::player::Player;
     use crate::test_support::TestWorld;
+    use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
+    use crate::world::World;
     use steel_registry::vanilla_entities::GLOW_ITEM_FRAME;
 
     const WALL_X: i32 = 0;
 
     /// Builds a world with a stone wall at `WALL_X` and returns it with the player.
-    fn wall_fixture(
-        name: &str,
-    ) -> (
-        TestWorld,
-        Arc<Player>,
-        BlockPos,
-    ) {
+    fn wall_fixture(name: &str) -> (TestWorld, Arc<Player>, BlockPos) {
         init_vanilla_registry();
         init_behaviors();
 
@@ -248,10 +242,7 @@ mod tests {
             .into_iter()
             .find(|entity| entity.as_item_frame().is_some())
             .expect("frame spawned");
-        assert_eq!(
-            entity.entity_type(),
-            &GLOW_ITEM_FRAME
-        );
+        assert_eq!(entity.entity_type(), &GLOW_ITEM_FRAME);
         assert_eq!(held_stack(&player).count(), 0);
     }
 

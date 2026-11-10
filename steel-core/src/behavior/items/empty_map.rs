@@ -82,10 +82,10 @@ mod tests {
     use steel_utils::types::InteractionHand;
 
     use super::EmptyMapItem;
+    use crate::behavior::InteractionResult;
     use crate::behavior::ItemBehavior as _;
     use crate::behavior::init_behaviors;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
-    use crate::behavior::InteractionResult;
     use steel_registry::item_stack::ItemStack;
 
     #[test]
@@ -100,9 +100,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(
-                &vanilla_items::MAP,
-            ));
+            .set_selected_item(ItemStack::new(&vanilla_items::MAP));
 
         let mut context = crate::behavior::UseItemContext::new(
             &player,

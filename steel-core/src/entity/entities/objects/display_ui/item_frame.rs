@@ -30,11 +30,11 @@ use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityBaseState, EntityMoveError, EntitySyncedData,
     ItemFrame, SharedEntity,
 };
+use crate::physics::collision;
 use crate::physics::{MoveResult, MoverType};
 use crate::player::Player;
 use crate::world::game_event::GameEventContext;
 use crate::world::{Explosion, World};
-use crate::physics::collision;
 use steel_registry::items::ItemRef;
 
 /// Item frame state needed by end-city structure markers.
@@ -618,12 +618,12 @@ mod tests {
     use steel_utils::Downcast as _;
 
     use crate::behavior::InteractionResult;
+    use crate::entity;
     use crate::entity::block_attached_entity::CHECK_SURVIVAL_FREQUENCY_TICKS;
     use crate::entity::entities::ItemEntity;
     use crate::test_support::{
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
     };
-    use crate::entity;
 
     fn frame_area() -> WorldAabb {
         WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 68.0, 2.0)

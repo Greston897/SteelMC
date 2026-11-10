@@ -37,9 +37,13 @@ use super::{
     WATER_ANIMAL_AMBIENT_SOUND_INTERVAL, WATER_ANIMAL_EXPERIENCE_MAX, WATER_ANIMAL_EXPERIENCE_MIN,
     check_water_animal_spawn_rules, flop, tick_breathing, travel_in_water,
 };
+use crate::entity::EntitySpawnReason;
+use crate::entity::SpawnGroupData;
 use crate::entity::ai::goal::{PanicGoal, RandomSwimmingGoal};
 use crate::entity::ai::path::PathType;
+use crate::entity::bucketable;
 use crate::entity::bucketable::Bucketable;
+use crate::entity::damage::DamageSource;
 use crate::entity::registry::SpawnRule;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData, LivingEntity,
@@ -47,10 +51,6 @@ use crate::entity::{
 };
 use crate::physics::MoveResult;
 use crate::world::World;
-use crate::entity::EntitySpawnReason;
-use crate::entity::SpawnGroupData;
-use crate::entity::bucketable;
-use crate::entity::damage::DamageSource;
 
 const SALMON_FLOP_SOUND: SoundEventRef = &sound_events::ENTITY_SALMON_FLOP;
 

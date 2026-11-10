@@ -301,8 +301,8 @@ mod tests {
     use crate::inventory::click::{Click, MouseButton};
     use crate::inventory::container::Container as _;
     use crate::inventory::menu::kinds::inventory_menu;
-    use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
     use crate::player::Player;
+    use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
 
     /// Menu slot index of the first hotbar slot in the player inventory menu.
     const HOTBAR_SLOT: usize = 36;

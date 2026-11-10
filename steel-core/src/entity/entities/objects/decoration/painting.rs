@@ -391,11 +391,7 @@ impl Entity for PaintingEntity {
         self.push_impulse_block_attached_entity(impulse);
     }
 
-    fn move_entity(
-        self: Arc<Self>,
-        mover_type: MoverType,
-        delta: DVec3,
-    ) -> Option<MoveResult> {
+    fn move_entity(self: Arc<Self>, mover_type: MoverType, delta: DVec3) -> Option<MoveResult> {
         self.move_entity_block_attached_entity(mover_type, delta)
     }
 

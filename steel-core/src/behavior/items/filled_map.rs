@@ -233,11 +233,9 @@ fn sample_pixel(
     has_ceiling: bool,
 ) -> Option<PixelSample> {
     let chunk_pos = ChunkPos::new(world_x >> 4, world_z >> 4);
-    world
-        .chunk_map
-        .with_full_chunk(chunk_pos, |chunk| {
-            sample_pixel_in_chunk(chunk, world_x, world_z, block_scale, has_ceiling)
-        })
+    world.chunk_map.with_full_chunk(chunk_pos, |chunk| {
+        sample_pixel_in_chunk(chunk, world_x, world_z, block_scale, has_ceiling)
+    })
 }
 
 fn sample_pixel_in_chunk(

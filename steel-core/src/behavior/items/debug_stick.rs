@@ -264,10 +264,7 @@ fn cycle<'a, T: PartialEq>(
 
 /// Reads the debug stick's stored selection for `block`, if any.
 #[cfg(test)]
-fn selected_property(
-    stack: &ItemStack,
-    block: BlockRef,
-) -> Option<&'static str> {
+fn selected_property(stack: &ItemStack, block: BlockRef) -> Option<&'static str> {
     stack
         .get(DEBUG_STICK_STATE)
         .and_then(|state| state.get(block))
@@ -296,21 +293,14 @@ mod tests {
         CanMineContext, InteractionResult, InventoryAccess, UseOnContext,
     };
     use crate::behavior::init_behaviors;
-    use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
     use crate::player::Player;
     use crate::test_support::TestWorld;
+    use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
     use crate::world::World;
 
     /// Places a lever (three properties: `face`, `facing`, `powered`) and returns
     /// the world plus the placed state.
-    fn lever_fixture(
-        name: &str,
-    ) -> (
-        TestWorld,
-        Arc<Player>,
-        BlockPos,
-        steel_utils::BlockStateId,
-    ) {
+    fn lever_fixture(name: &str) -> (TestWorld, Arc<Player>, BlockPos, steel_utils::BlockStateId) {
         init_vanilla_registry();
         init_behaviors();
 

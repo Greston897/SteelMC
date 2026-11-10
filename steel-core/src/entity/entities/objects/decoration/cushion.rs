@@ -270,17 +270,17 @@ mod tests {
 
     use super::{CushionEntity, cushion_item_for_color};
     use crate::behavior::InteractionResult;
+    use crate::entity;
     use crate::entity::damage::DamageSource;
     use crate::entity::entities::ItemEntity;
     use crate::entity::{Entity as _, SharedEntity};
     use crate::test_support::{
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
     };
-    use steel_registry::vanilla_damage_types;
-    use steel_registry::vanilla_entities;
-    use crate::entity;
     use crate::world::World;
     use std::sync::Weak;
+    use steel_registry::vanilla_damage_types;
+    use steel_registry::vanilla_entities;
 
     fn cushion_area() -> WorldAabb {
         WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 68.0, 2.0)
@@ -336,10 +336,7 @@ mod tests {
         Arc::clone(&cushion).tick();
 
         assert!(!cushion.is_removed());
-        assert_eq!(
-            dropped_items(&fixture.world),
-            [] as [ItemStack; 0]
-        );
+        assert_eq!(dropped_items(&fixture.world), [] as [ItemStack; 0]);
     }
 
     #[test]

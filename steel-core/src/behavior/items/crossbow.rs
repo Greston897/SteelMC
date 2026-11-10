@@ -22,11 +22,11 @@ use steel_utils::types::GameType;
 
 use crate::behavior::items::{ArrowItem, SpectralArrowItem};
 use crate::behavior::{InteractionResult, ItemBehavior, ItemUseAnimation, UseItemContext};
+use crate::entity::LivingEntity;
 use crate::entity::entities::{AbstractArrow, ArrowPickup, FireworkRocketEntity};
 use crate::entity::{Entity, LivingEntityRef, Projectile as _, SharedEntity, next_entity_id};
 use crate::player::Player;
 use crate::world::World;
-use crate::entity::LivingEntity;
 
 /// Vanilla `CrossbowItem.DEFAULT_CHARGE_DURATION`.
 pub const DEFAULT_CHARGE_DURATION: i32 = 25;
