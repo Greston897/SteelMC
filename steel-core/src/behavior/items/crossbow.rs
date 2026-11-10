@@ -160,7 +160,7 @@ impl CrossbowItem {
     }
 
     /// Fires every loaded projectile.
-    fn shoot(&self, context: &mut UseItemContext) -> InteractionResult {
+    fn shoot(context: &mut UseItemContext) -> InteractionResult {
         let world = context.world;
         let player = context.player;
         let creative = player.game_mode() == GameType::Creative;
@@ -286,7 +286,7 @@ impl CrossbowItem {
 impl ItemBehavior for CrossbowItem {
     fn use_item(&self, context: &mut UseItemContext) -> InteractionResult {
         if context.inv.with_item(|stack| Self::is_charged(stack)) {
-            return self.shoot(context);
+            return Self::shoot(context);
         }
         context.player.start_using_item(context.hand);
         InteractionResult::Consume
@@ -443,7 +443,7 @@ mod tests {
         let rocket = ItemStack::new(&vanilla_items::FIREWORK_ROCKET);
         assert_eq!(CrossbowItem::shot_velocity(&arrow), ARROW_SHOT_VELOCITY);
         assert_eq!(CrossbowItem::shot_velocity(&rocket), FIREWORK_SHOT_VELOCITY);
-        assert!(FIREWORK_SHOT_VELOCITY < ARROW_SHOT_VELOCITY);
+        const _: () = assert!(FIREWORK_SHOT_VELOCITY < ARROW_SHOT_VELOCITY);
     }
 
     #[test]

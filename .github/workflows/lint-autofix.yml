@@ -108,7 +108,9 @@ jobs:
           import subprocess
 
           totals = collections.Counter()
-          rows = []
+          # all-targets compiles the same file several times, so collapse the
+          # diagnostics to one row per (file, line, column, lint).
+          rows = {}
           with open("/tmp/clippy.json", "r", errors="replace") as handle:
               for line in handle:
                   line = line.strip()
@@ -121,30 +123,54 @@ jobs:
                   code = (message.get("code") or {}).get("code")
                   if not code:
                       continue
-                  spans = message.get("spans") or [{}]
-                  span = spans[0]
+                  span = (message.get("spans") or [{}])[0]
                   location = "{}:{}:{}".format(
                       span.get("file_name", "?"),
                       span.get("line_start", 0),
                       span.get("column_start", 0),
                   )
+                  rows[(location, code)] = "{} {} {}".format(
+                      location, code, message.get("message", "").splitlines()[0]
+                  )
                   totals[code] += 1
-                  rows.append("{} {} {}".format(location, code, message.get("message", "").splitlines()[0]))
+
+          ordered = [rows[key] for key in sorted(rows)]
 
           with open("/tmp/fmt.log", "r", errors="replace") as handle:
               fmt_diffs = sum(1 for line in handle if line.startswith("Diff in "))
 
-          summary = ["### remaining clippy", f"- total: {len(rows)}", f"- rustfmt diffs: {fmt_diffs}", ""]
-          summary += ["```"] + [f"{code} x{count}" for code, count in totals.most_common()] + ["```"]
+          summary = [
+              "### remaining clippy",
+              f"- distinct findings: {len(ordered)}",
+              f"- raw diagnostics: {sum(totals.values())}",
+              f"- rustfmt diffs: {fmt_diffs}",
+              "",
+              "```",
+          ]
+          summary += [f"{code} x{count}" for code, count in totals.most_common()]
+          summary += ["```"]
 
-          chunks = [rows[index:index + 600] for index in range(0, len(rows), 600)] or [[]]
+          chunks = []
+          current = []
+          budget = 0
+          for row in ordered:
+              if budget + len(row) + 1 > 45000 and current:
+                  chunks.append(current)
+                  current = []
+                  budget = 0
+              current.append(row)
+              budget += len(row) + 1
+          if current or not chunks:
+              chunks.append(current)
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          sha = os.environ["GITHUB_SHA"]
           for number, chunk in enumerate(chunks):
               body = summary if number == 0 else [f"### remaining clippy (part {number + 1}/{len(chunks)})"]
               body = list(body) + ["", "```"] + chunk + ["```"]
-              text = "\n".join(body)[:60000]
               subprocess.run(
-                  ["gh", "api", "repos/{}/commits/{}/comments".format(os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_SHA"]), "--input", "-"],
-                  input=json.dumps({"body": text}),
+                  ["gh", "api", f"repos/{repo}/commits/{sha}/comments", "--input", "-"],
+                  input=json.dumps({"body": "\n".join(body)}),
                   text=True,
                   check=False,
               )

@@ -210,11 +210,10 @@ impl PaintingEntity {
 
     const fn rotation_for_direction(direction: Direction) -> (f32, f32) {
         let yaw = match direction {
-            Direction::South => 0.0,
+            Direction::South | Direction::Up | Direction::Down => 0.0,
             Direction::West => 90.0,
             Direction::North => 180.0,
             Direction::East => 270.0,
-            Direction::Up | Direction::Down => 0.0,
         };
         (yaw, 0.0)
     }
@@ -246,7 +245,7 @@ impl PaintingEntity {
                 block_pos,
                 facing,
                 RegistryReference::new(*variant),
-                world.clone(),
+                Arc::clone(world),
             );
             painting.can_stay_attached()
         });
@@ -314,8 +313,11 @@ impl PaintingEntity {
     }
 
     /// The item this painting drops.
+    ///
+    /// The drop is fully determined by the entity type, so this is an
+    /// associated function rather than a method.
     #[must_use]
-    pub fn as_item_stack(&self) -> ItemStack {
+    pub fn as_item_stack() -> ItemStack {
         ItemStack::new(&vanilla_items::PAINTING)
     }
 }
@@ -448,7 +450,7 @@ impl BlockAttachedEntity for PaintingEntity {
         };
 
         self.play_sound(&sound_events::ENTITY_PAINTING_BREAK, 1.0, 1.0);
-        world.drop_item_stack(self.block_attached_entity_base.pos(), self.as_item_stack());
+        world.drop_item_stack(self.block_attached_entity_base.pos(), Self::as_item_stack());
     }
 
     fn recalculate_bounding_box(&self) -> Result<(), EntityMoveError> {
@@ -523,7 +525,7 @@ mod tests {
             variant,
             Arc::downgrade(world),
         ));
-        let shared: SharedEntity = painting.clone();
+        let shared: SharedEntity = Arc::clone(&painting);
         world
             .try_add_entity(shared)
             .expect("painting should enter a loaded chunk");

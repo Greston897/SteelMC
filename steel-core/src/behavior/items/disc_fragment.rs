@@ -53,6 +53,11 @@ mod tests {
             DiscFragmentItem::description_translation_key(&stack),
             "item.minecraft.disc_fragment_5.desc"
         );
-        assert!(DiscFragmentItem::description_translation_key(&stack).ends_with(".desc"));
+        assert_eq!(
+            DiscFragmentItem::description_translation_key(&stack)
+                .split('.')
+                .next_back(),
+            Some("desc")
+        );
     }
 }

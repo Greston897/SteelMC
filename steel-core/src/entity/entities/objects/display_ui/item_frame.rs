@@ -658,7 +658,7 @@ mod tests {
             direction,
             Arc::downgrade(world),
         ));
-        let shared: SharedEntity = frame.clone();
+        let shared: SharedEntity = Arc::clone(&frame);
         world
             .try_add_entity(shared)
             .expect("frame should enter a loaded chunk");
@@ -711,7 +711,7 @@ mod tests {
 
         // Vanilla only re-checks attachment every `CHECK_SURVIVAL_FREQUENCY_TICKS`.
         for _ in 0..=CHECK_SURVIVAL_FREQUENCY_TICKS {
-            frame.clone().tick();
+            Arc::clone(&frame).tick();
         }
 
         assert!(frame.is_removed());

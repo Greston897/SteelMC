@@ -195,7 +195,7 @@ mod tests {
         assert_eq!(by_id(61).rgb(), 8_365_974); // LICHEN_GREEN
         assert_eq!(MAP_COLORS.len(), 64);
         for (index, entry) in MAP_COLORS.iter().enumerate() {
-            assert_eq!(u8::try_from(index).unwrap(), entry.id());
+            assert_eq!(u8::try_from(index).ok(), Some(entry.id()));
         }
     }
 

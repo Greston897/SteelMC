@@ -237,7 +237,6 @@ fn sample_pixel(
         .with_full_chunk(chunk_pos, |chunk| {
             sample_pixel_in_chunk(chunk, world_x, world_z, block_scale, has_ceiling)
         })
-        .flatten()
 }
 
 fn sample_pixel_in_chunk(
@@ -246,7 +245,7 @@ fn sample_pixel_in_chunk(
     world_z: i32,
     block_scale: i32,
     has_ceiling: bool,
-) -> Option<PixelSample> {
+) -> PixelSample {
     // Palette counters instead of vanilla's `LinkedHashMultiset` allocations,
     // which keeps the hot path allocation-free.
     let mut palette = PaletteCounter::default();
@@ -323,11 +322,11 @@ fn sample_pixel_in_chunk(
         water_depth_sum / divisor
     };
 
-    Some(PixelSample {
+    PixelSample {
         dominant: palette.dominant(),
         water_depth,
         average_height,
-    })
+    }
 }
 
 /// Sends the pending map delta packets for every map the player carries.

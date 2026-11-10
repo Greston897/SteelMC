@@ -18,7 +18,7 @@
 //!   nether marker rotation; Steel compares the loaded world path because world
 //!   keys are domain-scoped (`steel:the_nether`).
 
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 
 use steel_protocol::packets::game::{CMapItemData, MapDecorationEntry, MapPatch, OptionalMapPatch};
 use steel_registry::data_components::components::MapDecorations;
@@ -179,7 +179,7 @@ pub struct MapState {
     /// Decorations in insertion order, matching vanilla's `LinkedHashMap`.
     decorations: Vec<(String, MapDecoration)>,
     decoration_count: usize,
-    trackers: HashMap<Uuid, PlayerUpdateTracker>,
+    trackers: FxHashMap<Uuid, PlayerUpdateTracker>,
     /// Insertion order of tracked players, so decoration sync is deterministic.
     tracker_order: Vec<Uuid>,
     dirty: bool,
@@ -265,7 +265,7 @@ impl MapState {
             locked,
             decorations: Vec::new(),
             decoration_count: 0,
-            trackers: HashMap::new(),
+            trackers: FxHashMap::default(),
             tracker_order: Vec::new(),
             dirty: false,
         }
@@ -891,7 +891,7 @@ fn player_holds_map(player: &Player, map_id: i32) -> bool {
 #[derive(Debug, Default)]
 pub struct MapStates {
     next_id: i32,
-    states: HashMap<i32, MapState>,
+    states: FxHashMap<i32, MapState>,
     dirty: bool,
 }
 
@@ -990,7 +990,10 @@ impl MapStates {
     /// Restores every persisted map.
     #[must_use]
     pub fn from_persistent(persistent: PersistentMapStates) -> Self {
-        let mut states = HashMap::with_capacity(persistent.maps.len());
+        let mut states = FxHashMap::with_capacity_and_hasher(
+            persistent.maps.len(),
+            rustc_hash::FxBuildHasher,
+        );
         for saved in persistent.maps {
             let id = saved.id;
             states.insert(id, MapState::from_persistent(saved));

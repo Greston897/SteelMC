@@ -390,6 +390,10 @@ impl BlockBreakingManager {
         clippy::unused_self,
         reason = "method belongs logically to BlockBreakingManager and will use self when additional state is added"
     )]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "linear port of vanilla ServerPlayerInteractionManager#tryBreakBlock"
+    )]
     fn destroy_block(&self, player: &Player, world: &Arc<World>, pos: BlockPos) -> bool {
         let state = world.get_block_state(pos);
 
