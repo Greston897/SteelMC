@@ -12,7 +12,7 @@ use steel_utils::types::Difficulty;
 
 use crate::behavior::items::ArrowItem;
 use crate::entity::entities::{AbstractArrow, ArrowEntity, ArrowPickup};
-use crate::entity::{Entity, Projectile as _, SharedEntity};
+use crate::entity::{Projectile as _, SharedEntity};
 
 /// Vanilla `AbstractSkeleton` arrow launch speed (`1.6`).
 pub const SKELETON_ARROW_SPEED: f32 = 1.6;

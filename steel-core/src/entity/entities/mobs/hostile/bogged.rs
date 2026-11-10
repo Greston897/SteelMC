@@ -68,7 +68,7 @@ const WOLF_FLEE_WALK_SPEED: f64 = 1.0;
 /// Vanilla `AvoidEntityGoal` sprint speed modifier.
 const WOLF_FLEE_SPRINT_SPEED: f64 = 1.2;
 /// Vanilla `LookAtPlayerGoal` search distance.
-const LOOK_AT_PLAYER_DISTANCE: f32 = 8.0;
+const LOOK_AT_PLAYER_DISTANCE: f64 = 8.0;
 
 /// Vanilla `net.minecraft.world.entity.monster.skeleton.Bogged`.
 #[entity_behavior(class = "Bogged")]
@@ -181,7 +181,7 @@ impl BoggedEntity {
     pub fn shear(&self, _world: &World, _tool: &ItemStack) {
         self.play_sound(&sound_events::ENTITY_BOGGED_SHEAR, 1.0, 1.0);
 
-        for item in [vanilla_items::RED_MUSHROOM, vanilla_items::BROWN_MUSHROOM] {
+        for item in [&vanilla_items::RED_MUSHROOM, &vanilla_items::BROWN_MUSHROOM] {
             let Some(item_entity) = self.spawn_at_location(ItemStack::new(item), 1.0) else {
                 continue;
             };

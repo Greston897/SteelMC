@@ -10,7 +10,7 @@
 use glam::DVec3;
 
 use super::selector::{Goal, GoalControls};
-use crate::entity::{Mob, PathfinderMob, SharedEntity};
+use crate::entity::{PathfinderMob, SharedEntity};
 
 const LOOK_YAW_SPEED: f32 = 30.0;
 const LOOK_PITCH_SPEED: f32 = 30.0;

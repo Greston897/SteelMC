@@ -61,7 +61,7 @@ const WOLF_FLEE_WALK_SPEED: f64 = 1.0;
 /// Vanilla `AvoidEntityGoal` sprint speed modifier.
 const WOLF_FLEE_SPRINT_SPEED: f64 = 1.2;
 /// Vanilla `LookAtPlayerGoal` search distance.
-const LOOK_AT_PLAYER_DISTANCE: f32 = 8.0;
+const LOOK_AT_PLAYER_DISTANCE: f64 = 8.0;
 
 /// Vanilla `net.minecraft.world.entity.monster.skeleton.Stray`.
 #[entity_behavior(class = "Stray")]
