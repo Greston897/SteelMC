@@ -61,7 +61,7 @@ unsafe impl DowncastType for ZombifiedPiglinEntity {
 }
 
 impl ZombifiedPiglinEntity {
-    /// Creates a new zombified_piglin entity.
+    /// Creates a new entity of this vanilla type.
     #[must_use]
     pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {
         Self::new_with_base(
@@ -70,7 +70,7 @@ impl ZombifiedPiglinEntity {
         )
     }
 
-    /// Loads a saved zombified_piglin entity.
+    /// Loads a saved entity of this vanilla type.
     #[must_use]
     pub fn from_saved(entity_type: EntityTypeRef, load: EntityBaseLoad) -> Self {
         Self::new_with_base(

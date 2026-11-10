@@ -60,7 +60,7 @@ unsafe impl DowncastType for CaveSpiderEntity {
 }
 
 impl CaveSpiderEntity {
-    /// Creates a new cave_spider entity.
+    /// Creates a new entity of this vanilla type.
     #[must_use]
     pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {
         Self::new_with_base(
@@ -69,7 +69,7 @@ impl CaveSpiderEntity {
         )
     }
 
-    /// Loads a saved cave_spider entity.
+    /// Loads a saved entity of this vanilla type.
     #[must_use]
     pub fn from_saved(entity_type: EntityTypeRef, load: EntityBaseLoad) -> Self {
         Self::new_with_base(

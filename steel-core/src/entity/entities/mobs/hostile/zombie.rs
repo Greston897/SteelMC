@@ -58,7 +58,7 @@ unsafe impl DowncastType for ZombieEntity {
 }
 
 impl ZombieEntity {
-    /// Creates a new zombie entity.
+    /// Creates a new entity of this vanilla type.
     #[must_use]
     pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {
         Self::new_with_base(
@@ -67,7 +67,7 @@ impl ZombieEntity {
         )
     }
 
-    /// Loads a saved zombie entity.
+    /// Loads a saved entity of this vanilla type.
     #[must_use]
     pub fn from_saved(entity_type: EntityTypeRef, load: EntityBaseLoad) -> Self {
         Self::new_with_base(
