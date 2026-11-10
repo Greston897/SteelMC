@@ -18,12 +18,12 @@ pub mod hoglin;
 pub mod husk;
 /// Hostile parched entity module.
 pub mod parched;
-/// Hostile pillager entity module.
-pub mod pillager;
 /// Hostile piglin entity module.
 pub mod piglin;
 /// Hostile piglin brute entity module.
 pub mod piglin_brute;
+/// Hostile pillager entity module.
+pub mod pillager;
 /// Hostile silverfish entity module.
 pub mod silverfish;
 /// Hostile skeleton entity module.
@@ -51,9 +51,9 @@ pub use endermite::EndermiteEntity;
 pub use hoglin::HoglinEntity;
 pub use husk::HuskEntity;
 pub use parched::ParchedEntity;
-pub use pillager::PillagerEntity;
 pub use piglin::PiglinEntity;
 pub use piglin_brute::PiglinBruteEntity;
+pub use pillager::PillagerEntity;
 pub use silverfish::SilverfishEntity;
 pub use skeleton::SkeletonEntity;
 pub use spider::SpiderEntity;

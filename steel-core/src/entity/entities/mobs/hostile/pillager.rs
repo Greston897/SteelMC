@@ -28,8 +28,8 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, Goal, GoalControls, HurtByTargetGoal, LookAtPlayerGoal,
-    NearestAttackableTargetGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    FloatGoal, Goal, GoalControls, HurtByTargetGoal, LookAtPlayerGoal, NearestAttackableTargetGoal,
+    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::ranged_attack;
@@ -138,7 +138,6 @@ impl PillagerEntity {
     }
 }
 
-
 struct PillagerCrossbowAttackGoal {
     entity_data: Arc<SyncMutex<PillagerEntityData>>,
     charge_ticks: i32,
@@ -146,8 +145,12 @@ struct PillagerCrossbowAttackGoal {
 }
 
 impl PillagerCrossbowAttackGoal {
-    fn new(entity_data: Arc<SyncMutex<PillagerEntityData>>) -> Self {
-        Self { entity_data, charge_ticks: 0, reload_ticks: 0 }
+    const fn new(entity_data: Arc<SyncMutex<PillagerEntityData>>) -> Self {
+        Self {
+            entity_data,
+            charge_ticks: 0,
+            reload_ticks: 0,
+        }
     }
 
     fn set_charging(&self, charging: bool) {
@@ -186,10 +189,14 @@ impl Goal for PillagerCrossbowAttackGoal {
         self.set_charging(false);
     }
 
-    fn requires_update_every_tick(&self) -> bool { true }
+    fn requires_update_every_tick(&self) -> bool {
+        true
+    }
 
     fn tick(&mut self, mob: &dyn PathfinderMob, entity: &SharedEntity) {
-        let Some(target) = mob.target() else { return; };
+        let Some(target) = mob.target() else {
+            return;
+        };
         let target_position = target.position();
         let distance_sqr = mob.distance_to_sqr(target_position);
         let can_see = mob.has_line_of_sight_cached(target.as_ref());
@@ -380,7 +387,9 @@ impl PathfinderMob for PillagerEntity {
         target: &SharedEntity,
         _power: f32,
     ) {
-        if ranged_attack::shoot_arrow(self_entity, target, ranged_attack::MOB_ARROW_DAMAGE).is_some() {
+        if ranged_attack::shoot_arrow(self_entity, target, ranged_attack::MOB_ARROW_DAMAGE)
+            .is_some()
+        {
             self.play_sound(&sound_events::ITEM_CROSSBOW_SHOOT, 1.0, 1.0);
         }
     }
@@ -407,14 +416,17 @@ mod tests {
         let pillager =
             PillagerEntity::new(&vanilla_entities::PILLAGER, 1, DVec3::ZERO, Weak::new());
         assert!((pillager.get_max_health() - 24.0).abs() < 1e-4);
-        assert!(pillager.equipment_in_slot(EquipmentSlot::MainHand).is(&vanilla_items::CROSSBOW));
+        assert!(
+            pillager
+                .equipment_in_slot(EquipmentSlot::MainHand)
+                .is(&vanilla_items::CROSSBOW)
+        );
         assert!(!*pillager.entity_data.lock().is_charging_crossbow.get());
 
         let mut nbt = NbtCompound::new();
         pillager.save_additional(&mut nbt);
 
-        let loaded =
-            PillagerEntity::new(&vanilla_entities::PILLAGER, 2, DVec3::ZERO, Weak::new());
+        let loaded = PillagerEntity::new(&vanilla_entities::PILLAGER, 2, DVec3::ZERO, Weak::new());
         let mut bytes = Vec::new();
         nbt.write(&mut bytes);
         let borrowed = read_compound(&mut Cursor::new(&bytes))
