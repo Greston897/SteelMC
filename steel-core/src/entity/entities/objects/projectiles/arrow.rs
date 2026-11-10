@@ -29,8 +29,8 @@ use crate::entity::LivingEntity;
 use crate::entity::damage::DamageSource;
 use crate::entity::potion_contents::to_runtime_instance_icon_from_visibility;
 use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, Player, Projectile, ProjectileBase, RemovalReason,
-    SharedEntity,
+    Entity, EntityBase, EntityBaseLoad, MobEffectInstance, Player, Projectile, ProjectileBase,
+    RemovalReason, SharedEntity,
 };
 use crate::world::{ClipHitResult, World};
 use steel_utils::types::GameType;
@@ -99,6 +99,7 @@ pub struct ArrowState {
     weapon: Option<ItemStack>,
     shot_from_crossbow: bool,
     pierced_entities: Vec<i32>,
+    effects: Vec<MobEffectInstance>,
 }
 
 impl ArrowState {
@@ -116,6 +117,7 @@ impl ArrowState {
             weapon: None,
             shot_from_crossbow: false,
             pierced_entities: Vec::new(),
+            effects: Vec::new(),
         }
     }
 }
@@ -196,6 +198,21 @@ pub trait AbstractArrow: Projectile + Sized {
     /// Sets the pierce level (vanilla `setPierceLevel`).
     fn set_pierce_level(&self, level: u8) {
         self.arrow_handle().state.lock().pierce_level = level;
+    }
+
+    /// Vanilla `Arrow#addEffect`: queues a mob effect applied on entity hit.
+    fn add_effect(&self, effect: MobEffectInstance) {
+        self.arrow_handle().state.lock().effects.push(effect);
+    }
+
+    /// Snapshot of the queued on-hit mob effects (vanilla `Arrow#getEffects`).
+    fn effects(&self) -> Vec<MobEffectInstance> {
+        self.arrow_handle().state.lock().effects.clone()
+    }
+
+    /// Whether this arrow carries queued on-hit effects.
+    fn has_effects(&self) -> bool {
+        !self.arrow_handle().state.lock().effects.is_empty()
     }
 
     /// Whether the arrow is stuck in a block.
@@ -376,11 +393,34 @@ pub trait AbstractArrow: Projectile + Sized {
         if !self.arrow_handle().spectral() {
             self.apply_tipped_arrow_effects(world.as_ref(), entity);
         }
+        // Vanilla `Arrow#doPostHurtEffects` also drains the queued effects that
+        // variant shooters (Stray, Bogged, Parched) attach to their arrows.
+        self.apply_queued_arrow_effects(entity);
 
         // Arrows without piercing stop at the entity they hit.
         if self.pierce_level() == 0 {
             self.set_velocity(self.velocity() * 0.0);
             self.set_removed(RemovalReason::Discarded);
+        }
+    }
+
+    /// Vanilla `Arrow#doPostHurtEffects` effect list: applies every queued
+    /// effect at full duration and empties the list so a piercing arrow only
+    /// applies them once.
+    fn apply_queued_arrow_effects(self: &Arc<Self>, entity: &SharedEntity) {
+        let effects = {
+            let mut state = self.arrow_handle().state.lock();
+            if state.effects.is_empty() {
+                return;
+            }
+            std::mem::take(&mut state.effects)
+        };
+        let Some(living) = entity.as_living_entity() else {
+            return;
+        };
+        let this: SharedEntity = Arc::<Self>::clone(self);
+        for effect in effects {
+            living.add_mob_effect_with_source(effect, Some(this.as_ref()));
         }
     }
 

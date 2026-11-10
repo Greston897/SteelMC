@@ -1,6 +1,7 @@
 # SteelMC — полный прогресс по подсистемам (замер 10 ноября 2026)
 
-Ветка `arena/8ff5adc9-steelmc`, HEAD `5f17d30`, CI зелёный
+Ветка `arena/8ff5adc9-steelmc`; последняя итерация — батч дальнобойного ИИ и
+семейства скелетов (`PARITY-26.3-RU.md` §19), CI зелёный
 (`Test`, `Flint Tests`, `Lint`, `Lint Autofix`, `Build Report`).
 Все числа ниже — машинный подсчёт по дереву репозитория и по извлечённым из
 ванильного 26.3 данным (`steel-registry/build_assets/*.json`,
@@ -14,10 +15,10 @@
 | Предметы (по классам поведения) | 1 400 | 1 658 | 84,4 % |
 | Предметы (с учётом базового `Item`) | **1 657** | 1 658 | **99,94 %** |
 | Блоки (с собственным поведением) | 1 031 | 1 286 | 80,2 % |
-| Сущности (зарегистрированные фабрики) | **75** | 161 | **46,6 %** |
+| Сущности (зарегистрированные фабрики) | **79** | 161 | **49,1 %** |
 | Пакеты протокола (есть Rust-модуль) | 131 | 234 | 56,0 % |
 | Команды | 43 | ~50 ванильных + свои | ~85 % |
-| Тесты | 3 578 | — | — |
+| Тесты | 3 593 | — | — |
 | Строк кода (`src` всех крейтов) | ~497 000 | — | — |
 
 Реестр «5 945 / 100 %» — это блоки 1 286, предметы 1 658, сущности 161,
@@ -71,25 +72,28 @@
 
 ## 5. Сущности
 
-**75 из 161 (46,6 %)** типов имеют зарегистрированную фабрику (57 классов):
+**79 из 161 (49,1 %)** типов имеют зарегистрированную фабрику (61 класс):
 
 * мобы: `Zombie`, `Husk`, `Drowned`, `ZombifiedPiglin`, `WitherSkeleton`,
   `Silverfish`, `CaveSpider`, `Spider`, `Piglin`, `PiglinBrute`, `Hoglin`, `Zoglin`,
   `Vindicator`, `Endermite`, `Bat`, `Cod`, `Salmon`, `Pufferfish`, `TropicalFish`,
   `Cow`, `Mooshroom`, `Pig`, `Sheep`, `Chicken`, `Squid`;
+* дальнобойные (`RangedAttackGoal` + помощник стрельбы): `Skeleton`, `Stray`,
+  `Bogged`, `Parched` (стрелы со `slowness`/`poison`/`weakness`, конверсия скелета
+  в `Stray` в порошковом снегу, стрижка боггеда);
 * объекты: стенд для брони, картина, подушка, рамки, блок/item-дисплеи, поводок,
   примленный ТНТ, кристалл Края, опыт-орб, падающий блок, стрелы и снаряды
   (трезубец, жемчуг, глаз, бутылочки, фейерверк, рыболовный крючок, заряд ветра,
   снежок, яйцо), лодки и лодки с сундуком, вагонетки и вагонетка с сундуком.
-* Не сделано (86 классов): вся деревенская линия (`Villager`, `WanderingTrader`,
+* Не сделано (82 класса): вся деревенская линия (`Villager`, `WanderingTrader`,
   `ZombieVillager`, `IronGolem`, `SnowGolem`, `Cat`, `Wolf`, `Horse`+`Donkey`+`Mule`+
   `Llama`+`TraderLlama`, `PolarBear`, `Panda`, `Fox`, `Ocelot`, `Parrot`, `Rabbit`,
   `Goat`, `Camel`, `Turtle`, `Armadillo`, `Sniffer`, `Allay`, `Bee`, `Dolphin`,
   `GlowSquid`, `Frog`, `Tadpole`, `Axolotl`, `Nautilus`, `ZombieNautilus`,
   `CopperGolem`, `CamelHusk`, `Creaking`, `Mannequin`, `Strider`, `SulfurCube`),
-  дальнобойные (`Skeleton`, `Stray`, `Bogged`, `Parched`, `Blaze`, `Breeze`,
-  `Ghast`, `Shulker`, `Guardian`, `ElderGuardian`, `Witch`, `Evoker`, `Illusioner`,
-  `Pillager`, `Vex`, `Phantom`, `WitherSkull`, `SmallFireball`, `LargeFireball`,
+  дальнобойные (`Blaze`, `Breeze`, `Ghast`, `Shulker`, `Guardian`, `ElderGuardian`,
+  `Witch`, `Evoker`, `Illusioner`, `Pillager`, `Vex`, `Phantom`, `WitherSkull`,
+  `SmallFireball`, `LargeFireball`,
   `DragonFireball`, `ShulkerBullet`, `LlamaSpit`, `BreezeWindCharge`,
   `EvokerFangs`, `OminousItemSpawner`, `LightningBolt`), боссы (`EnderDragon`,
   `WitherBoss`, `Warden`, `Ravager`, `IronGolem`), слаймы (`Slime`, `MagmaCube`,
@@ -124,9 +128,9 @@
 
 ## 7. ТОП-10 дыр по влиянию на «похожесть на ваниль»
 
-1. **86 классов сущностей** — половина мобов; самый заметный дефицит.
-2. **Нет дальнобойного ИИ** (`RangedAttackGoal`) — блокирует скелетов, блейзов,
-   гастов, шалкеров, стражей, ведьм; отсюда же «мечи без стрел».
+1. **82 класса сущностей** — половина мобов; самый заметный дефицит.
+2. **Дальнобойный ИИ есть, но использован только скелетами**: блейзы, гасты,
+   шалкеры, стражи, ведьмы, разбойники ждут своих батчей (снаряды/заряды).
 3. **Естественный спавн хост-мобов не подключён**: `SpawnRule` даёт
    `&dyn LevelReader`, а `Monster::check_monster_spawn_rules` требует `&World`.
 4. **Книга рецептов / `KnowledgeBookItem`** — нет `RecipeDisplay`.
@@ -143,18 +147,21 @@
 
 ## 8. План следующих батчей (по убыванию отдачи)
 
-1. `RangedAttackGoal` + стрелы: открывает `Skeleton`, `Stray`, `Bogged`, `Parched`,
-   `Pillager`, позже `Blaze`/`Ghast`.
-2. Животные батчем (шаблон `Animal`/`AgeableMob` готов): `Rabbit`, `Fox`,
+1. ~~`RangedAttackGoal` + стрелы~~ — **сделано** (`PARITY-26.3-RU.md` §19):
+   `Skeleton`, `Stray`, `Bogged`, `Parched`; следующими на этой базе идут
+   `Pillager` (арбалет) и `Illusioner`.
+2. Природный спавн: снять блокер `SpawnRule` ↔ `&World`, включить спавн
+   враждебных мобов и биомные замещения (`Parched` в пустынях, `Stray` в снегах).
+3. Животные батчем (шаблон `Animal`/`AgeableMob` готов): `Rabbit`, `Fox`,
    `PolarBear`, `Panda`, `Goat`, `Camel`, `Turtle`, `Armadillo`, `Strider`,
    `Parrot`, `Ocelot`, `Cat`.
-3. Водные мобы из ведра: `Axolotl`, `Tadpole`, `Dolphin`, `GlowSquid`, `Frog`,
+4. Водные мобы из ведра: `Axolotl`, `Tadpole`, `Dolphin`, `GlowSquid`, `Frog`,
    `Nautilus`, `SulfurCube`.
-4. Транспорт: `MinecartTNT`, `MinecartFurnace`, `MinecartHopper`,
+5. Транспорт: `MinecartTNT`, `MinecartFurnace`, `MinecartHopper`,
    `MinecartSpawner`, `MinecartCommandBlock`.
-5. Дисплеи: `TextDisplay`, `ItemDisplay`, `GlowItemFrame`; `LightningBolt`.
-6. Уникальные механики: `Creeper`, `Enderman`, `Slime`/`MagmaCube`.
-7. Деревня: `Villager` + профессии + торговля + `IronGolem`/`SnowGolem`.
-8. Боссы: `WitherBoss` → `EnderDragon` → `Warden`.
-9. Книга рецептов (как только определимся с `RecipeDisplay`).
-10. Оставшиеся блоки и пакеты.
+6. Дисплеи: `TextDisplay`, `ItemDisplay`, `GlowItemFrame`; `LightningBolt`.
+7. Уникальные механики: `Creeper`, `Enderman`, `Slime`/`MagmaCube`.
+8. Деревня: `Villager` + профессии + торговля + `IronGolem`/`SnowGolem`.
+9. Боссы: `WitherBoss` → `EnderDragon` → `Warden`.
+10. Книга рецептов (как только определимся с `RecipeDisplay`).
+11. Оставшиеся блоки и пакеты.

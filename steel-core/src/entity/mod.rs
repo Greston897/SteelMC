@@ -781,6 +781,7 @@ mod monster;
 mod movement_sync;
 mod potion_contents;
 pub mod projectile;
+mod ranged_attack;
 pub(crate) mod pushing;
 mod reference;
 mod registry;
