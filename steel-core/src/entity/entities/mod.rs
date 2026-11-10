@@ -4,7 +4,10 @@ pub mod mobs;
 pub mod objects;
 
 pub use mobs::ambient::BatEntity;
-pub use mobs::hostile::EndermiteEntity;
+pub use mobs::hostile::{
+    CaveSpiderEntity, DrownedEntity, EndermiteEntity, HuskEntity, SilverfishEntity,
+    VindicatorEntity, WitherSkeletonEntity, ZombieEntity, ZombifiedPiglinEntity,
+};
 pub use mobs::passive::*;
 pub use objects::decoration::{ArmorStandEntity, CushionEntity, PaintingEntity};
 pub use objects::display_ui::{BlockDisplayEntity, ItemFrameEntity, LeashFenceKnotEntity};
