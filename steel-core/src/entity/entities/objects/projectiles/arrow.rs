@@ -6,6 +6,7 @@
 //! piercing, pickup rules and the vanilla hit sounds. Spectral arrows share the
 //! whole implementation and additionally make the hit entity glow.
 
+use std::mem;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Weak};
 
@@ -413,7 +414,7 @@ pub trait AbstractArrow: Projectile + Sized {
             if state.effects.is_empty() {
                 return;
             }
-            std::mem::take(&mut state.effects)
+            mem::take(&mut state.effects)
         };
         let Some(living) = entity.as_living_entity() else {
             return;

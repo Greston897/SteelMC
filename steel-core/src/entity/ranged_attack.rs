@@ -91,7 +91,7 @@ pub fn shoot_arrow(
     );
     arrow.set_has_been_shot(true);
 
-    let shared: SharedEntity = arrow.clone();
+    let shared: SharedEntity = Arc::clone(&arrow);
     if let Err(error) = world.try_add_entity(shared) {
         log::debug!("failed to spawn mob arrow: {error}");
         return None;
@@ -120,11 +120,14 @@ mod tests {
     }
 
     #[test]
-    fn downward_shot_still_arcs() {
+    fn vertical_shot_keeps_the_drop() {
         let from = DVec3::new(0.0, 70.0, 0.0);
         let to = DVec3::new(0.0, 60.0, 0.0);
         let direction = arced_direction(from, to);
-        assert!((direction.y).abs() < 1e-9, "arc cancels the drop here");
+        assert!(
+            (direction.y + 10.0).abs() < 1e-9,
+            "no horizontal distance means no arc: {direction:?}"
+        );
     }
 
     #[test]
