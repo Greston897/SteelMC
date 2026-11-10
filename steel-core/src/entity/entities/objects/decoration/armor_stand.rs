@@ -624,7 +624,7 @@ mod tests {
         assert_eq!(
             nbt.compound("Pose")
                 .and_then(|pose| pose.list("Head"))
-                .and_then(simdnbt::owned::NbtList::floats),
+                .and_then(NbtList::floats),
             Some(vec![10.0, 20.0, 30.0])
         );
     }
