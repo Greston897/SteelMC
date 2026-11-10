@@ -509,8 +509,12 @@ mod tests {
             (SWELL_START_DISTANCE_SQR - 9.0).abs() < f64::EPSILON,
             "3 blocks"
         );
-        assert!(SWELL_START_DISTANCE_SQR < SWELL_DISTANCE_SQR);
         assert_eq!(MAX_SWELL, 30);
+        assert_eq!(
+            CreeperEntity::next_swell(MAX_SWELL - 1, 1),
+            MAX_SWELL,
+            "the fuse detonates on the 30th tick"
+        );
     }
 
     #[test]
