@@ -390,7 +390,8 @@ impl Bucketable for SalmonEntity {
         if let Some(name) = nbt.string("type") {
             let name = name.to_str();
             self.set_variant(
-                SalmonVariant::from_serialized_name(name.as_ref()).unwrap_or(SALMON_DEFAULT_VARIANT),
+                SalmonVariant::from_serialized_name(name.as_ref())
+                    .unwrap_or(SALMON_DEFAULT_VARIANT),
             );
         }
     }

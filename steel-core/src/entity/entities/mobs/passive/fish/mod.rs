@@ -23,9 +23,9 @@
 pub mod cod;
 pub mod pufferfish;
 pub mod salmon;
-pub mod tropical_fish;
 #[cfg(test)]
 mod tests;
+pub mod tropical_fish;
 
 use std::sync::Arc;
 

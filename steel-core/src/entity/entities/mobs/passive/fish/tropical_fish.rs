@@ -51,8 +51,9 @@ use crate::entity::bucketable::{self, Bucketable};
 use crate::entity::damage::DamageSource;
 use crate::entity::registry::SpawnRule;
 use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySpawnReason, EntitySyncedData,
-    LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity, SpawnGroupData,
+    Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySpawnReason,
+    EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity,
+    SpawnGroupData,
 };
 use crate::physics::MoveResult;
 use crate::world::World;
@@ -192,7 +193,12 @@ impl TropicalFishEntity {
     /// Returns the packed vanilla variant int (`DATA_ID_TYPE_VARIANT`).
     #[must_use]
     pub fn packed_variant(&self) -> i32 {
-        *self.entity_data.lock().tropical_fish().id_type_variant.get()
+        *self
+            .entity_data
+            .lock()
+            .tropical_fish()
+            .id_type_variant
+            .get()
     }
 
     /// Sets the packed vanilla variant int.
@@ -485,10 +491,7 @@ mod tests {
             DyeColor::Yellow,
         );
         assert_eq!(pattern_for_variant(packed), TropicalFishPattern::Clayfish);
-        assert_eq!(
-            pattern_for_variant(packed).base(),
-            TropicalFishBase::Large
-        );
+        assert_eq!(pattern_for_variant(packed).base(), TropicalFishBase::Large);
         assert_eq!(base_color_for_variant(packed), DyeColor::Blue);
         assert_eq!(pattern_color_for_variant(packed), DyeColor::Yellow);
     }
