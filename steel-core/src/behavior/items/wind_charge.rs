@@ -75,7 +75,7 @@ fn play_throw_sound(player: &Arc<Player>) {
     let pitch = 0.4 / (rand::random_range(0.0_f32..1.0) * 0.4 + 0.8);
     let world = player.get_world();
     world.play_sound_at(
-        &sound_events::ITEM_WIND_CHARGE_THROW,
+        &sound_events::ENTITY_WIND_CHARGE_THROW,
         SoundSource::Neutral,
         player.position(),
         0.5,

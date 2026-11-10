@@ -101,7 +101,7 @@ impl WindChargeEntity {
             ParticleData::simple(&vanilla_particle_types::GUST_EMITTER_SMALL);
         options.large_explosion_particle =
             ParticleData::simple(&vanilla_particle_types::GUST_EMITTER_LARGE);
-        options.explosion_sound = SoundEventHolder::registry(&sound_events::ITEM_WIND_CHARGE_BURST);
+        options.explosion_sound = SoundEventHolder::registry(&sound_events::ENTITY_WIND_CHARGE_WIND_BURST);
         world.explode(options);
     }
 }
@@ -198,7 +198,7 @@ mod tests {
 
     #[test]
     fn wind_charges_fly_without_gravity() {
-        assert_eq!(Entity::get_default_gravity(&charge()), 0.0);
+        assert_eq!(Entity::get_default_gravity(charge().as_ref()), 0.0);
     }
 
     #[test]
