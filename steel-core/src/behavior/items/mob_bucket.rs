@@ -81,7 +81,13 @@ impl ItemBehavior for MobBucketItem {
             return InteractionResult::Pass;
         };
 
-        if !is_water_fluid(context.world.get_block_state(hit_pos).get_fluid_state().fluid_id) {
+        if !is_water_fluid(
+            context
+                .world
+                .get_block_state(hit_pos)
+                .get_fluid_state()
+                .fluid_id,
+        ) {
             return InteractionResult::Pass;
         }
 
@@ -95,7 +101,7 @@ impl ItemBehavior for MobBucketItem {
             entity_type,
             next_entity_id(),
             position,
-            Arc::downgrade(&context.world),
+            Arc::downgrade(context.world),
         ) else {
             log::warn!("Failed to create bucketed entity {}", entity_type.key);
             return InteractionResult::Fail;

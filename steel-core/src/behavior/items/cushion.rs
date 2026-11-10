@@ -23,8 +23,8 @@ use crate::behavior::item::ItemBehavior;
 use crate::entity::entities::CushionEntity;
 use crate::entity::{Entity, SharedEntity, next_entity_id};
 use crate::physics::collision::{WorldCollisionProvider, has_block_collision};
-use crate::world::game_event::GameEventContext;
 use crate::world::World;
+use crate::world::game_event::GameEventContext;
 
 /// Vertical size of a vanilla cushion, in blocks.
 const CUSHION_HEIGHT: f64 = 0.25;
@@ -53,7 +53,9 @@ impl CushionItem {
         target: BlockPos,
     ) -> bool {
         target.y() < context.world.max_build_height()
-            && context.player.can_place_on(context.world, target, side, stack)
+            && context
+                .player
+                .can_place_on(context.world, target, side, stack)
     }
 
     /// Whether the cushion volume is free of blocks and of other cushions.
@@ -137,23 +139,21 @@ mod tests {
     use glam::DVec3;
     use steel_registry::data_components::vanilla_components::{CUSHION_COLOR, CUSTOM_NAME};
     use steel_registry::dye_color::DyeColor;
-    use steel_registry::items::item::BlockHitResult;
     use steel_registry::item_stack::ItemStack;
-    use steel_registry::{
-        init_vanilla_registry, vanilla_blocks, vanilla_items,
-    };
+    use steel_registry::items::item::BlockHitResult;
+    use steel_registry::{init_vanilla_registry, vanilla_blocks, vanilla_items};
+    use steel_utils::Downcast as _;
     use steel_utils::types::{InteractionHand, UpdateFlags};
     use steel_utils::{BlockPos, ChunkPos, Direction, WorldAabb};
-    use steel_utils::Downcast as _;
     use text_components::TextComponent;
 
     use super::CushionItem;
     use crate::behavior::ItemBehavior as _;
     use crate::behavior::context::{InteractionResult, UseOnContext};
     use crate::behavior::init_behaviors;
-    use crate::entity::entities::CushionEntity;
-    use crate::entity::SharedEntity;
     use crate::entity::Entity as _;
+    use crate::entity::SharedEntity;
+    use crate::entity::entities::CushionEntity;
     use crate::test_support::{
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
     };
@@ -280,10 +280,7 @@ mod tests {
         ));
 
         let mut context = place_context(world, &player, support);
-        assert_eq!(
-            CushionItem.use_on(&mut context),
-            InteractionResult::Consume
-        );
+        assert_eq!(CushionItem.use_on(&mut context), InteractionResult::Consume);
 
         assert!(cushions_in_world(world).is_empty());
         assert_eq!(held_stack(&player).count(), 2);
@@ -305,10 +302,7 @@ mod tests {
         ));
 
         let mut context = place_context(world, &player, support);
-        assert_eq!(
-            CushionItem.use_on(&mut context),
-            InteractionResult::Consume
-        );
+        assert_eq!(CushionItem.use_on(&mut context), InteractionResult::Consume);
         assert!(cushions_in_world(world).is_empty());
         assert_eq!(held_stack(&player).count(), 1);
     }
@@ -326,10 +320,7 @@ mod tests {
         assert_eq!(CushionItem.use_on(&mut first), InteractionResult::Success);
 
         let mut second = place_context(world, &player, support);
-        assert_eq!(
-            CushionItem.use_on(&mut second),
-            InteractionResult::Consume
-        );
+        assert_eq!(CushionItem.use_on(&mut second), InteractionResult::Consume);
 
         assert_eq!(cushions_in_world(world).len(), 1);
         assert_eq!(held_stack(&player).count(), 1);

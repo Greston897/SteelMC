@@ -301,6 +301,30 @@ fn filled_bucket_primary_pos(
     }
 }
 
+/// Vanilla `ProjectileUtil.getEntityHitResult` pass from `BucketItem.use`:
+/// the nearest alive, not-yet-bucketed `Bucketable` mob within reach.
+fn try_catch_bucketable_entity(
+    context: &UseItemContext,
+    start: glam::DVec3,
+    end: glam::DVec3,
+) -> Option<InteractionResult> {
+    use crate::entity::bucketable::{is_bucketable, try_bucket_entity};
+    use crate::entity::projectile::get_entity_hit_result;
+
+    let look = end - start;
+    let search_box = context
+        .player
+        .bounding_box()
+        .expand_towards(look)
+        .inflate(1.0);
+
+    let hit = get_entity_hit_result(context.world, start, end, search_box, 0.0, |entity| {
+        entity.is_alive() && is_bucketable(entity)
+    })?;
+
+    try_bucket_entity(context.player, context.hand, hit.entity.as_ref())
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -416,28 +440,4 @@ mod tests {
             vanilla_blocks::STONE.default_state()
         );
     }
-}
-
-/// Vanilla `ProjectileUtil.getEntityHitResult` pass from `BucketItem.use`:
-/// the nearest alive, not-yet-bucketed `Bucketable` mob within reach.
-fn try_catch_bucketable_entity(
-    context: &UseItemContext,
-    start: glam::DVec3,
-    end: glam::DVec3,
-) -> Option<InteractionResult> {
-    use crate::entity::bucketable::{is_bucketable, try_bucket_entity};
-    use crate::entity::projectile::get_entity_hit_result;
-
-    let look = end - start;
-    let search_box = context
-        .player
-        .bounding_box()
-        .expand_towards(look)
-        .inflate(1.0);
-
-    let hit = get_entity_hit_result(context.world, start, end, search_box, 0.0, |entity| {
-        entity.is_alive() && is_bucketable(entity)
-    })?;
-
-    try_bucket_entity(context.player, context.hand, hit.entity.as_ref())
 }

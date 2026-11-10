@@ -65,9 +65,15 @@ impl ItemBehavior for InstrumentItem {
             1.0,
             None,
         );
-        context.player.game_event(&vanilla_game_events::INSTRUMENT_PLAY);
-        context.player.set_item_cooldown(item.key.clone(), use_ticks);
-        context.player.award_stat(&vanilla_stat_types::ITEM_USED, item);
+        context
+            .player
+            .game_event(&vanilla_game_events::INSTRUMENT_PLAY);
+        context
+            .player
+            .set_item_cooldown(item.key.clone(), use_ticks);
+        context
+            .player
+            .award_stat(&vanilla_stat_types::ITEM_USED, item);
         InteractionResult::Consume
     }
 

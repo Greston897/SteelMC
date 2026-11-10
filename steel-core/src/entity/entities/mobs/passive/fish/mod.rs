@@ -38,7 +38,7 @@ use steel_registry::vanilla_damage_types;
 use steel_utils::BlockPos;
 
 use crate::entity::damage::DamageSource;
-use crate::entity::{ EntitySpawnReason, LivingEntity, SharedEntity};
+use crate::entity::{EntitySpawnReason, LivingEntity, SharedEntity};
 use crate::physics::{MoveResult, MoverType};
 use crate::world::LevelReader;
 
@@ -112,7 +112,12 @@ pub fn check_water_animal_spawn_rules(
     _random: &mut dyn Rng,
 ) -> bool {
     is_within_spawn_depth(level.sea_level(), pos.y())
-        && is_water_fluid(level.get_block_state(pos.below()).get_fluid_state().fluid_id)
+        && is_water_fluid(
+            level
+                .get_block_state(pos.below())
+                .get_fluid_state()
+                .fluid_id,
+        )
         && level.get_block_state(pos.above()).get_block() == &steel_registry::vanilla_blocks::WATER
 }
 

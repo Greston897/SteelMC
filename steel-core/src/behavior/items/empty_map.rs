@@ -114,15 +114,17 @@ mod tests {
 
         let hand = player.inventory.lock().get_selected_item().clone();
         assert!(hand.is(&vanilla_items::FILLED_MAP));
-        let map_id = hand
-            .get(MAP_ID)
-            .expect("filled map carries an id")
-            .id();
+        let map_id = hand.get(MAP_ID).expect("filled map carries an id").id();
 
         let (scale, center_x, center_z, stored) = {
             let maps = world.map_states.lock();
             let state = maps.get(map_id).expect("map state registered");
-            (state.scale(), state.center_x(), state.center_z(), maps.len())
+            (
+                state.scale(),
+                state.center_x(),
+                state.center_z(),
+                maps.len(),
+            )
         };
         assert_eq!(scale, 0);
         assert_eq!(stored, 1);

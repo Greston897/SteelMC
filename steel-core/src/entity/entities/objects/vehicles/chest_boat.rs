@@ -43,8 +43,8 @@ use crate::entity::{
 use crate::inventory::container::{Container as _, SimpleContainer, load_all_items};
 use crate::inventory::menu::kinds::chest_boat;
 use crate::world::{Explosion, World};
-use steel_utils::BlockPos;
 use steel_registry::items::ItemRef;
+use steel_utils::BlockPos;
 
 /// Vanilla `AbstractChestBoatEntity.INVENTORY_SIZE`.
 pub const CHEST_BOAT_SLOTS: usize = 27;
@@ -294,7 +294,13 @@ mod tests {
             Weak::<World>::new(),
         );
         assert_eq!(boat.inventory.lock().items().len(), CHEST_BOAT_SLOTS);
-        assert!(boat.inventory.lock().items().iter().all(|s| s.is_empty()));
+        assert!(
+            boat.inventory
+                .lock()
+                .items()
+                .iter()
+                .all(steel_registry::item_stack::ItemStack::is_empty)
+        );
     }
 
     #[test]

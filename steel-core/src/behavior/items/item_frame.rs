@@ -42,7 +42,9 @@ impl ItemFrameItem {
         target: steel_utils::BlockPos,
     ) -> bool {
         target.y() < context.world.max_build_height()
-            && context.player.can_place_on(context.world, target, side, stack)
+            && context
+                .player
+                .can_place_on(context.world, target, side, stack)
     }
 }
 
@@ -81,14 +83,9 @@ impl ItemBehavior for ItemFrameItem {
             return InteractionResult::Fail;
         }
 
-        context.world.play_sound(
-            sound,
-            SoundSource::Neutral,
-            target,
-            1.0,
-            1.0,
-            None,
-        );
+        context
+            .world
+            .play_sound(sound, SoundSource::Neutral, target, 1.0, 1.0, None);
         context.world.game_event(
             &vanilla_game_events::ENTITY_PLACE,
             target,
@@ -188,7 +185,9 @@ mod tests {
 
     fn frames_in_world(world: &Arc<World>) -> usize {
         world
-            .get_entities_in_aabb(&steel_utils::WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 66.0, 2.0))
+            .get_entities_in_aabb(&steel_utils::WorldAabb::new(
+                -2.0, 62.0, -2.0, 2.0, 66.0, 2.0,
+            ))
             .iter()
             .filter(|entity| entity.as_item_frame().is_some())
             .count()
@@ -204,13 +203,18 @@ mod tests {
             .set_selected_item(ItemStack::with_count(&vanilla_items::ITEM_FRAME, 3));
 
         let mut context = place_context(world, &player, wall, Direction::Up);
-        assert_eq!(ItemFrameItem.use_on(&mut context), InteractionResult::Success);
+        assert_eq!(
+            ItemFrameItem.use_on(&mut context),
+            InteractionResult::Success
+        );
 
         assert_eq!(frames_in_world(world), 1);
         assert_eq!(held_stack(&player).count(), 2);
 
         let frame = world
-            .get_entities_in_aabb(&steel_utils::WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 66.0, 2.0))
+            .get_entities_in_aabb(&steel_utils::WorldAabb::new(
+                -2.0, 62.0, -2.0, 2.0, 66.0, 2.0,
+            ))
             .into_iter()
             .find(|entity| entity.as_item_frame().is_some())
             .expect("frame spawned");
@@ -228,10 +232,15 @@ mod tests {
             .set_selected_item(ItemStack::new(&vanilla_items::GLOW_ITEM_FRAME));
 
         let mut context = place_context(world, &player, wall, Direction::North);
-        assert_eq!(ItemFrameItem.use_on(&mut context), InteractionResult::Success);
+        assert_eq!(
+            ItemFrameItem.use_on(&mut context),
+            InteractionResult::Success
+        );
 
         let entity = world
-            .get_entities_in_aabb(&steel_utils::WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 66.0, 2.0))
+            .get_entities_in_aabb(&steel_utils::WorldAabb::new(
+                -2.0, 62.0, -2.0, 2.0, 66.0, 2.0,
+            ))
             .into_iter()
             .find(|entity| entity.as_item_frame().is_some())
             .expect("frame spawned");
@@ -303,10 +312,15 @@ mod tests {
         player.inventory.lock().set_selected_item(stack);
 
         let mut context = place_context(world, &player, wall, Direction::Up);
-        assert_eq!(ItemFrameItem.use_on(&mut context), InteractionResult::Success);
+        assert_eq!(
+            ItemFrameItem.use_on(&mut context),
+            InteractionResult::Success
+        );
 
         let entity = world
-            .get_entities_in_aabb(&steel_utils::WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 66.0, 2.0))
+            .get_entities_in_aabb(&steel_utils::WorldAabb::new(
+                -2.0, 62.0, -2.0, 2.0, 66.0, 2.0,
+            ))
             .into_iter()
             .find(|entity| entity.as_item_frame().is_some())
             .expect("frame spawned");

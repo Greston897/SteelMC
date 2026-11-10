@@ -338,7 +338,10 @@ mod tests {
         // Seen from above a map shows the Y face, i.e. the wood (13); the bark
         // colour (34) belongs to the X/Z faces.
         assert_eq!(log.map_color(), 13, "wood color for an upright log");
-        let sideways = log.set_value(&BlockStateProperties::AXIS, crate::blocks::properties::Axis::X);
+        let sideways = log.set_value(
+            &BlockStateProperties::AXIS,
+            crate::blocks::properties::Axis::X,
+        );
         assert_eq!(sideways.map_color(), 34, "bark color for a sideways log");
     }
 

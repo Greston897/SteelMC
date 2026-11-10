@@ -1133,7 +1133,7 @@ mod tests {
         assert!(!BundleContents::can_be_bundled(&shulker));
 
         let mut contents = BundleContents::empty();
-        let mut stack = shulker.clone();
+        let mut stack = shulker;
         assert_eq!(contents.add_stack(&mut stack), 0);
         assert!(contents.is_empty());
     }
@@ -1198,8 +1198,8 @@ mod tests {
         let mut cursor = Cursor::new(Vec::new());
         selected.write(&mut cursor).expect("write bundle contents");
         let bytes = cursor.into_inner();
-        let decoded = BundleContents::read(&mut Cursor::new(bytes.as_slice()))
-            .expect("read bundle contents");
+        let decoded =
+            BundleContents::read(&mut Cursor::new(bytes.as_slice())).expect("read bundle contents");
         assert_eq!(
             decoded.selected_stack_index(),
             BundleContents::NO_SELECTED_SLOT,

@@ -100,18 +100,18 @@ mod tests {
 
     use glam::DVec3;
     use steel_registry::item_stack::ItemStack;
-    use steel_registry::{init_vanilla_registry, vanilla_blocks, vanilla_items};
     use steel_registry::items::item::BlockHitResult;
-    use steel_utils::types::{InteractionHand, UpdateFlags};
+    use steel_registry::{init_vanilla_registry, vanilla_blocks, vanilla_items};
     use steel_utils::Downcast as _;
+    use steel_utils::types::{InteractionHand, UpdateFlags};
     use steel_utils::{BlockPos, ChunkPos, Direction};
 
     use super::EndCrystalItem;
     use crate::behavior::ItemBehavior as _;
     use crate::behavior::context::{InteractionResult, UseOnContext};
     use crate::behavior::init_behaviors;
-    use crate::entity::entities::EndCrystalEntity;
     use crate::entity::SharedEntity;
+    use crate::entity::entities::EndCrystalEntity;
     use crate::test_support::{
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
     };
@@ -163,7 +163,9 @@ mod tests {
 
     fn crystals(world: &Arc<World>) -> Vec<SharedEntity> {
         world
-            .get_entities_in_aabb(&steel_utils::WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 70.0, 2.0))
+            .get_entities_in_aabb(&steel_utils::WorldAabb::new(
+                -2.0, 62.0, -2.0, 2.0, 70.0, 2.0,
+            ))
             .into_iter()
             .filter(|entity| entity.downcast_ref::<EndCrystalEntity>().is_some())
             .collect()

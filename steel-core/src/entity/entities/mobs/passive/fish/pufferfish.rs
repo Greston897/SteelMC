@@ -22,21 +22,21 @@ use steel_macros::entity_behavior;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::item_stack::ItemStack;
-use steel_registry::sound_event::SoundEventRef;
 use steel_registry::items::ItemRef;
-use steel_registry::vanilla_attributes;
-use steel_registry::vanilla_items;
-use steel_registry::vanilla_entity_data::PufferfishEntityData;
-use steel_registry::vanilla_mob_effects::POISON;
+use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
+use steel_registry::vanilla_attributes;
+use steel_registry::vanilla_entity_data::PufferfishEntityData;
+use steel_registry::vanilla_items;
+use steel_registry::vanilla_mob_effects::POISON;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use super::{
-    check_water_animal_spawn_rules, flop, tick_breathing, travel_in_water, FISH_LIMIT_PER_CHUNK,
-    FISH_MAX_HEALTH, FISH_MOVEMENT_SPEED, FISH_PANIC_SPEED, FISH_SWIM_TO_RANDOM_PLACE_INTERVAL,
-    FISH_SWIM_TO_RANDOM_PLACE_SPEED, WATER_ANIMAL_AMBIENT_SOUND_INTERVAL,
-    WATER_ANIMAL_EXPERIENCE_MAX, WATER_ANIMAL_EXPERIENCE_MIN,
+    FISH_LIMIT_PER_CHUNK, FISH_MAX_HEALTH, FISH_MOVEMENT_SPEED, FISH_PANIC_SPEED,
+    FISH_SWIM_TO_RANDOM_PLACE_INTERVAL, FISH_SWIM_TO_RANDOM_PLACE_SPEED,
+    WATER_ANIMAL_AMBIENT_SOUND_INTERVAL, WATER_ANIMAL_EXPERIENCE_MAX, WATER_ANIMAL_EXPERIENCE_MIN,
+    check_water_animal_spawn_rules, flop, tick_breathing, travel_in_water,
 };
 use crate::entity::ai::goal::{PanicGoal, RandomSwimmingGoal};
 use crate::entity::ai::path::PathType;
@@ -147,7 +147,11 @@ impl PufferfishEntity {
 
     /// Vanilla `setPuffState(int)`.
     pub fn set_puff_state(&self, state: i32) {
-        self.entity_data.lock().pufferfish_mut().puff_state.set(state);
+        self.entity_data
+            .lock()
+            .pufferfish_mut()
+            .puff_state
+            .set(state);
     }
 
     fn new_with_base(base: EntityBase, entity_type: EntityTypeRef) -> Self {
@@ -280,7 +284,7 @@ impl PufferfishEntity {
                 if let Some(living) = victim.as_living_entity() {
                     living.add_mob_effect(
                         crate::entity::living_base::MobEffectInstance::with_duration(
-                            &POISON,
+                            POISON,
                             PUFFER_POISON_TICKS_PER_STATE * state,
                             0,
                         ),
@@ -426,11 +430,27 @@ pub const fn pufferfish_limit_per_chunk() -> i32 {
     FISH_LIMIT_PER_CHUNK
 }
 
+impl Bucketable for PufferfishEntity {
+    fn is_from_bucket(&self) -> bool {
+        *self.entity_data.lock().abstract_fish().from_bucket.get()
+    }
+
+    fn set_from_bucket(&self, from_bucket: bool) {
+        self.entity_data
+            .lock()
+            .abstract_fish_mut()
+            .from_bucket
+            .set(from_bucket);
+    }
+
+    fn bucket_item(&self) -> ItemRef {
+        &vanilla_items::PUFFERFISH_BUCKET
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{
-        FULLY_PUFFED, NOT_PUFFED, SEMI_PUFFED, is_puffed, puff_scale, sting_damage,
-    };
+    use super::{FULLY_PUFFED, NOT_PUFFED, SEMI_PUFFED, is_puffed, puff_scale, sting_damage};
 
     #[test]
     fn puff_states_are_vanilla_constants() {
@@ -454,19 +474,5 @@ mod tests {
         assert!((sting_damage(NOT_PUFFED) - 1.0).abs() < f32::EPSILON);
         assert!((sting_damage(SEMI_PUFFED) - 2.0).abs() < f32::EPSILON);
         assert!((sting_damage(FULLY_PUFFED) - 3.0).abs() < f32::EPSILON);
-    }
-}
-
-impl Bucketable for PufferfishEntity {
-    fn is_from_bucket(&self) -> bool {
-        *self.entity_data.lock().abstract_fish().from_bucket.get()
-    }
-
-    fn set_from_bucket(&self, from_bucket: bool) {
-        self.entity_data.lock().abstract_fish_mut().from_bucket.set(from_bucket);
-    }
-
-    fn bucket_item(&self) -> ItemRef {
-        &vanilla_items::PUFFERFISH_BUCKET
     }
 }

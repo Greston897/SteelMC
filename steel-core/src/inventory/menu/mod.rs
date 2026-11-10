@@ -41,7 +41,9 @@ use crate::{
 };
 
 use crate::behavior::ITEM_BEHAVIORS;
-use crate::inventory::click::{Click, ClickOutcome, MouseButton, SwapTarget, can_item_quick_replace};
+use crate::inventory::click::{
+    Click, ClickOutcome, MouseButton, SwapTarget, can_item_quick_replace,
+};
 
 /// A menu opened by a player: the shared click machinery plus one
 /// [`MenuKind`].

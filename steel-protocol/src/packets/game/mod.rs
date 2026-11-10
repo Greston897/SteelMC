@@ -80,11 +80,11 @@ mod s_change_game_mode;
 mod s_client_command;
 mod s_client_tick_end;
 mod s_command_suggestion;
-mod s_edit_book;
 mod s_container_button_click;
 mod s_container_click;
 mod s_container_close;
 mod s_container_slot_state_changed;
+mod s_edit_book;
 mod s_interact;
 mod s_move_player;
 mod s_move_vehicle;
@@ -212,11 +212,11 @@ pub use s_change_game_mode::SChangeGameMode;
 pub use s_client_command::{ClientCommandAction, SClientCommand};
 pub use s_client_tick_end::SClientTickEnd;
 pub use s_command_suggestion::SCommandSuggestion;
-pub use s_edit_book::{MAX_PAGE_LENGTH, MAX_PAGES, MAX_TITLE_LENGTH, SEditBook};
 pub use s_container_button_click::SContainerButtonClick;
 pub use s_container_click::{ClickType, HashedPatchMap, HashedStack, SContainerClick};
 pub use s_container_close::SContainerClose;
 pub use s_container_slot_state_changed::SContainerSlotStateChanged;
+pub use s_edit_book::{MAX_PAGE_LENGTH, MAX_PAGES, MAX_TITLE_LENGTH, SEditBook};
 pub use s_interact::SInteract;
 pub use s_move_player::{
     SMovePlayer, SMovePlayerPos, SMovePlayerPosRot, SMovePlayerRot, SMovePlayerStatusOnly,

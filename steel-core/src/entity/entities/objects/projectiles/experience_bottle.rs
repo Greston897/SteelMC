@@ -22,8 +22,8 @@ use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
 
 use crate::entity::entities::ExperienceOrbEntity;
 use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, EntitySyncedData, Projectile, ProjectileBase, SharedEntity,
-    ProjectileHit, RemovalReason, ThrowableItemProjectile, ThrowableProjectile,
+    Entity, EntityBase, EntityBaseLoad, EntitySyncedData, Projectile, ProjectileBase,
+    ProjectileHit, RemovalReason, SharedEntity, ThrowableItemProjectile, ThrowableProjectile,
 };
 use crate::world::World;
 
@@ -261,7 +261,9 @@ mod tests {
 
         assert!(bottle.is_removed());
         let orbs: i32 = world
-            .get_entities_in_aabb(&steel_utils::WorldAabb::new(6.0, 63.0, 6.0, 10.0, 67.0, 10.0))
+            .get_entities_in_aabb(&steel_utils::WorldAabb::new(
+                6.0, 63.0, 6.0, 10.0, 67.0, 10.0,
+            ))
             .iter()
             .filter_map(|entity| entity.as_ref().downcast_ref::<ExperienceOrbEntity>())
             .map(ExperienceOrbEntity::value)

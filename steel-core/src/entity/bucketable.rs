@@ -7,18 +7,16 @@
 
 use simdnbt::owned;
 use steel_registry::data_components::components::CustomData;
-use steel_registry::item_stack::ItemStack;
 use steel_registry::data_components::vanilla_components;
+use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::vanilla_items;
+use steel_utils::Downcast as _;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::types::InteractionHand;
-use steel_utils::Downcast as _;
 
 use crate::behavior::InteractionResult;
-use crate::entity::entities::mobs::passive::{
-    CodEntity, PufferfishEntity, SalmonEntity,
-};
+use crate::entity::entities::mobs::passive::{CodEntity, PufferfishEntity, SalmonEntity};
 use crate::entity::{Entity, LivingEntity, Mob, RemovalReason};
 use crate::player::Player;
 

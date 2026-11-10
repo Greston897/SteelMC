@@ -39,9 +39,7 @@ impl ItemBehavior for WrittenBookItem {
     fn use_item(&self, context: &mut UseItemContext) -> InteractionResult {
         // Vanilla `WrittenBookItem.use` -> `ServerPlayerEntity.useBook`, which
         // opens the reading screen only when the stack carries written content.
-        let has_content = context
-            .inv
-            .with_item(|item| item.has(WRITTEN_BOOK_CONTENT));
+        let has_content = context.inv.with_item(|item| item.has(WRITTEN_BOOK_CONTENT));
         if has_content {
             context.player.send_packet(COpenBook::new(context.hand));
         }
@@ -63,7 +61,7 @@ mod tests {
     use steel_utils::ChunkPos;
     use steel_utils::types::InteractionHand;
 
-    use crate::behavior::{InteractionResult, ITEM_BEHAVIORS, UseItemContext, init_behaviors};
+    use crate::behavior::{ITEM_BEHAVIORS, InteractionResult, UseItemContext, init_behaviors};
     use crate::player::Player;
     use crate::test_support::{
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,

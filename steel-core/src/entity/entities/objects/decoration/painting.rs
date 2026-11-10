@@ -142,7 +142,11 @@ impl PaintingEntity {
 
     /// Sets the synced variant.
     pub fn set_variant(&self, variant: RegistryReference<PaintingVariant>) {
-        self.entity_data.lock().painting_mut().painting_variant.set(variant);
+        self.entity_data
+            .lock()
+            .painting_mut()
+            .painting_variant
+            .set(variant);
     }
 
     /// The direction the painting faces (away from its wall).
@@ -204,7 +208,7 @@ impl PaintingEntity {
         Self::wall_center(block_pos, facing)
     }
 
-    fn rotation_for_direction(direction: Direction) -> (f32, f32) {
+    const fn rotation_for_direction(direction: Direction) -> (f32, f32) {
         let yaw = match direction {
             Direction::South => 0.0,
             Direction::West => 90.0,
@@ -417,12 +421,11 @@ impl Entity for PaintingEntity {
             self.set_variant(RegistryReference::new(variant));
         }
 
-        self.base
-            .set_bounding_box(Self::painting_box(
-                self.block_attached_entity_base.pos(),
-                self.facing(),
-                self.variant().value(),
-            ));
+        self.base.set_bounding_box(Self::painting_box(
+            self.block_attached_entity_base.pos(),
+            self.facing(),
+            self.variant().value(),
+        ));
     }
 }
 
@@ -467,11 +470,11 @@ mod tests {
     use std::io::Cursor;
     use steel_registry::item_stack::ItemStack;
     use steel_registry::painting_variant::PaintingVariant;
-    use steel_registry::vanilla_painting_variants;
-    use steel_registry::{REGISTRY, RegistryExt as _, RegistryReference, init_vanilla_registry};
     use steel_registry::vanilla_blocks;
     use steel_registry::vanilla_entities;
     use steel_registry::vanilla_items;
+    use steel_registry::vanilla_painting_variants;
+    use steel_registry::{REGISTRY, RegistryExt as _, RegistryReference, init_vanilla_registry};
     use steel_utils::types::UpdateFlags;
     use steel_utils::{BlockPos, ChunkPos, Direction, Downcast as _, WorldAabb};
 
@@ -555,12 +558,8 @@ mod tests {
             (box_.max_x() - box_.min_x() - super::PIXEL_SIZE).abs() < 1.0e-6,
             "painting depth must be one pixel"
         );
-        assert!(
-            (box_.max_y() - box_.min_y() - f64::from(value.height)).abs() < 1.0e-6
-        );
-        assert!(
-            (box_.max_z() - box_.min_z() - f64::from(value.width)).abs() < 1.0e-6
-        );
+        assert!((box_.max_y() - box_.min_y() - f64::from(value.height)).abs() < 1.0e-6);
+        assert!((box_.max_z() - box_.min_z() - f64::from(value.width)).abs() < 1.0e-6);
     }
 
     #[test]
@@ -614,8 +613,14 @@ mod tests {
             kebab(),
         );
 
-        crate::entity::block_attached_entity::BlockAttachedEntity::drop_item(painting.as_ref(), None);
-        crate::entity::block_attached_entity::BlockAttachedEntity::drop_item(painting.as_ref(), None);
+        crate::entity::block_attached_entity::BlockAttachedEntity::drop_item(
+            painting.as_ref(),
+            None,
+        );
+        crate::entity::block_attached_entity::BlockAttachedEntity::drop_item(
+            painting.as_ref(),
+            None,
+        );
 
         assert_eq!(dropped_items(&fixture.world).len(), 1);
     }

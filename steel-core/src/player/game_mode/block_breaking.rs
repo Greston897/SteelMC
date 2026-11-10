@@ -567,14 +567,16 @@ fn held_item_can_mine(
         let inventory = player.inventory.lock();
         inventory.get_item_in_hand(InteractionHand::MainHand).item()
     };
-    ITEM_BEHAVIORS.get_behavior(main_hand_item).can_mine(&CanMineContext::new(
-        player,
-        world,
-        pos,
-        state,
-        Arc::clone(&player.inventory),
-        InteractionHand::MainHand,
-    ))
+    ITEM_BEHAVIORS
+        .get_behavior(main_hand_item)
+        .can_mine(&CanMineContext::new(
+            player,
+            world,
+            pos,
+            state,
+            Arc::clone(&player.inventory),
+            InteractionHand::MainHand,
+        ))
 }
 
 /// Checks if a block state is air.

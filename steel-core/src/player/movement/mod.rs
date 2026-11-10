@@ -958,7 +958,12 @@ impl Player {
         if let Some(vehicle) = self.controlled_vehicle()
             && let Some(boat) = vehicle.as_abstract_boat()
         {
-            boat.set_inputs(input.left(), input.right(), input.forward(), input.backward());
+            boat.set_inputs(
+                input.left(),
+                input.right(),
+                input.forward(),
+                input.backward(),
+            );
         }
 
         if !self.has_client_loaded() {

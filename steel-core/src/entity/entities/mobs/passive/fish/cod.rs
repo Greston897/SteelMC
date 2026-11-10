@@ -13,31 +13,31 @@ use simdnbt::{borrow, owned};
 use steel_macros::entity_behavior;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
-use steel_registry::sound_event::SoundEventRef;
 use steel_registry::items::ItemRef;
-use steel_registry::vanilla_attributes;
-use steel_registry::vanilla_items;
+use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
+use steel_registry::vanilla_attributes;
 use steel_registry::vanilla_entity_data::CodEntityData;
+use steel_registry::vanilla_items;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{PanicGoal, RandomSwimmingGoal};
 use crate::entity::ai::path::PathType;
+use crate::entity::bucketable::Bucketable;
+use crate::entity::registry::SpawnRule;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData, LivingEntity,
     LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity,
 };
-use crate::entity::bucketable::Bucketable;
-use crate::entity::registry::SpawnRule;
 use crate::physics::MoveResult;
 use crate::world::World;
 
 use super::{
-    check_water_animal_spawn_rules, flop, tick_breathing, travel_in_water,
     FISH_LIMIT_PER_CHUNK, FISH_MAX_HEALTH, FISH_MOVEMENT_SPEED, FISH_PANIC_SPEED,
     FISH_SWIM_TO_RANDOM_PLACE_INTERVAL, FISH_SWIM_TO_RANDOM_PLACE_SPEED,
     WATER_ANIMAL_AMBIENT_SOUND_INTERVAL, WATER_ANIMAL_EXPERIENCE_MAX, WATER_ANIMAL_EXPERIENCE_MIN,
+    check_water_animal_spawn_rules, flop, tick_breathing, travel_in_water,
 };
 
 const COD_FLOP_SOUND: SoundEventRef = &sound_events::ENTITY_COD_FLOP;
@@ -272,7 +272,11 @@ impl Bucketable for CodEntity {
     }
 
     fn set_from_bucket(&self, from_bucket: bool) {
-        self.entity_data.lock().abstract_fish_mut().from_bucket.set(from_bucket);
+        self.entity_data
+            .lock()
+            .abstract_fish_mut()
+            .from_bucket
+            .set(from_bucket);
     }
 
     fn bucket_item(&self) -> ItemRef {

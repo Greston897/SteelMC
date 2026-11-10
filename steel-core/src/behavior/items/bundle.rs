@@ -7,11 +7,11 @@
 
 use std::sync::Arc;
 
+use glam::DVec3;
 use steel_macros::item_behavior;
 use steel_registry::data_components::components::BundleContents;
 use steel_registry::data_components::vanilla_components::BUNDLE_CONTENTS;
 use steel_registry::item_stack::ItemStack;
-use glam::DVec3;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
 use steel_registry::stat::vanilla_stat_types;
@@ -475,13 +475,17 @@ mod tests {
             .expect("bundle item entity spawns");
         assert_eq!(contents_of(&bundle.get_item()).items().len(), 2);
 
-        <BundleItem as crate::behavior::item::ItemBehavior>::on_item_entity_destroyed(&BundleItem, &bundle);
+        <BundleItem as crate::behavior::item::ItemBehavior>::on_item_entity_destroyed(
+            &BundleItem,
+            &bundle,
+        );
 
         assert!(contents_of(&bundle.get_item()).is_empty());
         let spilled = world.get_entities_in_aabb_matching(
             &WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 68.0, 2.0),
             |entity| {
-                entity.downcast_ref::<ItemEntity>()
+                entity
+                    .downcast_ref::<ItemEntity>()
                     .is_some_and(|item| item.id() != bundle.id())
             },
         );

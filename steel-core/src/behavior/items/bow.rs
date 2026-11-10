@@ -18,8 +18,8 @@ use steel_utils::types::GameType;
 
 use crate::behavior::items::{ArrowItem, SpectralArrowItem};
 use crate::behavior::{ItemBehavior, ItemUseAnimation};
-use crate::entity::entities::{AbstractArrow, ArrowPickup};
 use crate::entity::LivingEntity;
+use crate::entity::entities::{AbstractArrow, ArrowPickup};
 use crate::entity::{Entity, SharedEntity};
 use crate::player::Player;
 use crate::world::World;
@@ -47,7 +47,7 @@ impl BowItem {
 
     /// Vanilla `BowItem#getWeaponStack` equivalent: the stack currently drawn.
     #[must_use]
-    pub fn arrow_pickup(creative: bool) -> ArrowPickup {
+    pub const fn arrow_pickup(creative: bool) -> ArrowPickup {
         if creative {
             ArrowPickup::CreativeOnly
         } else {
@@ -62,7 +62,7 @@ impl BowItem {
         inventory
             .get_items()
             .iter()
-            .position(|stack| ArrowItem::is_arrow(stack))
+            .position(ArrowItem::is_arrow)
             .map(|index| index as u8)
     }
 }

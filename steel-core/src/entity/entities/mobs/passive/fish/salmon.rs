@@ -22,20 +22,20 @@ use steel_macros::entity_behavior;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::entity_variant::SalmonVariant;
+use steel_registry::items::ItemRef;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
-use steel_registry::items::ItemRef;
 use steel_registry::vanilla_attributes;
-use steel_registry::vanilla_items;
 use steel_registry::vanilla_entity_data::SalmonEntityData;
+use steel_registry::vanilla_items;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use super::{
-    check_water_animal_spawn_rules, flop, tick_breathing, travel_in_water, FISH_LIMIT_PER_CHUNK,
-    FISH_MAX_HEALTH, FISH_MOVEMENT_SPEED, FISH_PANIC_SPEED, FISH_SWIM_TO_RANDOM_PLACE_INTERVAL,
-    FISH_SWIM_TO_RANDOM_PLACE_SPEED, WATER_ANIMAL_AMBIENT_SOUND_INTERVAL,
-    WATER_ANIMAL_EXPERIENCE_MAX, WATER_ANIMAL_EXPERIENCE_MIN,
+    FISH_LIMIT_PER_CHUNK, FISH_MAX_HEALTH, FISH_MOVEMENT_SPEED, FISH_PANIC_SPEED,
+    FISH_SWIM_TO_RANDOM_PLACE_INTERVAL, FISH_SWIM_TO_RANDOM_PLACE_SPEED,
+    WATER_ANIMAL_AMBIENT_SOUND_INTERVAL, WATER_ANIMAL_EXPERIENCE_MAX, WATER_ANIMAL_EXPERIENCE_MIN,
+    check_water_animal_spawn_rules, flop, tick_breathing, travel_in_water,
 };
 use crate::entity::ai::goal::{PanicGoal, RandomSwimmingGoal};
 use crate::entity::ai::path::PathType;
@@ -122,7 +122,11 @@ impl SalmonEntity {
 
     /// Vanilla `SalmonEntity.setVariant(SalmonVariant)`.
     pub fn set_variant(&self, variant: SalmonVariant) {
-        self.entity_data.lock().salmon_mut().variant_type.set(variant.id());
+        self.entity_data
+            .lock()
+            .salmon_mut()
+            .variant_type
+            .set(variant.id());
     }
 
     /// Vanilla `SalmonEntity.getVariantScale()`.
@@ -157,7 +161,10 @@ impl SalmonEntity {
         let mut entity_data = SalmonEntityData::new();
         living_base.initialize_synced_data(&mut entity_data);
         // Vanilla `SalmonEntity.defineSynchedData`: default is `MEDIUM.index`.
-        entity_data.salmon_mut().variant_type.set(SALMON_DEFAULT_VARIANT.id());
+        entity_data
+            .salmon_mut()
+            .variant_type
+            .set(SALMON_DEFAULT_VARIANT.id());
 
         {
             let mut goal_selector = mob_base.goal_selector().lock();
@@ -192,7 +199,9 @@ impl SalmonEntity {
 
     /// Vanilla `SalmonEntity` spawn variant roll.
     fn roll_spawn_variant(&self) {
-        let total = SALMON_VARIANT_WEIGHT_SMALL + SALMON_VARIANT_WEIGHT_MEDIUM + SALMON_VARIANT_WEIGHT_LARGE;
+        let total = SALMON_VARIANT_WEIGHT_SMALL
+            + SALMON_VARIANT_WEIGHT_MEDIUM
+            + SALMON_VARIANT_WEIGHT_LARGE;
         self.set_variant(salmon_variant_for_roll(rand::random_range(0..total)));
     }
 }
@@ -240,7 +249,8 @@ impl Entity for SalmonEntity {
         if let Some(name) = nbt.string("type") {
             let name = name.to_str();
             self.set_variant(
-                SalmonVariant::from_serialized_name(name.as_ref()).unwrap_or(SALMON_DEFAULT_VARIANT),
+                SalmonVariant::from_serialized_name(name.as_ref())
+                    .unwrap_or(SALMON_DEFAULT_VARIANT),
             );
         }
     }
@@ -354,7 +364,11 @@ impl Bucketable for SalmonEntity {
     }
 
     fn set_from_bucket(&self, from_bucket: bool) {
-        self.entity_data.lock().abstract_fish_mut().from_bucket.set(from_bucket);
+        self.entity_data
+            .lock()
+            .abstract_fish_mut()
+            .from_bucket
+            .set(from_bucket);
     }
 
     fn bucket_item(&self) -> ItemRef {

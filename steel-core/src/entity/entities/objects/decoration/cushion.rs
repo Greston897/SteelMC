@@ -10,9 +10,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Weak};
 
 use glam::DVec3;
+use simdnbt::FromNbtTag as _;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
-use simdnbt::FromNbtTag as _;
 use steel_macros::entity_behavior;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::data_components::vanilla_components::CUSHION_COLOR;
@@ -261,12 +261,12 @@ mod tests {
     use simdnbt::owned::NbtCompound;
     use steel_registry::data_components::vanilla_components::CUSHION_COLOR;
     use steel_registry::dye_color::DyeColor;
-    use steel_registry::vanilla_entity_data::CushionEntityData;
     use steel_registry::item_stack::ItemStack;
+    use steel_registry::vanilla_entity_data::CushionEntityData;
     use steel_registry::{init_vanilla_registry, vanilla_blocks};
+    use steel_utils::Downcast as _;
     use steel_utils::types::{InteractionHand, UpdateFlags};
     use steel_utils::{BlockPos, ChunkPos, WorldAabb};
-    use steel_utils::Downcast as _;
 
     use super::{CushionEntity, cushion_item_for_color};
     use crate::behavior::InteractionResult;
@@ -333,7 +333,10 @@ mod tests {
         Arc::clone(&cushion).tick();
 
         assert!(!cushion.is_removed());
-        assert!(dropped_items(&fixture.world).is_empty());
+        assert_eq!(
+            dropped_items(&fixture.world),
+            [] as [steel_registry::item_stack::ItemStack; 0]
+        );
     }
 
     #[test]

@@ -102,8 +102,8 @@ mod tests {
 
     use super::{
         ARMOR_TRIM_EMPTY_ADDITIONS_SLOT_TEXTURES, ARMOR_TRIM_EMPTY_BASE_SLOT_TEXTURES,
-        NETHERITE_UPGRADE_EMPTY_ADDITIONS_SLOT_TEXTURES, NETHERITE_UPGRADE_EMPTY_BASE_SLOT_TEXTURES,
-        SmithingTemplateItem,
+        NETHERITE_UPGRADE_EMPTY_ADDITIONS_SLOT_TEXTURES,
+        NETHERITE_UPGRADE_EMPTY_BASE_SLOT_TEXTURES, SmithingTemplateItem,
     };
 
     #[test]
@@ -123,8 +123,7 @@ mod tests {
             "minecraft:container/slot/helmet"
         );
         assert!(
-            ARMOR_TRIM_EMPTY_ADDITIONS_SLOT_TEXTURES
-                .contains(&"minecraft:container/slot/ingot")
+            ARMOR_TRIM_EMPTY_ADDITIONS_SLOT_TEXTURES.contains(&"minecraft:container/slot/ingot")
         );
     }
 
@@ -154,7 +153,10 @@ mod tests {
 
     #[test]
     fn tooltip_keys_match_the_vanilla_translation_ids() {
-        assert_eq!(SMITHING_TEMPLATE_TOOLTIP_KEY, "item.minecraft.smithing_template");
+        assert_eq!(
+            SMITHING_TEMPLATE_TOOLTIP_KEY,
+            "item.minecraft.smithing_template"
+        );
         assert_eq!(
             INGREDIENTS_TOOLTIP_KEY,
             "item.minecraft.smithing_template.ingredients"

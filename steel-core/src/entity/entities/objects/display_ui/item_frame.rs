@@ -267,11 +267,7 @@ impl ItemFrameEntity {
 
     /// Vanilla `ItemFrameEntity#interact`: rotate a filled frame, otherwise insert
     /// the held item and consume one of it.
-    fn interact_with_player(
-        &self,
-        player: &Player,
-        hand: InteractionHand,
-    ) -> InteractionResult {
+    fn interact_with_player(&self, player: &Player, hand: InteractionHand) -> InteractionResult {
         let held = player.inventory.lock().get_item_in_hand(hand).clone();
         let has_framed_item = !self.entity_data.lock().item.get().is_empty();
 

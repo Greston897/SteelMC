@@ -24,8 +24,8 @@ use steel_registry::items::ItemRef;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::AbstractBoatEntityData;
 use steel_registry::{REGISTRY, sound_events, vanilla_blocks, vanilla_items};
-use steel_utils::locks::SyncMutex;
 use steel_utils::BlockPos;
+use steel_utils::locks::SyncMutex;
 use steel_utils::types::InteractionHand;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
@@ -37,8 +37,8 @@ use crate::entity::{
     DamageSource, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData,
     Player, SharedEntity,
 };
-use crate::physics::collision::{WorldCollisionProvider, has_block_collision};
 use crate::physics::MoverType;
+use crate::physics::collision::{WorldCollisionProvider, has_block_collision};
 use crate::world::{Explosion, World};
 
 /// Vanilla `AbstractBoatEntity.UNDERWATER_TICKS_MAX`: riders are ejected after
@@ -461,7 +461,11 @@ pub trait AbstractBoat: VehicleEntity {
                 }
             }
         }
-        if count == 0 { 0.0 } else { total / count as f32 }
+        if count == 0 {
+            0.0
+        } else {
+            total / count as f32
+        }
     }
 
     /// Vanilla `updateVelocity`: buoyancy, drag and gravity per location.
@@ -488,9 +492,9 @@ pub trait AbstractBoat: VehicleEntity {
                 let mut state = self.boat_state().lock();
                 state.water_level = body_y;
             }
-            let shifted = self
-                .bounding_box()
-                .translate(DVec3::new(0.0, target_y - self.position().y, 0.0));
+            let shifted =
+                self.bounding_box()
+                    .translate(DVec3::new(0.0, target_y - self.position().y, 0.0));
             let collision = WorldCollisionProvider::new(&world);
             if !has_block_collision(&collision, shifted) {
                 let _ = self.try_set_position(DVec3::new(
@@ -604,16 +608,16 @@ pub trait AbstractBoat: VehicleEntity {
         let (yaw, _) = self.rotation();
         let yaw_radians = yaw * std::f32::consts::PI / 180.0;
         let velocity = self.velocity();
-        self.set_velocity(velocity + DVec3::new(
-            f64::from(-yaw_radians.sin() * forward_force),
-            0.0,
-            f64::from(yaw_radians.cos() * forward_force),
-        ));
-
-        self.set_paddles_moving(
-            (right && !left) || forward,
-            (left && !right) || forward,
+        self.set_velocity(
+            velocity
+                + DVec3::new(
+                    f64::from(-yaw_radians.sin() * forward_force),
+                    0.0,
+                    f64::from(yaw_radians.cos() * forward_force),
+                ),
         );
+
+        self.set_paddles_moving((right && !left) || forward, (left && !right) || forward);
     }
 
     /// Vanilla `tickPaddleSounds`.
@@ -664,8 +668,7 @@ pub trait AbstractBoat: VehicleEntity {
 
         let position = self.position();
         for (offset_x, offset_z, sound) in plays {
-            let pitch =
-                SPLASH_SOUND_PITCH_BASE + SPLASH_SOUND_PITCH_RANGE * rand::random::<f32>();
+            let pitch = SPLASH_SOUND_PITCH_BASE + SPLASH_SOUND_PITCH_RANGE * rand::random::<f32>();
             world.play_sound_at(
                 sound,
                 SoundSource::Neutral,
@@ -813,9 +816,9 @@ pub fn ride_boat_interact(entity: &dyn Entity, player: &Player) -> InteractionRe
         return InteractionResult::Pass;
     }
 
-    let underwater_too_long = entity.as_abstract_boat().is_some_and(|boat| {
-        boat.boat_state().lock().ticks_underwater >= UNDERWATER_TICKS_MAX
-    });
+    let underwater_too_long = entity
+        .as_abstract_boat()
+        .is_some_and(|boat| boat.boat_state().lock().ticks_underwater >= UNDERWATER_TICKS_MAX);
     if underwater_too_long {
         return InteractionResult::Pass;
     }

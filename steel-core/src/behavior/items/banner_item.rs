@@ -49,11 +49,7 @@ impl BannerItem {
             standing_block,
             wall_block,
             attachment_direction,
-            layout: StandingAndWallBlockItem::new(
-                standing_block,
-                wall_block,
-                attachment_direction,
-            ),
+            layout: StandingAndWallBlockItem::new(standing_block, wall_block, attachment_direction),
         }
     }
 }

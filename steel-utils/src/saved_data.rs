@@ -31,8 +31,7 @@ pub mod names {
     pub const COMMAND_STORAGE: SavedDataName = SavedDataName::trusted("command_storage");
     /// Map saved data (`MapState` color grids, decorations and next id),
     /// persisted as `data/maps.bin` per loaded world.
-    pub const MAPS: WincodeSavedDataName =
-        WincodeSavedDataName::trusted("maps", *b"STLM", 1);
+    pub const MAPS: WincodeSavedDataName = WincodeSavedDataName::trusted("maps", *b"STLM", 1);
 }
 
 /// Name of a per-world saved data entry.

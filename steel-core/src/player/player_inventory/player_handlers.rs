@@ -32,8 +32,8 @@ use steel_registry::item_stack::ItemStack;
 use steel_registry::mob_effect::MobEffectRef;
 use steel_registry::sound_events;
 use steel_registry::stat::vanilla_stat_types;
-use steel_registry::{vanilla_custom_stats, vanilla_items};
 use steel_registry::{REGISTRY, RegistryExt};
+use steel_registry::{vanilla_custom_stats, vanilla_items};
 use steel_utils::{
     Downcast as _,
     locks::Shared,
@@ -549,7 +549,7 @@ impl Player {
                 return;
             };
 
-            let mut editable = stack.clone();
+            let mut editable = stack;
             editable.set(WRITABLE_BOOK_CONTENT, content);
             editable
         };

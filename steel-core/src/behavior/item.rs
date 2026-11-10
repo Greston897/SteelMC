@@ -23,9 +23,6 @@ use steel_utils::types::{InteractionHand, SignTextSlot};
 use text_components::TextComponent;
 
 use crate::behavior::items::{DefaultItemBehavior, SpawnEggItem, block_transformer};
-use crate::inventory::click::MouseButton;
-use crate::inventory::lock::ContainerLockGuard;
-use crate::inventory::slots::Slot;
 use crate::behavior::{
     CanMineContext, InteractionResult, InventoryTickContext, UseItemContext, UseOnContext,
 };
@@ -34,6 +31,9 @@ use crate::entity::consume_effect::apply_consume_effect;
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::ItemEntity;
 use crate::entity::{Entity, LivingEntity, LivingEntityRef, MobEffectInstance, SharedEntity};
+use crate::inventory::click::MouseButton;
+use crate::inventory::lock::ContainerLockGuard;
+use crate::inventory::slots::Slot;
 use crate::player::{Player, player_inventory::EquipmentSwapResult};
 use crate::world::World;
 

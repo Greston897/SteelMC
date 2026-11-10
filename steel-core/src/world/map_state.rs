@@ -77,7 +77,7 @@ pub struct MapDecoration {
 impl MapDecoration {
     /// Creates a decoration and applies vanilla's rotation masking.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         kind: MapDecorationTypeRef,
         x: i8,
         z: i8,
@@ -124,7 +124,7 @@ struct PlayerUpdateTracker {
 }
 
 impl PlayerUpdateTracker {
-    fn new() -> Self {
+    const fn new() -> Self {
         Self {
             dirty: true,
             start_x: 0,
@@ -278,7 +278,7 @@ impl MapState {
     }
 
     /// Assigns the saved-data id. Called once when the state is registered.
-    pub(crate) fn set_id(&mut self, id: i32) {
+    pub(crate) const fn set_id(&mut self, id: i32) {
         self.id = id;
     }
 
@@ -296,7 +296,7 @@ impl MapState {
 
     /// Dimension (`domain:world` key) this map was created in.
     #[must_use]
-    pub fn dimension(&self) -> &Identifier {
+    pub const fn dimension(&self) -> &Identifier {
         &self.dimension
     }
 
@@ -406,12 +406,12 @@ impl MapState {
     }
 
     /// Marks the state for the next save.
-    pub fn mark_saved_dirty(&mut self) {
+    pub const fn mark_saved_dirty(&mut self) {
         self.dirty = true;
     }
 
     /// Clears the saved-data dirty flag after a successful write.
-    pub fn clear_saved_dirty(&mut self) {
+    pub const fn clear_saved_dirty(&mut self) {
         self.dirty = false;
     }
 
@@ -430,8 +430,8 @@ impl MapState {
 
     /// Returns the tracker for a player, creating it on first use.
     fn player_sync_data(&mut self, uuid: Uuid) -> &mut PlayerUpdateTracker {
-        if !self.trackers.contains_key(&uuid) {
-            self.trackers.insert(uuid, PlayerUpdateTracker::new());
+        if let std::collections::hash_map::Entry::Vacant(e) = self.trackers.entry(uuid) {
+            e.insert(PlayerUpdateTracker::new());
             self.tracker_order.push(uuid);
         }
         self.trackers
@@ -660,25 +660,22 @@ impl MapState {
         };
         let decoration = MapDecoration::new(kind, marker_x, marker_z, marker_rotation, name);
 
-        match self.decorations.iter().position(|(id, _)| id == key) {
-            Some(index) => {
-                if self.decorations[index].1 == decoration {
-                    return;
-                }
-                if self.decorations[index].1.kind.track_count {
-                    self.decoration_count = self.decoration_count.saturating_sub(1);
-                }
-                self.decorations[index].1 = decoration;
-                if self.decorations[index].1.kind.track_count {
-                    self.decoration_count += 1;
-                }
+        if let Some(index) = self.decorations.iter().position(|(id, _)| id == key) {
+            if self.decorations[index].1 == decoration {
+                return;
             }
-            None => {
-                if decoration.kind.track_count {
-                    self.decoration_count += 1;
-                }
-                self.decorations.push((key.to_owned(), decoration));
+            if self.decorations[index].1.kind.track_count {
+                self.decoration_count = self.decoration_count.saturating_sub(1);
             }
+            self.decorations[index].1 = decoration;
+            if self.decorations[index].1.kind.track_count {
+                self.decoration_count += 1;
+            }
+        } else {
+            if decoration.kind.track_count {
+                self.decoration_count += 1;
+            }
+            self.decorations.push((key.to_owned(), decoration));
         }
 
         self.mark_decorations_dirty();
@@ -925,7 +922,7 @@ impl MapStates {
     }
 
     /// Vanilla `ServerWorld.increaseAndGetMapId`.
-    pub fn allocate_id(&mut self) -> i32 {
+    pub const fn allocate_id(&mut self) -> i32 {
         self.next_id += 1;
         self.dirty = true;
         self.next_id
@@ -1060,8 +1057,8 @@ pub struct PersistentMapStates {
 #[cfg(test)]
 mod tests {
     use super::{
-        MAP_AREA, MAP_SIZE, MAX_SCALE, MapDecoration, MapState, MapStates,
-        PersistentDecoration, PersistentMapStates, is_nether_dimension,
+        MAP_AREA, MAP_SIZE, MAX_SCALE, MapDecoration, MapState, MapStates, PersistentDecoration,
+        PersistentMapStates, is_nether_dimension,
     };
     use steel_registry::{init_vanilla_registry, vanilla_map_decoration_types};
     use steel_utils::Identifier;
@@ -1206,7 +1203,10 @@ mod tests {
             0,
         );
         let (_, decoration) = state.decorations().next().expect("marker");
-        assert_eq!(decoration.kind.key, vanilla_map_decoration_types::PLAYER_OFF_MAP.key);
+        assert_eq!(
+            decoration.kind.key,
+            vanilla_map_decoration_types::PLAYER_OFF_MAP.key
+        );
         assert_eq!(decoration.rotation, 0);
 
         // Beyond the radius the marker disappears unless tracking is unlimited.
@@ -1462,9 +1462,7 @@ mod tests {
         maps.clear_dirty();
         assert!(!maps.is_dirty());
 
-        maps.get_mut(id)
-            .expect("map exists")
-            .put_color(1, 2, 0x2A);
+        maps.get_mut(id).expect("map exists").put_color(1, 2, 0x2A);
         assert!(maps.is_dirty(), "color writes reach the saved-data flag");
 
         maps.clear_dirty();
@@ -1479,6 +1477,9 @@ mod tests {
             None,
             0,
         );
-        assert!(maps.is_dirty(), "decoration writes reach the saved-data flag");
+        assert!(
+            maps.is_dirty(),
+            "decoration writes reach the saved-data flag"
+        );
     }
 }

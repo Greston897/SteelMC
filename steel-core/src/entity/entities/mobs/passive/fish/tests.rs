@@ -66,7 +66,8 @@ fn salmon_variant_pool_matches_vanilla_weights() {
     assert_eq!(SALMON_VARIANT_WEIGHT_MEDIUM, 50);
     assert_eq!(SALMON_VARIANT_WEIGHT_LARGE, 15);
 
-    let total = SALMON_VARIANT_WEIGHT_SMALL + SALMON_VARIANT_WEIGHT_MEDIUM + SALMON_VARIANT_WEIGHT_LARGE;
+    let total =
+        SALMON_VARIANT_WEIGHT_SMALL + SALMON_VARIANT_WEIGHT_MEDIUM + SALMON_VARIANT_WEIGHT_LARGE;
     assert_eq!(total, 95);
 
     assert_eq!(salmon_variant_for_roll(0), SalmonVariant::Small);

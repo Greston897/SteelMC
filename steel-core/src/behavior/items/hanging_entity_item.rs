@@ -34,7 +34,9 @@ impl HangingEntityItem {
     ) -> bool {
         side.is_horizontal()
             && target.y() < context.world.max_build_height()
-            && context.player.can_place_on(context.world, target, side, stack)
+            && context
+                .player
+                .can_place_on(context.world, target, side, stack)
     }
 }
 
@@ -44,7 +46,9 @@ impl ItemBehavior for HangingEntityItem {
         let (dx, dy, dz) = side.offset();
         let target = context.hit_result.block_pos.offset(dx, dy, dz);
 
-        let stack = context.inv.with_item(|stack: &mut steel_registry::item_stack::ItemStack| stack.clone());
+        let stack = context
+            .inv
+            .with_item(|stack: &mut steel_registry::item_stack::ItemStack| stack.clone());
 
         if !Self::can_place_on(context, &stack, side, target) {
             return InteractionResult::Fail;
@@ -100,8 +104,8 @@ mod tests {
 
     use glam::DVec3;
     use steel_registry::data_components::vanilla_components::CUSTOM_NAME;
-    use steel_registry::items::item::BlockHitResult;
     use steel_registry::item_stack::ItemStack;
+    use steel_registry::items::item::BlockHitResult;
     use steel_registry::{init_vanilla_registry, vanilla_blocks, vanilla_items};
     use steel_utils::types::{InteractionHand, UpdateFlags};
     use steel_utils::{BlockPos, ChunkPos, Direction, Downcast as _, WorldAabb};

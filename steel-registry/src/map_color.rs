@@ -183,9 +183,7 @@ pub const fn render_rgb(color_byte: u8) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        Brightness, CLEAR, MAP_COLORS, WATER_BLUE, by_id, render_rgb,
-    };
+    use super::{Brightness, CLEAR, MAP_COLORS, WATER_BLUE, by_id, render_rgb};
 
     #[test]
     fn palette_matches_vanilla_ids() {
@@ -224,8 +222,14 @@ mod tests {
     #[test]
     fn render_rgb_scales_each_channel() {
         // STONE_GRAY 0x707070 at NORMAL (220/255) rounds down to 0x606060.
-        assert_eq!(render_rgb(by_id(11).render_byte(Brightness::Normal)), 0x60_6060);
-        assert_eq!(render_rgb(by_id(11).render_byte(Brightness::High)), 0x70_7070);
+        assert_eq!(
+            render_rgb(by_id(11).render_byte(Brightness::Normal)),
+            0x60_6060
+        );
+        assert_eq!(
+            render_rgb(by_id(11).render_byte(Brightness::High)),
+            0x70_7070
+        );
     }
 
     #[test]

@@ -105,9 +105,10 @@ impl DebugStickItem {
             let Some(value) = cycle(&values, Some(&current), inverse).copied() else {
                 return false;
             };
-            let Some(updated) = REGISTRY
-                .blocks
-                .try_set_property_by_name(state, property_name, value)
+            let Some(updated) =
+                REGISTRY
+                    .blocks
+                    .try_set_property_by_name(state, property_name, value)
             else {
                 return false;
             };
@@ -231,7 +232,11 @@ fn ordered_value_names(property: &dyn Property) -> Vec<&str> {
 
 /// Vanilla `Util#next` / `Util#previous`: wraps around the ends and falls back to
 /// the first (or last) element when `current` is absent or unknown.
-fn cycle<'a, T: PartialEq>(values: &'a [T], current: Option<&'a T>, inverse: bool) -> Option<&'a T> {
+fn cycle<'a, T: PartialEq>(
+    values: &'a [T],
+    current: Option<&'a T>,
+    inverse: bool,
+) -> Option<&'a T> {
     let first = values.first()?;
     let last = values.last()?;
 
@@ -244,11 +249,7 @@ fn cycle<'a, T: PartialEq>(values: &'a [T], current: Option<&'a T>, inverse: boo
     };
 
     if inverse {
-        Some(if index == 0 {
-            last
-        } else {
-            &values[index - 1]
-        })
+        Some(if index == 0 { last } else { &values[index - 1] })
     } else {
         Some(if index + 1 == values.len() {
             first
@@ -264,7 +265,9 @@ fn selected_property(
     stack: &steel_registry::item_stack::ItemStack,
     block: BlockRef,
 ) -> Option<&'static str> {
-    stack.get(DEBUG_STICK_STATE).and_then(|state| state.get(block))
+    stack
+        .get(DEBUG_STICK_STATE)
+        .and_then(|state| state.get(block))
 }
 
 #[cfg(test)]
@@ -418,7 +421,10 @@ mod tests {
         // Left click selects the first property and leaves the world untouched.
         assert!(run_action(&player, world, pos, state, false));
         let stack = player.inventory.lock().get_selected_item().clone();
-        assert_eq!(selected_property(&stack, &vanilla_blocks::LEVER), Some(first));
+        assert_eq!(
+            selected_property(&stack, &vanilla_blocks::LEVER),
+            Some(first)
+        );
         assert_eq!(world.get_block_state(pos), state);
 
         // Right click cycles that property to the next vanilla value.
@@ -437,7 +443,10 @@ mod tests {
 
         assert!(run_action(&player, world, pos, state, true));
         let updated = world.get_block_state(pos);
-        assert_eq!(REGISTRY.blocks.get_property_str(updated, first), Some(expected));
+        assert_eq!(
+            REGISTRY.blocks.get_property_str(updated, first),
+            Some(expected)
+        );
 
         // Unrelated properties keep their values.
         let other = property_names(&vanilla_blocks::LEVER)[1];

@@ -122,7 +122,7 @@ impl CrossbowItem {
             let Some(slot) = inventory
                 .get_items()
                 .iter()
-                .position(|candidate| ArrowItem::is_arrow(candidate))
+                .position(ArrowItem::is_arrow)
                 .or_else(|| {
                     inventory
                         .get_items()
@@ -224,16 +224,23 @@ impl CrossbowItem {
                     Some(&shooter),
                     pickup,
                 );
-                Self::launch(arrow, world, &shooter, yaw + yaw_offset, pitch + pitch_offset);
-            } else {
-                let arrow = ArrowItem::create_arrow(
-                    projectile,
-                    position,
+                Self::launch(
+                    arrow,
                     world,
-                    Some(&shooter),
-                    pickup,
+                    &shooter,
+                    yaw + yaw_offset,
+                    pitch + pitch_offset,
                 );
-                Self::launch(arrow, world, &shooter, yaw + yaw_offset, pitch + pitch_offset);
+            } else {
+                let arrow =
+                    ArrowItem::create_arrow(projectile, position, world, Some(&shooter), pickup);
+                Self::launch(
+                    arrow,
+                    world,
+                    &shooter,
+                    yaw + yaw_offset,
+                    pitch + pitch_offset,
+                );
             }
         }
 
@@ -264,14 +271,7 @@ impl CrossbowItem {
     ) {
         arrow.set_arrow_damage(2.0);
         arrow.set_shot_from_crossbow();
-        arrow.shoot_from_rotation(
-            shooter.as_ref(),
-            pitch,
-            yaw,
-            0.0,
-            ARROW_SHOT_VELOCITY,
-            1.0,
-        );
+        arrow.shoot_from_rotation(shooter.as_ref(), pitch, yaw, 0.0, ARROW_SHOT_VELOCITY, 1.0);
         Self::spawn(world, arrow);
     }
 

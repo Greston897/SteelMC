@@ -6,9 +6,9 @@ use steel_math::{DEGREE_90, DEGREE_180, DEGREE_270};
 use steel_registry::blocks::properties::Direction;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
-use steel_utils::{BlockPos, BlockStateId};
 use steel_utils::locks::Shared;
 use steel_utils::types::InteractionHand;
+use steel_utils::{BlockPos, BlockStateId};
 
 use crate::behavior::{BlockStateBehaviorExt, ITEM_BEHAVIORS};
 use crate::entity::{Entity, LivingEntity};
@@ -804,6 +804,44 @@ impl<'a> InventoryTickContext<'a> {
     }
 }
 
+/// Context for vanilla's `ItemStack#canMine` check, run right before a block is destroyed.
+///
+/// Returning `false` keeps the block in place and, for the debug stick, is the
+/// path that selects the next block property instead of breaking anything.
+pub struct CanMineContext<'a> {
+    /// The player mining the block.
+    pub player: &'a Player,
+    /// The world the block lives in.
+    pub world: &'a Arc<World>,
+    /// The position of the block being mined.
+    pub pos: BlockPos,
+    /// The state of the block being mined.
+    pub state: BlockStateId,
+    /// Mutable inventory access for the mining hand.
+    pub inv: InventoryAccess,
+}
+
+impl<'a> CanMineContext<'a> {
+    /// Creates a new `CanMineContext`.
+    #[must_use]
+    pub const fn new(
+        player: &'a Player,
+        world: &'a Arc<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+        inventory: Shared<PlayerInventory>,
+        hand: InteractionHand,
+    ) -> Self {
+        Self {
+            player,
+            world,
+            pos,
+            state,
+            inv: InventoryAccess::new(inventory, hand),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
@@ -1018,43 +1056,5 @@ mod tests {
 
         assert_eq!(context.get_nearest_looking_direction(), Direction::Down);
         assert_eq!(context.get_nearest_looking_directions()[0], Direction::West);
-    }
-}
-
-/// Context for vanilla's `ItemStack#canMine` check, run right before a block is destroyed.
-///
-/// Returning `false` keeps the block in place and, for the debug stick, is the
-/// path that selects the next block property instead of breaking anything.
-pub struct CanMineContext<'a> {
-    /// The player mining the block.
-    pub player: &'a Player,
-    /// The world the block lives in.
-    pub world: &'a Arc<World>,
-    /// The position of the block being mined.
-    pub pos: BlockPos,
-    /// The state of the block being mined.
-    pub state: BlockStateId,
-    /// Mutable inventory access for the mining hand.
-    pub inv: InventoryAccess,
-}
-
-impl<'a> CanMineContext<'a> {
-    /// Creates a new `CanMineContext`.
-    #[must_use]
-    pub const fn new(
-        player: &'a Player,
-        world: &'a Arc<World>,
-        pos: BlockPos,
-        state: BlockStateId,
-        inventory: Shared<PlayerInventory>,
-        hand: InteractionHand,
-    ) -> Self {
-        Self {
-            player,
-            world,
-            pos,
-            state,
-            inv: InventoryAccess::new(inventory, hand),
-        }
     }
 }

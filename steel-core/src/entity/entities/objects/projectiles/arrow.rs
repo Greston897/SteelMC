@@ -102,7 +102,7 @@ pub struct ArrowState {
 impl ArrowState {
     /// A fresh arrow carrying `item`.
     #[must_use]
-    pub fn new(item: ItemStack, damage: f64) -> Self {
+    pub const fn new(item: ItemStack, damage: f64) -> Self {
         Self {
             damage,
             critical: false,
@@ -131,7 +131,7 @@ pub struct ArrowHandle {
 impl ArrowHandle {
     /// Creates the handle for a freshly spawned arrow.
     #[must_use]
-    pub fn new(item: ItemStack, damage: f64, spectral: bool) -> Self {
+    pub const fn new(item: ItemStack, damage: f64, spectral: bool) -> Self {
         Self {
             state: SyncMutex::new(ArrowState::new(item, damage)),
             removed: AtomicBool::new(false),
@@ -701,9 +701,7 @@ mod tests {
     use std::io::Cursor;
     use steel_registry::{init_vanilla_registry, vanilla_entities};
 
-    use super::{
-        AbstractArrow, ArrowEntity, ArrowPickup, MAX_LIFE_TICKS, SpectralArrowEntity,
-    };
+    use super::{AbstractArrow, ArrowEntity, ArrowPickup, MAX_LIFE_TICKS, SpectralArrowEntity};
     use crate::entity::Entity as _;
     use crate::world::World;
 
@@ -744,7 +742,10 @@ mod tests {
 
         for _ in 0..MAX_LIFE_TICKS - 1 {
             arrow.age_arrow();
-            assert!(!arrow.is_removed(), "arrows live for {MAX_LIFE_TICKS} ticks");
+            assert!(
+                !arrow.is_removed(),
+                "arrows live for {MAX_LIFE_TICKS} ticks"
+            );
         }
 
         arrow.age_arrow();

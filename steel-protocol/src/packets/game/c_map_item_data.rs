@@ -172,7 +172,13 @@ impl CMapItemData {
         locked: bool,
         decorations: Vec<MapDecorationEntry>,
     ) -> Self {
-        Self::new(map_id, scale, locked, Some(decorations), OptionalMapPatch::new(None))
+        Self::new(
+            map_id,
+            scale,
+            locked,
+            Some(decorations),
+            OptionalMapPatch::new(None),
+        )
     }
 }
 
@@ -221,7 +227,7 @@ mod tests {
                 0,    // no display name
                 1,    // patch present
                 2, 1, 3, 4, // width, height, startX, startZ
-                2,    // VarInt color count
+                2, // VarInt color count
                 0x2A, 0x0B,
             ]
         );
@@ -238,13 +244,7 @@ mod tests {
     fn decoration_name_is_optional_component() {
         let mut entry = MapDecorationEntry::new(3, 64, -64, 0);
         entry.name = Some(TextComponent::plain("Base"));
-        let packet = CMapItemData::new(
-            1,
-            4,
-            false,
-            Some(vec![entry]),
-            OptionalMapPatch::default(),
-        );
+        let packet = CMapItemData::new(1, 4, false, Some(vec![entry]), OptionalMapPatch::default());
 
         let bytes = encode(&packet);
         // 1 map id, 4 scale, 0 locked, 1 decorations, 1 count, 3 type, 64, -64,

@@ -54,11 +54,7 @@ impl ReadFrom for SEditBook {
             None
         };
 
-        Ok(Self {
-            slot,
-            pages,
-            title,
-        })
+        Ok(Self { slot, pages, title })
     }
 }
 
@@ -140,6 +136,9 @@ mod tests {
         let decoded =
             decode(&encode(0, &[&page], Some(&title))).expect("boundary values should decode");
         assert_eq!(decoded.pages[0].len(), MAX_PAGE_LENGTH);
-        assert_eq!(decoded.title.map(|title| title.len()), Some(MAX_TITLE_LENGTH));
+        assert_eq!(
+            decoded.title.map(|title| title.len()),
+            Some(MAX_TITLE_LENGTH)
+        );
     }
 }
