@@ -40,6 +40,9 @@ pub const ARROW_SHOT_VELOCITY: f32 = 3.15;
 /// Vanilla shot velocity for firework rockets.
 pub const FIREWORK_SHOT_VELOCITY: f32 = 1.6;
 
+/// A firework rocket must always be slower than a plain arrow.
+const _: () = assert!(FIREWORK_SHOT_VELOCITY < ARROW_SHOT_VELOCITY);
+
 /// Multishot loads (and fires) this many projectiles.
 pub const MULTISHOT_COUNT: i32 = 3;
 
@@ -444,7 +447,6 @@ mod tests {
         let rocket = ItemStack::new(&vanilla_items::FIREWORK_ROCKET);
         assert_eq!(CrossbowItem::shot_velocity(&arrow), ARROW_SHOT_VELOCITY);
         assert_eq!(CrossbowItem::shot_velocity(&rocket), FIREWORK_SHOT_VELOCITY);
-        const _: () = assert!(FIREWORK_SHOT_VELOCITY < ARROW_SHOT_VELOCITY);
     }
 
     #[test]

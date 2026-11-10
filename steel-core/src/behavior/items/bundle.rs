@@ -295,6 +295,7 @@ mod tests {
     use steel_utils::{ChunkPos, Downcast as _, WorldAabb};
 
     use super::BundleItem;
+    use crate::behavior::item::ItemBehavior;
     use crate::behavior::init_behaviors;
     use crate::entity::Entity as _;
     use crate::entity::entities::ItemEntity;
@@ -476,10 +477,7 @@ mod tests {
             .expect("bundle item entity spawns");
         assert_eq!(contents_of(&bundle.get_item()).items().len(), 2);
 
-        <BundleItem as crate::behavior::item::ItemBehavior>::on_item_entity_destroyed(
-            &BundleItem,
-            &bundle,
-        );
+        ItemBehavior::on_item_entity_destroyed(&BundleItem, &bundle);
 
         assert!(contents_of(&bundle.get_item()).is_empty());
         let spilled = world.get_entities_in_aabb_matching(

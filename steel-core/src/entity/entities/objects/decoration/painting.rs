@@ -468,7 +468,7 @@ impl BlockAttachedEntity for PaintingEntity {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+    use std::sync::{Arc, Weak};
 
     use simdnbt::borrow::read_compound;
     use simdnbt::owned::NbtCompound;
@@ -484,10 +484,12 @@ mod tests {
     use steel_utils::{BlockPos, ChunkPos, Direction, Downcast as _, WorldAabb};
 
     use super::PaintingEntity;
-    use crate::entity::block_attached_entity::CHECK_SURVIVAL_FREQUENCY_TICKS;
+    use crate::entity::block_attached_entity::{BlockAttachedEntity, CHECK_SURVIVAL_FREQUENCY_TICKS};
+    use crate::entity::next_entity_id;
     use crate::entity::entities::ItemEntity;
     use crate::entity::{Entity as _, SharedEntity};
     use crate::test_support::{TestWorld, fresh_test_world, insert_ready_full_chunk};
+    use crate::world::World;
 
     fn kebab() -> RegistryReference<PaintingVariant> {
         RegistryReference::new(&vanilla_painting_variants::KEBAB)
@@ -515,14 +517,14 @@ mod tests {
     }
 
     fn spawn_painting(
-        world: &Arc<crate::world::World>,
+        world: &Arc<World>,
         block_pos: BlockPos,
         facing: Direction,
         variant: RegistryReference<PaintingVariant>,
     ) -> Arc<PaintingEntity> {
         let painting = Arc::new(PaintingEntity::new_attached(
             &vanilla_entities::PAINTING,
-            crate::entity::next_entity_id(),
+            next_entity_id(),
             block_pos,
             facing,
             variant,
@@ -535,7 +537,7 @@ mod tests {
         painting
     }
 
-    fn dropped_items(world: &Arc<crate::world::World>) -> Vec<ItemStack> {
+    fn dropped_items(world: &Arc<World>) -> Vec<ItemStack> {
         world
             .get_entities_in_aabb(&painting_area())
             .iter()
@@ -618,11 +620,11 @@ mod tests {
             kebab(),
         );
 
-        crate::entity::block_attached_entity::BlockAttachedEntity::drop_item(
+        BlockAttachedEntity::drop_item(
             painting.as_ref(),
             None,
         );
-        crate::entity::block_attached_entity::BlockAttachedEntity::drop_item(
+        BlockAttachedEntity::drop_item(
             painting.as_ref(),
             None,
         );
@@ -678,7 +680,7 @@ mod tests {
             wall.offset(1, 0, 0),
             Direction::South,
             RegistryReference::new(REGISTRY.painting_variants.by_id(0).expect("variants")),
-            std::sync::Weak::new(),
+            Weak::new(),
         );
         assert_eq!(fresh.facing(), Direction::South);
 
