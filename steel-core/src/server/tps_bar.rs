@@ -8,7 +8,7 @@
 use steel_protocol::packets::game::{BossBarColor, BossBarOverlay, CBossEvent};
 use steel_utils::TICKS_PER_SECOND;
 use text_components::format::Color;
-use text_components::TextComponent;
+use text_components::{Modifier, TextComponent};
 use uuid::Uuid;
 
 use super::{Server, TabListTickStats};

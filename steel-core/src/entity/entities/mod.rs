@@ -5,8 +5,9 @@ pub mod objects;
 
 pub use mobs::ambient::BatEntity;
 pub use mobs::hostile::{
-    CaveSpiderEntity, DrownedEntity, EndermiteEntity, HuskEntity, SilverfishEntity,
-    VindicatorEntity, WitherSkeletonEntity, ZombieEntity, ZombifiedPiglinEntity,
+    CaveSpiderEntity, DrownedEntity, EndermiteEntity, HoglinEntity, HuskEntity, PiglinBruteEntity,
+    PiglinEntity, SilverfishEntity, SpiderEntity, VindicatorEntity, WitherSkeletonEntity,
+    ZoglinEntity, ZombieEntity, ZombieVillagerEntity, ZombifiedPiglinEntity,
 };
 pub use mobs::passive::*;
 pub use objects::decoration::{ArmorStandEntity, CushionEntity, PaintingEntity};
