@@ -42,19 +42,21 @@ jobs:
             > /tmp/test.log 2>&1 || true
           grep -E -A4 "^(error|FAILED|failures:)|panicked at|test result: FAILED" /tmp/test.log | head -200
 
-      - name: cargo fmt
+      - name: lint diagnostics (rustfmt + clippy + typos, as Lint runs them)
         continue-on-error: true
+        env:
+          RUSTFLAGS: "-Dwarnings"
         run: |
-          cargo fmt --all --check > /tmp/fmt.log 2>&1 || true
-          grep -c "^Diff in " /tmp/fmt.log || true
-
-      - name: cargo clippy
-        continue-on-error: true
-        timeout-minutes: 30
-        run: |
-          cargo clippy --workspace --all-targets --message-format=short -- -D warnings \
-            > /tmp/clippy.log 2>&1 || true
-          tail -c 8000 /tmp/clippy.log
+          rustup toolchain install nightly-2026-10-14 --profile minimal \
+            --component rustfmt,clippy --no-self-update > /dev/null 2>&1 || true
+          cargo +nightly-2026-10-14 fmt --all --check > /tmp/fmt.log 2>&1 || true
+          cargo +nightly-2026-10-14 clippy -r --workspace --all-targets --all-features \
+            --message-format=short > /tmp/clippy.log 2>&1 || true
+          curl -sL https://github.com/crate-ci/typos/releases/download/v1.48.0/typos-v1.48.0-x86_64-unknown-linux-musl.tar.gz \
+            | tar xz -C /usr/local/bin ./typos || true
+          typos > /tmp/typos.log 2>&1 || true
+          tail -c 4000 /tmp/clippy.log
+          tail -c 2000 /tmp/fmt.log
 
       - name: Report diagnostics as a commit comment
         if: always()
@@ -83,6 +85,7 @@ jobs:
               ("tests", "/tmp/test.log", ("test result: FAILED", "panicked at", "FAILED ", "error[E", "error: could not compile")),
               ("clippy", "/tmp/clippy.log", (": error",)),
               ("rustfmt", "/tmp/fmt.log", ("Diff in ",)),
+              ("typos", "/tmp/typos.log", ("error:",)),
           ):
               if not os.path.exists(path):
                   continue
