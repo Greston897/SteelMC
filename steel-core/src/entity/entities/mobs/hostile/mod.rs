@@ -10,6 +10,8 @@ pub mod cave_spider;
 pub mod creeper;
 /// Hostile drowned entity module.
 pub mod drowned;
+/// Hostile enderman entity module.
+pub mod enderman;
 /// Hostile endermite entity module.
 pub mod endermite;
 /// Hostile hoglin entity module.
@@ -47,6 +49,7 @@ pub use bogged::BoggedEntity;
 pub use cave_spider::CaveSpiderEntity;
 pub use creeper::CreeperEntity;
 pub use drowned::DrownedEntity;
+pub use enderman::EndermanEntity;
 pub use endermite::EndermiteEntity;
 pub use hoglin::HoglinEntity;
 pub use husk::HuskEntity;
