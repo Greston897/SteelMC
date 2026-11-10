@@ -12,7 +12,10 @@ mod splash_potion;
 mod thrown_egg;
 mod wind_charge;
 
-pub use arrow::{AbstractArrow, ArrowEntity, ArrowHandle, ArrowPickup, SpectralArrowEntity};
+pub use arrow::{
+    AbstractArrow, ArrowEntity, ArrowHandle, ArrowPickup, SpectralArrowEntity, TRIDENT_DAMAGE,
+    ThrownTridentEntity,
+};
 pub use ender_pearl::EnderPearlEntity;
 pub use experience_bottle::ExperienceBottleEntity;
 pub use eye_of_ender::EyeOfEnderEntity;

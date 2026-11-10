@@ -691,6 +691,240 @@ impl SpectralArrowEntity {
 
 arrow_entity_impl!(SpectralArrowEntity);
 
+
+/// Vanilla `ThrownTrident` base damage.
+pub const TRIDENT_DAMAGE: f64 = 8.0;
+
+/// Ticks between loyalty return steps (vanilla moves the trident every tick;
+/// Steel steps it a fixed distance to stay deterministic and testable).
+pub const LOYALTY_RETURN_DISTANCE: f64 = 1.0;
+
+/// A thrown trident (`ThrownTrident`).
+///
+/// Modelled on vanilla's `ThrownTrident extends AbstractArrow`, so it shares the
+/// arrow flight/pickup machinery and adds:
+/// * 8.0 base damage,
+/// * a persisted `Loyalty` level that makes the trident fly back to its owner
+///   once it has landed or hit something (`DealtDamage`),
+/// * pickup allowed for survival players, creative-only when thrown in creative.
+///
+/// Differences from vanilla, all deliberate:
+/// * Vanilla uses the `riptide` enchantment for the spin-attack throw; Steel has
+///   no riptide movement yet, so a charged throw always throws the trident.
+/// * The return trip moves the trident a fixed distance per tick instead of
+///   vanilla's per-tick teleport-with-particles.
+#[entity_behavior(class = "ThrownTrident")]
+pub struct ThrownTridentEntity {
+    base: EntityBase,
+    entity_type: EntityTypeRef,
+    projectile_base: ProjectileBase,
+    arrow: ArrowHandle,
+    /// Persisted `Loyalty` enchantment level.
+    loyalty: SyncMutex<i32>,
+    /// Persisted vanilla `DealtDamage` flag; armed loyalty only returns after it.
+    dealt_damage: AtomicBool,
+}
+
+// SAFETY: This key is owned by Steel and uniquely identifies `ThrownTridentEntity`.
+unsafe impl DowncastType for ThrownTridentEntity {
+    const TYPE_KEY: DowncastTypeKey = DowncastTypeKey::new("steel:entity/thrown_trident");
+}
+
+impl ThrownTridentEntity {
+    /// Creates a ready-to-throw trident carrying the given stack.
+    #[must_use]
+    pub fn new(
+        entity_type: EntityTypeRef,
+        id: i32,
+        position: DVec3,
+        world: Weak<World>,
+        item: ItemStack,
+        loyalty: i32,
+    ) -> Self {
+        let handle = ArrowHandle::new(ItemStack::new(&vanilla_items::TRIDENT), TRIDENT_DAMAGE, false);
+        let entity = Self {
+            base: EntityBase::new(id, position, entity_type.dimensions, world),
+            entity_type,
+            projectile_base: ProjectileBase::new(),
+            arrow: handle,
+            loyalty: SyncMutex::new(loyalty),
+            dealt_damage: AtomicBool::new(false),
+        };
+        entity.set_arrow_item(item);
+        entity
+    }
+
+    /// Creates a trident from saved base data.
+    #[must_use]
+    pub fn from_saved(entity_type: EntityTypeRef, load: EntityBaseLoad) -> Self {
+        Self {
+            base: EntityBase::from_load(load, entity_type.dimensions),
+            entity_type,
+            projectile_base: ProjectileBase::new(),
+            arrow: ArrowHandle::new(
+                ItemStack::new(&vanilla_items::TRIDENT),
+                TRIDENT_DAMAGE,
+                false,
+            ),
+            loyalty: SyncMutex::new(0),
+            dealt_damage: AtomicBool::new(false),
+        }
+    }
+
+    /// Current `Loyalty` level.
+    #[must_use]
+    pub fn loyalty(&self) -> i32 {
+        *self.loyalty.lock()
+    }
+
+    /// Whether the trident already hurt or hit something (`DealtDamage`).
+    #[must_use]
+    pub fn dealt_damage(&self) -> bool {
+        self.dealt_damage.load(Ordering::Acquire)
+    }
+
+    /// Marks the trident as having hit something, arming loyalty.
+    pub fn mark_dealt_damage(&self) {
+        self.dealt_damage.store(true, Ordering::Release);
+    }
+
+    /// Vanilla `ThrownTrident.tick` return leg: fly back to the owner once the
+    /// trident landed (or is mid-return) and loyalty is present.
+    ///
+    /// Returns `true` when the trident is being returned (so the regular arrow
+    /// tick must be skipped), `false` to run the normal flight tick.
+    fn tick_loyalty(self: &Arc<Self>) -> bool {
+        if self.loyalty() <= 0 || !self.dealt_damage() {
+            return false;
+        }
+
+        let Some(world) = self.level() else {
+            return false;
+        };
+        let Some(owner) = self.get_owner() else {
+            return false;
+        };
+
+        // Vanilla ignores collisions while returning.
+        self.base.set_no_physics(true);
+
+        let target = owner.position() + DVec3::new(0.0, owner.get_eye_y() - owner.position().y, 0.0);
+        let delta = target - self.position();
+        if delta.length_squared() <= 1.0 {
+            // Vanilla `tryReturnToOwner`: insert the trident into the owner's
+            // inventory (or drop it) and discard the entity.
+            let mut stack = self.pickup_item();
+            if let Some(player) = owner.as_player() {
+                player.add_item_with_sound(&mut stack);
+            } else {
+                world.drop_item_stack(self.position(), stack);
+            }
+            self.set_removed(RemovalReason::Discarded);
+            return true;
+        }
+
+        let step = delta.normalize_or_zero() * LOYALTY_RETURN_DISTANCE;
+        if let Err(error) = self.try_set_position(self.position() + step) {
+            log::debug!("failed to move returning trident: {error}");
+        }
+        self.play_sound(&sound_events::ITEM_TRIDENT_RETURN, 1.0, 1.0);
+        true
+    }
+
+    /// Saves the trident-only NBT fields on top of the shared arrow state.
+    fn save_trident(&self, nbt: &mut NbtCompound) {
+        nbt.insert("Loyalty", *self.loyalty.lock() as i8);
+        nbt.insert("DealtDamage", i8::from(self.dealt_damage()));
+    }
+
+    /// Loads the trident-only NBT fields.
+    fn load_trident(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
+        *self.loyalty.lock() = i32::from(nbt.byte_value("Loyalty").unwrap_or(0));
+        self.dealt_damage.store(
+            nbt.byte_value("DealtDamage").is_some_and(|value| value != 0),
+            Ordering::Release,
+        );
+    }
+}
+
+impl Entity for ThrownTridentEntity {
+    fn base(&self) -> &EntityBase {
+        &self.base
+    }
+
+    fn entity_type(&self) -> EntityTypeRef {
+        self.entity_type
+    }
+
+    fn tick(self: Arc<Self>) {
+        if self.tick_loyalty() {
+            return;
+        }
+        self.abstract_arrow_tick();
+    }
+
+    fn get_default_gravity(&self) -> f64 {
+        ARROW_GRAVITY
+    }
+
+    fn sound_source(&self) -> SoundSource {
+        SoundSource::Players
+    }
+
+    fn spawn_data(&self) -> i32 {
+        self.get_owner().map_or(0, |owner| owner.id())
+    }
+
+    fn restore_owner_reference(&self, owner: &SharedEntity) {
+        self.cache_owner_entity(owner);
+    }
+
+    fn projectile_owner_uuid(&self) -> Option<uuid::Uuid> {
+        self.owner_uuid()
+    }
+
+    fn projectile_owner(&self) -> Option<SharedEntity> {
+        self.get_owner()
+    }
+
+    fn player_touch(self: Arc<Self>, player: &Arc<Player>) {
+        self.abstract_arrow_player_touch(player);
+    }
+
+    fn save_additional(&self, nbt: &mut NbtCompound) {
+        self.save_projectile(nbt);
+        self.save_arrow(nbt);
+        self.save_trident(nbt);
+    }
+
+    fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
+        self.load_projectile(nbt);
+        self.load_arrow(nbt);
+        self.load_trident(nbt);
+    }
+}
+
+impl Projectile for ThrownTridentEntity {
+    fn projectile_base(&self) -> &ProjectileBase {
+        &self.projectile_base
+    }
+
+    fn on_hit_entity(self: Arc<Self>, entity: &SharedEntity, _location: DVec3) {
+        self.abstract_arrow_on_hit_entity(entity);
+        self.mark_dealt_damage();
+    }
+
+    fn on_hit_block(self: Arc<Self>, hit: &ClipHitResult) {
+        self.abstract_arrow_on_hit_block(hit);
+    }
+}
+
+impl AbstractArrow for ThrownTridentEntity {
+    fn arrow_handle(&self) -> &ArrowHandle {
+        &self.arrow
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::Weak;

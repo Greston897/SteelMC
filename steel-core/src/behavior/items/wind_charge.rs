@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use steel_macros::item_behavior;
 use steel_protocol::packets::game::SoundSource;
+use steel_registry::stat::vanilla_stat_types;
 use steel_registry::{sound_events, vanilla_entities};
 
 use crate::behavior::context::{InteractionResult, UseItemContext};
@@ -58,7 +59,7 @@ impl ItemBehavior for WindChargeItem {
             player.set_item_cooldown(stack.item.key.clone(), COOLDOWN_TICKS);
         }
 
-        player.award_stat(&steel_registry::stat::vanilla_stat_types::ITEM_USED, {
+        player.award_stat(&vanilla_stat_types::ITEM_USED, {
             context.inv.with_item(|stack| stack.item)
         });
         let has_infinite_materials = player.has_infinite_materials();
