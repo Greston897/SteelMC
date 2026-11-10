@@ -99,7 +99,10 @@ impl ArmorStandEntity {
     /// Creates an armor stand from persistent entity data.
     #[must_use]
     pub fn from_saved(entity_type: EntityTypeRef, load: EntityBaseLoad) -> Self {
-        Self::new_with_base(EntityBase::from_load(load, entity_type.dimensions), entity_type)
+        Self::new_with_base(
+            EntityBase::from_load(load, entity_type.dimensions),
+            entity_type,
+        )
     }
 
     fn new_with_base(base: EntityBase, entity_type: EntityTypeRef) -> Self {
@@ -424,9 +427,7 @@ impl Entity for ArmorStandEntity {
             dimensions.width,
             dimensions.height * SMALL_HEIGHT_FACTOR,
             dimensions.eye_height * SMALL_HEIGHT_FACTOR,
-            dimensions
-                .attachments
-                .scale(1.0, SMALL_HEIGHT_FACTOR),
+            dimensions.attachments.scale(1.0, SMALL_HEIGHT_FACTOR),
         )
     }
 
@@ -499,18 +500,12 @@ impl Entity for ArmorStandEntity {
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_equipment(nbt);
         if let Some(invisible) = nbt.byte_value("Invisible") {
-            self.set_base_invisible_flag(invisible != 0);
+            self.entity_data.set_base_invisible_flag(invisible != 0);
         }
         // The small flag changes the hitbox, so refresh dimensions afterwards.
         self.set_small(nbt.byte_value("Small").is_some_and(|value| value != 0));
-        self.set_show_arms(
-            nbt.byte_value("ShowArms")
-                .is_some_and(|value| value != 0),
-        );
-        self.set_no_base_plate(
-            nbt.byte_value("NoBasePlate")
-                .is_some_and(|value| value != 0),
-        );
+        self.set_show_arms(nbt.byte_value("ShowArms").is_some_and(|value| value != 0));
+        self.set_no_base_plate(nbt.byte_value("NoBasePlate").is_some_and(|value| value != 0));
         self.set_marker(nbt.byte_value("Marker").is_some_and(|value| value != 0));
         self.load_pose(nbt);
     }
@@ -626,7 +621,7 @@ mod tests {
         assert_eq!(
             nbt.compound("Pose")
                 .and_then(|pose| pose.list("Head"))
-                .and_then(|list| list.floats().map(<[f32]>::to_vec)),
+                .and_then(|list| list.floats()),
             Some(vec![10.0, 20.0, 30.0])
         );
     }
@@ -636,14 +631,9 @@ mod tests {
         let mut nbt = NbtCompound::new();
         nbt.insert("Small", 1_i8);
         nbt.insert("NoBasePlate", 1_i8);
-        nbt.insert(
-            "Pose",
-            {
-                let mut pose = NbtCompound::new();
-                pose.insert("RightArm", NbtList::Float(vec![1.0, 2.0, 3.0]));
-                NbtTag::Compound(pose)
-            },
-        );
+        let mut pose = NbtCompound::new();
+        pose.insert("RightArm", NbtList::Float(vec![1.0, 2.0, 3.0]));
+        nbt.insert("Pose", NbtTag::Compound(pose));
 
         let stand = reload(&nbt);
 
