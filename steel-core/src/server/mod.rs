@@ -9,6 +9,7 @@ pub mod registry_cache;
 mod run_loop;
 mod service_keys;
 mod tick_overload;
+mod tps_bar;
 /// The tick rate manager for the server.
 pub mod tick_rate_manager;
 mod world_tick_workers;
@@ -80,7 +81,7 @@ use crossbeam::queue::SegQueue;
 use glam::DVec3;
 use rayon::{ThreadPool, ThreadPoolBuilder};
 use rustc_hash::FxHashMap;
-use std::sync::atomic::AtomicI32;
+use std::sync::atomic::{AtomicBool, AtomicI32};
 use std::{
     collections::BTreeSet,
     io, mem,
@@ -249,6 +250,8 @@ pub async fn test_server_with_worlds_and_config(
         player_admission_changed: Notify::new(),
         server_tick_changed: Notify::new(),
         tick_rate_manager: SyncRwLock::new(TickRateManager::new()),
+        tps_bar_enabled: AtomicBool::new(false),
+        tps_bar_shown: SyncMutex::new(FxHashMap::default()),
         scoreboards,
         command_storage,
         command_dispatcher: SyncRwLock::new(registered_commands.dispatcher),
@@ -485,6 +488,10 @@ pub struct Server {
     server_tick_changed: Notify,
     /// The tick rate manager for the server.
     pub tick_rate_manager: SyncRwLock<TickRateManager>,
+    /// Whether the `/tpsbar` boss bar is enabled server-wide.
+    pub tps_bar_enabled: AtomicBool,
+    /// Players that already received the `add` action of the `/tpsbar` bar.
+    tps_bar_shown: SyncMutex<FxHashMap<Uuid, ()>>,
     /// The number of minutes required for a player to be idle for them to be kicked (timed out) from the server.
     /// If this is equal to 0, no kicking will happen.
     pub player_idle_timeout: AtomicI32,
@@ -831,6 +838,8 @@ impl Server {
             server_tick_changed: Notify::new(),
             registry_cache,
             tick_rate_manager: SyncRwLock::new(TickRateManager::new()),
+            tps_bar_enabled: AtomicBool::new(false),
+            tps_bar_shown: SyncMutex::new(FxHashMap::default()),
             player_idle_timeout: AtomicI32::new(0),
             scoreboards,
             command_storage,
