@@ -505,7 +505,10 @@ impl Entity for ArmorStandEntity {
         // The small flag changes the hitbox, so refresh dimensions afterwards.
         self.set_small(nbt.byte_value("Small").is_some_and(|value| value != 0));
         self.set_show_arms(nbt.byte_value("ShowArms").is_some_and(|value| value != 0));
-        self.set_no_base_plate(nbt.byte_value("NoBasePlate").is_some_and(|value| value != 0));
+        self.set_no_base_plate(
+            nbt.byte_value("NoBasePlate")
+                .is_some_and(|value| value != 0),
+        );
         self.set_marker(nbt.byte_value("Marker").is_some_and(|value| value != 0));
         self.load_pose(nbt);
     }
@@ -621,7 +624,7 @@ mod tests {
         assert_eq!(
             nbt.compound("Pose")
                 .and_then(|pose| pose.list("Head"))
-                .and_then(|list| list.floats()),
+                .and_then(simdnbt::owned::NbtList::floats),
             Some(vec![10.0, 20.0, 30.0])
         );
     }

@@ -108,7 +108,9 @@ impl ItemBehavior for ArmorStandItem {
         );
 
         let item = context.inv.with_item(|stack| stack.item);
-        context.player.award_stat(&vanilla_stat_types::ITEM_USED, item);
+        context
+            .player
+            .award_stat(&vanilla_stat_types::ITEM_USED, item);
         let has_infinite_materials = context.player.has_infinite_materials();
         context
             .inv
