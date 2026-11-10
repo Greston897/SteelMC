@@ -13,7 +13,6 @@
 //! * the silverfish's infested-block hiding (`SilverfishMergeWithStoneGoal`) is
 //!   not implemented.
 
-
 use std::iter::empty;
 use std::sync::Weak;
 
@@ -30,8 +29,8 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal,
-    NearestAttackableTargetGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
+    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
@@ -285,13 +284,15 @@ mod tests {
     #[test]
     fn silverfish_uses_registry_attributes_and_round_trips_nbt() {
         init_vanilla_registry();
-        let silverfish = SilverfishEntity::new(&vanilla_entities::SILVERFISH, 1, DVec3::ZERO, Weak::new());
+        let silverfish =
+            SilverfishEntity::new(&vanilla_entities::SILVERFISH, 1, DVec3::ZERO, Weak::new());
         assert!((silverfish.get_max_health() - 8.0).abs() < 1e-4);
 
         let mut nbt = NbtCompound::new();
         silverfish.save_additional(&mut nbt);
 
-        let loaded = SilverfishEntity::new(&vanilla_entities::SILVERFISH, 2, DVec3::ZERO, Weak::new());
+        let loaded =
+            SilverfishEntity::new(&vanilla_entities::SILVERFISH, 2, DVec3::ZERO, Weak::new());
         let mut bytes = Vec::new();
         nbt.write(&mut bytes);
         let borrowed = read_compound(&mut Cursor::new(&bytes))

@@ -13,7 +13,6 @@
 //! * the cave spider's poison bite is not applied yet (no per-hit effect hook
 //!   on `MeleeAttackGoal`), so a bite only deals its 2.0 attack damage.
 
-
 use std::iter::empty;
 use std::sync::Weak;
 
@@ -30,8 +29,8 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal,
-    NearestAttackableTargetGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
+    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
@@ -285,13 +284,15 @@ mod tests {
     #[test]
     fn cave_spider_uses_registry_attributes_and_round_trips_nbt() {
         init_vanilla_registry();
-        let cave_spider = CaveSpiderEntity::new(&vanilla_entities::CAVE_SPIDER, 1, DVec3::ZERO, Weak::new());
+        let cave_spider =
+            CaveSpiderEntity::new(&vanilla_entities::CAVE_SPIDER, 1, DVec3::ZERO, Weak::new());
         assert!((cave_spider.get_max_health() - 12.0).abs() < 1e-4);
 
         let mut nbt = NbtCompound::new();
         cave_spider.save_additional(&mut nbt);
 
-        let loaded = CaveSpiderEntity::new(&vanilla_entities::CAVE_SPIDER, 2, DVec3::ZERO, Weak::new());
+        let loaded =
+            CaveSpiderEntity::new(&vanilla_entities::CAVE_SPIDER, 2, DVec3::ZERO, Weak::new());
         let mut bytes = Vec::new();
         nbt.write(&mut bytes);
         let borrowed = read_compound(&mut Cursor::new(&bytes))

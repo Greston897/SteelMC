@@ -14,7 +14,6 @@
 //!   hit. Steel registers the plain hostile target selector for now, so they
 //!   attack players on sight.
 
-
 use std::iter::empty;
 use std::sync::Weak;
 
@@ -31,8 +30,8 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal,
-    NearestAttackableTargetGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
+    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
@@ -286,13 +285,23 @@ mod tests {
     #[test]
     fn zombified_piglin_uses_registry_attributes_and_round_trips_nbt() {
         init_vanilla_registry();
-        let zombified_piglin = ZombifiedPiglinEntity::new(&vanilla_entities::ZOMBIFIED_PIGLIN, 1, DVec3::ZERO, Weak::new());
+        let zombified_piglin = ZombifiedPiglinEntity::new(
+            &vanilla_entities::ZOMBIFIED_PIGLIN,
+            1,
+            DVec3::ZERO,
+            Weak::new(),
+        );
         assert!((zombified_piglin.get_max_health() - 20.0).abs() < 1e-4);
 
         let mut nbt = NbtCompound::new();
         zombified_piglin.save_additional(&mut nbt);
 
-        let loaded = ZombifiedPiglinEntity::new(&vanilla_entities::ZOMBIFIED_PIGLIN, 2, DVec3::ZERO, Weak::new());
+        let loaded = ZombifiedPiglinEntity::new(
+            &vanilla_entities::ZOMBIFIED_PIGLIN,
+            2,
+            DVec3::ZERO,
+            Weak::new(),
+        );
         let mut bytes = Vec::new();
         nbt.write(&mut bytes);
         let borrowed = read_compound(&mut Cursor::new(&bytes))

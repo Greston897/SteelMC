@@ -11,7 +11,6 @@
 //!   while `Monster::check_monster_spawn_rules` needs `&World`, so the entity
 //!   type is registered without a spawn rule and only spawners/commands create it.
 
-
 use std::iter::empty;
 use std::sync::Weak;
 
@@ -28,8 +27,8 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal,
-    NearestAttackableTargetGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
+    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
@@ -283,13 +282,23 @@ mod tests {
     #[test]
     fn wither_skeleton_uses_registry_attributes_and_round_trips_nbt() {
         init_vanilla_registry();
-        let wither_skeleton = WitherSkeletonEntity::new(&vanilla_entities::WITHER_SKELETON, 1, DVec3::ZERO, Weak::new());
+        let wither_skeleton = WitherSkeletonEntity::new(
+            &vanilla_entities::WITHER_SKELETON,
+            1,
+            DVec3::ZERO,
+            Weak::new(),
+        );
         assert!((wither_skeleton.get_max_health() - 20.0).abs() < 1e-4);
 
         let mut nbt = NbtCompound::new();
         wither_skeleton.save_additional(&mut nbt);
 
-        let loaded = WitherSkeletonEntity::new(&vanilla_entities::WITHER_SKELETON, 2, DVec3::ZERO, Weak::new());
+        let loaded = WitherSkeletonEntity::new(
+            &vanilla_entities::WITHER_SKELETON,
+            2,
+            DVec3::ZERO,
+            Weak::new(),
+        );
         let mut bytes = Vec::new();
         nbt.write(&mut bytes);
         let borrowed = read_compound(&mut Cursor::new(&bytes))
