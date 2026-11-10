@@ -496,8 +496,7 @@ mod tests {
     fn explosion_power_doubles_when_powered() {
         assert!((CreeperEntity::power_for_powered(false) - EXPLOSION_RADIUS).abs() < f32::EPSILON);
         assert!(
-            (CreeperEntity::power_for_powered(true)
-                - EXPLOSION_RADIUS * POWERED_RADIUS_MULTIPLIER)
+            (CreeperEntity::power_for_powered(true) - EXPLOSION_RADIUS * POWERED_RADIUS_MULTIPLIER)
                 .abs()
                 < f32::EPSILON
         );
@@ -506,7 +505,10 @@ mod tests {
     #[test]
     fn swell_window_matches_vanilla_swell_goal() {
         assert!((SWELL_DISTANCE_SQR - 49.0).abs() < f64::EPSILON, "7 blocks");
-        assert!((SWELL_START_DISTANCE_SQR - 9.0).abs() < f64::EPSILON, "3 blocks");
+        assert!(
+            (SWELL_START_DISTANCE_SQR - 9.0).abs() < f64::EPSILON,
+            "3 blocks"
+        );
         assert!(SWELL_START_DISTANCE_SQR < SWELL_DISTANCE_SQR);
         assert_eq!(MAX_SWELL, 30);
     }
@@ -518,7 +520,10 @@ mod tests {
 
         creeper.set_powered(true);
         assert!(creeper.is_powered());
-        assert!((creeper.explosion_power() - EXPLOSION_RADIUS * POWERED_RADIUS_MULTIPLIER).abs() < f32::EPSILON);
+        assert!(
+            (creeper.explosion_power() - EXPLOSION_RADIUS * POWERED_RADIUS_MULTIPLIER).abs()
+                < f32::EPSILON
+        );
 
         creeper.set_ignited(true);
         assert!(creeper.is_ignited());
