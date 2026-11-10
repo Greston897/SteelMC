@@ -45,6 +45,8 @@ use crate::inventory::menu::kinds::chest_boat;
 use crate::world::{Explosion, World};
 use steel_registry::items::ItemRef;
 use steel_utils::BlockPos;
+use std::mem;
+use steel_utils::locks::Shared;
 
 /// Vanilla `AbstractChestBoatEntity.INVENTORY_SIZE`.
 pub const CHEST_BOAT_SLOTS: usize = 27;
@@ -52,18 +54,18 @@ pub const CHEST_BOAT_SLOTS: usize = 27;
 /// Vanilla `AbstractChestBoatEntity.getMaxPassengers`.
 pub const CHEST_BOAT_MAX_PASSENGERS: usize = 1;
 
-fn new_inventory() -> steel_utils::locks::Shared<SimpleContainer> {
+fn new_inventory() -> Shared<SimpleContainer> {
     SimpleContainer::new(CHEST_BOAT_SLOTS).into_shared()
 }
 
 /// Scatters every stored stack at the boat's position.
-fn scatter(entity: &dyn Entity, inventory: &steel_utils::locks::Shared<SimpleContainer>) {
+fn scatter(entity: &dyn Entity, inventory: &Shared<SimpleContainer>) {
     let mut contents = Vec::new();
     {
         let mut container = inventory.lock();
         for slot in container.items_mut() {
             if !slot.is_empty() {
-                contents.push(std::mem::replace(slot, ItemStack::empty()));
+                contents.push(mem::replace(slot, ItemStack::empty()));
             }
         }
     }
@@ -73,7 +75,7 @@ fn scatter(entity: &dyn Entity, inventory: &steel_utils::locks::Shared<SimpleCon
 }
 
 /// Persists the chest inventory under vanilla's `Items` key.
-fn save_items(nbt: &mut NbtCompound, inventory: &steel_utils::locks::Shared<SimpleContainer>) {
+fn save_items(nbt: &mut NbtCompound, inventory: &Shared<SimpleContainer>) {
     let container = inventory.lock();
     let mut entries = Vec::new();
     for (slot, stack) in container.items().iter().enumerate() {
@@ -90,7 +92,7 @@ fn save_items(nbt: &mut NbtCompound, inventory: &steel_utils::locks::Shared<Simp
 
 fn load_items(
     nbt: BorrowedNbtCompoundView<'_, '_>,
-    inventory: &steel_utils::locks::Shared<SimpleContainer>,
+    inventory: &Shared<SimpleContainer>,
 ) {
     let mut container = inventory.lock();
     load_all_items(nbt, container.items_mut());
@@ -100,7 +102,7 @@ fn load_items(
 fn open_chest(
     entity: &dyn Entity,
     player: &Player,
-    inventory: &steel_utils::locks::Shared<SimpleContainer>,
+    inventory: &Shared<SimpleContainer>,
 ) -> InteractionResult {
     let Some(world) = entity.level() else {
         return InteractionResult::Pass;
@@ -131,7 +133,7 @@ fn open_chest(
 fn chest_boat_interact(
     entity: &dyn Entity,
     player: &Player,
-    inventory: &steel_utils::locks::Shared<SimpleContainer>,
+    inventory: &Shared<SimpleContainer>,
 ) -> InteractionResult {
     let result = ride_boat_interact(entity, player);
     if result != InteractionResult::Pass {
@@ -153,7 +155,7 @@ pub struct ChestBoatEntity {
     entity_type: EntityTypeRef,
     entity_data: SyncMutex<AbstractBoatEntityData>,
     boat_state: SyncMutex<BoatState>,
-    inventory: steel_utils::locks::Shared<SimpleContainer>,
+    inventory: Shared<SimpleContainer>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `ChestBoatEntity`.
@@ -216,7 +218,7 @@ pub struct ChestRaftEntity {
     entity_type: EntityTypeRef,
     entity_data: SyncMutex<AbstractBoatEntityData>,
     boat_state: SyncMutex<BoatState>,
-    inventory: steel_utils::locks::Shared<SimpleContainer>,
+    inventory: Shared<SimpleContainer>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `ChestRaftEntity`.
@@ -283,6 +285,8 @@ mod tests {
     use crate::entity::entities::objects::vehicles::boat::AbstractBoat as _;
     use crate::inventory::container::Container as _;
     use crate::world::World;
+    use steel_registry::item_stack::ItemStack;
+    use steel_registry::vanilla_items::OAK_CHEST_BOAT;
 
     #[test]
     fn a_chest_boat_has_a_full_size_inventory() {
@@ -299,7 +303,7 @@ mod tests {
                 .lock()
                 .items()
                 .iter()
-                .all(steel_registry::item_stack::ItemStack::is_empty)
+                .all(ItemStack::is_empty)
         );
     }
 
@@ -319,7 +323,7 @@ mod tests {
         );
         assert_eq!(
             boat.boat_drop_item().key,
-            steel_registry::vanilla_items::OAK_CHEST_BOAT.key
+            OAK_CHEST_BOAT.key
         );
         assert!(!boat.boat_state().lock().location.is_water());
     }

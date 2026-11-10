@@ -85,6 +85,8 @@ mod tests {
     use crate::behavior::ItemBehavior as _;
     use crate::behavior::init_behaviors;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
+    use crate::behavior::InteractionResult;
+    use steel_registry::item_stack::ItemStack;
 
     #[test]
     fn empty_map_becomes_a_filled_map_in_the_same_hand() {
@@ -98,7 +100,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(steel_registry::item_stack::ItemStack::new(
+            .set_selected_item(ItemStack::new(
                 &vanilla_items::MAP,
             ));
 
@@ -110,7 +112,7 @@ mod tests {
         );
 
         let result = EmptyMapItem.use_item(&mut context);
-        assert_eq!(result, crate::behavior::InteractionResult::Success);
+        assert_eq!(result, InteractionResult::Success);
 
         let hand = player.inventory.lock().get_selected_item().clone();
         assert!(hand.is(&vanilla_items::FILLED_MAP));
@@ -144,7 +146,7 @@ mod tests {
         let player = TestPlayerBuilder::new(Arc::clone(world), "MapStacker", 1).build();
         {
             let mut inventory = player.inventory.lock();
-            let mut stack = steel_registry::item_stack::ItemStack::new(&vanilla_items::MAP);
+            let mut stack = ItemStack::new(&vanilla_items::MAP);
             stack.set_count(2);
             inventory.set_selected_item(stack);
         }
@@ -156,7 +158,7 @@ mod tests {
             Arc::clone(&player.inventory),
         );
         let result = EmptyMapItem.use_item(&mut context);
-        assert_eq!(result, crate::behavior::InteractionResult::Success);
+        assert_eq!(result, InteractionResult::Success);
 
         let inventory = player.inventory.lock();
         assert!(inventory.get_selected_item().is(&vanilla_items::MAP));

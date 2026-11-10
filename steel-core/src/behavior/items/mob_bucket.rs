@@ -24,6 +24,7 @@ use crate::entity::{ENTITIES, Entity, next_entity_id};
 use crate::fluid::is_water_fluid;
 use crate::world::RaytraceAction;
 use crate::world::game_event::GameEventContext;
+use crate::entity::bucketable;
 
 /// Vanilla `EntityBucketItem`.
 #[item_behavior(class = "MobBucketItem")]
@@ -108,7 +109,7 @@ impl ItemBehavior for MobBucketItem {
         };
         entity.set_rotation((context.player.rotation().0, 0.0));
         // Vanilla `EntityBucketItem`: the released mob comes from a bucket.
-        crate::entity::bucketable::release_from_bucket(entity.as_ref(), &held);
+        bucketable::release_from_bucket(entity.as_ref(), &held);
 
         if let Err(error) = context.world.try_add_entity(entity) {
             log::warn!("Failed to add bucketed entity {}: {error}", entity_type.key);

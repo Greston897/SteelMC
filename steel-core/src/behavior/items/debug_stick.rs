@@ -23,6 +23,7 @@ use crate::behavior::context::{CanMineContext, InteractionResult, InventoryAcces
 use crate::behavior::item::ItemBehavior;
 use crate::player::Player;
 use crate::world::World;
+use steel_registry::item_stack::ItemStack;
 
 /// Vanilla `DebugStickItem.BLOCK_UPDATE_FLAGS` (`NOTIFY_LISTENERS | FORCE_STATE`).
 fn block_update_flags() -> UpdateFlags {
@@ -262,7 +263,7 @@ fn cycle<'a, T: PartialEq>(
 /// Reads the debug stick's stored selection for `block`, if any.
 #[cfg(test)]
 fn selected_property(
-    stack: &steel_registry::item_stack::ItemStack,
+    stack: &ItemStack,
     block: BlockRef,
 ) -> Option<&'static str> {
     stack
@@ -294,14 +295,17 @@ mod tests {
     };
     use crate::behavior::init_behaviors;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
+    use crate::player::Player;
+    use crate::test_support::TestWorld;
+    use crate::world::World;
 
     /// Places a lever (three properties: `face`, `facing`, `powered`) and returns
     /// the world plus the placed state.
     fn lever_fixture(
         name: &str,
     ) -> (
-        crate::test_support::TestWorld,
-        Arc<crate::player::Player>,
+        TestWorld,
+        Arc<Player>,
         BlockPos,
         steel_utils::BlockStateId,
     ) {
@@ -327,8 +331,8 @@ mod tests {
     }
 
     fn use_on_context<'a>(
-        world: &'a Arc<crate::world::World>,
-        player: &'a Arc<crate::player::Player>,
+        world: &'a Arc<World>,
+        player: &'a Arc<Player>,
         pos: BlockPos,
     ) -> UseOnContext<'a> {
         UseOnContext::new(
@@ -402,8 +406,8 @@ mod tests {
     /// Runs the permission-checked body directly so the cycling mechanics are
     /// covered without a `Server` (operator status requires one).
     fn run_action(
-        player: &Arc<crate::player::Player>,
-        world: &Arc<crate::world::World>,
+        player: &Arc<Player>,
+        world: &Arc<World>,
         pos: BlockPos,
         state: steel_utils::BlockStateId,
         update: bool,

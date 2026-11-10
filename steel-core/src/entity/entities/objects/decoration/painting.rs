@@ -36,6 +36,8 @@ use crate::entity::{
 };
 use crate::player::Player;
 use crate::world::World;
+use steel_registry::vanilla_painting_variants::KEBAB;
+use steel_utils::axis::Axis;
 
 /// Vanilla `PaintingEntity.PIXEL_SIZE`: the thickness of a painting against the wall.
 pub const PIXEL_SIZE: f64 = 0.0625;
@@ -131,7 +133,7 @@ impl PaintingEntity {
 
     /// Vanilla `Variants.getDefaultOrThrow`: the `kebab` variant is vanilla's default.
     fn default_variant() -> RegistryReference<PaintingVariant> {
-        RegistryReference::new(&steel_registry::vanilla_painting_variants::KEBAB)
+        RegistryReference::new(&KEBAB)
     }
 
     /// The currently synced variant.
@@ -189,12 +191,12 @@ impl PaintingEntity {
             + perpendicular.offset_vec().as_dvec3() * Self::offset_for(value.width)
             + DVec3::new(0.0, Self::offset_for(value.height), 0.0);
 
-        let size_x = if facing.get_axis() == steel_utils::axis::Axis::X {
+        let size_x = if facing.get_axis() == Axis::X {
             PIXEL_SIZE
         } else {
             f64::from(value.width)
         };
-        let size_z = if facing.get_axis() == steel_utils::axis::Axis::Z {
+        let size_z = if facing.get_axis() == Axis::Z {
             PIXEL_SIZE
         } else {
             f64::from(value.width)
@@ -245,7 +247,7 @@ impl PaintingEntity {
                 block_pos,
                 facing,
                 RegistryReference::new(*variant),
-                Arc::clone(world),
+                Weak::clone(&world),
             );
             painting.can_stay_attached()
         });

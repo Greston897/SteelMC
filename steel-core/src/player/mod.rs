@@ -175,6 +175,7 @@ use crate::portal::{
     PortalTicketTarget, TeleportPostAction, TeleportPostTransition, TeleportTransition,
 };
 use crate::world::World;
+use crate::behavior::items::filled_map;
 
 /// A struct representing a player.
 pub struct Player {
@@ -2145,7 +2146,7 @@ impl LivingEntity for Player {
         InventoryTickContext::tick_player_inventory(&self.get_world(), self);
         // Vanilla `ServerPlayerEntity.playerTick` sends map updates for every
         // carried map, independently of the per-item color update.
-        crate::behavior::items::filled_map::send_map_packets(self);
+        filled_map::send_map_packets(self);
         if self.is_flying() && !self.is_passenger() {
             self.reset_fall_distance();
         }

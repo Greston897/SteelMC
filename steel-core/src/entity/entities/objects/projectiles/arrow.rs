@@ -32,6 +32,8 @@ use crate::entity::{
     SharedEntity,
 };
 use crate::world::{ClipHitResult, World};
+use crate::entity::LivingEntity;
+use steel_utils::types::GameType;
 
 /// Vanilla `AbstractArrow.MAX_LIFE_TICKS`: a stuck arrow despawns after a minute.
 pub const MAX_LIFE_TICKS: i32 = 1200;
@@ -248,7 +250,7 @@ pub trait AbstractArrow: Projectile + Sized {
     }
 
     /// Vanilla `AbstractArrow#knockback`: pushes the hit living entity away.
-    fn arrow_knockback(&self, living: &dyn crate::entity::LivingEntity) {
+    fn arrow_knockback(&self, living: &dyn LivingEntity) {
         let velocity = self.velocity();
         let horizontal = (velocity.x * velocity.x + velocity.z * velocity.z).sqrt();
         if horizontal < 1.0e-6 {
@@ -444,7 +446,7 @@ pub trait AbstractArrow: Projectile + Sized {
         match self.pickup() {
             ArrowPickup::Disallowed => return,
             ArrowPickup::CreativeOnly
-                if player.game_mode() != steel_utils::types::GameType::Creative =>
+                if player.game_mode() != GameType::Creative =>
             {
                 return;
             }
@@ -704,6 +706,8 @@ mod tests {
     use super::{AbstractArrow, ArrowEntity, ArrowPickup, MAX_LIFE_TICKS, SpectralArrowEntity};
     use crate::entity::Entity as _;
     use crate::world::World;
+    use crate::world::ClipHitResult;
+    use std::sync::Arc;
 
     fn arrow(id: i32) -> ArrowEntity {
         ArrowEntity::new(
@@ -755,10 +759,10 @@ mod tests {
     #[test]
     fn hitting_a_block_sticks_the_arrow() {
         init_vanilla_registry();
-        let arrow = std::sync::Arc::new(arrow(2));
+        let arrow = Arc::new(arrow(2));
         arrow.set_velocity(DVec3::new(0.0, -1.0, 0.0));
 
-        let hit = crate::world::ClipHitResult {
+        let hit = ClipHitResult {
             location: DVec3::new(0.5, 64.0, 0.5),
             direction: steel_utils::Direction::Up,
             block_pos: steel_utils::BlockPos::new(0, 63, 0),
@@ -766,7 +770,7 @@ mod tests {
             inside: false,
             world_border_hit: false,
         };
-        std::sync::Arc::clone(&arrow).abstract_arrow_on_hit_block(&hit);
+        Arc::clone(&arrow).abstract_arrow_on_hit_block(&hit);
 
         assert!(arrow.is_in_ground());
         assert_eq!(arrow.velocity(), DVec3::ZERO);

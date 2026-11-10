@@ -32,6 +32,7 @@ use wincode::{SchemaRead, SchemaWrite};
 use crate::entity::Entity as _;
 use crate::player::Player;
 use crate::world::World;
+use std::collections::hash_map::Entry;
 
 /// Vanilla `MapState.SIZE`.
 pub const MAP_SIZE: usize = 128;
@@ -430,7 +431,7 @@ impl MapState {
 
     /// Returns the tracker for a player, creating it on first use.
     fn player_sync_data(&mut self, uuid: Uuid) -> &mut PlayerUpdateTracker {
-        if let std::collections::hash_map::Entry::Vacant(e) = self.trackers.entry(uuid) {
+        if let Entry::Vacant(e) = self.trackers.entry(uuid) {
             e.insert(PlayerUpdateTracker::new());
             self.tracker_order.push(uuid);
         }

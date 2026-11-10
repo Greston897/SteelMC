@@ -47,6 +47,10 @@ use crate::entity::{
 };
 use crate::physics::MoveResult;
 use crate::world::World;
+use crate::entity::EntitySpawnReason;
+use crate::entity::SpawnGroupData;
+use crate::entity::bucketable;
+use crate::entity::damage::DamageSource;
 
 const SALMON_FLOP_SOUND: SoundEventRef = &sound_events::ENTITY_SALMON_FLOP;
 
@@ -297,7 +301,7 @@ impl LivingEntity for SalmonEntity {
         result
     }
 
-    fn hurt_sound(&self, _source: &crate::entity::damage::DamageSource) -> Option<SoundEventRef> {
+    fn hurt_sound(&self, _source: &DamageSource) -> Option<SoundEventRef> {
         Some(&sound_events::ENTITY_SALMON_HURT)
     }
 
@@ -342,9 +346,9 @@ impl Mob for SalmonEntity {
     fn finalize_spawn(
         &self,
         _world: &Arc<World>,
-        _spawn_reason: crate::entity::EntitySpawnReason,
-        group_data: Option<crate::entity::SpawnGroupData>,
-    ) -> Option<crate::entity::SpawnGroupData> {
+        _spawn_reason: EntitySpawnReason,
+        group_data: Option<SpawnGroupData>,
+    ) -> Option<SpawnGroupData> {
         self.roll_spawn_variant();
         group_data
     }
@@ -376,7 +380,7 @@ impl Bucketable for SalmonEntity {
     }
 
     fn copy_bucket_data_to_nbt(&self, nbt: &mut owned::NbtCompound) {
-        crate::entity::bucketable::write_base_bucket_data(self, nbt);
+        bucketable::write_base_bucket_data(self, nbt);
         nbt.insert("type", self.variant().serialized_name().to_string());
     }
 }

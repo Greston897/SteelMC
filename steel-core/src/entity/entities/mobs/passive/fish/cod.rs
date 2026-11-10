@@ -39,6 +39,7 @@ use super::{
     WATER_ANIMAL_AMBIENT_SOUND_INTERVAL, WATER_ANIMAL_EXPERIENCE_MAX, WATER_ANIMAL_EXPERIENCE_MIN,
     check_water_animal_spawn_rules, flop, tick_breathing, travel_in_water,
 };
+use crate::entity::damage::DamageSource;
 
 const COD_FLOP_SOUND: SoundEventRef = &sound_events::ENTITY_COD_FLOP;
 
@@ -221,7 +222,7 @@ impl LivingEntity for CodEntity {
         result
     }
 
-    fn hurt_sound(&self, _source: &crate::entity::damage::DamageSource) -> Option<SoundEventRef> {
+    fn hurt_sound(&self, _source: &DamageSource) -> Option<SoundEventRef> {
         Some(&sound_events::ENTITY_COD_HURT)
     }
 

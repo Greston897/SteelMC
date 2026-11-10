@@ -48,6 +48,8 @@ use crate::entity::{
 };
 use crate::physics::MoveResult;
 use crate::world::World;
+use crate::entity::damage::DamageSource;
+use crate::entity::living_base::MobEffectInstance;
 
 /// Vanilla `PufferfishEntity.PUFF_STATE_NOT_PUFFED`.
 pub const NOT_PUFFED: i32 = 0;
@@ -283,7 +285,7 @@ impl PufferfishEntity {
                 self.make_sound(Some(PUFFER_STING_SOUND));
                 if let Some(living) = victim.as_living_entity() {
                     living.add_mob_effect(
-                        crate::entity::living_base::MobEffectInstance::with_duration(
+                        MobEffectInstance::with_duration(
                             POISON,
                             PUFFER_POISON_TICKS_PER_STATE * state,
                             0,
@@ -383,7 +385,7 @@ impl LivingEntity for PufferfishEntity {
         result
     }
 
-    fn hurt_sound(&self, _source: &crate::entity::damage::DamageSource) -> Option<SoundEventRef> {
+    fn hurt_sound(&self, _source: &DamageSource) -> Option<SoundEventRef> {
         Some(&sound_events::ENTITY_PUFFER_FISH_HURT)
     }
 

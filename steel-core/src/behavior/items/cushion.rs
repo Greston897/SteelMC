@@ -158,9 +158,10 @@ mod tests {
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
     };
     use crate::world::World;
+    use crate::player::Player;
 
     /// Builds a world with a stone support at `(0, 64, 0)`.
-    fn support_fixture(name: &str) -> (TestWorld, Arc<crate::player::Player>, BlockPos) {
+    fn support_fixture(name: &str) -> (TestWorld, Arc<Player>, BlockPos) {
         init_vanilla_registry();
         init_behaviors();
 
@@ -182,7 +183,7 @@ mod tests {
 
     fn place_context<'a>(
         world: &'a Arc<World>,
-        player: &'a Arc<crate::player::Player>,
+        player: &'a Arc<Player>,
         support: BlockPos,
     ) -> UseOnContext<'a> {
         UseOnContext::new(
@@ -219,7 +220,7 @@ mod tests {
             .expect("entity should be a cushion")
     }
 
-    fn held_stack(player: &Arc<crate::player::Player>) -> ItemStack {
+    fn held_stack(player: &Arc<Player>) -> ItemStack {
         player.inventory.lock().get_selected_item().clone()
     }
 

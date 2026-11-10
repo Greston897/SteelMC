@@ -26,6 +26,7 @@ use crate::entity::entities::{AbstractArrow, ArrowPickup, FireworkRocketEntity};
 use crate::entity::{Entity, LivingEntityRef, Projectile as _, SharedEntity, next_entity_id};
 use crate::player::Player;
 use crate::world::World;
+use crate::entity::LivingEntity;
 
 /// Vanilla `CrossbowItem.DEFAULT_CHARGE_DURATION`.
 pub const DEFAULT_CHARGE_DURATION: i32 = 25;
@@ -296,7 +297,7 @@ impl ItemBehavior for CrossbowItem {
         ItemUseAnimation::Crossbow
     }
 
-    fn get_use_duration(&self, stack: &ItemStack, _user: &dyn crate::entity::LivingEntity) -> i32 {
+    fn get_use_duration(&self, stack: &ItemStack, _user: &dyn LivingEntity) -> i32 {
         Self::charge_duration(stack)
     }
 
@@ -358,7 +359,7 @@ impl ItemBehavior for CrossbowItem {
         &self,
         _stack: &mut ItemStack,
         _world: &Arc<World>,
-        _user: &dyn crate::entity::LivingEntity,
+        _user: &dyn LivingEntity,
         _time_left: i32,
     ) -> bool {
         // Releasing an uncharged crossbow only cancels the charge.

@@ -18,6 +18,7 @@ use crate::behavior::item::ItemBehavior;
 use crate::entity::entities::ItemFrameEntity;
 use crate::entity::{Entity, SharedEntity, next_entity_id};
 use crate::world::game_event::GameEventContext;
+use steel_registry::item_stack::ItemStack;
 
 /// Placement behavior shared by the item frame and the glow item frame.
 #[item_behavior(class = "ItemFrameItem")]
@@ -25,7 +26,7 @@ pub struct ItemFrameItem;
 
 impl ItemFrameItem {
     /// Vanilla picks the entity type from the item that places the frame.
-    fn entity_type(stack: &steel_registry::item_stack::ItemStack) -> EntityTypeRef {
+    fn entity_type(stack: &ItemStack) -> EntityTypeRef {
         if stack.is(&vanilla_items::GLOW_ITEM_FRAME) {
             &vanilla_entities::GLOW_ITEM_FRAME
         } else {
@@ -37,7 +38,7 @@ impl ItemFrameItem {
     /// the player's placement rules.
     fn can_place_on(
         context: &UseOnContext<'_>,
-        stack: &steel_registry::item_stack::ItemStack,
+        stack: &ItemStack,
         side: Direction,
         target: steel_utils::BlockPos,
     ) -> bool {
@@ -118,6 +119,9 @@ mod tests {
 
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
     use crate::world::World;
+    use crate::player::Player;
+    use crate::test_support::TestWorld;
+    use steel_registry::vanilla_entities::GLOW_ITEM_FRAME;
 
     const WALL_X: i32 = 0;
 
@@ -125,8 +129,8 @@ mod tests {
     fn wall_fixture(
         name: &str,
     ) -> (
-        crate::test_support::TestWorld,
-        Arc<crate::player::Player>,
+        TestWorld,
+        Arc<Player>,
         BlockPos,
     ) {
         init_vanilla_registry();
@@ -159,7 +163,7 @@ mod tests {
 
     fn place_context<'a>(
         world: &'a Arc<World>,
-        player: &'a Arc<crate::player::Player>,
+        player: &'a Arc<Player>,
         wall: BlockPos,
         side: Direction,
     ) -> UseOnContext<'a> {
@@ -179,7 +183,7 @@ mod tests {
         )
     }
 
-    fn held_stack(player: &Arc<crate::player::Player>) -> ItemStack {
+    fn held_stack(player: &Arc<Player>) -> ItemStack {
         player.inventory.lock().get_selected_item().clone()
     }
 
@@ -246,7 +250,7 @@ mod tests {
             .expect("frame spawned");
         assert_eq!(
             entity.entity_type(),
-            &steel_registry::vanilla_entities::GLOW_ITEM_FRAME
+            &GLOW_ITEM_FRAME
         );
         assert_eq!(held_stack(&player).count(), 0);
     }

@@ -302,6 +302,7 @@ mod tests {
     use crate::inventory::container::Container as _;
     use crate::inventory::menu::kinds::inventory_menu;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
+    use crate::player::Player;
 
     /// Menu slot index of the first hotbar slot in the player inventory menu.
     const HOTBAR_SLOT: usize = 36;
@@ -324,12 +325,12 @@ mod tests {
     }
 
     /// Fills the first hotbar slot with `stack`.
-    fn set_hotbar(player: &Arc<crate::player::Player>, stack: ItemStack) {
+    fn set_hotbar(player: &Arc<Player>, stack: ItemStack) {
         player.inventory.lock().set_item(0, stack);
     }
 
     /// Vanilla keeps a shulker box in the clicked slot instead of bundling it.
-    fn shulker_still_in_slot(player: &Arc<crate::player::Player>) -> bool {
+    fn shulker_still_in_slot(player: &Arc<Player>) -> bool {
         player
             .inventory
             .lock()

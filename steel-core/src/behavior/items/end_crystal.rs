@@ -16,6 +16,7 @@ use crate::behavior::item::ItemBehavior;
 use crate::entity::entities::EndCrystalEntity;
 use crate::entity::{Entity, SharedEntity, next_entity_id};
 use crate::world::game_event::GameEventContext;
+use crate::world::World;
 
 /// Vanilla `EndCrystalItem`.
 #[item_behavior]
@@ -24,7 +25,7 @@ pub struct EndCrystalItem;
 impl EndCrystalItem {
     /// Vanilla accepts only obsidian and bedrock as the crystal's base.
     #[must_use]
-    pub fn is_valid_base(world: &crate::world::World, pos: BlockPos) -> bool {
+    pub fn is_valid_base(world: &World, pos: BlockPos) -> bool {
         let block = world.get_block_state(pos).get_block();
         block == &vanilla_blocks::OBSIDIAN || block == &vanilla_blocks::BEDROCK
     }
@@ -116,11 +117,13 @@ mod tests {
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
     };
     use crate::world::World;
+    use crate::player::Player;
+    use steel_registry::blocks::BlockRef;
 
     fn base_fixture(
         name: &str,
-        base: steel_registry::blocks::BlockRef,
-    ) -> (TestWorld, Arc<crate::player::Player>, BlockPos) {
+        base: BlockRef,
+    ) -> (TestWorld, Arc<Player>, BlockPos) {
         init_vanilla_registry();
         init_behaviors();
 
@@ -142,7 +145,7 @@ mod tests {
 
     fn place_context<'a>(
         world: &'a Arc<World>,
-        player: &'a Arc<crate::player::Player>,
+        player: &'a Arc<Player>,
         pos: BlockPos,
     ) -> UseOnContext<'a> {
         UseOnContext::new(

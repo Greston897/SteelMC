@@ -48,7 +48,7 @@ impl ItemBehavior for HangingEntityItem {
 
         let stack = context
             .inv
-            .with_item(|stack: &mut steel_registry::item_stack::ItemStack| stack.clone());
+            .with_item(|stack: &mut ItemStack| stack.clone());
 
         if !Self::can_place_on(context, &stack, side, target) {
             return InteractionResult::Fail;
@@ -121,9 +121,10 @@ mod tests {
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
     };
     use crate::world::World;
+    use crate::player::Player;
 
     /// Builds a world with a stone wall at `(0, 64, 0)`.
-    fn wall_fixture(name: &str) -> (TestWorld, Arc<crate::player::Player>, BlockPos) {
+    fn wall_fixture(name: &str) -> (TestWorld, Arc<Player>, BlockPos) {
         init_vanilla_registry();
         init_behaviors();
 
@@ -145,7 +146,7 @@ mod tests {
 
     fn place_context<'a>(
         world: &'a Arc<World>,
-        player: &'a Arc<crate::player::Player>,
+        player: &'a Arc<Player>,
         wall: BlockPos,
         side: Direction,
     ) -> UseOnContext<'a> {

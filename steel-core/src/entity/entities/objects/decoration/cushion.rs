@@ -278,6 +278,9 @@ mod tests {
     };
     use steel_registry::vanilla_damage_types;
     use steel_registry::vanilla_entities;
+    use crate::entity;
+    use crate::world::World;
+    use std::sync::Weak;
 
     fn cushion_area() -> WorldAabb {
         WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 68.0, 2.0)
@@ -300,10 +303,10 @@ mod tests {
         (world_fixture, support)
     }
 
-    fn spawn_cushion(world: &Arc<crate::world::World>, support: BlockPos) -> Arc<CushionEntity> {
+    fn spawn_cushion(world: &Arc<World>, support: BlockPos) -> Arc<CushionEntity> {
         let cushion = Arc::new(CushionEntity::new_on_support(
             &vanilla_entities::CUSHION,
-            crate::entity::next_entity_id(),
+            entity::next_entity_id(),
             support,
             DyeColor::Red,
             Arc::downgrade(world),
@@ -315,7 +318,7 @@ mod tests {
         cushion
     }
 
-    fn dropped_items(world: &Arc<crate::world::World>) -> Vec<ItemStack> {
+    fn dropped_items(world: &Arc<World>) -> Vec<ItemStack> {
         world
             .get_entities_in_aabb(&cushion_area())
             .iter()
@@ -335,7 +338,7 @@ mod tests {
         assert!(!cushion.is_removed());
         assert_eq!(
             dropped_items(&fixture.world),
-            [] as [steel_registry::item_stack::ItemStack; 0]
+            [] as [ItemStack; 0]
         );
     }
 
@@ -456,7 +459,7 @@ mod tests {
             &vanilla_entities::CUSHION,
             7,
             DVec3::new(0.5, 65.0, 0.5),
-            std::sync::Weak::new(),
+            Weak::new(),
         );
         assert_eq!(fresh.color(), DyeColor::White);
         assert_eq!(CushionEntityData::new().color.get(), &DyeColor::White);

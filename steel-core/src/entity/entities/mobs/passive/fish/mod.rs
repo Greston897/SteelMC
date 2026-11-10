@@ -41,6 +41,7 @@ use crate::entity::damage::DamageSource;
 use crate::entity::{EntitySpawnReason, LivingEntity, SharedEntity};
 use crate::physics::{MoveResult, MoverType};
 use crate::world::LevelReader;
+use steel_registry::vanilla_blocks::WATER;
 
 /// Vanilla `WaterAnimal.MAX_AIR`.
 pub const WATER_ANIMAL_MAX_AIR: i32 = 300;
@@ -118,7 +119,7 @@ pub fn check_water_animal_spawn_rules(
                 .get_fluid_state()
                 .fluid_id,
         )
-        && level.get_block_state(pos.above()).get_block() == &steel_registry::vanilla_blocks::WATER
+        && level.get_block_state(pos.above()).get_block() == &WATER
 }
 
 /// Vanilla `WaterAnimal.canSpawn` depth window: `[seaLevel - 13, seaLevel]`.

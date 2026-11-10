@@ -67,6 +67,7 @@ mod tests {
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
     };
     use crate::world::World;
+    use steel_registry::items::ItemRef;
 
     fn fixture(world_name: &'static str) -> (TestWorld, Arc<Player>) {
         init_vanilla_registry();
@@ -81,7 +82,7 @@ mod tests {
         world: &Arc<World>,
         player: &Arc<Player>,
         stack: ItemStack,
-        item: steel_registry::items::ItemRef,
+        item: ItemRef,
     ) -> InteractionResult {
         player
             .inventory

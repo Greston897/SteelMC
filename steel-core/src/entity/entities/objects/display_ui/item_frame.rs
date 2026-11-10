@@ -34,6 +34,8 @@ use crate::physics::{MoveResult, MoverType};
 use crate::player::Player;
 use crate::world::game_event::GameEventContext;
 use crate::world::{Explosion, World};
+use crate::physics::collision;
+use steel_registry::items::ItemRef;
 
 /// Item frame state needed by end-city structure markers.
 ///
@@ -160,7 +162,7 @@ impl ItemFrameEntity {
 
         let check_box = self.base.bounding_box();
         let collision = crate::physics::collision::WorldCollisionProvider::new(&world);
-        if crate::physics::collision::has_block_collision(&collision, check_box) {
+        if collision::has_block_collision(&collision, check_box) {
             return false;
         }
         // Vanilla `isSpaceBlocked` rejects any other entity inside the frame's own
@@ -217,7 +219,7 @@ impl ItemFrameEntity {
 
     /// Returns the item that places this frame (vanilla `getAsItemStack`).
     #[must_use]
-    pub fn placeable_item(&self) -> steel_registry::items::ItemRef {
+    pub fn placeable_item(&self) -> ItemRef {
         if self.is_glow() {
             &vanilla_items::GLOW_ITEM_FRAME
         } else {
@@ -621,6 +623,7 @@ mod tests {
     use crate::test_support::{
         TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
     };
+    use crate::entity;
 
     fn frame_area() -> WorldAabb {
         WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 68.0, 2.0)
@@ -653,7 +656,7 @@ mod tests {
     ) -> Arc<ItemFrameEntity> {
         let frame = Arc::new(ItemFrameEntity::new_attached(
             &vanilla_entities::ITEM_FRAME,
-            crate::entity::next_entity_id(),
+            entity::next_entity_id(),
             block_pos,
             direction,
             Arc::downgrade(world),

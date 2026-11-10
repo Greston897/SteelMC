@@ -40,16 +40,17 @@ use crate::entity::{
 use crate::physics::MoverType;
 use crate::physics::collision::{WorldCollisionProvider, has_block_collision};
 use crate::world::{Explosion, World};
+use std::f32::consts::PI;
 
 /// Vanilla `AbstractBoatEntity.UNDERWATER_TICKS_MAX`: riders are ejected after
 /// a second fully underwater.
 pub const UNDERWATER_TICKS_MAX: f32 = 60.0;
 
 /// Vanilla `NEXT_PADDLE_PHASE`: `π / 8` per tick.
-pub const NEXT_PADDLE_PHASE: f32 = std::f32::consts::PI / 8.0;
+pub const NEXT_PADDLE_PHASE: f32 = PI / 8.0;
 
 /// Vanilla `EMIT_SOUND_EVENT_PADDLE_ROTATION`: `π / 4`.
-pub const EMIT_SOUND_EVENT_PADDLE_ROTATION: f32 = std::f32::consts::PI / 4.0;
+pub const EMIT_SOUND_EVENT_PADDLE_ROTATION: f32 = PI / 4.0;
 
 /// Vanilla `PADDLE_TURN_SPEED`.
 pub const PADDLE_TURN_SPEED: f32 = 0.005;
@@ -610,7 +611,7 @@ pub trait AbstractBoat: VehicleEntity {
         }
 
         let (yaw, _) = self.rotation();
-        let yaw_radians = yaw * std::f32::consts::PI / 180.0;
+        let yaw_radians = yaw * PI / 180.0;
         let velocity = self.velocity();
         self.set_velocity(
             velocity
@@ -631,7 +632,7 @@ pub trait AbstractBoat: VehicleEntity {
     /// spawning the sound effect cannot re-enter this boat's locks.
     fn tick_paddle_sounds(&self, world: &World) {
         let (yaw, _) = self.rotation();
-        let yaw_radians = yaw * std::f32::consts::PI / 180.0;
+        let yaw_radians = yaw * PI / 180.0;
         let rot_x = -yaw_radians.sin();
         let rot_z = yaw_radians.cos();
         let silent = self.is_silent();
@@ -643,7 +644,7 @@ pub trait AbstractBoat: VehicleEntity {
                 [*data.id_paddle_left.get(), *data.id_paddle_right.get()]
             };
             let mut state = self.boat_state().lock();
-            let full_turn = std::f32::consts::PI * 2.0;
+            let full_turn = PI * 2.0;
             for (index, moving) in flags.into_iter().enumerate() {
                 if !moving {
                     state.paddle_phases[index] = 0.0;

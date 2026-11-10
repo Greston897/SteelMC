@@ -25,6 +25,7 @@ use crate::entity::Entity as _;
 use crate::player::Player;
 use crate::world::World;
 use crate::world::map_state::{MAP_SIZE, MapState};
+use steel_registry::vanilla_items::FILLED_MAP;
 
 /// Vanilla `FilledMapItem.MAP_WIDTH`.
 pub const MAP_WIDTH: i32 = MAP_SIZE as i32;
@@ -74,7 +75,7 @@ impl FilledMapItem {
             world.key.clone(),
         );
         let id = world.map_states.lock().insert(state);
-        let mut stack = ItemStack::new(&steel_registry::vanilla_items::FILLED_MAP);
+        let mut stack = ItemStack::new(&FILLED_MAP);
         stack.set(MAP_ID, MapId::new(id));
         stack
     }
