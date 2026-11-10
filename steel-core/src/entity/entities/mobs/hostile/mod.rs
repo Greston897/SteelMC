@@ -6,6 +6,8 @@
 pub mod bogged;
 /// Hostile cave spider entity module.
 pub mod cave_spider;
+/// Hostile creeper entity module.
+pub mod creeper;
 /// Hostile drowned entity module.
 pub mod drowned;
 /// Hostile endermite entity module.
@@ -41,6 +43,7 @@ pub mod zombified_piglin;
 
 pub use bogged::BoggedEntity;
 pub use cave_spider::CaveSpiderEntity;
+pub use creeper::CreeperEntity;
 pub use drowned::DrownedEntity;
 pub use endermite::EndermiteEntity;
 pub use hoglin::HoglinEntity;

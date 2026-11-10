@@ -15,10 +15,10 @@
 | Предметы (по классам поведения) | 1 400 | 1 658 | 84,4 % |
 | Предметы (с учётом базового `Item`) | **1 657** | 1 658 | **99,94 %** |
 | Блоки (с собственным поведением) | 1 031 | 1 286 | 80,2 % |
-| Сущности (зарегистрированные фабрики) | **79** | 161 | **49,1 %** |
+| Сущности (зарегистрированные фабрики) | **80** | 161 | **49,7 %** |
 | Пакеты протокола (есть Rust-модуль) | 131 | 234 | 56,0 % |
 | Команды | 43 | ~50 ванильных + свои | ~85 % |
-| Тесты | 3 593 | — | — |
+| Тесты (`steel-core` lib, CI) | 3 213 | — | — |
 | Строк кода (`src` всех крейтов) | ~497 000 | — | — |
 
 Реестр «5 945 / 100 %» — это блоки 1 286, предметы 1 658, сущности 161,
@@ -72,7 +72,7 @@
 
 ## 5. Сущности
 
-**79 из 161 (49,1 %)** типов имеют зарегистрированную фабрику (61 класс):
+**80 из 161 (49,7 %)** типов имеют зарегистрированную фабрику (62 класса):
 
 * мобы: `Zombie`, `Husk`, `Drowned`, `ZombifiedPiglin`, `WitherSkeleton`,
   `Silverfish`, `CaveSpider`, `Spider`, `Piglin`, `PiglinBrute`, `Hoglin`, `Zoglin`,
@@ -81,11 +81,14 @@
 * дальнобойные (`RangedAttackGoal` + помощник стрельбы): `Skeleton`, `Stray`,
   `Bogged`, `Parched` (стрелы со `slowness`/`poison`/`weakness`, конверсия скелета
   в `Stray` в порошковом снегу, стрижка боггеда);
+* уникальная механика: `Creeper` (ванильный фитиль `30` тиков, радиус `3`,
+  `×2` при `is_powered`, взрыв `MOB` через существующий `ServerExplosion`,
+  избегание кошек/оцелотов);
 * объекты: стенд для брони, картина, подушка, рамки, блок/item-дисплеи, поводок,
   примленный ТНТ, кристалл Края, опыт-орб, падающий блок, стрелы и снаряды
   (трезубец, жемчуг, глаз, бутылочки, фейерверк, рыболовный крючок, заряд ветра,
   снежок, яйцо), лодки и лодки с сундуком, вагонетки и вагонетка с сундуком.
-* Не сделано (82 класса): вся деревенская линия (`Villager`, `WanderingTrader`,
+* Не сделано (81 класс): вся деревенская линия (`Villager`, `WanderingTrader`,
   `ZombieVillager`, `IronGolem`, `SnowGolem`, `Cat`, `Wolf`, `Horse`+`Donkey`+`Mule`+
   `Llama`+`TraderLlama`, `PolarBear`, `Panda`, `Fox`, `Ocelot`, `Parrot`, `Rabbit`,
   `Goat`, `Camel`, `Turtle`, `Armadillo`, `Sniffer`, `Allay`, `Bee`, `Dolphin`,
@@ -97,7 +100,7 @@
   `DragonFireball`, `ShulkerBullet`, `LlamaSpit`, `BreezeWindCharge`,
   `EvokerFangs`, `OminousItemSpawner`, `LightningBolt`), боссы (`EnderDragon`,
   `WitherBoss`, `Warden`, `Ravager`, `IronGolem`), слаймы (`Slime`, `MagmaCube`,
-  `Giant`, `Creeper`, `Enderman`), оставшиеся вагонетки (`TNT`, `Furnace`,
+  `Giant`, `Enderman`), оставшиеся вагонетки (`TNT`, `Furnace`,
   `Hopper`, `Spawner`, `CommandBlock`), дисплеи (`TextDisplay`, `ItemDisplay`,
   `GlowItemFrame`).
 
@@ -137,8 +140,8 @@
 5. **Деревня и торговля**: нет крестьян, профессий, торговли, железного голема.
 6. **Боссы**: `EnderDragon`, `WitherBoss`, `Warden` — ни одного.
 7. **Лошади/езда/приручение** — нет лошадей, волков, кошек, попугаев.
-8. **`Slime`/`MagmaCube`/`Creeper`/`Enderman`** — уникальные механики
-   (прыжки, взрыв, телепорт) отсутствуют.
+8. **`Slime`/`MagmaCube`/`Enderman`** — уникальные механики (прыжки и
+   разделение, телепорт и перенос блоков) отсутствуют; крипер уже сделан.
 9. **255 блоков без спец. поведения**, из них реальные: `ShelfBlock` (13),
    `InfestedBlock` (6), статуи медного голема (8), `CommandBlock` (3),
    `NyliumBlock` (2).
@@ -159,8 +162,11 @@
    `Nautilus`, `SulfurCube`.
 5. Транспорт: `MinecartTNT`, `MinecartFurnace`, `MinecartHopper`,
    `MinecartSpawner`, `MinecartCommandBlock`.
-6. Дисплеи: `TextDisplay`, `ItemDisplay`, `GlowItemFrame`; `LightningBolt`.
-7. Уникальные механики: `Creeper`, `Enderman`, `Slime`/`MagmaCube`.
+6. Дисплеи: `TextDisplay`, `ItemDisplay`, `GlowItemFrame`; `LightningBolt`
+   (разблокирует «заряженного» крипера).
+7. Уникальные механики: ~~`Creeper`~~ — **сделано** (§20); следующими
+   `Enderman` (телепорт, перенос блоков) и `Slime`/`MagmaCube` (прыжки,
+   разделение по размерам).
 8. Деревня: `Villager` + профессии + торговля + `IronGolem`/`SnowGolem`.
 9. Боссы: `WitherBoss` → `EnderDragon` → `Warden`.
 10. Книга рецептов (как только определимся с `RecipeDisplay`).
