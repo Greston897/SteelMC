@@ -32,6 +32,18 @@ pub fn progress_for(tps: f32) -> f32 {
     (tps / TICKS_PER_SECOND as f32).clamp(0.0, 1.0)
 }
 
+/// Text colour for a TPS value, using the tab list thresholds.
+#[must_use]
+pub fn text_color_for(tps: f32) -> Color {
+    if tps >= TPS_BAR_GREEN_THRESHOLD {
+        Color::Green
+    } else if tps >= TPS_BAR_YELLOW_THRESHOLD {
+        Color::Yellow
+    } else {
+        Color::Red
+    }
+}
+
 /// Boss bar colour for a TPS value, using the tab list thresholds.
 #[must_use]
 pub fn color_for(tps: f32) -> BossBarColor {
@@ -57,7 +69,7 @@ fn mspt_color(mspt: f32) -> Color {
 pub fn tps_bar_text(stats: TabListTickStats) -> TextComponent {
     TextComponent::plain("").add_children(vec![
         TextComponent::plain("TPS ").color(Color::Gray),
-        TextComponent::plain(format!("{:.1}", stats.tps)).color(color_for(stats.tps)),
+        TextComponent::plain(format!("{:.1}", stats.tps)).color(text_color_for(stats.tps)),
         TextComponent::plain("  MSPT ").color(Color::Gray),
         TextComponent::plain(format!("{:.2}", stats.recent_mspt)).color(mspt_color(stats.recent_mspt)),
         TextComponent::plain(format!(

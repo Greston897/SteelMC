@@ -15,7 +15,6 @@ pub mod vindicator;
 pub mod wither_skeleton;
 pub mod zoglin;
 pub mod zombie;
-pub mod zombie_villager;
 pub mod zombified_piglin;
 
 pub use cave_spider::CaveSpiderEntity;
@@ -31,5 +30,4 @@ pub use vindicator::VindicatorEntity;
 pub use wither_skeleton::WitherSkeletonEntity;
 pub use zoglin::ZoglinEntity;
 pub use zombie::ZombieEntity;
-pub use zombie_villager::ZombieVillagerEntity;
 pub use zombified_piglin::ZombifiedPiglinEntity;

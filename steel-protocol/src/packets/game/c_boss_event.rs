@@ -131,7 +131,7 @@ pub struct CBossEvent {
 impl CBossEvent {
     /// Builds an `add` action.
     #[must_use]
-    pub fn add(
+    pub const fn add(
         uuid: Uuid,
         name: TextComponent,
         progress: f32,
@@ -171,7 +171,7 @@ impl CBossEvent {
 
     /// Builds an `update_name` action.
     #[must_use]
-    pub fn update_name(uuid: Uuid, name: TextComponent) -> Self {
+    pub const fn update_name(uuid: Uuid, name: TextComponent) -> Self {
         Self {
             uuid,
             action: BossEventAction::UpdateName { name },
