@@ -145,7 +145,10 @@ mod tests {
         assert!((goal.attack_power(7.5 * 7.5) - 0.5).abs() < 1e-5);
         // Exactly at the radius is full power, and beyond it clamps to 1.0.
         assert!((goal.attack_power(15.0 * 15.0) - 1.0).abs() < 1e-5);
-        assert!((goal.attack_power(40.0 * 40.0) - 1.0).abs() < 1e-5, "clamped");
+        assert!(
+            (goal.attack_power(40.0 * 40.0) - 1.0).abs() < 1e-5,
+            "clamped"
+        );
     }
 
     #[test]

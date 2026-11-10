@@ -104,9 +104,7 @@ mod tests {
     use glam::DVec3;
     use steel_utils::types::Difficulty;
 
-    use super::{
-        SKELETON_ARROW_ARC, arced_direction, arrow_inaccuracy, TARGET_AIM_HEIGHT_FACTOR,
-    };
+    use super::{SKELETON_ARROW_ARC, TARGET_AIM_HEIGHT_FACTOR, arced_direction, arrow_inaccuracy};
 
     #[test]
     fn flat_shot_keeps_horizontal_direction_and_adds_the_arc() {

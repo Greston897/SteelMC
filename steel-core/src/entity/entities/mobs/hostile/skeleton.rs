@@ -347,7 +347,12 @@ impl Mob for SkeletonEntity {
 impl Monster for SkeletonEntity {}
 
 impl PathfinderMob for SkeletonEntity {
-    fn perform_ranged_attack(&self, self_entity: &SharedEntity, target: &SharedEntity, _power: f32) {
+    fn perform_ranged_attack(
+        &self,
+        self_entity: &SharedEntity,
+        target: &SharedEntity,
+        _power: f32,
+    ) {
         let Some(_arrow) =
             ranged_attack::shoot_arrow(self_entity, target, ranged_attack::MOB_ARROW_DAMAGE)
         else {
@@ -397,7 +402,8 @@ mod tests {
     #[test]
     fn skeleton_starts_unconverted() {
         init_vanilla_registry();
-        let skeleton = SkeletonEntity::new(&vanilla_entities::SKELETON, 3, DVec3::ZERO, Weak::new());
+        let skeleton =
+            SkeletonEntity::new(&vanilla_entities::SKELETON, 3, DVec3::ZERO, Weak::new());
         assert!(!*skeleton.entity_data.lock().stray_conversion.get());
     }
 }

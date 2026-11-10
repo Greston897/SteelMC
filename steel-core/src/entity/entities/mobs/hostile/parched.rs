@@ -312,7 +312,12 @@ impl Mob for ParchedEntity {
 impl Monster for ParchedEntity {}
 
 impl PathfinderMob for ParchedEntity {
-    fn perform_ranged_attack(&self, self_entity: &SharedEntity, target: &SharedEntity, _power: f32) {
+    fn perform_ranged_attack(
+        &self,
+        self_entity: &SharedEntity,
+        target: &SharedEntity,
+        _power: f32,
+    ) {
         let Some(arrow) =
             ranged_attack::shoot_arrow(self_entity, target, ranged_attack::MOB_ARROW_DAMAGE)
         else {
