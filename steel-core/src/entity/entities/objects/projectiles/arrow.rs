@@ -731,9 +731,26 @@ unsafe impl DowncastType for ThrownTridentEntity {
 }
 
 impl ThrownTridentEntity {
-    /// Creates a ready-to-throw trident carrying the given stack.
+    /// Creates a bare trident (the shape the entity loader builds).
     #[must_use]
-    pub fn new(
+    pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {
+        Self {
+            base: EntityBase::new(id, position, entity_type.dimensions, world),
+            entity_type,
+            projectile_base: ProjectileBase::new(),
+            arrow: ArrowHandle::new(
+                ItemStack::new(&vanilla_items::TRIDENT),
+                TRIDENT_DAMAGE,
+                false,
+            ),
+            loyalty: SyncMutex::new(0),
+            dealt_damage: AtomicBool::new(false),
+        }
+    }
+
+    /// Creates a trident ready to be thrown, carrying `item` and its `Loyalty`.
+    #[must_use]
+    pub fn with_throw(
         entity_type: EntityTypeRef,
         id: i32,
         position: DVec3,
@@ -741,16 +758,9 @@ impl ThrownTridentEntity {
         item: ItemStack,
         loyalty: i32,
     ) -> Self {
-        let handle = ArrowHandle::new(ItemStack::new(&vanilla_items::TRIDENT), TRIDENT_DAMAGE, false);
-        let entity = Self {
-            base: EntityBase::new(id, position, entity_type.dimensions, world),
-            entity_type,
-            projectile_base: ProjectileBase::new(),
-            arrow: handle,
-            loyalty: SyncMutex::new(loyalty),
-            dealt_damage: AtomicBool::new(false),
-        };
+        let entity = Self::new(entity_type, id, position, world);
         entity.set_arrow_item(item);
+        *entity.loyalty.lock() = loyalty;
         entity
     }
 
@@ -817,7 +827,7 @@ impl ThrownTridentEntity {
             if let Some(player) = owner.as_player() {
                 player.add_item_with_sound(&mut stack);
             } else {
-                world.drop_item_stack(self.position(), stack);
+                world.drop_item_stack(self.block_position(), stack);
             }
             self.set_removed(RemovalReason::Discarded);
             return true;

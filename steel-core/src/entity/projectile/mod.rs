@@ -696,9 +696,10 @@ where
     E: Projectile + ThrowableItemProjectile + Entity + 'static,
 {
     let item = item_stack.clone();
+    let owner: SharedEntity = Arc::<Player>::clone(player);
     let entity = spawn_projectile_from_rotation(
         world,
-        player,
+        &owner,
         pitch_offset,
         power,
         uncertainty,
@@ -706,7 +707,6 @@ where
         |entity| entity.set_item_clamped(item),
     );
     if let Some(entity) = &entity {
-        let owner: SharedEntity = Arc::<Player>::clone(player);
         enchantment_helper::on_projectile_spawned(world, item_stack, entity.as_ref(), Some(&owner));
     }
     entity
@@ -724,7 +724,7 @@ where
 #[must_use]
 pub fn spawn_projectile_from_rotation<E>(
     world: &Arc<World>,
-    player: &Arc<Player>,
+    shooter: &SharedEntity,
     pitch_offset: f32,
     power: f32,
     uncertainty: f32,
@@ -734,22 +734,21 @@ pub fn spawn_projectile_from_rotation<E>(
 where
     E: Projectile + Entity + 'static,
 {
-    let player_pos = player.position();
+    let shooter_pos = shooter.position();
     let spawn_pos = DVec3::new(
-        player_pos.x,
-        player.get_eye_y() - THROWN_ITEM_SPAWN_EYE_OFFSET,
-        player_pos.z,
+        shooter_pos.x,
+        shooter.get_eye_y() - THROWN_ITEM_SPAWN_EYE_OFFSET,
+        shooter_pos.z,
     );
 
     let entity = create(spawn_pos);
-    let owner: SharedEntity = Arc::<Player>::clone(player);
-    entity.set_owner_entity(Some(&owner));
+    entity.set_owner_entity(Some(shooter));
     configure(&entity);
 
-    let (yaw, player_pitch) = player.rotation();
+    let (yaw, shooter_pitch) = shooter.rotation();
     entity.shoot_from_rotation(
-        player.as_ref(),
-        player_pitch,
+        shooter.as_ref(),
+        shooter_pitch,
         yaw,
         pitch_offset,
         power,

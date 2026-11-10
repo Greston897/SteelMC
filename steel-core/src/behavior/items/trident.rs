@@ -79,7 +79,7 @@ impl ItemBehavior for TridentItem {
     fn use_item(&self, context: &mut UseItemContext) -> InteractionResult {
         // Vanilla `TridentItem.use`: a trident that would break on the next
         // durability point refuses to start charging.
-        if context.inv.with_item(ItemStack::next_damage_will_break) {
+        if context.inv.with_item(|stack| stack.next_damage_will_break()) {
             return InteractionResult::Fail;
         }
         context.player.start_using_item(context.hand);
@@ -107,14 +107,18 @@ impl ItemBehavior for TridentItem {
         let loyalty = stack.get_enchantment_level(&vanilla_enchantments::LOYALTY.key);
         let thrown_stack = stack.copy_with_count(1);
 
+        let Some(shooter) = world.get_entity_by_id(user.id()) else {
+            return false;
+        };
+
         let trident = spawn_projectile_from_rotation(
             world,
-            player,
+            &shooter,
             0.0,
             SHOOT_POWER,
             SHOOT_UNCERTAINTY,
             |spawn_pos| {
-                ThrownTridentEntity::new(
+                ThrownTridentEntity::with_throw(
                     &vanilla_entities::TRIDENT,
                     next_entity_id(),
                     spawn_pos,
