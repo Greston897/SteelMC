@@ -146,7 +146,7 @@ impl MagmaCubeEntity {
     /// Vanilla cube size, always within `1..=127`.
     #[must_use]
     pub fn size(&self) -> i32 {
-        *self.entity_data.lock().id_size.get()
+        *self.entity_data.lock().abstract_cube_mob().id_size.get()
     }
 
     /// Sets the synced size and every value vanilla derives from it.
@@ -160,10 +160,10 @@ impl MagmaCubeEntity {
         let size = size.clamp(cube_mob::MIN_SIZE, cube_mob::MAX_SIZE);
         let changed = {
             let mut data = self.entity_data.lock();
-            if *data.id_size.get() == size {
+            if *data.abstract_cube_mob().id_size.get() == size {
                 false
             } else {
-                data.id_size.set(size);
+                data.abstract_cube_mob_mut().id_size.set(size);
                 true
             }
         };
@@ -274,7 +274,7 @@ impl MagmaCubeEntity {
             return;
         };
         if !self.can_deal_damage()
-            || !Entity::is_alive(self)
+            || !Entity::is_alive(&**self)
             || self.is_allied_to(target)
             || !self.is_within_melee_attack_range(target_living)
             || !self.has_line_of_sight(target)
@@ -284,7 +284,7 @@ impl MagmaCubeEntity {
         let Some(world) = self.level() else {
             return;
         };
-        let shared: SharedEntity = Arc::clone(self);
+        let shared = Arc::clone(self).into_shared_entity();
         let source = self.mob_attack_damage_source(&ItemStack::empty(), &shared);
         if target.hurt(&world, &source, self.attack_damage() as f32) {
             let pitch = (rand::random::<f32>() - rand::random::<f32>()) * 0.2 + 1.0;
@@ -519,6 +519,7 @@ mod tests {
     use simdnbt::borrow::read_compound;
     use simdnbt::owned::NbtCompound;
     use steel_registry::{init_vanilla_registry, vanilla_attributes, vanilla_entities};
+    use steel_utils::nbt::NbtValueInput as _;
 
     use super::MagmaCubeEntity;
     use crate::entity::{Entity, LivingEntity};

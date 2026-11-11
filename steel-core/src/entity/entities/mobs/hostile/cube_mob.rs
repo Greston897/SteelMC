@@ -212,7 +212,7 @@ mod tests {
         for _ in 0..256 {
             let size = random_spawn_size(1.0);
             assert!((MIN_SIZE..=MAX_RANDOM_SIZE).contains(&size));
-            assert!(size.is_power_of_two());
+            assert!(size.cast_unsigned().is_power_of_two());
         }
     }
 
