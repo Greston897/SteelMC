@@ -31,7 +31,7 @@ use crate::entity::ai::goal::{LookAtPlayerGoal, RandomLookAroundGoal, RandomSwim
 use crate::entity::ai::path::PathType;
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::mobs::passive::fish::{
-    WATER_ANIMAL_MAX_AIR, check_water_animal_spawn_rules, tick_breathing, travel_in_water,
+    check_water_animal_spawn_rules, tick_breathing, travel_in_water,
 };
 use crate::entity::{
     AgeableMob, AgeableMobBase, DefaultEntityPush, Entity, EntityBase, EntityBaseLoad,
@@ -179,7 +179,7 @@ impl DolphinEntity {
     pub fn is_food(&self, item_stack: &ItemStack) -> bool {
         REGISTRY
             .items
-            .is_in_tag(item_stack.item(), &ItemTag::DOLPHIN_FOOD)
+            .is_in_tag(item_stack.item(), &ItemTag::FISHES)
     }
 
     /// Vanilla `Dolphin.tickMoistness`.
@@ -464,9 +464,7 @@ mod tests {
         assert_eq!(nbt.byte("GotFish"), Some(1));
 
         let mut bytes = Vec::new();
-        simdnbt::owned::NbtTag::Compound(nbt)
-            .write(&mut bytes)
-            .expect("test NBT should write");
+        simdnbt::owned::NbtTag::Compound(nbt).write(&mut bytes);
         let mut cursor = std::io::Cursor::new(bytes.as_slice());
         let borrowed = simdnbt::borrow::read_compound(&mut cursor).expect("reborrows");
 

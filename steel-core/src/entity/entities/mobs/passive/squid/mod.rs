@@ -1,4 +1,6 @@
-pub mod glow;
+mod glow;
+
+pub use glow::GlowSquidEntity;
 
 use std::{
     f64::consts::{PI, TAU},

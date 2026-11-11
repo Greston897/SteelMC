@@ -14,16 +14,15 @@ use steel_math::vector;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::{
     entity_data::{EntityPose, ParticleData},
-    entity_type::{EntityAttachments, EntityDimensions, EntityTypeRef},
+    entity_type::{
+        EntityAttachmentPoint, EntityAttachments, EntityDimensions, EntityTypeRef,
+    },
     sound_event::SoundEventRef,
     sound_events, vanilla_attributes, vanilla_damage_types,
     vanilla_entity_data::GlowSquidEntityData,
-    vanilla_mob_effects::LEVITATION,
     vanilla_particle_types,
 };
-use steel_utils::{
-    DowncastType, DowncastTypeKey, entity_events, locks::SyncMutex, types::InteractionHand,
-};
+use steel_utils::{DowncastType, DowncastTypeKey, locks::SyncMutex, types::InteractionHand};
 
 use crate::{
     behavior::InteractionResult,
@@ -32,7 +31,7 @@ use crate::{
         LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity,
         ai::goal::SquidRandomMovementGoal,
     },
-    physics::{MoveResult, MoverType},
+    physics::MoveResult,
     world::World,
 };
 use crate::{
@@ -48,10 +47,8 @@ const GLOW_SQUID_DEFAULT_HEALTH: f64 = 10.0;
 const GLOW_SQUID_BABY_WIDTH: f32 = 0.5;
 const GLOW_SQUID_BABY_HEIGHT: f32 = 0.5;
 const GLOW_SQUID_BABY_EYE_HEIGHT: f32 = 0.37;
-const GLOW_SQUID_BABY_PASSENGER_ATTACHMENTS: [steel_registry::entity_type::EntityAttachmentPoint;
-    1] = [steel_registry::entity_type::EntityAttachmentPoint::new(
-    0.0, 0.25, 0.0,
-)];
+const GLOW_SQUID_BABY_PASSENGER_ATTACHMENTS: [EntityAttachmentPoint; 1] =
+    [EntityAttachmentPoint::new(0.0, 0.25, 0.0)];
 
 const GLOW_SQUID_BABY_DIMENSIONS: EntityDimensions = EntityDimensions::new_with_attachments(
     GLOW_SQUID_BABY_WIDTH,
