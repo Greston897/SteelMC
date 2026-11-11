@@ -200,8 +200,8 @@ mod tests {
 
     fn stick_display() -> RecipeDisplay {
         RecipeDisplay::CraftingShapeless {
-            ingredients: vec![SlotDisplay::Item(&*vanilla_items::OAK_PLANKS)],
-            result: SlotDisplay::Item(&*vanilla_items::STICK),
+            ingredients: vec![SlotDisplay::Item(&vanilla_items::OAK_PLANKS)],
+            result: SlotDisplay::Item(&vanilla_items::STICK),
             crafting_station: RecipeDisplay::crafting_table_station(),
         }
     }
@@ -213,7 +213,7 @@ mod tests {
             property_sets: Vec::new(),
             stonecutter: vec![StonecutterEntry {
                 input: Ingredient::Item(&vanilla_items::STONE),
-                display: SlotDisplay::Item(&*vanilla_items::STONE_STAIRS),
+                display: SlotDisplay::Item(&vanilla_items::STONE_STAIRS),
             }],
         };
         let mut bytes = Vec::new();

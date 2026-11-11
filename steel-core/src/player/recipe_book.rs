@@ -14,10 +14,9 @@ use steel_protocol::packets::game::{
     CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CUpdateRecipes, RecipeBookAddEntry,
     RecipeBookTypeSettings, StonecutterEntry,
 };
-use steel_registry::REGISTRY;
-use steel_registry::RegistryEntry as _;
 use steel_registry::recipe::{Ingredient, StonecuttingRecipe, display_for_recipe};
 use steel_registry::slot_display::{RecipeDisplay, SlotDisplay};
+use steel_registry::{REGISTRY, RegistryEntry as _, TaggedRegistryExt as _};
 use steel_utils::Identifier;
 
 /// The four recipe book tabs, in packet order.

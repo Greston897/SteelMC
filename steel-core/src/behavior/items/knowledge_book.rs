@@ -95,7 +95,7 @@ mod tests {
         let key = Identifier::vanilla_static("stick");
         let recipe = REGISTRY.recipes.by_key(&key).expect("stick recipe exists");
         let stack = recipe_result(recipe).expect("stick has a result");
-        assert_eq!(stack.item, &vanilla_items::STICK);
+        assert_eq!(stack.item, &*vanilla_items::STICK);
         assert_eq!(stack.count, 4, "vanilla crafts four sticks at once");
     }
 
