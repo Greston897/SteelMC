@@ -174,13 +174,6 @@ impl DolphinEntity {
         self.entity_data.lock().moistness_level.set(level);
     }
 
-    /// Whether a stack is a vanilla dolphin food item.
-    #[must_use]
-    pub fn is_food(&self, item_stack: &ItemStack) -> bool {
-        REGISTRY
-            .items
-            .is_in_tag(item_stack.item(), &ItemTag::FISHES)
-    }
 
     /// Vanilla `Dolphin.tickMoistness`.
     fn tick_moistness(&self) {
@@ -192,14 +185,15 @@ impl DolphinEntity {
 
         let remaining = self.moistness_level() - DOLPHIN_MOISTNESS_DRAIN;
         self.set_moistness_level(remaining);
-        if remaining <= -20 && self.tick_count() % 10 == 0 {
-            if let Some(world) = self.level() {
-                self.hurt(
-                    &world,
-                    &DamageSource::environment(&vanilla_damage_types::DROWN),
-                    DOLPHIN_DRY_DAMAGE,
-                );
-            }
+        if remaining <= -20
+            && self.tick_count() % 10 == 0
+            && let Some(world) = self.level()
+        {
+            self.hurt(
+                &world,
+                &DamageSource::environment(&vanilla_damage_types::DROWN),
+                DOLPHIN_DRY_DAMAGE,
+            );
         }
     }
 
@@ -217,6 +211,14 @@ impl DolphinEntity {
                 .set_base_glowing_flag(self.has_glowing_tag() || display.glowing);
         }
     }
+}
+
+/// Whether a stack is a vanilla dolphin food item (the `#minecraft:fishes` tag).
+#[must_use]
+pub fn is_dolphin_food(item_stack: &ItemStack) -> bool {
+    REGISTRY
+        .items
+        .is_in_tag(item_stack.item(), &ItemTag::FISHES)
 }
 
 impl DefaultEntityPush for DolphinEntity {}
@@ -268,7 +270,7 @@ impl Entity for DolphinEntity {
     fn save_additional(&self, nbt: &mut NbtCompound) {
         self.save_mob(nbt);
         self.save_ageable_mob(nbt);
-        nbt.insert("GotFish", i8::from(self.got_fish()));
+        nbt.insert("GotFish", u8::from(self.got_fish()));
         nbt.insert("Moistness", self.moistness_level());
     }
 
@@ -367,7 +369,7 @@ impl AgeableMob for DolphinEntity {
             let item_stack = inventory.get_item_in_hand(hand);
             item_stack.copy_with_count(item_stack.count())
         };
-        if !self.is_food(&item_stack) {
+        if !is_dolphin_food(&item_stack) {
             return InteractionResult::Pass;
         }
 
@@ -466,7 +468,9 @@ mod tests {
         let mut bytes = Vec::new();
         simdnbt::owned::NbtTag::Compound(nbt).write(&mut bytes);
         let mut cursor = std::io::Cursor::new(bytes.as_slice());
-        let borrowed = simdnbt::borrow::read_compound(&mut cursor).expect("reborrows");
+        let Some(borrowed) = simdnbt::borrow::read_compound(&mut cursor).ok() else {
+            panic!("test NBT should reborrow");
+        };
 
         let fresh = DolphinEntity::new(&vanilla_entities::DOLPHIN, 2, DVec3::ZERO, Weak::new());
         fresh.load_additional((&borrowed).into());
@@ -477,7 +481,7 @@ mod tests {
     #[test]
     fn raw_cod_is_dolphin_food() {
         init_vanilla_registry();
-        assert!(dolphin().is_food(&ItemStack::new(&vanilla_items::COD)));
-        assert!(!dolphin().is_food(&ItemStack::new(&vanilla_items::STONE)));
+        assert!(is_dolphin_food(&ItemStack::new(&vanilla_items::COD)));
+        assert!(!is_dolphin_food(&ItemStack::new(&vanilla_items::STONE)));
     }
 }

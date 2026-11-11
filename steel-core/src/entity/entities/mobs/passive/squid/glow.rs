@@ -83,12 +83,8 @@ pub struct GlowSquidEntity {
 }
 
 struct GlowSquidState {
-    x_body_rot: f32,
     // Required for inking on fleeing.
     x_body_rot_old: f32,
-    movement_vector: DVec3,
-    tentacle_speed: f32,
-    tentacle_movement: f32,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `GlowSquidEntity`.
@@ -215,13 +211,7 @@ impl GlowSquidEntity {
             mob_base,
             ageable_base,
             entity_data: SyncMutex::new(entity_data),
-            state: SyncMutex::new(GlowSquidState {
-                x_body_rot: 0.0,
-                x_body_rot_old: 0.0,
-                movement_vector: DVec3::ZERO,
-                tentacle_speed: 1.0 / (rand::random::<f32>() + 1.0) * 0.2,
-                tentacle_movement: 0.0,
-            }),
+            state: SyncMutex::new(GlowSquidState { x_body_rot_old: 0.0 }),
         }
     }
 }

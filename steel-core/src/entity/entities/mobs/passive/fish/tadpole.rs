@@ -144,13 +144,6 @@ impl TadpoleEntity {
         }
     }
 
-    /// Whether a stack speeds up this tadpole's growth (vanilla: slime ball).
-    #[must_use]
-    pub fn is_food(&self, item_stack: &ItemStack) -> bool {
-        REGISTRY
-            .items
-            .is_in_tag(item_stack.item(), &ItemTag::FROG_FOOD)
-    }
 
     fn handle_air_supply(&self, pre_tick_air_supply: i32) {
         tick_breathing(self, pre_tick_air_supply);
@@ -168,6 +161,14 @@ impl TadpoleEntity {
                 .set_base_glowing_flag(self.has_glowing_tag() || display.glowing);
         }
     }
+}
+
+/// Whether a stack speeds up a tadpole's growth (vanilla: the `frog_food` tag).
+#[must_use]
+pub fn is_tadpole_food(item_stack: &ItemStack) -> bool {
+    REGISTRY
+        .items
+        .is_in_tag(item_stack.item(), &ItemTag::FROG_FOOD)
 }
 
 impl DefaultEntityPush for TadpoleEntity {}
@@ -302,7 +303,7 @@ impl AgeableMob for TadpoleEntity {
             let item_stack = inventory.get_item_in_hand(hand);
             item_stack.copy_with_count(item_stack.count())
         };
-        if !self.is_food(&item_stack) {
+        if !is_tadpole_food(&item_stack) {
             return InteractionResult::Pass;
         }
 

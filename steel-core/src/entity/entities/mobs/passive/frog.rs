@@ -17,6 +17,8 @@ use steel_registry::entity_type::{
     EntityAttachmentPoint, EntityAttachments, EntityDimensions, EntityTypeRef,
 };
 use steel_registry::frog_variant::FrogVariantRef;
+use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_attributes;
 use steel_registry::vanilla_entity_data::FrogEntityData;
@@ -183,11 +185,10 @@ impl FrogEntity {
 
 /// Whether a stack is a vanilla frog food item (the `frog_food` tag).
 #[must_use]
-pub fn is_frog_food(item_stack: &steel_registry::item_stack::ItemStack) -> bool {
-    use steel_registry::TaggedRegistryExt as _;
+pub fn is_frog_food(item_stack: &ItemStack) -> bool {
     REGISTRY
         .items
-        .is_in_tag(item_stack.item(), &steel_registry::vanilla_item_tags::ItemTag::FROG_FOOD)
+        .is_in_tag(item_stack.item(), &ItemTag::FROG_FOOD)
 }
 
 impl DefaultEntityPush for FrogEntity {}
@@ -403,12 +404,8 @@ mod tests {
     #[test]
     fn only_slime_balls_are_frog_food() {
         init_vanilla_registry();
-        assert!(is_frog_food(&steel_registry::item_stack::ItemStack::new(
-            &vanilla_items::SLIME_BALL
-        )));
-        assert!(!is_frog_food(&steel_registry::item_stack::ItemStack::new(
-            &vanilla_items::STONE
-        )));
+        assert!(is_frog_food(&ItemStack::new(&vanilla_items::SLIME_BALL)));
+        assert!(!is_frog_food(&ItemStack::new(&vanilla_items::STONE)));
     }
 
     #[test]
