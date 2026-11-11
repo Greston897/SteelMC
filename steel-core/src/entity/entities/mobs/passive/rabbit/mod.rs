@@ -137,10 +137,7 @@ impl RabbitEntity {
                     RABBIT_AVOID_CLOSE_SPEED,
                 ),
             );
-            goal_selector.add_goal(
-                3,
-                TemptGoal::new(RABBIT_TEMPT_SPEED, is_rabbit_food, false),
-            );
+            goal_selector.add_goal(3, TemptGoal::new(RABBIT_TEMPT_SPEED, is_rabbit_food, false));
             goal_selector.add_goal(4, WaterAvoidingRandomStrollGoal::new(RABBIT_STROLL_SPEED));
             goal_selector.add_goal(
                 6,
@@ -195,7 +192,6 @@ impl RabbitEntity {
                 .set_base_glowing_flag(self.has_glowing_tag() || display.glowing);
         }
     }
-
 }
 
 /// Whether a stack is a vanilla rabbit food item.
@@ -252,7 +248,11 @@ impl Entity for RabbitEntity {
         SoundSource::Neutral
     }
 
-    fn play_step_sound(&self, _pos: steel_utils::BlockPos, _block_state: steel_utils::BlockStateId) {
+    fn play_step_sound(
+        &self,
+        _pos: steel_utils::BlockPos,
+        _block_state: steel_utils::BlockStateId,
+    ) {
         // Vanilla rabbits keep the generic step sound at a low volume.
         self.play_sound(&sound_events::ENTITY_RABBIT_JUMP, 0.15, 1.0);
     }
@@ -317,7 +317,6 @@ impl LivingEntity for RabbitEntity {
         Animal::tick_animal_love(self);
         result
     }
-
 }
 
 impl AgeableMob for RabbitEntity {
@@ -447,7 +446,9 @@ mod tests {
     #[test]
     fn carrots_are_rabbit_food() {
         init_vanilla_registry();
-        assert!(is_rabbit_food(&ItemStack::new(&steel_registry::vanilla_items::CARROT)));
+        assert!(is_rabbit_food(&ItemStack::new(
+            &steel_registry::vanilla_items::CARROT
+        )));
         assert!(!is_rabbit_food(&ItemStack::new(
             &steel_registry::vanilla_items::STONE
         )));
