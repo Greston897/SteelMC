@@ -373,7 +373,7 @@ mod tests {
     fn a_cub_never_stands() {
         init_vanilla_registry();
         let bear = bear();
-        AgeableMob::set_synced_baby(&bear, true);
+        bear.ageable_base().set_age(-1);
         bear.update_standing(true);
         assert!(!bear.is_standing(), "cubs stay on four legs");
     }
