@@ -144,13 +144,13 @@ impl ParrotEntity {
     /// Sets the coat variant by its numeric id, clamping to the vanilla range.
     pub fn set_variant_id(&self, id: i32) {
         let id = id.clamp(0, i32::try_from(PARROT_VARIANTS.len() - 1).unwrap_or(0));
-        self.entity_data.lock().variant_type.set(id);
+        self.entity_data.lock().variant_id.set(id);
     }
 
     /// Returns the numeric coat variant.
     #[must_use]
     pub fn variant_id(&self) -> i32 {
-        *self.entity_data.lock().variant_type.get()
+        *self.entity_data.lock().variant_id.get()
     }
 
     /// Returns the coat variant name used by the asset files.
