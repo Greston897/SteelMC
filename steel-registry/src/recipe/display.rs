@@ -75,16 +75,18 @@ fn crafting_display(recipe: &CraftingRecipe) -> RecipeDisplay {
         other => {
             // Remaining crafting types have no dedicated display in vanilla either;
             // they are rendered from the first ingredient and the result.
-            let ingredients = other.properties().placement.as_ref().map_or_else(
-                Vec::new,
-                |placement| {
-                    placement
-                        .ingredients
-                        .iter()
-                        .map(SlotDisplay::from_ingredient)
-                        .collect()
-                },
-            );
+            let ingredients =
+                other
+                    .properties()
+                    .placement
+                    .as_ref()
+                    .map_or_else(Vec::new, |placement| {
+                        placement
+                            .ingredients
+                            .iter()
+                            .map(SlotDisplay::from_ingredient)
+                            .collect()
+                    });
             let result = other
                 .result()
                 .map_or_else(|| SlotDisplay::Empty, result_display);
@@ -144,10 +146,7 @@ mod tests {
             }
         }
         assert!(total > 0, "vanilla registry should contain recipes");
-        assert!(
-            missing.is_empty(),
-            "recipes without a display: {missing:?}"
-        );
+        assert!(missing.is_empty(), "recipes without a display: {missing:?}");
     }
 
     #[test]

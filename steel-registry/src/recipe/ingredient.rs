@@ -79,8 +79,7 @@ fn item_id(item: ItemRef) -> std::io::Result<i32> {
             "item used in a recipe ingredient is not registered yet",
         ));
     };
-    i32::try_from(id)
-        .map_err(|_| std::io::Error::other("item ID does not fit in a VarInt"))
+    i32::try_from(id).map_err(|_| std::io::Error::other("item ID does not fit in a VarInt"))
 }
 
 impl steel_utils::serial::WriteTo for Ingredient {

@@ -314,7 +314,10 @@ fn property_sets() -> Vec<(Identifier, Vec<i32>)> {
     let mut sets = Vec::new();
     for (name, tag) in [
         ("minecraft:furnace_input", "minecraft:furnace_input"),
-        ("minecraft:blast_furnace_input", "minecraft:blast_furnace_input"),
+        (
+            "minecraft:blast_furnace_input",
+            "minecraft:blast_furnace_input",
+        ),
         ("minecraft:smoker_input", "minecraft:smoker_input"),
         ("minecraft:campfire_input", "minecraft:campfire_input"),
         ("minecraft:furnace_fuel", "minecraft:furnace_fuel"),
@@ -399,7 +402,10 @@ mod tests {
         let book = ServerRecipeBook::new();
         assert!(book.is_empty());
         assert_eq!(book.len(), 0);
-        assert_eq!(book.settings(RecipeBookType::Crafting), BookTypeSettings::default());
+        assert_eq!(
+            book.settings(RecipeBookType::Crafting),
+            BookTypeSettings::default()
+        );
     }
 
     #[test]

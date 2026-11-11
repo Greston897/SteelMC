@@ -380,7 +380,9 @@ mod tests {
             crafting_station: RecipeDisplay::crafting_table_station(),
         };
         let mut bytes = Vec::new();
-        display.write(&mut bytes).expect("shaped display should encode");
+        display
+            .write(&mut bytes)
+            .expect("shaped display should encode");
         assert_eq!(&bytes[..4], [1, 2, 2, 4], "kind, width, height, count");
     }
 }

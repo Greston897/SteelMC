@@ -174,7 +174,12 @@ pub struct CRecipeBookSettings {
 
 impl WriteTo for CRecipeBookSettings {
     fn write(&self, writer: &mut impl Write) -> Result<()> {
-        for tab in [&self.crafting, &self.furnace, &self.blast_furnace, &self.smoker] {
+        for tab in [
+            &self.crafting,
+            &self.furnace,
+            &self.blast_furnace,
+            &self.smoker,
+        ] {
             writer.write_all(&[u8::from(tab.open), u8::from(tab.filtering)])?;
         }
         Ok(())
