@@ -117,10 +117,7 @@ impl ParrotEntity {
             let mut goal_selector = mob_base.goal_selector().lock();
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
             goal_selector.add_goal(1, PanicGoal::new(PARROT_PANIC_SPEED));
-            goal_selector.add_goal(
-                2,
-                TemptGoal::new(PARROT_TEMPT_SPEED, is_parrot_food, false),
-            );
+            goal_selector.add_goal(2, TemptGoal::new(PARROT_TEMPT_SPEED, is_parrot_food, false));
             goal_selector.add_goal(3, FollowParentGoal::new(PARROT_FOLLOW_PARENT_SPEED));
             goal_selector.add_goal(5, WaterAvoidingRandomStrollGoal::new(PARROT_STROLL_SPEED));
             goal_selector.add_goal(
