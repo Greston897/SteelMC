@@ -1060,7 +1060,14 @@ pub trait LivingEntity: Entity {
 
         self.broadcast_entity_event(EntityStatus::Death);
         self.set_pose(EntityPose::Dying);
+        self.on_death(source);
     }
+
+    /// Runs one subtype-specific hook after vanilla death effects have been processed.
+    ///
+    /// Slime-family mobs use this to split into child entities without replacing
+    /// the shared loot, death-event, or removal lifecycle.
+    fn on_death(&self, _source: &DamageSource) {}
 
     /// Runs vanilla `LivingEntity.handleKillingBlow`.
     ///

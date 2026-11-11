@@ -7,14 +7,40 @@ use super::{
     player_can_change_difficulty, shapes, vanilla_attributes,
 };
 use crate::behavior::blocks::PowderSnowBlock;
+use crate::world::World;
 use steel_protocol::packets::game::SPunch;
+use steel_registry::item_stack::ItemStack;
+use steel_utils::Direction;
 use steel_utils::types::InteractionHand;
+
+use super::adventure_mode;
 
 impl Player {
     /// Default reach distance for block interactions, in blocks.
     pub const DEFAULT_BLOCK_INTERACTION_RANGE: f64 = 4.5;
     /// Default reach distance for entity interactions, in blocks.
     pub const DEFAULT_ENTITY_INTERACTION_RANGE: f64 = 3.0;
+
+    /// Vanilla `PlayerEntity#canPlaceOn`.
+    ///
+    /// Players with build rights may place anything; restricted (adventure)
+    /// players additionally need the item's `can_place_on` component to allow the
+    /// support block the item is placed against.
+    #[must_use]
+    pub fn can_place_on(
+        &self,
+        world: &World,
+        pos: BlockPos,
+        facing: Direction,
+        stack: &ItemStack,
+    ) -> bool {
+        if self.get_abilities().may_build {
+            return true;
+        }
+
+        let (dx, dy, dz) = facing.opposite().offset();
+        adventure_mode::can_place_on(stack, world, pos.offset(dx, dy, dz))
+    }
 
     /// Sets the player's game mode and notifies the client.
     ///

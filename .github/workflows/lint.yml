@@ -27,7 +27,9 @@ jobs:
         uses: crate-ci/typos@v1.48.0
 
       - name: Format
+        if: always()
         run: cargo fmt --all --check
 
       - name: Clippy
+        if: always()
         run: cargo clippy -r --workspace --all-targets --all-features

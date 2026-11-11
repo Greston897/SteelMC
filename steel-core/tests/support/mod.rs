@@ -124,12 +124,20 @@ pub(crate) fn dropped_items(world: &World, center: DVec3) -> Vec<SharedEntity> {
     )
 }
 
-pub(crate) fn fresh_test_world(key: &'static str) -> TestWorld {
-    create_test_world(key)
+/// Interns a runtime test key so world builders can keep `&'static str` domain keys.
+fn intern_test_key(key: &str) -> &'static str {
+    Box::leak(key.to_owned().into_boxed_str())
 }
 
-pub(crate) fn fresh_test_world_in_domain(domain: &'static str, key: &'static str) -> TestWorld {
-    create_test_world_with_key(Identifier::new_static(domain, key), Difficulty::Normal)
+pub(crate) fn fresh_test_world(key: &str) -> TestWorld {
+    create_test_world(intern_test_key(key))
+}
+
+pub(crate) fn fresh_test_world_in_domain(domain: &str, key: &str) -> TestWorld {
+    create_test_world_with_key(
+        Identifier::new_static(intern_test_key(domain), intern_test_key(key)),
+        Difficulty::Normal,
+    )
 }
 
 pub(crate) fn fresh_test_world_with_dimension_type(
