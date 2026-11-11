@@ -2,6 +2,9 @@
 //!
 //! Those mobs are aggressive creatures that attack players on sight.
 
+/// Shared helper functions for the slime family.
+mod cube_mob;
+
 /// Hostile bogged entity module.
 pub mod bogged;
 /// Hostile cave spider entity module.
@@ -18,6 +21,8 @@ pub mod endermite;
 pub mod hoglin;
 /// Hostile husk entity module.
 pub mod husk;
+/// Hostile magma cube entity module.
+pub mod magma_cube;
 /// Hostile parched entity module.
 pub mod parched;
 /// Hostile piglin entity module.
@@ -28,6 +33,8 @@ pub mod piglin_brute;
 pub mod pillager;
 /// Hostile silverfish entity module.
 pub mod silverfish;
+/// Hostile slime entity module.
+pub mod slime;
 /// Hostile skeleton entity module.
 pub mod skeleton;
 /// Hostile spider entity module.
@@ -53,11 +60,13 @@ pub use enderman::EndermanEntity;
 pub use endermite::EndermiteEntity;
 pub use hoglin::HoglinEntity;
 pub use husk::HuskEntity;
+pub use magma_cube::MagmaCubeEntity;
 pub use parched::ParchedEntity;
 pub use piglin::PiglinEntity;
 pub use piglin_brute::PiglinBruteEntity;
 pub use pillager::PillagerEntity;
 pub use silverfish::SilverfishEntity;
+pub use slime::SlimeEntity;
 pub use skeleton::SkeletonEntity;
 pub use spider::SpiderEntity;
 pub use stray::StrayEntity;

@@ -165,8 +165,9 @@
    `MinecartSpawner`, `MinecartCommandBlock`.
 6. Дисплеи: `TextDisplay`, `ItemDisplay`, `GlowItemFrame`; `LightningBolt`
    (разблокирует «заряженного» крипера).
-7. Уникальные механики: ~~`Creeper`~~ (§20), ~~`Enderman`~~ (§22) — **сделано**;
-   следующими `Slime`/`MagmaCube` (прыжки, разделение по размерам).
+7. Уникальные механики: ~~`Creeper`~~ (§20), ~~`Enderman`~~ (§22),
+   ~~`Slime`~~/~~`MagmaCube`~~ (§23) — **сделано**; следующими идут
+   `Villager` и големы.
 8. Деревня: `Villager` + профессии + торговля + `IronGolem`/`SnowGolem`.
 9. Боссы: `WitherBoss` → `EnderDragon` → `Warden`.
 10. Книга рецептов (как только определимся с `RecipeDisplay`).
