@@ -40,7 +40,10 @@ use crate::{
     player::{Player, PlayerConnection},
 };
 
-use crate::inventory::click::{Click, ClickOutcome, SwapTarget, can_item_quick_replace};
+use crate::behavior::ITEM_BEHAVIORS;
+use crate::inventory::click::{
+    Click, ClickOutcome, MouseButton, SwapTarget, can_item_quick_replace,
+};
 
 /// A menu opened by a player: the shared click machinery plus one
 /// [`MenuKind`].
@@ -265,10 +268,55 @@ impl Menu {
         }
     }
 
+    /// Vanilla `ScreenHandler.handleSlotClick`: gives the item on the cursor
+    /// (`Item.onStackClicked`) and the item in the clicked slot
+    /// (`Item.onClicked`) a chance to handle the click themselves.
+    ///
+    /// Runs after the menu's own [`MenuKind`] hook and before the default
+    /// pickup/drop arms. Returns `true` when an item consumed the click.
+    fn item_click_override(
+        &mut self,
+        slot_index: usize,
+        button: MouseButton,
+        player: &Player,
+    ) -> bool {
+        let mut guard = self.behavior().lock_all_containers();
+        let Self { behavior, .. } = self;
+        let (slots, carried) = behavior.slots_and_carried_mut();
+        let Some(slot) = slots.get(slot_index) else {
+            return false;
+        };
+
+        if !carried.is_empty() {
+            let cursor_item = carried.item();
+            if ITEM_BEHAVIORS.get_behavior(cursor_item).on_stack_clicked(
+                carried,
+                slot.as_ref(),
+                button,
+                player,
+                &mut guard,
+            ) {
+                return true;
+            }
+        }
+
+        let slot_stack = slot.get_item(&guard);
+        if slot_stack.is_empty() {
+            return false;
+        }
+        let slot_item = slot_stack.item();
+        ITEM_BEHAVIORS.get_behavior(slot_item).on_clicked(
+            slot.as_ref(),
+            button,
+            player,
+            &mut guard,
+            carried,
+        )
+    }
+
     /// Handles a click action in this menu. Packet clicks are validated via
     /// [`Click::parse`]; invalid programmatically constructed clicks are ignored.
     ///
-    /// TODO: Add `tryItemClickBehaviorOverride` for bundle item support.
     pub fn clicked(&mut self, click: Click, player: &Player) {
         if !click.is_valid_for(self.behavior().slot_count()) {
             log::debug!(
@@ -308,7 +356,18 @@ impl Menu {
                 kind.on_slot_clicked(behavior, &mut guard, click, player)
             };
 
-            if outcome == ClickOutcome::Fallthrough {
+            // Vanilla `ScreenHandler.handleSlotClick`: the item on the cursor or
+            // in the clicked slot may consume the click before the default
+            // pickup/drop logic runs.
+            let handled_by_item = outcome == ClickOutcome::Fallthrough
+                && match click {
+                    Click::Pickup { slot, button } => {
+                        self.item_click_override(slot, button, player)
+                    }
+                    _ => false,
+                };
+
+            if outcome == ClickOutcome::Fallthrough && !handled_by_item {
                 match click {
                     Click::Pickup { slot, button } => {
                         self.behavior_mut().do_pickup(slot, button, player);

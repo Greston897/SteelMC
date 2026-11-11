@@ -16,7 +16,7 @@ use std::sync::Arc;
 use steel_math::wrap_degrees;
 use steel_protocol::packets::game::{
     CMoveVehicle, CPlayerPosition, PlayerCommandAction, RelativeMovement, SAcceptTeleportation,
-    SMovePlayer, SMoveVehicle, SPlayerCommand, SPlayerInput,
+    SMovePlayer, SMoveVehicle, SPaddleBoat, SPlayerCommand, SPlayerInput,
 };
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::stat::custom::CustomStatRef;
@@ -954,6 +954,18 @@ impl Player {
         let input = PlayerInput::from_flags(packet.flags);
         self.movement.lock().set_last_client_input(input);
 
+        // Vanilla also forwards the input to the boat being ridden.
+        if let Some(vehicle) = self.controlled_vehicle()
+            && let Some(boat) = vehicle.as_abstract_boat()
+        {
+            boat.set_inputs(
+                input.left(),
+                input.right(),
+                input.forward(),
+                input.backward(),
+            );
+        }
+
         if !self.has_client_loaded() {
             return;
         }
@@ -961,6 +973,20 @@ impl Player {
         self.reset_last_action_time();
 
         self.set_crouching(input.shift());
+    }
+
+    /// Handles a boat paddle state packet.
+    ///
+    /// Vanilla `ServerPlayNetworkHandler#onBoatPaddleState`: the flags are only
+    /// accepted while the player controls an `AbstractBoatEntity`.
+    pub fn handle_paddle_boat(&self, packet: SPaddleBoat) {
+        let Some(vehicle) = self.controlled_vehicle() else {
+            return;
+        };
+        let Some(boat) = vehicle.as_abstract_boat() else {
+            return;
+        };
+        boat.set_paddles_moving(packet.left_paddling, packet.right_paddling);
     }
 
     /// Handles a player command packet (sprinting, elytra, leaving bed, etc).
