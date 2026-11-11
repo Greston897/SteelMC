@@ -24,7 +24,7 @@ use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::CatEntityData;
 use steel_registry::vanilla_item_tags::ItemTag;
-use steel_registry::{REGISTRY, RegistryReference, TaggedRegistryExt};
+use steel_registry::{REGISTRY, RegistryExt, RegistryReference, TaggedRegistryExt};
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey, Identifier, UuidExt};
@@ -252,11 +252,15 @@ impl CatEntity {
     }
 
     fn tamable_flags(&self) -> i8 {
-        *self.entity_data.lock().flags.get()
+        *self.entity_data.lock().tamable_animal().flags.get()
     }
 
     fn set_tamable_flags(&self, flags: i8) {
-        self.entity_data.lock().flags.set(flags);
+        self.entity_data
+            .lock()
+            .tamable_animal_mut()
+            .flags
+            .set(flags);
     }
 
     /// Whether the cat is sitting.
@@ -279,14 +283,14 @@ impl CatEntity {
     /// Returns the owner UUID of this cat, if tamed.
     #[must_use]
     pub fn owner_uuid(&self) -> Option<Uuid> {
-        *self.entity_data.lock().owneruuid.get()
+        *self.entity_data.lock().tamable_animal().owneruuid.get()
     }
 
     /// Tames the cat to `owner`, which also lifts the tame flag.
     pub fn set_owner(&self, owner: Option<Uuid>) {
         {
             let mut data = self.entity_data.lock();
-            data.owneruuid.set(owner);
+            data.tamable_animal_mut().owneruuid.set(owner);
         }
         let mut flags = self.tamable_flags();
         if owner.is_some() {
