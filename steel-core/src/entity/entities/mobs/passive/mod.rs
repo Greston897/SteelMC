@@ -3,6 +3,7 @@
 mod cat;
 mod chicken;
 mod cow;
+mod dolphin;
 mod fish;
 mod fox;
 mod frog;
@@ -17,6 +18,7 @@ mod squid;
 pub use cat::{CatEntity, flags as cat_flags};
 pub use chicken::ChickenEntity;
 pub use cow::CowEntity;
+pub use dolphin::DolphinEntity;
 pub use fish::cod::CodEntity;
 pub use fish::pufferfish::PufferfishEntity;
 pub use fish::salmon::SalmonEntity;
