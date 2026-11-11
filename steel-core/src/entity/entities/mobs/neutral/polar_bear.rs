@@ -16,8 +16,8 @@ use steel_registry::entity_type::{
 };
 use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
-use steel_registry::vanilla_entity_data::PolarBearEntityData;
 use steel_registry::sound_events;
+use steel_registry::vanilla_entity_data::PolarBearEntityData;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
@@ -111,7 +111,10 @@ impl PolarBearEntity {
             goal_selector.add_goal(1, MeleeAttackGoal::new(POLAR_BEAR_MELEE_SPEED, true));
             goal_selector.add_goal(2, PanicGoal::new(POLAR_BEAR_PANIC_SPEED));
             goal_selector.add_goal(4, FollowParentGoal::new(POLAR_BEAR_FOLLOW_PARENT_SPEED));
-            goal_selector.add_goal(5, WaterAvoidingRandomStrollGoal::new(POLAR_BEAR_STROLL_SPEED));
+            goal_selector.add_goal(
+                5,
+                WaterAvoidingRandomStrollGoal::new(POLAR_BEAR_STROLL_SPEED),
+            );
             goal_selector.add_goal(
                 6,
                 LookAtPlayerGoal::new(f64::from(POLAR_BEAR_LOOK_DISTANCE) / 2.0),
@@ -382,8 +385,6 @@ mod tests {
     fn polar_bears_eat_nothing() {
         init_vanilla_registry();
         let bear = bear();
-        assert!(!bear.is_food(&ItemStack::new(
-            &steel_registry::vanilla_items::SALMON
-        )));
+        assert!(!bear.is_food(&ItemStack::new(&steel_registry::vanilla_items::SALMON)));
     }
 }

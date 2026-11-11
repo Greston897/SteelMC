@@ -112,10 +112,7 @@ impl OcelotEntity {
             let mut goal_selector = mob_base.goal_selector().lock();
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
             goal_selector.add_goal(1, PanicGoal::new(OCELOT_PANIC_SPEED));
-            goal_selector.add_goal(
-                3,
-                TemptGoal::new(OCELOT_TEMPT_SPEED, is_ocelot_food, false),
-            );
+            goal_selector.add_goal(3, TemptGoal::new(OCELOT_TEMPT_SPEED, is_ocelot_food, false));
             goal_selector.add_goal(4, FollowParentGoal::new(OCELOT_FOLLOW_PARENT_SPEED));
             goal_selector.add_goal(5, WaterAvoidingRandomStrollGoal::new(OCELOT_STROLL_SPEED));
             goal_selector.add_goal(
