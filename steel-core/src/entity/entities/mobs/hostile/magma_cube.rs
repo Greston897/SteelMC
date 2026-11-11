@@ -35,6 +35,7 @@ use steel_registry::vanilla_entity_data::MagmaCubeEntityData;
 use steel_registry::vanilla_entities;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_fluid_tags};
 use steel_utils::locks::SyncMutex;
+use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, Identifier};
 
 use super::cube_mob;
@@ -44,7 +45,8 @@ use crate::entity::ai::goal::{
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
-    DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
+    DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityEventSource,
+    EntityMovementEmission, EntityPose,
     EntitySpawnReason, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster,
     PathfinderMob, SharedEntity, SpawnGroupData, sync_dirty_mob_effects,
 };
