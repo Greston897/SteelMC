@@ -23,6 +23,7 @@
 pub mod cod;
 pub mod pufferfish;
 pub mod salmon;
+pub mod tadpole;
 #[cfg(test)]
 mod tests;
 pub mod tropical_fish;

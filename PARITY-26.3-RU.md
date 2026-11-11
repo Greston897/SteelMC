@@ -1434,3 +1434,103 @@ NBT хранит `Size` в ванильной нулевой базе (`size - 1
 | Сущности (типы) | 82 | **84** | 161 | **52,2 %** |
 | Сущности (java-классы) | 64 | **66** | 143 | **46,2 %** |
 | Уникальные механики | 2 | **4** (`Creeper`, `Enderman`, `Slime`, `MagmaCube`) | — | — |
+
+## 24. Животные: кролик, лиса, белый медведь, оцелот, попугай, кошка (11 ноября 2026)
+
+Шесть животных, у которых раньше не было ни класса, ни поведения, доведены до
+рабочего состояния на существующем AI-фундаменте (`PathfinderMob`, `Animal`,
+`AgeableMob`, goal-селектор, `SyncMutex`-послойные synced-данные).
+
+### 24.1 Кролик
+
+Семь ванильных вариантов (0…6) с именами ассетов, `set_variant_id` /
+`variant_name` и запись `RabbitType` в NBT. Габариты 0,49 × 0,6 (глаза 0,59),
+детские 0,28 × 0,4 с точкой крепления `(0; 0,375; 0)`. Здоровье 3, скорость
+0,3, прыжок 0,42. Цели: `Float`, `Panic`, `Avoid(16, 1.4, 1.4)`, `Tempt`,
+`Stroll`, `LookAtPlayer`, `RandomLookAt`. Флаги моба читаются и пишутся через
+`entity_data.lock().mob().mob_flags`. Три теста.
+
+### 24.2 Лиса
+
+`FoxVariant { Red = 0, Snow = 1 }`. Флаги `SLEEPING`, `SITTING`, `CROUCHING`,
+`INTERESTED`, `POUNCING`, `DEFENDING`, `FACE_PLANTED` в `flags`-модуле,
+реэкспортированном как `fox_flags`. Доверие по `Uuid` с вытеснением (две
+позиции, `trusted_id_0` / `trusted_id_1` — имена полей synced-данных после
+санитайзера, поэтому в коде используются именно они). NBT: `Type`,
+`FoxFlags`, `TrustedCount`. Четыре теста.
+
+### 24.3 Белый медведь
+
+`is_standing` / `set_standing` / `update_standing`, `is_food` = `false`,
+`MeleeAttack(1.25, true)`, NBT `Standing`. Тест куб-детёныша использует
+`ageable_base().set_age(-1)`, потому что `set_synced_baby` возраст не меняет,
+а `is_baby()` смотрит именно на `get_age() < 0`. Класс живёт в
+`mobs::neutral`, поэтому `entities/mod.rs` реэкспортирует
+`pub use mobs::neutral::*;` **до** `mobs::passive::*` — иначе сгенерированный
+`entities.rs` не видит `PolarBearEntity` (E0433).
+
+### 24.4 Оцелот
+
+Синхронизированный флаг `trusting`, NBT `Trusting`, корм — тег
+`#minecraft:ocelot_food` (треска, лосось). Цели: `Float`, `Panic`, `Tempt`,
+`FollowParent`, `WaterAvoidingRandomStroll`, `AvoidEntity(16, 1.33, 1.33)`,
+`LookAtPlayer`, `RandomLookAt`.
+
+### 24.5 Попугай
+
+Пять вариантов (`red_blue`, `blue`, `green`, `yellow_blue`, `gray`),
+`set_variant_id` / `variant_id` / `variant_name`. Поле synced-данных после
+санитайзера — `variant` (`variant_id` → отрезается `_id`), не `variant_type`.
+`is_flyable`, 41 звук имитации через `sound_events::ENTITY_PARROT_IMITATE_*`
+и `imitation_sound_for(mob_key)`, `next_imitation_delay()` 6000…12000,
+корм — тег `#minecraft:parrot_food`. Габариты 0,5 × 0,9, детские 0,25 × 0,45
+(глаза 0,117), NBT `Variant`. Пять тестов.
+
+### 24.6 Кошка
+
+Класс `CatEntity` (`TamableAnimal` + `Animal`). Synced-данные: слой
+`tamable_animal()` даёт `flags` и `owneruuid` (оба читаются через родительский
+слой, а не напрямую из `CatEntityData`), собственный слой — `variant`
+(`RegistryReference<CatVariant>`), `sound_variant`
+(`RegistryReference<CatSoundVariant>`), `is_lying`, `relax_state_one`,
+`collar_color` (по умолчанию 14 = красный).
+
+Поведение: усики тамера — биты `SITTING = 1` и `TAME = 1 << 2`;
+`set_owner` ставит/снимает и владельца, и бит `TAME`;
+`is_owned_by(uuid)`; `set_variant_by_key` / `set_sound_variant_by_key`
+через `RegistryExt::by_key`; звуки (ambient/death/hurt/eat/… ) берутся из
+варианта звука с учётом детскости через `sounds()`. NBT: `CollarColor`,
+`variant`, `sound_variant`, `CatFlags` (i32), `Owner` (int-массив).
+Корм — тег `#minecraft:cat_food`. Цели: `Float`, `Panic`, `Tempt`,
+`Breed(1.0)`, `FollowParent`, `WaterAvoidingRandomStroll`, `LookAtPlayer`,
+`RandomLookAt`, `MeleeAttack(1.33, true)`. Семь тестов: старт без тамера и с
+красным ошейником, тамер/владелец, независимость сидения от тамера, круговой
+перебор всех 16 цветов ошейника, независимость `is_lying` и
+`relax_state_one`, еда (треска и лосось — да, камень — нет), круговой
+NBT-прогон варианта.
+
+### 24.7 Грабли, которые стоили сборок
+
+* `variant_id` / `sound_variant_id` / `type_id` в именах synced-полей
+  обрезаются санитайзером: `type_id` → `type` → `variant_type`, а
+  `variant_id` → `variant`. Попытка обратиться к `variant_id` или
+  `variant_type` у попугая — единственная причина красной сборки `78b751a`.
+* Поля `TamableAnimal` не лежат в `CatEntityData` напрямую: генератор
+  вкладывает их в родительский слой, доступ — `tamable_animal()` /
+  `tamable_animal_mut()`.
+* `RegistryExt::by_key` — метод **трейта**, его нужно импортировать
+  (`use steel_registry::RegistryExt`), иначе E0599 «no method named `by_key`».
+* `NbtValueInput::byte_value` читает байт из любого числового тега, а
+  `nbt.byte(...)` — только точный `Byte`; для `CollarColor`, который пишется
+  как `i8`, но может прийти как `Int`, нужен `byte_value`.
+
+### 24.8 Обновлённые числа
+
+| Реестр | Было | Стало | Всего | Готовность |
+|---|---|---|---|---|
+| Типы сущностей с поведением | 84 | **90** | 161 | **55,9 %** |
+| Java-классы | 66 | **72** | 143 | **50,3 %** |
+| Уникальные механики | 4 | **4** | — | — |
+
+Зелёные сборки: `4f293e8` (Test — success, попугай после правки поля),
+`3154f23` (Test — success, Lint — success, кошка).
