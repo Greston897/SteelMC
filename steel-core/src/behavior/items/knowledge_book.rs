@@ -7,7 +7,10 @@
 
 use steel_macros::item_behavior;
 use steel_registry::data_components::vanilla_components::RECIPES;
-use steel_registry::recipe::{CookingRecipe, CraftingRecipe, SmithingRecipe, StonecuttingRecipe};
+use steel_registry::item_stack_template::ItemStackTemplate;
+use steel_registry::recipe::{
+    CookingRecipe, CraftingRecipe, SmithingRecipe, StonecuttingRecipe, UntypedRecipeRef,
+};
 use steel_registry::stat::vanilla_stat_types;
 use steel_registry::{REGISTRY, item_stack::ItemStack};
 
@@ -60,9 +63,9 @@ impl ItemBehavior for KnowledgeBookItem {
 ///
 /// Recipes without a result (the repair and map-extending families) contribute
 /// nothing, exactly like vanilla.
-fn recipe_result(recipe: steel_registry::recipe::UntypedRecipeRef) -> Option<ItemStack> {
+fn recipe_result(recipe: UntypedRecipeRef) -> Option<ItemStack> {
     if let Some(data) = recipe.downcast_data::<CraftingRecipe>() {
-        return data.result().map(|template| template.create());
+        return data.result().map(ItemStackTemplate::create);
     }
     if let Some(data) = recipe.downcast_data::<SmithingRecipe>() {
         return match data {
@@ -95,7 +98,7 @@ mod tests {
         let key = Identifier::vanilla_static("stick");
         let recipe = REGISTRY.recipes.by_key(&key).expect("stick recipe exists");
         let stack = recipe_result(recipe).expect("stick has a result");
-        assert_eq!(stack.item, &*vanilla_items::STICK);
+        assert_eq!(stack.item, &vanilla_items::STICK);
         assert_eq!(stack.count, 4, "vanilla crafts four sticks at once");
     }
 

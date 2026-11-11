@@ -257,10 +257,14 @@ mod tests {
         };
         let mut bytes = Vec::new();
         entry.write(&mut bytes).expect("entry should encode");
-        // The display ends with the crafting-table station, so the group byte is
-        // the last one before the category.
-        let tail = &bytes[bytes.len() - 3..];
-        assert_eq!(tail, [1, 0, 0], "group 0 becomes 1, then category, then flags");
+        // After the display come the group, the category, the requirement flag
+        // and the flags byte, so the last four bytes spell them out.
+        let tail = &bytes[bytes.len() - 4..];
+        assert_eq!(
+            tail,
+            [1, 0, 0, 0],
+            "group 0 becomes 1, then category, requirement flag and flags"
+        );
     }
 
     #[test]

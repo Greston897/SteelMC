@@ -8,15 +8,15 @@
 //! `update_recipes` only carries the lookup tables and the stonecutter entries;
 //! the displays themselves go out in `recipe_book_add`.
 
-use std::collections::HashMap;
-
 use steel_protocol::packets::game::{
     CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CUpdateRecipes, RecipeBookAddEntry,
     RecipeBookTypeSettings, StonecutterEntry,
 };
+use steel_registry::items::ItemRef;
 use steel_registry::recipe::{Ingredient, StonecuttingRecipe, display_for_recipe};
 use steel_registry::slot_display::{RecipeDisplay, SlotDisplay};
 use steel_registry::{REGISTRY, RegistryEntry as _, TaggedRegistryExt as _};
+use rustc_hash::FxHashMap;
 use steel_utils::Identifier;
 
 /// The four recipe book tabs, in packet order.
@@ -74,10 +74,10 @@ pub struct ServerRecipeBook {
     /// Displays in the order the client knows them, indexed by display index.
     displays: Vec<Identifier>,
     /// Per key bookkeeping, so removals and dedup stay cheap.
-    entries: HashMap<Identifier, RecipeBookEntry>,
-    settings: HashMap<RecipeBookType, BookTypeSettings>,
+    entries: FxHashMap<Identifier, RecipeBookEntry>,
+    settings: FxHashMap<RecipeBookType, BookTypeSettings>,
     /// Group name to group index, assigned in first-seen order like vanilla.
-    group_ids: HashMap<String, i32>,
+    group_ids: FxHashMap<String, i32>,
 }
 
 impl Default for ServerRecipeBook {
@@ -90,7 +90,7 @@ impl ServerRecipeBook {
     /// Creates an empty book with every tab closed and unfiltered.
     #[must_use]
     pub fn new() -> Self {
-        let mut settings = HashMap::new();
+        let mut settings = FxHashMap::default();
         for book_type in [
             RecipeBookType::Crafting,
             RecipeBookType::Furnace,
@@ -101,9 +101,9 @@ impl ServerRecipeBook {
         }
         Self {
             displays: Vec::new(),
-            entries: HashMap::new(),
+            entries: FxHashMap::default(),
             settings,
-            group_ids: HashMap::new(),
+            group_ids: FxHashMap::default(),
         }
     }
 
@@ -254,7 +254,7 @@ impl ServerRecipeBook {
 
     /// Builds a removal packet for the given displays.
     #[must_use]
-    pub fn remove_packet(displays: Vec<i32>) -> CRecipeBookRemove {
+    pub const fn remove_packet(displays: Vec<i32>) -> CRecipeBookRemove {
         CRecipeBookRemove { recipes: displays }
     }
 }
@@ -276,7 +276,7 @@ impl RecipeBookPackets {
     /// The display list has to reach the client before the lookup tables, because
     /// a stonecutter entry refers to a display the client already knows.
     #[must_use]
-    pub fn in_order(&self) -> (&CRecipeBookAdd, &CUpdateRecipes, &CRecipeBookSettings) {
+    pub const fn in_order(&self) -> (&CRecipeBookAdd, &CUpdateRecipes, &CRecipeBookSettings) {
         (&self.add, &self.update, &self.settings)
     }
 }
@@ -345,10 +345,8 @@ fn requirements_of(display: &RecipeDisplay) -> Option<Vec<Ingredient>> {
                 .filter_map(ingredient_of_display)
                 .collect(),
         ),
-        RecipeDisplay::Furnace { ingredient, .. } => {
-            Some(ingredient_of_display(ingredient).into_iter().collect())
-        }
-        RecipeDisplay::Stonecutter { ingredient, .. } => {
+        RecipeDisplay::Furnace { ingredient, .. }
+        | RecipeDisplay::Stonecutter { ingredient, .. } => {
             Some(ingredient_of_display(ingredient).into_iter().collect())
         }
         RecipeDisplay::Smithing { .. } => None,
@@ -358,7 +356,6 @@ fn requirements_of(display: &RecipeDisplay) -> Option<Vec<Ingredient>> {
 /// Recovers an [`Ingredient`] from a slot display built by `from_ingredient`.
 fn ingredient_of_display(display: &SlotDisplay) -> Option<Ingredient> {
     match display {
-        SlotDisplay::Empty => None,
         SlotDisplay::Item(item) => Some(Ingredient::Item(item)),
         SlotDisplay::Tag(tag) => Some(Ingredient::Tag(tag.clone())),
         SlotDisplay::Composite(displays) => {
@@ -376,7 +373,11 @@ fn ingredient_of_display(display: &SlotDisplay) -> Option<Ingredient> {
                 None
             }
         }
-        _ => None,
+        SlotDisplay::Empty
+        | SlotDisplay::AnyFuel
+        | SlotDisplay::ItemStack(_)
+        | SlotDisplay::Dyed { .. }
+        | SlotDisplay::WithRemainder(_) => None,
     }
 }
 
@@ -384,9 +385,7 @@ fn ingredient_of_display(display: &SlotDisplay) -> Option<Ingredient> {
 ///
 /// The original ingredient already lives for the lifetime of the process, but the
 /// display only kept the items, so the choice has to be rebuilt once here.
-fn leak_items(
-    items: Vec<steel_registry::items::ItemRef>,
-) -> &'static [steel_registry::items::ItemRef] {
+fn leak_items(items: Vec<ItemRef>) -> &'static [ItemRef] {
     Box::leak(items.into_boxed_slice())
 }
 
@@ -432,7 +431,12 @@ mod tests {
         assert_eq!(book.add(&first), Some(0));
         assert_eq!(book.add(&second), Some(1));
         assert_eq!(book.remove(&first), Some(0));
-        assert_eq!(book.add(&first), None, "a removed key is not re-added automatically");
+        assert!(!book.contains(&first), "removal drops the unlock");
+        assert_eq!(
+            book.add(&first),
+            Some(2),
+            "re-unlocking allocates a fresh display index so old indices stay valid"
+        );
     }
 
     #[test]
