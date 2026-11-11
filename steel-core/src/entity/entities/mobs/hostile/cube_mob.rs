@@ -12,19 +12,20 @@
 
 use glam::DVec3;
 
-use crate::entity::conversion::{AfterConversion, ConversionParams, ConversionType, convert_to};
 use crate::entity::Mob;
+use crate::entity::conversion::{AfterConversion, ConversionParams, ConversionType, convert_to};
 
 /// Smallest vanilla cube size (`AbstractCubeMob.MIN_SIZE`).
 pub(crate) const MIN_SIZE: i32 = 1;
 
 /// Largest size vanilla clamps a cube to (`AbstractCubeMob.MAX_SIZE`).
 ///
-/// Natural spawning only uses [`MAX_RANDOM_SIZE`]; the larger bound exists so
+/// Natural spawning only rolls up to four; the larger bound exists so
 /// commands and NBT can create the big cubes vanilla supports.
 pub(crate) const MAX_SIZE: i32 = 127;
 
 /// Largest size vanilla's natural spawn rolls.
+#[cfg(test)]
 pub(crate) const MAX_RANDOM_SIZE: i32 = 4;
 
 /// Returns vanilla `getSize`-derived health: `size * size`.
@@ -100,7 +101,7 @@ pub(crate) fn initial_jump_delay() -> i32 {
 /// `Slime.getJumpDelay` halves to 5 while the cube has a target; without a
 /// target it uses `Slime.getTicksUntilNextJump`.
 #[must_use]
-pub(crate) fn next_jump_delay(aggressive: bool) -> i32 {
+pub(crate) const fn next_jump_delay(aggressive: bool) -> i32 {
     if aggressive {
         5
     } else {

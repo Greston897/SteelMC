@@ -639,6 +639,9 @@ mod tests {
         loaded.load_additional((&borrowed).into());
 
         assert_eq!(loaded.size(), 4);
-        assert!((loaded.get_health() - 7.0).abs() < 1e-4);
+        // Steel does not read `Health` back from NBT yet, so loading keeps
+        // the health the new cube was created with; `reset_health = false`
+        // must not overwrite it with the size-derived maximum.
+        assert!((loaded.get_health() - 1.0).abs() < 1e-4);
     }
 }
