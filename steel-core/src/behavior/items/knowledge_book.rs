@@ -21,9 +21,9 @@ pub struct KnowledgeBookItem;
 
 impl ItemBehavior for KnowledgeBookItem {
     fn use_item(&self, context: &mut UseItemContext) -> InteractionResult {
-        let keys = context.inv.with_item(|item| {
-            item.get(RECIPES).map(|recipes| recipes.keys().to_vec())
-        });
+        let keys = context
+            .inv
+            .with_item(|item| item.get(RECIPES).map(|recipes| recipes.keys().to_vec()));
         let Some(keys) = keys else {
             // Vanilla returns early without a result when the component is
             // missing, which leaves the book untouched.
@@ -42,7 +42,9 @@ impl ItemBehavior for KnowledgeBookItem {
             let leftover = context.player.inventory.lock().add_or_return(stack);
             if !leftover.is_empty() {
                 // Vanilla drops anything the inventory could not take.
-                let _ = context.player.drop_item(leftover, false, Prediction::Predicted);
+                let _ = context
+                    .player
+                    .drop_item(leftover, false, Prediction::Predicted);
             }
         }
 
@@ -62,7 +64,7 @@ impl ItemBehavior for KnowledgeBookItem {
 /// nothing, exactly like vanilla.
 fn recipe_result(recipe: steel_registry::recipe::UntypedRecipeRef) -> Option<ItemStack> {
     if let Some(data) = recipe.downcast_data::<CraftingRecipe>() {
-        return data.result().map(|template| template.create());
+        return data.result().map(steel_registry::ItemStackTemplate::create);
     }
     if let Some(data) = recipe.downcast_data::<SmithingRecipe>() {
         return match data {
@@ -81,8 +83,8 @@ fn recipe_result(recipe: steel_registry::recipe::UntypedRecipeRef) -> Option<Ite
 
 #[cfg(test)]
 mod tests {
-    use steel_registry::data_components::vanilla_components::RECIPES;
     use steel_registry::data_components::Recipes;
+    use steel_registry::data_components::vanilla_components::RECIPES;
     use steel_registry::item_stack::ItemStack;
     use steel_registry::{init_vanilla_registry, vanilla_items};
     use steel_utils::Identifier;

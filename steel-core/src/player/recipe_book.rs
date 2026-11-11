@@ -254,7 +254,7 @@ impl ServerRecipeBook {
 
     /// Builds a removal packet for the given displays.
     #[must_use]
-    pub fn remove_packet(displays: Vec<i32>) -> CRecipeBookRemove {
+    pub const fn remove_packet(displays: Vec<i32>) -> CRecipeBookRemove {
         CRecipeBookRemove { recipes: displays }
     }
 }
@@ -276,7 +276,7 @@ impl RecipeBookPackets {
     /// The display list has to reach the client before the lookup tables, because
     /// a stonecutter entry refers to a display the client already knows.
     #[must_use]
-    pub fn in_order(&self) -> (&CRecipeBookAdd, &CUpdateRecipes, &CRecipeBookSettings) {
+    pub const fn in_order(&self) -> (&CRecipeBookAdd, &CUpdateRecipes, &CRecipeBookSettings) {
         (&self.add, &self.update, &self.settings)
     }
 }
@@ -314,7 +314,10 @@ fn property_sets() -> Vec<(Identifier, Vec<i32>)> {
     let mut sets = Vec::new();
     for (name, tag) in [
         ("minecraft:furnace_input", "minecraft:furnace_input"),
-        ("minecraft:blast_furnace_input", "minecraft:blast_furnace_input"),
+        (
+            "minecraft:blast_furnace_input",
+            "minecraft:blast_furnace_input",
+        ),
         ("minecraft:smoker_input", "minecraft:smoker_input"),
         ("minecraft:campfire_input", "minecraft:campfire_input"),
         ("minecraft:furnace_fuel", "minecraft:furnace_fuel"),
@@ -400,7 +403,10 @@ mod tests {
         let book = ServerRecipeBook::new();
         assert!(book.is_empty());
         assert_eq!(book.len(), 0);
-        assert_eq!(book.settings(RecipeBookType::Crafting), BookTypeSettings::default());
+        assert_eq!(
+            book.settings(RecipeBookType::Crafting),
+            BookTypeSettings::default()
+        );
     }
 
     #[test]
@@ -432,7 +438,11 @@ mod tests {
         assert_eq!(book.add(&first), Some(0));
         assert_eq!(book.add(&second), Some(1));
         assert_eq!(book.remove(&first), Some(0));
-        assert_eq!(book.add(&first), None, "a removed key is not re-added automatically");
+        assert_eq!(
+            book.add(&first),
+            None,
+            "a removed key is not re-added automatically"
+        );
     }
 
     #[test]

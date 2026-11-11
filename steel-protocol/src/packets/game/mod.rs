@@ -30,7 +30,6 @@ mod c_map_item_data;
 mod c_move_entity;
 mod c_move_vehicle;
 mod c_open_book;
-mod c_recipe_book;
 mod c_open_screen;
 mod c_open_sign_editor;
 mod c_player_abilities;
@@ -38,6 +37,7 @@ mod c_player_combat_kill;
 mod c_player_info_update;
 mod c_player_look_at;
 mod c_player_position;
+mod c_recipe_book;
 mod c_remove_entities;
 mod c_remove_mob_effect;
 mod c_remove_player_info;
@@ -151,10 +151,6 @@ pub use c_move_entity::{
 };
 pub use c_move_vehicle::CMoveVehicle;
 pub use c_open_book::COpenBook;
-pub use c_recipe_book::{
-    CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CUpdateRecipes,
-    RecipeBookAddEntry, RecipeBookTypeSettings, StonecutterEntry,
-};
 pub use c_open_screen::COpenScreen;
 pub use c_open_sign_editor::COpenSignEditor;
 pub use c_player_abilities::{CPlayerAbilities, ability_flags};
@@ -165,6 +161,10 @@ pub use c_player_info_update::{
 };
 pub use c_player_look_at::{CPlayerLookAt, LookAtAnchor};
 pub use c_player_position::{CPlayerPosition, RelativeMovement};
+pub use c_recipe_book::{
+    CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CUpdateRecipes, RecipeBookAddEntry,
+    RecipeBookTypeSettings, StonecutterEntry,
+};
 pub use c_remove_entities::CRemoveEntities;
 pub use c_remove_mob_effect::CRemoveMobEffect;
 pub use c_remove_player_info::CRemovePlayerInfo;

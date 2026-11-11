@@ -174,7 +174,12 @@ pub struct CRecipeBookSettings {
 
 impl WriteTo for CRecipeBookSettings {
     fn write(&self, writer: &mut impl Write) -> Result<()> {
-        for tab in [&self.crafting, &self.furnace, &self.blast_furnace, &self.smoker] {
+        for tab in [
+            &self.crafting,
+            &self.furnace,
+            &self.blast_furnace,
+            &self.smoker,
+        ] {
             writer.write_all(&[u8::from(tab.open), u8::from(tab.filtering)])?;
         }
         Ok(())
@@ -260,7 +265,11 @@ mod tests {
         // The display ends with the crafting-table station, so the group byte is
         // the last one before the category.
         let tail = &bytes[bytes.len() - 3..];
-        assert_eq!(tail, [1, 0, 0], "group 0 becomes 1, then category, then flags");
+        assert_eq!(
+            tail,
+            [1, 0, 0],
+            "group 0 becomes 1, then category, then flags"
+        );
     }
 
     #[test]
