@@ -52,9 +52,6 @@ pub mod flags {
     pub const TAME: i8 = 1 << 2;
 }
 
-/// The default collar colour: vanilla stores red (id 14) on new cats.
-const DEFAULT_COLLAR_COLOR: i32 = 14;
-
 const CAT_BABY_PASSENGER_ATTACHMENTS: [EntityAttachmentPoint; 1] =
     [EntityAttachmentPoint::new(0.0, 0.34375, 0.0)];
 const CAT_BABY_WIDTH: f32 = 0.3;
@@ -134,10 +131,7 @@ impl CatEntity {
             goal_selector.add_goal(1, TemptGoal::new(CAT_TEMPT_SPEED, is_cat_food, false));
             goal_selector.add_goal(2, BreedGoal::new(CAT_BREED_SPEED));
             goal_selector.add_goal(3, FollowParentGoal::new(CAT_FOLLOW_PARENT_SPEED));
-            goal_selector.add_goal(
-                5,
-                WaterAvoidingRandomStrollGoal::new(CAT_STROLL_SPEED),
-            );
+            goal_selector.add_goal(5, WaterAvoidingRandomStrollGoal::new(CAT_STROLL_SPEED));
             goal_selector.add_goal(6, LookAtPlayerGoal::new(f64::from(CAT_LOOK_DISTANCE) / 2.0));
             goal_selector.add_goal(7, RandomLookAroundGoal::new());
             goal_selector.add_goal(8, MeleeAttackGoal::new(CAT_ATTACK_SPEED, true));
@@ -642,7 +636,10 @@ mod tests {
         init_vanilla_registry();
         let cat = cat();
         let key = Identifier::from_str("minecraft:tabby").expect("valid identifier");
-        assert!(cat.set_variant_by_key(&key), "tabby is a vanilla cat variant");
+        assert!(
+            cat.set_variant_by_key(&key),
+            "tabby is a vanilla cat variant"
+        );
         assert_eq!(cat.variant().key, key);
 
         let mut nbt = NbtCompound::new();

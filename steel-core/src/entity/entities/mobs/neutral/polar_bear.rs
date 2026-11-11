@@ -354,6 +354,7 @@ impl Animal for PolarBearEntity {
 mod tests {
     use steel_registry::init_vanilla_registry;
     use steel_registry::vanilla_entities;
+    use steel_registry::vanilla_items;
 
     use super::*;
 
@@ -385,6 +386,6 @@ mod tests {
     fn polar_bears_eat_nothing() {
         init_vanilla_registry();
         let bear = bear();
-        assert!(!bear.is_food(&ItemStack::new(&steel_registry::vanilla_items::SALMON)));
+        assert!(!bear.is_food(&ItemStack::new(&vanilla_items::SALMON)));
     }
 }
