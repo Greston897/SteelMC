@@ -72,7 +72,7 @@ const GLOW_SQUID_DARK_TICKS_DEFAULT: i32 = 100;
 const GLOW_SQUID_DARK_THRESHOLD: i32 = 0;
 const GLOW_SQUID_SQUIRT_SOUND: SoundEventRef = &sound_events::ENTITY_GLOW_SQUID_SQUIRT;
 
-#[entity_behavior(class = "GlowSquid", spawn_rule = false)]
+#[entity_behavior(class = "GlowSquid")]
 /// Vanilla glow squid with the dark-ticks glow counter.
 pub struct GlowSquidEntity {
     base: EntityBase,
@@ -134,15 +134,6 @@ impl GlowSquidEntity {
     pub fn is_glowing_in_the_dark(&self) -> bool {
         self.dark_ticks_remaining() <= GLOW_SQUID_DARK_THRESHOLD
     }
-
-    /// Vanilla `GlowSquid` spawn rule: any dark water block below sea level.
-    pub(crate) const SPAWN_RULE: crate::entity::SpawnRule =
-        |_entity_type, level, _spawn_reason, pos, _random| {
-            let below = pos.below();
-            level.get_block_state(below).get_fluid_state().is_water()
-                && level.get_block_state(pos.above()).is_air()
-                && pos.y() < level.sea_level()
-        };
 
     fn tick_dark_ticks(&self) {
         if self.is_glowing_in_the_dark() {
