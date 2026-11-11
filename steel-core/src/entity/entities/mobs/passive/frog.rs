@@ -22,7 +22,7 @@ use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_attributes;
 use steel_registry::vanilla_entity_data::FrogEntityData;
-use steel_registry::{REGISTRY, RegistryExt, RegistryReference, sound_events};
+use steel_registry::{REGISTRY, RegistryExt, RegistryReference, TaggedRegistryExt, sound_events};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey, Identifier};
 
