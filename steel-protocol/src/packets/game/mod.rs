@@ -152,8 +152,8 @@ pub use c_move_entity::{
 pub use c_move_vehicle::CMoveVehicle;
 pub use c_open_book::COpenBook;
 pub use c_recipe_book::{
-    CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CRecipeBookTypeSettings,
-    CUpdateRecipes, RecipeBookAddEntry, StonecutterEntry,
+    CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CUpdateRecipes,
+    RecipeBookAddEntry, RecipeBookTypeSettings, StonecutterEntry,
 };
 pub use c_open_screen::COpenScreen;
 pub use c_open_sign_editor::COpenSignEditor;

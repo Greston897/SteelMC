@@ -194,8 +194,8 @@ mod tests {
     use steel_utils::serial::WriteTo as _;
 
     use super::{
-        CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CRecipeBookTypeSettings,
-        CUpdateRecipes, RecipeBookAddEntry, StonecutterEntry,
+        CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CUpdateRecipes, RecipeBookAddEntry,
+        RecipeBookTypeSettings, StonecutterEntry,
     };
 
     fn stick_display() -> RecipeDisplay {
@@ -276,13 +276,13 @@ mod tests {
     #[test]
     fn settings_write_four_unprefixed_pairs() {
         let packet = CRecipeBookSettings {
-            crafting: CRecipeBookTypeSettings {
+            crafting: RecipeBookTypeSettings {
                 open: true,
                 filtering: false,
             },
-            furnace: CRecipeBookTypeSettings::default(),
-            blast_furnace: CRecipeBookTypeSettings::default(),
-            smoker: CRecipeBookTypeSettings::default(),
+            furnace: RecipeBookTypeSettings::default(),
+            blast_furnace: RecipeBookTypeSettings::default(),
+            smoker: RecipeBookTypeSettings::default(),
         };
         let mut bytes = Vec::new();
         packet.write(&mut bytes).expect("packet should encode");

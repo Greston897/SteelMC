@@ -11,13 +11,13 @@
 use std::collections::HashMap;
 
 use steel_protocol::packets::game::{
-    CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CRecipeBookTypeSettings,
-    CUpdateRecipes, RecipeBookAddEntry, StonecutterEntry,
+    CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CUpdateRecipes, RecipeBookAddEntry,
+    RecipeBookTypeSettings, StonecutterEntry,
 };
-use steel_registry::recipe::{Ingredient, StonecuttingRecipe, display_for_recipe};
+use steel_registry::REGISTRY;
 use steel_registry::RegistryEntry as _;
+use steel_registry::recipe::{Ingredient, StonecuttingRecipe, display_for_recipe};
 use steel_registry::slot_display::{RecipeDisplay, SlotDisplay};
-use steel_registry::{REGISTRY, vanilla_items};
 use steel_utils::Identifier;
 
 /// The four recipe book tabs, in packet order.
@@ -42,7 +42,7 @@ pub struct BookTypeSettings {
     pub filtering: bool,
 }
 
-impl From<BookTypeSettings> for CRecipeBookTypeSettings {
+impl From<BookTypeSettings> for RecipeBookTypeSettings {
     fn from(settings: BookTypeSettings) -> Self {
         Self {
             open: settings.open,
@@ -389,18 +389,6 @@ fn leak_items(
     items: Vec<steel_registry::items::ItemRef>,
 ) -> &'static [steel_registry::items::ItemRef] {
     Box::leak(items.into_boxed_slice())
-}
-
-/// Vanilla's station item per book tab, used by callers that build custom entries.
-#[must_use]
-pub fn station_for(book_type: RecipeBookType) -> SlotDisplay {
-    let item = match book_type {
-        RecipeBookType::Crafting => &*vanilla_items::CRAFTING_TABLE,
-        RecipeBookType::Furnace => &*vanilla_items::FURNACE,
-        RecipeBookType::BlastFurnace => &*vanilla_items::BLAST_FURNACE,
-        RecipeBookType::Smoker => &*vanilla_items::SMOKER,
-    };
-    SlotDisplay::Item(item)
 }
 
 #[cfg(test)]

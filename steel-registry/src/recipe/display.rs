@@ -24,16 +24,16 @@ pub fn display_for_recipe(recipe: crate::recipe::UntypedRecipeRef) -> Option<Rec
     // Every cooking recipe shares one data type, so the registered recipe type
     // decides which station icon the client shows.
     let station = match recipe.recipe_type().key.path.as_ref() {
-        "smelting" => &*vanilla_items::FURNACE,
-        "blasting" => &*vanilla_items::BLAST_FURNACE,
-        "smoking" => &*vanilla_items::SMOKER,
-        "campfire_cooking" => &*vanilla_items::CAMPFIRE,
+        "smelting" => &vanilla_items::FURNACE,
+        "blasting" => &vanilla_items::BLAST_FURNACE,
+        "smoking" => &vanilla_items::SMOKER,
+        "campfire_cooking" => &vanilla_items::CAMPFIRE,
         "stonecutting" => {
             let data = recipe.downcast_data::<StonecuttingRecipe>()?;
             return Some(RecipeDisplay::Stonecutter {
                 ingredient: SlotDisplay::from_ingredient(&data.ingredient),
                 result: result_display(&data.result),
-                crafting_station: SlotDisplay::Item(&*vanilla_items::STONECUTTER),
+                crafting_station: SlotDisplay::Item(&vanilla_items::STONECUTTER),
             });
         }
         _ => return None,
@@ -75,18 +75,16 @@ fn crafting_display(recipe: &CraftingRecipe) -> RecipeDisplay {
         other => {
             // Remaining crafting types have no dedicated display in vanilla either;
             // they are rendered from the first ingredient and the result.
-            let ingredients = other
-                .properties()
-                .placement
-                .as_ref()
-                .map(|placement| {
+            let ingredients = other.properties().placement.as_ref().map_or_else(
+                Vec::new,
+                |placement| {
                     placement
                         .ingredients
                         .iter()
                         .map(SlotDisplay::from_ingredient)
-                        .collect::<Vec<_>>()
-                })
-                .unwrap_or_default();
+                        .collect()
+                },
+            );
             let result = other
                 .result()
                 .map_or_else(|| SlotDisplay::Empty, result_display);
@@ -112,14 +110,14 @@ fn smithing_display(recipe: &SmithingRecipe) -> RecipeDisplay {
                 .as_ref()
                 .map_or(SlotDisplay::Empty, SlotDisplay::from_ingredient),
             result: result_display(&transform.result),
-            crafting_station: SlotDisplay::Item(&*vanilla_items::SMITHING_TABLE),
+            crafting_station: SlotDisplay::Item(&vanilla_items::SMITHING_TABLE),
         },
         SmithingRecipe::Trim(trim) => RecipeDisplay::Smithing {
             template: SlotDisplay::from_ingredient(&trim.template),
             base: SlotDisplay::from_ingredient(&trim.base),
             addition: SlotDisplay::from_ingredient(&trim.addition),
             result: SlotDisplay::Empty,
-            crafting_station: SlotDisplay::Item(&*vanilla_items::SMITHING_TABLE),
+            crafting_station: SlotDisplay::Item(&vanilla_items::SMITHING_TABLE),
         },
     }
 }
