@@ -225,7 +225,7 @@ impl FoxEntity {
     #[must_use]
     pub fn is_trusted(&self, uuid: Uuid) -> bool {
         let data = self.entity_data.lock();
-        *data.trusted_0.get() == Some(uuid) || *data.trusted_1.get() == Some(uuid)
+        *data.trusted_id_0.get() == Some(uuid) || *data.trusted_id_1.get() == Some(uuid)
     }
 
     /// Adds a trusted player, replacing the first slot when both are taken.
@@ -234,26 +234,26 @@ impl FoxEntity {
     /// second is occupied, so a third trust simply overwrites the first.
     pub fn add_trusted(&self, uuid: Uuid) {
         let mut data = self.entity_data.lock();
-        if data.trusted_0.get().is_none() {
-            data.trusted_0.set(Some(uuid));
+        if data.trusted_id_0.get().is_none() {
+            data.trusted_id_0.set(Some(uuid));
             return;
         }
-        if data.trusted_1.get().is_none() {
-            data.trusted_1.set(Some(uuid));
+        if data.trusted_id_1.get().is_none() {
+            data.trusted_id_1.set(Some(uuid));
             return;
         }
-        data.trusted_0.set(Some(uuid));
-        data.trusted_1.set(None);
+        data.trusted_id_0.set(Some(uuid));
+        data.trusted_id_1.set(None);
     }
 
     /// Forgets a trusted player in either slot.
     pub fn remove_trusted(&self, uuid: Uuid) {
         let mut data = self.entity_data.lock();
-        if *data.trusted_0.get() == Some(uuid) {
-            data.trusted_0.set(None);
+        if *data.trusted_id_0.get() == Some(uuid) {
+            data.trusted_id_0.set(None);
         }
-        if *data.trusted_1.get() == Some(uuid) {
-            data.trusted_1.set(None);
+        if *data.trusted_id_1.get() == Some(uuid) {
+            data.trusted_id_1.set(None);
         }
     }
 
@@ -261,7 +261,7 @@ impl FoxEntity {
     #[must_use]
     pub fn trusted_count(&self) -> usize {
         let data = self.entity_data.lock();
-        usize::from(data.trusted_0.get().is_some()) + usize::from(data.trusted_1.get().is_some())
+        usize::from(data.trusted_id_0.get().is_some()) + usize::from(data.trusted_id_1.get().is_some())
     }
 
     fn update_dirty_mob_effect_entity_data(&self) {

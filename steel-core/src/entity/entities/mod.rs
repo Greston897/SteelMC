@@ -10,6 +10,7 @@ pub use mobs::hostile::{
     PillagerEntity, SilverfishEntity, SkeletonEntity, SlimeEntity, SpiderEntity, StrayEntity,
     VindicatorEntity, WitherSkeletonEntity, ZoglinEntity, ZombieEntity, ZombifiedPiglinEntity,
 };
+pub use mobs::neutral::*;
 pub use mobs::passive::*;
 pub use objects::decoration::{ArmorStandEntity, CushionEntity, PaintingEntity};
 pub use objects::display_ui::{BlockDisplayEntity, ItemFrameEntity, LeashFenceKnotEntity};
