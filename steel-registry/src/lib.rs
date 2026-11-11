@@ -74,6 +74,7 @@ pub mod position_source;
 pub mod potion;
 pub mod recipe;
 pub mod registry;
+pub mod slot_display;
 pub use registry::holder;
 pub use registry::holder_set;
 pub use registry::reference as registry_reference;

@@ -21,6 +21,7 @@ pub mod player_data;
 pub mod player_data_storage;
 pub mod player_inventory;
 mod profile;
+pub mod recipe_book;
 mod session;
 mod sleep;
 mod sleep_state;
@@ -250,6 +251,9 @@ pub struct Player {
     sleep_state: SyncMutex<PlayerSleepState>,
     /// Persisted personal bed or respawn-anchor target.
     respawn_config: SyncMutex<Option<PlayerRespawnConfig>>,
+
+    /// Recipes this player has unlocked and the state of their recipe book tabs.
+    pub recipe_book: SyncMutex<recipe_book::ServerRecipeBook>,
 
     /// Player abilities (flight, invulnerability, build permissions, speeds, etc.)
     pub abilities: SyncMutex<Abilities>,
@@ -629,6 +633,7 @@ impl Player {
             tick_state: SyncMutex::new(PlayerTickState::new()),
             sleep_state: SyncMutex::new(PlayerSleepState::new()),
             respawn_config: SyncMutex::new(None),
+            recipe_book: SyncMutex::new(recipe_book::ServerRecipeBook::new()),
             abilities: SyncMutex::new(Abilities::default()),
             block_breaking: SyncMutex::new(BlockBreakingManager::new()),
             living_base,

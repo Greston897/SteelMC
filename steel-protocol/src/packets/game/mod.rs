@@ -30,6 +30,7 @@ mod c_map_item_data;
 mod c_move_entity;
 mod c_move_vehicle;
 mod c_open_book;
+mod c_recipe_book;
 mod c_open_screen;
 mod c_open_sign_editor;
 mod c_player_abilities;
@@ -150,6 +151,10 @@ pub use c_move_entity::{
 };
 pub use c_move_vehicle::CMoveVehicle;
 pub use c_open_book::COpenBook;
+pub use c_recipe_book::{
+    CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CRecipeBookTypeSettings,
+    CUpdateRecipes, RecipeBookAddEntry, StonecutterEntry,
+};
 pub use c_open_screen::COpenScreen;
 pub use c_open_sign_editor::COpenSignEditor;
 pub use c_player_abilities::{CPlayerAbilities, ability_flags};
