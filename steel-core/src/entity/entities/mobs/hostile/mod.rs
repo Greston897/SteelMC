@@ -33,10 +33,10 @@ pub mod piglin_brute;
 pub mod pillager;
 /// Hostile silverfish entity module.
 pub mod silverfish;
-/// Hostile slime entity module.
-pub mod slime;
 /// Hostile skeleton entity module.
 pub mod skeleton;
+/// Hostile slime entity module.
+pub mod slime;
 /// Hostile spider entity module.
 pub mod spider;
 /// Hostile stray entity module.
@@ -66,8 +66,8 @@ pub use piglin::PiglinEntity;
 pub use piglin_brute::PiglinBruteEntity;
 pub use pillager::PillagerEntity;
 pub use silverfish::SilverfishEntity;
-pub use slime::SlimeEntity;
 pub use skeleton::SkeletonEntity;
+pub use slime::SlimeEntity;
 pub use spider::SpiderEntity;
 pub use stray::StrayEntity;
 pub use vindicator::VindicatorEntity;

@@ -8,8 +8,7 @@ pub use mobs::hostile::{
     BoggedEntity, CaveSpiderEntity, CreeperEntity, DrownedEntity, EndermanEntity, EndermiteEntity,
     HoglinEntity, HuskEntity, MagmaCubeEntity, ParchedEntity, PiglinBruteEntity, PiglinEntity,
     PillagerEntity, SilverfishEntity, SkeletonEntity, SlimeEntity, SpiderEntity, StrayEntity,
-    VindicatorEntity,
-    WitherSkeletonEntity, ZoglinEntity, ZombieEntity, ZombifiedPiglinEntity,
+    VindicatorEntity, WitherSkeletonEntity, ZoglinEntity, ZombieEntity, ZombifiedPiglinEntity,
 };
 pub use mobs::passive::*;
 pub use objects::decoration::{ArmorStandEntity, CushionEntity, PaintingEntity};

@@ -31,8 +31,8 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
-use steel_registry::vanilla_entity_data::MagmaCubeEntityData;
 use steel_registry::vanilla_entities;
+use steel_registry::vanilla_entity_data::MagmaCubeEntityData;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_fluid_tags};
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
@@ -48,9 +48,9 @@ use crate::entity::ai::goal::{
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityEventSource,
-    EntityMovementEmission, EntityPose,
-    EntitySpawnReason, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster,
-    PathfinderMob, SharedEntity, SpawnGroupData, sync_dirty_mob_effects,
+    EntityMovementEmission, EntityPose, EntitySpawnReason, EntitySyncedData, LivingEntity,
+    LivingEntityBase, Mob, MobBase, Monster, PathfinderMob, SharedEntity, SpawnGroupData,
+    sync_dirty_mob_effects,
 };
 use crate::physics::MoveResult;
 use crate::player::Player;
@@ -139,9 +139,7 @@ impl MagmaCubeEntity {
             living_base,
             mob_base,
             entity_data: SyncMutex::new(entity_data),
-            jump_delay: AtomicI32::new(
-                cube_mob::initial_jump_delay() * JUMP_DELAY_MULTIPLIER,
-            ),
+            jump_delay: AtomicI32::new(cube_mob::initial_jump_delay() * JUMP_DELAY_MULTIPLIER),
         };
         cube.set_size(cube_mob::MIN_SIZE, true);
         cube
@@ -223,11 +221,7 @@ impl MagmaCubeEntity {
     /// Vanilla `getSoundVolume()`, inherited from `AbstractCubeMob`.
     #[must_use]
     fn sound_volume(&self) -> f32 {
-        if self.is_tiny() {
-            0.4
-        } else {
-            1.0
-        }
+        if self.is_tiny() { 0.4 } else { 1.0 }
     }
 
     fn update_dirty_mob_effect_entity_data(&self) {

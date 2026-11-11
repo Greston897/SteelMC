@@ -32,8 +32,8 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
-use steel_registry::vanilla_entity_data::SlimeEntityData;
 use steel_registry::vanilla_entities;
+use steel_registry::vanilla_entity_data::SlimeEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
@@ -47,9 +47,9 @@ use crate::entity::ai::goal::{
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityEventSource,
-    EntityMovementEmission, EntityPose,
-    EntitySpawnReason, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster,
-    PathfinderMob, SharedEntity, SpawnGroupData, sync_dirty_mob_effects,
+    EntityMovementEmission, EntityPose, EntitySpawnReason, EntitySyncedData, LivingEntity,
+    LivingEntityBase, Mob, MobBase, Monster, PathfinderMob, SharedEntity, SpawnGroupData,
+    sync_dirty_mob_effects,
 };
 use crate::physics::MoveResult;
 use crate::player::Player;
@@ -207,11 +207,7 @@ impl SlimeEntity {
     /// Vanilla `getSoundVolume()`: tiny cubes are quieter.
     #[must_use]
     fn sound_volume(&self) -> f32 {
-        if self.is_tiny() {
-            0.4
-        } else {
-            1.0
-        }
+        if self.is_tiny() { 0.4 } else { 1.0 }
     }
 
     /// Vanilla `Slime.getSoundPitch()`.
@@ -580,7 +576,10 @@ mod tests {
             .downcast_ref::<SlimeEntity>()
             .expect("slime is concrete");
         slime.set_size(4, true);
-        LivingEntity::die(slime, &DamageSource::environment(&vanilla_damage_types::GENERIC));
+        LivingEntity::die(
+            slime,
+            &DamageSource::environment(&vanilla_damage_types::GENERIC),
+        );
 
         let split_box = WorldAabb::new(4.0, 60.0, 4.0, 12.0, 70.0, 12.0);
         let children = world.get_entities_in_aabb_matching(&split_box, |entity| {
@@ -611,8 +610,13 @@ mod tests {
         world
             .try_add_entity(Arc::clone(&tiny))
             .expect("tiny test slime should attach to the loaded chunk");
-        let tiny_slime = tiny.downcast_ref::<SlimeEntity>().expect("slime is concrete");
-        LivingEntity::die(tiny_slime, &DamageSource::environment(&vanilla_damage_types::GENERIC));
+        let tiny_slime = tiny
+            .downcast_ref::<SlimeEntity>()
+            .expect("slime is concrete");
+        LivingEntity::die(
+            tiny_slime,
+            &DamageSource::environment(&vanilla_damage_types::GENERIC),
+        );
         let after = world.get_entities_in_aabb_matching(&split_box, |entity| {
             entity.entity_type() == &vanilla_entities::SLIME
                 && entity.id() != parent.id()

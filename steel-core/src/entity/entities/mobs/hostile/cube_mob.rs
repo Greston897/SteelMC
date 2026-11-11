@@ -76,11 +76,7 @@ pub(crate) fn split_offset(index: i32, width: f64) -> (f64, f64) {
 /// cube is too small to split (vanilla `size > 1`).
 #[must_use]
 pub(crate) const fn split_child_size(size: i32) -> Option<i32> {
-    if size > 1 {
-        Some(size / 2)
-    } else {
-        None
-    }
+    if size > 1 { Some(size / 2) } else { None }
 }
 
 /// Returns vanilla `getSplitCount()`: two to four children.
@@ -102,11 +98,7 @@ pub(crate) fn initial_jump_delay() -> i32 {
 /// target it uses `Slime.getTicksUntilNextJump`.
 #[must_use]
 pub(crate) const fn next_jump_delay(aggressive: bool) -> i32 {
-    if aggressive {
-        5
-    } else {
-        10
-    }
+    if aggressive { 5 } else { 10 }
 }
 
 /// Rolls vanilla's natural-spawn size (`1 << size_scale`).
