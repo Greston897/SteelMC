@@ -161,16 +161,10 @@ impl FoxEntity {
             let mut goal_selector = mob_base.goal_selector().lock();
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
             goal_selector.add_goal(1, PanicGoal::new(FOX_PANIC_SPEED));
-            goal_selector.add_goal(
-                2,
-                TemptGoal::new(FOX_TEMPT_SPEED, is_fox_food, false),
-            );
+            goal_selector.add_goal(2, TemptGoal::new(FOX_TEMPT_SPEED, is_fox_food, false));
             goal_selector.add_goal(3, FollowParentGoal::new(FOX_FOLLOW_PARENT_SPEED));
             goal_selector.add_goal(4, WaterAvoidingRandomStrollGoal::new(FOX_STROLL_SPEED));
-            goal_selector.add_goal(
-                9,
-                LookAtPlayerGoal::new(f64::from(FOX_LOOK_DISTANCE) / 2.0),
-            );
+            goal_selector.add_goal(9, LookAtPlayerGoal::new(f64::from(FOX_LOOK_DISTANCE) / 2.0));
             goal_selector.add_goal(10, RandomLookAroundGoal::new());
         }
 
@@ -216,7 +210,11 @@ impl FoxEntity {
     /// Sets or clears one flag bit and returns the new flag byte.
     pub fn set_flag(&self, flag: i8, value: bool) -> i8 {
         let current = self.flags();
-        let updated = if value { current | flag } else { current & !flag };
+        let updated = if value {
+            current | flag
+        } else {
+            current & !flag
+        };
         self.set_flags(updated);
         updated
     }
@@ -261,7 +259,8 @@ impl FoxEntity {
     #[must_use]
     pub fn trusted_count(&self) -> usize {
         let data = self.entity_data.lock();
-        usize::from(data.trusted_id_0.get().is_some()) + usize::from(data.trusted_id_1.get().is_some())
+        usize::from(data.trusted_id_0.get().is_some())
+            + usize::from(data.trusted_id_1.get().is_some())
     }
 
     fn update_dirty_mob_effect_entity_data(&self) {
@@ -530,7 +529,11 @@ mod tests {
         assert!(fox.is_trusted(second));
 
         fox.add_trusted(third);
-        assert_eq!(fox.trusted_count(), 1, "the third trust evicts the first slot");
+        assert_eq!(
+            fox.trusted_count(),
+            1,
+            "the third trust evicts the first slot"
+        );
         assert!(fox.is_trusted(third));
         assert!(!fox.is_trusted(first));
 
