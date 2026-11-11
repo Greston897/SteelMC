@@ -181,21 +181,12 @@ impl RabbitEntity {
             .unwrap_or("brown")
     }
 
-    fn set_variant_by_name(&self, name: &str) -> bool {
-        if let Some(index) = RABBIT_VARIANTS.iter().position(|variant| *variant == name) {
-            self.set_variant_id(i32::try_from(index).unwrap_or(0));
-            return true;
-        }
-        false
-    }
-
     fn update_dirty_mob_effect_entity_data(&self) {
         if let Some(display) = sync_dirty_mob_effects(&self.living_base, &self.entity_data) {
             self.entity_data
                 .set_base_glowing_flag(self.has_glowing_tag() || display.glowing);
         }
     }
-
 }
 
 /// Whether a stack is a vanilla rabbit food item.
@@ -412,11 +403,13 @@ impl Animal for RabbitEntity {
 #[cfg(test)]
 mod tests {
     use steel_registry::init_vanilla_registry;
+    use steel_registry::vanilla_entities;
+    use steel_registry::vanilla_items;
 
     use super::*;
 
     fn rabbit_entity_type() -> EntityTypeRef {
-        &steel_registry::vanilla_entities::RABBIT
+        &vanilla_entities::RABBIT
     }
 
     #[test]
@@ -447,9 +440,7 @@ mod tests {
     #[test]
     fn carrots_are_rabbit_food() {
         init_vanilla_registry();
-        assert!(is_rabbit_food(&ItemStack::new(&steel_registry::vanilla_items::CARROT)));
-        assert!(!is_rabbit_food(&ItemStack::new(
-            &steel_registry::vanilla_items::STONE
-        )));
+        assert!(is_rabbit_food(&ItemStack::new(&vanilla_items::CARROT)));
+        assert!(!is_rabbit_food(&ItemStack::new(&vanilla_items::STONE)));
     }
 }
