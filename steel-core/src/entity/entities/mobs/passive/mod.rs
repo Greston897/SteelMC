@@ -5,6 +5,7 @@ mod cow;
 mod fish;
 mod mooshroom;
 mod pig;
+mod rabbit;
 mod sheep;
 mod squid;
 
@@ -16,5 +17,6 @@ pub use fish::salmon::SalmonEntity;
 pub use fish::tropical_fish::TropicalFishEntity;
 pub use mooshroom::MushroomCowEntity;
 pub use pig::PigEntity;
+pub use rabbit::RabbitEntity;
 pub use sheep::SheepEntity;
 pub use squid::SquidEntity;
