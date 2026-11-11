@@ -28,4 +28,4 @@ pub use parrot::ParrotEntity;
 pub use pig::PigEntity;
 pub use rabbit::RabbitEntity;
 pub use sheep::SheepEntity;
-pub use squid::SquidEntity;
+pub use squid::{GlowSquidEntity, SquidEntity};

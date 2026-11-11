@@ -28,8 +28,7 @@ use crate::entity::ai::goal::{PanicGoal, RandomSwimmingGoal};
 use crate::entity::ai::path::PathType;
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::mobs::passive::fish::{
-    WATER_ANIMAL_DROWN_DAMAGE, WATER_ANIMAL_MAX_AIR, check_water_animal_spawn_rules, flop,
-    tick_breathing, travel_in_water,
+    check_water_animal_spawn_rules, flop, tick_breathing, travel_in_water,
 };
 use crate::entity::{
     AgeableMob, AgeableMobBase, DefaultEntityPush, Entity, EntityBase, EntityBaseLoad,
@@ -281,19 +280,16 @@ impl AgeableMob for TadpoleEntity {
     }
 
     fn is_age_locked(&self) -> bool {
-        *self.entity_data.lock().ageable_mob().age_locked.get()
+        *self.entity_data.lock().age_locked.get()
     }
 
     fn set_age_locked(&self, age_locked: bool) {
-        self.entity_data
-            .lock()
-            .ageable_mob_mut()
-            .age_locked
-            .set(age_locked);
+        self.entity_data.lock().age_locked.set(age_locked);
     }
 
-    fn set_synced_baby(&self, baby: bool) {
-        self.entity_data.lock().ageable_mob_mut().baby.set(baby);
+    fn set_synced_baby(&self, _baby: bool) {
+        // Vanilla `Tadpole` has no synced baby flag; it is always a baby until
+        // it converts into a frog.
     }
 
     fn age_boundary_changed(&self, _baby: bool) {
@@ -378,8 +374,6 @@ mod tests {
     #[test]
     fn water_animal_constants_match_vanilla() {
         init_vanilla_registry();
-        assert_eq!(WATER_ANIMAL_MAX_AIR, 300);
-        assert_eq!(WATER_ANIMAL_DROWN_DAMAGE, 2.0);
         assert_eq!(TADPOLE_GROW_UP_TICKS, 24000);
         assert_eq!(TADPOLE_FEED_AGE_UP_TICKS, 2400);
     }

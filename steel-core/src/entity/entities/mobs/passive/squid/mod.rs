@@ -1,3 +1,5 @@
+pub mod glow;
+
 use std::{
     f64::consts::{PI, TAU},
     sync::{Arc, Weak},
