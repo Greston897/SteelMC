@@ -91,8 +91,6 @@ impl steel_utils::serial::WriteTo for Ingredient {
     /// write the item count.
     fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
         use steel_utils::codec::VarInt;
-        use steel_utils::serial::WriteTo as _;
-
         match self {
             Self::Empty => VarInt(0).write(writer),
             Self::Tag(tag) => {

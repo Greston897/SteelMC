@@ -314,10 +314,10 @@ mod tests {
 
     use steel_utils::codec::VarInt;
     use steel_utils::serial::ReadFrom as _;
+    use steel_utils::serial::WriteTo as _;
 
     use super::{RecipeDisplay, SlotDisplay};
     use crate::init_vanilla_registry;
-    use crate::registry::RegistryEntry as _;
     use crate::vanilla_items;
 
     #[test]

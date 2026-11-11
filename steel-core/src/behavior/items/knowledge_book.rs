@@ -7,6 +7,7 @@
 
 use steel_macros::item_behavior;
 use steel_registry::data_components::vanilla_components::RECIPES;
+use steel_registry::recipe::{CookingRecipe, CraftingRecipe, SmithingRecipe, StonecuttingRecipe};
 use steel_registry::stat::vanilla_stat_types;
 use steel_registry::{REGISTRY, item_stack::ItemStack};
 
@@ -60,21 +61,19 @@ impl ItemBehavior for KnowledgeBookItem {
 /// Recipes without a result (the repair and map-extending families) contribute
 /// nothing, exactly like vanilla.
 fn recipe_result(recipe: steel_registry::recipe::UntypedRecipeRef) -> Option<ItemStack> {
-    if let Some(data) = recipe.downcast_data::<steel_registry::recipe::CraftingRecipe>() {
+    if let Some(data) = recipe.downcast_data::<CraftingRecipe>() {
         return data.result().map(|template| template.create());
     }
-    if let Some(data) = recipe.downcast_data::<steel_registry::recipe::SmithingRecipe>() {
+    if let Some(data) = recipe.downcast_data::<SmithingRecipe>() {
         return match data {
-            steel_registry::recipe::SmithingRecipe::Transform(transform) => {
-                Some(transform.result.create())
-            }
-            steel_registry::recipe::SmithingRecipe::Trim(_) => None,
+            SmithingRecipe::Transform(transform) => Some(transform.result.create()),
+            SmithingRecipe::Trim(_) => None,
         };
     }
-    if let Some(data) = recipe.downcast_data::<steel_registry::recipe::StonecuttingRecipe>() {
+    if let Some(data) = recipe.downcast_data::<StonecuttingRecipe>() {
         return Some(data.result.create());
     }
-    if let Some(data) = recipe.downcast_data::<steel_registry::recipe::CookingRecipe>() {
+    if let Some(data) = recipe.downcast_data::<CookingRecipe>() {
         return Some(data.result.create());
     }
     None

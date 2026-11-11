@@ -14,7 +14,7 @@ use steel_protocol::packets::game::{
     CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CRecipeBookTypeSettings,
     CUpdateRecipes, RecipeBookAddEntry, StonecutterEntry,
 };
-use steel_registry::recipe::{Ingredient, display_for_recipe};
+use steel_registry::recipe::{Ingredient, StonecuttingRecipe, display_for_recipe};
 use steel_registry::RegistryEntry as _;
 use steel_registry::slot_display::{RecipeDisplay, SlotDisplay};
 use steel_registry::{REGISTRY, vanilla_items};
@@ -221,7 +221,10 @@ impl ServerRecipeBook {
             entries.push(RecipeBookAddEntry {
                 id: entry.display_index,
                 display,
-                group: entry.group.as_ref().and_then(|group| self.group_ids.get(group).copied()),
+                group: entry
+                    .group
+                    .as_ref()
+                    .and_then(|group| self.group_ids.get(group).copied()),
                 category: entry.category,
                 requirements: entry.requirements.clone(),
                 // Notification is only interesting for newly unlocked recipes.
@@ -289,11 +292,10 @@ impl RecipeBookPackets {
 pub fn update_recipes_packet() -> CUpdateRecipes {
     let mut stonecutter = Vec::new();
     for recipe in REGISTRY.recipes.iter() {
-        if recipe.recipe_type().key().path.as_ref() != "stonecutting" {
+        if recipe.recipe_type().key.path.as_ref() != "stonecutting" {
             continue;
         }
-        let Some(data) = recipe.downcast_data::<steel_registry::recipe::StonecuttingRecipe>()
-        else {
+        let Some(data) = recipe.downcast_data::<StonecuttingRecipe>() else {
             continue;
         };
         stonecutter.push(StonecutterEntry {
@@ -479,7 +481,7 @@ mod tests {
         let expected = REGISTRY
             .recipes
             .iter()
-            .filter(|recipe| recipe.recipe_type().key().path.as_ref() == "stonecutting")
+            .filter(|recipe| recipe.recipe_type().key.path.as_ref() == "stonecutting")
             .count();
         assert_eq!(packet.stonecutter.len(), expected);
         assert!(expected > 0, "vanilla has stonecutting recipes");

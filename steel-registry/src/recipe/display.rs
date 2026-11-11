@@ -23,7 +23,7 @@ pub fn display_for_recipe(recipe: crate::recipe::UntypedRecipeRef) -> Option<Rec
     }
     // Every cooking recipe shares one data type, so the registered recipe type
     // decides which station icon the client shows.
-    let station = match recipe.recipe_type().key().path.as_ref() {
+    let station = match recipe.recipe_type().key.path.as_ref() {
         "smelting" => &*vanilla_items::FURNACE,
         "blasting" => &*vanilla_items::BLAST_FURNACE,
         "smoking" => &*vanilla_items::SMOKER,
