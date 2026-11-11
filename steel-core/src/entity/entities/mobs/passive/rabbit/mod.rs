@@ -375,6 +375,14 @@ impl Mob for RabbitEntity {
         Some(&sound_events::ENTITY_RABBIT_AMBIENT)
     }
 
+    fn mob_flags(&self) -> i8 {
+        *self.entity_data.lock().mob().mob_flags.get()
+    }
+
+    fn set_mob_flags(&self, flags: i8) {
+        self.entity_data.lock().mob_mut().mob_flags.set(flags);
+    }
+
     fn finalize_spawn(
         &self,
         world: &Arc<World>,
@@ -388,6 +396,8 @@ impl Mob for RabbitEntity {
         self.finalize_spawn_ageable_mob(world, spawn_reason, group_data)
     }
 }
+
+impl PathfinderMob for RabbitEntity {}
 
 impl Animal for RabbitEntity {
     fn animal_base(&self) -> &AnimalBase {
@@ -405,13 +415,14 @@ mod tests {
 
     use super::*;
 
+    fn rabbit_entity_type() -> EntityTypeRef {
+        &steel_registry::vanilla_entities::RABBIT
+    }
+
     #[test]
     fn variant_names_round_trip_through_the_entity() {
         init_vanilla_registry();
-        let entity_type = REGISTRY
-            .entity_types
-            .by_key(&Identifier::vanilla_static("rabbit"))
-            .expect("rabbit entity type is registered");
+        let entity_type = rabbit_entity_type();
         let rabbit = RabbitEntity::new(entity_type, 1, DVec3::ZERO, Weak::new());
         for (index, name) in RABBIT_VARIANTS.iter().enumerate() {
             rabbit.set_variant_id(i32::try_from(index).expect("index fits"));
@@ -422,10 +433,7 @@ mod tests {
     #[test]
     fn variant_ids_are_clamped_to_the_vanilla_range() {
         init_vanilla_registry();
-        let entity_type = REGISTRY
-            .entity_types
-            .by_key(&Identifier::vanilla_static("rabbit"))
-            .expect("rabbit entity type is registered");
+        let entity_type = rabbit_entity_type();
         let rabbit = RabbitEntity::new(entity_type, 1, DVec3::ZERO, Weak::new());
         rabbit.set_variant_id(-5);
         assert_eq!(rabbit.variant_id(), 0);
