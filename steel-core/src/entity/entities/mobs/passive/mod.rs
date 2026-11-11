@@ -2,6 +2,7 @@
 /// Those mobs are passive creatures that run away when attacked by a player.
 mod chicken;
 mod cow;
+mod fox;
 mod fish;
 mod mooshroom;
 mod pig;
@@ -11,6 +12,7 @@ mod squid;
 
 pub use chicken::ChickenEntity;
 pub use cow::CowEntity;
+pub use fox::FoxEntity;
 pub use fish::cod::CodEntity;
 pub use fish::pufferfish::PufferfishEntity;
 pub use fish::salmon::SalmonEntity;
