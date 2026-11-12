@@ -5,10 +5,12 @@ pub mod objects;
 
 pub use mobs::ambient::BatEntity;
 pub use mobs::hostile::{
-    BoggedEntity, CaveSpiderEntity, CreeperEntity, DrownedEntity, EndermanEntity, EndermiteEntity,
-    HoglinEntity, HuskEntity, MagmaCubeEntity, ParchedEntity, PiglinBruteEntity, PiglinEntity,
-    PillagerEntity, SilverfishEntity, SkeletonEntity, SlimeEntity, SpiderEntity, StrayEntity,
-    VindicatorEntity, WitherSkeletonEntity, ZoglinEntity, ZombieEntity, ZombifiedPiglinEntity,
+    BlazeEntity, BoggedEntity, CaveSpiderEntity, CreeperEntity, DrownedEntity, EndermanEntity,
+    EndermiteEntity, EvokerEntity, GhastEntity, GiantEntity, HoglinEntity, HuskEntity,
+    IllusionerEntity, MagmaCubeEntity, ParchedEntity, PiglinBruteEntity, PiglinEntity,
+    PillagerEntity, RavagerEntity, SilverfishEntity, SkeletonEntity, SlimeEntity, SpiderEntity,
+    StrayEntity, VexEntity, VindicatorEntity, WitchEntity, WitherSkeletonEntity, ZoglinEntity,
+    ZombieEntity, ZombifiedPiglinEntity,
 };
 pub use mobs::neutral::*;
 pub use mobs::passive::*;

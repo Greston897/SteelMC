@@ -5,6 +5,22 @@
 /// Shared helper functions for the slime family.
 mod cube_mob;
 
+/// Hostile blaze entity module.
+pub mod blaze;
+/// Hostile evoker entity module.
+pub mod evoker;
+/// Hostile ghast entity module.
+pub mod ghast;
+/// Hostile giant entity module.
+pub mod giant;
+/// Hostile illusioner entity module.
+pub mod illusioner;
+/// Hostile ravager entity module.
+pub mod ravager;
+/// Hostile vex entity module.
+pub mod vex;
+/// Hostile witch entity module.
+pub mod witch;
 /// Hostile bogged entity module.
 pub mod bogged;
 /// Hostile cave spider entity module.
