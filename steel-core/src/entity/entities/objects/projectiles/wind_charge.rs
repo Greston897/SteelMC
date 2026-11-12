@@ -10,10 +10,8 @@
 //!   `Projectile → ThrowableProjectile` stack, so this entity reuses the shared
 //!   throwable tick (drag, hit raycast) with gravity disabled instead of
 //!   reimplementing vanilla's hurting-projectile loop.
-//! * The burst uses [`ExplosionInteraction::None`] because Steel models vanilla's
-//!   `TRIGGER` interaction as "no block changes, damage entities"; Steel's
-//!   explosion engine already refuses to affect block-like entities for wind
-//!   charge sources.
+//! * The burst uses [`ExplosionInteraction::Trigger`], which leaves blocks in
+//!   place and only dispatches `BLOCK_ACTIVATE` so interactables react.
 //! * Vanilla applies an extra wind-charge-specific knockback multiplier; Steel
 //!   uses the standard explosion knockback formula with radius 1.2.
 
@@ -90,8 +88,11 @@ impl WindChargeEntity {
     /// Vanilla `WindCharge.explode`: a trigger-only explosion plus the gust
     /// particles and burst sound.
     fn explode(self: &Arc<Self>, world: &Arc<World>) {
-        let mut options =
-            ExplosionOptions::new(self.position(), EXPLOSION_POWER, ExplosionInteraction::None);
+        let mut options = ExplosionOptions::new(
+            self.position(),
+            EXPLOSION_POWER,
+            ExplosionInteraction::Trigger,
+        );
         options.source = Some(Arc::clone(self) as SharedEntity);
         options.damage_source = Some(self.wind_charge_damage_source());
         options.small_explosion_particle =
