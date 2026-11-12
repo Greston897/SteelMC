@@ -133,8 +133,103 @@ pub fn generate_text_component(component: &TextComponentJson) -> TokenStream {
 pub fn generate_item_stack_template(template: &ItemStackTemplateJson) -> TokenStream {
     let name = Ident::new(&template.id.path.to_shouty_snake_case(), Span::call_site());
     let count = template.count;
+    if let Some(components) = &template.components {
+        let patch = generate_component_patch(components, &template.id.to_string());
+        return quote! {
+            {
+                let (components, components_hash) = #patch;
+                ItemStackTemplate::from_extracted(
+                    &vanilla_items::#name,
+                    #count,
+                    components,
+                    components_hash,
+                )
+            }
+        };
+    }
     quote! {
         ItemStackTemplate::with_count(&*vanilla_items::#name,#count)
+    }
+}
+
+/// Builds a single-component `DataComponentPatch` plus its persistent hash for a
+/// build-time validated template.
+///
+/// Extracted assets only ever carry the components that have a build-time codec
+/// here; anything else fails the build instead of silently dropping data.
+fn generate_component_patch(components: &serde_json::Value, owner: &str) -> TokenStream {
+    let components = components.as_object().unwrap_or_else(|| {
+        panic!("Item stack template components for {owner} are not an object: {components}")
+    });
+    assert_eq!(
+        components.len(),
+        1,
+        "Item stack template {owner} has unsupported component set {components:?}"
+    );
+    let (key, component) = components
+        .iter()
+        .next()
+        .unwrap_or_else(|| panic!("Item stack template {owner} has empty components"));
+    let (component_type, component_value) = match key.as_str() {
+        "minecraft:suspicious_stew_effects" => (
+            quote! { SUSPICIOUS_STEW_EFFECTS },
+            suspicious_stew_effects_tokens(component),
+        ),
+        "minecraft:potion_contents" => (
+            quote! { POTION_CONTENTS },
+            potion_contents_tokens(component),
+        ),
+        _ => panic!("Unsupported item stack template components {components:?} in {owner}"),
+    };
+    quote! {{
+        let value = #component_value;
+        let components_hash = DataComponentPatch::compute_single_extracted_hash(
+            vanilla_components::#component_type.key(),
+            &value,
+        );
+        let mut components = DataComponentPatch::new();
+        components.set(vanilla_components::#component_type, value);
+        (components, components_hash)
+    }}
+}
+
+fn suspicious_stew_effects_tokens(value: &serde_json::Value) -> TokenStream {
+    let effects = value
+        .as_array()
+        .unwrap_or_else(|| panic!("Suspicious stew effects are not an array: {value}"));
+    let effects: Vec<_> = effects
+        .iter()
+        .map(|effect| {
+            let raw_id = effect
+                .get("id")
+                .and_then(|id| id.as_str())
+                .unwrap_or_else(|| panic!("Stew effect is missing an id: {effect}"));
+            let effect_id = vanilla_registry_ident(raw_id);
+            let duration = effect
+                .get("duration")
+                .and_then(serde_json::Value::as_i64)
+                .unwrap_or(160) as i32;
+            quote! { SuspiciousStewEffect::new(&vanilla_mob_effects::#effect_id, #duration) }
+        })
+        .collect();
+    quote! { SuspiciousStewEffects::new(vec![#(#effects),*]) }
+}
+
+fn potion_contents_tokens(value: &serde_json::Value) -> TokenStream {
+    let contents = value
+        .as_object()
+        .unwrap_or_else(|| panic!("Potion contents are not an object: {value}"));
+    assert!(
+        contents.len() == 1 && contents.contains_key("potion"),
+        "Unsupported extracted potion contents {contents:?}"
+    );
+    let potion = contents
+        .get("potion")
+        .and_then(|potion| potion.as_str())
+        .unwrap_or_else(|| panic!("Potion contents are missing a potion: {value}"));
+    let potion = vanilla_registry_ident(potion);
+    quote! {
+        PotionContents::new(Some(RegistryReference::new(&vanilla_potions::#potion)))
     }
 }
 
@@ -297,4 +392,14 @@ fn extracted_variant_order(subdir: &str) -> Vec<String> {
             key.to_owned()
         })
         .collect()
+}
+
+/// Maps a `minecraft:` registry identifier onto its generated constant name.
+fn vanilla_registry_ident(identifier: &str) -> Ident {
+    let path = identifier.strip_prefix("minecraft:").unwrap_or(identifier);
+    assert!(
+        !path.contains('/') && !path.contains(':'),
+        "Expected a vanilla registry identifier, got {identifier}"
+    );
+    Ident::new(&path.to_shouty_snake_case(), Span::call_site())
 }

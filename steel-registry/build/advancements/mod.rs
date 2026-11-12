@@ -131,7 +131,14 @@ pub(crate) fn build() -> TokenStream {
         use crate::advancement::registry::AdvancementRegistry;
         use crate::vanilla_items;
         use crate::vanilla_recipes;
+        use crate::vanilla_mob_effects;
+        use crate::vanilla_potions;
         use crate::ItemStackTemplate;
+        use crate::RegistryReference;
+        use crate::data_components::{DataComponentPatch, vanilla_components};
+        use crate::data_components::vanilla_components::{
+            FireworkExplosionShape, PotionContents, SuspiciousStewEffect, SuspiciousStewEffects,
+        };
         use crate::recipe::UntypedRecipeRef;
         use text_components::translation::TranslatedMessage;
         use std::collections::BTreeMap;
