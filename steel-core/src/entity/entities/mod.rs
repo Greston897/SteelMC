@@ -4,15 +4,27 @@ pub mod mobs;
 pub mod objects;
 
 pub use mobs::ambient::BatEntity;
-pub use mobs::hostile::EndermiteEntity;
+pub use mobs::hostile::{
+    BoggedEntity, CaveSpiderEntity, CreeperEntity, DrownedEntity, EndermanEntity, EndermiteEntity,
+    HoglinEntity, HuskEntity, MagmaCubeEntity, ParchedEntity, PiglinBruteEntity, PiglinEntity,
+    PillagerEntity, SilverfishEntity, SkeletonEntity, SlimeEntity, SpiderEntity, StrayEntity,
+    VindicatorEntity, WitherSkeletonEntity, ZoglinEntity, ZombieEntity, ZombifiedPiglinEntity,
+};
+pub use mobs::neutral::*;
 pub use mobs::passive::*;
+pub use objects::decoration::{ArmorStandEntity, CushionEntity, PaintingEntity};
 pub use objects::display_ui::{BlockDisplayEntity, ItemFrameEntity, LeashFenceKnotEntity};
 pub use objects::effects::AreaEffectCloudEntity;
 pub use objects::explosives::{EndCrystalEntity, PrimedTntEntity};
 pub use objects::items::{ExperienceOrbEntity, FallingBlockEntity, ItemEntity};
 pub use objects::projectiles::{
-    EnderPearlEntity, EyeOfEnderEntity, FireworkRocketEntity, FishingHookEntity,
-    LingeringPotionEntity, SnowballEntity, SplashPotionEntity, ThrownEggEntity,
+    AbstractArrow, ArrowEntity, ArrowPickup, EnderPearlEntity, ExperienceBottleEntity,
+    EyeOfEnderEntity, FireworkRocketEntity, FishingHookEntity, LingeringPotionEntity,
+    SnowballEntity, SpectralArrowEntity, SplashPotionEntity, ThrownEggEntity, ThrownTridentEntity,
+    WindChargeEntity,
 };
 pub use objects::technical::{InteractionEntity, MarkerEntity};
-pub use objects::vehicles::{ChestMinecartEntity, MinecartEntity};
+pub use objects::vehicles::{
+    BoatEntity, ChestBoatEntity, ChestMinecartEntity, ChestRaftEntity, FurnaceMinecartEntity,
+    HopperMinecartEntity, MinecartEntity, RaftEntity, TntMinecartEntity,
+};

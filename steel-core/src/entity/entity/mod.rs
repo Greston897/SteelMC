@@ -2,7 +2,9 @@ use std::collections::BTreeSet;
 
 use super::*;
 use crate::entity::{
-    entities::objects::vehicles::AbstractMinecart, leash::Leashable, pushing::EntityPush,
+    entities::objects::vehicles::{AbstractBoat, AbstractMinecart},
+    leash::Leashable,
+    pushing::EntityPush,
 };
 use rand::{RngExt, rng};
 use steel_math::DEGREE_90;
@@ -1638,6 +1640,11 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     /// Returns this entity as an `AbstractMinecart` if it has `AbstractMinecart` behavior.
     fn as_abstract_minecart(&self) -> Option<&dyn AbstractMinecart> {
         try_as_dyn::<Self, dyn AbstractMinecart>(self)
+    }
+
+    /// Returns this entity as an `AbstractBoat` if it has `AbstractBoat` behavior.
+    fn as_abstract_boat(&self) -> Option<&dyn AbstractBoat> {
+        try_as_dyn::<Self, dyn AbstractBoat>(self)
     }
 
     /// Returns true for entities that implement vanilla animal behavior.

@@ -1,5 +1,5 @@
 [files]
-extend-exclude = ["**/build_assets/**", "*.json"]
+extend-exclude = ["**/build_assets/**", "*.json", "**/*-RU.md"]
 
 [type.locale]
 extend-glob = ["**/locale.rs"]
@@ -11,6 +11,15 @@ strat = "strat"
 axe = "axe"
 BlockBehaviour = "BlockBehaviour"
 behaviour = "behaviour"
+# British spellings used across the shared docs/comments (project already allows
+# "behaviour"/"neighbour").
+colour = "colour"
+colours = "colours"
+coloured = "coloured"
+centre = "centre"
+centred = "centred"
+neighbouring = "neighbouring"
+modelled = "modelled"
 interruptable = "interruptable"
 neighbour = "neighbour"
 # Vanilla stronghold piece-type IDs (shs, shsd, shrc, ...).
@@ -29,3 +38,4 @@ player_mode_customisation = "player_mode_customisation"
 
 [default]
 locale = "en-us"
+

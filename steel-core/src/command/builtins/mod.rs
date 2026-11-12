@@ -38,6 +38,7 @@ mod tellraw;
 mod tick;
 mod time;
 mod title;
+mod tpsbar;
 mod transfer;
 mod version;
 mod weather;
@@ -109,6 +110,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(tick::registration())?;
     builder.register(time::registration())?;
     builder.register(title::registration())?;
+    builder.register(tpsbar::registration())?;
     builder.register(version::registration())?;
     builder.register(weather::registration())?;
     builder.register(worldborder::registration())?;
@@ -196,6 +198,7 @@ mod tests {
                 "tick",
                 "time",
                 "title",
+                "tpsbar",
                 "version",
                 "weather",
                 "worldborder",

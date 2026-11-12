@@ -285,6 +285,19 @@ impl Player {
         self.send_packet(world.initialize_border_packet());
         self.send_default_spawn_position(world);
         self.send_weather_sync(world);
+        self.send_recipe_book();
+    }
+
+    /// Sends the player's recipe book.
+    ///
+    /// Vanilla sends the whole book right after the spawn packets: the displays
+    /// replace whatever the client had, and `update_recipes` fills the lookup
+    /// tables, without which the stonecutter and furnace menus stay empty.
+    fn send_recipe_book(&self) {
+        let packets = self.recipe_book.lock().join_packets();
+        self.send_packet(packets.settings);
+        self.send_packet(packets.add);
+        self.send_packet(packets.update);
     }
 
     fn send_time_sync(&self, world: &World) {

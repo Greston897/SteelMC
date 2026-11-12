@@ -122,11 +122,12 @@ pub mod explosion;
 pub mod game_event;
 mod level_effects;
 mod level_reader;
+pub mod map_state;
 mod player_index;
 pub(crate) mod player_spawn_finder;
 mod portals;
 mod properties;
-mod raycast;
+pub(crate) mod raycast;
 mod redstone;
 mod signal_getter;
 mod sleep;
@@ -266,6 +267,8 @@ pub struct World {
     pub(crate) game_time: Arc<GameTime>,
     /// Per-world saved data storage.
     pub(crate) saved_data: SavedDataManager,
+    /// Vanilla `MapState` saved data: color grids, decorations and next map id.
+    pub map_states: SyncMutex<map_state::MapStates>,
     /// Runtime world border state.
     world_border: SyncMutex<WorldBorder>,
     /// Vanilla sleeping player counts for night-skip checks.
@@ -353,6 +356,10 @@ impl World {
         .await
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "single-pass world constructor that mirrors the vanilla ServerWorld initialization order"
+    )]
     pub(crate) async fn new_with_config_and_encoding_pool(
         chunk_runtime: Arc<Runtime>,
         key: Identifier,
@@ -395,6 +402,16 @@ impl World {
             level_data.save().await?;
         }
         let ticket_storage = ChunkTicketStorage::load(&saved_data, &key).await;
+        let map_states = match saved_data
+            .sync_load_wincode::<map_state::PersistentMapStates>(saved_data_names::MAPS)
+        {
+            Ok(Some(persistent)) => map_state::MapStates::from_persistent(persistent),
+            Ok(None) => map_state::MapStates::new(),
+            Err(error) => {
+                log::warn!("Could not load map data for world {key}; starting empty: {error}");
+                map_state::MapStates::new()
+            }
+        };
         let world_border = WorldBorder::new(level_data.data().world_border)
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         // let generator = Arc::new(ChunkGeneratorType::Flat(FlatChunkGenerator::new(
@@ -441,6 +458,7 @@ impl World {
                 game_time: level_data.game_time_handle(),
                 level_data: SyncRwLock::new(level_data),
                 saved_data,
+                map_states: SyncMutex::new(map_states),
                 world_border: SyncMutex::new(world_border),
                 sleep_status: SyncMutex::new(sleep_status::SleepStatus::default()),
                 view_distance,
@@ -492,6 +510,25 @@ impl World {
         {
             Ok(()) => log::info!("World {} saved chunk ticket data successfully", self.key),
             Err(e) => log::error!("Failed to save world chunk ticket data: {e}"),
+        }
+
+        {
+            let map_states = self.map_states.lock();
+            let has_changes = map_states.is_dirty();
+            let persistent = has_changes.then(|| map_states.to_persistent());
+            drop(map_states);
+            if let Some(persistent) = persistent {
+                match self
+                    .saved_data
+                    .sync_save_wincode(saved_data_names::MAPS, &persistent)
+                {
+                    Ok(()) => {
+                        self.map_states.lock().clear_dirty();
+                        log::info!("World {} saved map data successfully", self.key);
+                    }
+                    Err(e) => log::error!("Failed to save world map data: {e}"),
+                }
+            }
         }
 
         match self.save_all_chunks().await {

@@ -747,6 +747,7 @@ pub mod attribute;
 mod base;
 mod block_attached_entity;
 mod block_effects;
+pub(crate) mod bucketable;
 mod callback;
 mod combat_rules;
 pub mod consume_effect;
@@ -781,6 +782,7 @@ mod movement_sync;
 mod potion_contents;
 pub mod projectile;
 pub(crate) mod pushing;
+mod ranged_attack;
 mod reference;
 mod registry;
 pub(crate) mod selector;
@@ -850,7 +852,8 @@ pub use projectile::{
     AbstractThrownPotion, EntityHitResult, Projectile, ProjectileBase, ProjectileDeflection,
     ProjectileEventSource, ProjectileHit, SPLASH_HORIZONTAL_REACH, SPLASH_RANGE_SQ,
     SPLASH_VERTICAL_REACH, ThrowableItemProjectile, ThrowableProjectile, ViewVectorHitResult,
-    compute_margin, get_hit_result_on_view_vector, spawn_throwable_item_projectile,
+    compute_margin, get_hit_result_on_view_vector, spawn_projectile_from_rotation,
+    spawn_throwable_item_projectile,
 };
 pub use pushing::{DefaultEntityPush, EntityPushSnapshot};
 pub use reference::EntityReference;

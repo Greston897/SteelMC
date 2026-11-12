@@ -280,6 +280,7 @@ impl Server {
 
             if let Some(tick_stats) = tab_list_tick_stats {
                 self.broadcast_tab_list(tick_stats);
+                self.broadcast_tps_bar(tick_stats);
             }
 
             if should_sprint_this_tick {

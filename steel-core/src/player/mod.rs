@@ -21,6 +21,7 @@ pub mod player_data;
 pub mod player_data_storage;
 pub mod player_inventory;
 mod profile;
+pub mod recipe_book;
 mod session;
 mod sleep;
 mod sleep_state;
@@ -165,6 +166,7 @@ static INTENTIONAL_GAME_DESIGN_STYLE: LazyLock<Interactivity> = LazyLock::new(||
     ..Interactivity::new()
 });
 
+use crate::behavior::items::filled_map;
 use crate::chunk::player_chunk_view::PlayerChunkView;
 use crate::entity::entities::objects::projectiles::FishingHookEntity;
 use crate::inventory::ender_chest::{PlayerEnderChestContainer, SyncPlayerEnderChest};
@@ -249,6 +251,9 @@ pub struct Player {
     sleep_state: SyncMutex<PlayerSleepState>,
     /// Persisted personal bed or respawn-anchor target.
     respawn_config: SyncMutex<Option<PlayerRespawnConfig>>,
+
+    /// Recipes this player has unlocked and the state of their recipe book tabs.
+    pub recipe_book: SyncMutex<recipe_book::ServerRecipeBook>,
 
     /// Player abilities (flight, invulnerability, build permissions, speeds, etc.)
     pub abilities: SyncMutex<Abilities>,
@@ -628,6 +633,7 @@ impl Player {
             tick_state: SyncMutex::new(PlayerTickState::new()),
             sleep_state: SyncMutex::new(PlayerSleepState::new()),
             respawn_config: SyncMutex::new(None),
+            recipe_book: SyncMutex::new(recipe_book::ServerRecipeBook::new()),
             abilities: SyncMutex::new(Abilities::default()),
             block_breaking: SyncMutex::new(BlockBreakingManager::new()),
             living_base,
@@ -2143,6 +2149,9 @@ impl LivingEntity for Player {
     fn ai_step(&self, entity: &SharedEntity) -> Option<MoveResult> {
         self.tick_regeneration();
         InventoryTickContext::tick_player_inventory(&self.get_world(), self);
+        // Vanilla `ServerPlayerEntity.playerTick` sends map updates for every
+        // carried map, independently of the per-item color update.
+        filled_map::send_map_packets(self);
         if self.is_flying() && !self.is_passenger() {
             self.reset_fall_distance();
         }

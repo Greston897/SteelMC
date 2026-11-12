@@ -20,7 +20,7 @@ use steel_utils::{
     types::{GameType, InteractionHand, UpdateFlags},
 };
 
-use crate::behavior::{BLOCK_BEHAVIORS, BlockLootContext};
+use crate::behavior::{BLOCK_BEHAVIORS, BlockLootContext, CanMineContext, ITEM_BEHAVIORS};
 use crate::block_entity::BlockEntity;
 use crate::entity::{ActiveMobEffect, Entity, LivingEntity};
 use crate::fluid::fluid_state_to_block;
@@ -390,8 +390,19 @@ impl BlockBreakingManager {
         clippy::unused_self,
         reason = "method belongs logically to BlockBreakingManager and will use self when additional state is added"
     )]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "linear port of vanilla ServerPlayerInteractionManager#tryBreakBlock"
+    )]
     fn destroy_block(&self, player: &Player, world: &Arc<World>, pos: BlockPos) -> bool {
         let state = world.get_block_state(pos);
+
+        // Vanilla `ServerPlayerInteractionManager#tryBreakBlock` asks the held item
+        // whether it may mine the block before anything else happens. The debug
+        // stick refuses and selects a property instead.
+        if !held_item_can_mine(player, world, pos, state) {
+            return false;
+        }
 
         if player.get_abilities().instabuild && !held_item_can_destroy_in_creative(player) {
             return false;
@@ -544,6 +555,32 @@ fn held_item_can_destroy_in_creative(player: &Player) -> bool {
     let inventory = player.inventory.lock();
     let main_hand = inventory.get_item_in_hand(InteractionHand::MainHand);
     main_hand.can_destroy_blocks_in_creative()
+}
+
+/// Vanilla `ItemStack#canMine` for the stack in the player's main hand.
+///
+/// The inventory lock is released before the behavior runs so item code is free
+/// to mutate the held stack.
+fn held_item_can_mine(
+    player: &Player,
+    world: &Arc<World>,
+    pos: BlockPos,
+    state: BlockStateId,
+) -> bool {
+    let main_hand_item = {
+        let inventory = player.inventory.lock();
+        inventory.get_item_in_hand(InteractionHand::MainHand).item()
+    };
+    ITEM_BEHAVIORS
+        .get_behavior(main_hand_item)
+        .can_mine(&CanMineContext::new(
+            player,
+            world,
+            pos,
+            state,
+            Arc::clone(&player.inventory),
+            InteractionHand::MainHand,
+        ))
 }
 
 /// Checks if a block state is air.
