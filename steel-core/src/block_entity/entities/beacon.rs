@@ -65,7 +65,6 @@ pub(crate) const BEACON_EFFECTS: [&[MobEffectRef]; 4] = [
 ];
 
 /// A contiguous run of beam blocks sharing one tint.
-// TODO: Expose a `getBeamSections` equivalent when server-side callers need it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BeamSection {
     color: ArgbColor,
@@ -73,6 +72,18 @@ pub struct BeamSection {
 }
 
 impl BeamSection {
+    /// Returns the tint of this beam run.
+    #[must_use]
+    pub const fn color(&self) -> ArgbColor {
+        self.color
+    }
+
+    /// Returns the number of beam blocks in this run.
+    #[must_use]
+    pub const fn height(&self) -> i32 {
+        self.height
+    }
+
     const fn new(color: ArgbColor) -> Self {
         Self { color, height: 1 }
     }
@@ -185,6 +196,16 @@ impl BeaconBlockEntity {
             name: SyncMutex::new(None),
             lock_key: SyncMutex::new(LockCode::NO_LOCK),
         }
+    }
+
+    /// Returns the beam sections from the last completed scan.
+    ///
+    /// Modeled on vanilla `BeaconBlockEntity.getBeamSections`, which the renderer
+    /// and the beacon's own ambient sound logic share. An empty vector means the
+    /// beacon currently has no beam.
+    #[must_use]
+    pub fn beam_sections(&self) -> Vec<BeamSection> {
+        self.state.lock().beam_sections.clone()
     }
 
     pub(crate) fn state(&self) -> Arc<SyncMutex<BeaconState>> {
