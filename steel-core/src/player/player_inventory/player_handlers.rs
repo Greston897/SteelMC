@@ -451,8 +451,33 @@ impl Player {
             packet.new_state,
             packet.container_id
         );
-        // TODO: Implement slot state change handling
-        // This is used for the crafter block to enable/disable slots
+        self.reset_last_action_time();
+        match self.take_open_menu_for_callback(Some(packet.container_id)) {
+            Ok(mut menu) => {
+                if self.game_mode() != GameType::Spectator
+                    && menu.still_valid(self)
+                    && i32::from(menu.behavior().container_id()) == packet.container_id
+                {
+                    let Ok(slot) = usize::try_from(packet.slot_id) else {
+                        self.finish_open_menu_callback(menu);
+                        return;
+                    };
+                    // Vanilla only honours the toggle from the crafter menu; any
+                    // other menu ignores the packet.
+                    if menu.set_crafter_slot_state(slot, packet.new_state) {
+                        menu.behavior_mut().broadcast_changes(&self.connection);
+                    }
+                }
+                self.finish_open_menu_callback(menu);
+            }
+            Err(OpenMenuUnavailable::Closed) => {
+                log::debug!(
+                    "Player {} sent a slot state change without an open menu",
+                    self.gameprofile.name()
+                );
+            }
+            Err(OpenMenuUnavailable::Unavailable) => {}
+        }
     }
 
     /// Handles a creative mode slot set packet.

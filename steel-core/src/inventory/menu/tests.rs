@@ -1,8 +1,12 @@
 use std::sync::Arc;
 
-use super::{MenuBuilder, kinds::BasicKind};
+use super::{
+    MenuBuilder,
+    kinds::{BasicKind, crafter},
+};
 use crate::{
     behavior::init_behaviors,
+    block_entity::entities::crafter::CrafterBlockEntity,
     block_entity::init_block_entities,
     chunk::{Chunk, status::ChunkStatus},
     entity::{Entity as _, entities::ItemEntity},
@@ -275,4 +279,86 @@ fn partial_swap_overflow_is_discarded_in_creative() {
             )
             .is_empty()
     );
+}
+
+#[test]
+fn crafter_menu_toggles_the_block_entity_mask_through_data_slot_zero() {
+    init_vanilla_registry();
+    init_behaviors();
+    init_block_entities();
+    let world_fixture = fresh_test_world("crafter_menu_toggle");
+    let world = &world_fixture.world;
+    let pos = steel_utils::BlockPos::new(0, 64, 0);
+    insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+    assert!(world.set_block(
+        pos,
+        vanilla_blocks::CRAFTER.default_state(),
+        UpdateFlags::UPDATE_NONE,
+    ));
+    let block_entity = world
+        .get_block_entity(pos)
+        .expect("crafter should create its block entity");
+    let crafter = block_entity
+        .downcast_ref::<CrafterBlockEntity>()
+        .expect("crafter block entity type");
+    let container = ContainerRef::from_block_entity(Arc::clone(&block_entity))
+        .expect("crafter should expose a container");
+
+    let player = TestPlayerBuilder::new(Arc::clone(world), "CrafterTester", 1).build();
+    player.base().set_position_local(DVec3::new(0.5, 64.0, 0.5));
+    let inventory = Arc::clone(&player.inventory);
+    let mut menu = crafter(inventory, 1, pos, container, block_entity);
+
+    assert!(menu.set_crafter_slot_state(3, true));
+    assert_eq!(crafter.disabled_slots() & (1 << 3), 1 << 3);
+    assert_eq!(menu.behavior().get_data(0), Some(1 << 3));
+
+    // Disabling twice is a no-op.
+    assert!(!menu.set_crafter_slot_state(3, true));
+    // Re-enabling clears the bit again.
+    assert!(menu.set_crafter_slot_state(3, false));
+    assert_eq!(crafter.disabled_slots(), 0);
+
+    // A slot outside the 3x3 grid is rejected instead of panicking.
+    assert!(!menu.set_crafter_slot_state(9, true));
+    assert_eq!(crafter.disabled_slots(), 0);
+}
+
+#[test]
+fn crafter_menu_refuses_to_disable_an_occupied_slot() {
+    init_vanilla_registry();
+    init_behaviors();
+    init_block_entities();
+    let world_fixture = fresh_test_world("crafter_menu_occupied");
+    let world = &world_fixture.world;
+    let pos = steel_utils::BlockPos::new(0, 64, 0);
+    insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+    assert!(world.set_block(
+        pos,
+        vanilla_blocks::CRAFTER.default_state(),
+        UpdateFlags::UPDATE_NONE,
+    ));
+    let block_entity = world
+        .get_block_entity(pos)
+        .expect("crafter should create its block entity");
+    let crafter = block_entity
+        .downcast_ref::<CrafterBlockEntity>()
+        .expect("crafter block entity type");
+    let container =
+        ContainerRef::from_block_entity(Arc::clone(&block_entity)).expect("container");
+    {
+        let mut guard = ContainerLockGuard::lock_all(&[&container]);
+        assert!(guard.set_item(
+            container.container_id(),
+            0,
+            ItemStack::new(&vanilla_items::STONE),
+        ));
+    }
+
+    let player = TestPlayerBuilder::new(Arc::clone(world), "CrafterOccupied", 1).build();
+    let inventory = Arc::clone(&player.inventory);
+    let mut menu = crafter(inventory, 1, pos, container, block_entity);
+
+    assert!(!menu.set_crafter_slot_state(0, true));
+    assert_eq!(crafter.disabled_slots(), 0);
 }

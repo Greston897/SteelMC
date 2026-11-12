@@ -187,6 +187,31 @@ impl Menu {
         kind.click_menu_button(behavior, button_id, player)
     }
 
+    /// Applies a crafter slot-state toggle from the client.
+    ///
+    /// Returns false for any menu that is not a crafter menu, mirroring
+    /// vanilla's `instanceof CrafterMenu` check on the receiving side.
+    pub fn set_crafter_slot_state(&mut self, slot: usize, disabled: bool) -> bool {
+        let Self { behavior, kind, .. } = self;
+        if kind.downcast_ref::<kinds::CrafterKind>().is_none() {
+            return false;
+        }
+        // Slot occupancy gates disabling, and reading a slot needs the container
+        // locks. Take them here, then drop them before touching the kind so the
+        // click path and the mutation never hold locks at the same time.
+        let occupied = {
+            let guard = behavior.lock_all_containers();
+            behavior
+                .slots()
+                .get(slot)
+                .is_some_and(|slot| !slot.get_item(&guard).is_empty())
+        };
+        let Some(crafter) = kind.downcast_mut::<kinds::CrafterKind>() else {
+            return false;
+        };
+        crafter.apply_slot_state(behavior, slot, disabled, occupied)
+    }
+
     /// Clears or counts crafting-grid items in the base inventory menu,
     /// returning the number cleared or counted. Returns 0 for any other menu.
     pub(crate) fn clear_or_count_crafting_items(

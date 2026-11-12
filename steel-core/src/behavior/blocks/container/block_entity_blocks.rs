@@ -16,17 +16,18 @@ use glam::DVec3;
 use steel_registry::vanilla_entities;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_items;
-use steel_utils::{BlockPos, BlockStateId};
+use steel_utils::{BlockPos, BlockStateId, Downcast as _};
 use text_components::TextComponent;
 
 use crate::behavior::InventoryAccess;
 use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
 use crate::block_entity::BlockEntityTicker;
+use crate::block_entity::entities::crafter::CrafterBlockEntity;
 use crate::behavior::context::{BlockHitResult, BlockPlaceContext, InteractionResult};
 use crate::block_entity::BLOCK_ENTITIES;
 use crate::inventory::container::calculate_redstone_signal_from_container;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
-use crate::inventory::menu::kinds::chest;
+use crate::inventory::menu::kinds::{chest, crafter};
 use crate::entity::SharedEntity;
 use crate::entity::entities::{
     ArrowEntity, EnderPearlEntity, ExperienceBottleEntity, FireworkRocketEntity, ItemEntity,
@@ -500,6 +501,43 @@ impl CrafterBlock {
 }
 
 impl BlockBehavior for CrafterBlock {
+    /// Vanilla `CrafterBlock.useWithoutItem`: opens the 3x3 grid menu so the
+    /// player can fill it and toggle slots.
+    fn open_menu(
+        &self,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _state: BlockStateId,
+        player: &Player,
+    ) -> InteractionResult {
+        let Some(block_entity) = world.get_block_entity(pos) else {
+            return InteractionResult::Pass;
+        };
+        if block_entity.downcast_ref::<CrafterBlockEntity>().is_none() {
+            return InteractionResult::Pass;
+        }
+        let Some(container_ref) = ContainerRef::from_block_entity(Arc::clone(&block_entity))
+        else {
+            return InteractionResult::Pass;
+        };
+        let menu_entity = Arc::clone(&block_entity);
+        let inventory = Arc::clone(&player.inventory);
+        player.open_menu(
+            // Vanilla titles this menu with `container.crafter`.
+            TextComponent::plain("Crafter"),
+            move |context| {
+                crafter(
+                    inventory,
+                    context.container_id,
+                    pos,
+                    container_ref,
+                    menu_entity,
+                )
+            },
+        );
+        InteractionResult::Success
+    }
+
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(
             self.block
