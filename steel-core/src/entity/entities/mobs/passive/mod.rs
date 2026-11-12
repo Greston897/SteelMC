@@ -5,6 +5,7 @@ mod armadillo;
 mod axolotl;
 mod bee;
 mod camel;
+mod camel_husk;
 mod cat;
 mod chicken;
 mod cow;
@@ -31,6 +32,7 @@ pub use armadillo::ArmadilloEntity;
 pub use axolotl::AxolotlEntity;
 pub use bee::BeeEntity;
 pub use camel::CamelEntity;
+pub use camel_husk::CamelHuskEntity;
 pub use cat::{CatEntity, flags as cat_flags};
 pub use chicken::ChickenEntity;
 pub use cow::CowEntity;
@@ -45,7 +47,8 @@ pub use fox::{FoxEntity, FoxVariant, flags as fox_flags};
 pub use frog::FrogEntity;
 pub use goat::GoatEntity;
 pub use horse::{
-    DonkeyEntity, HorseEntity, LlamaEntity, MuleEntity, SkeletonHorseEntity, ZombieHorseEntity,
+    DonkeyEntity, HorseEntity, LlamaEntity, MuleEntity, SkeletonHorseEntity, TraderLlamaEntity,
+    ZombieHorseEntity,
 };
 pub use mooshroom::MushroomCowEntity;
 pub use ocelot::OcelotEntity;
