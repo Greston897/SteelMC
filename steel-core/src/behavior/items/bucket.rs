@@ -3,7 +3,6 @@ use crate::behavior::context::InteractionResult;
 use crate::behavior::item_utils::create_filled_result;
 use crate::behavior::{
     BLOCK_BEHAVIORS, BlockStateBehaviorExt, FLUID_BEHAVIORS, ItemBehavior, UseItemContext,
-    pickup_waterlogged_block,
 };
 use crate::entity::Entity;
 use crate::fluid::{fluid_state_to_block, is_lava_fluid, is_water_fluid};
@@ -101,18 +100,10 @@ fn use_empty_bucket(context: &mut UseItemContext) -> InteractionResult {
     let hit_state = context.world.get_block_state(hit_pos);
     let block_behavior = BLOCK_BEHAVIORS.get_behavior(hit_state.get_block());
 
-    // TODO: Remove fallback once all waterloggable blocks implement pickup_block.
-    let picked = block_behavior
-        .pickup_block(context.world, hit_pos, hit_state, Some(context.player))
-        .or_else(|| {
-            pickup_waterlogged_block(
-                block_behavior,
-                context.world,
-                hit_pos,
-                hit_state,
-                Some(context.player),
-            )
-        });
+    // `BlockBehavior::pickup_block`'s default already drains waterloggable
+    // blocks, so blocks with custom pickup logic only override it.
+    let picked =
+        block_behavior.pickup_block(context.world, hit_pos, hit_state, Some(context.player));
     // Fail, not pass, so the client knows no item changed.
     let Some(result) = picked else {
         return InteractionResult::Fail;

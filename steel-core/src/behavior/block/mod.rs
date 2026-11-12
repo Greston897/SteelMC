@@ -208,10 +208,6 @@ pub trait BlockBehavior: Send + Sync {
     /// - Return the filled bucket stack to give
     ///
     /// Return None if pickup failed.
-    #[expect(
-        unused_variables,
-        reason = "default trait implementation ignores all params"
-    )]
     fn pickup_block(
         &self,
         world: &Arc<World>,
@@ -219,7 +215,9 @@ pub trait BlockBehavior: Send + Sync {
         state: BlockStateId,
         player: Option<&Player>,
     ) -> Option<PickupResult> {
-        None
+        // Vanilla `BucketItem` drains any `SimpleWaterloggedBlock` through
+        // `pickupBlock`; blocks opt into that by having a `waterlogged` property.
+        pickup_waterlogged_block(self, world, pos, state, player)
     }
     /// Called when a neighboring block changes shape.
     /// Returns the new state for this block after considering the neighbor change.
