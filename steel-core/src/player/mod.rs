@@ -2313,16 +2313,43 @@ impl LivingEntity for Player {
 }
 
 impl TextResolutor for Player {
-    fn resolve_content(&self, _resolvable: &Resolvable) -> TextComponent {
-        TextComponent::new()
+    /// Vanilla resolves entity and score content against the viewer. The
+    /// player is the only entity reachable here, so a selector resolves to its
+    /// own display name and a score resolves for its own scoreboard holder.
+    fn resolve_content(&self, resolvable: &Resolvable) -> TextComponent {
+        match resolvable {
+            Resolvable::Entity { .. } => self.display_name(),
+            Resolvable::Scoreboard { objective, .. } => {
+                let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+                let world = self.get_world();
+                let score = self
+                    .server()
+                    .scoreboards
+                    .get(world.domain())
+                    .and_then(|scoreboard| {
+                        let objective = scoreboard.objective(objective)?;
+                        scoreboard.score(&holder, &objective)
+                    });
+                TextComponent::plain(score.unwrap_or(0).to_string())
+            }
+            // NBT content needs a live entity NBT snapshot, which the player
+            // has no viewer-scoped copy of.
+            Resolvable::NBT { .. } => TextComponent::new(),
+        }
     }
 
+    /// Vanilla resolves `custom` content from the client's registered custom
+    /// text data; the server has no client-side copy, so nothing resolves.
     fn resolve_custom(&self, _data: &CustomData) -> Option<TextComponent> {
         None
     }
 
-    fn translate(&self, _key: &str) -> Option<String> {
-        None
+    /// Vanilla `TranslatableContents.resolve` for a server-side view: the
+    /// English translation table.
+    fn translate(&self, key: &str) -> Option<String> {
+        steel_utils::translations_registry::TRANSLATIONS
+            .get(key)
+            .map(|value| (*value).to_owned())
     }
 }
 

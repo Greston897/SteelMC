@@ -1192,16 +1192,25 @@ impl JavaConnection {
 }
 
 impl TextResolutor for JavaConnection {
+    /// Connection-level text has no player scope yet (the connection exists
+    /// before a player is attached), so content that needs a viewer resolves to
+    /// an empty component.
     fn resolve_content(&self, _resolvable: &Resolvable) -> TextComponent {
         TextComponent::new()
     }
 
+    /// Vanilla resolves `custom` content from the client's registered custom
+    /// text data, which the server never receives.
     fn resolve_custom(&self, _data: &CustomData) -> Option<TextComponent> {
         None
     }
 
-    fn translate(&self, _key: &str) -> Option<String> {
-        None
+    /// Uses the English translation table, like a server-side view of a
+    /// translatable component.
+    fn translate(&self, key: &str) -> Option<String> {
+        steel_utils::translations_registry::TRANSLATIONS
+            .get(key)
+            .map(|value| (*value).to_owned())
     }
 }
 
