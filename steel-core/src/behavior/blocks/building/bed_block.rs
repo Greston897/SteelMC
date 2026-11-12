@@ -17,7 +17,7 @@ use steel_registry::blocks::{
 };
 use steel_registry::{vanilla_blocks, vanilla_custom_stats, vanilla_damage_types};
 use steel_utils::{
-    BlockPos, BlockStateId, Direction, axis::Axis, translations, types::UpdateFlags,
+    BlockPos, BlockStateId, Direction, WorldAabb, axis::Axis, translations, types::UpdateFlags,
 };
 
 const BED_PART: &EnumProperty<BedPart> = &BlockStateProperties::BED_PART;
@@ -26,15 +26,40 @@ const OCCUPIED: &BoolProperty = &BlockStateProperties::OCCUPIED;
 const EXPLOSION_RADIUS: f32 = 5.0;
 
 /// Behavior for beds
-///
-/// TODO: Mirror vanilla `BedBlock.kickVillagerOutOfBed` once villager sleeping
-/// entities exist.
 #[block_behavior]
 pub struct BedBlock {
     pub(super) block: BlockRef,
 }
 
 impl BedBlock {
+    /// Wakes and displaces any living entity sleeping on the bed at `head_pos`.
+    ///
+    /// Vanilla `BedBlock.kickVillagerOutOfBed` handles villagers specifically;
+    /// Steel stores the sleeping position on every living entity, so this covers
+    /// villagers, players and any other sleeper uniformly.
+    fn kick_sleeping_entities_out(world: &Arc<World>, head_pos: BlockPos) {
+        let box_ = WorldAabb::new(
+            f64::from(head_pos.x()),
+            f64::from(head_pos.y()),
+            f64::from(head_pos.z()),
+            f64::from(head_pos.x()) + 1.0,
+            f64::from(head_pos.y()) + 1.0,
+            f64::from(head_pos.z()) + 1.0,
+        );
+        for entity in world.get_entities_in_aabb(&box_) {
+            let Some(living) = entity.as_living_entity() else {
+                continue;
+            };
+            if living.sleeping_pos() != Some(head_pos) {
+                continue;
+            }
+            // Vanilla wakes the sleeper then pushes it off the bed; players keep
+            // their bed settings and only lose the sleeping position.
+            living.clear_sleeping_pos();
+            entity.push_impulse(DVec3::new(0.0, 0.25, 0.0));
+        }
+    }
+
     /// Creates a bed block behavior.
     #[must_use]
     pub const fn new(block: BlockRef) -> Self {
@@ -354,9 +379,10 @@ impl BlockBehavior for BedBlock {
         }
 
         if head_state.get_value(OCCUPIED) {
-            // TODO: Mirror vanilla `kickVillagerOutOfBed`: find a sleeping
-            // villager in this bed AABB and call `stopSleeping` once villager
-            // sleeping exists.
+            // Vanilla `BedBlock.kickVillagerOutOfBed`: any living entity asleep
+            // on this bed is woken up and pushed off before the player is told
+            // the bed is occupied.
+            Self::kick_sleeping_entities_out(world, head_pos);
             player.send_overlay_message(
                 &translations::BLOCK_MINECRAFT_BED_OCCUPIED.msg().component(),
             );
