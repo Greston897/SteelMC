@@ -220,15 +220,13 @@ pub use c_delete_chat::{CDeleteChat, MessageSignature};
 pub use c_entity_event::CEntityEvent;
 pub use c_entity_position_sync::{CEntityPositionSync, PositionPath, PositionStep};
 pub use c_explode::{
-pub use c_game_event::CGameEvent;
-pub use c_game_event::GameEventType;
+pub use c_game_event::{CGameEvent, GameEventType};
 pub use c_game_rule_values::CGameRuleValues;
 pub use c_game_test_highlight_pos::CGameTestHighlightPos;
 pub use c_hurt_animation::CHurtAnimation;
 pub use c_level_event::CLevelEvent;
 pub use c_level_particles::{CLevelParticles, RandomizationType};
-pub use c_login::CLogin;
-pub use c_login::CommonPlayerSpawnInfo;
+pub use c_login::{CLogin, CommonPlayerSpawnInfo};
 pub use c_low_disk_space_warning::CLowDiskSpaceWarning;
 pub use c_map_item_data::{CMapItemData, MapDecorationEntry, MapPatch, OptionalMapPatch};
 pub use c_merchant_offers::{CMerchantOffers, MerchantOffer};
