@@ -64,7 +64,9 @@ impl PlayerAdvancement {
         let progress = self.progress.get_mut_or_start_progress(advancement);
         let was_done = progress.is_done();
         if progress.grant_progress(criterion) {
-            //TODO: register advancement listener
+            // Vanilla registers a listener per advancement at this point. Steel
+            // instead walks the registry in `trigger`, so there is nothing to
+            // register here — a data pack reload needs no listener bookkeeping.
             self.progress_changed.insert(advancement);
             result = true;
             if !was_done && progress.is_done() {
@@ -127,7 +129,7 @@ impl PlayerAdvancement {
         let progress = self.progress.get_mut_or_start_progress(advancement);
         let was_done = progress.is_done();
         if progress.revoke_progress(criterion) {
-            //TODO: unregister advancement listener
+            // See `award`: the pull-based dispatcher owns no per-player listeners.
             self.progress_changed.insert(advancement);
             result = true;
         }

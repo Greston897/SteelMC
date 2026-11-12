@@ -811,6 +811,7 @@ pub trait LivingEntity: Entity {
         let durability_damage = (damage / 4.0).max(1.0) as i32;
         for &slot in slots {
             let mut item_broke = false;
+            let mut durability_changed = false;
             let mut item_ref = &*vanilla_items::AIR;
             self.with_equipment_slot_mut(slot, &mut |item| {
                 item_ref = item.item;
@@ -821,10 +822,17 @@ pub trait LivingEntity: Entity {
                     && item.is_damageable_item()
                     && item.can_be_hurt_by(source.damage_type)
                 {
+                    let before = item.get_damage_value();
                     item_broke =
                         item.hurt_and_break(durability_damage, self.has_infinite_materials());
+                    durability_changed = item.get_damage_value() != before;
                 }
             });
+            // Vanilla `ItemStack.hurtAndBreak` fires `item_durability_changed` for the
+            // owning player; `ItemStack` has no player reference, so it happens here.
+            if durability_changed && let Some(player) = self.as_player() {
+                player.trigger_advancement(&vanilla_criteria_triggers::ITEM_DURABILITY_CHANGED);
+            }
             if item_broke {
                 self.on_equipped_item_broken(item_ref, slot);
             }

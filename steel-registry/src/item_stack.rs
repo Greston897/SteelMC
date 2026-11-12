@@ -289,7 +289,8 @@ impl ItemStack {
 
         let new_damage = self.get_damage_value() + effective_amount;
 
-        // TODO: Trigger ITEM_DURABILITY_CHANGED advancement criteria
+        // The `item_durability_changed` trigger lives in the caller: a stack has no
+        // player reference, so `LivingEntity` fires it after this returns.
 
         self.set_damage_value(new_damage);
 
