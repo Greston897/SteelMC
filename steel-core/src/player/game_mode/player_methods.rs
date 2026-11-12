@@ -329,13 +329,15 @@ impl Player {
             return;
         };
 
-        // TODO: Store the camera entity and apply world-border/cross-world
-        // setCamera semantics once those foundations exist.
+        // Vanilla `ServerPlayer.setCamera`: a spectator may only spectate an
+        // entity it can reach with a 3-block buffer. The camera is stored so the
+        // teardown path can restore the player's own view.
         if self.is_within_entity_interaction_range(target.bounding_box(), 3.0)
             && target.is_pickable()
         {
+            self.set_camera_entity(Some(target));
             self.send_packet(CSetCamera {
-                camera_id: target.id(),
+                camera_id: entity_id,
             });
         }
     }

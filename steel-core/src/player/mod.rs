@@ -212,6 +212,11 @@ pub struct Player {
     pub last_chunk_pos: SyncMutex<ChunkPos>,
     /// The last chunk tracking view of the player.
     pub last_tracking_view: SyncMutex<Option<PlayerChunkView>>,
+    /// Entity the player's camera is attached to, if any.
+    ///
+    /// Vanilla `ServerPlayer.camera`/`setCamera`; a spectator's `set_camera`
+    /// stores the target here so later packets and teardown can restore it.
+    camera_entity: SyncMutex<Option<SharedEntity>>,
     /// The client's settings/information (language, view distance, chat visibility, etc.).
     /// Updated when the client sends `SClientInformation` during config or play phase.
     client_information: SyncMutex<ClientInformation>,
@@ -357,6 +362,21 @@ impl Player {
     pub fn trigger_recipe_crafted(&self, recipe: &Identifier) -> usize {
         let _ = recipe;
         self.trigger_advancement(&steel_registry::vanilla_criteria_triggers::RECIPE_CRAFTED)
+    }
+
+    /// Returns the entity this player's camera is attached to.
+    #[must_use]
+    pub fn camera_entity(&self) -> Option<SharedEntity> {
+        self.camera_entity.lock().clone()
+    }
+
+    /// Attaches the player's camera to `entity`, or restores the player's own
+    /// camera when `None`.
+    ///
+    /// Vanilla `ServerPlayer.setCamera`; callers are responsible for sending the
+    /// matching `SetCamera` packet.
+    pub fn set_camera_entity(&self, entity: Option<SharedEntity>) {
+        *self.camera_entity.lock() = entity;
     }
 
     /// Fires an advancement trigger for this player, granting every matching
@@ -582,7 +602,14 @@ impl Player {
 
     /// Changes the current game mode and records the old current mode as previous.
     fn change_game_mode_state(&self, game_mode: GameType) -> bool {
-        self.game_modes.lock().change_current(game_mode)
+        let was_spectator = self.game_modes.lock().current() == GameType::Spectator;
+        let changed = self.game_modes.lock().change_current(game_mode);
+        // Vanilla `ServerPlayer.setGameMode` drops a spectator camera when the
+        // player leaves spectator mode.
+        if changed && was_spectator && game_mode != GameType::Spectator {
+            self.set_camera_entity(None);
+        }
+        changed
     }
 
     /// Creates a new player.
@@ -635,6 +662,7 @@ impl Player {
             }),
             last_chunk_pos: SyncMutex::new(ChunkPos::new(0, 0)),
             last_tracking_view: SyncMutex::new(None),
+            camera_entity: SyncMutex::new(None),
             client_information: SyncMutex::new(client_information),
             game_modes: SyncMutex::new(PlayerGameModeState::new(GameType::Survival)),
             inventory: Arc::clone(&inventory),
