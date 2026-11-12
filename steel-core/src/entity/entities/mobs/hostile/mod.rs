@@ -21,6 +21,8 @@ pub mod shulker;
 pub mod snow_golem;
 /// Hostile warden entity module.
 pub mod warden;
+/// Hostile elder guardian entity module.
+pub mod elder_guardian;
 /// Hostile blaze entity module.
 pub mod blaze;
 /// Hostile evoker entity module.
