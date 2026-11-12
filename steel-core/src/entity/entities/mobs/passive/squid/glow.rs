@@ -14,9 +14,7 @@ use steel_math::vector;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::{
     entity_data::{EntityPose, ParticleData},
-    entity_type::{
-        EntityAttachmentPoint, EntityAttachments, EntityDimensions, EntityTypeRef,
-    },
+    entity_type::{EntityAttachmentPoint, EntityAttachments, EntityDimensions, EntityTypeRef},
     sound_event::SoundEventRef,
     sound_events, vanilla_attributes, vanilla_damage_types,
     vanilla_entity_data::GlowSquidEntityData,
@@ -174,8 +172,7 @@ impl GlowSquidEntity {
                 -1.0,
                 rand::random_range(-0.3..0.3),
             ));
-            let offset =
-                direction * f64::from(position_scale + rand::random::<f32>() * 2.0_f32);
+            let offset = direction * f64::from(position_scale + rand::random::<f32>() * 2.0_f32);
             world.send_particles(particle.clone(), particle_position, 0, offset, 0.1);
         }
     }
@@ -213,7 +210,9 @@ impl GlowSquidEntity {
             mob_base,
             ageable_base,
             entity_data: SyncMutex::new(entity_data),
-            state: SyncMutex::new(GlowSquidState { x_body_rot_old: 0.0 }),
+            state: SyncMutex::new(GlowSquidState {
+                x_body_rot_old: 0.0,
+            }),
         }
     }
 }

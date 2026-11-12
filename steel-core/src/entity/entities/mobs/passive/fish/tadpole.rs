@@ -144,7 +144,6 @@ impl TadpoleEntity {
         }
     }
 
-
     fn handle_air_supply(&self, pre_tick_air_supply: i32) {
         tick_breathing(self, pre_tick_air_supply);
     }

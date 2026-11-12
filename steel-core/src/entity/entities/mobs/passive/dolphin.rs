@@ -174,7 +174,6 @@ impl DolphinEntity {
         self.entity_data.lock().moistness_level.set(level);
     }
 
-
     /// Vanilla `Dolphin.tickMoistness`.
     fn tick_moistness(&self) {
         if self.is_in_water_or_rain() {
