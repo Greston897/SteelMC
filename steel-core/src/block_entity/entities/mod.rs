@@ -32,6 +32,20 @@ mod skull;
 mod spawner;
 mod unimplemented;
 
+mod creaking_heart;
+mod marker;
+mod shelf;
+mod sculk_catalyst;
+mod sculk_sensor;
+mod trial_spawner;
+mod vault;
+pub use creaking_heart::CreakingHeartBlockEntity;
+pub use marker::{CommandBlockEntity, CopperGolemStatueBlockEntity, JigsawBlockEntity, StructureBlockEntity, TestBlockEntity, TestInstanceBlockEntity};
+pub use shelf::ShelfBlockEntity;
+pub use sculk_catalyst::{SculkCatalystBlockEntity, SculkShriekerBlockEntity};
+pub use sculk_sensor::SculkSensorBlockEntity;
+pub use trial_spawner::TrialSpawnerBlockEntity;
+pub use vault::VaultBlockEntity;
 pub use abstract_furnace::{
     BlastFurnaceBlockEntity, FurnaceBlockEntity, FurnaceKind, SmokerBlockEntity,
 };
