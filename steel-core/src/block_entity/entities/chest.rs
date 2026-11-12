@@ -21,6 +21,7 @@ use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::inventory::container::Container;
 use crate::inventory::container::load_all_items;
 use crate::inventory::lock::{ContainerRef, SharedContainer};
+use crate::inventory::openers_counter::ContainerOpenersCounter;
 use crate::world::World;
 
 /// Number of slots in a single chest block (3 rows of 9).
@@ -31,6 +32,7 @@ pub struct ChestBlockEntity {
     base: Arc<BlockEntityBase>,
     container: Arc<SyncMutex<ChestContainer>>,
     container_ref: ContainerRef,
+    openers_counter: ContainerOpenersCounter,
 }
 
 pub(crate) struct ChestContainer {
@@ -69,6 +71,10 @@ impl ChestBlockEntity {
             container_ref: ContainerRef::owned_by_block_entity(shared_container, Arc::clone(&base)),
             base,
             container,
+            openers_counter: ContainerOpenersCounter::without_open_state(
+                &steel_registry::sound_events::BLOCK_CHEST_OPEN,
+                &steel_registry::sound_events::BLOCK_CHEST_CLOSE,
+            ),
         }
     }
 
@@ -82,6 +88,12 @@ impl ChestBlockEntity {
     #[must_use]
     pub fn new_trapped(level: Weak<World>, pos: BlockPos, state: BlockStateId) -> Self {
         Self::new(&vanilla_block_entity_types::TRAPPED_CHEST, level, pos, state)
+    }
+
+    /// Viewer counter used for the double-chest lid animation and comparator.
+    #[must_use]
+    pub fn openers_counter(&self) -> &ContainerOpenersCounter {
+        &self.openers_counter
     }
 }
 

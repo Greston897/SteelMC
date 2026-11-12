@@ -22,7 +22,7 @@ use crate::behavior::block::{
 };
 use crate::behavior::context::{BlockHitResult, BlockPlaceContext, InteractionResult};
 use crate::behavior::{InventoryAccess, PlacementSource};
-use crate::block_entity::BLOCK_ENTITIES;
+use crate::block_entity::{BLOCK_ENTITIES, entities::ChestBlockEntity};
 use crate::inventory::container::calculate_redstone_signal_from_container;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::inventory::menu::kinds::chest;
@@ -84,14 +84,28 @@ impl ChestBlock {
             return InteractionResult::Pass;
         };
 
-        // Vanilla plays the open sound at a slightly randomized pitch for a
-        // single chest, and a fixed low pitch for both halves of a double one.
-        let pitch = if state.get_value(&BlockStateProperties::CHEST_TYPE) == ChestType::Single {
-            rand::random_range(0.9..1.0)
+        // Vanilla tracks viewers on the block entity so a double chest opens both
+        // halves and the comparator sees a consistent count.
+        let block_entity = world.get_block_entity(pos);
+        if let Some(chest) = block_entity
+            .as_ref()
+            .and_then(|entity| entity.downcast_ref::<ChestBlockEntity>())
+        {
+            chest.openers_counter().increment_openers(
+                world,
+                pos,
+                state,
+                state.get_block(),
+            );
         } else {
-            0.5
-        };
-        world.play_block_sound(self.open_sound, pos, 0.5, pitch, None);
+            let pitch =
+                if state.get_value(&BlockStateProperties::CHEST_TYPE) == ChestType::Single {
+                    rand::random_range(0.9..1.0)
+                } else {
+                    0.5
+                };
+            world.play_block_sound(self.open_sound, pos, 0.5, pitch, None);
+        }
 
         let inventory = Arc::clone(&player.inventory);
         player.open_menu(
