@@ -294,9 +294,9 @@ impl ItemStack {
         self.set_damage_value(new_damage);
 
         if self.is_broken() {
-            // TODO: Call onEquippedItemBroken callback which:
-            // - Broadcasts entity event (byte 47 for mainhand) for break sound/particles
-            // - Stops location-based effects (removes attribute modifiers)
+            // Callers detect the `true` return and forward it to
+            // `LivingEntity::on_equipped_item_broken`, which broadcasts the
+            // break entity event and drops the equipment modifiers.
             self.shrink_one();
             return true;
         }
