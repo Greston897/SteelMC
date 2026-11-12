@@ -12,6 +12,10 @@ use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, Direction};
 use steel_registry::vanilla_block_entity_types;
+use glam::DVec3;
+use steel_registry::vanilla_entities;
+use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_items;
 use steel_utils::{BlockPos, BlockStateId};
 use text_components::TextComponent;
 
@@ -23,11 +27,94 @@ use crate::block_entity::BLOCK_ENTITIES;
 use crate::inventory::container::calculate_redstone_signal_from_container;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::inventory::menu::kinds::chest;
+use crate::entity::SharedEntity;
+use crate::entity::entities::{
+    ArrowEntity, EnderPearlEntity, ExperienceBottleEntity, FireworkRocketEntity, ItemEntity,
+    LingeringPotionEntity, SnowballEntity, SpectralArrowEntity, SplashPotionEntity,
+    ThrownEggEntity, next_entity_id,
+};
 use crate::player::Player;
 use crate::world::World;
 
 
 const HOPPER_FACING: &EnumProperty<Direction> = &BlockStateProperties::FACING_HOPPER;
+
+/// Vanilla `DispenseItemBehavior` launch speed for dispensed projectiles.
+const DISPENSE_POWER: f64 = 1.1;
+
+/// Maps a dispensed item to the projectile entity vanilla fires for it.
+///
+/// Items without a `ProjectileItem` implementation return `None`, which makes
+/// `dispense_from` drop them instead.
+fn dispense_projectile(stack: &ItemStack, world: &Arc<World>, pos: DVec3) -> Option<SharedEntity> {
+    let kind = stack.item();
+    let weak = Arc::downgrade(world);
+    let id = next_entity_id();
+
+    let entity: SharedEntity = if kind == &vanilla_items::ARROW {
+        let arrow = Arc::new(ArrowEntity::new(&vanilla_entities::ARROW, id, pos, weak));
+        arrow.set_arrow_item(stack.copy_with_count(1));
+        arrow
+    } else if kind == &vanilla_items::TIPPED_ARROW {
+        let arrow = Arc::new(ArrowEntity::new(&vanilla_entities::ARROW, id, pos, weak));
+        arrow.set_arrow_item(stack.copy_with_count(1));
+        arrow
+    } else if kind == &vanilla_items::SPECTRAL_ARROW {
+        Arc::new(SpectralArrowEntity::new(
+            &vanilla_entities::SPECTRAL_ARROW,
+            id,
+            pos,
+            weak,
+        ))
+    } else if kind == &vanilla_items::SPLASH_POTION {
+        Arc::new(SplashPotionEntity::new(
+            &vanilla_entities::SPLASH_POTION,
+            id,
+            pos,
+            weak,
+        ))
+    } else if kind == &vanilla_items::LINGERING_POTION {
+        Arc::new(LingeringPotionEntity::new(
+            &vanilla_entities::LINGERING_POTION,
+            id,
+            pos,
+            weak,
+        ))
+    } else if kind == &vanilla_items::EXPERIENCE_BOTTLE {
+        Arc::new(ExperienceBottleEntity::new(
+            &vanilla_entities::EXPERIENCE_BOTTLE,
+            id,
+            pos,
+            weak,
+        ))
+    } else if kind == &vanilla_items::SNOWBALL {
+        Arc::new(SnowballEntity::new(
+            &vanilla_entities::SNOWBALL,
+            id,
+            pos,
+            weak,
+        ))
+    } else if kind == &vanilla_items::EGG {
+        Arc::new(ThrownEggEntity::new(&vanilla_entities::EGG, id, pos, weak))
+    } else if kind == &vanilla_items::ENDER_PEARL {
+        Arc::new(EnderPearlEntity::new(
+            &vanilla_entities::ENDER_PEARL,
+            id,
+            pos,
+            weak,
+        ))
+    } else if kind == &vanilla_items::FIREWORK_ROCKET {
+        Arc::new(FireworkRocketEntity::new(
+            &vanilla_entities::FIREWORK_ROCKET,
+            id,
+            pos,
+            weak,
+        ))
+    } else {
+        return None;
+    };
+    Some(entity)
+}
 
 /// Vanilla `HopperBlock`: a five-slot container that points at a direction.
 #[block_behavior]
@@ -131,8 +218,33 @@ impl DropperBlock {
 }
 
 macro_rules! funnel_like {
-    ($name:ident, $type_const:ident) => {
+    ($name:ident, $type_const:ident, $fire:expr) => {
         impl BlockBehavior for $name {
+            fn handle_neighbor_changed(
+                &self,
+                state: BlockStateId,
+                world: &Arc<World>,
+                pos: BlockPos,
+                _source_block: BlockRef,
+                _moved_by_piston: bool,
+            ) {
+                // Vanilla `DispenserBlock.neighborChanged` triggers on the rising
+                // edge of a redstone signal only, so a constant signal does not
+                // empty the funnel every tick.
+                let powered = world.get_best_neighbor_signal(pos) > 0;
+                let was_powered = state.get_value(&BlockStateProperties::TRIGGERED);
+                if powered != was_powered {
+                    world.set_block(
+                        pos,
+                        state.set_value(&BlockStateProperties::TRIGGERED, powered),
+                        steel_utils::types::UpdateFlags::UPDATE_CLIENTS,
+                    );
+                    if powered {
+                        $fire(world, pos, state);
+                    }
+                }
+            }
+
             fn get_state_for_placement(
                 &self,
                 context: &BlockPlaceContext<'_>,
@@ -180,8 +292,97 @@ macro_rules! funnel_like {
     };
 }
 
-funnel_like!(DispenserBlock, DISPENSER);
-funnel_like!(DropperBlock, DROPPER);
+funnel_like!(DispenserBlock, DISPENSER, |world: &Arc<World>, pos, state| {
+    dispense_from(world, pos, state);
+});
+funnel_like!(DropperBlock, DROPPER, |world: &Arc<World>, pos, state| {
+    drop_from(world, pos, state);
+});
+
+/// Removes the first non-empty stack from the funnel at `pos`.
+fn take_front_stack(world: &Arc<World>, pos: BlockPos) -> Option<ItemStack> {
+    let block_entity = world.get_block_entity(pos)?;
+    let container = block_entity.container_ref()?;
+    let mut guard = container.lock();
+    let slot = (0..guard.get_container_size()).find(|slot| !guard.get_item(*slot).is_empty())?;
+    Some(guard.remove_item(slot, 1))
+}
+
+/// Vanilla dispenser launch geometry: the entity appears just past the funnel
+/// face, travelling along the facing axis.
+fn launch_point(pos: BlockPos, facing: Direction) -> (DVec3, DVec3) {
+    let (dx, dy, dz) = facing.offset();
+    let (dx, dy, dz) = (f64::from(dx), f64::from(dy), f64::from(dz));
+    let spawn_pos = DVec3::new(
+        f64::from(pos.x()) + 0.5 + dx * 0.7,
+        f64::from(pos.y()) + 0.5 + dy * 0.7,
+        f64::from(pos.z()) + 0.5 + dz * 0.7,
+    );
+    (spawn_pos, DVec3::new(dx, dy, dz) * DISPENSE_POWER)
+}
+
+/// Vanilla `DispenserBlock.dispenseFrom`: fires whatever the front slot holds.
+///
+/// Projectiles keep their vanilla spawn point (slightly ahead of the funnel) and
+/// velocity; anything without a `ProjectileItem` implementation is dropped as an
+/// item entity, matching `DefaultDispenseItemBehavior`.
+fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool {
+    let facing = state.get_value(&BlockStateProperties::FACING);
+    let Some(stack) = take_front_stack(world, pos) else {
+        return false;
+    };
+
+    let (spawn_pos, velocity) = launch_point(pos, facing);
+    if let Some(projectile) = dispense_projectile(&stack, world, spawn_pos) {
+        projectile.set_velocity(velocity);
+        let _ = world.try_add_entity(projectile);
+    } else {
+        spawn_dropped_item(world, spawn_pos, velocity, stack);
+    }
+
+    world.play_sound(
+        &sound_events::BLOCK_DISPENSER_DISPENSE,
+        crate::sound::SoundSource::Blocks,
+        pos,
+        1.0,
+        1.0,
+        None,
+    );
+    true
+}
+
+/// Vanilla `DropperBlock.dispenseFrom`: always drops the front stack as an item.
+fn drop_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool {
+    let facing = state.get_value(&BlockStateProperties::FACING);
+    let Some(stack) = take_front_stack(world, pos) else {
+        return false;
+    };
+
+    let (spawn_pos, velocity) = launch_point(pos, facing);
+    spawn_dropped_item(world, spawn_pos, velocity, stack);
+    world.play_sound(
+        &sound_events::BLOCK_DISPENSER_DISPENSE,
+        crate::sound::SoundSource::Blocks,
+        pos,
+        1.0,
+        1.0,
+        None,
+    );
+    true
+}
+
+/// Spawns an item entity that travels along `velocity`.
+fn spawn_dropped_item(world: &Arc<World>, spawn_pos: DVec3, velocity: DVec3, stack: ItemStack) {
+    let entity = ItemEntity::new(
+        &vanilla_entities::ITEM,
+        next_entity_id(),
+        spawn_pos,
+        Arc::downgrade(world),
+    );
+    entity.set_item(stack);
+    entity.set_velocity(velocity);
+    let _ = world.try_add_entity(Arc::new(entity));
+}
 
 /// Vanilla `BrewingStandBlock`: a four-slot container with an `has_bottle` state.
 #[block_behavior]
