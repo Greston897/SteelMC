@@ -99,20 +99,12 @@ impl Hash for AdvancementNode {
     }
 }
 
-/// equivalent of the `AdvancementTree` of the minecraft source code
+/// Equivalent of the `AdvancementTree` of the Minecraft source code.
 ///
-/// TODO add Dynamic allocated Advancement with a enum :
-/// ```rust
-/// use steel_registry::advancement::Advancement;
-/// use steel_registry::advancement::registry::AdvancementRef;
-///
-/// enum AdvancementHolder {
-///    Static(AdvancementRef),
-///    Dynamic(Box<Advancement>),
-/// }
-/// ```
-/// TODO add the ability to reload the registry.
-/// TODO made the registry behind a `ArcSwap` and the `unloaded_advancement` behind a `Mutex` to allow for dynamic reloading of advancements.
+/// Holds `'static` handles, so runtime-registered advancements are leaked once by
+/// [`AdvancementRegistry::register_owned`]. Vanilla never unloads an advancement
+/// tree either: `/reload` builds a fresh `ServerAdvancementManager` and swaps it in,
+/// which this registry models with [`AdvancementRegistry::reload`].
 #[derive(Default, Debug)]
 pub struct AdvancementRegistry {
     pub(crate) advancements: Vec<AdvancementRef>,
@@ -194,10 +186,47 @@ impl AdvancementRegistry {
         }
     }
 
-    /// Registers an advancement in the registry. Returns true if the advancement was added to the
-    /// unloaded advancements set, false if it was already present.
+    /// Registers a statically known advancement in the registry. Returns true if the advancement
+    /// was added to the unloaded advancements set, false if it was already present.
     pub fn register(&mut self, advancement: AdvancementRef) -> bool {
         self.unloaded_advancement.insert(advancement)
+    }
+
+    /// Registers a runtime-built advancement (a data pack loaded at run time).
+    ///
+    /// `AdvancementRef` is `&'static`, so the value is leaked exactly once, which is
+    /// what vanilla does implicitly by keeping the manager alive for the server's
+    /// lifetime. Returns `true` when the key was previously unknown.
+    pub fn register_owned(&mut self, advancement: Advancement) -> bool {
+        let key = advancement.key.clone();
+        if self.by_key.contains_key(&key)
+            || self
+                .unloaded_advancement
+                .iter()
+                .any(|existing| existing.key == key)
+        {
+            return false;
+        }
+        let leaked: AdvancementRef = Box::leak(Box::new(advancement));
+        self.unloaded_advancement.insert(leaked)
+    }
+
+    /// Drops every tree and re-registers the supplied set, mirroring the
+    /// `ServerAdvancementManager` rebuild that `/reload` performs.
+    ///
+    /// Earlier `'static` handles stay valid (they are leaked by construction), so
+    /// player progress that references them keeps working.
+    pub fn reload(&mut self, advancements: Vec<AdvancementRef>) {
+        self.advancements.clear();
+        self.adv_nodes.clear();
+        self.by_key.clear();
+        self.roots.clear();
+        self.tasks.clear();
+        self.unloaded_advancement.clear();
+        for advancement in advancements {
+            self.unloaded_advancement.insert(advancement);
+        }
+        self.update_tree();
     }
 
     #[cfg(test)]
