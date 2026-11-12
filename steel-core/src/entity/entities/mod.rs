@@ -19,7 +19,9 @@ pub use objects::decoration::{
     ArmorStandEntity, BillboardConstraints, CushionEntity, DisplayTransformation, ItemDisplayEntity,
     PaintingEntity, TextDisplayEntity,
 };
-pub use objects::display_ui::{BlockDisplayEntity, ItemFrameEntity, LeashFenceKnotEntity};
+pub use objects::display_ui::{
+    BlockDisplayEntity, GlowItemFrameEntity, ItemFrameEntity, LeashFenceKnotEntity,
+};
 pub use objects::effects::{
     AreaEffectCloudEntity, EvokerFangsEntity, LightningBoltEntity,
 };
