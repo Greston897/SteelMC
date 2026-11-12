@@ -64,7 +64,8 @@ use steel_math::RAD_TO_DEG_F64;
 use steel_protocol::packets::game::{
     CEntityEvent, CHurtAnimation, CPlayerCombatKill, CPlayerLookAt, CRespawn,
     CSetDefaultSpawnPosition, CSetHealth, CSetHeldSlot, CSetPassengers, ClientCommandAction,
-    LookAtAnchor, RelativeMovement, SoundSource,
+    LookAtAnchor, RelativeMovement, SRecipeBookChangeSettings, SRecipeBookSeenRecipe, SSetGameRule,
+    SoundSource,
 };
 use steel_protocol::packets::game::{CLevelEvent, CSetEntityData, CSetExperience};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
@@ -79,10 +80,10 @@ use steel_registry::vanilla_game_rules::{
     SHOW_DEATH_MESSAGES,
 };
 use steel_registry::{
-    level_events, sound_events, vanilla_attributes, vanilla_custom_stats, vanilla_damage_type_tags,
-    vanilla_entities, vanilla_game_events,
+    REGISTRY, level_events, sound_events, vanilla_attributes, vanilla_custom_stats,
+    vanilla_damage_type_tags, vanilla_entities, vanilla_game_events,
 };
-use steel_utils::{entity_events::EntityStatus, locks::Shared, translations};
+use steel_utils::{Identifier, entity_events::EntityStatus, locks::Shared, translations};
 use tick_state::PlayerTickState;
 use uuid::Uuid;
 
@@ -801,6 +802,72 @@ impl Player {
     /// Handles a custom payload packet.
     #[expect(clippy::unused_self, reason = "this is an api function")]
     pub fn handle_custom_payload(&self, _packet: SCustomPayload) {}
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetGameRule`: applies one
+    /// game rule value sent by the client, silently dropping unknown rules and
+    /// malformed values.
+    pub fn handle_set_game_rule(&self, packet: SSetGameRule) {
+        use steel_registry::game_rules::{GameRuleType, GameRuleValue};
+
+        // Vanilla resolves `gamerule` ids with the `minecraft:` default namespace.
+        let key = match packet.rule.parse::<Identifier>() {
+            Ok(key) => key,
+            Err(_) => return,
+        };
+        let Some(rule) = REGISTRY.game_rules.by_key(&key) else {
+            return;
+        };
+        let value = match rule.value_type() {
+            GameRuleType::Bool => match packet.value.as_str() {
+                "true" => GameRuleValue::new(true),
+                "false" => GameRuleValue::new(false),
+                _ => return,
+            },
+            GameRuleType::Int => match packet.value.parse::<i32>() {
+                Ok(value) if value >= rule.min_value().unwrap_or(i32::MIN) => {
+                    GameRuleValue::new(value)
+                }
+                _ => return,
+            },
+        };
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        world.set_erased_game_rule(rule, value);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleRecipeBookChangeSettingsPacket`:
+    /// stores the tab state and echoes it to other listeners, exactly as the
+    /// server does for every tab change.
+    pub fn handle_recipe_book_change_settings(&self, packet: SRecipeBookChangeSettings) {
+        let Some(book_type) = recipe_book::RecipeBookType::from_ordinal(packet.book_type) else {
+            return;
+        };
+        {
+            let mut book = self.recipe_book.lock();
+            book.set_settings(
+                book_type,
+                recipe_book::BookTypeSettings {
+                    open: packet.open,
+                    filtering: packet.filtering,
+                },
+            );
+        }
+        let settings = self.recipe_book.lock().settings_packet();
+        self.send_packet(settings);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleRecipeBookSeenRecipePacket`:
+    /// marks one recipe as seen for this player.
+    pub fn handle_recipe_book_seen_recipe(&self, packet: SRecipeBookSeenRecipe) {
+        // Vanilla `ServerGamePacketListenerImpl.handleRecipeBookSeenRecipePacket`
+        // only drops the "new" highlight; it never unlocks the recipe.
+        let mut book = self.recipe_book.lock();
+        if !book.is_highlighted(&packet.recipe) {
+            return;
+        }
+        book.remove_highlight(&packet.recipe);
+    }
 
     /// Handles the end of a client tick.
     pub fn handle_client_tick_end(&self) {
@@ -1758,7 +1825,6 @@ impl Entity for Player {
         entity: &dyn LivingEntity,
         _source: &DamageSource,
     ) -> bool {
-        log::debug!("1");
         self.award_stat(&vanilla_stat_types::ENTITY_KILLED, entity.entity_type());
         true
     }

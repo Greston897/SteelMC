@@ -8,7 +8,7 @@
 //! `update_recipes` only carries the lookup tables and the stonecutter entries;
 //! the displays themselves go out in `recipe_book_add`.
 
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use steel_protocol::packets::game::{
     CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CUpdateRecipes, RecipeBookAddEntry,
     RecipeBookTypeSettings, StonecutterEntry,
@@ -30,6 +30,20 @@ pub enum RecipeBookType {
     BlastFurnace,
     /// Smoker.
     Smoker,
+}
+
+impl RecipeBookType {
+    /// Resolves the vanilla `RecipeBookType` ordinal sent by the client.
+    #[must_use]
+    pub const fn from_ordinal(ordinal: i32) -> Option<Self> {
+        match ordinal {
+            0 => Some(Self::Crafting),
+            1 => Some(Self::Furnace),
+            2 => Some(Self::BlastFurnace),
+            3 => Some(Self::Smoker),
+            _ => None,
+        }
+    }
 }
 
 /// Open and filter state of one tab.
@@ -75,6 +89,8 @@ pub struct ServerRecipeBook {
     displays: Vec<Identifier>,
     /// Per key bookkeeping, so removals and dedup stay cheap.
     entries: FxHashMap<Identifier, RecipeBookEntry>,
+    /// Recipes the client still shows as "new", vanilla `RecipeBook.highlight`.
+    highlighted: FxHashSet<Identifier>,
     settings: FxHashMap<RecipeBookType, BookTypeSettings>,
     /// Group name to group index, assigned in first-seen order like vanilla.
     group_ids: FxHashMap<String, i32>,
@@ -102,6 +118,7 @@ impl ServerRecipeBook {
         Self {
             displays: Vec::new(),
             entries: FxHashMap::default(),
+            highlighted: FxHashSet::default(),
             settings,
             group_ids: FxHashMap::default(),
         }
@@ -169,6 +186,9 @@ impl ServerRecipeBook {
         };
         self.displays.push(key.clone());
         self.entries.insert(key.clone(), entry);
+        // Vanilla `ServerPlayer.awardRecipes` highlights every freshly unlocked
+        // recipe, which is what lights up the "new recipe" badge on the client.
+        self.highlighted.insert(key.clone());
         Some(index)
     }
 
@@ -226,8 +246,8 @@ impl ServerRecipeBook {
                     .and_then(|group| self.group_ids.get(group).copied()),
                 category: entry.category,
                 requirements: entry.requirements.clone(),
-                // Notification is only interesting for newly unlocked recipes.
-                flags: 0,
+                // Vanilla `RecipeBookAdd.Entry`: `0x01` notification, `0x02` highlight.
+                flags: u8::from(self.highlighted.contains(key)) << 1,
             });
         }
 
@@ -239,6 +259,18 @@ impl ServerRecipeBook {
             },
             update: update_recipes_packet(),
         }
+    }
+
+    /// Returns whether this recipe still carries the "new" highlight.
+    #[must_use]
+    pub fn is_highlighted(&self, key: &Identifier) -> bool {
+        self.highlighted.contains(key)
+    }
+
+    /// Vanilla `RecipeBook.removeHighlight`: clears the "new" badge after the
+    /// client reports that the player looked at the recipe.
+    pub fn remove_highlight(&mut self, key: &Identifier) {
+        self.highlighted.remove(key);
     }
 
     /// Builds the settings packet for all four tabs.

@@ -274,13 +274,10 @@ impl ScheduledPlayPacket {
             | ScheduledPlayPacketKind::PickItemFromEntity(_)
             | ScheduledPlayPacketKind::PlaceRecipe(_)
             | ScheduledPlayPacketKind::Pong(_)
-            | ScheduledPlayPacketKind::RecipeBookChangeSettings(_)
-            | ScheduledPlayPacketKind::RecipeBookSeenRecipe(_)
             | ScheduledPlayPacketKind::ResourcePack(_)
             | ScheduledPlayPacketKind::SelectTrade(_)
             | ScheduledPlayPacketKind::SetCommandBlock(_)
             | ScheduledPlayPacketKind::SetCommandMinecart(_)
-            | ScheduledPlayPacketKind::SetGameRule(_)
             | ScheduledPlayPacketKind::SetJigsawBlock(_)
             | ScheduledPlayPacketKind::SetStructureBlock(_)
             | ScheduledPlayPacketKind::SetTestBlock(_)
@@ -452,10 +449,10 @@ impl ScheduledPlayPacket {
                 log::debug!("ignoring unimplemented Pong packet: {packet:?}");
             }
             ScheduledPlayPacketKind::RecipeBookChangeSettings(packet) => {
-                log::debug!("ignoring unimplemented RecipeBookChangeSettings packet: {packet:?}");
+                player.handle_recipe_book_change_settings(packet);
             }
             ScheduledPlayPacketKind::RecipeBookSeenRecipe(packet) => {
-                log::debug!("ignoring unimplemented RecipeBookSeenRecipe packet: {packet:?}");
+                player.handle_recipe_book_seen_recipe(packet);
             }
             ScheduledPlayPacketKind::ResourcePack(packet) => {
                 log::debug!("ignoring unimplemented ResourcePack packet: {packet:?}");
@@ -469,9 +466,7 @@ impl ScheduledPlayPacket {
             ScheduledPlayPacketKind::SetCommandMinecart(packet) => {
                 log::debug!("ignoring unimplemented SetCommandMinecart packet: {packet:?}");
             }
-            ScheduledPlayPacketKind::SetGameRule(packet) => {
-                log::debug!("ignoring unimplemented SetGameRule packet: {packet:?}");
-            }
+            ScheduledPlayPacketKind::SetGameRule(packet) => player.handle_set_game_rule(packet),
             ScheduledPlayPacketKind::SetJigsawBlock(packet) => {
                 log::debug!("ignoring unimplemented SetJigsawBlock packet: {packet:?}");
             }
