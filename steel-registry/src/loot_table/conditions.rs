@@ -376,8 +376,10 @@ impl LootCondition {
                 true
             }
             LootCondition::Reference(_name) => {
-                // TODO: Implement condition registry lookup
-                // For now, return true (permissive)
+                // Datagen resolves predicate references at build time
+                // (`generate_condition` inlines `load_predicate`), so generated
+                // tables never contain one. Permissive fallback for any
+                // hand-built table.
                 true
             }
         }

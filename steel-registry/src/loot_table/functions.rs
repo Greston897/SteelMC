@@ -510,7 +510,11 @@ impl LootFunction {
                 item.count = 0;
             }
             LootFunction::Reference(_name) => {
-                // TODO: Implement function registry lookup
+                // Datagen inlines referenced functions (`steel-registry/build`
+                // resolves `function` references while generating), so no
+                // generated table carries a `Reference` function. Keeping the
+                // arm a no-op preserves the codec shape without inventing a
+                // runtime registry that nothing can populate.
             }
             LootFunction::Sequence { functions } => {
                 for cond_func in *functions {
