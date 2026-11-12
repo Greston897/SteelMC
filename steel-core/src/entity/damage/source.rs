@@ -126,13 +126,12 @@ impl DamageSource {
     }
 
     /// Whether this damage bypasses the invulnerability cooldown timer.
-    /// No vanilla damage types currently use this, but the logic exists in
-    /// `LivingEntity.hurtServer()`.
-    /// TODO: use damage type tag query once supported
-    #[expect(clippy::unused_self, reason = "this is an api function")]
+    ///
+    /// Vanilla checks `DamageTypes.BYPASSES_COOLDOWN` (a damage-type tag); the tag
+    /// is empty in vanilla data but data packs may populate it.
     #[must_use]
-    pub const fn bypasses_cooldown(&self) -> bool {
-        false
+    pub fn bypasses_cooldown(&self) -> bool {
+        self.is(&vanilla_damage_type_tags::BYPASSES_COOLDOWN)
     }
 
     /// Whether this damage scales with difficulty for the retained causing entity.
