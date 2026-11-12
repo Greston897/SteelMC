@@ -1044,13 +1044,19 @@ impl Player {
                 .component()
             }
             DeathMessageType::Default | DeathMessageType::FallVariants => {
-                // TODO: use CombatTracker for killer name items and fall variants
+                // Vanilla `DamageSource.getLocalizedDeathMessage`: the message
+                // gets the victim plus, when a living entity caused the damage,
+                // that entity's display name.
+                let mut args = vec![TextComponent::plain(self.gameprofile.name().to_owned())];
+                if let Some(killer) = source.causing_entity()
+                    && killer.as_living_entity().is_some()
+                {
+                    args.push(killer.display_name());
+                }
                 TranslatedMessage {
                     key: death_key.into(),
                     fallback: None,
-                    args: Some(Box::new([TextComponent::plain(
-                        self.gameprofile.name().to_owned(),
-                    )])),
+                    args: Some(args.into_boxed_slice()),
                 }
                 .component()
             }
