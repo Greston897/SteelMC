@@ -402,6 +402,51 @@ impl Scoreboard {
         Ok(())
     }
 
+    /// Removes an objective and every score stored against it.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the objective is missing or read-only.
+    pub fn remove_objective(&self, name: &str) -> Result<(), ScoreboardError> {
+        let mut state = self.state.write();
+        let Some(_) = state.objectives.get(name) else {
+            return Err(ScoreboardError::MissingObjective(name.to_owned()));
+        };
+        if state
+            .objectives
+            .get(name)
+            .is_some_and(|objective| objective.read_only)
+        {
+            return Err(ScoreboardError::ReadOnlyObjective(name.to_owned()));
+        }
+        state.objectives.remove(name);
+        for scores in state.scores.values_mut() {
+            scores.remove(name);
+        }
+        self.mark_dirty();
+        Ok(())
+    }
+
+    /// Removes one holder's score for an objective.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the objective is missing or read-only.
+    pub fn remove_score(
+        &self,
+        holder: &ScoreHolder,
+        objective: &ScoreboardObjective,
+    ) -> Result<(), ScoreboardError> {
+        ensure_holder_name(holder.name())?;
+        let mut state = self.state.write();
+        ensure_writable_objective(&state, objective)?;
+        if let Some(scores) = state.scores.get_mut(holder.name()) {
+            scores.remove(objective.name());
+        }
+        self.mark_dirty();
+        Ok(())
+    }
+
     /// Returns objective names that have a score for the holder.
     #[must_use]
     pub fn holder_objectives(&self, holder: &ScoreHolder) -> BTreeSet<String> {

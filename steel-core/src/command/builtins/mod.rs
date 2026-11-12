@@ -24,6 +24,7 @@ mod playsound;
 mod position;
 mod return_command;
 mod say;
+mod scoreboard;
 mod seed;
 mod setblock;
 mod setidletimeout;
@@ -98,6 +99,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(return_command::registration())?;
     builder.register(say::say_registration())?;
     builder.register(say::me_registration())?;
+    builder.register(scoreboard::registration())?;
     builder.register(seed::registration())?;
     builder.register(setblock::registration())?;
     builder.register(spawnpoint::registration())?;
