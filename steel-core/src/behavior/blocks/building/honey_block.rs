@@ -3,11 +3,12 @@ use std::sync::Arc;
 use glam::DVec3;
 use steel_macros::block_behavior;
 use steel_registry::blocks::{BlockRef, block_state_ext::BlockStateExt as _, shapes::VoxelShape};
-use steel_registry::{sound_events, vanilla_damage_types, vanilla_entities};
+use steel_registry::{
+    sound_events, vanilla_criteria_triggers, vanilla_damage_types, vanilla_entities,
+};
 use steel_utils::entity_events::EntityStatus;
 use steel_utils::{BlockLocalAabb, BlockPos, BlockStateId};
 
-use crate::entity::DEFAULT_AIR_DRAG;
 use crate::{
     behavior::{
         BlockBehavior, BlockCollisionContext, BlockPlaceContext, EntityFallDamage,
@@ -198,7 +199,11 @@ impl BlockBehavior for HoneyBlock {
         is_precise: bool,
     ) {
         if Self::is_sliding_down(pos, entity) {
-            // TODO: Award the honey-block slide advancement once advancements exist.
+            // Vanilla `HoneyBlock.stepOn`: the sliding entity is the one whose
+            // advancement progresses, so only players can earn the criterion.
+            if let Some(player) = entity.as_player() {
+                player.trigger_advancement(&vanilla_criteria_triggers::HONEY_BLOCK_SLIDE);
+            }
             Self::do_slide_movement(entity);
             Self::maybe_do_slide_effects(world, entity);
         }

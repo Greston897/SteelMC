@@ -91,6 +91,36 @@ impl PlayerAdvancement {
         result
     }
 
+    /// Vanilla `PlayerAdvancements.awardRecipes`/trigger dispatch: grants every
+    /// criterion whose trigger id matches `trigger` across all advancements.
+    ///
+    /// Returns the number of criteria that were newly granted. Vanilla keeps a
+    /// listener per advancement and per trigger; Steel walks the registry instead,
+    /// which is equivalent and avoids a second index that would have to be
+    /// invalidated whenever a data pack reloads.
+    pub fn trigger(&mut self, player: &Player, trigger: &Identifier) -> usize {
+        let mut granted = 0;
+        for advancement in REGISTRY.advancements.advancements() {
+            // Collect first: `award` mutates `self`.
+            let matching: Vec<String> = advancement
+                .criteria_ids()
+                .into_iter()
+                .filter(|criterion_id| {
+                    advancement
+                        .get_criterion(criterion_id)
+                        .is_some_and(|criterion| &criterion.id() == trigger)
+                })
+                .map(str::to_owned)
+                .collect();
+            for criterion_id in matching {
+                if self.award(player, advancement, &criterion_id) {
+                    granted += 1;
+                }
+            }
+        }
+        granted
+    }
+
     /// revoke the specified criterion for a player.
     pub fn revoke(&mut self, advancement: AdvancementRef, criterion: &str) -> bool {
         let mut result = false;

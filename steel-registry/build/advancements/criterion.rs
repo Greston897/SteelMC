@@ -15,8 +15,17 @@ pub(crate) struct CriterionJson {
 
 impl ToTokens for CriterionJson {
     fn to_tokens(&self, tokens: &mut TokenStream) {
+        // The trigger id and the raw instance are kept so the server can match a
+        // fired trigger against every advancement. Predicate evaluation inside a
+        // criterion is not modelled yet, which is why the instance is stored
+        // verbatim instead of being parsed into a typed struct.
+        let trigger = &self.trigger;
+        let instance = self.conditions.to_string();
         tokens.extend(quote! {
-            Box::new(Criterion::<ImpossibleInstance, ImpossibleTrigger>::default()) as Box<dyn AnyCriterion> // TODO when predicate are implemented
+            Box::new(SimpleCriterion::new(
+                #trigger.clone(),
+                #instance.to_owned(),
+            )) as Box<dyn AnyCriterion>
         });
     }
 }

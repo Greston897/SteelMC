@@ -350,6 +350,12 @@ impl PlayerResidenceState {
 }
 
 impl Player {
+    /// Fires an advancement trigger for this player, granting every matching
+    /// criterion. Mirrors vanilla's `CriteriaTriggers` dispatch.
+    pub fn trigger_advancement(&self, trigger: &Identifier) -> usize {
+        self.advancements.lock().trigger(self, trigger)
+    }
+
     const USING_ITEM_FLAG: i8 = 1;
     const OFF_HAND_ACTIVE_ITEM_FLAG: i8 = 1 << 1;
 

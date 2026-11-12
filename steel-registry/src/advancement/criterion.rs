@@ -1,5 +1,32 @@
 use steel_utils::Identifier;
 
+/// A criterion generated from the vanilla data pack.
+///
+/// Vanilla pairs every criterion with a typed trigger and a predicate parsed from
+/// the JSON. Steel keeps the trigger id and the raw instance so the server can
+/// match a fired trigger against every advancement at once; predicate evaluation
+/// inside a single criterion is not modelled yet.
+pub struct SimpleCriterion {
+    trigger: Identifier,
+    instance: String,
+}
+
+impl SimpleCriterion {
+    /// Creates a criterion for `trigger` from its raw JSON instance.
+    #[must_use]
+    pub const fn new(trigger: Identifier, instance: String) -> Self {
+        Self { trigger, instance }
+    }
+}
+
+impl CriterionTriggerInstance for SimpleCriterion {}
+
+impl AnyCriterion for SimpleCriterion {
+    fn id(&self) -> Identifier {
+        self.trigger.clone()
+    }
+}
+
 pub struct ImpossibleInstance;
 impl CriterionTriggerInstance for ImpossibleInstance {}
 

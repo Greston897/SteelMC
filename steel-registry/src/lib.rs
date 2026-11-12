@@ -92,6 +92,7 @@ pub mod ticket_type;
 pub mod timeline;
 pub mod trim_material;
 pub mod trim_pattern;
+pub mod vanilla_criteria_triggers;
 pub mod vanilla_ticket_types;
 pub mod villager_profession;
 pub mod villager_type;
