@@ -28,7 +28,8 @@ use crate::{
             BLOCK_STATE, ENCHANTABLE, ENCHANTMENTS, EQUIPPABLE, Equippable, ITEM_NAME,
             ItemAttributeModifiers,
             ItemEnchantments, MAX_DAMAGE, MAX_STACK_SIZE, MINIMUM_ATTACK_CHARGE,
-            BANNER_PATTERNS, FIREWORK_EXPLOSION, FIREWORKS, ItemLore, LORE,
+            BANNER_PATTERNS, CONTAINER_LOOT, FIREWORK_EXPLOSION, FIREWORKS, ItemLore, LORE,
+            SUSPICIOUS_STEW_EFFECTS, WRITABLE_BOOK_CONTENT,
             OMINOUS_BOTTLE_AMPLIFIER, OminousBottleAmplifier, PIERCING_WEAPON, POTION_CONTENTS,
             PiercingWeapon, PotionContents, REPAIRABLE, STORED_ENCHANTMENTS, TOOL, Tool,
             UNBREAKABLE, WEAPON, WRITTEN_BOOK_CONTENT, Weapon,
@@ -773,18 +774,85 @@ impl ItemStack {
     }
 
     /// Enchants this item as if using an enchanting table at the given level.
-    pub const fn enchant_with_levels<R: rand::Rng>(
+    ///
+    /// Vanilla `EnchantWithLevelsFunction`: run the enchanting-table algorithm
+    /// (level jitter, then weighted picks from the eligible enchantments whose
+    /// cost range covers the level) and apply the result.
+    pub fn enchant_with_levels<R: rand::Rng>(
         &mut self,
-        _level: i32,
-        _options: &crate::loot_table::EnchantmentOptions,
-        _rng: &mut R,
+        level: i32,
+        options: &crate::loot_table::EnchantmentOptions,
+        rng: &mut R,
     ) {
-        // TODO: Implement when enchantment registry and system are ready
-        // This simulates the enchanting table algorithm:
-        // 1. Calculate modified level based on item enchantability
-        // 2. Generate list of possible enchantments for that level
-        // 3. Filter by options (tag or list)
-        // 4. Apply enchantments with proper weights
+        if level <= 0 {
+            return;
+        }
+        let item = self.item();
+        let candidates: Vec<&'static crate::enchantment::Enchantment> = match options {
+            crate::loot_table::EnchantmentOptions::Tag(tag) => {
+                REGISTRY.enchantments.get_tag(tag).unwrap_or_default()
+            }
+            crate::loot_table::EnchantmentOptions::List(keys) => keys
+                .iter()
+                .filter_map(|key| REGISTRY.enchantments.by_key(key))
+                .collect(),
+        };
+        let eligible: Vec<&'static crate::enchantment::Enchantment> = candidates
+            .into_iter()
+            .filter(|enchantment| REGISTRY.items.is_in_tag(item, &enchantment.supported_items))
+            .collect();
+        if eligible.is_empty() {
+            return;
+        }
+
+        // Vanilla `EnchantmentHelper`: the level is jittered once, then the
+        // table repeatedly picks eligible enchantments and halves the level.
+        let jitter = rng.random_range(0..(level / 4 + 1)) as i32;
+        let mut modified_level = level + jitter;
+
+        let mut chosen: Vec<(Identifier, u32)> = Vec::new();
+        while chosen.len() < 3 {
+            let pool: Vec<&'static crate::enchantment::Enchantment> = eligible
+                .iter()
+                .copied()
+                .filter(|enchantment| {
+                    enchantment.min_cost.calculate(1) <= modified_level
+                        && modified_level <= enchantment.max_cost.calculate(1)
+                        && !chosen.iter().any(|(key, _)| *key == enchantment.key)
+                })
+                .collect();
+            let total_weight: u32 = pool.iter().map(|enchantment| enchantment.weight).sum();
+            if pool.is_empty() || total_weight == 0 {
+                break;
+            }
+            let mut roll = rng.random_range(0..total_weight);
+            let pick = pool
+                .iter()
+                .find(|enchantment| {
+                    if roll < enchantment.weight {
+                        true
+                    } else {
+                        roll -= enchantment.weight;
+                        false
+                    }
+                })
+                .copied()
+                .unwrap_or(pool[0]);
+            let pick_level = if pick.max_level <= 1 {
+                1
+            } else {
+                rng.random_range(1..=pick.max_level)
+            };
+            chosen.push((pick.key.clone(), pick_level));
+            modified_level /= 2;
+            if modified_level <= 0 {
+                break;
+            }
+        }
+
+        if !chosen.is_empty() {
+            self.set_enchantments(&chosen, false);
+        }
     }
 
     /// Copies components from a source (block entity, attacker, etc.) to this item.
@@ -920,14 +988,25 @@ impl ItemStack {
     }
 
     /// Sets the suspicious stew effects for this item.
-    pub const fn set_stew_effects<R: rand::Rng>(
+    ///
+    /// Vanilla `SetStewEffectFunction` resolves each effect type and rolls its
+    /// duration through the effect's number provider.
+    pub fn set_stew_effects<R: rand::Rng>(
         &mut self,
-        _effects: &[crate::loot_table::StewEffect],
-        _rng: &mut R,
+        effects: &[crate::loot_table::StewEffect],
+        rng: &mut R,
     ) {
-        // TODO: Implement stew effect setting
-        // Set the SUSPICIOUS_STEW_EFFECTS component
-        // Duration is determined by each effect's NumberProvider
+        use crate::data_components::components::{SuspiciousStewEffect, SuspiciousStewEffects};
+
+        let mut resolved = Vec::with_capacity(effects.len());
+        for effect in effects {
+            let Some(effect_type) = REGISTRY.mob_effects.by_key(&effect.effect_type) else {
+                continue;
+            };
+            let duration = effect.duration.get_simple(rng) as i32;
+            resolved.push(SuspiciousStewEffect::new(effect_type, duration));
+        }
+        self.set(SUSPICIOUS_STEW_EFFECTS, SuspiciousStewEffects::new(resolved));
     }
 
     pub fn set_enchantments(&mut self, enchantments: &[(Identifier, u32)], add: bool) {
@@ -1032,20 +1111,65 @@ impl ItemStack {
     }
 
     /// Sets the container's loot table reference.
-    pub const fn set_loot_table(&mut self, _loot_table: &Identifier, _seed: Option<i64>) {
-        // TODO: Implement loot table reference setting
-        // Set CONTAINER_LOOT component with table reference and seed
+    ///
+    /// Vanilla `SetLootTableFunction` stores the table and a seed; an omitted
+    /// seed is randomised.
+    pub fn set_loot_table(&mut self, loot_table: &Identifier, seed: Option<i64>) {
+        use crate::data_components::components::SeededContainerLoot;
+        let seed = seed.unwrap_or_else(|| rand::rng().random::<i64>());
+        self.set(
+            CONTAINER_LOOT,
+            SeededContainerLoot::new(loot_table.clone(), seed),
+        );
     }
 
     /// Sets attribute modifiers on this item.
-    pub const fn set_attributes<R: rand::Rng>(
+    ///
+    /// Vanilla `SetAttributesFunction` resolves each modifier's attribute and
+    /// rolls its amount; `replace` clears existing modifiers first.
+    pub fn set_attributes<R: rand::Rng>(
         &mut self,
-        _modifiers: &[crate::loot_table::AttributeModifier],
-        _replace: bool,
-        _rng: &mut R,
+        modifiers: &[crate::loot_table::AttributeModifier],
+        replace: bool,
+        rng: &mut R,
     ) {
-        // TODO: Implement attribute modifier setting
-        // Set ATTRIBUTE_MODIFIERS component
+        use crate::data_components::components::{
+            ItemAttributeModifierDisplay, ItemAttributeModifierEntry, ItemAttributeModifiers,
+        };
+        use crate::loot_table::AttributeOperation;
+
+        let mut current = if replace {
+            ItemAttributeModifiers::empty()
+        } else {
+            self.get(ATTRIBUTE_MODIFIERS)
+                .cloned()
+                .unwrap_or_else(ItemAttributeModifiers::empty)
+        };
+        for modifier in modifiers {
+            let Some(attribute) = REGISTRY.attributes.by_key(&modifier.attribute) else {
+                continue;
+            };
+            let operation = match modifier.operation {
+                AttributeOperation::AddValue => {
+                    crate::attribute::AttributeModifierOperation::AddValue
+                }
+                AttributeOperation::AddMultipliedBase => {
+                    crate::attribute::AttributeModifierOperation::AddMultipliedBase
+                }
+                AttributeOperation::AddMultipliedTotal => {
+                    crate::attribute::AttributeModifierOperation::AddMultipliedTotal
+                }
+            };
+            current.modifiers.push(ItemAttributeModifierEntry {
+                attribute,
+                id: modifier.id.clone(),
+                amount: f64::from(modifier.amount.get_simple(rng)),
+                operation,
+                slot: modifier.slot,
+                display: ItemAttributeModifierDisplay::Default,
+            });
+        }
+        self.set(ATTRIBUTE_MODIFIERS, current);
     }
 
     /// Fills a player head with texture from an entity.
@@ -1158,13 +1282,26 @@ impl ItemStack {
     }
 
     /// Sets writable book page contents.
-    pub const fn set_writable_book_pages(
+    ///
+    /// Vanilla `SetWritableBookPagesFunction` applies the list operation to the
+    /// existing pages and stores them without filtering.
+    pub fn set_writable_book_pages(
         &mut self,
-        _pages: &[&str],
-        _mode: crate::loot_table::ListOperation,
+        pages: &[&str],
+        mode: crate::loot_table::ListOperation,
     ) {
-        // TODO: Implement writable book pages setting
-        // Set WRITABLE_BOOK_CONTENT pages
+        use crate::data_components::components::{Filterable, WritableBookContent};
+
+        let mut existing: Vec<Filterable<String>> = self
+            .get(WRITABLE_BOOK_CONTENT)
+            .map(|content| content.pages().to_vec())
+            .unwrap_or_default();
+        apply_list_operation(&mut existing, pages, mode, |page| {
+            Filterable::pass_through((*page).to_owned())
+        });
+        if let Ok(content) = WritableBookContent::new(existing) {
+            self.set(WRITABLE_BOOK_CONTENT, content);
+        }
     }
 
     /// Runs vanilla `ToggleTooltips`: each boolean says whether the component is shown.
