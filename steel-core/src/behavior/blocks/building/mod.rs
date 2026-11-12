@@ -1,4 +1,7 @@
 mod amethyst_block;
+mod simple_marker_blocks;
+mod infested_block;
+mod technical_blocks;
 mod amethyst_cluster;
 mod bar_block;
 mod barrier_block;
@@ -44,6 +47,9 @@ mod web_block;
 mod wet_sponge_block;
 
 pub use amethyst_block::*;
+pub use simple_marker_blocks::*;
+pub use infested_block::*;
+pub use technical_blocks::*;
 pub use amethyst_cluster::*;
 pub use bar_block::*;
 pub use barrier_block::*;

@@ -1,4 +1,5 @@
 mod anvil_block;
+mod block_entity_blocks;
 mod barrel_block;
 mod beacon_block;
 mod beehive_block;
@@ -11,8 +12,10 @@ mod ender_chest_block;
 mod furnace_block;
 mod grindstone_block;
 mod shulker_box_block;
+mod station_blocks;
 
 pub use anvil_block::*;
+pub use block_entity_blocks::*;
 pub use barrel_block::*;
 pub use beacon_block::*;
 pub use beehive_block::*;
@@ -25,3 +28,4 @@ pub use ender_chest_block::*;
 pub use furnace_block::*;
 pub use grindstone_block::*;
 pub use shulker_box_block::*;
+pub use station_blocks::*;

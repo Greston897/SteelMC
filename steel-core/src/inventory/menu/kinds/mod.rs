@@ -12,6 +12,7 @@ mod furnace_menu;
 mod grindstone_menu;
 mod inventory_menu;
 mod shulker_box_menu;
+mod station_menu;
 
 pub use anvil_menu::{AnvilKind, anvil};
 pub use basic_menu::BasicKind;
@@ -25,3 +26,4 @@ pub use furnace_menu::{FurnaceMenuKind, furnace_menu};
 pub use grindstone_menu::{GrindstoneKind, grindstone};
 pub use inventory_menu::{INVENTORY_MENU_CONTAINER_ID, InventoryKind, inventory_menu};
 pub use shulker_box_menu::{ShulkerBoxKind, shulker_box};
+pub use station_menu::{StationKind, cartography_table, loom, smithing, stonecutter};
