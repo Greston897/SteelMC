@@ -8,6 +8,7 @@
 
 pub mod behavior;
 pub mod block_state_ext;
+pub mod block_state_nbt;
 pub mod properties;
 pub mod shapes;
 

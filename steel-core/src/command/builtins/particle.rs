@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use glam::DVec3;
+use simdnbt::owned::NbtCompound;
 use steel_registry::particle_type::ParticleData;
 use steel_registry::{REGISTRY, RegistryExt as _};
 use steel_utils::Identifier;
@@ -20,28 +21,43 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
     CommandRegistration::new(Identifier::vanilla_static("particle"), |_| command())
 }
 
-fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    literal("particle").then(
-        argument("name", ArgumentType::word()).then(
-            argument("pos", SteelArgumentType::vec3(false))
+/// Argument trees share the trailing `<pos> <delta> <speed> <count> [viewers]
+/// [force]` shape, with and without the vanilla `[payload]` argument.
+fn position_tree() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
+    argument("pos", SteelArgumentType::vec3(false))
+        .then(
+            argument("delta", SteelArgumentType::vec3(false))
                 .then(
-                    argument("delta", SteelArgumentType::vec3(false))
+                    argument("speed", SteelArgumentType::float(0.0, f32::MAX))
                         .then(
-                            argument("speed", SteelArgumentType::float(0.0, f32::MAX))
-                                .then(
-                                    argument("count", ArgumentType::integer(0, i32::MAX))
-                                        .executes(|context| emit(context, None)),
-                                )
+                            argument("count", ArgumentType::integer(0, i32::MAX))
                                 .executes(|context| emit(context, None)),
                         )
                         .executes(|context| emit(context, None)),
                 )
                 .executes(|context| emit(context, None)),
-        ),
+        )
+        .executes(|context| emit(context, None))
+}
+
+fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
+    literal("particle").then(
+        argument("name", ArgumentType::word())
+            // Vanilla `particle <name> <pos> ...` for types without options, and
+            // `particle <name> <payload> <pos> ...` for the configurable ones.
+            .then(position_tree())
+            .then(
+                argument("payload", SteelArgumentType::compound())
+                    .then(position_tree()),
+            ),
     )
 }
 
-fn particle_for(name: &str) -> Option<ParticleData> {
+/// Resolves the particle, decoding an optional vanilla `<payload>` compound.
+///
+/// Vanilla requires the payload for option-carrying types (`dust`, `block`,
+/// `item`, `entity_effect`, ...) and rejects it for the plain ones.
+fn particle_for(name: &str, payload: Option<&NbtCompound>) -> Option<ParticleData> {
     let key = if name == "dust" {
         Identifier::vanilla("dust".to_owned())
     } else if name.contains(':') {
@@ -53,7 +69,10 @@ fn particle_for(name: &str) -> Option<ParticleData> {
         Identifier::vanilla(name.to_owned())
     };
     let particle_type = REGISTRY.particle_types.by_key(&key)?;
-    Some(ParticleData::simple(particle_type))
+    let Some(payload) = payload else {
+        return Some(ParticleData::simple(particle_type));
+    };
+    ParticleData::from_nbt_compound(payload)
 }
 
 fn emit(
@@ -61,7 +80,8 @@ fn emit(
     _viewer: Option<&Arc<crate::world::World>>,
 ) -> Result<i32, CommandSyntaxError> {
     let name = context.string("name")?;
-    let Some(particle) = particle_for(name) else {
+    let payload = context.compound("payload").ok();
+    let Some(particle) = particle_for(name, payload) else {
         return Err(CommandSyntaxError::dynamic(format!(
             "Unknown particle '{name}'"
         )));

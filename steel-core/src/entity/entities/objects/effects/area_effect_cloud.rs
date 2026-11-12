@@ -58,6 +58,8 @@ struct AreaEffectCloudState {
     radius_on_use: f32,
     radius_per_tick: f32,
     owner: Option<EntityReference>,
+    /// Vanilla `custom_particle`: overrides the potion-derived particle.
+    custom_particle: Option<ParticleData>,
 }
 
 impl AreaEffectCloudState {
@@ -73,14 +75,16 @@ impl AreaEffectCloudState {
             radius_on_use: 0.0,
             radius_per_tick: 0.0,
             owner: None,
+            custom_particle: None,
         }
     }
 }
 
 /// An area effect cloud, spawned by lingering potions.
-// TODO: Persist `custom_particle` once particle options have an NBT codec. Vanilla
-// only sets it for dragon breath and commands; potion clouds always derive their
-// particle from the potion color.
+///
+/// Vanilla overrides the derived potion particle through `custom_particle`, which
+/// dragon breath and `/summon`/`/data` set; the payload round-trips through the
+/// shared `ParticleData` NBT codec.
 #[entity_behavior(class = "AreaEffectCloud")]
 pub struct AreaEffectCloudEntity {
     base: EntityBase,
@@ -155,11 +159,26 @@ impl AreaEffectCloudEntity {
     }
 
     /// Sets the cloud particle, mirroring vanilla `AreaEffectCloud.setParticle`.
+    ///
+    /// This is the runtime value; `custom_particle` persistence is handled
+    /// separately because a potion update overwrites the synced particle.
     pub fn set_particle(&self, particle: ParticleData) {
         self.entity_data.lock().particle.set(particle);
     }
 
+    /// Returns the override particle, if one was loaded from `custom_particle`.
+    #[must_use]
+    pub fn custom_particle(&self) -> Option<ParticleData> {
+        self.state.lock().custom_particle.clone()
+    }
+
+    /// Vanilla `updateParticle`: a `custom_particle` override wins over the
+    /// potion-derived `entity_effect` color.
     fn update_particle(&self, potion_color: i32) {
+        if let Some(custom) = self.custom_particle() {
+            self.entity_data.lock().particle.set(custom);
+            return;
+        }
         let color = RgbColor::new(potion_color).with_alpha(u8::MAX);
         self.entity_data.lock().particle.set(ParticleData::new(
             &vanilla_particle_types::ENTITY_EFFECT,
@@ -433,6 +452,9 @@ impl Entity for AreaEffectCloudEntity {
         if state.potion_duration_scale != DEFAULT_POTION_DURATION_SCALE {
             nbt.insert("potion_duration_scale", state.potion_duration_scale);
         }
+        if let Some(particle) = state.custom_particle.clone() {
+            nbt.insert("custom_particle", particle.to_nbt_tag());
+        }
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
@@ -452,12 +474,20 @@ impl Entity for AreaEffectCloudEntity {
                 .float_value("potion_duration_scale")
                 .unwrap_or(DEFAULT_POTION_DURATION_SCALE);
         }
+        let custom_particle = nbt
+            .get("custom_particle")
+            .and_then(ParticleData::from_nbt_tag);
         self.set_radius(nbt.float_value("Radius").unwrap_or(DEFAULT_RADIUS));
         self.set_potion_contents(
             nbt.get("potion_contents")
                 .and_then(PotionContents::from_nbt_tag)
                 .unwrap_or_else(PotionContents::empty),
         );
+        // Vanilla applies `custom_particle` last so it wins over the potion color.
+        if let Some(particle) = custom_particle {
+            self.state.lock().custom_particle = Some(particle.clone());
+            self.set_particle(particle);
+        }
     }
 }
 
