@@ -248,7 +248,6 @@ impl SheepEntity {
     /// colors, falling back to a random parent when no mix recipe exists.
     #[must_use]
     pub fn get_mixed_color(color1: DyeColor, color2: DyeColor) -> DyeColor {
-        // TODO: add this function to DyeColor
         Self::find_color_mix_in_recipes(color1, color2).unwrap_or_else(|| {
             if rand::random::<bool>() {
                 color1
@@ -259,45 +258,20 @@ impl SheepEntity {
     }
 
     fn find_color_mix_in_recipes(color1: DyeColor, color2: DyeColor) -> Option<DyeColor> {
-        // TODO: add this function to DyeColor
-        let dye1: Vec<_> = REGISTRY
-            .items
-            .iter()
-            .filter_map(|(_, item)| (item.components.get(DYE) == Some(color1)).then_some(item))
-            .collect();
-        if dye1.is_empty() {
-            return None;
-        }
-        let dye2: Vec<_> = REGISTRY
-            .items
-            .iter()
-            .filter_map(|(_, item)| (item.components.get(DYE) == Some(color2)).then_some(item))
-            .collect();
-        if dye2.is_empty() {
-            return None;
-        }
-
-        for dye1_item in &dye1 {
-            for dye2_item in &dye2 {
-                let input = CraftingInput::new(
-                    2,
-                    1,
-                    vec![ItemStack::new(dye1_item), ItemStack::new(dye2_item)],
-                );
-                let Some(recipe) = REGISTRY
-                    .recipes
-                    .find_match(&vanilla_recipe_types::CRAFTING, &input)
-                else {
-                    continue;
-                };
-                if let Some(color) = recipe_manager::assemble_recipe(recipe, &input)
-                    .get(DYE)
-                    .copied()
-                {
-                    return Some(color);
-                }
-            }
-        }
+        // Vanilla builds the 2x1 grid from the two colors' dye items, so no
+        // registry scan is needed to find them.
+        let input = CraftingInput::new(
+            2,
+            1,
+            vec![
+                ItemStack::new(color1.dye_item()),
+                ItemStack::new(color2.dye_item()),
+            ],
+        );
+        let recipe = REGISTRY
+            .recipes
+            .find_match(&vanilla_recipe_types::CRAFTING, &input)?;
+        recipe_manager::assemble_recipe(recipe, &input).get(DYE).copied()
 
         None
     }

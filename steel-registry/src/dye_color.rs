@@ -204,6 +204,32 @@ impl DyeColor {
         })
     }
 
+    /// Returns the vanilla dye item for this color.
+    ///
+    /// Vanilla `DyeColor.getDyeItem` maps each color to its `*_dye` item; the
+    /// mapping is data-driven here so callers never hand-roll the lookup.
+    #[must_use]
+    pub const fn dye_item(self) -> crate::items::ItemRef {
+        match self {
+            Self::White => &crate::vanilla_items::WHITE_DYE,
+            Self::Orange => &crate::vanilla_items::ORANGE_DYE,
+            Self::Magenta => &crate::vanilla_items::MAGENTA_DYE,
+            Self::LightBlue => &crate::vanilla_items::LIGHT_BLUE_DYE,
+            Self::Yellow => &crate::vanilla_items::YELLOW_DYE,
+            Self::Lime => &crate::vanilla_items::LIME_DYE,
+            Self::Pink => &crate::vanilla_items::PINK_DYE,
+            Self::Gray => &crate::vanilla_items::GRAY_DYE,
+            Self::LightGray => &crate::vanilla_items::LIGHT_GRAY_DYE,
+            Self::Cyan => &crate::vanilla_items::CYAN_DYE,
+            Self::Purple => &crate::vanilla_items::PURPLE_DYE,
+            Self::Blue => &crate::vanilla_items::BLUE_DYE,
+            Self::Brown => &crate::vanilla_items::BROWN_DYE,
+            Self::Green => &crate::vanilla_items::GREEN_DYE,
+            Self::Red => &crate::vanilla_items::RED_DYE,
+            Self::Black => &crate::vanilla_items::BLACK_DYE,
+        }
+    }
+
     #[must_use]
     pub fn by_firework_color(color: i32) -> Option<Self> {
         Self::VALUES
