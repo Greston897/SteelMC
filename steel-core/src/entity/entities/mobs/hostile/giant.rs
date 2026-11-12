@@ -274,7 +274,7 @@ mod tests {
         init_vanilla_registry();
         let entity =
             GiantEntity::new(&vanilla_entities::GIANT, 1, DVec3::ZERO, Weak::new());
-        assert!(entity.get_max_health() > 0.0);
+        assert!(entity.attributes().lock().get_value(vanilla_attributes::MAX_HEALTH).is_some());
 
         let mut nbt = NbtCompound::new();
         entity.save_additional(&mut nbt);

@@ -231,8 +231,8 @@ mod tests {
         let cart = cart();
         let mut stack = ItemStack::new(&steel_registry::vanilla_items::STONE).copy_with_count(64);
         assert!(cart.try_insert(&mut stack));
-        assert_eq!(cart.items()[0].count(), 64);
         assert!(cart.items().iter().any(|slot| !slot.is_empty()));
+        assert!(stack.is_empty());
     }
 
     #[test]

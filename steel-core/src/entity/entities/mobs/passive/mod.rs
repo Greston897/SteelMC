@@ -1,5 +1,6 @@
 //! Passive entity implementations.
 /// Those mobs are passive creatures that run away when attacked by a player.
+mod allay;
 mod axolotl;
 mod bee;
 mod cat;
@@ -23,6 +24,7 @@ mod squid;
 mod strider;
 mod turtle;
 
+pub use allay::AllayEntity;
 pub use axolotl::AxolotlEntity;
 pub use bee::BeeEntity;
 pub use cat::{CatEntity, flags as cat_flags};

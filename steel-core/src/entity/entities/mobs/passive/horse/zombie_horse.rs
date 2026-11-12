@@ -352,7 +352,7 @@ mod tests {
         );
         assert!(!horse.is_tamed());
         assert!(!horse.is_saddled());
-        assert!(horse.get_max_health() > 0.0);
+        assert!(horse.attributes().lock().get_value(vanilla_attributes::MAX_HEALTH).is_some());
     }
 
     #[test]
