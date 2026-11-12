@@ -17,6 +17,7 @@ use text_components::TextComponent;
 
 use crate::behavior::InventoryAccess;
 use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
+use crate::block_entity::BlockEntityTicker;
 use crate::behavior::context::{BlockHitResult, BlockPlaceContext, InteractionResult};
 use crate::block_entity::BLOCK_ENTITIES;
 use crate::inventory::container::calculate_redstone_signal_from_container;
@@ -83,6 +84,21 @@ impl BlockBehavior for HopperBlock {
         _direction: Direction,
     ) -> i32 {
         container_signal(world, pos)
+    }
+
+    fn get_block_entity_ticker(
+        &self,
+        _world: &Arc<World>,
+        _state: BlockStateId,
+        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+    ) -> Option<BlockEntityTicker> {
+        // Vanilla `HopperBlock.getTicker`: enabled hoppers tick, disabled ones do
+        // not. The state is read per tick by the world, so the enabled gate is
+        // expressed by the ticker always being present for the hopper type.
+        BlockEntityTicker::for_matching_entity_tick(
+            block_entity_type,
+            &vanilla_block_entity_types::HOPPER,
+        )
     }
 }
 
