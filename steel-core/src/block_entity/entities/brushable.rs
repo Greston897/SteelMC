@@ -9,6 +9,7 @@ use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as Nbt
 use simdnbt::owned::NbtCompound;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::BlockStateProperties;
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::loot_table::{LootContext, LootTableRef};
 use steel_registry::{
@@ -226,7 +227,11 @@ impl BrushableBlockEntity {
     ) {
         let loot = match loot_table {
             Some(table) => {
-                // TODO: Trigger CriteriaTriggers.GENERATE_LOOT once criteria triggers exist.
+                // Vanilla `BrushableBlockEntity` fires `player_generates_container_loot`
+                // for the brushing player when the loot table is rolled.
+                player.trigger_advancement(
+                    &vanilla_criteria_triggers::PLAYER_GENERATES_CONTAINER_LOOT,
+                );
                 let equipment = living_loot_equipment(player);
                 let mut ctx = LootContext::new(rng)
                     .with_luck(player.get_luck())

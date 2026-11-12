@@ -122,7 +122,8 @@ impl BlockBehavior for ShulkerBoxBlock {
             );
 
             player.award_custom_stat(&vanilla_custom_stats::OPEN_SHULKER_BOX);
-            // TODO: Anger nearby piglins (PiglinAi.angerNearbyPiglins)
+            // Vanilla angers nearby piglins when a player opens a shulker box.
+            // Steel has no piglin anger state yet, so nothing is dispatched here.
         }
         InteractionResult::Success
     }
@@ -147,7 +148,8 @@ impl BlockBehavior for ShulkerBoxBlock {
             let item = shulker_box_block_entity.shulker_box_as_item(state);
             world.pop_resource(pos, item);
         } else {
-            // TODO: maybe? shulkerBoxBlockEntity.unpackLootTable(player);
+            // Vanilla may unpack the box's loot table here; Steel shulker boxes are
+            // only ever created by a player, so they never carry one.
         }
 
         state

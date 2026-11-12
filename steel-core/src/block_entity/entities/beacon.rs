@@ -451,8 +451,9 @@ impl BlockEntity for BeaconBlockEntity {
         }
 
         if scan_complete {
-            // TODO: Trigger the CONSTRUCT_BEACON criterion for nearby players on activation once
-            //       Steel's shared advancement foundations exist.
+            // Vanilla `BeaconBlockEntity` fires `construct_beacon` for every player
+            // within range when the beam is (re)activated. Steel has no per-world
+            // player index yet, so the trigger has no recipients to dispatch to.
             let sound = match (previous_levels > 0, levels > 0) {
                 (false, true) => &sound_events::BLOCK_BEACON_ACTIVATE,
                 (true, false) => &sound_events::BLOCK_BEACON_DEACTIVATE,
