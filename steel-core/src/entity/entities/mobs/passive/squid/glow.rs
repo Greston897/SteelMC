@@ -197,6 +197,8 @@ impl GlowSquidEntity {
 
         let mut entity_data = GlowSquidEntityData::new();
         living_base.initialize_synced_data(&mut entity_data);
+        // Vanilla `GlowSquid` starts with the full dark counter.
+        entity_data.dark_ticks_remaining.set(GLOW_SQUID_DARK_TICKS_DEFAULT);
 
         {
             let mut goal_selector = mob_base.goal_selector().lock();
