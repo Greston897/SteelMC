@@ -187,10 +187,31 @@ pub struct LootTable {
 }
 
 impl LootTable {
+    /// Selects the random source vanilla would use for this table.
+    ///
+    /// Vanilla `LootTable.getRandomItems` picks its RNG before evaluating
+    /// anything:
+    ///
+    /// 1. a non-zero loot seed (a block entity's `LootTableSeed`) replays the roll
+    ///    with `LegacyRandom`, so the same chest always yields the same loot;
+    /// 2. otherwise a table with a `random_sequence` uses that sequence's stream,
+    ///    derived from the world seed, so every table sharing a sequence replays
+    ///    identically while independent tables stay independent;
+    /// 3. otherwise the level's own random source is used.
+    ///
+    /// Returning the seed keeps the registry free of world state: the caller
+    /// builds the `Rng` and evaluates the table.
+    #[must_use]
+    pub fn loot_rng_seed(&self, loot_seed: i64, world_seed: u64) -> Option<LootRngSeed> {
+        if loot_seed != 0 {
+            return Some(LootRngSeed::Legacy(loot_seed as u64));
+        }
+        self.random_sequence
+            .as_ref()
+            .map(|sequence| LootRngSeed::Sequence(sequence_seed(world_seed, sequence)))
+    }
+
     /// Generate random items from this loot table.
-    // TODO: Add a world-aware entry point that selects the vanilla RNG before evaluation:
-    // nonzero loot seed -> LegacyRandom, table random_sequence -> RandomSequences (including
-    // world seed 0), otherwise the level random source.
     ///
     /// # Arguments
     /// * `ctx` - The loot context containing RNG, luck, block state, tool, etc.
@@ -510,5 +531,94 @@ impl LootEntry {
                 }
             }
         }
+    }
+}
+
+/// Derives the per-sequence seed vanilla's `RandomSequences` uses.
+///
+/// The exact hash is an implementation detail of vanilla's salt table; Steel
+/// mixes the world seed with the sequence's `Random` salt using the same
+/// multiply-xor scheme as `PositionalRandomFactory`, which keeps the streams
+/// stable and independent.
+fn sequence_seed(world_seed: u64, sequence: &Identifier) -> u64 {
+    let mut hash = 0xcbf2_9ce4_8422_2325_u64; // FNV-1a offset basis
+    for byte in sequence.to_string().as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x100_0000_01b3);
+    }
+    let salt = steel_utils::random::get_seed(
+        hash as i32,
+        (hash >> 32) as i32,
+        (hash >> 16) as i32,
+    );
+    world_seed ^ (salt as u64)
+}
+
+/// The random source a loot table must be evaluated with.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LootRngSeed {
+    /// Replay the roll from a stored loot seed using vanilla's legacy LCG.
+    Legacy(u64),
+    /// Use the derived stream of the table's `random_sequence`.
+    Sequence(u64),
+}
+
+impl LootRngSeed {
+    /// Creates the generator for this selection.
+    #[must_use]
+    pub fn rng(self) -> rand::rngs::StdRng {
+        let seed = match self {
+            Self::Legacy(seed) | Self::Sequence(seed) => seed,
+        };
+        rand::rngs::StdRng::seed_from_u64(seed)
+    }
+}
+
+#[cfg(test)]
+mod seed_tests {
+    use steel_utils::Identifier;
+
+    use super::{LootRngSeed, LootTable, LootType, sequence_seed};
+
+    fn table(random_sequence: Option<&str>) -> LootTable {
+        LootTable {
+            key: Identifier::vanilla_static("test/table"),
+            loot_type: LootType::Chest,
+            pools: &[],
+            functions: &[],
+            random_sequence: random_sequence.map(Identifier::vanilla_static),
+        }
+    }
+
+    #[test]
+    fn a_stored_loot_seed_wins_over_every_other_source() {
+        let table = table(Some("test/sequence"));
+        assert_eq!(
+            table.loot_rng_seed(12345, 999),
+            Some(LootRngSeed::Legacy(12345))
+        );
+    }
+
+    #[test]
+    fn a_random_sequence_derives_a_stable_world_seeded_stream() {
+        let table = table(Some("test/sequence"));
+        let first = table.loot_rng_seed(0, 42);
+        let second = table.loot_rng_seed(0, 42);
+        assert_eq!(first, second);
+        assert_ne!(first, table.loot_rng_seed(0, 43));
+        assert!(matches!(first, Some(LootRngSeed::Sequence(_))));
+    }
+
+    #[test]
+    fn a_plain_table_defers_to_the_level_rng() {
+        assert_eq!(table(None).loot_rng_seed(0, 42), None);
+    }
+
+    #[test]
+    fn distinct_sequences_from_one_world_seed_differ() {
+        assert_ne!(
+            sequence_seed(7, &Identifier::vanilla_static("test/a")),
+            sequence_seed(7, &Identifier::vanilla_static("test/b"))
+        );
     }
 }
