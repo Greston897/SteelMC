@@ -921,7 +921,12 @@ impl Player {
             }
         }
 
-        // TODO: reset player noActionTime and remove shoulder entities.
+        // Vanilla `Player.hurtServer` clears the idle timer so mobs stop
+        // treating a freshly damaged player as inactive.
+        self.set_no_action_time(0);
+        // Vanilla also drops both shoulder entities here; Steel has no
+        // shoulder-riding entities (parrots) yet, so there is nothing to
+        // detach.
         if self.get_health() <= 0.0 {
             return false;
         }
@@ -1952,7 +1957,8 @@ impl LivingEntity for Player {
         self.living_base.decrement_invulnerable_time();
         self.tick_mob_effects();
         self.tick_active_item_use(entity);
-        // TODO: Tick stats even when the player has been dead for more than 20 ticks.
+        // Vanilla `Player.tick` runs the stat tick before the death branch, so
+        // `play_time` keeps counting while dead.
         self.tick_stats();
 
         if self.get_health() <= 0.0 {
