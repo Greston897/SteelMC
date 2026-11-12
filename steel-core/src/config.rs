@@ -82,6 +82,9 @@ pub struct RuntimeConfig {
     pub favicon: String,
     /// Whether to enforce secure chat.
     pub enforce_secure_chat: bool,
+    /// Whether `defaultgamemode` forces the new mode onto every online player
+    /// (vanilla `force-gamemode`).
+    pub force_gamemode: bool,
     /// Vanilla chat spam threshold window in seconds
     pub chat_spam_threshold_seconds: i32,
     /// Vanilla command spam threshold window in seconds
@@ -117,6 +120,7 @@ impl Default for RuntimeConfig {
             use_favicon: true,
             favicon: "config/favicon.png".to_owned(),
             enforce_secure_chat: false,
+            force_gamemode: false,
             chat_spam_threshold_seconds: DEFAULT_SPAM_THRESHOLD_SECONDS,
             command_spam_threshold_seconds: DEFAULT_SPAM_THRESHOLD_SECONDS,
             compression: Some(CompressionInfo::default()),
