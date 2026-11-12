@@ -39,6 +39,7 @@ mod setblock;
 mod setidletimeout;
 mod setworldspawn;
 mod spawnpoint;
+mod spreadplayers;
 mod stop;
 mod stopsound;
 mod summon;
@@ -120,6 +121,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(seed::registration())?;
     builder.register(setblock::registration())?;
     builder.register(spawnpoint::registration())?;
+    builder.register(spreadplayers::registration())?;
     builder.register(setidletimeout::registration())?;
     builder.register(setworldspawn::registration())?;
     builder.register(stop::registration())?;
