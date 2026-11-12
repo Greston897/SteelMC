@@ -208,6 +208,23 @@ pub fn init_block_entities() {
             |level, pos, state| Arc::new(ChestBlockEntity::new_trapped(level, pos, state)),
         );
 
+        registry.register(
+            &vanilla_block_entity_types::BREWING_STAND,
+            |level, pos, state| Arc::new(BrewingStandBlockEntity::new(level, pos, state)),
+        );
+
+        registry.register(&vanilla_block_entity_types::HOPPER, |level, pos, state| {
+            Arc::new(HopperBlockEntity::new(level, pos, state))
+        });
+
+        registry.register(&vanilla_block_entity_types::DISPENSER, |level, pos, state| {
+            Arc::new(DispenserBlockEntity::new(level, pos, state))
+        });
+
+        registry.register(&vanilla_block_entity_types::DROPPER, |level, pos, state| {
+            Arc::new(DispenserBlockEntity::new_dropper(level, pos, state))
+        });
+
         registry.register(&vanilla_block_entity_types::BEACON, |level, pos, state| {
             Arc::new(BeaconBlockEntity::new(level, pos, state))
         });
