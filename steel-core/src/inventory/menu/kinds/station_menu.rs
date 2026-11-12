@@ -51,41 +51,58 @@ unsafe impl steel_utils::DowncastType for StationKind {
 
 impl MenuKind for StationKind {}
 
-/// Builds the loom menu (four inputs: banner, dye, pattern item, pattern).
+/// Builds the loom menu: three inputs plus the banner result.
+///
+/// Vanilla's loom stores the result in a separate slot filled by the selected
+/// banner pattern; the pattern selection is not modelled yet, so the result slot
+/// stays empty but occupies its vanilla position.
 #[must_use]
 pub fn loom(inventory: Shared<PlayerInventory>, container_id: u8) -> Menu {
-    let input = SimpleContainer::new(4).into_shared();
-    build_station(
+    let input = SimpleContainer::new(3).into_shared();
+    let result = SimpleContainer::new(1).into_shared();
+    build_station_with_result(
         &vanilla_menu_types::LOOM,
         inventory,
         container_id,
         input,
+        result,
         StationKind::new,
     )
 }
 
-/// Builds the cartography table menu (two inputs).
+/// Builds the cartography table menu: two inputs plus the map result.
+///
+/// The `MapExtendingRecipe` matcher exists in the registry, but the copied-map
+/// data it needs is not attached to the input yet, so the result slot stays empty.
 #[must_use]
 pub fn cartography_table(inventory: Shared<PlayerInventory>, container_id: u8) -> Menu {
     let input = SimpleContainer::new(2).into_shared();
-    build_station(
+    let result = SimpleContainer::new(1).into_shared();
+    build_station_with_result(
         &vanilla_menu_types::CARTOGRAPHY_TABLE,
         inventory,
         container_id,
         input,
+        result,
         StationKind::new,
     )
 }
 
-/// Builds the smithing table menu (template, base, addition).
+/// Builds the smithing table menu: template, base, addition and the result.
+///
+/// Smithing recipes are in the registry (`SmithingTransformRecipe`), but the
+/// trimming/upgrade result also carries enchantment and attribute transfers that
+/// are not implemented yet, so the result slot stays empty.
 #[must_use]
 pub fn smithing(inventory: Shared<PlayerInventory>, container_id: u8) -> Menu {
     let input = SimpleContainer::new(3).into_shared();
-    build_station(
+    let result = SimpleContainer::new(1).into_shared();
+    build_station_with_result(
         &vanilla_menu_types::SMITHING,
         inventory,
         container_id,
         input,
+        result,
         StationKind::new,
     )
 }
@@ -193,6 +210,24 @@ fn build_stonecutter(
         result: result_ref,
         selected: -1,
     })
+}
+
+/// Builds a station menu with a dedicated result slot after the inputs.
+fn build_station_with_result(
+    menu_type: &'static steel_registry::menu_type::MenuTypeRef,
+    inventory: Shared<PlayerInventory>,
+    container_id: u8,
+    input: Shared<SimpleContainer>,
+    result: Shared<SimpleContainer>,
+    make_kind: impl FnOnce(Shared<SimpleContainer>) -> StationKind,
+) -> Menu {
+    let mut builder = MenuBuilder::new(menu_type, container_id);
+    let input_section = builder.section_all(input.clone());
+    let _result = builder.section_at(result, [0], SectionKind::take_only());
+    let player = builder.player_inventory(&inventory);
+    builder.route(input_section, player.all(), FillDirection::Forward);
+    let kind = make_kind(input).with_sections(input_section, player);
+    builder.build(kind)
 }
 
 /// Shared builder used by every station menu.
