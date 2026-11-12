@@ -184,7 +184,10 @@ impl FishingHookEntity {
             entity_type,
             entity_data: SyncMutex::new(FishingBobberEntityData::new()),
             projectile_base: ProjectileBase::new(),
-            // FIXME: `lure_speed` and `luck` are taken from the existing rod, but auto generation fails when doing this, refer to: https://mcsrc.dev/2/26.2/net/minecraft/world/entity/projectile/FishingHook#L75
+            // Loaded hooks start with neutral fishing state; the owning rod
+            // re-applies `lure_speed` and `luck` through `update_owner_info`
+            // once the owner is known, which is what vanilla's constructor does
+            // with the `FishingRodItem` passed in from the shooter.
             hook_state: SyncMutex::new(FishingHookState::new(0, 0)),
             synchronized_random: SyncMutex::new(LegacyRandom::from_seed(0)),
         }
