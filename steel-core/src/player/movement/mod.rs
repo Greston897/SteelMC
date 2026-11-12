@@ -1028,14 +1028,44 @@ impl Player {
                     self.stop_sleep_in_bed(false, true);
                 }
             }
-            PlayerCommandAction::StartRidingJump
-            | PlayerCommandAction::StopRidingJump
-            | PlayerCommandAction::OpenVehicleInventory => {
-                // TODO: Implement once controlled vehicle jumping and vehicle inventory interfaces exist.
+            PlayerCommandAction::StartRidingJump => {
+                // Vanilla `ServerboundPlayerCommandPacket.Action.START_RIDING_JUMP`:
+                // the player is the controlling passenger of a mob, so the
+                // mounted mob jumps.
+                if let Some(mob) = self.controlling_vehicle_mob() {
+                    mob.jump_control_jump();
+                }
+            }
+            PlayerCommandAction::StopRidingJump => {
+                // Vanilla has no "stop jump" behaviour beyond clearing the
+                // pending input, which `JumpControl::tick` does on the next
+                // entity tick.
+            }
+            PlayerCommandAction::OpenVehicleInventory => {
+                // Vanilla opens the mount's inventory menu; Steel routes it
+                // through the same entity menu hook as any other interaction so
+                // a mount that grows a menu starts working without new wiring
+                // here.
+                if let Some(vehicle) = self.vehicle() {
+                    let _ = vehicle.open_menu_for(self);
+                }
             }
         }
 
         // Dirty shared flags are synced once per tick by sync_entity_data().
+    }
+
+    /// Returns the mounted mob this player controls, mirroring vanilla
+    /// `Mob.getControllingPassenger` from the passenger side.
+    fn controlling_vehicle_mob(&self) -> Option<&dyn crate::entity::mob::Mob> {
+        let vehicle = self.vehicle()?;
+        if vehicle
+            .controlling_passenger()
+            .is_none_or(|passenger| passenger.id() != self.id())
+        {
+            return None;
+        }
+        vehicle.as_mob()
     }
 
     /// Checks new player non-riding movement provided to award stats for it,
