@@ -19,6 +19,7 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey, WorldAabb};
 
+use crate::entity::entities::mobs::passive::MushroomCowEntity;
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntitySyncedData, RemovalReason,
@@ -125,10 +126,18 @@ impl LightningBoltEntity {
             pos.z + DAMAGE_RADIUS,
         );
         let source = DamageSource::environment(&vanilla_damage_types::LIGHTNING_BOLT);
+        let self_uuid = self.uuid();
         for entity in world.get_entities_in_aabb(&box_) {
             if entity.id() == self.id() || !entity.is_alive() {
                 continue;
             }
+
+            // Vanilla runs `LightningBolt.onHitEntity` before the damage call, which
+            // is where the mooshroom variant flip lives.
+            if let Some(cow) = entity.as_entity_event_source().downcast_ref::<MushroomCowEntity>() {
+                cow.thunder_hit(self_uuid);
+            }
+
             entity.hurt(&world, &source, LIGHTNING_DAMAGE);
         }
     }
