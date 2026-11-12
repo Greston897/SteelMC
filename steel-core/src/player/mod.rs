@@ -2176,8 +2176,9 @@ impl LivingEntity for Player {
             self.inventory.lock().set_changed();
         }
 
+        // `on_equip_item` runs the vanilla attribute refresh, the equip sound
+        // and the `GameEvent.EQUIP` dispatch.
         self.on_equip_item(slot, &ItemStack::empty(), &equipped);
-        // TODO: Emit EQUIP game event once game-event dispatch is implemented.
         InteractionResult::Success
     }
 

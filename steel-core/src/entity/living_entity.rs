@@ -1960,6 +1960,10 @@ pub trait LivingEntity: Entity {
             enchantment_helper::apply_attribute_effects(&mut attributes, slot, stack);
         }
 
+        // Vanilla `LivingEntity.onEquipItem` ends with `GameEvent.EQUIP`, which
+        // is what sculk sensors and vibration listeners react to.
+        self.game_event(&vanilla_game_events::EQUIP);
+
         let Some(sound) = self.equip_sound(slot, stack) else {
             return;
         };
@@ -2018,9 +2022,6 @@ pub trait LivingEntity: Entity {
         if let Some(mob) = self.as_mob() {
             mob.set_guaranteed_drop(slot);
         }
-        // Vanilla `LivingEntity.onEquipItem` sends `GameEvent.EQUIP` so sculk
-        // sensors and vibration listeners observe the change.
-        self.game_event(&vanilla_game_events::EQUIP);
         InteractionResult::Success
     }
 
