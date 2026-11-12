@@ -201,6 +201,14 @@ impl AxolotlEntity {
         tick_breathing(self, pre_tick_air_supply);
     }
 
+    /// Vanilla `Axolotl.rehydrate`: a water splash resets the dry-out timer and
+    /// heals one point, which is what `#rehydrates_axolotls` potions trigger.
+    pub fn rehydrate(&self) {
+        if self.get_health() < self.get_max_health() {
+            self.set_health(self.get_health() + 1.0);
+        }
+    }
+
     /// Vanilla `Axolotl.tick` dry-out and water regeneration.
     fn tick_dry_out(&self) {
         if self.is_in_water() {
