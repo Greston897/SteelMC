@@ -832,6 +832,7 @@ pub use living_base::{
     sync_dirty_mob_effects,
 };
 pub use living_entity::LivingEntity;
+pub use living_entity::create_wither_rose;
 pub(crate) use manager::EntityCollisionCandidates;
 #[cfg(feature = "benchmark-support")]
 pub use manager::benchmark_support as entity_manager_benchmark_support;

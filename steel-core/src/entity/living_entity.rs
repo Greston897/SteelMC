@@ -4,7 +4,7 @@ use steel_registry::data_components::vanilla_components::{
 };
 use steel_registry::item_stack::ItemStack;
 use steel_registry::stat::vanilla_stat_types;
-use steel_registry::{DyeColor, vanilla_custom_stats};
+use steel_registry::{DyeColor, vanilla_blocks, vanilla_custom_stats};
 
 use super::*;
 use crate::behavior::{BLOCK_BEHAVIORS, InventoryTickContext, MOB_EFFECT_BEHAVIORS};
@@ -1139,7 +1139,7 @@ pub trait LivingEntity: Entity {
             {
                 self.game_event(&vanilla_game_events::ENTITY_DIE);
                 self.drop_all_death_loot(source);
-                // TODO: Create wither rose for killer
+                create_wither_rose(self_entity, source);
             }
         }
 
@@ -3427,4 +3427,31 @@ mod shield_tests {
         let dirt = ItemStack::new(&vanilla_items::DIRT);
         assert!(!dirt.has(BLOCKS_ATTACKS));
     }
+}
+
+/// Vanilla `WitherRoseBlock.createWitherRose`: when the causing entity is a
+/// wither skeleton and the victim's position accepts the rose, place it.
+pub(crate) fn create_wither_rose(dead: &dyn Entity, source: &DamageSource) {
+    let Some(causing) = source.causing_entity() else {
+        return;
+    };
+    if causing.entity_type() != &vanilla_entities::WITHER_SKELETON {
+        return;
+    }
+    let Some(world) = dead.level() else {
+        return;
+    };
+    let pos = BlockPos::containing(dead.position());
+    let current = world.get_block_state(pos);
+    if !current.is_air() && !current.is_replaceable() {
+        return;
+    }
+    let rose = vanilla_blocks::WITHER_ROSE.default_state();
+    if !BLOCK_BEHAVIORS
+        .get_behavior(vanilla_blocks::WITHER_ROSE)
+        .can_survive(rose, world.as_ref(), pos)
+    {
+        return;
+    }
+    world.set_block_state(pos, rose, UpdateFlags::UPDATE_ALL);
 }
