@@ -3,7 +3,7 @@ use rustc_hash::FxHashMap;
 use steel_math::trig;
 use steel_utils::{DowncastType, DowncastTypeKey, Identifier};
 
-use crate::{RegistryTags, blocks::behavior::PushReaction};
+use crate::{RegistryExt, RegistryTags, blocks::behavior::PushReaction};
 
 const DEFAULT_EYE_HEIGHT_FACTOR: f32 = 0.85;
 
@@ -320,6 +320,18 @@ pub struct EntityType {
 }
 
 pub type EntityTypeRef = &'static EntityType;
+
+impl EntityType {
+    /// Returns `true` if this entity type is tagged with the given tag.
+    ///
+    /// Mirrors `Block::has_tag`: the check goes through the global registry so
+    /// data-pack tags (`#minecraft:zombies`, `#minecraft:sensitive_to_smite`, …)
+    /// resolve against whatever the last reload registered.
+    #[must_use]
+    pub fn has_tag(&'static self, tag: &Identifier) -> bool {
+        crate::REGISTRY.entity_types.is_in_tag(self, tag)
+    }
+}
 
 pub struct EntityTypeRegistry {
     types_by_id: Vec<EntityTypeRef>,

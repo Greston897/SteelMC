@@ -7,6 +7,7 @@
 use std::sync::Arc;
 
 use steel_macros::block_behavior;
+use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, IntProperty};
@@ -313,15 +314,11 @@ impl BlockBehavior for TurtleEggBlock {
         pos: BlockPos,
         context: EntityFallOnContext<'_>,
     ) -> Option<EntityFallDamage> {
+        // Vanilla excludes `instanceof Zombie`, which covers husks, drowned,
+        // zombie villagers and zombified piglins via the shared `#zombies` tag.
         if let Some(entity) = context.source_entity()
-            && entity.entity_type() != &vanilla_entities::ZOMBIE
+            && !entity.entity_type().has_tag(&EntityTypeTag::ZOMBIES)
         {
-            // Vanilla excludes `instanceof Zombie`, which also covers husks,
-            // drowned, zombie villagers, and zombified piglins. None of those
-            // exist in Steel yet, so this single-type check is currently exact.
-            // TODO(zombie-family): widen this to the whole zombie set (a shared
-            // "is a zombie" predicate or an entity-type tag) once those entities
-            // land, so falling zombies do not double up with their trample AI.
             self.destroy_egg(world, state, pos, entity, FALL_TRAMPLE_ODDS);
         }
         self.default_fall_on(state, world, pos, context)
