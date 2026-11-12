@@ -9,7 +9,7 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::MinecartEntityData;
-use steel_registry::{items::ItemRef, vanilla_items};
+use steel_registry::{items::ItemRef, vanilla_entities, vanilla_items};
 use steel_utils::axis::Axis;
 use steel_utils::block_util::FoundRectangle;
 use steel_utils::locks::SyncMutex;
@@ -302,7 +302,24 @@ impl Entity for MinecartEntity {
         self.load_abstract_minecart_data(nbt);
     }
 
-    // TODO: Implement getPickResult.
+    fn pick_result(&self) -> Option<ItemStack> {
+        // Vanilla `AbstractMinecart.getPickResult` returns the minecart item that
+        // matches this entity type, which also covers the specialised variants.
+        let item = if self.entity_type == &vanilla_entities::MINECART {
+            &vanilla_items::MINECART
+        } else if self.entity_type == &vanilla_entities::CHEST_MINECART {
+            &vanilla_items::CHEST_MINECART
+        } else if self.entity_type == &vanilla_entities::FURNACE_MINECART {
+            &vanilla_items::FURNACE_MINECART
+        } else if self.entity_type == &vanilla_entities::TNT_MINECART {
+            &vanilla_items::TNT_MINECART
+        } else if self.entity_type == &vanilla_entities::HOPPER_MINECART {
+            &vanilla_items::HOPPER_MINECART
+        } else {
+            return None;
+        };
+        Some(ItemStack::new(item))
+    }
 }
 
 #[cfg(test)]

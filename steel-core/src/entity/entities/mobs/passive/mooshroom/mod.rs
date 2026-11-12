@@ -205,7 +205,8 @@ impl MushroomCowEntity {
 
     /// Handles a lightning strike hitting the mooshroom.
     pub fn thunder_hit(&self, lightning_uuid: Uuid) {
-        // TODO: Route server-side LightningBolt hits here once that shared entity and dispatch exist.
+        // Reached from `LightningBoltEntity::hit_entities`, which dispatches before
+        // applying lightning damage.
         let mut last_uuid = self.last_lightning_bolt_uuid.lock();
         if last_uuid.as_ref() == Some(&lightning_uuid) {
             return;

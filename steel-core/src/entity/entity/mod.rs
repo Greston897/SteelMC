@@ -1265,6 +1265,14 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         self.base().removal_reason()
     }
 
+    /// Returns the item produced by picking this entity in creative mode.
+    ///
+    /// Vanilla `Entity.getPickResult`. Most entities yield nothing; minecarts,
+    /// boats and similar vehicles override it with their own item.
+    fn pick_result(&self) -> Option<steel_registry::item_stack::ItemStack> {
+        None
+    }
+
     /// Marks the entity as removed with the given reason.
     fn set_removed(&self, reason: RemovalReason) {
         self.base().set_removed(reason);
