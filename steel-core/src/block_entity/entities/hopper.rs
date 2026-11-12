@@ -60,7 +60,8 @@ impl HopperBlockEntity {
         let container = Arc::new(SyncMutex::new(HopperContainer {
             items: vec![ItemStack::empty(); HOPPER_SLOTS],
         }));
-        let shared_container: SharedContainer = Arc::<SyncMutex<HopperContainer>>::clone(&container);
+        let shared_container: SharedContainer =
+            Arc::<SyncMutex<HopperContainer>>::clone(&container);
         Self {
             container_ref: ContainerRef::owned_by_block_entity(shared_container, Arc::clone(&base)),
             base,
