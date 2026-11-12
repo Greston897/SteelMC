@@ -142,7 +142,40 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 - **Сохранение вне тика.** `chunk_map/persistence.rs` сериализует и кодирует чанки в `chunk_encoding_pool`, результат возвращается через `oneshot`; кэш синхронных lookup'ов (`gameplay_chunk_lookup_cache`) — scoped, без синхронизации внутри области.
 - **Свет параллельный, без глобальной очереди** — `chunk/light/workset.rs` на Rayon, как описано в блоге (Starlight/ScalableLux-подход).
 
-**Вывод:** архитектурных регрессий против заявленной планки нет; ветка ничего не сериализовала и не увела в главный поток. Правки этой сессии (обработчики `set_game_rule`/recipe book, облако дракона, фазы фантома) — O(1) на пакет/тик и не добавляют блокирующих ожиданий.
+**Вывод:** архитектурных регрессий против заявленной планки нет; ветка ничего не сериализовала и не увела в главный поток. Правки этой сессии (обработчики `set_game_rule`/recipe book, облако дракона, фазы фантома, щит) — O(1) на пакет/тик и не добавляют блокирующих ожиданий.
+
+## 3c. Аудит механик ядра: сверка констант с ванилью
+
+Проверено по исходникам Steel и ванильным значениям; расхождения исправлены или задокументированы.
+
+| Механика | Ванильные значения (26.3) | Статус в Steel |
+|---|---|---|
+| Голод (`food_data.rs`) | MAX 20 / SAT 20 / DEFAULT_SAT 5 / EXHAUSTION_DROP 4; regen 80 тиков (10 при sat>0), порог 18; sprint 6; starvation Hard всегда, Normal >1 HP, Easy >10 HP | **ванильно** |
+| Падение (`calculate_fall_damage`) | `floor((dist + 1e-6 − safeFall) × modifier × multiplier)` | **ванильно** |
+| Броня (`combat_rules.rs`) | toughness `2.0 + armorToughness/4`, clamp `armor×0.1…20`, делитель 25 | **ванильно** |
+| Взрывы | шаг луча `0.3`, затухание `0.225`, сила `0.7+0.6·rand`, max `1.3`, resistance `0.3/0.3` | **ванильно** |
+| Взрыв — урон/knockback | exposure-sampling по AABB, `should_damage_entity`, `knockback_multiplier` | **ванильно** |
+| Жидкости | вода: delay 5, dropOff 1, slopeFind 4; лава: fast-lava в Nether | **ванильно** |
+| Редстоун-провод | `calculateTargetStrength` = ваниль + Lithium-инлайн, сила 0…15 | **ванильно** |
+| Повторитель | `delay = DELAY × 2` тика, боковая блокировка | **ванильно** |
+| Рост культур | база 25.0, множитель 3.0 на влажной земле, свет ≥ 9 | **ванильно** |
+| Зачарование | cost: `rand(8)+1+(shelves>>1)+rand(shelves+1)`, 3 слота, max 15 полок, вес/уровни | **ванильно** |
+| Наковальня | `prior_work` (`REPAIR_COST`), бонус прочности 12 %, 16-битный клиентский cost | **ванильно** |
+| Опыт-орбы | `getExperienceValue` = 3/7/17/37/73/149/307/617/1237/2477 | **ванильно** |
+| Моб-эффекты | tick-обработка, `shouldApplyEffectTickThisTick`, water-breathing (incl. conduit/nautilus) | **ванильно** |
+| TNT | фитиль 80, сила 4.0, max 128, `should_block_explode` | **ванильно** |
+| Лёд | таяние при свете ≥ 11, `PREVENTS_ICE_MELTING` | **ванильно** |
+| Random tick | LCG `x*3+1013904223`, `>>2`, биты 0/16/8; `speed` сэмплов на секцию | **ванильно** (сид — из runtime RNG, намеренное отличие для детерминизма чанков) |
+| DragonFireball | облако `AreaEffectCloud` r=3, 100 тиков, `Instant Damage II` 1 тик, партикл `dragon_breath` power 0.4, якорь — блок под попаданием | **исправлено** (было: взрыв) |
+| Phantom | фазы `Circle → Swoop → Land → Attack → Start`, таймеры 100/20/10/20/20, высоты 8/1/1.5/6, скорость 0.1 | **исправлено** (было: обычный melee) |
+| Щит | `Item.use` → timed use для `blocks_attacks`; `isBlocking` = active item + компонент; `blockUsingItem` = дуга `horizontal_blocking_angle` + `base + factor`, `bypassed_by`, звук `item.shield.block` | **исправлено** (было: не блокировал) |
+| Износ брони | `hurtArmor` наносит `max(damage/4, 1)` всем 4 слотам | **исправлено** (работало только у игрока) |
+| Геймрулы | `set_game_rule`: bool только `true/false`, int с проверкой границ | **исправлено** (было: read-and-ignore) |
+| Книга рецептов | `change_settings` сохраняет вкладки + эхо; `seen_recipe` только снимает highlight (`0x02`) | **исправлено** (было: read-and-ignore) |
+| Моб-спавн | моб-кап 70 на игрока, 400-тиковый цикл, 7 spawn rules | **отсутствует** (соответствует upstream: «entity spawning not included») |
+| Торговля | `select_trade`, `merchant_offers` | **отсутствует** (нет подсистемы торговли) |
+| Теги мобов | `NOT_SCARY_FOR_PUFFERFISH` и др. entity-type теги | **нет данных**: в `build_assets/tags.json` только block/item — pufferfish приближён игроком в 8 блоках (задокументировано) |
+| Критерии достижений | `used_totem`, `ITEM_CRAFTED` и др. | **инфраструктура есть** (`PlayerAdvancement::award`), данных критериев в ассетах нет |
 
 ## 3. Сводная матрица
 
