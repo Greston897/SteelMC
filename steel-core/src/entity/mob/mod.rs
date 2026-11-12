@@ -852,9 +852,14 @@ pub trait Mob: LivingEntity + Leashable {
         }
 
         let count = equipped.count();
-        // TODO(advancements): vanilla calls LivingEntity.onItemPickup here, before
-        // the take packet, which fires the THROWN_ITEM_PICKED_UP_BY_ENTITY criterion.
-        // Add that once Steel has the advancement-criteria foundation.
+        // Vanilla `LivingEntity.onItemPickup` runs before the take packet and fires
+        // the `thrown_item_picked_up_by_entity` criterion on the picking entity,
+        // which for a player is the advancement owner.
+        if let Some(player) = self.as_player() {
+            player.trigger_advancement(
+                &steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_ENTITY,
+            );
+        }
         let chunk_pos = ChunkPos::from_entity_pos(item_entity.position());
         world.broadcast_to_nearby(
             chunk_pos,

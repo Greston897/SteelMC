@@ -274,7 +274,9 @@ pub trait BlockBehavior: Send + Sync {
         pos: BlockPos,
         _entity_type: EntityTypeRef,
     ) -> bool {
-        // TODO: extract the correct rules from block spawn rule
+        // Vanilla's default `BlockState.isValidSpawn` is the full-up-support plus
+        // light-emission check; blocks with their own rules (magma, soul sand,
+        // spawner-specific blocks) override this hook.
         world.is_face_sturdy_for(state, pos, Direction::Up, SupportType::Full)
             && state.get_light_emission() < MAX_MOB_SPAWN_LIGHT_EMISSION
     }
