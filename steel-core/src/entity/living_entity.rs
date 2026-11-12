@@ -1,5 +1,8 @@
 use steel_math::{DEGREE_90, trig};
-use steel_registry::data_components::vanilla_components::{DEATH_PROTECTION, USE_EFFECTS};
+use steel_registry::data_components::vanilla_components::{
+    BLOCKS_ATTACKS, DEATH_PROTECTION, USE_EFFECTS,
+};
+use steel_registry::item_stack::ItemStack;
 use steel_registry::stat::vanilla_stat_types;
 use steel_registry::{DyeColor, vanilla_custom_stats};
 
@@ -709,7 +712,11 @@ pub trait LivingEntity: Entity {
             damage = 0.0;
         }
 
-        // TODO: apply item blocking before actually_hurt once shield/use-item hooks exist.
+        // Vanilla `LivingEntity.blockUsingItem`: a blocking entity facing the
+        // damage source reduces the damage by the `blocks_attacks` rule.
+        if !source.is(&vanilla_damage_type_tags::DamageTypeTag::BYPASSES_SHIELD) {
+            damage = self.block_using_item(world, source, damage);
+        }
         if source.is(&vanilla_damage_type_tags::DamageTypeTag::IS_FREEZING)
             && REGISTRY
                 .entity_types
@@ -988,6 +995,65 @@ pub trait LivingEntity: Entity {
             },
             None,
         );
+    }
+
+    /// Vanilla `LivingEntity.blockUsingItem`: applies the shield's
+    /// `blocks_attacks` damage reduction when the entity blocks an attack that
+    /// arrives inside the blocking arc.
+    ///
+    /// Vanilla also checks `block_delay_seconds`; Steel starts blocking on the
+    /// first use tick and has no shield-disable timer yet, so only the arc and
+    /// the per-rule reduction are applied.
+    fn block_using_item(&self, _world: &World, source: &DamageSource, damage: f32) -> f32 {
+        if !self.is_blocking() {
+            return damage;
+        }
+        let Some(use_state) = self.living_base().active_item_use() else {
+            return damage;
+        };
+        let Some(blocks_attacks) = ItemStack::new(use_state.item())
+            .get(BLOCKS_ATTACKS)
+            .cloned()
+        else {
+            return damage;
+        };
+        if blocks_attacks
+            .bypassed_by()
+            .is_some_and(|types| types.contains(source.damage_type))
+        {
+            return damage;
+        }
+        // Vanilla falls back to the target position when the source has none.
+        let source_position = source
+            .source_position()
+            .unwrap_or_else(|| self.position());
+        let delta = source_position - self.position();
+        let horizontal = DVec3::new(delta.x, 0.0, delta.z);
+        if horizontal.length_squared() < f64::EPSILON {
+            return damage;
+        }
+        let view = DVec3::new(self.look_angle().x, 0.0, self.look_angle().z);
+        if view.length_squared() < f64::EPSILON {
+            return damage;
+        }
+        // `DVec3::angle_between` returns radians in `[0, PI]`.
+        let angle_degrees = view.angle_between(horizontal).to_degrees() as f32;
+        for reduction in blocks_attacks.damage_reductions() {
+            let applies = reduction
+                .damage_types()
+                .is_none_or(|types| types.contains(source.damage_type));
+            if !applies || angle_degrees > reduction.horizontal_blocking_angle() {
+                continue;
+            }
+            let reduced = damage * reduction.base() + damage * reduction.factor();
+            let reduced = reduced.min(damage);
+            if reduced < damage {
+                // Vanilla plays the shield's own block sound on a successful block.
+                self.play_sound(&sound_events::ITEM_SHIELD_BLOCK, 1.0, 1.0);
+            }
+            return reduced;
+        }
+        damage
     }
 
     /// Uses a held death-protection item to survive lethal damage. Returns whether one was used.
@@ -1665,8 +1731,18 @@ pub trait LivingEntity: Entity {
     }
 
     /// Checks if the entity is blocking with a shield or similar item.
+    ///
+    /// Vanilla `LivingEntity.isBlocking`: the entity must be using an item and
+    /// the active use item must carry the `blocks_attacks` component. Vanilla
+    /// also excludes a `disabled_shield` entity; Steel has no shield-disable
+    /// timer yet, so that term is always false here.
     fn is_blocking(&self) -> bool {
-        false
+        if !self.is_using_item() {
+            return false;
+        }
+        self.living_base().active_item_use().is_some_and(|use_state| {
+            ItemStack::new(use_state.item()).has(BLOCKS_ATTACKS)
+        })
     }
 
     /// Checks if the entity is fall flying (using elytra).
@@ -3306,4 +3382,21 @@ pub(crate) fn shearing_loot_items_with_rng<R: rand::Rng, E: LivingEntity + ?Size
         context = context.with_game_time(level.game_time());
     }
     loot_table.get_random_items(&mut context)
+}
+
+#[cfg(test)]
+mod shield_tests {
+    use super::*;
+
+    #[test]
+    fn shield_component_is_present_on_shield_items() {
+        let shield = ItemStack::new(&vanilla_items::SHIELD);
+        assert!(shield.has(BLOCKS_ATTACKS));
+    }
+
+    #[test]
+    fn non_shield_items_do_not_block() {
+        let dirt = ItemStack::new(&vanilla_items::DIRT);
+        assert!(!dirt.has(BLOCKS_ATTACKS));
+    }
 }

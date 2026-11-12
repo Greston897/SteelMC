@@ -103,8 +103,16 @@ pub trait ItemBehavior: Send + Sync {
 
     /// Called when this item is used (e.g. right click in air).
     fn use_item(&self, context: &mut UseItemContext) -> InteractionResult {
-        // TODO: Mirror Item.use for BLOCKS_ATTACKS and KINETIC_WEAPON so
-        // specialized behaviors inherit the complete Vanilla base path.
+        // Vanilla `Item.use` → `BlocksAttacks`/`KineticWeapon` start the timed
+        // use state, which is what makes shields block and the mace charge.
+        let starts_timed_use = context
+            .inv
+            .with_item(|item| item.has(BLOCKS_ATTACKS) || item.has(KINETIC_WEAPON));
+        if starts_timed_use {
+            context.player.start_using_item(context.hand);
+            return InteractionResult::Consume;
+        }
+
         let (consume_ticks, can_eat) = context.inv.with_item(|item| {
             let can_eat = item
                 .get(FOOD)
