@@ -13,8 +13,9 @@ mod dolphin;
 mod fish;
 mod fox;
 mod frog;
-mod horse;
 mod goat;
+mod happy_ghast;
+mod horse;
 mod mooshroom;
 mod ocelot;
 mod panda;
@@ -25,7 +26,11 @@ mod sheep;
 mod sniffer;
 mod squid;
 mod strider;
+mod sulfur_cube;
 mod turtle;
+mod villager;
+mod wandering_trader;
+mod wolf;
 
 pub use allay::AllayEntity;
 pub use armadillo::ArmadilloEntity;
@@ -46,6 +51,7 @@ pub use fish::tropical_fish::TropicalFishEntity;
 pub use fox::{FoxEntity, FoxVariant, flags as fox_flags};
 pub use frog::FrogEntity;
 pub use goat::GoatEntity;
+pub use happy_ghast::HappyGhastEntity;
 pub use horse::{
     DonkeyEntity, HorseEntity, LlamaEntity, MuleEntity, SkeletonHorseEntity, TraderLlamaEntity,
     ZombieHorseEntity,
@@ -60,4 +66,8 @@ pub use sheep::SheepEntity;
 pub use sniffer::SnifferEntity;
 pub use squid::{GlowSquidEntity, SquidEntity};
 pub use strider::StriderEntity;
+pub use sulfur_cube::SulfurCubeEntity;
 pub use turtle::TurtleEntity;
+pub use villager::VillagerEntity;
+pub use wandering_trader::WanderingTraderEntity;
+pub use wolf::WolfEntity;

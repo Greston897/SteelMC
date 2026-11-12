@@ -4,15 +4,17 @@ pub mod mobs;
 pub mod objects;
 
 pub use mobs::ambient::BatEntity;
+pub use mobs::bosses::{EnderDragonEntity, WitherBossEntity};
 pub use mobs::hostile::{
     BlazeEntity, BoggedEntity, BreezeEntity, CaveSpiderEntity, CopperGolemEntity, CreakingEntity,
     CreeperEntity, DrownedEntity, ElderGuardianEntity, EndermanEntity, EndermiteEntity,
     EvokerEntity, GhastEntity, GiantEntity, GuardianEntity, HoglinEntity, HuskEntity,
-    IllusionerEntity, MagmaCubeEntity, ParchedEntity, PhantomEntity, PiglinBruteEntity,
+    IllusionerEntity, IronGolemEntity, MagmaCubeEntity, ParchedEntity, PhantomEntity,
+    PiglinBruteEntity,
     PiglinEntity, PillagerEntity, RavagerEntity, ShulkerEntity, SilverfishEntity, SkeletonEntity,
     SlimeEntity, SnowGolemEntity, SpiderEntity, StrayEntity, VexEntity, VindicatorEntity,
     WardenEntity, WitchEntity, WitherSkeletonEntity, ZoglinEntity, ZombieEntity,
-    ZombifiedPiglinEntity,
+    ZombieVillagerEntity, ZombifiedPiglinEntity,
 };
 pub use mobs::neutral::*;
 pub use mobs::passive::*;
@@ -35,7 +37,7 @@ pub use objects::projectiles::{
     ShulkerBulletEntity, SmallFireballEntity, SnowballEntity, SpectralArrowEntity,
     SplashPotionEntity, ThrownEggEntity, ThrownTridentEntity, WindChargeEntity, WitherSkullEntity,
 };
-pub use objects::technical::{InteractionEntity, MarkerEntity};
+pub use objects::technical::{InteractionEntity, MarkerEntity, OminousItemSpawnerEntity};
 pub use objects::vehicles::{
     BoatEntity, ChestBoatEntity, ChestMinecartEntity, ChestRaftEntity, CommandBlockMinecartEntity,
     FurnaceMinecartEntity, HopperMinecartEntity, MinecartEntity, RaftEntity, TntMinecartEntity,

@@ -3,6 +3,7 @@
 mod armor_stand;
 mod cushion;
 mod display;
+mod mannequin;
 mod painting;
 
 pub use armor_stand::ArmorStandEntity;
@@ -11,4 +12,5 @@ pub use display::{
     BillboardConstraints, BlockDisplayEntity, DisplayTransformation, ItemDisplayEntity,
     TextDisplayEntity,
 };
+pub use mannequin::MannequinEntity;
 pub use painting::PaintingEntity;

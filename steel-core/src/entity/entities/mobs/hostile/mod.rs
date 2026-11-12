@@ -23,6 +23,8 @@ pub mod snow_golem;
 pub mod warden;
 /// Hostile elder guardian entity module.
 pub mod elder_guardian;
+/// Iron golem entity module.
+pub mod iron_golem;
 /// Hostile blaze entity module.
 pub mod blaze;
 /// Hostile evoker entity module.
@@ -83,6 +85,8 @@ pub mod wither_skeleton;
 pub mod zoglin;
 /// Hostile zombie entity module.
 pub mod zombie;
+/// Hostile zombie villager entity module.
+pub mod zombie_villager;
 /// Hostile zombified piglin entity module.
 pub mod zombified_piglin;
 

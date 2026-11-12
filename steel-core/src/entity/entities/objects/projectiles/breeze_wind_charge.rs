@@ -90,8 +90,11 @@ impl BreezeWindChargeEntity {
     /// Vanilla `WindCharge.explode`: a trigger-only explosion plus the gust
     /// particles and burst sound.
     fn explode(self: &Arc<Self>, world: &Arc<World>) {
-        let mut options =
-            ExplosionOptions::new(self.position(), BREEZE_WIND_CHARGE_POWER, ExplosionInteraction::None);
+        let mut options = ExplosionOptions::new(
+            self.position(),
+            BREEZE_WIND_CHARGE_POWER,
+            ExplosionInteraction::None,
+        );
         options.source = Some(Arc::clone(self) as SharedEntity);
         options.damage_source = Some(self.wind_charge_damage_source());
         options.small_explosion_particle =
