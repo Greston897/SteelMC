@@ -204,6 +204,16 @@ pub trait Projectile: Entity + ProjectileEventSource {
     /// Returns shared projectile runtime state.
     fn projectile_base(&self) -> &ProjectileBase;
 
+    /// Returns the stack this projectile represents for permission checks.
+    ///
+    /// Vanilla passes `AbstractArrow.getPickupItemStackOrigin()` to
+    /// `BlockState.getCloneItemStack`, and every other projectile passes an empty
+    /// stack. An empty stack can never satisfy Adventure-mode breaking rules, so
+    /// the default keeps non-arrow projectiles from destroying blocks.
+    fn pickup_item_stack(&self) -> Option<ItemStack> {
+        None
+    }
+
     /// Returns the horizontal hurt-knockback vector used for this projectile.
     fn calculate_horizontal_hurt_knockback_direction(
         &self,

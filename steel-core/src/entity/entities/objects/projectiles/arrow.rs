@@ -619,6 +619,12 @@ macro_rules! arrow_entity_impl {
                 &self.projectile_base
             }
 
+            fn pickup_item_stack(&self) -> Option<ItemStack> {
+                // Vanilla `AbstractArrow.getPickupItemStackOrigin`, used by TNT's
+                // `getCloneItemStack` so Adventure-mode arrows cannot light TNT.
+                Some(self.pickup_item())
+            }
+
             fn on_hit_entity(self: Arc<Self>, entity: &SharedEntity, _location: DVec3) {
                 self.abstract_arrow_on_hit_entity(entity);
             }
