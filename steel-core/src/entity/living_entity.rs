@@ -1254,7 +1254,10 @@ pub trait LivingEntity: Entity {
             }
         }
         self.drop_experience(&world, source.causing_entity().map(AsRef::as_ref), source);
-        // TODO: Drop non-mob equipment overrides once those foundations exist.
+        // Vanilla `LivingEntity.dropAllDeathLoot` ends with `dropEquipment()`,
+        // which is a no-op on the base class. `Mob` overrides it through
+        // `drop_custom_death_loot_mob` above; non-mob wearers such as armor
+        // stands drop their own equipment from their death path.
     }
 
     /// Awards experience for this entity's death when eligible, spawning an experience orb.
