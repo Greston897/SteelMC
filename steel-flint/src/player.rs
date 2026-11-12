@@ -124,18 +124,27 @@ fn stack_to_flint_item(stack: &ItemStack, requested_data: Vec<String>) -> Option
     let id = format!("minecraft:{}", stack.item.key.path);
     let mut map: FxHashMap<String, String> = FxHashMap::default();
     for key in requested_data {
-        if let Some(data) = stack.get_effective_value_raw(&Identifier::vanilla(key.clone())) {
-            if data.downcast_ref::<()>().is_some() {
-                map.insert(key, String::new());
-            } else if let Some(b) = data.downcast_ref::<bool>() {
-                map.insert(key, b.to_string());
-            } else if let Some(i) = data.downcast_ref::<i32>() {
-                map.insert(key, i.to_string());
-            } else if let Some(f) = data.downcast_ref::<f32>() {
-                map.insert(key, f.to_string());
-            }
-            // TODO: handle other data types then needed
-        }
+        let Some(data) = stack.get_effective_value_raw(&Identifier::vanilla(key.clone())) else {
+            continue;
+        };
+        // Flint only compares strings, so leaf values use their plain textual
+        // form and structured components fall back to their `Debug` rendering.
+        // Both are stable for a given Steel build, which is what a test
+        // assertion needs; nothing here is part of the wire protocol.
+        let value = if data.downcast_ref::<()>().is_some() {
+            String::new()
+        } else if let Some(b) = data.downcast_ref::<bool>() {
+            b.to_string()
+        } else if let Some(i) = data.downcast_ref::<i32>() {
+            i.to_string()
+        } else if let Some(f) = data.downcast_ref::<f32>() {
+            f.to_string()
+        } else if let Some(id) = data.downcast_ref::<Identifier>() {
+            id.to_string()
+        } else {
+            format!("{data:?}")
+        };
+        map.insert(key, value);
     }
     Some(Item {
         id,
@@ -220,5 +229,28 @@ impl FlintPlayer for SteelTestPlayer {
             GameMode::Spectator => GameType::Spectator,
         });
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use steel_registry::data_components::vanilla_components::DAMAGE;
+
+    #[test]
+    fn stack_conversion_reports_requested_plain_components() {
+        crate::init();
+        let mut stack = ItemStack::new(&steel_registry::vanilla_items::STONE);
+        stack.set(DAMAGE, 7);
+
+        let item = stack_to_flint_item(&stack, vec!["damage".to_owned()])
+            .expect("non-empty stack converts");
+        assert_eq!(item.id, "minecraft:stone");
+        assert_eq!(item.data.get("damage").map(String::as_str), Some("7"));
+
+        // Components that were not asked for stay out of the map.
+        let unrequested = stack_to_flint_item(&stack, Vec::new())
+            .expect("non-empty stack converts");
+        assert!(unrequested.data.is_empty());
     }
 }
