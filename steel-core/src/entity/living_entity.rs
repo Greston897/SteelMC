@@ -2743,10 +2743,24 @@ pub trait LivingEntity: Entity {
         }
     }
 
+    /// Returns whether this entity uses vanilla `FlyingAnimal` physics.
+    ///
+    /// Only bats implement the interface today; it only changes the vertical
+    /// friction applied by [`Self::air_travel_vertical_friction`].
+    fn is_flying_animal(&self) -> bool {
+        false
+    }
+
     /// Returns the vertical friction used by `travelInAir`.
-    fn air_travel_vertical_friction(&self, _horizontal_friction: f32) -> f32 {
-        // TODO: FlyingAnimal uses horizontal friction here once animal types exist.
-        0.98
+    ///
+    /// Vanilla `FlyingAnimal.travelInAir` replaces the hard-coded `0.98` with the
+    /// entity's horizontal friction so flying animals keep momentum.
+    fn air_travel_vertical_friction(&self, horizontal_friction: f32) -> f32 {
+        if self.is_flying_animal() {
+            horizontal_friction
+        } else {
+            0.98
+        }
     }
 
     /// Clamps movement while on a climbable block: caps horizontal and

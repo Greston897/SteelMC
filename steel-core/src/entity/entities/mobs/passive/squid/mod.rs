@@ -223,9 +223,9 @@ impl SquidEntity {
         if let Some(living_entity) = self.as_living_entity() {
             self.set_velocity(DVec3::new(
                 0.0,
-                // TODO: depending on how `LivingEntity.air_travel_vertical_friction` implements `FlyingAnimal`'s
-                // different base friction value, the input value may change here (e.g. replace with
-                // a const value added to `LivingEntity`).
+                // Squid is not a `FlyingAnimal`, so
+                // `air_travel_vertical_friction` returns the plain `0.98` base
+                // value and the squid drag below is the only modification.
                 y * f64::from(living_entity.air_travel_vertical_friction(SQUID_AIR_DRAG)),
                 0.0,
             ));
