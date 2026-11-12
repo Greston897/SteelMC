@@ -43,12 +43,13 @@ use crate::entity::{
 use crate::fluid::is_water_fluid;
 use crate::physics::collide;
 use crate::player::Player;
-use crate::world::game_event::SharedGameEventListener;
+use crate::world::game_event::{GameEventContext, SharedGameEventListener};
 use crate::world::{
     BlockInteraction, ClipHitResult, ConditionalBlockSetResult, Explosion, LevelAccessor,
     LevelReader, ScheduledTickAccess, SignalQueryContext, World,
 };
 use steel_registry::vanilla_fluids;
+use steel_registry::vanilla_game_events;
 
 /// Exclusive block-emission limit for the default mob spawn predicate.
 pub(crate) const MAX_MOB_SPAWN_LIGHT_EMISSION: u8 = 14;
@@ -437,6 +438,18 @@ pub trait BlockBehavior: Send + Sync {
         on_hit: &mut dyn FnMut(ItemStack, BlockPos),
     ) {
         if state.is_air() {
+            return;
+        }
+
+        // Vanilla `BlockInteraction.Trigger` (wind charges) never destroys the
+        // block; it dispatches a `BLOCK_ACTIVATE` game event so the block's own
+        // listeners (buttons, levers, doors) react as if touched.
+        if explosion.block_interaction() == BlockInteraction::Trigger {
+            world.game_event(
+                &vanilla_game_events::BLOCK_ACTIVATE,
+                pos,
+                &GameEventContext::new(None, Some(state)),
+            );
             return;
         }
 
