@@ -44,6 +44,8 @@ pub enum EntitySpawnReason {
     TrialSpawner,
     Load,
     DimensionTravel,
+    /// A bee leaving or being released from a beehive.
+    Beehive,
 }
 
 impl EntitySpawnReason {
