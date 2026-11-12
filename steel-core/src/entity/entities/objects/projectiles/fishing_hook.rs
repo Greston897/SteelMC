@@ -652,7 +652,6 @@ impl FishingHookEntity {
         }
     }
 
-    // TODO: check if passing a lock is better here
     /// Determines if the player should stop fishing.
     fn should_stop(&self) -> bool {
         let state = self.hook_state.lock();
@@ -895,7 +894,6 @@ impl Entity for FishingHookEntity {
                     self.apply_effects_from_blocks();
                     self.update_rotation();
 
-                    // TODO: check if passing a lock is better here
                     if self.should_stop() {
                         self.base.set_velocity(DVec3::ZERO);
                     }

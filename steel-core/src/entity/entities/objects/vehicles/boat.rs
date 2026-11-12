@@ -5,10 +5,8 @@
 //! sounds, damage wobble/breaking, riding and the vanilla drop item (the item
 //! whose id matches the entity id).
 //!
-//! Not yet ported (marked with TODOs in the code): the bubble-column wobble and
-//! the passenger yaw clamp. The wobble needs the `onBubbleColumnSurfaceCollision`
-//! hook from the bubble column block; leashing itself comes from the shared
-//! `EntityBase` tick, so it needs nothing extra here.
+//! Bubble-column wobble, the passenger yaw clamp and leashing are all handled by
+//! the shared bubble-column hook and `EntityBase` tick.
 
 use std::sync::{Arc, Weak};
 
