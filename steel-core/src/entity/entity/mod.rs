@@ -2699,11 +2699,18 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     }
 
     /// Moves this entity to `pos`, keeping its current rotation.
-    // TODO: Recursively reposition this entity's passengers (vanilla
-    // `Entity.teleportPassengers`, via `getSelfAndPassengers`)
+    ///
+    /// Vanilla `Entity.teleportTo` follows the move with `teleportPassengers`,
+    /// which re-runs `positionRider` for every passenger so the whole stack
+    /// lands together.
     #[must_use = "movement commits can fail when world entity state rejects the update"]
     fn teleport_to(&self, pos: DVec3) -> Result<(), EntityMoveError> {
-        self.try_set_position(pos)
+        self.try_set_position(pos)?;
+        for passenger in self.passengers() {
+            passenger.set_old_position_to_current();
+            self.position_rider(passenger.as_ref());
+        }
+        Ok(())
     }
 
     /// Sets the vanilla movement-trace old position to the current position.
