@@ -202,12 +202,20 @@ fn is_block_floor_valid(block_floor_height: f64) -> bool {
 }
 
 fn is_block_dangerous(entity: &dyn Entity, state: BlockStateId) -> bool {
-    // TODO: mirror vanilla entitytype.immuneto when the entity types carry entity specific immune block tag
+    let block = state.get_block();
+
+    // Vanilla `EntityType.immuneTo`: a type may declare one block tag it ignores
+    // entirely, so striders can stand on lava and hoglins on their own blocks.
+    if let Some(immune_tag) = &entity.entity_type().immune_to
+        && block.has_tag(immune_tag)
+    {
+        return false;
+    }
+
     if !entity.fire_immune() && WalkPathEvaluator::is_burning_block(state) {
         return true;
     }
 
-    let block = state.get_block();
     block == &vanilla_blocks::WITHER_ROSE
         || block == &vanilla_blocks::SWEET_BERRY_BUSH
         || block == &vanilla_blocks::CACTUS

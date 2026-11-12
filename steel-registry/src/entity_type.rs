@@ -286,6 +286,12 @@ pub struct EntityType {
     pub mob_category: MobCategory,
     /// Whether this entity is immune to fire damage.
     pub fire_immune: bool,
+    /// Block tag this entity ignores when scanning floor blocks for danger.
+    ///
+    /// Vanilla 26.3 `EntityType.immune_to`. Striders use `#strider_warm_blocks`,
+    /// hoglins `#hoglin_repellents` is separate; the common case is a mob that may
+    /// stand on a block other mobs treat as harmful.
+    pub immune_to: Option<Identifier>,
     /// Whether this entity can be summoned via commands.
     pub summonable: bool,
     /// Whether this entity type is allowed to exist in Peaceful difficulty.
