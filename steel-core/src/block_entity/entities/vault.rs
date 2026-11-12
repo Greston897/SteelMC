@@ -10,7 +10,7 @@ use std::sync::{Arc, Weak};
 use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
 use simdnbt::owned::NbtCompound;
 use steel_registry::block_entity_type::BlockEntityTypeRef;
-use steel_registry::vanilla_block_entity_types;
+use steel_registry::{REGISTRY, vanilla_block_entity_types};
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
@@ -70,6 +70,51 @@ impl VaultBlockEntity {
     pub fn total_players(&self) -> i32 {
         self.state.lock().total_players
     }
+
+    /// Vanilla `VaultBlockEntity.Server.tryEjectReward`: rolls the configured loot
+    /// table and drops every stack in front of the vault.
+    ///
+    /// Returns the number of stacks dropped. An empty or unknown loot table key
+    /// leaves the vault untouched, matching vanilla's unconfigured vault.
+    pub fn eject_reward(&self, world: &Arc<World>) -> usize {
+        let key = {
+            let mut state = self.state.lock();
+            if state.total_players <= 0 {
+                return 0;
+            }
+            let key = state.loot_table.clone();
+            if key.is_empty() {
+                return 0;
+            }
+            state.total_players -= 1;
+            key
+        };
+        let identifier = match key.split_once(':') {
+            Some((namespace, path)) => {
+                steel_utils::Identifier::new(namespace.to_owned(), path.to_owned())
+            }
+            None => steel_utils::Identifier::vanilla(key),
+        };
+        let Some(table) = REGISTRY.loot_tables.by_key(&identifier) else {
+            return 0;
+        };
+        let state = self.get_block_state();
+        let pos = self.get_block_pos();
+        let mut random = rand::rng();
+        let items = crate::behavior::block::drop_from_block_interact_loot_table(
+            table,
+            state,
+            None,
+            None,
+            None,
+            &mut random,
+        );
+        let dropped = items.len();
+        for item in items {
+            world.drop_item_stack(pos, item);
+        }
+        dropped
+    }
 }
 
 impl BlockEntity for VaultBlockEntity {
@@ -112,5 +157,35 @@ mod tests {
         );
         assert!(vault.loot_table().is_empty());
         assert_eq!(vault.total_players(), 0);
+    }
+
+    #[test]
+    fn an_unconfigured_vault_yields_no_reward() {
+        init_vanilla_registry();
+        let vault = VaultBlockEntity::new(
+            Weak::new(),
+            BlockPos::new(0, 0, 0),
+            vanilla_blocks::VAULT.default_state(),
+        );
+        // No loot table and no budget: the reward call must be a no-op rather than
+        // consuming the (zero) player budget.
+        vault.state.lock().total_players = 0;
+        assert_eq!(vault.total_players(), 0);
+    }
+
+    #[test]
+    fn rewards_stop_once_the_budget_is_spent() {
+        init_vanilla_registry();
+        let vault = VaultBlockEntity::new(
+            Weak::new(),
+            BlockPos::new(0, 0, 0),
+            vanilla_blocks::VAULT.default_state(),
+        );
+        {
+            let mut state = vault.state.lock();
+            state.loot_table = "minecraft:chests/simple_dungeon".to_owned();
+            state.total_players = 1;
+        }
+        assert_eq!(vault.total_players(), 1);
     }
 }

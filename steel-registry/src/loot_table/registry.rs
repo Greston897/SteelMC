@@ -31,6 +31,15 @@ impl LootTableRegistry {
         id
     }
 
+    /// Looks up a loot table by its registry key.
+    #[must_use]
+    pub fn by_key(&self, key: &Identifier) -> Option<LootTableRef> {
+        self.tables_by_key
+            .get(key)
+            .and_then(|id| self.tables_by_id.get(*id))
+            .copied()
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = (usize, LootTableRef)> + '_ {
         self.tables_by_id
             .iter()
