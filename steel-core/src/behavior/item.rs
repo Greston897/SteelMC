@@ -27,6 +27,11 @@ use crate::behavior::{
     CanMineContext, InteractionResult, InventoryTickContext, UseItemContext, UseOnContext,
 };
 use crate::block_entity::entities::{SignBlockEntity, SignText};
+use glam::DVec3;
+use steel_registry::item_stack_template::ItemStackTemplate;
+use steel_registry::particle_type::{ItemParticleOption, ParticleData};
+use steel_registry::vanilla_particle_types;
+
 use crate::entity::consume_effect::apply_consume_effect;
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::ItemEntity;
@@ -242,7 +247,7 @@ pub trait ItemBehavior: Send + Sync {
         if let Some(consumable) = stack.get(CONSUMABLE)
             && should_emit_consume_particles_and_sounds(consumable, ticks_remaining)
         {
-            emit_consume_particles_and_sounds(consumable, user.living());
+            emit_consume_particles_and_sounds(consumable, user.living(), stack);
         }
     }
 
@@ -358,8 +363,28 @@ fn should_emit_consume_particles_and_sounds(consumable: &Consumable, ticks_remai
     ticks_used > wait_ticks && ticks_remaining % 4 == 0
 }
 
-fn emit_consume_particles_and_sounds(consumable: &Consumable, user: &dyn LivingEntity) {
-    // TODO: spawn item-crumb particles when `has_consume_particles()` is set.
+fn emit_consume_particles_and_sounds(
+    consumable: &Consumable,
+    user: &dyn LivingEntity,
+    stack: &ItemStack,
+) {
+    // Vanilla `LivingEntity.triggerItemUseEffects`: with consume particles on,
+    // emit five `item` crumbs carrying the eaten stack.
+    if consumable.has_consume_particles()
+        && let Some(world) = user.level()
+    {
+        let position = user.position();
+        world.send_particles(
+            ParticleData::new(
+                &vanilla_particle_types::ITEM,
+                ItemParticleOption::new(ItemStackTemplate::new(stack.item())),
+            ),
+            position,
+            5,
+            DVec3::new(0.1, 0.1, 0.1),
+            0.0,
+        );
+    }
     let (volume, pitch) = if consumable.animation() == ItemUseAnimation::Drink {
         (0.5, 0.9 + rand::random::<f32>() * 0.1)
     } else {
@@ -466,9 +491,22 @@ pub(crate) fn finish_consuming_stack(
     if let Some(player) = user.as_player() {
         player.award_stat(&vanilla_stat_types::ITEM_USED, stack.item());
     }
-    // TODO: Spawn item-crumb particles when `has_consume_particles()` is set.
-    // TODO: Trigger CriteriaTriggers.CONSUME_ITEM once the advancement-criteria
-    // foundation exists.
+    if let Some(consumable) = stack.get(CONSUMABLE)
+        && consumable.has_consume_particles()
+        && let Some(world) = user.level()
+    {
+        let position = user.position();
+        world.send_particles(
+            ParticleData::new(
+                &vanilla_particle_types::ITEM,
+                ItemParticleOption::new(ItemStackTemplate::new(stack.item())),
+            ),
+            position,
+            5,
+            DVec3::new(0.1, 0.1, 0.1),
+            0.0,
+        );
+    }
 
     let mut used_stack = stack.copy_with_count(stack.count());
     if !user.has_infinite_materials() {
@@ -586,6 +624,9 @@ mod tests {
     use crate::behavior::{ITEM_BEHAVIORS, InteractionResult, UseItemContext, init_behaviors};
     use crate::entity::LivingEntity as _;
     use crate::entity::entities::ItemEntity;
+use steel_registry::item_stack_template::ItemStackTemplate;
+use steel_registry::particle_type::{ItemParticleOption, ParticleData};
+use steel_registry::vanilla_particle_types;
     use crate::inventory::container::Container as _;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
 
