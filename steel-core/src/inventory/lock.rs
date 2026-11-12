@@ -12,12 +12,13 @@ use std::mem;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use steel_utils::locks::Shared;
-use steel_utils::{Downcast as _, DowncastType, locks::SyncMutex};
+use steel_utils::{BlockPos, Downcast as _, DowncastType, locks::SyncMutex};
 
 use crate::{
     block_entity::{BlockEntityBase, SharedBlockEntity},
     inventory::container::Container,
     player::{Player, player_inventory::PlayerInventory},
+    world::World,
 };
 use steel_registry::item_stack::ItemStack;
 
@@ -158,6 +159,19 @@ impl ContainerRef {
     #[must_use]
     pub const fn container_id(&self) -> ContainerId {
         self.id
+    }
+
+    /// Returns the world that owns this container, when it is backed by a block
+    /// entity. Player inventories and detached containers have no level.
+    #[must_use]
+    pub fn level(&self) -> Option<Arc<World>> {
+        self.owner.as_ref()?.block_entity.level()
+    }
+
+    /// Returns the block position of the owning block entity, if any.
+    #[must_use]
+    pub fn owner_pos(&self) -> Option<BlockPos> {
+        Some(self.owner.as_ref()?.block_entity.pos())
     }
 
     /// Checks container access without locking its item storage.

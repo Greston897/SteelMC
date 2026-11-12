@@ -110,6 +110,12 @@ impl MenuKind for DoubleChestKind {
     fn still_valid(&self, _behavior: &MenuBehavior, player: &Player) -> bool {
         self.first.still_valid(player) && self.second.still_valid(player)
     }
+
+    fn removed(&mut self, _behavior: &mut MenuBehavior, player: &Player) {
+        // Vanilla counts viewers on each half of a double chest separately.
+        decrement_chest_openers(&self.first, player);
+        decrement_chest_openers(&self.second, player);
+    }
 }
 
 /// Menu type for a chest of `rows` rows.
@@ -147,6 +153,124 @@ impl MenuKind for ChestKind {
     fn still_valid(&self, _behavior: &MenuBehavior, player: &Player) -> bool {
         self.container.still_valid(player)
     }
+
+    fn removed(&mut self, _behavior: &mut MenuBehavior, player: &Player) {
+        // Vanilla `ChestBlock` decrements the opener count when the menu closes,
+        // which drops the `open` state and the comparator signal back to zero.
+        decrement_chest_openers(&self.container, player);
+    }
+}
+
+/// Decrements the opener counter of the chest block entity that owns `container`.
+///
+/// The owner handle on [`ContainerRef`] is the block entity base, which does not
+/// expose its counter, so the block entity is looked up through the world at the
+/// base's position instead.
+fn decrement_chest_openers(container: &ContainerRef, _player: &Player) {
+    let Some(world) = container.level() else {
+        return;
+    };
+    let Some(pos) = container.owner_pos() else {
+        return;
+    };
+    let Some(block_entity) = world.get_block_entity(pos) else {
+        return;
+    };
+    let Some(chest) = block_entity.downcast_ref::<ChestBlockEntity>() else {
+        return;
+    };
+    let state = chest.get_block_state();
+    chest
+        .openers_counter()
+        .decrement_openers(&world, pos, state, state.get_block());
+}
+
+/// Per-menu double-chest state: both halves for the validity check.
+pub struct DoubleChestKind {
+    /// First half.
+    first: ContainerRef,
+    /// Second half.
+    second: ContainerRef,
+}
+
+// SAFETY: This Steel-owned key uniquely identifies the concrete menu kind
+// within the process.
+unsafe impl steel_utils::DowncastType for DoubleChestKind {
+    const TYPE_KEY: steel_utils::DowncastTypeKey =
+        steel_utils::DowncastTypeKey::new("steel:menu/double_chest");
+}
+
+impl MenuKind for DoubleChestKind {
+    fn still_valid(&self, _behavior: &MenuBehavior, player: &Player) -> bool {
+        self.first.still_valid(player) && self.second.still_valid(player)
+    }
+
+    fn removed(&mut self, _behavior: &mut MenuBehavior, player: &Player) {
+        // Vanilla counts viewers on each half of a double chest separately.
+        decrement_chest_openers(&self.first, player);
+        decrement_chest_openers(&self.second, player);
+    }
+}
+
+/// Menu type for a chest of `rows` rows.
+///
+/// # Panics
+/// Panics if `rows` is 0 or greater than 6.
+#[must_use]
+pub fn menu_type_for_rows(rows: usize) -> MenuTypeRef {
+    match rows {
+        1 => &vanilla_menu_types::GENERIC_9X1,
+        2 => &vanilla_menu_types::GENERIC_9X2,
+        3 => &vanilla_menu_types::GENERIC_9X3,
+        4 => &vanilla_menu_types::GENERIC_9X4,
+        5 => &vanilla_menu_types::GENERIC_9X5,
+        6 => &vanilla_menu_types::GENERIC_9X6,
+        _ => panic!("Invalid row count: {rows}"),
+    }
+}
+
+/// Per-menu chest state: just the backing container for the validity check.
+pub struct ChestKind {
+    /// The backing container.
+    container: ContainerRef,
+}
+
+// SAFETY: This Steel-owned key uniquely identifies the concrete menu kind
+// within the process.
+unsafe impl steel_utils::DowncastType for ChestKind {
+    const TYPE_KEY: steel_utils::DowncastTypeKey =
+        steel_utils::DowncastTypeKey::new("steel:menu/chest");
+}
+
+impl MenuKind for ChestKind {
+    /// Returns true if the backing container is still valid for the player.
+    fn still_valid(&self, _behavior: &MenuBehavior, player: &Player) -> bool {
+        self.container.still_valid(player)
+    }
+
+    fn removed(&mut self, _behavior: &mut MenuBehavior, _player: &Player) {
+        // Vanilla `ChestBlock` closes the opener count when the menu is removed so
+        // the `open` state and the comparison signal drop back to zero.
+        close_openers(&self.container);
+    }
+}
+
+/// Notifies the chest block entity behind `container` that one viewer left.
+fn close_openers(container: &ContainerRef) {
+    let Some(block_entity) = container.block_entity_owner() else {
+        return;
+    };
+    let Some(chest) = block_entity.downcast_ref::<ChestBlockEntity>() else {
+        return;
+    };
+    let Some(world) = chest.get_level() else {
+        return;
+    };
+    let pos = chest.get_block_pos();
+    let state = chest.get_block_state();
+    chest
+        .openers_counter()
+        .decrement_openers(&world, pos, state, state.get_block());
 }
 
 #[cfg(test)]
