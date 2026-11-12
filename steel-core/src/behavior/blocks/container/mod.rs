@@ -1,3 +1,13 @@
+use std::sync::Arc;
+
+use steel_utils::{BlockPos, WorldAabb};
+
+use crate::entity::SharedEntity;
+use crate::entity::entities::PiglinEntity;
+use crate::entity::mob::Mob as _;
+use crate::player::Player;
+use crate::world::World;
+
 mod anvil_block;
 mod block_entity_blocks;
 mod barrel_block;
@@ -28,4 +38,30 @@ pub use ender_chest_block::*;
 pub use furnace_block::*;
 pub use grindstone_block::*;
 pub use shulker_box_block::*;
+
+/// Radius vanilla `EnderChestBlock` and `ShulkerBoxBlock` scan for piglins.
+const PIGLIN_ANGER_RADIUS: f64 = 4.0;
+
+/// Angers every piglin around `pos` and points it at `player`.
+///
+/// Vanilla runs this from `EnderChestBlock.useWithoutItem` and
+/// `ShulkerBoxBlock.useWithoutItem`, both through `setPersistentAngerTarget` for
+/// 20 seconds. Steel stores the anger as the piglin's attack target.
+pub(crate) fn anger_nearby_piglins(world: &Arc<World>, pos: BlockPos, player: &Player) {
+    let box_ = WorldAabb::new(
+        f64::from(pos.x()) - PIGLIN_ANGER_RADIUS,
+        f64::from(pos.y()) - PIGLIN_ANGER_RADIUS,
+        f64::from(pos.z()) - PIGLIN_ANGER_RADIUS,
+        f64::from(pos.x()) + PIGLIN_ANGER_RADIUS,
+        f64::from(pos.y()) + PIGLIN_ANGER_RADIUS,
+        f64::from(pos.z()) + PIGLIN_ANGER_RADIUS,
+    );
+    let player_entity: SharedEntity = Arc::<Player>::clone(player);
+    for entity in world.get_entities_in_aabb(&box_) {
+        let Some(piglin) = entity.as_entity_event_source().downcast_ref::<PiglinEntity>() else {
+            continue;
+        };
+        piglin.set_target(Some(&player_entity));
+    }
+}
 pub use station_blocks::*;

@@ -123,7 +123,7 @@ impl BlockBehavior for ShulkerBoxBlock {
 
             player.award_custom_stat(&vanilla_custom_stats::OPEN_SHULKER_BOX);
             // Vanilla angers nearby piglins when a player opens a shulker box.
-            // Steel has no piglin anger state yet, so nothing is dispatched here.
+            super::anger_nearby_piglins(world, pos, player);
         }
         InteractionResult::Success
     }
