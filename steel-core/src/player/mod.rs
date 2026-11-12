@@ -1023,7 +1023,17 @@ impl Player {
             );
         }
 
-        // TODO: combat tracker (getCombatTracker().recordDamage)
+        // Vanilla `CombatTracker.recordDamage` keeps the last damage source so
+        // the death message and `getLastDamageSource` see it. Steel records into
+        // the shared `DamageHistory` instead of a per-player tracker.
+        {
+            let world = self.get_world();
+            let clock = world.level_data.read().game_time_handle();
+            self.server()
+                .damage_history
+                .record(self.base(), source, &clock);
+        }
+
         if damage != 0.0 {
             self.cause_food_exhaustion(source.damage_type.exhaustion);
             self.set_health(self.get_health() - damage);
