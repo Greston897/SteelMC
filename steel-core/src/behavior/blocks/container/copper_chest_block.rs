@@ -22,6 +22,8 @@ use std::sync::Arc;
 use crate::behavior::BlockPlaceContext;
 use crate::behavior::PlacementSource;
 use crate::behavior::block::{BlockBehavior, schedule_water_tick_if_waterlogged};
+use crate::behavior::blocks::{WeatherState, WeatheringCopper};
+use crate::block_entity::entities::ChestBlockEntity;
 use crate::world::{ScheduledTickAccess, World};
 
 /// Copper chest behaviour
@@ -138,19 +140,40 @@ impl BlockBehavior for CopperChestBlock {
 #[block_behavior]
 pub struct WeatheringCopperChestBlock {
     block: BlockRef,
+    #[json_arg(r#enum = "WeatherState", json = "weather_state")]
+    weathering: WeatheringCopper,
 }
 
 impl WeatheringCopperChestBlock {
     /// creates a new chest behaviour
     #[must_use]
-    pub const fn new(block: BlockRef) -> Self {
-        Self { block }
+    pub const fn new(block: BlockRef, weather_state: WeatherState) -> Self {
+        Self {
+            block,
+            weathering: WeatheringCopper::new(weather_state),
+        }
     }
 }
 
 impl BlockBehavior for WeatheringCopperChestBlock {
-    // TODO: Implement weathering random ticks skipping right halves and chests with active viewers
-    // TODO: Expose the weathering age to neighboring copper blocks through the shared capability
+    fn random_tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        // Vanilla `WeatheringCopperChestBlock.changeOverTime` only weathers the
+        // left half, so a double chest oxidises once instead of twice, and it
+        // skips chests someone is looking into so an open chest never changes
+        // under the player.
+        if state.get_value(&BlockStateProperties::CHEST_TYPE) == ChestType::Right {
+            return;
+        }
+        if world
+            .get_block_entity(pos)
+            .and_then(|entity| entity.downcast_ref::<ChestBlockEntity>())
+            .is_some_and(|chest| chest.openers_counter().openers() > 0)
+        {
+            return;
+        }
+        self.weathering.change_over_time(state, world, pos);
+    }
+
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(chest_state_for_placement(self.block, context))
     }
