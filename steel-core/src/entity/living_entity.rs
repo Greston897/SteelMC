@@ -728,7 +728,9 @@ pub trait LivingEntity: Entity {
         {
             damage *= 5.0;
         }
-        // TODO: apply helmet damage once those equipment hooks exist.
+        // Vanilla `LivingEntity.hurtServer` → `damageHelmet`: a damaging hit
+        // wears down the helmet in the head slot.
+        self.damage_helmet(source, damage);
         if !damage.is_finite() {
             damage = f32::MAX;
         }
@@ -1818,6 +1820,30 @@ pub trait LivingEntity: Entity {
     ) {
         let mut equipment = self.living_base().equipment().lock();
         visitor(equipment.get_mut(slot));
+    }
+
+    /// Vanilla `LivingEntity.damageHelmet`: damage the helmet by the incoming
+    /// damage (rounded up), honouring the item's durability. Unbreakable and
+    /// non-damageable head items are left alone, as are hits that bypass armour.
+    fn damage_helmet(&self, source: &DamageSource, damage: f32) {
+        if damage < 1.0 {
+            return;
+        }
+        let amount = (damage as i32).max(1);
+        self.with_equipment_slot_mut(EquipmentSlot::Head, &mut |helmet| {
+            // `is_damageable_item` already excludes unbreakable items.
+            if !helmet.is_damageable_item() {
+                return;
+            }
+            if source.is(&vanilla_damage_type_tags::DamageTypeTag::BYPASSES_ARMOR) {
+                return;
+            }
+            // Vanilla `ItemStack.hurtAndBreak` keeps the stack in the slot and
+            // removes it when the durability runs out.
+            if helmet.hurt_and_break(amount, false) {
+                *helmet = ItemStack::empty();
+            }
+        });
     }
 
     /// Returns whether this entity currently has an item in `slot`.
