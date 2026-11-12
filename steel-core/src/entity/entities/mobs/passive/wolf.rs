@@ -19,6 +19,7 @@ use steel_registry::vanilla_entity_data::WolfEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
+use uuid::Uuid;
 
 use crate::entity::ai::goal::{
     FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
@@ -114,6 +115,18 @@ impl WolfEntity {
         *self.entity_data.lock().tamable_animal().flags.get() & 0x04 != 0
     }
 
+    /// Returns the owner UUID of this wolf, if tamed.
+    #[must_use]
+    pub fn owner_uuid(&self) -> Option<Uuid> {
+        *self.entity_data.lock().tamable_animal().owneruuid.get()
+    }
+
+    /// Vanilla `TamableAnimal.isOwnedBy`.
+    #[must_use]
+    pub fn is_owned_by(&self, uuid: Option<Uuid>) -> bool {
+        self.is_tame() && uuid.is_some() && self.owner_uuid() == uuid
+    }
+
     /// Vanilla `Wolf.getCollarColor`.
     #[must_use]
     pub fn collar_color(&self) -> i32 {
@@ -142,6 +155,10 @@ impl WolfEntity {
 impl DefaultEntityPush for WolfEntity {}
 
 impl Entity for WolfEntity {
+    fn is_tame_owned_by(&self, owner: &dyn crate::entity::LivingEntity) -> bool {
+        self.is_owned_by(Some(owner.uuid()))
+    }
+
     fn as_default_entity_push(&self) -> Option<&dyn DefaultEntityPush> {
         Some(self)
     }
