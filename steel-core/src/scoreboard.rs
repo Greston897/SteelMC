@@ -450,6 +450,16 @@ impl Scoreboard {
         true
     }
 
+    /// Returns the team the holder belongs to, if any.
+    #[must_use]
+    pub fn team_of(&self, holder: &ScoreHolder) -> Option<String> {
+        self.state
+            .read()
+            .holder_teams
+            .get(holder.name())
+            .cloned()
+    }
+
     /// Returns every holder currently on `team_name`, in stable order.
     #[must_use]
     pub fn team_members(&self, team_name: &str) -> Vec<String> {

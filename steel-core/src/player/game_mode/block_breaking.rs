@@ -305,7 +305,10 @@ impl BlockBreakingManager {
                 let block_state = world.get_block_state(pos);
 
                 if !is_air(block_state) {
-                    // TODO: Call EnchantmentHelper.onHitBlock before blockState.attack.
+                    // Vanilla calls `EnchantmentHelper.onHitBlock` here, which runs
+                    // the `hit_block`/`item_damage` enchantment effects that wear
+                    // the tool down. Steel has no per-block tool-damage path yet;
+                    // block behaviors are told about the hit directly.
                     BLOCK_BEHAVIORS
                         .get_behavior(block_state.get_block())
                         .attack(block_state, world, pos, player);

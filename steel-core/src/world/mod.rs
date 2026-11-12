@@ -215,6 +215,8 @@ pub enum ConditionalBlockSetResult {
 /// Configuration for creating a new world.
 #[derive(Clone)]
 pub struct WorldConfig {
+    /// Server this world belongs to, filled once during startup.
+    server: std::sync::OnceLock<std::sync::Weak<crate::server::Server>>,
     /// Server-owned history; the caller retains it while the world runs.
     pub damage_history: Arc<DamageHistory>,
     /// Domain game-time authority, bound during construction.
@@ -453,6 +455,7 @@ impl World {
                 chunk_map,
                 players: PlayerMap::new(),
                 player_area_map: PlayerAreaMap::new(),
+                server: std::sync::OnceLock::new(),
                 key,
                 dimension_type,
                 game_time: level_data.game_time_handle(),
@@ -535,6 +538,34 @@ impl World {
             Ok(count) => *total_saved += count,
             Err(e) => log::error!("Failed to save world chunks: {e}"),
         }
+    }
+
+    /// Attaches the owning server so world-scoped gameplay can reach
+    /// server-owned state such as scoreboards.
+    ///
+    /// Worlds are constructed before the server (they are fields of it), so the
+    /// link is filled once during startup; callers must tolerate `None` in tests.
+    pub fn attach_server(&self, server: &Arc<crate::server::Server>) {
+        let _ = self.server.set(Arc::downgrade(server));
+    }
+
+    /// Returns the owning server, if this world has been attached to one.
+    #[must_use]
+    pub fn server(&self) -> Option<Arc<crate::server::Server>> {
+        self.server.get().and_then(std::sync::Weak::upgrade)
+    }
+
+    /// Returns the scoreboard for this world's domain, if a server is attached.
+    ///
+    /// The scoreboard is built once from all worlds, so it borrows from the
+    /// server; callers clone whatever slice of state they need.
+    #[must_use]
+    pub fn with_scoreboard<R>(
+        &self,
+        f: impl FnOnce(&crate::scoreboard::Scoreboard) -> R,
+    ) -> Option<R> {
+        let server = self.server()?;
+        server.scoreboards.get(self.domain()).map(f)
     }
 
     /// Returns the domain this loaded world belongs to.

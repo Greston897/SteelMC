@@ -119,6 +119,14 @@ impl SteelServer {
             .player_idle_timeout
             .store(player_idle_timeout, Ordering::Relaxed);
 
+        // Worlds are built before the server, so hand each one the server handle
+        // now that the `Arc` exists. Scoreboards and other server-owned state are
+        // reached from world-scoped code through this link.
+        let server = Arc::new(server);
+        for world in server.worlds.values() {
+            world.attach_server(&server);
+        }
+
         let tcp_listener = TcpListener::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, server_port))
             .await
             .map_err(|source| SteelServerError::Bind {
@@ -130,7 +138,7 @@ impl SteelServer {
             tcp_listener,
             cancel_token,
             client_id: 0,
-            server: Arc::new(server),
+            server,
             connection_session: Arc::new(ServerConnectionSession::default()),
         })
     }

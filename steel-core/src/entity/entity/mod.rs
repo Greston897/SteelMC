@@ -1162,6 +1162,33 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         self.base().level()
     }
 
+    /// Returns the scoreboard team this entity belongs to, if any.
+    ///
+    /// Vanilla `Entity.getTeam` reads the server scoreboard; Steel reaches it
+    /// through the world's server link, so worlds without a server report none.
+    fn team_name(&self) -> Option<String> {
+        let world = self.level()?;
+        let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+        world.with_scoreboard(|scoreboard| scoreboard.team_of(&holder))?
+    }
+
+    /// Vanilla `Team.canCollideWith` for this entity's own team.
+    ///
+    /// Returns `true` when no team is set, because vanilla only constrains
+    /// collisions between members of the same team.
+    fn team_allows_friendly_fire(&self) -> bool {
+        let Some(team) = self.team_name() else {
+            return true;
+        };
+        let Some(world) = self.level() else {
+            return true;
+        };
+        world
+            .with_scoreboard(|scoreboard| scoreboard.team_state(&team))
+            .flatten()
+            .is_none_or(|state| state.allow_friendly_fire)
+    }
+
     /// Packs dirty entity data for network synchronization.
     ///
     /// Returns `Some(values)` if there are dirty values to sync, `None` otherwise.
