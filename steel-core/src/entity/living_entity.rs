@@ -2018,7 +2018,9 @@ pub trait LivingEntity: Entity {
         if let Some(mob) = self.as_mob() {
             mob.set_guaranteed_drop(slot);
         }
-        // TODO: Emit EQUIP game event once game-event dispatch is implemented.
+        // Vanilla `LivingEntity.onEquipItem` sends `GameEvent.EQUIP` so sculk
+        // sensors and vibration listeners observe the change.
+        self.game_event(&vanilla_game_events::EQUIP);
         InteractionResult::Success
     }
 
@@ -2069,6 +2071,17 @@ pub trait LivingEntity: Entity {
             changes.retain(|(slot, _, _)| {
                 !matches!(slot, EquipmentSlot::MainHand | EquipmentSlot::OffHand)
             });
+        }
+
+        // Vanilla `LivingEntity.tick` broadcasts `GameEvent.EQUIP` when any
+        // slot ends up non-empty and `GameEvent.UNEQUIP` when it ends up empty.
+        for (_, _, current) in &changes {
+            let event = if current.is_empty() {
+                &vanilla_game_events::UNEQUIP
+            } else {
+                &vanilla_game_events::EQUIP
+            };
+            self.game_event(event);
         }
 
         self.living_base().queue_equipment_changes(
