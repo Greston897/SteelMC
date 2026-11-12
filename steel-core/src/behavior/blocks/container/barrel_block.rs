@@ -49,7 +49,12 @@ impl BlockBehavior for BarrelBlock {
         Some(self.block.default_state().set_value(FACING, facing))
     }
 
-    fn allows_spectator_menu(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) -> bool {
+    fn allows_spectator_menu(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+    ) -> bool {
         // Vanilla `allowsSpectatorMenu` for container blocks.
         let _ = (state, world, pos);
         true

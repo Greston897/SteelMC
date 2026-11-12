@@ -66,7 +66,12 @@ impl BlockBehavior for AnvilBlock {
         ))
     }
 
-    fn allows_spectator_menu(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) -> bool {
+    fn allows_spectator_menu(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+    ) -> bool {
         // Vanilla `allowsSpectatorMenu` for container blocks.
         let _ = (state, world, pos);
         true
