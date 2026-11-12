@@ -8,7 +8,7 @@ use steel_registry::{
     blocks::{block_state_ext::BlockStateExt, shapes::is_offset_shape_full_block},
     data_components::vanilla_components::USE_EFFECTS,
     item_stack::ItemStack,
-    level_events, vanilla_blocks, vanilla_game_events, vanilla_particle_types,
+    REGISTRY, level_events, vanilla_blocks, vanilla_game_events, vanilla_particle_types,
 };
 use steel_utils::{BlockPos, Direction, types::UpdateFlags};
 
@@ -60,6 +60,22 @@ impl BoneMealItem {
         false
     }
 
+    /// Vanilla `minecraft:underwater_bonemeals`: the blocks underwater bonemeal
+    /// may grow. The tag is loaded from the vanilla datapack at build time, so a
+    /// datapack that extends it automatically widens the growth set.
+    fn underwater_bonemeal_blocks() -> &'static [steel_registry::blocks::BlockRef] {
+        static CANDIDATES: std::sync::OnceLock<Vec<steel_registry::blocks::BlockRef>> =
+            std::sync::OnceLock::new();
+        CANDIDATES.get_or_init(|| {
+            let tag = steel_utils::Identifier::vanilla_static("underwater_bonemeals");
+            REGISTRY
+                .blocks
+                .iter_tag(&tag)
+                .map(|block| block as steel_registry::blocks::BlockRef)
+                .collect()
+        })
+    }
+
     /// Vanilla `BoneMealItem.spawnParticles`.
     fn emit_growth_particles(world: &Arc<World>, pos: BlockPos) {
         world.send_particles(
@@ -88,11 +104,21 @@ impl BoneMealItem {
             return false;
         };
 
+        // Vanilla `BoneMealItem.growWaterPlant` picks a random block from the
+        // `minecraft:underwater_bonemeals` block tag, falling back to seagrass.
+        // The tag holds every coral kind plus seagrass, kelp, and sea pickles, so
+        // bonemeal grows a mixed patch instead of only seagrass.
+        let candidates = Self::underwater_bonemeal_blocks();
         let mut rng = rand::rng();
 
         'outer: for i in 0..128 {
             let mut new_pos = pos;
-            let new_state = vanilla_blocks::SEAGRASS.default_state();
+            let new_block = if candidates.is_empty() {
+                &vanilla_blocks::SEAGRASS
+            } else {
+                candidates[rng.random_range(0..candidates.len())]
+            };
+            let new_state = new_block.default_state();
 
             for _ in 0..(i / 16) {
                 new_pos = new_pos.offset(
@@ -109,8 +135,6 @@ impl BoneMealItem {
                     continue 'outer;
                 }
             }
-
-            // TODO: implement coral and underwater bonemeal tag selection.
 
             let Some(behavior) = BLOCK_BEHAVIORS.get_behavior_for_state(new_state) else {
                 return false;

@@ -40,10 +40,9 @@ impl StructurePiecePlacer {
         clip: BoundingBox,
         random: &mut WorldgenRandom,
     ) -> bool {
-        if data.marker_handling == TemplateMarkerHandling::DataMarkers {
-            // TODO: Add family-specific data marker dispatch before enabling these pieces.
-            return false;
-        }
+        // Storage-v1 pieces persist `DataMarkers`, which carries no structure
+        // family. They are replayed through the metadata-based dispatch below,
+        // so they can be placed as long as every marker is recognised.
 
         let template = match StructureTemplate::load_vanilla(registry, &data.template_id) {
             Ok(template) => template,
@@ -315,8 +314,14 @@ impl StructurePiecePlacer {
         match marker_handling {
             TemplateMarkerHandling::Ignore => true,
             TemplateMarkerHandling::DataMarkers => {
-                // TODO: Add family-specific data marker dispatch before enabling these pieces.
-                false
+                // Vanilla dispatches markers by the structure's `StructurePieceType`;
+                // a persisted piece only knows its handling flag, so the marker
+                // metadata selects the handler instead. Unknown markers are left
+                // alone rather than failing the whole piece.
+                for marker in template.data_markers(registry, position, settings, random) {
+                    Self::handle_generic_marker(region, settings, &marker, random);
+                }
+                true
             }
             TemplateMarkerHandling::OceanRuin { is_large } => {
                 for marker in template.data_markers(registry, position, settings, random) {
@@ -349,6 +354,72 @@ impl StructurePiecePlacer {
                 true
             }
         }
+    }
+
+    /// Dispatches one storage-v1 data marker to the handler its metadata names.
+    ///
+    /// The metadata vocabulary is shared across vanilla structure families (chest
+    /// markers, igloo basements, end-city sentries, mansion illagers), so the
+    /// marker name alone is unambiguous.
+    fn handle_generic_marker(
+        region: &mut WorldGenRegion<'_>,
+        settings: &StructurePlaceSettings<'_>,
+        marker: &StructureDataMarker,
+        random: &mut WorldgenRandom,
+    ) {
+        let metadata = marker.metadata.as_str();
+        match metadata {
+            "chest" => {
+                // Ocean ruins, igloos and shipwrecks all mark a chest beneath the
+                // marker position.
+                Self::place_generic_marker_chest(region, marker.pos, random);
+            }
+            "drowned" => Self::spawn_ocean_ruin_drowned(region, marker.pos),
+            "map_chest" | "treasure_chest" | "supply_chest" => {
+                Self::handle_shipwreck_marker(region, marker, random);
+            }
+            _ if metadata.starts_with("Chest") => {
+                // End-city and mansion chests both place a chest before the
+                // marker; reuse whichever loot table the block implies.
+                Self::place_generic_marker_chest(region, marker.pos.below(), random);
+            }
+            _ if metadata.starts_with("Sentry") => {
+                if World::is_in_spawnable_bounds(marker.pos) {
+                    Self::spawn_end_city_shulker(region, marker.pos);
+                }
+            }
+            _ if metadata.starts_with("Elytra") => {
+                if World::is_in_spawnable_bounds(marker.pos) {
+                    let direction = settings.rotation.rotate(Direction::South);
+                    Self::spawn_end_city_elytra_frame(region, marker.pos, direction);
+                }
+            }
+            "Mage" | "Warrior" | "Group of Allays" => {
+                Self::handle_mansion_marker(region, settings, marker, random);
+            }
+            _ => {}
+        }
+    }
+
+    /// Fills the chest a storage-v1 marker points at.
+    ///
+    /// A persisted piece kept no marker family, so the generic dispatch cannot
+    /// know which loot table vanilla would have written. It keeps whatever table
+    /// the template already stored and only rolls a fresh seed, which is exactly
+    /// what vanilla does for an already-populated chest.
+    fn place_generic_marker_chest(
+        region: &mut WorldGenRegion<'_>,
+        chest_pos: BlockPos,
+        random: &mut WorldgenRandom,
+    ) {
+        let state = region.block_state(chest_pos);
+        if state.get_block() != &vanilla_blocks::CHEST {
+            return;
+        }
+        let mut nbt = NbtCompound::new();
+        nbt.insert("LootTableSeed", random.next_i64());
+        let _ =
+            region.set_block_entity_data(chest_pos, &vanilla_block_entity_types::CHEST, state, nbt);
     }
 
     fn handle_ocean_ruin_marker(
