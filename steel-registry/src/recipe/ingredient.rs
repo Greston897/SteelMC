@@ -71,3 +71,48 @@ impl Ingredient {
         }
     }
 }
+
+/// Looks up an item's registry ID, failing instead of panicking before startup.
+fn item_id(item: ItemRef) -> std::io::Result<i32> {
+    let Some(id) = crate::RegistryEntry::try_id(item) else {
+        return Err(std::io::Error::other(
+            "item used in a recipe ingredient is not registered yet",
+        ));
+    };
+    i32::try_from(id).map_err(|_| std::io::Error::other("item ID does not fit in a VarInt"))
+}
+
+impl steel_utils::serial::WriteTo for Ingredient {
+    /// Encodes the ingredient as a `HolderSet<Item>`.
+    ///
+    /// Vanilla uses zero to refer to a tag by name and `count + 1` for an inline
+    /// item list, which is why an empty or single-item ingredient still has to
+    /// write the item count.
+    fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+        use steel_utils::codec::VarInt;
+        match self {
+            Self::Empty => VarInt(0).write(writer),
+            Self::Tag(tag) => {
+                VarInt(0).write(writer)?;
+                tag.write(writer)
+            }
+            Self::Item(item) => {
+                VarInt(2).write(writer)?;
+                VarInt(item_id(item)?).write(writer)
+            }
+            Self::Choice(items) => {
+                let len = i32::try_from(items.len())
+                    .map_err(|_| std::io::Error::other("ingredient is too large"))?;
+                VarInt(
+                    len.checked_add(1)
+                        .ok_or_else(|| std::io::Error::other("ingredient is too large"))?,
+                )
+                .write(writer)?;
+                for item in *items {
+                    VarInt(item_id(item)?).write(writer)?;
+                }
+                Ok(())
+            }
+        }
+    }
+}

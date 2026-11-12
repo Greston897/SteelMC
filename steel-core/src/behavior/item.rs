@@ -6,24 +6,39 @@ use std::sync::Arc;
 use std::borrow::Cow;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::data_components::Consumable;
+use steel_registry::data_components::components::OminousBottleAmplifier;
 use steel_registry::data_components::vanilla_components::{
-    BLOCKS_ATTACKS, CONSUMABLE, FOOD, KINETIC_WEAPON, USE_REMAINDER,
+    BLOCKS_ATTACKS, CONSUMABLE, FOOD, KINETIC_WEAPON, OMINOUS_BOTTLE_AMPLIFIER,
+    SUSPICIOUS_STEW_EFFECTS, USE_REMAINDER,
 };
 
 use steel_registry::data_components::vanilla_components::ITEM_NAME;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::stat::vanilla_stat_types;
-use steel_registry::{REGISTRY, RegistryEntry, RegistryExt, sound_events, vanilla_game_events};
+use steel_registry::{
+    REGISTRY, RegistryEntry, RegistryExt, sound_events, vanilla_game_events, vanilla_mob_effects,
+};
 use steel_utils::types::{InteractionHand, SignTextSlot};
 use text_components::TextComponent;
 
 use crate::behavior::items::{DefaultItemBehavior, SpawnEggItem, block_transformer};
-use crate::behavior::{InteractionResult, InventoryTickContext, UseItemContext, UseOnContext};
+use crate::behavior::{
+    CanMineContext, InteractionResult, InventoryTickContext, UseItemContext, UseOnContext,
+};
 use crate::block_entity::entities::{SignBlockEntity, SignText};
+use glam::DVec3;
+use steel_registry::item_stack_template::ItemStackTemplate;
+use steel_registry::particle_type::{ItemParticleOption, ParticleData};
+use steel_registry::vanilla_particle_types;
+
 use crate::entity::consume_effect::apply_consume_effect;
 use crate::entity::damage::DamageSource;
-use crate::entity::{Entity, LivingEntity, LivingEntityRef, SharedEntity};
+use crate::entity::entities::ItemEntity;
+use crate::entity::{Entity, LivingEntity, LivingEntityRef, MobEffectInstance, SharedEntity};
+use crate::inventory::click::MouseButton;
+use crate::inventory::lock::ContainerLockGuard;
+use crate::inventory::slots::Slot;
 use crate::player::{Player, player_inventory::EquipmentSwapResult};
 use crate::world::World;
 
@@ -81,10 +96,28 @@ pub trait ItemBehavior: Send + Sync {
         block_transformer::use_on(context)
     }
 
+    /// Returns whether the held stack may destroy `context.state`
+    /// (vanilla `ItemStack#canMine`).
+    ///
+    /// Runs right before a block is removed; `false` leaves the block in place.
+    /// The debug stick overrides this to select block properties instead of
+    /// breaking anything.
+    fn can_mine(&self, _context: &CanMineContext<'_>) -> bool {
+        true
+    }
+
     /// Called when this item is used (e.g. right click in air).
     fn use_item(&self, context: &mut UseItemContext) -> InteractionResult {
-        // TODO: Mirror Item.use for BLOCKS_ATTACKS and KINETIC_WEAPON so
-        // specialized behaviors inherit the complete Vanilla base path.
+        // Vanilla `Item.use` → `BlocksAttacks`/`KineticWeapon` start the timed
+        // use state, which is what makes shields block and the mace charge.
+        let starts_timed_use = context
+            .inv
+            .with_item(|item| item.has(BLOCKS_ATTACKS) || item.has(KINETIC_WEAPON));
+        if starts_timed_use {
+            context.player.start_using_item(context.hand);
+            return InteractionResult::Consume;
+        }
+
         let (consume_ticks, can_eat) = context.inv.with_item(|item| {
             let can_eat = item
                 .get(FOOD)
@@ -170,6 +203,39 @@ pub trait ItemBehavior: Send + Sync {
         }
     }
 
+    /// Vanilla `Item.onStackClicked`: called when this item is carried on the
+    /// cursor and the player clicks a menu slot.
+    ///
+    /// The implementation may move items between `stack`, the clicked `slot`
+    /// and its own contents while the menu's containers stay locked.
+    fn on_stack_clicked(
+        &self,
+        _stack: &mut ItemStack,
+        _slot: &dyn Slot,
+        _click: MouseButton,
+        _player: &Player,
+        _guard: &mut ContainerLockGuard,
+    ) -> bool {
+        false
+    }
+
+    /// Vanilla `Item.onClicked`: called when this item sits in the slot the
+    /// player clicked. `cursor` is the stack the player is carrying.
+    fn on_clicked(
+        &self,
+        _slot: &dyn Slot,
+        _click: MouseButton,
+        _player: &Player,
+        _guard: &mut ContainerLockGuard,
+        _cursor: &mut ItemStack,
+    ) -> bool {
+        false
+    }
+
+    /// Vanilla `Item.onItemEntityDestroyed`: runs right before an item entity
+    /// holding this item is discarded because it ran out of health.
+    fn on_item_entity_destroyed(&self, _entity: &ItemEntity) {}
+
     /// Called every tick while a living entity is actively using this item.
     fn on_use_tick(
         &self,
@@ -181,7 +247,7 @@ pub trait ItemBehavior: Send + Sync {
         if let Some(consumable) = stack.get(CONSUMABLE)
             && should_emit_consume_particles_and_sounds(consumable, ticks_remaining)
         {
-            emit_consume_particles_and_sounds(consumable, user.living());
+            emit_consume_particles_and_sounds(consumable, user.living(), stack);
         }
     }
 
@@ -297,8 +363,28 @@ fn should_emit_consume_particles_and_sounds(consumable: &Consumable, ticks_remai
     ticks_used > wait_ticks && ticks_remaining % 4 == 0
 }
 
-fn emit_consume_particles_and_sounds(consumable: &Consumable, user: &dyn LivingEntity) {
-    // TODO: spawn item-crumb particles when `has_consume_particles()` is set.
+fn emit_consume_particles_and_sounds(
+    consumable: &Consumable,
+    user: &dyn LivingEntity,
+    stack: &ItemStack,
+) {
+    // Vanilla `LivingEntity.triggerItemUseEffects`: with consume particles on,
+    // emit five `item` crumbs carrying the eaten stack.
+    if consumable.has_consume_particles()
+        && let Some(world) = user.level()
+    {
+        let position = user.position();
+        world.send_particles(
+            ParticleData::new(
+                &vanilla_particle_types::ITEM,
+                ItemParticleOption::new(ItemStackTemplate::new(stack.item())),
+            ),
+            position,
+            5,
+            DVec3::new(0.1, 0.1, 0.1),
+            0.0,
+        );
+    }
     let (volume, pitch) = if consumable.animation() == ItemUseAnimation::Drink {
         (0.5, 0.9 + rand::random::<f32>() * 0.1)
     } else {
@@ -308,6 +394,42 @@ fn emit_consume_particles_and_sounds(consumable: &Consumable, user: &dyn LivingE
     };
     if let Some(sound) = consumable.sound().registry_ref() {
         user.play_sound(sound, volume, pitch);
+    }
+}
+
+/// Applies consume-time hooks contributed by components other than
+/// `minecraft:consumable`.
+///
+/// Vanilla `ConsumableComponent.finishConsumption` runs
+/// `stack.streamAll(Consumable.class)`, and components such as
+/// `SuspiciousStewEffectsComponent` and `OminousBottleAmplifierComponent`
+/// implement `Consumable` to add their own effects on top of the consumable's
+/// `on_consume_effects` list. Both are plain `Item`s in vanilla, so the hooks
+/// live here rather than in an item behavior.
+fn apply_component_consume_hooks(stack: &ItemStack, user: &dyn LivingEntity) {
+    if let Some(stew) = stack.get(SUSPICIOUS_STEW_EFFECTS) {
+        // `SuspiciousStewEffectsComponent.onConsume`: one default-visibility
+        // instance per stew effect.
+        for effect in stew.effects() {
+            user.add_mob_effect(MobEffectInstance::with_duration(
+                effect.effect(),
+                effect.duration(),
+                0,
+            ));
+        }
+    }
+
+    if let Some(amplifier) = stack.get(OMINOUS_BOTTLE_AMPLIFIER) {
+        // `OminousBottleAmplifierComponent.onConsume`: Bad Omen for two hours
+        // with the amplifier stored in the component, without particles.
+        user.add_mob_effect(
+            MobEffectInstance::with_duration(
+                vanilla_mob_effects::BAD_OMEN,
+                OminousBottleAmplifier::EFFECT_DURATION,
+                amplifier.value(),
+            )
+            .with_visible(false),
+        );
     }
 }
 
@@ -354,6 +476,8 @@ pub(crate) fn finish_consuming_stack(
         }
     }
 
+    apply_component_consume_hooks(stack, user);
+
     for effect in consumable.on_consume_effects() {
         apply_consume_effect(effect, world, user);
     }
@@ -367,9 +491,22 @@ pub(crate) fn finish_consuming_stack(
     if let Some(player) = user.as_player() {
         player.award_stat(&vanilla_stat_types::ITEM_USED, stack.item());
     }
-    // TODO: Spawn item-crumb particles when `has_consume_particles()` is set.
-    // TODO: Trigger CriteriaTriggers.CONSUME_ITEM once the advancement-criteria
-    // foundation exists.
+    if let Some(consumable) = stack.get(CONSUMABLE)
+        && consumable.has_consume_particles()
+        && let Some(world) = user.level()
+    {
+        let position = user.position();
+        world.send_particles(
+            ParticleData::new(
+                &vanilla_particle_types::ITEM,
+                ItemParticleOption::new(ItemStackTemplate::new(stack.item())),
+            ),
+            position,
+            5,
+            DVec3::new(0.1, 0.1, 0.1),
+            0.0,
+        );
+    }
 
     let mut used_stack = stack.copy_with_count(stack.count());
     if !user.has_infinite_materials() {
@@ -470,16 +607,26 @@ impl Default for ItemBehaviorRegistry {
 mod tests {
     use std::sync::Arc;
 
+    use steel_registry::data_components::components::{
+        OminousBottleAmplifier, SuspiciousStewEffect, SuspiciousStewEffects,
+    };
     use steel_registry::data_components::{Consumable, vanilla_components};
     use steel_registry::item_stack::ItemStack;
     use steel_registry::stat::vanilla_stat_types;
-    use steel_registry::{init_vanilla_registry, vanilla_entities, vanilla_items, vanilla_potions};
+    use steel_registry::{
+        init_vanilla_registry, vanilla_entities, vanilla_items, vanilla_mob_effects,
+        vanilla_potions,
+    };
     use steel_utils::types::InteractionHand;
     use steel_utils::{ChunkPos, Downcast as _, WorldAabb};
 
     use super::finish_consuming_stack;
     use crate::behavior::{ITEM_BEHAVIORS, InteractionResult, UseItemContext, init_behaviors};
+    use crate::entity::LivingEntity as _;
     use crate::entity::entities::ItemEntity;
+use steel_registry::item_stack_template::ItemStackTemplate;
+use steel_registry::particle_type::{ItemParticleOption, ParticleData};
+use steel_registry::vanilla_particle_types;
     use crate::inventory::container::Container as _;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
 
@@ -680,5 +827,67 @@ mod tests {
                 .map(|(_, count)| count),
             Some(1)
         );
+    }
+
+    /// Vanilla `SuspiciousStewEffectsComponent` implements `Consumable`, so
+    /// eating the stew applies every effect stored in the component on top of
+    /// the consumable's own effects. Suspicious stew is a plain `Item` in
+    /// vanilla, which is why this lives in the shared consume path.
+    #[test]
+    fn eating_a_suspicious_stew_applies_its_component_effects() {
+        init_vanilla_registry();
+        init_behaviors();
+        let world_fixture = fresh_test_world("finish_consuming_suspicious_stew");
+        let world = &world_fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let player = TestPlayerBuilder::new(Arc::clone(world), "Test", 1).build();
+        player.set_client_loaded(true);
+
+        let stew_effect = SuspiciousStewEffect::new(vanilla_mob_effects::REGENERATION, 160);
+        let stew = SuspiciousStewEffects::new(vec![stew_effect]);
+        let mut stack = ItemStack::new(&vanilla_items::SUSPICIOUS_STEW);
+        stack.set(vanilla_components::SUSPICIOUS_STEW_EFFECTS, stew);
+
+        let remaining = finish_consuming_stack(&stack, world, player.as_ref());
+
+        // Vanilla turns the eaten stew into its bowl (`USE_REMAINDER`) in place.
+        assert!(remaining.is(&vanilla_items::BOWL));
+        assert_eq!(remaining.count(), 1);
+        let regeneration = player
+            .mob_effect(vanilla_mob_effects::REGENERATION)
+            .expect("stew effect should be applied");
+        assert_eq!(regeneration.duration(), 160);
+        assert_eq!(regeneration.amplifier(), 0);
+        assert!(regeneration.is_visible());
+    }
+
+    /// Vanilla `OminousBottleAmplifierComponent` implements `Consumable` and
+    /// grants Bad Omen for two hours with the amplifier stored in the
+    /// component. The bottle itself is a plain `Item` in vanilla.
+    #[test]
+    fn drinking_an_ominous_bottle_applies_bad_omen_with_its_amplifier() {
+        init_vanilla_registry();
+        init_behaviors();
+        let world_fixture = fresh_test_world("finish_consuming_ominous_bottle");
+        let world = &world_fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let player = TestPlayerBuilder::new(Arc::clone(world), "Test", 1).build();
+        player.set_client_loaded(true);
+
+        let amplifier = OminousBottleAmplifier::new(3);
+        let mut stack = ItemStack::new(&vanilla_items::OMINOUS_BOTTLE);
+        stack.set(vanilla_components::OMINOUS_BOTTLE_AMPLIFIER, amplifier);
+
+        let remaining = finish_consuming_stack(&stack, world, player.as_ref());
+
+        // Vanilla `ominous_bottle` carries no `use_remainder` component, so the
+        // bottle is simply consumed.
+        assert_eq!(remaining.count(), 0);
+        let bad_omen = player
+            .mob_effect(vanilla_mob_effects::BAD_OMEN)
+            .expect("ominous bottle should apply Bad Omen");
+        assert_eq!(bad_omen.duration(), OminousBottleAmplifier::EFFECT_DURATION);
+        assert_eq!(bad_omen.amplifier(), 3);
+        assert!(!bad_omen.is_visible());
     }
 }

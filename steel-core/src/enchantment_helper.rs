@@ -157,6 +157,22 @@ pub(crate) fn modify_smash_damage_per_fallen_block(
     )
 }
 
+/// Vanilla `EnchantmentHelper.processMobExperience`: the killer's main-hand
+/// `mob_experience` effects scale the dropped experience.
+pub(crate) fn process_mob_experience(
+    item: &ItemStack,
+    context: &EnchantmentDamageContext<'_>,
+    experience: i32,
+) -> i32 {
+    let scaled = apply_value_effects(
+        item,
+        EnchantmentEffectComponent::MobExperience,
+        context,
+        experience as f32,
+    );
+    scaled.max(0.0) as i32
+}
+
 pub(crate) fn is_immune_to_damage<V: LivingEntity + ?Sized>(
     victim: &V,
     damage_source: &DamageSource,
@@ -248,6 +264,83 @@ pub(crate) fn do_post_attack_effects_with_item_source(
         EnchantmentTarget::Attacker,
         context,
     );
+}
+
+/// Applies the `attributes` enchantment component of every equipped item to
+/// `attributes`, matching vanilla `EnchantmentHelper.runLocationChangedEffects`.
+///
+/// Each modifier uses the enchantment's declared id, so removing it later only
+/// needs that id. Returns whether any modifier changed.
+pub(crate) fn apply_attribute_effects(
+    attributes: &mut crate::entity::attribute::AttributeMap,
+    slot: EquipmentSlot,
+    item: &ItemStack,
+) -> bool {
+    if item.is_empty() {
+        return false;
+    }
+    let Some(enchantments) = item.get_enchantments() else {
+        return false;
+    };
+    let mut changed = false;
+    for (key, level) in enchantments.iter() {
+        if *level == 0 {
+            continue;
+        }
+        let Some(enchantment) = REGISTRY.enchantments.by_key(key) else {
+            continue;
+        };
+        if !enchantment.matching_slot(slot) {
+            continue;
+        }
+        for effect in enchantment.effects.attributes {
+            let amount = f64::from(effect.amount.calculate(*level as i32));
+            if amount == 0.0 {
+                continue;
+            }
+            changed |= attributes.add_modifier(
+                effect.attribute,
+                crate::entity::attribute::AttributeModifier {
+                    id: effect.id.clone(),
+                    amount,
+                    operation: effect.operation,
+                },
+                false,
+            );
+        }
+    }
+    changed
+}
+
+/// Removes every attribute modifier installed by [`apply_attribute_effects`]
+/// for `item`. Mirrors the removal half of vanilla's location-changed hook.
+pub(crate) fn remove_attribute_effects(
+    attributes: &mut crate::entity::attribute::AttributeMap,
+    slot: EquipmentSlot,
+    item: &ItemStack,
+) -> bool {
+    if item.is_empty() {
+        return false;
+    }
+    let Some(enchantments) = item.get_enchantments() else {
+        return false;
+    };
+    let mut changed = false;
+    for (key, level) in enchantments.iter() {
+        if *level == 0 {
+            continue;
+        }
+        let Some(enchantment) = REGISTRY.enchantments.by_key(key) else {
+            continue;
+        };
+        if !enchantment.matching_slot(slot) {
+            continue;
+        }
+        for effect in enchantment.effects.attributes {
+            changed |= attributes.remove_modifier(effect.attribute, &effect.id);
+        }
+    }
+    changed
 }
 
 fn apply_value_effects(

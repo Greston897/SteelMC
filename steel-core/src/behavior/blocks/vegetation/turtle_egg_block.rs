@@ -24,7 +24,9 @@ use crate::behavior::block::{
 };
 use crate::behavior::context::BlockPlaceContext;
 use crate::block_entity::SharedBlockEntity;
-use crate::entity::Entity;
+use crate::entity::{
+    Entity, EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest, spawn_entity,
+};
 use crate::player::Player;
 use crate::world::World;
 use crate::world::game_event::GameEventContext;
@@ -271,10 +273,27 @@ impl BlockBehavior for TurtleEggBlock {
                     level_events::encode_block_state_data(u32::from(state.0)),
                     None,
                 );
-                // TODO(turtle-entity): spawn one baby Turtle per egg here once the
-                // Turtle entity lands. Vanilla creates it with age -24000, calls
-                // setHomePos(pos), snaps it just above the nest, and adds it to the
-                // world. Wired up in the follow-up entity PR.
+                // Vanilla `TurtleEggBlock.randomTick`: one baby turtle per egg,
+                // spawned just above the nest with a negative age.
+                let request = EntitySpawnRequest {
+                    entity_type: &vanilla_entities::TURTLE,
+                    placement: EntitySpawnPlacement::Block {
+                        pos,
+                        try_move_down: false,
+                        moved_up: false,
+                    },
+                    reason: EntitySpawnReason::Natural,
+                    finalize_spawn: true,
+                    play_ambient_sound: false,
+                    item_stack: None,
+                    user_is_operator: false,
+                };
+                if let Ok(turtle) = spawn_entity(world, request)
+                    && let Some(ageable) = turtle.as_ageable_mob()
+                {
+                    // Vanilla sets `age = -24000` (a fresh baby).
+                    ageable.set_age(ageable.get_baby_start_age());
+                }
             }
         }
     }

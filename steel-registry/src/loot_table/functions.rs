@@ -380,11 +380,9 @@ impl LootFunction {
                 item.set_damage_fraction(damage.get_simple(ctx.rng), *add);
             }
             LootFunction::EnchantRandomly { options } => {
-                // TODO: Implement when enchantment system is ready
                 item.enchant_randomly(options, ctx.rng);
             }
             LootFunction::EnchantWithLevels { levels, options } => {
-                // TODO: Implement when enchantment system is ready
                 let level = levels.get_int(ctx.rng);
                 item.enchant_with_levels(level, options, ctx.rng);
             }
@@ -393,11 +391,9 @@ impl LootFunction {
                 item.copy_components(*source, include, ctx);
             }
             LootFunction::CopyState { block, properties } => {
-                // TODO: Implement block state copying
                 item.copy_block_state(block, properties, ctx);
             }
             LootFunction::SetComponents { components } => {
-                // TODO: Implement component setting from JSON
                 item.set_components_from_json(components);
             }
             LootFunction::SetCustomData { tag } => {
@@ -514,7 +510,11 @@ impl LootFunction {
                 item.count = 0;
             }
             LootFunction::Reference(_name) => {
-                // TODO: Implement function registry lookup
+                // Datagen inlines referenced functions (`steel-registry/build`
+                // resolves `function` references while generating), so no
+                // generated table carries a `Reference` function. Keeping the
+                // arm a no-op preserves the codec shape without inventing a
+                // runtime registry that nothing can populate.
             }
             LootFunction::Sequence { functions } => {
                 for cond_func in *functions {

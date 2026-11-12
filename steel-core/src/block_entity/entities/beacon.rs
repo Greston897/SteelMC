@@ -14,7 +14,10 @@ use std::{
 use glam::DVec3;
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::NbtCompound;
+use simdnbt::{FromNbtTag as _, ToNbtTag as _};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::data_components::{DataComponentMap, vanilla_components::CUSTOM_NAME};
+use steel_registry::item_predicate::LockCode;
 use steel_registry::mob_effect::MobEffectRef;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::{
@@ -27,8 +30,10 @@ use steel_utils::{
     BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, Identifier, WorldAabb,
 };
 
+use text_components::TextComponent;
+
 use crate::behavior::BLOCK_BEHAVIORS;
-use crate::block_entity::{BlockEntity, BlockEntityBase};
+use crate::block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter};
 use crate::chunk::heightmap::HeightmapType;
 use crate::chunk::light::MAX_LIGHT_LEVEL;
 use crate::entity::{LivingEntity as _, MobEffectInstance};
@@ -150,6 +155,10 @@ impl BeaconState {
 pub struct BeaconBlockEntity {
     base: Arc<BlockEntityBase>,
     state: Arc<SyncMutex<BeaconState>>,
+    /// Vanilla `BaseContainerBlockEntity.name`.
+    name: SyncMutex<Option<TextComponent>>,
+    /// Vanilla `BaseContainerBlockEntity.lockKey`.
+    lock_key: SyncMutex<LockCode>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `BeaconBlockEntity`.
@@ -170,11 +179,27 @@ impl BeaconBlockEntity {
         Self {
             base,
             state: Arc::new(SyncMutex::new(BeaconState::new())),
+            name: SyncMutex::new(None),
+            lock_key: SyncMutex::new(LockCode::NO_LOCK),
         }
     }
 
     pub(crate) fn state(&self) -> Arc<SyncMutex<BeaconState>> {
         Arc::clone(&self.state)
+    }
+
+    #[must_use]
+    pub fn custom_name(&self) -> Option<TextComponent> {
+        self.name.lock().clone()
+    }
+
+    pub fn set_custom_name(&self, name: Option<TextComponent>) {
+        *self.name.lock() = name;
+    }
+
+    #[must_use]
+    pub fn lock_key(&self) -> LockCode {
+        self.lock_key.lock().clone()
     }
 
     /// Handle the menu uses to mark this beacon changed.
@@ -342,19 +367,43 @@ impl BlockEntity for BeaconBlockEntity {
         &self.base
     }
 
-    // TODO: Persist `CustomName` and `Lock` like Vanilla. Both need foundations Steel lacks: a
-    //       block-entity display name and a `LockCode` type.
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
+        let nbt_view: BorrowedNbtCompoundView<'_, '_> = nbt.into();
+        *self.name.lock() = nbt_view
+            .get("CustomName")
+            .and_then(|tag| TextComponent::from_nbt(&tag.to_owned()));
+        *self.lock_key.lock() = nbt_view
+            .get("Lock")
+            .and_then(LockCode::from_nbt_tag)
+            .unwrap_or(LockCode::NO_LOCK);
+
         let mut state = self.state.lock();
         state.primary_power = Self::load_effect(nbt, "primary_effect");
         state.secondary_power = Self::load_effect(nbt, "secondary_effect");
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
+        if let Some(name) = self.name.lock().as_ref() {
+            nbt.insert("CustomName", name.to_codec_nbt());
+        }
+        {
+            let lock_key = self.lock_key.lock().clone();
+            if lock_key != LockCode::NO_LOCK {
+                nbt.insert("Lock", lock_key.to_nbt_tag());
+            }
+        }
         let state = self.state.lock();
         Self::store_effect(nbt, "primary_effect", state.primary_power);
         Self::store_effect(nbt, "secondary_effect", state.secondary_power);
         nbt.insert("Levels", state.levels);
+    }
+
+    fn apply_implicit_components(&self, components: &mut ImplicitComponentGetter<'_>) {
+        *self.name.lock() = components.get(CUSTOM_NAME);
+    }
+
+    fn collect_implicit_components(&self, components: &mut DataComponentMap) {
+        components.set(CUSTOM_NAME, self.custom_name());
     }
 
     fn get_update_tag(&self) -> Option<NbtCompound> {

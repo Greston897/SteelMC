@@ -198,6 +198,11 @@ impl Player {
         let behavior = block_behaviors.get_behavior(block);
 
         let block_entity = world.get_block_entity(packet.pos);
+        // Saved before the block entity is handed to the behavior, which may
+        // consume the shared handle.
+        let picked_data = block_entity
+            .as_ref()
+            .map(|block_entity| (block_entity.get_type(), block_entity.save_custom_only()));
 
         let include_data = self.has_infinite_materials() && packet.include_data;
 
@@ -211,7 +216,18 @@ impl Player {
             return;
         }
 
-        // TODO: If include_data, copy the block entity data into the picked item stack.
+        // Vanilla `ServerGameMode.handlePickItemFromBlock`: with data included
+        // (`hasInfiniteMaterials` + the request flag) the block entity's saved
+        // NBT becomes the item's `block_entity_data` component.
+        let mut item_stack = item_stack;
+        if include_data && let Some((block_entity_type, nbt)) = picked_data {
+            if let Some(data) = CustomData::try_from_compound(nbt) {
+                item_stack.set(
+                    vanilla_components::BLOCK_ENTITY_DATA,
+                    BlockEntityData::new(block_entity_type, data),
+                );
+            }
+        }
 
         let mut inventory = self.inventory.lock();
 

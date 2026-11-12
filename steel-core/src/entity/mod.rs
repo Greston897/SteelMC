@@ -747,6 +747,7 @@ pub mod attribute;
 mod base;
 mod block_attached_entity;
 mod block_effects;
+pub(crate) mod bucketable;
 mod callback;
 mod combat_rules;
 pub mod consume_effect;
@@ -781,9 +782,11 @@ mod movement_sync;
 mod potion_contents;
 pub mod projectile;
 pub(crate) mod pushing;
+mod ranged_attack;
 mod reference;
 mod registry;
 pub(crate) mod selector;
+pub(crate) mod natural_spawner;
 mod spawn;
 mod spawn_placements;
 mod storage;
@@ -829,6 +832,7 @@ pub use living_base::{
     sync_dirty_mob_effects,
 };
 pub use living_entity::LivingEntity;
+pub use living_entity::create_wither_rose;
 pub(crate) use manager::EntityCollisionCandidates;
 #[cfg(feature = "benchmark-support")]
 pub use manager::benchmark_support as entity_manager_benchmark_support;
@@ -850,7 +854,8 @@ pub use projectile::{
     AbstractThrownPotion, EntityHitResult, Projectile, ProjectileBase, ProjectileDeflection,
     ProjectileEventSource, ProjectileHit, SPLASH_HORIZONTAL_REACH, SPLASH_RANGE_SQ,
     SPLASH_VERTICAL_REACH, ThrowableItemProjectile, ThrowableProjectile, ViewVectorHitResult,
-    compute_margin, get_hit_result_on_view_vector, spawn_throwable_item_projectile,
+    compute_margin, get_hit_result_on_view_vector, spawn_projectile_from_rotation,
+    spawn_throwable_item_projectile,
 };
 pub use pushing::{DefaultEntityPush, EntityPushSnapshot};
 pub use reference::EntityReference;
@@ -1407,6 +1412,8 @@ pub(crate) fn entity_loot_ref<'a>(
         sheep_color: sheep.map(|(color, _)| color),
         sheep_sheared: sheep.map(|(_, sheared)| sheared),
         chicken_variant: living_entity.and_then(LivingEntity::chicken_loot_variant),
+        // Scoreboard holder names need an entity display-name snapshot.
+        holder_name: None,
     }
 }
 

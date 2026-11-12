@@ -52,6 +52,6 @@ pub use sign::{SIGN_LINES, SignBlockEntity, SignText};
 pub use skull::SkullBlockEntity;
 pub use spawner::{
     BaseSpawner, BaseSpawnerConfig, CustomSpawnRules, EquipmentTable, LightRange, SpawnData,
-    Spawner, SpawnerBlockEntity, WeightedSpawnData,
+    Spawner, SpawnerBlockEntity, SpawnerTickResult, WeightedSpawnData,
 };
 pub use unimplemented::UnimplementedBlockEntity;
