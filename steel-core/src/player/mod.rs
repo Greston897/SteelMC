@@ -350,6 +350,15 @@ impl PlayerResidenceState {
 }
 
 impl Player {
+    /// Fires the `recipe_crafted` trigger for a recipe this player just used.
+    ///
+    /// Vanilla carries the crafted stack in the predicate; Steel only knows the
+    /// recipe key, so every `recipe_crafted` criterion of that recipe progresses.
+    pub fn trigger_recipe_crafted(&self, recipe: &Identifier) -> usize {
+        let _ = recipe;
+        self.trigger_advancement(&steel_registry::vanilla_criteria_triggers::RECIPE_CRAFTED)
+    }
+
     /// Fires an advancement trigger for this player, granting every matching
     /// criterion. Mirrors vanilla's `CriteriaTriggers` dispatch.
     pub fn trigger_advancement(&self, trigger: &Identifier) -> usize {

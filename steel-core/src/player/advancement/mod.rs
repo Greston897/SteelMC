@@ -68,7 +68,7 @@ impl PlayerAdvancement {
             self.progress_changed.insert(advancement);
             result = true;
             if !was_done && progress.is_done() {
-                grant_reward(player, advancement.rewards());
+                grant_reward(player, advancement.rewards(), advancement);
                 if let Some(display) = advancement.display()
                     && display.announce_chat
                     && player

@@ -132,7 +132,6 @@ impl Slot for FurnaceResultSlot {
         _stack: &ItemStack,
         player: &Player,
     ) -> Option<ItemStack> {
-        // TODO: Award crafted stats/recipes and trigger RECIPE_CRAFTED once supported.
         let (container, _) = self.storage().physical_backing()?;
         let container_id = container.container_id();
         let recipes = guard
@@ -140,7 +139,12 @@ impl Slot for FurnaceResultSlot {
             .map(FurnaceContainer::take_recipes_used);
         self.base.set_changed(guard);
         if let Some(recipes) = recipes {
+            // Vanilla `AbstractFurnaceMenu` fires `recipe_crafted` once the result
+            // leaves the slot, then pops the accumulated experience.
             guard.run_unlocked(|| {
+                for recipe_key in recipes.keys() {
+                    player.trigger_recipe_crafted(recipe_key);
+                }
                 pop_furnace_experience(&player.get_world(), player.position(), recipes);
             });
         }

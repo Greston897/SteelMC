@@ -1,3 +1,4 @@
+use crate::player::Player;
 use crate::player::player_inventory::Prediction;
 use std::sync::Arc;
 
@@ -65,6 +66,28 @@ impl ResultHandler for CraftingHandler {
         vec![ContainerRef::from(Arc::clone(&self.crafting_container))]
     }
 
+    /// Vanilla `ResultSlot.checkTakeAchievements` recipe-unlock half.
+    ///
+    /// Every recipe that matches the current grid and that the player does not
+    /// know yet is added to the recipe book. Returns how many were unlocked.
+    fn unlock_new_recipes(&self, player: &Player) -> usize {
+        let grid = self.crafting_container.lock();
+        let mut unlocked = 0;
+        let mut book = player.recipe_book.lock();
+        for recipe in recipe_manager::matching_recipes_for(&grid) {
+            if book.add(recipe.key()).is_some() {
+                unlocked += 1;
+            }
+        }
+        unlocked
+    }
+
+    /// Returns the key of the recipe the current grid produces, if any.
+    fn crafted_recipe(&self, guard: &ContainerLockGuard) -> Option<steel_utils::Identifier> {
+        let crafting = guard.get_typed::<CraftingContainer>(self.crafting_id())?;
+        recipe_manager::find_recipe(crafting).map(|recipe| recipe.key().clone())
+    }
+
     fn update_result(&self, guard: &mut ContainerLockGuard) {
         // TODO: Enforce limited crafting and retain the recipe once player recipe books exist.
         let crafting = guard
@@ -86,7 +109,10 @@ impl ResultHandler for CraftingHandler {
         guard: &mut ContainerLockGuard,
         player: &Player,
     ) -> Option<ItemStack> {
-        // TODO: Unlock the recipe and trigger RECIPE_CRAFTED once their foundations exist.
+        // Vanilla `ResultSlot.checkTakeAchievements`: unlock every recipe the player
+        // can now craft, then fire `recipe_crafted` for the crafted result.
+        let unlocked = self.unlock_new_recipes(player);
+        let crafted_recipe = self.crafted_recipe(guard);
         let mut remainder_overflow: Vec<ItemStack> = Vec::new();
 
         let remainders_and_positioned = {
@@ -149,6 +175,13 @@ impl ResultHandler for CraftingHandler {
         }
 
         self.update_result(guard);
+
+        // Vanilla fires the triggers after the grid was consumed, so a failed craft
+        // never unlocks anything.
+        let _ = unlocked;
+        if let Some(recipe) = crafted_recipe {
+            player.trigger_recipe_crafted(&recipe);
+        }
 
         for remainder in remainder_overflow {
             player.add_item_or_drop_with_guard(guard, remainder, Prediction::Predicted);

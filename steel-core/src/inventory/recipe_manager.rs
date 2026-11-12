@@ -42,6 +42,22 @@ pub fn find_recipe(crafting: &CraftingContainer) -> Option<CraftingRecipeRef> {
         .find_match(&vanilla_recipe_types::CRAFTING, &positioned.input)
 }
 
+/// Returns every crafting recipe matching the current grid, in registry order.
+///
+/// Mirrors the recipe list vanilla hands to `ServerPlayer.awardRecipes`, which
+/// unlocks all newly available recipes after a craft.
+#[must_use]
+pub fn matching_recipes_for(crafting: &CraftingContainer) -> Vec<CraftingRecipeRef> {
+    let positioned = crafting.as_positioned_input();
+    if positioned.input.is_empty() {
+        return Vec::new();
+    }
+    REGISTRY
+        .recipes
+        .matching(&vanilla_recipe_types::CRAFTING, &positioned.input)
+        .collect()
+}
+
 /// Finds and interprets the output for the current crafting container.
 #[must_use]
 pub fn assemble_for_container(crafting: &CraftingContainer) -> Option<ItemStack> {
