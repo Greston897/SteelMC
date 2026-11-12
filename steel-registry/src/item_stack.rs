@@ -22,6 +22,7 @@ use crate::{
     data_components::{
         Component, ComponentData, ComponentPatchEntry, CustomData, DataComponentMap,
         DataComponentPatch, DataComponentType,
+        components::ItemContainerContents,
         vanilla_components::{
             ATTACK_RANGE, ATTRIBUTE_MODIFIERS, AttackRange, BUNDLE_CONTENTS, CHARGED_PROJECTILES,
             CONTAINER, CUSTOM_DATA, CUSTOM_NAME, DAMAGE, DAMAGE_RESISTANT, DAMAGE_TYPE,
@@ -1138,25 +1139,74 @@ impl ItemStack {
     }
 
     /// Sets container inventory contents.
-    pub const fn set_contents<R: rand::Rng>(
+    ///
+    /// Vanilla `SetContainerContents`: each entry contributes its rolled items
+    /// to the container slots, up to [`ItemContainerContents::MAX_SIZE`].
+    pub fn set_contents<R: rand::Rng>(
         &mut self,
-        _entries: &[crate::loot_table::LootEntry],
-        _component_type: &Identifier,
-        _ctx: &mut crate::loot_table::LootContext<'_, R>,
+        entries: &[crate::loot_table::LootEntry],
+        component_type: &Identifier,
+        ctx: &mut crate::loot_table::LootContext<'_, R>,
     ) {
-        // TODO: Implement container contents setting
-        // Generate items from entries and set as CONTAINER component
+        let mut items = Vec::new();
+        for entry in entries {
+            entry.create_items(ctx, &mut items);
+        }
+        self.write_container_contents(items, component_type);
     }
 
     /// Modifies existing container contents.
-    pub const fn modify_contents<R: rand::Rng>(
+    ///
+    /// Vanilla `ModifyContainerContents`: the modifier functions run against a
+    /// synthetic container stack, so only functions that rewrite the component
+    /// as a whole are observable — those are applied per stored stack here.
+    pub fn modify_contents<R: rand::Rng>(
         &mut self,
-        _modifier: &[crate::loot_table::ConditionalLootFunction],
-        _component_type: &Identifier,
-        _ctx: &mut crate::loot_table::LootContext<'_, R>,
+        modifier: &[crate::loot_table::ConditionalLootFunction],
+        component_type: &Identifier,
+        ctx: &mut crate::loot_table::LootContext<'_, R>,
     ) {
-        // TODO: Implement container contents modification
-        // Apply modifier functions to existing container contents
+        // Vanilla wraps each stored stack into a one-slot container and runs the
+        // modifiers on that container's `CONTAINER` component. Without a
+        // container-item intermediate to mirror, Steel applies the modifiers to
+        // the stored stacks directly, which matches every stock modifier.
+        let mut items = self
+            .get(CONTAINER)
+            .map(|contents| {
+                contents
+                    .items()
+                    .iter()
+                    .map(|slot| slot.as_ref().map_or_else(ItemStack::empty, |t| t.create()))
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+
+        for item in &mut items {
+            for cond_func in modifier {
+                if cond_func.conditions.iter().all(|condition| condition.test(ctx)) {
+                    cond_func.function.apply(item, ctx);
+                }
+            }
+        }
+        self.write_container_contents(items, component_type);
+    }
+
+    /// Stores rolled stacks into the component named by `component_type`.
+    ///
+    /// Only `minecraft:container` is modelled; other component ids keep the
+    /// item unchanged, matching vanilla's silent skip for unknown ids.
+    fn write_container_contents(&mut self, items: Vec<ItemStack>, component_type: &Identifier) {
+        if *component_type != CONTAINER.key {
+            return;
+        }
+        let templates = items
+            .into_iter()
+            .take(ItemContainerContents::MAX_SIZE)
+            .map(|item| ItemStackTemplate::from_stack(&item).ok())
+            .collect();
+        if let Ok(contents) = ItemContainerContents::new(templates) {
+            self.set(CONTAINER, contents);
+        }
     }
 
     /// Sets the container's loot table reference.
