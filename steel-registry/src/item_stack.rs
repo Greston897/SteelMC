@@ -1221,14 +1221,23 @@ impl ItemStack {
         self.set(ATTRIBUTE_MODIFIERS, current);
     }
 
-    /// Fills a player head with texture from an entity.
-    pub const fn fill_player_head<R: rand::Rng>(
+    /// Fills a player head with the profile of a player entity.
+    ///
+    /// Vanilla `FillPlayerHeadFunction` copies the `GameProfile` of the source
+    /// entity into the `profile` component; only players carry one, so a
+    /// non-player source leaves the stack untouched.
+    pub fn fill_player_head<R: rand::Rng>(
         &mut self,
-        _entity: crate::loot_table::LootContextEntity,
-        _ctx: &crate::loot_table::LootContext<'_, R>,
+        entity: crate::loot_table::LootContextEntity,
+        ctx: &crate::loot_table::LootContext<'_, R>,
     ) {
-        // TODO: Implement player head texture filling
-        // Get player profile from entity and set PROFILE component
+        let Some(profile) = ctx.get_entity(entity).and_then(|entity| entity.profile) else {
+            return;
+        };
+        self.set(
+            crate::data_components::vanilla_components::PROFILE,
+            crate::resolvable_profile::ResolvableProfile::from(profile.clone()),
+        );
     }
 
     /// Copies custom NBT data from a source.

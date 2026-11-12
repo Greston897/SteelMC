@@ -342,6 +342,8 @@ pub struct EntityRef<'a> {
     pub chicken_variant: Option<&'a Identifier>,
     /// Scoreboard holder name, used by score-backed loot conditions.
     pub holder_name: Option<&'a str>,
+    /// Full player profile, used by `fill_player_head`.
+    pub profile: Option<&'a crate::game_profile::GameProfile>,
 }
 
 /// Entity flags for predicate checking.

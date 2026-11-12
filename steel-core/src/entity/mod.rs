@@ -1414,6 +1414,8 @@ pub(crate) fn entity_loot_ref<'a>(
         chicken_variant: living_entity.and_then(LivingEntity::chicken_loot_variant),
         // Scoreboard holder names need an entity display-name snapshot.
         holder_name: None,
+        // Only players carry a profile; vanilla `fill_player_head` needs it.
+        profile: entity.as_player().map(|player| &player.gameprofile),
     }
 }
 
