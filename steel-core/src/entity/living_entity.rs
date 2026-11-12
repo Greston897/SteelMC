@@ -777,7 +777,22 @@ pub trait LivingEntity: Entity {
     }
 
     /// Damages equipment that participates in vanilla armor absorption.
-    fn hurt_armor(&self, _source: &DamageSource, _damage: f32) {}
+    ///
+    /// Vanilla `LivingEntity.hurtArmor` damages the four armor slots; mobs and
+    /// players share the same path, so it lives on the trait instead of being
+    /// re-implemented per type.
+    fn hurt_armor(&self, source: &DamageSource, damage: f32) {
+        self.do_hurt_equipment(
+            source,
+            damage,
+            &[
+                EquipmentSlot::Feet,
+                EquipmentSlot::Legs,
+                EquipmentSlot::Chest,
+                EquipmentSlot::Head,
+            ],
+        );
+    }
 
     /// Damages equipped items in the given slots that are eligible to absorb this damage source.
     fn do_hurt_equipment(&self, source: &DamageSource, damage: f32, slots: &[EquipmentSlot]) {

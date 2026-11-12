@@ -2023,19 +2023,6 @@ impl LivingEntity for Player {
         !self.has_client_loaded()
     }
 
-    fn hurt_armor(&self, source: &DamageSource, damage: f32) {
-        self.do_hurt_equipment(
-            source,
-            damage,
-            &[
-                EquipmentSlot::Feet,
-                EquipmentSlot::Legs,
-                EquipmentSlot::Chest,
-                EquipmentSlot::Head,
-            ],
-        );
-    }
-
     fn actually_hurt(&self, world: &World, source: &DamageSource, amount: f32) {
         Player::actually_hurt(self, world, source, amount);
     }
