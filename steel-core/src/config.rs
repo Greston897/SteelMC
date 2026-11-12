@@ -133,6 +133,38 @@ impl Default for RuntimeConfig {
 }
 
 impl RuntimeConfig {
+    /// Minimum view distance the server accepts from a client.
+    ///
+    /// Vanilla never sends fewer than two chunks, because a one-chunk view
+    /// leaves the client unable to render a full chunk column.
+    pub const MIN_VIEW_DISTANCE: u8 = 2;
+
+    /// Clamps a client-requested view distance to the server's configured range.
+    ///
+    /// This is the single place both the configuration-state handler and the
+    /// play-state client-information handler apply the bound, so the two can
+    /// never disagree about the effective distance.
+    #[must_use]
+    pub const fn clamp_view_distance(&self, requested: u8) -> u8 {
+        // Both bounds are lifted to the floor first: a config that asks for one
+        // chunk still yields a usable distance instead of propagating the value.
+        let requested = if requested < Self::MIN_VIEW_DISTANCE {
+            Self::MIN_VIEW_DISTANCE
+        } else {
+            requested
+        };
+        let ceiling = if self.view_distance < Self::MIN_VIEW_DISTANCE {
+            Self::MIN_VIEW_DISTANCE
+        } else {
+            self.view_distance
+        };
+        if requested > ceiling {
+            ceiling
+        } else {
+            requested
+        }
+    }
+
     /// Builds the `CServerLinks` packet from config, if server links are enabled.
     #[must_use]
     pub fn server_links_packet(&self) -> Option<CServerLinks> {
@@ -1319,5 +1351,22 @@ default = true
             validate_relative_path("region", "storage.config.path"),
             Ok(())
         );
+    }
+
+    #[test]
+    fn view_distance_clamp_lifts_the_floor_on_both_sides() {
+        let mut config = RuntimeConfig::default();
+
+        config.view_distance = 10;
+        assert_eq!(config.clamp_view_distance(0), 2);
+        assert_eq!(config.clamp_view_distance(1), 2);
+        assert_eq!(config.clamp_view_distance(2), 2);
+        assert_eq!(config.clamp_view_distance(7), 7);
+        assert_eq!(config.clamp_view_distance(32), 10);
+
+        // A server configured below vanilla's floor still yields a usable value.
+        config.view_distance = 1;
+        assert_eq!(config.clamp_view_distance(1), 2);
+        assert_eq!(config.clamp_view_distance(8), 2);
     }
 }

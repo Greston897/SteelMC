@@ -208,10 +208,6 @@ impl Player {
 
     /// Lowest view distance the server accepts from a client.
     ///
-    /// Vanilla clamps at 2; the server config never asks for less, so this is the
-    /// single place the floor is defined.
-    const MIN_CLIENT_VIEW_DISTANCE: u8 = 2;
-
     /// Handles client information updates during play phase.
     pub fn handle_client_information(&self, packet: SClientInformation) {
         let old_view_distance = self.view_distance();
@@ -219,11 +215,7 @@ impl Player {
 
         let info = ClientInformation {
             language: packet.language,
-            view_distance: packet
-                .view_distance
-                .max(MIN_CLIENT_VIEW_DISTANCE)
-                .cast_unsigned()
-                .min(self.config.view_distance.max(2)),
+            view_distance: self.config.clamp_view_distance(packet.view_distance.cast_unsigned()),
             chat_visibility: packet.chat_visibility,
             chat_colors: packet.chat_colors,
             model_customization: packet.model_customization,
