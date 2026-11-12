@@ -338,21 +338,20 @@ impl World {
 
         if drop_items {
             self.drop_resources_with_entity(state, pos, entity);
-            // TODO: This only covers the `drop_items` path. In vanilla, container
-            // content dropping runs unconditionally on any block-entity removal
-            // (BlockEntity.preRemoveSideEffects via LevelChunk.setBlockState) —
-            // independent of drop_items — so explosions, pistons, etc. still need
-            // a similar hook once Steel's block-update pipeline has one.
-            if let Some(block_entity) = self.get_block_entity(pos)
-                && let Some(container_ref) = ContainerRef::from_block_entity(block_entity)
-            {
-                let mut guard = ContainerLockGuard::lock_all(&[&container_ref]);
-                if let Some(container) = guard.get_mut(container_ref.container_id()) {
-                    for slot in 0..container.get_container_size() {
-                        let item = container.remove_item_no_update(slot);
-                        if !item.is_empty() {
-                            self.pop_resource(pos, item);
-                        }
+        }
+
+        // Vanilla `BlockEntity.preRemoveSideEffects` drops container contents on
+        // *any* removal, independent of the `drop_items` loot flag: a container
+        // destroyed by a piston or explosion still spills its items.
+        if let Some(block_entity) = self.get_block_entity(pos)
+            && let Some(container_ref) = ContainerRef::from_block_entity(block_entity)
+        {
+            let mut guard = ContainerLockGuard::lock_all(&[&container_ref]);
+            if let Some(container) = guard.get_mut(container_ref.container_id()) {
+                for slot in 0..container.get_container_size() {
+                    let item = container.remove_item_no_update(slot);
+                    if !item.is_empty() {
+                        self.pop_resource(pos, item);
                     }
                 }
             }
@@ -378,7 +377,6 @@ impl World {
     /// This is the no-tool/no-entity overload. Player block breaking uses
     /// `block_breaking::drop_block_loot` which includes tool context for
     /// fortune/silk touch.
-    // TODO: block entity and entity drops
     pub fn drop_resources(self: &Arc<Self>, state: BlockStateId, pos: BlockPos) {
         self.drop_resources_with_entity(state, pos, None);
     }
