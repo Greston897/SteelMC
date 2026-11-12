@@ -7,7 +7,7 @@ use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
 
 use super::super::{
-    brigadier::{CommandNodeBuilder, CommandSyntaxError},
+    brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
     execution::{
         CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
         literal,
@@ -25,12 +25,12 @@ pub(super) fn me_registration() -> CommandRegistration<CommandSource> {
 
 fn say_command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("say")
-        .then(argument("message", SteelArgumentType::greedy_string()).executes(broadcast_say))
+        .then(argument("message", ArgumentType::greedy_string()).executes(broadcast_say))
 }
 
 fn me_command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("me")
-        .then(argument("action", SteelArgumentType::greedy_string()).executes(broadcast_me))
+        .then(argument("action", ArgumentType::greedy_string()).executes(broadcast_me))
 }
 
 fn translated(key: &str, args: Vec<TextComponent>) -> TextComponent {

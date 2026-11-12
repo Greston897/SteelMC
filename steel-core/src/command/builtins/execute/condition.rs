@@ -12,7 +12,7 @@ use steel_utils::{
 use text_components::TextComponent;
 
 use super::super::super::{
-    brigadier::{CommandNodeBuilder, CommandRedirectTarget, CommandSyntaxError},
+    brigadier::{ArgumentType, CommandNodeBuilder, CommandRedirectTarget, CommandSyntaxError},
     execution::{
         CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
         literal,
@@ -422,7 +422,7 @@ fn items_condition(expected: bool) -> Builder {
     literal("items").then(
         literal("entity").then(
             argument("targets", SteelArgumentType::entities()).then(
-                argument("slots", SteelArgumentType::greedy_string()).then(
+                argument("slots", ArgumentType::greedy_string()).then(
                     argument("item_predicate", SteelArgumentType::item_predicate())
                         .then(items_count_range(expected)),
                 ),

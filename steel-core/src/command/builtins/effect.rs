@@ -4,7 +4,7 @@ use steel_utils::Identifier;
 use text_components::TextComponent;
 
 use super::super::{
-    brigadier::{CommandNodeBuilder, CommandSyntaxError},
+    brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
     execution::{
         CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
         literal,
@@ -28,13 +28,13 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
             literal("give").then(
                 argument("targets", SteelArgumentType::entities())
                     .then(
-                        argument("effect", SteelArgumentType::word())
+                        argument("effect", ArgumentType::word())
                             .then(
-                                argument("seconds", SteelArgumentType::integer(1, 1_000_000))
+                                argument("seconds", ArgumentType::integer(1, 1_000_000))
                                     .then(
                                         argument(
                                             "amplifier",
-                                            SteelArgumentType::integer(0, 255),
+                                            ArgumentType::integer(0, 255),
                                         )
                                         .executes(|context| give(context, false)),
                                     )
@@ -48,7 +48,7 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
             literal("clear").then(
                 argument("targets", SteelArgumentType::entities())
                     .then(
-                        argument("effect", SteelArgumentType::word())
+                        argument("effect", ArgumentType::word())
                             .executes(clear_one),
                     )
                     .executes(clear_all),

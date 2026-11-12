@@ -8,7 +8,7 @@ use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
 
 use super::super::{
-    brigadier::{CommandNodeBuilder, CommandSyntaxError},
+    brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
     execution::{
         CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
         literal,
@@ -25,7 +25,7 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("msg").then(
         argument("targets", SteelArgumentType::players()).then(
-            argument("message", SteelArgumentType::greedy_string()).executes(send_message),
+            argument("message", ArgumentType::greedy_string()).executes(send_message),
         ),
     )
 }

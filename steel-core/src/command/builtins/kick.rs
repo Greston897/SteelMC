@@ -5,7 +5,7 @@ use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
 
 use super::super::{
-    brigadier::{CommandNodeBuilder, CommandSyntaxError},
+    brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
     execution::{
         CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
         literal,
@@ -20,7 +20,7 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("kick").then(
         argument("targets", SteelArgumentType::players())
-            .then(argument("reason", SteelArgumentType::greedy_string()).executes(kick))
+            .then(argument("reason", ArgumentType::greedy_string()).executes(kick))
             .executes(kick_default),
     )
 }

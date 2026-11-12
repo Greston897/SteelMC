@@ -8,7 +8,7 @@ use steel_registry::{REGISTRY, RegistryExt as _};
 use steel_utils::Identifier;
 
 use super::super::{
-    brigadier::{CommandNodeBuilder, CommandSyntaxError},
+    brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
     execution::{
         CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
         literal,
@@ -22,14 +22,14 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("particle").then(
-        argument("name", SteelArgumentType::word()).then(
+        argument("name", ArgumentType::word()).then(
             argument("pos", SteelArgumentType::vec3(false))
                 .then(
                     argument("delta", SteelArgumentType::vec3(false))
                         .then(
                             argument("speed", SteelArgumentType::float(0.0, f32::MAX))
                                 .then(
-                                    argument("count", SteelArgumentType::integer(0, i32::MAX))
+                                    argument("count", ArgumentType::integer(0, i32::MAX))
                                         .executes(|context| emit(context, None)),
                                 )
                                 .executes(|context| emit(context, None)),

@@ -9,7 +9,7 @@ use steel_utils::Identifier;
 use text_components::TextComponent;
 
 use super::super::{
-    brigadier::{CommandNodeBuilder, CommandSyntaxError},
+    brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
     execution::{
         CommandSource, ScoreHolderWildcard, SteelArgumentType, SteelCommandContext,
         SteelCommandRuntime, argument, literal,
@@ -32,9 +32,9 @@ fn objectives_node() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("objectives")
         .then(
             literal("add").then(
-                argument("objective", SteelArgumentType::word())
+                argument("objective", ArgumentType::word())
                     .then(
-                        argument("criteria", SteelArgumentType::word())
+                        argument("criteria", ArgumentType::word())
                             .executes(create_objective),
                     )
                     .executes(create_objective),
@@ -58,7 +58,7 @@ fn players_node() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         .then(
             literal("set").then(
                 targets().then(
-                    argument("score", SteelArgumentType::integer(i32::MIN, i32::MAX))
+                    argument("score", ArgumentType::integer(i32::MIN, i32::MAX))
                         .executes(set_score),
                 ),
             ),
@@ -66,7 +66,7 @@ fn players_node() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         .then(
             literal("add").then(
                 targets().then(
-                    argument("score", SteelArgumentType::integer(i32::MIN, i32::MAX))
+                    argument("score", ArgumentType::integer(i32::MIN, i32::MAX))
                         .executes(add_score),
                 ),
             ),
@@ -74,7 +74,7 @@ fn players_node() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         .then(
             literal("remove").then(
                 targets().then(
-                    argument("score", SteelArgumentType::integer(i32::MIN, i32::MAX))
+                    argument("score", ArgumentType::integer(i32::MIN, i32::MAX))
                         .executes(remove_score_value),
                 ),
             ),

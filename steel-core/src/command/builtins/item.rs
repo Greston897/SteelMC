@@ -13,7 +13,7 @@ use steel_utils::Identifier;
 use text_components::TextComponent;
 
 use super::super::{
-    brigadier::{CommandNodeBuilder, CommandSyntaxError},
+    brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
     execution::{
         CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
         literal,
@@ -33,11 +33,11 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 fn command() -> Builder {
     literal("item").then(literal("replace").then(literal("entity").then(
         argument("targets", SteelArgumentType::players())
-            .then(literal("slot").then(argument("slot", SteelArgumentType::word()).then(
+            .then(literal("slot").then(argument("slot", ArgumentType::word()).then(
                 argument("item", SteelArgumentType::item_stack())
                     .executes(|context| replace(context, None))
                     .then(
-                        argument("count", SteelArgumentType::integer(1, 99))
+                        argument("count", ArgumentType::integer(1, 99))
                             .executes(|context| replace(context, Some(context.integer("count")?))),
                     ),
             ))),
