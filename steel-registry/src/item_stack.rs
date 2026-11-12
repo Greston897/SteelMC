@@ -28,9 +28,9 @@ use crate::{
             BLOCK_STATE, ENCHANTABLE, ENCHANTMENTS, EQUIPPABLE, Equippable, ITEM_NAME,
             ItemAttributeModifiers,
             ItemEnchantments, MAX_DAMAGE, MAX_STACK_SIZE, MINIMUM_ATTACK_CHARGE,
-            OMINOUS_BOTTLE_AMPLIFIER, OminousBottleAmplifier, PIERCING_WEAPON, PiercingWeapon,
-            REPAIRABLE, STORED_ENCHANTMENTS, TOOL, Tool, UNBREAKABLE, WEAPON, WRITTEN_BOOK_CONTENT,
-            Weapon,
+            ItemLore, LORE, OMINOUS_BOTTLE_AMPLIFIER, OminousBottleAmplifier, PIERCING_WEAPON,
+            POTION_CONTENTS, PiercingWeapon, PotionContents, REPAIRABLE, STORED_ENCHANTMENTS, TOOL,
+            Tool, UNBREAKABLE, WEAPON, WRITTEN_BOOK_CONTENT, Weapon,
         },
     },
     enchantment_effect::EnchantmentEffectComponent,
@@ -908,9 +908,14 @@ impl ItemStack {
     }
 
     /// Sets the potion type for this item.
-    pub const fn set_potion(&mut self, _id: &Identifier) {
-        // TODO: Implement potion type setting
-        // Set the POTION_CONTENTS component with the potion ID
+    ///
+    /// Vanilla `SetPotionFunction` replaces `potion_contents` with the named
+    /// potion and leaves every other field at its default.
+    pub fn set_potion(&mut self, id: &Identifier) {
+        let Some(potion) = REGISTRY.potions.by_key(id) else {
+            return;
+        };
+        self.set(POTION_CONTENTS, PotionContents::of(potion));
     }
 
     /// Sets the suspicious stew effects for this item.
@@ -961,21 +966,46 @@ impl ItemStack {
     }
 
     /// Copies the name from a source entity/block to this item.
-    pub const fn copy_name<R: rand::Rng>(
+    ///
+    /// Vanilla `CopyNameFunction` supports the block-entity source only: the
+    /// context's `BlockEntityRef::custom_name` becomes `custom_name`.
+    pub fn copy_name<R: rand::Rng>(
         &mut self,
-        _source: crate::loot_table::CopySource,
-        _ctx: &crate::loot_table::LootContext<'_, R>,
+        source: crate::loot_table::CopySource,
+        ctx: &crate::loot_table::LootContext<'_, R>,
     ) {
-        // TODO: Implement when entity/block entity name access is available
-        // Get name from source (block_entity.custom_name or entity.custom_name)
-        // Set as CUSTOM_NAME component
+        if !matches!(source, crate::loot_table::CopySource::BlockEntity) {
+            return;
+        }
+        let Some(block_entity) = ctx.block_entity else {
+            return;
+        };
+        let Some(name) = block_entity.custom_name else {
+            return;
+        };
+        self.set(CUSTOM_NAME, TextComponent::plain(name.to_owned()));
     }
 
     /// Sets lore lines on this item.
-    pub const fn set_lore(&mut self, _lore: &[&str], _mode: crate::loot_table::ListOperation) {
-        // TODO: Implement lore setting
-        // Parse lore strings as text components and set LORE component
-        // Apply mode (replace, append, insert, etc.)
+    ///
+    /// Vanilla `SetLoreFunction` applies the list operation to the existing
+    /// `lore` component, then rewrites it; an empty result removes the
+    /// component so the item shows no lore.
+    pub fn set_lore(&mut self, lore: &[&str], mode: crate::loot_table::ListOperation) {
+        let mut lines: Vec<TextComponent> = self
+            .get(LORE)
+            .map(|existing| existing.lines().to_vec())
+            .unwrap_or_default();
+        apply_list_operation(&mut lines, lore, mode, |line| {
+            TextComponent::plain((*line).to_owned())
+        });
+        if lines.is_empty() {
+            self.remove(LORE);
+            return;
+        }
+        if let Ok(value) = ItemLore::new(lines) {
+            self.set(LORE, value);
+        }
     }
 
     /// Sets container inventory contents.
@@ -1418,6 +1448,46 @@ fn decode_persistent_count(tag: Option<BorrowedNbtTag<'_, '_>>) -> Option<i32> {
         None => 1,
     };
     (1..=99).contains(&count).then_some(count)
+}
+
+/// Applies a vanilla `ListOperation` to `existing`, mapping each new value with
+/// `convert`. Shared by the `lore` loot function.
+fn apply_list_operation<T>(
+    existing: &mut Vec<T>,
+    values: &[&str],
+    mode: crate::loot_table::ListOperation,
+    convert: impl Fn(&str) -> T,
+) {
+    use crate::loot_table::ListOperation;
+    let new_values: Vec<T> = values.iter().map(|value| convert(value)).collect();
+    match mode {
+        ListOperation::ReplaceAll => *existing = new_values,
+        ListOperation::Append => existing.extend(new_values),
+        ListOperation::InsertBefore { offset } => {
+            let index = list_index(offset, existing.len());
+            existing.splice(index..index, new_values);
+        }
+        ListOperation::InsertAfter { offset } => {
+            let index = list_index(offset, existing.len());
+            existing.splice(index..index, new_values);
+        }
+        ListOperation::ReplaceSection { offset, size } => {
+            let index = list_index(offset, existing.len());
+            let end = size.map_or(existing.len(), |size| {
+                (index + size.max(0) as usize).min(existing.len())
+            });
+            existing.splice(index..end, new_values);
+        }
+    }
+}
+
+/// Vanilla list offsets are signed: negative values count from the end.
+fn list_index(offset: i32, len: usize) -> usize {
+    if offset >= 0 {
+        (offset as usize).min(len)
+    } else {
+        len.saturating_sub(offset.unsigned_abs() as usize)
+    }
 }
 
 #[cfg(test)]
