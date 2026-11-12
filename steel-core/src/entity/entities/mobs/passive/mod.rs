@@ -1,6 +1,7 @@
 //! Passive entity implementations.
 /// Those mobs are passive creatures that run away when attacked by a player.
 mod axolotl;
+mod bee;
 mod cat;
 mod chicken;
 mod cow;
@@ -8,15 +9,21 @@ mod dolphin;
 mod fish;
 mod fox;
 mod frog;
+mod goat;
 mod mooshroom;
 mod ocelot;
+mod panda;
 mod parrot;
 mod pig;
 mod rabbit;
 mod sheep;
+mod sniffer;
 mod squid;
+mod strider;
+mod turtle;
 
 pub use axolotl::AxolotlEntity;
+pub use bee::BeeEntity;
 pub use cat::{CatEntity, flags as cat_flags};
 pub use chicken::ChickenEntity;
 pub use cow::CowEntity;
@@ -28,10 +35,15 @@ pub use fish::tadpole::TadpoleEntity;
 pub use fish::tropical_fish::TropicalFishEntity;
 pub use fox::{FoxEntity, FoxVariant, flags as fox_flags};
 pub use frog::FrogEntity;
+pub use goat::GoatEntity;
 pub use mooshroom::MushroomCowEntity;
 pub use ocelot::OcelotEntity;
+pub use panda::PandaEntity;
 pub use parrot::ParrotEntity;
 pub use pig::PigEntity;
 pub use rabbit::RabbitEntity;
 pub use sheep::SheepEntity;
+pub use sniffer::SnifferEntity;
 pub use squid::{GlowSquidEntity, SquidEntity};
+pub use strider::StriderEntity;
+pub use turtle::TurtleEntity;
