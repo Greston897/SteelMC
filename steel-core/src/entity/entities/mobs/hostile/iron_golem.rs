@@ -241,8 +241,6 @@ impl Mob for IronGolemEntity {
     }
 }
 
-
-
 impl PathfinderMob for IronGolemEntity {}
 
 #[cfg(test)]

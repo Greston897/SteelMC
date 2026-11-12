@@ -106,12 +106,12 @@ impl EnderDragonEntity {
     /// Vanilla `EnderDragon.getPhase` (`DATA_PHASE`).
     #[must_use]
     pub fn phase(&self) -> i32 {
-        *self.entity_data.lock().ender_dragon().phase.get()
+        *self.entity_data.lock().phase.get()
     }
 
     /// Sets the vanilla dragon phase ordinal.
     pub fn set_phase(&self, phase: i32) {
-        self.entity_data.lock().ender_dragon_mut().phase.set(phase);
+        self.entity_data.lock().phase.set(phase);
     }
 
     fn update_dirty_mob_effect_entity_data(&self) {

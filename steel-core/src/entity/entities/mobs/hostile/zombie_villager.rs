@@ -21,6 +21,7 @@ use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::ZombieVillagerEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
+use steel_utils::random::legacy_random::LegacyRandom;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
@@ -76,7 +77,10 @@ impl ZombieVillagerEntity {
         let living_base = LivingEntityBase::new(entity_type);
         let mob_base = MobBase::new();
 
-        let mut entity_data = ZombieVillagerEntityData::new();
+        // Vanilla `ZombieVillager` rolls a random villager profession on spawn
+        // (`DATA_VILLAGER_DATA` runtime initializer).
+        let mut random = LegacyRandom::from_seed(rand::random());
+        let mut entity_data = ZombieVillagerEntityData::new(&mut random);
         living_base.initialize_synced_data(&mut entity_data);
 
         {
@@ -189,36 +193,27 @@ impl Entity for ZombieVillagerEntity {
     }
 }
 
-
 impl ZombieVillagerEntity {
     /// Vanilla `ZombieVillager.isConverting` (`DATA_CONVERTING_ID`).
     #[must_use]
     pub fn is_converting(&self) -> bool {
-        *self.entity_data.lock().zombie_villager().converting.get()
+        *self.entity_data.lock().converting.get()
     }
 
     /// Sets the vanilla conversion flag.
     pub fn set_converting(&self, converting: bool) {
-        self.entity_data
-            .lock()
-            .zombie_villager_mut()
-            .converting
-            .set(converting);
+        self.entity_data.lock().converting.set(converting);
     }
 
     /// Vanilla `ZombieVillager.getVillagerData`.
     #[must_use]
     pub fn villager_data(&self) -> steel_registry::entity_data::VillagerData {
-        *self.entity_data.lock().zombie_villager().villager_data.get()
+        *self.entity_data.lock().villager_data.get()
     }
 
     /// Sets the vanilla villager data (profession, type, level).
     pub fn set_villager_data(&self, data: steel_registry::entity_data::VillagerData) {
-        self.entity_data
-            .lock()
-            .zombie_villager_mut()
-            .villager_data
-            .set(data);
+        self.entity_data.lock().villager_data.set(data);
     }
 }
 
