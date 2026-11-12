@@ -237,7 +237,7 @@ pub async fn test_server_with_worlds_and_config(
         return Err("test worlds must share the server's history owner".to_owned());
     }
 
-    Ok(Arc::new(Server {
+    let server = Arc::new(Server {
         damage_history,
         config,
         permission_groups,
@@ -272,7 +272,19 @@ pub async fn test_server_with_worlds_and_config(
         pending_world_changes: SyncMutex::new(Vec::new()),
         pending_domain_switches: SyncMutex::new(Vec::new()),
         player_idle_timeout: AtomicI32::new(0),
-    }))
+    });
+    attach_server_to_worlds(&server);
+    Ok(server)
+}
+
+/// Links every already loaded world back to the server that owns it.
+///
+/// Worlds are fields of the server, so the `Weak` back-reference can only be
+/// filled once the `Arc` exists; startup and the test constructor share this.
+pub fn attach_server_to_worlds(server: &Arc<Server>) {
+    for world in server.worlds.values() {
+        world.attach_server(server);
+    }
 }
 
 fn apply_default_spawn(player: &Arc<Player>, world: &Arc<World>, spawn: PreparedSpawn) {

@@ -44,12 +44,10 @@ pub trait Bucketable: Mob {
     }
 }
 
-// TODO(bucketable): `Bucketable.tryBucket` (water bucket -> mob bucket exchange,
-// `RemovalReason::Discarded`, `apply_filled_result`, bucket NBT component) and the
-// catch path inside `BucketItem::use_empty_bucket` land together with the
-// `MobBucketItem` behavior; the interaction recipe is taken from
-// `behavior/items/boat.rs` + `behavior/items/bucket.rs` so it matches the
-// existing inventory-exchange semantics exactly.
+// `Bucketable.tryBucket` is exercised through `MobBucketItem`: the item swaps the
+// filled bucket for the mob bucket, discards the caught entity, and re-applies the
+// stored NBT component on release (`write_base_bucket_data`/`read_base_bucket_data`
+// above, plus `release_from_bucket` for the spawn path).
 
 /// Base `Bucketable.copyDataToNbt` payload; also callable from an override so a
 /// subclass can append its own keys after the shared ones.

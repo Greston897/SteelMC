@@ -123,9 +123,7 @@ impl SteelServer {
         // now that the `Arc` exists. Scoreboards and other server-owned state are
         // reached from world-scoped code through this link.
         let server = Arc::new(server);
-        for world in server.worlds.values() {
-            world.attach_server(&server);
-        }
+        steel_core::server::attach_server_to_worlds(&server);
 
         let tcp_listener = TcpListener::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, server_port))
             .await

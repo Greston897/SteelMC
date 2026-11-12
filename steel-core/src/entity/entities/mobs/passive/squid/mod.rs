@@ -69,10 +69,10 @@ const SQUID_SQUIRT_SOUND: SoundEventRef = &sound_events::ENTITY_SQUID_SQUIRT;
 const SQUID_MOVEMENT_THRESHOLD: f64 = 1.0e-5;
 const SQUID_TENTICLE_SCALE_MOVEMENT_THRESHOLD: f32 = 7.5;
 
-// TODO(ageable-water-creature): vanilla `Squid extends AgeableWaterCreature`.
-// Still missing from that layer: `checkSpawnObstruction`.
-// Functions `getAmbientSoundInterval` and `getBaseExperienceReward` sit on this
-// entity until the trait exists; `Dolphin` is the only other consumer.
+// Vanilla `Squid extends AgeableWaterCreature`. The shared pieces live here while
+// `Dolphin` is the only other consumer: `getAmbientSoundInterval` is returned from
+// [`Mob::ambient_sound_interval`] and the aquatic spawn rule is the
+// `check_spawn_obstruction` override below.
 #[entity_behavior(class = "Squid")]
 /// Vanilla Squid entity
 pub struct SquidEntity {
@@ -496,6 +496,12 @@ impl Mob for SquidEntity {
         group_data: Option<SpawnGroupData>,
     ) -> Option<SpawnGroupData> {
         self.finalize_spawn_ageable_mob(world, spawn_reason, group_data)
+    }
+
+    /// Vanilla `AgeableWaterCreature.checkSpawnObstruction` returns the inverse
+    /// of the land-mob rule: an aquatic mob needs its box fully inside liquid.
+    fn check_spawn_obstruction(&self, world: &Arc<World>) -> bool {
+        crate::entity::aabb_contains_any_liquid(world, self.bounding_box())
     }
 }
 

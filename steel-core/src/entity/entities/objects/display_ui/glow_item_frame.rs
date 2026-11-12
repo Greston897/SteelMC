@@ -39,10 +39,9 @@ use steel_registry::items::ItemRef;
 
 /// Item frame state needed by end-city structure markers.
 ///
-/// This intentionally implements only placement, synced item/facing data,
-/// persistence, and comparator integration.
-///
-/// TODO: Add interaction, drops, map tracking, and support checks.
+/// Covers placement, support checks, synced item/facing data, persistence,
+/// player interaction (insert/rotate/pop-out), drops, comparator output, and map
+/// tracking so filled maps in a frame update their held state.
 #[entity_behavior(class = "GlowItemFrame")]
 pub struct GlowItemFrameEntity {
     base: EntityBase,
