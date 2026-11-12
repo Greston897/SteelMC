@@ -4,7 +4,9 @@ mod abstract_minecart;
 mod boat;
 mod chest_boat;
 mod chest_minecart;
+mod command_block_minecart;
 mod minecart;
+mod spawner_minecart;
 mod furnace_minecart;
 mod hopper_minecart;
 mod minecart_behavior;
@@ -18,10 +20,12 @@ pub use chest_boat::{
     CHEST_BOAT_MAX_PASSENGERS, CHEST_BOAT_SLOTS, ChestBoatEntity, ChestRaftEntity,
 };
 pub use chest_minecart::ChestMinecartEntity;
+pub use command_block_minecart::CommandBlockMinecartEntity;
 pub use furnace_minecart::FurnaceMinecartEntity;
 pub use hopper_minecart::HopperMinecartEntity;
 pub use tnt_minecart::TntMinecartEntity;
 pub use minecart::MinecartEntity;
+pub use spawner_minecart::SpawnerMinecartEntity;
 pub use minecart_behavior::MinecartBehavior;
 pub use vehicle_entity::VehicleEntity;
 
