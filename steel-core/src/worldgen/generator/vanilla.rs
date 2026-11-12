@@ -189,6 +189,29 @@ impl SurfaceExtensionBiomes {
 }
 
 impl<N: DimensionNoises> VanillaGenerator<N> {
+    /// Returns the biome id at `pos` using vanilla's `BiomeManager` fuzzing.
+    ///
+    /// This is the same lookup the carver top-material path uses, so callers see
+    /// exactly the biome vanilla would report for that block position. Cheaper
+    /// than forcing a chunk load when only the biome identity is needed.
+    #[must_use]
+    pub fn biome_at(&self, pos: BlockPos) -> u16 {
+        let mut sampler = self.biome_source.chunk_sampler();
+        fuzzed_biome_at_block(self.biome_zoom_seed, pos, |q_pos| {
+            sampler.sample(q_pos.x, q_pos.y, q_pos.z).id() as u16
+        })
+    }
+
+    /// Returns the unfuzzed biome id sampled at quart resolution.
+    ///
+    /// Used by biome searches, which probe on a quart grid and must not pay the
+    /// eight-corner fuzzing cost per candidate.
+    #[must_use]
+    pub fn quart_biome_at(&self, qx: i32, qy: i32, qz: i32) -> u16 {
+        let mut sampler = self.biome_source.chunk_sampler();
+        sampler.sample(qx, qy, qz).id() as u16
+    }
+
     /// Creates a new `VanillaGenerator` with the given biome source and seed.
     ///
     /// # Panics

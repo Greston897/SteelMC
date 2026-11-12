@@ -2,6 +2,8 @@
 
 use std::{sync::Arc, time::Instant};
 
+use glam::IVec3;
+use steel_registry::biome::BiomeRef;
 use steel_utils::{BlockPos, Identifier, translations};
 use text_components::{
     Modifier, TextComponent,
@@ -12,8 +14,9 @@ use text_components::{
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
     execution::{
-        CommandResultSuspension, CommandResultSuspensionPoll, CommandSource, SteelArgumentType,
-        SteelCommandContext, SteelCommandRuntime, StructureOrTagKey, argument, literal,
+        BiomeOrTag, CommandResultSuspension, CommandResultSuspensionPoll, CommandSource,
+        SteelArgumentType, SteelCommandContext, SteelCommandRuntime, StructureOrTagKey, argument,
+        literal,
     },
     registration::CommandRegistration,
 };
@@ -24,12 +27,19 @@ use crate::{
     },
     world::World,
     worldgen::{
-        generator::ChunkGenerator,
+        generator::{ChunkGenerator, ChunkGeneratorType},
         structure::{StructureLocateCandidate, StructureLocatePlan, squared_distance},
     },
 };
 
 const MAX_STRUCTURE_SEARCH_RADIUS: i32 = 100;
+
+/// Vanilla `LocateCommand` searches a 6400-quart ring before giving up.
+const BIOME_SEARCH_RADIUS_QUARTS: i32 = 6400;
+
+/// Vanilla samples biomes every 32 blocks (`BiomeSearchTree`'s spacing) to keep
+/// the ring scan bounded.
+const BIOME_SEARCH_STEP_QUARTS: i32 = 8;
 
 pub(super) fn registration() -> CommandRegistration<CommandSource> {
     CommandRegistration::new(Identifier::vanilla_static("locate"), |_| command())
@@ -40,10 +50,16 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         literal("structure").then(
             argument("structure", SteelArgumentType::structure_or_tag_key())
                 .executes_suspended(start_structure_search),
+        )
+        .then(
+            literal("biome").then(
+                argument("biome", SteelArgumentType::biome_or_tag())
+                    .executes(locate_biome),
+            ),
         ),
     )
-    // TODO: Add `locate biome` once Steel has an asynchronous closest-biome search.
-    // TODO: Add `locate poi` once Steel has a point-of-interest manager.
+    // `locate poi` still needs a point-of-interest manager: Steel does not index
+    // POIs (nor persist them), so there is nothing to search yet.
 }
 
 fn start_structure_search(
@@ -342,6 +358,69 @@ fn structure_not_found(query: &StructureOrTagKey) -> CommandSyntaxError {
             .message([TextComponent::from(query.as_printable())])
             .component(),
     )
+}
+
+/// `locate biome <biome>` — closest block whose biome matches, searched in
+/// expanding rings on vanilla's quart grid.
+///
+/// Vanilla runs this through `AsyncLocateHandler`; Steel's biome lookup is a pure
+/// sampler call (`ChunkGenerator::noise_biome`), so the search is cheap enough to
+/// run inline without loading chunks.
+fn locate_biome(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
+    let query = context.biome_or_tag("biome")?;
+    let world = context.source().world();
+    let origin = BlockPos::from(context.source().position());
+
+    let generator = &world.chunk_map.world_gen_context.generator;
+    let origin_quart = IVec3::new(origin.0.x >> 2, 0, origin.0.z >> 2);
+
+    let (found_quart, found_biome) = search_biome_rings(generator, origin_quart, query)
+        .ok_or_else(|| biome_not_found(query))?;
+
+    let pos = BlockPos::new(found_quart.x << 2, 0, found_quart.z << 2);
+    let distance = horizontal_distance(origin, pos);
+    context.source().send_success(
+        &locate_success_component(found_biome.key.to_string(), pos, distance),
+        false,
+    );
+
+    Ok(distance)
+}
+
+/// Walks outward in square rings until a quart cell matching `query` is found.
+///
+/// Returns the matching quart coordinate together with the biome it resolved to,
+/// or `None` when the whole search radius is exhausted.
+fn search_biome_rings(
+    generator: &ChunkGeneratorType,
+    origin: IVec3,
+    query: &BiomeOrTag,
+) -> Option<(IVec3, BiomeRef)> {
+    let max_rings = BIOME_SEARCH_RADIUS_QUARTS / BIOME_SEARCH_STEP_QUARTS;
+
+    for ring in 0..=max_rings {
+        let offset = ring * BIOME_SEARCH_STEP_QUARTS;
+        for dx in -offset..=offset {
+            for dz in -offset..=offset {
+                // Only the ring border, so earlier rings are not rescanned.
+                if ring != 0 && dx.abs() != offset && dz.abs() != offset {
+                    continue;
+                }
+                let qx = origin.x + dx;
+                let qz = origin.z + dz;
+                let biome = generator.noise_biome(qx, 0, qz);
+                if query.matches(biome) {
+                    return Some((IVec3::new(qx, 0, qz), biome));
+                }
+            }
+        }
+    }
+
+    None
+}
+
+fn biome_not_found(query: &BiomeOrTag) -> CommandSyntaxError {
+    CommandSyntaxError::dynamic(format!("Could not find a biome of type {query:?}"))
 }
 
 fn horizontal_distance(a: BlockPos, b: BlockPos) -> i32 {
