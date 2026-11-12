@@ -9,6 +9,7 @@ mod dolphin;
 mod fish;
 mod fox;
 mod frog;
+mod horse;
 mod goat;
 mod mooshroom;
 mod ocelot;
@@ -37,6 +38,9 @@ pub use fish::tropical_fish::TropicalFishEntity;
 pub use fox::{FoxEntity, FoxVariant, flags as fox_flags};
 pub use frog::FrogEntity;
 pub use goat::GoatEntity;
+pub use horse::{
+    DonkeyEntity, HorseEntity, LlamaEntity, MuleEntity, SkeletonHorseEntity, ZombieHorseEntity,
+};
 pub use mooshroom::MushroomCowEntity;
 pub use ocelot::OcelotEntity;
 pub use panda::PandaEntity;
