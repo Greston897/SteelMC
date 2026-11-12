@@ -9,6 +9,7 @@ use super::super::{
 };
 use super::{JobPoll, ServerJob, ServerJobContext};
 use crate::entity::LivingEntity as _;
+use crate::player::lifecycle::resolve_personal_respawn_for_world_change;
 use crate::world::player_spawn_finder::POLL_TIME_BUDGET;
 
 pub(in crate::server) struct RootVehicleRestoreJob {
@@ -542,6 +543,35 @@ impl EndPortalTeleportJob {
         respawn_data: RespawnData,
         pending_token: PendingWorldChangeToken,
     ) -> Result<Self, String> {
+        // Vanilla `ServerPlayer.changeDimension` for the End return uses the
+        // player's own bed or respawn anchor when it is in the target world, and
+        // only falls back to the world spawn when there is none. Resolve it here
+        // so the search below starts from the right anchor.
+        let personal = entity
+            .as_player()
+            .and_then(|player| resolve_personal_respawn_for_world_change(&target_world, player));
+        if let Some((position, rotation)) = personal {
+            let request = target_world.chunk_map.request_chunk(
+                end_portal::prewarm_center(BlockPos::new(
+                    position.x.floor() as i32,
+                    position.y.floor() as i32,
+                    position.z.floor() as i32,
+                )),
+                ChunkStatus::Full,
+                ChunkTicketKind::Portal,
+            );
+            return Ok(Self {
+                entity,
+                source_world,
+                pending_token,
+                phase: EndPortalTeleportPhase::LoadingPlayerRespawn {
+                    target_world,
+                    spawn: EndPortalRespawnSpawn { position, rotation },
+                    request,
+                },
+            });
+        }
+
         let search = PlayerSpawnSearch::new(
             &target_world,
             respawn_data.pos(),

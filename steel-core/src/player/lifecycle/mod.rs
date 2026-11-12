@@ -4,6 +4,7 @@ mod spawn_sync;
 mod world_transition;
 
 pub use respawn::PlayerRespawnConfig;
+pub(crate) use respawn::resolve_personal_respawn_for_world_change;
 
 use super::*;
 use crate::entity::PendingWorldChangeToken;
