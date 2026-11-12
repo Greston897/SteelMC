@@ -744,6 +744,7 @@ pub trait LivingEntity: Entity {
 
         self.before_actually_hurt(source, effective_amount);
         self.actually_hurt(world, source, effective_amount);
+        self.run_mob_hurt_effect_hooks(source);
         if took_full_damage {
             self.living_base().begin_hurt_animation();
         }
@@ -1148,6 +1149,48 @@ pub trait LivingEntity: Entity {
         self.broadcast_entity_event(EntityStatus::Death);
         self.set_pose(EntityPose::Dying);
         self.on_death(source);
+        self.run_mob_removed_effect_hooks();
+    }
+
+    /// Vanilla `LivingEntity.hurtServer` fires `MobEffect.onMobHurt` for every
+    /// active effect right after the damage lands.
+    fn run_mob_hurt_effect_hooks(&self, _source: &DamageSource) {
+        let Some(world) = self.level() else {
+            return;
+        };
+        let effects = self.living_base().active_mob_effects();
+        if effects.is_empty() {
+            return;
+        }
+        let Some(mob) = self.as_living_entity() else {
+            return;
+        };
+        for effect in effects {
+            crate::behavior::MOB_EFFECT_BEHAVIORS
+                .get_behavior(effect.effect())
+                .on_mob_hurt(&world, mob, effect.amplifier());
+        }
+    }
+
+    /// Vanilla `LivingEntity` fires `MobEffect.onMobRemoved` for every active
+    /// effect when the entity leaves the world. Steel only removes entities on
+    /// death, so `die` is the single dispatch point.
+    fn run_mob_removed_effect_hooks(&self) {
+        let Some(world) = self.level() else {
+            return;
+        };
+        let effects = self.living_base().active_mob_effects();
+        if effects.is_empty() {
+            return;
+        }
+        let Some(mob) = self.as_living_entity() else {
+            return;
+        };
+        for effect in effects {
+            crate::behavior::MOB_EFFECT_BEHAVIORS
+                .get_behavior(effect.effect())
+                .on_mob_removed(&world, mob);
+        }
     }
 
     /// Runs one subtype-specific hook after vanilla death effects have been processed.
