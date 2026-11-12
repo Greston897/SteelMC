@@ -12,14 +12,19 @@ use steel_protocol::packets::common::{
 };
 use steel_protocol::packets::game::{
     CBundleDelimiter, CCommandSuggestions, ClientCommandAction, PlayerAction, PlayerCommandAction,
-    SAcceptTeleportation, SAttack, SChangeDifficulty, SChangeGameMode, SChat, SChatAck,
-    SChatCommand, SChatSessionUpdate, SChunkBatchReceived, SClientCommand, SClientTickEnd,
-    SCommandSuggestion, SContainerButtonClick, SContainerClick, SContainerClose,
-    SContainerSlotStateChanged, SEditBook, SInteract, SMovePlayer, SMovePlayerPos,
+    SAcceptTeleportation, SAttack, SBlockEntityTagQuery, SBundleItemSelected, SChangeDifficulty,
+    SChangeGameMode, SChat, SChatAck, SChatCommand, SChatCommandSigned, SChatSessionUpdate,
+    SChunkBatchReceived, SClientCommand, SClientTickEnd, SCommandSuggestion,
+    SConfigurationAcknowledged, SContainerButtonClick, SContainerClick, SContainerClose,
+    SContainerSlotStateChanged, SCustomClickAction, SDebugSubscriptionRequest, SEditBook,
+    SEntityTagQuery, SInteract, SJigsawGenerate, SLockDifficulty, SMovePlayer, SMovePlayerPos,
     SMovePlayerPosRot, SMovePlayerRot, SMovePlayerStatusOnly, SMoveVehicle, SPaddleBoat,
-    SPickItemFromBlock, SPlayerAbilities, SPlayerAction, SPlayerCommand, SPlayerInput, SPlayerLoad,
-    SPunch, SRenameItem, SSeenAdvancement, SSetBeacon, SSetCarriedItem, SSetCreativeModeSlot,
-    SSignUpdate, SSpectatorAction, SUseItem, SUseItemOn,
+    SPickItemFromBlock, SPickItemFromEntity, SPlaceRecipe, SPlayerAbilities, SPlayerAction,
+    SPlayerCommand, SPlayerInput, SPlayerLoad, SPong, SPunch, SRecipeBookChangeSettings,
+    SRecipeBookSeenRecipe, SRenameItem, SResourcePack, SSeenAdvancement, SSelectTrade,
+    SSetBeacon, SSetCarriedItem, SSetCommandBlock, SSetCommandMinecart, SSetCreativeModeSlot,
+    SSetGameRule, SSetJigsawBlock, SSetStructureBlock, SSetTestBlock, SSignUpdate, SSpectatorAction,
+    STeleportToEntity, STestInstanceBlockAction, SUseItem, SUseItemOn,
 };
 
 use crate::command::{handle_client_request, sender::CommandSender};
@@ -118,6 +123,31 @@ enum ScheduledPlayPacketKind {
     ChangeGameMode(SChangeGameMode),
     ChangeDifficulty(SChangeDifficulty),
     UpdateSelectedTab(SSeenAdvancement),
+    BlockEntityTagQuery(SBlockEntityTagQuery),
+    BundleItemSelected(SBundleItemSelected),
+    ChatCommandSigned(SChatCommandSigned),
+    ConfigurationAcknowledged(SConfigurationAcknowledged),
+    CookieResponse(SCookieResponse),
+    DebugSubscriptionRequest(SDebugSubscriptionRequest),
+    EntityTagQuery(SEntityTagQuery),
+    JigsawGenerate(SJigsawGenerate),
+    LockDifficulty(SLockDifficulty),
+    PickItemFromEntity(SPickItemFromEntity),
+    PlaceRecipe(SPlaceRecipe),
+    Pong(SPong),
+    RecipeBookChangeSettings(SRecipeBookChangeSettings),
+    RecipeBookSeenRecipe(SRecipeBookSeenRecipe),
+    ResourcePack(SResourcePack),
+    SelectTrade(SSelectTrade),
+    SetCommandBlock(SSetCommandBlock),
+    SetCommandMinecart(SSetCommandMinecart),
+    SetGameRule(SSetGameRule),
+    SetJigsawBlock(SSetJigsawBlock),
+    SetStructureBlock(SSetStructureBlock),
+    SetTestBlock(SSetTestBlock),
+    TeleportToEntity(STeleportToEntity),
+    TestInstanceBlockAction(STestInstanceBlockAction),
+    CustomClickAction(SCustomClickAction),
 }
 
 enum ImmediatePlayPacket {
@@ -231,9 +261,32 @@ impl ScheduledPlayPacket {
             | ScheduledPlayPacketKind::CustomPayload(_)
             | ScheduledPlayPacketKind::ContainerButtonClick(_)
             | ScheduledPlayPacketKind::SetBeacon(_)
-            | ScheduledPlayPacketKind::ContainerSlotStateChanged(_) => {
-                ScheduledPacketExecution::Exclusive
-            }
+            | ScheduledPlayPacketKind::ContainerSlotStateChanged(_)
+            | ScheduledPlayPacketKind::BlockEntityTagQuery(_)
+            | ScheduledPlayPacketKind::BundleItemSelected(_)
+            | ScheduledPlayPacketKind::ChatCommandSigned(_)
+            | ScheduledPlayPacketKind::ConfigurationAcknowledged(_)
+            | ScheduledPlayPacketKind::CookieResponse(_)
+            | ScheduledPlayPacketKind::DebugSubscriptionRequest(_)
+            | ScheduledPlayPacketKind::EntityTagQuery(_)
+            | ScheduledPlayPacketKind::JigsawGenerate(_)
+            | ScheduledPlayPacketKind::LockDifficulty(_)
+            | ScheduledPlayPacketKind::PickItemFromEntity(_)
+            | ScheduledPlayPacketKind::PlaceRecipe(_)
+            | ScheduledPlayPacketKind::Pong(_)
+            | ScheduledPlayPacketKind::RecipeBookChangeSettings(_)
+            | ScheduledPlayPacketKind::RecipeBookSeenRecipe(_)
+            | ScheduledPlayPacketKind::ResourcePack(_)
+            | ScheduledPlayPacketKind::SelectTrade(_)
+            | ScheduledPlayPacketKind::SetCommandBlock(_)
+            | ScheduledPlayPacketKind::SetCommandMinecart(_)
+            | ScheduledPlayPacketKind::SetGameRule(_)
+            | ScheduledPlayPacketKind::SetJigsawBlock(_)
+            | ScheduledPlayPacketKind::SetStructureBlock(_)
+            | ScheduledPlayPacketKind::SetTestBlock(_)
+            | ScheduledPlayPacketKind::TeleportToEntity(_)
+            | ScheduledPlayPacketKind::TestInstanceBlockAction(_)
+            | ScheduledPlayPacketKind::CustomClickAction(_) => ScheduledPacketExecution::Exclusive,
         }
     }
 
@@ -361,6 +414,81 @@ impl ScheduledPlayPacket {
             }
             ScheduledPlayPacketKind::UpdateSelectedTab(packet) => {
                 player.handle_seen_advancement(packet);
+            }
+            ScheduledPlayPacketKind::BlockEntityTagQuery(packet) => {
+                log::debug!("ignoring unimplemented BlockEntityTagQuery packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::BundleItemSelected(packet) => {
+                log::debug!("ignoring unimplemented BundleItemSelected packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::ChatCommandSigned(packet) => {
+                log::debug!("ignoring unimplemented ChatCommandSigned packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::ConfigurationAcknowledged(packet) => {
+                log::debug!("ignoring unimplemented ConfigurationAcknowledged packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::CookieResponse(packet) => {
+                log::debug!("ignoring unimplemented CookieResponse packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::DebugSubscriptionRequest(packet) => {
+                log::debug!("ignoring unimplemented DebugSubscriptionRequest packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::EntityTagQuery(packet) => {
+                log::debug!("ignoring unimplemented EntityTagQuery packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::JigsawGenerate(packet) => {
+                log::debug!("ignoring unimplemented JigsawGenerate packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::LockDifficulty(packet) => {
+                log::debug!("ignoring unimplemented LockDifficulty packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::PickItemFromEntity(packet) => {
+                log::debug!("ignoring unimplemented PickItemFromEntity packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::PlaceRecipe(packet) => {
+                log::debug!("ignoring unimplemented PlaceRecipe packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::Pong(packet) => {
+                log::debug!("ignoring unimplemented Pong packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::RecipeBookChangeSettings(packet) => {
+                log::debug!("ignoring unimplemented RecipeBookChangeSettings packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::RecipeBookSeenRecipe(packet) => {
+                log::debug!("ignoring unimplemented RecipeBookSeenRecipe packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::ResourcePack(packet) => {
+                log::debug!("ignoring unimplemented ResourcePack packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::SelectTrade(packet) => {
+                log::debug!("ignoring unimplemented SelectTrade packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::SetCommandBlock(packet) => {
+                log::debug!("ignoring unimplemented SetCommandBlock packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::SetCommandMinecart(packet) => {
+                log::debug!("ignoring unimplemented SetCommandMinecart packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::SetGameRule(packet) => {
+                log::debug!("ignoring unimplemented SetGameRule packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::SetJigsawBlock(packet) => {
+                log::debug!("ignoring unimplemented SetJigsawBlock packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::SetStructureBlock(packet) => {
+                log::debug!("ignoring unimplemented SetStructureBlock packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::SetTestBlock(packet) => {
+                log::debug!("ignoring unimplemented SetTestBlock packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::TeleportToEntity(packet) => {
+                log::debug!("ignoring unimplemented TeleportToEntity packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::TestInstanceBlockAction(packet) => {
+                log::debug!("ignoring unimplemented TestInstanceBlockAction packet: {packet:?}");
+            }
+            ScheduledPlayPacketKind::CustomClickAction(packet) => {
+                log::debug!("ignoring unimplemented CustomClickAction packet: {packet:?}");
             }
         }
     }
@@ -835,6 +963,126 @@ impl JavaConnection {
             play::S_SEEN_ADVANCEMENTS => scheduled(ScheduledPlayPacketKind::UpdateSelectedTab(
                 SSeenAdvancement::read_packet(data)?,
             )),
+            play::S_BLOCK_ENTITY_TAG_QUERY => {
+                scheduled(ScheduledPlayPacketKind::BlockEntityTagQuery(
+                    SBlockEntityTagQuery::read_packet(data)?,
+                ))
+            }
+            play::S_BUNDLE_ITEM_SELECTED => {
+                scheduled(ScheduledPlayPacketKind::BundleItemSelected(
+                    SBundleItemSelected::read_packet(data)?,
+                ))
+            }
+            play::S_CHAT_COMMAND_SIGNED => {
+                scheduled(ScheduledPlayPacketKind::ChatCommandSigned(
+                    SChatCommandSigned::read_packet(data)?,
+                ))
+            }
+            play::S_CONFIGURATION_ACKNOWLEDGED => {
+                scheduled(ScheduledPlayPacketKind::ConfigurationAcknowledged(
+                    SConfigurationAcknowledged::read_packet(data)?,
+                ))
+            }
+            play::S_DEBUG_SUBSCRIPTION_REQUEST => {
+                scheduled(ScheduledPlayPacketKind::DebugSubscriptionRequest(
+                    SDebugSubscriptionRequest::read_packet(data)?,
+                ))
+            }
+            play::S_ENTITY_TAG_QUERY => {
+                scheduled(ScheduledPlayPacketKind::EntityTagQuery(
+                    SEntityTagQuery::read_packet(data)?,
+                ))
+            }
+            play::S_JIGSAW_GENERATE => {
+                scheduled(ScheduledPlayPacketKind::JigsawGenerate(
+                    SJigsawGenerate::read_packet(data)?,
+                ))
+            }
+            play::S_LOCK_DIFFICULTY => {
+                scheduled(ScheduledPlayPacketKind::LockDifficulty(
+                    SLockDifficulty::read_packet(data)?,
+                ))
+            }
+            play::S_PICK_ITEM_FROM_ENTITY => {
+                scheduled(ScheduledPlayPacketKind::PickItemFromEntity(
+                    SPickItemFromEntity::read_packet(data)?,
+                ))
+            }
+            play::S_PLACE_RECIPE => {
+                scheduled(ScheduledPlayPacketKind::PlaceRecipe(
+                    SPlaceRecipe::read_packet(data)?,
+                ))
+            }
+            play::S_PONG => {
+                scheduled(ScheduledPlayPacketKind::Pong(
+                    SPong::read_packet(data)?,
+                ))
+            }
+            play::S_RECIPE_BOOK_CHANGE_SETTINGS => {
+                scheduled(ScheduledPlayPacketKind::RecipeBookChangeSettings(
+                    SRecipeBookChangeSettings::read_packet(data)?,
+                ))
+            }
+            play::S_RECIPE_BOOK_SEEN_RECIPE => {
+                scheduled(ScheduledPlayPacketKind::RecipeBookSeenRecipe(
+                    SRecipeBookSeenRecipe::read_packet(data)?,
+                ))
+            }
+            play::S_RESOURCE_PACK => {
+                scheduled(ScheduledPlayPacketKind::ResourcePack(
+                    SResourcePack::read_packet(data)?,
+                ))
+            }
+            play::S_SELECT_TRADE => {
+                scheduled(ScheduledPlayPacketKind::SelectTrade(
+                    SSelectTrade::read_packet(data)?,
+                ))
+            }
+            play::S_SET_COMMAND_BLOCK => {
+                scheduled(ScheduledPlayPacketKind::SetCommandBlock(
+                    SSetCommandBlock::read_packet(data)?,
+                ))
+            }
+            play::S_SET_COMMAND_MINECART => {
+                scheduled(ScheduledPlayPacketKind::SetCommandMinecart(
+                    SSetCommandMinecart::read_packet(data)?,
+                ))
+            }
+            play::S_SET_GAME_RULE => {
+                scheduled(ScheduledPlayPacketKind::SetGameRule(
+                    SSetGameRule::read_packet(data)?,
+                ))
+            }
+            play::S_SET_JIGSAW_BLOCK => {
+                scheduled(ScheduledPlayPacketKind::SetJigsawBlock(
+                    SSetJigsawBlock::read_packet(data)?,
+                ))
+            }
+            play::S_SET_STRUCTURE_BLOCK => {
+                scheduled(ScheduledPlayPacketKind::SetStructureBlock(
+                    SSetStructureBlock::read_packet(data)?,
+                ))
+            }
+            play::S_SET_TEST_BLOCK => {
+                scheduled(ScheduledPlayPacketKind::SetTestBlock(
+                    SSetTestBlock::read_packet(data)?,
+                ))
+            }
+            play::S_TELEPORT_TO_ENTITY => {
+                scheduled(ScheduledPlayPacketKind::TeleportToEntity(
+                    STeleportToEntity::read_packet(data)?,
+                ))
+            }
+            play::S_TEST_INSTANCE_BLOCK_ACTION => {
+                scheduled(ScheduledPlayPacketKind::TestInstanceBlockAction(
+                    STestInstanceBlockAction::read_packet(data)?,
+                ))
+            }
+            play::S_CUSTOM_CLICK_ACTION => {
+                scheduled(ScheduledPlayPacketKind::CustomClickAction(
+                    SCustomClickAction::read_packet(data)?,
+                ))
+            }
             id => DecodedPlayPacket::Immediate(ImmediatePlayPacket::Unknown(id)),
         })
     }
