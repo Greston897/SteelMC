@@ -11,6 +11,7 @@ use super::{
 use crate::block_entity::BlockEntity;
 use crate::entity::loot_equipment;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
+use crate::loot::resolvers::{WorldScoreResolver, WorldStorageResolver};
 use steel_registry::sound_event::SoundEventHolder;
 use steel_registry::vanilla_particle_types::{BUBBLE, SPLASH};
 
@@ -443,6 +444,7 @@ impl World {
             loot_table
         };
 
+        let world = context.world();
         let mut rng = rand::rng();
         let mut ctx = LootContext::new(&mut rng)
             .with_luck(context.luck())
@@ -461,6 +463,18 @@ impl World {
         }
         if let Some(radius) = context.explosion_radius() {
             ctx = ctx.with_explosion(radius);
+        }
+
+        // Vanilla binds the scoreboard and command storage to the loot params;
+        // both live on the server, so install the adapters here.
+        if let Some(server) = world.server() {
+            let domain = world.domain();
+            let score_resolver = WorldScoreResolver::new(&server, domain);
+            let storage_resolver = WorldStorageResolver::new(&server, domain);
+            ctx = ctx
+                .with_score_resolver(&score_resolver)
+                .with_storage_resolver(&storage_resolver);
+            return loot_table.get_random_items(&mut ctx);
         }
 
         loot_table.get_random_items(&mut ctx)

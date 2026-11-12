@@ -115,10 +115,16 @@ impl NumberProvider {
                     value as f32 * scale
                 })
             }
-            Self::Storage { .. } => {
-                // TODO: Implement when command storage system is available
-                let _ = ctx;
-                0.0
+            Self::Storage { storage, path } => {
+                let Some(ctx) = ctx else {
+                    return 0.0;
+                };
+                let Some(resolver) = ctx.storage_resolver else {
+                    return 0.0;
+                };
+                resolver
+                    .storage_number(storage, path)
+                    .map_or(0.0, |value| value as f32)
             }
             Self::EnchantmentLevel { enchantment } => ctx
                 .and_then(|c| c.tool)
@@ -133,6 +139,7 @@ impl NumberProvider {
             score_resolver: ctx.score_resolver,
             this_holder: ctx.this_entity.and_then(|entity| entity.holder_name),
             killer_holder: ctx.killer_entity.and_then(|entity| entity.holder_name),
+            storage_resolver: ctx.storage_resolver,
         };
         self.get(ctx.rng, Some(&ctx_ref))
     }
@@ -262,6 +269,8 @@ pub struct LootContextRef<'a> {
     pub this_holder: Option<&'a str>,
     /// Holder name for the killer targets.
     pub killer_holder: Option<&'a str>,
+    /// Resolves command storage values for the `Storage` number provider.
+    pub storage_resolver: Option<&'a dyn StorageResolver>,
 }
 
 /// Context for loot table evaluation, containing all relevant game state.
@@ -306,12 +315,27 @@ pub struct LootContext<'a, R: rand::Rng> {
     /// number providers. The scoreboard itself lives on the server, so the
     /// game layer installs this hook when the launch context needs it.
     pub score_resolver: Option<&'a dyn ScoreResolver>,
+    /// Resolves command storage values for the `Storage` number provider.
+    pub storage_resolver: Option<&'a dyn StorageResolver>,
 }
 
 /// Resolves a named entity's scoreboard value for an objective.
 pub trait ScoreResolver {
     /// Returns the score, or `None` when the holder or objective is unknown.
     fn score(&self, holder: &str, objective: &str) -> Option<i32>;
+}
+
+/// Reads a numeric value out of command storage (`/data` NBT) for the
+/// `minecraft:storage` number provider.
+///
+/// Command storage lives on the server, which sits above this crate, so the
+/// game layer installs this hook alongside the scoreboard resolver.
+pub trait StorageResolver {
+    /// Returns the number at `path` in `storage`, or `None` when the storage,
+    /// the path, or the value's numeric type is unknown.
+    ///
+    /// Vanilla accepts every numeric NBT tag and rejects non-numeric ones.
+    fn storage_number(&self, storage: &Identifier, path: &str) -> Option<f64>;
 }
 
 /// Weather state for `WeatherCheck` condition.
@@ -441,6 +465,7 @@ impl<'a, R: rand::Rng> LootContext<'a, R> {
             block_entity: None,
             interacting_entity: None,
             score_resolver: None,
+            storage_resolver: None,
         }
     }
 
@@ -448,6 +473,13 @@ impl<'a, R: rand::Rng> LootContext<'a, R> {
     #[must_use]
     pub const fn with_score_resolver(mut self, resolver: &'a dyn ScoreResolver) -> Self {
         self.score_resolver = Some(resolver);
+        self
+    }
+
+    /// Installs a command-storage resolver for storage-backed number providers.
+    #[must_use]
+    pub const fn with_storage_resolver(mut self, resolver: &'a dyn StorageResolver) -> Self {
+        self.storage_resolver = Some(resolver);
         self
     }
 
