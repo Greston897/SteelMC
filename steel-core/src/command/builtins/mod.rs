@@ -2,6 +2,7 @@
 
 pub mod advancement;
 mod clear;
+mod clone;
 mod damage;
 mod defaultgamemode;
 mod difficulty;
@@ -27,6 +28,7 @@ mod operator;
 mod particle;
 mod perms;
 mod playsound;
+mod recipe;
 mod position;
 mod return_command;
 mod ride;
@@ -84,6 +86,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.declare_permission(perms::METADATA_PERMISSION)?;
     builder.register(advancement::registration())?;
     builder.register(clear::registration())?;
+    builder.register(clone::registration())?;
     builder.register(operator::deop_registration())?;
     builder.register(damage::registration())?;
     builder.register(defaultgamemode::registration())?;
@@ -108,6 +111,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(particle::registration())?;
     builder.register(perms::registration())?;
     builder.register(playsound::registration())?;
+    builder.register(recipe::registration())?;
     builder.register(return_command::registration())?;
     builder.register(ride::registration())?;
     builder.register(say::say_registration())?;
