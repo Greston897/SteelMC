@@ -12,7 +12,7 @@
 | Срез | Оценка паритета |
 |---|---|
 | **Серверное ядро в целом (взвешенно)** | **≈61 %** (реалистичный диапазон 58–64 %); на старте ветки было ≈56 % |
-| Инфраструктура и мир: протокол, чанки, свет, сохранения, мирогенерация | ≈76 % |
+| Инфраструктура и мир: протокол, чанки, свет, сохранения, мирогенерация | ≈81 % (протокол закрыт на 100 % по обеим сторонам) |
 | Контент-механики: блоки, block entities, предметы, меню, крафт | ≈75 % |
 | Живой мир: сущности, ИИ, бой, редстоун | ≈47 % (было ≈32 %) |
 | Серверные системы: команды, права, scoreboard, достижения, админ, плагины | ≈37 % |
@@ -31,6 +31,8 @@
 | `#[entity_behavior]` структур в коде | 29 | **141** | +112 |
 | Классы сущностей с поведением (из 143 в `classes.json`) | 29 / 143 ≈ 20 % | **142 / 143 = 99,3 %** | **+113 классов** |
 | Типы сущностей с фабрикой (из 161) | 29 / 161 ≈ 18 % | **142 / 161 = 88,2 %** | +113 типов |
+| Clientbound-пакеты 26.3 (файлы с `#[packet_id]`) | 105 / 173 | **173 / 173 = 100 %** | **+68, +40 п.п.** |
+| Serverbound play-пакеты 26.3 (декодируются) | 44 / 69 | **69 / 69 = 100 %** | **+25** |
 | Тестов в коде | 3 142 | **4 201** | +1 059 |
 | Строк Rust (без `generated`) | ≈517 000 | ≈563 900 | +46 900 |
 | Серверное ядро в целом (взвешенно) | ≈56 % | **≈61 %** | +5 п.п. |
@@ -47,7 +49,7 @@
 | Источник | Что даёт |
 |---|---|
 | `steel-registry/build_assets/*.json` (извлечённые данные 26.3) | 1 286 блоков / 268 классов блоков, 1 658 предметов / 66 классов, 161 тип сущности / 143 класса, 49 типов block entity, 40 эффектов, 46 зелий, 144 clientbound + 69 serverbound play-пакетов |
-| Код SteelMC | 223 `#[block_behavior]`, 60 `#[item_behavior]`, **141 `#[entity_behavior]`**, 25 зарегистрированных block entity, 108 clientbound + 25 serverbound пакетов в `game/`, 133 файла пакетов всего, 41 корневая команда, 10 модулей меню из 25 ванильных типов |
+| Код SteelMC | 223 `#[block_behavior]`, 60 `#[item_behavior]`, **142 `#[entity_behavior]`**, 25 зарегистрированных block entity, **173 clientbound + 69 serverbound** play-пакетов 26.3 покрыты (100 % в обе стороны), 41 корневая команда, 10 модулей меню из 25 ванильных типов |
 | [Официальный трекер SteelMC](https://steelmc.dev/tracker) (nightly) | 1 101 запись: 888 реализовано (81 %), 143 в работе (13 %), 70 в планах (6 %) |
 | [minecraft.net: 26.3](https://www.minecraft.net/en-us/article/minecraft-java-edition-26-3), [minecraft.wiki](https://minecraft.wiki/w/Java_Edition_26.3) | Состав целевого релиза |
 | README, AGENTS.md, открытые issues и майлстоун `0.17.1` | Официально признанные пробелы и ближайший план |
@@ -59,13 +61,18 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 
 ---
 
-## 3a. Статус по областям (срез `aa4fc29`)
+## 3a. Статус по областям (срез `6b1b1af`)
 
 Разделение «готово / осталось» по каждой области. Проценты — взвешенная оценка, счётчики — из кода.
 
-### Протокол (≈78 %)
-**Готово:** handshake/status/login/config полностью; play: 108 clientbound + 25 serverbound файлов пакетов; `paddle_boat`, `map_item_data`, `merchant_offers`-подобные, `update_attributes`, `entity_data`/`equipment`/`metadata`; VarInt/String/Position/NBT-кодеки, сжатие, шифрование (`steel-crypto`), `steel-login` (online-mode, verify-token).
-**Осталось:** сверка полного списка 144 clientbound / 69 serverbound play-пакетов 26.3 (часть объединена в общие структуры), редкие пакеты (`ping_request`, debug-пакеты), протокол-тесты на NBT-кодеки данных компонентов.
+### Протокол (≈96 %)
+**Готово:**
+- **clientbound 173/173 (100 %)**: status 2/2, login 6/6, config 21/21, play **144/144** — каждый пакет 26.3 имеет собственный файл с `#[packet_id]`, сверено с `packets.json`;
+- **serverbound play 69/69 (100 %) декодируется**: 44 пакета обрабатываются по-настоящему, 25 — `read-and-ignore` (`Exclusive` + `log::debug!`, как в ванильном `handleXXX` для debug/тестовых пакетов);
+- кодеки VarInt/VarLong/String/Position/NBT, сжатие, шифрование (`steel-crypto`), `steel-login` (online-mode, verify-token);
+- `set_game_rule`, `recipe_book_change_settings`, `recipe_book_seen_recipe` теперь применяются к состоянию мира/игрока, а не только парсятся.
+
+**Осталось:** типизированная обработка 25 read-and-ignore пакетов (`set_command_block`, `set_jigsaw_block`, `set_structure_block`, `set_test_block`, `jigsaw_generate`, `test_instance_block_action`, `debug_subscription_request`, `teleport_to_entity`, `pick_item_from_entity`, `select_trade` и др. — все требуют ещё не реализованных подсистем: командных блоков, jigsaw/структур, тест-фреймворка, торговли); протокол-тесты на NBT-кодеки данных компонентов.
 
 ### Чанки, свет, сохранения (≈82 %)
 **Готово:** палитровые секции, `ChunkStatus`, сохранение регионами (`.mca`-совместимо), свет (block+sky), heightmaps, entity/poi-хранилища, сериализация block/entity NBT.
@@ -112,6 +119,31 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 **Готово:** 41 корневая команда, парсер Brigadier-подобный, права/OP-уровни, базовый scoreboard, статистика/достижения-каркас.
 **Осталось:** достижения (полный набор), scoreboard-критерии, селекторы `@e` с полным набором аргументов, RCON/админ-API, плагины.
 
+## 3b. Производительность и многопоточность (сверено с upstream)
+
+Внешняя планка (README + [steelmc.dev/reference/benchmarks](https://steelmc.dev/reference/benchmarks/)):
+
+| Метрика | Steel (9950X) | Fabric+Chunky | Отношение |
+|---|---|---|---|
+| 10 201 чанк, медиана | **3,95 с** | 74,42 с | **18,8×** |
+| Пропускная способность | 2 581,8 чанков/с | 137,2 | 18,8× |
+| Средняя загрузка CPU | **30,2 ядра** | 4,4 ядра | 6,9× |
+| Чанков на CPU-секунду | 85,51 | 31,15 | **2,75×** |
+| Пиковый RSS | 1,79 ГиБ | 2,47 ГиБ | −27 % |
+| 301×301 (90 601 чанк) | 32,14 с / 2 818,6 чанков/с | 8:37,39 | **16,1×** |
+
+**Проверено в коде ветки, инварианты целы:**
+
+- **Синхронный геймплей, асинхронные подсистемы.** `Server::run` (`server/run_loop.rs`) держит три независимые задачи: пул пакетных воркеров (`packet_processor`), тик игры и тик отправки чанков; `tokio::join!` над ними.
+- **Пакеты текут между тиками, а не одной пачкой.** `packet_processor.open_after_tick()` → воркеры обрабатывают пакеты → `close_for_tick()` у границы тика (`run_loop.rs:238`, `:293`). Совпадает с описанной в блоге схемой «drain + close».
+- **Тик никогда не ждёт async-работу.** Миры тикаются на выделенных потоках (`server/world_tick_workers.rs`, `world-tick-N`), результат — через `oneshot`; перегрузка обрабатывается `TickOverloadGuard` и sprint-тиками, а не блокировкой.
+- **Пулы конфигурируемы и по умолчанию масштабируются по ядрам.** `chunk_generation_threads` / `chunk_encoding_threads` (`config.rs`) → `rayon::ThreadPoolBuilder::num_threads`, иначе `available_parallelism()`; `packet_workers` по умолчанию `max(available/2, 2)` (`steel-utils/threading.rs`).
+- **Горячий путь без глобальных локов.** Чтение блоков — через `block_region`/`level_reader` без `Mutex`; список тикающих чанков и мир игрока — `arc_swap::ArcSwap` (lock-free чтение); глобальные `LazyLock` — только read-only кэши масок heightmap.
+- **Сохранение вне тика.** `chunk_map/persistence.rs` сериализует и кодирует чанки в `chunk_encoding_pool`, результат возвращается через `oneshot`; кэш синхронных lookup'ов (`gameplay_chunk_lookup_cache`) — scoped, без синхронизации внутри области.
+- **Свет параллельный, без глобальной очереди** — `chunk/light/workset.rs` на Rayon, как описано в блоге (Starlight/ScalableLux-подход).
+
+**Вывод:** архитектурных регрессий против заявленной планки нет; ветка ничего не сериализовала и не увела в главный поток. Правки этой сессии (обработчики `set_game_rule`/recipe book, облако дракона, фазы фантома) — O(1) на пакет/тик и не добавляют блокирующих ожиданий.
+
 ## 3. Сводная матрица
 
 | # | Область | Вес | Покрытие | Что уже готово | Ключевые пробелы |
@@ -124,12 +156,12 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 | 6 | Блоки и blockstates | 13 | **81 %** (трекер) / 223 поведения на 268 классов | 888 записей реализовано, 143 в работе; редстоун, растения, двери, лестницы/плиты, шерсть/бетон, straw bed, shelf mushroom, red shrub | 70 классов в планах: **chest/trapped_chest**, dispenser, dropper, hopper, brewing_stand, crafter, lectern, loom, stonecutter, smithing_table, cartography_table, sculk*, calibrated_sculk_sensor, trial_spawner, vault, decorated_pot, jigsaw, structure_block, command_block, creaking_heart, copper_golem_statue, shelf (13), leaves-база, nylium, infested, froglights и др. |
 | 7 | Block entities | 6 | 25 / 49 ≈ **51 %** | furnace/smoker/blast furnace, barrel, beacon, beehive, bell, brushable, campfire, chiseled_bookshelf, comparator, conduit, daylight detector, enchanting table, ender chest, end portal/gateway, sign/hanging sign, jukebox, mob spawner, piston, potent sulfur, shulker box, skull | **chest/trapped_chest**, dispenser, dropper, hopper, brewing stand, banner, structure/jigsaw/command block, lectern, sculk sensor/catalyst/shrieker, shelf, decorated pot, crafter, trial spawner, vault, creaking heart, copper golem statue |
 | 8 | Предметы и компоненты | 8 | ≈78 % (**1 390 / 1 658 = 83,8 %** предметов с поведением) | 1 658 предметов и компоненты данных, прочность, еда, зелья, вёдра, инструменты/броня через компоненты, mace, shield (частично), spawn eggs, dye, banner, minecart, sign, подушечки (16), картины, лук/арбалет/стрелы (в т.ч. зельевые), кристалл Края, шаблоны кузнеца, **лодки и плоты (22)**, **карты и пустые карты (18, включая `MapState` и пакет `map_item_data`)** | Нет поведения: `MobBucketItem` (7), `KnowledgeBookItem`, `ArmorStandItem`, `TridentItem`, `WindChargeItem`; элитры нет |
-| 9 | Инвентарь, меню, крафт | 6 | 10 / 25 ≈ **40 %** | inventory, crafting (2x2/3x3), furnace/smoker/blast furnace, anvil, enchanting, grindstone, beacon, ender chest, shulker box, универсальные 9x1–9x6; chest-меню есть, но без блока | Нет типов меню: hopper, brewing_stand, smithing, stonecutter, loom, cartography_table, merchant, crafter_3x3, lectern; нет книги рецептов (`update_recipes`, `recipe_book_*`) |
+| 9 | Инвентарь, меню, крафт | 6 | 10 / 25 ≈ **40 %** | inventory, crafting (2x2/3x3), furnace/smoker/blast furnace, anvil, enchanting, grindstone, beacon, ender chest, shulker box, универсальные 9x1–9x6; chest-меню есть, но без блока; книга рецептов: `ServerRecipeBook` + `update_recipes`/`recipe_book_add`/`recipe_book_settings`, обработка `recipe_book_change_settings` и `recipe_book_seen_recipe` (vanilla highlight) | Нет типов меню: hopper, brewing_stand, smithing, stonecutter, loom, cartography_table, merchant, crafter_3x3, lectern; нет `recipe_book_remove`/`place_recipe` поведения |
 | 10 | Сущности, ИИ, спавн | 14 | 39 / 161 ≈ **24 %**; живые мобы 8 / ~95 ≈ **8 %** | AI-фундамент: goals, navigation, pathfinder, sensing, targeting, physics, equipment, effects, маунты, лианы, item/XP orb, TNT, кристалл Края, снаряды (снежок, яйцо, жемчуг, око, зелья, фейерверк, удочка, стрелы/спектральные стрелы), вагонетки (2), **лодки/плоты и сундук-лодки (4 класса)** | 122 типа без реализации: все враждебные (zombie, skeleton, creeper, spider, enderman, witch, slime, pillager…), животные кроме 6 (chicken, cow, mooshroom, pig, sheep, squid) и bat, villagers, iron/snow golem, bosses, остальные вагонетки, трезубец/винд-чардж, sulfur cube (26.2); **нет моб-капа, спавн-цикла и естественного спавна** (7 spawn rules) |
 | 11 | Бой, урон, эффекты, зелья | 9 | ≈55 % | Типы урона, атрибуты, броня/toughness, поглощение урона бронёй, knockback, часть sweep, enchantment helper (защита), 13 активных эффектов, зелья/всплеск/туман, голод/регенерация/истощение | Нет combat tracker и death messages (PR), критов/кулдауна атаки полностью, щита (PR), трезубца, mace-механик полностью, **атрибутных эффектов** (speed/strength/jump/resistance и др. не накладывают модификаторы), варки зелий, тотема, элитр |
 | 12 | Редстоун и механизмы | 4 | ≈65 % | wire, repeater, comparator, torch, lever, buttons, pressure plates (15), observer, note block, daylight detector, piston head/base (в работе), TNT (частично), target, tripwire, rails, minecart physics | **piston base в работе**, dispenser/dropper/hopper/crafter отсутствуют, sculk-сенсоры, copper bulb/chest частично, нет полной 1:1 модели обновлений и «quasi-connectivity»-краёв |
 | 13 | Достижения и статистика | 2 | ≈60 % | Данные всех достижений, `PlayerAdvancements`-хранилище, критерии/триггеры, `/advancement`, статистика (vanilla stat types + custom), начисление части статов | Мало фактически срабатывающих триггеров, нет выдачи `ITEM_CRAFTED` (issue), формат сохранения не ванильный JSON (issue), нет динамической перезагрузки |
-| 14 | Scoreboard, команды-интерфейсы, карты | 1 | ≈20 % | Серверная модель scoreboard/team/objective, title/actionbar/subtitle, tab list, чат | **Нет пакетов** `set_objective/set_score/set_display_objective/set_player_team/reset_score`, нет `/scoreboard`, `/team`, `/bossbar`; нет карт (`map_item_data`), waypoint-системы, диалогов |
+| 14 | Scoreboard, команды-интерфейсы, карты | 1 | ≈45 % | Серверная модель scoreboard/team/objective, title/actionbar/subtitle, tab list, чат; **clientbound-пакеты** `set_objective/set_score/set_display_objective/set_player_team/reset_score`, `map_item_data`, `waypoint`, `show_dialog`/`clear_dialog` реализованы и корректно кодируются | Нет `/scoreboard`, `/team`, `/bossbar` (команд пока нет), нет отправки карт клиенту как поведения |
 | 15 | Команды | 3 | ≈40 % | 41 корневая команда (43 с алиасами `xp`, `tp`): advancement, clear, damage, defaultgamemode, difficulty, enchant, execute, experience, fill, gamemode, gamerule, give, kill, list, locate, op/deop, playsound, return, seed, setblock, spawnpoint, setidletimeout, setworldspawn, stop, stopsound, summon, tag, teleport, tellraw, tick, time, title, weather, worldborder, transfer + steel-специфичные (domain, fly, perms, invsee, swing, version) | Нет ≈45 ванильных: attribute, ban/ban-ip/banlist/pardon, bossbar, clone, data, datapack, debug, dialog, effect, fillbiome, forceload, function, help, item, jfr, kick, loot, me/msg/tell/tm/w, particle, perf, place, publish, raid, random, recipe, reload, ride, save-all/off/on, say, schedule, scoreboard, spectate, spreadplayers, stopwatch, team, teammsg, trigger, warden_warning, waypoint, whitelist |
 | 16 | Права, админ, интеграции | 2 | ≈30 % | Своя система permissions/групп (лучше ванильных op-level), конфиг, server links, motd/favicon, online-mode | Нет whitelist, ban-листов, RCON, query, Minecraft Server Management Protocol (появился в 26.3 вместо лог-строк), нет консольных метрик/`/perf` (issue) |
 | 17 | Плагины и API | 2 | ≈15 % | `steel-flint` (ранний), keyed-downcasting, регистрация блоков/предметов/команд с прицелом на ABI | Нет стабильного plugin API, нет Bukkit/Paper/Fabric/NeoForge-совместимости, нет рантайм-датапаков |
