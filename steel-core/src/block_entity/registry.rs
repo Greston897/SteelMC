@@ -225,6 +225,23 @@ pub fn init_block_entities() {
             Arc::new(DispenserBlockEntity::new_dropper(level, pos, state))
         });
 
+        registry.register(&vanilla_block_entity_types::BANNER, |level, pos, state| {
+            Arc::new(BannerBlockEntity::new(level, pos, state))
+        });
+
+        registry.register(&vanilla_block_entity_types::LECTERN, |level, pos, state| {
+            Arc::new(LecternBlockEntity::new(level, pos, state))
+        });
+
+        registry.register(
+            &vanilla_block_entity_types::DECORATED_POT,
+            |level, pos, state| Arc::new(DecoratedPotBlockEntity::new(level, pos, state)),
+        );
+
+        registry.register(&vanilla_block_entity_types::CRAFTER, |level, pos, state| {
+            Arc::new(CrafterBlockEntity::new(level, pos, state))
+        });
+
         registry.register(&vanilla_block_entity_types::BEACON, |level, pos, state| {
             Arc::new(BeaconBlockEntity::new(level, pos, state))
         });
