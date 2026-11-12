@@ -20,7 +20,9 @@ pub use objects::decoration::{
     PaintingEntity, TextDisplayEntity,
 };
 pub use objects::display_ui::{BlockDisplayEntity, ItemFrameEntity, LeashFenceKnotEntity};
-pub use objects::effects::AreaEffectCloudEntity;
+pub use objects::effects::{
+    AreaEffectCloudEntity, EvokerFangsEntity, LightningBoltEntity,
+};
 pub use objects::explosives::{EndCrystalEntity, PrimedTntEntity};
 pub use objects::items::{ExperienceOrbEntity, FallingBlockEntity, ItemEntity};
 pub use objects::projectiles::{
