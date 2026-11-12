@@ -6,12 +6,13 @@
 //! point and removes the stack (creative keeps it), plays
 //! `item.trident.throw` and awards `ITEM_USED`.
 //!
-//! Differences from vanilla, all deliberate:
-//! * The `riptide` spin attack needs charge-tick movement and damage while
-//!   swimming; Steel has no riptide implementation yet, so a fully charged
-//!   throw always throws the trident instead of starting a spin attack.
-//! * `Loyalty` is read from the stack's enchantments and handed to the
-//!   projectile, which implements the return trip.
+//! Riptide follows vanilla: in water or rain the trident starts a spin attack
+//! instead of throwing, scaled by the enchantment level (see
+//! `Player::start_auto_spin_attack`). Out of water and rain a charged release
+//! throws the trident.
+//!
+//! `Loyalty` is read from the stack's enchantments and handed to the
+//! projectile, which implements the return trip.
 
 use std::sync::Arc;
 
@@ -26,6 +27,7 @@ use crate::behavior::ItemUseAnimation;
 use crate::behavior::context::{InteractionResult, UseItemContext};
 use crate::behavior::item::ItemBehavior;
 use crate::entity::entities::{AbstractArrow as _, ArrowPickup, ThrownTridentEntity};
+use glam::DVec3;
 use crate::entity::{Entity, LivingEntity, next_entity_id, spawn_projectile_from_rotation};
 use crate::world::World;
 
@@ -85,6 +87,24 @@ impl ItemBehavior for TridentItem {
         {
             return InteractionResult::Fail;
         }
+
+        // Vanilla starts the spin attack immediately when the player is wet or
+        // in rain, without waiting for the charge to build.
+        let level = context
+            .inv
+            .with_item(|stack| stack.get_enchantment_level(&vanilla_enchantments::RIPTIDE.key));
+        if level > 0 && Entity::is_in_water_or_rain(&**context.player) {
+            let look = {
+                let (yaw, pitch) = Entity::rotation(&**context.player);
+                let yaw = f64::from(yaw).to_radians();
+                let pitch = f64::from(pitch).to_radians();
+                let xz = pitch.cos();
+                DVec3::new(-yaw.sin() * xz, -pitch.sin(), yaw.cos() * xz)
+            };
+            context.player.start_auto_spin_attack(level, look);
+            return InteractionResult::Success;
+        }
+
         context.player.start_using_item(context.hand);
         InteractionResult::Consume
     }

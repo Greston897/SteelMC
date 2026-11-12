@@ -98,6 +98,9 @@ struct PlayerFloatingValidation {
     may_fly: bool,
     has_levitation: bool,
     is_fall_flying: bool,
+    /// Vanilla exempts the riptide spin attack from the floating check, because
+    /// the spin moves the player vertically on its own.
+    is_auto_spin_attack: bool,
 }
 
 impl PlayerFloatingValidation {
@@ -109,6 +112,7 @@ impl PlayerFloatingValidation {
             && !self.may_fly
             && !self.has_levitation
             && !self.is_fall_flying
+            && !self.is_auto_spin_attack
     }
 }
 
@@ -686,7 +690,6 @@ impl Player {
         is_spectator: bool,
         is_fall_flying: bool,
     ) {
-        // TODO: Add auto-spin exemption when riptide/spin attack state exists.
         let can_violate_floating = PlayerFloatingValidation {
             y_dist,
             player_stands_on_something,
@@ -695,6 +698,7 @@ impl Player {
             may_fly: self.abilities.lock().may_fly,
             has_levitation: self.has_mob_effect(vanilla_mob_effects::LEVITATION),
             is_fall_flying,
+            is_auto_spin_attack: self.is_auto_spin_attack(),
         }
         .can_violate();
 
@@ -1220,6 +1224,31 @@ mod tests {
     }
 
     #[test]
+    fn floating_validation_exempts_the_riptide_spin_attack() {
+        let validation = PlayerFloatingValidation {
+            y_dist: 0.0,
+            player_stands_on_something: false,
+            is_spectator: false,
+            server_allows_flight: false,
+            may_fly: false,
+            has_levitation: false,
+            is_fall_flying: false,
+            is_auto_spin_attack: false,
+        };
+
+        assert!(validation.can_violate());
+        // An active spin attack moves the player vertically, so vanilla does not
+        // treat the resulting delta as illegal flight.
+        assert!(
+            !PlayerFloatingValidation {
+                is_auto_spin_attack: true,
+                ..validation
+            }
+            .can_violate()
+        );
+    }
+
+    #[test]
     fn floating_validation_exempts_levitation_like_vanilla() {
         let validation = PlayerFloatingValidation {
             y_dist: 0.0,
@@ -1229,6 +1258,7 @@ mod tests {
             may_fly: false,
             has_levitation: false,
             is_fall_flying: false,
+            is_auto_spin_attack: false,
         };
 
         assert!(validation.can_violate());
