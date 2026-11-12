@@ -11,6 +11,7 @@ mod effect;
 mod execute;
 mod experience;
 mod fill;
+mod fillbiome;
 mod fly;
 pub(crate) mod gamemode;
 mod gamerule;
@@ -92,6 +93,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(execute::registration())?;
     builder.register(experience::registration())?;
     builder.register(fill::registration())?;
+    builder.register(fillbiome::registration())?;
     builder.register(fly::registration())?;
     builder.register(gamemode::registration()?)?;
     builder.register(gamerule::registration())?;

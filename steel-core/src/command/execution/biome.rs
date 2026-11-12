@@ -1,7 +1,8 @@
 //! Biome registry command arguments.
 
 use steel_registry::{
-    BIOMES_REGISTRY, REGISTRY, RegistryExt as _, TaggedRegistryExt as _, biome::BiomeRef,
+    BIOMES_REGISTRY, REGISTRY, RegistryEntry as _, RegistryExt as _, TaggedRegistryExt as _,
+    biome::BiomeRef,
 };
 use steel_utils::{Identifier, translations};
 
@@ -19,6 +20,23 @@ pub(crate) enum BiomeOrTag {
 }
 
 impl BiomeOrTag {
+    /// Resolves a plain biome to its network id.
+    ///
+    /// Biomes are addressable by id in the chunk palette, so an argument used to
+    /// *write* a biome (rather than filter one) must name a single biome; a tag
+    /// is rejected because it has no unique id.
+    pub(crate) fn to_biome_id(&self) -> Result<u16, CommandSyntaxError> {
+        match self {
+            Self::Biome(biome) => Ok(biome.id() as u16),
+            Self::Tag(tag) => Err(CommandSyntaxError::dynamic(
+                "commands.fillbiome.tag",
+                "Biome tags cannot be used here",
+                tag.to_string(),
+                "#".to_string(),
+            )),
+        }
+    }
+
     pub(crate) fn matches(&self, biome: BiomeRef) -> bool {
         match self {
             Self::Biome(expected) => *expected == biome,
