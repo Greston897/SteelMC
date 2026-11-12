@@ -19,7 +19,7 @@ use steel_protocol::packets::game::CTakeItemEntity;
 use steel_registry::attribute::AttributeRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::data_components::components::ItemEnchantments;
-use steel_registry::data_components::vanilla_components::CUSTOM_NAME;
+use steel_registry::data_components::vanilla_components::{CUSTOM_NAME, USE_REMAINDER};
 use steel_registry::enchantment_effect::EnchantmentEffectComponent;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
@@ -716,10 +716,35 @@ pub trait Mob: LivingEntity + Leashable {
         !self.is_vehicle()
     }
 
-    /// Consumes one of the player's held item after this mob uses it in an interaction.
+    /// Consumes one of the player's held item after this mob uses it in an
+    /// interaction, converting it to the vanilla `use_remainder` result.
     fn use_player_item(&self, player: &Player, hand: InteractionHand) {
-        player.inventory.lock().shrink_item_in_hand(hand, 1);
-        // TODO: Apply USE_REMAINDER components once item use-remainder support exists.
+        let mut produced = None;
+        {
+            let mut inventory = player.inventory.lock();
+            let original = inventory.get_item_in_hand(hand).copy_with_count(
+                inventory.get_item_in_hand(hand).count(),
+            );
+            inventory.shrink_item_in_hand(hand, 1);
+            let mut used = inventory
+                .get_item_in_hand(hand)
+                .copy_with_count(inventory.get_item_in_hand(hand).count());
+            if let Some(remainder) = original.get(USE_REMAINDER)
+                && let Some(extra) = remainder.convert_into_remainder(
+                    &mut used,
+                    original.count(),
+                    player.has_infinite_materials(),
+                )
+            {
+                produced = Some(extra);
+            }
+            // `convert_into_remainder` may have swapped the emptied stack for
+            // the remainder.
+            *inventory.get_item_in_hand_mut(hand) = used;
+        }
+        if let Some(extra) = produced {
+            player.handle_extra_items_created_on_use(extra);
+        }
     }
 
     fn remove_when_far_away(&self, dist_sqr: f64) -> bool {
