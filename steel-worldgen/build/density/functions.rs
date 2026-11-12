@@ -685,8 +685,12 @@ fn json_data_to_df(data: &DensityFunctionData) -> DensityFunction {
             })
         }
 
-        // TODO: Implement Beardifier for structure terrain adaptation.
-        // Constant(0.0) is correct when structures are not yet generated.
+        // Vanilla's `minecraft:beardifier` node is a *marker*: evaluating it
+        // yields nothing. The terrain adaptation is applied later, when the noise
+        // chunk fills corners, from the structure beardifier state
+        // (`steel_worldgen::noise::Beardifier`, wired in
+        // `worldgen/generator/vanilla.rs`). Keeping it a constant here is exactly
+        // vanilla's behaviour, not a stand-in.
         DensityFunctionData::Beardifier {} => DensityFunction::Constant(Constant { value: 0.0 }),
         DensityFunctionData::EndIslands {} | DensityFunctionData::EndOuterIslands {} => {
             DensityFunction::EndIslands
