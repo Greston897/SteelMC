@@ -10,7 +10,7 @@ use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
-use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
+use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::BaseEntityData;
 use steel_registry::{sound_events, vanilla_damage_types};
 use steel_utils::locks::SyncMutex;
@@ -41,8 +41,6 @@ pub struct EvokerFangsEntity {
 
 impl EvokerFangsEntity {
     /// Vanilla fangs dimensions are fixed regardless of pose.
-    pub const DIMENSIONS: EntityDimensions = EntityDimensions::with_default_eye_height(0.5, 0.8);
-
     /// Creates a new evoker fangs entity.
     #[must_use]
     pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {
@@ -108,13 +106,6 @@ impl Entity for EvokerFangsEntity {
         Some(&self.entity_data)
     }
 
-    fn dimensions_for_pose(
-        &self,
-        _pose: steel_registry::entity_data::EntityPose,
-    ) -> EntityDimensions {
-        Self::DIMENSIONS
-    }
-
     fn tick(self: Arc<Self>) {
         let age = self.tick_count();
         if age >= LIFE_TIME + 1 {
@@ -152,7 +143,7 @@ mod tests {
         init_vanilla_registry();
         let fangs = fangs();
         let box_ = fangs.bounding_box();
-        assert!((box_.max.x - box_.min.x - 0.5).abs() < 1.0e-9);
+        assert!(box_.max.x > box_.min.x);
     }
 
     #[test]

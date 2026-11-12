@@ -18,9 +18,7 @@ use steel_utils::{DowncastType, DowncastTypeKey};
 
 use super::abstract_minecart::{AbstractMinecart, AbstractMinecartBase};
 use crate::entity::damage::DamageSource;
-use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, LivingEntity, SharedEntity,
-};
+use crate::entity::{Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, SharedEntity};
 use crate::world::{
     DefaultExplosionDamageCalculator, ExplosionInteraction, ExplosionOptions, World,
 };
@@ -182,7 +180,10 @@ impl Entity for TntMinecartEntity {
         if ignites && !self.is_primed() {
             self.prime_fuse(true);
         }
-        LivingEntity::hurt_server(self, world, source, amount)
+        // Minecarts are not living entities, so there is no health to subtract;
+        // the fuse is the only damage reaction.
+        let _ = (world, source, amount);
+        false
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
