@@ -7,11 +7,14 @@ use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::{vanilla_block_entity_types, vanilla_custom_stats};
-use steel_utils::{BlockPos, BlockStateId, translations};
+use steel_utils::{BlockPos, BlockStateId, WorldAabb, translations};
 use text_components::TextComponent;
 
 use crate::behavior::InventoryAccess;
 use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
+use crate::entity::SharedEntity;
+use crate::entity::entities::PiglinEntity;
+use crate::entity::mob::Mob as _;
 use crate::behavior::context::{BlockHitResult, BlockPlaceContext, InteractionResult};
 use crate::block_entity::BLOCK_ENTITIES;
 use crate::inventory::menu::kinds::ender_chest;
@@ -24,11 +27,35 @@ pub struct EnderChestBlock {
     block: BlockRef,
 }
 
+/// Radius vanilla `EnderChestBlock` scans for piglins to anger.
+const PIGLIN_ANGER_RADIUS: f64 = 4.0;
+
 impl EnderChestBlock {
     /// Creates a new ender chest block.
     #[must_use]
     pub const fn new(block: BlockRef) -> Self {
         Self { block }
+    }
+
+    /// Vanilla `EnderChestBlock.useWithoutItem` calls `PlayerLookup.tracking`
+    /// around the chest and runs `entity.setPersistentAngerTarget` for piglins,
+    /// with the player as the anger target for 20 seconds.
+    fn anger_nearby_piglins(world: &Arc<World>, pos: BlockPos, player: &Player) {
+        let box_ = WorldAabb::new(
+            f64::from(pos.x()) - PIGLIN_ANGER_RADIUS,
+            f64::from(pos.y()) - PIGLIN_ANGER_RADIUS,
+            f64::from(pos.z()) - PIGLIN_ANGER_RADIUS,
+            f64::from(pos.x()) + PIGLIN_ANGER_RADIUS,
+            f64::from(pos.y()) + PIGLIN_ANGER_RADIUS,
+            f64::from(pos.z()) + PIGLIN_ANGER_RADIUS,
+        );
+        let player_entity: SharedEntity = Arc::<Player>::clone(player);
+        for entity in world.get_entities_in_aabb(&box_) {
+            let Some(piglin) = entity.as_entity_event_source().downcast_ref::<PiglinEntity>() else {
+                continue;
+            };
+            piglin.set_target(Some(&player_entity));
+        }
     }
 }
 
@@ -93,7 +120,7 @@ impl BlockBehavior for EnderChestBlock {
         );
 
         player.award_custom_stat(&vanilla_custom_stats::OPEN_ENDERCHEST);
-        // TODO: Anger nearby piglins
+        Self::anger_nearby_piglins(world, pos, player);
 
         InteractionResult::Success
     }
