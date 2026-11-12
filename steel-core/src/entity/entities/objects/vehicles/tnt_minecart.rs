@@ -43,11 +43,21 @@ pub struct TntMinecartEntity {
     state: SyncMutex<TntMinecartState>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct TntMinecartState {
     fuse: i32,
     /// Whether the fuse was lit by a player or a redstone pulse.
     ignited: bool,
+}
+
+impl Default for TntMinecartState {
+    fn default() -> Self {
+        // Vanilla `MinecartTNT.fuse = -1`: a freshly placed cart is not primed.
+        Self {
+            fuse: -1,
+            ignited: false,
+        }
+    }
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `TntMinecartEntity`.
@@ -232,7 +242,7 @@ mod tests {
     fn new_tnt_minecarts_are_defused() {
         init_vanilla_registry();
         let cart = cart();
-        assert_eq!(cart.fuse(), 0);
+        assert_eq!(cart.fuse(), -1);
         assert!(!cart.is_primed());
     }
 
@@ -240,7 +250,6 @@ mod tests {
     fn priming_uses_the_vanilla_fuse_length() {
         init_vanilla_registry();
         let cart = cart();
-        cart.set_fuse(-1);
         cart.prime_fuse(true);
         assert!(cart.is_primed());
         assert_eq!(cart.fuse(), TNT_MINECART_FUSE_TICKS);
