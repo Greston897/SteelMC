@@ -689,7 +689,13 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
 
     /// Stops riding the current vehicle, if any.
     fn stop_riding(&self) {
+        let was_riding = self.is_passenger();
         self.base().stop_riding();
+        // Vanilla `Entity.stopRiding` dispatches `GameEvent.ENTITY_DISMOUNT`
+        // from the passenger that left.
+        if was_riding {
+            self.game_event(&vanilla_game_events::ENTITY_DISMOUNT);
+        }
     }
 
     /// Dismounts every passenger from this entity.

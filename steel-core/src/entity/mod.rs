@@ -959,7 +959,9 @@ pub(crate) fn start_riding_entities(
     {
         mob.drop_leash();
     }
-    // TODO: Emit ENTITY_MOUNT game event and riding advancement trigger once those foundations exist.
+    // Vanilla `Entity.startRiding` dispatches `GameEvent.ENTITY_MOUNT` from the
+    // passenger so sculk sensors see the boarding.
+    passenger.game_event(&vanilla_game_events::ENTITY_MOUNT);
     true
 }
 
