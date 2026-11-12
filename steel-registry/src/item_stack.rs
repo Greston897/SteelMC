@@ -28,7 +28,7 @@ use crate::{
             BLOCK_STATE, ENCHANTABLE, ENCHANTMENTS, EQUIPPABLE, Equippable, ITEM_NAME,
             ItemAttributeModifiers,
             ItemEnchantments, MAX_DAMAGE, MAX_STACK_SIZE, MINIMUM_ATTACK_CHARGE,
-            ItemLore, LORE, OMINOUS_BOTTLE_AMPLIFIER, OminousBottleAmplifier, PIERCING_WEAPON,
+            BANNER_PATTERNS, FIREWORK_EXPLOSION, FIREWORKS, ItemLore, LORE, OMINOUS_BOTTLE_AMPLIFIER, OminousBottleAmplifier, PIERCING_WEAPON,
             POTION_CONTENTS, PiercingWeapon, PotionContents, REPAIRABLE, STORED_ENCHANTMENTS, TOOL,
             Tool, UNBREAKABLE, WEAPON, WRITTEN_BOOK_CONTENT, Weapon,
         },
@@ -1069,32 +1069,70 @@ impl ItemStack {
     }
 
     /// Sets banner pattern layers.
-    pub const fn set_banner_pattern(
+    ///
+    /// Vanilla `SetBannerPatternFunction` maps each definition to a layer that
+    /// references a registered banner pattern.
+    pub fn set_banner_pattern(
         &mut self,
-        _patterns: &[crate::loot_table::BannerPattern],
-        _append: bool,
+        patterns: &[crate::loot_table::BannerPattern],
+        append: bool,
     ) {
-        // TODO: Implement banner pattern setting
-        // Set BANNER_PATTERNS component
+        use crate::data_components::components::{BannerPatternLayer, BannerPatternLayers};
+        use crate::registry::holder::RegistryHolder;
+
+        let mut layers = if append {
+            self.get(BANNER_PATTERNS)
+                .map(|existing| existing.layers().to_vec())
+                .unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        for pattern in patterns {
+            let Some(entry) = REGISTRY.banner_patterns.by_key(&pattern.pattern) else {
+                continue;
+            };
+            layers.push(BannerPatternLayer::new(
+                RegistryHolder::Reference(entry),
+                pattern.color,
+            ));
+        }
+        self.set(BANNER_PATTERNS, BannerPatternLayers::new(layers));
     }
 
     /// Sets firework rocket properties.
-    pub const fn set_fireworks(
+    ///
+    /// Vanilla `SetFireworksFunction` keeps the existing component values for
+    /// whatever the function omits.
+    pub fn set_fireworks(
         &mut self,
-        _explosions: Option<&[crate::loot_table::FireworkExplosion]>,
-        _flight_duration: Option<i32>,
+        explosions: Option<&[crate::loot_table::FireworkExplosion]>,
+        flight_duration: Option<i32>,
     ) {
-        // TODO: Implement firework setting
-        // Set FIREWORKS component
+        use crate::data_components::components::Fireworks;
+
+        let existing = self.get(FIREWORKS).cloned();
+        let flight = flight_duration
+            .or_else(|| existing.as_ref().map(Fireworks::flight_duration))
+            .unwrap_or(0);
+        let converted: Vec<_> = explosions.map(|explosions| {
+            explosions
+                .iter()
+                .map(convert_firework_explosion)
+                .collect()
+        });
+        let explosion_values = converted.unwrap_or_else(|| {
+            existing
+                .map(|fireworks| fireworks.explosions().to_vec())
+                .unwrap_or_default()
+        });
+        if let Ok(fireworks) = Fireworks::new(flight, explosion_values) {
+            self.set(FIREWORKS, fireworks);
+        }
     }
 
     /// Sets firework star explosion properties.
-    pub const fn set_firework_explosion(
-        &mut self,
-        _explosion: &crate::loot_table::FireworkExplosion,
-    ) {
-        // TODO: Implement firework explosion setting
-        // Set FIREWORK_EXPLOSION component
+    pub fn set_firework_explosion(&mut self, explosion: &crate::loot_table::FireworkExplosion) {
+        self.set(FIREWORK_EXPLOSION, convert_firework_explosion(explosion));
     }
 
     /// Sets book cover (title/author for written books).
@@ -1448,6 +1486,30 @@ fn decode_persistent_count(tag: Option<BorrowedNbtTag<'_, '_>>) -> Option<i32> {
         None => 1,
     };
     (1..=99).contains(&count).then_some(count)
+}
+
+/// Converts a loot-table firework explosion definition into the item component
+/// representation.
+fn convert_firework_explosion(
+    explosion: &crate::loot_table::FireworkExplosion,
+) -> crate::data_components::components::FireworkExplosion {
+    use crate::data_components::components::FireworkExplosionShape;
+    use crate::loot_table::FireworkShape;
+
+    let shape = match explosion.shape {
+        FireworkShape::SmallBall => FireworkExplosionShape::SmallBall,
+        FireworkShape::LargeBall => FireworkExplosionShape::LargeBall,
+        FireworkShape::Star => FireworkExplosionShape::Star,
+        FireworkShape::Creeper => FireworkExplosionShape::Creeper,
+        FireworkShape::Burst => FireworkExplosionShape::Burst,
+    };
+    crate::data_components::components::FireworkExplosion::new(
+        shape,
+        explosion.colors.to_vec(),
+        explosion.fade_colors.to_vec(),
+        explosion.has_trail,
+        explosion.has_twinkle,
+    )
 }
 
 /// Applies a vanilla `ListOperation` to `existing`, mapping each new value with
