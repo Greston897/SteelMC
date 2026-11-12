@@ -372,6 +372,8 @@ pub struct BlockEntityRef<'a> {
     pub custom_name: Option<&'a str>,
     /// Inventory contents (for dynamic/slots entries).
     pub inventory: Option<&'a [ItemStack]>,
+    /// Saved block entity NBT, used by `copy_components` and `copy_custom_data`.
+    pub data: Option<&'a simdnbt::owned::NbtCompound>,
 }
 
 impl<'a, R: rand::Rng> LootContext<'a, R> {

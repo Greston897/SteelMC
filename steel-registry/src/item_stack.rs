@@ -856,15 +856,51 @@ impl ItemStack {
     }
 
     /// Copies components from a source (block entity, attacker, etc.) to this item.
-    pub const fn copy_components<R: rand::Rng>(
+    ///
+    /// Vanilla `CopyComponentsFunction` reads the source's component map and
+    /// merges the requested component ids into this stack. Steel's loot context
+    /// exposes the block entity's saved NBT, which carries the same map under
+    /// `components`, so the requested ids are decoded from there.
+    pub fn copy_components<R: rand::Rng>(
         &mut self,
-        _source: crate::loot_table::CopySource,
-        _include: &[Identifier],
-        _ctx: &crate::loot_table::LootContext<'_, R>,
+        source: crate::loot_table::CopySource,
+        include: &[Identifier],
+        ctx: &crate::loot_table::LootContext<'_, R>,
     ) {
-        // TODO: Implement when block entity system is ready
-        // 1. Get the source entity/block entity from context
-        // 2. For each component in `include`, copy it to this item's patch
+        use crate::loot_table::CopySource;
+
+        let data = match source {
+            CopySource::BlockEntity => match ctx.block_entity.and_then(|entity| entity.data) {
+                Some(data) => data,
+                None => return,
+            },
+            // Entity sources have no component map in the loot context yet.
+            CopySource::This | CopySource::Attacker | CopySource::DirectAttacker => return,
+        };
+
+        let Some(raw) = data.get("components") else {
+            return;
+        };
+        let mut encoded = Vec::new();
+        raw.write(&mut encoded);
+        let Ok(borrowed) = simdnbt::borrow::read_compound(&mut std::io::Cursor::new(encoded.as_slice()))
+        else {
+            return;
+        };
+        let Some(patch) = DataComponentPatch::from_nbt_tag(simdnbt::borrow::NbtTag::Compound(
+            borrowed,
+        )) else {
+            return;
+        };
+
+        for (key, entry) in patch.iter() {
+            if !include.iter().any(|include| include == key) {
+                continue;
+            }
+            if let ComponentPatchEntry::Set(data) = entry {
+                self.patch.set_raw(key.clone(), data.clone());
+            }
+        }
     }
 
     /// Copies block state properties to this item (for blocks like `note_block`).
