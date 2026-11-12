@@ -555,6 +555,17 @@ pub trait BlockBehavior: Send + Sync {
         InteractionResult::Pass
     }
 
+    /// Vanilla `BlockState.useWithoutItem` under spectator mode: whether a
+    /// spectator may open this block's menu. Containers opt in; everything else
+    /// stays impassable.
+    #[expect(
+        unused_variables,
+        reason = "default trait implementation ignores all params"
+    )]
+    fn allows_spectator_menu(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) -> bool {
+        false
+    }
+
     /// Called when a neighboring block changes (not shape-related).
     ///
     /// This is the Rust equivalent of vanilla's `BlockState.handleNeighborChanged()`.

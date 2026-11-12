@@ -11,7 +11,7 @@ use steel_registry::stat::vanilla_stat_types;
 /// This implements the logic from Java's `ServerPlayerGameMode.useItemOn()`.
 ///
 /// # Flow
-/// 1. Spectator mode: Only allow opening menus (currently returns Pass)
+/// 1. Spectator mode: Only allow opening container menus
 /// 2. Check if block interaction should be suppressed (sneaking + holding items)
 /// 3. If not suppressed: Call block's `use_item_on` method
 /// 4. If block returns `TryEmptyHandInteraction` and main hand: Call block's `use_without_item`
@@ -26,10 +26,26 @@ pub fn use_item_on(
     let pos = hit_result.block_pos;
     let state = world.get_block_state(pos);
 
-    // Spectator mode: can only open menus
-    // TODO: Implement menu providers for blocks like chests
+    // Vanilla `ServerPlayerGameMode.useItemOn`: in spectator mode the only
+    // permitted block interaction is opening a container menu. Unlike survival,
+    // the hand-held item is ignored and no block-use logic runs.
     if player.game_mode() == GameType::Spectator {
-        return InteractionResult::Pass;
+        let Some(block) = REGISTRY.blocks.by_state_id(state) else {
+            return InteractionResult::Pass;
+        };
+        let behavior = BLOCK_BEHAVIORS.get_behavior(block);
+        if !behavior.allows_spectator_menu(state, world, pos) {
+            return InteractionResult::Pass;
+        }
+        let mut inventory_access = InventoryAccess::new(Arc::clone(&player.inventory), hand);
+        return behavior.use_without_item(
+            state,
+            world,
+            pos,
+            player,
+            hit_result,
+            &mut inventory_access,
+        );
     }
 
     // Check if block interaction should be suppressed (sneaking + holding items in either hand)

@@ -107,6 +107,12 @@ impl BlockBehavior for EnchantingTableBlock {
         false
     }
 
+    fn allows_spectator_menu(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) -> bool {
+        // Vanilla `allowsSpectatorMenu` for container blocks.
+        let _ = (state, world, pos);
+        true
+    }
+
     fn use_without_item(
         &self,
         _state: BlockStateId,
