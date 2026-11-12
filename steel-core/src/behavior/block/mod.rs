@@ -93,10 +93,18 @@ pub(crate) fn drop_from_block_interact_loot_table(
             .get(container_ref.container_id())
             .map(|container| container.items().to_vec())
     });
+    // Vanilla `BlockEntity` exposes its display name for `copy_name`. When the
+    // name is a plain NBT string the text is taken verbatim; JSON text
+    // components need a resolver the loot registry does not have.
+    let block_entity_custom_name = block_entity_data.as_ref().and_then(|data| {
+        data.get("CustomName")
+            .and_then(|tag| tag.string())
+            .map(|value| value.to_str().into_owned())
+    });
     let block_entity_ref = interacted_block_entity.as_ref().map(|block_entity| {
         BlockEntityRef {
             block_entity_type: Some(&block_entity.get_type().key),
-            custom_name: None,
+            custom_name: block_entity_custom_name.as_deref(),
             inventory: block_entity_inventory.as_deref(),
             data: block_entity_data.as_ref(),
         }

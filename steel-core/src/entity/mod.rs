@@ -1384,7 +1384,6 @@ fn remove_after_changing_dimensions(entity: &dyn Entity) {
 ///
 /// Locks the entity's equipment (a player's inventory), so callers must not already hold it.
 pub(crate) fn living_loot_equipment<E: LivingEntity + ?Sized>(entity: &E) -> EntityEquipmentSlots {
-    // TODO: Read live equipment once loot contexts can do so safely.
     entity.living_base().equipment().lock().snapshot()
 }
 
