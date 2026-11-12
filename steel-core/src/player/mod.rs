@@ -141,7 +141,7 @@ use steel_registry::vanilla_damage_types;
 
 use steel_protocol::packets::{
     common::SCustomPayload,
-    game::{CContainerClose, CGameEvent, CSystemChat, GameEventType},
+    game::{CContainerClose, CGameEvent, GameEventType},
 };
 use steel_registry::RegistryEntry;
 use steel_registry::damage_type::DeathMessageType;
@@ -1121,12 +1121,17 @@ impl Player {
             },
         });
 
-        // TODO: team death message visibility (ALWAYS / HIDE_FOR_OTHER_TEAMS / HIDE_FOR_OWN_TEAM)
         if show_death_messages {
-            world.broadcast_system_chat(CSystemChat {
-                content: death_message,
-                overlay: false,
-            });
+            // Vanilla routes death messages through `PlayerTeam.sendMessage`, so a
+            // team's `death_message_visibility` decides who receives them.
+            let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+            let server = self.server();
+            let team = server
+                .scoreboards
+                .get(world.domain())
+                .and_then(|scoreboard| scoreboard.holder_team_name(&holder));
+
+            server.broadcast_team_message(&death_message, team.as_deref(), None);
         }
 
         if !world.get_game_rule(&KEEP_INVENTORY) && self.game_mode() != GameType::Spectator {

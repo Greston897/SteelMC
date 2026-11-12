@@ -127,10 +127,80 @@ struct ObjectiveState {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
+/// Vanilla `Team.Visibility`: who may see a message routed through the team.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TeamVisibility {
+    /// Every player sees the message.
+    #[default]
+    Always,
+    /// Only players on other teams see the message.
+    HideForOwnTeam,
+    /// Only players on the same team see the message.
+    HideForOtherTeams,
+    /// Nobody sees the message.
+    Never,
+}
+
+impl TeamVisibility {
+    /// Returns whether `viewer_team` (the viewer's team name, if any) may see a
+    /// message emitted on `message_team`.
+    #[must_use]
+    pub fn visible_to(&self, message_team: &str, viewer_team: Option<&str>) -> bool {
+        let same_team = viewer_team == Some(message_team);
+        match self {
+            Self::Always => true,
+            Self::HideForOwnTeam => !same_team,
+            Self::HideForOtherTeams => same_team,
+            Self::Never => false,
+        }
+    }
+
+    /// Vanilla command name (`always`, `hideForOtherTeams`, `hideForOwnTeam`, `never`).
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Always => "always",
+            Self::HideForOwnTeam => "hideForOwnTeam",
+            Self::HideForOtherTeams => "hideForOtherTeams",
+            Self::Never => "never",
+        }
+    }
+}
+
+/// Persisted state of one scoreboard team.
+///
+/// Mirrors the fields vanilla's `PlayerTeam` writes to `scoreboard.dat` and to the
+/// client packet, so `/team modify` can round-trip every option.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct TeamState {
+    /// Who may see messages routed through this team.
+    #[serde(default)]
+    pub visibility: TeamVisibility,
+    /// Who may see nametags of members.
+    #[serde(default)]
+    pub name_tag_visibility: TeamVisibility,
+    /// Whether members may push each other.
+    #[serde(default)]
+    pub allow_friendly_fire: bool,
+    /// Whether death messages are shown for members.
+    #[serde(default)]
+    pub death_message_visibility: TeamVisibility,
+    /// Colour for member names, if any.
+    #[serde(default)]
+    pub color: Option<String>,
+    /// Prefix shown before member names.
+    #[serde(default)]
+    pub prefix: String,
+    /// Suffix shown after member names.
+    #[serde(default)]
+    pub suffix: String,
+}
+
 struct PersistentScoreboard {
     objectives: BTreeMap<String, ObjectiveState>,
     scores: BTreeMap<String, BTreeMap<String, ScoreboardScore>>,
-    teams: BTreeSet<String>,
+    teams: BTreeMap<String, TeamState>,
     holder_teams: BTreeMap<String, String>,
 }
 
@@ -308,7 +378,11 @@ impl Scoreboard {
         let name = name.into();
         ensure_team_name(&name)?;
         let mut state = self.state.write();
-        if !state.teams.insert(name.clone()) {
+        if state
+            .teams
+            .insert(name.clone(), TeamState::default())
+            .is_some()
+        {
             return Err(ScoreboardError::DuplicateTeam(name));
         }
         self.mark_dirty();
@@ -321,16 +395,79 @@ impl Scoreboard {
         self.state
             .read()
             .teams
-            .contains(name)
+            .contains_key(name)
             .then(|| ScoreboardTeam {
                 name: name.to_owned(),
             })
     }
 
+    /// Returns the persisted state of a team.
+    #[must_use]
+    pub fn team_state(&self, name: &str) -> Option<TeamState> {
+        self.state.read().teams.get(name).cloned()
+    }
+
+    /// Mutates a team's state in place and returns the result.
+    ///
+    /// Returns `None` when the team does not exist.
+    pub fn update_team<F>(&self, name: &str, f: F) -> Option<TeamState>
+    where
+        F: FnOnce(&mut TeamState),
+    {
+        let mut state = self.state.write();
+        let team = state.teams.get_mut(name)?;
+        f(team);
+        let result = team.clone();
+        drop(state);
+        self.mark_dirty();
+        Some(result)
+    }
+
+    /// Removes a team and every membership pointing at it.
+    ///
+    /// Returns whether the team existed.
+    pub fn remove_team(&self, name: &str) -> bool {
+        let mut state = self.state.write();
+        if state.teams.remove(name).is_none() {
+            return false;
+        }
+        state.holder_teams.retain(|_, team| team != name);
+        drop(state);
+        self.mark_dirty();
+        true
+    }
+
+    /// Removes a holder from its team.
+    ///
+    /// Returns whether the holder was on a team.
+    pub fn remove_holder_from_team(&self, holder: &ScoreHolder) -> bool {
+        let mut state = self.state.write();
+        if state.holder_teams.remove(holder.name()).is_none() {
+            return false;
+        }
+        drop(state);
+        self.mark_dirty();
+        true
+    }
+
+    /// Returns whether `viewer` may see a message emitted on `team_name`.
+    ///
+    /// `viewer` resolves through their own team membership, so callers only pass
+    /// the score holder.
+    #[must_use]
+    pub fn can_see_team_message(&self, viewer: &ScoreHolder, team_name: &str) -> bool {
+        let state = self.state.read();
+        let Some(team) = state.teams.get(team_name) else {
+            return true;
+        };
+        let viewer_team = state.holder_teams.get(viewer.name()).map(String::as_str);
+        team.visibility.visible_to(team_name, viewer_team)
+    }
+
     /// Returns team names in stable order.
     #[must_use]
     pub fn team_names(&self) -> Vec<String> {
-        self.state.read().teams.iter().cloned().collect()
+        self.state.read().teams.keys().cloned().collect()
     }
 
     /// Returns the current team name for a score holder.
@@ -351,7 +488,7 @@ impl Scoreboard {
     ) -> Result<(), ScoreboardError> {
         ensure_holder_name(holder.name())?;
         let mut state = self.state.write();
-        if !state.teams.contains(team.name()) {
+        if !state.teams.contains_key(team.name()) {
             return Err(ScoreboardError::MissingTeam(team.name().to_owned()));
         }
         if state
@@ -544,7 +681,7 @@ fn validate_persistent_scoreboard(state: &PersistentScoreboard) -> Result<(), Sc
     for name in state.objectives.keys() {
         ensure_objective_name(name)?;
     }
-    for name in &state.teams {
+    for name in state.teams.keys() {
         ensure_team_name(name)?;
     }
     for (holder, scores) in &state.scores {
@@ -557,7 +694,7 @@ fn validate_persistent_scoreboard(state: &PersistentScoreboard) -> Result<(), Sc
     }
     for (holder, team) in &state.holder_teams {
         ensure_holder_name(holder)?;
-        if !state.teams.contains(team) {
+        if !state.teams.contains_key(team) {
             return Err(ScoreboardError::MissingTeam(team.clone()));
         }
     }

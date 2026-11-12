@@ -17,6 +17,46 @@ impl Server {
         });
     }
 
+    /// Logs and broadcasts a system chat message, honouring a team's
+    /// `death_message_visibility` when the message belongs to a team.
+    ///
+    /// Players on the emitting team see it according to that team's visibility,
+    /// matching vanilla `PlayerTeam.sendMessage`. When `team` is `None` the call
+    /// degrades to a normal broadcast.
+    pub fn broadcast_team_message(
+        &self,
+        message: &TextComponent,
+        team: Option<&str>,
+        excluded_player: Option<Uuid>,
+    ) {
+        log::info!("{}", message.to_plain(&DisplayResolutor));
+
+        let Some(team) = team else {
+            self.broadcast_system_chat(message, excluded_player);
+            return;
+        };
+
+        self.online_players.iter_players(|uuid, player| {
+            if Some(*uuid) == excluded_player {
+                return true;
+            }
+            let world = player.get_world();
+            let can_see = self
+                .scoreboards
+                .get(world.domain())
+                .is_none_or(|scoreboard| {
+                    scoreboard.can_see_team_message(
+                        &crate::scoreboard::ScoreHolder::new(player.scoreboard_name()),
+                        team,
+                    )
+                });
+            if can_see {
+                player.send_packet(CSystemChat::new(message, false, player));
+            }
+            true
+        });
+    }
+
     /// Builds the tab list header/footer with recent and five-second tick statistics.
     pub(super) fn tab_list_components(
         tick_stats: TabListTickStats,
