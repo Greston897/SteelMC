@@ -41,7 +41,10 @@ mod sculk_sensor;
 mod trial_spawner;
 mod vault;
 pub use creaking_heart::CreakingHeartBlockEntity;
-pub use marker::{CommandBlockEntity, CopperGolemStatueBlockEntity, JigsawBlockEntity, StructureBlockEntity, TestBlockEntity, TestInstanceBlockEntity};
+pub use marker::{
+    CommandBlockEntity, CopperGolemStatueBlockEntity, JigsawBlockEntity, StructureBlockEntity,
+    TestBlockEntity, TestInstanceBlockEntity,
+};
 pub use shelf::ShelfBlockEntity;
 pub use sculk_catalyst::{SculkCatalystBlockEntity, SculkShriekerBlockEntity};
 pub use sculk_sensor::SculkSensorBlockEntity;

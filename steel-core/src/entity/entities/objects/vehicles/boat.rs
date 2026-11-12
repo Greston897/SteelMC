@@ -235,7 +235,7 @@ pub trait AbstractBoat: VehicleEntity {
     /// Vanilla `setInputs(left, right, forward, back)`.
     #[expect(
         clippy::fn_params_excessive_bools,
-        reason = "signature mirrors vanilla AbstractBoatEntity#setInputs(left, right, forward, back)"
+        reason = "signature mirrors vanilla AbstractBoatEntity#setInputs(left, right, fwd, back)"
     )]
     fn set_inputs(&self, left: bool, right: bool, forward: bool, back: bool) {
         let mut state = self.boat_state().lock();

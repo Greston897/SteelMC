@@ -358,7 +358,7 @@ impl World {
 
     #[expect(
         clippy::too_many_lines,
-        reason = "single-pass world constructor that mirrors the vanilla ServerWorld initialization order"
+        reason = "single-pass constructor mirroring the vanilla ServerWorld init order"
     )]
     pub(crate) async fn new_with_config_and_encoding_pool(
         chunk_runtime: Arc<Runtime>,

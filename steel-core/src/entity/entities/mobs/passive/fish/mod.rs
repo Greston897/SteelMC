@@ -18,7 +18,7 @@
 
 #![allow(
     dead_code,
-    reason = "the water-mob pack lands incrementally; helpers are consumed as each fish entity arrives"
+    reason = "the water-mob pack lands incrementally; helpers are consumed per fish entity"
 )]
 pub mod cod;
 pub mod pufferfish;

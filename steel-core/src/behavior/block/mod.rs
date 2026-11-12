@@ -596,7 +596,12 @@ pub trait BlockBehavior: Send + Sync {
         unused_variables,
         reason = "default trait implementation ignores all params"
     )]
-    fn allows_spectator_menu(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) -> bool {
+    fn allows_spectator_menu(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+    ) -> bool {
         false
     }
 
