@@ -1405,24 +1405,71 @@ impl ItemStack {
     }
 
     /// Sets book cover (title/author for written books).
-    pub const fn set_book_cover(
+    ///
+    /// Vanilla `SetBookCoverFunction` keeps whatever the function omits; a book
+    /// without an existing `written_book_content` starts from the empty title.
+    pub fn set_book_cover(
         &mut self,
-        _title: Option<&str>,
-        _author: Option<&str>,
-        _generation: Option<i32>,
+        title: Option<&str>,
+        author: Option<&str>,
+        generation: Option<i32>,
     ) {
-        // TODO: Implement book cover setting
-        // Set WRITTEN_BOOK_CONTENT component fields
+        use crate::data_components::components::{Filterable, WrittenBookContent};
+
+        let existing = self.get(WRITTEN_BOOK_CONTENT);
+        let current_title = existing
+            .map(|content| content.title().clone())
+            .unwrap_or_else(|| Filterable::pass_through(String::new()));
+        let current_author = existing
+            .map(|content| content.author().to_owned())
+            .unwrap_or_default();
+        let current_generation = existing.map_or(0, WrittenBookContent::generation);
+        let current_pages = existing
+            .map(|content| content.pages().to_vec())
+            .unwrap_or_default();
+
+        let title = title.map_or(current_title, |value| {
+            Filterable::pass_through(value.to_owned())
+        });
+        let author = author.map_or(current_author, str::to_owned);
+        let generation = generation.unwrap_or(current_generation);
+        if let Ok(content) =
+            WrittenBookContent::new(title, author, generation, current_pages, false)
+        {
+            self.set(WRITTEN_BOOK_CONTENT, content);
+        }
     }
 
     /// Sets written book page contents.
-    pub const fn set_written_book_pages(
+    ///
+    /// Vanilla `SetWrittenBookPagesFunction` applies the list operation to the
+    /// existing pages, then clears the `resolved` flag so clients re-resolve
+    /// the changed text.
+    pub fn set_written_book_pages(
         &mut self,
-        _pages: &[&str],
-        _mode: crate::loot_table::ListOperation,
+        pages: &[&str],
+        mode: crate::loot_table::ListOperation,
     ) {
-        // TODO: Implement written book pages setting
-        // Set WRITTEN_BOOK_CONTENT pages
+        use crate::data_components::components::{Filterable, WrittenBookContent};
+
+        let existing = self.get(WRITTEN_BOOK_CONTENT);
+        let mut current: Vec<Filterable<TextComponent>> = existing
+            .map(|content| content.pages().to_vec())
+            .unwrap_or_default();
+        apply_list_operation(&mut current, pages, mode, |page| {
+            Filterable::pass_through(TextComponent::plain((*page).to_owned()))
+        });
+
+        let title = existing
+            .map(|content| content.title().clone())
+            .unwrap_or_else(|| Filterable::pass_through(String::new()));
+        let author = existing
+            .map(|content| content.author().to_owned())
+            .unwrap_or_default();
+        let generation = existing.map_or(0, WrittenBookContent::generation);
+        if let Ok(content) = WrittenBookContent::new(title, author, generation, current, false) {
+            self.set(WRITTEN_BOOK_CONTENT, content);
+        }
     }
 
     /// Sets writable book page contents.
