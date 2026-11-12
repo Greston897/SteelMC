@@ -1524,13 +1524,46 @@ NBT-прогон варианта.
   `nbt.byte(...)` — только точный `Byte`; для `CollarColor`, который пишется
   как `i8`, но может прийти как `Int`, нужен `byte_value`.
 
-### 24.8 Обновлённые числа
+### 24.8 Вторая волна: транспорт, дисплеи, враждебные и пассивные мобы
+
+После животных закрыты следующие группы сущностей (все — на общих слоях
+`Entity`/`LivingEntity`/`Mob`, без новых механик):
+
+* **Транспорт (7/7 вагонеток):** `Minecart`, `MinecartChest`, `MinecartTNT`,
+  `MinecartHopper`, `MinecartFurnace`, `MinecartSpawner`,
+  `MinecartCommandBlock`. TNT-вагонетка: `fuse = 80`, сила взрыва
+  `4 + (|v|/0.05 / 5) * 4`, зажатая в `4..16`, взрыв в `pos + (0, 0.0625, 0)`.
+  Hopper-вагонетка: 5 слотов, `MOVE_ITEM_SPEED = 4`, NBT `Items`/`Enabled`.
+  Furnace-вагонетка: `PushX`/`PushZ`/`Fuel`/`FuelTicks`, синхронный `fuel`.
+  Spawner-вагонетка переиспользует `BaseSpawner` (общий с блоком спавнера).
+  CommandBlock-вагонетка хранит команду и `Powered`, исполнение команд пока не
+  подключено — диспетчер не связан с сущностями.
+* **Дисплеи:** `ItemDisplay` и `TextDisplay` (общий слой `Display`:
+  transformation, billboard, `view_range`, `width`/`height`,
+  `glow_color_override`); `Interaction` и `BlockDisplay` уже были.
+* **Враждебные:** `Blaze`, `Ghast`, `Giant`, `Vex`, `Witch`, `Evoker`,
+  `Illusioner`, `Ravager`, `Warden`, `Shulker`, `Phantom`, `Breeze`,
+  `Creaking`, `CopperGolem`, `Guardian`, `SnowGolem`, `EvokerFangs`,
+  `LightningBolt`.
+* **Пассивные:** `Goat`, `Panda`, `Bee`, `Turtle`, `Strider`, `Sniffer`,
+  `Nautilus`, `ZombieNautilus`.
+* **Семейство лошадей:** `Donkey`, `Mule`, `Horse`, `SkeletonHorse`,
+  `ZombieHorse`, `Llama` — с битами `AbstractHorse.id_flags`
+  (`TAME = 0x02`, `SADDLE = 0x04`).
+
+Осознанные упрощения (все задокументированы в шапках файлов): у мобов нет
+видоспецифичных целей (ramming, digging, hive, charge, ...), у дисплеев нет
+интерполяции, у командной вагонетки нет исполнения команд.
+
+### 24.9 Обновлённые числа
 
 | Реестр | Было | Стало | Всего | Готовность |
 |---|---|---|---|---|
-| Типы сущностей с поведением | 84 | **90** | 161 | **55,9 %** |
-| Java-классы | 66 | **72** | 143 | **50,3 %** |
+| Типы сущностей с поведением | 84 | **114** | 161 | **70,8 %** |
+| Java-классы | 66 | **114** (112 фактических + 2 макросных) | 143 | **79,7 %** |
 | Уникальные механики | 4 | **4** | — | — |
 
-Зелёные сборки: `4f293e8` (Test — success, попугай после правки поля),
-`3154f23` (Test — success, Lint — success, кошка).
+Последние зелёные сборки до этой волны: `4f293e8` (попугай), `3154f23`
+(кошка), `a511fee`, `0846b54` (аксолотль после чистки импортов).
+Волна вагонеток/дисплеев/мобов проверяется отдельно; при появлении
+компиляционных ошибок они правятся батчами.

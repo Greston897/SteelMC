@@ -11,10 +11,7 @@ use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
-use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_entity_data::MinecartFurnaceEntityData;
-use steel_registry::vanilla_item_tags::ItemTag;
-use steel_registry::{REGISTRY, TaggedRegistryExt};
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::types::InteractionHand;
@@ -34,8 +31,6 @@ const FURNACE_PUSH_TIME: i32 = 320;
 const FURNACE_PUSH_ACCELERATION: f64 = 0.0075;
 /// Vanilla `MinecartFurnace` push drag while the cart is burning.
 const FURNACE_PUSH_DRAG: f64 = 0.997;
-/// Vanilla `MinecartFurnace` fuel per coal (`3600` ticks).
-const FURNACE_COAL_TICKS: i32 = 3600;
 
 #[entity_behavior(class = "MinecartFurnace")]
 /// Vanilla furnace minecart with a synced burning flag.
@@ -102,14 +97,6 @@ impl FurnaceMinecartEntity {
     #[must_use]
     pub fn push_time(&self) -> i32 {
         self.state.lock().push_time
-    }
-
-    /// Returns whether the stack can be used as furnace-minecart fuel.
-    #[must_use]
-    pub fn is_fuel(item_stack: &ItemStack) -> bool {
-        REGISTRY
-            .items
-            .is_in_tag(item_stack.item(), &ItemTag::FURNACE_MINECART_FUEL)
     }
 
     /// Vanilla `MinecartFurnace.activateMinecart` / `push`: start pushing
@@ -238,8 +225,7 @@ impl AbstractMinecart for FurnaceMinecartEntity {
 mod tests {
     use steel_registry::init_vanilla_registry;
     use steel_registry::vanilla_entities;
-    use steel_registry::vanilla_items;
-
+    
     use super::*;
 
     fn cart() -> FurnaceMinecartEntity {
@@ -268,15 +254,4 @@ mod tests {
         assert_eq!(cart.push_time(), FURNACE_PUSH_TIME);
     }
 
-    #[test]
-    fn coal_is_furnace_minecart_fuel() {
-        init_vanilla_registry();
-        assert!(FurnaceMinecartEntity::is_fuel(&ItemStack::new(
-            &vanilla_items::COAL
-        )));
-        assert!(!FurnaceMinecartEntity::is_fuel(&ItemStack::new(
-            &vanilla_items::STONE
-        )));
-        assert_eq!(FURNACE_COAL_TICKS, 3600);
-    }
 }
