@@ -293,7 +293,7 @@ impl CommandSource {
                 world.key.clone(),
                 server.command_permission_snapshot(player.gameprofile.id()),
             ),
-            CommandSender::Console | CommandSender::Rcon => {
+            CommandSender::Console | CommandSender::Rcon(_) => {
                 CommandAuthorizationContext::unrestricted(world.key.clone())
             }
         };

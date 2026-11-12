@@ -10,7 +10,7 @@ use crate::command::PendingCommandExecutionQueue;
 use crate::command::brigadier::{
     ArgumentType, CommandDispatcher, CommandNodeBuilder, CommandSyntaxError, NodeId,
 };
-use crate::command::sender::{CommandExecutionOwner, CommandSender, CommandSenderKey};
+use crate::command::sender::{CommandExecutionOwner, CommandSender, CommandSenderKey, RconOutput};
 use crate::permission::{PermissionExpr, PermissionState};
 
 use super::{
@@ -20,6 +20,12 @@ use super::{
     EntryAction, ExecutionCommandSource, ExecutionControl, ExecutionStop, Frame,
     SteelCommandRuntime, SteelContextChain, argument, literal,
 };
+
+/// An RCON sink whose receiver is already dropped; the tests only need the
+/// sender side to satisfy the type.
+fn closed_rcon_output() -> RconOutput {
+    RconOutput::new(tokio::sync::mpsc::unbounded_channel().0)
+}
 
 #[derive(Default)]
 struct Observed {
@@ -1304,7 +1310,7 @@ fn pending_execution_queue_polls_once_per_tick_in_fifo_order() {
         first
     ));
     assert!(queue.push_suspended(
-        CommandExecutionOwner::non_player_for_test(CommandSender::Rcon),
+        CommandExecutionOwner::non_player_for_test(CommandSender::Rcon(closed_rcon_output())),
         second
     ));
     assert!(queue.blocks(CommandSenderKey::Console));

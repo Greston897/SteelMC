@@ -4,7 +4,7 @@ use steel_core::{
     chunk::chunk_ticket_manager::MAX_SUPPORTED_VIEW_DISTANCE,
     config::{
         CompressionInfo, DEFAULT_MAX_CHAINED_NEIGHBOR_UPDATES, DEFAULT_SPAM_THRESHOLD_SECONDS,
-        RuntimeConfig, ServerLinks, validate_login_security,
+        RconConfig, RuntimeConfig, ServerLinks, validate_login_security,
     },
 };
 
@@ -80,6 +80,9 @@ pub struct ServerConfig {
     /// Thread counts for server thread pools.
     #[serde(default)]
     pub threads: ThreadConfig,
+    /// Remote-console settings.
+    #[serde(default)]
+    pub rcon: RconSettings,
     /// The number of minutes required for a player to be idle for them to be kicked (timed out) from the server.
     /// If this is equal to 0, no kicking will happen.
     #[serde(default)]
@@ -112,6 +115,26 @@ impl ServerConfig {
             packet_workers: self.threads.packet_workers,
             chunk_generation_threads: self.threads.chunk_generation,
             chunk_encoding_threads: self.threads.chunk_encoding,
+            rcon: self.rcon.into_runtime(),
+        }
+    }
+}
+
+/// RCOn settings as they appear in `config.toml`.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct RconSettings {
+    /// Port the RCON listener binds.
+    pub port: u16,
+    /// Shared secret; empty disables RCON.
+    pub password: String,
+}
+
+impl RconSettings {
+    fn into_runtime(self) -> RconConfig {
+        RconConfig {
+            port: self.port,
+            password: self.password,
         }
     }
 }

@@ -4,6 +4,7 @@ mod broadcasting;
 pub mod jobs;
 mod packet_processor;
 mod pregen;
+pub mod rcon;
 /// The registry cache for the server.
 pub mod registry_cache;
 mod run_loop;

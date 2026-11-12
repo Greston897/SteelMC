@@ -131,7 +131,10 @@
               "default": 4
             }
           },
-          "required": ["threshold", "level"],
+          "required": [
+            "threshold",
+            "level"
+          ],
           "additionalProperties": false
         },
         "server_links": {
@@ -202,7 +205,9 @@
                             "description": "Obfuscate text"
                           }
                         },
-                        "required": ["text"],
+                        "required": [
+                          "text"
+                        ],
                         "additionalProperties": true
                       }
                     ]
@@ -213,7 +218,10 @@
                     "format": "uri"
                   }
                 },
-                "required": ["label", "url"],
+                "required": [
+                  "label",
+                  "url"
+                ],
                 "additionalProperties": false
               },
               "default": []
@@ -257,6 +265,25 @@
             }
           },
           "additionalProperties": false
+        },
+        "rcon": {
+          "type": "object",
+          "description": "Remote console (RCON). Disabled while password is empty.",
+          "properties": {
+            "port": {
+              "type": "integer",
+              "description": "TCP port the RCON listener binds",
+              "minimum": 1,
+              "maximum": 65535,
+              "default": 25575
+            },
+            "password": {
+              "type": "string",
+              "description": "Shared secret every RCON client must authenticate with. Empty disables RCON",
+              "default": ""
+            }
+          },
+          "additionalProperties": false
         }
       },
       "required": [
@@ -279,7 +306,9 @@
                 "const": true
               }
             },
-            "required": ["allow_extended_view_distance"]
+            "required": [
+              "allow_extended_view_distance"
+            ]
           },
           "then": {
             "properties": {
@@ -303,7 +332,9 @@
                 "const": true
               }
             },
-            "required": ["online_mode"]
+            "required": [
+              "online_mode"
+            ]
           },
           "then": {
             "properties": {
@@ -327,13 +358,23 @@
         "log_level": {
           "type": "string",
           "description": "The level of information the logger will show",
-          "enum": ["error", "warn", "info", "debug", "trace"],
+          "enum": [
+            "error",
+            "warn",
+            "info",
+            "debug",
+            "trace"
+          ],
           "default": "info"
         },
         "time": {
           "type": "string",
           "description": "Time format: none, date (HH:MM:SS:mmm), or uptime (seconds since start)",
-          "enum": ["none", "date", "uptime"],
+          "enum": [
+            "none",
+            "date",
+            "uptime"
+          ],
           "default": "uptime"
         },
         "module_path": {
@@ -354,7 +395,13 @@
         "rotation_time": {
           "type": "string",
           "description": "Time between log file rotations",
-          "enum": ["none", "hourly", "daily", "weekly", "monthly"],
+          "enum": [
+            "none",
+            "hourly",
+            "daily",
+            "weekly",
+            "monthly"
+          ],
           "default": "daily"
         },
         "max_history": {
@@ -367,6 +414,8 @@
       "additionalProperties": false
     }
   },
-  "required": ["server"],
+  "required": [
+    "server"
+  ],
   "additionalProperties": false
 }

@@ -41,6 +41,13 @@ chat_spam_threshold_seconds = 10
 # Vanilla command spam threshold window in seconds
 command_spam_threshold_seconds = 10
 
+# Remote console (RCON). Disabled while "password" is empty.
+[server.rcon]
+# TCP port the RCON listener binds.
+port = 25575
+# Shared secret every RCON client must authenticate with. Empty disables RCON.
+password = ""
+
 # Optional worker counts for server thread pools. 0 or omitted uses each pool's automatic default.
 [server.threads]
 # Worker threads for the primary Tokio runtime.

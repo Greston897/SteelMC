@@ -28,7 +28,7 @@ use simdnbt::borrow::read_compound;
 use simdnbt::owned::{NbtCompound, NbtTag};
 use steel_core::chunk::chunk_request::{ChunkRequestHandle, ChunkRequestState, ChunkTicketKind};
 use steel_core::chunk::status::ChunkStatus;
-use steel_core::config::{ResolvedDomainConfig, RuntimeConfig};
+use steel_core::config::{RconConfig, ResolvedDomainConfig, RuntimeConfig};
 use steel_core::entity::damage::DamageHistory;
 use steel_core::entity::{ENTITIES, Entity, SharedEntity, next_entity_id};
 use steel_core::level_data::{GameTimeSource, WorldGenerationSettings};
@@ -136,6 +136,7 @@ impl SteelTestWorld {
             packet_workers: Some(1),
             chunk_generation_threads: Some(1),
             chunk_encoding_threads: Some(1),
+        rcon: RconConfig::default(),
             ..RuntimeConfig::default()
         });
 

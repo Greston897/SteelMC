@@ -151,6 +151,21 @@ impl SteelServer {
             server.run(token).await;
         });
 
+        // RCON runs on its own task; an empty password disables it entirely, so
+        // a failure to bind is reported but does not take the server down.
+        {
+            let rcon_server = Arc::clone(&self.server);
+            let rcon_config = self.server.config.rcon.clone();
+            let rcon_token = self.cancel_token.clone();
+            tokio::spawn(async move {
+                if let Err(error) =
+                    steel_core::server::rcon::run_rcon(rcon_server, rcon_config, rcon_token).await
+                {
+                    log::error!("RCON stopped: {error}");
+                }
+            });
+        }
+
         loop {
             select! {
                 () = self.cancel_token.cancelled() => {

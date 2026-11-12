@@ -3,7 +3,7 @@ use std::sync::{Arc, Weak};
 use uuid::Uuid;
 
 use super::TestConnection;
-use crate::config::RuntimeConfig;
+use crate::config::{RconConfig, RuntimeConfig};
 use crate::player::{ClientInformation, GameProfile, Player, PlayerConnection, PlayerSession};
 use crate::server::Server;
 use crate::world::World;
@@ -22,6 +22,7 @@ pub(crate) fn test_runtime_config(max_players: u32) -> Arc<RuntimeConfig> {
         packet_workers: Some(1),
         chunk_generation_threads: Some(1),
         chunk_encoding_threads: Some(1),
+        rcon: RconConfig::default(),
         ..RuntimeConfig::default()
     })
 }

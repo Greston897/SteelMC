@@ -99,6 +99,17 @@ pub struct RuntimeConfig {
     pub chunk_generation_threads: Option<usize>,
     /// Optional worker count for the Rayon chunk encoding pool.
     pub chunk_encoding_threads: Option<usize>,
+    /// Remote-console settings; disabled unless a password is configured.
+    pub rcon: RconConfig,
+}
+
+/// Vanilla `server.properties` RCON settings.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct RconConfig {
+    /// TCP port the RCON listener binds; unused when `password` is empty.
+    pub port: u16,
+    /// Shared secret every client must authenticate with. Empty disables RCON.
+    pub password: String,
 }
 
 impl Default for RuntimeConfig {
@@ -128,6 +139,7 @@ impl Default for RuntimeConfig {
             packet_workers: None,
             chunk_generation_threads: None,
             chunk_encoding_threads: None,
+            rcon: RconConfig::default(),
         }
     }
 }
