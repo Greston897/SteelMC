@@ -785,8 +785,13 @@ pub trait Mob: LivingEntity + Leashable {
     }
 
     /// Vanilla `EnchantmentHelper.processEquipmentDropChance`: the item's
-    /// `equipment_drops` enchantment effects multiply the base drop chance.
-    fn equipment_drop_chance_with_enchantments(&self, slot: EquipmentSlot) -> f32 {
+    /// `equipment_drops` enchantment effects adjust the base drop chance, but
+    /// only for effects whose requirements match the killing blow.
+    fn equipment_drop_chance_with_enchantments(
+        &self,
+        slot: EquipmentSlot,
+        context: &EnchantmentDamageContext<'_>,
+    ) -> f32 {
         let base = self.equipment_drop_chance(slot);
         let mut stack = None;
         self.with_equipment_slot(slot, &mut |item| {
@@ -795,26 +800,7 @@ pub trait Mob: LivingEntity + Leashable {
         let Some(stack) = stack else {
             return base;
         };
-        let Some(enchantments) = stack.get_enchantments() else {
-            return base;
-        };
-        let mut chance = base;
-        for (key, level) in enchantments.iter() {
-            if *level == 0 {
-                continue;
-            }
-            let Some(enchantment) = REGISTRY.enchantments.by_key(key) else {
-                continue;
-            };
-            for effect in enchantment.effects.equipment_drops {
-                if let Some(updated) =
-                    effect.effect.process_without_random(*level as i32, chance)
-                {
-                    chance = updated;
-                }
-            }
-        }
-        chance.clamp(0.0, 1.0)
+        enchantment_helper::process_equipment_drop_chance(&stack, context, base).clamp(0.0, 1.0)
     }
 
     fn set_equipment_drop_chance(&self, slot: EquipmentSlot, chance: f32) {
@@ -1136,13 +1122,16 @@ pub trait Mob: LivingEntity + Leashable {
         }
     }
 
-    fn drop_custom_death_loot_mob(&self, _source: &DamageSource, killed_by_player: bool) {
+    fn drop_custom_death_loot_mob(&self, source: &DamageSource, killed_by_player: bool) {
         if self.level().is_none() {
             return;
         }
+        let enchantment_context =
+            EnchantmentDamageContext::from_damage_source(self.entity_type(), source);
 
         for slot in EquipmentSlot::ALL {
-            let drop_chance = self.equipment_drop_chance_with_enchantments(slot);
+            let drop_chance =
+                self.equipment_drop_chance_with_enchantments(slot, &enchantment_context);
             let preserve = self.is_equipment_drop_preserved(slot);
             if !can_attempt_equipment_drop(drop_chance, preserve, killed_by_player) {
                 continue;
@@ -1159,8 +1148,6 @@ pub trait Mob: LivingEntity + Leashable {
                 continue;
             }
 
-            // TODO: Apply EquipmentDrops enchantment value effects once damage
-            // sources can resolve their living attacker context.
             let random_roll = rand::random::<f32>();
             if random_roll >= drop_chance {
                 continue;

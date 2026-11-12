@@ -173,6 +173,42 @@ pub(crate) fn process_mob_experience(
     scaled.max(0.0) as i32
 }
 
+/// Vanilla `EnchantmentHelper.processEquipmentDropChance`: each
+/// `equipment_drops` effect whose requirements match the killing blow's damage
+/// source adjusts the mob's drop chance for that slot.
+pub(crate) fn process_equipment_drop_chance(
+    item: &ItemStack,
+    context: &EnchantmentDamageContext<'_>,
+    chance: f32,
+) -> f32 {
+    if item.is_empty() {
+        return chance;
+    }
+    let Some(enchantments) = item.get_enchantments() else {
+        return chance;
+    };
+
+    let mut value = chance;
+    for (key, level) in enchantments.iter() {
+        if *level == 0 {
+            continue;
+        }
+        let Some(enchantment) = REGISTRY.enchantments.by_key(key) else {
+            continue;
+        };
+        let level = *level as i32;
+        for effect in enchantment.effects.equipment_drops {
+            if !requirements_match(effect.requirements, context) {
+                continue;
+            }
+            if let Some(updated) = effect.effect.process_without_random(level, value) {
+                value = updated;
+            }
+        }
+    }
+    value
+}
+
 pub(crate) fn is_immune_to_damage<V: LivingEntity + ?Sized>(
     victim: &V,
     damage_source: &DamageSource,
