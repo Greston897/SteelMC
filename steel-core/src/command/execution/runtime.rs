@@ -8,15 +8,17 @@
 
 use std::sync::Arc;
 
+use simdnbt::owned::NbtCompound;
+
 use super::{
     BiomeOrTag, BlockInput, BlockPredicate, ChainModifiers, CommandResultSuspension, CommandSource,
     Coordinates, ExecutionCommandSource, ExecutionControl, GameProfileArgument, IntRange,
     ItemPredicate, PermissionGroupName, ScoreHolderArgument, ScoreHolderWildcard,
     SteelArgumentType, StructureOrTagKey, WorldArgument,
     argument::{
-        ComponentValue, CoordinateAxes, DomainValue, EnchantmentValue, EntityTypeValue,
-        GameModeValue, IdentifierValue, ItemStackValue, NbtPathValue, ObjectiveValue,
-        SteelArgumentValue, TimeValue, TimelineValue, WorldClockValue,
+        ComponentValue, CompoundValue, CoordinateAxes, DomainValue, EnchantmentValue,
+        EntityTypeValue, GameModeValue, IdentifierValue, ItemStackValue, NbtPathValue,
+        ObjectiveValue, SteelArgumentValue, TimeValue, TimelineValue, WorldClockValue,
     },
     selector::EntitySelector,
 };
@@ -324,6 +326,12 @@ where
     pub(crate) fn entity_type(&self, name: &str) -> Result<EntityTypeRef, CommandSyntaxError> {
         self.typed_argument::<EntityTypeValue>(name)
             .map(|value| value.0)
+    }
+
+    /// Returns a greedy SNBT compound argument.
+    pub(crate) fn compound(&self, name: &str) -> Result<&NbtCompound, CommandSyntaxError> {
+        self.typed_argument::<CompoundValue>(name)
+            .map(|value| &value.0)
     }
 
     pub(crate) fn enchantment(&self, name: &str) -> Result<EnchantmentRef, CommandSyntaxError> {

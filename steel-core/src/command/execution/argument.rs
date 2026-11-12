@@ -1,5 +1,7 @@
 use std::{fmt, sync::Arc};
 
+use simdnbt::owned::NbtCompound;
+
 use super::{
     BiomeOrTag, BlockInput, BlockPredicate, CommandArgumentSource, Coordinates, IntRange,
     ItemPredicate, ScoreHolderArgument, StructureOrTagKey, WorldArgument,
@@ -46,7 +48,7 @@ use steel_registry::{
 use steel_utils::translations::ADVANCEMENT_ADVANCEMENT_NOT_FOUND;
 use steel_utils::{
     Downcast as _, DowncastType, DowncastTypeKey, ErasedType, Identifier,
-    nbt::{NbtPath, parse_snbt_argument},
+    nbt::{NbtPath, parse_snbt_argument, parse_snbt_compound_argument},
     translations,
     types::GameType,
 };
@@ -333,6 +335,11 @@ impl SteelArgumentType {
         Self::new(SummonableEntityParser)
     }
 
+    /// A greedy SNBT compound, matching vanilla `minecraft:nbt_compound_tag`.
+    pub(crate) fn compound() -> Self {
+        Self::new(CompoundParser)
+    }
+
     pub(crate) fn enchantment() -> Self {
         Self::new(EnchantmentParser)
     }
@@ -560,6 +567,10 @@ argument_value_wrapper!(
     "steel:command/value/component"
 );
 argument_value_wrapper!(NbtPathValue(NbtPath), "steel:command/value/nbt_path");
+argument_value_wrapper!(
+    CompoundValue(NbtCompound),
+    "steel:command/value/nbt_compound"
+);
 argument_value_wrapper!(
     IdentifierValue(Identifier),
     "steel:command/value/identifier"
@@ -1054,6 +1065,18 @@ unit_argument_parser!(
     )
 );
 unit_argument_parser!(
+    CompoundParser,
+    "steel:command/parser/compound",
+    CompoundValue,
+    parse | reader,
+    _source | { parse_compound_argument(reader).map(CompoundValue) },
+    suggest | _context,
+    builder | {
+        let _ = builder;
+    },
+    protocol(ProtocolArgumentType::Nbt, None)
+);
+unit_argument_parser!(
     SummonableEntityParser,
     "steel:command/parser/summonable_entity",
     EntityTypeValue,
@@ -1537,6 +1560,34 @@ fn suggest_game_modes(builder: &mut SuggestionsBuilder<'_>) {
             builder.suggest(name);
         }
     }
+}
+
+fn component_snbt_error(
+    reader: &StringReader<'_>,
+    message: impl Into<TextComponent>,
+) -> CommandSyntaxError {
+    reader.error(CommandSyntaxErrorKind::Dynamic(Box::new(message.into())))
+}
+
+fn parse_compound_argument(
+    reader: &mut StringReader<'_>,
+) -> Result<NbtCompound, CommandSyntaxError> {
+    // Vanilla reads the whole remaining input as one SNBT compound, so a command
+    // can pass `{CustomName:'"Bob"',NoGravity:1b}` without quoting.
+    let parsed = parse_snbt_compound_argument(reader.remaining());
+    let (nbt, consumed) = match parsed {
+        Ok(value) => value,
+        Err(error) => {
+            if !reader.advance_bytes(error.cursor()) {
+                return Err(component_snbt_error(reader, "Invalid SNBT cursor"));
+            }
+            return Err(component_snbt_error(reader, error.component()));
+        }
+    };
+    if !reader.advance_bytes(consumed) {
+        return Err(component_snbt_error(reader, "Invalid SNBT cursor"));
+    }
+    Ok(nbt)
 }
 
 fn parse_summonable_entity(

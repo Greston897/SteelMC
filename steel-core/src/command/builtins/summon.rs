@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use glam::DVec3;
+use simdnbt::owned::NbtCompound;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_utils::{BlockPos, Identifier, translations, types::Difficulty};
 use text_components::{TextComponent, translation::Translation};
@@ -29,14 +30,49 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         argument("entity", SteelArgumentType::summonable_entity())
             .executes(|context| summon_entity(context, context.source().position()))
             .then(
-                argument("pos", SteelArgumentType::vec3(true)).executes(|context| {
-                    let position = context.coordinates("pos")?;
-                    summon_entity(context, position.position(context.source()))
-                }),
+                argument("pos", SteelArgumentType::vec3(true))
+                    .executes(|context| {
+                        let position = context.coordinates("pos")?;
+                        summon_entity(context, position.position(context.source()))
+                    })
+                    .then(
+                        argument("nbt", SteelArgumentType::compound()).executes(|context| {
+                            let position = context.coordinates("pos")?;
+                            let nbt = context.compound("nbt")?;
+                            summon_entity_with_nbt(
+                                context,
+                                position.position(context.source()),
+                                nbt,
+                            )
+                        }),
+                    ),
             ),
     )
-    // TODO: Add the vanilla compound-NBT branch once Steel has an SNBT compound
-    // argument and recursive command entity loading.
+}
+
+/// Vanilla `SummonCommand`: `/summon <entity> <pos> <nbt>` merges the compound
+/// into the freshly created entity before it enters the world.
+fn summon_entity_with_nbt(
+    context: &SteelCommandContext<CommandSource>,
+    position: DVec3,
+    nbt: &NbtCompound,
+) -> Result<i32, CommandSyntaxError> {
+    let entity_type = context.entity_type("entity")?;
+    let entity = create_entity(context, entity_type, position)?;
+
+    // `apply_spawn_data` reads borrowed NBT, so serialize the owned command
+    // compound once and hand the borrowed view to the entity.
+    let mut bytes: Vec<u8> = Vec::new();
+    nbt.write(&mut bytes);
+    let mut cursor = std::io::Cursor::new(bytes.as_slice());
+    let borrowed = simdnbt::borrow::read_compound(&mut cursor)
+        .map_err(|_| command_failed(&translations::COMMANDS_SUMMON_FAILED))?;
+    entity.apply_spawn_data((&borrowed).into());
+    let message = translations::COMMANDS_SUMMON_SUCCESS
+        .message([entity.display_name()])
+        .component();
+    context.source().send_success(&message, true);
+    Ok(1)
 }
 
 fn summon_entity(
