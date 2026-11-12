@@ -64,6 +64,54 @@ pub(crate) fn chest_with_kind(
     builder.build(kind)
 }
 
+/// Builds a double chest: two 27-slot halves shown as one six-row menu.
+///
+/// Vanilla composes the two halves into a single `CompoundContainer`; Steel has
+/// no such wrapper, so the menu claims both containers in one section each. The
+/// slot indices still run `0..54` in the packet, which is what the client needs:
+/// the first section covers the top three rows and the second the bottom three.
+#[must_use]
+pub fn double_chest(
+    inventory: Shared<PlayerInventory>,
+    container_id: u8,
+    first: ContainerRef,
+    second: ContainerRef,
+) -> Menu {
+    let mut builder = MenuBuilder::new(menu_type_for_rows(6), container_id);
+    let top = builder.section(&first, 27);
+    let bottom = builder.section(&second, 27);
+    let player = builder.player_inventory(&inventory);
+
+    builder.route([top, bottom], player.all(), FillDirection::Backward);
+    builder.route(player.all(), [top, bottom], FillDirection::Forward);
+
+    builder.build(DoubleChestKind {
+        first: first.clone(),
+        second,
+    })
+}
+
+/// Per-menu double-chest state: both halves for the validity check.
+pub struct DoubleChestKind {
+    /// First half.
+    first: ContainerRef,
+    /// Second half.
+    second: ContainerRef,
+}
+
+// SAFETY: This Steel-owned key uniquely identifies the concrete menu kind
+// within the process.
+unsafe impl steel_utils::DowncastType for DoubleChestKind {
+    const TYPE_KEY: steel_utils::DowncastTypeKey =
+        steel_utils::DowncastTypeKey::new("steel:menu/double_chest");
+}
+
+impl MenuKind for DoubleChestKind {
+    fn still_valid(&self, _behavior: &MenuBehavior, player: &Player) -> bool {
+        self.first.still_valid(player) && self.second.still_valid(player)
+    }
+}
+
 /// Menu type for a chest of `rows` rows.
 ///
 /// # Panics

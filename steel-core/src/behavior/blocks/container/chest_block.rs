@@ -25,7 +25,7 @@ use crate::behavior::{InventoryAccess, PlacementSource};
 use crate::block_entity::{BLOCK_ENTITIES, entities::ChestBlockEntity};
 use crate::inventory::container::calculate_redstone_signal_from_container;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
-use crate::inventory::menu::kinds::chest;
+use crate::inventory::menu::kinds::{chest, double_chest};
 use crate::player::Player;
 use crate::world::{ScheduledTickAccess, World};
 
@@ -108,10 +108,29 @@ impl ChestBlock {
         }
 
         let inventory = Arc::clone(&player.inventory);
+        // Vanilla `ChestBlock.use`: a double chest opens one six-row menu backed
+        // by both halves, a single chest opens three rows.
+        let second_half = if state.get_value(&BlockStateProperties::CHEST_TYPE) == ChestType::Single
+        {
+            None
+        } else {
+            let (dx, dy, dz) = connected_direction(state).offset();
+            world
+                .get_block_entity(pos.offset(dx, dy, dz))
+                .and_then(ContainerRef::from_block_entity)
+        };
         player.open_menu(
             // Vanilla titles this menu with `container.chest`.
             TextComponent::plain("Chest"),
-            move |context| chest(inventory, context.container_id, container_ref, 3),
+            move |context| match &second_half {
+                Some(second) => double_chest(
+                    inventory,
+                    context.container_id,
+                    container_ref,
+                    second.clone(),
+                ),
+                None => chest(inventory, context.container_id, container_ref, 3),
+            },
         );
 
         InteractionResult::Success

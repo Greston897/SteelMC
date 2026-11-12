@@ -18,7 +18,7 @@ pub use anvil_menu::{AnvilKind, anvil};
 pub use basic_menu::BasicKind;
 pub use beacon_menu::{BeaconKind, beacon};
 pub use chest_boat_menu::{CHEST_BOAT_ROWS, ChestBoatKind, chest_boat};
-pub use chest_menu::{ChestKind, chest};
+pub use chest_menu::{ChestKind, DoubleChestKind, chest, double_chest};
 pub use crafting_menu::{CraftingKind, crafting};
 pub use enchantment_menu::{EnchantmentKind, enchantment};
 pub use ender_chest_menu::{EnderChestKind, ender_chest};
