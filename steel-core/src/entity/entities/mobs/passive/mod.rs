@@ -1,5 +1,6 @@
 //! Passive entity implementations.
 /// Those mobs are passive creatures that run away when attacked by a player.
+mod axolotl;
 mod cat;
 mod chicken;
 mod cow;
@@ -15,6 +16,7 @@ mod rabbit;
 mod sheep;
 mod squid;
 
+pub use axolotl::AxolotlEntity;
 pub use cat::{CatEntity, flags as cat_flags};
 pub use chicken::ChickenEntity;
 pub use cow::CowEntity;
