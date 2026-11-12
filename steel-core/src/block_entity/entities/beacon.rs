@@ -12,9 +12,13 @@ use std::{
 };
 
 use glam::DVec3;
-use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
+use simdnbt::borrow::{
+    BaseNbtCompound as BorrowedNbtCompound, NbtCompound as BorrowedNbtCompoundView,
+};
 use simdnbt::owned::NbtCompound;
+use simdnbt::{FromNbtTag, ToNbtTag};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::item_predicate::LockCode;
 use steel_registry::mob_effect::MobEffectRef;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::{
@@ -23,6 +27,7 @@ use steel_registry::{
 };
 use steel_utils::color::ArgbColor;
 use steel_utils::locks::SyncMutex;
+use text_components::TextComponent;
 use steel_utils::{
     BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, Identifier, WorldAabb,
 };
@@ -150,6 +155,10 @@ impl BeaconState {
 pub struct BeaconBlockEntity {
     base: Arc<BlockEntityBase>,
     state: Arc<SyncMutex<BeaconState>>,
+    /// Vanilla `BaseContainerBlockEntity.name`.
+    name: SyncMutex<Option<TextComponent>>,
+    /// Vanilla `BaseContainerBlockEntity.lockKey`.
+    lock_key: SyncMutex<LockCode>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `BeaconBlockEntity`.
@@ -170,6 +179,8 @@ impl BeaconBlockEntity {
         Self {
             base,
             state: Arc::new(SyncMutex::new(BeaconState::new())),
+            name: SyncMutex::new(None),
+            lock_key: SyncMutex::new(LockCode::NO_LOCK),
         }
     }
 
@@ -342,15 +353,31 @@ impl BlockEntity for BeaconBlockEntity {
         &self.base
     }
 
-    // TODO: Persist `CustomName` and `Lock` like Vanilla. Both need foundations Steel lacks: a
-    //       block-entity display name and a `LockCode` type.
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
+        let nbt_view: BorrowedNbtCompoundView<'_, '_> = nbt.into();
+        *self.name.lock() = nbt_view
+            .get("CustomName")
+            .and_then(|tag| TextComponent::from_nbt(&tag.to_owned()));
+        *self.lock_key.lock() = nbt_view
+            .get("Lock")
+            .and_then(LockCode::from_nbt_tag)
+            .unwrap_or(LockCode::NO_LOCK);
+
         let mut state = self.state.lock();
         state.primary_power = Self::load_effect(nbt, "primary_effect");
         state.secondary_power = Self::load_effect(nbt, "secondary_effect");
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
+        if let Some(name) = self.name.lock().as_ref() {
+            nbt.insert("CustomName", name.to_codec_nbt());
+        }
+        {
+            let lock_key = self.lock_key.lock();
+            if *lock_key != LockCode::NO_LOCK {
+                nbt.insert("Lock", lock_key.clone().to_nbt_tag());
+            }
+        }
         let state = self.state.lock();
         Self::store_effect(nbt, "primary_effect", state.primary_power);
         Self::store_effect(nbt, "secondary_effect", state.secondary_power);
