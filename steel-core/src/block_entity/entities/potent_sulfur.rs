@@ -10,6 +10,7 @@ use steel_registry::vanilla_block_entity_types;
 use steel_registry::vanilla_game_events;
 use steel_registry::{
     REGISTRY, TaggedRegistryExt as _, vanilla_blocks, vanilla_entity_type_tags::EntityTypeTag,
+    vanilla_mob_effects,
 };
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::random::xoroshiro::Xoroshiro;
@@ -21,11 +22,18 @@ use steel_utils::{
 
 use crate::behavior::{BLOCK_BEHAVIORS, BlockCollisionContext};
 use crate::block_entity::{BlockEntity, BlockEntityBase, BlockEntityLifecycleExt as _};
+use crate::entity::MobEffectInstance;
 use crate::fluid::FluidStateExt as _;
 use crate::world::World;
 
 const GEYSER_SALT: i64 = -904_011_478;
 const COUNTDOWN_FREQUENCY_TICKS: i64 = 20;
+/// Ticks between nausea applications to nearby living entities.
+const NAUSEA_TICK_INTERVAL: i64 = 10;
+/// Nausea duration applied per pulse, in ticks.
+const NAUSEA_DURATION: i32 = 200;
+/// Half-extent of the box that receives nausea.
+const NAUSEA_RADIUS: f64 = 0.5;
 const LAUNCH_FORCE: f64 = 0.2;
 const BASE_VELOCITY_THRESHOLD: f64 = 0.3;
 const VELOCITY_THRESHOLD_SCALE: f64 = 0.1;
@@ -277,7 +285,42 @@ impl BlockEntity for PotentSulfurBlockEntity {
 
         let game_time = world.game_time();
 
-        // TODO: Add nausea ticker (WET / DORMANT states, every 10 ticks) after the mob-effect refactor adds timed instances and sync.
+        // Vanilla `PotentSulfurBlockEntity`: while wet or dormant, every ten
+        // ticks every living entity inside the block's box gets 200 ticks of
+        // nausea (ambient, invisible icon).
+        if matches!(
+            &current,
+            PotentSulfurState::Wet | PotentSulfurState::Dormant
+        ) && game_time % NAUSEA_TICK_INTERVAL == 0
+        {
+            let (min_x, min_y, min_z) = (
+                f64::from(pos.x()) - NAUSEA_RADIUS,
+                f64::from(pos.y()) - NAUSEA_RADIUS,
+                f64::from(pos.z()) - NAUSEA_RADIUS,
+            );
+            let aabb = WorldAabb::new(
+                min_x,
+                min_y,
+                min_z,
+                min_x + 1.0 + NAUSEA_RADIUS * 2.0,
+                min_y + 1.0 + NAUSEA_RADIUS * 2.0,
+                min_z + 1.0 + NAUSEA_RADIUS * 2.0,
+            );
+            for entity in world.get_entities_in_aabb(&aabb) {
+                let Some(living) = entity.as_living_entity() else {
+                    continue;
+                };
+                living.add_mob_effect(
+                    MobEffectInstance::with_duration(
+                        vanilla_mob_effects::NAUSEA,
+                        NAUSEA_DURATION,
+                        0,
+                    )
+                    .with_ambient(true)
+                    .with_visible(false),
+                );
+            }
+        }
 
         let action = if matches!(
             &current,
