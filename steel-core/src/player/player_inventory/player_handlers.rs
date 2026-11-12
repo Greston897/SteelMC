@@ -1182,8 +1182,8 @@ impl Player {
     /// Returns false if the player is dead, removed, or has a flag preventing item drops.
     #[must_use]
     pub fn can_drop_items(&self) -> bool {
-        !self.is_removed()
-        // TODO: Check if player is alive (health > 0)
+        // Vanilla `Player.canDropItems`: `!isRemoved() && getHealth() > 0`.
+        !self.is_removed() && self.get_health() > 0.0
     }
 
     /// Returns whether items from a closing menu (crafting grid, anvil inputs,
