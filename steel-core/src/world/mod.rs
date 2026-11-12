@@ -135,6 +135,7 @@ mod sleep_status;
 mod spawn;
 pub mod tick_scheduler;
 mod waypoint;
+pub mod dragon_fight;
 pub mod raid;
 mod weather;
 mod world_entities;
@@ -260,6 +261,8 @@ pub struct World {
     pub waypoints: waypoint::WaypointManager,
     /// Vanilla `Raid` list for bad/raid omen.
     pub raids: raid::RaidManager,
+    /// Vanilla `EnderDragonFight` state for this world (only meaningful in the End).
+    pub dragon_fight: dragon_fight::DragonFight,
     /// Spatial index for player proximity queries.
     pub player_area_map: PlayerAreaMap,
     /// Loaded world identifier (`domain:world`).
@@ -462,6 +465,7 @@ impl World {
                 players: PlayerMap::new(),
                 waypoints: waypoint::WaypointManager::new(),
                 raids: raid::RaidManager::new(),
+                dragon_fight: dragon_fight::DragonFight::new(),
                 player_area_map: PlayerAreaMap::new(),
                 server: std::sync::OnceLock::new(),
                 key,
@@ -574,6 +578,27 @@ impl World {
     ) -> Option<R> {
         let server = self.server()?;
         server.scoreboards.get(self.domain()).map(f)
+    }
+
+    /// Returns the block position crystals should beam at, if a dragon is alive.
+    ///
+    /// Vanilla only links crystals to the dragon in the End; other dimensions have
+    /// no dragon fight, so this yields `None` there.
+    #[must_use]
+    pub fn dragon_fight_target(&self) -> Option<BlockPos> {
+        if !self.is_end_dimension_type() {
+            return None;
+        }
+        self.dragon_fight.dragon_target().map(|pos| BlockPos::new(pos.x, pos.y, pos.z))
+    }
+
+    /// Vanilla `EndCrystal` removal hook: a crystal that dies on the exit portal
+    /// column starts the dragon respawn.
+    pub fn on_end_crystal_destroyed(&self, pos: BlockPos) {
+        if !self.is_end_dimension_type() {
+            return;
+        }
+        self.dragon_fight.try_respawn(pos.0);
     }
 
     /// Returns the domain this loaded world belongs to.

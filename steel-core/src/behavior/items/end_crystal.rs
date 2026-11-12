@@ -87,8 +87,16 @@ impl ItemBehavior for EndCrystalItem {
             spawn,
             &GameEventContext::new(Some(&**context.player as &dyn Entity), None),
         );
-        // TODO: Trigger the ender dragon respawn (`EnderDragonFight#respawnDragon`)
-        // once Steel has a dragon fight implementation.
+        // Placing a crystal on the exit portal column while no dragon is alive sets
+        // off the same respawn path a destroyed crystal uses
+        // (`EnderDragonFight.tryRespawn`); `dragon_fight` records the request.
+        context
+            .world
+            .on_end_crystal_destroyed(steel_utils::BlockPos::new(
+                spawn.x.floor() as i32,
+                spawn.y.floor() as i32,
+                spawn.z.floor() as i32,
+            ));
         context.inv.with_item(|stack| stack.consume_one(false));
 
         InteractionResult::Success
