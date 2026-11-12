@@ -903,9 +903,22 @@ impl ItemStack {
     }
 
     /// Sets components from a JSON string representation.
-    pub const fn set_components_from_json(&mut self, _components: &str) {
-        // TODO: Implement component parsing from JSON
-        // Parse the JSON and set each component in the patch
+    ///
+    /// Vanilla `SetComponentsFunction` holds the component map as JSON in the
+    /// loot table; the equivalent runtime representation is the item component
+    /// patch, so the JSON is converted to NBT and decoded through the same
+    /// codec that reads components from saved data.
+    pub fn set_components_from_json(&mut self, components: &str) {
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(components) else {
+            return;
+        };
+        let Some(tag) = json_to_nbt(&value) else {
+            return;
+        };
+        let Some(added) = DataComponentPatch::from_nbt_tag(tag.as_borrowed()) else {
+            return;
+        };
+        self.patch.apply(&added);
     }
 
     /// Merges custom NBT data into this item's `custom_data` component.
@@ -1624,6 +1637,49 @@ fn decode_persistent_count(tag: Option<BorrowedNbtTag<'_, '_>>) -> Option<i32> {
         None => 1,
     };
     (1..=99).contains(&count).then_some(count)
+}
+
+/// Converts a JSON value into the NBT tag shape the component codec reads.
+///
+/// Loot tables embed component maps as JSON, while the item codec is NBT based,
+/// so this bridges the two. Integral numbers become `Int` (widening to `Long`
+/// when they do not fit), fractional numbers become `Double`, and arrays become
+/// lists.
+fn json_to_nbt(value: &serde_json::Value) -> Option<simdnbt::owned::NbtTag> {
+    use simdnbt::owned::{NbtList, NbtTag};
+
+    Some(match value {
+        serde_json::Value::Null => return None,
+        serde_json::Value::Bool(value) => NbtTag::Byte(i8::from(*value)),
+        serde_json::Value::Number(number) => {
+            if let Some(value) = number.as_i64() {
+                if let Ok(value) = i32::try_from(value) {
+                    NbtTag::Int(value)
+                } else {
+                    NbtTag::Long(value)
+                }
+            } else if let Some(value) = number.as_f64() {
+                NbtTag::Double(value)
+            } else {
+                return None;
+            }
+        }
+        serde_json::Value::String(value) => NbtTag::String(value.clone().into()),
+        serde_json::Value::Array(values) => {
+            let mut tags = Vec::with_capacity(values.len());
+            for value in values {
+                tags.push(json_to_nbt(value)?);
+            }
+            NbtTag::List(NbtList::from(tags))
+        }
+        serde_json::Value::Object(entries) => {
+            let mut compound = NbtCompound::new();
+            for (key, value) in entries {
+                compound.insert(key.clone(), json_to_nbt(value)?);
+            }
+            NbtTag::Compound(compound)
+        }
+    })
 }
 
 /// Converts a loot-table firework explosion definition into the item component
