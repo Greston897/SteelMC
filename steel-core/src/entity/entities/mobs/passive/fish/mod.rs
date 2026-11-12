@@ -22,6 +22,7 @@
 )]
 pub mod cod;
 pub mod pufferfish;
+pub mod nautilus;
 pub mod salmon;
 pub mod tadpole;
 #[cfg(test)]

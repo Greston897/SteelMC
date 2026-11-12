@@ -31,6 +31,7 @@ pub use dolphin::DolphinEntity;
 pub use fish::cod::CodEntity;
 pub use fish::pufferfish::PufferfishEntity;
 pub use fish::salmon::SalmonEntity;
+pub use fish::nautilus::{NautilusEntity, ZombieNautilusEntity};
 pub use fish::tadpole::TadpoleEntity;
 pub use fish::tropical_fish::TropicalFishEntity;
 pub use fox::{FoxEntity, FoxVariant, flags as fox_flags};
