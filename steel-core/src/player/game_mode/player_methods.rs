@@ -83,14 +83,16 @@ impl Player {
 
         if gamemode == GameType::Spectator {
             self.stop_riding();
-            // TODO: Remove shoulder entities once player shoulder storage is implemented.
-            // TODO: Stop item use once living item-use state is implemented.
-            // TODO: Stop location-based enchantment effects once those effects are implemented.
+            // Vanilla `ServerPlayer.setGameMode` for spectators: stop using the
+            // held item and drop every enchantment attribute modifier.
+            self.stop_using_item();
+            self.living_base.clear_equipment_attribute_modifiers();
         } else if was_spectator {
             self.send_packet(CSetCamera {
                 camera_id: self.id(),
             });
-            // TODO: Restart location-based enchantment effects once those effects are implemented.
+            // Vanilla re-runs the location-changed effects for the restored body.
+            self.living_base.refresh_all_equipment_attribute_modifiers();
         }
 
         self.send_abilities();
