@@ -117,6 +117,12 @@ const fn default_score_locked() -> bool {
 #[serde(default, deny_unknown_fields)]
 struct ObjectiveState {
     read_only: bool,
+    /// Statistic this objective tracks, if it was created with a stat criterion.
+    ///
+    /// Vanilla allows any criterion id here; Steel only models the statistic
+    /// criteria, which are the ones with a data source on the server.
+    #[serde(default)]
+    criterion: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -217,11 +223,61 @@ impl Scoreboard {
         if state.objectives.contains_key(&name) {
             return Err(ScoreboardError::DuplicateObjective(name));
         }
-        state
-            .objectives
-            .insert(name.clone(), ObjectiveState { read_only });
+        state.objectives.insert(
+            name.clone(),
+            ObjectiveState {
+                read_only,
+                criterion: None,
+            },
+        );
         self.mark_dirty();
         Ok(ScoreboardObjective { name, read_only })
+    }
+
+    /// Adds a writable objective that tracks a statistic criterion.
+    ///
+    /// Mirrors `/scoreboard objectives add <name> <criterion>` where the criterion
+    /// names a statistic such as `minecraft.mined:minecraft.stone`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the objective name is empty or already exists.
+    pub fn add_objective_with_criterion(
+        &self,
+        name: impl Into<String>,
+        criterion: impl Into<String>,
+    ) -> Result<ScoreboardObjective, ScoreboardError> {
+        let name = name.into();
+        let criterion = criterion.into();
+        ensure_objective_name(&name)?;
+        let mut state = self.state.write();
+        if state.objectives.contains_key(&name) {
+            return Err(ScoreboardError::DuplicateObjective(name));
+        }
+        state.objectives.insert(
+            name.clone(),
+            ObjectiveState {
+                read_only: false,
+                criterion: Some(criterion),
+            },
+        );
+        self.mark_dirty();
+        Ok(ScoreboardObjective {
+            name,
+            read_only: false,
+        })
+    }
+
+    /// Objective names that track `criterion`, in name order.
+    #[must_use]
+    pub fn objectives_with_criterion(&self, criterion: &str) -> Vec<String> {
+        self.state
+            .read()
+            .objectives
+            .iter()
+            .filter(|(_, objective)| objective.criterion.as_deref() == Some(criterion))
+            .map(|(name, _)| name.clone())
+            .collect()
     }
 
     /// Returns an objective by name.

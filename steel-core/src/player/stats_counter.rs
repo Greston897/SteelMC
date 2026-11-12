@@ -171,14 +171,42 @@ impl Player {
 
     /// Awards a given amount of a particular stat to this player.
     pub(crate) fn award_erased_stat_with_count(&self, stat: Stat, count: i32) {
-        self.stats.lock().increment(stat, count);
-        // TODO: Add score to the objectives having the criterion of this stat for the player.
+        let total = {
+            let mut stats = self.stats.lock();
+            stats.increment(stat, count);
+            stats.get(&stat)
+        };
+        // Vanilla `ServerStatsCounter.setValue`: every objective whose criterion
+        // names this statistic is set to the new total.
+        self.sync_stat_to_objectives(stat, total);
     }
 
     /// Resets the counter of a stat from this player to zero.
     pub fn reset_stat(&self, stat: Stat) {
         self.stats.lock().set(stat, 0);
-        // TODO: Reset score of the objectives having the criterion of this stat for the player.
+        self.sync_stat_to_objectives(stat, 0);
+    }
+
+    /// Writes the current value of `stat` into every objective tracking it.
+    ///
+    /// Vanilla compares the criterion id against `Stat.toString()`; Steel uses the
+    /// same textual form so a data pack written for vanilla keeps working.
+    fn sync_stat_to_objectives(&self, stat: Stat, value: i32) {
+        let Some(level) = self.level() else {
+            return;
+        };
+        let domain = level.domain().to_owned();
+        let Some(scoreboard) = self.server().scoreboards.get(&domain) else {
+            return;
+        };
+        let criterion = stat.to_string();
+        let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+        for objective_name in scoreboard.objectives_with_criterion(&criterion) {
+            let Some(objective) = scoreboard.objective(&objective_name) else {
+                continue;
+            };
+            let _ = scoreboard.set_score(&holder, &objective, value);
+        }
     }
 
     /// Resets the counter of a custom stat from this player to zero.
