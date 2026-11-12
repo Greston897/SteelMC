@@ -184,8 +184,15 @@ fn use_filled_bucket(fluid: FluidRef, context: &mut UseItemContext) -> Interacti
         }
 
         // Water-tagged fluids fizz out where water evaporates (e.g. the Nether).
-        // TODO: Read the per-position WATER_EVAPORATES attribute once Steel has environment attributes.
-        if is_water_fluid(fluid) && context.world.dimension_type.water_evaporates {
+        // Vanilla reads `gameplay/water_evaporates` from the position's
+        // environment attributes; the dimension type supplies the same value
+        // until a datapack overrides it per biome.
+        let water_evaporates = context
+            .world
+            .dimension_type
+            .gameplay_attribute_bool("minecraft:gameplay/water_evaporates")
+            .unwrap_or(false);
+        if is_water_fluid(fluid) && water_evaporates {
             context
                 .world
                 .level_event(level_events::PARTICLES_WATER_EVAPORATING, pos, 0, None);

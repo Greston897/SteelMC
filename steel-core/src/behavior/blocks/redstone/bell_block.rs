@@ -2,6 +2,7 @@
 
 use std::sync::{Arc, Weak};
 
+use glam::DVec3;
 use steel_macros::block_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::block_entity_type::BlockEntityTypeRef;
@@ -11,11 +12,12 @@ use steel_registry::blocks::properties::{
     BellAttachType, BlockStateProperties, BoolProperty, Direction, EnumProperty,
 };
 use steel_registry::vanilla_custom_stats::BELL_RING;
+use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
 use steel_registry::{
-    sound_events, vanilla_block_entity_types, vanilla_blocks, vanilla_game_events,
+    REGISTRY, TaggedRegistryExt as _, sound_events, vanilla_block_entity_types, vanilla_blocks, vanilla_game_events,
 };
 use steel_utils::types::UpdateFlags;
-use steel_utils::{BlockPos, BlockStateId, Downcast as _};
+use steel_utils::{BlockPos, BlockStateId, Downcast as _, WorldAabb};
 
 use crate::behavior::{
     BlockBehavior, BlockEntityCreation, BlockHitResult, BlockPlaceContext, InteractionResult,
@@ -31,6 +33,11 @@ use crate::world::game_event::GameEventContext;
 use crate::world::{ClipHitResult, LevelReader, ScheduledTickAccess, SignalGetter as _, World};
 
 const MAX_HIT_HEIGHT: f64 = 0.8125;
+
+/// Vanilla `BellBlock.ENTITY_ALERT_RADIUS` for villagers.
+const VILLAGER_ALERT_RADIUS: i32 = 32;
+/// Vanilla `BellBlock.SHORT_DELAY`-scale alert radius for raiders (48 blocks).
+const RAIDER_ALERT_RADIUS: i32 = 48;
 const FACING: &EnumProperty<Direction> = &BlockStateProperties::FACING;
 const BELL_ATTACHMENT: &EnumProperty<BellAttachType> = &BlockStateProperties::BELL_ATTACHMENT;
 const POWERED: &BoolProperty = &BlockStateProperties::POWERED;
@@ -67,7 +74,9 @@ impl BellBlock {
         world.is_face_sturdy(support, support_pos, direction.opposite())
     }
 
-    // TODO: Notify villagers when the villager AI is fully implemented.
+    /// Vanilla `BellBlock.attemptToRing`: the bell sound plus the raider/villager
+    /// reaction. Vanilla glows raiders inside 48 blocks and gives villagers
+    /// inside 32 blocks a short glow so they walk to the bell as a meeting point.
     fn ring(source: Option<&dyn Entity>, world: &Arc<World>, pos: BlockPos, direction: Direction) {
         let Some(block_entity) = world.get_block_entity(pos) else {
             return;
@@ -94,6 +103,45 @@ impl BellBlock {
             && let Some(player) = entity.as_player()
         {
             player.award_custom_stat(&BELL_RING);
+        }
+
+        Self::alert_entities(world, pos);
+    }
+
+    /// Vanilla `BellBlock.attemptToRing` entity pass: raiders glow at 48 blocks,
+    /// villagers at 32 (both measured from the bell center).
+    fn alert_entities(world: &Arc<World>, pos: BlockPos) {
+        let center = DVec3::new(
+            f64::from(pos.0.x) + 0.5,
+            f64::from(pos.0.y) + 0.5,
+            f64::from(pos.0.z) + 0.5,
+        );
+        for radius in [VILLAGER_ALERT_RADIUS, RAIDER_ALERT_RADIUS] {
+            let reach = f64::from(radius);
+            let bounds = WorldAabb::new(
+                center.x - reach,
+                center.y - reach,
+                center.z - reach,
+                center.x + reach,
+                center.y + reach,
+                center.z + reach,
+            );
+            let entities = world.get_entities_in_aabb_matching(&bounds, |entity| {
+                entity.is_living_entity() && !entity.is_spectator()
+            });
+            for entity in entities {
+                let entity_pos = entity.position();
+                if entity_pos.distance_squared(center) > f64::from(radius).powi(2) {
+                    continue;
+                }
+                let is_villager = entity.entity_type() == &vanilla_entities::VILLAGER;
+                let is_raider = REGISTRY
+                    .entity_types
+                    .is_in_tag(entity.entity_type(), &EntityTypeTag::RAIDERS);
+                if is_villager || is_raider {
+                    entity.base().set_glowing(true);
+                }
+            }
         }
     }
 
