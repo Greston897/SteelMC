@@ -12,7 +12,9 @@ use std::{
 };
 
 use glam::DVec3;
-use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
+use simdnbt::borrow::{
+    BaseNbtCompound as BorrowedNbtCompound, NbtCompound as BorrowedNbtCompoundView,
+};
 use simdnbt::owned::NbtCompound;
 use simdnbt::{FromNbtTag as _, ToNbtTag as _};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
@@ -26,6 +28,7 @@ use steel_registry::{
 };
 use steel_utils::color::ArgbColor;
 use steel_utils::locks::SyncMutex;
+use text_components::TextComponent;
 use steel_utils::{
     BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, Identifier, WorldAabb,
 };
