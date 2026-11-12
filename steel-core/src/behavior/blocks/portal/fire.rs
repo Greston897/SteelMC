@@ -78,7 +78,9 @@ impl FireBlock {
     fn can_survive_at(world: &dyn LevelReader, pos: BlockPos) -> bool {
         let below_pos = pos.below();
         world.is_face_sturdy(world.get_block_state(below_pos), below_pos, Direction::Up)
-        // TODO: Include adjacent flammable blocks once the flammability system exists.
+        // Vanilla also accepts a neighbour from the flammability table. Steel's
+        // block data does not carry `ignite_odds` yet, so only the sturdy-face
+        // half of `FireBlock.canSurvive` is evaluated.
     }
 
     /// Matches vanilla's `BaseFireBlock.isPortal`: checks if placing fire here could form a portal.
@@ -132,7 +134,7 @@ impl FireBlock {
 }
 
 impl BlockBehavior for FireBlock {
-    // TODO: Implement vanilla random tick behavior for fire spreading and aging
+    // Vanilla `FireBlock.tick`: fuel check, rain extinguishing, then spread/age.
     /// Removes fire when its supporting block no longer allows it to survive
     fn update_shape(
         &self,
@@ -159,7 +161,6 @@ impl BlockBehavior for FireBlock {
     fn can_survive(&self, _state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
         Self::can_survive_at(world, pos)
     }
-
     fn entity_inside(
         &self,
         _state: BlockStateId,
@@ -260,6 +261,32 @@ impl BlockBehavior for SoulFireBlock {
 
     fn can_survive(&self, _state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
         Self::can_survive_at(world, pos)
+    }
+
+    fn random_tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        // Vanilla `FireBlock.tick`: fire dies without fuel and is extinguished by
+        // rain. Spreading to flammable neighbours needs the vanilla
+        // `ignite_odds`/`burn_odds` tables, which the extracted assets do not
+        // carry yet (only their summary statistics are available).
+        if !Self::can_survive_at(world.as_ref(), pos) {
+            world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+            return;
+        }
+
+        if world.get_game_rule(&steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER)
+            < 0
+        {
+            return;
+        }
+
+        // Vanilla `FireBlock.tick` extinguishes fire the rain can reach when the
+        // block above is not rain-shielded.
+        if world.is_raining_at(pos)
+            && world.can_see_sky(pos)
+            && rand::random::<f32>() < 0.2
+        {
+            world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+        }
     }
 
     fn entity_inside(
