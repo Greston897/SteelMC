@@ -453,29 +453,61 @@ impl LootEntry {
                 // Empty entry produces nothing
             }
             LootEntry::Dynamic { name, .. } => {
-                // Dynamic entries are used for block entity contents (like shulker boxes)
-                // The name identifies what content to retrieve:
-                // - "contents" = block entity inventory contents
-                // - Other names may exist for specific use cases
-                //
-                // TODO: Implement when block entity system supports inventory retrieval
-                // This requires:
-                // 1. Block entity reference in LootContext
-                // 2. Method to get inventory contents from block entity
-                // 3. Adding those items to the result
-                let _ = name;
+                // Vanilla `DynamicLootEntry`: only `minecraft:contents` is
+                // defined, and it yields the block entity's whole inventory.
+                if name.path.as_ref() != "contents" {
+                    return;
+                }
+                let Some(inventory) = ctx
+                    .block_entity
+                    .as_ref()
+                    .and_then(|block_entity| block_entity.inventory)
+                else {
+                    return;
+                };
+                result.extend(inventory.iter().filter(|item| !item.is_empty()).cloned());
             }
             LootEntry::Slots {
                 slots, functions, ..
             } => {
-                // Slots entries select items from specific block entity slots
-                // TODO: Implement when block entity system supports slot access
-                // This requires:
-                // 1. Block entity reference in LootContext
-                // 2. Method to get items from specific slots
-                // 3. Apply functions to each retrieved item
-                let _ = slots;
-                let _ = functions;
+                // Vanilla `SlotsLootEntry`: read the named slots, then run the
+                // entry functions on each selected stack.
+                let Some(inventory) = ctx
+                    .block_entity
+                    .as_ref()
+                    .and_then(|block_entity| block_entity.inventory)
+                else {
+                    return;
+                };
+                // Vanilla `SlotRange` resolves to a slot interval; `Named` slots
+                // only exist for entity inventories, which Steel has no loot-context
+                // access to yet.
+                let (first, last) = match *slots {
+                    SlotRange::Single(slot) => (slot, slot),
+                    SlotRange::Range { min, max } => (min, max),
+                    SlotRange::Contents => (0, inventory.len() as i32 - 1),
+                    SlotRange::Named(_) => return,
+                };
+                for slot in first..=last {
+                    let Ok(index) = usize::try_from(slot) else {
+                        continue;
+                    };
+                    let Some(stack) = inventory.get(index) else {
+                        continue;
+                    };
+                    if stack.is_empty() {
+                        continue;
+                    }
+                    let mut stack = stack.clone();
+                    for cond_func in *functions {
+                        if cond_func.conditions.iter().all(|c| c.test(ctx)) {
+                            cond_func.function.apply(&mut stack, ctx);
+                        }
+                    }
+                    if !stack.is_empty() {
+                        result.push(stack);
+                    }
+                }
             }
         }
     }

@@ -41,6 +41,7 @@ use crate::entity::{
     Entity, InsideBlockEffectCollector, damage::DamageSource, entity_loot_ref, loot_equipment,
 };
 use crate::fluid::is_water_fluid;
+use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::physics::collide;
 use crate::player::Player;
 use crate::world::game_event::{GameEventContext, SharedGameEventListener};
@@ -80,11 +81,23 @@ pub(crate) fn drop_from_block_interact_loot_table(
     let block_entity_data = interacted_block_entity
         .as_ref()
         .map(|block_entity| block_entity.save_custom_only());
+    // Vanilla `LootParams` exposes the live container inventory so `dynamic`
+    // (`contents`) and `slots` entries can read it. Steel snapshots it because
+    // the guard cannot outlive this function.
+    let block_entity_inventory = interacted_block_entity.as_ref().and_then(|block_entity| {
+        let container_ref =
+            ContainerRef::from_block_entity(SharedBlockEntity::clone(block_entity))?;
+        let guard = ContainerLockGuard::lock_all(&[&container_ref]);
+        // Keep the slot layout intact: `slots` entries index into it directly.
+        guard
+            .get(container_ref.container_id())
+            .map(|container| container.items().to_vec())
+    });
     let block_entity_ref = interacted_block_entity.as_ref().map(|block_entity| {
         BlockEntityRef {
             block_entity_type: Some(&block_entity.get_type().key),
             custom_name: None,
-            inventory: None,
+            inventory: block_entity_inventory.as_deref(),
             data: block_entity_data.as_ref(),
         }
     });
