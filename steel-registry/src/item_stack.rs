@@ -1098,20 +1098,30 @@ impl ItemStack {
 
     /// Copies the name from a source entity/block to this item.
     ///
-    /// Vanilla `CopyNameFunction` supports the block-entity source only: the
-    /// context's `BlockEntityRef::custom_name` becomes `custom_name`.
+    /// Vanilla `CopyNameFunction` reads `BlockEntity` sources from the block
+    /// entity and `This`/attacker sources from the entity reference.
     pub fn copy_name<R: rand::Rng>(
         &mut self,
         source: crate::loot_table::CopySource,
         ctx: &crate::loot_table::LootContext<'_, R>,
     ) {
-        if !matches!(source, crate::loot_table::CopySource::BlockEntity) {
-            return;
-        }
-        let Some(block_entity) = ctx.block_entity else {
-            return;
+        use crate::loot_table::CopySource;
+
+        let name = match source {
+            CopySource::BlockEntity => ctx
+                .block_entity
+                .and_then(|block_entity| block_entity.custom_name),
+            CopySource::This => ctx
+                .this_entity
+                .and_then(|entity| entity.custom_name.as_deref()),
+            CopySource::Attacker => ctx
+                .killer_entity
+                .and_then(|entity| entity.custom_name.as_deref()),
+            CopySource::DirectAttacker => ctx
+                .direct_killer_entity
+                .and_then(|entity| entity.custom_name.as_deref()),
         };
-        let Some(name) = block_entity.custom_name else {
+        let Some(name) = name else {
             return;
         };
         self.set(CUSTOM_NAME, TextComponent::plain(name.to_owned()));

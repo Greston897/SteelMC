@@ -332,7 +332,10 @@ pub struct EntityRef<'a> {
     /// Equipment slots for equipment predicates. `None` for non-living entities.
     pub equipment: Option<EntityEquipmentRef<'a>>,
     /// Entity name (for `copy_name` function).
-    pub custom_name: Option<&'a str>,
+    ///
+    /// Owned because a live entity's custom name is resolved from a component
+    /// under a lock; the loot context snapshots it when it is built.
+    pub custom_name: Option<String>,
     /// Vanilla `minecraft:components.sheep/color` entity data component.
     pub sheep_color: Option<DyeColor>,
     /// Vanilla `minecraft:type_specific/sheep.sheared`. `None` when the entity is

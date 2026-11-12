@@ -1396,6 +1396,18 @@ pub(crate) fn entity_loot_ref<'a>(
     entity: &'a dyn Entity,
     equipment: Option<&'a EntityEquipmentSlots>,
 ) -> EntityRef<'a> {
+    entity_loot_ref_with_name(entity, equipment, None)
+}
+
+/// [`entity_loot_ref`] variant that attaches a custom-name snapshot.
+///
+/// Vanilla's loot context carries the entity's custom name, which `copy_name`
+/// reads for the `this` source.
+pub(crate) fn entity_loot_ref_with_name<'a>(
+    entity: &'a dyn Entity,
+    equipment: Option<&'a EntityEquipmentSlots>,
+    custom_name: Option<String>,
+) -> EntityRef<'a> {
     let living_entity = entity.as_living_entity();
     let sheep = living_entity.and_then(LivingEntity::sheep_loot_state);
     EntityRef {
@@ -1408,8 +1420,7 @@ pub(crate) fn entity_loot_ref<'a>(
             is_baby: living_entity.is_some_and(LivingEntity::is_baby),
         },
         equipment: equipment.map(EntityEquipmentRef::new),
-        // TODO: Include custom name once loot contexts can snapshot entity data.
-        custom_name: None,
+        custom_name,
         sheep_color: sheep.map(|(color, _)| color),
         sheep_sheared: sheep.map(|(_, sheared)| sheared),
         chicken_variant: living_entity.and_then(LivingEntity::chicken_loot_variant),

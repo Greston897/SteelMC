@@ -3491,7 +3491,11 @@ fn death_loot_items_with_rng<R: rand::Rng, E: LivingEntity + ?Sized>(
     let causing_equipment = causing_entity.and_then(loot_equipment);
     let direct_equipment = direct_entity.and_then(loot_equipment);
     let last_damage_player_equipment = last_damage_player.as_deref().and_then(loot_equipment);
-    let this_entity = entity_loot_ref(entity.as_entity_event_source(), Some(&this_equipment));
+    let this_entity = entity_loot_ref_with_name(
+        entity.as_entity_event_source(),
+        Some(&this_equipment),
+        entity.custom_name().map(|_| entity.plain_text_name()),
+    );
     let causing_entity =
         causing_entity.map(|causing| entity_loot_ref(causing, causing_equipment.as_ref()));
     let direct_entity =
