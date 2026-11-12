@@ -5,6 +5,22 @@
 /// Shared helper functions for the slime family.
 mod cube_mob;
 
+/// Hostile breeze entity module.
+pub mod breeze;
+/// Copper golem entity module.
+pub mod copper_golem;
+/// Hostile creaking entity module.
+pub mod creaking;
+/// Hostile guardian entity module.
+pub mod guardian;
+/// Hostile phantom entity module.
+pub mod phantom;
+/// Hostile shulker entity module.
+pub mod shulker;
+/// Snow golem entity module.
+pub mod snow_golem;
+/// Hostile warden entity module.
+pub mod warden;
 /// Hostile blaze entity module.
 pub mod blaze;
 /// Hostile evoker entity module.
