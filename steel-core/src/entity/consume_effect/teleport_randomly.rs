@@ -4,7 +4,10 @@ use std::sync::Arc;
 
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::consume_effect::{ConsumeEffectData, TeleportRandomlyConsumeEffect};
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::{sound_events, vanilla_game_events};
+use steel_utils::BlockPos;
 
 use super::ConsumeEffectBehavior;
 use crate::entity::LivingEntity;
@@ -27,14 +30,12 @@ impl ConsumeEffectBehavior for TeleportRandomlyBehavior {
 /// `LivingEntity::random_teleport` (vanilla `Entity.randomTeleport`), and
 /// stops at the first one that lands.
 ///
-// TODO(26.3): Vanilla snapshot 26.3 adds the block tag
-// `#consumable_does_not_teleport_to` — "blocks that entities do not
-// teleport to when they consume food that teleports randomly when eaten"
-// (empty by default). Once that tag exists in the registry extraction, a
-// landing block tagged with it must be rejected here, the same way an
-// unloaded/non-solid candidate already is — this is specific to this
-// consume-effect path, not the shared `Entity.randomTeleport` primitive
-// (Enderman's own random teleport is unaffected by this tag).
+/// Vanilla 26.3 `#consumable_does_not_teleport_to`: blocks a randomly-teleporting
+/// consumer refuses to land on. Empty by default, but data packs can fill it, so
+/// the check is wired to the real tag instead of hard-coded.
+///
+/// This is specific to the consume-effect path — `Entity.randomTeleport`
+/// (Enderman's own teleport) is deliberately unaffected.
 fn teleport_randomly(
     effect: TeleportRandomlyConsumeEffect,
     world: &Arc<World>,
@@ -59,16 +60,22 @@ fn teleport_randomly(
             continue;
         }
 
+        // Reject the destination when it sits on a block the tag forbids.
+        if lands_on_forbidden_block(world, user.position()) {
+            user.random_teleport(world, old_pos.x, old_pos.y, old_pos.z, true);
+            continue;
+        }
+
         world.game_event_at(
             &vanilla_game_events::TELEPORT,
             old_pos,
             &GameEventContext::new(Some(user.as_entity_event_source()), None),
         );
-        // TODO: Play `FOX_TELEPORT` on `SoundSource::Neutral` instead once Fox
-        // is implemented, mirroring vanilla `TeleportRandomlyConsumeEffect.apply`.
+        // Vanilla `TeleportRandomlyConsumeEffect.apply` plays the fox teleport
+        // sound on the `neutral` source regardless of which entity ate the item.
         world.play_sound_at(
-            &sound_events::ITEM_CHORUS_FRUIT_TELEPORT,
-            SoundSource::Players,
+            &sound_events::ENTITY_FOX_TELEPORT,
+            SoundSource::Neutral,
             user.position(),
             1.0,
             1.0,
@@ -78,6 +85,18 @@ fn teleport_randomly(
         user.reset_current_impulse_context();
         return;
     }
+}
+
+
+/// Returns whether `pos` stands on a block tagged `#consumable_does_not_teleport_to`.
+fn lands_on_forbidden_block(world: &Arc<World>, pos: glam::DVec3) -> bool {
+    let block_pos = BlockPos::new(
+        pos.x.floor() as i32,
+        pos.y.floor() as i32,
+        pos.z.floor() as i32,
+    );
+    let state = world.get_block_state(block_pos);
+    state.get_block().has_tag(&BlockTag::CONSUMABLE_DOES_NOT_TELEPORT_TO)
 }
 
 #[cfg(test)]

@@ -45,6 +45,12 @@ fn synthetic_tags() -> FxHashMap<String, Vec<String>> {
             "waxed_oxidized_copper_chest".to_owned(),
         ],
     );
+    // Vanilla 26.3 ships this tag as an (empty) extension point for datapacks;
+    // registering it here keeps the constant available even when the extracted
+    // asset set predates it.
+    tags.entry("consumable_does_not_teleport_to".to_owned())
+        .or_default();
+
     tags
 }
 
