@@ -8,6 +8,7 @@ mod banner;
 mod bell;
 mod brushable;
 mod brewing_stand;
+pub mod potion_brewing;
 mod campfire;
 mod chest;
 mod chiseled_bookshelf;

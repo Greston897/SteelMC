@@ -229,6 +229,18 @@ impl BlockBehavior for BrewingStandBlock {
     ) -> i32 {
         container_signal(world, pos)
     }
+    fn get_block_entity_ticker(
+        &self,
+        _world: &Arc<World>,
+        _state: BlockStateId,
+        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+    ) -> Option<BlockEntityTicker> {
+        // Vanilla `BrewingStandBlock.getTicker`.
+        BlockEntityTicker::for_matching_entity_tick(
+            block_entity_type,
+            &vanilla_block_entity_types::BREWING_STAND,
+        )
+    }
 }
 
 /// Vanilla `LecternBlock`: a one-slot book container that opens a reading menu.

@@ -1027,6 +1027,17 @@ impl ItemStack {
         );
     }
 
+    /// Returns the registry key of the potion stored in this stack, if any.
+    ///
+    /// Vanilla reads the same information through `potion_contents`; exposing a
+    /// key keeps brewing recipes comparable without cloning the component.
+    #[must_use]
+    pub fn potion_key(&self) -> Option<Identifier> {
+        self.get(POTION_CONTENTS)
+            .and_then(|contents| contents.potion())
+            .map(|potion| potion.value().key().clone())
+    }
+
     /// Sets the potion type for this item.
     ///
     /// Vanilla `SetPotionFunction` replaces `potion_contents` with the named

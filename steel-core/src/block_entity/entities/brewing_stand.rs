@@ -13,9 +13,10 @@ use simdnbt::ToNbtTag;
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_block_entity_types;
+use steel_registry::{level_events, vanilla_block_entity_types};
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
 
+use super::potion_brewing;
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerRef, SharedContainer};
@@ -26,6 +27,9 @@ pub const BREWING_STAND_SLOTS: usize = 4;
 
 /// Index of the fuel slot, matching vanilla's `BrewingStandBlockEntity.FUEL_SLOT`.
 pub const FUEL_SLOT: usize = 3;
+
+/// Number of potion slots, matching `BrewingStandBlockEntity.BREWING_SLOTS`.
+pub const POTION_SLOTS: usize = 3;
 
 /// Ticks one brew takes in vanilla (`BREWING_TIME = 400` ticks is the whole
 /// fuel burn; one operation is 20 ticks).
@@ -45,6 +49,8 @@ pub struct BrewingStandBlockEntity {
     container: Arc<SyncMutex<BrewingStandContainer>>,
     container_ref: ContainerRef,
     state: SyncMutex<BrewingState>,
+    /// Ingredient on top of the stand, matching vanilla's fifth slot.
+    ingredient: SyncMutex<ItemStack>,
 }
 
 pub(crate) struct BrewingStandContainer {
@@ -85,6 +91,7 @@ impl BrewingStandBlockEntity {
                 brew_time: 0,
                 fuel: 0,
             }),
+            ingredient: SyncMutex::new(ItemStack::empty()),
         }
     }
 
@@ -129,9 +136,15 @@ impl BlockEntity for BrewingStandBlockEntity {
             container.items.fill(ItemStack::empty());
             load_all_items(nbt_view, &mut container.items);
         }
+        if let Some(ingredient_nbt) = nbt_view.compound("Ingredient") {
+            if let Some(stack) = ItemStack::from_borrowed_compound(&ingredient_nbt) {
+                *self.ingredient.lock() = stack;
+            }
+        }
         let mut state = self.state.lock();
         state.brew_time = nbt_view.int("BrewTime").unwrap_or(0);
         state.fuel = nbt_view.int("Fuel").unwrap_or(0);
+        drop(state);
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
@@ -151,10 +164,90 @@ impl BlockEntity for BrewingStandBlockEntity {
         let state = self.state.lock();
         nbt.insert("BrewTime", state.brew_time);
         nbt.insert("Fuel", state.fuel);
+        drop(state);
+        let ingredient = self.ingredient.lock();
+        if !ingredient.is_empty() {
+            nbt.insert("Ingredient", ingredient.clone().to_nbt_tag());
+        }
     }
 
     fn container_ref(&self) -> Option<ContainerRef> {
         Some(self.container_ref.clone())
+    }
+
+    fn tick(&self, world: &Arc<World>) {
+        let pos = self.get_block_pos();
+        let mut state = self.state.lock();
+        // Vanilla `BrewingStandBlockEntity.doTick`: an active brew counts down and
+        // starts a new one whenever fuel and a valid recipe are available.
+        if state.brew_time > 0 {
+            state.brew_time -= 1;
+            if state.brew_time == 0 {
+                drop(state);
+                self.brew(world, pos);
+            }
+        } else if state.fuel > 0 && self.can_brew() {
+            state.fuel -= 1;
+            state.brew_time = BREW_TIME;
+        }
+    }
+}
+
+impl BrewingStandBlockEntity {
+    /// Vanilla `BrewingStandBlockEntity.canBrew`: an ingredient is present and at
+    /// least one potion slot has a matching recipe.
+    fn can_brew(&self) -> bool {
+        let container = self.container.lock();
+        let Some(ingredient) = self.ingredient_stack() else {
+            return false;
+        };
+        if !potion_brewing::is_ingredient(&ingredient) {
+            return false;
+        }
+        (0..POTION_SLOTS).any(|slot| {
+            let stack = &container.items[slot];
+            !stack.is_empty() && potion_brewing::has_recipe(stack, &ingredient)
+        })
+    }
+
+    /// Returns the ingredient on top of the stand, matching vanilla's separate
+    /// ingredient slot (stored outside the four container slots).
+    fn ingredient_stack(&self) -> Option<ItemStack> {
+        let ingredient = self.ingredient.lock().clone();
+        (!ingredient.is_empty()).then_some(ingredient)
+    }
+
+    /// Vanilla `BrewingStandBlockEntity.doBrew`: applies the recipe to every
+    /// matching potion slot and consumes one ingredient.
+    fn brew(&self, world: &Arc<World>, pos: BlockPos) {
+        let mut container = self.container.lock();
+        let Some(ingredient) = self.ingredient_stack() else {
+            return;
+        };
+        let mut brewed = false;
+        for slot in 0..POTION_SLOTS {
+            let stack = container.items[slot].clone();
+            if stack.is_empty() {
+                continue;
+            }
+            if let Some(result) = potion_brewing::mix(&stack, &ingredient) {
+                let mut result_stack = stack.clone();
+                result_stack.set_potion(&result);
+                container.items[slot] = result_stack;
+                brewed = true;
+            }
+        }
+        container.set_changed();
+        drop(container);
+        if brewed {
+            let mut ingredient = self.ingredient.lock();
+            ingredient.shrink(1);
+            if ingredient.count() <= 0 {
+                *ingredient = ItemStack::empty();
+            }
+            drop(ingredient);
+            world.level_event(level_events::SOUND_BREWING_STAND_BREW, pos, 0, None);
+        }
     }
 }
 
@@ -225,6 +318,40 @@ mod tests {
     fn state_defaults_to_idle() {
         let brewing_stand = test_brewing_stand();
         assert_eq!(brewing_stand.brew_time(), 0);
+        assert_eq!(brewing_stand.fuel(), 0);
+    }
+
+    #[test]
+    fn brew_time_and_fuel_round_trip() {
+        let brewing_stand = test_brewing_stand();
+        {
+            let mut state = brewing_stand.state.lock();
+            state.brew_time = 12;
+            state.fuel = 7;
+        }
+        assert_eq!(brewing_stand.brew_time(), 12);
+        assert_eq!(brewing_stand.fuel(), 7);
+    }
+
+    #[test]
+    fn ingredient_starts_empty() {
+        let brewing_stand = test_brewing_stand();
+        assert!(brewing_stand.ingredient.lock().is_empty());
+    }
+
+    #[test]
+    fn brewing_requires_fuel_and_a_recipe() {
+        let brewing_stand = test_brewing_stand();
+        assert!(!brewing_stand.can_brew(), "an empty stand cannot brew");
+
+        // Nether wart over a water bottle is a valid recipe, but without fuel the
+        // ticker will not start a brew.
+        let mut water = ItemStack::new(&steel_registry::vanilla_items::POTION);
+        water.set_potion(&steel_utils::Identifier::new("minecraft", "water"));
+        brewing_stand.container.lock().set_item(0, water);
+        *brewing_stand.ingredient.lock() =
+            ItemStack::with_count(&steel_registry::vanilla_items::NETHER_WART, 1);
+        assert!(brewing_stand.can_brew());
         assert_eq!(brewing_stand.fuel(), 0);
     }
 }
