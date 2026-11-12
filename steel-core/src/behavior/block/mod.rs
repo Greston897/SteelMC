@@ -1007,6 +1007,15 @@ pub trait BlockBehavior: Send + Sync {
         // Default: no-op
     }
 
+    /// Called when a lightning bolt strikes this block position.
+    ///
+    /// Vanilla `LightningBolt.tick` calls `BlockState.onLightningStrike` for the
+    /// block it landed on. Lightning rods use this to become powered; most blocks
+    /// ignore it.
+    fn on_lightning_strike(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        let _ = (state, world, pos);
+    }
+
     /// Called when a scheduled tick fires for this block.
     ///
     /// Unlike `random_tick`, scheduled ticks are deterministic — they fire after

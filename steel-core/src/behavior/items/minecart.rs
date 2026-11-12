@@ -65,8 +65,8 @@ impl ItemBehavior for MinecartItem {
             Some(context.player),
         ) {
             Ok(cart) => cart,
-            // TODO: Place chest, furnace, TNT, hopper, spawner and command block minecarts once
-            // their entities implement `AbstractMinecart`.
+            // A variant whose entity has no factory cannot be placed; every vanilla
+            // minecart type is registered, so this only guards modded types.
             Err(CreateMinecartError::Unsupported) => return InteractionResult::Pass,
             Err(CreateMinecartError::Spawn(error)) => {
                 log::warn!(

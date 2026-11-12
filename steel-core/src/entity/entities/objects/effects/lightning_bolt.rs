@@ -15,6 +15,7 @@ use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::BaseEntityData;
 use steel_registry::{sound_events, vanilla_damage_types};
+use steel_utils::BlockPos;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey, WorldAabb};
@@ -125,6 +126,14 @@ impl LightningBoltEntity {
             pos.y + DAMAGE_ABOVE,
             pos.z + DAMAGE_RADIUS,
         );
+        // Vanilla `LightningBolt.tick` first calls `BlockState.onLightningStrike`
+        // on the block it landed on, which is what powers lightning rods.
+        let struck_pos = BlockPos::containing(pos.x, pos.y, pos.z);
+        let struck_state = world.get_block_state(struck_pos);
+        crate::behavior::BLOCK_BEHAVIORS
+            .get_behavior(struck_state.get_block())
+            .on_lightning_strike(struck_state, &world, struck_pos);
+
         let source = DamageSource::environment(&vanilla_damage_types::LIGHTNING_BOLT);
         let self_uuid = self.uuid();
         for entity in world.get_entities_in_aabb(&box_) {

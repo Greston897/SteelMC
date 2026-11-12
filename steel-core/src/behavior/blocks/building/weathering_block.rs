@@ -76,7 +76,10 @@ impl WeatheringCopper {
     /// 4. On success, advance to next oxidation stage preserving block properties
     ///
     /// Vanilla: `ChangeOverTimeBlock.getNextState`
-    fn get_next_state(
+    /// Returns the next oxidation state for `state`, if neighbouring copper
+    /// pushes it further along the weathering chain.
+    #[must_use]
+    pub fn get_next_state(
         &self,
         state: BlockStateId,
         world: &Arc<World>,
