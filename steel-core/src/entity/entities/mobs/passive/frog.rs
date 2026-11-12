@@ -18,10 +18,10 @@ use steel_registry::entity_type::{
 };
 use steel_registry::frog_variant::FrogVariantRef;
 use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_attributes;
 use steel_registry::vanilla_entity_data::FrogEntityData;
+use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{REGISTRY, RegistryExt, RegistryReference, TaggedRegistryExt, sound_events};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey, Identifier};
@@ -32,8 +32,8 @@ use crate::entity::ai::goal::{
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
-    AgeableMob, AgeableMobBase, DefaultEntityPush, Entity, EntityBase, EntityBaseLoad,
-    EntityPose, EntitySpawnReason, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase,
+    AgeableMob, AgeableMobBase, DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityPose,
+    EntitySpawnReason, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase,
     PathfinderMob, SharedEntity, SpawnGroupData, sync_dirty_mob_effects,
 };
 use crate::physics::MoveResult;
