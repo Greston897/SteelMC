@@ -784,6 +784,39 @@ pub trait Mob: LivingEntity + Leashable {
         self.mob_base().drop_chances().lock().by_equipment(slot)
     }
 
+    /// Vanilla `EnchantmentHelper.processEquipmentDropChance`: the item's
+    /// `equipment_drops` enchantment effects multiply the base drop chance.
+    fn equipment_drop_chance_with_enchantments(&self, slot: EquipmentSlot) -> f32 {
+        let base = self.equipment_drop_chance(slot);
+        let mut stack = None;
+        self.with_equipment_slot(slot, &mut |item| {
+            stack = Some(item.clone());
+        });
+        let Some(stack) = stack else {
+            return base;
+        };
+        let Some(enchantments) = stack.get_enchantments() else {
+            return base;
+        };
+        let mut chance = base;
+        for (key, level) in enchantments.iter() {
+            if *level == 0 {
+                continue;
+            }
+            let Some(enchantment) = REGISTRY.enchantments.by_key(key) else {
+                continue;
+            };
+            for effect in enchantment.effects.equipment_drops {
+                if let Some(updated) =
+                    effect.effect.process_without_random(*level as i32, chance)
+                {
+                    chance = updated;
+                }
+            }
+        }
+        chance.clamp(0.0, 1.0)
+    }
+
     fn set_equipment_drop_chance(&self, slot: EquipmentSlot, chance: f32) {
         self.mob_base()
             .drop_chances()
@@ -1109,7 +1142,7 @@ pub trait Mob: LivingEntity + Leashable {
         }
 
         for slot in EquipmentSlot::ALL {
-            let drop_chance = self.equipment_drop_chance(slot);
+            let drop_chance = self.equipment_drop_chance_with_enchantments(slot);
             let preserve = self.is_equipment_drop_preserved(slot);
             if !can_attempt_equipment_drop(drop_chance, preserve, killed_by_player) {
                 continue;
