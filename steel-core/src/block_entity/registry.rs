@@ -199,6 +199,15 @@ pub fn init_block_entities() {
             Arc::new(BarrelBlockEntity::new(level, pos, state))
         });
 
+        registry.register(&vanilla_block_entity_types::CHEST, |level, pos, state| {
+            Arc::new(ChestBlockEntity::new_chest(level, pos, state))
+        });
+
+        registry.register(
+            &vanilla_block_entity_types::TRAPPED_CHEST,
+            |level, pos, state| Arc::new(ChestBlockEntity::new_trapped(level, pos, state)),
+        );
+
         registry.register(&vanilla_block_entity_types::BEACON, |level, pos, state| {
             Arc::new(BeaconBlockEntity::new(level, pos, state))
         });
