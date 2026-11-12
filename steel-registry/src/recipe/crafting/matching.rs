@@ -380,7 +380,10 @@ fn map_extending(recipe: &MapExtendingRecipe, input: &CraftingInput) -> bool {
             }
         }
     }
-    // TODO: Populate this from saved map data once maps are implemented.
+    // Saved map data (`minecraft:map_id` -> `MapItemSavedData`, carrying scale and
+    // the exploration flag) is not persisted by Steel yet. The crafting container
+    // supplies these two facts from the stack instead; see
+    // `CraftingContainer::as_positioned_input`.
     let Some(data) = input.map_data(CRAFTING_TABLE_CENTER_SLOT) else {
         return false;
     };
