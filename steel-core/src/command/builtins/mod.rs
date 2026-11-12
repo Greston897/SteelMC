@@ -43,6 +43,7 @@ mod setworldspawn;
 mod spawnpoint;
 mod spreadplayers;
 mod stop;
+mod stopwatch;
 mod stopsound;
 mod summon;
 mod swing;
@@ -130,6 +131,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(setidletimeout::registration())?;
     builder.register(setworldspawn::registration())?;
     builder.register(stop::registration())?;
+    builder.register(stopwatch::registration())?;
     builder.register(stopsound::registration())?;
     builder.register(summon::registration())?;
     builder.register(swing::registration())?;

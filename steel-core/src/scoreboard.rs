@@ -202,6 +202,26 @@ struct PersistentScoreboard {
     scores: BTreeMap<String, BTreeMap<String, ScoreboardScore>>,
     teams: BTreeMap<String, TeamState>,
     holder_teams: BTreeMap<String, String>,
+    /// Named server tick counters driven by `/stopwatch`.
+    ///
+    /// Vanilla keeps these on the scoreboard so they persist with the level and
+    /// are visible to `/execute if stopwatch`.
+    stopwatches: BTreeMap<String, StopwatchState>,
+}
+
+/// One named stopwatch.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct StopwatchState {
+    ticks: i64,
+}
+
+impl StopwatchState {
+    /// Ticks this stopwatch has accumulated.
+    #[must_use]
+    pub const fn ticks(self) -> i64 {
+        self.ticks
+    }
 }
 
 /// Invalid scoreboard operation or persisted state.
@@ -213,6 +233,9 @@ pub enum ScoreboardError {
     /// Team names may not be empty.
     #[error("team name cannot be empty")]
     EmptyTeamName,
+    /// Stopwatch names may not be empty.
+    #[error("stopwatch name cannot be empty")]
+    EmptyStopwatchName,
     /// Score holder names may not be empty.
     #[error("score holder name cannot be empty")]
     EmptyScoreHolderName,
@@ -275,6 +298,65 @@ impl Scoreboard {
         name: impl Into<String>,
     ) -> Result<ScoreboardObjective, ScoreboardError> {
         self.add_objective_with_read_only(name, false)
+    }
+
+    /// Creates a named stopwatch (vanilla `/stopwatch create`).
+    ///
+    /// Returns `false` when a stopwatch with that name already exists, matching
+    /// vanilla's "already exists" failure without clobbering its counter.
+    pub fn create_stopwatch(&self, name: &str) -> bool {
+        if name.is_empty() {
+            return false;
+        }
+        let mut state = self.state.write();
+        if state.stopwatches.contains_key(name) {
+            return false;
+        }
+        state
+            .stopwatches
+            .insert(name.to_owned(), StopwatchState::default());
+        self.mark_dirty();
+        true
+    }
+
+    /// Removes a named stopwatch, returning whether it existed.
+    pub fn remove_stopwatch(&self, name: &str) -> bool {
+        let mut state = self.state.write();
+        let removed = state.stopwatches.remove(name).is_some();
+        if removed {
+            self.mark_dirty();
+        }
+        removed
+    }
+
+    /// Reads a stopwatch's accumulated ticks.
+    #[must_use]
+    pub fn stopwatch_ticks(&self, name: &str) -> Option<i64> {
+        self.state
+            .read()
+            .stopwatches
+            .get(name)
+            .map(|stopwatch| stopwatch.ticks())
+    }
+
+    /// Names of every stopwatch, sorted.
+    #[must_use]
+    pub fn stopwatch_names(&self) -> Vec<String> {
+        self.state.read().stopwatches.keys().cloned().collect()
+    }
+
+    /// Advances every stopwatch by one tick.
+    ///
+    /// Called once per game tick from the world tick phase, exactly where
+    /// vanilla advances `ServerScoreboard` stopwatches.
+    pub fn tick_stopwatches(&self) {
+        let mut state = self.state.write();
+        if state.stopwatches.is_empty() {
+            return;
+        }
+        for stopwatch in state.stopwatches.values_mut() {
+            stopwatch.ticks = stopwatch.ticks.saturating_add(1);
+        }
     }
 
     /// Adds an objective with explicit command mutability.
@@ -706,6 +788,11 @@ fn validate_persistent_scoreboard(state: &PersistentScoreboard) -> Result<(), Sc
     for name in state.teams.keys() {
         ensure_team_name(name)?;
     }
+    for name in state.stopwatches.keys() {
+        if name.is_empty() {
+            return Err(ScoreboardError::EmptyStopwatchName);
+        }
+    }
     for (holder, scores) in &state.scores {
         ensure_holder_name(holder)?;
         for objective in scores.keys() {
@@ -806,6 +893,18 @@ impl DomainScoreboards {
 
     /// Returns the scoreboard for a domain.
     #[must_use]
+    /// Advances the stopwatches of every domain scoreboard by one tick.
+    pub fn tick_stopwatches(&self) {
+        for scoreboard in self.scoreboards.values() {
+            scoreboard.tick_stopwatches();
+        }
+    }
+
+    /// Domains that own a scoreboard, in sorted order.
+    pub fn domain_names(&self) -> impl Iterator<Item = &str> {
+        self.scoreboards.keys().map(String::as_str)
+    }
+
     pub fn get(&self, domain: &str) -> Option<&Scoreboard> {
         self.scoreboards.get(domain)
     }
@@ -888,6 +987,26 @@ mod tests {
             .expect("score should exist");
         assert_eq!(entry.value(), 9);
         assert!(!entry.is_locked());
+    }
+
+    #[test]
+    fn stopwatches_advance_one_tick_at_a_time() {
+        let scoreboard = Scoreboard::new();
+        assert!(scoreboard.create_stopwatch("raid"));
+        // Duplicate creation keeps the existing counter instead of resetting it.
+        assert!(!scoreboard.create_stopwatch("raid"));
+        assert!(!scoreboard.create_stopwatch(""));
+
+        scoreboard.tick_stopwatches();
+        scoreboard.tick_stopwatches();
+        assert_eq!(scoreboard.stopwatch_ticks("raid"), Some(2));
+        assert_eq!(scoreboard.stopwatch_names(), vec!["raid".to_owned()]);
+
+        assert!(scoreboard.remove_stopwatch("raid"));
+        assert!(!scoreboard.remove_stopwatch("raid"));
+        assert_eq!(scoreboard.stopwatch_ticks("raid"), None);
+        // Ticking with no stopwatches is a no-op, not a panic.
+        scoreboard.tick_stopwatches();
     }
 
     #[test]

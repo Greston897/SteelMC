@@ -32,7 +32,6 @@ pub(super) fn conditionals(name: &'static str, expected: bool) -> Builder {
     // registries are not ported yet.
     // `items` covers the entity slot provider below; block containers and
     // deferred loot-table unpacking still need the block-entity slot API.
-    // TODO: Restore Steel stopwatch conditions with the stopwatch command system.
     literal(name)
         .then(biome_condition(expected))
         .then(block_condition(expected))
@@ -43,6 +42,34 @@ pub(super) fn conditionals(name: &'static str, expected: bool) -> Builder {
         .then(items_condition(expected))
         .then(loaded_condition(expected))
         .then(score_condition(expected))
+        .then(stopwatch_condition(expected))
+}
+
+/// `/execute if stopwatch <name>`: matches while the named stopwatch exists.
+///
+/// Vanilla `StopwatchCondition` resolves the name against the scoreboard's
+/// stopwatch map and matches when that stopwatch has been created, which is
+/// also the only state `/stopwatch` can produce.
+fn stopwatch_condition(expected: bool) -> Builder {
+    literal("stopwatch").then(
+        argument("name", ArgumentType::word())
+            .executes(move |context| {
+                let name = context.string("name")?;
+                let running = scoreboard_stopwatch_running(context.source(), name)?;
+                execute_boolean_condition(context, expected, running)
+            }),
+    )
+}
+
+fn scoreboard_stopwatch_running(
+    source: &CommandSource,
+    name: &str,
+) -> Result<bool, CommandSyntaxError> {
+    let domain = source.world().domain().to_owned();
+    let Some(scoreboard) = source.server().scoreboards.get(&domain) else {
+        return Ok(false);
+    };
+    Ok(scoreboard.stopwatch_ticks(name).is_some())
 }
 
 fn data_condition(expected: bool) -> Builder {
