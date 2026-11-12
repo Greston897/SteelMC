@@ -51,6 +51,15 @@ pub trait Bonemealable {
     fn bonemeal_action_type(&self) -> BonemealAction {
         BonemealAction::Grower
     }
+
+    /// Vanilla `BonemealableBlock.getParticlePos`.
+    ///
+    /// Rooted dirt overrides this to emit particles one block lower, because the
+    /// growth appears beneath the clicked block; everything else follows its
+    /// [`BonemealAction`].
+    fn particle_pos(&self, action: BonemealAction, pos: BlockPos) -> BlockPos {
+        action.particle_pos(pos)
+    }
 }
 
 /// How bonemeal affects the block.
@@ -63,9 +72,9 @@ pub enum BonemealAction {
 
 impl BonemealAction {
     /// Returns the particle position for this bonemeal action.
-    // TODO: Rooted dirt is a GROWER in vanilla but overrides getParticlePos to pos.below().
-    // Add a per-block particle-position hook before wiring bonemeal particles.
-    #[expect(dead_code, reason = "used later for spawning the particles")]
+    ///
+    /// Blocks that deviate (rooted dirt) override
+    /// [`Bonemealable::particle_pos`] instead of this default.
     const fn particle_pos(&self, pos: BlockPos) -> BlockPos {
         match self {
             BonemealAction::NeighborSpreader => pos.above(),

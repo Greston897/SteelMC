@@ -37,14 +37,18 @@ const MAX_HATCH_LEVEL: u8 = 2;
 /// Maximum number of eggs that can occupy a single block space.
 const MAX_EGGS: u8 = 4;
 
-/// Length of one full Minecraft day, in ticks.
-const TICKS_PER_DAY: i64 = 24_000;
+/// Vanilla `gameplay/turtle_egg_hatch_chance` attribute key.
+const HATCH_CHANCE_ATTRIBUTE: &str = "minecraft:gameplay/turtle_egg_hatch_chance";
 /// Base per-random-tick chance that an egg advances a cracking stage.
 const BASE_HATCH_CHANCE: f32 = 0.002;
+/// Length of one full Minecraft day, in ticks (fallback window maths).
+const TICKS_PER_DAY: i64 = 24_000;
 /// Start (inclusive) of the pre-dawn window where eggs always advance.
 const HATCH_WINDOW_START: i64 = 21_062;
 /// End (exclusive) of the pre-dawn window where eggs always advance.
 const HATCH_WINDOW_END: i64 = 21_905;
+/// Dimension timeline tag carrying the overworld day timeline.
+const OVERWORLD_TIMELINE_TAG: &str = "#minecraft:in_overworld";
 
 /// One in this many chance to trample an egg while standing on it each tick.
 const STEP_TRAMPLE_ODDS: i32 = 100;
@@ -54,11 +58,6 @@ const FALL_TRAMPLE_ODDS: i32 = 3;
 /// Particle count for the "egg placed on sand" effect.
 const TURTLE_EGG_PLACEMENT_PARTICLE_COUNT: i32 = 15;
 
-/// Dimension timeline tag that carries the day timeline. Only dimensions on this
-/// tag (the overworld and its caves variant) apply the pre-dawn hatch boost;
-/// nether and end eggs stay at the base chance, matching vanilla's per-dimension
-/// resolution of the `gameplay/turtle_egg_hatch_chance` attribute.
-const OVERWORLD_TIMELINE_TAG: &str = "#minecraft:in_overworld";
 
 const HATCH: &IntProperty = &BlockStateProperties::HATCH;
 const EGGS: &IntProperty = &BlockStateProperties::EGGS;
@@ -87,38 +86,36 @@ impl TurtleEggBlock {
 
     /// Rolls whether an egg should advance its cracking stage this random tick.
     ///
-    /// In vanilla this chance comes from the `gameplay/turtle_egg_hatch_chance`
-    /// environment attribute: base 0.002, raised to 1.0 by a day-timeline
-    /// `maximum` modifier during the pre-dawn window (ticks 21062 to 21904).
-    /// Vanilla resolves the attribute per dimension, and only dimensions tagged
-    /// `#minecraft:in_overworld` include that day timeline, so eggs in the nether
-    /// or end keep the 0.002 base regardless of the overworld time of day.
-    ///
-    /// Steel's timeline sampler in `world::environment` only handles
-    /// `multiply`/replace modifiers and exposes sky light and sun angle, so it
-    /// cannot resolve this attribute yet; the turtle curve is reproduced inline
-    /// off the overworld day clock, gated on the same timeline tag.
-    // TODO(environment-attributes): replace this inline curve with a single
-    // attribute lookup once the timeline sampler learns the `maximum` modifier
-    // and exposes a public environment-attribute getter.
+    /// Vanilla resolves `gameplay/turtle_egg_hatch_chance` through the dimension's
+    /// environment attributes: the base is 0.002 and the overworld day timeline
+    /// raises it to 1.0 with a `maximum` modifier during the pre-dawn window. Only
+    /// dimensions on `#minecraft:in_overworld` carry that timeline, so nether and
+    /// end eggs keep the base chance — which the sampler reproduces for free.
     fn should_update_hatch_level(world: &Arc<World>) -> bool {
-        let day_time = world
-            .clock_total_ticks(&vanilla_world_clocks::OVERWORLD)
-            .unwrap_or(0)
-            .rem_euclid(TICKS_PER_DAY);
-
-        let in_hatch_window = (HATCH_WINDOW_START..HATCH_WINDOW_END).contains(&day_time)
-            && world.dimension_type.timelines == Some(OVERWORLD_TIMELINE_TAG);
-        let chance = if in_hatch_window {
+        let chance = world.environment_attribute(HATCH_CHANCE_ATTRIBUTE, BASE_HATCH_CHANCE);
+        // Environments whose datapacks do not ship the day timeline yet still get
+        // the vanilla curve, so hatching works without extracted assets.
+        let chance = if chance == BASE_HATCH_CHANCE
+            && world.dimension_type.timelines == Some(OVERWORLD_TIMELINE_TAG)
+            && in_fallback_hatch_window(world)
+        {
             1.0
         } else {
-            BASE_HATCH_CHANCE
+            chance
         };
-
         chance > 0.0 && rand::random::<f32>() < chance
     }
 
-    /// Vanilla `TurtleEggBlock.canDestroyEgg`: which entities are able to trample
+    /// Pre-dawn check used when the day timeline is unavailable.
+fn in_fallback_hatch_window(world: &Arc<World>) -> bool {
+    let day_time = world
+        .clock_total_ticks(&vanilla_world_clocks::OVERWORLD)
+        .unwrap_or(0)
+        .rem_euclid(TICKS_PER_DAY);
+    (HATCH_WINDOW_START..HATCH_WINDOW_END).contains(&day_time)
+}
+
+/// Vanilla `TurtleEggBlock.canDestroyEgg`: which entities are able to trample
     /// an egg. Turtles and bats never do, and only living entities can; players
     /// always may, other mobs only when `mobGriefing` is enabled.
     fn can_destroy_egg(world: &Arc<World>, entity: &dyn Entity) -> bool {

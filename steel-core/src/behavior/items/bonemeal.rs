@@ -1,16 +1,19 @@
 use std::sync::Arc;
 
+use glam::DVec3;
 use rand::RngExt;
 use steel_macros::item_behavior;
+use steel_registry::particle_type::ParticleData;
 use steel_registry::{
     blocks::{block_state_ext::BlockStateExt, shapes::is_offset_shape_full_block},
     data_components::vanilla_components::USE_EFFECTS,
     item_stack::ItemStack,
-    level_events, vanilla_blocks, vanilla_game_events,
+    level_events, vanilla_blocks, vanilla_game_events, vanilla_particle_types,
 };
 use steel_utils::{BlockPos, Direction, types::UpdateFlags};
 
 use crate::{
+    behavior::blocks::vegetation::bonemealable::Bonemealable as _,
     behavior::{BLOCK_BEHAVIORS, InteractionResult, ItemBehavior, UseOnContext},
     entity::Entity,
     world::{LevelReader as _, World},
@@ -46,11 +49,30 @@ impl BoneMealItem {
             let mut rng = rand::rng();
             if bonemealable.is_bonemeal_success(state, world, &mut rng, pos) {
                 bonemealable.perform_bonemeal(state, world, &mut rng, pos);
+                // Vanilla `BoneMealItem.growCrop` emits the happy-villager burst at
+                // the block-specific particle position once growth succeeds.
+                let particle_pos = bonemealable.particle_pos(bonemealable.bonemeal_action_type(), pos);
+                emit_growth_particles(world, particle_pos);
             }
 
             return true;
         }
         false
+    }
+
+    /// Vanilla `BoneMealItem.spawnParticles`.
+    fn emit_growth_particles(world: &Arc<World>, pos: BlockPos) {
+        world.send_particles(
+            ParticleData::simple(&vanilla_particle_types::HAPPY_VILLAGER),
+            DVec3::new(
+                f64::from(pos.0.x) + 0.5,
+                f64::from(pos.0.y) + 0.5,
+                f64::from(pos.0.z) + 0.5,
+            ),
+            15,
+            DVec3::new(0.5, 0.5, 0.5),
+            0.0,
+        );
     }
 
     fn grow_water_plant(world: &Arc<World>, pos: BlockPos, _clicked_face: Direction) -> bool {

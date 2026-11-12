@@ -267,6 +267,19 @@ impl World {
         environment::monsters_burn(self.dimension_type, level_data.world_clocks())
     }
 
+    /// Returns one `minecraft:gameplay/...` environment attribute sampled off
+    /// this dimension's timelines, like vanilla `EnvironmentAttributeSystem`.
+    #[must_use]
+    pub fn environment_attribute(&self, attribute: &str, default: f32) -> f32 {
+        let level_data = self.level_data.read();
+        environment::apply_timeline_float_attribute(
+            default,
+            self.dimension_type,
+            level_data.world_clocks(),
+            attribute,
+        )
+    }
+
     /// Returns sky-layer light after the current sky darkening is subtracted.
     ///
     /// Mirrors vanilla `LevelReader.getEffectiveSkyBrightness` without allowing
