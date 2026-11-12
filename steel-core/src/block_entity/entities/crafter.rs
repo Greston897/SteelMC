@@ -9,9 +9,16 @@ use std::sync::{Arc, Weak};
 use simdnbt::ToNbtTag;
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
+use glam::DVec3;
+use steel_registry::REGISTRY;
+use steel_registry::blocks::block_state_ext::BlockStateExt;
+use steel_registry::blocks::properties::{
+    BlockStateProperties, BoolProperty, Direction, FrontAndTop,
+};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::recipe::{CraftingInput, vanilla_recipe_types};
 use steel_registry::vanilla_block_entity_types;
+use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
@@ -22,6 +29,15 @@ use crate::world::World;
 
 /// Number of slots in the crafter grid.
 pub const CRAFTER_SLOTS: usize = 9;
+
+/// Vanilla `CrafterBlockEntity.TRIGGERED_DURATION`: the `triggered` block state
+/// counts down from two game ticks before the craft fires.
+pub const CRAFT_COOLDOWN_TICKS: i32 = 2;
+
+/// Vanilla `CrafterBlock.CRAFTING` block-state property.
+const CRAFTING: BoolProperty = BlockStateProperties::CRAFTING;
+/// Vanilla `CrafterBlock.TRIGGERED` block-state property.
+const TRIGGERED: BoolProperty = BlockStateProperties::TRIGGERED;
 
 /// Crafter block entity.
 pub struct CrafterBlockEntity {
@@ -146,28 +162,173 @@ impl BlockEntity for CrafterBlockEntity {
     }
 
     fn tick(&self, world: &Arc<World>) {
-        // Vanilla `CrafterBlockEntity.serverTick` decrements the trigger counter
-        // and, once it reaches zero, crafts and updates the block state.
-        let mut triggered = self.triggered.lock();
-        if *triggered <= 0 {
+        // Vanilla `CrafterBlockEntity.serverTick`: the trigger counter counts
+        // *down* while the block is triggered and fires the craft when it
+        // reaches zero, after which `crafting` is cleared and the block stops
+        // being powered.
+        let should_craft = {
+            let mut triggered = self.triggered.lock();
+            if *triggered <= 0 {
+                false
+            } else {
+                *triggered -= 1;
+                *triggered == 0
+            }
+        };
+        if !should_craft {
             return;
         }
-        *triggered -= 1;
-        drop(triggered);
         let _ = self.craft(world);
+        self.set_block_state_flag(world, CRAFTING, false);
+        self.set_block_state_flag(world, TRIGGERED, false);
     }
 }
 
 impl CrafterBlockEntity {
-    /// Vanilla `CrafterBlockEntity.craft`: fills the result into the grid's
-    /// disabled slots and consumes one item from each enabled slot.
+    /// Vanilla `CrafterBlockEntity.craft`: matches a crafting recipe over the
+    /// enabled slots, consumes one item from each of them and **ejects** the
+    /// result out of the front face.
     ///
-    /// Returns the crafter's position when a craft happened.
-    fn craft(&self, _world: &Arc<World>) -> Option<BlockPos> {
-        let mut container = self.container.lock();
-        let disabled = *self.disabled_slots.lock();
-        // Vanilla uses the enabled slots as the crafting input.
-        let mut input = CraftingInput::new(
+    /// Vanilla does not keep the result inside the grid: disabled slots hold
+    /// the crafter's output *only* while it cannot be pushed out, and
+    /// `craft` hands the assembled stack to `CraftingRecipe.eject`.
+    /// Returns the ejected position when a craft happened.
+    fn craft(&self, world: &Arc<World>) -> Option<BlockPos> {
+        let result = {
+            let mut container = self.container.lock();
+            let disabled = self.disabled_slots();
+            let input = CraftingInput::new(
+                3,
+                3,
+                container
+                    .items
+                    .iter()
+                    .enumerate()
+                    .map(|(slot, stack)| {
+                        if disabled & (1 << slot) != 0 {
+                            ItemStack::empty()
+                        } else {
+                            stack.copy_with_count(1)
+                        }
+                    })
+                    .collect(),
+            );
+            let recipe = REGISTRY
+                .recipes
+                .find_match(&vanilla_recipe_types::CRAFTING, &input);
+            let Some(recipe) = recipe else {
+                return None;
+            };
+            let assembled = recipe_manager::assemble_recipe(recipe, &input);
+            if assembled.is_empty() {
+                return None;
+            }
+            // Vanilla consumes one item from every enabled, non-empty slot and
+            // then asks the recipe for the remaining items of the grid.
+            for (slot, stack) in container.items.iter_mut().enumerate() {
+                if disabled & (1 << slot) != 0 || stack.is_empty() {
+                    continue;
+                }
+                stack.shrink(1);
+                if stack.count() <= 0 {
+                    *stack = ItemStack::empty();
+                }
+            }
+            // Mark the chunk dirty through the block entity, matching every
+            // other container block entity.
+            self.base.set_changed();
+            assembled
+        };
+
+        self.eject(world, result)
+    }
+
+    /// Vanilla `CraftingRecipe.eject` as used by the crafter: pushes the
+    /// assembled stack out of the block's facing side and returns the position
+    /// the item was dropped at.
+    pub(crate) fn eject(
+        &self,
+        world: &Arc<World>,
+        stack: ItemStack,
+    ) -> Option<BlockPos> {
+        let pos = self.get_block_pos();
+        let (dx, dy, dz) = self.state_facing().offset();
+        // Just outside the front face, matching vanilla's
+        // `Vec3.atCenterOf(pos).add(facing.getStepX() * 0.5, ..., 0.05)`.
+        let drop_pos = DVec3::new(
+            f64::from(pos.x()) + 0.5 + f64::from(dx) * 0.5,
+            f64::from(pos.y()) + 0.5 + f64::from(dy) * 0.5,
+            f64::from(pos.z()) + 0.5 + f64::from(dz) * 0.5,
+        );
+        // The crafter pushes the item in the facing direction instead of
+        // dropping it straight down.
+        let velocity = DVec3::new(f64::from(dx) * 0.25, f64::from(dy) * 0.25, f64::from(dz) * 0.25);
+        world.spawn_item_with_velocity(drop_pos, stack, velocity)?;
+        Some(pos)
+    }
+
+    /// Reads the direction the crafter's front face points at.
+    ///
+    /// Vanilla `CrafterBlock` uses the `orientation` (`front_and_top`) property
+    /// instead of a plain `facing`, because the front can point up or down too.
+    fn state_facing(&self) -> Direction {
+        self.block_state()
+            .try_get_value(&BlockStateProperties::ORIENTATION)
+            .map_or(Direction::North, FrontAndTop::front)
+    }
+
+    /// Writes one boolean block-state property, keeping every other value.
+    ///
+    /// Does nothing when the block at `pos` no longer carries the property,
+    /// which happens when the crafter is broken while a craft is counting down.
+    fn set_block_state_flag(&self, world: &Arc<World>, property: BoolProperty, value: bool) {
+        let pos = self.get_block_pos();
+        let state = world.get_block_state(pos);
+        if state.try_get_value(&property) != Some(value) {
+            return;
+        }
+        world.set_block(
+            pos,
+            state.set_value(&property, value),
+            UpdateFlags::UPDATE_CLIENTS,
+        );
+    }
+
+    /// Vanilla `CrafterBlock.updateState`: starts the crafting sequence when a
+    /// rising redstone edge arrives and the grid has a matching recipe.
+    ///
+    /// Returns whether the sequence started.
+    pub(crate) fn start_crafting(&self, world: &Arc<World>) -> bool {
+        if !self.begin_crafting() {
+            return false;
+        }
+        self.set_block_state_flag(world, CRAFTING, true);
+        self.set_block_state_flag(world, TRIGGERED, true);
+        true
+    }
+
+    /// Arms the trigger counter without touching the block state.
+    ///
+    /// Split out of [`Self::start_crafting`] so the counter logic is testable
+    /// without a live world.
+    fn begin_crafting(&self) -> bool {
+        if self.triggered() > 0 {
+            return false;
+        }
+        if !self.has_matching_recipe() {
+            return false;
+        }
+        // Vanilla starts the counter at two ticks; `serverTick` decrements it
+        // and fires the craft when it reaches zero.
+        *self.triggered.lock() = CRAFT_COOLDOWN_TICKS;
+        true
+    }
+
+    /// Whether the enabled slots currently form a valid recipe.
+    fn has_matching_recipe(&self) -> bool {
+        let container = self.container.lock();
+        let disabled = self.disabled_slots();
+        let input = CraftingInput::new(
             3,
             3,
             container
@@ -183,46 +344,10 @@ impl CrafterBlockEntity {
                 })
                 .collect(),
         );
-        let recipe = steel_registry::REGISTRY
+        REGISTRY
             .recipes
-            .find_match(&vanilla_recipe_types::CRAFTING, &input);
-        let Some(recipe) = recipe else {
-            return None;
-        };
-        let result = recipe_manager::assemble_recipe(recipe, &input);
-        if result.is_empty() {
-            return None;
-        }
-        // Place the result into the disabled slots, which are the crafter's output.
-        let output_slots: Vec<usize> = (0..CRAFTER_SLOTS)
-            .filter(|slot| disabled & (1 << slot) != 0)
-            .collect();
-        if output_slots.is_empty() {
-            return None;
-        }
-        for slot in &output_slots {
-            if container.items[*slot].is_empty() {
-                container.items[*slot] = result.copy_with_count(result.count().min(1));
-                break;
-            }
-        }
-        // Consume one item from each enabled slot taking part in the recipe.
-        let mut consumed = false;
-        for (slot, stack) in container.items.iter_mut().enumerate() {
-            if disabled & (1 << slot) != 0 || stack.is_empty() {
-                continue;
-            }
-            stack.shrink(1);
-            if stack.count() <= 0 {
-                *stack = ItemStack::empty();
-            }
-            consumed = true;
-        }
-        if !consumed {
-            return None;
-        }
-        container.set_changed();
-        Some(self.get_block_pos())
+            .find_match(&vanilla_recipe_types::CRAFTING, &input)
+            .is_some()
     }
 }
 
@@ -286,12 +411,104 @@ mod tests {
     #[test]
     fn craft_without_a_recipe_does_nothing() {
         let crafter = test_crafter();
-        // A single stick cannot form a 3x3 recipe, so nothing is consumed.
-        crafter
-            .container
-            .lock()
-            .set_item(0, ItemStack::with_count(&steel_registry::vanilla_items::STICK, 1));
+        // A single stick cannot form a 3x3 recipe, so no craft starts and
+        // nothing is consumed.
+        crafter.container.lock().set_item(
+            0,
+            ItemStack::with_count(&steel_registry::vanilla_items::STICK, 1),
+        );
+        assert!(!crafter.has_matching_recipe());
         assert_eq!(crafter.container.lock().get_item(0).count(), 1);
+    }
+
+    #[test]
+    fn a_two_log_column_matches_the_planks_recipe() {
+        init_vanilla_registry();
+        let crafter = test_crafter();
+        {
+            let mut container = crafter.container.lock();
+            // Two logs stacked in the left column: the vanilla
+            // `oak_planks` shaped recipe.
+            container.set_item(
+                0,
+                ItemStack::with_count(&steel_registry::vanilla_items::OAK_LOG, 3),
+            );
+            container.set_item(
+                3,
+                ItemStack::with_count(&steel_registry::vanilla_items::OAK_LOG, 3),
+            );
+        }
+        assert!(
+            crafter.has_matching_recipe(),
+            "two logs in a column craft planks"
+        );
+        // Nothing is consumed until `craft` runs.
+        assert_eq!(crafter.container.lock().get_item(0).count(), 3);
+    }
+
+    #[test]
+    fn disabled_slots_are_ignored_by_the_recipe_match() {
+        init_vanilla_registry();
+        let crafter = test_crafter();
+        {
+            let mut container = crafter.container.lock();
+            container.set_item(
+                0,
+                ItemStack::with_count(&steel_registry::vanilla_items::OAK_LOG, 1),
+            );
+            container.set_item(
+                3,
+                ItemStack::with_count(&steel_registry::vanilla_items::OAK_LOG, 1),
+            );
+        }
+        assert!(crafter.has_matching_recipe());
+        // Disabling the lower log removes one input of the two-log recipe, so
+        // the match disappears even though the items are still in the grid.
+        crafter.set_disabled_slots(1 << 3);
+        assert!(!crafter.has_matching_recipe());
+    }
+
+    #[test]
+    fn begin_crafting_sets_the_counter_once_and_requires_a_recipe() {
+        init_vanilla_registry();
+        let crafter = test_crafter();
+        // No recipe in the grid: nothing starts.
+        assert!(!crafter.begin_crafting());
+        assert_eq!(crafter.triggered(), 0);
+
+        {
+            let mut container = crafter.container.lock();
+            container.set_item(
+                0,
+                ItemStack::with_count(&steel_registry::vanilla_items::OAK_LOG, 1),
+            );
+            container.set_item(
+                3,
+                ItemStack::with_count(&steel_registry::vanilla_items::OAK_LOG, 1),
+            );
+        }
+        assert!(crafter.begin_crafting());
+        assert_eq!(crafter.triggered(), CRAFT_COOLDOWN_TICKS);
+        // Starting again while the counter runs is a no-op, so a constant
+        // redstone signal cannot re-arm the craft every tick.
+        assert!(!crafter.begin_crafting());
+        assert_eq!(crafter.triggered(), CRAFT_COOLDOWN_TICKS);
+    }
+
+    #[test]
+    fn the_front_face_follows_the_orientation_property() {
+        init_vanilla_registry();
+        let state = vanilla_blocks::CRAFTER
+            .default_state()
+            .set_value(
+                &BlockStateProperties::ORIENTATION,
+                FrontAndTop::from_front_and_top(Direction::West),
+            );
+        assert_eq!(
+            state.get_value(&BlockStateProperties::ORIENTATION).front(),
+            Direction::West,
+            "the crafter ejects out of its front face"
+        );
     }
 
     #[test]

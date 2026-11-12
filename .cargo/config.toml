@@ -2,7 +2,8 @@
 
 [build]
 rustflags = ["-Zthreads=0"]
-# TODO: remove once nightly ICE with incremental cache is fixed
+# Disabled: nightly ICEs with the incremental cache (see rust-lang issues);
+# re-enable once that is fixed.
 #incremental = false
 
 [target.x86_64-unknown-linux-gnu]

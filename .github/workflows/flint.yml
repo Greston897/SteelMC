@@ -82,7 +82,8 @@ jobs:
 
       - name: Check for regressions
         id: regression
-        # TODO delete later so it will fail if regression are there
+        # Non-blocking on purpose: regressions are reported but do not fail
+        # the workflow yet.
         continue-on-error: true
         uses: actions/github-script@v7
         with:

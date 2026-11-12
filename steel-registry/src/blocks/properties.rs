@@ -335,6 +335,43 @@ pub enum FrontAndTop {
     SouthUp,
 }
 
+impl FrontAndTop {
+    /// The direction the front face points at.
+    ///
+    /// Vanilla `FrontAndTop.getFront`; the enum is stored `front_top` and the
+    /// front part is the first six variants.
+    #[must_use]
+    pub const fn front(self) -> Direction {
+        match self {
+            FrontAndTop::DownEast | FrontAndTop::DownNorth | FrontAndTop::DownSouth
+            | FrontAndTop::DownWest => Direction::Down,
+            FrontAndTop::UpEast | FrontAndTop::UpNorth | FrontAndTop::UpSouth
+            | FrontAndTop::UpWest => Direction::Up,
+            FrontAndTop::WestUp => Direction::West,
+            FrontAndTop::EastUp => Direction::East,
+            FrontAndTop::NorthUp => Direction::North,
+            FrontAndTop::SouthUp => Direction::South,
+        }
+    }
+
+    /// Builds `front_top` for a mostly-horizontal front, as vanilla
+    /// `FrontAndTop.fromFrontAndTop(front, Direction.UP)` does.
+    ///
+    /// Vertical fronts pair with `East` as their top, which is what the
+    /// vanilla helper produces for a `Down`/`Up` front.
+    #[must_use]
+    pub const fn from_front_and_top(front: Direction) -> Self {
+        match front {
+            Direction::Down => FrontAndTop::DownEast,
+            Direction::Up => FrontAndTop::UpEast,
+            Direction::North => FrontAndTop::NorthUp,
+            Direction::South => FrontAndTop::SouthUp,
+            Direction::West => FrontAndTop::WestUp,
+            Direction::East => FrontAndTop::EastUp,
+        }
+    }
+}
+
 impl PropertyEnum for FrontAndTop {
     fn as_str(&self) -> &str {
         match self {

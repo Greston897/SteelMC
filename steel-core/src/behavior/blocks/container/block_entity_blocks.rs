@@ -10,7 +10,7 @@ use std::sync::{Arc, Weak};
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
-use steel_registry::blocks::properties::{BlockStateProperties, Direction};
+use steel_registry::blocks::properties::{BlockStateProperties, Direction, FrontAndTop};
 use steel_registry::vanilla_block_entity_types;
 use glam::DVec3;
 use steel_registry::vanilla_entities;
@@ -35,7 +35,7 @@ use crate::entity::entities::{
     ThrownEggEntity, next_entity_id,
 };
 use crate::player::Player;
-use crate::world::World;
+use crate::world::{SignalGetter, World};
 
 
 const HOPPER_FACING: &EnumProperty<Direction> = &BlockStateProperties::FACING_HOPPER;
@@ -538,15 +538,53 @@ impl BlockBehavior for CrafterBlock {
         InteractionResult::Success
     }
 
+    /// Vanilla `CrafterBlock.getStateForPlacement`: the front face points back
+    /// at the player, expressed through the `orientation` property.
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(
             self.block
                 .default_state()
                 .set_value(
-                    &BlockStateProperties::HORIZONTAL_FACING,
-                    context.horizontal_direction().opposite(),
+                    &BlockStateProperties::ORIENTATION,
+                    FrontAndTop::from_front_and_top(
+                        context.get_nearest_looking_direction().opposite(),
+                    ),
                 ),
         )
+    }
+
+    /// Vanilla `CrafterBlock.neighborChanged`: a rising redstone edge starts the
+    /// crafting sequence; the falling edge clears `triggered` once the counter
+    /// has run out.
+    fn handle_neighbor_changed(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _source_block: BlockRef,
+        _moved_by_piston: bool,
+    ) {
+        let powered = world.get_best_neighbor_signal(pos) > 0;
+        if powered {
+            let Some(block_entity) = world.get_block_entity(pos) else {
+                return;
+            };
+            let Some(crafter) = block_entity.downcast_ref::<CrafterBlockEntity>() else {
+                return;
+            };
+            // The block entity is ticked every game tick whenever the crafter
+            // block entity ticker is registered, so starting the counter here
+            // is enough; `serverTick` decrements it and fires the craft.
+            let _ = crafter.start_crafting(world);
+        } else if state.get_value(&BlockStateProperties::TRIGGERED) {
+            // The sequence finished or the signal dropped: mirror the falling
+            // edge into the block state.
+            world.set_block(
+                pos,
+                state.set_value(&BlockStateProperties::TRIGGERED, false),
+                steel_utils::types::UpdateFlags::UPDATE_CLIENTS,
+            );
+        }
     }
 
     fn new_block_entity(

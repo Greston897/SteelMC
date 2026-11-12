@@ -101,7 +101,8 @@ impl ItemBehavior for CompassItem {
 
         let pos = target.pos();
         if world.is_in_world_bounds(pos) {
-            // TODO: validate unloaded targets once POI persistence exists.
+            // Unloaded chunks are skipped rather than validated: lodestone
+            // targets are only resolved once POI data is persisted per chunk.
             if !world.is_full_chunk_loaded_at(pos) {
                 return;
             }
