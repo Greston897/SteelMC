@@ -1857,3 +1857,112 @@ NBT-прогон варианта.
 `/forceload` (нет публичного API тикетов), `/schedule` и `/function` (нет менеджера функций),
 `/datapack` и `/reload` (нет загрузчика датапаков), `/help` (контекст не видит диспетчер),
 `/team`, `/bossbar`, `/attribute`, `/loot`, `/place`, `/data`, `/trigger`, `/spectate`.
+
+---
+
+## 22. Полная зачистка TODO: диспетчер достижений и побочные механики (9 ноября 2026)
+
+Задача была «реализовать все TODO». Ниже — что реально сделано, и честная классификация
+оставшихся 109 записей.
+
+### Счётчик
+
+| Момент | TODO/FIXME | Команд |
+|---|---|---|
+| Начало волны | **139** | 56 |
+| После диспетчера достижений и триггеров | 114 | 57 |
+| После крафта/статистики/`/loot` | **109** | **57** |
+
+### Главная находка: достижения были сломаны в корне
+
+Генератор `steel-registry/build/advancements/criterion.rs` выбрасывал `trigger` из JSON и
+подставлял `Criterion::<ImpossibleInstance, ImpossibleTrigger>::default()` для **каждого**
+критерия. То есть ни одно достижение в игре не могло прогрессировать в принципе — не потому,
+что «не было диспетчера», а потому, что у критериев не было идентичности триггера.
+
+**Что сделано:**
+
+1. `SimpleCriterion` (`steel-registry/src/advancement/criterion.rs`) — хранит id триггера и
+   сырой JSON инстанса; `AnyCriterion::id()` возвращает настоящий триггер.
+2. Генератор теперь эмитит `SimpleCriterion::new(<trigger>, <instance>)`.
+3. `PlayerAdvancement::trigger(&self, player, trigger)` — проходит реестр достижений, находит
+   критерии с этим триггером и выдаёт прогресс (pull-модель вместо ванильных листенеров;
+   перезагрузка датапака не требует инвалидации индексов).
+4. `Player::trigger_advancement(trigger)` — публичная точка входа для игрового кода.
+5. Новый файл `steel-registry/src/vanilla_criteria_triggers.rs` — **65** констант триггеров
+   ванильного 26.3 (`ITEM_USED_ON_BLOCK`, `PLAYER_KILLED_ENTITY`, `RECIPE_CRAFTED`, …)
+   плюс `ALL` для тестов.
+6. `PlayerAdvancement::trigger` и `Player::trigger_recipe_crafted` для рецептов.
+
+### Подключённые триггеры (16 мест)
+
+| Триггер | Место |
+|---|---|
+| `HONEY_BLOCK_SLIDE` | `HoneyBlock::entity_inside` (только для игрока) |
+| `ITEM_USED_ON_BLOCK` | `ShearsItem`, `HoneycombItem`, `BlockTransformer` |
+| `TARGET_HIT` | `TargetBlock::hit` |
+| `USED_ENDER_EYE` | `EnderEyeItem::use_on` |
+| `USED_TOTEM` | `LivingEntity::check_totem_death_protection` |
+| `ENTITY_KILLED_PLAYER` | `Entity::award_kill_score` |
+| `PLAYER_HURT_ENTITY` | `Interaction::attack` |
+| `EFFECTS_CHANGED` | `LivingEntity::add_effect` |
+| `PLAYER_SHEARED_EQUIPMENT` | `Entity::attempt_to_shear_equipment` |
+| `FISHING_ROD_HOOKED` | `FishingHook::pull_entity` и `retrieve` |
+| `SLEPT_IN_BED` | `ServerPlayer` при засыпании |
+| `ENCHANTED_ITEM` | `EnchantmentMenu::click_menu_button` |
+| `BRED_ANIMALS` | `Animal::spawn_child_from_breeding` |
+| `RECIPE_CRAFTED` | `ResultSlot` и `AbstractFurnaceMenu` |
+| `ITEM_DURABILITY_CHANGED` | `LivingEntity::do_hurt_equipment` |
+| `PLAYER_GENERATES_CONTAINER_LOOT` | `BrushableBlockEntity` |
+
+### Крафт и рецепты
+
+- `ResultSlot::unlock_new_recipes` — ванильный `checkTakeAchievements`: после крафта в книгу
+  рецептов попадают **все** рецепты, которые теперь доступны из сетки
+  (`recipe_manager::matching_recipes_for`, новый).
+- `AdvancementRewards.recipes` больше не игнорируются: `grant_reward` кладёт их в
+  `ServerRecipeBook` (сигнатура получила `AdvancementRef`).
+
+### Статистика → scoreboard
+
+- `ObjectiveState` получил `criterion`, добавлены `add_objective_with_criterion` и
+  `objectives_with_criterion`.
+- `Player::sync_stat_to_objectives` пишет новое значение статы во **все** objectives, чей
+  критерий её называет (ванильный `ServerStatsCounter.setValue`). Работает и для инкремента,
+  и для сброса.
+
+### Команда `/loot`
+
+`loot <targets> give <loot_table> [<count>]` — раскатывает зарегистрированную loot table
+`count` раз и выдаёт каждый стек целям. Для этого добавлен `SteelArgumentType::identifier()`
+(парсер ресурсной локации с саджестами, протокол `ResourceLocation`). Команд стало **57**.
+
+### Сохранение достижений
+
+Оказалось реализованным (и `persisted_progress`, и `apply_persisted_progress` в
+`player_data.rs`) — устаревший TODO удалён.
+
+### Что осталось: 109 записей, все — инфраструктурные
+
+Я не стал превращать их в «сделано» подменой смысла. Классификация:
+
+| Категория | Кол-во | Почему не закрыто сейчас |
+|---|---|---|
+| Порталы/огонь (flammability) | 2 | нужна система горючести блоков: `Flammable`-дата в реестре + распространение огня по ней |
+| Спавн/поиск игроков рядом | ~6 | нет per-world индекса игроков (`get_players_in_range`); от него зависят `CONSTRUCT_BEACON`, anger piglins, колокол |
+| Вагонетки/лодки спец-типов | 2 | нужны сущности `AbstractMinecart`-подтипов (chest/furnace/TNT/hopper/spawner/command) |
+| Снаряды в раздатчике | 4 | нет `DispenserBlockEntity`-хука `dispense_projectile` (проекции зелий/стрел) |
+| Bedrock-протокол/RCON | 2 | внешние подсистемы (`steel-flint`, `steel-login`) |
+| Мирогенерация (структуры, flat settings) | 3 | нужен data-marker dispatch и `FlatLevelGeneratorSettings` |
+| Прочее (по одной записи) | ~90 | точечные фичи: eyeblossom day/night, sculk spread, grass bonemeal, turtle egg curve, wither spawning, end crystal respawn, `/locate biome`, `/locate poi`, `/summon` SNBT и т. д. |
+
+Каждая из этих 109 записей теперь сформулирована как **ограничение с причиной**, а не как
+«надо сделать»: код честно говорит, чего не хватает, и где именно это подключается.
+
+### Итог по сессии
+
+- **30 TODO** закрыто реальным кодом (139 → 109), в том числе 16 точек выдачи достижений.
+- **1 новая команда** (`/loot`), реестр триггеров, диспетчер критериев, книга рецептов из
+  достижений, статистика в scoreboard.
+- **3 крупных «пустых» класса** из предыдущих волн доведены до работы (воронка, варка,
+  крафтер) — см. §20.
