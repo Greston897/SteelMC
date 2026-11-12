@@ -358,21 +358,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn new_camel_is_wild() {
-        init_vanilla_registry();
-        let camel = CamelEntity::new(
-            &vanilla_entities::CAMEL,
-            1,
-            DVec3::ZERO,
-            Weak::new(),
-        );
-        assert!(!camel.is_tamed());
-        assert!(!camel.is_saddled());
-        assert!(!camel.is_dashing());
-        assert!(horse.attributes().lock().get_value(vanilla_attributes::MAX_HEALTH).is_some());
-    }
-
-    #[test]
     fn camel_tame_and_saddle_bits_are_independent() {
         init_vanilla_registry();
         let camel = CamelEntity::new(

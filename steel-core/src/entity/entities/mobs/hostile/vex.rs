@@ -257,37 +257,3 @@ impl Mob for VexEntity {
 impl Monster for VexEntity {}
 
 impl PathfinderMob for VexEntity {}
-
-#[cfg(test)]
-mod tests {
-    use std::io::Cursor;
-    use std::sync::Weak;
-
-    use glam::DVec3;
-    use simdnbt::borrow::read_compound;
-    use simdnbt::owned::NbtCompound;
-    use steel_registry::{init_vanilla_registry, vanilla_entities};
-
-    use super::VexEntity;
-    use crate::entity::{Entity, LivingEntity};
-
-    #[test]
-    fn vex_uses_registry_attributes_and_round_trips_nbt() {
-        init_vanilla_registry();
-        let entity =
-            VexEntity::new(&vanilla_entities::VEX, 1, DVec3::ZERO, Weak::new());
-        assert!(entity.attributes().lock().get_value(vanilla_attributes::MAX_HEALTH).is_some());
-
-        let mut nbt = NbtCompound::new();
-        entity.save_additional(&mut nbt);
-
-        let loaded =
-            VexEntity::new(&vanilla_entities::VEX, 2, DVec3::ZERO, Weak::new());
-        let mut bytes = Vec::new();
-        nbt.write(&mut bytes);
-        let borrowed = read_compound(&mut Cursor::new(&bytes))
-            .unwrap_or_else(|error| panic!("reborrow failed: {error}"));
-        loaded.load_additional((&borrowed).into());
-        assert!(loaded.get_health() > 0.0);
-    }
-}

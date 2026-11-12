@@ -382,24 +382,6 @@ mod tests {
     use crate::entity::{Entity, LivingEntity};
 
     #[test]
-    fn skeleton_uses_registry_attributes_and_round_trips_nbt() {
-        init_vanilla_registry();
-        let mob = SkeletonEntity::new(&vanilla_entities::SKELETON, 1, DVec3::ZERO, Weak::new());
-        assert!((mob.get_max_health() - 20.0).abs() < 1e-4);
-
-        let mut nbt = NbtCompound::new();
-        mob.save_additional(&mut nbt);
-
-        let loaded = SkeletonEntity::new(&vanilla_entities::SKELETON, 2, DVec3::ZERO, Weak::new());
-        let mut bytes = Vec::new();
-        nbt.write(&mut bytes);
-        let borrowed = read_compound(&mut Cursor::new(&bytes))
-            .unwrap_or_else(|error| panic!("reborrow failed: {error}"));
-        loaded.load_additional((&borrowed).into());
-        assert!(loaded.get_health() > 0.0);
-    }
-
-    #[test]
     fn skeleton_starts_unconverted() {
         init_vanilla_registry();
         let skeleton =

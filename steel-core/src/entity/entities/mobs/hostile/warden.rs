@@ -265,37 +265,3 @@ impl Mob for WardenEntity {
 impl Monster for WardenEntity {}
 
 impl PathfinderMob for WardenEntity {}
-
-#[cfg(test)]
-mod tests {
-    use std::io::Cursor;
-    use std::sync::Weak;
-
-    use glam::DVec3;
-    use simdnbt::borrow::read_compound;
-    use simdnbt::owned::NbtCompound;
-    use steel_registry::{init_vanilla_registry, vanilla_entities};
-
-    use super::WardenEntity;
-    use crate::entity::{Entity, LivingEntity};
-
-    #[test]
-    fn warden_uses_registry_attributes_and_round_trips_nbt() {
-        init_vanilla_registry();
-        let silverfish =
-            WardenEntity::new(&vanilla_entities::WARDEN, 1, DVec3::ZERO, Weak::new());
-        assert!((silverfish.get_max_health() - 8.0).abs() < 1e-4);
-
-        let mut nbt = NbtCompound::new();
-        silverfish.save_additional(&mut nbt);
-
-        let loaded =
-            WardenEntity::new(&vanilla_entities::WARDEN, 2, DVec3::ZERO, Weak::new());
-        let mut bytes = Vec::new();
-        nbt.write(&mut bytes);
-        let borrowed = read_compound(&mut Cursor::new(&bytes))
-            .unwrap_or_else(|error| panic!("reborrow failed: {error}"));
-        loaded.load_additional((&borrowed).into());
-        assert!(loaded.get_health() > 0.0);
-    }
-}

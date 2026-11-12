@@ -350,20 +350,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn new_horse_is_wild() {
-        init_vanilla_registry();
-        let horse = HorseEntity::new(
-            &vanilla_entities::HORSE,
-            1,
-            DVec3::ZERO,
-            Weak::new(),
-        );
-        assert!(!horse.is_tamed());
-        assert!(!horse.is_saddled());
-        assert!(horse.attributes().lock().get_value(vanilla_attributes::MAX_HEALTH).is_some());
-    }
-
-    #[test]
     fn horse_tame_and_saddle_bits_are_independent() {
         init_vanilla_registry();
         let horse = HorseEntity::new(

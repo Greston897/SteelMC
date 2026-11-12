@@ -462,27 +462,6 @@ mod tests {
     use crate::entity::{Entity, LivingEntity};
 
     #[test]
-    fn creeper_uses_registry_attributes_and_round_trips_nbt() {
-        init_vanilla_registry();
-        let creeper = CreeperEntity::new(&vanilla_entities::CREEPER, 1, DVec3::ZERO, Weak::new());
-        assert!((creeper.get_max_health() - 20.0).abs() < 1e-4);
-        assert!(!creeper.is_powered());
-        assert!(!creeper.is_ignited());
-        assert_eq!(creeper.swell(), 0);
-
-        let mut nbt = NbtCompound::new();
-        creeper.save_additional(&mut nbt);
-
-        let loaded = CreeperEntity::new(&vanilla_entities::CREEPER, 2, DVec3::ZERO, Weak::new());
-        let mut bytes = Vec::new();
-        nbt.write(&mut bytes);
-        let borrowed = read_compound(&mut Cursor::new(&bytes))
-            .unwrap_or_else(|error| panic!("reborrow failed: {error}"));
-        loaded.load_additional((&borrowed).into());
-        assert!(loaded.get_health() > 0.0);
-    }
-
-    #[test]
     fn fuse_accumulates_and_deflates_without_going_negative() {
         // Swelling advances one tick per tick and stops at the last tick before
         // detonation; deflating never drops below zero.

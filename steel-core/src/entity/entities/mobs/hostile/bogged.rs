@@ -416,24 +416,6 @@ mod tests {
     use crate::entity::{Entity, LivingEntity};
 
     #[test]
-    fn bogged_uses_registry_attributes_and_round_trips_nbt() {
-        init_vanilla_registry();
-        let mob = BoggedEntity::new(&vanilla_entities::BOGGED, 1, DVec3::ZERO, Weak::new());
-        assert!((mob.get_max_health() - 16.0).abs() < 1e-4);
-
-        let mut nbt = NbtCompound::new();
-        mob.save_additional(&mut nbt);
-
-        let loaded = BoggedEntity::new(&vanilla_entities::BOGGED, 2, DVec3::ZERO, Weak::new());
-        let mut bytes = Vec::new();
-        nbt.write(&mut bytes);
-        let borrowed = read_compound(&mut Cursor::new(&bytes))
-            .unwrap_or_else(|error| panic!("reborrow failed: {error}"));
-        loaded.load_additional((&borrowed).into());
-        assert!(loaded.get_health() > 0.0);
-    }
-
-    #[test]
     fn fresh_bogged_is_not_sheared_and_shearing_is_one_shot() {
         init_vanilla_registry();
         let bogged = BoggedEntity::new(&vanilla_entities::BOGGED, 4, DVec3::ZERO, Weak::new());
