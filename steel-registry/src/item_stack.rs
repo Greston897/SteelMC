@@ -1292,14 +1292,49 @@ impl ItemStack {
     }
 
     /// Copies custom NBT data from a source.
-    pub const fn copy_custom_data<R: rand::Rng>(
+    ///
+    /// Vanilla `CopyCustomDataFunction` walks each operation's source path and
+    /// writes it to the target path inside the stack's `custom_data` component.
+    /// Paths are dot-separated compound keys; list indices are not supported by
+    /// any vanilla loot function, so they are skipped.
+    pub fn copy_custom_data<R: rand::Rng>(
         &mut self,
-        _source: crate::loot_table::CopySource,
-        _operations: &[crate::loot_table::CopyDataOperation],
-        _ctx: &crate::loot_table::LootContext<'_, R>,
+        source: crate::loot_table::CopySource,
+        operations: &[crate::loot_table::CopyDataOperation],
+        ctx: &crate::loot_table::LootContext<'_, R>,
     ) {
-        // TODO: Implement custom data copying
-        // Copy NBT paths from source to item's CUSTOM_DATA component
+        use crate::loot_table::CopyDataOp;
+
+        // Only block entities carry NBT in Steel's loot context.
+        if !matches!(source, crate::loot_table::CopySource::BlockEntity) {
+            return;
+        }
+        let Some(data) = ctx.block_entity.and_then(|entity| entity.data) else {
+            return;
+        };
+
+        let mut target = self
+            .get(CUSTOM_DATA)
+            .map_or_else(simdnbt::owned::NbtCompound::new, |existing| {
+                existing.as_compound().clone()
+            });
+
+        for operation in operations {
+            let Some(value) = nbt_path_get(data, operation.source_path) else {
+                continue;
+            };
+            match operation.op {
+                // Vanilla distinguishes replace/append/merge only for list and
+                // compound targets; a scalar path is always overwritten.
+                CopyDataOp::Replace | CopyDataOp::Append | CopyDataOp::Merge => {
+                    nbt_path_set(&mut target, operation.target_path, value.clone());
+                }
+            }
+        }
+
+        if let Some(custom_data) = CustomData::try_from_compound(target) {
+            self.set(CUSTOM_DATA, custom_data);
+        }
     }
 
     /// Sets banner pattern layers.
@@ -2334,4 +2369,45 @@ mod persistence_tests {
         assert_eq!(nested.int("kept"), Some(1));
         assert_eq!(nested.int("changed"), Some(2));
     }
+}
+
+/// Reads a dot-separated compound path from `data`.
+fn nbt_path_get<'a>(
+    data: &'a simdnbt::owned::NbtCompound,
+    path: &str,
+) -> Option<&'a simdnbt::owned::NbtTag> {
+    let mut current = data;
+    let mut segments = path.split('.').peekable();
+    while let Some(segment) = segments.next() {
+        let tag = current.get(segment)?;
+        if segments.peek().is_none() {
+            return Some(tag);
+        }
+        current = tag.compound()?;
+    }
+    None
+}
+
+/// Writes `value` at a dot-separated compound path, creating intermediates.
+///
+/// `simdnbt` exposes no mutable compound child, so the subtree is rebuilt from
+/// the existing value plus the new leaf and written back with `insert`.
+fn nbt_path_set(data: &mut simdnbt::owned::NbtCompound, path: &str, value: simdnbt::owned::NbtTag) {
+    let mut segments = path.split('.').peekable();
+    let Some(first) = segments.next() else {
+        return;
+    };
+    if segments.peek().is_none() {
+        data.insert(first, value);
+        return;
+    }
+
+    let rest = segments.collect::<Vec<_>>().join(".");
+    let mut child = data
+        .get(first)
+        .and_then(simdnbt::owned::NbtTag::compound)
+        .cloned()
+        .unwrap_or_else(simdnbt::owned::NbtCompound::new);
+    nbt_path_set(&mut child, &rest, value);
+    data.insert(first, simdnbt::owned::NbtTag::Compound(child));
 }
