@@ -47,6 +47,7 @@ mod stopsound;
 mod summon;
 mod swing;
 mod tag;
+mod team;
 mod teleport;
 mod tellraw;
 mod tick;
@@ -133,6 +134,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(summon::registration())?;
     builder.register(swing::registration())?;
     builder.register(tag::registration())?;
+    builder.register(team::registration())?;
     builder.register(teleport::registration())?;
     builder.register(tellraw::registration())?;
     builder.register(tick::registration())?;

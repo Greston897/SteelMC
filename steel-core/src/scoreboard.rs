@@ -450,6 +450,18 @@ impl Scoreboard {
         true
     }
 
+    /// Returns every holder currently on `team_name`, in stable order.
+    #[must_use]
+    pub fn team_members(&self, team_name: &str) -> Vec<String> {
+        self.state
+            .read()
+            .holder_teams
+            .iter()
+            .filter(|(_, team)| team.as_str() == team_name)
+            .map(|(holder, _)| holder.clone())
+            .collect()
+    }
+
     /// Returns whether `viewer` may see a message emitted on `team_name`.
     ///
     /// `viewer` resolves through their own team membership, so callers only pass
