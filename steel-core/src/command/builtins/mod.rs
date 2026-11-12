@@ -23,6 +23,7 @@ mod kick;
 mod kill;
 mod list;
 mod locate;
+mod loot;
 mod msg;
 mod operator;
 mod particle;
@@ -107,6 +108,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(kill::registration())?;
     builder.register(list::registration())?;
     builder.register(locate::registration())?;
+    builder.register(loot::registration())?;
     builder.register(msg::registration())?;
     builder.register(operator::op_registration())?;
     builder.register(particle::registration())?;

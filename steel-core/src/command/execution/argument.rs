@@ -182,6 +182,11 @@ impl SteelArgumentType {
         Self::new(BlockPosParser)
     }
 
+    /// Parses a plain namespaced identifier, as vanilla does for registry keys.
+    pub(crate) fn identifier() -> Self {
+        Self::new(IdentifierParser)
+    }
+
     pub(crate) fn vec3(center_integers: bool) -> Self {
         Self::new(Vec3Parser { center_integers })
     }
@@ -1201,6 +1206,19 @@ unit_argument_parser!(
     suggest | _context,
     _builder | {},
     protocol(ProtocolArgumentType::NbtPath, None)
+);
+unit_argument_parser!(
+    IdentifierParser,
+    "steel:command/parser/identifier",
+    IdentifierValue,
+    parse | reader,
+    _source | { parse_identifier(reader).map(IdentifierValue) },
+    suggest | _context,
+    _builder | {},
+    protocol(
+        ProtocolArgumentType::ResourceLocation,
+        Some(ProtocolSuggestionType::AskServer),
+    )
 );
 unit_argument_parser!(
     StorageKeyParser,
