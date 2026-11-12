@@ -5,7 +5,6 @@
 //! damage and stops AI, a `from_bucket` flag and an attack buff applied after
 //! killing a target. They hunt fish and drown-only mobs, and dry out on land.
 
-use std::str::FromStr;
 use std::sync::{Arc, Weak};
 
 use glam::DVec3;
@@ -25,7 +24,7 @@ use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{REGISTRY, TaggedRegistryExt, sound_events};
 use steel_utils::locks::SyncMutex;
 use steel_utils::types::InteractionHand;
-use steel_utils::{DowncastType, DowncastTypeKey, Identifier};
+use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::behavior::InteractionResult;
 use crate::entity::ai::goal::{MeleeAttackGoal, PanicGoal, RandomSwimmingGoal};
@@ -80,8 +79,6 @@ const AXOLOTL_PANIC_SPEED: f64 = 1.25;
 const AXOLOTL_DRY_DAMAGE: f32 = 2.0;
 /// Vanilla `Axolotl` regen while in water (`600` ticks per 1 HP).
 const AXOLOTL_WATER_REGEN_INTERVAL: i32 = 600;
-/// Vanilla `Axolotl` play-dead damage reduction (`0.5`).
-const AXOLOTL_PLAY_DEAD_DAMAGE_REDUCTION: f32 = 0.5;
 
 #[entity_behavior(class = "Axolotl", spawn_rule)]
 /// Vanilla axolotl with variants, play-dead pose and dry-out damage.
@@ -495,11 +492,6 @@ mod tests {
 
         axolotl.set_playing_dead(false);
         assert!(!axolotl.is_playing_dead() && axolotl.is_from_bucket());
-    }
-
-    #[test]
-    fn play_dead_halves_incoming_damage() {
-        assert!((AXOLOTL_PLAY_DEAD_DAMAGE_REDUCTION - 0.5).abs() < f32::EPSILON);
     }
 
     #[test]
