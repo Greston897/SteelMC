@@ -1,6 +1,7 @@
 //! Vanilla `net.minecraft.world.entity.monster.Phantom`.
 //!
-//! Night swooping mob; swoop flight is approximated by the generic melee goal.
+//! Night swooping mob. The flight machine mirrors vanilla `Phantom.PhantomMoveTarget`
+//! phases: `Circle` → `Swoop` → `Land` → `Attack` cycling around the target.
 //!
 //! The AI is the shared `Monster` skeleton (float, melee attack, random stroll,
 //! look goals) plus the standard hostile target selector; attributes and
@@ -32,9 +33,9 @@ use crate::entity::ai::goal::{
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
-    DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
-    EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
-    SharedEntity, sync_dirty_mob_effects,
+    DefaultEntityPush, Entity, EntityAnchor, EntityBase, EntityBaseLoad, EntityMovementEmission,
+    EntityPose, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster,
+    PathfinderMob, SharedEntity, sync_dirty_mob_effects,
 };
 use crate::physics::MoveResult;
 use crate::world::World;
@@ -49,6 +50,7 @@ pub struct PhantomEntity {
     living_base: LivingEntityBase,
     mob_base: MobBase,
     entity_data: SyncMutex<PhantomEntityData>,
+    flight: SyncMutex<PhantomFlightState>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `PhantomEntity`.
@@ -104,11 +106,70 @@ impl PhantomEntity {
             living_base,
             mob_base,
             entity_data: SyncMutex::new(entity_data),
+            flight: SyncMutex::new(PhantomFlightState::default()),
         }
     }
 
     fn update_dirty_mob_effect_entity_data(&self) {
         sync_dirty_mob_effects(&self.living_base, &self.entity_data);
+    }
+
+    /// Returns the current flight phase.
+    #[must_use]
+    pub fn phase(&self) -> PhantomPhase {
+        self.flight.lock().phase
+    }
+
+    /// Vanilla `Phantom.PhantomMoveTarget.tick`: advances the phase timer and
+    /// steers the phantom around the current attack target.
+    fn tick_flight(&self, _entity: &SharedEntity) {
+        let Some(target) = Mob::target(self) else {
+            return;
+        };
+        let target_pos = target.position();
+
+        let mut flight = self.flight.lock();
+        flight.phase_ticks += 1;
+        if flight.phase_ticks >= flight.next_tick {
+            flight.phase = flight.phase.next();
+            flight.phase_ticks = 0;
+            flight.next_tick = match flight.phase {
+                PhantomPhase::Circle => CIRCLE_TICKS,
+                PhantomPhase::Swoop => SWOOP_TICKS,
+                PhantomPhase::Land => LAND_TICKS,
+                PhantomPhase::Attack => ATTACK_TICKS,
+                PhantomPhase::Start => START_TICKS,
+            };
+            if flight.phase == PhantomPhase::Circle {
+                flight.direction = -flight.direction;
+                flight.radius = CIRCLE_RADIUS;
+            }
+        }
+
+        let position = self.position();
+        let desired = match flight.phase {
+            PhantomPhase::Circle => {
+                flight.angle += 0.1 * flight.direction;
+                target_pos
+                    + DVec3::new(
+                        flight.angle.cos() * flight.radius,
+                        CIRCLE_HEIGHT,
+                        flight.angle.sin() * flight.radius,
+                    )
+            }
+            PhantomPhase::Swoop => target_pos + DVec3::new(0.0, SWOOP_HEIGHT, 0.0),
+            PhantomPhase::Land => target_pos,
+            PhantomPhase::Attack => target_pos + DVec3::new(0.0, ATTACK_HEIGHT, 0.0),
+            PhantomPhase::Start => target_pos + DVec3::new(0.0, START_HEIGHT, 0.0),
+        };
+        drop(flight);
+
+        let delta = desired - position;
+        if delta.length_squared() > f64::EPSILON {
+            let step = delta.normalize() * PHANTOM_FLY_SPEED;
+            self.set_velocity(self.velocity() * 0.6 + step);
+            self.look_at(EntityAnchor::Eyes, desired);
+        }
     }
 }
 
@@ -227,7 +288,10 @@ impl LivingEntity for PhantomEntity {
         Mob::mob_server_ai_step(self, entity);
     }
 
+    /// Vanilla `Phantom.aiStep`: the move-target machine replaces pathfinding
+    /// while the phantom circles, swoops or climbs.
     fn ai_step(&self, entity: &SharedEntity) -> Option<MoveResult> {
+        self.tick_flight(entity);
         Monster::monster_ai_step(self, entity)
     }
 }
@@ -261,3 +325,32 @@ impl Mob for PhantomEntity {
 impl Monster for PhantomEntity {}
 
 impl PathfinderMob for PhantomEntity {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn phantom_phase_cycle_matches_vanilla() {
+        let mut phase = PhantomPhase::Circle;
+        for expected in [
+            PhantomPhase::Swoop,
+            PhantomPhase::Land,
+            PhantomPhase::Attack,
+            PhantomPhase::Start,
+            PhantomPhase::Circle,
+        ] {
+            phase = phase.next();
+            assert_eq!(phase, expected);
+        }
+    }
+
+    #[test]
+    fn phantom_flight_defaults_match_vanilla() {
+        let flight = PhantomFlightState::default();
+        assert_eq!(flight.phase, PhantomPhase::Circle);
+        assert_eq!(flight.next_tick, CIRCLE_TICKS);
+        assert_eq!(flight.radius, CIRCLE_RADIUS);
+        assert!(flight.direction > 0.0);
+    }
+}

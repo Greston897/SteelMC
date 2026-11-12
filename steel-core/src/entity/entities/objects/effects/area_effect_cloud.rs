@@ -154,6 +154,11 @@ impl AreaEffectCloudEntity {
         self.state.lock().potion_duration_scale = scale;
     }
 
+    /// Sets the cloud particle, mirroring vanilla `AreaEffectCloud.setParticle`.
+    pub fn set_particle(&self, particle: ParticleData) {
+        self.entity_data.lock().particle.set(particle);
+    }
+
     fn update_particle(&self, potion_color: i32) {
         let color = RgbColor::new(potion_color).with_alpha(u8::MAX);
         self.entity_data.lock().particle.set(ParticleData::new(

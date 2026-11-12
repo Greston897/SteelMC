@@ -1,8 +1,10 @@
-//! Large fireball projectile (`LargeFireball`).
+//! Dragon fireball projectile (`DragonFireball`).
 //!
-//! Vanilla `DragonFireball` flies straight and leaves a lingering dragon-breath
-//! cloud where it lands. The cloud is approximated by an explosion of the same
-//! radius.
+//! Vanilla `DragonFireball` flies straight and, instead of exploding, spawns an
+//! `AreaEffectCloud` with the dragon-breath effect where it lands
+//! (`DragonFireball.onHit` → `spawnAreaCloud`). The cloud is anchored to the
+//! block position below the impact, has radius `3`, lasts `100` (wait time `0`)
+//! ticks and applies `Instant Damage II` for `1` tick once per entity.
 
 use std::sync::{Arc, Weak};
 
@@ -11,19 +13,36 @@ use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
+use steel_registry::data_components::components::potion_contents::PotionContents;
 use steel_registry::entity_type::EntityTypeRef;
-use steel_registry::vanilla_damage_types;
+use steel_registry::mob_effect::instance::MobEffectInstance;
+use steel_registry::particle_type::{ParticleData, PowerParticleOption};
+use steel_registry::{vanilla_entities, vanilla_mob_effects, vanilla_particle_types};
+use steel_utils::BlockPos;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
-use crate::entity::damage::DamageSource;
+use crate::entity::entities::objects::effects::AreaEffectCloudEntity;
+use crate::entity::next_entity_id;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, Projectile, ProjectileBase, ProjectileHit, RemovalReason,
     SharedEntity, ThrowableProjectile,
 };
-use crate::world::{ExplosionInteraction, ExplosionOptions, World};
+use crate::world::World;
 
 /// Vanilla `DragonFireball` breath cloud radius (`3.0`).
 pub const DRAGON_FIREBALL_RADIUS: f32 = 3.0;
+
+/// Ticks the breath cloud stays alive (vanilla `spawnAreaCloud` duration).
+pub const DRAGON_BREATH_CLOUD_DURATION: i32 = 100;
+
+/// `Instant Damage` duration applied by the cloud, in ticks.
+pub const DRAGON_BREATH_EFFECT_DURATION: i32 = 1;
+
+/// `Instant Damage` amplifier (`1` = level II, like vanilla).
+pub const DRAGON_BREATH_EFFECT_AMPLIFIER: i32 = 1;
+
+/// Vanilla `DragonFireball` breath particle power (`0.4`).
+pub const DRAGON_BREATH_PARTICLE_POWER: f32 = 0.4;
 
 /// A dragon fireball.
 #[entity_behavior(class = "DragonFireball")]
@@ -59,28 +78,51 @@ impl DragonFireballEntity {
         }
     }
 
-    /// Vanilla `DragonFireball` damage source.
-    fn fireball_damage_source(self: &Arc<Self>) -> DamageSource {
-        let mut source = DamageSource::environment(&vanilla_damage_types::MAGIC)
-            .with_direct_entity(Arc::clone(self) as SharedEntity);
-        if let Some(owner) = self.get_owner() {
-            source = source.with_causing_entity(owner);
-        }
-        source
-    }
+    /// Vanilla `DragonFireball.spawnAreaCloud`: spawns the breath cloud and
+    /// discards the fireball. The block below the impact becomes the cloud
+    /// anchor when it is a solid surface.
+    fn spawn_breath_cloud(self: &Arc<Self>, world: &Arc<World>) {
+        let position = self.position();
+        let below = BlockPos::from(position - DVec3::new(0.0, 1.0, 0.0));
+        let anchor = if world.get_block_state(below).is_solid() {
+            position - DVec3::new(0.0, 1.0, 0.0)
+        } else {
+            position
+        };
 
-    /// Vanilla `DragonFireball.onHit`: spawns the breath cloud. Steel has no
-    /// area-effect breath cloud yet, so the impact uses a plain explosion of
-    /// the same radius.
-    fn explode(self: &Arc<Self>, world: &Arc<World>) {
-        let mut options = ExplosionOptions::new(
-            self.position(),
-            DRAGON_FIREBALL_RADIUS,
-            ExplosionInteraction::Tnt,
-        );
-        options.source = Some(Arc::clone(self) as SharedEntity);
-        options.damage_source = Some(self.fireball_damage_source());
-        world.explode(options);
+        let cloud = Arc::new(AreaEffectCloudEntity::new(
+            &vanilla_entities::AREA_EFFECT_CLOUD,
+            next_entity_id(),
+            anchor,
+            Arc::downgrade(world),
+        ));
+        cloud.set_owner(self.get_owner().as_ref());
+        cloud.set_radius(DRAGON_FIREBALL_RADIUS);
+        cloud.set_duration(DRAGON_BREATH_CLOUD_DURATION);
+        cloud.set_wait_time(0);
+        cloud.set_radius_per_tick(-DRAGON_FIREBALL_RADIUS / DRAGON_BREATH_CLOUD_DURATION as f32);
+        cloud.set_particle(ParticleData::new(
+            &vanilla_particle_types::DRAGON_BREATH,
+            PowerParticleOption::new(DRAGON_BREATH_PARTICLE_POWER),
+        ));
+        cloud.set_potion_contents(PotionContents::new(
+            None,
+            None,
+            vec![MobEffectInstance::new(
+                &vanilla_mob_effects::INSTANT_DAMAGE,
+                DRAGON_BREATH_EFFECT_DURATION,
+                DRAGON_BREATH_EFFECT_AMPLIFIER,
+                false,
+                true,
+                true,
+            )],
+            None,
+        ));
+
+        let cloud: SharedEntity = cloud;
+        if let Err(error) = world.try_add_entity(cloud) {
+            log::debug!("world rejected a dragon breath cloud: {error}");
+        }
     }
 }
 
@@ -139,7 +181,7 @@ impl Projectile for DragonFireballEntity {
     fn on_hit(self: Arc<Self>, hit: &ProjectileHit) {
         Arc::clone(&self).projectile_on_hit(hit);
         if let Some(world) = self.level() {
-            self.explode(&world);
+            self.spawn_breath_cloud(&world);
         }
         self.set_removed(RemovalReason::Discarded);
     }
@@ -154,5 +196,13 @@ mod tests {
     #[test]
     fn dragon_fireball_radius_matches_vanilla() {
         assert_eq!(DRAGON_FIREBALL_RADIUS, 3.0);
+    }
+
+    #[test]
+    fn dragon_breath_cloud_matches_vanilla() {
+        assert_eq!(DRAGON_BREATH_CLOUD_DURATION, 100);
+        assert_eq!(DRAGON_BREATH_EFFECT_DURATION, 1);
+        assert_eq!(DRAGON_BREATH_EFFECT_AMPLIFIER, 1);
+        assert_eq!(DRAGON_BREATH_PARTICLE_POWER, 0.4);
     }
 }
