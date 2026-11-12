@@ -407,6 +407,16 @@ pub trait LivingEntity: Entity {
         self.make_sound(self.hurt_sound(source));
     }
 
+    /// Vanilla `playSecondaryHurtSound`.
+    ///
+    /// Equipment-driven damage sources carry their own sound; thorns is the only
+    /// one vanilla registers today, so the table lives here next to the source.
+    fn play_secondary_hurt_sound(&self, source: &DamageSource) {
+        if source.damage_type.key == vanilla_damage_types::THORNS.key {
+            self.make_sound(Some(&sound_events::ENCHANT_THORNS_HIT));
+        }
+    }
+
     /// Plays vanilla's death sound for this living entity.
     fn play_death_sound(&self) {
         self.make_sound(self.death_sound());
@@ -770,7 +780,12 @@ pub trait LivingEntity: Entity {
         } else if took_full_damage {
             self.play_hurt_sound(source);
         }
-        // TODO: Play secondary hurt sounds once equipment effects expose them.
+
+        // Vanilla `playSecondaryHurtSound`: thorns retaliation announces itself
+        // with the enchantment's own clip, independently of the hurt sound.
+        if took_full_damage {
+            self.play_secondary_hurt_sound(source);
+        }
 
         self.record_last_damage_source(source);
 
@@ -3424,7 +3439,9 @@ pub trait LivingEntity: Entity {
             } else if attr.key == vanilla_attributes::SCALE.key {
                 self.refresh_dimensions();
             }
-            // TODO: WAYPOINT_TRANSMIT_RANGE → waypoint manager
+            // `WAYPOINT_TRANSMIT_RANGE` needs no push here: `WaypointManager::tick`
+            // reads the current attribute value each tick, so a change takes effect
+            // on the next locator-bar refresh.
         }
     }
 

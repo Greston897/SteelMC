@@ -598,6 +598,11 @@ impl Server {
         if runs_normally {
             self.worlds.advance_domain_game_times();
         }
+        // Vanilla ticks locator-bar transmission after the world tick, from the
+        // per-world `WaypointManager`; it only needs the post-move positions.
+        for world in self.worlds.values() {
+            world.waypoints.tick(world);
+        }
         self.damage_history.expire();
         let all_timings = workers.tick_all(tick_count, runs_normally).await?;
         for (i, timings) in all_timings.iter().enumerate() {

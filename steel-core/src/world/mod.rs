@@ -134,6 +134,7 @@ mod sleep;
 mod sleep_status;
 mod spawn;
 pub mod tick_scheduler;
+mod waypoint;
 mod weather;
 mod world_entities;
 
@@ -254,6 +255,8 @@ pub struct World {
     pub chunk_map: Arc<ChunkMap>,
     /// All players in the world with dual indexing by UUID and entity ID.
     pub players: PlayerMap,
+    /// Vanilla `WaypointManager` state for the locator bar.
+    pub waypoints: waypoint::WaypointManager,
     /// Spatial index for player proximity queries.
     pub player_area_map: PlayerAreaMap,
     /// Loaded world identifier (`domain:world`).
@@ -454,6 +457,7 @@ impl World {
                 damage_history: Arc::downgrade(&config.damage_history),
                 chunk_map,
                 players: PlayerMap::new(),
+                waypoints: waypoint::WaypointManager::new(),
                 player_area_map: PlayerAreaMap::new(),
                 server: std::sync::OnceLock::new(),
                 key,
