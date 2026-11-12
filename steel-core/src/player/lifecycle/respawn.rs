@@ -15,10 +15,11 @@ use crate::{
     player::Player,
 };
 use steel_math::{DEGREE_90, wrap_degrees};
-use steel_protocol::packets::game::{CSound, SoundSource};
+use steel_protocol::packets::game::{CGameRuleValues, CSound, SoundSource};
 use steel_registry::blocks::{
     block_state_ext::BlockStateExt as _, properties::BlockStateProperties,
 };
+use steel_registry::game_rules::ErasedGameRule as _;
 use steel_registry::{sound_events, vanilla_blocks};
 
 // Bed candidates reach two blocks out and collision checks read one block farther.
@@ -699,10 +700,28 @@ impl Player {
                 }
             }
             ClientCommandAction::RequestStats => self.send_stats(),
-            ClientCommandAction::RequestGameRuleValues => {
-                // TODO: implement requesting for game rule values
-            }
+            ClientCommandAction::RequestGameRuleValues => self.send_game_rule_values(),
         }
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleClientCommand` reply to
+    /// `REQUEST_GAME_RULE_VALUES`: every rule with its current value, which the
+    /// client uses to render its own rule-dependent UI.
+    fn send_game_rule_values(&self) {
+        let Some(world) = self.level() else {
+            return;
+        };
+        let rules = REGISTRY
+            .game_rules
+            .iter()
+            .map(|(_, rule)| {
+                (
+                    rule.key().to_string(),
+                    world.get_erased_game_rule(rule).to_string(),
+                )
+            })
+            .collect();
+        self.send_packet(CGameRuleValues { rules });
     }
 
     /// Vanilla accepts a client respawn request only when player health is dead-or-dying.
