@@ -299,8 +299,29 @@ impl LootCondition {
                 predicate.test(entity, ctx)
             }
             LootCondition::DamageSourceProperties { predicate } => predicate.test(ctx),
-            LootCondition::LocationCheck { .. } => {
-                // TODO: Implement when world position data is available in context
+            LootCondition::LocationCheck { predicate, .. } => {
+                // Vanilla evaluates the location predicate against the world
+                // position; Steel's context carries the block state that the
+                // predicate's block check compares against.
+                let Some(required) = predicate.block.as_ref() else {
+                    return true;
+                };
+                let Some(state) = ctx.block_state else {
+                    return false;
+                };
+                let state_block = state.get_block();
+                if required
+                    .blocks
+                    .as_ref()
+                    .is_some_and(|blocks| *blocks != state_block.key)
+                {
+                    return false;
+                }
+                for (name, value) in required.state {
+                    if state.get_property_str(name) != Some(*value) {
+                        return false;
+                    }
+                }
                 true
             }
             LootCondition::WeatherCheck {
@@ -332,8 +353,26 @@ impl LootCondition {
                 let is_active = level > 0;
                 is_active == *active
             }
-            LootCondition::EntityScores { .. } => {
-                // TODO: Implement when scoreboard system is available
+            LootCondition::EntityScores { entity, scores } => {
+                // Vanilla `EntityHasScoreCondition`: every listed objective must
+                // exist and satisfy its range for the referenced entity.
+                let Some(resolver) = ctx.score_resolver else {
+                    return true;
+                };
+                let Some(entity) = ctx.get_entity(*entity) else {
+                    return false;
+                };
+                let Some(holder) = entity.holder_name else {
+                    return false;
+                };
+                for (objective, range) in *scores {
+                    let Some(score) = resolver.score(holder, objective) else {
+                        return false;
+                    };
+                    if !range.test(score as f32, ctx.rng) {
+                        return false;
+                    }
+                }
                 true
             }
             LootCondition::Reference(_name) => {

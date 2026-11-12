@@ -1411,6 +1411,8 @@ pub(crate) fn entity_loot_ref<'a>(
         sheep_color: sheep.map(|(color, _)| color),
         sheep_sheared: sheep.map(|(_, sheared)| sheared),
         chicken_variant: living_entity.and_then(LivingEntity::chicken_loot_variant),
+        // Scoreboard holder names need an entity display-name snapshot.
+        holder_name: None,
     }
 }
 

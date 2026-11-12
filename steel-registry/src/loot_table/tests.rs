@@ -110,6 +110,7 @@ fn test_pig_loot_drops_raw_porkchop_when_not_on_fire() {
         sheep_color: None,
         sheep_sheared: None,
         chicken_variant: None,
+        holder_name: None,
     };
 
     let mut ctx = LootContext::new(&mut rng).with_this_entity(pig);
@@ -247,6 +248,7 @@ fn sheared_predicate_rejects_non_sheep_entities() {
         sheep_color: None,
         sheep_sheared: None,
         chicken_variant: None,
+        holder_name: None,
     };
     let mut ctx = LootContext::new(&mut rng).with_this_entity(pig);
 
@@ -283,6 +285,7 @@ fn test_pig_loot_smelt_condition_uses_entity_fire_flag() {
         sheep_color: None,
         sheep_sheared: None,
         chicken_variant: None,
+        holder_name: None,
     };
 
     let mut ctx = LootContext::new(&mut rng).with_this_entity(pig);
