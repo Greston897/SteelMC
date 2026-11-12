@@ -520,8 +520,12 @@ impl BlockPalette {
     pub fn has_only_air(&self) -> bool {
         match self {
             Self::Homogeneous(v) => v.is_air(),
-            //TODO: Use a nonEmpty counter?
-            Self::Heterogeneous(_data) => false,
+            // A heterogeneous cube is all-air exactly when its palette holds
+            // nothing but air, so no per-cell scan is needed.
+            Self::Heterogeneous(data) => data
+                .palette()
+                .iter()
+                .all(|(value, count)| *count == 0 || value.is_air()),
             Self::Building(cube) => cube
                 .iter()
                 .flatten()
