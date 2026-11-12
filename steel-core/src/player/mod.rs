@@ -806,6 +806,24 @@ impl Player {
     }
 
     /// Vanilla `ServerPlayer.awardKillScore` dummy objective: `playerKillCount`.
+    /// Returns whether `self` and `other` belong to the same scoreboard team.
+    ///
+    /// Vanilla asks the scoreboard for both holder teams; unteamed holders are
+    /// never teammates, matching `PlayerTeam == null` checks.
+    fn is_on_same_team_as(&self, world: &Arc<World>, other: &dyn Entity) -> bool {
+        let Some(scoreboard) = self.server().scoreboards.get(world.domain()) else {
+            return false;
+        };
+        let Some(other) = other.as_player() else {
+            return false;
+        };
+        let own = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+        let theirs = crate::scoreboard::ScoreHolder::new(other.scoreboard_name());
+        let own_team = scoreboard.holder_team_name(&own);
+        let other_team = scoreboard.holder_team_name(&theirs);
+        own_team.is_some() && own_team == other_team
+    }
+
     fn increment_player_kill_count_objective(&self) {
         let world = self.get_world();
         self.increment_dummy_objective(&world, "playerKillCount");
@@ -1878,7 +1896,12 @@ impl Entity for Player {
             } else {
                 &vanilla_custom_stats::MOB_KILLS
             });
-            // TODO: Handle team kill
+            // Vanilla `ServerPlayer.awardKillScore` also bumps `teamKillCount`
+            // when killer and victim share a team.
+            let world = self.get_world();
+            if self.is_on_same_team_as(&world, victim) {
+                self.increment_dummy_objective(&world, "teamKillCount");
+            }
         }
     }
 }
