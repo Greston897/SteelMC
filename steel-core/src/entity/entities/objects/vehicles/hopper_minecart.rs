@@ -98,12 +98,13 @@ impl HopperMinecartEntity {
         }
         let mut container = self.container.lock();
         let before = stack.count();
-        let full = !container.add(stack);
+        // `Container::add` returns `true` when the whole stack fit.
+        let fit = container.add(stack);
         let after = stack.count();
         if after != before {
             container.set_changed();
         }
-        full || after != before
+        fit || after != before
     }
 
     /// Vanilla `MinecartHopper.suckItems`: pull nearby item entities in.

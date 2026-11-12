@@ -16,6 +16,7 @@ use steel_registry::vanilla_entity_data::MinecartFurnaceEntityData;
 use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{REGISTRY, TaggedRegistryExt};
 use steel_utils::locks::SyncMutex;
+use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
 
@@ -24,7 +25,6 @@ use crate::behavior::InteractionResult;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData, SharedEntity,
 };
-use crate::inventory::container::Container;
 use crate::player::Player;
 use crate::world::World;
 
@@ -203,10 +203,10 @@ impl Entity for FurnaceMinecartEntity {
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
-        let push_x = nbt.double("PushX").unwrap_or(0.0);
-        let push_z = nbt.double("PushZ").unwrap_or(0.0);
-        let fuel = nbt.int("Fuel").unwrap_or(0);
-        let fuel_ticks = nbt.int("FuelTicks").unwrap_or(0);
+        let push_x = nbt.double_value("PushX").unwrap_or(0.0);
+        let push_z = nbt.double_value("PushZ").unwrap_or(0.0);
+        let fuel = nbt.int_value("Fuel").unwrap_or(0);
+        let fuel_ticks = nbt.int_value("FuelTicks").unwrap_or(0);
         let mut state = self.state.lock();
         state.push_time = fuel;
         state.fuel_ticks = fuel_ticks;
@@ -227,7 +227,8 @@ impl AbstractMinecart for FurnaceMinecartEntity {
             return;
         }
         // Vanilla pushes the cart forward along its current facing.
-        let rotation = self.living_rotation_state().y_rot().to_radians();
+        let (yaw, _) = self.rotation();
+        let rotation = yaw.to_radians();
         let direction = DVec3::new(-rotation.sin(), 0.0, rotation.cos());
         self.push(direction);
     }

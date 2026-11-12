@@ -18,6 +18,7 @@ use steel_registry::vanilla_entity_data::{
     DisplayItemDisplayEntityData, DisplayTextDisplayEntityData,
 };
 use steel_utils::locks::SyncMutex;
+use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::types::InteractionHand;
 use steel_utils::{DowncastType, DowncastTypeKey, WorldAabb};
 use text_components::TextComponent;
@@ -223,7 +224,7 @@ macro_rules! display_boilerplate {
                 if let Some(height) = nbt.float_value("height") {
                     data.display.height.set(height);
                 }
-                if let Some(color) = nbt.int("glow_color_override") {
+                if let Some(color) = nbt.int_value("glow_color_override") {
                     data.display.glow_color_override.set(color);
                 }
                 if let Some(billboard) = nbt.byte_value("billboard") {

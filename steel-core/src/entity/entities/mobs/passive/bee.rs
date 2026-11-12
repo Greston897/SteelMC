@@ -171,10 +171,6 @@ impl Entity for BeeEntity {
         SoundSource::Neutral
     }
 
-    fn play_step_sound(&self, _pos: BlockPos, _block_state: BlockStateId) {
-        self.play_sound(&sound_events::ENTITY_GENERIC_STEP, 0.15, 1.0);
-    }
-
     fn save_additional(&self, nbt: &mut NbtCompound) {
         self.save_mob(nbt);
         self.save_ageable_mob(nbt);
