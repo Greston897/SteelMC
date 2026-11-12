@@ -2,11 +2,14 @@
 //!
 //! Loom, cartography table, smithing table and stonecutter have no block entity:
 //! vanilla keeps their input slots in a `SimpleContainer` owned by the menu kind.
-//! Steel mirrors that so the slot layout and the menu type match vanilla; the
-//! result-slot rules that need a recipe registry (loom patterns, smithing
-//! templates, stonecutter recipes) are not wired yet and leave the result empty.
+//! Steel mirrors that so the slot layout and the menu type match vanilla. The
+//! stonecutter resolves its recipe through the shared recipe registry; the loom,
+//! cartography table and smithing table still leave the result slot empty because
+//! their pattern/trim data is not modelled yet.
 
-use steel_registry::vanilla_menu_types;
+use steel_registry::item_stack::ItemStack;
+use steel_registry::recipe::{SingleItemRecipeInput, vanilla_recipe_types};
+use steel_registry::{REGISTRY, vanilla_menu_types};
 use steel_utils::locks::IntoShared;
 
 use crate::inventory::container::SimpleContainer;
@@ -87,17 +90,109 @@ pub fn smithing(inventory: Shared<PlayerInventory>, container_id: u8) -> Menu {
     )
 }
 
-/// Builds the stonecutter menu (one input plus a recipe selector).
+/// Builds the stonecutter menu: one input, one result and the recipe selector.
+///
+/// Vanilla keeps the chosen recipe index in `StonecutterMenu`, so the result slot
+/// is produced by [`StonecutterKind`] rather than by the input container.
 #[must_use]
 pub fn stonecutter(inventory: Shared<PlayerInventory>, container_id: u8) -> Menu {
     let input = SimpleContainer::new(1).into_shared();
-    build_station(
-        &vanilla_menu_types::STONECUTTER,
-        inventory,
-        container_id,
-        input,
-        StationKind::new,
-    )
+    let result = SimpleContainer::new(1).into_shared();
+    build_stonecutter(inventory, container_id, input, result)
+}
+
+/// Stonecutter state: the selected recipe index, matching
+/// `StonecutterMenu.selectedRecipeIndex`.
+pub struct StonecutterKind {
+    input: ContainerRef,
+    result: ContainerRef,
+    /// Index into the matching stonecutting recipes, `-1` when none is selected.
+    selected: i32,
+}
+
+// SAFETY: This Steel-owned key uniquely identifies the concrete menu kind
+// within the process.
+unsafe impl steel_utils::DowncastType for StonecutterKind {
+    const TYPE_KEY: steel_utils::DowncastTypeKey =
+        steel_utils::DowncastTypeKey::new("steel:menu/stonecutter");
+}
+
+impl StonecutterKind {
+    /// Computes the result stack for a given input and selection.
+    ///
+    /// The matching set is recomputed on every access so the selection can never
+    /// point at a recipe that the current input no longer produces — vanilla keeps
+    /// the same invariant by listing the recipes in the menu packet.
+    fn result_stack(input: &ItemStack, selected: i32) -> ItemStack {
+        if input.is_empty() || selected < 0 {
+            return ItemStack::empty();
+        }
+        let recipe_input = SingleItemRecipeInput::new(input.clone());
+        REGISTRY
+            .recipes
+            .matching(&vanilla_recipe_types::STONECUTTING, &recipe_input)
+            .nth(selected as usize)
+            .map_or_else(ItemStack::empty, |recipe| recipe.data().result.create())
+    }
+}
+
+impl MenuKind for StonecutterKind {
+    fn slots_changed(
+        &mut self,
+        _behavior: &mut MenuBehavior,
+        guard: &mut ContainerLockGuard,
+        _player: &Player,
+    ) {
+        // Vanilla resets the selection whenever the input changes and recomputes
+        // the result from the new input.
+        self.selected = -1;
+        let input_id = self.input.container_id();
+        let Some(input_container) = guard.get(input_id) else {
+            return;
+        };
+        let stack = input_container.get_item(0).clone();
+        let result_id = self.result.container_id();
+        let Some(result_container) = guard.get_mut(result_id) else {
+            return;
+        };
+        result_container.set_item(0, Self::result_stack(&stack, self.selected));
+    }
+
+    fn click_menu_button(
+        &mut self,
+        _behavior: &mut MenuBehavior,
+        button_id: i32,
+        _player: &Player,
+    ) -> bool {
+        // Vanilla `StonecutterMenu.clickMenuButton`: the button id indexes the
+        // currently matching recipes.
+        if button_id < 0 {
+            return false;
+        }
+        self.selected = button_id;
+        true
+    }
+}
+
+/// Builds the stonecutter layout: input, result, player inventory.
+fn build_stonecutter(
+    inventory: Shared<PlayerInventory>,
+    container_id: u8,
+    input: Shared<SimpleContainer>,
+    result: Shared<SimpleContainer>,
+) -> Menu {
+    let input_ref: ContainerRef = input.into();
+    let result_ref: ContainerRef = result.into();
+    let mut builder = MenuBuilder::new(&vanilla_menu_types::STONECUTTER, container_id);
+    let input_section = builder.section_all(input_ref.clone());
+    let _result_section = builder.section_at(result_ref.clone(), [0], SectionKind::take_only());
+    let player = builder.player_inventory(&inventory);
+    builder.route(input_section, player.all(), FillDirection::Forward);
+    builder.build(StonecutterKind {
+        input: input_ref,
+        result: result_ref,
+        selected: -1,
+    })
 }
 
 /// Shared builder used by every station menu.
