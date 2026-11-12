@@ -1,4 +1,6 @@
 use glam::IVec3;
+use std::sync::OnceLock;
+use steel_utils::BlockPos;
 use rustc_hash::FxHashMap;
 use steel_registry::biome::BiomeRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
@@ -12,7 +14,9 @@ use crate::worldgen::generator::{
     ChunkGenerator, GenerationChunk, TerrainPhase, xoroshiro_worldgen_region_random,
 };
 use crate::worldgen::region::WorldGenRegion;
+use crate::worldgen::feature::FeatureDecorationRunner;
 use crate::worldgen::structure::{StructureGenerator, create_structures};
+use steel_worldgen::biomes::obfuscate_biome_seed;
 use steel_worldgen::noise::Beardifier;
 use steel_worldgen::structure::{ColumnBlock, StructureGenerationContext};
 
@@ -31,6 +35,19 @@ pub struct FlatChunkGenerator {
     sea_level: i32,
     /// Optional structure engine from flat structure overrides.
     structure_generator: Option<StructureGenerator>,
+    /// Whether vanilla `minecraft:flat` `features` flag is enabled.
+    ///
+    /// Vanilla builds the flat biome feature list from `FLAT_ALLOWS` (the
+    /// `lakes` flag only keeps `lake_water`/`lake_lava`) and runs the normal
+    /// decoration pipeline over it. Steel reuses the real plains feature
+    /// list and filters it, which is equivalent because vanilla's flat world
+    /// uses the same plains features.
+    features: bool,
+    /// Whether vanilla `minecraft:flat` `lakes` flag is enabled.
+    lakes: bool,
+    /// Decoration runner built from the plains biomes, created lazily because
+    /// it needs the registry to be initialized.
+    feature_runner: OnceLock<FeatureDecorationRunner>,
 }
 
 impl FlatChunkGenerator {
@@ -58,6 +75,19 @@ impl FlatChunkGenerator {
         sea_level: i32,
         structure_generator: Option<StructureGenerator>,
     ) -> Self {
+        Self::new_layers_with_options(layers, seed, sea_level, structure_generator, false, false)
+    }
+
+    /// Creates a flat generator with the vanilla `features` and `lakes` flags.
+    #[must_use]
+    pub(crate) fn new_layers_with_options(
+        layers: Vec<BlockStateId>,
+        seed: i64,
+        sea_level: i32,
+        structure_generator: Option<StructureGenerator>,
+        features: bool,
+        lakes: bool,
+    ) -> Self {
         let biome_id = REGISTRY
             .biomes
             .id_from_key(&Identifier::vanilla("plains".to_string()))
@@ -69,6 +99,32 @@ impl FlatChunkGenerator {
             seed,
             sea_level,
             structure_generator,
+            features,
+            lakes,
+            feature_runner: OnceLock::new(),
+        }
+    }
+
+    fn feature_runner(&self) -> &FeatureDecorationRunner {
+        self.feature_runner.get_or_init(|| {
+            FeatureDecorationRunner::new(&[&vanilla_biomes::PLAINS], &REGISTRY)
+        })
+    }
+
+    /// Runs the decoration the flat flags allow.
+    ///
+    /// `features=true` runs the full plains feature pipeline, `lakes=true`
+    /// keeps only vanilla's flat lake features, and neither flag leaves the
+    /// world undecorated. This mirrors vanilla
+    /// `FlatLevelGeneratorSettings.adjustGenerationSettings`.
+    fn apply_flat_decoration(&self, region: &mut WorldGenRegion<'_>) {
+        let zoom_seed = obfuscate_biome_seed(self.seed);
+        if self.features {
+            self.feature_runner()
+                .decorate(region, &REGISTRY, self.seed, zoom_seed);
+        } else if self.lakes {
+            self.feature_runner()
+                .decorate_lakes_only(region, &REGISTRY, self.seed, zoom_seed);
         }
     }
 }
@@ -315,5 +371,7 @@ impl ChunkGenerator for FlatChunkGenerator {
         xoroshiro_worldgen_region_random(world_seed, center)
     }
 
-    fn apply_biome_decorations(&self, _region: &mut WorldGenRegion<'_>) {}
+    fn apply_biome_decorations(&self, region: &mut WorldGenRegion<'_>) {
+        self.apply_flat_decoration(region);
+    }
 }

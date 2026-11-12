@@ -253,13 +253,6 @@ fn validate_flat_config(config: &toml::Value) -> Result<WorldGeneratorConfigData
     if parsed.layers.is_empty() {
         return Err("minecraft:flat requires at least one layer".to_owned());
     }
-    // TODO: Implement vanilla FlatLevelGeneratorSettings::adjustGenerationSettings for these flags.
-    if parsed.features {
-        return Err("minecraft:flat features=true is not implemented yet".to_owned());
-    }
-    if parsed.lakes {
-        return Err("minecraft:flat lakes=true is not implemented yet".to_owned());
-    }
     dimension_type_by_key(&parsed.dimension_type)?;
     for layer in &parsed.layers {
         if layer.height == 0 {
@@ -406,11 +399,13 @@ fn create_flat(
     Ok(GeneratorOutput {
         dimension_type,
         config: normalized_config,
-        generator: ChunkGeneratorType::Flat(FlatChunkGenerator::new_layers_with_structures(
+        generator: ChunkGeneratorType::Flat(FlatChunkGenerator::new_layers_with_options(
             layers,
             seed,
             FlatChunkGenerator::SEA_LEVEL,
             structure_generator,
+            parsed.features,
+            parsed.lakes,
         )),
         is_flat: true,
         sea_level: FlatChunkGenerator::SEA_LEVEL,
