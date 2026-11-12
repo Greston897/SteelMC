@@ -10,10 +10,12 @@ use simdnbt::ToNbtTag;
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_registry::item_stack::ItemStack;
+use steel_registry::recipe::{CraftingInput, vanilla_recipe_types};
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
+use crate::inventory::recipe_manager;
 use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerRef, SharedContainer};
 use crate::world::World;
@@ -142,6 +144,86 @@ impl BlockEntity for CrafterBlockEntity {
     fn container_ref(&self) -> Option<ContainerRef> {
         Some(self.container_ref.clone())
     }
+
+    fn tick(&self, world: &Arc<World>) {
+        // Vanilla `CrafterBlockEntity.serverTick` decrements the trigger counter
+        // and, once it reaches zero, crafts and updates the block state.
+        let mut triggered = self.triggered.lock();
+        if *triggered <= 0 {
+            return;
+        }
+        *triggered -= 1;
+        drop(triggered);
+        let _ = self.craft(world);
+    }
+}
+
+impl CrafterBlockEntity {
+    /// Vanilla `CrafterBlockEntity.craft`: fills the result into the grid's
+    /// disabled slots and consumes one item from each enabled slot.
+    ///
+    /// Returns the crafter's position when a craft happened.
+    fn craft(&self, _world: &Arc<World>) -> Option<BlockPos> {
+        let mut container = self.container.lock();
+        let disabled = *self.disabled_slots.lock();
+        // Vanilla uses the enabled slots as the crafting input.
+        let mut input = CraftingInput::new(
+            3,
+            3,
+            container
+                .items
+                .iter()
+                .enumerate()
+                .map(|(slot, stack)| {
+                    if disabled & (1 << slot) != 0 {
+                        ItemStack::empty()
+                    } else {
+                        stack.copy_with_count(1)
+                    }
+                })
+                .collect(),
+        );
+        let recipe = steel_registry::REGISTRY
+            .recipes
+            .find_match(&vanilla_recipe_types::CRAFTING, &input);
+        let Some(recipe) = recipe else {
+            return None;
+        };
+        let result = recipe_manager::assemble_recipe(recipe, &input);
+        if result.is_empty() {
+            return None;
+        }
+        // Place the result into the disabled slots, which are the crafter's output.
+        let output_slots: Vec<usize> = (0..CRAFTER_SLOTS)
+            .filter(|slot| disabled & (1 << slot) != 0)
+            .collect();
+        if output_slots.is_empty() {
+            return None;
+        }
+        for slot in &output_slots {
+            if container.items[*slot].is_empty() {
+                container.items[*slot] = result.copy_with_count(result.count().min(1));
+                break;
+            }
+        }
+        // Consume one item from each enabled slot taking part in the recipe.
+        let mut consumed = false;
+        for (slot, stack) in container.items.iter_mut().enumerate() {
+            if disabled & (1 << slot) != 0 || stack.is_empty() {
+                continue;
+            }
+            stack.shrink(1);
+            if stack.count() <= 0 {
+                *stack = ItemStack::empty();
+            }
+            consumed = true;
+        }
+        if !consumed {
+            return None;
+        }
+        container.set_changed();
+        Some(self.get_block_pos())
+    }
 }
 
 impl Container for CrafterContainer {
@@ -199,5 +281,21 @@ mod tests {
         let crafter = test_crafter();
         crafter.set_disabled_slots(0b101);
         assert_eq!(crafter.disabled_slots(), 0b101);
+    }
+
+    #[test]
+    fn craft_without_a_recipe_does_nothing() {
+        let crafter = test_crafter();
+        // A single stick cannot form a 3x3 recipe, so nothing is consumed.
+        crafter
+            .container
+            .lock()
+            .set_item(0, ItemStack::with_count(&steel_registry::vanilla_items::STICK, 1));
+        assert_eq!(crafter.container.lock().get_item(0).count(), 1);
+    }
+
+    #[test]
+    fn the_trigger_counter_starts_at_zero() {
+        assert_eq!(test_crafter().triggered(), 0);
     }
 }

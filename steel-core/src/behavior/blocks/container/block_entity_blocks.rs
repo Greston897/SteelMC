@@ -337,6 +337,18 @@ impl BlockBehavior for CrafterBlock {
     ) -> i32 {
         container_signal(world, pos)
     }
+    fn get_block_entity_ticker(
+        &self,
+        _world: &Arc<World>,
+        _state: BlockStateId,
+        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+    ) -> Option<BlockEntityTicker> {
+        // Vanilla `CrafterBlock.getTicker`.
+        BlockEntityTicker::for_matching_entity_tick(
+            block_entity_type,
+            &vanilla_block_entity_types::CRAFTER,
+        )
+    }
 }
 
 /// Vanilla `DecoratedPotBlock`: no menu, but the block entity holds sherds and a
