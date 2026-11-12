@@ -17,7 +17,7 @@ use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::world::World;
 
-pub use base_spawner::{BaseSpawner, BaseSpawnerConfig};
+pub use base_spawner::{BaseSpawner, BaseSpawnerConfig, SpawnerTickResult};
 pub use spawn_data::{CustomSpawnRules, EquipmentTable, LightRange, SpawnData, WeightedSpawnData};
 
 /// Capability implemented by normal spawner block entities.

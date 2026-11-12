@@ -20,6 +20,7 @@ use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey};
 use uuid::Uuid;
 
+use crate::behavior::ITEM_BEHAVIORS;
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     DEFAULT_AIR_DRAG, DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityBaseState,
@@ -736,7 +737,12 @@ impl Entity for ItemEntity {
             state.health
         };
         if new_health <= 0 {
-            // TODO: Call item.onDestroyed() when implemented
+            // Vanilla `ItemEntity.hurt`: the stack gets a last callback before
+            // the entity is discarded, which is how bundles spill contents.
+            let stack = self.get_item();
+            ITEM_BEHAVIORS
+                .get_behavior(stack.item())
+                .on_item_entity_destroyed(self);
             self.set_removed(RemovalReason::Killed);
         }
         true

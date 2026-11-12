@@ -6,6 +6,7 @@ mod c_block_destruction;
 mod c_block_entity_data;
 mod c_block_event;
 mod c_block_update;
+mod c_boss_event;
 mod c_bundle_delimiter;
 mod c_change_difficulty;
 mod c_clear_titles;
@@ -25,8 +26,10 @@ mod c_hurt_animation;
 mod c_level_event;
 mod c_level_particles;
 mod c_login;
+mod c_map_item_data;
 mod c_move_entity;
 mod c_move_vehicle;
+mod c_open_book;
 mod c_open_screen;
 mod c_open_sign_editor;
 mod c_player_abilities;
@@ -34,6 +37,7 @@ mod c_player_combat_kill;
 mod c_player_info_update;
 mod c_player_look_at;
 mod c_player_position;
+mod c_recipe_book;
 mod c_remove_entities;
 mod c_remove_mob_effect;
 mod c_remove_player_info;
@@ -82,9 +86,11 @@ mod s_container_button_click;
 mod s_container_click;
 mod s_container_close;
 mod s_container_slot_state_changed;
+mod s_edit_book;
 mod s_interact;
 mod s_move_player;
 mod s_move_vehicle;
+mod s_paddle_boat;
 mod s_pick_item_from_block;
 mod s_player_abilities;
 mod s_player_action;
@@ -111,6 +117,7 @@ pub use c_block_destruction::CBlockDestruction;
 pub use c_block_entity_data::CBlockEntityData;
 pub use c_block_event::CBlockEvent;
 pub use c_block_update::CBlockUpdate;
+pub use c_boss_event::{BossBarColor, BossBarOverlay, BossEventAction, CBossEvent};
 pub use c_bundle_delimiter::CBundleDelimiter;
 pub use c_change_difficulty::CChangeDifficulty;
 pub use c_clear_titles::CClearTitles;
@@ -137,11 +144,13 @@ pub use c_level_event::CLevelEvent;
 pub use c_level_particles::{CLevelParticles, RandomizationType};
 pub use c_login::CLogin;
 pub use c_login::CommonPlayerSpawnInfo;
+pub use c_map_item_data::{CMapItemData, MapDecorationEntry, MapPatch, OptionalMapPatch};
 pub use c_move_entity::{
     CMoveEntityPos, CMoveEntityPosRot, CMoveEntityRot, DeltaStep, PackedEntityDelta, VecDelta,
     calc_delta, to_angle_byte,
 };
 pub use c_move_vehicle::CMoveVehicle;
+pub use c_open_book::COpenBook;
 pub use c_open_screen::COpenScreen;
 pub use c_open_sign_editor::COpenSignEditor;
 pub use c_player_abilities::{CPlayerAbilities, ability_flags};
@@ -152,6 +161,10 @@ pub use c_player_info_update::{
 };
 pub use c_player_look_at::{CPlayerLookAt, LookAtAnchor};
 pub use c_player_position::{CPlayerPosition, RelativeMovement};
+pub use c_recipe_book::{
+    CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CUpdateRecipes, RecipeBookAddEntry,
+    RecipeBookTypeSettings, StonecutterEntry,
+};
 pub use c_remove_entities::CRemoveEntities;
 pub use c_remove_mob_effect::CRemoveMobEffect;
 pub use c_remove_player_info::CRemovePlayerInfo;
@@ -210,11 +223,13 @@ pub use s_container_button_click::SContainerButtonClick;
 pub use s_container_click::{ClickType, HashedPatchMap, HashedStack, SContainerClick};
 pub use s_container_close::SContainerClose;
 pub use s_container_slot_state_changed::SContainerSlotStateChanged;
+pub use s_edit_book::{MAX_PAGE_LENGTH, MAX_PAGES, MAX_TITLE_LENGTH, SEditBook};
 pub use s_interact::SInteract;
 pub use s_move_player::{
     SMovePlayer, SMovePlayerPos, SMovePlayerPosRot, SMovePlayerRot, SMovePlayerStatusOnly,
 };
 pub use s_move_vehicle::SMoveVehicle;
+pub use s_paddle_boat::SPaddleBoat;
 pub use s_pick_item_from_block::SPickItemFromBlock;
 pub use s_player_abilities::SPlayerAbilities;
 pub use s_player_action::{PlayerAction, SPlayerAction};
