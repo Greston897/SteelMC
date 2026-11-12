@@ -30,6 +30,18 @@ use crate::world::{ConditionalBlockSetResult, World, game_event::GameEventContex
 
 use super::adventure_mode;
 
+/// Vanilla `GameMasterBlock` implementors: blocks that only an operator at
+/// creative level two may break.
+fn is_game_master_block(block: &steel_registry::blocks::BlockRef) -> bool {
+    block.key == vanilla_blocks::COMMAND_BLOCK.key
+        || block.key == vanilla_blocks::REPEATING_COMMAND_BLOCK.key
+        || block.key == vanilla_blocks::CHAIN_COMMAND_BLOCK.key
+        || block.key == vanilla_blocks::STRUCTURE_BLOCK.key
+        || block.key == vanilla_blocks::JIGSAW.key
+        || block.key == vanilla_blocks::TEST_BLOCK.key
+        || block.key == vanilla_blocks::TEST_INSTANCE_BLOCK.key
+}
+
 impl Player {
     /// Mining speed for `state` with the held item, after attributes, effects and
     /// position penalties.
@@ -409,11 +421,17 @@ impl BlockBreakingManager {
         }
 
         // Get block info
-        let Some(_block) = REGISTRY.blocks.by_state_id(state) else {
+        let Some(block) = REGISTRY.blocks.by_state_id(state) else {
             return false;
         };
 
-        // TODO: Check for GameMasterBlock (command blocks, etc.)
+        // Vanilla `ServerPlayerGameMode.destroyBlock` refuses game-master blocks
+        // (command, structure, jigsaw and test blocks) for anybody below creative
+        // level two operator. Steel models that level with its operator group,
+        // the same gate `GameMasterBlockItem` uses for placement.
+        if is_game_master_block(block) && !player.is_operator() {
+            return false;
+        }
 
         if player.block_action_restricted(world, pos) {
             return false;
