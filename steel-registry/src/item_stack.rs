@@ -992,6 +992,12 @@ impl ItemStack {
     }
 
     /// Creates an exploration map pointing to a structure.
+    ///
+    /// Blocked on world access: vanilla `ExplorationMapFunction` has to locate
+    /// the destination structure (`ServerLevel.findNearestMapStructure`) before
+    /// it can store the map decoration, and the loot registry has no `World`.
+    /// Doing only the item swap would hand out a blank filled map, which is
+    /// worse than leaving the treasure-map loot without its map.
     pub const fn create_exploration_map(
         &mut self,
         _destination: &Identifier,
@@ -999,11 +1005,6 @@ impl ItemStack {
         _zoom: i32,
         _skip_existing_chunks: bool,
     ) {
-        // TODO: Implement exploration map creation
-        // 1. Change item to filled_map
-        // 2. Set MAP_DECORATIONS component
-        // 3. Set destination structure tag
-        // This requires world access to find the structure
     }
 
     /// Sets the custom name or item name of this item.

@@ -387,7 +387,6 @@ impl LootFunction {
                 item.enchant_with_levels(level, options, ctx.rng);
             }
             LootFunction::CopyComponents { source, include } => {
-                // TODO: Implement when block entity system is ready
                 item.copy_components(*source, include, ctx);
             }
             LootFunction::CopyState { block, properties } => {
@@ -408,11 +407,9 @@ impl LootFunction {
                 zoom,
                 skip_existing_chunks,
             } => {
-                // TODO: Implement exploration map creation
                 item.create_exploration_map(destination, decoration, *zoom, *skip_existing_chunks);
             }
             LootFunction::SetName { name, target } => {
-                // TODO: Implement name setting
                 item.set_name(name, *target);
             }
             LootFunction::SetOminousBottleAmplifier { amplifier } => {
