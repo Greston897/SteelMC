@@ -1691,7 +1691,9 @@ impl Entity for Player {
             self.default_make_stuck_in_block(state, speed_multiplier);
         }
 
-        // TODO: Reset current impulse context once vehicle/player impulse contexts exist.
+        // Vanilla `Player.makeStuckInBlock` clears the impulse context so the
+        // following movement ticks are exempt from the stuck-in-block speed cap.
+        self.reset_current_impulse_context();
     }
 
     fn can_be_hit_by_projectile(&self) -> bool {
