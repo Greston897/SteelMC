@@ -175,6 +175,17 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         true
     }
 
+    /// Opens this entity's menu for `player`, if it provides one.
+    ///
+    /// Mirrors vanilla `Entity.openMenu` / `MenuProvider.createMenu`, which is
+    /// how villagers, horses, donkeys and llamas expose a container. Steel has
+    /// no entity-owned menu yet, so the default passes; the hook exists so
+    /// spectator interaction already routes through the same call vanilla uses
+    /// and so the first entity menu only has to override this method.
+    fn open_menu_for(&self, _player: &Player) -> crate::behavior::InteractionResult {
+        crate::behavior::InteractionResult::Pass
+    }
+
     /// Gets the entity's unique network ID (session-local).
     fn id(&self) -> i32 {
         self.base().id()

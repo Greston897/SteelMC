@@ -668,8 +668,11 @@ impl Player {
         location: DVec3,
     ) -> InteractionResult {
         if self.is_spectator() {
-            // TODO: Open entity menu providers in spectator once that foundation exists.
-            return InteractionResult::Pass;
+            // Vanilla lets a spectator open entity menus (villager trades,
+            // horse inventory and the like) while suppressing every other
+            // interaction. Entities without a menu pass, so the caller falls
+            // through to its ordinary spectator handling.
+            return entity.open_menu_for(self);
         }
 
         let inventory_access = InventoryAccess::new(Arc::clone(&self.inventory), hand);
