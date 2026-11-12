@@ -425,6 +425,10 @@ impl PathfinderMob for DolphinEntity {}
 
 #[cfg(test)]
 mod tests {
+    use std::io::Cursor;
+
+    use simdnbt::borrow::read_compound;
+    use simdnbt::owned::NbtTag;
     use steel_registry::init_vanilla_registry;
     use steel_registry::vanilla_entities;
     use steel_registry::vanilla_items;
@@ -466,9 +470,9 @@ mod tests {
         assert_eq!(nbt.byte("GotFish"), Some(1));
 
         let mut bytes = Vec::new();
-        simdnbt::owned::NbtTag::Compound(nbt).write(&mut bytes);
-        let mut cursor = std::io::Cursor::new(bytes.as_slice());
-        let Some(borrowed) = simdnbt::borrow::read_compound(&mut cursor).ok() else {
+        NbtTag::Compound(nbt).write(&mut bytes);
+        let mut cursor = Cursor::new(bytes.as_slice());
+        let Some(borrowed) = read_compound(&mut cursor).ok() else {
             panic!("test NBT should reborrow");
         };
 
