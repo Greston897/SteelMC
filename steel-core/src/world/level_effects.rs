@@ -8,6 +8,7 @@ use super::{
     SoundSource, UpdateFlags, World, WorldEntityManager, entity_loot_ref, fluid_state_to_block,
     level_events, vanilla_blocks, vanilla_game_events,
 };
+use crate::block_entity::BlockEntity;
 use crate::entity::loot_equipment;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use steel_registry::sound_event::SoundEventHolder;
@@ -337,7 +338,12 @@ impl World {
         }
 
         if drop_items {
-            self.drop_resources_with_entity(state, pos, entity);
+            let block_entity = if state.has_block_entity() {
+                self.get_block_entity(pos)
+            } else {
+                None
+            };
+            self.drop_resources_with_entity(state, pos, entity, block_entity.as_deref());
         }
 
         // Vanilla `BlockEntity.preRemoveSideEffects` drops container contents on
@@ -378,7 +384,18 @@ impl World {
     /// `block_breaking::drop_block_loot` which includes tool context for
     /// fortune/silk touch.
     pub fn drop_resources(self: &Arc<Self>, state: BlockStateId, pos: BlockPos) {
-        self.drop_resources_with_entity(state, pos, None);
+        self.drop_resources_with_entity(state, pos, None, None);
+    }
+
+    /// Drops the loot for a block that had a block entity, so loot functions
+    /// such as `copy_name` and `copy_custom_data` can read it.
+    pub(super) fn drop_resources_with_block_entity(
+        self: &Arc<Self>,
+        state: BlockStateId,
+        pos: BlockPos,
+        block_entity: Option<&dyn BlockEntity>,
+    ) {
+        self.drop_resources_with_entity(state, pos, None, block_entity);
     }
 
     pub(super) fn drop_resources_with_entity(
@@ -386,8 +403,11 @@ impl World {
         state: BlockStateId,
         pos: BlockPos,
         entity: Option<&dyn Entity>,
+        block_entity: Option<&dyn BlockEntity>,
     ) {
-        let context = BlockLootContext::new(self, pos).with_entity(entity);
+        let context = BlockLootContext::new(self, pos)
+            .with_entity(entity)
+            .with_block_entity(block_entity);
         for item in context.get_drops(state) {
             if !item.is_empty() {
                 self.pop_resource(pos, item);
