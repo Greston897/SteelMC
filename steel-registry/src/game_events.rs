@@ -15,7 +15,9 @@ pub struct GameEventRegistry {
     allows_registering: bool,
 }
 
-// TODO: GameEventListenerRegistry per Chunk Section
+// Listener storage is per chunk section and therefore lives in the game layer:
+// see `steel_core::world::game_event::listener`. This registry only holds the
+// static `GameEvent` definitions.
 
 impl GameEventRegistry {
     #[must_use]
