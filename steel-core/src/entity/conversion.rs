@@ -81,7 +81,9 @@ pub(crate) fn convert_to(
         return None;
     }
     let world = from.level()?;
-    // TODO: Check feature flags once supported cause currently only checks difficulty
+    // Vanilla `EntityType.create` gates on the difficulty's `isAllowedInPeaceful`
+    // flag; feature/experiment flags do not exist in Steel yet, so difficulty is
+    // the whole check.
     if !entity_type.allowed_in_peaceful && world.difficulty() == Difficulty::Peaceful {
         return None;
     }
