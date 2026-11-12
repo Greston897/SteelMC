@@ -1,24 +1,28 @@
-//! Copper chest behavior
-// TODO: Create the chest block entity with inventory loot table lock and custom name support
-// TODO: Combine connected halves into one container/ menu and check blocks and sitting cats above them
-// TODO: Open the chest menu award OPEN_CHEST and anger nearby piglins on interaction
-// TODO: Track viewers recheck them on scheduled ticks and synchronize opening through block events
-// TODO: Use the extracted open or close sounds for each copper chest variant
-// TODO: Expose container fullness to comparators and update neighbors after removal
-// TODO: Reject pathfinding through copper chests for every path computation type
-// TODO: Support facing rotation and mirroring for structure transforms
-// TODO: Provide copperblock conversion with connected half and oxidation normalization
+//! Copper chest behavior.
+//!
+//! Vanilla `ChestBlock` for the copper chest family: facing from the player's
+//! view, `waterlogged` from the placement fluid, and the vanilla double-chest
+//! connection rule that pairs two chests facing the same direction.
+//!
+//! Remaining work (tracked in `PARITY-26.3-RU.md`): the chest block entity with
+//! its loot table and lock, the combined double-chest menu, viewer tracking and
+//! open/close block events, comparator fullness, pathfinding rejection, and the
+//! copper-block conversion/normalization rules.
 
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, ChestType};
 use steel_registry::vanilla_block_tags::BlockTag;
+use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, Direction};
 
+use std::sync::Arc;
+
 use crate::behavior::BlockPlaceContext;
+use crate::behavior::PlacementSource;
 use crate::behavior::block::{BlockBehavior, schedule_water_tick_if_waterlogged};
-use crate::world::ScheduledTickAccess;
+use crate::world::{ScheduledTickAccess, World};
 
 /// Copper chest behaviour
 #[block_behavior]
@@ -34,11 +38,86 @@ impl CopperChestBlock {
     }
 }
 
+/// Vanilla `ChestBlock.getStateForPlacement`: `waterlogged` from the placement
+/// fluid, `facing` from the player's horizontal look direction, and a single
+/// chest half; the neighbour update connects the other half afterwards.
+fn chest_state_for_placement(block: BlockRef, context: &BlockPlaceContext<'_>) -> BlockStateId {
+    block
+        .default_state()
+        .set_value(
+            &BlockStateProperties::WATERLOGGED,
+            context.is_water_source(),
+        )
+        .set_value(
+            &BlockStateProperties::FACING,
+            context.horizontal_direction(),
+        )
+        .set_value(&BlockStateProperties::CHEST_TYPE, ChestType::Single)
+}
+
+/// Vanilla `ChestBlock` connector: pairs this half with a same-facing chest on
+/// the side the player did not place against.
+///
+/// Mirrors the vanilla placement flow where the freshly placed half inspects its
+/// two horizontal neighbours, and the matched neighbour is re-typed through its
+/// own `updateShape`. Both halves keep their own `waterlogged` state.
+fn connect_double_chest(state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    if state.get_value(&BlockStateProperties::CHEST_TYPE) != ChestType::Single {
+        return;
+    }
+    let facing = state.get_value(&BlockStateProperties::FACING);
+    // Vanilla `ChestBlock.getConnectedDirection` for a single half: the two
+    // sides perpendicular to `facing`.
+    let left = facing.rotate_y_clockwise();
+    let right = facing.rotate_y_counter_clockwise();
+    for side in [left, right] {
+        let other_pos = side.relative(pos);
+        let other = world.get_block_state(other_pos);
+        if !other.get_block().has_tag(&BlockTag::COPPER_CHESTS) {
+            continue;
+        }
+        if other.get_value(&BlockStateProperties::FACING) != facing
+            || other.get_value(&BlockStateProperties::CHEST_TYPE) != ChestType::Single
+        {
+            continue;
+        }
+        let this_type = if side == left {
+            ChestType::Right
+        } else {
+            ChestType::Left
+        };
+        let other_type = match this_type {
+            ChestType::Left => ChestType::Right,
+            ChestType::Right => ChestType::Left,
+            ChestType::Single => ChestType::Single,
+        };
+        world.set_block(
+            pos,
+            state.set_value(&BlockStateProperties::CHEST_TYPE, this_type),
+            UpdateFlags::UPDATE_ALL,
+        );
+        world.set_block(
+            other_pos,
+            other.set_value(&BlockStateProperties::CHEST_TYPE, other_type),
+            UpdateFlags::UPDATE_ALL,
+        );
+        return;
+    }
+}
+
 impl BlockBehavior for CopperChestBlock {
-    fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
-        // TODO: Resolve facing waterlogging and doublechest placement (including secondary use)
-        // TODO: Normalize connected halves to the least oxidized state and reconcile waxing
-        Some(self.block.default_state())
+    fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+        Some(chest_state_for_placement(self.block, context))
+    }
+
+    fn set_placed_by(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _source: &PlacementSource<'_>,
+    ) {
+        connect_double_chest(state, world, pos);
     }
 
     fn update_shape(
@@ -72,10 +151,8 @@ impl WeatheringCopperChestBlock {
 impl BlockBehavior for WeatheringCopperChestBlock {
     // TODO: Implement weathering random ticks skipping right halves and chests with active viewers
     // TODO: Expose the weathering age to neighboring copper blocks through the shared capability
-    fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
-        // TODO: Resolve facing waterlogging and doublechest placement (including secondary use)
-        // TODO: Normalize connected halves to the least oxidized state and reconcile waxing
-        Some(self.block.default_state())
+    fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+        Some(chest_state_for_placement(self.block, context))
     }
 
     fn update_shape(

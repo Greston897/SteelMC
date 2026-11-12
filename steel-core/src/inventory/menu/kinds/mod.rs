@@ -3,6 +3,7 @@
 mod anvil_menu;
 mod basic_menu;
 mod beacon_menu;
+mod chest_boat_menu;
 mod chest_menu;
 mod crafting_menu;
 mod enchantment_menu;
@@ -15,6 +16,7 @@ mod shulker_box_menu;
 pub use anvil_menu::{AnvilKind, anvil};
 pub use basic_menu::BasicKind;
 pub use beacon_menu::{BeaconKind, beacon};
+pub use chest_boat_menu::{CHEST_BOAT_ROWS, ChestBoatKind, chest_boat};
 pub use chest_menu::{ChestKind, chest};
 pub use crafting_menu::{CraftingKind, crafting};
 pub use enchantment_menu::{EnchantmentKind, enchantment};

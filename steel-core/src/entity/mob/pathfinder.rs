@@ -100,6 +100,18 @@ fn ground_navigation_surface_y<M: Mob + ?Sized>(mob: &M, world: &World, can_floa
 }
 
 pub trait PathfinderMob: Mob {
+    /// Vanilla `RangedAttackMob.performRangedAttack`.
+    ///
+    /// Ranged mobs override this; melee-only mobs keep the no-op default so
+    /// [`crate::entity::ai::goal::RangedAttackGoal`] stays usable everywhere.
+    fn perform_ranged_attack(
+        &self,
+        _self_entity: &SharedEntity,
+        _target: &SharedEntity,
+        _power: f32,
+    ) {
+    }
+
     fn controlled_pathfinder_vehicle(&self) -> Option<SharedEntity> {
         let vehicle = self.controlled_mob_vehicle()?;
         vehicle.as_pathfinder_mob()?;

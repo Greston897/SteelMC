@@ -21,6 +21,7 @@ pub mod player_data;
 pub mod player_data_storage;
 pub mod player_inventory;
 mod profile;
+pub mod recipe_book;
 mod session;
 mod sleep;
 mod sleep_state;
@@ -63,7 +64,8 @@ use steel_math::RAD_TO_DEG_F64;
 use steel_protocol::packets::game::{
     CEntityEvent, CHurtAnimation, CPlayerCombatKill, CPlayerLookAt, CRespawn,
     CSetDefaultSpawnPosition, CSetHealth, CSetHeldSlot, CSetPassengers, ClientCommandAction,
-    LookAtAnchor, RelativeMovement, SoundSource,
+    LookAtAnchor, RelativeMovement, SRecipeBookChangeSettings, SRecipeBookSeenRecipe, SSetGameRule,
+    SoundSource,
 };
 use steel_protocol::packets::game::{CLevelEvent, CSetEntityData, CSetExperience};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
@@ -78,10 +80,10 @@ use steel_registry::vanilla_game_rules::{
     SHOW_DEATH_MESSAGES,
 };
 use steel_registry::{
-    level_events, sound_events, vanilla_attributes, vanilla_custom_stats, vanilla_damage_type_tags,
-    vanilla_entities, vanilla_game_events,
+    REGISTRY, level_events, sound_events, vanilla_attributes, vanilla_custom_stats,
+    vanilla_damage_type_tags, vanilla_entities, vanilla_game_events,
 };
-use steel_utils::{entity_events::EntityStatus, locks::Shared, translations};
+use steel_utils::{Identifier, entity_events::EntityStatus, locks::Shared, translations};
 use tick_state::PlayerTickState;
 use uuid::Uuid;
 
@@ -165,6 +167,7 @@ static INTENTIONAL_GAME_DESIGN_STYLE: LazyLock<Interactivity> = LazyLock::new(||
     ..Interactivity::new()
 });
 
+use crate::behavior::items::filled_map;
 use crate::chunk::player_chunk_view::PlayerChunkView;
 use crate::entity::entities::objects::projectiles::FishingHookEntity;
 use crate::inventory::ender_chest::{PlayerEnderChestContainer, SyncPlayerEnderChest};
@@ -249,6 +252,9 @@ pub struct Player {
     sleep_state: SyncMutex<PlayerSleepState>,
     /// Persisted personal bed or respawn-anchor target.
     respawn_config: SyncMutex<Option<PlayerRespawnConfig>>,
+
+    /// Recipes this player has unlocked and the state of their recipe book tabs.
+    pub recipe_book: SyncMutex<recipe_book::ServerRecipeBook>,
 
     /// Player abilities (flight, invulnerability, build permissions, speeds, etc.)
     pub abilities: SyncMutex<Abilities>,
@@ -628,6 +634,7 @@ impl Player {
             tick_state: SyncMutex::new(PlayerTickState::new()),
             sleep_state: SyncMutex::new(PlayerSleepState::new()),
             respawn_config: SyncMutex::new(None),
+            recipe_book: SyncMutex::new(recipe_book::ServerRecipeBook::new()),
             abilities: SyncMutex::new(Abilities::default()),
             block_breaking: SyncMutex::new(BlockBreakingManager::new()),
             living_base,
@@ -792,9 +799,106 @@ impl Player {
             .set_base_glowing_flag(self.has_glowing_tag() || display.glowing);
     }
 
+    /// Vanilla `ServerPlayer.die` dummy objective: `deathCount` on this domain's
+    /// scoreboard, created on demand and incremented by one.
+    fn increment_death_count_objective(&self, world: &Arc<World>) {
+        self.increment_dummy_objective(world, "deathCount");
+    }
+
+    /// Vanilla `ServerPlayer.awardKillScore` dummy objective: `playerKillCount`.
+    fn increment_player_kill_count_objective(&self) {
+        let world = self.get_world();
+        self.increment_dummy_objective(&world, "playerKillCount");
+    }
+
+    /// Increments one vanilla dummy scoreboard objective for this player,
+    /// creating the objective when a server-side scoreboard exists for the
+    /// domain. Missing scoreboards are ignored, like vanilla when the objective
+    /// is not registered.
+    fn increment_dummy_objective(&self, world: &Arc<World>, objective_name: &str) {
+        let Some(scoreboard) = self.server().scoreboards.get(world.domain()) else {
+            return;
+        };
+        let objective = scoreboard
+            .objective(objective_name)
+            .or_else(|| scoreboard.add_objective(objective_name).ok());
+        let Some(objective) = objective else {
+            return;
+        };
+        let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+        let current = scoreboard.score(&holder, &objective).unwrap_or(0);
+        let _ = scoreboard.set_score(&holder, &objective, current.saturating_add(1));
+    }
+
     /// Handles a custom payload packet.
     #[expect(clippy::unused_self, reason = "this is an api function")]
     pub fn handle_custom_payload(&self, _packet: SCustomPayload) {}
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetGameRule`: applies one
+    /// game rule value sent by the client, silently dropping unknown rules and
+    /// malformed values.
+    pub fn handle_set_game_rule(&self, packet: SSetGameRule) {
+        use steel_registry::game_rules::{GameRuleType, GameRuleValue};
+
+        // Vanilla resolves `gamerule` ids with the `minecraft:` default namespace.
+        let key = match packet.rule.parse::<Identifier>() {
+            Ok(key) => key,
+            Err(_) => return,
+        };
+        let Some(rule) = REGISTRY.game_rules.by_key(&key) else {
+            return;
+        };
+        let value = match rule.value_type() {
+            GameRuleType::Bool => match packet.value.as_str() {
+                "true" => GameRuleValue::new(true),
+                "false" => GameRuleValue::new(false),
+                _ => return,
+            },
+            GameRuleType::Int => match packet.value.parse::<i32>() {
+                Ok(value) if value >= rule.min_value().unwrap_or(i32::MIN) => {
+                    GameRuleValue::new(value)
+                }
+                _ => return,
+            },
+        };
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        world.set_erased_game_rule(rule, value);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleRecipeBookChangeSettingsPacket`:
+    /// stores the tab state and echoes it to other listeners, exactly as the
+    /// server does for every tab change.
+    pub fn handle_recipe_book_change_settings(&self, packet: SRecipeBookChangeSettings) {
+        let Some(book_type) = recipe_book::RecipeBookType::from_ordinal(packet.book_type) else {
+            return;
+        };
+        {
+            let mut book = self.recipe_book.lock();
+            book.set_settings(
+                book_type,
+                recipe_book::BookTypeSettings {
+                    open: packet.open,
+                    filtering: packet.filtering,
+                },
+            );
+        }
+        let settings = self.recipe_book.lock().settings_packet();
+        self.send_packet(settings);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleRecipeBookSeenRecipePacket`:
+    /// marks one recipe as seen for this player.
+    pub fn handle_recipe_book_seen_recipe(&self, packet: SRecipeBookSeenRecipe) {
+        // Vanilla `ServerGamePacketListenerImpl.handleRecipeBookSeenRecipePacket`
+        // only drops the "new" highlight; it never unlocks the recipe.
+        let mut book = self.recipe_book.lock();
+        if !book.is_highlighted(&packet.recipe) {
+            return;
+        }
+        book.remove_highlight(&packet.recipe);
+    }
 
     /// Handles the end of a client tick.
     pub fn handle_client_tick_end(&self) {
@@ -993,7 +1097,9 @@ impl Player {
             }
         }
 
-        // TODO: Increment DEATH_COUNT objective criterion
+        // Vanilla `ServerPlayer.die` → `awardStat(Stats.DEATHS)` and the
+        // `deathCount` dummy scoreboard objective.
+        self.increment_death_count_objective(world);
         if let Some(killer) = get_kill_credit(self, world.as_ref()) {
             self.award_stat(&vanilla_stat_types::ENTITY_KILLED_BY, killer.entity_type());
             killer.award_kill_score(self, source);
@@ -1752,15 +1858,16 @@ impl Entity for Player {
         entity: &dyn LivingEntity,
         _source: &DamageSource,
     ) -> bool {
-        log::debug!("1");
         self.award_stat(&vanilla_stat_types::ENTITY_KILLED, entity.entity_type());
         true
     }
 
     fn award_kill_score(&self, victim: &dyn Entity, _killing_blow: &DamageSource) {
         if self.id() != victim.id() {
-            // TODO: Trigger advancement criteria.
-            // TODO: Increment the score of some objectives of this player.
+            // Vanilla `ServerPlayer.awardKillScore` → `playerKillCount` objective.
+            if victim.as_player().is_some() {
+                self.increment_player_kill_count_objective();
+            }
             self.award_custom_stat(if victim.as_player().is_some() {
                 &vanilla_custom_stats::PLAYER_KILLS
             } else {
@@ -1951,19 +2058,6 @@ impl LivingEntity for Player {
         !self.has_client_loaded()
     }
 
-    fn hurt_armor(&self, source: &DamageSource, damage: f32) {
-        self.do_hurt_equipment(
-            source,
-            damage,
-            &[
-                EquipmentSlot::Feet,
-                EquipmentSlot::Legs,
-                EquipmentSlot::Chest,
-                EquipmentSlot::Head,
-            ],
-        );
-    }
-
     fn actually_hurt(&self, world: &World, source: &DamageSource, amount: f32) {
         Player::actually_hurt(self, world, source, amount);
     }
@@ -2143,6 +2237,9 @@ impl LivingEntity for Player {
     fn ai_step(&self, entity: &SharedEntity) -> Option<MoveResult> {
         self.tick_regeneration();
         InventoryTickContext::tick_player_inventory(&self.get_world(), self);
+        // Vanilla `ServerPlayerEntity.playerTick` sends map updates for every
+        // carried map, independently of the per-item color update.
+        filled_map::send_map_packets(self);
         if self.is_flying() && !self.is_passenger() {
             self.reset_fall_distance();
         }

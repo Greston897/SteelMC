@@ -1,5 +1,8 @@
 use steel_math::{DEGREE_90, trig};
-use steel_registry::data_components::vanilla_components::{DEATH_PROTECTION, USE_EFFECTS};
+use steel_registry::data_components::vanilla_components::{
+    BLOCKS_ATTACKS, DEATH_PROTECTION, USE_EFFECTS,
+};
+use steel_registry::item_stack::ItemStack;
 use steel_registry::stat::vanilla_stat_types;
 use steel_registry::{DyeColor, vanilla_custom_stats};
 
@@ -150,9 +153,13 @@ pub trait LivingEntity: Entity {
         self.living_base().attributes()
     }
 
-    /// Vanilla `LivingEntity.getLuck` - non-players contribute no luck to loot.
+    /// Vanilla `LivingEntity.getLuck`: the `luck` attribute value, for every
+    /// living entity (mobs can carry the attribute too).
     fn get_luck(&self) -> f32 {
-        0.0
+        self.attributes()
+            .lock()
+            .get_value(vanilla_attributes::LUCK)
+            .unwrap_or(0.0) as f32
     }
 
     /// Packs syncable attributes for initial spawn pairing.
@@ -709,7 +716,11 @@ pub trait LivingEntity: Entity {
             damage = 0.0;
         }
 
-        // TODO: apply item blocking before actually_hurt once shield/use-item hooks exist.
+        // Vanilla `LivingEntity.blockUsingItem`: a blocking entity facing the
+        // damage source reduces the damage by the `blocks_attacks` rule.
+        if !source.is(&vanilla_damage_type_tags::DamageTypeTag::BYPASSES_SHIELD) {
+            damage = self.block_using_item(world, source, damage);
+        }
         if source.is(&vanilla_damage_type_tags::DamageTypeTag::IS_FREEZING)
             && REGISTRY
                 .entity_types
@@ -770,7 +781,22 @@ pub trait LivingEntity: Entity {
     }
 
     /// Damages equipment that participates in vanilla armor absorption.
-    fn hurt_armor(&self, _source: &DamageSource, _damage: f32) {}
+    ///
+    /// Vanilla `LivingEntity.hurtArmor` damages the four armor slots; mobs and
+    /// players share the same path, so it lives on the trait instead of being
+    /// re-implemented per type.
+    fn hurt_armor(&self, source: &DamageSource, damage: f32) {
+        self.do_hurt_equipment(
+            source,
+            damage,
+            &[
+                EquipmentSlot::Feet,
+                EquipmentSlot::Legs,
+                EquipmentSlot::Chest,
+                EquipmentSlot::Head,
+            ],
+        );
+    }
 
     /// Damages equipped items in the given slots that are eligible to absorb this damage source.
     fn do_hurt_equipment(&self, source: &DamageSource, damage: f32, slots: &[EquipmentSlot]) {
@@ -990,6 +1016,65 @@ pub trait LivingEntity: Entity {
         );
     }
 
+    /// Vanilla `LivingEntity.blockUsingItem`: applies the shield's
+    /// `blocks_attacks` damage reduction when the entity blocks an attack that
+    /// arrives inside the blocking arc.
+    ///
+    /// Vanilla also checks `block_delay_seconds`; Steel starts blocking on the
+    /// first use tick and has no shield-disable timer yet, so only the arc and
+    /// the per-rule reduction are applied.
+    fn block_using_item(&self, _world: &World, source: &DamageSource, damage: f32) -> f32 {
+        if !self.is_blocking() {
+            return damage;
+        }
+        let Some(use_state) = self.living_base().active_item_use() else {
+            return damage;
+        };
+        let Some(blocks_attacks) = ItemStack::new(use_state.item())
+            .get(BLOCKS_ATTACKS)
+            .cloned()
+        else {
+            return damage;
+        };
+        if blocks_attacks
+            .bypassed_by()
+            .is_some_and(|types| types.contains(source.damage_type))
+        {
+            return damage;
+        }
+        // Vanilla falls back to the target position when the source has none.
+        let source_position = source
+            .source_position()
+            .unwrap_or_else(|| self.position());
+        let delta = source_position - self.position();
+        let horizontal = DVec3::new(delta.x, 0.0, delta.z);
+        if horizontal.length_squared() < f64::EPSILON {
+            return damage;
+        }
+        let view = DVec3::new(self.look_angle().x, 0.0, self.look_angle().z);
+        if view.length_squared() < f64::EPSILON {
+            return damage;
+        }
+        // `DVec3::angle_between` returns radians in `[0, PI]`.
+        let angle_degrees = view.angle_between(horizontal).to_degrees() as f32;
+        for reduction in blocks_attacks.damage_reductions() {
+            let applies = reduction
+                .damage_types()
+                .is_none_or(|types| types.contains(source.damage_type));
+            if !applies || angle_degrees > reduction.horizontal_blocking_angle() {
+                continue;
+            }
+            let reduced = damage * reduction.base() + damage * reduction.factor();
+            let reduced = reduced.min(damage);
+            if reduced < damage {
+                // Vanilla plays the shield's own block sound on a successful block.
+                self.play_sound(&sound_events::ITEM_SHIELD_BLOCK, 1.0, 1.0);
+            }
+            return reduced;
+        }
+        damage
+    }
+
     /// Uses a held death-protection item to survive lethal damage. Returns whether one was used.
     fn check_totem_death_protection(&self, source: &DamageSource) -> bool {
         if source.bypasses_invulnerability() {
@@ -1060,7 +1145,14 @@ pub trait LivingEntity: Entity {
 
         self.broadcast_entity_event(EntityStatus::Death);
         self.set_pose(EntityPose::Dying);
+        self.on_death(source);
     }
+
+    /// Runs one subtype-specific hook after vanilla death effects have been processed.
+    ///
+    /// Slime-family mobs use this to split into child entities without replacing
+    /// the shared loot, death-event, or removal lifecycle.
+    fn on_death(&self, _source: &DamageSource) {}
 
     /// Runs vanilla `LivingEntity.handleKillingBlow`.
     ///
@@ -1658,8 +1750,18 @@ pub trait LivingEntity: Entity {
     }
 
     /// Checks if the entity is blocking with a shield or similar item.
+    ///
+    /// Vanilla `LivingEntity.isBlocking`: the entity must be using an item and
+    /// the active use item must carry the `blocks_attacks` component. Vanilla
+    /// also excludes a `disabled_shield` entity; Steel has no shield-disable
+    /// timer yet, so that term is always false here.
     fn is_blocking(&self) -> bool {
-        false
+        if !self.is_using_item() {
+            return false;
+        }
+        self.living_base().active_item_use().is_some_and(|use_state| {
+            ItemStack::new(use_state.item()).has(BLOCKS_ATTACKS)
+        })
     }
 
     /// Checks if the entity is fall flying (using elytra).
@@ -1779,13 +1881,22 @@ pub trait LivingEntity: Entity {
             .flatten()
     }
 
-    /// Applies the sound portion of vanilla's equipment-change hook.
+    /// Applies vanilla's equipment-change hook: enchantment `attributes`
+    /// modifiers (Efficiency, Aqua Affinity, ...) plus the equip sound.
     fn on_equip_item(&self, slot: EquipmentSlot, previous: &ItemStack, stack: &ItemStack) {
         if self.is_spectator()
             || self.is_first_tick()
             || ItemStack::is_same_item_same_components(previous, stack)
         {
             return;
+        }
+
+        // Vanilla `EnchantmentHelper.runLocationChangedEffects`: drop the old
+        // item's modifiers, then install the new item's.
+        {
+            let mut attributes = self.attributes().lock();
+            enchantment_helper::remove_attribute_effects(&mut attributes, slot, previous);
+            enchantment_helper::apply_attribute_effects(&mut attributes, slot, stack);
         }
 
         let Some(sound) = self.equip_sound(slot, stack) else {
@@ -3299,4 +3410,21 @@ pub(crate) fn shearing_loot_items_with_rng<R: rand::Rng, E: LivingEntity + ?Size
         context = context.with_game_time(level.game_time());
     }
     loot_table.get_random_items(&mut context)
+}
+
+#[cfg(test)]
+mod shield_tests {
+    use super::*;
+
+    #[test]
+    fn shield_component_is_present_on_shield_items() {
+        let shield = ItemStack::new(&vanilla_items::SHIELD);
+        assert!(shield.has(BLOCKS_ATTACKS));
+    }
+
+    #[test]
+    fn non_shield_items_do_not_block() {
+        let dirt = ItemStack::new(&vanilla_items::DIRT);
+        assert!(!dirt.has(BLOCKS_ATTACKS));
+    }
 }

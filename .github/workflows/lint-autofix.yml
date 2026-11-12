@@ -1,0 +1,178 @@
+name: Lint Autofix
+
+# Applies only *machine-applicable* fixes: `cargo fmt` and `cargo clippy --fix`.
+# It never hand-edits logic, and it refuses to push if the workspace stops
+# compiling. Everything that clippy cannot fix automatically is published as a
+# commit comment so it can be addressed deliberately.
+#
+# Run it manually: Actions -> Lint Autofix -> Run workflow.
+
+# NOTE: workflow_dispatch needs the workflow to exist on the repository's
+# default branch first, so this job is also wired to a marker file: touching
+# .ci/autofix-trigger on a feature branch runs it for that branch.
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to fix (pushed back to the same branch)"
+        required: true
+        default: "arena/8ff5adc9-steelmc"
+  push:
+    paths:
+      - ".ci/autofix-trigger"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: never
+  TOOLCHAIN: nightly-2026-10-14
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref_name }}
+          fetch-depth: 0
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "lint-autofix"
+
+      - name: Install toolchain
+        run: |
+          rustup toolchain install "$TOOLCHAIN" --profile minimal \
+            --component rustfmt,clippy --no-self-update
+
+      - name: cargo fmt
+        run: cargo "+$TOOLCHAIN" fmt --all
+
+      - name: cargo clippy --fix
+        continue-on-error: true
+        timeout-minutes: 45
+        run: |
+          for pass in 1 2 3; do
+            cargo "+$TOOLCHAIN" clippy --fix --workspace --all-targets --all-features \
+              --allow-dirty --allow-staged --allow-no-vcs \
+              > "/tmp/fix-$pass.log" 2>&1 || true
+          done
+          cargo "+$TOOLCHAIN" fmt --all
+          tail -c 2000 /tmp/fix-3.log
+
+      - name: Verify the workspace still compiles
+        id: verify
+        continue-on-error: true
+        timeout-minutes: 30
+        run: |
+          cargo "+$TOOLCHAIN" check --workspace --all-targets \
+            > /tmp/verify.log 2>&1
+          tail -c 4000 /tmp/verify.log
+
+      - name: Discard fixes that break the build
+        if: steps.verify.outcome == 'failure'
+        run: |
+          git checkout -- .
+          git clean -fd
+          echo "autofix reverted: workspace no longer compiled" > /tmp/reverted
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -f /tmp/reverted ]; then
+            echo "nothing pushed"
+            exit 0
+          fi
+          git add -A
+          if git diff --cached --quiet; then
+            echo "already formatted, nothing to commit"
+            exit 0
+          fi
+          git commit -m "style: cargo fmt + machine-applicable clippy fixes"
+          git push origin "HEAD:${{ inputs.branch || github.ref_name }}"
+
+      - name: Remaining clippy findings
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cargo "+$TOOLCHAIN" clippy -r --workspace --all-targets --all-features \
+            --message-format=json > /tmp/clippy.json 2>/dev/null || true
+          cargo "+$TOOLCHAIN" fmt --all --check > /tmp/fmt.log 2>&1 || true
+          python3 - <<'PY'
+          import collections
+          import json
+          import os
+          import subprocess
+
+          totals = collections.Counter()
+          # all-targets compiles the same file several times, so collapse the
+          # diagnostics to one row per (file, line, column, lint).
+          rows = {}
+          with open("/tmp/clippy.json", "r", errors="replace") as handle:
+              for line in handle:
+                  line = line.strip()
+                  if not line.startswith("{"):
+                      continue
+                  try:
+                      message = json.loads(line).get("message") or {}
+                  except json.JSONDecodeError:
+                      continue
+                  code = (message.get("code") or {}).get("code")
+                  if not code:
+                      continue
+                  span = (message.get("spans") or [{}])[0]
+                  location = "{}:{}:{}".format(
+                      span.get("file_name", "?"),
+                      span.get("line_start", 0),
+                      span.get("column_start", 0),
+                  )
+                  rows[(location, code)] = "{} {} {}".format(
+                      location, code, message.get("message", "").splitlines()[0]
+                  )
+                  totals[code] += 1
+
+          ordered = [rows[key] for key in sorted(rows)]
+
+          with open("/tmp/fmt.log", "r", errors="replace") as handle:
+              fmt_diffs = sum(1 for line in handle if line.startswith("Diff in "))
+
+          summary = [
+              "### remaining clippy",
+              f"- distinct findings: {len(ordered)}",
+              f"- raw diagnostics: {sum(totals.values())}",
+              f"- rustfmt diffs: {fmt_diffs}",
+              "",
+              "```",
+          ]
+          summary += [f"{code} x{count}" for code, count in totals.most_common()]
+          summary += ["```"]
+
+          chunks = []
+          current = []
+          budget = 0
+          for row in ordered:
+              if budget + len(row) + 1 > 45000 and current:
+                  chunks.append(current)
+                  current = []
+                  budget = 0
+              current.append(row)
+              budget += len(row) + 1
+          if current or not chunks:
+              chunks.append(current)
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          sha = os.environ["GITHUB_SHA"]
+          for number, chunk in enumerate(chunks):
+              body = summary if number == 0 else [f"### remaining clippy (part {number + 1}/{len(chunks)})"]
+              body = list(body) + ["", "```"] + chunk + ["```"]
+              subprocess.run(
+                  ["gh", "api", f"repos/{repo}/commits/{sha}/comments", "--input", "-"],
+                  input=json.dumps({"body": "\n".join(body)}),
+                  text=True,
+                  check=False,
+              )
+          print("\n".join(summary))
+          PY

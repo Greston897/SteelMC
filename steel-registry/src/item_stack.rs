@@ -25,7 +25,8 @@ use crate::{
         vanilla_components::{
             ATTACK_RANGE, ATTRIBUTE_MODIFIERS, AttackRange, BUNDLE_CONTENTS, CHARGED_PROJECTILES,
             CONTAINER, CUSTOM_DATA, CUSTOM_NAME, DAMAGE, DAMAGE_RESISTANT, DAMAGE_TYPE,
-            ENCHANTABLE, ENCHANTMENTS, EQUIPPABLE, Equippable, ITEM_NAME, ItemAttributeModifiers,
+            BLOCK_STATE, ENCHANTABLE, ENCHANTMENTS, EQUIPPABLE, Equippable, ITEM_NAME,
+            ItemAttributeModifiers,
             ItemEnchantments, MAX_DAMAGE, MAX_STACK_SIZE, MINIMUM_ATTACK_CHARGE,
             OMINOUS_BOTTLE_AMPLIFIER, OminousBottleAmplifier, PIERCING_WEAPON, PiercingWeapon,
             REPAIRABLE, STORED_ENCHANTMENTS, TOOL, Tool, UNBREAKABLE, WEAPON, WRITTEN_BOOK_CONTENT,
@@ -695,26 +696,79 @@ impl ItemStack {
     }
 
     /// Sets the damage/durability as a fraction (0.0 = broken, 1.0 = full).
-    /// If `add` is true, adds to current damage instead of setting.
-    pub const fn set_damage_fraction(&mut self, _fraction: f32, _add: bool) {
-        // TODO: Implement when damage component system is ready
-        // let max_damage = self.get_max_damage();
-        // let damage_value = ((1.0 - fraction) * max_damage as f32) as i32;
-        // self.set_component(DAMAGE, damage_value);
+    ///
+    /// Vanilla `SetDamageFunction`: `damage = (1 - fraction) * maxDamage`, and
+    /// with `add` the result is added to the current damage value instead of
+    /// replacing it. Items without a `max_damage` component are left untouched.
+    pub fn set_damage_fraction(&mut self, fraction: f32, add: bool) {
+        let max_damage = self.get_max_damage();
+        if max_damage <= 0 {
+            return;
+        }
+        let damage_value = ((1.0 - fraction) * max_damage as f32) as i32;
+        let damage_value = damage_value.clamp(0, max_damage);
+        let damage_value = if add {
+            self.get_damage_value().saturating_add(damage_value)
+        } else {
+            damage_value
+        };
+        self.set_damage_value(damage_value);
     }
 
     /// Enchants this item randomly with enchantments from the given options.
-    pub const fn enchant_randomly<R: rand::Rng>(
+    ///
+    /// Vanilla `EnchantRandomlyFunction`: pick one eligible enchantment by
+    /// weight, then roll a level between 1 and its `max_level`.
+    pub fn enchant_randomly<R: rand::Rng>(
         &mut self,
-        _options: &crate::loot_table::EnchantmentOptions,
-        _rng: &mut R,
+        options: &crate::loot_table::EnchantmentOptions,
+        rng: &mut R,
     ) {
-        // TODO: Implement when enchantment registry and system are ready
-        // 1. Get list of valid enchantments from options (tag or list)
-        // 2. Filter to enchantments that can apply to this item
-        // 3. Pick one randomly
-        // 4. Pick a random level for that enchantment
-        // 5. Add to ENCHANTMENTS component
+        let candidates: Vec<&'static crate::enchantment::Enchantment> = match options {
+            crate::loot_table::EnchantmentOptions::Tag(tag) => {
+                REGISTRY.enchantments.get_tag(tag).unwrap_or_default()
+            }
+            crate::loot_table::EnchantmentOptions::List(keys) => keys
+                .iter()
+                .filter_map(|key| REGISTRY.enchantments.by_key(key))
+                .collect(),
+        };
+        // Vanilla keeps only enchantments whose `supported_items` tag contains
+        // this item.
+        let item = self.item();
+        let eligible: Vec<&'static crate::enchantment::Enchantment> = candidates
+            .into_iter()
+            .filter(|enchantment| REGISTRY.items.is_in_tag(item, &enchantment.supported_items))
+            .collect();
+        if eligible.is_empty() {
+            return;
+        }
+
+        let total_weight: u32 = eligible.iter().map(|e| e.weight).sum();
+        let mut roll = if total_weight == 0 {
+            0
+        } else {
+            rng.random_range(0..total_weight)
+        };
+        let chosen = eligible
+            .iter()
+            .find(|enchantment| {
+                if roll < enchantment.weight {
+                    true
+                } else {
+                    roll -= enchantment.weight;
+                    false
+                }
+            })
+            .copied()
+            .unwrap_or(eligible[0]);
+
+        let level = if chosen.max_level <= 1 {
+            1
+        } else {
+            rng.random_range(1..=chosen.max_level)
+        };
+        self.set_enchantments(&[(chosen.key.clone(), level)], true);
     }
 
     /// Enchants this item as if using an enchanting table at the given level.
@@ -745,15 +799,38 @@ impl ItemStack {
     }
 
     /// Copies block state properties to this item (for blocks like `note_block`).
-    pub const fn copy_block_state<R: rand::Rng>(
+    ///
+    /// Vanilla `CopyBlockStateFunction` only runs when the loot context carries a
+    /// block state of the same block, and only stores the requested properties.
+    pub fn copy_block_state<R: rand::Rng>(
         &mut self,
-        _block: &Identifier,
-        _properties: &[&str],
-        _ctx: &crate::loot_table::LootContext<'_, R>,
+        block: &Identifier,
+        properties: &[&str],
+        ctx: &crate::loot_table::LootContext<'_, R>,
     ) {
-        // TODO: Implement block state copying
-        // 1. Get block state from context
-        // 2. For each property, store it in the item's BLOCK_STATE component
+        let Some(state) = ctx.block_state else {
+            return;
+        };
+        let Some(state_block) = REGISTRY.blocks.by_state_id(state) else {
+            return;
+        };
+        if state_block.key != *block {
+            return;
+        }
+
+        let mut copied = std::collections::BTreeMap::new();
+        for property in properties {
+            if let Some(value) = REGISTRY.blocks.get_property_str(state, property) {
+                copied.insert((*property).to_owned(), value.to_owned());
+            }
+        }
+        if copied.is_empty() {
+            return;
+        }
+        self.set(
+            BLOCK_STATE,
+            crate::data_components::components::BlockItemStateProperties::new(copied),
+        );
     }
 
     /// Sets components from a JSON string representation.
@@ -811,9 +888,15 @@ impl ItemStack {
     }
 
     /// Sets the custom name or item name of this item.
-    pub const fn set_name(&mut self, _name: &str, _target: crate::loot_table::NameTarget) {
-        // TODO: Implement name setting
-        // Parse the name as a text component and set CUSTOM_NAME or ITEM_NAME
+    ///
+    /// Both vanilla targets are supported. Steel stores the name as a plain
+    /// text component; JSON text parsing needs a resolver from the consumer.
+    pub fn set_name(&mut self, name: &str, target: crate::loot_table::NameTarget) {
+        let text = TextComponent::plain(name.to_owned());
+        match target {
+            crate::loot_table::NameTarget::CustomName => self.set(CUSTOM_NAME, text),
+            crate::loot_table::NameTarget::ItemName => self.set(ITEM_NAME, text),
+        }
     }
 
     /// Sets the ominous bottle amplifier component.

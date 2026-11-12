@@ -56,8 +56,8 @@ use crate::entity::conversion::{AfterConversion, convert_to as convert_mob};
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::objects::items::ItemEntity;
 use crate::entity::{
-    ConversionParams, Entity, EntitySpawnReason, LivingEntity, LivingTravelInput, RemovalReason,
-    SharedEntity, SpawnGroupData, WeakEntity, aabb_contains_any_liquid,
+    ConversionParams, ENTITIES, Entity, EntitySpawnReason, LivingEntity, LivingTravelInput,
+    RemovalReason, SharedEntity, SpawnGroupData, WeakEntity, aabb_contains_any_liquid,
 };
 use crate::inventory::equipment::EquipmentSlot;
 use crate::physics::MoveResult;
@@ -359,9 +359,35 @@ pub trait Mob: LivingEntity + Leashable {
 
     fn set_mob_flags(&self, flags: i8);
 
-    /// Returns whether the entity-specific spawn predicate accepts this spawn.
-    fn check_spawn_rules(&self, _world: &Arc<World>, _reason: EntitySpawnReason) -> bool {
-        true
+    /// Vanilla `Mob.checkSpawnRules`.
+    ///
+    /// Vanilla dispatches to the type's registered `SpawnPlacements` predicate
+    /// (`Monster.checkMonsterSpawnRules`, `Animal.checkAnimalSpawnRules`, …).
+    /// Steel stores that predicate as the type's `SpawnRule`, so the default
+    /// implementation runs it; types with a genuinely unconditional predicate
+    /// (or no registered rule) accept the spawn.
+    fn check_spawn_rules(&self, world: &Arc<World>, reason: EntitySpawnReason) -> bool {
+        let entity = self.as_entity_event_source();
+        let entity_type = entity.entity_type();
+        let Some(registry) = ENTITIES.get() else {
+            return true;
+        };
+        let Some(rule) = registry.spawn_rule(entity_type) else {
+            return true;
+        };
+        let mut random = rand::rng();
+        let position = entity.position();
+        rule(
+            entity_type,
+            world,
+            reason,
+            BlockPos::new(
+                position.x.floor() as i32,
+                position.y.floor() as i32,
+                position.z.floor() as i32,
+            ),
+            &mut random,
+        )
     }
 
     /// Sets the vanilla baby state. Vanilla `Mob.setBaby` is a no-op; ageable
