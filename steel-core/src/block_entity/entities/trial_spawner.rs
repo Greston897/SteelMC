@@ -8,7 +8,7 @@ use std::sync::{Arc, Weak};
 
 use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
 use simdnbt::owned::NbtCompound;
-use steel_registry::vanilla_block_entity_types;
+use steel_registry::{REGISTRY, vanilla_block_entity_types};
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
@@ -63,6 +63,43 @@ impl TrialSpawnerBlockEntity {
     #[must_use]
     pub fn total_mobs(&self) -> i32 {
         self.state.lock().total_mobs
+    }
+
+    /// Vanilla `TrialSpawnerBlockEntity.ejectReward`: rolls the configured loot
+    /// table and drops every stack in front of the spawner.
+    ///
+    /// Returns the number of stacks dropped. An unconfigured spawner (no loot
+    /// table) drops nothing, matching vanilla's silent no-op.
+    pub fn eject_reward(&self, world: &Arc<World>) -> usize {
+        let key = self.state.lock().loot_table.clone();
+        if key.is_empty() {
+            return 0;
+        }
+        let identifier = match key.split_once(':') {
+            Some((namespace, path)) => {
+                steel_utils::Identifier::new(namespace.to_owned(), path.to_owned())
+            }
+            None => steel_utils::Identifier::vanilla(key),
+        };
+        let Some(table) = REGISTRY.loot_tables.by_key(&identifier) else {
+            return 0;
+        };
+        let state = self.get_block_state();
+        let pos = self.get_block_pos();
+        let mut random = rand::rng();
+        let items = crate::behavior::block::drop_from_block_interact_loot_table(
+            table,
+            state,
+            None,
+            None,
+            None,
+            &mut random,
+        );
+        let dropped = items.len();
+        for item in items {
+            world.drop_item_stack(pos, item);
+        }
+        dropped
     }
 }
 
