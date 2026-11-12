@@ -8,6 +8,7 @@ use crate::entity::{
 };
 use rand::{RngExt, rng};
 use steel_math::DEGREE_90;
+use steel_registry::vanilla_criteria_triggers;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::nbt::{NbtNumeric, nbt_collection_values};
 
@@ -1461,7 +1462,9 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
                 .attachments
                 .get_average(EntityAttachment::Passenger, dimensions);
             let _ = self.spawn_at_location_with_offset(item_stack, spawn_offset);
-            // TODO: Trigger PLAYER_SHEARED_EQUIPMENT once advancement criteria exist.
+            // Vanilla `LivingEntity.shear` fires `player_sheared_equipment` for the
+            // shearer when an equipment slot was actually emptied.
+            player.trigger_advancement(&vanilla_criteria_triggers::PLAYER_SHEARED_EQUIPMENT);
             return true;
         }
 
@@ -4146,8 +4149,14 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     }
 
     /// Runs when this entity kills another entity.
-    fn award_kill_score(&self, _victim: &dyn Entity, _killing_blow: &DamageSource) {
-        // TODO: Trigger advancement criterion ENTITY_KILLED_PLAYER if the victim is a player.
+    fn award_kill_score(&self, victim: &dyn Entity, _killing_blow: &DamageSource) {
+        // Vanilla `LivingEntity.awardKillScore` fires `entity_killed_player` on
+        // the killer when the victim is a player.
+        if victim.as_player().is_some()
+            && let Some(killer) = self.as_player()
+        {
+            killer.trigger_advancement(&vanilla_criteria_triggers::ENTITY_KILLED_PLAYER);
+        }
     }
 }
 

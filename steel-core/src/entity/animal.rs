@@ -8,6 +8,7 @@ use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::{NbtCompound, NbtTag};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_type::EntityTypeRef;
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_game_rules::MOB_DROPS;
@@ -310,7 +311,16 @@ pub trait Animal: AgeableMob {
             .or_else(|| partner.love_cause_uuid())
             .is_some()
         {
-            // TODO: Award the animals-bred stat and advancement once those foundations exist.
+            // Vanilla `Animal.spawnChildFromBreeding` awards `animals_bred` and fires
+            // `bred_animals` for the player whose love cause started the breeding.
+            let breeder = self
+                .love_cause_uuid()
+                .or_else(|| partner.love_cause_uuid())
+                .and_then(|uuid| self.level()?.get_entity_by_uuid(&uuid))
+                .and_then(|entity| entity.as_player().cloned());
+            if let Some(breeder) = breeder {
+                breeder.trigger_advancement(&vanilla_criteria_triggers::BRED_ANIMALS);
+            }
         }
 
         self.set_age(PARENT_AGE_AFTER_BREEDING);

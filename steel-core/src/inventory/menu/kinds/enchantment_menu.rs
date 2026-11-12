@@ -5,7 +5,8 @@ use std::sync::Arc;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::{
     REGISTRY, RegistryEntry, TaggedRegistryExt, item_stack::ItemStack, sound_events,
-    vanilla_blocks, vanilla_custom_stats, vanilla_enchantment_tags::EnchantmentTag, vanilla_items,
+    vanilla_blocks, vanilla_criteria_triggers, vanilla_custom_stats,
+    vanilla_enchantment_tags::EnchantmentTag, vanilla_items,
     vanilla_menu_types,
 };
 use steel_utils::random::Random as _;
@@ -336,7 +337,9 @@ impl MenuKind for EnchantmentKind {
         container.set_changed();
 
         player.award_custom_stat(&vanilla_custom_stats::ENCHANT_ITEM);
-        // TODO: Trigger CriteriaTriggers.ENCHANTED_ITEM once Steel has shared advancement foundations.
+        // Vanilla `EnchantmentMenu.clickMenuButton` fires `enchanted_item` for the
+        // player who paid for the enchantment.
+        player.trigger_advancement(&vanilla_criteria_triggers::ENCHANTED_ITEM);
 
         self.update_offers(behavior, &mut guard);
         drop(guard);

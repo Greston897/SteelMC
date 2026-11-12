@@ -3,6 +3,7 @@ use steel_registry::data_components::vanilla_components::{
     BLOCKS_ATTACKS, DEATH_PROTECTION, USE_EFFECTS,
 };
 use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::stat::vanilla_stat_types;
 use steel_registry::{DyeColor, vanilla_blocks, vanilla_custom_stats};
 
@@ -1102,7 +1103,8 @@ pub trait LivingEntity: Entity {
 
         if let Some(player) = self.as_player() {
             player.award_stat(&vanilla_stat_types::ITEM_USED, protection_item.item());
-            // TODO: trigger the `used_totem` advancement criterion once advancements exist.
+            // Vanilla `LivingEntity.checkTotemDeathProtection` fires `used_totem`.
+            player.trigger_advancement(&vanilla_criteria_triggers::USED_TOTEM);
             if protection_item
                 .get(USE_EFFECTS)
                 .is_some_and(|effects| effects.interact_vibrations)
@@ -1607,8 +1609,11 @@ pub trait LivingEntity: Entity {
         }
         let (effect_key, amplifier) = (effect.effect(), effect.amplifier());
         let changed = self.living_base().add_mob_effect(effect);
-        // TODO: Trigger CriteriaTriggers.EFFECTS_CHANGED with `source` when `changed`,
-        // once the advancement-criteria foundation exists.
+        // Vanilla `LivingEntity.addEffect` fires `effects_changed` for the affected
+        // player whenever an effect was actually added.
+        if changed && let Some(player) = self.as_player() {
+            player.trigger_advancement(&vanilla_criteria_triggers::EFFECTS_CHANGED);
+        }
         let _ = source;
         // Calls on_effect_started unconditionally, even when it didn't replace a stronger instance.
         let dyn_self = self

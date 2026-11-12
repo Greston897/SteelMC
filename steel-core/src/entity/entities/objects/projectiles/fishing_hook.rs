@@ -18,6 +18,7 @@ use std::sync::{Arc, Weak};
 use steel_macros::entity_behavior;
 use steel_math::{DEG_TO_RAD, DEGREE_360, trig};
 use steel_registry::blocks::block_state_ext::BlockStateExt;
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::fluid::FluidStateExt;
 use steel_registry::item_stack::ItemStack;
@@ -516,7 +517,13 @@ impl FishingHookEntity {
 
                 if let Some(hooked_in) = hooked_in {
                     self.pull_entity(&hooked_in);
-                    // TODO: criteria triggers (advancements)
+                    // Vanilla `FishingHook.pullEntity` fires `fishing_rod_hooked`.
+                    if let Some(owner) = self.get_owner()
+                        && let Some(player) = owner.as_player()
+                    {
+                        player
+                            .trigger_advancement(&vanilla_criteria_triggers::FISHING_ROD_HOOKED);
+                    }
                     self.broadcast_entity_event(EntityStatus::FishingRodReelIn);
                     damage = if hooked_in.as_ref().is::<ItemEntity>() {
                         DMG_ITEM_ENTITY
@@ -543,7 +550,15 @@ impl FishingHookEntity {
                         let items =
                             vanilla_loot_tables::GAMEPLAY_FISHING.get_random_items(&mut loot_ctx);
 
-                        // TODO: criteria triggers (advancements)
+                        // Vanilla `FishingHook.retrieve` fires `fishing_rod_hooked`
+                        // once the loot actually exists.
+                        if let Some(owner) = self.get_owner()
+                            && let Some(player) = owner.as_player()
+                        {
+                            player.trigger_advancement(
+                                &vanilla_criteria_triggers::FISHING_ROD_HOOKED,
+                            );
+                        }
 
                         let Some(world) = self.level() else {
                             return damage;
