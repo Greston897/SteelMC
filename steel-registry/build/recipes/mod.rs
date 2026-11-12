@@ -28,7 +28,11 @@ pub(crate) fn build() -> TokenStream {
     println!("cargo:rerun-if-changed={}", recipe_dir.display());
 
     let mut recipes = read_recipes(recipe_dir);
-    // TODO: generate `minecraft:brewing` recipes once brewing stands are implemented.
+    // Vanilla has no `minecraft:brewing` recipe *type*: the brewing table is a
+    // hard-coded `PotionBrewing` list in code, which Steel mirrors in
+    // `steel-core/src/block_entity/entities/potion_brewing.rs`. A datapack entry
+    // with that type is therefore not a recipe the registry can hold, so it is
+    // dropped here instead of failing the build.
     recipes.retain(|recipe| string_field(&recipe.value, "type") != "minecraft:brewing");
     recipes.sort_by(|left, right| left.name.cmp(&right.name));
 

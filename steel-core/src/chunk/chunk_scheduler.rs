@@ -283,6 +283,19 @@ pub(crate) struct ChunkSchedulingCoordinator {
 }
 
 impl ChunkSchedulingCoordinator {
+    /// Returns whether any live ticket keeps this dimension active.
+    ///
+    /// Vanilla's `MinecraftServer.tickChildren` skips the idle check for a
+    /// dimension whose tickets carry `FLAG_KEEP_DIMENSION_ACTIVE`, so this is
+    /// the query that makes the flag observable.
+    #[must_use]
+    pub(crate) fn dimension_kept_active(&self) -> bool {
+        self.ticket_ingress
+            .lock()
+            .storage
+            .keeps_dimension_active()
+    }
+
     pub fn new(
         ticket_storage: ChunkTicketStorage,
         view_distance: u8,

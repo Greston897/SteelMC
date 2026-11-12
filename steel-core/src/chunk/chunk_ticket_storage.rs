@@ -155,6 +155,23 @@ impl SourceProjectionChanges {
         changes
     }
 
+    /// Returns whether any ticket here carries vanilla's
+    /// `FLAG_KEEP_DIMENSION_ACTIVE`.
+    ///
+    /// Vanilla uses the flag to decide whether a dimension with no players
+    /// still counts as active: `/forceload` and player tickets set it, and
+    /// `MinecraftServer` skips the "no players, no force-loaded chunks" idle
+    /// check for those dimensions.
+    #[must_use]
+    pub(crate) fn keeps_dimension_active(&self) -> bool {
+        self.tickets.values().flatten().any(|ticket| {
+            ticket
+                .ticket()
+                .ticket_type()
+                .should_keep_dimension_active()
+        })
+    }
+
     pub(crate) fn merge(&mut self, mut other: Self) {
         self.load_positions.append(&mut other.load_positions);
         self.simulation_positions
@@ -484,6 +501,24 @@ mod tests {
 
     fn init_registry() {
         let _ = init_vanilla_registry();
+    }
+
+    #[test]
+    fn keep_dimension_active_follows_the_ticket_flag() {
+        init_registry();
+        let mut storage = ChunkTicketStorage::new();
+        // No tickets at all: the dimension idles.
+        assert!(!storage.keeps_dimension_active());
+
+        // A portal ticket carries `FLAG_KEEP_DIMENSION_ACTIVE`, so it keeps the
+        // dimension active without any player.
+        let pos = ChunkPos::new(0, 0);
+        let ticket = portal_ticket();
+        let _ = storage.add_ticket(pos, ticket);
+        assert!(storage.keeps_dimension_active());
+
+        let _ = storage.remove_ticket(pos, ticket);
+        assert!(!storage.keeps_dimension_active());
     }
 
     #[test]

@@ -290,7 +290,14 @@ impl World {
     }
 
     /// Advances this world's clocks and periodically synchronizes the shared game time.
+    ///
+    /// A dimension with no players idles unless one of its tickets carries
+    /// vanilla's `FLAG_KEEP_DIMENSION_ACTIVE` (a force-loaded chunk or a portal
+    /// ticket), so `MinecraftServer.tickChildren` skips its time step.
     pub(super) fn tick_time(&self) {
+        if self.players.is_empty() && !self.is_kept_active() {
+            return;
+        }
         let game_time = {
             let mut lock = self.level_data.write();
             let advance_time = self.advance_time_with_guard(&lock);

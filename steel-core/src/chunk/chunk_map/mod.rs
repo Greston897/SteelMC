@@ -1329,10 +1329,16 @@ impl ChunkMap {
     /// Mirrors vanilla `ServerPlayer.placeEnderPearlTicket` →
     /// `chunkSource.addTicketWithRadius(ENDER_PEARL, chunk, 2)`. Re-placing the
     /// same ticket resets its countdown rather than stacking duplicates.
-    // TODO: Steel records vanilla's FLAG_KEEP_DIMENSION_ACTIVE, but has no
-    // idle-dimension system that consumes it yet.
     pub fn place_ender_pearl_ticket(&self, chunk: ChunkPos) {
         self.scheduling.add_or_refresh_ender_pearl_ticket(chunk);
+    }
+
+    /// Returns whether any ticket keeps this dimension active.
+    ///
+    /// Consulted by the idle-dimension check so a dimension with only
+    /// force-loaded chunks or a portal ticket keeps ticking without players.
+    pub fn dimension_kept_active(&self) -> bool {
+        self.scheduling.dimension_kept_active()
     }
 }
 

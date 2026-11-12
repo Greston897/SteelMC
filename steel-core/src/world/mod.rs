@@ -633,6 +633,16 @@ impl World {
         clippy::too_many_lines,
         reason = "world tick orchestration keeps vanilla subsystem order explicit"
     )]
+    /// Returns whether this dimension is kept active without players.
+    ///
+    /// Mirrors vanilla `ServerLevel`'s `FLAG_KEEP_DIMENSION_ACTIVE` check: a
+    /// dimension whose tickets carry the flag keeps its game time and chunk
+    /// simulation running even with no players inside.
+    #[must_use]
+    pub fn is_kept_active(&self) -> bool {
+        self.chunk_map.dimension_kept_active()
+    }
+
     pub fn tick_game(
         self: &Arc<Self>,
         tick_count: u64,
