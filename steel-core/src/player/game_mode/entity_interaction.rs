@@ -5,7 +5,7 @@ use super::{
     DamageType, ENTITY_INTERACTION_RANGE_BUFFER, EnchantmentDamageContext,
     EnchantmentPostAttackContext, Entity, EntityTypeRef, GameType, ITEM_BEHAVIORS, InteractionHand,
     InteractionResult, InventoryAccess, ItemStack, LivingEntity, PiercingWeapon, Player, SAttack,
-    Identifier, SInteract, SharedEntity, SoundEventHolder, SoundEventRef, TextComponent,
+    Identifier, SInteract, SharedEntity, SoundEventHolder, TextComponent,
     TranslatedMessage, World, WorldAabb, enchantment_helper, piercing_ray_hit_t,
     vanilla_attributes, vanilla_damage_types, vanilla_entities,
 };
@@ -16,15 +16,6 @@ use steel_math::trig;
 use steel_registry::particle_type::ParticleData;
 use steel_registry::{sound_events, vanilla_custom_stats, vanilla_particle_types};
 
-const fn sound_holder_ref(holder: &SoundEventHolder) -> Option<SoundEventRef> {
-    match holder {
-        SoundEventHolder::Registry(sound) => Some(*sound),
-        SoundEventHolder::Direct { .. } => {
-            // TODO: Support direct sound holders when entity sound playback can send them.
-            None
-        }
-    }
-}
 impl Player {
     fn invalid_entity_attacked_message() -> TextComponent {
         TranslatedMessage {
@@ -394,10 +385,10 @@ impl Player {
     }
 
     fn play_sound_holder(&self, holder: Option<&SoundEventHolder>) {
-        let Some(sound) = holder.and_then(sound_holder_ref) else {
+        let Some(holder) = holder else {
             return;
         };
-        self.play_sound(sound, 1.0, 1.0);
+        Entity::play_sound_holder(self, holder, 1.0, 1.0);
     }
 
     fn cannot_attack(self: &Arc<Self>, entity: &dyn Entity) -> bool {

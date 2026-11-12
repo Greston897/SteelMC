@@ -3173,6 +3173,27 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         }
     }
 
+    /// Plays a sound holder (registry or direct) at the entity's position.
+    ///
+    /// Vanilla entity sounds are `Holder<SoundEvent>`, which may be a direct
+    /// sound id rather than a registry entry.
+    fn play_sound_holder(&self, sound: &SoundEventHolder, volume: f32, pitch: f32) {
+        if self.is_silent() {
+            return;
+        }
+
+        if let Some(world) = self.level() {
+            world.play_sound_holder_at(
+                sound,
+                self.sound_source(),
+                self.position(),
+                volume,
+                pitch,
+                None,
+            );
+        }
+    }
+
     /// Returns the sound played when this entity enters water at low speed.
     fn swim_splash_sound(&self) -> SoundEventRef {
         &sound_events::ENTITY_GENERIC_SPLASH

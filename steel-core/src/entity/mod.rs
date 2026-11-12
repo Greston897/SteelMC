@@ -38,7 +38,7 @@ use steel_registry::loot_table::{
 };
 use steel_registry::mob_effect::MobEffectRef;
 use steel_registry::particle_type::{BlockParticleOption, ParticleData};
-use steel_registry::sound_event::SoundEventRef;
+use steel_registry::sound_event::{SoundEventHolder, SoundEventRef};
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_blocks;
 use steel_registry::vanilla_entities;
