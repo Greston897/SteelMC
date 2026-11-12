@@ -1202,12 +1202,42 @@ pub trait LivingEntity: Entity {
         self.as_mob().map_or(0, Mob::base_experience_reward_mob)
     }
 
-    /// Returns the experience reward for this entity's death; currently
-    /// equal to the base reward (see TODO).
-    fn experience_reward(&self, _world: &World, _killer_entity: Option<&dyn Entity>) -> i32 {
-        // TODO: Apply EnchantmentHelper.processMobExperience once enchantment
-        // value-effect hooks can receive the killer/living-entity context.
-        self.base_experience_reward()
+    /// Returns the experience reward for this entity's death, after the
+    /// killer's `mob_experience` enchantment effects.
+    ///
+    /// Vanilla `LivingEntity.getExperienceReward`: the base reward is scaled by
+    /// the killer's main-hand enchantments.
+    fn experience_reward(
+        &self,
+        world: &World,
+        killer_entity: Option<&dyn Entity>,
+        source: &DamageSource,
+    ) -> i32 {
+        let base = self.base_experience_reward();
+        if base <= 0 {
+            return base;
+        }
+        let Some(killer) = killer_entity else {
+            return base;
+        };
+        let Some(killer_living) = killer.as_living_entity() else {
+            return base;
+        };
+        let mut attacking_item = None;
+        killer_living.with_equipment_slot(EquipmentSlot::MainHand, &mut |item| {
+            attacking_item = Some(item.clone());
+        });
+        let Some(attacking_item) = attacking_item else {
+            return base;
+        };
+        let context = enchantment_helper::EnchantmentDamageContext::new(
+            self.entity_type(),
+            Some(killer.entity_type()),
+            Some(killer.entity_type()),
+            source,
+        );
+        let _ = world;
+        enchantment_helper::process_mob_experience(&attacking_item, &context, base)
     }
 
     /// Runs the currently implemented subset of vanilla `LivingEntity.dropAllDeathLoot`.
@@ -1223,12 +1253,17 @@ pub trait LivingEntity: Entity {
                 mob.drop_custom_death_loot_mob(source, killed_by_player);
             }
         }
-        self.drop_experience(&world, source.causing_entity().map(AsRef::as_ref));
+        self.drop_experience(&world, source.causing_entity().map(AsRef::as_ref), source);
         // TODO: Drop non-mob equipment overrides once those foundations exist.
     }
 
     /// Awards experience for this entity's death when eligible, spawning an experience orb.
-    fn drop_experience(&self, world: &Arc<World>, killer_entity: Option<&dyn Entity>) {
+    fn drop_experience(
+        &self,
+        world: &Arc<World>,
+        killer_entity: Option<&dyn Entity>,
+        source: &DamageSource,
+    ) {
         if self.was_experience_consumed() {
             return;
         }
@@ -1241,7 +1276,7 @@ pub trait LivingEntity: Entity {
             return;
         }
 
-        let reward = self.experience_reward(world, killer_entity);
+        let reward = self.experience_reward(world, killer_entity, source);
         if reward > 0 {
             ExperienceOrbEntity::award(world, self.position(), reward);
         }

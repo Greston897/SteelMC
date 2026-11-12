@@ -157,6 +157,22 @@ pub(crate) fn modify_smash_damage_per_fallen_block(
     )
 }
 
+/// Vanilla `EnchantmentHelper.processMobExperience`: the killer's main-hand
+/// `mob_experience` effects scale the dropped experience.
+pub(crate) fn process_mob_experience(
+    item: &ItemStack,
+    context: &EnchantmentDamageContext<'_>,
+    experience: i32,
+) -> i32 {
+    let scaled = apply_value_effects(
+        item,
+        EnchantmentEffectComponent::MobExperience,
+        context,
+        experience as f32,
+    );
+    scaled.max(0.0) as i32
+}
+
 pub(crate) fn is_immune_to_damage<V: LivingEntity + ?Sized>(
     victim: &V,
     damage_source: &DamageSource,
