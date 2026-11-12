@@ -17,6 +17,7 @@ pub(crate) mod gamemode;
 mod gamerule;
 mod give;
 mod invsee;
+mod item;
 mod kick;
 mod kill;
 mod list;
@@ -132,6 +133,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(weather::registration())?;
     builder.register(worldborder::registration())?;
     builder.register(invsee::registration()?)?;
+    builder.register(item::registration())?;
     builder.register(transfer::registration())?;
     builder.extend(extension_commands.into_inner())?;
     builder.build_with_permissions()
