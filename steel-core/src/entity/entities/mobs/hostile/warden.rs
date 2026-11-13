@@ -1,6 +1,7 @@
 //! Vanilla `net.minecraft.world.entity.monster.warden.Warden`.
 //!
-//! Deep-dark melee horror; its darkness pulses and shrieker sensors are not implemented.
+//! Deep-dark melee horror. It pulses vanilla's darkness effect onto nearby
+//! players while it is angry; the shrieker summoning rules are not implemented.
 //!
 //! The AI is the shared `Monster` skeleton (float, melee attack, random stroll,
 //! look goals) plus the standard hostile target selector; attributes and
@@ -17,7 +18,9 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::WardenEntityData;
-use steel_registry::{sound_events, vanilla_attributes};
+use steel_registry::mob_effect::instance::MobEffectInstance;
+use steel_registry::{sound_events, vanilla_attributes, vanilla_mob_effects};
+use steel_utils::WorldAabb;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
@@ -44,6 +47,9 @@ pub struct WardenEntity {
     living_base: LivingEntityBase,
     mob_base: MobBase,
     entity_data: SyncMutex<WardenEntityData>,
+    /// Ticks since the last darkness pulse, matching vanilla
+    /// `Warden.tendrilAnimation` bookkeeping.
+    darkness_pulse_ticks: SyncMutex<i32>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `WardenEntity`.
@@ -99,6 +105,7 @@ impl WardenEntity {
             living_base,
             mob_base,
             entity_data: SyncMutex::new(entity_data),
+            darkness_pulse_ticks: SyncMutex::new(0),
         }
     }
 
@@ -231,6 +238,15 @@ impl LivingEntity for WardenEntity {
     }
 }
 
+/// Vanilla `Warden.getDarknessPulseInterval`: ticks between darkness pulses.
+const WARDEN_DARKNESS_INTERVAL: i32 = 6;
+
+/// Vanilla `Warden` darkness radius in blocks.
+const WARDEN_DARKNESS_RADIUS: f64 = 20.0;
+
+/// Vanilla darkness effect length per pulse, in ticks.
+const WARDEN_DARKNESS_DURATION: i32 = 260;
+
 impl Mob for WardenEntity {
     fn mob_base(&self) -> &MobBase {
         &self.mob_base
@@ -238,6 +254,46 @@ impl Mob for WardenEntity {
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {
         PathfinderMob::tick_pathfinder_goal_selectors(self, entity);
+    }
+
+    /// Vanilla `Warden` pulses `MobEffects.DARKNESS` onto every player within
+    /// twenty blocks while it is hunting, which is what makes the deep dark read
+    /// as dangerous rather than just dark.
+    fn custom_server_ai_step(&self) {
+        let Some(world) = self.level() else {
+            return;
+        };
+        let mut ticks = self.darkness_pulse_ticks.lock();
+        *ticks += 1;
+        if *ticks < WARDEN_DARKNESS_INTERVAL {
+            return;
+        }
+        *ticks = 0;
+        drop(ticks);
+
+        if self.target().is_none() {
+            return;
+        }
+
+        let position = self.position();
+        let reach = WorldAabb::new(
+            position.x - WARDEN_DARKNESS_RADIUS,
+            position.y - WARDEN_DARKNESS_RADIUS,
+            position.z - WARDEN_DARKNESS_RADIUS,
+            position.x + WARDEN_DARKNESS_RADIUS,
+            position.y + WARDEN_DARKNESS_RADIUS,
+            position.z + WARDEN_DARKNESS_RADIUS,
+        );
+        for entity in world.get_entities_in_aabb(&reach) {
+            let Some(player) = world.players.get_by_entity_id(entity.id()) else {
+                continue;
+            };
+            player.add_mob_effect(MobEffectInstance::simple(
+                &vanilla_mob_effects::DARKNESS,
+                WARDEN_DARKNESS_DURATION,
+                0,
+            ));
+        }
     }
 
     fn tick_path_navigation(&self) {
