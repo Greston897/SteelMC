@@ -418,6 +418,14 @@ impl World {
             level_data.save().await?;
         }
         let ticket_storage = ChunkTicketStorage::load(&saved_data, &key).await;
+        let raids = match saved_data.load_or_default::<Vec<raid::Raid>>(saved_data_names::RAIDS).await
+        {
+            Ok(raids) => raid::RaidManager::from_raids(raids),
+            Err(error) => {
+                log::warn!("Could not load raids for world {key}; starting empty: {error}");
+                raid::RaidManager::new()
+            }
+        };
         let map_states = match saved_data
             .sync_load_wincode::<map_state::PersistentMapStates>(saved_data_names::MAPS)
         {
@@ -469,7 +477,7 @@ impl World {
                 chunk_map,
                 players: PlayerMap::new(),
                 waypoints: waypoint::WaypointManager::new(),
-                raids: raid::RaidManager::new(),
+                raids,
                 dragon_fight: dragon_fight::DragonFight::new(),
                 player_area_map: PlayerAreaMap::new(),
                 server: std::sync::OnceLock::new(),
@@ -549,6 +557,14 @@ impl World {
                     Err(e) => log::error!("Failed to save world map data: {e}"),
                 }
             }
+        }
+
+        // Active raids must survive a restart, otherwise a raid in progress is
+        // silently forgotten when the server stops.
+        let raids = self.raids.to_persistent();
+        match self.saved_data.save(saved_data_names::RAIDS, &raids).await {
+            Ok(()) => log::info!("World {} saved {} raid(s)", self.key, raids.len()),
+            Err(e) => log::error!("Failed to save world raids: {e}"),
         }
 
         match self.save_all_chunks().await {

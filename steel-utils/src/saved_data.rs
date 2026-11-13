@@ -39,6 +39,8 @@ pub mod names {
     pub const WHITELIST: SavedDataName = SavedDataName::trusted("whitelist");
     /// Player and address bans with their expiry, persisted as `data/bans.toml`.
     pub const BANS: SavedDataName = SavedDataName::trusted("bans");
+    /// Active village raids, persisted as `data/raids.toml`.
+    pub const RAIDS: SavedDataName = SavedDataName::trusted("raids");
 }
 
 /// Name of a per-world saved data entry.

@@ -11,8 +11,9 @@ use std::sync::Arc;
 use glam::IVec3;
 use steel_utils::locks::SyncMutex;
 
-use steel_registry::vanilla_mob_effects;
+use serde::{Deserialize, Serialize};
 use steel_registry::mob_effect::instance::MobEffectInstance;
+use steel_registry::vanilla_mob_effects;
 
 use crate::entity::LivingEntity as _;
 use crate::poi::OccupationStatus;
@@ -36,7 +37,7 @@ const TICKS_PER_WAVE: i32 = 600;
 const HERO_EFFECT_TICKS_PER_OMEN_LEVEL: i32 = 4_800;
 
 /// One active raid.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Raid {
     /// Village center (the bell POI).
     pub center: IVec3,
@@ -74,6 +75,20 @@ impl RaidManager {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Creates a manager over raids loaded from disk.
+    #[must_use]
+    pub fn from_raids(raids: Vec<Raid>) -> Self {
+        Self {
+            raids: SyncMutex::new(raids),
+        }
+    }
+
+    /// Snapshot of the raids in the form persisted to disk.
+    #[must_use]
+    pub fn to_persistent(&self) -> Vec<Raid> {
+        self.raids.lock().clone()
     }
 
     /// Returns the raid whose center lies within the village radius of `pos`.
