@@ -494,6 +494,30 @@ impl Block {
     pub fn has_tag(&'static self, tag: &Identifier) -> bool {
         crate::REGISTRY.blocks.is_in_tag(self, tag)
     }
+
+    /// Vanilla `InfestedBlock.getHostBlock`: the plain block an infested block
+    /// turns back into when a silverfish merges with it.
+    ///
+    /// Returns the block itself for every non-infested block, matching vanilla,
+    /// where `InfestedBlock` overrides the method and everything else inherits
+    /// the identity implementation.
+    #[must_use]
+    pub fn host_block(&'static self) -> Option<BlockRef> {
+        const INFESTED_TO_HOST: [(&str, &str); 7] = [
+            ("infested_stone", "stone"),
+            ("infested_cobblestone", "cobblestone"),
+            ("infested_stone_bricks", "stone_bricks"),
+            ("infested_mossy_stone_bricks", "mossy_stone_bricks"),
+            ("infested_cracked_stone_bricks", "cracked_stone_bricks"),
+            ("infested_chiseled_stone_bricks", "chiseled_stone_bricks"),
+            ("infested_deepslate", "deepslate"),
+        ];
+        let path = self.key.path.as_ref();
+        let (_, host) = INFESTED_TO_HOST.iter().find(|(plain, _)| *plain == path)?;
+        crate::REGISTRY
+            .blocks
+            .by_key(&Identifier::vanilla_static(host))
+    }
 }
 
 pub type BlockRef = &'static Block;

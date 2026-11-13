@@ -64,6 +64,7 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
                 argument("poi", SteelArgumentType::identifier()).executes(locate_poi),
             ),
         ),
+    )
 }
 
 fn start_structure_search(

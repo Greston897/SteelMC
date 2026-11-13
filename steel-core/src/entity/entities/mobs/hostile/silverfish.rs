@@ -6,9 +6,9 @@
 //! hostile target selector. Daylight burning is driven by the
 //! `minecraft:burn_in_daylight` entity type tag, not by this file.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
-//! * the silverfish's infested-block hiding (`SilverfishMergeWithStoneGoal`) is
-//!   not implemented.
+//! The infested-block hiding (`SilverfishMergeWithStoneGoal`) is implemented:
+//! an unnoticed silverfish slides back into the block it came from and turns it
+//! into its plain form.
 
 use std::iter::empty;
 use std::sync::Weak;
@@ -27,7 +27,7 @@ use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
-    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    RandomLookAroundGoal, SilverfishMergeWithStoneGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
@@ -85,6 +85,7 @@ impl SilverfishEntity {
             let mut goal_selector = mob_base.goal_selector().lock();
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
             goal_selector.add_goal(2, MeleeAttackGoal::new(1.0, false));
+            goal_selector.add_goal(3, SilverfishMergeWithStoneGoal::new());
             goal_selector.add_goal(7, WaterAvoidingRandomStrollGoal::new(1.0));
             goal_selector.add_goal(8, LookAtPlayerGoal::new(8.0));
             goal_selector.add_goal(9, RandomLookAroundGoal::new());

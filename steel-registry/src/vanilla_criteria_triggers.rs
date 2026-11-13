@@ -193,6 +193,7 @@ pub static ALL: &[&Identifier] = &[
     &USING_ITEM,
     &VILLAGER_TRADE,
     &VOLUNTARY_EXILE,
+];
 
 /// The trigger ids vanilla 26.3 registers, in the order of the wiki's
 /// "List of triggers" section.
