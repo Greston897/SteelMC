@@ -20,6 +20,9 @@ use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::{ENTITIES, Entity as _, next_entity_id};
 use crate::world::World;
 
+/// Vanilla distance within which a player keeps a heart active.
+const CREAKING_SPAWN_PLAYER_RANGE: f64 = 32.0;
+
 /// Creaking heart block entity.
 pub struct CreakingHeartBlockEntity {
     base: Arc<BlockEntityBase>,
@@ -67,7 +70,7 @@ impl CreakingHeartBlockEntity {
             return;
         }
         let pos = self.get_block_pos();
-        if !Self::is_valid_heart(world, pos) {
+        if !Self::is_valid_heart(world, pos) || !Self::has_nearby_player(world, pos) {
             return;
         }
         let position = DVec3::new(
@@ -93,6 +96,28 @@ impl CreakingHeartBlockEntity {
         if world.try_add_entity(creaking).is_ok() {
             self.set_creaking(Some(creaking_uuid));
         }
+    }
+
+    /// Vanilla only lets the heart act while a player is close enough to see the
+    /// pale garden, which keeps distant hearts from spawning mobs forever.
+    fn has_nearby_player(world: &World, pos: BlockPos) -> bool {
+        let center = DVec3::new(
+            f64::from(pos.x()) + 0.5,
+            f64::from(pos.y()) + 0.5,
+            f64::from(pos.z()) + 0.5,
+        );
+        let mut found = false;
+        world.players.iter_players(|_uuid, player| {
+            if player.position().distance_squared(center)
+                <= CREAKING_SPAWN_PLAYER_RANGE * CREAKING_SPAWN_PLAYER_RANGE
+            {
+                found = true;
+                false
+            } else {
+                true
+            }
+        });
+        found
     }
 
     /// Vanilla `CreakingHeartBlock.isValid`: the heart needs pale oak logs on both

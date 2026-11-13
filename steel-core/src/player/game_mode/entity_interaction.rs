@@ -14,7 +14,9 @@ use crate::player::food_data::food_constants;
 use std::ops::Add;
 use steel_math::trig;
 use steel_registry::particle_type::ParticleData;
-use steel_registry::{sound_events, vanilla_custom_stats, vanilla_particle_types};
+use steel_registry::{
+    REGISTRY, sound_events, vanilla_custom_stats, vanilla_item_tags, vanilla_particle_types,
+};
 
 impl Player {
     fn invalid_entity_attacked_message() -> TextComponent {
@@ -488,6 +490,20 @@ impl Player {
                 old_movement,
             );
             self.item_attack_interaction(target, &damage_source, true);
+            // Vanilla `SpearMobsTrigger` (`spear_mobs`): a spear hit on a mob
+            // counts, whether or not it kills. The `count` condition counts hits,
+            // so the trigger fires on every spear attack.
+            if REGISTRY
+                .items
+                .is_in_tag(attacking_item.item(), &vanilla_item_tags::ItemTag::SPEARS)
+            {
+                self.trigger_advancement_with_context(
+                    &steel_registry::vanilla_criteria_triggers::SPEAR_MOBS,
+                    &crate::player::advancement::predicate::TriggerContext::entity(
+                        &entity.entity_type().key,
+                    ),
+                );
+            }
             self.damage_stats_and_hearts(entity, old_entity_living_health);
             self.cause_food_exhaustion(food_constants::EXHAUSTION_ATTACK);
             if critical {

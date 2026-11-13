@@ -2179,7 +2179,7 @@ impl Entity for Player {
         true
     }
 
-    fn award_kill_score(&self, victim: &dyn Entity, killing_blow: &DamageSource) {
+    fn award_kill_score(&self, victim: &dyn Entity, _killing_blow: &DamageSource) {
         if self.id() != victim.id() {
             // Vanilla `ServerPlayer.awardKillScore` → `playerKillCount` objective.
             if victim.as_player().is_some() {
@@ -2199,17 +2199,6 @@ impl Entity for Player {
                     &victim.entity_type().key,
                 ),
             );
-            // Vanilla `ServerPlayer.awardKillScore` fires `CriteriaTriggers.
-            // SPEAR_MOBS` when the killing blow's damage type is the spear one,
-            // which is how `adventure/overkill` style spear advancements see it.
-            if killing_blow.damage_type.key == vanilla_damage_types::SPEAR.key {
-                self.trigger_advancement_with_context(
-                    &steel_registry::vanilla_criteria_triggers::SPEAR_MOBS,
-                    &crate::player::advancement::predicate::TriggerContext::entity(
-                        &victim.entity_type().key,
-                    ),
-                );
-            }
             // Vanilla `ServerPlayer.awardKillScore` fires
             // `CriteriaTriggers.KILL_MOB_NEAR_SCULK_CATALYST` when the victim is
             // a mob killed within eight blocks of a sculk catalyst.
