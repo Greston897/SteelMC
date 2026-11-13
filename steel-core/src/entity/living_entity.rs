@@ -5,7 +5,10 @@ use steel_registry::data_components::vanilla_components::{
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_criteria_triggers;
 use steel_registry::stat::vanilla_stat_types;
-use steel_registry::{DyeColor, vanilla_blocks, vanilla_custom_stats};
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::{
+    DyeColor, REGISTRY, TaggedRegistryExt as _, vanilla_blocks, vanilla_custom_stats,
+};
 
 use super::*;
 use crate::behavior::{BLOCK_BEHAVIORS, InventoryTickContext, MOB_EFFECT_BEHAVIORS};
@@ -3501,7 +3504,21 @@ pub trait LivingEntity: Entity {
     /// Returns `true` and commits the move on success, or
     /// `false` and leaves the entity untouched on failure.
     fn random_teleport(&self, world: &Arc<World>, x: f64, y: f64, z: f64, broadcast: bool) -> bool {
-        let Some(landing_y) = random_teleport_ground_y(world, x, y, z) else {
+        self.random_teleport_avoiding(world, x, y, z, broadcast, None)
+    }
+
+    /// Vanilla `Entity.randomTeleport(x, y, z, broadcastTeleport, blockedTag)`:
+    /// the optional tag names blocks the entity must not land on.
+    fn random_teleport_avoiding(
+        &self,
+        world: &Arc<World>,
+        x: f64,
+        y: f64,
+        z: f64,
+        broadcast: bool,
+        blocked_tag: Option<&Identifier>,
+    ) -> bool {
+        let Some(landing_y) = random_teleport_ground_y_avoiding(world, x, y, z, blocked_tag) else {
             return false;
         };
 
@@ -3540,11 +3557,31 @@ pub trait LivingEntity: Entity {
 /// mirroring the descent loop in vanilla `Entity.randomTeleport`. Returns
 /// `None` if the world's floor is reached without finding solid ground.
 fn random_teleport_ground_y(world: &Arc<World>, x: f64, y: f64, z: f64) -> Option<f64> {
+    random_teleport_ground_y_avoiding(world, x, y, z, None)
+}
+
+/// Descent loop with the vanilla `blockedTag` filter applied to every candidate
+/// landing block.
+fn random_teleport_ground_y_avoiding(
+    world: &Arc<World>,
+    x: f64,
+    y: f64,
+    z: f64,
+    blocked_tag: Option<&Identifier>,
+) -> Option<f64> {
     let mut pos = BlockPos::containing(x, y, z);
     let mut current_y = y;
     while pos.y() > world.get_min_y() {
         let below = pos.below();
-        if world.get_block_state(below).blocks_motion() {
+        let state = world.get_block_state(below);
+        if state.blocks_motion() {
+            // Vanilla rejects the candidate when the supporting block is tagged
+            // as forbidden for this teleport.
+            if let Some(tag) = blocked_tag
+                && REGISTRY.blocks.is_in_tag(state.get_block(), tag)
+            {
+                return None;
+            }
             return Some(current_y);
         }
         current_y -= 1.0;

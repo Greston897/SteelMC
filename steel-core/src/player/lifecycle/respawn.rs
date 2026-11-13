@@ -630,6 +630,9 @@ impl Player {
             RespawnRequestKind::Death => ResetReason::Respawn,
             RespawnRequestKind::EndCredits => ResetReason::EndCredits,
         };
+        // Vanilla `PlayerList.respawn` assigns the forced game type *before* the
+        // client is told to respawn, so the respawn packet already carries it.
+        crate::server::Server::apply_forced_game_mode(&replacement, target_world);
         replacement.prepare_respawn_replacement(reason);
         replacement.experience.lock().dirty = true;
         replacement.synchronize_respawn_replacement(spawn.position, spawn.rotation);

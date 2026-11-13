@@ -67,6 +67,10 @@ pub struct ServerConfig {
     pub favicon: String,
     /// Whether to enforce secure chat.
     pub enforce_secure_chat: bool,
+    /// Whether `defaultgamemode` forces the new mode onto every online player
+    /// (vanilla `force-gamemode`).
+    #[serde(default)]
+    pub force_gamemode: bool,
     /// Vanilla chat spam threshold window in seconds
     #[serde(default = "default_spam_threshold_seconds")]
     pub chat_spam_threshold_seconds: i32,
@@ -108,6 +112,7 @@ impl ServerConfig {
             use_favicon: self.use_favicon,
             favicon: self.favicon,
             enforce_secure_chat: self.enforce_secure_chat,
+            force_gamemode: self.force_gamemode,
             chat_spam_threshold_seconds: self.chat_spam_threshold_seconds,
             command_spam_threshold_seconds: self.command_spam_threshold_seconds,
             compression: self.compression,

@@ -59,17 +59,19 @@ fn apply_default_game_mode(
         world.set_default_gamemode(game_mode);
     }
 
-    // Vanilla `DefaultGameModeCommand` also switches every online player in
-    // these worlds and reports how many changed. `force-gamemode` additionally
-    // applies the mode when a saved player joins.
+    // Vanilla `DefaultGameModeCommand`: online players only follow the new mode
+    // when `force-gamemode` is enabled, and the result is that changed count.
+    // Otherwise the command reports zero and leaves every player untouched.
     let mut updated = 0;
-    for world in context.source().server().worlds.worlds_in_domain(domain) {
-        world.players.iter_players(|_uuid, player| {
-            if player.game_mode() != game_mode && player.set_game_mode(game_mode) {
-                updated += 1;
-            }
-            true
-        });
+    if context.source().server().config.force_gamemode {
+        for world in context.source().server().worlds.worlds_in_domain(domain) {
+            world.players.iter_players(|_uuid, player| {
+                if player.game_mode() != game_mode && player.set_game_mode(game_mode) {
+                    updated += 1;
+                }
+                true
+            });
+        }
     }
 
     let message = translations::COMMANDS_DEFAULTGAMEMODE_SUCCESS

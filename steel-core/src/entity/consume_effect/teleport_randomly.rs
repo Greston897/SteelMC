@@ -4,9 +4,8 @@ use std::sync::Arc;
 
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::consume_effect::{ConsumeEffectData, TeleportRandomlyConsumeEffect};
-use steel_registry::blocks::block_state_ext::BlockStateExt as _;
-use steel_registry::{REGISTRY, TaggedRegistryExt as _, sound_events, vanilla_game_events};
-use steel_utils::{BlockPos, Identifier};
+use steel_registry::{sound_events, vanilla_game_events};
+use steel_utils::Identifier;
 
 use super::ConsumeEffectBehavior;
 use crate::entity::LivingEntity;
@@ -55,13 +54,17 @@ fn teleport_randomly(
         }
 
         let old_pos = user.position();
-        if !user.random_teleport(world, x, y, z, true) {
-            continue;
-        }
-
-        // Reject the destination when it sits on a block the tag forbids.
-        if lands_on_forbidden_block(world, user.position()) {
-            user.random_teleport(world, old_pos.x, old_pos.y, old_pos.z, true);
+        // Vanilla 26.3 `TeleportRandomlyConsumeEffect.apply` passes
+        // `BlockTags.CONSUMABLE_DOES_NOT_TELEPORT_TO` into `randomTeleport`, which
+        // rejects a candidate whose supporting block is tagged.
+        if !user.random_teleport_avoiding(
+            world,
+            x,
+            y,
+            z,
+            true,
+            Some(&CONSUMABLE_DOES_NOT_TELEPORT_TO),
+        ) {
             continue;
         }
 
@@ -87,19 +90,10 @@ fn teleport_randomly(
 }
 
 
-/// Returns whether `pos` stands on a block tagged `#consumable_does_not_teleport_to`.
-fn lands_on_forbidden_block(world: &Arc<World>, pos: glam::DVec3) -> bool {
-    let block_pos = BlockPos::new(
-        pos.x.floor() as i32,
-        pos.y.floor() as i32,
-        pos.z.floor() as i32,
-    );
-    let state = world.get_block_state(block_pos);
-    REGISTRY.blocks.is_in_tag(
-        state.get_block(),
-        &Identifier::vanilla_static("consumable_does_not_teleport_to"),
-    )
-}
+/// Vanilla 26.3 `#consumable_does_not_teleport_to`: blocks a randomly-teleporting
+/// consumer refuses to land on. Empty by default, but data packs can fill it.
+const CONSUMABLE_DOES_NOT_TELEPORT_TO: Identifier =
+    Identifier::vanilla_static("consumable_does_not_teleport_to");
 
 #[cfg(test)]
 mod tests {

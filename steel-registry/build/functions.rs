@@ -59,15 +59,12 @@ fn collect(root: &Path) -> Vec<FunctionEntry> {
         .into_iter()
         .filter_map(|path| {
             let relative = path.strip_prefix(&function_root).ok()?;
-            let mut segments: Vec<String> = relative
-                .parent()
-                .map(|parent| {
-                    parent
-                        .components()
-                        .map(|part| part.as_os_str().to_string_lossy().into_owned())
-                        .collect()
-                })
-                .unwrap_or_default();
+            let mut segments: Vec<String> = relative.parent().map_or_else(Vec::new, |parent| {
+                parent
+                    .components()
+                    .map(|part| part.as_os_str().to_string_lossy().into_owned())
+                    .collect()
+            });
             let stem = relative.file_stem()?.to_string_lossy().into_owned();
             segments.push(stem);
             let path_str = segments.join("/");

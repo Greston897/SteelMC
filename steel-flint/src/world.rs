@@ -90,6 +90,7 @@ impl SteelTestWorld {
 
         let damage_history = Arc::new(DamageHistory::default());
         let config = WorldConfig {
+            server: std::sync::OnceLock::new(),
             damage_history: Arc::clone(&damage_history),
             storage: WorldStorageConfig::RamOnly,
             level_data_path: None,

@@ -98,6 +98,11 @@
           "description": "Whether to enforce secure chat",
           "default": false
         },
+        "force_gamemode": {
+          "type": "boolean",
+          "description": "Whether defaultgamemode forces the new mode onto every online player",
+          "default": false
+        },
         "chat_spam_threshold_seconds": {
           "type": "integer",
           "description": "Vanilla chat spam threshold window in seconds; values <= 0 disable throttling",
