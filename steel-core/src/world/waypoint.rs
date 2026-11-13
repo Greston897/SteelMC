@@ -8,7 +8,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use steel_protocol::packets::game::c_waypoint::{CWaypoint, WaypointData, WaypointOperation};
+use steel_protocol::packets::game::{CWaypoint, WaypointData, WaypointOperation};
 use steel_registry::vanilla_attributes;
 use steel_utils::Identifier;
 use steel_utils::locks::SyncMutex;

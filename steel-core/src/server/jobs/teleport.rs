@@ -9,7 +9,7 @@ use super::super::{
 };
 use super::{JobPoll, ServerJob, ServerJobContext};
 use crate::entity::LivingEntity as _;
-use crate::player::lifecycle::resolve_personal_respawn_for_world_change;
+use crate::player::resolve_personal_respawn_for_world_change;
 use crate::world::player_spawn_finder::POLL_TIME_BUDGET;
 
 pub(in crate::server) struct RootVehicleRestoreJob {

@@ -43,7 +43,7 @@ use glam::DVec3;
 use health_sync::HealthSyncState;
 use item_cooldowns::ItemCooldowns;
 use lifecycle::PlayerLifecycleState;
-pub use lifecycle::PlayerRespawnConfig;
+pub use lifecycle::{PlayerRespawnConfig, resolve_personal_respawn_for_world_change};
 pub(crate) use lifecycle::ResetReason;
 pub use movement::PlayerInput;
 use movement::{MovementState, TeleportState};
