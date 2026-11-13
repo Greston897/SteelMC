@@ -137,7 +137,8 @@ pub(crate) fn build() -> TokenStream {
         use crate::RegistryReference;
         use crate::data_components::{DataComponentPatch, vanilla_components};
         use crate::data_components::vanilla_components::{
-            FireworkExplosionShape, PotionContents, SuspiciousStewEffect, SuspiciousStewEffects,
+            FireworkExplosionShape, PotDecorations, PotionContents, SuspiciousStewEffect,
+            SuspiciousStewEffects,
         };
         use crate::recipe::UntypedRecipeRef;
         use text_components::translation::TranslatedMessage;

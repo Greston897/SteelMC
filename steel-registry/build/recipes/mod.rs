@@ -58,7 +58,8 @@ pub(crate) fn build() -> TokenStream {
             vanilla_trim_patterns,
         };
         use crate::data_components::vanilla_components::{
-            FireworkExplosionShape, PotionContents, SuspiciousStewEffect, SuspiciousStewEffects,
+            FireworkExplosionShape, PotDecorations, PotionContents, SuspiciousStewEffect,
+            SuspiciousStewEffects,
         };
 
         #(#declarations)*

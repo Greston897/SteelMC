@@ -179,6 +179,10 @@ fn generate_component_patch(components: &serde_json::Value, owner: &str) -> Toke
             quote! { POTION_CONTENTS },
             potion_contents_tokens(component),
         ),
+        "minecraft:pot_decorations" => (
+            quote! { POT_DECORATIONS },
+            pot_decorations_tokens(component),
+        ),
         _ => panic!("Unsupported item stack template components {components:?} in {owner}"),
     };
     quote! {{
@@ -230,6 +234,32 @@ fn potion_contents_tokens(value: &serde_json::Value) -> TokenStream {
     let potion = vanilla_registry_ident(potion);
     quote! {
         PotionContents::new(Some(RegistryReference::new(&vanilla_potions::#potion)))
+    }
+}
+
+/// One decoration side: either absent or a single item stack.
+///
+/// The extracted JSON names each present side, and vanilla's codec leaves absent
+/// sides out entirely, so a missing key is `None` rather than a failure.
+fn pot_decorations_tokens(value: &serde_json::Value) -> TokenStream {
+    let sides = value
+        .as_object()
+        .unwrap_or_else(|| panic!("Pot decorations are not an object: {value}"));
+    let side = |name: &str| {
+        sides.get(name).map_or_else(
+            || quote! { None },
+            |stack| {
+                let template = generate_item_stack_template(
+                    &serde_json::from_value(stack.clone())
+                        .unwrap_or_else(|error| panic!("Invalid pot decoration {name}: {error}")),
+                );
+                quote! { Some(#template) }
+            },
+        )
+    };
+    let (back, left, right, front) = (side("back"), side("left"), side("right"), side("front"));
+    quote! {
+        PotDecorations::new(#back, #left, #right, #front)
     }
 }
 
