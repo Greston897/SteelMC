@@ -3,7 +3,8 @@
 //! A neutral village golem that retaliates when attacked.
 //!
 //! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
-//! * village defence, poppy offering and the crack overlay are not implemented.
+//! * poppy offering and the crack overlay are not implemented; village defence is
+//!   modelled as vanilla's `#minecraft:raiders` target selector.
 
 use std::iter::empty;
 use std::sync::Weak;
@@ -16,13 +17,14 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::IronGolemEntityData;
-use steel_registry::{sound_events, vanilla_attributes};
+use steel_registry::vanilla_entity_tags::EntityTypeTag;
+use steel_registry::{REGISTRY, sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, RandomLookAroundGoal,
-    WaterAvoidingRandomStrollGoal,
+    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
+    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
@@ -86,6 +88,16 @@ impl IronGolemEntity {
 
             let mut target_selector = mob_base.target_selector().lock();
             target_selector.add_goal(1, HurtByTargetGoal::new().set_alert_others(empty()));
+            // Vanilla `IronGolem.createAngerLevelTarget`: golems attack the
+            // raiders that threaten their village.
+            target_selector.add_goal(
+                2,
+                NearestAttackableTargetGoal::new(true, |entity, _| {
+                    REGISTRY
+                        .entity_types
+                        .is_in_tag(entity.entity_type(), &EntityTypeTag::RAIDERS)
+                }),
+            );
         }
 
         Self {
