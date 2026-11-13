@@ -1,12 +1,12 @@
 //! Debug sample packet.
 
-use steel_macros::ClientPacket;
+use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_DEBUG_SAMPLE;
 use steel_utils::codec::VarInt;
 use steel_utils::serial::WriteTo;
 
 /// Clientbound packet that streams profiler samples to the client.
-#[derive(ClientPacket, Debug, Clone)]
+#[derive(ClientPacket, Debug, Clone, WriteTo)]
 #[packet_id(Play = C_DEBUG_SAMPLE)]
 pub struct CDebugSample {
     /// Sample kind ordinal (`0` tick time, `1` chunk task time).

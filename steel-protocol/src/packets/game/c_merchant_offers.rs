@@ -1,6 +1,7 @@
 //! Merchant offers packet (villager and wandering trader trade lists).
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::PrefixedWrite as _;
 use steel_utils::serial::WriteTo as _;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::packets::play::C_MERCHANT_OFFERS;

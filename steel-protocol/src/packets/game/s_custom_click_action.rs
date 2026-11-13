@@ -3,6 +3,7 @@
 use steel_macros::{ReadFrom, ServerPacket};
 use steel_utils::Identifier;
 use steel_utils::codec::VarInt;
+use steel_utils::serial::ReadFrom as _;
 use steel_utils::serial::{PrefixedRead as _, ReadFrom};
 
 /// Serverbound packet sent when the player clicks a custom dialog action.

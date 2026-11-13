@@ -3,6 +3,7 @@
 use steel_macros::ClientPacket;
 use steel_registry::packets::play::C_SET_PLAYER_TEAM;
 use steel_utils::codec::VarInt;
+use steel_utils::serial::PrefixedWrite as _;
 use steel_utils::serial::WriteTo;
 use text_components::TextComponent;
 

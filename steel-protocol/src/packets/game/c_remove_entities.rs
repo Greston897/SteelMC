@@ -1,6 +1,7 @@
 //! Packet sent to remove entities from the client.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::PrefixedWrite as _;
 use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_REMOVE_ENTITIES;
 

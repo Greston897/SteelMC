@@ -1,12 +1,13 @@
 //! Post-processing effects packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::PrefixedWrite as _;
 use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::{config, play};
 use steel_utils::Identifier;
 
 /// A post-processing shader to enable.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, WriteTo)]
 pub struct PostEffect {
     /// Effect id from the `minecraft:post_effect` registry.
     pub id: Identifier,

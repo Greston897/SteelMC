@@ -3,7 +3,7 @@ use steel_macros::{ClientPacket, WriteTo};
 use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::status::C_STATUS_RESPONSE;
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, WriteTo)]
 pub struct Sample {
     /// The player's name.
     pub name: String,

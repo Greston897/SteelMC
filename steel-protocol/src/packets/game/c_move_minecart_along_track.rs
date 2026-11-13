@@ -1,12 +1,12 @@
 //! Minecart move-along-track packet.
 
-use steel_macros::ClientPacket;
+use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_MOVE_MINECART_ALONG_TRACK;
 use steel_utils::codec::VarInt;
 use steel_utils::serial::WriteTo;
 
 /// One step of the client-side interpolation path.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, WriteTo)]
 pub struct MinecartStep {
     /// Step position.
     pub position: glam::DVec3,

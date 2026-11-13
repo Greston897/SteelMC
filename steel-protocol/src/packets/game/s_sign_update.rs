@@ -2,6 +2,7 @@ use std::io::Cursor;
 
 use steel_macros::ServerPacket;
 use steel_utils::BlockPos;
+use steel_utils::serial::ReadFrom as _;
 use steel_utils::serial::{PrefixedRead, ReadFrom};
 use steel_utils::types::SignTextSlot;
 

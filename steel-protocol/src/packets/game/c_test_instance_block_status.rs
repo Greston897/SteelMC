@@ -1,6 +1,7 @@
 //! Game-test block status packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::PrefixedWrite as _;
 use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_TEST_INSTANCE_BLOCK_STATUS;
 use steel_utils::BlockPos;

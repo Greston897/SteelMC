@@ -5,6 +5,7 @@ use std::io::Cursor;
 use steel_macros::ServerPacket;
 use steel_utils::Identifier;
 use steel_utils::codec::VarInt;
+use steel_utils::serial::ReadFrom as _;
 use steel_utils::serial::{PrefixedRead as _, ReadFrom};
 
 /// Serverbound answer to a cookie request.

@@ -3,6 +3,7 @@
 use steel_macros::ClientPacket;
 use steel_registry::packets::play::C_UPDATE_RECIPES;
 use steel_utils::codec::VarInt;
+use steel_utils::serial::PrefixedWrite as _;
 use steel_utils::serial::WriteTo;
 
 /// One recipe entry: its id and the network form of the recipe body.

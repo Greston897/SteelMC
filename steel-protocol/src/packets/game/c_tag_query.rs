@@ -1,6 +1,7 @@
 //! Tag query response packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::PrefixedWrite as _;
 use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_TAG_QUERY;
 use steel_utils::codec::VarInt;

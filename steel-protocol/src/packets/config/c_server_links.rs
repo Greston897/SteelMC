@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::PrefixedWrite as _;
 use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::config::C_SERVER_LINKS;
 use steel_utils::codec::Or;
