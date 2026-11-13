@@ -23,8 +23,8 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    BreedGoal, FloatGoal, FollowParentGoal,
-    LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal, MoveTowardsRestrictionGoal,
+    OpenDoorGoal, PanicGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 
 use crate::entity::damage::DamageSource;
@@ -97,6 +97,10 @@ impl VillagerEntity {
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
             goal_selector.add_goal(1, PanicGoal::new(2.0));
             goal_selector.add_goal(2, BreedGoal::new(1.0));
+            // Vanilla `Villager.registerGoals` walks back toward its home POI and
+            // opens doors on the way, so a villager that strayed still returns.
+            goal_selector.add_goal(3, MoveTowardsRestrictionGoal::new(0.6));
+            goal_selector.add_goal(3, OpenDoorGoal::new(true));
             goal_selector.add_goal(4, FollowParentGoal::new(1.25));
             goal_selector.add_goal(5, WaterAvoidingRandomStrollGoal::new(1.0));
             goal_selector.add_goal(6, LookAtPlayerGoal::new(6.0));

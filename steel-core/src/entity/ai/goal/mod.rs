@@ -36,17 +36,23 @@ mod try_find_water;
 mod water_avoiding_random_stroll;
 
 pub(crate) use avoid_entity::AvoidEntityGoal;
+pub(crate) use breath_air::BreathAirGoal;
 pub(crate) use breed_goal::BreedGoal;
 pub(crate) use climb_on_top_of_powder_snow::ClimbOnTopOfPowderSnowGoal;
 pub(crate) use eat_block_goal::EatBlockGoal;
 pub(crate) use flee_sun::FleeSunGoal;
 pub(crate) use float_goal::FloatGoal;
+pub(crate) use follow_mob::FollowMobGoal;
 pub(crate) use follow_parent::FollowParentGoal;
 pub(crate) use hurt_by_target::HurtByTargetGoal;
 pub(crate) use leap_at_target::LeapAtTargetGoal;
 pub(crate) use look_at_player::LookAtPlayerGoal;
 pub(crate) use melee_attack::MeleeAttackGoal;
+pub(crate) use move_to_block::MoveToBlockGoal;
+pub(crate) use move_towards_restriction::MoveTowardsRestrictionGoal;
+pub(crate) use move_towards_target::MoveTowardsTargetGoal;
 pub(crate) use nearest_attackable_target::NearestAttackableTargetGoal;
+pub(crate) use open_door::OpenDoorGoal;
 pub(crate) use panic_goal::PanicGoal;
 pub(crate) use random_look_around::RandomLookAroundGoal;
 pub(crate) use random_stroll::RandomStrollGoal;
@@ -58,6 +64,7 @@ pub(crate) use selector::{Goal, GoalControl, GoalSelector};
 pub(crate) use squid_flee_goal::SquidFleeGoal;
 pub(crate) use squid_random_movement_goal::SquidRandomMovementGoal;
 pub(crate) use tempt_goal::TemptGoal;
+pub(crate) use try_find_water::TryFindWaterGoal;
 pub(crate) use water_avoiding_random_stroll::WaterAvoidingRandomStrollGoal;
 
 pub(super) const fn reduced_tick_delay(ticks: i32) -> i32 {

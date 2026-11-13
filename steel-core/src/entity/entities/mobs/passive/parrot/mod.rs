@@ -23,8 +23,8 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal, TemptGoal,
-    WaterAvoidingRandomStrollGoal,
+    FloatGoal, FollowMobGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal,
+    RandomLookAroundGoal, TemptGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
@@ -119,6 +119,12 @@ impl ParrotEntity {
             goal_selector.add_goal(1, PanicGoal::new(PARROT_PANIC_SPEED));
             goal_selector.add_goal(2, TemptGoal::new(PARROT_TEMPT_SPEED, is_parrot_food, false));
             goal_selector.add_goal(3, FollowParentGoal::new(PARROT_FOLLOW_PARENT_SPEED));
+            // Vanilla `Parrot.registerGoals` keeps a `FollowMobGoal` at 4 so a
+            // parrot trails whichever player it is perched near.
+            goal_selector.add_goal(
+                4,
+                FollowMobGoal::new(PARROT_STROLL_SPEED, 3.0, 1.0, |_mob, _target| true),
+            );
             goal_selector.add_goal(5, WaterAvoidingRandomStrollGoal::new(PARROT_STROLL_SPEED));
             goal_selector.add_goal(
                 6,
