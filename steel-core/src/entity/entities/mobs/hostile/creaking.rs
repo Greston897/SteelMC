@@ -1,6 +1,8 @@
 //! Vanilla `net.minecraft.world.entity.monster.creaking.Creaking`.
 //!
-//! Pale-garden mob immune while its creaking heart is intact; that rule is not implemented.
+//! Pale-garden mob. While the creaking heart that spawned it is intact the
+//! creaking is invulnerable; breaking the heart kills it. Vanilla's "dissolve in
+//! daylight / freeze when watched" rules are not implemented.
 //!
 //! The AI is the shared `Monster` skeleton (float, melee attack, random stroll,
 //! look goals) plus the standard hostile target selector; attributes and
@@ -11,13 +13,13 @@ use std::sync::Weak;
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
-use simdnbt::owned::NbtCompound;
+use simdnbt::owned::{NbtCompound, NbtTag};
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::CreakingEntityData;
-use steel_registry::{sound_events, vanilla_attributes};
+use steel_registry::{sound_events, vanilla_attributes, vanilla_damage_types};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
@@ -43,6 +45,9 @@ pub struct CreakingEntity {
     living_base: LivingEntityBase,
     mob_base: MobBase,
     entity_data: SyncMutex<CreakingEntityData>,
+    /// Position of the creaking heart that spawned this creaking, matching
+    /// vanilla's `Creaking.creakingHeartPos` / persisted `creaking_heart` field.
+    creaking_heart_pos: SyncMutex<Option<BlockPos>>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `CreakingEntity`.
@@ -51,6 +56,30 @@ unsafe impl DowncastType for CreakingEntity {
 }
 
 impl CreakingEntity {
+    /// Returns the heart position if this creaking was spawned by a heart.
+    #[must_use]
+    pub fn creaking_heart_pos(&self) -> Option<BlockPos> {
+        *self.creaking_heart_pos.lock()
+    }
+
+    /// Links this creaking to the heart at `pos`.
+    pub fn set_creaking_heart_pos(&self, pos: Option<BlockPos>) {
+        *self.creaking_heart_pos.lock() = pos;
+    }
+
+    fn has_linked_heart(&self) -> bool {
+        self.creaking_heart_pos().is_some()
+    }
+
+    /// Vanilla `Creaking.getCreakingHeart`: the linked heart is resolved through
+    /// the block entity at the stored position, so a removed heart returns `None`.
+    fn linked_heart(&self, world: &World) -> Option<BlockPos> {
+        let pos = self.creaking_heart_pos()?;
+        let block_entity = world.get_block_entity(pos)?;
+        let heart = block_entity
+            .downcast_ref::<crate::block_entity::entities::CreakingHeartBlockEntity>()?;
+        (heart.creaking() == Some(self.uuid().as_u128())).then_some(pos)
+    }
     /// Creates a new entity of this vanilla type.
     #[must_use]
     pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {
@@ -98,6 +127,7 @@ impl CreakingEntity {
             living_base,
             mob_base,
             entity_data: SyncMutex::new(entity_data),
+            creaking_heart_pos: SyncMutex::new(None),
         }
     }
 
@@ -179,10 +209,21 @@ impl Entity for CreakingEntity {
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
         self.save_mob(nbt);
+        if let Some(pos) = *self.creaking_heart_pos.lock() {
+            nbt.insert(
+                "creaking_heart",
+                NbtTag::IntArray(vec![pos.x(), pos.y(), pos.z()]),
+            );
+        }
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_mob(nbt);
+        let view: simdnbt::borrow::NbtCompound<'_, '_> = (&nbt).into();
+        *self.creaking_heart_pos.lock() = view.int_array("creaking_heart").and_then(|values| {
+            let [x, y, z] = [values.first(), values.get(1), values.get(2)];
+            Some(BlockPos::new(*x?, *y?, *z?))
+        });
     }
 }
 
@@ -229,6 +270,23 @@ impl LivingEntity for CreakingEntity {
 impl Mob for CreakingEntity {
     fn mob_base(&self) -> &MobBase {
         &self.mob_base
+    }
+
+    /// Vanilla `Creaking.isInvulnerableTo`: the creaking can only be hurt once its
+    /// creaking heart is gone, which is what forces the player to find the heart.
+    fn is_invulnerable_to(&self, world: &World, _source: &DamageSource) -> bool {
+        self.linked_heart(world).is_some()
+    }
+
+    /// Vanilla `Creaking.tick`: a creaking whose heart no longer exists dies.
+    fn custom_server_ai_step(&self) {
+        let Some(world) = self.level() else {
+            return;
+        };
+        if self.linked_heart(&world).is_none() && self.has_linked_heart() {
+            let damage = DamageSource::environment(&vanilla_damage_types::GENERIC_KILL);
+            self.hurt(&world, &damage, f32::MAX);
+        }
     }
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {
