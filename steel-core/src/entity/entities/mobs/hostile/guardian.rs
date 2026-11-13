@@ -1,10 +1,12 @@
 //! Vanilla `net.minecraft.world.entity.monster.Guardian`.
 //!
-//! Ocean-monument guardian; its laser beam is not implemented.
+//! Ocean-monument guardian with its charging laser beam.
 //!
 //! The AI is the shared `Monster` skeleton (float, melee attack, random stroll,
 //! look goals) plus the standard hostile target selector; attributes and
-//! dimensions come from the extracted `entities.json`.
+//! dimensions come from the extracted `entities.json`. Vanilla's beam is a
+//! charge timer: it locks on for `GUARDIAN_ATTACK_TIME` ticks and only then deals
+//! its damage, which is what this file models.
 //!
 use std::iter::empty;
 use std::sync::Weak;
@@ -44,6 +46,9 @@ pub struct GuardianEntity {
     living_base: LivingEntityBase,
     mob_base: MobBase,
     entity_data: SyncMutex<GuardianEntityData>,
+    /// Ticks the current laser beam has been charging, matching vanilla's
+    /// `Guardian.clientSideAttackTime` / `attackTime` pair.
+    beam_ticks: SyncMutex<i32>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `GuardianEntity`.
@@ -99,6 +104,7 @@ impl GuardianEntity {
             living_base,
             mob_base,
             entity_data: SyncMutex::new(entity_data),
+            beam_ticks: SyncMutex::new(0),
         }
     }
 
@@ -227,6 +233,12 @@ impl LivingEntity for GuardianEntity {
     }
 }
 
+/// Vanilla `Guardian.ATTACK_TIME`: ticks the beam charges before it hurts.
+pub const GUARDIAN_ATTACK_TIME: i32 = 80;
+
+/// Vanilla `Guardian` beam range, squared.
+const GUARDIAN_BEAM_RANGE_SQ: f64 = 256.0;
+
 impl Mob for GuardianEntity {
     fn mob_base(&self) -> &MobBase {
         &self.mob_base
@@ -234,6 +246,40 @@ impl Mob for GuardianEntity {
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {
         PathfinderMob::tick_pathfinder_goal_selectors(self, entity);
+    }
+
+    /// Vanilla `Guardian.attackTime` bookkeeping plus `Guardian.hurtTarget`.
+    ///
+    /// The guardian locks its beam onto the current target and, once the charge
+    /// reaches `GUARDIAN_ATTACK_TIME`, deals its magic damage. Losing the target
+    /// or its range resets the charge.
+    fn custom_server_ai_step(&self) {
+        let chasing = self.target().filter(|target| {
+            let offset = target.position() - self.position();
+            offset.length_squared() <= GUARDIAN_BEAM_RANGE_SQ
+        });
+        let Some(target) = chasing else {
+            *self.beam_ticks.lock() = 0;
+            return;
+        };
+        let Some(world) = self.level() else {
+            return;
+        };
+
+        let mut beam_ticks = self.beam_ticks.lock();
+        *beam_ticks += 1;
+        if *beam_ticks < GUARDIAN_ATTACK_TIME {
+            return;
+        }
+        *beam_ticks = 0;
+        drop(beam_ticks);
+
+        // Vanilla `Guardian.hurtTarget` deals `magic` damage. Steel's damage
+        // source needs an `Arc<dyn Entity>` for the attacker; the guardian is
+        // reached through its target here, so the beam is credited to the world
+        // rather than to a specific entity.
+        let damage = DamageSource::environment(&steel_registry::vanilla_damage_types::MAGIC);
+        target.hurt(&world, &damage, 2.0);
     }
 
     fn tick_path_navigation(&self) {
