@@ -78,6 +78,7 @@ fn packaged_config_matches_the_runtime_config_defaults() {
         packet_workers,
         chunk_generation_threads,
         chunk_encoding_threads,
+        rcon,
     } = config.server.into_runtime_config();
     let defaults = RuntimeConfig::default();
 
@@ -124,6 +125,7 @@ fn packaged_config_matches_the_runtime_config_defaults() {
     assert_eq!(packet_workers, Some(0));
     assert_eq!(chunk_generation_threads, Some(0));
     assert_eq!(chunk_encoding_threads, Some(0));
+    assert_eq!(rcon, defaults.rcon);
 }
 
 #[test]
