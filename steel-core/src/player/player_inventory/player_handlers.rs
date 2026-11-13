@@ -1273,10 +1273,33 @@ impl Player {
             return;
         }
 
+        let count_before = item.count();
         let added = self.inventory.lock().add(&mut item);
+        let moved = count_before.saturating_sub(item.count());
+        if moved > 0 {
+            // Vanilla `Inventory.add` → `InventoryChangeTrigger`: the predicate
+            // sees the inventory slots and the items that changed, which is what
+            // every "obtain item" advancement keys off. Steel fires it with the
+            // acquired item, the shape the vanilla predicates actually use.
+            self.notify_inventory_changed(&item, moved);
+        }
         if !added || !item.is_empty() {
             let _ = self.drop_item(item, false, prediction);
         }
+    }
+
+    /// Fires `inventory_changed` for items that just entered the inventory.
+    ///
+    /// Vanilla `InventoryChangeTrigger#trigger` compares the inventory against
+    /// the predicate's `items`; passing the acquired stack lets
+    /// [`crate::player::advancement::predicate::matches`] decide which
+    /// advancements apply.
+    fn notify_inventory_changed(&self, acquired: &ItemStack, count: i32) {
+        let _ = count;
+        self.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::INVENTORY_CHANGED,
+            &crate::player::advancement::predicate::TriggerContext::item(&acquired.item().key),
+        );
     }
 
     /// Tries to add an item to the player's inventory using an existing lock guard,

@@ -21,9 +21,21 @@ impl SimpleCriterion {
 
 impl CriterionTriggerInstance for SimpleCriterion {}
 
+impl SimpleCriterion {
+    /// Returns the raw JSON instance vanilla stores next to the trigger.
+    #[must_use]
+    pub fn instance(&self) -> &str {
+        &self.instance
+    }
+}
+
 impl AnyCriterion for SimpleCriterion {
     fn id(&self) -> Identifier {
         self.trigger.clone()
+    }
+
+    fn instance(&self) -> Option<&str> {
+        Some(&self.instance)
     }
 }
 
@@ -43,6 +55,14 @@ impl CriterionTrigger<ImpossibleInstance> for ImpossibleTrigger {
 
 pub trait AnyCriterion: Send + Sync {
     fn id(&self) -> Identifier;
+
+    /// Returns the raw JSON instance, when the criterion was generated from data.
+    ///
+    /// Vanilla parses this into a typed predicate; Steel keeps it verbatim and
+    /// evaluates it lazily against the event that fired the trigger.
+    fn instance(&self) -> Option<&str> {
+        None
+    }
 }
 
 impl<T, G> AnyCriterion for Criterion<T, G>

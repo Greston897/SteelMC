@@ -490,6 +490,12 @@ pub(crate) fn finish_consuming_stack(
     user.game_event(event);
     if let Some(player) = user.as_player() {
         player.award_stat(&vanilla_stat_types::ITEM_USED, stack.item());
+        // Vanilla `ConsumableComponent#finishConsumption` fires
+        // `CriteriaTriggers.CONSUME_ITEM` with the consumed stack.
+        player.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::CONSUME_ITEM,
+            &crate::player::advancement::predicate::TriggerContext::item(&stack.item().key),
+        );
     }
     if let Some(consumable) = stack.get(CONSUMABLE)
         && consumable.has_consume_particles()

@@ -2,6 +2,7 @@
 //!
 //! Groups the advancementPlayer, advancement progress and visibility evaluator
 
+pub mod predicate;
 pub mod progress;
 pub mod rewards;
 mod saving;
@@ -12,6 +13,7 @@ pub(crate) use saving::{PersistedAdvancements, PersistedAdvancementsRef};
 use crate::entity::Entity;
 use crate::player::Player;
 use crate::player::advancement::rewards::grant_reward;
+use predicate::TriggerContext;
 use progress::{AdvancementProgress, AdvancementProgressMap};
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::time::UNIX_EPOCH;
@@ -101,6 +103,21 @@ impl PlayerAdvancement {
     /// which is equivalent and avoids a second index that would have to be
     /// invalidated whenever a data pack reloads.
     pub fn trigger(&mut self, player: &Player, trigger: &Identifier) -> usize {
+        self.trigger_with_context(player, trigger, &TriggerContext::default())
+    }
+
+    /// Fires `trigger` with an event description, honouring each criterion's
+    /// predicate.
+    ///
+    /// Vanilla evaluates the criterion's stored `conditions` against the event;
+    /// [`predicate::matches`] does the same for the subset of the predicate
+    /// language the vanilla advancement data uses.
+    pub fn trigger_with_context(
+        &mut self,
+        player: &Player,
+        trigger: &Identifier,
+        context: &TriggerContext,
+    ) -> usize {
         let mut granted = 0;
         for advancement in REGISTRY.advancements.advancements() {
             // Collect first: `award` mutates `self`.
@@ -108,9 +125,12 @@ impl PlayerAdvancement {
                 .criteria_ids()
                 .into_iter()
                 .filter(|criterion_id| {
-                    advancement
-                        .get_criterion(criterion_id)
-                        .is_some_and(|criterion| &criterion.id() == trigger)
+                    advancement.get_criterion(criterion_id).is_some_and(|criterion| {
+                        &criterion.id() == trigger
+                            && criterion
+                                .instance()
+                                .is_none_or(|instance| predicate::matches(instance, context))
+                    })
                 })
                 .map(str::to_owned)
                 .collect();

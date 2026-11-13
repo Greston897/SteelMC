@@ -401,6 +401,22 @@ impl Player {
         self.advancements.lock().trigger(self, trigger)
     }
 
+    /// Fires a trigger together with the event that caused it.
+    ///
+    /// Criteria carry vanilla `conditions` objects; passing the event lets
+    /// [`crate::player::advancement::predicate::matches`] decide which
+    /// advancements actually apply instead of granting every criterion with a
+    /// matching trigger id.
+    pub fn trigger_advancement_with_context(
+        &self,
+        trigger: &Identifier,
+        context: &crate::player::advancement::predicate::TriggerContext,
+    ) -> usize {
+        self.advancements
+            .lock()
+            .trigger_with_context(self, trigger, context)
+    }
+
     const USING_ITEM_FLAG: i8 = 1;
     const OFF_HAND_ACTIVE_ITEM_FLAG: i8 = 1 << 1;
 
