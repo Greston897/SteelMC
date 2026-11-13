@@ -7,7 +7,7 @@ use steel_registry::{
     biome::BiomeRef,
 };
 use steel_utils::{Identifier, translations};
-use text_components::{TextComponent, TranslatedMessage};
+use text_components::{TextComponent, translation::TranslatedMessage};
 
 use super::argument::{parse_identifier, unknown_resource};
 use super::suggestions::identifier_matches;

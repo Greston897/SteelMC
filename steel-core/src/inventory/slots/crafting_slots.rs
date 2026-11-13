@@ -33,7 +33,7 @@ pub struct CraftingHandler {
 
 impl CraftingHandler {
     /// Creates a new Crafting Recipe Handler
-    pub const fn new(
+    pub fn new(
         crafting_container: Shared<CraftingContainer>,
         result_container: Shared<ResultContainer>,
         grid_size: usize,

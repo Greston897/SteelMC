@@ -298,18 +298,19 @@ fn crafter_menu_toggles_the_block_entity_mask_through_data_slot_zero() {
     let block_entity = world
         .get_block_entity(pos)
         .expect("crafter should create its block entity");
-    let crafter_entity = block_entity
-        .downcast_ref::<CrafterBlockEntity>()
-        .expect("crafter block entity type");
     let container = ContainerRef::from_block_entity(Arc::clone(&block_entity))
         .expect("crafter should expose a container");
 
     let player = TestPlayerBuilder::new(Arc::clone(world), "CrafterTester", 1).build();
     player.base().set_position_local(DVec3::new(0.5, 64.0, 0.5));
     let inventory = Arc::clone(&player.inventory);
+    let crafter_handle = Arc::clone(&block_entity);
     let mut menu = crafter(inventory, 1, pos, container, block_entity);
 
     assert!(menu.set_crafter_slot_state(3, true));
+    let crafter_entity = crafter_handle
+        .downcast_ref::<CrafterBlockEntity>()
+        .expect("crafter block entity type");
     assert_eq!(crafter_entity.disabled_slots() & (1 << 3), 1 << 3);
     assert_eq!(menu.behavior().get_data(0), Some(1 << 3));
 
@@ -341,7 +342,7 @@ fn crafter_menu_refuses_to_disable_an_occupied_slot() {
     let block_entity = world
         .get_block_entity(pos)
         .expect("crafter should create its block entity");
-    let crafter = block_entity
+    let crafter_entity = block_entity
         .downcast_ref::<CrafterBlockEntity>()
         .expect("crafter block entity type");
     let container =

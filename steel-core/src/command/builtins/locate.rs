@@ -7,9 +7,10 @@ use steel_registry::biome::BiomeRef;
 use steel_registry::{REGISTRY, RegistryExt as _};
 use steel_utils::{BlockPos, ChunkPos, Identifier, translations};
 use text_components::{
-    Modifier, TextComponent, TranslatedMessage,
+    Modifier, TextComponent,
     format::Color,
     interactivity::{ClickEvent, HoverEvent},
+    translation::TranslatedMessage,
 };
 
 use super::super::{

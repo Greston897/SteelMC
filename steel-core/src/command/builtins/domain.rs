@@ -179,6 +179,12 @@ fn domain_menu(
         .map(ToOwned::to_owned)
         .collect();
 
+    // Both are needed by the menu record below and by the grid painter, so they
+    // are resolved before the layout scope opens.
+    let page_count = domain_names.len().div_ceil(DOMAINS_PER_PAGE).max(1);
+    let page = page.min(page_count - 1);
+    let start = page * DOMAINS_PER_PAGE;
+
     let map: Vec<(Section, Vec<Arc<World>>)> = b.grid(6, |g| {
         g.paint_all(ItemStack::empty());
         g.paint(
@@ -197,10 +203,6 @@ fn domain_menu(
             Rect::cols(0).rows(1..5),
             &*vanilla_items::GRAY_STAINED_GLASS_PANE,
         );
-
-        let page_count = domain_names.len().div_ceil(DOMAINS_PER_PAGE).max(1);
-        let page = page.min(page_count - 1);
-        let start = page * DOMAINS_PER_PAGE;
 
         // Page indicator: the bottom bar shows which slice is visible.
         let mut indicator = ItemStack::new(&*vanilla_items::PAPER);

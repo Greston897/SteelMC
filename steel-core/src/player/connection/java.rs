@@ -211,7 +211,11 @@ impl ScheduledPlayPacket {
             | ScheduledPlayPacketKind::SetCarriedItem(_)
             | ScheduledPlayPacketKind::Punch(_)
             | ScheduledPlayPacketKind::PickItemFromBlock(_)
-            | ScheduledPlayPacketKind::ClientCommand(_) => ScheduledPacketExecution::PlayerLocal,
+            | ScheduledPlayPacketKind::ClientCommand(_)
+            // Recipe book toggles and game rule changes only touch player-owned state.
+            | ScheduledPlayPacketKind::RecipeBookChangeSettings(_)
+            | ScheduledPlayPacketKind::RecipeBookSeenRecipe(_)
+            | ScheduledPlayPacketKind::SetGameRule(_) => ScheduledPacketExecution::PlayerLocal,
             ScheduledPlayPacketKind::PlayerCommand(packet) => match packet.action {
                 PlayerCommandAction::StartSprinting
                 | PlayerCommandAction::StopSprinting

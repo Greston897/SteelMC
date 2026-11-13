@@ -39,7 +39,7 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 /// The extracted `en_us.json` does not carry the `commands.schedule.*` keys yet,
 /// so the fallback is what the client actually renders today; the key is kept so
 /// the message switches to the packaged translation as soon as it lands.
-fn schedule_message(key: &str, fallback: &str, args: Vec<TextComponent>) -> TextComponent {
+fn schedule_message(key: &'static str, fallback: &str, args: Vec<TextComponent>) -> TextComponent {
     TextComponent::translated(TranslatedMessage {
         key: Cow::Borrowed(key),
         fallback: Some(Cow::Owned(fallback.to_owned())),

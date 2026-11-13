@@ -1082,7 +1082,8 @@ impl Player {
     /// Vanilla asks the scoreboard for both holder teams; unteamed holders are
     /// never teammates, matching `PlayerTeam == null` checks.
     fn is_on_same_team_as(&self, world: &Arc<World>, other: &dyn Entity) -> bool {
-        let Some(scoreboard) = self.server().scoreboards.get(world.domain()) else {
+        let server = self.server();
+        let Some(scoreboard) = server.scoreboards.get(world.domain()) else {
             return false;
         };
         let Some(other) = other.as_player() else {
@@ -1105,7 +1106,8 @@ impl Player {
     /// domain. Missing scoreboards are ignored, like vanilla when the objective
     /// is not registered.
     fn increment_dummy_objective(&self, world: &Arc<World>, objective_name: &str) {
-        let Some(scoreboard) = self.server().scoreboards.get(world.domain()) else {
+        let server = self.server();
+        let Some(scoreboard) = server.scoreboards.get(world.domain()) else {
             return;
         };
         let objective = scoreboard

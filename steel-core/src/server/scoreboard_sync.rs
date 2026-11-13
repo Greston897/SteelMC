@@ -165,7 +165,7 @@ pub fn sync_objective_added(server: &Arc<Server>, domain: &str, name: &str) {
         CSetObjective {
             name: name.to_owned(),
             action: ObjectiveAction::Add {
-                display_name: TextComponent::plain(name),
+                display_name: TextComponent::plain(name.to_owned()),
                 render_type: RenderType::Integer,
             },
         }
@@ -180,7 +180,7 @@ pub fn sync_objective_updated(
     display: &str,
     read_only: bool,
 ) {
-    let display_name = TextComponent::plain(display);
+    let display_name = TextComponent::plain(display.to_owned());
     broadcast(server, domain, |_| CSetObjective {
         name: name.to_owned(),
         action: ObjectiveAction::Update {

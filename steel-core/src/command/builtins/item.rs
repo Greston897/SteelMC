@@ -82,7 +82,10 @@ fn replace(
         return Err(CommandSyntaxError::dynamic(translated(
             "commands.item.slot.unknown",
             "Unknown item slot".to_owned(),
-            vec![(slot_name).into(), ("hotbar.0".to_string()).into()],
+            vec![
+                TextComponent::plain(slot_name.to_string()),
+                TextComponent::plain("hotbar.0".to_owned()),
+            ],
         )));
     };
     let stack = context.item_stack("item")?;

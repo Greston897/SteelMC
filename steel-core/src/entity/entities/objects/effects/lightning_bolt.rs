@@ -246,10 +246,10 @@ mod tests {
     #[test]
     fn visual_only_flag_is_saved_into_nbt() {
         init_vanilla_registry();
-        let bolt = bolt();
-        bolt.set_visual_only(true);
+        let visual_bolt = bolt();
+        visual_bolt.set_visual_only(true);
         let mut saved = NbtCompound::new();
-        bolt.save_additional(&mut saved);
+        visual_bolt.save_additional(&mut saved);
         assert_eq!(saved.byte_value("visual_only"), Some(1));
         assert_eq!(saved.int_value("life"), Some(LIGHTNING_LIFE));
 

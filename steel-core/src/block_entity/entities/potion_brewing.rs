@@ -127,7 +127,7 @@ mod tests {
 
     fn potion(key: &str) -> ItemStack {
         let mut stack = ItemStack::new(&*vanilla_items::POTION);
-        stack.set_potion(&Identifier::new("minecraft", key));
+        stack.set_potion(&Identifier::new("minecraft", key.to_owned()));
         stack
     }
 

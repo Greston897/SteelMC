@@ -61,10 +61,10 @@ fn particle_for(name: &str, payload: Option<&NbtCompound>) -> Option<ParticleDat
     let key = if name == "dust" {
         Identifier::vanilla("dust".to_owned())
     } else if name.contains(':') {
-        Identifier::new(
-            name.split_once(':').map_or("minecraft", |(namespace, _)| namespace),
-            name.split_once(':').map_or(name, |(_, path)| path),
-        )
+        let (namespace, path) = name
+            .split_once(':')
+            .expect("the branch guarantees a namespace separator");
+        Identifier::new(namespace.to_owned(), path.to_owned())
     } else {
         Identifier::vanilla(name.to_owned())
     };

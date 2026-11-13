@@ -50,7 +50,10 @@ fn spread(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSy
         return Err(CommandSyntaxError::dynamic(translated(
             "commands.spreadplayers.spreading",
             "Cannot spread players that close together".to_owned(),
-            vec![(spread_distance).into(), (max_range).into()],
+            vec![
+                TextComponent::plain(spread_distance.to_string()),
+                TextComponent::plain(max_range.to_string()),
+            ],
         )));
     }
 

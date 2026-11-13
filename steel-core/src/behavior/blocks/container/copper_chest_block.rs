@@ -164,11 +164,14 @@ impl BlockBehavior for WeatheringCopperChestBlock {
         if state.get_value(&BlockStateProperties::CHEST_TYPE) == ChestType::Right {
             return;
         }
-        if world
-            .get_block_entity(pos)
-            .and_then(|entity| entity.downcast_ref::<ChestBlockEntity>())
-            .is_some_and(|chest| chest.openers_counter().openers() > 0)
-        {
+        let chest_has_openers = {
+            let entity = world.get_block_entity(pos);
+            entity
+                .as_ref()
+                .and_then(|entity| entity.downcast_ref::<ChestBlockEntity>())
+                .is_some_and(|chest| chest.openers_counter().openers() > 0)
+        };
+        if chest_has_openers {
             return;
         }
         self.weathering.change_over_time(state, world, pos);

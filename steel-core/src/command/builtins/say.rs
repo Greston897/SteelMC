@@ -55,7 +55,7 @@ fn broadcast_say(context: &SteelCommandContext<CommandSource>) -> Result<i32, Co
 
 /// Vanilla `MeCommand`: `chat.type.emote` with the sender and the action.
 fn broadcast_me(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
-    let action = context.string("action")?;
+    let action = context.string("action")?.to_owned();
     let sender = TextComponent::plain(context.source().source_name());
     let content = translated(
         "chat.type.emote",

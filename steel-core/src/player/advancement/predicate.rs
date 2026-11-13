@@ -437,7 +437,7 @@ mod tests {
     use super::*;
 
     fn id(path: &str) -> Identifier {
-        Identifier::vanilla_static(path)
+        Identifier::vanilla(path.to_owned())
     }
 
     #[test]

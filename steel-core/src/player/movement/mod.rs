@@ -27,7 +27,7 @@ use steel_utils::{TICKS_PER_SECOND, translations};
 
 use crate::entity::{
     AcceptedClientMovement, AcceptedClientMovementOutcome, Entity, EntityMoveError, LivingEntity,
-    get_input_vector,
+    SharedEntity, get_input_vector,
 };
 use crate::physics::{
     MOVEMENT_ERROR_THRESHOLD, MovementCollisionValidation, MoverType, WorldCollisionProvider,
@@ -1032,7 +1032,9 @@ impl Player {
                 // Vanilla `ServerboundPlayerCommandPacket.Action.START_RIDING_JUMP`:
                 // the player is the controlling passenger of a mob, so the
                 // mounted mob jumps.
-                if let Some(mob) = self.controlling_vehicle_mob() {
+                if let Some(vehicle) = self.controlling_vehicle_mob()
+                    && let Some(mob) = vehicle.as_mob()
+                {
                     mob.jump_control_jump();
                 }
             }
@@ -1057,7 +1059,7 @@ impl Player {
 
     /// Returns the mounted mob this player controls, mirroring vanilla
     /// `Mob.getControllingPassenger` from the passenger side.
-    fn controlling_vehicle_mob(&self) -> Option<&dyn crate::entity::Mob> {
+    fn controlling_vehicle_mob(&self) -> Option<SharedEntity> {
         let vehicle = self.vehicle()?;
         if vehicle
             .controlling_passenger()
@@ -1065,7 +1067,7 @@ impl Player {
         {
             return None;
         }
-        vehicle.as_mob()
+        vehicle.as_mob().map(|_| vehicle)
     }
 
     /// Checks new player non-riding movement provided to award stats for it,

@@ -7,6 +7,8 @@
 //! cartography table and smithing table still leave the result slot empty because
 //! their pattern/trim data is not modelled yet.
 
+use std::sync::Arc;
+
 use steel_registry::item_stack::ItemStack;
 use steel_registry::recipe::{SingleItemRecipeInput, vanilla_recipe_types};
 use steel_registry::menu_type::MenuType;
@@ -227,7 +229,7 @@ fn build_station_with_result(
     let _result = builder.section_at(result, [0], SectionKind::take_only());
     let player = builder.player_inventory(&inventory);
     builder.route(input_section, player.all(), FillDirection::Forward);
-    let kind = make_kind(input).with_sections(input_section, player);
+    let kind = make_kind(kind_input).with_sections(input_section, player);
     builder.build(kind)
 }
 
@@ -240,6 +242,7 @@ fn build_station(
     make_kind: impl FnOnce(Shared<SimpleContainer>) -> StationKind,
 ) -> Menu {
     let mut builder = MenuBuilder::new(menu_type, container_id);
+    let kind_input = Arc::clone(&input);
     let input_section = builder.section_all(input);
     let player = builder.player_inventory(&inventory);
     builder.route(input_section, player.all(), FillDirection::Forward);

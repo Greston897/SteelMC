@@ -54,7 +54,10 @@ fn execute_fillbiome(
         return Err(CommandSyntaxError::dynamic(translated(
             "commands.fillbiome.toobig",
             "Too many blocks in the specified area".to_owned(),
-            vec![(area).into(), (i64::from(limit)).into()],
+            vec![
+                TextComponent::plain(area.to_string()),
+                TextComponent::plain(i64::from(limit).to_string()),
+            ],
         )));
     }
     ensure_region_chunks_block_ticking(world, &region)?;

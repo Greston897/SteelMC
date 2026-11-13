@@ -197,7 +197,8 @@ impl Player {
             return;
         };
         let domain = level.domain().to_owned();
-        let Some(scoreboard) = self.server().scoreboards.get(&domain) else {
+        let server = self.server();
+        let Some(scoreboard) = server.scoreboards.get(&domain) else {
             return;
         };
         let criterion = stat.to_string();

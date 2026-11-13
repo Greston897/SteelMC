@@ -6,12 +6,12 @@
 //! the block entity registry owns the NBT shape, copies block entities through
 //! their save/load path when both sides have a container.
 
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::vanilla_game_rules::MAX_BLOCK_MODIFICATIONS;
 use steel_utils::{BlockPos, BoundingBox, Identifier};
-use text_components::TextComponent;
+use text_components::{TextComponent, translation::TranslatedMessage};
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
@@ -86,7 +86,10 @@ fn execute_clone(
         return Err(CommandSyntaxError::dynamic(translated(
             "commands.clone.toobig",
             "Too many blocks in the specified area".to_owned(),
-            vec![volume.into(), i64::from(limit).into()],
+            vec![
+                TextComponent::plain(volume.to_string()),
+                TextComponent::plain(i64::from(limit).to_string()),
+            ],
         )));
     }
     // Vanilla refuses to clone a region onto itself.
