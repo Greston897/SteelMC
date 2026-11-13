@@ -36,13 +36,13 @@ const RANDOM_GROWTH_BOUND: u32 = 7;
 pub struct SaplingBlock {
     block: BlockRef,
     /// `TreeGrower` secondary tree name (e.g. `oak`).
-    #[json_arg(json = "tree_grower_name")]
+    #[json_arg(value, json = "tree_grower_name")]
     tree_grower_name: &'static str,
     /// The grower's first tree type (e.g. `oak`, `jungle_tree_no_vine`).
     ///
     /// Growers with a single tree (`dark_oak`, `pale_oak`) omit the key entirely,
     /// which the extractor reports as the `none` sentinel.
-    #[json_arg(json = "tree_grower_shortest_tree_type", optional = "none")]
+    #[json_arg(value, json = "tree_grower_shortest_tree_type", optional = "none")]
     shortest_tree_type: Option<&'static str>,
 }
 

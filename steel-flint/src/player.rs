@@ -249,8 +249,8 @@ mod tests {
         assert_eq!(item.data.get("damage").map(String::as_str), Some("7"));
 
         // Components that were not asked for stay out of the map.
-        let unrequested = stack_to_flint_item(&stack, Vec::new())
-            .expect("non-empty stack converts");
+        let unrequested =
+            stack_to_flint_item(&stack, Vec::new()).expect("non-empty stack converts");
         assert!(unrequested.data.is_empty());
     }
 }

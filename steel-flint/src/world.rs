@@ -136,7 +136,7 @@ impl SteelTestWorld {
             packet_workers: Some(1),
             chunk_generation_threads: Some(1),
             chunk_encoding_threads: Some(1),
-        rcon: RconConfig::default(),
+            rcon: RconConfig::default(),
             ..RuntimeConfig::default()
         });
 

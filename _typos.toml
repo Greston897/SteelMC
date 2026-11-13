@@ -6,6 +6,9 @@ extend-glob = ["**/locale.rs"]
 check-file = false
 
 [default.extend-words]
+# "unparseable" is the spelling the codebase uses for values a parser rejects.
+unparseable = "unparseable"
+Unparseable = "Unparseable"
 flate = "flate"
 strat = "strat"
 axe = "axe"
@@ -22,6 +25,27 @@ neighbouring = "neighbouring"
 modelled = "modelled"
 interruptable = "interruptable"
 neighbour = "neighbour"
+neighbours = "neighbours"
+honour = "honour"
+honoured = "honoured"
+honouring = "honouring"
+honours = "honours"
+armour = "armour"
+behaviours = "behaviours"
+oxidis = "oxidis"
+oxidises = "oxidises"
+oxidising = "oxidising"
+randomised = "randomised"
+recognise = "recognise"
+recognised = "recognised"
+unrecognised = "unrecognised"
+requeueing = "requeueing"
+synchronisation = "synchronisation"
+travelling = "travelling"
+levelling = "levelling"
+recolour = "recolour"
+desynchronise = "desynchronise"
+Modelling = "Modelling"
 # Vanilla stronghold piece-type IDs (shs, shsd, shrc, ...).
 shs = "shs"
 # Vanilla carver tag name (minecraft:overworld_carver_replaceables).

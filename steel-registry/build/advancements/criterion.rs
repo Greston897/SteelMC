@@ -16,14 +16,15 @@ pub(crate) struct CriterionJson {
 impl ToTokens for CriterionJson {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         // The trigger id and the raw instance are kept so the server can match a
-        // fired trigger against every advancement. Predicate evaluation inside a
-        // criterion is not modelled yet, which is why the instance is stored
-        // verbatim instead of being parsed into a typed struct.
-        let trigger = &self.trigger;
+        // fired trigger against every advancement and evaluate the predicate the
+        // instance carries (`steel-core`'s `advancement::predicate`). The
+        // instance stays a JSON string because the predicate shape varies by
+        // trigger and is easier to interpret at runtime than to type out here.
+        let trigger = super::super::features::common::generate_identifier(&self.trigger);
         let instance = self.conditions.to_string();
         tokens.extend(quote! {
             Box::new(SimpleCriterion::new(
-                #trigger.clone(),
+                #trigger,
                 #instance.to_owned(),
             )) as Box<dyn AnyCriterion>
         });
