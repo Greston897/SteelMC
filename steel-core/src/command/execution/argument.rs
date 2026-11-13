@@ -1562,13 +1562,6 @@ fn suggest_game_modes(builder: &mut SuggestionsBuilder<'_>) {
     }
 }
 
-fn component_snbt_error(
-    reader: &StringReader<'_>,
-    message: impl Into<TextComponent>,
-) -> CommandSyntaxError {
-    reader.error(CommandSyntaxErrorKind::Dynamic(Box::new(message.into())))
-}
-
 fn parse_compound_argument(
     reader: &mut StringReader<'_>,
 ) -> Result<NbtCompound, CommandSyntaxError> {

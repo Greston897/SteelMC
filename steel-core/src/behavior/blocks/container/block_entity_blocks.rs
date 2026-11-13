@@ -13,9 +13,10 @@ use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, Direction, FrontAndTop};
 use steel_registry::vanilla_block_entity_types;
 use glam::DVec3;
-use steel_registry::vanilla_entities;
+use steel_registry::{sound_events, vanilla_entities};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_items;
+use steel_protocol::packets::game::SoundSource;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _};
 use text_components::TextComponent;
 
@@ -394,7 +395,7 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
 
     world.play_sound(
         &sound_events::BLOCK_DISPENSER_DISPENSE,
-        crate::sound::SoundSource::Blocks,
+        SoundSource::Blocks,
         pos,
         1.0,
         1.0,
@@ -414,7 +415,7 @@ fn drop_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool {
     spawn_dropped_item(world, spawn_pos, velocity, stack);
     world.play_sound(
         &sound_events::BLOCK_DISPENSER_DISPENSE,
-        crate::sound::SoundSource::Blocks,
+        SoundSource::Blocks,
         pos,
         1.0,
         1.0,

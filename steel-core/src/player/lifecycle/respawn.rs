@@ -333,27 +333,6 @@ impl ServerJob for PlayerRespawnJob {
     }
 }
 
-/// Resolves a player's personal respawn position for a world change that is not
-/// a death, such as the End portal return.
-///
-/// Returns `None` when the player has no usable bed or anchor in `target_world`,
-/// which tells the caller to fall back to the world spawn search.
-pub(crate) fn resolve_personal_respawn_for_world_change(
-    target_world: &Arc<World>,
-    player: &Player,
-) -> Option<(DVec3, (f32, f32))> {
-    let config = player.respawn_config()?;
-    // The config records the dimension the bed lives in; only use it when that
-    // dimension is the one being entered.
-    if config.respawn_data.dimension() != &target_world.key {
-        return None;
-    }
-    // A world change must not consume the anchor's charge: vanilla only depletes
-    // charges when the player actually respawns after dying.
-    let spawn = PlayerRespawnJob::resolve_personal_respawn(target_world, player, &config, false)?;
-    Some((spawn.position, spawn.rotation))
-}
-
 impl PlayerRespawnJob {
     fn finish(&mut self, spawn: DeathRespawnSpawn) {
         let outcome = self.player.finish_respawn_replacement(

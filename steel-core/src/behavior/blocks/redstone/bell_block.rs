@@ -14,7 +14,8 @@ use steel_registry::blocks::properties::{
 use steel_registry::vanilla_custom_stats::BELL_RING;
 use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
 use steel_registry::{
-    REGISTRY, TaggedRegistryExt as _, sound_events, vanilla_block_entity_types, vanilla_blocks, vanilla_game_events,
+    REGISTRY, TaggedRegistryExt as _, sound_events, vanilla_block_entity_types, vanilla_blocks,
+    vanilla_entities, vanilla_game_events,
 };
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _, WorldAabb};
