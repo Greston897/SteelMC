@@ -1,6 +1,7 @@
 //! Steel-owned built-in command declarations.
 
 pub mod advancement;
+mod attribute;
 mod ban;
 mod banip;
 mod bossbar;
@@ -98,6 +99,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.declare_permission(perms::GROUP_ALL_PERMISSION)?;
     builder.declare_permission(perms::METADATA_PERMISSION)?;
     builder.register(advancement::registration())?;
+    builder.register(attribute::registration())?;
     builder.register(ban::ban_registration())?;
     builder.register(ban::pardon_registration())?;
     builder.register(ban::banlist_registration())?;
@@ -212,6 +214,7 @@ mod tests {
             names,
             [
                 "advancement",
+                "attribute",
                 "ban",
                 "banip",
                 "banlist",
