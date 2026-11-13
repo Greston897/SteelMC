@@ -9,6 +9,7 @@ pub mod rcon;
 /// The registry cache for the server.
 pub mod registry_cache;
 mod run_loop;
+pub mod schedule;
 mod service_keys;
 mod tick_overload;
 /// The tick rate manager for the server.
@@ -259,6 +260,7 @@ pub async fn test_server_with_worlds_and_config(
         command_dispatcher: SyncRwLock::new(registered_commands.dispatcher),
         command_permission_keys,
         command_requests: CommandRequestQueue::new(),
+        schedules: Arc::new(schedule::ScheduleRegistry::new()),
         packet_processor: PacketProcessor::new(),
         chunk_encoding_pool: Arc::new(chunk_encoding_pool),
         jobs: ServerJobQueue::new(),
@@ -519,6 +521,8 @@ pub struct Server {
     command_permission_keys: Vec<String>,
     /// Command work submitted from connection and console tasks.
     command_requests: CommandRequestQueue,
+    /// Commands waiting for their tick, backing `/schedule`.
+    pub schedules: Arc<schedule::ScheduleRegistry>,
     /// Decoded serverbound play packets handled during the inter-tick phase.
     packet_processor: PacketProcessor,
     /// Dedicated worker pool for CPU-heavy chunk persistence and packet encoding.

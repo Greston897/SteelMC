@@ -35,6 +35,7 @@ mod position;
 mod return_command;
 mod ride;
 mod say;
+mod schedule;
 mod scoreboard;
 mod seed;
 mod setblock;
@@ -124,6 +125,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(say::say_registration())?;
     builder.register(say::me_registration())?;
     builder.register(scoreboard::registration())?;
+    builder.register(schedule::registration())?;
     builder.register(seed::registration())?;
     builder.register(setblock::registration())?;
     builder.register(spawnpoint::registration())?;
@@ -215,6 +217,7 @@ mod tests {
                 "perms",
                 "playsound",
                 "return",
+                "schedule",
                 "seed",
                 "setblock",
                 "spawnpoint",

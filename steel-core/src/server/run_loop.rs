@@ -241,6 +241,7 @@ impl Server {
             let (tick_count, runs_normally) = self.advance_server_tick();
 
             self.tick_pending_command_executions(&mut pending_command_executions);
+            self.tick_scheduled_commands();
             self.tick_command_requests(&mut pending_command_executions);
             if let Err(error) = self
                 .tick_worlds_game(&world_tick_workers, tick_count, runs_normally)
@@ -373,6 +374,39 @@ impl Server {
                 pending = stats.pending,
                 "Command resumption tick reached per-tick processing limit"
             );
+        }
+    }
+
+    /// Runs the commands whose scheduled tick has arrived.
+    ///
+    /// Each command is submitted through the ordinary request queue, so a
+    /// scheduled function runs with console permissions and cannot starve the
+    /// tick loop — the queue caps how many run per tick.
+    fn tick_scheduled_commands(self: &Arc<Self>) {
+        let tick = self.current_tick();
+        let due = self.schedules.due(tick);
+        if due.is_empty() {
+            return;
+        }
+
+        for scheduled in due {
+            if self
+                .submit_command(CommandSender::Console, scheduled.command.clone())
+                .is_err()
+            {
+                // The queue is full: keep the schedule rather than dropping it,
+                // so the command runs on a later tick instead of vanishing.
+                tracing::warn!(
+                    command = %scheduled.command,
+                    "Command queue full while running a scheduled command; requeueing"
+                );
+                self.schedules.schedule(
+                    scheduled.key,
+                    scheduled.command,
+                    tick + 1,
+                    crate::server::schedule::ScheduleMode::Append,
+                );
+            }
         }
     }
 
