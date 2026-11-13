@@ -2129,6 +2129,15 @@ impl Entity for Player {
             } else {
                 &vanilla_custom_stats::MOB_KILLS
             });
+            // Vanilla `ServerPlayer.awardKillScore` fires
+            // `CriteriaTriggers.PLAYER_KILLED_ENTITY`, which the `kill_a_mob` and
+            // `monster_hunter` advancements listen for.
+            self.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::PLAYER_KILLED_ENTITY,
+                &crate::player::advancement::predicate::TriggerContext::entity(
+                    &victim.entity_type().key,
+                ),
+            );
             // Vanilla `ServerPlayer.awardKillScore` also bumps `teamKillCount`
             // when killer and victim share a team.
             let world = self.get_world();

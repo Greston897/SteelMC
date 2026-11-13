@@ -58,6 +58,18 @@ impl TriggerContext {
         }
     }
 
+    /// A context for an entity event, carrying the entity type.
+    ///
+    /// `player_killed_entity`, `tame_animal` and `villager_trade` all key their
+    /// predicates on the entity type, so one constructor serves them.
+    #[must_use]
+    pub fn entity(entity_type: &Identifier) -> Self {
+        Self {
+            entity_type: Some(entity_type.clone()),
+            ..Self::default()
+        }
+    }
+
     /// A context for a position-only trigger such as `location`.
     #[must_use]
     pub fn at(world: &World, pos: steel_utils::BlockPos) -> Self {

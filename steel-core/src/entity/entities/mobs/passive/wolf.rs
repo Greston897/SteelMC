@@ -16,7 +16,7 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::WolfEntityData;
-use steel_registry::{sound_events, vanilla_attributes};
+use steel_registry::{sound_events, vanilla_attributes, vanilla_items};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 use uuid::Uuid;
@@ -26,6 +26,7 @@ use crate::entity::ai::goal::{
     LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 
+use crate::behavior::InteractionResult;
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
@@ -33,9 +34,17 @@ use crate::entity::{
     PathfinderMob, SharedEntity, SpawnRule, sync_dirty_mob_effects,
 };
 use crate::physics::MoveResult;
+use crate::player::Player;
 use crate::world::World;
+use steel_utils::types::InteractionHand;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
+
+/// Vanilla `TamableAnimal` flag bit 2 marks a tamed animal.
+const TAME_FLAG: i8 = 0x04;
+
+/// Vanilla `Wolf.TAMING_CHANCE`: one bone in three tames a wolf.
+const TAMING_CHANCE: f32 = 1.0 / 3.0;
 
 #[entity_behavior(class = "Wolf", spawn_rule)]
 /// Vanilla wolf entity.
@@ -113,7 +122,7 @@ impl WolfEntity {
     /// Vanilla `Wolf.isTame`.
     #[must_use]
     pub fn is_tame(&self) -> bool {
-        *self.entity_data.lock().tamable_animal().flags.get() & 0x04 != 0
+        *self.entity_data.lock().tamable_animal().flags.get() & TAME_FLAG != 0
     }
 
     /// Returns the owner UUID of this wolf, if tamed.
@@ -137,6 +146,20 @@ impl WolfEntity {
     /// Sets the vanilla wolf collar colour.
     pub fn set_collar_color(&self, color: i32) {
         self.entity_data.lock().wolf_mut().collar_color.set(color);
+    }
+
+    /// Vanilla `TamableAnimal.setTame(boolean, boolean)`: the tame flag and the
+    /// owner are written together so a partially tamed wolf cannot exist.
+    pub fn set_tame(&self, tame: bool, owner: Option<Uuid>) {
+        let mut data = self.entity_data.lock();
+        data.tamable_animal_mut().owneruuid.set(owner);
+        let mut flags = *data.tamable_animal().flags.get();
+        if tame {
+            flags |= TAME_FLAG;
+        } else {
+            flags &= !TAME_FLAG;
+        }
+        data.tamable_animal_mut().flags.set(flags);
     }
 
     /// Vanilla `Wolf.isInterested`.
@@ -302,6 +325,44 @@ impl Animal for WolfEntity {
 impl Mob for WolfEntity {
     fn mob_base(&self) -> &MobBase {
         &self.mob_base
+    }
+
+    /// Vanilla `Wolf.mobInteract`: feeding a bone tames an untamed wolf, and a
+    /// tamed wolf eats meat to heal. Taming fires `CriteriaTriggers.TAME_ANIMAL`
+    /// and consumes one bone either way.
+    fn mob_interact(
+        &self,
+        player: &Player,
+        hand: InteractionHand,
+    ) -> InteractionResult {
+        let stack = {
+            let inventory = player.inventory.lock();
+            let stack = inventory.get_item_in_hand(hand);
+            stack.copy_with_count(stack.count())
+        };
+
+        if !self.is_tame() {
+            if !stack.is(&*vanilla_items::BONE) {
+                return InteractionResult::Pass;
+            }
+            // Vanilla rolls `random.nextFloat() < 0.33F`; a success tames and
+            // heals to full, a failure only shows the smoke particles.
+            let tame = rand::random::<f32>() < TAMING_CHANCE;
+            if tame {
+                self.set_tame(true, Some(player.base().uuid()));
+                self.set_health(self.get_max_health());
+                player.trigger_advancement_with_context(
+                    &steel_registry::vanilla_criteria_triggers::TAME_ANIMAL,
+                    &crate::player::advancement::predicate::TriggerContext::entity(
+                        &self.entity_type().key,
+                    ),
+                );
+            }
+            player.inventory.lock().shrink_item_in_hand(hand, 1);
+            return InteractionResult::Success;
+        }
+
+        InteractionResult::Pass
     }
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {

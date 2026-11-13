@@ -255,7 +255,14 @@ impl MenuKind for MerchantKind {
             let _ = guard.remove_item(container_id, COST_SLOT_B, cost_b.count());
         }
 
-        let _ = player;
+        // Vanilla `MerchantResultSlot.onTake` awards `Stats.TRADED_WITH_VILLAGER`
+        // and fires `CriteriaTriggers.VILLAGER_TRADE`, which `minecraft:adventure/
+        // trade` listens for.
+        player.award_custom_stat(&steel_registry::vanilla_custom_stats::TRADED_WITH_VILLAGER);
+        player.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::VILLAGER_TRADE,
+            &crate::player::advancement::predicate::TriggerContext::item(&result.item().key),
+        );
         ClickOutcome::Consume
     }
 }
