@@ -97,12 +97,10 @@ mod zombie_nautilus_variants;
 mod enchantments;
 
 mod advancements;
-mod functions;
 mod generator_functions;
 mod shared_structs;
 mod tags;
 
-const FUNCTIONS: &str = "functions";
 const ADVANCEMENTS: &str = "advancements";
 const ATTRIBUTES: &str = "attributes";
 const BLOCKS: &str = "blocks";
@@ -279,7 +277,6 @@ pub fn main() {
         (custom_stats::build(), CUSTOM_STATS),
         (suspicious_stew_effects::build(), SUSPICIOUS_STEW_EFFECTS),
         (advancements::build(), ADVANCEMENTS),
-        (functions::build(), FUNCTIONS),
     ];
 
     // Track which files we're generating this run

@@ -45,6 +45,10 @@ const MAX_LEVELS: i32 = 4;
 
 const BEACON_TICK_INTERVAL: i64 = 80;
 
+/// Squared vanilla radius (`10` blocks) within which a new beacon beam grants
+/// the `construct_beacon` advancement.
+const BEACON_TRIGGER_RADIUS_SQUARED: f64 = 100.0;
+
 /// Blocks of beam column scanned per tick.
 const BLOCKS_CHECK_PER_TICK: i32 = 10;
 
@@ -469,15 +473,37 @@ impl BlockEntity for BeaconBlockEntity {
         }
 
         if scan_complete {
-            // Vanilla `BeaconBlockEntity` fires `construct_beacon` for every player
-            // within range when the beam is (re)activated. Steel has no per-world
-            // player index yet, so the trigger has no recipients to dispatch to.
             let sound = match (previous_levels > 0, levels > 0) {
                 (false, true) => &sound_events::BLOCK_BEACON_ACTIVATE,
                 (true, false) => &sound_events::BLOCK_BEACON_DEACTIVATE,
                 _ => return,
             };
             Self::play_sound(world, pos, sound);
+        }
+
+        // Vanilla `BeaconBlockEntity.tick` fires `construct_beacon` for the players
+        // around the beacon the moment its pyramid becomes valid again, which is
+        // what `story/construct_beacon` waits for.
+        if scan_complete
+            && previous_levels <= 0
+            && levels > 0
+        {
+            let (center_x, center_y, center_z) = pos.get_center();
+            let center = DVec3::new(center_x, center_y, center_z);
+            world.players.iter_players(|_uuid, player| {
+                if player.position().distance_squared(center) <= BEACON_TRIGGER_RADIUS_SQUARED {
+                    let mut context =
+                        crate::player::advancement::predicate::TriggerContext::at(
+                            world, center,
+                        );
+                    context.dimension_level = Some(levels);
+                    player.trigger_advancement_with_context(
+                        &steel_registry::vanilla_criteria_triggers::CONSTRUCT_BEACON,
+                        &context,
+                    );
+                }
+                true
+            });
         }
     }
 

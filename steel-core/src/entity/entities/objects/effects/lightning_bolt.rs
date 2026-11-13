@@ -134,6 +134,26 @@ impl LightningBoltEntity {
             .get_behavior(struck_state.get_block())
             .on_lightning_strike(struck_state, &world, struck_pos);
 
+        // Vanilla `LightningBolt.tick` fires `lightning_strike` on the players
+        // `ServerLevel.lastLightningBolt` recorded as this strike's cause, while
+        // `channeled_lightning` goes to the trident thrower. Steel's bolts carry no
+        // owner, so the players inside the same box the damage sweep uses play the
+        // striker role: those are the ones vanilla would have notified.
+        for entity in world.get_entities_in_aabb(&box_) {
+            let Some(player) = entity.as_player() else {
+                continue;
+            };
+            let context = crate::player::advancement::predicate::TriggerContext::at(&world, pos);
+            player.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::LIGHTNING_STRIKE,
+                &context,
+            );
+            player.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::CHANNELED_LIGHTNING,
+                &context,
+            );
+        }
+
         let source = DamageSource::environment(&vanilla_damage_types::LIGHTNING_BOLT);
         let self_uuid = self.uuid();
         for entity in world.get_entities_in_aabb(&box_) {

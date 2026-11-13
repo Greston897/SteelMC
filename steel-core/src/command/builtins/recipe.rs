@@ -69,11 +69,32 @@ fn apply(
 }
 
 fn give_recipes(target: &Arc<Player>, key: Option<&Identifier>) -> i32 {
-    let mut book = target.recipe_book.lock();
-    match key {
-        Some(key) => i32::from(book.add(key).is_some()),
-        None => i32::try_from(book.add_all_registered()).unwrap_or(i32::MAX),
+    let newly_unlocked: Vec<Identifier> = {
+        let mut book = target.recipe_book.lock();
+        match key {
+            Some(key) => {
+                if book.add(key).is_some() {
+                    vec![key.clone()]
+                } else {
+                    Vec::new()
+                }
+            }
+            None => {
+                let before: rustc_hash::FxHashSet<Identifier> =
+                    book.keys().cloned().collect();
+                book.add_all_registered();
+                book.keys()
+                    .filter(|key| !before.contains(key))
+                    .cloned()
+                    .collect()
+            }
+        }
+    };
+    // Vanilla `ServerPlayer.awardRecipes` fires `recipe_unlocked` per new recipe.
+    for key in &newly_unlocked {
+        target.trigger_recipe_unlocked(key);
     }
+    i32::try_from(newly_unlocked.len()).unwrap_or(i32::MAX)
 }
 
 fn take_recipes(target: &Arc<Player>, key: Option<&Identifier>) -> i32 {

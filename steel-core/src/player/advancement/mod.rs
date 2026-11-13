@@ -43,6 +43,8 @@ pub struct PlayerAdvancement {
     /// `location`. Vanilla registers all of them, so `location` is special-cased
     /// here to the criteria that actually carry a location predicate.
     location_listeners: Vec<(AdvancementRef, String)>,
+    /// Same idea for the `tick` trigger.
+    tick_listeners: Vec<(AdvancementRef, String)>,
 }
 
 impl Default for PlayerAdvancement {
@@ -54,7 +56,8 @@ impl Default for PlayerAdvancement {
             visible: FxHashSet::default(),
             progress_changed: FxHashSet::default(),
             last_selected_tab: Option::default(),
-            location_listeners: collect_location_listeners(),
+            location_listeners: collect_listeners(vanilla_criteria_triggers::LOCATION),
+            tick_listeners: collect_listeners(vanilla_criteria_triggers::TICK),
         }
     }
 }
@@ -149,16 +152,33 @@ impl PlayerAdvancement {
         granted
     }
 
+    /// Vanilla `TickTrigger`: re-evaluated every player tick.
+    ///
+    /// Like `location`, vanilla registers a listener per criterion; here the list
+    /// is built once from the `tick` criteria that carry a predicate.
+    pub fn trigger_tick(&mut self, player: &Player, context: &TriggerContext) -> usize {
+        self.trigger_listeners(player, &self.tick_listeners.clone(), context)
+    }
+
     /// Vanilla `LocationTrigger`: re-evaluated every player tick.
     ///
     /// Vanilla registers a listener only for criteria whose instance carries a
     /// location predicate, which keeps the per-tick work bounded. The listener
     /// list is built once, mirroring vanilla's registration on advancement load.
     pub fn trigger_location(&mut self, player: &Player, context: &TriggerContext) -> usize {
+        self.trigger_listeners(player, &self.location_listeners.clone(), context)
+    }
+
+    /// Grants every listener in `listeners` whose predicate accepts `context`.
+    fn trigger_listeners(
+        &mut self,
+        player: &Player,
+        listeners: &[(AdvancementRef, String)],
+        context: &TriggerContext,
+    ) -> usize {
         let mut granted = 0;
         // Collect first: `award` mutates `self`.
-        let matching: Vec<(AdvancementRef, String)> = self
-            .location_listeners
+        let matching: Vec<(AdvancementRef, String)> = listeners
             .iter()
             .filter(|(advancement, criterion_id)| {
                 advancement
@@ -452,25 +472,25 @@ mod tests {
     }
 }
 
-/// Collects the `location` criteria that carry a location predicate, the way
-/// vanilla's `PlayerAdvancements.registerListeners` does on advancement load.
-fn collect_location_listeners() -> Vec<(AdvancementRef, String)> {
+/// Collects the criteria of `trigger` that carry a predicate, the way vanilla's
+/// `PlayerAdvancements.registerListeners` does on advancement load.
+fn collect_listeners(trigger: &Identifier) -> Vec<(AdvancementRef, String)> {
     let mut listeners = Vec::new();
     for advancement in REGISTRY.advancements.advancements() {
         for criterion_id in advancement.criteria_ids() {
             let Some(criterion) = advancement.get_criterion(criterion_id) else {
                 continue;
             };
-            if &criterion.id() != &vanilla_criteria_triggers::LOCATION {
+            if &criterion.id() != trigger {
                 continue;
             }
             let Some(instance) = criterion.instance() else {
                 continue;
             };
-            // Vanilla only registers the listener when the instance is a
-            // `LocationPredicate`; anything else would re-check the same
-            // predicate every tick for no reason.
-            if !instance.contains("\"location\"") {
+            // Vanilla registers a listener only for the typed instance (a
+            // `LocationPredicate` for `location`); a bare trigger would re-check
+            // the same predicate every tick for no reason.
+            if !instance.contains("\"conditions\"") && !instance.contains("\"location\"") {
                 continue;
             }
             listeners.push((advancement, criterion_id.to_owned()));

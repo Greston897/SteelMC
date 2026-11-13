@@ -45,6 +45,12 @@ pub struct TriggerContext {
     pub distance: Option<f64>,
     /// Duration in ticks, for `levitation`.
     pub duration: Option<i32>,
+    /// Recipe key, for `recipe_unlocked`.
+    pub recipe: Option<Identifier>,
+    /// Whether a destroyed nest still held occupants, for `bee_nest_destroyed`.
+    pub bees_inside: Option<bool>,
+    /// Pyramid level of a constructed beacon, for `construct_beacon`.
+    pub dimension_level: Option<i32>,
 }
 
 impl TriggerContext {
@@ -87,6 +93,15 @@ impl TriggerContext {
     pub fn with_entity_type(mut self, entity_type: &Identifier) -> Self {
         self.entity_type = Some(entity_type.clone());
         self
+    }
+
+    /// A context for `recipe_unlocked`.
+    #[must_use]
+    pub fn recipe(recipe: &Identifier) -> Self {
+        Self {
+            recipe: Some(recipe.clone()),
+            ..Self::default()
+        }
     }
 
     /// Adds the held item to an existing context.
@@ -178,6 +193,19 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
         "to" => matches_dimension(expected, context.to_dimension.as_ref()),
         // `nether_travel` and `levitation` measure how far the player moved.
         "distance" => matches_distance(expected, context.distance),
+        // `bee_nest_destroyed` reports whether bees were still inside.
+        "bee_count" | "has_bee" | "bees" => context
+            .bees_inside
+            .is_none_or(|bees_inside| matches_bee_count(expected, bees_inside)),
+        // `construct_beacon` reports the pyramid level that was built.
+        "level" => context
+            .dimension_level
+            .is_none_or(|level| matches_number_range(expected, f64::from(level))),
+        // `recipe_unlocked` names the recipe the player just learned.
+        "recipe" => context
+            .recipe
+            .as_ref()
+            .is_none_or(|recipe| contains_id(expected, recipe)),
         // `levitation` also carries how long the effect has been running.
         "duration" => context
             .duration
@@ -186,6 +214,17 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
         "conditions" => true,
         // Unknown predicates are ignored: vanilla deserialization is lenient and
         // an unrecognised key would be a data-pack field Steel does not model.
+        _ => true,
+    }
+}
+
+/// Vanilla `bee_count` predicate: either a range or `{"occupied": true}`.
+fn matches_bee_count(expected: &Value, bees_inside: bool) -> bool {
+    match expected {
+        Value::Object(map) => map
+            .get("occupied")
+            .and_then(Value::as_bool)
+            .is_none_or(|occupied| occupied == bees_inside),
         _ => true,
     }
 }

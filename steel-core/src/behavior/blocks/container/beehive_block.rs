@@ -246,15 +246,35 @@ impl BlockBehavior for BeehiveBlock {
     fn player_destroy(
         &self,
         world: &std::sync::Arc<World>,
-        _player: &Player,
+        player: &Player,
         pos: BlockPos,
-        _state: BlockStateId,
+        state: BlockStateId,
         _block_entity: Option<&SharedBlockEntity>,
         _tool: &steel_registry::item_stack::ItemStack,
     ) {
         // Vanilla `BeehiveBlock.playerDestroy` releases every occupant, so
-        // breaking a hive never deletes the bees inside it.
+        // breaking a hive never deletes the bees inside it, and fires
+        // `bee_nest_destroyed` with the block and a bee-in-nest state.
+        // Vanilla reads `BeehiveBlockEntity.isFull()`/`isEmpty()` *before* the
+        // release, so the predicate sees the occupants the hive still held.
+        let bees_inside = world
+            .get_block_entity(pos)
+            .and_then(|block_entity| {
+                block_entity
+                    .downcast_ref::<BeehiveBlockEntity>()
+                    .map(BeehiveBlockEntity::occupant_count)
+            })
+            .is_some_and(|occupants| occupants > 0);
         Self::release_bees(world, pos);
+        let mut context = crate::player::advancement::predicate::TriggerContext::block(
+            &state.get_block().key,
+            None,
+        );
+        context.bees_inside = Some(bees_inside);
+        player.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::BEE_NEST_DESTROYED,
+            &context,
+        );
     }
 
     fn random_tick(&self, state: BlockStateId, world: &std::sync::Arc<World>, pos: BlockPos) {

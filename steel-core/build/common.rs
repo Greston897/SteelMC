@@ -348,12 +348,8 @@ pub(crate) fn generate_arg(
     let json_key = field.json_name.as_deref().unwrap_or(&field.field_name);
 
     // For optional fields, check the sentinel before computing the registry token.
-    // An absent key is optional too: single-tree growers simply do not record a
-    // shortest tree type, which is what the `none` sentinel is meant to express.
     if let Some(sentinel) = &field.optional_sentinel {
-        let Some(raw) = extra.get(json_key).and_then(serde_json::Value::as_str) else {
-            return quote! { None };
-        };
+        let raw = get_json_str(extra, entry_name, json_key);
         if raw == sentinel {
             return quote! { None };
         }

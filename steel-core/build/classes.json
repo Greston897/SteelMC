@@ -6663,42 +6663,42 @@
     {
       "name": "copper_golem_statue",
       "class": "WeatheringCopperGolemStatueBlock",
-      "weather_state": "unaffected"
+      "weathering_state": "unaffected"
     },
     {
       "name": "exposed_copper_golem_statue",
       "class": "WeatheringCopperGolemStatueBlock",
-      "weather_state": "exposed"
+      "weathering_state": "exposed"
     },
     {
       "name": "weathered_copper_golem_statue",
       "class": "WeatheringCopperGolemStatueBlock",
-      "weather_state": "weathered"
+      "weathering_state": "weathered"
     },
     {
       "name": "oxidized_copper_golem_statue",
       "class": "WeatheringCopperGolemStatueBlock",
-      "weather_state": "oxidized"
+      "weathering_state": "oxidized"
     },
     {
       "name": "waxed_copper_golem_statue",
       "class": "CopperGolemStatueBlock",
-      "weather_state": "unaffected"
+      "weathering_state": "unaffected"
     },
     {
       "name": "waxed_exposed_copper_golem_statue",
       "class": "CopperGolemStatueBlock",
-      "weather_state": "exposed"
+      "weathering_state": "exposed"
     },
     {
       "name": "waxed_weathered_copper_golem_statue",
       "class": "CopperGolemStatueBlock",
-      "weather_state": "weathered"
+      "weathering_state": "weathered"
     },
     {
       "name": "waxed_oxidized_copper_golem_statue",
       "class": "CopperGolemStatueBlock",
-      "weather_state": "oxidized"
+      "weathering_state": "oxidized"
     },
     {
       "name": "lightning_rod",

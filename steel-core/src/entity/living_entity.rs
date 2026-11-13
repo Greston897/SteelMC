@@ -1530,6 +1530,30 @@ pub trait LivingEntity: Entity {
             return false;
         }
 
+        // Vanilla `FallFromHeightTrigger`/`FallAfterExplosionTrigger` fire from
+        // `Entity.checkFallDamage`: both carry the distance fallen, and the latter
+        // requires an active impulse (the explosion that launched the entity).
+        if let Some(player) = self.as_player() {
+            let had_impulse = self.living_base().current_impulse_impact_pos().is_some();
+            let mut context =
+                crate::player::advancement::predicate::TriggerContext::nether_travel(
+                    effective_fall_distance,
+                );
+            context.position = Some({
+                let position = self.position();
+                (position.x, position.y, position.z)
+            });
+            player.trigger_advancement_with_context(
+                &vanilla_criteria_triggers::FALL_FROM_HEIGHT,
+                &context,
+            );
+            if had_impulse {
+                player.trigger_advancement_with_context(
+                    &vanilla_criteria_triggers::FALL_AFTER_EXPLOSION,
+                    &context,
+                );
+            }
+        }
         self.reset_current_impulse_context();
         self.play_sound(self.fall_damage_sound(damage), 1.0, 1.0);
         self.play_block_fall_sound();
@@ -2868,6 +2892,21 @@ pub trait LivingEntity: Entity {
             && self.entity_type() == &vanilla_entities::PLAYER
         {
             y = 0.0;
+        }
+
+        // Vanilla `LivingEntity.travel` fires `slide_down_block` when the entity
+        // is actually sliding down a climbable block, which `cave_vines`/`ladder`
+        // data packs observe.
+        if y < 0.0
+            && let Some(player) = self.as_player()
+        {
+            player.trigger_advancement_with_context(
+                &vanilla_criteria_triggers::SLIDE_DOWN_BLOCK,
+                &crate::player::advancement::predicate::TriggerContext::block(
+                    &block_state.get_block().key,
+                    None,
+                ),
+            );
         }
 
         DVec3::new(

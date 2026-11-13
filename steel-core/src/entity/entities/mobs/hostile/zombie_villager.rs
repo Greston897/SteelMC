@@ -4,10 +4,14 @@
 //! into a villager with a golden apple and a weakness potion; the synced
 //! `converting` flag and the villager data drive that process.
 //!
+//! Curing follows vanilla `ZombieVillager`: a golden apple plus a weakness
+//! potion starts a conversion timer, and when it runs out the zombie turns into
+//! a villager that keeps the profession and fires `cured_zombie_villager`.
+//!
 //! Documented deviations from vanilla 26.3 (see `PARITY-26.3-RU.md`):
-//! * curing and the conversion timer are not implemented; the synced
-//!   `converting` flag and villager data are only stored and synced.
 //! * the profession-specific texture is client-side and not part of Steel.
+//! * gossip and the reputation discount are not modelled; the cured villager
+//!   starts with vanilla's converted-villager experience of zero.
 use std::iter::empty;
 use std::sync::Weak;
 
@@ -19,25 +23,35 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::ZombieVillagerEntityData;
-use steel_registry::{sound_events, vanilla_attributes};
+use steel_registry::{sound_events, vanilla_attributes, vanilla_items};
 use steel_utils::locks::SyncMutex;
 use steel_utils::random::legacy_random::LegacyRandom;
+use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
+use crate::behavior::InteractionResult;
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::entity::entities::mobs::passive::VillagerEntity;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
     SharedEntity, sync_dirty_mob_effects,
 };
 use crate::physics::MoveResult;
+use crate::player::Player;
 use crate::world::World;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
+
+/// Vanilla `ZombieVillager.getConversionProgress` base: the roll is
+/// `random.nextInt(2401) + 3600` ticks, i.e. three to five minutes.
+const CONVERSION_MIN_TICKS: i32 = 3600;
+/// Upper bound of the extra random ticks added to [`CONVERSION_MIN_TICKS`].
+const CONVERSION_RANDOM_TICKS: i32 = 2401;
 
 /// Vanilla `net.minecraft.world.entity.monster.Zombie`.
 #[entity_behavior(class = "ZombieVillager")]
@@ -47,6 +61,17 @@ pub struct ZombieVillagerEntity {
     living_base: LivingEntityBase,
     mob_base: MobBase,
     entity_data: SyncMutex<ZombieVillagerEntityData>,
+    /// Remaining ticks of a started cure, or `None` when not converting.
+    conversion: SyncMutex<Option<ConversionState>>,
+}
+
+/// State of a cure in progress.
+#[derive(Debug, Clone, Copy)]
+pub struct ConversionState {
+    /// Ticks left until the zombie becomes a villager.
+    remaining_ticks: i32,
+    /// The player who started the cure, credited by `cured_zombie_villager`.
+    starter: Option<uuid::Uuid>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `ZombieVillagerEntity`.
@@ -105,6 +130,7 @@ impl ZombieVillagerEntity {
             living_base,
             mob_base,
             entity_data: SyncMutex::new(entity_data),
+            conversion: SyncMutex::new(None),
         }
     }
 
@@ -217,6 +243,71 @@ impl ZombieVillagerEntity {
     }
 }
 
+impl ZombieVillagerEntity {
+    /// Vanilla `ZombieVillager.startConverting`: arms the conversion timer,
+    /// remembering the player to credit.
+    fn start_converting(&self, starter: &Player) {
+        let ticks = rand::random_range(0..CONVERSION_RANDOM_TICKS) + CONVERSION_MIN_TICKS;
+        *self.conversion.lock() = Some(ConversionState {
+            remaining_ticks: ticks,
+            starter: Some(starter.base().uuid()),
+        });
+        self.set_converting(true);
+        // Vanilla plays the zombie-villager cure sound and particles here.
+        self.play_sound(&sound_events::ENTITY_ZOMBIE_VILLAGER_CURE, 1.0, 1.0);
+    }
+
+    /// Advances an active cure, converting into a villager when it finishes.
+    ///
+    /// Vanilla `ZombieVillager.tick` decrements the timer and calls
+    /// `finishConversion` at zero.
+    fn tick_conversion(&self) {
+        let Some(state) = *self.conversion.lock() else {
+            return;
+        };
+        if state.remaining_ticks > 1 {
+            self.conversion.lock().as_mut().unwrap().remaining_ticks -= 1;
+            return;
+        }
+        self.finish_conversion(&state);
+    }
+
+    /// Vanilla `ZombieVillager.finishConversion`.
+    fn finish_conversion(&self, state: &ConversionState) {
+        if self.is_removed() {
+            return;
+        }
+        let villager_data = self.villager_data();
+        let starter = state
+            .starter
+            .and_then(|uuid| self.level().and_then(|world| world.players.get_by_uuid(&uuid)).cloned());
+        let converted = crate::entity::conversion::convert_to(
+            self,
+            &vanilla_entities::VILLAGER,
+            crate::entity::conversion::ConversionParams::single(true, true),
+            Some(&|mob| {
+                if let Some(villager) =
+                    mob.as_entity_event_source().downcast_ref::<VillagerEntity>()
+                {
+                    villager.set_villager_data(villager_data);
+                }
+            }),
+        );
+        if converted.is_none() {
+            return;
+        }
+        // Vanilla fires `cured_zombie_villager` on whoever started the cure.
+        if let Some(player) = starter {
+            player.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::CURED_ZOMBIE_VILLAGER,
+                &crate::player::advancement::predicate::TriggerContext::entity(
+                    &vanilla_entities::ZOMBIE_VILLAGER.key,
+                ),
+            );
+        }
+    }
+}
+
 impl LivingEntity for ZombieVillagerEntity {
     fn living_base(&self) -> &LivingEntityBase {
         &self.living_base
@@ -284,6 +375,34 @@ impl Mob for ZombieVillagerEntity {
 
     fn set_mob_flags(&self, flags: i8) {
         self.entity_data.lock().mob_mut().mob_flags.set(flags);
+    }
+
+    fn mob_interact(&self, player: &Player, hand: InteractionHand) -> InteractionResult {
+        // Vanilla `ZombieVillager.mobInteract`: a golden apple fed to a zombie
+        // villager that already has Weakness starts the cure and consumes both
+        // the apple and the effect.
+        if self.is_converting() {
+            return InteractionResult::Pass;
+        }
+        let stack = {
+            let inventory = player.inventory.lock();
+            let stack = inventory.get_item_in_hand(hand);
+            stack.copy_with_count(stack.count())
+        };
+        if !stack.is(&*vanilla_items::GOLDEN_APPLE) {
+            return InteractionResult::Pass;
+        }
+        if !self.has_mob_effect(vanilla_mob_effects::WEAKNESS) {
+            return InteractionResult::Pass;
+        }
+        self.remove_mob_effect(vanilla_mob_effects::WEAKNESS);
+        player.inventory.lock().shrink_item_in_hand(hand, 1);
+        self.start_converting(player);
+        InteractionResult::Success
+    }
+
+    fn custom_server_ai_step(&self) {
+        self.tick_conversion();
     }
 }
 

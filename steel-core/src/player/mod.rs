@@ -381,6 +381,14 @@ impl Player {
     ///
     /// Vanilla carries the crafted stack in the predicate; Steel only knows the
     /// recipe key, so every `recipe_crafted` criterion of that recipe progresses.
+    /// Fires `recipe_unlocked`, mirroring vanilla `ServerPlayer.awardRecipes`.
+    pub fn trigger_recipe_unlocked(&self, recipe: &Identifier) -> usize {
+        self.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::RECIPE_UNLOCKED,
+            &crate::player::advancement::predicate::TriggerContext::recipe(recipe),
+        )
+    }
+
     pub fn trigger_recipe_crafted(&self, recipe: &Identifier) -> usize {
         let _ = recipe;
         self.trigger_advancement(&steel_registry::vanilla_criteria_triggers::RECIPE_CRAFTED)
@@ -2284,6 +2292,7 @@ impl LivingEntity for Player {
             {
                 let mut advancements = self.advancements.lock();
                 advancements.trigger_location(self, &location_context);
+                advancements.trigger_tick(self, &location_context);
                 advancements.flush_dirty(self, true);
             }
             self.tick_levitation_trigger();
