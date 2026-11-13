@@ -16,6 +16,7 @@ mod fill;
 mod fillbiome;
 mod fly;
 mod forceload;
+mod help;
 mod function;
 pub(crate) mod gamemode;
 mod gamerule;
@@ -128,6 +129,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(say::me_registration())?;
     builder.register(scoreboard::registration())?;
     builder.register(forceload::registration())?;
+    builder.register(help::registration())?;
     builder.register(function::registration())?;
     builder.register(schedule::registration())?;
     builder.register(seed::registration())?;
@@ -244,6 +246,7 @@ mod tests {
                 "version",
                 "weather",
                 "worldborder",
+                "help",
                 "invsee",
                 "transfer"
             ]

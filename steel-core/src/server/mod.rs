@@ -575,6 +575,15 @@ impl Drop for GameTickTaskGuard {
 }
 
 impl Server {
+    /// The names of every registered top-level command, sorted.
+    ///
+    /// `/help` lists these; the list lives behind the dispatcher's lock, so it
+    /// is copied rather than borrowed.
+    #[must_use]
+    pub fn command_names(&self) -> Vec<String> {
+        self.command_dispatcher.read().command_names()
+    }
+
     /// Returns the current server tick number.
     pub fn current_tick(&self) -> u64 {
         self.tick_rate_manager.read().tick_count
