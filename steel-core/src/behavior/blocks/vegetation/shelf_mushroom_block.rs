@@ -4,7 +4,7 @@ use crate::behavior::{
 };
 use crate::entity::ai::path::PathComputationType;
 use crate::world::{LevelReader, ScheduledTickAccess, World};
-use rand::Rng;
+use rand::RngExt;
 use std::sync::Arc;
 use steel_macros::block_behavior;
 use steel_protocol::packets::game::SoundSource;

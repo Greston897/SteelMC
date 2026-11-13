@@ -2,7 +2,7 @@ use std::iter::empty;
 use std::sync::Weak;
 
 use glam::DVec3;
-use rand::Rng;
+use rand::RngExt;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;

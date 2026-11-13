@@ -8,7 +8,7 @@ use crate::behavior::{
     },
 };
 use crate::world::{LevelReader, ScheduledTickAccess, World};
-use rand::Rng;
+use rand::RngExt;
 use std::sync::Arc;
 use steel_macros::block_behavior;
 use steel_registry::blocks::block_state_ext::BlockStateExt;

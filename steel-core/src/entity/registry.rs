@@ -4,7 +4,7 @@ use std::ops::Deref;
 use std::sync::{OnceLock, Weak};
 
 use glam::DVec3;
-use rand::Rng;
+use rand::RngExt;
 use simdnbt::borrow::{
     BaseNbtCompound as BorrowedNbtCompound, NbtCompound as BorrowedNbtCompoundView,
 };

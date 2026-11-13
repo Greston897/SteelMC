@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rand::Rng;
+use rand::RngExt;
 use steel_macros::block_behavior;
 use steel_registry::blocks::properties::Direction;
 use steel_utils::{BlockPos, BlockStateId};

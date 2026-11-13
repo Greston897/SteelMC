@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::RngExt;
 use steel_macros::block_behavior;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, Direction};

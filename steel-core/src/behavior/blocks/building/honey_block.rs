@@ -9,6 +9,7 @@ use steel_registry::{
 use steel_utils::entity_events::EntityStatus;
 use steel_utils::{BlockLocalAabb, BlockPos, BlockStateId};
 
+use crate::entity::DEFAULT_AIR_DRAG;
 use crate::{
     behavior::{
         BlockBehavior, BlockCollisionContext, BlockPlaceContext, EntityFallDamage,
