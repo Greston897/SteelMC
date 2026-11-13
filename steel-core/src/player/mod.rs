@@ -81,7 +81,7 @@ use steel_registry::vanilla_game_rules::{
     SHOW_DEATH_MESSAGES,
 };
 use steel_registry::{
-    REGISTRY, level_events, sound_events, vanilla_attributes, vanilla_custom_stats,
+    REGISTRY, level_events, sound_events, vanilla_attributes, vanilla_blocks, vanilla_custom_stats,
     vanilla_damage_type_tags, vanilla_entities, vanilla_game_events,
 };
 use steel_utils::{Identifier, entity_events::EntityStatus, locks::Shared, translations};
@@ -2209,6 +2209,29 @@ impl Entity for Player {
                         &victim.entity_type().key,
                     ),
                 );
+            }
+            // Vanilla `ServerPlayer.awardKillScore` fires
+            // `CriteriaTriggers.KILL_MOB_NEAR_SCULK_CATALYST` when the victim is
+            // a mob killed within eight blocks of a sculk catalyst.
+            if victim.as_player().is_none()
+                && let Some(world) = self.level()
+            {
+                let victim_pos = victim.block_position();
+                let near_catalyst = BlockPos::between_closed(
+                    victim_pos.offset(-8, -8, -8),
+                    victim_pos.offset(8, 8, 8),
+                )
+                .any(|pos| {
+                    world.get_block_state(pos).get_block() == &vanilla_blocks::SCULK_CATALYST
+                });
+                if near_catalyst {
+                    self.trigger_advancement_with_context(
+                        &steel_registry::vanilla_criteria_triggers::KILL_MOB_NEAR_SCULK_CATALYST,
+                        &crate::player::advancement::predicate::TriggerContext::entity(
+                            &victim.entity_type().key,
+                        ),
+                    );
+                }
             }
             // Vanilla `ServerPlayer.awardKillScore` also bumps `teamKillCount`
             // when killer and victim share a team.
