@@ -8,7 +8,7 @@
 //! * curing and the conversion timer are not implemented; the synced
 //!   `converting` flag and villager data are only stored and synced.
 //! * the profession-specific texture is client-side and not part of Steel.
-#use std::iter::empty;
+use std::iter::empty;
 use std::sync::Weak;
 
 use glam::DVec3;
