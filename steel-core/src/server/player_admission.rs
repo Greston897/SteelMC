@@ -30,6 +30,7 @@ pub(super) enum PlayerAdmissionState {
 pub(super) enum PlayerJoinError {
     DuplicateLogin,
     ServerFull,
+    NotWhitelisted,
 }
 
 /// A duplicate-session wait ended before the old session finished leaving.
@@ -270,6 +271,9 @@ impl Server {
                 PlayerJoinError::ServerFull => {
                     translations::MULTIPLAYER_DISCONNECT_SERVER_FULL.msg()
                 }
+                PlayerJoinError::NotWhitelisted => {
+                    translations::MULTIPLAYER_DISCONNECT_NOT_WHITELISTED.msg()
+                }
             };
             player.disconnect(reason);
             return;
@@ -366,7 +370,9 @@ impl Server {
         }
 
         // Keep the final capacity check and insertion atomic with respect to other joins.
-        let result = if self.is_player_limit_reached(uuid) {
+        let result = if !self.whitelist.allows(uuid) {
+            Err(PlayerJoinError::NotWhitelisted)
+        } else if self.is_player_limit_reached(uuid) {
             Err(PlayerJoinError::ServerFull)
         } else if self.online_players.insert(player) {
             Ok(())

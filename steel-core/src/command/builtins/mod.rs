@@ -63,6 +63,7 @@ mod tpsbar;
 mod transfer;
 mod version;
 mod weather;
+mod whitelist;
 mod worldborder;
 
 pub(crate) use difficulty::player_can_change_difficulty;
@@ -155,6 +156,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(tpsbar::registration())?;
     builder.register(version::registration())?;
     builder.register(weather::registration())?;
+    builder.register(whitelist::registration())?;
     builder.register(worldborder::registration())?;
     builder.register(invsee::registration()?)?;
     builder.register(item::registration())?;
@@ -248,6 +250,7 @@ mod tests {
                 "tpsbar",
                 "version",
                 "weather",
+                "whitelist",
                 "worldborder",
                 "help",
                 "invsee",
