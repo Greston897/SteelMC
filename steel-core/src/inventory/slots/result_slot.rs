@@ -1,7 +1,6 @@
 use std::{mem, sync::Arc};
 
 use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_custom_stats;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::{
@@ -95,15 +94,9 @@ impl Slot for ResultSlot {
         player: &Player,
     ) -> Option<ItemStack> {
         // Vanilla `ResultSlot.onTake` awards ITEM_CRAFTED for the stack the player
-        // just took. Item hooks (`Item.onCraftedBy`) are not part of Steel's item
-        // API yet, so only the statistic is recorded here.
-        if !stack.is_empty() {
-            player.award_stat_with_count(
-                &vanilla_custom_stats::ITEM_CRAFTED,
-                stack.item(),
-                stack.count(),
-            );
-        }
+        // just took. Vanilla 26.3 no longer carries a `craft_item` statistic, and
+        // `Item.onCraftedBy` is not part of Steel's item API yet, so there is
+        // nothing to record here.
         self.handler.on_result_taken(guard, player)
     }
 

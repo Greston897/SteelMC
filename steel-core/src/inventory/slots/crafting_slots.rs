@@ -225,7 +225,7 @@ impl ResultHandler for CraftingHandler {
         // recipe in their recipe book cannot take the result.
         if player
             .get_world()
-            .get_game_rule(&steel_utils::LIMITED_CRAFTING)
+            .get_game_rule(&crate::player::LIMITED_CRAFTING)
             && let Some(key) = self.last_recipe.lock().clone()
             && !player.recipe_book.lock().contains(&key)
         {
