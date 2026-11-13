@@ -193,4 +193,84 @@ pub static ALL: &[&Identifier] = &[
     &USING_ITEM,
     &VILLAGER_TRADE,
     &VOLUNTARY_EXILE,
+
+/// The trigger ids vanilla 26.3 registers, in the order of the wiki's
+/// "List of triggers" section.
+///
+/// The registry above was hand-written and silently drifted once already
+/// (invented ids that no advancement can reference, missing real ones), so the
+/// list is pinned here and checked by `vanilla_trigger_list_matches_the_game`.
+pub const VANILLA_26_3: &[&str] = &[
+    "allay_drop_item_on_block",
+    "any_block_use",
+    "avoid_vibration",
+    "bee_nest_destroyed",
+    "bred_animals",
+    "brewed_potion",
+    "changed_dimension",
+    "channeled_lightning",
+    "construct_beacon",
+    "consume_item",
+    "crafter_recipe_crafted",
+    "cured_zombie_villager",
+    "default_block_use",
+    "effects_changed",
+    "enchanted_item",
+    "enter_block",
+    "entity_hurt_player",
+    "entity_killed_player",
+    "fall_after_explosion",
+    "fall_from_height",
+    "filled_bucket",
+    "fishing_rod_hooked",
+    "hero_of_the_village",
+    "impossible",
+    "inventory_changed",
+    "item_durability_changed",
+    "item_used_on_block",
+    "kill_mob_near_sculk_catalyst",
+    "killed_by_arrow",
+    "levitation",
+    "lightning_strike",
+    "location",
+    "nether_travel",
+    "placed_block",
+    "player_generates_container_loot",
+    "player_hurt_entity",
+    "player_interacted_with_entity",
+    "player_killed_entity",
+    "player_sheared_equipment",
+    "recipe_crafted",
+    "recipe_unlocked",
+    "ride_entity_in_lava",
+    "shot_crossbow",
+    "slept_in_bed",
+    "slide_down_block",
+    "spear_mobs",
+    "started_riding",
+    "summoned_entity",
+    "tame_animal",
+    "target_hit",
+    "thrown_item_picked_up_by_entity",
+    "thrown_item_picked_up_by_player",
+    "tick",
+    "used_ender_eye",
+    "used_totem",
+    "using_item",
+    "villager_trade",
+    "voluntary_exile",
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn vanilla_trigger_list_matches_the_game() {
+        let mut registered: Vec<&str> = ALL.iter().map(|id| id.path.as_ref()).collect();
+        registered.sort_unstable();
+        let mut expected = VANILLA_26_3.to_vec();
+        expected.sort_unstable();
+        assert_eq!(registered, expected);
+    }
+}

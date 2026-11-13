@@ -11,6 +11,10 @@ use std::sync::Arc;
 use glam::IVec3;
 use steel_utils::locks::SyncMutex;
 
+use steel_registry::vanilla_mob_effects;
+use steel_registry::mob_effect::instance::MobEffectInstance;
+
+use crate::entity::LivingEntity as _;
 use crate::poi::OccupationStatus;
 use crate::world::World;
 
@@ -19,6 +23,17 @@ pub const MAX_OMEN_LEVEL: i32 = 4;
 
 /// Vanilla village detection radius: `PoiManager.getInSquare(..., 64, ...)`.
 const VILLAGE_SCAN_RADIUS: i32 = 64;
+
+/// Vanilla `Raid.RAID_TIMEOUT`: a raid with no progress for this long fizzles out.
+const RAID_TIMEOUT_TICKS: i32 = 48_000;
+
+/// Rough per-wave duration used until raiders are simulated: vanilla spawns a
+/// wave, waits for it to die, then spawns the next one.
+const TICKS_PER_WAVE: i32 = 600;
+
+/// Vanilla `HeroOfTheVillageTrigger` reward: the raid's total bad omen level
+/// becomes the hero effect duration in ticks, `20 * 10 * level` seconds.
+const HERO_EFFECT_TICKS_PER_OMEN_LEVEL: i32 = 4_800;
 
 /// One active raid.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -29,6 +44,8 @@ pub struct Raid {
     pub omen_level: i32,
     /// Ticks the raid has been running.
     pub ticks_active: i32,
+    /// Waves already cleared.
+    pub waves_cleared: i32,
 }
 
 impl Raid {
@@ -37,6 +54,12 @@ impl Raid {
     #[must_use]
     pub const fn wave_count(&self) -> i32 {
         self.omen_level + 1
+    }
+
+    /// Returns true once every wave has been cleared.
+    #[must_use]
+    pub const fn is_victory(&self) -> bool {
+        self.waves_cleared >= self.wave_count()
     }
 }
 
@@ -87,6 +110,7 @@ impl RaidManager {
             center,
             omen_level,
             ticks_active: 0,
+            waves_cleared: 0,
         };
         raids.push(raid.clone());
         raid
@@ -101,10 +125,75 @@ impl RaidManager {
     }
 
     /// Advances every raid by one tick.
-    pub fn tick(&self) {
-        for raid in self.raids.lock().iter_mut() {
-            raid.ticks_active = raid.ticks_active.saturating_add(1);
+    ///
+    /// Steel does not spawn raider entities yet, so a wave is treated as cleared
+    /// once `TICKS_PER_WAVE` ticks have passed with no timeout. When the last
+    /// wave clears, the raid stops and every player in the village earns the
+    /// vanilla `hero_of_the_village` reward.
+    pub fn tick(&self, world: &Arc<World>) {
+        let mut victories: Vec<Raid> = Vec::new();
+        {
+            let mut raids = self.raids.lock();
+            for raid in raids.iter_mut() {
+                raid.ticks_active = raid.ticks_active.saturating_add(1);
+                if raid.ticks_active > RAID_TIMEOUT_TICKS.saturating_mul(raid.wave_count()) {
+                    continue;
+                }
+                let expected_waves =
+                    (raid.ticks_active / TICKS_PER_WAVE).min(raid.wave_count());
+                if expected_waves > raid.waves_cleared {
+                    raid.waves_cleared = expected_waves;
+                    if raid.is_victory() {
+                        victories.push(raid.clone());
+                    }
+                }
+            }
+            raids.retain(|raid| !raid.is_victory());
         }
+        for raid in victories {
+            Self::award_hero_of_the_village(world, &raid);
+        }
+    }
+
+    /// Vanilla `Raid.stop` victory path: every player inside the village becomes
+    /// the hero of the village and fires its criterion.
+    fn award_hero_of_the_village(world: &Arc<World>, raid: &Raid) {
+        let center = DVec3::new(
+            f64::from(raid.center.x),
+            f64::from(raid.center.y),
+            f64::from(raid.center.z),
+        );
+        let radius = f64::from(VILLAGE_SCAN_RADIUS);
+        let players: Vec<_> = world
+            .players
+            .iter_players(|_uuid, player| {
+                let position = player.position();
+                let dx = position.x - center.x;
+                let dz = position.z - center.z;
+                if dx * dx + dz * dz > radius * radius {
+                    return true;
+                }
+                // Vanilla gives the hero effect for 20 * 10 * omenLevel seconds.
+                let duration = raid
+                    .omen_level
+                    .max(1)
+                    .saturating_mul(HERO_EFFECT_TICKS_PER_OMEN_LEVEL);
+                player.add_mob_effect(MobEffectInstance::simple(
+                    &vanilla_mob_effects::HERO_OF_THE_VILLAGE,
+                    duration,
+                    0,
+                ));
+                player.trigger_advancement_with_context(
+                    &steel_registry::vanilla_criteria_triggers::HERO_OF_THE_VILLAGE,
+                    &crate::player::advancement::predicate::TriggerContext::at(
+                        &player.get_world(),
+                        player.block_position(),
+                    ),
+                );
+                true
+            })
+            .collect();
+        drop(players);
     }
 }
 

@@ -645,6 +645,11 @@ impl Server {
         // per-world `WaypointManager`; it only needs the post-move positions.
         for world in self.worlds.values() {
             world.waypoints.tick(world);
+            // Vanilla ticks `ServerLevel.raidManager` every tick: it advances the
+            // waves, stops finished raids and grants hero of the village.
+            if runs_normally {
+                world.raids.tick(world);
+            }
         }
         self.damage_history.expire();
         let all_timings = workers.tick_all(tick_count, runs_normally).await?;

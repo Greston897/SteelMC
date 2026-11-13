@@ -256,12 +256,11 @@ impl MenuKind for MerchantKind {
         }
 
         // Vanilla `MerchantResultSlot.onTake` awards `Stats.TRADED_WITH_VILLAGER`
-        // and fires `CriteriaTriggers.TRADE`, which `minecraft:adventure/trade`
-        // listens for. `villager_trade` is not a criterion at all: `TRADE` is the
-        // single vanilla trigger for taking a merchant result.
+        // and fires `CriteriaTriggers.TRADE_WITH_VILLAGER` (`villager_trade`),
+        // which `minecraft:adventure/trade` listens for.
         player.award_custom_stat(&steel_registry::vanilla_custom_stats::TRADED_WITH_VILLAGER);
         player.trigger_advancement_with_context(
-            &steel_registry::vanilla_criteria_triggers::TRADE,
+            &steel_registry::vanilla_criteria_triggers::VILLAGER_TRADE,
             &crate::player::advancement::predicate::TriggerContext::item(&result.item().key),
         );
         ClickOutcome::Consume
