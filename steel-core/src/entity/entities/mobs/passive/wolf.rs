@@ -16,7 +16,9 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::WolfEntityData;
-use steel_registry::{sound_events, vanilla_attributes, vanilla_items};
+use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_item_tags::ItemTag;
+use steel_registry::{REGISTRY, sound_events, vanilla_attributes, vanilla_items};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 use uuid::Uuid;
@@ -319,6 +321,11 @@ impl AgeableMob for WolfEntity {
 impl Animal for WolfEntity {
     fn animal_base(&self) -> &AnimalBase {
         &self.animal_base
+    }
+
+    /// Vanilla `Wolf.isFood`: the item must be in `#minecraft:wolf_food`.
+    fn is_food(&self, item_stack: &ItemStack) -> bool {
+        REGISTRY.items.is_in_tag(item_stack.item(), &ItemTag::WOLF_FOOD)
     }
 }
 

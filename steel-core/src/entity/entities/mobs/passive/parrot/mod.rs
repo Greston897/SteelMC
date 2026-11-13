@@ -430,6 +430,12 @@ impl Animal for ParrotEntity {
         &self.animal_base
     }
 
+    /// Vanilla `Parrot` overrides `Animal.canBreed` to `false`: it
+    /// eats its food but never enters love mode.
+    fn can_breed(&self) -> bool {
+        false
+    }
+
     fn is_food(&self, item_stack: &ItemStack) -> bool {
         is_parrot_food(item_stack)
     }

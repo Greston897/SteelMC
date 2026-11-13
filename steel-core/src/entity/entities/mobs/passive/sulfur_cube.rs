@@ -284,6 +284,12 @@ impl Animal for SulfurCubeEntity {
     fn animal_base(&self) -> &AnimalBase {
         &self.animal_base
     }
+
+    /// Vanilla `SulfurCube` overrides `Animal.canBreed` to `false`: it
+    /// eats its food but never enters love mode.
+    fn can_breed(&self) -> bool {
+        false
+    }
 }
 
 impl Mob for SulfurCubeEntity {

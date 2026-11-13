@@ -16,6 +16,9 @@ use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
 use steel_registry::vanilla_attributes;
+use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_item_tags::ItemTag;
+use steel_registry::REGISTRY;
 use steel_registry::vanilla_entity_data::CamelEntityData;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
@@ -318,6 +321,17 @@ impl AgeableMob for CamelHuskEntity {
 impl Animal for CamelHuskEntity {
     fn animal_base(&self) -> &AnimalBase {
         &self.animal_base
+    }
+
+    /// Vanilla `CamelHusk` overrides `Animal.canBreed` to `false`: it
+    /// eats its food but never enters love mode.
+    fn can_breed(&self) -> bool {
+        false
+    }
+
+    /// Vanilla `CamelHusk.isFood`: the item must be in `#minecraft:camel_husk_food`.
+    fn is_food(&self, item_stack: &ItemStack) -> bool {
+        REGISTRY.items.is_in_tag(item_stack.item(), &ItemTag::CAMEL_HUSK_FOOD)
     }
 }
 

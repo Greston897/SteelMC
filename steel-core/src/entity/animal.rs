@@ -170,6 +170,14 @@ pub trait Animal: AgeableMob {
         false
     }
 
+    /// Returns whether this animal can breed at all. Vanilla overrides
+    /// `Animal.canBreed` to `false` for parrots, mules, skeleton/zombie horses,
+    /// camel husks, happy ghasts and sulfur cubes, which still *eat* their food
+    /// but never enter love mode.
+    fn can_breed(&self) -> bool {
+        true
+    }
+
     /// Returns the base breeding experience reward: 1 to 3, randomly.
     fn base_experience_reward_animal(&self) -> i32 {
         1 + rand::random_range(0..3)
@@ -242,7 +250,7 @@ pub trait Animal: AgeableMob {
         }
 
         let age = self.get_age();
-        if age == 0 && self.can_fall_in_love() {
+        if age == 0 && self.can_breed() && self.can_fall_in_love() {
             Mob::use_player_item(self, player, hand);
             self.set_in_love(Some(player));
             self.play_eating_sound();

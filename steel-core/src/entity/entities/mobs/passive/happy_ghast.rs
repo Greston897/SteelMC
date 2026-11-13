@@ -16,7 +16,9 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::HappyGhastEntityData;
-use steel_registry::{sound_events, vanilla_attributes};
+use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_item_tags::ItemTag;
+use steel_registry::{REGISTRY, sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
@@ -277,6 +279,17 @@ impl AgeableMob for HappyGhastEntity {
 impl Animal for HappyGhastEntity {
     fn animal_base(&self) -> &AnimalBase {
         &self.animal_base
+    }
+
+    /// Vanilla `HappyGhast` overrides `Animal.canBreed` to `false`: it
+    /// eats its food but never enters love mode.
+    fn can_breed(&self) -> bool {
+        false
+    }
+
+    /// Vanilla `HappyGhast.isFood`: the item must be in `#minecraft:happy_ghast_food`.
+    fn is_food(&self, item_stack: &ItemStack) -> bool {
+        REGISTRY.items.is_in_tag(item_stack.item(), &ItemTag::HAPPY_GHAST_FOOD)
     }
 }
 

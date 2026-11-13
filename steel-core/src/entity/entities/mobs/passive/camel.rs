@@ -17,6 +17,9 @@ use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
 use steel_registry::vanilla_attributes;
+use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_item_tags::ItemTag;
+use steel_registry::REGISTRY;
 use steel_registry::vanilla_entity_data::CamelEntityData;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
@@ -319,6 +322,11 @@ impl AgeableMob for CamelEntity {
 impl Animal for CamelEntity {
     fn animal_base(&self) -> &AnimalBase {
         &self.animal_base
+    }
+
+    /// Vanilla `Camel.isFood`: the item must be in `#minecraft:camel_food`.
+    fn is_food(&self, item_stack: &ItemStack) -> bool {
+        REGISTRY.items.is_in_tag(item_stack.item(), &ItemTag::CAMEL_FOOD)
     }
 }
 
