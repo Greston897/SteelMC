@@ -14,11 +14,12 @@
 use std::collections::BTreeMap;
 use std::net::IpAddr;
 
+use serde::{Deserialize, Serialize};
 use steel_utils::locks::SyncMutex;
 use uuid::Uuid;
 
 /// One ban entry.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BanEntry {
     /// The banned player, or `None` for an address ban.
     pub uuid: Option<Uuid>,
@@ -200,6 +201,44 @@ impl BanList {
     pub fn address_ban_count(&self) -> usize {
         self.addresses.lock().len()
     }
+
+    /// The persisted form: both lists in one snapshot.
+    #[must_use]
+    pub fn to_saved(&self) -> BanListSaved {
+        BanListSaved {
+            players: self.player_bans(),
+            addresses: self.address_bans(),
+        }
+    }
+
+    /// Replaces both lists from a saved snapshot.
+    pub fn apply_saved(&self, saved: BanListSaved) {
+        let mut players = self.players.lock();
+        players.clear();
+        for entry in saved.players {
+            if let Some(uuid) = entry.uuid {
+                players.insert(uuid, entry);
+            }
+        }
+        drop(players);
+        let mut addresses = self.addresses.lock();
+        addresses.clear();
+        for entry in saved.addresses {
+            if let Some(address) = entry.address {
+                addresses.insert(address, entry);
+            }
+        }
+    }
+}
+
+/// On-disk form of the ban lists.
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct BanListSaved {
+    /// Player bans, keyed by UUID at load time.
+    pub players: Vec<BanEntry>,
+    /// Address bans, keyed by address at load time.
+    pub addresses: Vec<BanEntry>,
 }
 
 #[cfg(test)]

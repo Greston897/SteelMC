@@ -159,6 +159,10 @@ pub struct CommandDataSaveResults {
     pub scoreboards: io::Result<usize>,
     /// Number of dirty domain command-storage values written, or the save error.
     pub storage: io::Result<usize>,
+    /// Whether the whitelist was written, or the save error.
+    pub whitelist: io::Result<bool>,
+    /// Whether the ban lists were written, or the save error.
+    pub bans: io::Result<bool>,
 }
 
 mod known_players;
@@ -868,7 +872,7 @@ impl Server {
             log::error!("Minecraft services key fetch task stopped before its initial attempt");
         }
 
-        Ok(Server {
+        let server = Arc::new(Server {
             damage_history,
             config,
             permission_groups,
@@ -906,7 +910,14 @@ impl Server {
             pending_player_disconnects: PlayerDisconnectQueue::new(),
             pending_world_changes: SyncMutex::new(vec![]),
             pending_domain_switches: SyncMutex::new(vec![]),
-        })
+        });
+        // Whitelist and bans live in world saved data, so they are read once the
+        // server handle exists and its worlds are reachable.
+        server
+            .load_access_lists()
+            .await
+            .map_err(|error| format!("failed to load whitelist and bans: {error}"))?;
+        Ok(server)
     }
 
     /// Returns the current player-certificate validator, if service keys are available.
@@ -932,7 +943,54 @@ impl Server {
         CommandDataSaveResults {
             scoreboards: self.scoreboards.save(&self.worlds).await,
             storage: self.save_command_storage().await,
+            whitelist: self.save_whitelist().await,
+            bans: self.save_bans().await,
         }
+    }
+
+    /// Writes the whitelist through the overworld's saved data.
+    ///
+    /// Vanilla keeps `whitelist.json` beside the server jar; Steel writes it with
+    /// the other world-owned data so one world directory is self-contained.
+    pub async fn save_whitelist(&self) -> io::Result<bool> {
+        let Some(world) = self.worlds.server_default_world() else {
+            return Ok(false);
+        };
+        world
+            .saved_data
+            .save(saved_data_names::WHITELIST, &self.whitelist.to_saved())
+            .await?;
+        Ok(true)
+    }
+
+    /// Writes the ban lists through the overworld's saved data.
+    pub async fn save_bans(&self) -> io::Result<bool> {
+        let Some(world) = self.worlds.server_default_world() else {
+            return Ok(false);
+        };
+        world
+            .saved_data
+            .save(saved_data_names::BANS, &self.bans.to_saved())
+            .await?;
+        Ok(true)
+    }
+
+    /// Loads the whitelist and ban lists that a previous run persisted.
+    pub async fn load_access_lists(&self) -> io::Result<()> {
+        let Some(world) = self.worlds.server_default_world() else {
+            return Ok(());
+        };
+        let whitelist = world
+            .saved_data
+            .load_or_default(saved_data_names::WHITELIST)
+            .await?;
+        self.whitelist.apply_saved(whitelist);
+        let bans = world
+            .saved_data
+            .load_or_default(saved_data_names::BANS)
+            .await?;
+        self.bans.apply_saved(bans);
+        Ok(())
     }
 
     /// Queues a command for execution at the start of the next game tick.

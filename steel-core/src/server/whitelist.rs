@@ -12,11 +12,12 @@
 
 use std::collections::BTreeMap;
 
+use serde::{Deserialize, Serialize};
 use steel_utils::locks::SyncMutex;
 use uuid::Uuid;
 
 /// One whitelisted profile.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WhitelistEntry {
     /// The player's UUID.
     pub uuid: Uuid,
@@ -122,6 +123,39 @@ impl Whitelist {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
+
+    /// The persisted form: the enabled flag plus every entry.
+    ///
+    /// Vanilla writes `whitelist.json` as an array of `{uuid, name}` objects and
+    /// keeps the enabled flag only in `server.properties`; Steel persists both
+    /// together so an operator does not lose the gate on a restart.
+    #[must_use]
+    pub fn to_saved(&self) -> WhitelistSaved {
+        WhitelistSaved {
+            enabled: self.is_enabled(),
+            entries: self.entries(),
+        }
+    }
+
+    /// Replaces the contents from a saved snapshot.
+    pub fn apply_saved(&self, saved: WhitelistSaved) {
+        *self.enabled.lock() = saved.enabled;
+        let mut entries = self.entries.lock();
+        entries.clear();
+        for entry in saved.entries {
+            entries.insert(entry.uuid, entry.name);
+        }
+    }
+}
+
+/// On-disk form of the whitelist.
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct WhitelistSaved {
+    /// Whether the whitelist gates logins.
+    pub enabled: bool,
+    /// Listed profiles.
+    pub entries: Vec<WhitelistEntry>,
 }
 
 #[cfg(test)]

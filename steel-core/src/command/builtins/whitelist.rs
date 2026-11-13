@@ -6,6 +6,7 @@
 //! through `GameProfileArgument`, which accepts a real name or a UUID.
 
 use std::borrow::Cow;
+use std::sync::Arc;
 
 use steel_utils::Identifier;
 use text_components::TextComponent;
@@ -109,7 +110,8 @@ async fn run_operation(
     action: WhitelistAction,
 ) -> Result<i32, CommandSyntaxError> {
     let targets = argument.resolve(source).await?;
-    let whitelist = source.server().whitelist.clone();
+    let server = source.server().clone();
+    let whitelist = Arc::clone(&server.whitelist);
 
     let mut changed: i32 = 0;
     for target in &targets {
@@ -128,6 +130,12 @@ async fn run_operation(
             "Nothing changed".to_owned(),
             Vec::new(),
         )));
+    }
+
+    // Vanilla writes `whitelist.json` as part of the command, not at shutdown,
+    // so an operator who stops the server right after is not surprised.
+    if let Err(error) = server.save_whitelist().await {
+        log::error!("failed to save the whitelist: {error}");
     }
 
     let message = translated(
@@ -207,6 +215,9 @@ fn set_enabled(
 ) -> Result<i32, CommandSyntaxError> {
     let whitelist = whitelist_of(context);
     let was_enabled = whitelist.set_enabled(enabled);
+    // The enabled flag is part of the saved snapshot, but this handler is
+    // synchronous, so the autosave or shutdown write picks it up; the entry
+    // lists save immediately in `run_operation`.
 
     let key = if enabled {
         "commands.whitelist.enabled"

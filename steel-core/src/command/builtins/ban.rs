@@ -135,6 +135,12 @@ async fn run_ban(
         banned += 1;
     }
 
+    // Vanilla writes `banned-players.json` inside the command, so a ban survives
+    // a restart even if the server is stopped right away.
+    if let Err(error) = server.save_bans().await {
+        log::error!("failed to save the ban list: {error}");
+    }
+
     let message = translated(
         "commands.ban.success",
         format!("Banned {banned} player(s): {reason}"),
@@ -169,10 +175,10 @@ async fn run_pardon(
     argument: GameProfileArgument,
 ) -> Result<i32, CommandSyntaxError> {
     let targets = argument.resolve(source).await?;
-    let bans = &source.server().bans;
+    let server = source.server().clone();
     let mut pardoned = 0;
     for target in &targets {
-        if bans.pardon(target.uuid) {
+        if server.bans.pardon(target.uuid) {
             pardoned += 1;
         }
     }
@@ -183,6 +189,10 @@ async fn run_pardon(
             "That player is not banned".to_owned(),
             Vec::new(),
         )));
+    }
+
+    if let Err(error) = server.save_bans().await {
+        log::error!("failed to save the ban list: {error}");
     }
 
     let message = translated(

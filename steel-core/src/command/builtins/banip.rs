@@ -81,7 +81,7 @@ fn ban(
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |elapsed| i64::try_from(elapsed.as_secs()).unwrap_or(i64::MAX));
 
-    let server = context.source().server();
+    let server = context.source().server().clone();
     server.bans.ban_address(BanEntry::address(
         address,
         address.to_string(),
@@ -90,6 +90,9 @@ fn ban(
         now,
         None,
     ));
+    // Vanilla writes `banned-ips.json` inside the command; the handler is
+    // synchronous, so the write is handed to the runtime instead of the tick.
+    save_bans_in_background(&server);
 
     let message = translated(
         "commands.banip.success",
@@ -105,14 +108,15 @@ fn ban(
 
 fn pardon(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let address = parse_address(context)?;
-    let bans = &context.source().server().bans;
-    if !bans.pardon_address(address) {
+    let server = context.source().server().clone();
+    if !server.bans.pardon_address(address) {
         return Err(CommandSyntaxError::dynamic(translated(
             "commands.unbanip.failed",
             format!("{address} is not banned"),
             vec![TextComponent::from(address.to_string())],
         )));
     }
+    save_bans_in_background(&server);
 
     let message = translated(
         "commands.unbanip.success",
@@ -121,4 +125,17 @@ fn pardon(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSy
     );
     context.source().send_success(&message, true);
     Ok(1)
+}
+
+/// Writes the ban lists without blocking the synchronous command handler.
+///
+/// `save_bans` is async because it touches the filesystem; the command itself
+/// runs on the tick thread, so it schedules the write and moves on.
+fn save_bans_in_background(server: &std::sync::Arc<crate::server::Server>) {
+    let server = std::sync::Arc::clone(server);
+    tokio::spawn(async move {
+        if let Err(error) = server.save_bans().await {
+            log::error!("failed to save the ban list: {error}");
+        }
+    });
 }
