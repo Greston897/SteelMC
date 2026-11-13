@@ -8,6 +8,7 @@ mod bossbar;
 mod clear;
 mod clone;
 mod damage;
+mod data;
 mod datapack;
 mod defaultgamemode;
 mod difficulty;
@@ -111,6 +112,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(clone::registration())?;
     builder.register(operator::deop_registration())?;
     builder.register(damage::registration())?;
+    builder.register(data::registration())?;
     builder.register(datapack::registration())?;
     builder.register(defaultgamemode::registration())?;
     builder.register(difficulty::registration())?;
@@ -223,6 +225,7 @@ mod tests {
                 "clear",
                 "deop",
                 "damage",
+                "data",
                 "datapack",
                 "defaultgamemode",
                 "difficulty",
