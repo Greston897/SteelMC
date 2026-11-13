@@ -267,7 +267,10 @@ impl BeehiveBlockEntity {
         if release_bees {
             self.release_all_bees(world, pos);
         }
-        let state = state.set_value(&BlockStateProperties::LEVEL_HONEY, new_honey_level);
+        let state = state.set_value(
+            &BlockStateProperties::LEVEL_HONEY,
+            u8::try_from(new_honey_level).unwrap_or(0),
+        );
         world.set_block(pos, state, steel_utils::types::UpdateFlags::UPDATE_ALL);
     }
 

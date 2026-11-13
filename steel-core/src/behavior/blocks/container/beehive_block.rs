@@ -43,7 +43,7 @@ const HORIZONTAL_FACING: &EnumProperty<Direction> = &BlockStateProperties::HORIZ
 const LEVEL_HONEY: &IntProperty = &BlockStateProperties::LEVEL_HONEY;
 
 /// Vanilla `BeehiveBlock.MAX_HONEY_LEVEL`.
-const MAX_HONEY_LEVEL: u8 = 5;
+const MAX_HONEY_LEVEL: i32 = 5;
 /// Vanilla `BeehiveBlock` smoke search: a campfire up to this many blocks below.
 const SMOKE_SEARCH_DISTANCE: i32 = 5;
 
@@ -130,10 +130,10 @@ impl BeehiveBlock {
 
         let action = inv.with_item(|stack| {
             let item = stack.item();
-            if item == &*vanilla_items::GLASS_BOTTLE && honey_level == MAX_HONEY_LEVEL {
+            if item == &*vanilla_items::GLASS_BOTTLE && i32::from(honey_level) == MAX_HONEY_LEVEL {
                 return Some(HoneyAction::Bottle);
             }
-            if item == &*vanilla_items::SHEARS && honey_level == MAX_HONEY_LEVEL {
+            if item == &*vanilla_items::SHEARS && i32::from(honey_level) == MAX_HONEY_LEVEL {
                 return Some(HoneyAction::Shear);
             }
             if item == &*vanilla_items::CAMPFIRE
