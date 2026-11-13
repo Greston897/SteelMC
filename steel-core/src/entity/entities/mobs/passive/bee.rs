@@ -266,7 +266,7 @@ impl Animal for BeeEntity {
 
     /// Vanilla `Bee.isFood`: the item must be in `#minecraft:bee_food`.
     fn is_food(&self, item_stack: &ItemStack) -> bool {
-        REGISTRY.items.is_in_tag(item_stack.item(), &ItemTag::BEE_FOOD)
+        item_stack.item().has_tag(&ItemTag::BEE_FOOD)
     }
 }
 

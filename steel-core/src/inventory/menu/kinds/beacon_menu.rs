@@ -74,10 +74,9 @@ pub fn beacon(
         &payment_ref,
         1,
         SectionKind::restricted(|_, stack| {
-            REGISTRY.items.is_in_tag(
-                stack.item(),
-                &vanilla_item_tags::ItemTag::BEACON_PAYMENT_ITEMS,
-            )
+            stack
+                .item()
+                .has_tag(&vanilla_item_tags::ItemTag::BEACON_PAYMENT_ITEMS)
         }),
     );
     let player = builder.player_inventory(&inventory);

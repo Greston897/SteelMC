@@ -199,7 +199,7 @@ impl RaidManager {
                 &steel_registry::vanilla_criteria_triggers::HERO_OF_THE_VILLAGE,
                 &crate::player::advancement::predicate::TriggerContext::at(
                     &player.get_world(),
-                    player.block_position(),
+                    player.position(),
                 ),
             );
             true

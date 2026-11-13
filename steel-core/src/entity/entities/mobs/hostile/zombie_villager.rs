@@ -43,6 +43,8 @@ use crate::entity::{
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
     SharedEntity, sync_dirty_mob_effects,
 };
+use steel_utils::Downcast as _;
+
 use crate::physics::MoveResult;
 use crate::player::Player;
 use crate::world::World;
@@ -285,14 +287,11 @@ impl ZombieVillagerEntity {
         let villager_data = self.villager_data();
         let starter = state
             .starter
-            .and_then(|uuid| self.level().and_then(|world| world.players.get_by_uuid(&uuid)).cloned());
+            .and_then(|uuid| self.level().and_then(|world| world.players.get_by_uuid(&uuid)));
         // Vanilla `ZombieVillager.finishConversion` copies the villager data and
         // the gossip onto the new villager; Steel carries the profession/type/level.
         let copy_villager_data = |mob: &dyn Mob| {
-            if let Some(villager) = mob
-                .as_entity_event_source()
-                .downcast_ref::<VillagerEntity>()
-            {
+            if let Some(villager) = mob.as_entity_event_source().downcast_ref::<VillagerEntity>() {
                 villager.set_villager_data(villager_data);
             }
         };

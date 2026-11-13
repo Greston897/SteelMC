@@ -12,6 +12,7 @@ use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
+use steel_registry::vanilla_entity_data::MinecartEntityData;
 use steel_utils::locks::SyncMutex;
 use steel_utils::BlockStateId;
 use steel_utils::nbt::NbtValueInput as _;
@@ -40,6 +41,7 @@ const TNT_MINECART_FUSE_TICKS: i32 = 80;
 pub struct TntMinecartEntity {
     base: EntityBase,
     entity_type: EntityTypeRef,
+    entity_data: SyncMutex<MinecartEntityData>,
     minecart_base: AbstractMinecartBase,
     state: SyncMutex<TntMinecartState>,
 }
@@ -73,6 +75,7 @@ impl TntMinecartEntity {
         Self {
             base: EntityBase::new(id, position, entity_type.dimensions, world),
             entity_type,
+            entity_data: SyncMutex::new(MinecartEntityData::new()),
             minecart_base: AbstractMinecartBase::new(),
             state: SyncMutex::new(TntMinecartState::default()),
         }
@@ -84,6 +87,7 @@ impl TntMinecartEntity {
         Self {
             base: EntityBase::from_load(load, entity_type.dimensions),
             entity_type,
+            entity_data: SyncMutex::new(MinecartEntityData::new()),
             minecart_base: AbstractMinecartBase::new(),
             state: SyncMutex::new(TntMinecartState::default()),
         }

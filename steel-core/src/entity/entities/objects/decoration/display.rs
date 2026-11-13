@@ -297,27 +297,23 @@ impl ItemDisplayEntity {
     /// The displayed item stack.
     #[must_use]
     pub fn item_stack(&self) -> ItemStack {
-        self.entity_data.lock().item_display.item_stack.get().clone()
+        self.entity_data.lock().item_stack.get().clone()
     }
 
     /// Sets the displayed item stack.
     pub fn set_item_stack(&self, stack: ItemStack) {
-        self.entity_data.lock().item_display.item_stack.set(stack);
+        self.entity_data.lock().item_stack.set(stack);
     }
 
     /// Vanilla `ItemDisplay.ItemDisplayContext` ordinal.
     #[must_use]
     pub fn display_context(&self) -> i8 {
-        *self.entity_data.lock().item_display.item_display.get()
+        *self.entity_data.lock().item_display.get()
     }
 
     /// Sets the vanilla `ItemDisplay.ItemDisplayContext` ordinal.
     pub fn set_display_context(&self, context: i8) {
-        self.entity_data
-            .lock()
-            .item_display
-            .item_display
-            .set(context);
+        self.entity_data.lock().item_display.set(context);
     }
 }
 
@@ -325,77 +321,69 @@ impl TextDisplayEntity {
     /// The displayed text component.
     #[must_use]
     pub fn text(&self) -> TextComponent {
-        (**self.entity_data.lock().text_display.text.get()).clone()
+        (**self.entity_data.lock().text.get()).clone()
     }
 
     /// Sets the displayed text component.
     pub fn set_text(&self, text: TextComponent) {
-        self.entity_data
-            .lock()
-            .text_display
-            .text
-            .set(Box::new(text));
+        self.entity_data.lock().text.set(Box::new(text));
     }
 
     /// Vanilla `TextDisplay` line width, wrapped at `line_width` pixels.
     #[must_use]
     pub fn line_width(&self) -> i32 {
-        *self.entity_data.lock().text_display.line_width.get()
+        *self.entity_data.lock().line_width.get()
     }
 
     /// Sets the vanilla `TextDisplay` line width.
     pub fn set_line_width(&self, width: i32) {
-        self.entity_data.lock().text_display.line_width.set(width);
+        self.entity_data.lock().line_width.set(width);
     }
 
     /// The background colour as ARGB.
     #[must_use]
     pub fn background_color(&self) -> i32 {
-        *self.entity_data.lock().text_display.background_color.get()
+        *self.entity_data.lock().background_color.get()
     }
 
     /// Sets the background colour as ARGB.
     pub fn set_background_color(&self, color: i32) {
-        self.entity_data
-            .lock()
-            .text_display
-            .background_color
-            .set(color);
+        self.entity_data.lock().background_color.set(color);
     }
 
     /// Vanilla `TextDisplay` text opacity, `-1` means opaque.
     #[must_use]
     pub fn text_opacity(&self) -> i8 {
-        *self.entity_data.lock().text_display.text_opacity.get()
+        *self.entity_data.lock().text_opacity.get()
     }
 
     /// Sets the vanilla `TextDisplay` text opacity.
     pub fn set_text_opacity(&self, opacity: i8) {
-        self.entity_data.lock().text_display.text_opacity.set(opacity);
+        self.entity_data.lock().text_opacity.set(opacity);
     }
 
     /// Whether the text is rendered see-through.
     #[must_use]
     pub fn is_see_through(&self) -> bool {
-        *self.entity_data.lock().text_display.style_flags.get() & 0x02 != 0
+        *self.entity_data.lock().style_flags.get() & 0x02 != 0
     }
 
     /// Vanilla `TextDisplay.setFlags` for the see-through flag.
     pub fn set_see_through(&self, see_through: bool) {
         let mut data = self.entity_data.lock();
-        let mut flags = *data.text_display.style_flags.get();
+        let mut flags = *data.style_flags.get();
         if see_through {
             flags |= 0x02;
         } else {
             flags &= !0x02;
         }
-        data.text_display.style_flags.set(flags);
+        data.style_flags.set(flags);
     }
 
     /// Whether the text is drawn with a default shadow.
     #[must_use]
     pub fn has_shadow(&self) -> bool {
-        *self.entity_data.lock().text_display.style_flags.get() & 0x01 != 0
+        *self.entity_data.lock().style_flags.get() & 0x01 != 0
     }
 }
 

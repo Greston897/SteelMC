@@ -326,9 +326,7 @@ impl Animal for HorseEntity {
 
     /// Vanilla `AbstractHorse.isFood`: `#minecraft:horse_food`.
     fn is_food(&self, item_stack: &ItemStack) -> bool {
-        REGISTRY
-            .items
-            .is_in_tag(item_stack.item(), &ItemTag::HORSE_FOOD)
+        item_stack.item().has_tag(&ItemTag::HORSE_FOOD)
     }
 }
 

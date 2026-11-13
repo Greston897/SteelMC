@@ -162,23 +162,6 @@ impl SourceProjectionChanges {
         changes
     }
 
-    /// Returns whether any ticket here carries vanilla's
-    /// `FLAG_KEEP_DIMENSION_ACTIVE`.
-    ///
-    /// Vanilla uses the flag to decide whether a dimension with no players
-    /// still counts as active: `/forceload` and player tickets set it, and
-    /// `MinecraftServer` skips the "no players, no force-loaded chunks" idle
-    /// check for those dimensions.
-    #[must_use]
-    pub(crate) fn keeps_dimension_active(&self) -> bool {
-        self.tickets.values().flatten().any(|ticket| {
-            ticket
-                .ticket()
-                .ticket_type()
-                .should_keep_dimension_active()
-        })
-    }
-
     pub(crate) fn merge(&mut self, mut other: Self) {
         self.load_positions.append(&mut other.load_positions);
         self.simulation_positions
@@ -197,6 +180,23 @@ impl ChunkTicketStorage {
     #[must_use]
     pub(crate) fn new() -> Self {
         Self::default()
+    }
+
+    /// Returns whether any ticket here carries vanilla's
+    /// `FLAG_KEEP_DIMENSION_ACTIVE`.
+    ///
+    /// Vanilla uses the flag to decide whether a dimension with no players
+    /// still counts as active: `/forceload` and player tickets set it, and
+    /// `MinecraftServer` skips the "no players, no force-loaded chunks" idle
+    /// check for those dimensions.
+    #[must_use]
+    pub(crate) fn keeps_dimension_active(&self) -> bool {
+        self.tickets.values().flatten().any(|ticket| {
+            ticket
+                .ticket()
+                .ticket_type()
+                .should_keep_dimension_active()
+        })
     }
 
     /// Loads saved tickets, starting with none if the saved data cannot be read.

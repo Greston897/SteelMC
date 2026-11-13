@@ -112,7 +112,7 @@ impl GameEventListener for SculkSensorListener {
                 &steel_registry::vanilla_criteria_triggers::AVOID_VIBRATION,
                 &crate::player::advancement::predicate::TriggerContext::at(
                     &player.get_world(),
-                    player.block_position(),
+                    player.position(),
                 ),
             );
         }

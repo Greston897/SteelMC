@@ -188,7 +188,7 @@ impl BeehiveBlockEntity {
             // Vanilla `BeehiveBlockEntity.releaseOccupant` nudges the bee out of
             // the hive block along the hive's facing.
             let position = entity.position() + glam::DVec3::new(offset.0, offset.1, offset.2);
-            entity.set_position(position);
+            entity.base().set_position_local(position);
         }
     }
 

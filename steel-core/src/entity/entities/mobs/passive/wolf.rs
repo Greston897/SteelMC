@@ -325,7 +325,7 @@ impl Animal for WolfEntity {
 
     /// Vanilla `Wolf.isFood`: the item must be in `#minecraft:wolf_food`.
     fn is_food(&self, item_stack: &ItemStack) -> bool {
-        REGISTRY.items.is_in_tag(item_stack.item(), &ItemTag::WOLF_FOOD)
+        item_stack.item().has_tag(&ItemTag::WOLF_FOOD)
     }
 }
 

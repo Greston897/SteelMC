@@ -266,7 +266,7 @@ impl Animal for TurtleEntity {
 
     /// Vanilla `Turtle.isFood`: the item must be in `#minecraft:turtle_food`.
     fn is_food(&self, item_stack: &ItemStack) -> bool {
-        REGISTRY.items.is_in_tag(item_stack.item(), &ItemTag::TURTLE_FOOD)
+        item_stack.item().has_tag(&ItemTag::TURTLE_FOOD)
     }
 }
 

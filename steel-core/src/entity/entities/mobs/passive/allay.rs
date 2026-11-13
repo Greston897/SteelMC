@@ -21,7 +21,7 @@ use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::AllayEntityData;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_blocks, vanilla_entities};
 use steel_utils::locks::SyncMutex;
-use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
+use steel_utils::{BlockPos, Downcast as _, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     FloatGoal, LookAtPlayerGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
@@ -199,7 +199,10 @@ impl Entity for AllayEntity {
     }
 
     fn fall_sounds(&self) -> (SoundEventRef, SoundEventRef) {
-        (sound_events::ENTITY_GENERIC_SMALL_FALL, sound_events::ENTITY_GENERIC_BIG_FALL)
+        (
+            &sound_events::ENTITY_GENERIC_SMALL_FALL,
+            &sound_events::ENTITY_GENERIC_BIG_FALL,
+        )
     }
 
     fn swim_sound(&self) -> SoundEventRef {
@@ -213,7 +216,7 @@ impl Entity for AllayEntity {
     fn save_additional(&self, nbt: &mut NbtCompound) {
         self.save_mob(nbt);
         if let Some(stack) = self.carried_item.lock().clone() {
-            nbt.insert("CarriedItem", stack.to_nbt_tag());
+            nbt.insert("CarriedItem", stack.to_nbt_tag_ref());
         }
     }
 
@@ -309,7 +312,9 @@ impl AllayEntity {
     /// Vanilla `Allay.tick`: with empty hands an allay grabs a nearby dropped
     /// item, remembers a player to deliver to, and then carries it.
     fn tick_item_pickup(&self) {
-        if self.carried_item.lock().is_some() || !self.is_alive() {
+        // `Entity` and `LivingEntity` both declare `is_alive`; the living one
+        // is the vanilla `LivingEntity.isAlive` this tick uses.
+        if self.carried_item.lock().is_some() || !LivingEntity::is_alive(self) {
             return;
         }
         let Some(world) = self.level() else {
@@ -326,7 +331,7 @@ impl AllayEntity {
         );
         let picked_up = world.get_entities_in_aabb(&reach).into_iter().find_map(|entity| {
             let stack = {
-                let item_entity = entity.as_entity_event_source().downcast_ref::<ItemEntity>()?;
+                let item_entity = entity.as_ref().downcast_ref::<ItemEntity>()?;
                 if item_entity.has_pickup_delay() {
                     return None;
                 }

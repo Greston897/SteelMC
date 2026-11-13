@@ -326,7 +326,7 @@ impl Animal for CamelEntity {
 
     /// Vanilla `Camel.isFood`: the item must be in `#minecraft:camel_food`.
     fn is_food(&self, item_stack: &ItemStack) -> bool {
-        REGISTRY.items.is_in_tag(item_stack.item(), &ItemTag::CAMEL_FOOD)
+        item_stack.item().has_tag(&ItemTag::CAMEL_FOOD)
     }
 }
 

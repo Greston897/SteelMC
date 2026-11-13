@@ -270,7 +270,7 @@ impl Animal for PandaEntity {
 
     /// Vanilla `Panda.isFood`: the item must be in `#minecraft:panda_food`.
     fn is_food(&self, item_stack: &ItemStack) -> bool {
-        REGISTRY.items.is_in_tag(item_stack.item(), &ItemTag::PANDA_FOOD)
+        item_stack.item().has_tag(&ItemTag::PANDA_FOOD)
     }
 }
 

@@ -3663,7 +3663,8 @@ pub fn create_wither_rose(dead: &dyn Entity, source: &DamageSource) {
     let Some(world) = dead.level() else {
         return;
     };
-    let pos = BlockPos::containing(dead.position());
+    let dead_position = dead.position();
+    let pos = BlockPos::containing(dead_position.x, dead_position.y, dead_position.z);
     let current = world.get_block_state(pos);
     if !current.is_air() && !current.is_replaceable() {
         return;

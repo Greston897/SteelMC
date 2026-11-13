@@ -127,7 +127,7 @@ impl NautilusEntity {
     pub fn start_dash(&self) {
         self.set_dash(true);
         let (yaw, _) = self.rotation();
-        let rotation = yaw.to_radians();
+        let rotation = f64::from(yaw).to_radians();
         let direction = DVec3::new(-rotation.sin(), 0.0, rotation.cos());
         self.set_velocity(direction * NAUTILUS_DASH_SPEED);
     }

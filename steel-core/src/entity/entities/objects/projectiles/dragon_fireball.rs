@@ -15,6 +15,7 @@ use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::data_components::components::PotionContents;
 use steel_registry::entity_type::EntityTypeRef;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::mob_effect::instance::MobEffectInstance;
 use steel_registry::particle_type::{ParticleData, PowerParticleOption};
 use steel_registry::{vanilla_entities, vanilla_mob_effects, vanilla_particle_types};
@@ -115,6 +116,7 @@ impl DragonFireballEntity {
                 false,
                 true,
                 true,
+                None,
             )],
             None,
         ));

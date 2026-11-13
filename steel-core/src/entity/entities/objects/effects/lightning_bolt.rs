@@ -15,10 +15,11 @@ use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::BaseEntityData;
 use steel_registry::{sound_events, vanilla_damage_types};
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_utils::BlockPos;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
-use steel_utils::{DowncastType, DowncastTypeKey, WorldAabb};
+use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey, WorldAabb};
 
 use crate::entity::entities::mobs::passive::MushroomCowEntity;
 use crate::entity::damage::DamageSource;
@@ -163,7 +164,7 @@ impl LightningBoltEntity {
 
             // Vanilla runs `LightningBolt.onHitEntity` before the damage call, which
             // is where the mooshroom variant flip lives.
-            if let Some(cow) = entity.as_entity_event_source().downcast_ref::<MushroomCowEntity>() {
+            if let Some(cow) = entity.as_ref().downcast_ref::<MushroomCowEntity>() {
                 cow.thunder_hit(self_uuid);
             }
 

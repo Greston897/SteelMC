@@ -128,8 +128,10 @@ impl Entity for SpawnerMinecartEntity {
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
-        let view: BorrowedNbtCompound<'_> = nbt.into();
-        self.spawner.lock().load(&view);
+        // `BaseSpawner::load` takes the trait object and converts to the view
+        // itself, so the compound is handed over unchanged.
+        let view: &dyn BorrowedNbtCompound<'_> = &nbt;
+        self.spawner.lock().load(view);
     }
 }
 

@@ -270,7 +270,7 @@ impl Animal for StriderEntity {
 
     /// Vanilla `Strider.isFood`: the item must be in `#minecraft:strider_food`.
     fn is_food(&self, item_stack: &ItemStack) -> bool {
-        REGISTRY.items.is_in_tag(item_stack.item(), &ItemTag::STRIDER_FOOD)
+        item_stack.item().has_tag(&ItemTag::STRIDER_FOOD)
     }
 }
 

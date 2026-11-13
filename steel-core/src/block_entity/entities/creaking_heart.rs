@@ -130,7 +130,7 @@ impl CreakingHeartBlockEntity {
             world
                 .get_block_state(pos.relative(direction))
                 .get_block()
-                == vanilla_blocks::PALE_OAK_LOG
+                == &vanilla_blocks::PALE_OAK_LOG
         };
         (axis(Direction::North) && axis(Direction::South))
             || (axis(Direction::East) && axis(Direction::West))
