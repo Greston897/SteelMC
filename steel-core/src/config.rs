@@ -104,12 +104,22 @@ pub struct RuntimeConfig {
 }
 
 /// Vanilla `server.properties` RCON settings.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RconConfig {
     /// TCP port the RCON listener binds; unused when `password` is empty.
     pub port: u16,
     /// Shared secret every client must authenticate with. Empty disables RCON.
     pub password: String,
+}
+
+impl Default for RconConfig {
+    /// Vanilla `server.properties` defaults `rcon.port` to 25575.
+    fn default() -> Self {
+        Self {
+            port: 25575,
+            password: String::new(),
+        }
+    }
 }
 
 impl Default for RuntimeConfig {

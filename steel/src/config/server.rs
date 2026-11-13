@@ -126,13 +126,23 @@ impl ServerConfig {
 }
 
 /// RCOn settings as they appear in `config.toml`.
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct RconSettings {
     /// Port the RCON listener binds.
     pub port: u16,
     /// Shared secret; empty disables RCON.
     pub password: String,
+}
+
+impl Default for RconSettings {
+    /// Vanilla `server.properties` defaults `rcon.port` to 25575.
+    fn default() -> Self {
+        Self {
+            port: 25575,
+            password: String::new(),
+        }
+    }
 }
 
 impl RconSettings {
