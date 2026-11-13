@@ -40,8 +40,9 @@ pub struct SaplingBlock {
     tree_grower_name: &'static str,
     /// The grower's first tree type (e.g. `oak`, `jungle_tree_no_vine`).
     ///
-    /// Growers with a single tree (`dark_oak`, `pale_oak`) omit the key entirely,
-    /// which the extractor reports as the `none` sentinel.
+    /// Growers with a single tree (`dark_oak`, `pale_oak`) omit the key
+    /// entirely in `classes.json`; the `optional = "none"` sentinel accepts
+    /// both a missing key and an explicit `"none"` value.
     #[json_arg(value, json = "tree_grower_shortest_tree_type", optional = "none")]
     shortest_tree_type: Option<&'static str>,
 }

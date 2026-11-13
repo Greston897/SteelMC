@@ -321,7 +321,7 @@ impl BlockBehavior for CopperGolemStatueBlock {
 #[block_behavior]
 pub struct WeatheringCopperGolemStatueBlock {
     block: BlockRef,
-    #[json_arg(r#enum = "WeatherState", json = "weather_state")]
+    #[json_arg(r#enum = "WeatherState", json = "weathering_state")]
     weathering: crate::behavior::blocks::building::WeatheringCopper,
 }
 

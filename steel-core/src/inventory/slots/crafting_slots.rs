@@ -191,16 +191,6 @@ impl ResultHandler for CraftingHandler {
         let _ = unlocked;
         if let Some(recipe) = crafted_recipe {
             player.trigger_recipe_crafted(&recipe);
-            // Vanilla `CraftingMenu#slotsChanged` fires `CRAFTING_TABLE_USED`
-            // when the menu is a full 3x3 crafting table (the 2x2 player grid
-            // does not count), so the `minecraft:recipes/...` style advancements
-            // that gate on a crafting table behave correctly.
-            if self.grid_size == 9 {
-                player.trigger_advancement_with_context(
-                    &steel_registry::vanilla_criteria_triggers::CRAFTING_TABLE_USED,
-                    &crate::player::advancement::predicate::TriggerContext::default(),
-                );
-            }
         }
 
         for remainder in remainder_overflow {

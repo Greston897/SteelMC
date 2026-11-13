@@ -347,11 +347,15 @@ pub(crate) fn generate_arg(
 ) -> TokenStream {
     let json_key = field.json_name.as_deref().unwrap_or(&field.field_name);
 
-    // For optional fields, check the sentinel before computing the registry token.
+    // For optional fields, a missing key and the sentinel both mean `None`.
+    // The extractor omits keys that have no value at all (e.g. `dark_oak_sapling`
+    // has a single tree, so `tree_grower_shortest_tree_type` is absent), so
+    // requiring the key here would panic on otherwise valid data.
     if let Some(sentinel) = &field.optional_sentinel {
-        let raw = get_json_str(extra, entry_name, json_key);
-        if raw == sentinel {
-            return quote! { None };
+        match extra.get(json_key) {
+            None | Some(serde_json::Value::Null) => return quote! { None },
+            Some(raw) if raw.as_str() == Some(sentinel.as_str()) => return quote! { None },
+            Some(_) => {}
         }
     }
 

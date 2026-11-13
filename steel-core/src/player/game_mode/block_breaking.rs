@@ -14,7 +14,7 @@ use steel_registry::{
     REGISTRY, blocks::properties::Direction, item_stack::ItemStack, level_events, vanilla_blocks,
     vanilla_game_events,
 };
-use steel_registry::{vanilla_attributes, vanilla_criteria_triggers, vanilla_mob_effects};
+use steel_registry::{vanilla_attributes, vanilla_mob_effects};
 use steel_utils::{
     BlockPos, BlockStateId,
     types::{GameType, InteractionHand, UpdateFlags},
@@ -471,20 +471,6 @@ impl BlockBreakingManager {
 
         if removed_by_player_break {
             behavior.destroy(adjusted_state, world, pos);
-
-            // Vanilla `ServerPlayerGameMode#destroyBlock` → `CriteriaTriggers.
-            // DESTROYED_BLOCK`, fired with the destroyed block and its item
-            // form so `destroyed_block` predicates can filter by block.
-            if let Some(destroyed_block) = REGISTRY.blocks.by_state_id(adjusted_state) {
-                let dest_item = REGISTRY.items.by_block(block).key.clone();
-                player.trigger_advancement_with_context(
-                    &vanilla_criteria_triggers::DESTROYED_BLOCK,
-                    &crate::player::advancement::predicate::TriggerContext::block(
-                        &destroyed_block.key,
-                        Some(&dest_item),
-                    ),
-                );
-            }
 
             // Play block destruction particles and sound (skip for fire blocks like vanilla)
             // Exclude the breaking player as they see the effect client-side
