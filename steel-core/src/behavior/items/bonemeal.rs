@@ -8,7 +8,8 @@ use steel_registry::{
     blocks::{block_state_ext::BlockStateExt, shapes::is_offset_shape_full_block},
     data_components::vanilla_components::USE_EFFECTS,
     item_stack::ItemStack,
-    REGISTRY, RegistryExt as _, level_events, vanilla_blocks, vanilla_game_events,
+    REGISTRY, RegistryExt as _, TaggedRegistryExt as _, level_events, vanilla_blocks,
+    vanilla_game_events,
     vanilla_particle_types,
 };
 use steel_utils::{BlockPos, Direction, types::UpdateFlags};

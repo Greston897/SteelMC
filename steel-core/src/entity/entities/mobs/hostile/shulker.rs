@@ -9,7 +9,7 @@
 //! dimensions come from the extracted `entities.json`.
 //!
 use std::iter::empty;
-use std::sync::Weak;
+use std::sync::{Arc, Weak};
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
@@ -19,7 +19,7 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::ShulkerEntityData;
-use steel_registry::{sound_events, vanilla_attributes};
+use steel_registry::{sound_events, vanilla_attributes, vanilla_entities};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
@@ -258,6 +258,11 @@ impl Mob for ShulkerEntity {
         self.entity_data.lock().mob_mut().mob_flags.set(flags);
     }
 
+}
+
+impl Monster for ShulkerEntity {}
+
+impl PathfinderMob for ShulkerEntity {
     fn perform_ranged_attack(
         &self,
         self_entity: &SharedEntity,
@@ -285,7 +290,3 @@ impl Mob for ShulkerEntity {
         }
     }
 }
-
-impl Monster for ShulkerEntity {}
-
-impl PathfinderMob for ShulkerEntity {}

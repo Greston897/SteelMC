@@ -8,14 +8,14 @@
 
 use std::sync::Arc;
 
-use glam::IVec3;
+use glam::{DVec3, IVec3};
 use steel_utils::locks::SyncMutex;
 
 use serde::{Deserialize, Serialize};
-use steel_registry::mob_effect::instance::MobEffectInstance;
 use steel_registry::vanilla_mob_effects;
 
-use crate::entity::LivingEntity as _;
+use crate::entity::living_base::MobEffectInstance;
+use crate::entity::{Entity as _, LivingEntity as _};
 use crate::poi::OccupationStatus;
 use crate::world::World;
 
@@ -179,36 +179,32 @@ impl RaidManager {
             f64::from(raid.center.z),
         );
         let radius = f64::from(VILLAGE_SCAN_RADIUS);
-        let players: Vec<_> = world
-            .players
-            .iter_players(|_uuid, player| {
-                let position = player.position();
-                let dx = position.x - center.x;
-                let dz = position.z - center.z;
-                if dx * dx + dz * dz > radius * radius {
-                    return true;
-                }
-                // Vanilla gives the hero effect for 20 * 10 * omenLevel seconds.
-                let duration = raid
-                    .omen_level
-                    .max(1)
-                    .saturating_mul(HERO_EFFECT_TICKS_PER_OMEN_LEVEL);
-                player.add_mob_effect(MobEffectInstance::simple(
-                    &vanilla_mob_effects::HERO_OF_THE_VILLAGE,
-                    duration,
-                    0,
-                ));
-                player.trigger_advancement_with_context(
-                    &steel_registry::vanilla_criteria_triggers::HERO_OF_THE_VILLAGE,
-                    &crate::player::advancement::predicate::TriggerContext::at(
-                        &player.get_world(),
-                        player.block_position(),
-                    ),
-                );
-                true
-            })
-            .collect();
-        drop(players);
+        world.players.iter_players(|_uuid, player| {
+            let position = player.position();
+            let dx = position.x - center.x;
+            let dz = position.z - center.z;
+            if dx * dx + dz * dz > radius * radius {
+                return true;
+            }
+            // Vanilla gives the hero effect for 20 * 10 * omenLevel seconds.
+            let duration = raid
+                .omen_level
+                .max(1)
+                .saturating_mul(HERO_EFFECT_TICKS_PER_OMEN_LEVEL);
+            player.add_mob_effect(MobEffectInstance::with_duration(
+                vanilla_mob_effects::HERO_OF_THE_VILLAGE,
+                duration,
+                0,
+            ));
+            player.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::HERO_OF_THE_VILLAGE,
+                &crate::player::advancement::predicate::TriggerContext::at(
+                    &player.get_world(),
+                    player.block_position(),
+                ),
+            );
+            true
+        });
     }
 }
 

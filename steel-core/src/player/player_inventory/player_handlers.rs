@@ -579,7 +579,7 @@ impl Player {
             };
 
             let mut written = stack.copy_with_count(stack.count());
-            written.set_item(&*vanilla_items::WRITTEN_BOOK.key);
+            written.set_item(&vanilla_items::WRITTEN_BOOK.key);
             written.remove::<WritableBookContent>(WRITABLE_BOOK_CONTENT);
             written.set(WRITTEN_BOOK_CONTENT, content);
             written

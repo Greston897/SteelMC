@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use steel_utils::{Downcast as _, BlockPos, WorldAabb};
 
-use crate::entity::{EntityEventSource, Mob as _, SharedEntity};
+use crate::entity::{Entity as _, EntityEventSource, Mob as _, SharedEntity};
 use crate::entity::entities::PiglinEntity;
 use crate::entity::Mob as _;
 use crate::player::Player;

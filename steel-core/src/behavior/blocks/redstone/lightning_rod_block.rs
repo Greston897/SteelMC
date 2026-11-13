@@ -45,8 +45,13 @@ impl LightningRodBlock {
         // Experimental redstone orientations are intentionally omitted.
         world.update_neighbors_at(pos.relative(front), block);
     }
-    fn on_lightning_strike(
-        block: BlockRef,
+    /// Vanilla `LightningRodBlock.onLightningStrike`: powers the rod and
+    /// schedules its deactivation.
+    ///
+    /// Named apart from the `BlockBehavior::on_lightning_strike` hook so the
+    /// call from `WeatheringLightningRodBlock` cannot resolve to the trait
+    /// method, which takes `&self`.
+    fn strike(block: BlockRef,
         state: BlockStateId,
         world: &Arc<World>,
         pos: BlockPos,

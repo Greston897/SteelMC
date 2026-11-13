@@ -83,7 +83,7 @@ impl BlockBehavior for WeatheringLightningRodBlock {
             world.set_block(pos, next_state, steel_utils::types::UpdateFlags::UPDATE_ALL);
         }
         // The rod lights up using the state actually present after oxidation.
-        LightningRodBlock::on_lightning_strike(
+        LightningRodBlock::strike(
             self.lightning_rod.block_ref(),
             world.get_block_state(pos),
             world,

@@ -27,6 +27,7 @@ use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
+use crate::entity::damage::DamageSource;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
@@ -265,17 +266,17 @@ impl LivingEntity for CreakingEntity {
     fn ai_step(&self, entity: &SharedEntity) -> Option<MoveResult> {
         Monster::monster_ai_step(self, entity)
     }
-}
-
-impl Mob for CreakingEntity {
-    fn mob_base(&self) -> &MobBase {
-        &self.mob_base
-    }
 
     /// Vanilla `Creaking.isInvulnerableTo`: the creaking can only be hurt once its
     /// creaking heart is gone, which is what forces the player to find the heart.
     fn is_invulnerable_to(&self, world: &World, _source: &DamageSource) -> bool {
         self.linked_heart(world).is_some()
+    }
+}
+
+impl Mob for CreakingEntity {
+    fn mob_base(&self) -> &MobBase {
+        &self.mob_base
     }
 
     /// Vanilla `Creaking.tick`: a creaking whose heart no longer exists dies.

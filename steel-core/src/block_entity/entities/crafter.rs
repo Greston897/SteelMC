@@ -7,6 +7,7 @@
 use std::sync::{Arc, Weak};
 
 use simdnbt::ToNbtTag;
+use uuid::Uuid;
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use glam::DVec3;

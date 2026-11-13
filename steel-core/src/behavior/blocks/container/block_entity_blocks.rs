@@ -32,7 +32,7 @@ use crate::inventory::container::calculate_redstone_signal_from_container;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::inventory::menu::kinds::{brewing_stand, chest, crafter, dispenser, hopper, lectern};
 use crate::entity::entities::objects::projectiles::AbstractArrow as _;
-use crate::entity::{SharedEntity, next_entity_id};
+use crate::entity::{Entity as _, SharedEntity, next_entity_id};
 use crate::entity::entities::{
     ArrowEntity, EnderPearlEntity, ExperienceBottleEntity, FireworkRocketEntity, ItemEntity,
     LingeringPotionEntity, SnowballEntity, SpectralArrowEntity, SplashPotionEntity,

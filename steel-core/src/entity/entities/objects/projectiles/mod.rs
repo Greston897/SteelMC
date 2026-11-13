@@ -23,7 +23,7 @@ pub use arrow::{
     AbstractArrow, ArrowEntity, ArrowHandle, ArrowPickup, SpectralArrowEntity, TRIDENT_DAMAGE,
     ThrownTridentEntity,
 };
-pub use breeze_wind_charge::BreezeWindChargeEntity;
+pub use breeze_wind_charge::{BREEZE_WIND_CHARGE_POWER, BreezeWindChargeEntity};
 pub use dragon_fireball::DragonFireballEntity;
 pub use ender_pearl::EnderPearlEntity;
 pub use experience_bottle::ExperienceBottleEntity;

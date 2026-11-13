@@ -14,10 +14,10 @@ use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::
 
 use glam::DVec3;
 use steel_registry::{vanilla_blocks, vanilla_entities};
-use steel_utils::types::Direction;
+use steel_utils::Direction;
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
-use crate::entity::{ENTITIES, Entity as _, next_entity_id};
+use crate::entity::{ENTITIES, Entity, next_entity_id};
 use crate::world::World;
 
 /// Vanilla distance within which a player keeps a heart active.

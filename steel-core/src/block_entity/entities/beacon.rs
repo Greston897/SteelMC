@@ -12,9 +12,8 @@ use std::{
 };
 
 use glam::DVec3;
-use simdnbt::borrow::{
-    BaseNbtCompound as BorrowedNbtCompound,
-};
+use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
+use simdnbt::borrow::BorrowedNbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use simdnbt::{FromNbtTag as _, ToNbtTag as _};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
@@ -37,7 +36,7 @@ use crate::behavior::BLOCK_BEHAVIORS;
 use crate::block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter};
 use crate::chunk::heightmap::HeightmapType;
 use crate::chunk::light::MAX_LIGHT_LEVEL;
-use crate::entity::{LivingEntity as _, MobEffectInstance};
+use crate::entity::{Entity as _, LivingEntity as _, MobEffectInstance};
 use crate::player::Player;
 use crate::world::World;
 
@@ -394,10 +393,13 @@ impl BlockEntity for BeaconBlockEntity {
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
-        *self.name.lock() = nbt
+        // The `BaseNbtCompound` trait itself has no map access; the borrowed
+        // view is what exposes `get` and `byte_value`.
+        let view: BorrowedNbtCompoundView<'_, '_> = nbt.into();
+        *self.name.lock() = view
             .get("CustomName")
             .and_then(|tag| TextComponent::from_nbt(&tag.to_owned()));
-        *self.lock_key.lock() = nbt
+        *self.lock_key.lock() = view
             .get("Lock")
             .and_then(LockCode::from_nbt_tag)
             .unwrap_or(LockCode::NO_LOCK);

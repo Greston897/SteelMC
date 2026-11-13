@@ -13,7 +13,7 @@ use steel_registry::vanilla_attributes;
 use steel_utils::Identifier;
 use steel_utils::locks::SyncMutex;
 
-use crate::entity::Entity;
+use crate::entity::{Entity, LivingEntity as _};
 use crate::player::Player;
 use crate::world::World;
 

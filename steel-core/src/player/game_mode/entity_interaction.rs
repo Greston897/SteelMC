@@ -493,9 +493,9 @@ impl Player {
             // Vanilla `SpearMobsTrigger` (`spear_mobs`): a spear hit on a mob
             // counts, whether or not it kills. The `count` condition counts hits,
             // so the trigger fires on every spear attack.
-            if REGISTRY
-                .items
-                .is_in_tag(attacking_item.item(), &vanilla_item_tags::ItemTag::SPEARS)
+            if attacking_item
+                .item()
+                .has_tag(&vanilla_item_tags::ItemTag::SPEARS)
             {
                 self.trigger_advancement_with_context(
                     &steel_registry::vanilla_criteria_triggers::SPEAR_MOBS,

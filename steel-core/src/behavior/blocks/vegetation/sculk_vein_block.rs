@@ -14,6 +14,7 @@ use crate::behavior::context::BlockPlaceContext;
 use crate::world::{LevelReader, ScheduledTickAccess, World};
 
 use super::BlockRef;
+use super::multiface_block::MultifaceSpreader;
 
 /// Vanilla `SculkVeinBlock` survival, spread, and catalyst charge handling.
 ///
@@ -27,6 +28,9 @@ use super::BlockRef;
 #[block_behavior]
 pub struct SculkVeinBlock {
     multiface: MultifaceBlock,
+    /// Vanilla `MultifaceBlock.getSpreader`: the vein spreads through the shared
+    /// multiface spreader, which owns the face/direction search.
+    spreader: MultifaceSpreader,
 }
 
 impl SculkVeinBlock {
@@ -45,6 +49,7 @@ impl SculkVeinBlock {
     pub const fn new(block: BlockRef) -> Self {
         Self {
             multiface: MultifaceBlock::new(block),
+            spreader: MultifaceSpreader::new(block),
         }
     }
 
@@ -76,7 +81,7 @@ impl SculkVeinBlock {
             for _ in 0..4 {
                 let spread_direction = Self::DIRECTIONS[rng.random_range(0..6)];
                 if self
-                    .multiface
+                    .spreader
                     .spread_from_face_toward_direction(
                         state,
                         world,
@@ -120,7 +125,7 @@ impl SculkVeinBlock {
             }
             let spread_direction = Self::DIRECTIONS[rng.random_range(0..6)];
             if self
-                .multiface
+                .spreader
                 .spread_from_face_toward_direction(
                     state,
                     world,

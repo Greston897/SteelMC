@@ -111,6 +111,7 @@ use steel_registry::{
 use steel_utils::{
     BlockPos, ChunkPos, Identifier,
     locks::{AsyncMutex, SyncMutex, SyncRwLock},
+    saved_data::names as saved_data_names,
     text::DisplayResolutor,
     threading::{DEBUG_STACK_SIZE, available_worker_threads},
     translations,
@@ -252,6 +253,7 @@ pub async fn test_server_with_worlds_and_config(
         config,
         permission_groups,
         cancel_token: CancellationToken::new(),
+        auto_save_enabled: std::sync::atomic::AtomicBool::new(true),
         key_store: KeyStore::create(),
         registry_cache,
         worlds,
@@ -921,7 +923,10 @@ impl Server {
             .load_access_lists()
             .await
             .map_err(|error| format!("failed to load whitelist and bans: {error}"))?;
-        Ok(server)
+        // The caller wraps the returned server in `Arc` and only then links it
+        // into the worlds, so this stays a plain `Server` and the `Arc` built
+        // for the startup-only work above is unwrapped here.
+        Arc::try_unwrap(server).map_err(|_| "server Arc was cloned during startup".to_owned())
     }
 
     /// Returns the current player-certificate validator, if service keys are available.

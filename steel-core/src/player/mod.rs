@@ -82,7 +82,7 @@ use steel_registry::vanilla_game_rules::{
 };
 use steel_registry::{
     REGISTRY, level_events, sound_events, vanilla_attributes, vanilla_blocks, vanilla_custom_stats,
-    vanilla_damage_type_tags, vanilla_entities, vanilla_game_events,
+    vanilla_damage_type_tags, vanilla_entities, vanilla_game_events, vanilla_mob_effects,
 };
 use steel_utils::{Identifier, entity_events::EntityStatus, locks::Shared, translations};
 use tick_state::PlayerTickState;

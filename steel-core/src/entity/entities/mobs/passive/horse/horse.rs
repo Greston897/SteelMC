@@ -23,7 +23,8 @@ use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::REGISTRY;
 use steel_registry::vanilla_entity_data::HorseEntityData;
 use steel_utils::locks::SyncMutex;
-use steel_utils::types::{EquipmentSlot, InteractionHand};
+use steel_registry::equipment::EquipmentSlot;
+use steel_utils::types::InteractionHand;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
@@ -38,6 +39,7 @@ use crate::entity::{
     LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity, sync_dirty_mob_effects,
 };
 use crate::physics::MoveResult;
+use crate::player::Player;
 use crate::world::World;
 
 /// Vanilla `AbstractHorse.DATA_ID_FLAGS` bit: the horse is tamed.
@@ -285,6 +287,10 @@ impl LivingEntity for HorseEntity {
         Animal::tick_animal_love(self);
         result
     }
+
+    fn can_use_slot(&self, slot: EquipmentSlot) -> bool {
+        slot != EquipmentSlot::Saddle || (Entity::is_alive(self) && !AgeableMob::is_baby(self))
+    }
 }
 
 impl AgeableMob for HorseEntity {
@@ -371,9 +377,6 @@ impl Mob for HorseEntity {
         InteractionResult::Pass
     }
 
-    fn can_use_slot(&self, slot: EquipmentSlot) -> bool {
-        slot != EquipmentSlot::Saddle || (Entity::is_alive(self) && !AgeableMob::is_baby(self))
-    }
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {
         PathfinderMob::tick_pathfinder_goal_selectors(self, entity);

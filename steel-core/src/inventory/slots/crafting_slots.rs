@@ -1,5 +1,3 @@
-use crate::player::Player;
-use crate::player::player_inventory::Prediction;
 use std::sync::Arc;
 
 use steel_registry::item_stack::ItemStack;
@@ -7,6 +5,8 @@ use steel_utils::Identifier;
 use steel_utils::locks::{Shared, SyncMutex};
 
 use crate::inventory::container::{CraftingContainer, ResultContainer};
+use crate::player::Player;
+use crate::player::player_inventory::Prediction;
 use crate::{
     inventory::{
         container::Container,
@@ -17,13 +17,18 @@ use crate::{
 };
 
 /// A Recipe Handler for Crafting Recipes
+///
+/// Cloning shares the same containers and the same remembered recipe: the
+/// player's 2x2 grid and the crafting table's 3x3 grid each hold one handler,
+/// and every menu that displays a grid clones it.
+#[derive(Clone)]
 pub struct CraftingHandler {
     crafting_container: Shared<CraftingContainer>,
     result_container: Shared<ResultContainer>,
     grid_size: usize,
     /// The recipe currently shown in the result slot, retained so the limited
     /// crafting rule can re-check the same recipe on every grid change.
-    last_recipe: SyncMutex<Option<Identifier>>,
+    last_recipe: Arc<SyncMutex<Option<Identifier>>>,
 }
 
 impl CraftingHandler {
@@ -37,7 +42,7 @@ impl CraftingHandler {
             crafting_container,
             result_container,
             grid_size,
-            last_recipe: SyncMutex::new(None),
+            last_recipe: Arc::new(SyncMutex::new(None)),
         }
     }
 

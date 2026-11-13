@@ -18,7 +18,7 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::BreezeEntityData;
-use steel_registry::{sound_events, vanilla_attributes};
+use steel_registry::{sound_events, vanilla_attributes, vanilla_entities};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
@@ -27,8 +27,9 @@ use crate::entity::ai::goal::{
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
-use crate::entity::entities::objects::projectiles::breeze_wind_charge::BREEZE_WIND_CHARGE_POWER;
-use crate::entity::entities::objects::projectiles::BreezeWindChargeEntity;
+use crate::entity::entities::objects::projectiles::{
+    BREEZE_WIND_CHARGE_POWER, BreezeWindChargeEntity,
+};
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
@@ -251,6 +252,11 @@ impl Mob for BreezeEntity {
         self.entity_data.lock().mob_mut().mob_flags.set(flags);
     }
 
+}
+
+impl Monster for BreezeEntity {}
+
+impl PathfinderMob for BreezeEntity {
     /// Vanilla `Breeze.performRangedAttack`: spawn a breeze wind charge at eye
     /// height aimed at the target, with the breeze as its owner.
     fn perform_ranged_attack(
@@ -283,7 +289,3 @@ impl Mob for BreezeEntity {
         }
     }
 }
-
-impl Monster for BreezeEntity {}
-
-impl PathfinderMob for BreezeEntity {}

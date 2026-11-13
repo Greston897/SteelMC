@@ -56,8 +56,8 @@ impl Default for PlayerAdvancement {
             visible: FxHashSet::default(),
             progress_changed: FxHashSet::default(),
             last_selected_tab: Option::default(),
-            location_listeners: collect_listeners(vanilla_criteria_triggers::LOCATION),
-            tick_listeners: collect_listeners(vanilla_criteria_triggers::TICK),
+            location_listeners: collect_listeners(&vanilla_criteria_triggers::LOCATION),
+            tick_listeners: collect_listeners(&vanilla_criteria_triggers::TICK),
         }
     }
 }
@@ -477,6 +477,7 @@ mod tests {
 fn collect_listeners(trigger: &Identifier) -> Vec<(AdvancementRef, String)> {
     let mut listeners = Vec::new();
     for advancement in REGISTRY.advancements.advancements() {
+        let advancement = *advancement;
         for criterion_id in advancement.criteria_ids() {
             let Some(criterion) = advancement.get_criterion(criterion_id) else {
                 continue;

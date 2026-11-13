@@ -13,6 +13,7 @@ use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, FrontAndTop};
 use steel_registry::{vanilla_block_entity_types, vanilla_blocks, vanilla_damage_types};
+use steel_utils::Downcast as _;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
 
@@ -27,7 +28,7 @@ use crate::block_entity::BLOCK_ENTITIES;
 use crate::world::World;
 
 macro_rules! block_entity_block {
-    ($name:ident, $type_const:ident, $placement:expr) => {
+    ($name:ident, $type_const:ident, $placement:expr $(, $hook:item)?) => {
         #[block_behavior]
         pub struct $name {
             block: BlockRef,
@@ -63,7 +64,34 @@ macro_rules! block_entity_block {
                     state,
                 ))
             }
+
+            $( $hook )?
         }
+    };
+}
+
+/// Declares a block-entity block whose `on_place` runs `$hook` when the old
+/// state belonged to a different block.
+macro_rules! block_entity_block_with_on_place {
+    ($name:ident, $type_const:ident, $placement:expr, $hook:expr) => {
+        block_entity_block!(
+            $name,
+            $type_const,
+            $placement,
+            fn on_place(
+                &self,
+                state: BlockStateId,
+                world: &Arc<World>,
+                pos: BlockPos,
+                old_state: BlockStateId,
+                _moved_by_piston: bool,
+            ) {
+                if old_state.get_block() == state.get_block() {
+                    return;
+                }
+                ($hook)(world, pos, &self);
+            }
+        );
     };
 }
 
@@ -172,10 +200,32 @@ block_entity_block!(
     STRUCTURE_BLOCK,
     |state: BlockStateId, _context: &BlockPlaceContext<'_>| state
 );
-block_entity_block!(
+/// Vanilla `CreakingHeartBlockEntity.removeCreaking`: destroying the heart takes
+/// its creaking with it, which is the only way to kill a creaking.
+fn kill_linked_creaking(world: &Arc<World>, pos: BlockPos) {
+    let Some(block_entity) = world.get_block_entity(pos) else {
+        return;
+    };
+    let Some(heart) = block_entity
+        .downcast_ref::<crate::block_entity::entities::CreakingHeartBlockEntity>()
+    else {
+        return;
+    };
+    let Some(creaking_uuid) = heart.creaking() else {
+        return;
+    };
+    heart.set_creaking(None);
+    if let Some(entity) = world.get_entity_by_uuid(&uuid::Uuid::from_u128(creaking_uuid)) {
+        let damage = DamageSource::environment(&vanilla_damage_types::GENERIC_KILL);
+        entity.hurt(world, &damage, f32::MAX);
+    }
+}
+
+block_entity_block_with_on_place!(
     CreakingHeartBlock,
     CREAKING_HEART,
-    |state: BlockStateId, _context: &BlockPlaceContext<'_>| state
+    |state: BlockStateId, _context: &BlockPlaceContext<'_>| state,
+    |world, pos, _behavior| kill_linked_creaking(world, pos)
 );
 
 impl CreakingHeartBlock {
@@ -201,25 +251,6 @@ impl CreakingHeartBlock {
     }
 }
 
-impl BlockBehavior for CreakingHeartBlock {
-    /// Vanilla `CreakingHeartBlock`: breaking the heart takes its creaking with
-    /// it, which is the only way to kill a creaking.
-    fn on_place(
-        &self,
-        state: BlockStateId,
-        world: &Arc<World>,
-        pos: BlockPos,
-        old_state: BlockStateId,
-        _moved_by_piston: bool,
-    ) {
-        if old_state.get_block() == state.get_block() {
-            return;
-        }
-        if old_state.get_block() == &self.block {
-            Self::kill_creaking(world, pos);
-        }
-    }
-}
 block_entity_block!(
     TrialSpawnerBlock,
     TRIAL_SPAWNER,
@@ -316,7 +347,7 @@ impl Bonemealable for BonemealableFeaturePlacerBlock {
         // position inside the 3x3x3 area around the block.
         let plant = self.vegetation_block(rng);
         let plant_state = plant.default_state();
-        let behavior = BLOCK_BEHAVIORS.get_behavior(&plant);
+        let behavior = BLOCK_BEHAVIORS.get_behavior(plant);
         for _ in 0..MOSS_PLACEMENT_ATTEMPTS {
             let dx = rng.random_range(-1..=1);
             let dy = rng.random_range(-1..=1);
@@ -339,20 +370,22 @@ impl BonemealableFeaturePlacerBlock {
     /// Vanilla `moss_vegetation` / `pale_moss_vegetation` feature contents: the
     /// weighted plant set the feature scatters.
     fn vegetation_block(&self, rng: &mut dyn Rng) -> BlockRef {
-        let pale = self.block == &vanilla_blocks::PALE_MOSS_BLOCK;
-        let choices: [&BlockRef; 4] = if pale {
+        let pale = self.block.key == vanilla_blocks::PALE_MOSS_BLOCK.key;
+        // `vanilla_blocks::X` are already `BlockRef` (`&'static Block`), so the
+        // array holds the references directly rather than taking them again.
+        let choices: [BlockRef; 4] = if pale {
             [
-                &vanilla_blocks::PALE_HANGING_MOSS,
-                &vanilla_blocks::SHORT_GRASS,
-                &vanilla_blocks::PALE_MOSS_CARPET,
-                &vanilla_blocks::TALL_GRASS,
+                vanilla_blocks::PALE_HANGING_MOSS,
+                vanilla_blocks::SHORT_GRASS,
+                vanilla_blocks::PALE_MOSS_CARPET,
+                vanilla_blocks::TALL_GRASS,
             ]
         } else {
             [
-                &vanilla_blocks::SHORT_GRASS,
-                &vanilla_blocks::MOSS_CARPET,
-                &vanilla_blocks::TALL_GRASS,
-                &vanilla_blocks::AZALEA,
+                vanilla_blocks::SHORT_GRASS,
+                vanilla_blocks::MOSS_CARPET,
+                vanilla_blocks::TALL_GRASS,
+                vanilla_blocks::AZALEA,
             ]
         };
         let index = rng.random_range(0..choices.len());
