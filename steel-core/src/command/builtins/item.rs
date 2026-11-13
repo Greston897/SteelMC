@@ -7,10 +7,12 @@
 //! the modify form needs the item component patch parser, both of which follow in
 //! a later pass.
 
+use std::borrow::Cow;
 use std::sync::Arc;
 
 use steel_utils::Identifier;
 use text_components::TextComponent;
+use text_components::translation::TranslatedMessage;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
@@ -77,12 +79,11 @@ fn replace(
     let slot_key = context.identifier("slot")?;
     let slot_name = slot_key.path.clone();
     let Some(slot) = slot_index(&slot_name) else {
-        return Err(CommandSyntaxError::dynamic(
+        return Err(CommandSyntaxError::dynamic(translated(
             "commands.item.slot.unknown",
-            "Unknown item slot",
-            slot_name,
-            "hotbar.0".to_string(),
-        ));
+            "Unknown item slot".to_owned(),
+            vec![(slot_name).into(), ("hotbar.0".to_string()).into()],
+        )));
     };
     let stack = context.item_stack("item")?;
     let stack = match count {
@@ -143,4 +144,13 @@ mod tests {
     fn unknown_slot_is_rejected() {
         assert_eq!(slot_index("nonsense"), None);
     }
+}
+
+/// Builds a translated component with a literal fallback.
+fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> TextComponent {
+    TextComponent::translated(TranslatedMessage {
+        key: Cow::Borrowed(key),
+        fallback: Some(Cow::Owned(fallback)),
+        args: Some(args.into_boxed_slice()),
+    })
 }

@@ -272,6 +272,7 @@ pub async fn test_server_with_worlds_and_config(
         schedules: Arc::new(schedule::ScheduleRegistry::new()),
         whitelist: Arc::new(whitelist::Whitelist::new()),
         bans: Arc::new(bans::BanList::new()),
+        boss_bars: Arc::new(boss_bars::BossBarRegistry::new()),
         packet_processor: PacketProcessor::new(),
         chunk_encoding_pool: Arc::new(chunk_encoding_pool),
         jobs: ServerJobQueue::new(),
@@ -541,6 +542,8 @@ pub struct Server {
     pub whitelist: Arc<whitelist::Whitelist>,
     /// Player and address bans, backing `/ban`, `/banip`, `/pardon` and `/banlist`.
     pub bans: Arc<bans::BanList>,
+    /// Custom boss bars, backing `/bossbar`.
+    pub boss_bars: Arc<boss_bars::BossBarRegistry>,
     /// Decoded serverbound play packets handled during the inter-tick phase.
     packet_processor: PacketProcessor,
     /// Dedicated worker pool for CPU-heavy chunk persistence and packet encoding.
@@ -899,6 +902,7 @@ impl Server {
             schedules: Arc::new(schedule::ScheduleRegistry::new()),
             whitelist: Arc::new(whitelist::Whitelist::new()),
             bans: Arc::new(bans::BanList::new()),
+            boss_bars: Arc::new(boss_bars::BossBarRegistry::new()),
             command_dispatcher: SyncRwLock::new(registered_commands.dispatcher),
             command_permission_keys,
             command_requests: CommandRequestQueue::new(),

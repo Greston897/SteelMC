@@ -5,9 +5,11 @@
 //! still covers the whole cell; Steel mirrors that by writing the section's biome
 //! palette entry for the containing cell.
 
+use std::borrow::Cow;
 use steel_registry::vanilla_game_rules::MAX_BLOCK_MODIFICATIONS;
 use steel_utils::{BlockPos, BoundingBox, Identifier};
 use text_components::TextComponent;
+use text_components::translation::TranslatedMessage;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
@@ -27,7 +29,7 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 }
 
 fn command() -> Builder {
-    let biome = argument("biome", SteelArgumentType::biome())
+    let biome = argument("biome", SteelArgumentType::biome_or_tag())
         .executes(|context| execute_fillbiome(context));
 
     literal("fillbiome").then(
@@ -49,14 +51,13 @@ fn execute_fillbiome(
     let area = block_region_volume(region);
     let limit = world.get_game_rule(&MAX_BLOCK_MODIFICATIONS);
     if area > i64::from(limit) {
-        return Err(CommandSyntaxError::dynamic(
+        return Err(CommandSyntaxError::dynamic(translated(
             "commands.fillbiome.toobig",
-            "Too many blocks in the specified area",
-            area,
-            i64::from(limit),
-        ));
+            "Too many blocks in the specified area".to_owned(),
+            vec![(area).into(), (i64::from(limit)).into()],
+        )));
     }
-    ensure_region_chunks_block_ticking(&source, &region)?;
+    ensure_region_chunks_block_ticking(world, &region)?;
 
     let mut changed = 0i32;
     for z in region.min_z()..=region.max_z() {
@@ -114,4 +115,13 @@ mod tests {
         let region = BoundingBox::from_corners(BlockPos::new(0, 0, 0), BlockPos::new(1, 1, 1));
         assert_eq!(block_region_volume(region), 8);
     }
+}
+
+/// Builds a translated component with a literal fallback.
+fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> TextComponent {
+    TextComponent::translated(TranslatedMessage {
+        key: Cow::Borrowed(key),
+        fallback: Some(Cow::Owned(fallback)),
+        args: Some(args.into_boxed_slice()),
+    })
 }

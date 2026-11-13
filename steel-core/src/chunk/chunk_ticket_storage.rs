@@ -191,12 +191,10 @@ impl ChunkTicketStorage {
     /// check for those dimensions.
     #[must_use]
     pub(crate) fn keeps_dimension_active(&self) -> bool {
-        self.tickets.values().flatten().any(|ticket| {
-            ticket
-                .ticket()
-                .ticket_type()
-                .should_keep_dimension_active()
-        })
+        self.tickets
+            .values()
+            .flatten()
+            .any(|stored| stored.ticket.ticket_type().should_keep_dimension_active())
     }
 
     /// Loads saved tickets, starting with none if the saved data cannot be read.

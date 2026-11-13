@@ -18,7 +18,7 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::WardenEntityData;
-use steel_registry::mob_effect::instance::MobEffectInstance;
+use crate::entity::living_base::MobEffectInstance;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_mob_effects};
 use steel_utils::WorldAabb;
 use steel_utils::locks::SyncMutex;
@@ -288,8 +288,8 @@ impl Mob for WardenEntity {
             let Some(player) = world.players.get_by_entity_id(entity.id()) else {
                 continue;
             };
-            player.add_mob_effect(MobEffectInstance::simple(
-                &vanilla_mob_effects::DARKNESS,
+            player.add_mob_effect(MobEffectInstance::with_duration(
+                vanilla_mob_effects::DARKNESS,
                 WARDEN_DARKNESS_DURATION,
                 0,
             ));

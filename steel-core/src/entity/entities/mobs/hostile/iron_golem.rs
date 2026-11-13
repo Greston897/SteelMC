@@ -15,6 +15,7 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
+use steel_registry::registry::TaggedRegistryExt as _;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::IronGolemEntityData;
 use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
@@ -170,7 +171,10 @@ impl Entity for IronGolemEntity {
     }
 
     fn fall_sounds(&self) -> (SoundEventRef, SoundEventRef) {
-        (sound_events::ENTITY_GENERIC_SMALL_FALL, sound_events::ENTITY_GENERIC_BIG_FALL)
+        (
+            &sound_events::ENTITY_GENERIC_SMALL_FALL,
+            &sound_events::ENTITY_GENERIC_BIG_FALL,
+        )
     }
 
     fn swim_sound(&self) -> SoundEventRef {

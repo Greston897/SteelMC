@@ -57,7 +57,7 @@ enum Listing {
 fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> TextComponent {
     TextComponent::translated(TranslatedMessage {
         key: Cow::Borrowed(key),
-        fallback: Some(fallback),
+        fallback: Some(Cow::Owned(fallback)),
         args: Some(args.into_boxed_slice()),
     })
 }

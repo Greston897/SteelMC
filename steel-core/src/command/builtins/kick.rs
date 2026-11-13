@@ -53,7 +53,7 @@ fn do_kick(
         if context
             .source()
             .player()
-            .is_some_and(|player| player.uuid() == target.uuid())
+            .is_some_and(|player| player.base().uuid() == target.base().uuid())
         {
             continue;
         }

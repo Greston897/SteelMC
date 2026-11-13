@@ -327,6 +327,16 @@ impl CommandSource {
         self.player.as_ref()
     }
 
+    /// Vanilla `CommandSourceStack.getTextName`: the player's profile name, or
+    /// `Server` / `Rcon` for the non-player senders.
+    pub(crate) fn source_name(&self) -> String {
+        match &self.sender {
+            CommandSender::Player(player) => player.gameprofile.name().to_owned(),
+            CommandSender::Console => "Server".to_owned(),
+            CommandSender::Rcon(_) => "Rcon".to_owned(),
+        }
+    }
+
     pub(crate) const fn entity(&self) -> Option<&SharedEntity> {
         self.entity.as_ref()
     }

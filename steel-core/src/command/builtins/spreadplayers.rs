@@ -5,9 +5,11 @@
 //! times per entity and silently skips an entity it cannot place; this
 //! implementation mirrors that limit and reports how many entities moved.
 
+use std::borrow::Cow;
 use glam::DVec3;
 use steel_utils::Identifier;
 use text_components::TextComponent;
+use text_components::translation::TranslatedMessage;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
@@ -45,17 +47,16 @@ fn spread(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSy
     let spread_distance = context.float("spreadDistance")?;
     let max_range = context.float("maxRange")?;
     if spread_distance >= max_range {
-        return Err(CommandSyntaxError::dynamic(
+        return Err(CommandSyntaxError::dynamic(translated(
             "commands.spreadplayers.spreading",
-            "Cannot spread players that close together",
-            spread_distance,
-            max_range,
-        ));
+            "Cannot spread players that close together".to_owned(),
+            vec![(spread_distance).into(), (max_range).into()],
+        )));
     }
 
     let targets = context.entities("targets")?;
     let world = source.world();
-    let y = f64::from(world.sea_level());
+    let y = f64::from(world.sea_level);
 
     let mut placed: Vec<(f64, f64)> = Vec::with_capacity(targets.len());
     let mut spread = 0;
@@ -130,4 +131,13 @@ mod tests {
         let placed = vec![(0.0, 0.0)];
         assert!(find_position(100.0, 1.0, &placed).is_none());
     }
+}
+
+/// Builds a translated component with a literal fallback.
+fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> TextComponent {
+    TextComponent::translated(TranslatedMessage {
+        key: Cow::Borrowed(key),
+        fallback: Some(Cow::Owned(fallback)),
+        args: Some(args.into_boxed_slice()),
+    })
 }

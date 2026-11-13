@@ -8,6 +8,7 @@
 
 use std::sync::Arc;
 
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::vanilla_game_rules::MAX_BLOCK_MODIFICATIONS;
 use steel_utils::{BlockPos, BoundingBox, Identifier};
 use text_components::TextComponent;
@@ -82,12 +83,11 @@ fn execute_clone(
     let volume = block_region_volume(region);
     let limit = world.get_game_rule(&MAX_BLOCK_MODIFICATIONS);
     if volume > i64::from(limit) {
-        return Err(CommandSyntaxError::dynamic(
+        return Err(CommandSyntaxError::dynamic(translated(
             "commands.clone.toobig",
-            "Too many blocks in the specified area",
-            volume,
-            i64::from(limit),
-        ));
+            "Too many blocks in the specified area".to_owned(),
+            vec![volume.into(), i64::from(limit).into()],
+        )));
     }
     // Vanilla refuses to clone a region onto itself.
     let destination = BoundingBox::from_corners(
@@ -99,16 +99,15 @@ fn execute_clone(
         ),
     );
     if boxes_intersect(region, destination) {
-        return Err(CommandSyntaxError::dynamic(
+        return Err(CommandSyntaxError::dynamic(translated(
             "commands.clone.overlap",
-            "The source and destination regions overlap",
-            String::new(),
-            String::new(),
-        ));
+            "The source and destination regions overlap".to_owned(),
+            Vec::new(),
+        )));
     }
 
-    ensure_region_chunks_block_ticking(&source, &region)?;
-    ensure_region_chunks_block_ticking(&source, &destination)?;
+    ensure_region_chunks_block_ticking(world, &region)?;
+    ensure_region_chunks_block_ticking(world, &destination)?;
 
     let filter = match mode {
         CloneMode::Filtered(name) => Some(context.block_predicate(name)?),
@@ -187,4 +186,13 @@ mod tests {
         let right = BoundingBox::from_corners(BlockPos::new(2, 2, 2), BlockPos::new(4, 4, 4));
         assert!(boxes_intersect(left, right));
     }
+}
+
+/// Builds a translated component with a literal fallback.
+fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> TextComponent {
+    TextComponent::translated(TranslatedMessage {
+        key: Cow::Borrowed(key),
+        fallback: Some(Cow::Owned(fallback)),
+        args: Some(args.into_boxed_slice()),
+    })
 }

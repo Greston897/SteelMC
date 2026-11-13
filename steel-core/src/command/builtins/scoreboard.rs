@@ -106,18 +106,15 @@ fn domain_of(context: &SteelCommandContext<CommandSource>) -> String {
     context.source().world().domain().to_owned()
 }
 
-fn scoreboard_of(
-    context: &SteelCommandContext<CommandSource>,
-) -> Result<Arc<Scoreboard>, CommandSyntaxError> {
+fn scoreboard_of<'a>(
+    context: &'a SteelCommandContext<CommandSource>,
+) -> Result<&'a Scoreboard, CommandSyntaxError> {
     let source = context.source();
     let domain = source.world().domain().to_owned();
-    let server = Arc::clone(source.server());
-    let Some(scoreboard) = server.scoreboards.get(&domain) else {
-        return Err(CommandSyntaxError::dynamic(format!(
-            "Domain '{domain}' has no scoreboard"
-        )));
-    };
-    Ok(Arc::clone(scoreboard))
+    let server = source.server();
+    server.scoreboards.get(&domain).ok_or_else(|| {
+        CommandSyntaxError::dynamic(format!("Domain '{domain}' has no scoreboard"))
+    })
 }
 
 fn objective_of(

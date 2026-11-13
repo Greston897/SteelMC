@@ -202,6 +202,14 @@ fn domain_menu(
         let page = page.min(page_count - 1);
         let start = page * DOMAINS_PER_PAGE;
 
+        // Page indicator: the bottom bar shows which slice is visible.
+        let mut indicator = ItemStack::new(&*vanilla_items::PAPER);
+        indicator.set(
+            CUSTOM_NAME,
+            format!("Page {} / {page_count}", page + 1).into(),
+        );
+        g.paint(Rect::cell(4, 5), indicator);
+
         domain_names
             .iter()
             .skip(start)
@@ -235,16 +243,6 @@ fn domain_menu(
             })
             .collect()
     });
-    let page_count = domain_names.len().div_ceil(DOMAINS_PER_PAGE).max(1);
-
-    // Page indicator: the bottom bar shows which slice is visible.
-    let mut indicator = ItemStack::new(&*vanilla_items::PAPER);
-    indicator.set(
-        CUSTOM_NAME,
-        format!("Page {} / {page_count}", page + 1).into(),
-    );
-    b.paint(Rect::cell(4, 5), indicator);
-
     b.player_inventory(&player.inventory);
 
     b.build(DomainMenuKind {
