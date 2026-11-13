@@ -37,14 +37,10 @@ pub const CONSTRUCT_BEACON: Identifier = trigger("construct_beacon");
 pub const CONSUME_ITEM: Identifier = trigger("consume_item");
 /// `minecraft:crafter_recipe_crafted`
 pub const CRAFTER_RECIPE_CRAFTED: Identifier = trigger("crafter_recipe_crafted");
-/// `minecraft:crafting_table_used`
-pub const CRAFTING_TABLE_USED: Identifier = trigger("crafting_table_used");
 /// `minecraft:cured_zombie_villager`
 pub const CURED_ZOMBIE_VILLAGER: Identifier = trigger("cured_zombie_villager");
 /// `minecraft:default_block_use`
 pub const DEFAULT_BLOCK_USE: Identifier = trigger("default_block_use");
-/// `minecraft:destroyed_block`
-pub const DESTROYED_BLOCK: Identifier = trigger("destroyed_block");
 /// `minecraft:effects_changed`
 pub const EFFECTS_CHANGED: Identifier = trigger("effects_changed");
 /// `minecraft:enchanted_item`
@@ -65,20 +61,18 @@ pub const FILLED_BUCKET: Identifier = trigger("filled_bucket");
 pub const FISHING_ROD_HOOKED: Identifier = trigger("fishing_rod_hooked");
 /// `minecraft:hero_of_the_village`
 pub const HERO_OF_THE_VILLAGE: Identifier = trigger("hero_of_the_village");
-/// `minecraft:honey_block_slide`
-pub const HONEY_BLOCK_SLIDE: Identifier = trigger("honey_block_slide");
+/// `minecraft:impossible`
+pub const IMPOSSIBLE: Identifier = trigger("impossible");
 /// `minecraft:inventory_changed`
 pub const INVENTORY_CHANGED: Identifier = trigger("inventory_changed");
-/// `minecraft:item_delivered_to_player`
-pub const ITEM_DELIVERED_TO_PLAYER: Identifier = trigger("item_delivered_to_player");
 /// `minecraft:item_durability_changed`
 pub const ITEM_DURABILITY_CHANGED: Identifier = trigger("item_durability_changed");
 /// `minecraft:item_used_on_block`
 pub const ITEM_USED_ON_BLOCK: Identifier = trigger("item_used_on_block");
+/// `minecraft:killed_by_arrow`
+pub const KILLED_BY_ARROW: Identifier = trigger("killed_by_arrow");
 /// `minecraft:kill_mob_near_sculk_catalyst`
 pub const KILL_MOB_NEAR_SCULK_CATALYST: Identifier = trigger("kill_mob_near_sculk_catalyst");
-/// `minecraft:killed_by_crossbow`
-pub const KILLED_BY_CROSSBOW: Identifier = trigger("killed_by_crossbow");
 /// `minecraft:levitation`
 pub const LEVITATION: Identifier = trigger("levitation");
 /// `minecraft:lightning_strike`
@@ -111,6 +105,8 @@ pub const SHOT_CROSSBOW: Identifier = trigger("shot_crossbow");
 pub const SLEPT_IN_BED: Identifier = trigger("slept_in_bed");
 /// `minecraft:slide_down_block`
 pub const SLIDE_DOWN_BLOCK: Identifier = trigger("slide_down_block");
+/// `minecraft:spear_mobs`
+pub const SPEAR_MOBS: Identifier = trigger("spear_mobs");
 /// `minecraft:started_riding`
 pub const STARTED_RIDING: Identifier = trigger("started_riding");
 /// `minecraft:summoned_entity`
@@ -126,10 +122,6 @@ pub const THROWN_ITEM_PICKED_UP_BY_PLAYER: Identifier =
     trigger("thrown_item_picked_up_by_player");
 /// `minecraft:tick`
 pub const TICK: Identifier = trigger("tick");
-/// `minecraft:trade`
-pub const TRADE: Identifier = trigger("trade");
-/// `minecraft:travel_through_dimension`
-pub const TRAVEL_THROUGH_DIMENSION: Identifier = trigger("travel_through_dimension");
 /// `minecraft:used_ender_eye`
 pub const USED_ENDER_EYE: Identifier = trigger("used_ender_eye");
 /// `minecraft:used_totem`
@@ -154,10 +146,8 @@ pub static ALL: &[&Identifier] = &[
     &CONSTRUCT_BEACON,
     &CONSUME_ITEM,
     &CRAFTER_RECIPE_CRAFTED,
-    &CRAFTING_TABLE_USED,
     &CURED_ZOMBIE_VILLAGER,
     &DEFAULT_BLOCK_USE,
-    &DESTROYED_BLOCK,
     &EFFECTS_CHANGED,
     &ENCHANTED_ITEM,
     &ENTER_BLOCK,
@@ -168,13 +158,12 @@ pub static ALL: &[&Identifier] = &[
     &FILLED_BUCKET,
     &FISHING_ROD_HOOKED,
     &HERO_OF_THE_VILLAGE,
-    &HONEY_BLOCK_SLIDE,
+    &IMPOSSIBLE,
     &INVENTORY_CHANGED,
-    &ITEM_DELIVERED_TO_PLAYER,
     &ITEM_DURABILITY_CHANGED,
     &ITEM_USED_ON_BLOCK,
+    &KILLED_BY_ARROW,
     &KILL_MOB_NEAR_SCULK_CATALYST,
-    &KILLED_BY_CROSSBOW,
     &LEVITATION,
     &LIGHTNING_STRIKE,
     &LOCATION,
@@ -191,6 +180,7 @@ pub static ALL: &[&Identifier] = &[
     &SHOT_CROSSBOW,
     &SLEPT_IN_BED,
     &SLIDE_DOWN_BLOCK,
+    &SPEAR_MOBS,
     &STARTED_RIDING,
     &SUMMONED_ENTITY,
     &TAME_ANIMAL,
@@ -198,8 +188,6 @@ pub static ALL: &[&Identifier] = &[
     &THROWN_ITEM_PICKED_UP_BY_ENTITY,
     &THROWN_ITEM_PICKED_UP_BY_PLAYER,
     &TICK,
-    &TRADE,
-    &TRAVEL_THROUGH_DIMENSION,
     &USED_ENDER_EYE,
     &USED_TOTEM,
     &USING_ITEM,

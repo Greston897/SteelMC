@@ -342,7 +342,8 @@ impl AllayEntity {
     }
 
     /// Vanilla `Allay.tick`: a carrying allay hands its stack to the nearest
-    /// player it can reach, which is what `item_delivered_to_player` observes.
+    /// player it can reach. Vanilla has no criterion for this (the old
+    /// `item_delivered_to_player` trigger was removed), so no trigger fires.
     fn tick_item_delivery(&self) {
         let Some(stack) = self.carried_item.lock().clone() else {
             return;
@@ -377,10 +378,6 @@ impl AllayEntity {
         } else {
             *self.carried_item.lock() = Some(remaining);
         }
-        player.trigger_advancement_with_context(
-            &steel_registry::vanilla_criteria_triggers::ITEM_DELIVERED_TO_PLAYER,
-            &crate::player::advancement::predicate::TriggerContext::item(&stack.item().key),
-        );
     }
 }
 

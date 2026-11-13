@@ -4,7 +4,7 @@ use glam::DVec3;
 use steel_macros::block_behavior;
 use steel_registry::blocks::{BlockRef, block_state_ext::BlockStateExt as _, shapes::VoxelShape};
 use steel_registry::{
-    sound_events, vanilla_criteria_triggers, vanilla_damage_types, vanilla_entities,
+    sound_events, vanilla_blocks, vanilla_criteria_triggers, vanilla_damage_types, vanilla_entities,
 };
 use steel_utils::entity_events::EntityStatus;
 use steel_utils::{BlockLocalAabb, BlockPos, BlockStateId};
@@ -200,10 +200,17 @@ impl BlockBehavior for HoneyBlock {
         is_precise: bool,
     ) {
         if Self::is_sliding_down(pos, entity) {
-            // Vanilla `HoneyBlock.stepOn`: the sliding entity is the one whose
-            // advancement progresses, so only players can earn the criterion.
+            // Vanilla `HoneyBlock.stepOn` slides the entity down and fires
+            // `slide_down_block` for the sliding player; there is no
+            // honey-specific criterion.
             if let Some(player) = entity.as_player() {
-                player.trigger_advancement(&vanilla_criteria_triggers::HONEY_BLOCK_SLIDE);
+                player.trigger_advancement_with_context(
+                    &vanilla_criteria_triggers::SLIDE_DOWN_BLOCK,
+                    &crate::player::advancement::predicate::TriggerContext::block(
+                        &vanilla_blocks::HONEY_BLOCK.key,
+                        None,
+                    ),
+                );
             }
             Self::do_slide_movement(entity);
             Self::maybe_do_slide_effects(world, entity);

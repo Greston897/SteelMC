@@ -382,19 +382,24 @@ pub trait AbstractArrow: Projectile + Sized {
             self.arrow_knockback(living);
         }
 
-        // Vanilla `ShootArrowTrigger` (the `killed_by_arrow` / `killed_by_crossbow`
-        // criterion) fires from `AbstractArrow.onHitEntity` for a player shooter,
-        // carrying the weapon, so `adventure/sniper_duel` completes on the hit.
-        if self.shot_from_crossbow()
+        // Vanilla `ShootArrowTrigger` (the `killed_by_arrow` criterion) fires
+        // from `AbstractArrow.onHitEntity` only when the hit *kills* the target,
+        // carrying the weapon that shot the arrow. `adventure/sniper_duel` waits
+        // for exactly that.
+        if !entity.is_alive()
             && let Some(owner) = self.get_owner()
             && let Some(player) = owner.as_player()
         {
-            let context = crate::player::advancement::predicate::TriggerContext::item(
-                &vanilla_items::CROSSBOW.key,
-            )
-            .with_entity_type(&entity.entity_type().key);
+            let weapon = if self.shot_from_crossbow() {
+                &vanilla_items::CROSSBOW.key
+            } else {
+                &vanilla_items::BOW.key
+            };
+            let context =
+                crate::player::advancement::predicate::TriggerContext::item(weapon)
+                    .with_entity_type(&entity.entity_type().key);
             player.trigger_advancement_with_context(
-                &steel_registry::vanilla_criteria_triggers::KILLED_BY_CROSSBOW,
+                &steel_registry::vanilla_criteria_triggers::KILLED_BY_ARROW,
                 &context,
             );
         }

@@ -5,8 +5,8 @@
 //! mechanics are intentionally not wired yet.
 //!
 //! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
-//! * the `AbstractHorse` behaviour (saddling, jumping, galloping, chest
-//!   inventory, breeding stats) is not implemented; only the flag byte is kept.
+//! * jumping, galloping, chest inventory and breeding stats are not implemented;
+//!   taming by repeated mounting and saddling are.
 
 use std::sync::Weak;
 
@@ -17,15 +17,20 @@ use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
+use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_attributes;
+use steel_registry::vanilla_item_tags::ItemTag;
+use steel_registry::REGISTRY;
 use steel_registry::vanilla_entity_data::HorseEntityData;
 use steel_utils::locks::SyncMutex;
+use steel_utils::types::{EquipmentSlot, InteractionHand};
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
     WaterAvoidingRandomStrollGoal,
 };
+use crate::behavior::InteractionResult;
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
@@ -312,11 +317,62 @@ impl Animal for HorseEntity {
     fn animal_base(&self) -> &AnimalBase {
         &self.animal_base
     }
+
+    /// Vanilla `AbstractHorse.isFood`: `#minecraft:horse_food`.
+    fn is_food(&self, item_stack: &ItemStack) -> bool {
+        REGISTRY
+            .items
+            .is_in_tag(item_stack.item(), &ItemTag::HORSE_FOOD)
+    }
 }
 
 impl Mob for HorseEntity {
     fn mob_base(&self) -> &MobBase {
         &self.mob_base
+    }
+
+    /// Vanilla `AbstractHorse.mobInteract`, reduced to the parts Steel models:
+    /// an untamed horse is mounted and tamed by the player, a tamed one is
+    /// saddled or ridden, and food still feeds it like any animal.
+    fn mob_interact(&self, player: &Player, hand: InteractionHand) -> InteractionResult {
+        let item_stack = {
+            let inventory = player.inventory.lock();
+            let item_stack = inventory.get_item_in_hand(hand);
+            item_stack.copy_with_count(item_stack.count())
+        };
+
+        // Vanilla: feeding wins over every other interaction.
+        if self.is_food(&item_stack) {
+            return Animal::mob_interact_animal(self, player, hand);
+        }
+
+        if LivingEntity::is_equippable_in_slot(self, &item_stack, EquipmentSlot::Saddle) {
+            let result = LivingEntity::interact_living_entity_with_equippable(self, player, hand);
+            if result.consumes_action() {
+                return result;
+            }
+        }
+
+        if !AgeableMob::is_baby(self)
+            && !player.is_secondary_use_active()
+            && !self.is_vehicle()
+            && let Some(world) = self.level()
+            && let Some(vehicle) = world.get_entity_by_id(self.id())
+        {
+            // Vanilla `AbstractHorse.doPlayerRide`: mounting an untamed horse
+            // tames it. Steel has no horse-stat minigame, so the roll is skipped.
+            if !self.is_tamed() {
+                self.set_tamed(true);
+            }
+            player.start_riding(&vehicle);
+            return InteractionResult::Success;
+        }
+
+        InteractionResult::Pass
+    }
+
+    fn can_use_slot(&self, slot: EquipmentSlot) -> bool {
+        slot != EquipmentSlot::Saddle || (Entity::is_alive(self) && !AgeableMob::is_baby(self))
     }
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {
