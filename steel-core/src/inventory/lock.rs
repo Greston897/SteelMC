@@ -33,7 +33,8 @@ struct ContainerOwner {
 /// Thread-safe reference to an erased container.
 pub type SharedContainer = Shared<dyn Container>;
 
-struct LockedContainer(ArcMutexGuard<RawMutex, dyn Container>);
+/// Guard returned by [`ContainerRef::lock`], dereferencing to the container.
+pub struct LockedContainer(ArcMutexGuard<RawMutex, dyn Container>);
 
 impl Deref for LockedContainer {
     type Target = dyn Container;
