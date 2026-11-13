@@ -14,10 +14,10 @@
 //!    `width`, `height`, `start_x`, `start_z` bytes followed by a
 //!    `VarInt`-prefixed color array.
 
-use steel_macros::ClientPacket;
+use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_MAP_ITEM_DATA;
 use steel_utils::codec::VarInt;
-use steel_utils::serial::WriteTo;
+use steel_utils::serial::WriteTo as _;
 use text_components::TextComponent;
 
 /// One icon drawn on a map.
@@ -79,7 +79,7 @@ impl OptionalMapPatch {
     }
 }
 
-impl WriteTo for OptionalMapPatch {
+impl steel_utils::serial::WriteTo for OptionalMapPatch {
     fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
         // Vanilla wraps the patch in an `Optional`: one presence byte, then the
         // patch itself (`width, height, startX, startZ` + byte array).
@@ -111,7 +111,7 @@ pub struct MapPatch {
     pub colors: Vec<u8>,
 }
 
-impl WriteTo for MapPatch {
+impl steel_utils::serial::WriteTo for MapPatch {
     fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
         self.width.write(writer)?;
         self.height.write(writer)?;
@@ -185,7 +185,7 @@ impl CMapItemData {
 #[cfg(test)]
 mod tests {
     use super::{CMapItemData, MapDecorationEntry, MapPatch, OptionalMapPatch};
-    use steel_utils::serial::WriteTo;
+    use steel_utils::serial::WriteTo as _;
     use text_components::TextComponent;
 
     fn encode(packet: &CMapItemData) -> Vec<u8> {

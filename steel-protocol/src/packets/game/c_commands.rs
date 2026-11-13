@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::io::{Result, Write};
 
-use steel_macros::ClientPacket;
+use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_COMMANDS;
 use steel_utils::{
     codec::VarInt,
@@ -156,7 +156,7 @@ impl CommandNode {
     }
 }
 
-impl WriteTo for CommandNode {
+impl steel_utils::serial::WriteTo for CommandNode {
     fn write(&self, writer: &mut impl Write) -> Result<()> {
         writer.write_all(&self.flags().to_be_bytes())?;
         let children = self.children();
@@ -421,7 +421,7 @@ impl ArgumentType {
     }
 }
 
-impl WriteTo for ArgumentType {
+impl steel_utils::serial::WriteTo for ArgumentType {
     fn write(&self, writer: &mut impl Write) -> Result<()> {
         VarInt(self.discriminant()).write(writer)?;
 
@@ -495,7 +495,7 @@ impl SuggestionType {
 
 #[cfg(test)]
 mod tests {
-    use steel_utils::serial::WriteTo;
+    use steel_utils::serial::WriteTo as _;
 
     use super::{ArgumentType, CommandNode, CommandNodeInfo};
 

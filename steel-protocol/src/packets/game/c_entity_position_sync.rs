@@ -3,7 +3,7 @@
 use std::io::{self, Write};
 
 use glam::DVec3;
-use steel_macros::ClientPacket;
+use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_ENTITY_POSITION_SYNC;
 use steel_utils::codec::VarInt;
 use steel_utils::serial::{PrefixedWrite, WriteTo};
@@ -38,7 +38,7 @@ impl PositionPath {
     }
 }
 
-impl WriteTo for PositionPath {
+impl steel_utils::serial::WriteTo for PositionPath {
     fn write(&self, writer: &mut impl Write) -> io::Result<()> {
         match self {
             Self::Linear(position) => {

@@ -22,6 +22,5 @@ pub struct CCustomChatCompletions {
     #[write(as = VarInt)]
     pub action: i32,
     /// Entries carried by the action.
-    #[write(as = Prefixed(VarInt))]
     pub entries: Vec<ChatCompletionAction>,
 }
