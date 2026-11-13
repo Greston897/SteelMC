@@ -4,7 +4,7 @@ use std::{sync::Arc, time::Instant};
 
 use glam::IVec3;
 use steel_registry::biome::BiomeRef;
-use steel_utils::{BlockPos, Identifier, translations};
+use steel_utils::{BlockPos, ChunkPos, Identifier, translations};
 use text_components::{
     Modifier, TextComponent,
     format::Color,
@@ -31,6 +31,7 @@ use crate::{
         structure::{StructureLocateCandidate, StructureLocatePlan, squared_distance},
     },
 };
+use crate::poi::poi_storage::OccupationStatus;
 use crate::worldgen::generator::context::ChunkGeneratorType;
 
 const MAX_STRUCTURE_SEARCH_RADIUS: i32 = 100;
@@ -57,10 +58,12 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
                 argument("biome", SteelArgumentType::biome_or_tag())
                     .executes(locate_biome),
             ),
+        )
+        .then(
+            literal("poi").then(
+                argument("poi", SteelArgumentType::identifier()).executes(locate_poi),
+            ),
         ),
-    )
-    // `locate poi` still needs a point-of-interest manager: Steel does not index
-    // POIs (nor persist them), so there is nothing to search yet.
 }
 
 fn start_structure_search(
@@ -422,6 +425,63 @@ fn search_biome_rings(
 
 fn biome_not_found(query: &BiomeOrTag) -> CommandSyntaxError {
     CommandSyntaxError::dynamic(format!("Could not find a biome of type {query:?}"))
+}
+
+/// Vanilla `LocateCommand` searches a 100-block ring for POIs. Steel widens it to
+/// 256 blocks because its index answers per chunk, so a match in a neighbouring
+/// chunk is still inside the box.
+const POI_SEARCH_RADIUS_BLOCKS: i32 = 256;
+
+/// Vanilla `/locate poi <type>`: the nearest block of a point-of-interest type.
+///
+/// Vanilla answers from the per-server `PoiManager`. Steel has the same index:
+/// `World::poi_storage` records every POI block as it is placed or loaded, keyed
+/// by type id. The nearest match in vanilla's 100-block ring wins; Steel widens
+/// the ring to 256 blocks because the index is chunk-granular.
+fn locate_poi(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
+    let key = context.identifier("poi")?.clone();
+    let world = context.source().world();
+    let origin = BlockPos::from(context.source().position());
+
+    let Some(target_id) = steel_registry::REGISTRY.poi_types.id_from_key(&key) else {
+        return Err(poi_not_found(&key));
+    };
+
+    let matches: Vec<(BlockPos, usize)> = {
+        let storage = world.poi_storage.lock();
+        storage.get_in_horizontal_square(
+            &|poi_type_id| poi_type_id == target_id,
+            origin,
+            POI_SEARCH_RADIUS_BLOCKS,
+            OccupationStatus::Any,
+        )
+    };
+
+    let Some((pos, _)) = matches.into_iter().min_by_key(|(pos, _)| {
+        let dx = i64::from(pos.0.x.wrapping_sub(origin.0.x));
+        let dz = i64::from(pos.0.z.wrapping_sub(origin.0.z));
+        let dy = i64::from(pos.0.y.wrapping_sub(origin.0.y));
+        dx * dx + dy * dy + dz * dz
+    }) else {
+        return Err(poi_not_found(&key));
+    };
+
+    let distance = horizontal_distance(origin, pos);
+    context.source().send_success(
+        &locate_success_component(key.to_string(), pos, distance),
+        false,
+    );
+    Ok(distance)
+}
+
+/// The vanilla "point of interest not found" failure.
+fn poi_not_found(key: &Identifier) -> CommandSyntaxError {
+    CommandSyntaxError::dynamic(
+        "commands.locate.poi.not_found",
+        format!("There is no point of interest of type {key}"),
+        key.to_string(),
+        String::new(),
+    )
 }
 
 fn horizontal_distance(a: BlockPos, b: BlockPos) -> i32 {
