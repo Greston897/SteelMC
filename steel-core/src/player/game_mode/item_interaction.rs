@@ -107,6 +107,26 @@ pub fn use_item_on(
     let (is_empty, original_count, item_ref, stack_before_use) =
         inventory_access.with_item(|item| (item.is_empty(), item.count, item.item, item.clone()));
 
+    // Vanilla `ServerPlayerGameMode.useItemOn` fires `any_block_use` (any hand) and
+    // `default_block_use` (the main-hand fallthrough) before the item's own
+    // `useOn` runs, with a context holding both the item and the clicked block.
+    if let Some(block) = REGISTRY.blocks.by_state_id(state) {
+        let context = crate::player::advancement::predicate::TriggerContext::block(
+            &block.key,
+            Some(&item_ref.key),
+        );
+        player.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::ANY_BLOCK_USE,
+            &context,
+        );
+        if hand == InteractionHand::MainHand {
+            player.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::DEFAULT_BLOCK_USE,
+                &context,
+            );
+        }
+    }
+
     if !is_empty {
         if player.is_item_on_cooldown(&stack_before_use) {
             return InteractionResult::Pass;

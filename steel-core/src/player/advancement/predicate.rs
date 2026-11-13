@@ -43,6 +43,8 @@ pub struct TriggerContext {
     pub to_dimension: Option<Identifier>,
     /// Distance travelled, for `nether_travel` and `levitation` distances.
     pub distance: Option<f64>,
+    /// Duration in ticks, for `levitation`.
+    pub duration: Option<i32>,
 }
 
 impl TriggerContext {
@@ -77,6 +79,23 @@ impl TriggerContext {
         }
     }
 
+    /// Adds the entity type to an existing context.
+    ///
+    /// Triggers that key on both an item and an entity (`killed_by_crossbow`
+    /// carries the weapon and the victim) need both halves at once.
+    #[must_use]
+    pub fn with_entity_type(mut self, entity_type: &Identifier) -> Self {
+        self.entity_type = Some(entity_type.clone());
+        self
+    }
+
+    /// Adds the held item to an existing context.
+    #[must_use]
+    pub fn with_item(mut self, item: &Identifier) -> Self {
+        self.item = Some(item.clone());
+        self
+    }
+
     /// A context for `changed_dimension`, carrying both dimension keys.
     ///
     /// Vanilla `ChangeDimensionTrigger.TriggerInstance` matches on `from`/`to`,
@@ -92,9 +111,9 @@ impl TriggerContext {
 
     /// A context for `nether_travel`, carrying the travelled distance.
     #[must_use]
-    pub fn nether_travel(position: DVec3) -> Self {
+    pub fn nether_travel(distance_travelled: f64) -> Self {
         Self {
-            distance: Some(position.length()),
+            distance: Some(distance_travelled),
             ..Self::default()
         }
     }
@@ -159,6 +178,10 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
         "to" => matches_dimension(expected, context.to_dimension.as_ref()),
         // `nether_travel` and `levitation` measure how far the player moved.
         "distance" => matches_distance(expected, context.distance),
+        // `levitation` also carries how long the effect has been running.
+        "duration" => context
+            .duration
+            .is_none_or(|duration| matches_number_range(expected, f64::from(duration))),
         // Nested conditions (e.g. `effects_changed`), evaluated recursively.
         "conditions" => true,
         // Unknown predicates are ignored: vanilla deserialization is lenient and

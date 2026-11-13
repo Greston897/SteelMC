@@ -543,6 +543,18 @@ fn apply_block_effect_segment(
             }
 
             if inside_block {
+                // Vanilla `Entity.checkInsideBlocks` fires `enter_block` for a player
+                // entity that ends up inside a non-air block, which is the only way
+                // `story/enter_the_end`-style data packs observe block occupancy.
+                if let Some(player) = entity.as_player() {
+                    player.trigger_advancement_with_context(
+                        &steel_registry::vanilla_criteria_triggers::ENTER_BLOCK,
+                        &crate::player::advancement::predicate::TriggerContext::block(
+                            &state.get_block().key,
+                            None,
+                        ),
+                    );
+                }
                 let moved_far = from.distance_squared(to) > 0.999_990_000_000_252_6_f64.powi(2);
                 let is_precise = moved_far || aabb.intersects_block(pos);
                 effect_collector.advance_step(iteration);
@@ -963,6 +975,16 @@ pub(crate) fn start_riding_entities(
     // Vanilla `Entity.startRiding` dispatches `GameEvent.ENTITY_MOUNT` from the
     // passenger so sculk sensors see the boarding.
     passenger.game_event(&vanilla_game_events::ENTITY_MOUNT);
+    // Vanilla `Entity.startRiding` fires `started_riding` on a player passenger,
+    // which gates `adventure/ride_a_boat_with_a_goat` and friends.
+    if let Some(player) = passenger.as_player() {
+        player.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::STARTED_RIDING,
+            &crate::player::advancement::predicate::TriggerContext::entity(
+                &entity_to_ride.entity_type().key,
+            ),
+        );
+    }
     true
 }
 

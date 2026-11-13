@@ -248,6 +248,14 @@ impl CrossbowItem {
             }
         }
 
+        // Vanilla `CrossbowItem.fireProjectiles` fires `shot_crossbow` with the
+        // crossbow stack, which `adventure/arbalistic` requires.
+        context.player.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::SHOT_CROSSBOW,
+            &crate::player::advancement::predicate::TriggerContext::item(
+                &context.inv.with_item(|stack| stack.item().key.clone()),
+            ),
+        );
         let item = context.inv.with_item(|stack| stack.item());
         context.inv.with_item(|stack| {
             stack.remove(vanilla_components::CHARGED_PROJECTILES);

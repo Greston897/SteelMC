@@ -833,8 +833,25 @@ impl Player {
             return;
         }
 
+        let hand_item = {
+            let inventory = self.inventory.lock();
+            inventory.get_item_in_hand(packet.hand).item().key.clone()
+        };
+        let target_type = target.entity_type().key.clone();
         let animation = self.interact_animation(packet.hand);
         let result = self.interact_on(target.as_ref(), packet.hand, packet.location);
+        // Vanilla `ServerPlayerGameMode.interact` fires `player_interacted_with_entity`
+        // for a successful interaction, carrying both the entity and the held item.
+        if result.consumes_action() {
+            let context = crate::player::advancement::predicate::TriggerContext::entity(
+                &target_type,
+            )
+            .with_item(&hand_item);
+            self.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::PLAYER_INTERACTED_WITH_ENTITY,
+                &context,
+            );
+        }
         self.swing_after_interaction(packet.hand, animation, result);
         self.broadcast_inventory_changes();
     }

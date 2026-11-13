@@ -86,7 +86,7 @@ impl Player {
                 self.trigger_advancement_with_context(
                     &steel_registry::vanilla_criteria_triggers::NETHER_TRAVEL,
                     &crate::player::advancement::predicate::TriggerContext::nether_travel(
-                        position,
+                        position.distance(current_position),
                     ),
                 );
             }

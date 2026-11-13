@@ -118,6 +118,15 @@ fn use_empty_bucket(context: &mut UseItemContext) -> InteractionResult {
         context.player.play_sound(sound, 1.0, 1.0);
     }
 
+    // Vanilla `BucketItem.use` fires `filled_bucket` with the resulting bucket
+    // item, which `husbandry/tactical_fishing` and `husbandry/obtain_netherite_hoe`
+    // chain off.
+    context.player.trigger_advancement_with_context(
+        &steel_registry::vanilla_criteria_triggers::FILLED_BUCKET,
+        &crate::player::advancement::predicate::TriggerContext::item(
+            &result.filled_bucket.item().key,
+        ),
+    );
     create_filled_result(context, result.filled_bucket, true);
     context.world.game_event(
         &vanilla_game_events::FLUID_PICKUP,

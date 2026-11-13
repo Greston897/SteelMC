@@ -315,6 +315,11 @@ pub struct Player {
     /// Remaining ticks of an active riptide spin attack, plus the enchantment
     /// level that scales its knockback. Vanilla `LivingEntity.autoSpinAttackTicks`.
     riptide: SyncMutex<Option<RiptideSpin>>,
+
+    /// Where and when the current levitation started, for the `levitation`
+    /// advancement trigger. Vanilla `LevitationMobEffect` keeps the same pair in
+    /// `startLevitation`.
+    levitation_start: SyncMutex<Option<(glam::DVec3, i32)>>,
 }
 
 /// Vanilla `LivingEntity` spin-attack duration per riptide level.
@@ -556,6 +561,13 @@ impl Player {
         let Some(user) = LivingEntityRef::new(entity) else {
             panic!("active item use requires a living entity");
         };
+        // Vanilla `Item.use` fires `using_item` once per tick while the item is
+        // held in use, which is how `adventure/salvage_sherd`-style criteria see
+        // sustained use.
+        self.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::USING_ITEM,
+            &crate::player::advancement::predicate::TriggerContext::item(&item.item().key),
+        );
         behavior.on_use_tick(&world, user, &mut item, active.remaining_ticks());
 
         if self.active_item_use_hand() != Some(hand) {
@@ -839,6 +851,7 @@ impl Player {
             open_menu: SyncMutex::new(player_inventory::OpenMenuState::new()),
             container_counter: SyncMutex::new(ContainerCounter::new()),
             teleport_state: SyncMutex::new(TeleportState::new()),
+            levitation_start: SyncMutex::new(None),
             item_cooldowns: SyncMutex::new(ItemCooldowns::default()),
             tick_state: SyncMutex::new(PlayerTickState::new()),
             sleep_state: SyncMutex::new(PlayerSleepState::new()),
@@ -973,6 +986,29 @@ impl Player {
                 1,
             );
         }
+    }
+
+    /// Vanilla `LevitationMobEffect.applyEffectTick`: while levitation is active the
+    /// effect remembers where it started and fires the `levitation` trigger with
+    /// the distance travelled and the effect duration so far.
+    fn tick_levitation_trigger(&self) {
+        let Some(effect) = self.mob_effect(vanilla_mob_effects::LEVITATION) else {
+            *self.levitation_start.lock() = None;
+            return;
+        };
+        let position = self.position();
+        let mut start = self.levitation_start.lock();
+        let (start_position, start_tick) = *start.get_or_insert((position, self.tick_count()));
+        let distance = position.distance(start_position);
+        let duration = self.tick_count().saturating_sub(start_tick);
+        drop(start);
+        let mut context =
+            crate::player::advancement::predicate::TriggerContext::nether_travel(distance);
+        context.duration = Some(duration);
+        self.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::LEVITATION,
+            &context,
+        );
     }
 
     /// Immediately flushes dirty player entity data to tracking players and self.
@@ -2250,6 +2286,7 @@ impl LivingEntity for Player {
                 advancements.trigger_location(self, &location_context);
                 advancements.flush_dirty(self, true);
             }
+            self.tick_levitation_trigger();
             self.living_base.refresh_speed_from_attributes();
             self.tick_food_data();
 

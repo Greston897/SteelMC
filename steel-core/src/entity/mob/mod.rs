@@ -856,9 +856,26 @@ pub trait Mob: LivingEntity + Leashable {
         // the `thrown_item_picked_up_by_entity` criterion on the picking entity,
         // which for a player is the advancement owner.
         if let Some(player) = self.as_player() {
-            player.trigger_advancement(
-                &steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_ENTITY,
+            let context = crate::player::advancement::predicate::TriggerContext::item(
+                &equipped.item().key,
             );
+            player.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_ENTITY,
+                &context,
+            );
+            // Vanilla `ItemEntity.playerTouch` additionally fires
+            // `thrown_item_picked_up_by_player` when the thrown item's owner is
+            // the picking player, which is how `husbandry/throw_trident` and
+            // `adventure/throw_and_retrieve` complete.
+            if item_entity
+                .get_owner()
+                .is_some_and(|owner| owner == player.gameprofile.id())
+            {
+                player.trigger_advancement_with_context(
+                    &steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_PLAYER,
+                    &context,
+                );
+            }
         }
         let chunk_pos = ChunkPos::from_entity_pos(item_entity.position());
         world.broadcast_to_nearby(

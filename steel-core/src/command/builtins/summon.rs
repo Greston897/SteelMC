@@ -120,7 +120,18 @@ pub(super) fn create_entity(
     }
 
     match world.try_add_entity(Arc::clone(&entity)) {
-        Ok(()) => Ok(entity),
+        Ok(()) => {
+            // Vanilla `SummonCommand` fires `summoned_entity` on the source player.
+            if let Some(player) = context.source().player() {
+                player.trigger_advancement_with_context(
+                    &steel_registry::vanilla_criteria_triggers::SUMMONED_ENTITY,
+                    &crate::player::advancement::predicate::TriggerContext::entity(
+                        &entity_type.key,
+                    ),
+                );
+            }
+            Ok(entity)
+        }
         Err(AddEntityError::DuplicateUuid { .. }) => {
             Err(command_failed(&translations::COMMANDS_SUMMON_FAILED_UUID))
         }
