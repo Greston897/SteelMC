@@ -3,8 +3,8 @@
 //! Vanilla loads a function as a list of command lines and runs them in order
 //! (`FunctionCommand`). The datapack is extracted from the server jar by
 //! `steel-utils`' build script into
-//! `steel-utils/build_assets/builtin_datapacks/minecraft`, which is where the
-//! `data/<namespace>/function/**/*.mcfunction` tree lives.
+//! `steel-utils/build_assets/builtin_datapacks/minecraft` with the jar's `data/`
+//! prefix stripped, so the tree is `<namespace>/function/**/*.mcfunction`.
 //!
 //! Lines are split and `#` comments and blank lines dropped exactly like
 //! vanilla's `CommandFunction` parser. A function that references another
@@ -39,7 +39,9 @@ struct FunctionEntry {
 /// Walks `data/<namespace>/function`, collecting every `.mcfunction` file.
 fn collect(root: &Path) -> Vec<FunctionEntry> {
     let mut found: Vec<PathBuf> = Vec::new();
-    let function_root = root.join("data").join(NAMESPACE).join("function");
+    // `steel-utils`' build script strips the `data/` prefix while unpacking, so
+    // the jar's `data/minecraft/function` lands as `minecraft/function`.
+    let function_root = root.join(NAMESPACE).join("function");
     if !function_root.exists() {
         // A checkout without extracted assets (a plain `cargo check` before the
         // jar is fetched) still has to produce a valid, empty module rather than
