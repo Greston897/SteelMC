@@ -2,7 +2,7 @@ use crate::shared_structs::{
     BiomeCondition, BiomeConditionTarget, ItemStackTemplateJson, SpawnConditionEntry,
     TextComponentJson,
 };
-use heck::ToShoutySnakeCase;
+use heck::{ToShoutySnakeCase, ToUpperCamelCase};
 use proc_macro2::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::quote;
@@ -152,49 +152,159 @@ pub fn generate_item_stack_template(template: &ItemStackTemplateJson) -> TokenSt
     }
 }
 
-/// Builds a single-component `DataComponentPatch` plus its persistent hash for a
-/// build-time validated template.
+/// Builds a `DataComponentPatch` plus its persistent hash for a build-time
+/// validated template.
 ///
-/// Extracted assets only ever carry the components that have a build-time codec
-/// here; anything else fails the build instead of silently dropping data.
+/// Templates carry one component in the common case and several for things like
+/// vanilla's ominous banner, so every entry is mapped rather than assuming a
+/// single one. Extracted assets only ever carry the components that have a
+/// build-time codec here; anything else fails the build instead of silently
+/// dropping data.
 fn generate_component_patch(components: &serde_json::Value, owner: &str) -> TokenStream {
     let components = components.as_object().unwrap_or_else(|| {
         panic!("Item stack template components for {owner} are not an object: {components}")
     });
-    assert_eq!(
-        components.len(),
-        1,
-        "Item stack template {owner} has unsupported component set {components:?}"
+    assert!(
+        !components.is_empty(),
+        "Item stack template {owner} has empty components"
     );
-    let (key, component) = components
+
+    // One `(component type, value expression)` pair per entry, in the order the
+    // asset lists them (a `serde_json` object preserves insertion order).
+    let entries: Vec<_> = components
         .iter()
-        .next()
-        .unwrap_or_else(|| panic!("Item stack template {owner} has empty components"));
-    let (component_type, component_value) = match key.as_str() {
-        "minecraft:suspicious_stew_effects" => (
-            quote! { SUSPICIOUS_STEW_EFFECTS },
-            suspicious_stew_effects_tokens(component),
-        ),
-        "minecraft:potion_contents" => (
-            quote! { POTION_CONTENTS },
-            potion_contents_tokens(component),
-        ),
-        "minecraft:pot_decorations" => (
-            quote! { POT_DECORATIONS },
-            pot_decorations_tokens(component),
-        ),
-        _ => panic!("Unsupported item stack template components {components:?} in {owner}"),
-    };
+        .map(|(key, component)| {
+            let (component_type, component_value) = match key.as_str() {
+                "minecraft:suspicious_stew_effects" => (
+                    quote! { SUSPICIOUS_STEW_EFFECTS },
+                    suspicious_stew_effects_tokens(component),
+                ),
+                "minecraft:potion_contents" => (
+                    quote! { POTION_CONTENTS },
+                    potion_contents_tokens(component),
+                ),
+                "minecraft:pot_decorations" => (
+                    quote! { POT_DECORATIONS },
+                    pot_decorations_tokens(component),
+                ),
+                "minecraft:banner_patterns" => (
+                    quote! { BANNER_PATTERNS },
+                    banner_patterns_tokens(component),
+                ),
+                "minecraft:rarity" => (quote! { RARITY }, rarity_tokens(component)),
+                "minecraft:tooltip_display" => (
+                    quote! { TOOLTIP_DISPLAY },
+                    tooltip_display_tokens(component),
+                ),
+                _ => panic!("Unsupported item stack template components {components:?} in {owner}"),
+            };
+            (component_type, component_value)
+        })
+        .collect();
+
+    let names: Vec<_> = entries.iter().map(|(name, _)| name).collect();
+    let values: Vec<_> = entries.iter().map(|(_, value)| value).collect();
+    let entry_count = entries.len();
     quote! {{
-        let value = #component_value;
-        let components_hash = DataComponentPatch::compute_single_extracted_hash(
-            vanilla_components::#component_type.key(),
-            &value,
-        );
         let mut components = DataComponentPatch::new();
-        components.set(vanilla_components::#component_type, value);
+        let mut hashed: Vec<(Identifier, i32)> = Vec::with_capacity(#entry_count);
+        #(
+            {
+                let value = #values;
+                hashed.push((
+                    vanilla_components::#names.key().clone(),
+                    steel_utils::hash::HashComponent::compute_hash(&value),
+                ));
+                components.set(vanilla_components::#names, value);
+            }
+        )*
+        let components_hash = DataComponentPatch::compute_extracted_hash(&hashed);
         (components, components_hash)
     }}
+}
+
+/// A banner's pattern layers, each a pattern id plus dye colour.
+fn banner_patterns_tokens(value: &serde_json::Value) -> TokenStream {
+    let layers = value
+        .as_array()
+        .unwrap_or_else(|| panic!("Banner patterns are not an array: {value}"));
+    let layers: Vec<_> = layers
+        .iter()
+        .map(|layer| {
+            let pattern = layer
+                .get("pattern")
+                .and_then(|pattern| pattern.as_str())
+                .unwrap_or_else(|| panic!("Banner pattern is missing an id: {layer}"));
+            let pattern = vanilla_registry_ident(pattern);
+            let color = layer
+                .get("color")
+                .and_then(|color| color.as_str())
+                .unwrap_or_else(|| panic!("Banner pattern is missing a color: {layer}"));
+            let color = dye_color_tokens(color);
+            quote! {
+                BannerPatternLayer::new(
+                    RegistryHolder::reference(&vanilla_banner_patterns::#pattern),
+                    #color,
+                )
+            }
+        })
+        .collect();
+    quote! { BannerPatternLayers::new(vec![#(#layers),*]) }
+}
+
+/// Vanilla `Rarity`, whose serialized form is the lowercase name.
+fn rarity_tokens(value: &serde_json::Value) -> TokenStream {
+    let rarity = value
+        .as_str()
+        .unwrap_or_else(|| panic!("Rarity is not a string: {value}"));
+    match rarity {
+        "common" => quote! { Rarity::Common },
+        "uncommon" => quote! { Rarity::Uncommon },
+        "rare" => quote! { Rarity::Rare },
+        "epic" => quote! { Rarity::Epic },
+        _ => panic!("Unknown rarity {rarity}"),
+    }
+}
+
+/// The tooltip display rules: whether the tooltip is hidden and which
+/// components are suppressed inside it.
+fn tooltip_display_tokens(value: &serde_json::Value) -> TokenStream {
+    let display = value
+        .as_object()
+        .unwrap_or_else(|| panic!("Tooltip display is not an object: {value}"));
+    let hide_tooltip = display
+        .get("hide_tooltip")
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false);
+    let hidden: Vec<_> = display
+        .get("hidden_components")
+        .and_then(|components| components.as_array())
+        .map(|components| {
+            components
+                .iter()
+                .map(|component| {
+                    let key = component
+                        .as_str()
+                        .unwrap_or_else(|| panic!("Hidden component is not a string: {component}"));
+                    let key = key.parse::<Identifier>().unwrap_or_else(|error| {
+                        panic!("Hidden component {key} is not an identifier: {error}")
+                    });
+                    quote! { Identifier::vanilla_static(#key) }
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    quote! {{
+        let display = TooltipDisplay::new(#hide_tooltip);
+        #(let display = display.with_hidden_key(Identifier::vanilla_static(#hidden), true);)*
+        display
+    }}
+}
+
+/// Maps a dye colour name from the extracted assets to `DyeColor`.
+fn dye_color_tokens(color: &str) -> TokenStream {
+    let variant = Ident::new(&color.to_upper_camel_case(), Span::call_site());
+    quote! { DyeColor::#variant }
 }
 
 fn suspicious_stew_effects_tokens(value: &serde_json::Value) -> TokenStream {

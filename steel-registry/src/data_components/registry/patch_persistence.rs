@@ -21,6 +21,28 @@ impl DataComponentPatch {
         hasher.finish()
     }
 
+    /// Computes the persistent map hash for a set of build-time validated
+    /// components without consulting the not-yet-published global registry.
+    ///
+    /// The single-component variant above is the common case; extracted item
+    /// templates such as vanilla's ominous banner carry several components at
+    /// once, and they are all persistent by construction.
+    pub(crate) fn compute_extracted_hash(entries_in: &[(&Identifier, i32)]) -> i32 {
+        let mut entries: Vec<_> = entries_in
+            .iter()
+            .map(|(key, value_hash)| hash_entry(key.to_string().compute_hash(), *value_hash))
+            .collect();
+        sort_map_entries(&mut entries);
+        let mut hasher = ComponentHasher::new();
+        hasher.start_map();
+        for entry in &entries {
+            hasher.put_raw_bytes(&entry.key_bytes);
+            hasher.put_raw_bytes(&entry.value_bytes);
+        }
+        hasher.end_map();
+        hasher.finish()
+    }
+
     /// Computes Vanilla's `HashOps` value for the persistent patch codec.
     pub fn compute_persistent_hash(&self) -> Result<i32> {
         use crate::{REGISTRY, RegistryExt};

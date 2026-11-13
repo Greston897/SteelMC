@@ -137,9 +137,12 @@ pub(crate) fn build() -> TokenStream {
         use crate::RegistryReference;
         use crate::data_components::{DataComponentPatch, vanilla_components};
         use crate::data_components::vanilla_components::{
-            FireworkExplosionShape, PotDecorations, PotionContents, SuspiciousStewEffect,
-            SuspiciousStewEffects,
+            BannerPatternLayer, BannerPatternLayers, FireworkExplosionShape, PotDecorations,
+            PotionContents, Rarity, SuspiciousStewEffect, SuspiciousStewEffects, TooltipDisplay,
         };
+        use crate::RegistryHolder;
+        use crate::vanilla_banner_patterns;
+        use crate::DyeColor;
         use crate::recipe::UntypedRecipeRef;
         use text_components::translation::TranslatedMessage;
         use std::collections::BTreeMap;
