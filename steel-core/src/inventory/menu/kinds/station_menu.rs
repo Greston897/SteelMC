@@ -225,7 +225,8 @@ fn build_station_with_result(
     make_kind: impl FnOnce(Shared<SimpleContainer>) -> StationKind,
 ) -> Menu {
     let mut builder = MenuBuilder::new(menu_type, container_id);
-    let input_section = builder.section_all(input.clone());
+    let kind_input = Arc::clone(&input);
+    let input_section = builder.section_all(input);
     let _result = builder.section_at(result, [0], SectionKind::take_only());
     let player = builder.player_inventory(&inventory);
     builder.route(input_section, player.all(), FillDirection::Forward);
@@ -246,6 +247,6 @@ fn build_station(
     let input_section = builder.section_all(input);
     let player = builder.player_inventory(&inventory);
     builder.route(input_section, player.all(), FillDirection::Forward);
-    let kind = make_kind(input).with_sections(input_section, player);
+    let kind = make_kind(kind_input).with_sections(input_section, player);
     builder.build(kind)
 }

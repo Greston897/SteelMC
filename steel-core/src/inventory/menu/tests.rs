@@ -358,7 +358,11 @@ fn crafter_menu_refuses_to_disable_an_occupied_slot() {
 
     let player = TestPlayerBuilder::new(Arc::clone(world), "CrafterOccupied", 1).build();
     let inventory = Arc::clone(&player.inventory);
+    let crafter_handle = Arc::clone(&block_entity);
     let mut menu = crafter(inventory, 1, pos, container, block_entity);
+    let crafter_entity = crafter_handle
+        .downcast_ref::<CrafterBlockEntity>()
+        .expect("crafter block entity type");
 
     assert!(!menu.set_crafter_slot_state(0, true));
     assert_eq!(crafter_entity.disabled_slots(), 0);

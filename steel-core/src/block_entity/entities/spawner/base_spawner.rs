@@ -164,7 +164,15 @@ impl BaseSpawner {
 
     /// Loads the vanilla spawner fields from NBT.
     pub fn load(&self, nbt: &BorrowedNbtCompound<'_>) {
-        let nbt: NbtCompoundView<'_, '_> = nbt.into();
+        let view: NbtCompoundView<'_, '_> = nbt.into();
+        self.load_view(&view);
+    }
+
+    /// Loads the vanilla spawner fields from an already-borrowed compound view.
+    ///
+    /// Callers that hold a typed [`NbtCompoundView`] rather than the erased
+    /// `BaseNbtCompound` reborrow before reaching this entry point.
+    pub fn load_view(&self, nbt: &NbtCompoundView<'_, '_>) {
         let mut state = self.state.lock();
         state.spawn_delay = nbt
             .get("Delay")

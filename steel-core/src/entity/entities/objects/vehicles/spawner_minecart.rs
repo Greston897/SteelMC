@@ -126,10 +126,9 @@ impl Entity for SpawnerMinecartEntity {
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
-        // `BaseSpawner::load` takes the erased `BaseNbtCompound` view, so the
-        // typed compound is re-borrowed into that form.
-        let erased: simdnbt::borrow::BaseNbtCompound<'_> = (&nbt).into();
-        self.spawner.lock().load(&erased);
+        // The spawner reads through the typed view, so no erasure round trip is
+        // needed here.
+        self.spawner.lock().load_view(&nbt);
     }
 }
 

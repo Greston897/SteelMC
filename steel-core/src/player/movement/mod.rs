@@ -1067,7 +1067,10 @@ impl Player {
         {
             return None;
         }
-        vehicle.as_mob().map(|_| vehicle)
+        if vehicle.as_mob().is_none() {
+            return None;
+        }
+        Some(vehicle)
     }
 
     /// Checks new player non-riding movement provided to award stats for it,
