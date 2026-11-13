@@ -387,6 +387,32 @@ impl ChunkSchedulingCoordinator {
         ingress.record_changes(changes);
     }
 
+    #[must_use]
+    pub(crate) fn is_forced(&self, pos: ChunkPos) -> bool {
+        self.ticket_ingress.lock().storage.is_forced(pos)
+    }
+
+    #[must_use]
+    pub(crate) fn forced_count(&self) -> usize {
+        self.ticket_ingress.lock().storage.forced_count()
+    }
+
+    /// Adds `pos` to the force-loaded set, persisting the ticket.
+    pub(crate) fn add_forced_ticket(&self, pos: ChunkPos) {
+        let mut ingress = self.ticket_ingress.lock();
+        let changes = ingress.storage.add_forced_ticket(pos);
+        ingress.record_changes(changes);
+    }
+
+    /// Removes `pos` from the force-loaded set. Returns whether it was there.
+    ///
+    /// The next scheduling pass drops the projected tickets, so the caller only
+    /// needs the boolean for its feedback message.
+    pub(crate) fn remove_forced_ticket(&self, pos: ChunkPos) -> bool {
+        let mut ingress = self.ticket_ingress.lock();
+        ingress.storage.remove_forced_ticket(pos)
+    }
+
     pub(crate) fn add_or_refresh_ender_pearl_ticket(&self, pos: ChunkPos) {
         let mut ingress = self.ticket_ingress.lock();
         let changes = ingress.storage.add_or_refresh_ender_pearl_ticket(pos);
