@@ -4,7 +4,7 @@ use std::{borrow::Cow, sync::Arc, time::Instant};
 
 use glam::IVec3;
 use steel_registry::biome::BiomeRef;
-use steel_registry::{REGISTRY, RegistryExt as _};
+use steel_registry::RegistryExt as _;
 use steel_utils::{BlockPos, ChunkPos, Identifier, translations};
 use text_components::{
     Modifier, TextComponent,

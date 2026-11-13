@@ -27,7 +27,7 @@ use super::super::{
     registration::CommandRegistration,
 };
 use steel_registry::attribute::AttributeRef;
-use steel_registry::{REGISTRY, RegistryExt as _};
+use steel_registry::RegistryExt as _;
 
 use crate::entity::attribute::{AttributeModifier, AttributeModifierOperation};
 
