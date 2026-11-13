@@ -253,7 +253,7 @@ impl FeatureDecorationRunner {
     }
 
     fn tree_is_vine(region: &impl LevelReader, pos: BlockPos) -> bool {
-        region.get_block_state(pos).get_block() == &vanilla_blocks::VINE
+        region.get_block_state(pos).get_block() == &*vanilla_blocks::VINE
     }
 
     fn set_tree_block(region: &mut impl LevelAccessor, pos: BlockPos, state: BlockStateId) {

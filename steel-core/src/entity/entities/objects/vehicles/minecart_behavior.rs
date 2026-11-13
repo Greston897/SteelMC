@@ -61,7 +61,7 @@ impl MinecartBehavior {
 
         if on_rails {
             Self::move_along_track(minecart, entity, world);
-            if block_state.get_block() == &vanilla_blocks::ACTIVATOR_RAIL {
+            if block_state.get_block() == &*vanilla_blocks::ACTIVATOR_RAIL {
                 minecart.activate_minecart(world, pos, block_state.get_value(POWERED));
             }
         } else {

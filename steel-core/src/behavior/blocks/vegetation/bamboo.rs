@@ -43,7 +43,7 @@ impl BambooStalkBlock {
     fn stalk_segments_below(world: &dyn LevelReader, pos: BlockPos) -> i32 {
         let mut height = 0;
         while height < MAX_BAMBOO_HEIGHT
-            && world.get_block_state(pos.below_n(height + 1)).get_block() == &vanilla_blocks::BAMBOO
+            && world.get_block_state(pos.below_n(height + 1)).get_block() == &*vanilla_blocks::BAMBOO
         {
             height += 1;
         }
@@ -54,7 +54,7 @@ impl BambooStalkBlock {
     fn stalk_segments_above(world: &dyn LevelReader, pos: BlockPos) -> i32 {
         let mut height = 0;
         while height < MAX_BAMBOO_HEIGHT
-            && world.get_block_state(pos.above_n(height + 1)).get_block() == &vanilla_blocks::BAMBOO
+            && world.get_block_state(pos.above_n(height + 1)).get_block() == &*vanilla_blocks::BAMBOO
         {
             height += 1;
         }
@@ -76,7 +76,7 @@ impl BambooStalkBlock {
         } else {
             let leaves = Self::leaves_for_new_segment(state_below);
             if leaves == BambooLeaves::Large
-                && state_two_below.get_block() == &vanilla_blocks::BAMBOO
+                && state_two_below.get_block() == &*vanilla_blocks::BAMBOO
             {
                 world.set_block(
                     pos.below(),
@@ -93,7 +93,7 @@ impl BambooStalkBlock {
         };
 
         let new_age = u8::from(
-            state.get_value(AGE) == 1 || state_two_below.get_block() == &vanilla_blocks::BAMBOO,
+            state.get_value(AGE) == 1 || state_two_below.get_block() == &*vanilla_blocks::BAMBOO,
         );
 
         let new_stage = u8::from(
@@ -198,7 +198,7 @@ impl BlockBehavior for BambooStalkBlock {
             )
         } else {
             let state_above = context.world.get_block_state(context.place_pos().above());
-            if state_above.get_block() == &vanilla_blocks::BAMBOO {
+            if state_above.get_block() == &*vanilla_blocks::BAMBOO {
                 Some(
                     vanilla_blocks::BAMBOO
                         .default_state()
@@ -252,7 +252,7 @@ impl BlockBehavior for BambooStalkBlock {
         let age = state.get_value(AGE);
 
         if direction == Direction::Up
-            && neighbor_state.get_block() == &vanilla_blocks::BAMBOO
+            && neighbor_state.get_block() == &*vanilla_blocks::BAMBOO
             && neighbor_state.get_value(AGE) > age
         {
             return state.set_value(AGE, age.not() & 1); // 0 => 1; 1 => 0

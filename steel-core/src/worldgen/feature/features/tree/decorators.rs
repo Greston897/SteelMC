@@ -596,12 +596,12 @@ impl FeatureDecorationRunner {
         ]
         .into_iter()
         .any(|direction| {
-            region.get_block_state(pos.relative(direction)).get_block() == &vanilla_blocks::WATER
-        }) || region.get_block_state(pos).get_block() == &vanilla_blocks::WATER
+            region.get_block_state(pos.relative(direction)).get_block() == &*vanilla_blocks::WATER
+        }) || region.get_block_state(pos).get_block() == &*vanilla_blocks::WATER
     }
 
     fn has_shelf_mushroom_at(region: &impl LevelReader, pos: BlockPos) -> bool {
-        region.get_block_state(pos).get_block() == &vanilla_blocks::SHELF_MUSHROOM
+        region.get_block_state(pos).get_block() == &*vanilla_blocks::SHELF_MUSHROOM
     }
 
     fn has_horizontally_adjacent_shelf_mushroom(region: &impl LevelReader, pos: BlockPos) -> bool {

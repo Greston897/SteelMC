@@ -187,7 +187,7 @@ pub trait Animal: AgeableMob {
             return 0.0;
         };
 
-        if world.get_block_state(pos.below()).get_block() == &vanilla_blocks::GRASS_BLOCK {
+        if world.get_block_state(pos.below()).get_block() == &*vanilla_blocks::GRASS_BLOCK {
             10.0
         } else {
             world.pathfinding_cost_from_light_levels(pos)

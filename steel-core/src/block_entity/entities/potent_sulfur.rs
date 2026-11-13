@@ -102,7 +102,7 @@ impl PotentSulfurBlockEntity {
 
     fn is_geyser_passable(world: &World, pos: BlockPos, context: BlockCollisionContext) -> bool {
         let state = world.get_block_state(pos);
-        if state.is_air() || state.get_block() == &vanilla_blocks::WATER {
+        if state.is_air() || state.get_block() == &*vanilla_blocks::WATER {
             return true;
         }
 
@@ -124,7 +124,7 @@ impl PotentSulfurBlockEntity {
             let is_water_source = fluid.is_source() && fluid.is_water();
 
             if is_water_source
-                && (state.get_block() == &vanilla_blocks::WATER
+                && (state.get_block() == &*vanilla_blocks::WATER
                     || Self::is_geyser_passable(world, pos, geyser_position_context))
             {
                 pos = BlockPos::new(pos.x(), pos.y() + 1, pos.z());

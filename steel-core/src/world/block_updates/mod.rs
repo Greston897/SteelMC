@@ -487,7 +487,7 @@ impl World {
             }
 
             let mut state = self.get_block_state(relative_pos);
-            if state.get_block() == &vanilla_blocks::COMPARATOR {
+            if state.get_block() == &*vanilla_blocks::COMPARATOR {
                 self.neighbor_changed_with_state(state, relative_pos, changed_block, false);
                 continue;
             }
@@ -501,7 +501,7 @@ impl World {
                 continue;
             }
             state = self.get_block_state(relative_pos);
-            if state.get_block() == &vanilla_blocks::COMPARATOR {
+            if state.get_block() == &*vanilla_blocks::COMPARATOR {
                 self.neighbor_changed_with_state(state, relative_pos, changed_block, false);
             }
         }
@@ -585,7 +585,7 @@ impl World {
         let current_state = self.get_block_state(pos);
 
         if flags.contains(UpdateFlags::UPDATE_SKIP_SHAPE_UPDATE_ON_WIRE)
-            && current_state.get_block() == &vanilla_blocks::REDSTONE_WIRE
+            && current_state.get_block() == &*vanilla_blocks::REDSTONE_WIRE
         {
             return;
         }

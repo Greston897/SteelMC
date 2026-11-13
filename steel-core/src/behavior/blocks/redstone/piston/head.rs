@@ -97,7 +97,7 @@ impl BlockBehavior for PistonHeadBlock {
         let facing = state.get_value(FACING);
         let base = world.get_block_state(pos.relative(facing.opposite()));
         Self::is_fitting_base(state, base)
-            || (base.get_block() == &vanilla_blocks::MOVING_PISTON
+            || (base.get_block() == &*vanilla_blocks::MOVING_PISTON
                 && base.get_value(FACING) == facing)
     }
 

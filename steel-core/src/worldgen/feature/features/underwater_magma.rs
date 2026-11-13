@@ -53,7 +53,7 @@ impl FeatureDecorationRunner {
             pos = pos.below();
         }
 
-        if region.block_state(pos).get_block() == &vanilla_blocks::WATER {
+        if region.block_state(pos).get_block() == &*vanilla_blocks::WATER {
             return None;
         }
 
@@ -82,7 +82,7 @@ impl FeatureDecorationRunner {
     }
 
     fn underwater_magma_is_water_or_air(state: BlockStateId) -> bool {
-        state.get_block() == &vanilla_blocks::WATER || state.is_air()
+        state.get_block() == &*vanilla_blocks::WATER || state.is_air()
     }
 
     fn underwater_magma_visible_from_outside(

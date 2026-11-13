@@ -424,7 +424,7 @@ impl FeatureDecorationRunner {
 
                 let vein_pos = support_pos.relative(direction);
                 let possible_vein = region.block_state(vein_pos);
-                if possible_vein.get_block() == &vanilla_blocks::SCULK_VEIN {
+                if possible_vein.get_block() == &*vanilla_blocks::SCULK_VEIN {
                     Self::sculk_on_discharged(region, possible_vein, vein_pos);
                 }
             }
@@ -576,9 +576,9 @@ impl FeatureDecorationRunner {
         existing_state: BlockStateId,
     ) -> bool {
         let against_state = region.block_state(placement_pos.relative(placement_direction));
-        if against_state.get_block() == &vanilla_blocks::SCULK
-            || against_state.get_block() == &vanilla_blocks::SCULK_CATALYST
-            || against_state.get_block() == &vanilla_blocks::MOVING_PISTON
+        if against_state.get_block() == &*vanilla_blocks::SCULK
+            || against_state.get_block() == &*vanilla_blocks::SCULK_CATALYST
+            || against_state.get_block() == &*vanilla_blocks::MOVING_PISTON
         {
             return false;
         }
@@ -610,8 +610,8 @@ impl FeatureDecorationRunner {
         existing_state: BlockStateId,
     ) -> bool {
         existing_state.is_air()
-            || existing_state.get_block() == &vanilla_blocks::SCULK_VEIN
-            || (existing_state.get_block() == &vanilla_blocks::WATER
+            || existing_state.get_block() == &*vanilla_blocks::SCULK_VEIN
+            || (existing_state.get_block() == &*vanilla_blocks::WATER
                 && get_fluid_state_from_block(existing_state).is_source())
     }
 
@@ -630,7 +630,7 @@ impl FeatureDecorationRunner {
             return None;
         }
 
-        let mut new_state = if old_state.get_block() == &vanilla_blocks::SCULK_VEIN {
+        let mut new_state = if old_state.get_block() == &*vanilla_blocks::SCULK_VEIN {
             old_state
         } else {
             let state = vanilla_blocks::SCULK_VEIN.default_state();
@@ -651,7 +651,7 @@ impl FeatureDecorationRunner {
         placement_pos: BlockPos,
         placement_direction: Direction,
     ) -> bool {
-        if old_state.get_block() == &vanilla_blocks::SCULK_VEIN
+        if old_state.get_block() == &*vanilla_blocks::SCULK_VEIN
             && Self::sculk_vein_has_face(old_state, placement_direction)
         {
             return false;
@@ -698,7 +698,7 @@ impl FeatureDecorationRunner {
 
         for direction in Self::VANILLA_DIRECTION_VALUES {
             if Self::sculk_vein_has_face(state, direction)
-                && region.block_state(pos.relative(direction)).get_block() == &vanilla_blocks::SCULK
+                && region.block_state(pos.relative(direction)).get_block() == &*vanilla_blocks::SCULK
             {
                 state = state.set_value(multiface_face_property(direction), false);
             }
@@ -858,8 +858,8 @@ impl FeatureDecorationRunner {
             for y in 0..=2 {
                 for x in -4..=4 {
                     let state = region.block_state(pos.offset(x, y, z));
-                    if state.get_block() == &vanilla_blocks::SCULK_SENSOR
-                        || state.get_block() == &vanilla_blocks::SCULK_SHRIEKER
+                    if state.get_block() == &*vanilla_blocks::SCULK_SENSOR
+                        || state.get_block() == &*vanilla_blocks::SCULK_SHRIEKER
                     {
                         growth_count += 1;
                     }
@@ -904,14 +904,14 @@ impl FeatureDecorationRunner {
         pos: BlockPos,
         state: BlockStateId,
     ) {
-        if state.get_block() == &vanilla_blocks::SCULK_SENSOR {
+        if state.get_block() == &*vanilla_blocks::SCULK_SENSOR {
             Self::set_empty_block_entity(
                 region,
                 pos,
                 &vanilla_block_entity_types::SCULK_SENSOR,
                 state,
             );
-        } else if state.get_block() == &vanilla_blocks::SCULK_SHRIEKER {
+        } else if state.get_block() == &*vanilla_blocks::SCULK_SHRIEKER {
             Self::set_empty_block_entity(
                 region,
                 pos,
@@ -982,9 +982,9 @@ impl FeatureDecorationRunner {
     }
 
     fn sculk_behavior(state: BlockStateId) -> SculkBehaviorKind {
-        if state.get_block() == &vanilla_blocks::SCULK {
+        if state.get_block() == &*vanilla_blocks::SCULK {
             SculkBehaviorKind::Sculk
-        } else if state.get_block() == &vanilla_blocks::SCULK_VEIN {
+        } else if state.get_block() == &*vanilla_blocks::SCULK_VEIN {
             SculkBehaviorKind::SculkVein
         } else {
             SculkBehaviorKind::Default

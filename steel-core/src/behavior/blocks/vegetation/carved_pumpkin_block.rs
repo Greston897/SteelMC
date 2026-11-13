@@ -40,8 +40,8 @@ impl CarvedPumpkinBlock {
         };
 
         // Snow golem: two snow blocks below the pumpkin.
-        if world.get_block_state(below1).get_block() == &vanilla_blocks::SNOW_BLOCK
-            && world.get_block_state(below2).get_block() == &vanilla_blocks::SNOW_BLOCK
+        if world.get_block_state(below1).get_block() == &*vanilla_blocks::SNOW_BLOCK
+            && world.get_block_state(below2).get_block() == &*vanilla_blocks::SNOW_BLOCK
         {
             return Some(&vanilla_entities::SNOW_GOLEM);
         }

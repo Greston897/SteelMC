@@ -549,7 +549,7 @@ impl FeatureDecorationRunner {
     }
 
     fn speleothem_is_empty_or_water(state: BlockStateId) -> bool {
-        state.is_air() || state.get_block() == &vanilla_blocks::WATER
+        state.is_air() || state.get_block() == &*vanilla_blocks::WATER
     }
 
     fn random_speleothem_direction(random: &mut WorldgenRandom) -> Direction {

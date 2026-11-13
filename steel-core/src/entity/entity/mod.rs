@@ -3450,7 +3450,7 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
                     self.game_event(&vanilla_game_events::SWIM);
                 }
             }
-        } else if supporting_state.get_block() == &vanilla_blocks::AIR {
+        } else if supporting_state.get_block() == &*vanilla_blocks::AIR {
             self.process_flapping_movement();
         }
     }
@@ -3483,7 +3483,7 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         should_vibrate: bool,
         clipped_movement: DVec3,
     ) -> bool {
-        if block_state.get_block() == &vanilla_blocks::AIR {
+        if block_state.get_block() == &*vanilla_blocks::AIR {
             return false;
         }
 

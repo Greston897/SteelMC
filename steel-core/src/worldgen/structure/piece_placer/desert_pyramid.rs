@@ -709,9 +709,9 @@ impl DesertPyramidPlacer<'_, '_> {
     fn is_replaceable_by_structures(state: BlockStateId) -> bool {
         state.is_air()
             || state.has_fluid()
-            || state.get_block() == &vanilla_blocks::GLOW_LICHEN
-            || state.get_block() == &vanilla_blocks::SEAGRASS
-            || state.get_block() == &vanilla_blocks::TALL_SEAGRASS
+            || state.get_block() == &*vanilla_blocks::GLOW_LICHEN
+            || state.get_block() == &*vanilla_blocks::SEAGRASS
+            || state.get_block() == &*vanilla_blocks::TALL_SEAGRASS
     }
 
     fn stairs(facing: Direction) -> BlockStateId {

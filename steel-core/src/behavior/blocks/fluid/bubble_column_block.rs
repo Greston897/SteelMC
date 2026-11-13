@@ -86,7 +86,7 @@ impl BubbleColumnBlock {
         fluid_state
             .fluid_id
             .has_tag(&FluidTag::BUBBLE_COLUMN_CAN_OCCUPY)
-            && occupy_state.get_block() == &vanilla_blocks::WATER
+            && occupy_state.get_block() == &*vanilla_blocks::WATER
             && fluid_state.is_source()
             && fluid_state.is_full()
     }
@@ -356,7 +356,7 @@ mod tests {
         let placed = level.placed_blocks.borrow();
         assert_eq!(placed.len(), 2);
         assert!(placed.iter().all(|placed| {
-            placed.state.get_block() == &vanilla_blocks::BUBBLE_COLUMN
+            placed.state.get_block() == &*vanilla_blocks::BUBBLE_COLUMN
                 && !placed.state.get_value(DRAG)
         }));
     }

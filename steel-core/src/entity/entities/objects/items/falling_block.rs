@@ -369,7 +369,7 @@ impl FallingBlockEntity {
             velocity.y * LANDED_VERTICAL_BOUNCE,
             velocity.z * LANDED_HORIZONTAL_DRAG,
         ));
-        if current_state.get_block() == &vanilla_blocks::MOVING_PISTON {
+        if current_state.get_block() == &*vanilla_blocks::MOVING_PISTON {
             return;
         }
 

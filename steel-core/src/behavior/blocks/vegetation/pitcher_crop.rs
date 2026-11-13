@@ -53,7 +53,7 @@ impl PitcherCropBlock {
     }
 
     fn is_lower(state: BlockStateId) -> bool {
-        state.get_block() == &vanilla_blocks::PITCHER_CROP
+        state.get_block() == &*vanilla_blocks::PITCHER_CROP
             && state.get_value(HALF_PROPERTY) == DoubleBlockHalf::Lower
     }
 
@@ -162,7 +162,7 @@ impl PitcherCropBlock {
             && !world.is_outside_build_height(pos.above().y())
             && (new_age < 3
                 || state_above.is_air()
-                || state_above.get_block() == &vanilla_blocks::PITCHER_CROP)
+                || state_above.get_block() == &*vanilla_blocks::PITCHER_CROP)
     }
 }
 

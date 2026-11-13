@@ -280,7 +280,7 @@ fn end_portal_pattern_entry_matches(
 
 fn end_portal_frame_matches(level: &impl LevelReader, pos: BlockPos, facing: Direction) -> bool {
     let state = level.get_block_state(pos);
-    state.get_block() == &vanilla_blocks::END_PORTAL_FRAME
+    state.get_block() == &*vanilla_blocks::END_PORTAL_FRAME
         && state.get_value(&BlockStateProperties::EYE)
         && state.get_value(&BlockStateProperties::HORIZONTAL_FACING) == facing
 }

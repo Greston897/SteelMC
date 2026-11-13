@@ -278,9 +278,9 @@ impl FeatureDecorationRunner {
         existing_state: BlockStateId,
     ) -> bool {
         let against_state = region.block_state(placement_pos.relative(placement_direction));
-        if against_state.get_block() == &vanilla_blocks::SCULK
-            || against_state.get_block() == &vanilla_blocks::SCULK_CATALYST
-            || against_state.get_block() == &vanilla_blocks::MOVING_PISTON
+        if against_state.get_block() == &*vanilla_blocks::SCULK
+            || against_state.get_block() == &*vanilla_blocks::SCULK_CATALYST
+            || against_state.get_block() == &*vanilla_blocks::MOVING_PISTON
         {
             return false;
         }
@@ -324,7 +324,7 @@ impl FeatureDecorationRunner {
     ) -> bool {
         existing_state.is_air()
             || existing_state.get_block() == place_block
-            || (existing_state.get_block() == &vanilla_blocks::WATER
+            || (existing_state.get_block() == &*vanilla_blocks::WATER
                 && get_fluid_state_from_block(existing_state).is_source())
     }
 
@@ -472,6 +472,6 @@ impl FeatureDecorationRunner {
     }
 
     fn multiface_is_air_or_water(state: BlockStateId) -> bool {
-        state.is_air() || state.get_block() == &vanilla_blocks::WATER
+        state.is_air() || state.get_block() == &*vanilla_blocks::WATER
     }
 }

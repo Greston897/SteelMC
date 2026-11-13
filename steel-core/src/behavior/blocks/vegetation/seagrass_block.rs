@@ -102,7 +102,7 @@ impl Bonemealable for SeagrassBlock {
         world: &dyn LevelReader,
         pos: BlockPos,
     ) -> bool {
-        world.get_block_state(pos.above()).get_block() == &vanilla_blocks::WATER
+        world.get_block_state(pos.above()).get_block() == &*vanilla_blocks::WATER
     }
 
     fn perform_bonemeal(

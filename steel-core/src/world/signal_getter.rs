@@ -176,10 +176,10 @@ pub(crate) fn get_control_input_signal(
             MIN_REDSTONE_SIGNAL
         };
     }
-    if state.get_block() == &vanilla_blocks::REDSTONE_BLOCK {
+    if state.get_block() == &*vanilla_blocks::REDSTONE_BLOCK {
         return MAX_REDSTONE_SIGNAL;
     }
-    if state.get_block() == &vanilla_blocks::REDSTONE_WIRE {
+    if state.get_block() == &*vanilla_blocks::REDSTONE_WIRE {
         return i32::from(state.get_value(&BlockStateProperties::POWER));
     }
     if behavior.is_signal_source(state, SignalQueryContext::DEFAULT) {

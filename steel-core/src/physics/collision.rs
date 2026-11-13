@@ -275,7 +275,7 @@ fn should_resolve_collision_shape(
     match cursor_type {
         CollisionCursorType::Inside => true,
         CollisionCursorType::Face => block_state_may_expand_collision_cursor(block_state),
-        CollisionCursorType::Edge => block_state.get_block() == &vanilla_blocks::MOVING_PISTON,
+        CollisionCursorType::Edge => block_state.get_block() == &*vanilla_blocks::MOVING_PISTON,
         CollisionCursorType::Corner => false,
     }
 }

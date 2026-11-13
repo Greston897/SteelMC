@@ -141,7 +141,7 @@ impl Bonemealable for SeaPickleBlock {
 
                     if position != pos
                         && rng.random_range(0..6) == 0
-                        && world.get_block_state(position).get_block() == &vanilla_blocks::WATER
+                        && world.get_block_state(position).get_block() == &*vanilla_blocks::WATER
                     {
                         let below_state = world.get_block_state(position.below());
 

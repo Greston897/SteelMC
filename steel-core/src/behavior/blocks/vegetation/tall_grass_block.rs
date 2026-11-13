@@ -45,7 +45,7 @@ impl TallGrassBlock {
     }
 
     fn large_variant(state: BlockStateId) -> BlockRef {
-        if state.get_block() == &vanilla_blocks::FERN {
+        if state.get_block() == &*vanilla_blocks::FERN {
             &vanilla_blocks::LARGE_FERN
         } else {
             &vanilla_blocks::TALL_GRASS

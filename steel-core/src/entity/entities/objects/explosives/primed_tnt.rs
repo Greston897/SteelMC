@@ -68,7 +68,7 @@ impl ExplosionDamageCalculator for NetherPortalPreservingExplosionDamageCalculat
         state: BlockStateId,
         fluid: FluidState,
     ) -> Option<f32> {
-        if state.get_block() == &vanilla_blocks::NETHER_PORTAL {
+        if state.get_block() == &*vanilla_blocks::NETHER_PORTAL {
             return None;
         }
         DefaultExplosionDamageCalculator
@@ -83,7 +83,7 @@ impl ExplosionDamageCalculator for NetherPortalPreservingExplosionDamageCalculat
         state: BlockStateId,
         power: f32,
     ) -> bool {
-        if state.get_block() == &vanilla_blocks::NETHER_PORTAL {
+        if state.get_block() == &*vanilla_blocks::NETHER_PORTAL {
             return false;
         }
         DefaultExplosionDamageCalculator.should_block_explode(explosion, world, pos, state, power)
@@ -106,7 +106,7 @@ impl ImmutableExplosionBlockCalculator for NetherPortalPreservingExplosionDamage
         state: BlockStateId,
         fluid: FluidState,
     ) -> Option<f32> {
-        if state.get_block() == &vanilla_blocks::NETHER_PORTAL {
+        if state.get_block() == &*vanilla_blocks::NETHER_PORTAL {
             return None;
         }
         DefaultExplosionDamageCalculator.explosion_resistance(reader, pos, state, fluid)
@@ -119,7 +119,7 @@ impl ImmutableExplosionBlockCalculator for NetherPortalPreservingExplosionDamage
         state: BlockStateId,
         power: f32,
     ) -> bool {
-        if state.get_block() == &vanilla_blocks::NETHER_PORTAL {
+        if state.get_block() == &*vanilla_blocks::NETHER_PORTAL {
             return false;
         }
         DefaultExplosionDamageCalculator.should_explode(reader, pos, state, power)

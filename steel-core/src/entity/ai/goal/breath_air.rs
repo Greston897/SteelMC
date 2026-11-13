@@ -128,7 +128,7 @@ fn first_matching_pos_in_closed_box(
 
 fn gives_air(level: &World, pos: BlockPos) -> bool {
     let state = level.get_block_state(pos);
-    (!state.has_fluid() || state.get_block() == &vanilla_blocks::BUBBLE_COLUMN)
+    (!state.has_fluid() || state.get_block() == &*vanilla_blocks::BUBBLE_COLUMN)
         && state.is_pathfindable(PathComputationType::Land)
 }
 

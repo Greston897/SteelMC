@@ -53,7 +53,7 @@ impl FarmlandBlock {
                     let state = world.get_block_state(check_pos);
 
                     // Check if block is water
-                    if state.get_block() == &vanilla_blocks::WATER {
+                    if state.get_block() == &*vanilla_blocks::WATER {
                         return true;
                     }
 

@@ -38,7 +38,7 @@ impl Goal for ClimbOnTopOfPowderSnowGoal {
 
         let above = mob.block_position().above();
         let above_state = world.get_block_state(above);
-        if above_state.get_block() == &vanilla_blocks::POWDER_SNOW {
+        if above_state.get_block() == &*vanilla_blocks::POWDER_SNOW {
             return true;
         }
 

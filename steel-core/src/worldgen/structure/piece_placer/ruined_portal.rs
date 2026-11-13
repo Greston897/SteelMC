@@ -67,7 +67,7 @@ impl StructurePiecePlacer {
         random: &mut WorldgenRandom,
     ) {
         let state = region.block_state(pos);
-        if state.is_air() || state.get_block() == &vanilla_blocks::VINE {
+        if state.is_air() || state.get_block() == &*vanilla_blocks::VINE {
             return;
         }
 
@@ -117,7 +117,7 @@ impl StructurePiecePlacer {
         for x in portal_box.min_x() + 1..portal_box.max_x() {
             for z in portal_box.min_z() + 1..portal_box.max_z() {
                 let pos = BlockPos::new(x, portal_box.min_y(), z);
-                if region.block_state(pos).get_block() == &vanilla_blocks::NETHERRACK {
+                if region.block_state(pos).get_block() == &*vanilla_blocks::NETHERRACK {
                     Self::add_ruined_portal_netherrack_drip_column(
                         region,
                         properties,

@@ -62,7 +62,7 @@ impl Player {
 
 impl Player {
     pub(crate) fn bed_rule_for(world: &World, state: steel_utils::BlockStateId) -> &BedRule {
-        if state.get_block() == &vanilla_blocks::STRAW_BED {
+        if state.get_block() == &*vanilla_blocks::STRAW_BED {
             &world.dimension_type.straw_bed_rule
         } else {
             &world.dimension_type.bed_rule

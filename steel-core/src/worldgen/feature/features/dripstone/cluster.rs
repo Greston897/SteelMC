@@ -362,15 +362,15 @@ impl FeatureDecorationRunner {
 
     pub(in crate::worldgen::feature) fn is_empty_or_water_or_lava(state: BlockStateId) -> bool {
         state.is_air()
-            || state.get_block() == &vanilla_blocks::WATER
-            || state.get_block() == &vanilla_blocks::LAVA
+            || state.get_block() == &*vanilla_blocks::WATER
+            || state.get_block() == &*vanilla_blocks::LAVA
     }
 
     pub(in crate::worldgen::feature) fn is_lava(
         region: &WorldGenRegion<'_>,
         pos: BlockPos,
     ) -> bool {
-        region.block_state(pos).get_block() == &vanilla_blocks::LAVA
+        region.block_state(pos).get_block() == &*vanilla_blocks::LAVA
     }
 
     pub(in crate::worldgen::feature) fn clamped_map_f32(

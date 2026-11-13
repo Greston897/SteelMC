@@ -209,11 +209,11 @@ impl RedstoneWireBlock {
         if state.get_block() == self.block {
             return true;
         }
-        if state.get_block() == &vanilla_blocks::REPEATER {
+        if state.get_block() == &*vanilla_blocks::REPEATER {
             let facing = state.get_value(HORIZONTAL_FACING);
             return direction == Some(facing) || direction == Some(facing.opposite());
         }
-        if state.get_block() == &vanilla_blocks::OBSERVER {
+        if state.get_block() == &*vanilla_blocks::OBSERVER {
             return direction == Some(state.get_value(FACING));
         }
 
@@ -225,7 +225,7 @@ impl RedstoneWireBlock {
 
     fn can_survive_on(level: &dyn LevelReader, pos: BlockPos, state: BlockStateId) -> bool {
         level.is_face_sturdy(state, pos, Direction::Up)
-            || state.get_block() == &vanilla_blocks::HOPPER
+            || state.get_block() == &*vanilla_blocks::HOPPER
     }
 
     fn check_corner_change_at(&self, world: &Arc<World>, pos: BlockPos) {

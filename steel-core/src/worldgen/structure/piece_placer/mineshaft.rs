@@ -923,9 +923,9 @@ impl MineshaftPlacer<'_, '_> {
     fn is_replaceable_by_structures(state: BlockStateId) -> bool {
         state.is_air()
             || state.get_block().config.liquid
-            || state.get_block() == &vanilla_blocks::GLOW_LICHEN
-            || state.get_block() == &vanilla_blocks::SEAGRASS
-            || state.get_block() == &vanilla_blocks::TALL_SEAGRASS
+            || state.get_block() == &*vanilla_blocks::GLOW_LICHEN
+            || state.get_block() == &*vanilla_blocks::SEAGRASS
+            || state.get_block() == &*vanilla_blocks::TALL_SEAGRASS
     }
 
     const fn world_pos(&self, x: i32, y: i32, z: i32) -> BlockPos {

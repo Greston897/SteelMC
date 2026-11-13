@@ -618,7 +618,7 @@ impl Animal for MushroomCowEntity {
             return 0.0;
         };
 
-        if world.get_block_state(pos.below()).get_block() == &vanilla_blocks::MYCELIUM {
+        if world.get_block_state(pos.below()).get_block() == &*vanilla_blocks::MYCELIUM {
             MYCELIUM_WALK_TARGET_VALUE
         } else {
             world.pathfinding_cost_from_light_levels(pos)
