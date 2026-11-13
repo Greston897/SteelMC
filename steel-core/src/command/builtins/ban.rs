@@ -107,7 +107,7 @@ fn start_ban(
 }
 
 async fn run_ban(
-    source: &CommandSource<'_>,
+    source: &CommandSource,
     argument: GameProfileArgument,
     reason: String,
     by: String,
@@ -165,7 +165,7 @@ fn start_pardon(
 }
 
 async fn run_pardon(
-    source: &CommandSource<'_>,
+    source: &CommandSource,
     argument: GameProfileArgument,
 ) -> Result<i32, CommandSyntaxError> {
     let targets = argument.resolve(source).await?;

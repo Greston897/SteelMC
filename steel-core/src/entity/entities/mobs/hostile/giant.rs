@@ -198,14 +198,6 @@ impl LivingEntity for GiantEntity {
             .set(clamped);
     }
 
-    fn hurt_sound(&self, _source: &DamageSource) -> Option<SoundEventRef> {
-        Some(&sound_events::ENTITY_GIANT_HURT)
-    }
-
-    fn death_sound(&self) -> Option<SoundEventRef> {
-        Some(&sound_events::ENTITY_GIANT_DEATH)
-    }
-
     fn should_drop_experience(&self) -> bool {
         Monster::should_drop_experience_monster(self)
     }
@@ -234,10 +226,6 @@ impl Mob for GiantEntity {
 
     fn tick_path_navigation(&self) {
         PathfinderMob::tick_pathfinder_path_navigation(self);
-    }
-
-    fn ambient_sound(&self) -> Option<SoundEventRef> {
-        Some(&sound_events::ENTITY_GIANT_AMBIENT)
     }
 
     fn mob_flags(&self) -> i8 {

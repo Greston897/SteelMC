@@ -36,7 +36,7 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
 }
 
 fn scoreboard_of(
-    source: CommandSource<'_>,
+    source: CommandSource,
 ) -> Result<&Scoreboard, CommandSyntaxError> {
     let domain = source.world().domain().to_owned();
     source

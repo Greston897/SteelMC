@@ -12,6 +12,9 @@ use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
+use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
+use simdnbt::owned::NbtCompound;
+
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::world::World;
 
@@ -52,6 +55,10 @@ macro_rules! marker_block_entity {
             fn base(&self) -> &BlockEntityBase {
                 &self.base
             }
+
+            fn load_additional(&self, _nbt: &BorrowedNbtCompound<'_>) {}
+
+            fn save_additional(&self, _nbt: &mut NbtCompound) {}
         }
     };
 }

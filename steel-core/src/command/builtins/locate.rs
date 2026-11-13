@@ -27,10 +27,11 @@ use crate::{
     },
     world::World,
     worldgen::{
-        generator::{ChunkGenerator, ChunkGeneratorType},
+        generator::ChunkGenerator,
         structure::{StructureLocateCandidate, StructureLocatePlan, squared_distance},
     },
 };
+use crate::worldgen::generator::context::ChunkGeneratorType;
 
 const MAX_STRUCTURE_SEARCH_RADIUS: i32 = 100;
 

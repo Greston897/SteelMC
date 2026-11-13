@@ -104,7 +104,7 @@ fn start_operation(
 }
 
 async fn run_operation(
-    source: &CommandSource<'_>,
+    source: &CommandSource,
     argument: GameProfileArgument,
     action: WhitelistAction,
 ) -> Result<i32, CommandSyntaxError> {

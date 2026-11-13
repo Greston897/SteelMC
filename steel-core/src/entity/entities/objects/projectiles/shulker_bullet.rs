@@ -154,6 +154,6 @@ mod tests {
             Weak::<World>::new(),
         );
         assert!(projectile.get_owner().is_none());
-        assert!(!spit.is_removed());
+        assert!(!projectile.is_removed());
     }
 }

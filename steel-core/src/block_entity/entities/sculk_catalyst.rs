@@ -46,6 +46,11 @@ impl BlockEntity for SculkCatalystBlockEntity {
     fn base(&self) -> &BlockEntityBase {
         &self.base
     }
+
+    fn load_additional(&self, _nbt: &BorrowedNbtCompound<'_>) {}
+
+    fn save_additional(&self, _nbt: &mut NbtCompound) {}
+
 }
 
 /// Sculk shrieker block entity.
