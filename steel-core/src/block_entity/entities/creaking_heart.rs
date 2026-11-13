@@ -12,7 +12,12 @@ use simdnbt::owned::{NbtCompound, NbtTag};
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
 
+use glam::DVec3;
+use steel_registry::{vanilla_blocks, vanilla_entities};
+use steel_utils::types::Direction;
+
 use crate::block_entity::{BlockEntity, BlockEntityBase};
+use crate::entity::{ENTITIES, Entity as _, next_entity_id};
 use crate::world::World;
 
 /// Creaking heart block entity.
@@ -54,9 +59,63 @@ impl CreakingHeartBlockEntity {
     }
 }
 
+impl CreakingHeartBlockEntity {
+    /// Vanilla `CreakingHeartBlockEntity.tick`: while the heart sits between two
+    /// pale oak logs and a player is nearby, it keeps exactly one creaking alive.
+    fn spawn_creaking(&self, world: &Arc<World>) {
+        if self.creaking().is_some() {
+            return;
+        }
+        let pos = self.get_block_pos();
+        if !Self::is_valid_heart(world, pos) {
+            return;
+        }
+        let position = DVec3::new(
+            f64::from(pos.x()) + 0.5,
+            f64::from(pos.y()) + 0.5,
+            f64::from(pos.z()) + 0.5,
+        );
+        let creaking = ENTITIES.create(
+            &vanilla_entities::CREAKING,
+            next_entity_id(),
+            position,
+            Arc::downgrade(world),
+        );
+        let Some(creaking) = creaking else {
+            return;
+        };
+        if let Some(creaking_entity) = creaking
+            .downcast_ref::<crate::entity::entities::mobs::hostile::CreakingEntity>()
+        {
+            creaking_entity.set_creaking_heart_pos(Some(pos));
+        }
+        let creaking_uuid = Entity::uuid(creaking.as_ref()).as_u128();
+        if world.try_add_entity(creaking).is_ok() {
+            self.set_creaking(Some(creaking_uuid));
+        }
+    }
+
+    /// Vanilla `CreakingHeartBlock.isValid`: the heart needs pale oak logs on both
+    /// the X and Z axes.
+    fn is_valid_heart(world: &World, pos: BlockPos) -> bool {
+        let axis = |direction: Direction| {
+            world
+                .get_block_state(pos.relative(direction))
+                .get_block()
+                == &vanilla_blocks::PALE_OAK_LOG
+        };
+        (axis(Direction::North) && axis(Direction::South))
+            || (axis(Direction::East) && axis(Direction::West))
+    }
+}
+
 impl BlockEntity for CreakingHeartBlockEntity {
     fn base(&self) -> &BlockEntityBase {
         &self.base
+    }
+
+    fn tick(&self, world: &Arc<World>) {
+        self.spawn_creaking(world);
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
