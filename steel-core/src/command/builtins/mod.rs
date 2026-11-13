@@ -42,6 +42,7 @@ mod recipe;
 mod position;
 mod return_command;
 mod ride;
+mod save;
 mod say;
 mod schedule;
 mod scoreboard;
@@ -140,6 +141,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(recipe::registration())?;
     builder.register(return_command::registration())?;
     builder.register(ride::registration())?;
+    builder.register(save::registration())?;
     builder.register(say::say_registration())?;
     builder.register(say::me_registration())?;
     builder.register(scoreboard::registration())?;

@@ -351,6 +351,12 @@ impl Server {
         if Instant::now() < *next_autosave {
             return;
         }
+        // Vanilla `MinecraftServer.saveEverything` returns early while `/save-off`
+        // has disabled automatic saving; the cadence keeps ticking either way.
+        if !self.is_auto_save_enabled() {
+            *next_autosave = Instant::now() + COMMAND_DATA_AUTOSAVE_INTERVAL;
+            return;
+        }
         if saves.is_empty() {
             let server = Arc::clone(self);
             saves.spawn(async move {

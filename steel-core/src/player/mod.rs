@@ -1019,6 +1019,23 @@ impl Player {
         );
     }
 
+    /// Vanilla `Entity.baseTick`: a player riding a vehicle while submerged in
+    /// lava fires `ride_entity_in_lava` for the vehicle's type.
+    fn tick_ride_entity_in_lava_trigger(&self) {
+        if !self.is_passenger() || !self.is_in_lava() {
+            return;
+        }
+        let Some(vehicle) = self.vehicle() else {
+            return;
+        };
+        self.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::RIDE_ENTITY_IN_LAVA,
+            &crate::player::advancement::predicate::TriggerContext::entity(
+                &vehicle.entity_type().key,
+            ),
+        );
+    }
+
     /// Immediately flushes dirty player entity data to tracking players and self.
     fn sync_entity_data(&self) {
         let dirty_values = self.entity_data.lock().pack_dirty();
@@ -2296,6 +2313,7 @@ impl LivingEntity for Player {
                 advancements.flush_dirty(self, true);
             }
             self.tick_levitation_trigger();
+            self.tick_ride_entity_in_lava_trigger();
             self.living_base.refresh_speed_from_attributes();
             self.tick_food_data();
 

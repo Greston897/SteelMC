@@ -497,6 +497,9 @@ pub struct Server {
     pub permission_groups: PermissionGroupManager,
     /// The cancellation token for graceful shutdown.
     pub cancel_token: CancellationToken,
+    /// Whether periodic saves run. Vanilla `MinecraftServer.saveEverything`
+    /// consults the same flag, toggled by `/save-off` and `/save-on`.
+    auto_save_enabled: std::sync::atomic::AtomicBool,
     /// The key store for the server.
     pub key_store: KeyStore,
     /// The registry cache for the server.
@@ -877,6 +880,7 @@ impl Server {
             config,
             permission_groups,
             cancel_token,
+            auto_save_enabled: std::sync::atomic::AtomicBool::new(true),
             key_store: KeyStore::create(),
             worlds,
             online_players: PlayerMap::new(),
@@ -946,6 +950,18 @@ impl Server {
             whitelist: self.save_whitelist().await,
             bans: self.save_bans().await,
         }
+    }
+
+    /// Whether automatic saves are currently enabled.
+    #[must_use]
+    pub fn is_auto_save_enabled(&self) -> bool {
+        self.auto_save_enabled.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Enables or disables automatic saves, as `/save-on` and `/save-off` do.
+    pub fn set_auto_save_enabled(&self, enabled: bool) {
+        self.auto_save_enabled
+            .store(enabled, std::sync::atomic::Ordering::Relaxed);
     }
 
     /// Writes the whitelist through the overworld's saved data.
