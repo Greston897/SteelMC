@@ -19,7 +19,7 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::AllayEntityData;
-use steel_registry::{sound_events, vanilla_attributes};
+use steel_registry::{sound_events, vanilla_attributes, vanilla_blocks, vanilla_entities};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
@@ -31,10 +31,11 @@ use crate::entity::entities::objects::items::ItemEntity;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, RemovalReason,
-    SharedEntity, sync_dirty_mob_effects,
+    SharedEntity, next_entity_id, sync_dirty_mob_effects,
 };
 use steel_registry::item_stack::ItemStack;
 use steel_utils::WorldAabb;
+
 use crate::physics::MoveResult;
 use crate::world::World;
 
@@ -47,6 +48,10 @@ const ALLAY_PICKUP_RADIUS: f64 = 8.0;
 
 /// Vanilla hands the carried stack over at `Allay`'s interaction distance.
 const ALLAY_DELIVERY_RADIUS: f64 = 2.0;
+
+/// Vanilla `Allay.NOTE_BLOCK_DETECTION_RANGE`: how far an allay looks for a
+/// note block to drop its stack onto.
+const ALLAY_NOTE_BLOCK_RANGE: i32 = 16;
 
 /// Vanilla `net.minecraft.world.entity.animal.allay.Allay`.
 #[entity_behavior(class = "Allay")]
@@ -341,9 +346,10 @@ impl AllayEntity {
         *self.carried_item.lock() = Some(stack);
     }
 
-    /// Vanilla `Allay.tick`: a carrying allay hands its stack to the nearest
-    /// player it can reach. Vanilla has no criterion for this (the old
-    /// `item_delivered_to_player` trigger was removed), so no trigger fires.
+    /// Vanilla `Allay.tick`: an allay carrying a stack walks to a note block
+    /// within range and drops the stack **onto** it, which is what
+    /// `allay_drop_item_on_block` observes; otherwise it hands the stack to the
+    /// nearest reachable player.
     fn tick_item_delivery(&self) {
         let Some(stack) = self.carried_item.lock().clone() else {
             return;
@@ -351,6 +357,13 @@ impl AllayEntity {
         let Some(world) = self.level() else {
             return;
         };
+
+        if let Some(note_block) = self.nearby_note_block(&world) {
+            if self.drop_item_on_block(&world, note_block, &stack) {
+                *self.carried_item.lock() = None;
+                return;
+            }
+        }
         let position = self.position();
         let reach = WorldAabb::new(
             position.x - ALLAY_DELIVERY_RADIUS,
@@ -378,6 +391,78 @@ impl AllayEntity {
         } else {
             *self.carried_item.lock() = Some(remaining);
         }
+    }
+}
+
+impl AllayEntity {
+    /// Vanilla `Allay.getNoteBlock`: the closest note block within
+    /// `Allay.NOTE_BLOCK_DETECTION_RANGE`.
+    fn nearby_note_block(&self, world: &World) -> Option<BlockPos> {
+        let position = self.block_position();
+        let scanner = BlockPos::between_closed(
+            position.offset(-ALLAY_NOTE_BLOCK_RANGE, -ALLAY_NOTE_BLOCK_RANGE, -ALLAY_NOTE_BLOCK_RANGE),
+            position.offset(ALLAY_NOTE_BLOCK_RANGE, ALLAY_NOTE_BLOCK_RANGE, ALLAY_NOTE_BLOCK_RANGE),
+        );
+        scanner
+            .filter(|pos| world.get_block_state(*pos).get_block() == &vanilla_blocks::NOTE_BLOCK)
+            .min_by_key(|pos| {
+                let dx = i64::from(pos.x() - position.x());
+                let dy = i64::from(pos.y() - position.y());
+                let dz = i64::from(pos.z() - position.z());
+                dx * dx + dy * dy + dz * dz
+            })
+    }
+
+    /// Vanilla `Allay.dropItemOnBlock`: spawns the carried stack above the note
+    /// block and fires `allay_drop_item_on_block` for the allay's owner.
+    fn drop_item_on_block(
+        &self,
+        world: &Arc<World>,
+        note_block: BlockPos,
+        stack: &ItemStack,
+    ) -> bool {
+        let spawn_pos = DVec3::new(
+            f64::from(note_block.x()) + 0.5,
+            f64::from(note_block.y()) + 1.0,
+            f64::from(note_block.z()) + 0.5,
+        );
+        let item = ItemEntity::new(
+            &vanilla_entities::ITEM,
+            next_entity_id(),
+            spawn_pos,
+            Arc::downgrade(world),
+        );
+        item.set_item(stack.clone());
+        // Vanilla `Allay.dropItemOnBlock` hands the stack to the player that is
+        // standing next to the note block, so the drop cannot be re-picked
+        // immediately by the allay itself.
+        item.set_pickup_delay(10);
+        if world.try_add_entity(Arc::new(item)).is_err() {
+            return false;
+        }
+        self.play_sound(&sound_events::ENTITY_ALLAY_ITEM_THROWN, 1.0, 1.0);
+        // Vanilla fires `allay_drop_item_on_block` on the allay's owner. Steel
+        // does not model allay ownership yet, so the criterion goes to the
+        // nearest player — the one standing at the note block.
+        let reach = WorldAabb::new(
+            spawn_pos.x - ALLAY_DELIVERY_RADIUS,
+            spawn_pos.y - ALLAY_DELIVERY_RADIUS,
+            spawn_pos.z - ALLAY_DELIVERY_RADIUS,
+            spawn_pos.x + ALLAY_DELIVERY_RADIUS,
+            spawn_pos.y + ALLAY_DELIVERY_RADIUS,
+            spawn_pos.z + ALLAY_DELIVERY_RADIUS,
+        );
+        if let Some(player) = world
+            .get_entities_in_aabb(&reach)
+            .into_iter()
+            .find_map(|entity| world.players.get_by_entity_id(entity.id()))
+        {
+            player.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::ALLAY_DROP_ITEM_ON_BLOCK,
+                &crate::player::advancement::predicate::TriggerContext::item(&stack.item().key),
+            );
+        }
+        true
     }
 }
 
