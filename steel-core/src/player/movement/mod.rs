@@ -1057,7 +1057,7 @@ impl Player {
 
     /// Returns the mounted mob this player controls, mirroring vanilla
     /// `Mob.getControllingPassenger` from the passenger side.
-    fn controlling_vehicle_mob(&self) -> Option<&dyn crate::entity::mob::Mob> {
+    fn controlling_vehicle_mob(&self) -> Option<&dyn crate::entity::Mob> {
         let vehicle = self.vehicle()?;
         if vehicle
             .controlling_passenger()

@@ -74,48 +74,6 @@ impl MinecartEntity {
     }
 }
 
-impl VehicleEntity for MinecartEntity {
-    fn hurt_time(&self) -> i32 {
-        *self.entity_data.lock().vehicle_entity().id_hurt.get()
-    }
-
-    fn set_hurt_time(&self, value: i32) {
-        self.entity_data
-            .lock()
-            .vehicle_entity_mut()
-            .id_hurt
-            .set(value);
-    }
-
-    fn hurt_dir(&self) -> i32 {
-        *self.entity_data.lock().vehicle_entity().id_hurtdir.get()
-    }
-
-    fn set_hurt_dir(&self, value: i32) {
-        self.entity_data
-            .lock()
-            .vehicle_entity_mut()
-            .id_hurtdir
-            .set(value);
-    }
-
-    fn damage(&self) -> f32 {
-        *self.entity_data.lock().vehicle_entity().id_damage.get()
-    }
-
-    fn set_damage(&self, value: f32) {
-        self.entity_data
-            .lock()
-            .vehicle_entity_mut()
-            .id_damage
-            .set(value);
-    }
-
-    fn vehicle_drop_item(&self) -> ItemRef {
-        &vanilla_items::MINECART
-    }
-}
-
 impl AbstractMinecart for MinecartEntity {
     fn minecart_base(&self) -> &AbstractMinecartBase {
         &self.minecart_base
