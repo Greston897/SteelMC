@@ -51,7 +51,7 @@ fn scoreboard_of<'a>(
 }
 
 fn create_stopwatch(
-    context: SteelCommandContext<'_, CommandSource>,
+    context: &SteelCommandContext<CommandSource>,
 ) -> Result<i32, CommandSyntaxError> {
     let name = context.string("name")?.to_owned();
     let scoreboard = scoreboard_of(context.source())?;
@@ -68,7 +68,7 @@ fn create_stopwatch(
 }
 
 fn remove_stopwatch(
-    context: SteelCommandContext<'_, CommandSource>,
+    context: &SteelCommandContext<CommandSource>,
 ) -> Result<i32, CommandSyntaxError> {
     let name = context.string("name")?.to_owned();
     let scoreboard = scoreboard_of(context.source())?;
@@ -85,7 +85,7 @@ fn remove_stopwatch(
 }
 
 fn list_stopwatches(
-    context: SteelCommandContext<'_, CommandSource>,
+    context: &SteelCommandContext<CommandSource>,
 ) -> Result<i32, CommandSyntaxError> {
     let scoreboard = scoreboard_of(context.source())?;
     let names = scoreboard.stopwatch_names();
