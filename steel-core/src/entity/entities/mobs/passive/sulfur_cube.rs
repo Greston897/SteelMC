@@ -303,10 +303,6 @@ impl Mob for SulfurCubeEntity {
         Animal::custom_server_ai_step_animal(self);
     }
 
-    fn ambient_sound(&self) -> Option<SoundEventRef> {
-        Some(&sound_events::ENTITY_SULFUR_CUBE_AMBIENT)
-    }
-
     fn mob_flags(&self) -> i8 {
         *self.entity_data.lock().mob().mob_flags.get()
     }

@@ -13,6 +13,7 @@ use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::MinecartFurnaceEntityData;
 use steel_utils::locks::SyncMutex;
+use steel_utils::BlockStateId;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};

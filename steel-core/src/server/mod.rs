@@ -792,6 +792,7 @@ impl Server {
                 generator_output.dimension_type,
                 world_seed,
                 WorldConfig {
+                    server: std::sync::OnceLock::new(),
                     damage_history: Arc::clone(&damage_history),
                     game_time_source,
                     storage: storage_output.storage,

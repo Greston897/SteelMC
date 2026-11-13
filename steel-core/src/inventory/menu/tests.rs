@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{
     behavior::init_behaviors,
-    block_entity::entities::crafter::CrafterBlockEntity,
+    block_entity::entities::CrafterBlockEntity,
     block_entity::init_block_entities,
     chunk::{Chunk, status::ChunkStatus},
     entity::{Entity as _, entities::ItemEntity},

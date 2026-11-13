@@ -55,59 +55,59 @@ fn dispense_projectile(stack: &ItemStack, world: &Arc<World>, pos: DVec3) -> Opt
     let weak = Arc::downgrade(world);
     let id = next_entity_id();
 
-    let entity: SharedEntity = if kind == &vanilla_items::ARROW {
+    let entity: SharedEntity = if kind == &*vanilla_items::ARROW {
         let arrow = Arc::new(ArrowEntity::new(&vanilla_entities::ARROW, id, pos, weak));
         arrow.set_arrow_item(stack.copy_with_count(1));
         arrow
-    } else if kind == &vanilla_items::TIPPED_ARROW {
+    } else if kind == &*vanilla_items::TIPPED_ARROW {
         let arrow = Arc::new(ArrowEntity::new(&vanilla_entities::ARROW, id, pos, weak));
         arrow.set_arrow_item(stack.copy_with_count(1));
         arrow
-    } else if kind == &vanilla_items::SPECTRAL_ARROW {
+    } else if kind == &*vanilla_items::SPECTRAL_ARROW {
         Arc::new(SpectralArrowEntity::new(
             &vanilla_entities::SPECTRAL_ARROW,
             id,
             pos,
             weak,
         ))
-    } else if kind == &vanilla_items::SPLASH_POTION {
+    } else if kind == &*vanilla_items::SPLASH_POTION {
         Arc::new(SplashPotionEntity::new(
             &vanilla_entities::SPLASH_POTION,
             id,
             pos,
             weak,
         ))
-    } else if kind == &vanilla_items::LINGERING_POTION {
+    } else if kind == &*vanilla_items::LINGERING_POTION {
         Arc::new(LingeringPotionEntity::new(
             &vanilla_entities::LINGERING_POTION,
             id,
             pos,
             weak,
         ))
-    } else if kind == &vanilla_items::EXPERIENCE_BOTTLE {
+    } else if kind == &*vanilla_items::EXPERIENCE_BOTTLE {
         Arc::new(ExperienceBottleEntity::new(
             &vanilla_entities::EXPERIENCE_BOTTLE,
             id,
             pos,
             weak,
         ))
-    } else if kind == &vanilla_items::SNOWBALL {
+    } else if kind == &*vanilla_items::SNOWBALL {
         Arc::new(SnowballEntity::new(
             &vanilla_entities::SNOWBALL,
             id,
             pos,
             weak,
         ))
-    } else if kind == &vanilla_items::EGG {
+    } else if kind == &*vanilla_items::EGG {
         Arc::new(ThrownEggEntity::new(&vanilla_entities::EGG, id, pos, weak))
-    } else if kind == &vanilla_items::ENDER_PEARL {
+    } else if kind == &*vanilla_items::ENDER_PEARL {
         Arc::new(EnderPearlEntity::new(
             &vanilla_entities::ENDER_PEARL,
             id,
             pos,
             weak,
         ))
-    } else if kind == &vanilla_items::FIREWORK_ROCKET {
+    } else if kind == &*vanilla_items::FIREWORK_ROCKET {
         Arc::new(FireworkRocketEntity::new(
             &vanilla_entities::FIREWORK_ROCKET,
             id,

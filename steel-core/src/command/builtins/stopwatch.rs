@@ -35,9 +35,13 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         .then(literal("list").executes(list_stopwatches))
 }
 
-fn scoreboard_of(
-    source: CommandSource,
-) -> Result<&Scoreboard, CommandSyntaxError> {
+/// Resolves the domain's scoreboard for the duration of one command.
+///
+/// The board lives on the server for the whole session, so the borrow can be
+/// tied to `source`'s server reference rather than to `source` itself.
+fn scoreboard_of<'a>(
+    source: &'a CommandSource,
+) -> Result<&'a Scoreboard, CommandSyntaxError> {
     let domain = source.world().domain().to_owned();
     source
         .server()

@@ -14,6 +14,7 @@ use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
 use steel_utils::locks::SyncMutex;
+use steel_utils::BlockStateId;
 use steel_utils::types::InteractionHand;
 use steel_utils::{DowncastType, DowncastTypeKey, nbt::NbtValueInput as _};
 

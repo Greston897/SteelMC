@@ -15,6 +15,7 @@ use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::MinecartCommandBlockEntityData;
 use steel_utils::locks::SyncMutex;
+use steel_utils::BlockStateId;
 use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
 use text_components::TextComponent;

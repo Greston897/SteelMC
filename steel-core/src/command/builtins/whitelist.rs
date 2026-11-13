@@ -111,7 +111,7 @@ async fn run_operation(
     let targets = argument.resolve(source).await?;
     let whitelist = source.server().whitelist.clone();
 
-    let mut changed = 0;
+    let mut changed: i32 = 0;
     for target in &targets {
         let touched = match action {
             WhitelistAction::Add => !whitelist.add(target.uuid, target.name.clone()),

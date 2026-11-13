@@ -11,7 +11,7 @@ use steel_registry::blocks::properties::{
 use steel_registry::vanilla_block_entity_types;
 use steel_registry::{sound_events, vanilla_blocks, vanilla_items};
 use steel_utils::types::UpdateFlags;
-use steel_utils::{BlockPos, BlockStateId};
+use steel_utils::{Downcast as _, BlockPos, BlockStateId};
 
 use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
 use crate::block_entity::SharedBlockEntity;
