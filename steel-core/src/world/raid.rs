@@ -14,8 +14,7 @@ use steel_utils::locks::SyncMutex;
 use serde::{Deserialize, Serialize};
 use steel_registry::vanilla_mob_effects;
 
-use crate::entity::living_base::MobEffectInstance;
-use crate::entity::{Entity as _, LivingEntity as _};
+use crate::entity::{Entity as _, LivingEntity as _, MobEffectInstance};
 use crate::poi::OccupationStatus;
 use crate::world::World;
 

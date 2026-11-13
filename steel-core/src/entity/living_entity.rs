@@ -3675,5 +3675,5 @@ pub fn create_wither_rose(dead: &dyn Entity, source: &DamageSource) {
     {
         return;
     }
-    LevelAccessor::set_block_state(&world, pos, rose, UpdateFlags::UPDATE_ALL);
+    crate::world::LevelAccessor::set_block_state(&world, pos, rose, UpdateFlags::UPDATE_ALL);
 }

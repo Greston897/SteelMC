@@ -10,6 +10,7 @@ use std::iter::empty;
 use std::sync::Weak;
 
 use glam::DVec3;
+use rand::Rng;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
@@ -64,7 +65,7 @@ impl ElderGuardianEntity {
         level: &dyn LevelReader,
         spawn_reason: EntitySpawnReason,
         pos: BlockPos,
-        random: &mut dyn Rng,
+        _random: &mut dyn Rng,
     ) -> bool {
         is_water_fluid(level.get_block_state(pos).get_fluid_state().fluid_id)
             && is_water_fluid(
@@ -74,10 +75,6 @@ impl ElderGuardianEntity {
                     .fluid_id,
             )
             && <Self as Mob>::check_mob_spawn_rules(entity_type, level, spawn_reason, pos)
-            && {
-                let _ = random;
-                true
-            }
     }
 
     /// Creates a new entity of this vanilla type.
