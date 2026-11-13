@@ -266,7 +266,10 @@ impl ZombieVillagerEntity {
             return;
         };
         if state.remaining_ticks > 1 {
-            self.conversion.lock().as_mut().unwrap().remaining_ticks -= 1;
+            let mut conversion = self.conversion.lock();
+            if let Some(active) = conversion.as_mut() {
+                active.remaining_ticks -= 1;
+            }
             return;
         }
         self.finish_conversion(&state);
@@ -281,18 +284,23 @@ impl ZombieVillagerEntity {
         let starter = state
             .starter
             .and_then(|uuid| self.level().and_then(|world| world.players.get_by_uuid(&uuid)).cloned());
+        // Vanilla `ZombieVillager.finishConversion` copies the villager data and
+        // the gossip onto the new villager; Steel carries the profession/type/level.
+        let copy_villager_data = |mob: &dyn Mob| {
+            if let Some(villager) = mob
+                .as_entity_event_source()
+                .downcast_ref::<VillagerEntity>()
+            {
+                villager.set_villager_data(villager_data);
+            }
+        };
         let converted = crate::entity::conversion::convert_to(
             self,
             &vanilla_entities::VILLAGER,
             crate::entity::conversion::ConversionParams::single(true, true),
-            Some(&|mob| {
-                if let Some(villager) =
-                    mob.as_entity_event_source().downcast_ref::<VillagerEntity>()
-                {
-                    villager.set_villager_data(villager_data);
-                }
-            }),
+            Some(&copy_villager_data),
         );
+        *self.conversion.lock() = None;
         if converted.is_none() {
             return;
         }
