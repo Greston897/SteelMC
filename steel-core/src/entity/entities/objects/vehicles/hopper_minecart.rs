@@ -21,7 +21,7 @@ use steel_utils::{DowncastType, DowncastTypeKey, nbt::NbtValueInput as _};
 use super::abstract_minecart::{AbstractMinecart, AbstractMinecartBase};
 use crate::behavior::InteractionResult;
 use crate::entity::{Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, SharedEntity};
-use crate::inventory::container::simple::SimpleContainer;
+use crate::inventory::container::SimpleContainer;
 use crate::inventory::container::{Container, load_all_items};
 use crate::player::Player;
 use crate::world::World;
