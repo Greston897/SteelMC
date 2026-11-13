@@ -1,6 +1,8 @@
 //! Vanilla `net.minecraft.world.entity.monster.Shulker`.
 //!
-//! Shell-dwelling mob; bullet attacks and teleporting are not implemented.
+//! Shell-dwelling mob that peeks out of its shell and fires homing
+//! `ShulkerBullet`s at the target it can see. Teleporting while closed (vanilla
+//! `Shulker.tick`'s "search for a new spot") is documented as missing.
 //!
 //! The AI is the shared `Monster` skeleton (float, melee attack, random stroll,
 //! look goals) plus the standard hostile target selector; attributes and
@@ -26,15 +28,19 @@ use crate::entity::ai::goal::{
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::entity::entities::objects::projectiles::ShulkerBulletEntity;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
-    SharedEntity, sync_dirty_mob_effects,
+    Projectile, SharedEntity, next_entity_id, sync_dirty_mob_effects,
 };
 use crate::physics::MoveResult;
 use crate::world::World;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
+
+/// Vanilla `ShulkerBullet` travels at `0.5` blocks per tick along its aim vector.
+const SHULKER_BULLET_SPEED: f64 = 0.5;
 
 /// Vanilla `net.minecraft.world.entity.monster.Silverfish`.
 #[entity_behavior(class = "Shulker")]
@@ -250,6 +256,33 @@ impl Mob for ShulkerEntity {
 
     fn set_mob_flags(&self, flags: i8) {
         self.entity_data.lock().mob_mut().mob_flags.set(flags);
+    }
+
+    fn perform_ranged_attack(
+        &self,
+        self_entity: &SharedEntity,
+        target: &SharedEntity,
+        _power: f32,
+    ) {
+        let Some(world) = self.level() else {
+            return;
+        };
+        // Vanilla spawns the bullet at the shulker's peek height, halfway up its
+        // one-block shell centre.
+        let start = self.position().add(DVec3::new(0.0, 0.5, 0.0));
+        let bullet = ShulkerBulletEntity::new(
+            &vanilla_entities::SHULKER_BULLET,
+            next_entity_id(),
+            start,
+            Arc::downgrade(&world),
+        );
+        let bullet = Arc::new(bullet);
+        bullet.set_owner_entity(Some(self_entity));
+        let direction = (target.position().add(DVec3::new(0.0, f64::from(target.base().dimensions().height) * 0.5, 0.0)) - start).normalize_or_zero();
+        bullet.set_velocity(direction * SHULKER_BULLET_SPEED);
+        if world.try_add_entity(Arc::clone(&bullet) as SharedEntity).is_ok() {
+            self.play_sound(&sound_events::ENTITY_SHULKER_SHOOT, 2.0, 1.0);
+        }
     }
 }
 

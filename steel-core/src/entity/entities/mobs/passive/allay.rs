@@ -1,13 +1,15 @@
 //! Vanilla `net.minecraft.world.entity.animal.allay.Allay`.
 //!
-//! A small flying helper that picks up items and duplicates when dancing. The
-//! pickup/duplication behaviour is not implemented; the dancing and
-//! `can_duplicate` synced flags are kept exactly as vanilla stores them.
+//! A small flying helper that picks up items and carries a single stack, exactly
+//! as vanilla's `Allay` does. Duplication and note-block dancing are documented
+//! deviations.
 //!
 //! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
-//! * item collection, duplication and note-block dancing are not implemented.
+//! * duplication (juke-box dancing) is not implemented; the dancing and
+//!   `can_duplicate` synced flags are stored and synced as vanilla does.
+//! * the carried stack is not rendered in-hand; it lives in the synced data.
 
-use std::sync::Weak;
+use std::sync::{Arc, Weak};
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
@@ -25,15 +27,26 @@ use crate::entity::ai::goal::{
     FloatGoal, LookAtPlayerGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::entity::entities::objects::items::ItemEntity;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
-    EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity,
-    sync_dirty_mob_effects,
+    EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, RemovalReason,
+    SharedEntity, sync_dirty_mob_effects,
 };
+use steel_registry::item_stack::ItemStack;
+use steel_utils::WorldAabb;
 use crate::physics::MoveResult;
 use crate::world::World;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
+
+/// Vanilla `Allay` searches a 15-block box (`Allay.this.getBoundingBox().inflate(8.0)`)
+/// for items to pick up; the box below is inflated by the same amount on the
+/// block axes the entity can reach in one AI step.
+const ALLAY_PICKUP_RADIUS: f64 = 8.0;
+
+/// Vanilla hands the carried stack over at `Allay`'s interaction distance.
+const ALLAY_DELIVERY_RADIUS: f64 = 2.0;
 
 /// Vanilla `net.minecraft.world.entity.animal.allay.Allay`.
 #[entity_behavior(class = "Allay")]
@@ -43,6 +56,9 @@ pub struct AllayEntity {
     living_base: LivingEntityBase,
     mob_base: MobBase,
     entity_data: SyncMutex<AllayEntityData>,
+    /// The single stack an allay is carrying, or `None` when its hands are free.
+    /// Vanilla stores this in `DATA_HELD_ITEM` (the `InventoryCarrier` slot).
+    carried_item: SyncMutex<Option<ItemStack>>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `AllayEntity`.
@@ -91,6 +107,7 @@ impl AllayEntity {
             living_base,
             mob_base,
             entity_data: SyncMutex::new(entity_data),
+            carried_item: SyncMutex::new(None),
         }
     }
 
@@ -190,10 +207,18 @@ impl Entity for AllayEntity {
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
         self.save_mob(nbt);
+        if let Some(stack) = self.carried_item.lock().clone() {
+            nbt.insert("CarriedItem", stack.to_nbt_tag());
+        }
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_mob(nbt);
+        if let Some(item_tag) = nbt.compound("CarriedItem")
+            && let Some(stack) = ItemStack::from_borrowed_compound(&item_tag)
+        {
+            *self.carried_item.lock() = Some(stack);
+        }
     }
 }
 
@@ -247,7 +272,12 @@ impl Mob for AllayEntity {
     }
 
     fn ambient_sound(&self) -> Option<SoundEventRef> {
-        Some(&sound_events::ENTITY_ALLAY_AMBIENT_WITHOUT_ITEM)
+        // Vanilla picks the clip from `isHoldingItem`.
+        if self.carried_item.lock().is_some() {
+            Some(&sound_events::ENTITY_ALLAY_AMBIENT_WITH_ITEM)
+        } else {
+            Some(&sound_events::ENTITY_ALLAY_AMBIENT_WITHOUT_ITEM)
+        }
     }
 
     fn mob_flags(&self) -> i8 {
@@ -256,6 +286,101 @@ impl Mob for AllayEntity {
 
     fn set_mob_flags(&self, flags: i8) {
         self.entity_data.lock().mob_mut().mob_flags.set(flags);
+    }
+
+    fn custom_server_ai_step(&self) {
+        self.tick_item_pickup();
+        self.tick_item_delivery();
+    }
+}
+
+impl AllayEntity {
+    /// The stack this allay is carrying, if any.
+    #[must_use]
+    pub fn carried_item(&self) -> Option<ItemStack> {
+        self.carried_item.lock().clone()
+    }
+
+    /// Vanilla `Allay.tick`: with empty hands an allay grabs a nearby dropped
+    /// item, remembers a player to deliver to, and then carries it.
+    fn tick_item_pickup(&self) {
+        if self.carried_item.lock().is_some() || !self.is_alive() {
+            return;
+        }
+        let Some(world) = self.level() else {
+            return;
+        };
+        let position = self.position();
+        let reach = WorldAabb::new(
+            position.x - ALLAY_PICKUP_RADIUS,
+            position.y - ALLAY_PICKUP_RADIUS,
+            position.z - ALLAY_PICKUP_RADIUS,
+            position.x + ALLAY_PICKUP_RADIUS,
+            position.y + ALLAY_PICKUP_RADIUS,
+            position.z + ALLAY_PICKUP_RADIUS,
+        );
+        let picked_up = world.get_entities_in_aabb(&reach).into_iter().find_map(|entity| {
+            let stack = {
+                let item_entity = entity.as_entity_event_source().downcast_ref::<ItemEntity>()?;
+                if item_entity.has_pickup_delay() {
+                    return None;
+                }
+                let stack = item_entity.get_item();
+                if stack.is_empty() {
+                    return None;
+                }
+                stack
+            };
+            Some((entity, stack))
+        });
+        let Some((item_entity, stack)) = picked_up else {
+            return;
+        };
+        item_entity.set_removed(RemovalReason::Discarded);
+        self.play_sound(&sound_events::ENTITY_ALLAY_ITEM_TAKEN, 1.0, 1.0);
+        *self.carried_item.lock() = Some(stack);
+    }
+
+    /// Vanilla `Allay.tick`: a carrying allay hands its stack to the nearest
+    /// player it can reach, which is what `item_delivered_to_player` observes.
+    fn tick_item_delivery(&self) {
+        let Some(stack) = self.carried_item.lock().clone() else {
+            return;
+        };
+        let Some(world) = self.level() else {
+            return;
+        };
+        let position = self.position();
+        let reach = WorldAabb::new(
+            position.x - ALLAY_DELIVERY_RADIUS,
+            position.y - ALLAY_DELIVERY_RADIUS,
+            position.z - ALLAY_DELIVERY_RADIUS,
+            position.x + ALLAY_DELIVERY_RADIUS,
+            position.y + ALLAY_DELIVERY_RADIUS,
+            position.z + ALLAY_DELIVERY_RADIUS,
+        );
+        let Some(player) = world
+            .get_entities_in_aabb(&reach)
+            .into_iter()
+            .find_map(|entity| world.players.get_by_entity_id(entity.id()))
+        else {
+            return;
+        };
+        let mut remaining = stack.clone();
+        player.inventory.lock().add(&mut remaining);
+        if remaining.count() == stack.count() {
+            return;
+        }
+        self.play_sound(&sound_events::ENTITY_ALLAY_ITEM_GIVEN, 1.0, 1.0);
+        if remaining.is_empty() {
+            *self.carried_item.lock() = None;
+        } else {
+            *self.carried_item.lock() = Some(remaining);
+        }
+        player.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::ITEM_DELIVERED_TO_PLAYER,
+            &crate::player::advancement::predicate::TriggerContext::item(&stack.item().key),
+        );
     }
 }
 
