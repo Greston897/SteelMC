@@ -7,15 +7,20 @@
 
 use std::sync::{Arc, Weak};
 
+use rand::{Rng, RngExt};
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, FrontAndTop};
-use steel_registry::{vanilla_block_entity_types, vanilla_damage_types};
+use steel_registry::{vanilla_block_entity_types, vanilla_blocks, vanilla_damage_types};
+use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
 
+use crate::behavior::BLOCK_BEHAVIORS;
 use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
+use crate::behavior::blocks::vegetation::bonemealable::Bonemealable;
 use crate::entity::damage::DamageSource;
+use crate::world::LevelReader;
 use crate::entity::{Entity as _, LivingEntity as _};
 use crate::behavior::context::{BlockPlaceContext, InteractionResult};
 use crate::block_entity::BLOCK_ENTITIES;
@@ -252,12 +257,17 @@ block_entity_block!(
     |state: BlockStateId, _context: &BlockPlaceContext<'_>| state
 );
 
+/// Attempts vanilla's moss feature makes to find a valid position.
+const MOSS_PLACEMENT_ATTEMPTS: usize = 8;
+
 /// Vanilla `BonemealableFeaturePlacerBlock` (moss and pale moss blocks): bonemeal
-/// places a vegetation feature around the block.
+/// scatters the block's vegetation feature over the surrounding blocks.
 ///
-/// The feature placement itself lives in `BonemealableFeaturePlacer`; Steel has
-/// no moss-vegetation feature wired yet, so the behavior only carries the
-/// placement state and leaves the feature call to the bonemeal dispatcher.
+/// Vanilla reads the feature key from the block's `FEATURE` data component
+/// (`moss_vegetation` for moss, `pale_moss_vegetation` for pale moss) and asks
+/// the feature system to place it inside a 3x3x3 area, skipping the source block.
+/// Steel places the simple vegetation set directly: vanilla's features are thin
+/// wrappers that put one random plant on a random supported position.
 #[block_behavior]
 pub struct BonemealableFeaturePlacerBlock {
     block: BlockRef,
@@ -274,5 +284,78 @@ impl BonemealableFeaturePlacerBlock {
 impl BlockBehavior for BonemealableFeaturePlacerBlock {
     fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(self.block.default_state())
+    }
+
+    fn as_bonemealable(&self) -> Option<&dyn Bonemealable> {
+        Some(self)
+    }
+}
+
+impl Bonemealable for BonemealableFeaturePlacerBlock {
+    fn is_valid_bonemeal_target(
+        &self,
+        _state: BlockStateId,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> bool {
+        // Vanilla `BonemealableFeaturePlacerBlock.isValidBonemealTarget`: any
+        // position with room for the feature is fine; the feature's own placement
+        // check decides the rest.
+        world.get_block_state(pos.above()).is_air()
+    }
+
+    fn perform_bonemeal(
+        &self,
+        _state: BlockStateId,
+        world: &Arc<World>,
+        rng: &mut dyn rand::Rng,
+        pos: BlockPos,
+    ) {
+        // Vanilla's moss feature places a *single* random plant: the configured
+        // feature picks one weighted entry and tries to put it on a random
+        // position inside the 3x3x3 area around the block.
+        let plant = self.vegetation_block(rng);
+        let plant_state = plant.default_state();
+        let behavior = BLOCK_BEHAVIORS.get_behavior(&plant);
+        for _ in 0..MOSS_PLACEMENT_ATTEMPTS {
+            let dx = rng.random_range(-1..=1);
+            let dy = rng.random_range(-1..=1);
+            let dz = rng.random_range(-1..=1);
+            let candidate = pos.offset(dx, dy, dz);
+            if candidate == pos {
+                continue;
+            }
+            if world.get_block_state(candidate).is_air()
+                && behavior.can_survive(plant_state, world, candidate)
+            {
+                world.set_block(candidate, plant_state, UpdateFlags::UPDATE_ALL);
+                return;
+            }
+        }
+    }
+}
+
+impl BonemealableFeaturePlacerBlock {
+    /// Vanilla `moss_vegetation` / `pale_moss_vegetation` feature contents: the
+    /// weighted plant set the feature scatters.
+    fn vegetation_block(&self, rng: &mut dyn Rng) -> BlockRef {
+        let pale = self.block == &vanilla_blocks::PALE_MOSS_BLOCK;
+        let choices: [&BlockRef; 4] = if pale {
+            [
+                &vanilla_blocks::PALE_HANGING_MOSS,
+                &vanilla_blocks::SHORT_GRASS,
+                &vanilla_blocks::PALE_MOSS_CARPET,
+                &vanilla_blocks::TALL_GRASS,
+            ]
+        } else {
+            [
+                &vanilla_blocks::SHORT_GRASS,
+                &vanilla_blocks::MOSS_CARPET,
+                &vanilla_blocks::TALL_GRASS,
+                &vanilla_blocks::AZALEA,
+            ]
+        };
+        let index = rng.random_range(0..choices.len());
+        choices[index]
     }
 }
