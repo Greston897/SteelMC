@@ -7,14 +7,17 @@
 
 use std::sync::{Arc, Weak};
 
+use glam::DVec3;
 use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
 use simdnbt::owned::NbtCompound;
 use steel_registry::block_entity_type::BlockEntityTypeRef;
+use steel_registry::game_events::GameEventRef;
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::world::World;
+use crate::world::game_event::{GameEventContext, GameEventListener, SharedGameEventListener};
 
 /// Sculk sensor and calibrated sculk sensor block entity.
 pub struct SculkSensorBlockEntity {
@@ -70,9 +73,69 @@ impl SculkSensorBlockEntity {
     }
 }
 
+/// Vanilla `SculkSensorBlockEntity.VibrationListener` as far as Steel needs it:
+/// the sensor hears a vibration, records its frequency and the entity that
+/// caused it fires `avoid_vibration`, which is vanilla
+/// `CriteriaTriggers.AVOID_VIBRATION` ("walk near a sculk sensor or shrieker
+/// while sneaking").
+struct SculkSensorListener {
+    position: DVec3,
+}
+
+impl GameEventListener for SculkSensorListener {
+    fn listener_pos(&self) -> Option<DVec3> {
+        Some(self.position)
+    }
+
+    fn listener_radius(&self) -> i32 {
+        SCULK_SENSOR_RADIUS
+    }
+
+    fn handle_game_event(
+        &self,
+        _world: &Arc<World>,
+        event: GameEventRef,
+        context: &GameEventContext<'_>,
+        _source_pos: DVec3,
+    ) -> bool {
+        // Vanilla records the vibration frequency for the comparator; Steel's
+        // game events do not carry a frequency yet, so only the criterion fires.
+        let _ = event;
+        // Vanilla credits the *source entity* of the vibration, so a player who
+        // sneaks past a sensor earns the criterion even though the sensor heard
+        // them.
+        if let Some(source) = context.source_entity()
+            && let Some(player) = source.as_player()
+        {
+            player.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::AVOID_VIBRATION,
+                &crate::player::advancement::predicate::TriggerContext::at(
+                    &player.get_world(),
+                    player.block_position(),
+                ),
+            );
+        }
+        true
+    }
+}
+
+/// Vanilla `SculkSensorBlockEntity.VibrationListener` radius.
+const SCULK_SENSOR_RADIUS: i32 = 8;
+
 impl BlockEntity for SculkSensorBlockEntity {
     fn base(&self) -> &BlockEntityBase {
         &self.base
+    }
+
+    fn game_event_listener(&self) -> Option<SharedGameEventListener> {
+        let position = self.base.pos();
+        Some(Arc::new(SculkSensorListener {
+            position: DVec3::new(
+                f64::from(position.x()),
+                f64::from(position.y()),
+                f64::from(position.z()),
+            ),
+        }))
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
