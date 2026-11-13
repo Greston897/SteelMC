@@ -11,6 +11,7 @@
 //! Unknown keys are ignored rather than treated as "no match", matching
 //! vanilla's lenient deserialization of predicates.
 
+use glam::DVec3;
 use serde_json::Value;
 use steel_registry::item_stack::ItemStack;
 use steel_utils::Identifier;
@@ -36,6 +37,12 @@ pub struct TriggerContext {
     pub player_sneaking: Option<bool>,
     /// Whether the item was the main hand, for `item`/`tool` predicates.
     pub main_hand: Option<bool>,
+    /// Dimension the player left, for `changed_dimension`.
+    pub from_dimension: Option<Identifier>,
+    /// Dimension the player entered, for `changed_dimension`.
+    pub to_dimension: Option<Identifier>,
+    /// Distance travelled, for `nether_travel` and `levitation` distances.
+    pub distance: Option<f64>,
 }
 
 impl TriggerContext {
@@ -70,12 +77,34 @@ impl TriggerContext {
         }
     }
 
+    /// A context for `changed_dimension`, carrying both dimension keys.
+    ///
+    /// Vanilla `ChangeDimensionTrigger.TriggerInstance` matches on `from`/`to`,
+    /// usually to tell the Nether apart from the End.
+    #[must_use]
+    pub fn dimension(from: &Identifier, to: &Identifier) -> Self {
+        Self {
+            from_dimension: Some(from.clone()),
+            to_dimension: Some(to.clone()),
+            ..Self::default()
+        }
+    }
+
+    /// A context for `nether_travel`, carrying the travelled distance.
+    #[must_use]
+    pub fn nether_travel(position: DVec3) -> Self {
+        Self {
+            distance: Some(position.length()),
+            ..Self::default()
+        }
+    }
+
     /// A context for a position-only trigger such as `location`.
     #[must_use]
-    pub fn at(world: &World, pos: steel_utils::BlockPos) -> Self {
+    pub fn at(world: &World, pos: DVec3) -> Self {
         let _ = world;
         Self {
-            position: Some((f64::from(pos.x()), f64::from(pos.y()), f64::from(pos.z()))),
+            position: Some((pos.x, pos.y, pos.z)),
             ..Self::default()
         }
     }
@@ -125,10 +154,52 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
         // `player` sub-predicate: Steel models sneaking, the only flag the
         // vanilla advancement data in 26.3 relies on for these triggers.
         "player" => matches_player(expected, context.player_sneaking),
+        // `changed_dimension`: `{"from": "minecraft:overworld", "to": "minecraft:the_nether"}`.
+        "from" => matches_dimension(expected, context.from_dimension.as_ref()),
+        "to" => matches_dimension(expected, context.to_dimension.as_ref()),
+        // `nether_travel` and `levitation` measure how far the player moved.
+        "distance" => matches_distance(expected, context.distance),
         // Nested conditions (e.g. `effects_changed`), evaluated recursively.
         "conditions" => true,
         // Unknown predicates are ignored: vanilla deserialization is lenient and
         // an unrecognised key would be a data-pack field Steel does not model.
+        _ => true,
+    }
+}
+
+/// Vanilla dimension predicate: a plain key or `{"dimension": "..."}`.
+fn matches_dimension(expected: &Value, actual: Option<&Identifier>) -> bool {
+    let Some(actual) = actual else {
+        return is_unconstrained(expected);
+    };
+    match expected {
+        Value::String(value) => id_matches(value, actual),
+        Value::Object(map) => map
+            .get("dimension")
+            .is_none_or(|value| contains_id(value, actual)),
+        _ => true,
+    }
+}
+
+/// Vanilla `DistancePredicate`: bare number, `{"min": ..}`, or the full
+/// `horizontal`/`x`/`y`/`z`/`absolute` breakdown.
+///
+/// Only the `absolute` (and bare) form is modelled, which is what the vanilla
+/// `nether_travel` advancement uses.
+fn matches_distance(expected: &Value, distance: Option<f64>) -> bool {
+    let Some(distance) = distance else {
+        return true;
+    };
+    match expected {
+        Value::Number(_) => matches_number_range(expected, distance),
+        Value::Object(map) => {
+            if map.is_empty() {
+                return true;
+            }
+            map.get("absolute")
+                .or_else(|| map.get("horizontal"))
+                .is_none_or(|range| matches_number_range(range, distance))
+        }
         _ => true,
     }
 }

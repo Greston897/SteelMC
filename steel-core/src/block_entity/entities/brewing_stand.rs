@@ -21,6 +21,7 @@ use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerRef, SharedContainer};
 use crate::world::World;
+use steel_registry::vanilla_criteria_triggers;
 
 /// Number of slots in a brewing stand (three potions plus fuel).
 pub const BREWING_STAND_SLOTS: usize = 4;
@@ -34,6 +35,10 @@ pub const POTION_SLOTS: usize = 3;
 /// Ticks one brew takes in vanilla (`BREWING_TIME = 400` ticks is the whole
 /// fuel burn; one operation is 20 ticks).
 pub const BREW_TIME: i32 = 20;
+
+/// Squared vanilla radius (five blocks) within which a brew grants the
+/// `brewed_potion` advancement.
+const BREW_TRIGGER_RADIUS_SQUARED: f64 = 25.0;
 
 /// Brewing stand state persisted alongside the inventory.
 struct BrewingState {
@@ -247,6 +252,17 @@ impl BrewingStandBlockEntity {
             }
             drop(ingredient);
             world.level_event(level_events::SOUND_BREWING_STAND_BREW, pos, 0, None);
+            // Vanilla `BrewingStandBlockEntity.doTick` triggers `brewed_potion` for
+            // every player standing within five blocks of the stand;
+            // `nether/brew_potion` and `nether/all_potions` hang off it.
+            let (center_x, center_y, center_z) = pos.get_center();
+            let center = glam::DVec3::new(center_x, center_y, center_z);
+            world.players.iter_players(|_uuid, player| {
+                if player.position().distance_squared(center) <= BREW_TRIGGER_RADIUS_SQUARED {
+                    player.trigger_advancement(&vanilla_criteria_triggers::BREWED_POTION);
+                }
+                true
+            });
         }
     }
 }

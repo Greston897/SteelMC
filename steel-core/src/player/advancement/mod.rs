@@ -22,6 +22,7 @@ use steel_protocol::packets::game::CUpdateAdvancements;
 use steel_registry::REGISTRY;
 use steel_registry::advancement::registry::{AdvancementNodeRef, AdvancementRef};
 use steel_registry::advancement::{AdvancementProgressData, Criteria};
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::vanilla_game_rules::SHOW_ADVANCEMENT_MESSAGES;
 use steel_utils::Identifier;
 
@@ -38,6 +39,10 @@ pub struct PlayerAdvancement {
     progress_changed: FxHashSet<AdvancementRef>,
     /// represent the las selected advancement tab
     pub last_selected_tab: Option<AdvancementRef>,
+    /// Vanilla `PlayerAdvancements` keeps a `PlayerListeners` entry for
+    /// `location`. Vanilla registers all of them, so `location` is special-cased
+    /// here to the criteria that actually carry a location predicate.
+    location_listeners: Vec<(AdvancementRef, String)>,
 }
 
 impl Default for PlayerAdvancement {
@@ -49,6 +54,7 @@ impl Default for PlayerAdvancement {
             visible: FxHashSet::default(),
             progress_changed: FxHashSet::default(),
             last_selected_tab: Option::default(),
+            location_listeners: collect_location_listeners(),
         }
     }
 }
@@ -138,6 +144,33 @@ impl PlayerAdvancement {
                 if self.award(player, advancement, &criterion_id) {
                     granted += 1;
                 }
+            }
+        }
+        granted
+    }
+
+    /// Vanilla `LocationTrigger`: re-evaluated every player tick.
+    ///
+    /// Vanilla registers a listener only for criteria whose instance carries a
+    /// location predicate, which keeps the per-tick work bounded. The listener
+    /// list is built once, mirroring vanilla's registration on advancement load.
+    pub fn trigger_location(&mut self, player: &Player, context: &TriggerContext) -> usize {
+        let mut granted = 0;
+        // Collect first: `award` mutates `self`.
+        let matching: Vec<(AdvancementRef, String)> = self
+            .location_listeners
+            .iter()
+            .filter(|(advancement, criterion_id)| {
+                advancement
+                    .get_criterion(criterion_id)
+                    .and_then(|criterion| criterion.instance())
+                    .is_none_or(|instance| predicate::matches(instance, context))
+            })
+            .cloned()
+            .collect();
+        for (advancement, criterion_id) in matching {
+            if self.award(player, advancement, &criterion_id) {
+                granted += 1;
             }
         }
         granted
@@ -417,4 +450,31 @@ mod tests {
 
         assert!(player_advancement.progress.is_empty());
     }
+}
+
+/// Collects the `location` criteria that carry a location predicate, the way
+/// vanilla's `PlayerAdvancements.registerListeners` does on advancement load.
+fn collect_location_listeners() -> Vec<(AdvancementRef, String)> {
+    let mut listeners = Vec::new();
+    for advancement in REGISTRY.advancements.advancements() {
+        for criterion_id in advancement.criteria_ids() {
+            let Some(criterion) = advancement.get_criterion(criterion_id) else {
+                continue;
+            };
+            if &criterion.id() != &vanilla_criteria_triggers::LOCATION {
+                continue;
+            }
+            let Some(instance) = criterion.instance() else {
+                continue;
+            };
+            // Vanilla only registers the listener when the instance is a
+            // `LocationPredicate`; anything else would re-check the same
+            // predicate every tick for no reason.
+            if !instance.contains("\"location\"") {
+                continue;
+            }
+            listeners.push((advancement, criterion_id.to_owned()));
+        }
+    }
+    listeners
 }

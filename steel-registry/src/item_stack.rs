@@ -2295,7 +2295,7 @@ mod persistence_tests {
         assert!(stack.components_patch().is_empty());
 
         stack.set(MAX_STACK_SIZE, 16);
-        stack.set_item(&*vanilla_items::ENDER_PEARL.key);
+        stack.set_item(&vanilla_items::ENDER_PEARL.key);
         assert_eq!(stack.max_stack_size(), 16);
         assert!(stack.components_patch().is_empty());
     }

@@ -1,0 +1,367 @@
+### cargo check diagnostics
+- errors: 6
+- warnings: 183
+
+```
+warning: steel-utils@0.17.0+mc26.3: Successfully extracted datapack and translation files for Minecraft 26.3.
+   Compiling steel-registry v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-registry)
+   Compiling steel-worldgen v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-worldgen)
+warning: steel-registry@0.17.0+mc26.3: Function directory ../steel-utils/build_assets/builtin_datapacks/minecraft/function is missing; no functions will be loaded
+steel-registry/src/data_components/components/map_decorations.rs:312:22: error[E0614]: type `steel_utils::Identifier` cannot be dereferenced: can't be dereferenced
+steel-registry/src/item_stack.rs:2298:25: error[E0614]: type `steel_utils::Identifier` cannot be dereferenced: can't be dereferenced
+-----
+   Compiling steel-registry v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-registry)
+   Compiling steel-worldgen v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-worldgen)
+warning: steel-registry@0.17.0+mc26.3: Function directory ../steel-utils/build_assets/builtin_datapacks/minecraft/function is missing; no functions will be loaded
+steel-registry/src/data_components/components/map_decorations.rs:312:22: error[E0614]: type `steel_utils::Identifier` cannot be dereferenced: can't be dereferenced
+steel-registry/src/item_stack.rs:2298:25: error[E0614]: type `steel_utils::Identifier` cannot be dereferenced: can't be dereferenced
+steel-registry/src/data_components/registry/patch_persistence.rs:30:19: warning: associated function `compute_extracted_hash` is never used
+-----
+steel-registry/src/data_components/registry/patch_persistence.rs:30:19: warning: associated function `compute_extracted_hash` is never used
+warning: `steel-registry` (lib) generated 1 warning
+    Checking steel-protocol v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-protocol)
+warning: steel-registry@0.17.0+mc26.3: Function directory ../steel-utils/build_assets/builtin_datapacks/minecraft/function is missing; no functions will be loaded
+error: could not compile `steel-registry` (lib test) due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+-----
+```
+
+<details><summary>warnings</summary>
+
+```
+warning: steel-utils@0.17.0+mc26.3: Assets not found or version mismatch for Minecraft 26.3. Fetching...
+warning: steel-utils@0.17.0+mc26.3: Downloading server jar for 26.3...
+warning: steel-utils@0.17.0+mc26.3: Detected bootstrap jar. Extracting nested jar META-INF/versions/26.3/server-26.3.jar...
+warning: steel-utils@0.17.0+mc26.3: Successfully extracted datapack and translation files for Minecraft 26.3.
+warning: steel-registry@0.17.0+mc26.3: Function directory ../steel-utils/build_assets/builtin_datapacks/minecraft/function is missing; no functions will be loaded
+steel-registry/src/data_components/registry/patch_persistence.rs:30:19: warning: associated function `compute_extracted_hash` is never used
+warning: `steel-registry` (lib) generated 1 warning
+warning: steel-registry@0.17.0+mc26.3: Function directory ../steel-utils/build_assets/builtin_datapacks/minecraft/function is missing; no functions will be loaded
+warning: build failed, waiting for other jobs to finish...
+steel-protocol/src/packets/config/c_finish_configuration.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo as _`
+steel-protocol/src/packets/config/c_select_known.rs:3:5: warning: unused import: `steel_utils::serial::WriteTo as _`
+steel-protocol/src/packets/game/c_bundle_delimiter.rs:8:5: warning: unused import: `steel_utils::serial::WriteTo as _`
+steel-protocol/src/packets/game/c_clear_dialog.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo as _`
+steel-protocol/src/packets/game/c_custom_chat_completions.rs:6:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/c_debug_chunk_value.rs:6:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/c_debug_entity_value.rs:6:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/c_game_rule_values.rs:5:5: warning: unused import: `steel_utils::serial::WriteTo as _`
+steel-protocol/src/packets/game/c_low_disk_space_warning.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo as _`
+steel-protocol/src/packets/game/c_merchant_offers.rs:8:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/c_mount_screen_open.rs:6:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/c_place_ghost_recipe.rs:6:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/c_player_combat_end.rs:6:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/c_player_combat_enter.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo as _`
+steel-protocol/src/packets/game/c_projectile_power.rs:6:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/c_remove_entities.rs:4:5: warning: unused import: `steel_utils::serial::PrefixedWrite as _`
+steel-protocol/src/packets/game/c_remove_player_info.rs:5:5: warning: unused import: `steel_utils::serial::WriteTo as _`
+steel-protocol/src/packets/game/c_reset_chat.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo as _`
+steel-protocol/src/packets/game/c_set_display_objective.rs:6:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/c_set_passengers.rs:4:5: warning: unused import: `steel_utils::serial::PrefixedWrite as _`
+steel-protocol/src/packets/game/c_set_simulation_distance.rs:6:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/c_sound_entity.rs:6:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/c_start_configuration.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo as _`
+steel-protocol/src/packets/game/c_tag_query.rs:7:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/c_test_instance_block_status.rs:8:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/c_update_enabled_features.rs:5:5: warning: unused import: `steel_utils::serial::WriteTo as _`
+steel-protocol/src/packets/game/chat/command.rs:7:5: warning: unused import: `steel_utils::serial::PrefixedWrite as _`
+steel-protocol/src/packets/game/chat/message.rs:1:5: warning: unused import: `steel_utils::serial::PrefixedWrite as _`
+steel-protocol/src/packets/game/chunk/light.rs:2:5: warning: unused import: `steel_utils::serial::ReadFrom as _`
+steel-protocol/src/packets/game/s_block_entity_tag_query.rs:5:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/s_bundle_item_selected.rs:4:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/s_command_suggestion.rs:1:5: warning: unused import: `steel_utils::serial::PrefixedWrite as _`
+steel-protocol/src/packets/game/s_custom_click_action.rs:3:20: warning: unused import: `ReadFrom`
+steel-protocol/src/packets/game/s_debug_subscription_request.rs:4:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/s_entity_tag_query.rs:4:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/s_jigsaw_generate.rs:5:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/s_pick_item_from_entity.rs:4:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/s_place_recipe.rs:4:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/s_recipe_book_change_settings.rs:4:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/s_resource_pack.rs:4:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/s_select_trade.rs:4:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/s_set_command_block.rs:5:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/s_set_jigsaw_block.rs:5:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/s_set_structure_block.rs:5:26: warning: unused imports: `VarInt` and `VarLong`
+steel-protocol/src/packets/game/s_set_test_block.rs:5:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/game/s_test_instance_block_action.rs:5:5: warning: unused import: `steel_utils::codec::VarInt`
+steel-protocol/src/packets/handshake/mod.rs:1:5: warning: unused import: `steel_utils::serial::PrefixedWrite as _`
+steel-protocol/src/packets/login/c_login_disconnect.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo as _`
+steel-protocol/src/packets/login/s_hello.rs:1:5: warning: unused import: `steel_utils::serial::PrefixedWrite as _`
+steel-protocol/src/packets/login/s_key.rs:1:5: warning: unused import: `steel_utils::serial::PrefixedWrite as _`
+steel-protocol/src/packet_writer.rs:144:9: warning: unused import: `std::sync::Arc`
+steel-protocol/src/packets/common/s_client_information.rs:36:9: warning: unused import: `steel_utils::serial::PrefixedWrite as _`
+steel-protocol/src/packets/config/s_select_known.rs:17:9: warning: unused import: `steel_utils::serial::PrefixedWrite as _`
+steel-protocol/src/packets/game/chunk/data.rs:3:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/common/c_custom_payload.rs:3:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/common/c_custom_payload.rs:2:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/common/c_disconnect.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/common/c_keep_alive.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/common/c_pong_response.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/common/c_update_tags.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/status/c_status_response.rs:3:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/config/c_registry_data.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/config/c_registry_data.rs:3:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/config/c_select_known.rs:2:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/config/c_server_links.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/config/c_server_links.rs:3:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/game/c_add_transient_block.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_animate.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_block_changed_ack.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_block_destruction.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_block_event.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_block_update.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_change_difficulty.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_clear_titles.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_code_of_conduct.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_command_suggestions.rs:3:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_command_suggestions.rs:2:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/shared_implementation.rs:1:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/game/c_config_ping.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_container_close.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_container_set_content.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_container_set_data.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_container_set_slot.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_cookie_request.rs:6:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_cooldown.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_custom_chat_completions.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_damage_event.rs:5:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_debug_block_value.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_debug_chunk_value.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_debug_entity_value.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_debug_event.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_entity_event.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_entity_position_sync.rs:9:42: warning: unused import: `WriteTo`
+steel-protocol/src/packets/game/c_explode.rs:3:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_game_event.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_game_rule_values.rs:4:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/game/c_game_test_highlight_pos.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_hurt_animation.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_level_event.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_level_particles.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_login.rs:3:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_login.rs:2:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/game/c_map_item_data.rs:20:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_merchant_offers.rs:5:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_merchant_offers.rs:4:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/game/c_mount_screen_open.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_move_vehicle.rs:3:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/login/s_custom_query_answer.rs:7:5: warning: unused import: `steel_utils::serial::ReadFrom`
+steel-protocol/src/packets/game/c_ping.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_ping_request.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_place_ghost_recipe.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_player_abilities.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_player_combat_end.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_player_combat_kill.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_player_position.rs:7:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_player_rotation.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_post_effects.rs:5:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_post_effects.rs:4:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/game/c_projectile_power.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/chunk/light.rs:3:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_remove_entities.rs:5:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_remove_mob_effect.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_remove_player_info.rs:4:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/game/c_reset_score.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/login/s_cookie_response.rs:8:5: warning: unused import: `steel_utils::serial::ReadFrom`
+steel-protocol/src/packets/game/c_resource_pack_push.rs:6:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_respawn.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_rotate_head.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/chunk/tracking.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/login/c_login_finished.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_select_advancements_tab.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/login/c_login_cookie_request.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_set_action_bar_text.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_set_camera.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_set_cursor_item.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_set_default_spawn_position.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_set_display_objective.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/login/c_login_compression.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/login/c_hello.rs:3:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/login/c_hello.rs:2:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/game/c_set_experience.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_set_health.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_set_held_slot.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_set_passengers.rs:5:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_set_simulation_distance.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_set_subtitle_text.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/world_border.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_set_title_text.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_set_titles_animation.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_sound_entity.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_stop_sound.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_store_cookie.rs:6:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_tag_query.rs:5:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_tag_query.rs:4:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/game/s_sign_update.rs:5:5: warning: unused import: `steel_utils::serial::ReadFrom`
+steel-protocol/src/packets/game/s_custom_click_action.rs:6:5: warning: unused import: `steel_utils::serial::ReadFrom`
+steel-protocol/src/packets/game/c_teleport_entity.rs:3:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_test_instance_block_status.rs:5:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_test_instance_block_status.rs:4:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/game/c_ticking_state.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_ticking_step.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_update_advancement.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_update_attributes.rs:5:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/c_update_attributes.rs:4:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/game/c_update_enabled_features.rs:4:5: warning: unused import: `steel_utils::serial::PrefixedWrite`
+steel-protocol/src/packets/game/c_update_mob_effect.rs:4:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/game/chat/command.rs:8:5: warning: unused import: `steel_utils::serial::ReadFrom`
+steel-protocol/src/packets/game/chat/message.rs:2:5: warning: unused import: `steel_utils::serial::ReadFrom`
+steel-protocol/src/packets/game/chat/system.rs:2:5: warning: unused import: `steel_utils::serial::WriteTo`
+steel-protocol/src/packets/config/s_select_known.rs:18:5: warning: unused import: `steel_utils::serial::ReadFrom`
+steel-protocol/src/packets/game/c_section_blocks_update.rs:56:9: warning: unused import: `steel_utils::serial::ReadFrom`
+steel-protocol/src/packets/game/s_container_click.rs:159:9: warning: unused import: `steel_utils::serial::ReadFrom`
+warning: `steel-protocol` (lib) generated 166 warnings (run `cargo fix --lib -p steel-protocol` to apply 50 suggestions)
+warning: `steel-protocol` (lib test) generated 170 warnings (164 duplicates) (run `cargo fix --lib -p steel-protocol --tests` to apply 3 suggestions)
+```
+</details>
+### tests
+```
+error[E0614]: type `steel_utils::Identifier` cannot be dereferenced
+   --> steel-registry/src/data_components/components/map_decorations.rs:312:22
+    |
+312 |             .by_key(&*vanilla_items::FILLED_MAP.key)
+error[E0614]: type `steel_utils::Identifier` cannot be dereferenced
+    --> steel-registry/src/item_stack.rs:2298:25
+     |
+2298 |         stack.set_item(&*vanilla_items::ENDER_PEARL.key);
+error: could not compile `steel-registry` (lib test) due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+warning: `steel-registry` (lib) generated 1 warning
+```
+
+### clippy
+```
+steel-registry/build/entities.rs:185:25: error: you seem to be trying to use `match` for destructuring a single pattern. Consider using `if let`
+    Checking either v1.19.0
+    Checking parking_lot_core v0.10.0
+    Checking rayon v1.12.0
+steel-registry/build/functions.rs:34:5: error: consider using `sort_by_key`
+steel-registry/build/functions.rs:80:16: error: this `if` statement can be collapsed
+    Checking toml_parser v1.1.5+spec-1.1.0
+    Checking phf v0.11.3
+```
+
+### rustfmt
+```
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packet_reader.rs:273:
+     }
+ }
+ 
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/common/c_custom_payload.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::PrefixedWrite as _;
+-use steel_utils::serial::WriteTo as _;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/common/c_custom_payload.rs:7:
++use steel_utils::serial::PrefixedWrite as _;
++use steel_utils::serial::WriteTo as _;
+ 
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/common/c_disconnect.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::WriteTo as _;
+ use steel_registry::packets::config::C_DISCONNECT;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/common/c_keep_alive.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::WriteTo as _;
+ use steel_registry::packets::config::C_KEEP_ALIVE;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/common/c_pong_response.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::WriteTo as _;
+ use steel_registry::packets::{play, status};
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/common/c_update_tags.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::WriteTo as _;
+ use steel_registry::packets::config::C_UPDATE_TAGS;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/common/c_update_tags.rs:6:
+ use steel_utils::codec::VarInt;
++use steel_utils::serial::WriteTo as _;
+ 
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/common/s_client_information.rs:34:
+     use std::io::Cursor;
+ 
+     use steel_utils::serial::PrefixedWrite as _;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/config/c_finish_configuration.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::WriteTo as _;
+ use steel_registry::packets::config::C_FINISH_CONFIGURATION;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/config/c_registry_data.rs:1:
+ use simdnbt::owned::NbtTag;
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::PrefixedWrite as _;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/config/c_select_known.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
++use steel_registry::packets::config::C_SELECT_KNOWN_PACKS;
+ use steel_utils::serial::PrefixedWrite as _;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/config/c_server_links.rs:1:
+ use serde::{Deserialize, Serialize};
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::PrefixedWrite as _;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/config/s_select_known.rs:15:
+     use std::io::Cursor;
+     use steel_utils::codec::VarInt;
+     use steel_utils::serial::PrefixedWrite as _;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_add_transient_block.rs:1:
+ //! Transient block packet.
+ 
+ use steel_macros::{ClientPacket, WriteTo};
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_animate.rs:1:
+ //! Clientbound animate packet - sent to play an entity animation.
+ 
+ use steel_macros::{ClientPacket, WriteTo};
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_block_changed_ack.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::WriteTo as _;
+ use steel_registry::packets::play::C_BLOCK_CHANGED_ACK;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_block_destruction.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::WriteTo as _;
+ use steel_registry::packets::play::C_BLOCK_DESTRUCTION;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_block_event.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::WriteTo as _;
+ use steel_registry::packets::play::C_BLOCK_EVENT;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_block_update.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::WriteTo as _;
+ use steel_registry::packets::play::C_BLOCK_UPDATE;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_bundle_delimiter.rs:5:
+ //! packets (spawn, metadata, equipment, etc.) are applied together.
+ 
+ use steel_macros::{ClientPacket, WriteTo};
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_change_difficulty.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::WriteTo as _;
+ use steel_registry::packets::play::C_CHANGE_DIFFICULTY;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_clear_dialog.rs:1:
+ //! Clear dialog packet.
+ 
+ use steel_macros::{ClientPacket, WriteTo};
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_clear_titles.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::WriteTo as _;
+ use steel_registry::packets::play::C_CLEAR_TITLES;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_code_of_conduct.rs:1:
+ //! Code of conduct packet.
+ 
+ use steel_macros::{ClientPacket, WriteTo};
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_command_suggestions.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
++use steel_registry::packets::play::C_COMMAND_SUGGESTIONS;
+ use steel_utils::serial::PrefixedWrite as _;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_config_ping.rs:1:
+ //! Configuration-state ping packet.
+ 
+ use steel_macros::{ClientPacket, WriteTo};
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_container_close.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::WriteTo as _;
+ use steel_registry::packets::play::C_CONTAINER_CLOSE;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_container_set_content.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::WriteTo as _;
+ use steel_registry::{item_stack::ItemStack, packets::play::C_CONTAINER_SET_CONTENT};
+Diff in /home/runner/work/SteelMC/SteelMC/steel-protocol/src/packets/game/c_container_set_data.rs:1:
+ use steel_macros::{ClientPacket, WriteTo};
+-use steel_utils::serial::WriteTo as _;
+ use steel_registry::packets::play::C_CONTAINER_SET_DATA;
+```
+

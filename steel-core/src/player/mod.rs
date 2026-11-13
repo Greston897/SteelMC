@@ -2234,7 +2234,22 @@ impl LivingEntity for Player {
             self.block_breaking.lock().tick(self, &world);
 
             self.update_player_attributes();
-            self.advancements.lock().flush_dirty(self, true);
+            // Vanilla `Player.tick` calls `advancements.tick()`, which re-runs the
+            // registered `location` predicates against the player's new position.
+            let location_context = {
+                let position = self.position();
+                let mut context = crate::player::advancement::predicate::TriggerContext::at(
+                    &world,
+                    glam::DVec3::from(position),
+                );
+                context.player_sneaking = Some(self.is_discrete());
+                context
+            };
+            {
+                let mut advancements = self.advancements.lock();
+                advancements.trigger_location(self, &location_context);
+                advancements.flush_dirty(self, true);
+            }
             self.living_base.refresh_speed_from_attributes();
             self.tick_food_data();
 

@@ -753,6 +753,20 @@ pub trait LivingEntity: Entity {
             return false;
         };
 
+        // Vanilla `Player.hurtServer` fires `entity_hurt_player` on the victim with
+        // the damaging entity, which is what `adventure/kill_a_mob`'s sibling
+        // `adventure/very_very_frightening` and the datapack predicates watch.
+        if let Some(victim) = self.as_player()
+            && let Some(attacker) = source.causing_entity()
+        {
+            victim.trigger_advancement_with_context(
+                &vanilla_criteria_triggers::ENTITY_HURT_PLAYER,
+                &crate::player::advancement::predicate::TriggerContext::entity(
+                    &attacker.entity_type().key,
+                ),
+            );
+        }
+
         self.before_actually_hurt(source, effective_amount);
         self.actually_hurt(world, source, effective_amount);
         self.run_mob_hurt_effect_hooks(source);
