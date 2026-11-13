@@ -10,7 +10,9 @@ use std::sync::{Arc, Weak};
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
-use steel_registry::blocks::properties::{BlockStateProperties, Direction, FrontAndTop};
+use steel_registry::blocks::properties::{
+    BlockStateProperties, Direction, EnumProperty, FrontAndTop,
+};
 use steel_registry::vanilla_block_entity_types;
 use glam::DVec3;
 use steel_registry::{sound_events, vanilla_entities};
@@ -29,11 +31,11 @@ use crate::block_entity::BLOCK_ENTITIES;
 use crate::inventory::container::calculate_redstone_signal_from_container;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::inventory::menu::kinds::{brewing_stand, chest, crafter, dispenser, hopper, lectern};
-use crate::entity::SharedEntity;
+use crate::entity::{SharedEntity, next_entity_id};
 use crate::entity::entities::{
     ArrowEntity, EnderPearlEntity, ExperienceBottleEntity, FireworkRocketEntity, ItemEntity,
     LingeringPotionEntity, SnowballEntity, SpectralArrowEntity, SplashPotionEntity,
-    ThrownEggEntity, next_entity_id,
+    ThrownEggEntity,
 };
 use crate::player::Player;
 use crate::world::{SignalGetter, World};

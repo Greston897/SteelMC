@@ -18,7 +18,7 @@ use super::super::{
     registration::CommandRegistration,
 };
 use super::execute::{ensure_region_chunks_block_ticking, loaded_block_position};
-use crate::chunk::ChunkPos;
+use steel_utils::ChunkPos;
 
 type Builder = CommandNodeBuilder<CommandSource, SteelCommandRuntime>;
 

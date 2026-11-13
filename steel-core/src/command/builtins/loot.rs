@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 use steel_registry::REGISTRY;
 use steel_registry::loot_table::LootTableRef;
-use steel_utils::Identifier;
+use steel_utils::{BlockPos, Identifier};
 use text_components::TextComponent;
 
 use super::super::{

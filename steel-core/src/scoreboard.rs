@@ -130,8 +130,6 @@ struct ObjectiveState {
     criterion: Option<String>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, deny_unknown_fields)]
 /// Vanilla `Team.Visibility`: who may see a message routed through the team.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

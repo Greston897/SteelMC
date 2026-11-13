@@ -13,7 +13,7 @@ use std::{
 
 use glam::DVec3;
 use simdnbt::borrow::{
-    BaseNbtCompound as BorrowedNbtCompound, NbtCompound as BorrowedNbtCompoundView,
+    BaseNbtCompound as BorrowedNbtCompound,
 };
 use simdnbt::owned::NbtCompound;
 use simdnbt::{FromNbtTag as _, ToNbtTag as _};
@@ -32,8 +32,6 @@ use text_components::TextComponent;
 use steel_utils::{
     BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, Identifier, WorldAabb,
 };
-
-use text_components::TextComponent;
 
 use crate::behavior::BLOCK_BEHAVIORS;
 use crate::block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter};
@@ -379,8 +377,7 @@ impl BeaconBlockEntity {
     }
 
     fn load_effect(nbt: &BorrowedNbtCompound<'_>, field: &str) -> Option<MobEffectRef> {
-        let nbt_view: NbtCompoundView<'_, '_> = nbt.into();
-        let key = Identifier::from_str(&nbt_view.string(field)?.to_string()).ok()?;
+        let key = Identifier::from_str(&nbt.string(field)?.to_str()).ok()?;
         let effect = REGISTRY.mob_effects.by_key(&key)?;
         BeaconState::filter_effect(Some(effect))
     }
@@ -392,11 +389,10 @@ impl BlockEntity for BeaconBlockEntity {
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
-        let nbt_view: BorrowedNbtCompoundView<'_, '_> = nbt.into();
-        *self.name.lock() = nbt_view
+        *self.name.lock() = nbt
             .get("CustomName")
             .and_then(|tag| TextComponent::from_nbt(&tag.to_owned()));
-        *self.lock_key.lock() = nbt_view
+        *self.lock_key.lock() = nbt
             .get("Lock")
             .and_then(LockCode::from_nbt_tag)
             .unwrap_or(LockCode::NO_LOCK);

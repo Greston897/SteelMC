@@ -186,7 +186,11 @@ impl Entity for WanderingTraderEntity {
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_mob(nbt);
         self.load_ageable_mob(nbt);
+    }
 
+    /// Vanilla `WanderingTrader.openMenu` through `MenuProvider`.
+    fn open_menu_for(&self, player: &Player) -> InteractionResult {
+        self.open_trading_screen(player)
     }
 }
 
@@ -304,11 +308,6 @@ impl Mob for WanderingTraderEntity {
 
     fn set_mob_flags(&self, flags: i8) {
         self.entity_data.lock().mob_mut().mob_flags.set(flags);
-    }
-
-    /// Vanilla `WanderingTrader.openMenu` through `MenuProvider`.
-    fn open_menu_for(&self, player: &Player) -> InteractionResult {
-        self.open_trading_screen(player)
     }
 }
 

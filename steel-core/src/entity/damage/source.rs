@@ -131,7 +131,7 @@ impl DamageSource {
     /// is empty in vanilla data but data packs may populate it.
     #[must_use]
     pub fn bypasses_cooldown(&self) -> bool {
-        self.is(&vanilla_damage_type_tags::BYPASSES_COOLDOWN)
+        self.is(&vanilla_damage_type_tags::DamageTypeTag::BYPASSES_COOLDOWN)
     }
 
     /// Whether this damage scales with difficulty for the retained causing entity.

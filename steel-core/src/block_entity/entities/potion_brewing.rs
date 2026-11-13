@@ -20,7 +20,7 @@ pub struct PotionMix {
     pub to: Identifier,
 }
 
-const fn mix(ingredient: &'static str, from: &'static str, to: &'static str) -> PotionMix {
+const fn potion_mix(ingredient: &'static str, from: &'static str, to: &'static str) -> PotionMix {
     PotionMix {
         ingredient: Identifier::vanilla_static(ingredient),
         from: Identifier::vanilla_static(from),
@@ -30,40 +30,40 @@ const fn mix(ingredient: &'static str, from: &'static str, to: &'static str) -> 
 
 /// Base-potion-plus-ingredient recipes, matching vanilla `PotionBrewing.POTION_MIXES`.
 pub static POTION_MIXES: &[PotionMix] = &[
-    mix("nether_wart", "water", "awkward"),
-    mix("redstone", "water", "mundane"),
-    mix("fermented_spider_eye", "water", "weakness"),
-    mix("glowstone_dust", "water", "thick"),
+    potion_mix("nether_wart", "water", "awkward"),
+    potion_mix("redstone", "water", "mundane"),
+    potion_mix("fermented_spider_eye", "water", "weakness"),
+    potion_mix("glowstone_dust", "water", "thick"),
     // Awkward base.
-    mix("golden_carrot", "awkward", "night_vision"),
-    mix("rabbit_foot", "awkward", "leaping"),
-    mix("magma_cream", "awkward", "fire_resistance"),
-    mix("blaze_powder", "awkward", "strength"),
-    mix("sugar", "awkward", "swiftness"),
-    mix("pufferfish", "awkward", "water_breathing"),
-    mix("glistering_melon_slice", "awkward", "healing"),
-    mix("spider_eye", "awkward", "poison"),
-    mix("phantom_membrane", "awkward", "slow_falling"),
+    potion_mix("golden_carrot", "awkward", "night_vision"),
+    potion_mix("rabbit_foot", "awkward", "leaping"),
+    potion_mix("magma_cream", "awkward", "fire_resistance"),
+    potion_mix("blaze_powder", "awkward", "strength"),
+    potion_mix("sugar", "awkward", "swiftness"),
+    potion_mix("pufferfish", "awkward", "water_breathing"),
+    potion_mix("glistering_melon_slice", "awkward", "healing"),
+    potion_mix("spider_eye", "awkward", "poison"),
+    potion_mix("phantom_membrane", "awkward", "slow_falling"),
     // Amplified tier.
-    mix("glowstone_dust", "swiftness", "strong_swiftness"),
-    mix("glowstone_dust", "leaping", "strong_leaping"),
-    mix("glowstone_dust", "healing", "strong_healing"),
-    mix("glowstone_dust", "poison", "strong_poison"),
-    mix("glowstone_dust", "strength", "strong_strength"),
+    potion_mix("glowstone_dust", "swiftness", "strong_swiftness"),
+    potion_mix("glowstone_dust", "leaping", "strong_leaping"),
+    potion_mix("glowstone_dust", "healing", "strong_healing"),
+    potion_mix("glowstone_dust", "poison", "strong_poison"),
+    potion_mix("glowstone_dust", "strength", "strong_strength"),
     // Extended tier.
-    mix("redstone", "swiftness", "long_swiftness"),
-    mix("redstone", "leaping", "long_leaping"),
-    mix("redstone", "poison", "long_poison"),
-    mix("redstone", "strength", "long_strength"),
-    mix("redstone", "night_vision", "long_night_vision"),
-    mix("redstone", "fire_resistance", "long_fire_resistance"),
-    mix("redstone", "water_breathing", "long_water_breathing"),
-    mix("redstone", "slow_falling", "long_slow_falling"),
+    potion_mix("redstone", "swiftness", "long_swiftness"),
+    potion_mix("redstone", "leaping", "long_leaping"),
+    potion_mix("redstone", "poison", "long_poison"),
+    potion_mix("redstone", "strength", "long_strength"),
+    potion_mix("redstone", "night_vision", "long_night_vision"),
+    potion_mix("redstone", "fire_resistance", "long_fire_resistance"),
+    potion_mix("redstone", "water_breathing", "long_water_breathing"),
+    potion_mix("redstone", "slow_falling", "long_slow_falling"),
     // Corruptions.
-    mix("fermented_spider_eye", "swiftness", "slowness"),
-    mix("fermented_spider_eye", "leaping", "slowness"),
-    mix("fermented_spider_eye", "healing", "harming"),
-    mix("fermented_spider_eye", "poison", "harming"),
+    potion_mix("fermented_spider_eye", "swiftness", "slowness"),
+    potion_mix("fermented_spider_eye", "leaping", "slowness"),
+    potion_mix("fermented_spider_eye", "healing", "harming"),
+    potion_mix("fermented_spider_eye", "poison", "harming"),
 ];
 
 /// Mirrors vanilla `PotionBrewing.mix(ItemStack ingredient, ItemStack input)`.

@@ -213,7 +213,7 @@ impl MenuKind for MerchantKind {
         // Vanilla `MerchantResultSlot.onTake`: taking the result spends the
         // payment and one use of the selected offer. Only a pickup or a
         // shift-click pays; throwing or swapping the result does not.
-        let Click::Pickup { .. } | Click::QuickMove { .. } = click else {
+        let (Click::Pickup { .. } | Click::QuickMove { .. }) = click else {
             return ClickOutcome::Consume;
         };
 

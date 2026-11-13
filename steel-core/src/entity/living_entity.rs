@@ -3600,7 +3600,7 @@ mod shield_tests {
 
 /// Vanilla `WitherRoseBlock.createWitherRose`: when the causing entity is a
 /// wither skeleton and the victim's position accepts the rose, place it.
-pub(crate) fn create_wither_rose(dead: &dyn Entity, source: &DamageSource) {
+pub fn create_wither_rose(dead: &dyn Entity, source: &DamageSource) {
     let Some(causing) = source.causing_entity() else {
         return;
     };

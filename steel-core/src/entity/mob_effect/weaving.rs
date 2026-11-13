@@ -2,7 +2,7 @@
 
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::vanilla_blocks;
-use steel_utils::UpdateFlags;
+use steel_utils::types::UpdateFlags;
 
 use std::sync::Arc;
 

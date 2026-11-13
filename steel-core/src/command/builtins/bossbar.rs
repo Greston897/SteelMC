@@ -3,6 +3,8 @@
 //! Mirrors vanilla `BossBarCommand`: `add`, `remove`, `list`, `get`, and the
 //! `set` children (`name`, `color`, `style`, `value`, `max`, `visible`, `players`).
 
+use std::sync::Arc;
+
 use steel_protocol::packets::game::{BossBarColor, BossBarOverlay, BossEventAction, CBossEvent};
 use steel_utils::Identifier;
 use text_components::TextComponent;

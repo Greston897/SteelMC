@@ -60,16 +60,6 @@ impl CraftingHandler {
     pub fn result_id(&self) -> ContainerId {
         ContainerId::from_arc(&self.result_container)
     }
-}
-
-impl ResultHandler for CraftingHandler {
-    fn result_container(&self) -> ContainerRef {
-        ContainerRef::from(Arc::clone(&self.result_container))
-    }
-
-    fn dependencies(&self) -> Vec<ContainerRef> {
-        vec![ContainerRef::from(Arc::clone(&self.crafting_container))]
-    }
 
     /// Vanilla `ResultSlot.checkTakeAchievements` recipe-unlock half.
     ///
@@ -92,6 +82,17 @@ impl ResultHandler for CraftingHandler {
         let crafting = guard.get_typed::<CraftingContainer>(self.crafting_id())?;
         recipe_manager::find_recipe(crafting).map(|recipe| recipe.key().clone())
     }
+}
+
+impl ResultHandler for CraftingHandler {
+    fn result_container(&self) -> ContainerRef {
+        ContainerRef::from(Arc::clone(&self.result_container))
+    }
+
+    fn dependencies(&self) -> Vec<ContainerRef> {
+        vec![ContainerRef::from(Arc::clone(&self.crafting_container))]
+    }
+
 
     fn update_result(&self, guard: &mut ContainerLockGuard) {
         let crafting = guard

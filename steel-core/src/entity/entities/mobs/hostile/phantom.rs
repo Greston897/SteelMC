@@ -37,6 +37,78 @@ use crate::world::World;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
 
+/// Ticks a phantom spends circling its target before starting a dive.
+const CIRCLE_TICKS: u32 = 100;
+/// Ticks spent descending towards the target.
+const SWOOP_TICKS: u32 = 20;
+/// Ticks spent gliding along at the target's level.
+const LAND_TICKS: u32 = 20;
+/// Ticks spent attacking before climbing away again.
+const ATTACK_TICKS: u32 = 100;
+/// Ticks of the climb-out that precedes the next circle.
+const START_TICKS: u32 = 40;
+/// Orbit radius in blocks while circling.
+const CIRCLE_RADIUS: f64 = 16.0;
+
+/// Vanilla `Phantom.PhantomMoveTarget.State`: the phase of the swoop cycle.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PhantomPhase {
+    /// Orbits the target at a distance.
+    Circle,
+    /// Dives towards the target.
+    Swoop,
+    /// Flies level with the target.
+    Land,
+    /// Closes on the target to bite.
+    Attack,
+    /// Climbs away to begin another pass.
+    Start,
+}
+
+impl PhantomPhase {
+    /// Vanilla's phase order: the cycle only ever advances forwards.
+    #[must_use]
+    pub const fn next(self) -> Self {
+        match self {
+            Self::Circle => Self::Swoop,
+            Self::Swoop => Self::Land,
+            Self::Land => Self::Attack,
+            Self::Attack => Self::Start,
+            Self::Start => Self::Circle,
+        }
+    }
+}
+
+/// Vanilla `Phantom.PhantomMoveTarget`: the per-phantom swoop state machine.
+#[derive(Debug, Clone, Copy)]
+pub struct PhantomFlightState {
+    /// Current phase of the cycle.
+    pub phase: PhantomPhase,
+    /// Ticks spent in the current phase.
+    pub phase_ticks: u32,
+    /// Tick count at which the phase advances.
+    pub next_tick: u32,
+    /// Current orbit angle in radians.
+    pub angle: f64,
+    /// Orbit radius in blocks.
+    pub radius: f64,
+    /// Orbit direction: `+1` or `-1`, flipped on each new circle.
+    pub direction: f64,
+}
+
+impl Default for PhantomFlightState {
+    fn default() -> Self {
+        Self {
+            phase: PhantomPhase::Circle,
+            phase_ticks: 0,
+            next_tick: CIRCLE_TICKS,
+            angle: 0.0,
+            radius: CIRCLE_RADIUS,
+            direction: 1.0,
+        }
+    }
+}
+
 /// Vanilla `net.minecraft.world.entity.monster.Silverfish`.
 #[entity_behavior(class = "Phantom")]
 pub struct PhantomEntity {

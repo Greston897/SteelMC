@@ -254,7 +254,7 @@ pub use c_player_combat_enter::CPlayerCombatEnter;
 pub use c_player_combat_kill::CPlayerCombatKill;
 pub use c_player_info_update::{
     CPlayerInfoUpdate, PLAYER_INFO_INIT_ACTIONS, PlayerInfoAction, PlayerInfoEntry,
-    PlayerInfoTarget,
+    PlayerInfoTarget, PlayerDisplayName,
 };
 pub use c_player_look_at::{CPlayerLookAt, LookAtAnchor};
 pub use c_player_position::{CPlayerPosition, RelativeMovement};
@@ -262,7 +262,8 @@ pub use c_player_rotation::CPlayerRotation;
 pub use c_post_effects::{CPostEffects, PostEffect};
 pub use c_projectile_power::CProjectilePower;
 pub use c_recipe_book::{
-    CRecipeBookAdd, CRecipeBookRemove, RecipeBookAddEntry, RecipeBookTypeSettings, StonecutterEntry,
+    CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CUpdateRecipes, RecipeBookAddEntry,
+    RecipeBookTypeSettings, StonecutterEntry,
 };
 pub use c_remove_entities::CRemoveEntities;
 pub use c_remove_mob_effect::CRemoveMobEffect;

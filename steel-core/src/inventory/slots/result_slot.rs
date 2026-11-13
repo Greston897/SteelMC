@@ -1,7 +1,6 @@
 use std::{mem, sync::Arc};
 
 use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_stat_types;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::{

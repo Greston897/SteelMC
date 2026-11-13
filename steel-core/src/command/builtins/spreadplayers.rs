@@ -5,7 +5,8 @@
 //! times per entity and silently skips an entity it cannot place; this
 //! implementation mirrors that limit and reports how many entities moved.
 
-use steel_utils::{DVec3, Identifier};
+use glam::DVec3;
+use steel_utils::Identifier;
 use text_components::TextComponent;
 
 use super::super::{

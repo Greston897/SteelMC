@@ -1,4 +1,5 @@
 //! This module contains the `Server` struct, which is the main entry point for the server.
+pub mod boss_bars;
 mod broadcasting;
 pub mod scoreboard_sync;
 /// Tick-polled server jobs.

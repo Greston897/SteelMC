@@ -15,7 +15,7 @@ use steel_registry::entity_data::{Quaternionf, Vector3f};
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_entity_data::{
-    DisplayItemDisplayEntityData, DisplayTextDisplayEntityData,
+    ItemDisplayEntityData, TextDisplayEntityData,
 };
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
@@ -282,13 +282,13 @@ macro_rules! display_entity {
 // directly (it is abstract), so only the three concrete subclasses are exposed.
 display_entity!(
     ItemDisplayEntity,
-    DisplayItemDisplayEntityData,
+    ItemDisplayEntityData,
     "ItemDisplay",
     "steel:entity/item_display"
 );
 display_entity!(
     TextDisplayEntity,
-    DisplayTextDisplayEntityData,
+    TextDisplayEntityData,
     "TextDisplay",
     "steel:entity/text_display"
 );

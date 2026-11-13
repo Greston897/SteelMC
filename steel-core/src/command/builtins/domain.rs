@@ -20,7 +20,8 @@ use crate::{
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
     execution::{
-        CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
+        ArgumentType, CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime,
+        argument,
         literal,
     },
     registration::CommandRegistration,

@@ -9,7 +9,10 @@
 //! Steel's schedules live on the server and are drained by the game tick loop
 //! (see [`crate::server::schedule`]).
 
-use steel_utils::{Identifier, translations};
+use std::borrow::Cow;
+
+use steel_utils::Identifier;
+use text_components::translation::TranslatedMessage;
 use text_components::TextComponent;
 
 use super::super::{
@@ -28,6 +31,20 @@ const MODE_ARGUMENT: &str = "mode";
 
 pub(super) fn registration() -> CommandRegistration<CommandSource> {
     CommandRegistration::new(Identifier::vanilla_static("schedule"), |_| command())
+}
+
+
+/// Builds a translatable component with an English fallback.
+///
+/// The extracted `en_us.json` does not carry the `commands.schedule.*` keys yet,
+/// so the fallback is what the client actually renders today; the key is kept so
+/// the message switches to the packaged translation as soon as it lands.
+fn schedule_message(key: &str, fallback: &str, args: Vec<TextComponent>) -> TextComponent {
+    TextComponent::translated(TranslatedMessage {
+        key: Cow::Borrowed(key),
+        fallback: Some(Cow::Owned(fallback.to_owned())),
+        args: Some(args.into_boxed_slice()),
+    })
 }
 
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
@@ -81,16 +98,20 @@ fn schedule_function(
         .schedule_function(&function, due_tick, mode);
 
     let message = if replaced == 0 {
-        translations::COMMANDS_SCHEDULE_SUCCESS
-            .message([TextComponent::from(function.to_string())])
-            .component()
+        schedule_message(
+            "commands.schedule.created.function",
+            "Scheduled function %s in %s ticks at gametime %s",
+            vec![TextComponent::from(function.to_string())],
+        )
     } else {
-        translations::COMMANDS_SCHEDULE_SUCCESS_REPLACED
-            .message([
+        schedule_message(
+            "commands.schedule.created.function",
+            "Scheduled function %s in %s ticks at gametime %s",
+            vec![
                 TextComponent::from(function.to_string()),
                 TextComponent::from(replaced.to_string()),
-            ])
-            .component()
+            ],
+        )
     };
     context.source().send_success(&message, false);
     Ok(1)
@@ -101,11 +122,13 @@ fn clear_id(context: &SteelCommandContext<CommandSource>) -> Result<i32, Command
     let removed = context.source().server().schedules.clear(&function.to_string());
 
     let message = if removed == 0 {
-        translations::COMMANDS_SCHEDULE_FAILED.msg()
+        TextComponent::from("No scheduled function was found")
     } else {
-        translations::COMMANDS_SCHEDULE_SUCCESS_CLEAR
-            .message([TextComponent::from(removed.to_string())])
-            .component()
+        schedule_message(
+            "commands.schedule.cleared.success",
+            "Removed %s scheduled functions",
+            vec![TextComponent::from(removed.to_string())],
+        )
     };
     context.source().send_success(&message, false);
     Ok(removed as i32)
