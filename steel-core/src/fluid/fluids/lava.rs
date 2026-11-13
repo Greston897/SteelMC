@@ -76,7 +76,7 @@ impl FluidBehavior for LavaFluid {
     }
 
     fn bucket(&self) -> ItemRef {
-        &vanilla_items::LAVA_BUCKET
+        &*vanilla_items::LAVA_BUCKET
     }
 
     fn fluid_type(&self) -> FluidRef {

@@ -317,7 +317,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::DEBUG_STICK));
+            .set_selected_item(ItemStack::new(&*vanilla_items::DEBUG_STICK));
 
         (world_fixture, player, pos, state)
     }

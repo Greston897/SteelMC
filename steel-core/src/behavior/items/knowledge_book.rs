@@ -107,7 +107,7 @@ mod tests {
     #[test]
     fn knowledge_book_component_keeps_its_keys() {
         init_vanilla_registry();
-        let stack = ItemStack::new(&vanilla_items::KNOWLEDGE_BOOK);
+        let stack = ItemStack::new(&*vanilla_items::KNOWLEDGE_BOOK);
         assert_eq!(
             stack.get(RECIPES),
             Some(&Recipes::empty()),

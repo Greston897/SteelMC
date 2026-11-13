@@ -708,7 +708,7 @@ mod tests {
             &vanilla_entities::PIG,
             CustomData::try_from_compound(payload).expect("test entity data should be valid"),
         );
-        let mut spawn_egg = ItemStack::new(&vanilla_items::PIG_SPAWN_EGG);
+        let mut spawn_egg = ItemStack::new(&*vanilla_items::PIG_SPAWN_EGG);
         spawn_egg.set(ENTITY_DATA, entity_data);
 
         apply_item_stack_components(&entity, &spawn_egg, false)
@@ -733,7 +733,7 @@ mod tests {
         pig.set_variant(&vanilla_pig_variants::WARM);
         let entity: SharedEntity = Arc::<PigEntity>::clone(&pig);
 
-        let mut spawn_egg = ItemStack::new(&vanilla_items::PIG_SPAWN_EGG);
+        let mut spawn_egg = ItemStack::new(&*vanilla_items::PIG_SPAWN_EGG);
         spawn_egg.set(
             PIG_VARIANT,
             RegistryReference::new(&vanilla_pig_variants::COLD),
@@ -757,7 +757,7 @@ mod tests {
         ));
         let entity: SharedEntity = Arc::<CowEntity>::clone(&cow);
 
-        let mut spawn_egg = ItemStack::new(&vanilla_items::COW_SPAWN_EGG);
+        let mut spawn_egg = ItemStack::new(&*vanilla_items::COW_SPAWN_EGG);
         spawn_egg.set(
             COW_VARIANT,
             RegistryReference::new(&vanilla_cow_variants::COLD),
@@ -789,7 +789,7 @@ mod tests {
         ));
         let entity: SharedEntity = Arc::<ChickenEntity>::clone(&chicken);
 
-        let mut spawn_egg = ItemStack::new(&vanilla_items::CHICKEN_SPAWN_EGG);
+        let mut spawn_egg = ItemStack::new(&*vanilla_items::CHICKEN_SPAWN_EGG);
         spawn_egg.set(
             CHICKEN_VARIANT,
             RegistryReference::new(&vanilla_chicken_variants::COLD),
@@ -821,7 +821,7 @@ mod tests {
         ));
         let entity: SharedEntity = Arc::<SheepEntity>::clone(&sheep);
 
-        let mut spawn_egg = ItemStack::new(&vanilla_items::SHEEP_SPAWN_EGG);
+        let mut spawn_egg = ItemStack::new(&*vanilla_items::SHEEP_SPAWN_EGG);
         spawn_egg.set(SHEEP_COLOR, DyeColor::Pink);
 
         apply_item_stack_components(&entity, &spawn_egg, false)

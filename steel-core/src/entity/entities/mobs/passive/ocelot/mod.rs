@@ -377,7 +377,7 @@ mod tests {
     #[test]
     fn raw_cod_is_ocelot_food() {
         init_vanilla_registry();
-        assert!(is_ocelot_food(&ItemStack::new(&vanilla_items::COD)));
-        assert!(!is_ocelot_food(&ItemStack::new(&vanilla_items::STONE)));
+        assert!(is_ocelot_food(&ItemStack::new(&*vanilla_items::COD)));
+        assert!(!is_ocelot_food(&ItemStack::new(&*vanilla_items::STONE)));
     }
 }

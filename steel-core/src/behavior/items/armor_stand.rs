@@ -214,7 +214,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::with_count(&vanilla_items::ARMOR_STAND, 2));
+            .set_selected_item(ItemStack::with_count(&*vanilla_items::ARMOR_STAND, 2));
 
         let mut context = place_context(world, &player, floor, Direction::Up);
         assert_eq!(
@@ -238,7 +238,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::ARMOR_STAND));
+            .set_selected_item(ItemStack::new(&*vanilla_items::ARMOR_STAND));
         player.set_rotation((10.0, 0.0));
 
         let mut context = place_context(world, &player, floor, Direction::Up);
@@ -260,7 +260,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::ARMOR_STAND));
+            .set_selected_item(ItemStack::new(&*vanilla_items::ARMOR_STAND));
 
         let mut context = place_context(world, &player, floor, Direction::Down);
         assert_eq!(ArmorStandItem.use_on(&mut context), InteractionResult::Fail);
@@ -275,7 +275,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::ARMOR_STAND));
+            .set_selected_item(ItemStack::new(&*vanilla_items::ARMOR_STAND));
         assert!(world.set_block(
             floor.above(),
             vanilla_blocks::STONE.default_state(),
@@ -292,7 +292,7 @@ mod tests {
         let (fixture, player, floor) = floor_fixture("armor_stand_place_name");
         let world = &fixture.world;
 
-        let mut stack = ItemStack::new(&vanilla_items::ARMOR_STAND);
+        let mut stack = ItemStack::new(&*vanilla_items::ARMOR_STAND);
         stack.set(CUSTOM_NAME, TextComponent::plain("Sir Stands"));
         player.inventory.lock().set_selected_item(stack);
 

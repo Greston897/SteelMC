@@ -265,15 +265,15 @@ impl Entity for MinecartEntity {
         // Vanilla `AbstractMinecart.getPickResult` returns the minecart item that
         // matches this entity type, which also covers the specialised variants.
         let item = if self.entity_type == &vanilla_entities::MINECART {
-            &vanilla_items::MINECART
+            &*vanilla_items::MINECART
         } else if self.entity_type == &vanilla_entities::CHEST_MINECART {
-            &vanilla_items::CHEST_MINECART
+            &*vanilla_items::CHEST_MINECART
         } else if self.entity_type == &vanilla_entities::FURNACE_MINECART {
-            &vanilla_items::FURNACE_MINECART
+            &*vanilla_items::FURNACE_MINECART
         } else if self.entity_type == &vanilla_entities::TNT_MINECART {
-            &vanilla_items::TNT_MINECART
+            &*vanilla_items::TNT_MINECART
         } else if self.entity_type == &vanilla_entities::HOPPER_MINECART {
-            &vanilla_items::HOPPER_MINECART
+            &*vanilla_items::HOPPER_MINECART
         } else {
             return None;
         };

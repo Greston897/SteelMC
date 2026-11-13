@@ -952,10 +952,10 @@ mod tests {
     #[test]
     fn recursive_item_components_round_trip_both_codecs() {
         init_vanilla_registry();
-        let arrow = ItemStackTemplate::new(&vanilla_items::ARROW);
-        let diamond = ItemStackTemplate::new(&vanilla_items::DIAMOND);
+        let arrow = ItemStackTemplate::new(&*vanilla_items::ARROW);
+        let diamond = ItemStackTemplate::new(&*vanilla_items::DIAMOND);
         round_trip(UseRemainder::new(ItemStackTemplate::new(
-            &vanilla_items::BOWL,
+            &*vanilla_items::BOWL,
         )));
         round_trip(
             ChargedProjectiles::new(vec![arrow.clone()]).expect("one projectile should fit"),
@@ -972,7 +972,7 @@ mod tests {
         init_vanilla_registry();
         let contents = ItemContainerContents::new(vec![
             None,
-            Some(ItemStackTemplate::new(&vanilla_items::DIAMOND)),
+            Some(ItemStackTemplate::new(&*vanilla_items::DIAMOND)),
             None,
         ])
         .expect("three slots should fit");
@@ -991,7 +991,7 @@ mod tests {
     #[test]
     fn recursive_collection_limits_are_enforced() {
         init_vanilla_registry();
-        let projectile = ItemStackTemplate::new(&vanilla_items::ARROW);
+        let projectile = ItemStackTemplate::new(&*vanilla_items::ARROW);
         assert!(
             ChargedProjectiles::new(vec![projectile; ChargedProjectiles::MAX_SIZE + 1]).is_err()
         );
@@ -1007,10 +1007,10 @@ mod tests {
         let mut inner_patch = DataComponentPatch::new();
         inner_patch.set(
             BUNDLE_CONTENTS,
-            BundleContents::new(vec![ItemStackTemplate::new(&vanilla_items::STONE)]),
+            BundleContents::new(vec![ItemStackTemplate::new(&*vanilla_items::STONE)]),
         );
         let nested_bundle =
-            ItemStackTemplate::try_with_count_and_patch(&vanilla_items::STONE, 1, inner_patch)
+            ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::STONE, 1, inner_patch)
                 .expect("nested bundle should persist");
         let nested_weight = BundleContents::new(vec![nested_bundle])
             .compute_weight()
@@ -1028,7 +1028,7 @@ mod tests {
         let mut beehive_patch = DataComponentPatch::new();
         beehive_patch.set(BEES, Bees::new(vec![occupant]));
         let beehive =
-            ItemStackTemplate::try_with_count_and_patch(&vanilla_items::BEEHIVE, 1, beehive_patch)
+            ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::BEEHIVE, 1, beehive_patch)
                 .expect("occupied beehive should persist");
         let beehive_weight = BundleContents::new(vec![beehive])
             .compute_weight()
@@ -1048,7 +1048,7 @@ mod tests {
             .map(|max_stack_size| {
                 let mut patch = DataComponentPatch::new();
                 patch.set(MAX_STACK_SIZE, max_stack_size);
-                ItemStackTemplate::try_with_count_and_patch(&vanilla_items::STONE, 1, patch)
+                ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::STONE, 1, patch)
                     .expect("prime max stack size should be persistable")
             })
             .collect();
@@ -1104,13 +1104,13 @@ mod tests {
     #[test]
     fn bundle_contents_enforces_the_vanilla_weight_limit() {
         let mut contents = BundleContents::empty();
-        let mut dirt = ItemStack::with_count(&vanilla_items::DIRT, 64);
+        let mut dirt = ItemStack::with_count(&*vanilla_items::DIRT, 64);
         assert_eq!(contents.add_stack(&mut dirt), 64);
         assert_eq!(dirt.count(), 0);
         assert!(contents.is_full());
         assert!((contents.occupancy() - 1.0).abs() < f32::EPSILON);
 
-        let mut extra = ItemStack::new(&vanilla_items::DIRT);
+        let mut extra = ItemStack::new(&*vanilla_items::DIRT);
         assert_eq!(contents.add_stack(&mut extra), 0);
         assert_eq!(extra.count(), 1);
     }
@@ -1118,8 +1118,8 @@ mod tests {
     #[test]
     fn bundle_contents_merges_matching_stacks() {
         let mut contents = BundleContents::empty();
-        let mut first = ItemStack::with_count(&vanilla_items::DIRT, 10);
-        let mut second = ItemStack::with_count(&vanilla_items::DIRT, 5);
+        let mut first = ItemStack::with_count(&*vanilla_items::DIRT, 10);
+        let mut second = ItemStack::with_count(&*vanilla_items::DIRT, 5);
         assert_eq!(contents.add_stack(&mut first), 10);
         assert_eq!(contents.add_stack(&mut second), 5);
         assert_eq!(contents.items().len(), 1);
@@ -1129,7 +1129,7 @@ mod tests {
 
     #[test]
     fn bundle_contents_rejects_shulker_boxes() {
-        let shulker = ItemStack::new(&vanilla_items::SHULKER_BOX);
+        let shulker = ItemStack::new(&*vanilla_items::SHULKER_BOX);
         assert!(!BundleContents::can_be_bundled(&shulker));
 
         let mut contents = BundleContents::empty();
@@ -1141,10 +1141,10 @@ mod tests {
     #[test]
     fn nested_bundles_cost_themselves_plus_one_sixteenth() {
         let mut inner_contents = BundleContents::empty();
-        let mut dirt = ItemStack::with_count(&vanilla_items::DIRT, 16);
+        let mut dirt = ItemStack::with_count(&*vanilla_items::DIRT, 16);
         assert_eq!(inner_contents.add_stack(&mut dirt), 16);
 
-        let mut inner_bundle = ItemStack::new(&vanilla_items::BUNDLE);
+        let mut inner_bundle = ItemStack::new(&*vanilla_items::BUNDLE);
         inner_bundle.set(BUNDLE_CONTENTS, inner_contents);
 
         // 1/16 nested-bundle cost + 16/64 contents = 5/16, so three fit.
@@ -1160,8 +1160,8 @@ mod tests {
     #[test]
     fn remove_selected_pops_the_selected_stack_and_clears_the_selection() {
         let mut contents = BundleContents::empty();
-        let mut dirt = ItemStack::with_count(&vanilla_items::DIRT, 4);
-        let mut stone = ItemStack::with_count(&vanilla_items::STONE, 2);
+        let mut dirt = ItemStack::with_count(&*vanilla_items::DIRT, 4);
+        let mut stone = ItemStack::with_count(&*vanilla_items::STONE, 2);
         assert_eq!(contents.add_stack(&mut dirt), 4);
         assert_eq!(contents.add_stack(&mut stone), 2);
         // Vanilla inserts new stacks at the front: [stone, dirt].
@@ -1169,7 +1169,7 @@ mod tests {
 
         contents.set_selected_stack_index(1);
         let removed = contents.remove_selected().expect("selected stack");
-        assert!(removed.is(&vanilla_items::DIRT));
+        assert!(removed.is(&*vanilla_items::DIRT));
         assert_eq!(removed.count(), 4);
         assert_eq!(
             contents.selected_stack_index(),
@@ -1187,7 +1187,7 @@ mod tests {
     #[test]
     fn selected_index_is_transient_ui_state() {
         let mut contents = BundleContents::empty();
-        let mut dirt = ItemStack::new(&vanilla_items::DIRT);
+        let mut dirt = ItemStack::new(&*vanilla_items::DIRT);
         assert_eq!(contents.add_stack(&mut dirt), 1);
 
         let mut selected = contents.clone();

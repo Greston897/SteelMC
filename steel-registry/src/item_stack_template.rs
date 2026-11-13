@@ -62,7 +62,7 @@ pub struct ItemStackTemplate {
 
 impl Default for ItemStackTemplate {
     fn default() -> Self {
-        Self::new(&vanilla_items::STONE)
+        Self::new(&*vanilla_items::STONE)
     }
 }
 
@@ -413,7 +413,7 @@ mod tests {
     #[test]
     fn item_only_alternative_decodes_and_primary_codec_omits_defaults() {
         init_vanilla_registry();
-        let template = ItemStackTemplate::new(&vanilla_items::STICK);
+        let template = ItemStackTemplate::new(&*vanilla_items::STICK);
         let mut expected = NbtCompound::new();
         expected.insert("id", "minecraft:stick");
         let expected = NbtTag::Compound(expected);
@@ -428,7 +428,7 @@ mod tests {
         let mut patch = DataComponentPatch::new();
         patch.set(ENCHANTMENT_GLINT_OVERRIDE, true);
         let template =
-            ItemStackTemplate::try_with_count_and_patch(&vanilla_items::DIAMOND, 3, patch)
+            ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::DIAMOND, 3, patch)
                 .expect("valid template should construct");
         assert_eq!(parse(template.clone().to_nbt_tag()), Some(template.clone()));
 
@@ -447,7 +447,7 @@ mod tests {
         init_vanilla_registry();
         let mut patch = DataComponentPatch::new();
         patch.set(CUSTOM_NAME, TextComponent::plain("Stone"));
-        let template = ItemStackTemplate::try_with_count_and_patch(&vanilla_items::STONE, 2, patch)
+        let template = ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::STONE, 2, patch)
             .expect("valid template should construct");
         let component = TextComponent::plain("item").hover_event(
             template
@@ -476,7 +476,7 @@ mod tests {
         for count in [-1, 0, 100] {
             assert!(
                 ItemStackTemplate::try_with_count_and_patch(
-                    &vanilla_items::STICK,
+                    &*vanilla_items::STICK,
                     count,
                     DataComponentPatch::new(),
                 )
@@ -485,7 +485,7 @@ mod tests {
         }
         assert!(
             ItemStackTemplate::try_with_count_and_patch(
-                &vanilla_items::AIR,
+                &*vanilla_items::AIR,
                 1,
                 DataComponentPatch::new(),
             )
@@ -518,7 +518,7 @@ mod tests {
         init_vanilla_registry();
         let mut patch = DataComponentPatch::new();
         patch.set(MAX_STACK_SIZE, 0);
-        let template = ItemStackTemplate::from_stream(&vanilla_items::STONE, 1, patch)
+        let template = ItemStackTemplate::from_stream(&*vanilla_items::STONE, 1, patch)
             .expect("stream codec should admit the nested patch");
         let bundle = BundleContents::new(vec![template]);
         let entry = REGISTRY
@@ -542,19 +542,19 @@ mod tests {
         let mut oversized_patch = DataComponentPatch::new();
         oversized_patch.set(MAX_STACK_SIZE, 1);
         let oversized =
-            ItemStackTemplate::try_with_count_and_patch(&vanilla_items::STONE, 2, oversized_patch)
+            ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::STONE, 2, oversized_patch)
                 .expect("template codec permits counts above the effective stack maximum");
         assert!(oversized.create().is_empty());
 
         let mut damageable_patch = DataComponentPatch::new();
         damageable_patch.set(MAX_DAMAGE, 1);
         let damageable =
-            ItemStackTemplate::try_with_count_and_patch(&vanilla_items::STONE, 1, damageable_patch)
+            ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::STONE, 1, damageable_patch)
                 .expect("individually valid components should construct a template");
         assert!(damageable.create().is_empty());
 
         assert!(
-            !ItemStackTemplate::new(&vanilla_items::STONE)
+            !ItemStackTemplate::new(&*vanilla_items::STONE)
                 .create()
                 .is_empty()
         );
@@ -571,7 +571,7 @@ mod tests {
                 .expect("one container slot should be valid"),
         );
         let container =
-            ItemStackTemplate::try_with_count_and_patch(&vanilla_items::STONE, 1, container_patch)
+            ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::STONE, 1, container_patch)
                 .expect("container component should persist");
         assert!(container.create().is_empty());
 
@@ -581,7 +581,7 @@ mod tests {
             BundleContents::new(vec![oversized_stone_template()]),
         );
         let bundle =
-            ItemStackTemplate::try_with_count_and_patch(&vanilla_items::STONE, 1, bundle_patch)
+            ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::STONE, 1, bundle_patch)
                 .expect("bundle component should persist");
         assert!(bundle.create().is_empty());
 
@@ -592,7 +592,7 @@ mod tests {
                 .expect("one charged projectile should be valid"),
         );
         let projectiles =
-            ItemStackTemplate::try_with_count_and_patch(&vanilla_items::STONE, 1, projectile_patch)
+            ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::STONE, 1, projectile_patch)
                 .expect("charged-projectiles component should persist");
         assert!(projectiles.create().is_empty());
     }
@@ -606,13 +606,13 @@ mod tests {
             .map(|max_stack_size| {
                 let mut patch = DataComponentPatch::new();
                 patch.set(MAX_STACK_SIZE, max_stack_size);
-                ItemStackTemplate::try_with_count_and_patch(&vanilla_items::STONE, 1, patch)
+                ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::STONE, 1, patch)
                     .expect("prime max stack size should be persistable")
             })
             .collect();
         let mut patch = DataComponentPatch::new();
         patch.set(BUNDLE_CONTENTS, BundleContents::new(items));
-        let template = ItemStackTemplate::try_with_count_and_patch(&vanilla_items::STONE, 1, patch)
+        let template = ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::STONE, 1, patch)
             .expect("bundle with individually valid entries should persist");
 
         assert!(template.create().is_empty());
@@ -621,7 +621,7 @@ mod tests {
     fn oversized_stone_template() -> ItemStackTemplate {
         let mut patch = DataComponentPatch::new();
         patch.set(MAX_STACK_SIZE, 1);
-        ItemStackTemplate::try_with_count_and_patch(&vanilla_items::STONE, 2, patch)
+        ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::STONE, 2, patch)
             .expect("template codec permits counts above the effective stack maximum")
     }
 }

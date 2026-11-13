@@ -1346,7 +1346,7 @@ fn apply_non_default_domain_data(player: &Player) {
     source_data.abilities.walking_speed = 0.3;
     source_data.inventory = vec![PersistentSlot {
         slot: 0,
-        item: ItemStack::new(&vanilla_items::STICK),
+        item: ItemStack::new(&*vanilla_items::STICK),
     }];
     source_data.selected_slot = 4;
     source_data.food_level = 6;
@@ -1360,7 +1360,7 @@ fn apply_non_default_domain_data(player: &Player) {
     source_data.seen_credits = true;
     source_data.ender_items = vec![PersistentSlot {
         slot: 3,
-        item: ItemStack::new(&vanilla_items::STICK),
+        item: ItemStack::new(&*vanilla_items::STICK),
     }];
     source_data.apply_to_player_without_location(player);
 }

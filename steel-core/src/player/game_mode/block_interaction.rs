@@ -378,7 +378,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::FIREWORK_ROCKET));
+            .set_selected_item(ItemStack::new(&*vanilla_items::FIREWORK_ROCKET));
 
         for (sequence, location) in [
             (1, DVec3::new(f64::NAN, 0.5, 0.5)),
@@ -401,7 +401,7 @@ mod tests {
 
         let inventory = player.inventory.lock();
         let held_item = inventory.get_item_in_hand(InteractionHand::MainHand);
-        assert!(held_item.is(&vanilla_items::FIREWORK_ROCKET));
+        assert!(held_item.is(&*vanilla_items::FIREWORK_ROCKET));
         assert_eq!(held_item.count(), 1);
         assert!(!player.connection.closed());
     }

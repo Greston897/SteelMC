@@ -38,22 +38,22 @@ use crate::world::World;
 #[must_use]
 pub fn cushion_item_for_color(color: DyeColor) -> ItemRef {
     match color {
-        DyeColor::White => &vanilla_items::WHITE_CUSHION,
-        DyeColor::Orange => &vanilla_items::ORANGE_CUSHION,
-        DyeColor::Magenta => &vanilla_items::MAGENTA_CUSHION,
-        DyeColor::LightBlue => &vanilla_items::LIGHT_BLUE_CUSHION,
-        DyeColor::Yellow => &vanilla_items::YELLOW_CUSHION,
-        DyeColor::Lime => &vanilla_items::LIME_CUSHION,
-        DyeColor::Pink => &vanilla_items::PINK_CUSHION,
-        DyeColor::Gray => &vanilla_items::GRAY_CUSHION,
-        DyeColor::LightGray => &vanilla_items::LIGHT_GRAY_CUSHION,
-        DyeColor::Cyan => &vanilla_items::CYAN_CUSHION,
-        DyeColor::Purple => &vanilla_items::PURPLE_CUSHION,
-        DyeColor::Blue => &vanilla_items::BLUE_CUSHION,
-        DyeColor::Brown => &vanilla_items::BROWN_CUSHION,
-        DyeColor::Green => &vanilla_items::GREEN_CUSHION,
-        DyeColor::Red => &vanilla_items::RED_CUSHION,
-        DyeColor::Black => &vanilla_items::BLACK_CUSHION,
+        DyeColor::White => &*vanilla_items::WHITE_CUSHION,
+        DyeColor::Orange => &*vanilla_items::ORANGE_CUSHION,
+        DyeColor::Magenta => &*vanilla_items::MAGENTA_CUSHION,
+        DyeColor::LightBlue => &*vanilla_items::LIGHT_BLUE_CUSHION,
+        DyeColor::Yellow => &*vanilla_items::YELLOW_CUSHION,
+        DyeColor::Lime => &*vanilla_items::LIME_CUSHION,
+        DyeColor::Pink => &*vanilla_items::PINK_CUSHION,
+        DyeColor::Gray => &*vanilla_items::GRAY_CUSHION,
+        DyeColor::LightGray => &*vanilla_items::LIGHT_GRAY_CUSHION,
+        DyeColor::Cyan => &*vanilla_items::CYAN_CUSHION,
+        DyeColor::Purple => &*vanilla_items::PURPLE_CUSHION,
+        DyeColor::Blue => &*vanilla_items::BLUE_CUSHION,
+        DyeColor::Brown => &*vanilla_items::BROWN_CUSHION,
+        DyeColor::Green => &*vanilla_items::GREEN_CUSHION,
+        DyeColor::Red => &*vanilla_items::RED_CUSHION,
+        DyeColor::Black => &*vanilla_items::BLACK_CUSHION,
     }
 }
 

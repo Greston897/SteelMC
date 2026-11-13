@@ -246,7 +246,7 @@ impl ThrowableProjectile for ThrownEggEntity {}
 
 impl ThrowableItemProjectile for ThrownEggEntity {
     fn get_default_item(&self) -> ItemRef {
-        &vanilla_items::EGG
+        &*vanilla_items::EGG
     }
 
     fn set_item(&self, item: ItemStack) {
@@ -318,7 +318,7 @@ mod tests {
 
         let egg =
             ThrownEggEntity::new(&vanilla_entities::EGG, 1, DVec3::ZERO, Weak::<World>::new());
-        let mut stack = ItemStack::new(&vanilla_items::EGG);
+        let mut stack = ItemStack::new(&*vanilla_items::EGG);
         stack.set(
             CHICKEN_VARIANT,
             RegistryReference::new(&vanilla_chicken_variants::COLD),
@@ -342,7 +342,7 @@ mod tests {
 
         let egg =
             ThrownEggEntity::new(&vanilla_entities::EGG, 1, DVec3::ZERO, Weak::<World>::new());
-        egg.set_item(ItemStack::new(&vanilla_items::EGG));
+        egg.set_item(ItemStack::new(&*vanilla_items::EGG));
 
         let chicken = ChickenEntity::new(
             &vanilla_entities::CHICKEN,
@@ -372,7 +372,7 @@ mod tests {
             pos,
             Arc::downgrade(world),
         ));
-        egg.set_item(ItemStack::new(&vanilla_items::EGG));
+        egg.set_item(ItemStack::new(&*vanilla_items::EGG));
 
         assert!(egg.spawn_hatchling(world));
 
@@ -411,7 +411,7 @@ mod tests {
             DVec3::new(0.5, 80.5, 0.5),
             Arc::downgrade(world),
         ));
-        egg.set_item(ItemStack::new(&vanilla_items::EGG));
+        egg.set_item(ItemStack::new(&*vanilla_items::EGG));
 
         assert!(!egg.spawn_hatchling(world));
         assert!(
@@ -449,7 +449,7 @@ mod tests {
             pos,
             Arc::downgrade(world),
         ));
-        egg.set_item(ItemStack::new(&vanilla_items::EGG));
+        egg.set_item(ItemStack::new(&*vanilla_items::EGG));
 
         assert!(egg.spawn_hatchling(world));
         assert!(

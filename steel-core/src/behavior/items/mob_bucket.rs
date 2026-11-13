@@ -34,19 +34,19 @@ impl MobBucketItem {
     /// Maps a mob bucket item to the entity it carries.
     #[must_use]
     pub fn entity_type_for_item(stack: &ItemStack) -> Option<EntityTypeRef> {
-        if stack.is(&vanilla_items::COD_BUCKET) {
+        if stack.is(&*vanilla_items::COD_BUCKET) {
             Some(&vanilla_entities::COD)
-        } else if stack.is(&vanilla_items::SALMON_BUCKET) {
+        } else if stack.is(&*vanilla_items::SALMON_BUCKET) {
             Some(&vanilla_entities::SALMON)
-        } else if stack.is(&vanilla_items::TROPICAL_FISH_BUCKET) {
+        } else if stack.is(&*vanilla_items::TROPICAL_FISH_BUCKET) {
             Some(&vanilla_entities::TROPICAL_FISH)
-        } else if stack.is(&vanilla_items::PUFFERFISH_BUCKET) {
+        } else if stack.is(&*vanilla_items::PUFFERFISH_BUCKET) {
             Some(&vanilla_entities::PUFFERFISH)
-        } else if stack.is(&vanilla_items::AXOLOTL_BUCKET) {
+        } else if stack.is(&*vanilla_items::AXOLOTL_BUCKET) {
             Some(&vanilla_entities::AXOLOTL)
-        } else if stack.is(&vanilla_items::TADPOLE_BUCKET) {
+        } else if stack.is(&*vanilla_items::TADPOLE_BUCKET) {
             Some(&vanilla_entities::TADPOLE)
-        } else if stack.is(&vanilla_items::SULFUR_CUBE_BUCKET) {
+        } else if stack.is(&*vanilla_items::SULFUR_CUBE_BUCKET) {
             Some(&vanilla_entities::SULFUR_CUBE)
         } else {
             None
@@ -122,7 +122,7 @@ impl ItemBehavior for MobBucketItem {
             &GameEventContext::new(None, Some(context.world.get_block_state(hit_pos.below()))),
         );
 
-        create_filled_result(context, ItemStack::new(&vanilla_items::WATER_BUCKET), true);
+        create_filled_result(context, ItemStack::new(&*vanilla_items::WATER_BUCKET), true);
 
         InteractionResult::Success
     }

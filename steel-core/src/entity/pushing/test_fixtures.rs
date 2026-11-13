@@ -85,7 +85,7 @@ pub(super) const DEFAULT_ENTITIES: [(&str, Factory); 9] = [
             &vanilla_entities::ITEM,
             id,
             pos,
-            ItemStack::new(&vanilla_items::WHEAT),
+            ItemStack::new(&*vanilla_items::WHEAT),
             DVec3::ZERO,
             Arc::downgrade(world),
         ))

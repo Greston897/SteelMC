@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use steel_utils::{Downcast as _, BlockPos, WorldAabb};
 
-use crate::entity::{EntityEventSource as _, Mob as _, SharedEntity};
+use crate::entity::{EntityEventSource, Mob as _, SharedEntity};
 use crate::entity::entities::PiglinEntity;
 use crate::entity::Mob as _;
 use crate::player::Player;
@@ -60,7 +60,7 @@ pub(crate) fn anger_nearby_piglins(world: &Arc<World>, pos: BlockPos, player: &P
     // one through the world's player index, which owns the `Arc`.
     let Some(player_entity) = world
         .players
-        .get_by_entity_id(player.id())
+        .get_by_entity_id(player.base().id())
         .map(EntityEventSource::into_shared_entity)
     else {
         return;

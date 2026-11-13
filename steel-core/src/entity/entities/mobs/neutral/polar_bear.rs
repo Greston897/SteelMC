@@ -386,6 +386,6 @@ mod tests {
     fn polar_bears_eat_nothing() {
         init_vanilla_registry();
         let bear = bear();
-        assert!(!bear.is_food(&ItemStack::new(&vanilla_items::SALMON)));
+        assert!(!bear.is_food(&ItemStack::new(&*vanilla_items::SALMON)));
     }
 }

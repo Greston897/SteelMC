@@ -191,7 +191,7 @@ impl ThrowableProjectile for ExperienceBottleEntity {}
 
 impl ThrowableItemProjectile for ExperienceBottleEntity {
     fn get_default_item(&self) -> ItemRef {
-        &vanilla_items::EXPERIENCE_BOTTLE
+        &*vanilla_items::EXPERIENCE_BOTTLE
     }
 
     fn set_item(&self, item: ItemStack) {

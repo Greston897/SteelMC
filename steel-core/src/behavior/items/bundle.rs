@@ -309,7 +309,7 @@ mod tests {
     const HOTBAR_SLOT: usize = 36;
 
     fn bundle_stack(contents: BundleContents) -> ItemStack {
-        let mut stack = ItemStack::new(&vanilla_items::BUNDLE);
+        let mut stack = ItemStack::new(&*vanilla_items::BUNDLE);
         stack.set(BUNDLE_CONTENTS, contents);
         stack
     }
@@ -322,7 +322,7 @@ mod tests {
     }
 
     fn dirt(count: i32) -> ItemStack {
-        ItemStack::with_count(&vanilla_items::DIRT, count)
+        ItemStack::with_count(&*vanilla_items::DIRT, count)
     }
 
     /// Fills the first hotbar slot with `stack`.
@@ -336,7 +336,7 @@ mod tests {
             .inventory
             .lock()
             .get_item(0)
-            .is(&vanilla_items::SHULKER_BOX)
+            .is(&*vanilla_items::SHULKER_BOX)
     }
 
     #[test]
@@ -408,7 +408,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_item(0, ItemStack::new(&vanilla_items::SHULKER_BOX));
+            .set_item(0, ItemStack::new(&*vanilla_items::SHULKER_BOX));
 
         let mut menu = inventory_menu(Arc::clone(&player.inventory));
         *menu.behavior_mut().carried_mut() = bundle_stack(BundleContents::empty());
@@ -451,7 +451,7 @@ mod tests {
         let Some(item) = dropped[0].as_ref().downcast_ref::<ItemEntity>() else {
             panic!("dropped entity should be an item entity");
         };
-        assert!(item.get_item().is(&vanilla_items::DIRT));
+        assert!(item.get_item().is(&*vanilla_items::DIRT));
         assert_eq!(item.get_item().count(), 7);
     }
 
@@ -467,7 +467,7 @@ mod tests {
 
         let mut contents = BundleContents::empty();
         let mut five = dirt(5);
-        let mut stone = ItemStack::with_count(&vanilla_items::STONE, 3);
+        let mut stone = ItemStack::with_count(&*vanilla_items::STONE, 3);
         assert_eq!(contents.add_stack(&mut five), 5);
         assert_eq!(contents.add_stack(&mut stone), 3);
 
@@ -542,7 +542,7 @@ mod tests {
             &player,
         );
 
-        assert!(menu.behavior().carried().is(&vanilla_items::DIRT));
+        assert!(menu.behavior().carried().is(&*vanilla_items::DIRT));
         assert_eq!(menu.behavior().carried().count(), 7);
         let stack = player.inventory.lock().get_item(0).clone();
         assert!(contents_of(&stack).is_empty());

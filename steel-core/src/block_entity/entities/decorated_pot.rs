@@ -151,7 +151,7 @@ mod tests {
             BlockPos::new(0, 0, 0),
             vanilla_blocks::DECORATED_POT.default_state(),
         );
-        pot.set_item_on_side(2, ItemStack::new(&vanilla_items::BRICK));
+        pot.set_item_on_side(2, ItemStack::new(&*vanilla_items::BRICK));
         assert_eq!(pot.item_on_side(2).count(), 1);
     }
 }

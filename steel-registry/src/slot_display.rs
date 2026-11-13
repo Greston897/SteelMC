@@ -339,7 +339,7 @@ mod tests {
     fn item_display_writes_the_registry_id() {
         init_vanilla_registry();
         let mut bytes = Vec::new();
-        SlotDisplay::Item(&vanilla_items::DIAMOND)
+        SlotDisplay::Item(&*vanilla_items::DIAMOND)
             .write(&mut bytes)
             .expect("item display should encode");
         assert_eq!(bytes[0], 4, "minecraft:item is slot display kind 4");
@@ -355,8 +355,8 @@ mod tests {
     fn composite_display_writes_its_length() {
         init_vanilla_registry();
         let display = SlotDisplay::Composite(vec![
-            SlotDisplay::Item(&vanilla_items::DIAMOND),
-            SlotDisplay::Item(&vanilla_items::EMERALD),
+            SlotDisplay::Item(&*vanilla_items::DIAMOND),
+            SlotDisplay::Item(&*vanilla_items::EMERALD),
         ]);
         let mut bytes = Vec::new();
         display.write(&mut bytes).expect("composite should encode");
@@ -371,12 +371,12 @@ mod tests {
             width: 2,
             height: 2,
             ingredients: vec![
-                SlotDisplay::Item(&vanilla_items::OAK_PLANKS),
-                SlotDisplay::Item(&vanilla_items::OAK_PLANKS),
-                SlotDisplay::Item(&vanilla_items::OAK_PLANKS),
-                SlotDisplay::Item(&vanilla_items::OAK_PLANKS),
+                SlotDisplay::Item(&*vanilla_items::OAK_PLANKS),
+                SlotDisplay::Item(&*vanilla_items::OAK_PLANKS),
+                SlotDisplay::Item(&*vanilla_items::OAK_PLANKS),
+                SlotDisplay::Item(&*vanilla_items::OAK_PLANKS),
             ],
-            result: SlotDisplay::Item(&vanilla_items::CRAFTING_TABLE),
+            result: SlotDisplay::Item(&*vanilla_items::CRAFTING_TABLE),
             crafting_station: RecipeDisplay::crafting_table_station(),
         };
         let mut bytes = Vec::new();

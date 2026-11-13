@@ -127,7 +127,7 @@ mod tests {
     #[test]
     fn prevents_ice_melting_with_silk_touch() {
         init_vanilla_registry();
-        let mut tool = ItemStack::new(&vanilla_items::DIAMOND_PICKAXE);
+        let mut tool = ItemStack::new(&*vanilla_items::DIAMOND_PICKAXE);
         assert!(!IceBlock::prevents_ice_melting(&tool));
 
         tool.upgrade_enchantment(vanilla_enchantments::SILK_TOUCH.key.clone(), 1);

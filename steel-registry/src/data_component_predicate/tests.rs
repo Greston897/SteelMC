@@ -144,7 +144,7 @@ fn adventure_and_lock_components_round_trip_both_codecs() {
     )
     .expect("exact and partial maps use separate namespaces");
     let item = ItemPredicate::new(
-        Some(RegistryHolderSet::Direct(vec![&vanilla_items::STONE])),
+        Some(RegistryHolderSet::Direct(vec![&*vanilla_items::STONE])),
         IntBounds::exactly(1),
         matchers,
     );

@@ -116,7 +116,7 @@ mod tests {
     #[test]
     fn extracted_sherd_item_provides_its_pattern() {
         init_vanilla_registry();
-        let sherd = ItemStack::new(&vanilla_items::ANGLER_POTTERY_SHERD);
+        let sherd = ItemStack::new(&*vanilla_items::ANGLER_POTTERY_SHERD);
         let component = sherd
             .get(PROVIDES_POTTERY_PATTERN)
             .expect("angler pottery sherd should provide a pattern");

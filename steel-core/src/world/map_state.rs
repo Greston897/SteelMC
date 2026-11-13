@@ -1436,7 +1436,7 @@ mod tests {
         let nether = Identifier::new_static("minecraft", "the_nether");
         let (mut state, _) = MapState::of(0.0, 0.0, 0, true, false, nether);
         state.set_id(7);
-        let mut stack = ItemStack::new(&vanilla_items::FILLED_MAP);
+        let mut stack = ItemStack::new(&*vanilla_items::FILLED_MAP);
         stack.set(MAP_ID, MapId::new(7));
         player.inventory.lock().set_selected_item(stack);
 

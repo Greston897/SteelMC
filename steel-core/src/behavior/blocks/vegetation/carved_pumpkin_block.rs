@@ -53,7 +53,7 @@ impl CarvedPumpkinBlock {
         ] {
             if world.get_block_state(below1).get_block() == block
                 && world.get_block_state(below2).get_block() == block
-                && has_arms(below2, *block)
+                && has_arms(below2, block)
             {
                 return Some(entity_type);
             }

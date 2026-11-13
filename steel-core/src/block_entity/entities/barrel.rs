@@ -189,7 +189,7 @@ mod tests {
         barrel
             .container
             .lock()
-            .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 100));
+            .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 100));
 
         assert_eq!(barrel.container.lock().get_item(0).count(), 64);
     }
@@ -200,7 +200,7 @@ mod tests {
         barrel
             .container
             .lock()
-            .set_item(0, ItemStack::new(&vanilla_items::STONE));
+            .set_item(0, ItemStack::new(&*vanilla_items::STONE));
 
         barrel.pre_remove_side_effects(
             BlockPos::new(1, 2, 3),

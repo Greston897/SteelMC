@@ -278,19 +278,19 @@ impl MushroomCowEntity {
             .inventory
             .lock()
             .get_item_in_hand(hand)
-            .is(&vanilla_items::BOWL)
+            .is(&*vanilla_items::BOWL)
         {
             return false;
         }
 
         let stew_effects = self.stew_effects.lock().take();
         let (stew_stack, sound) = if let Some(effects) = stew_effects {
-            let mut stack = ItemStack::new(&vanilla_items::SUSPICIOUS_STEW);
+            let mut stack = ItemStack::new(&*vanilla_items::SUSPICIOUS_STEW);
             stack.set(SUSPICIOUS_STEW_EFFECTS, effects);
             (stack, &sound_events::ENTITY_MOOSHROOM_SUSPICIOUS_MILK)
         } else {
             (
-                ItemStack::new(&vanilla_items::MUSHROOM_STEW),
+                ItemStack::new(&*vanilla_items::MUSHROOM_STEW),
                 &sound_events::ENTITY_MOOSHROOM_MILK,
             )
         };
@@ -374,7 +374,7 @@ impl MushroomCowEntity {
             .inventory
             .lock()
             .get_item_in_hand(hand)
-            .is(&vanilla_items::BUCKET)
+            .is(&*vanilla_items::BUCKET)
         {
             return false;
         }
@@ -385,7 +385,7 @@ impl MushroomCowEntity {
             let mut inventory = player.inventory.lock();
             inventory.apply_filled_result(
                 hand,
-                ItemStack::new(&vanilla_items::MILK_BUCKET),
+                ItemStack::new(&*vanilla_items::MILK_BUCKET),
                 player.has_infinite_materials(),
                 true,
             )
@@ -668,7 +668,7 @@ impl Mob for MushroomCowEntity {
             stack.copy_with_count(stack.count())
         };
 
-        if item_stack.is(&vanilla_items::SHEARS) {
+        if item_stack.is(&*vanilla_items::SHEARS) {
             let result = self.try_interact_shears(player, hand);
             if result != InteractionResult::Pass {
                 return result;

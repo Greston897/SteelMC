@@ -381,8 +381,8 @@ mod tests {
         let (mut menu, state) = open_test_beacon(world, &player, BlockPos::new(8, 64, 8));
         let payment_id = payment_id_of(&menu);
 
-        click_into_payment(&mut menu, &player, ItemStack::new(&vanilla_items::DIRT));
-        assert!(menu.behavior().carried().is(&vanilla_items::DIRT));
+        click_into_payment(&mut menu, &player, ItemStack::new(&*vanilla_items::DIRT));
+        assert!(menu.behavior().carried().is(&*vanilla_items::DIRT));
         assert!({
             let guard = menu.behavior().lock_all_containers();
             guard
@@ -395,7 +395,7 @@ mod tests {
         click_into_payment(
             &mut menu,
             &player,
-            ItemStack::with_count(&vanilla_items::IRON_INGOT, 2),
+            ItemStack::with_count(&*vanilla_items::IRON_INGOT, 2),
         );
         assert_eq!(menu.behavior().carried().count(), 1);
         assert!({
@@ -404,7 +404,7 @@ mod tests {
                 .get(payment_id)
                 .expect("payment container locked")
                 .get_item(0)
-                .is(&vanilla_items::IRON_INGOT)
+                .is(&*vanilla_items::IRON_INGOT)
         });
 
         state.lock().levels = 1;
@@ -445,7 +445,7 @@ mod tests {
         click_into_payment(
             &mut menu,
             &player,
-            ItemStack::new(&vanilla_items::IRON_INGOT),
+            ItemStack::new(&*vanilla_items::IRON_INGOT),
         );
 
         let main_slot = menu
@@ -457,7 +457,7 @@ mod tests {
         {
             let mut guard = menu.behavior().lock_all_containers();
             menu.behavior().slots()[main_slot]
-                .set_item(&mut guard, ItemStack::new(&vanilla_items::IRON_INGOT));
+                .set_item(&mut guard, ItemStack::new(&*vanilla_items::IRON_INGOT));
         }
 
         menu.clicked(Click::QuickMove { slot: main_slot }, &player);
@@ -477,7 +477,7 @@ mod tests {
                 .get(payment_id)
                 .expect("payment container locked")
                 .get_item(0)
-                .is(&vanilla_items::IRON_INGOT)
+                .is(&*vanilla_items::IRON_INGOT)
         });
     }
 
@@ -497,7 +497,7 @@ mod tests {
         click_into_payment(
             &mut menu,
             &player,
-            ItemStack::new(&vanilla_items::IRON_INGOT),
+            ItemStack::new(&*vanilla_items::IRON_INGOT),
         );
 
         menu.removed(&player);
@@ -506,7 +506,7 @@ mod tests {
             !player
                 .inventory
                 .lock()
-                .contains_stack(&ItemStack::new(&vanilla_items::IRON_INGOT)),
+                .contains_stack(&ItemStack::new(&*vanilla_items::IRON_INGOT)),
             "vanilla drops the payment rather than returning it to the inventory"
         );
     }

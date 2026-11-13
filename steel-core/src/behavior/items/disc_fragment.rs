@@ -47,7 +47,7 @@ mod tests {
     #[test]
     fn the_description_key_is_the_item_key_plus_desc() {
         init_vanilla_registry();
-        let stack = ItemStack::new(&vanilla_items::DISC_FRAGMENT_5);
+        let stack = ItemStack::new(&*vanilla_items::DISC_FRAGMENT_5);
 
         assert_eq!(
             DiscFragmentItem::description_translation_key(&stack),

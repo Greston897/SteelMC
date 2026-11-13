@@ -274,7 +274,7 @@ mod tests {
     fn extracted_equippable_fields_gate_swapping_and_entity_types() {
         init_vanilla_registry();
 
-        let pumpkin = ItemStack::new(&vanilla_items::CARVED_PUMPKIN);
+        let pumpkin = ItemStack::new(&*vanilla_items::CARVED_PUMPKIN);
         let Some(pumpkin_equippable) = pumpkin.get_equippable() else {
             panic!("carved pumpkin should have equippable data");
         };
@@ -285,7 +285,7 @@ mod tests {
             Some(&Identifier::vanilla_static("misc/pumpkinblur"))
         );
 
-        let helmet = ItemStack::new(&vanilla_items::DIAMOND_HELMET);
+        let helmet = ItemStack::new(&*vanilla_items::DIAMOND_HELMET);
         let Some(helmet_equippable) = helmet.get_equippable() else {
             panic!("diamond helmet should have equippable data");
         };
@@ -303,7 +303,7 @@ mod tests {
         );
         assert!(helmet_equippable.can_be_equipped_by(&PLAYER));
 
-        let saddle = ItemStack::new(&vanilla_items::SADDLE);
+        let saddle = ItemStack::new(&*vanilla_items::SADDLE);
         let Some(saddle_equippable) = saddle.get_equippable() else {
             panic!("saddle should have equippable data");
         };
@@ -325,7 +325,7 @@ mod tests {
             ))
         );
 
-        let carpet = ItemStack::new(&vanilla_items::WHITE_CARPET);
+        let carpet = ItemStack::new(&*vanilla_items::WHITE_CARPET);
         let Some(carpet_equippable) = carpet.get_equippable() else {
             panic!("carpet should have equippable data");
         };
@@ -338,7 +338,7 @@ mod tests {
         assert!(!carpet_equippable.can_be_equipped_by(&PIG));
         assert!(!carpet_equippable.can_be_equipped_by(&PLAYER));
 
-        let wolf_armor = ItemStack::new(&vanilla_items::WOLF_ARMOR);
+        let wolf_armor = ItemStack::new(&*vanilla_items::WOLF_ARMOR);
         let Some(wolf_armor_equippable) = wolf_armor.get_equippable() else {
             panic!("wolf armor should have equippable data");
         };
@@ -350,13 +350,13 @@ mod tests {
     fn equippable_network_round_trips_tag_and_direct_holder_sets() {
         init_vanilla_registry();
 
-        let saddle = ItemStack::new(&vanilla_items::SADDLE);
+        let saddle = ItemStack::new(&*vanilla_items::SADDLE);
         let Some(saddle_equippable) = saddle.get_equippable() else {
             panic!("saddle should have equippable data");
         };
         assert_eq!(&round_trip_equippable(saddle_equippable), saddle_equippable);
 
-        let carpet = ItemStack::new(&vanilla_items::WHITE_CARPET);
+        let carpet = ItemStack::new(&*vanilla_items::WHITE_CARPET);
         let Some(carpet_equippable) = carpet.get_equippable() else {
             panic!("carpet should have equippable data");
         };
@@ -367,11 +367,11 @@ mod tests {
     fn equippable_hash_includes_vanilla_codec_fields() {
         init_vanilla_registry();
 
-        let saddle = ItemStack::new(&vanilla_items::SADDLE);
+        let saddle = ItemStack::new(&*vanilla_items::SADDLE);
         let Some(saddle_equippable) = saddle.get_equippable() else {
             panic!("saddle should have equippable data");
         };
-        let helmet = ItemStack::new(&vanilla_items::DIAMOND_HELMET);
+        let helmet = ItemStack::new(&*vanilla_items::DIAMOND_HELMET);
         let Some(helmet_equippable) = helmet.get_equippable() else {
             panic!("diamond helmet should have equippable data");
         };

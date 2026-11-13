@@ -76,7 +76,7 @@ impl BlockBehavior for WeepingVinesPlantBlock {
         _block_entity: Option<SharedBlockEntity>,
         _include_data: bool,
     ) -> Option<ItemStack> {
-        Some(ItemStack::new(&vanilla_items::WEEPING_VINES))
+        Some(ItemStack::new(&*vanilla_items::WEEPING_VINES))
     }
 
     fn as_bonemealable(&self) -> Option<&dyn Bonemealable> {

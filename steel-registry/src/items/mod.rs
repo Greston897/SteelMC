@@ -183,7 +183,7 @@ impl ItemRegistry {
     pub fn by_block(&self, block: BlockRef) -> ItemRef {
         self.items_by_block
             .get(&block.key)
-            .map_or(&vanilla_items::AIR, |&item_id| self.items_by_id[item_id])
+            .map_or(&*vanilla_items::AIR, |&item_id| self.items_by_id[item_id])
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (usize, ItemRef)> + '_ {
@@ -263,7 +263,7 @@ mod tests {
         assert!(
             !REGISTRY
                 .items
-                .is_block_item(&vanilla_items::DIAMOND_PICKAXE)
+                .is_block_item(&*vanilla_items::DIAMOND_PICKAXE)
         );
     }
 }

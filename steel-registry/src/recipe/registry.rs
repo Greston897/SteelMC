@@ -411,14 +411,14 @@ mod tests {
             3,
             3,
             vec![
-                ItemStack::new(&vanilla_items::IRON_INGOT),
-                ItemStack::new(&vanilla_items::IRON_INGOT),
-                ItemStack::new(&vanilla_items::IRON_INGOT),
+                ItemStack::new(&*vanilla_items::IRON_INGOT),
+                ItemStack::new(&*vanilla_items::IRON_INGOT),
+                ItemStack::new(&*vanilla_items::IRON_INGOT),
                 empty(),
-                ItemStack::new(&vanilla_items::STICK),
+                ItemStack::new(&*vanilla_items::STICK),
                 empty(),
                 empty(),
-                ItemStack::new(&vanilla_items::STICK),
+                ItemStack::new(&*vanilla_items::STICK),
                 empty(),
             ],
         );
@@ -658,19 +658,19 @@ mod tests {
         let choice = Ingredient::Choice(Box::leak(
             vec![&*vanilla_items::RED_DYE, &*vanilla_items::BLUE_DYE].into_boxed_slice(),
         ));
-        let exact_red = Ingredient::Item(&vanilla_items::RED_DYE);
+        let exact_red = Ingredient::Item(&*vanilla_items::RED_DYE);
         let input = CraftingInput::new(
             2,
             1,
             vec![
-                ItemStack::new(&vanilla_items::RED_DYE),
-                ItemStack::new(&vanilla_items::BLUE_DYE),
+                ItemStack::new(&*vanilla_items::RED_DYE),
+                ItemStack::new(&*vanilla_items::BLUE_DYE),
             ],
         );
         let recipe = CraftingRecipe::Shapeless(crate::recipe::ShapelessRecipe::new(
             crate::recipe::RecipeProperties::special(),
             vec![choice, exact_red].into_boxed_slice(),
-            crate::item_stack_template::ItemStackTemplate::new(&vanilla_items::PURPLE_DYE),
+            crate::item_stack_template::ItemStackTemplate::new(&*vanilla_items::PURPLE_DYE),
         ));
 
         assert!(recipe.matches(&input));

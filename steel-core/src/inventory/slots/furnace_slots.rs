@@ -49,7 +49,7 @@ impl Slot for FurnaceFuelSlot {
     }
 
     fn may_place(&self, stack: &ItemStack) -> bool {
-        VANILLA_FUEL_VALUES.is_fuel(stack.item()) || stack.is(&vanilla_items::BUCKET)
+        VANILLA_FUEL_VALUES.is_fuel(stack.item()) || stack.is(&*vanilla_items::BUCKET)
     }
 
     fn get_max_stack_size(&self, guard: &ContainerLockGuard) -> i32 {
@@ -57,7 +57,7 @@ impl Slot for FurnaceFuelSlot {
     }
 
     fn get_max_stack_size_for_item(&self, guard: &ContainerLockGuard, stack: &ItemStack) -> i32 {
-        if stack.is(&vanilla_items::BUCKET) {
+        if stack.is(&*vanilla_items::BUCKET) {
             1
         } else {
             self.base.get_max_stack_size_for_item(guard, stack)

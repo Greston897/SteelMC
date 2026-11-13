@@ -9,6 +9,7 @@ use steel_registry::menu_type::MenuTypeRef;
 use steel_utils::Downcast as _;
 use steel_registry::vanilla_menu_types;
 
+use crate::block_entity::BlockEntity as _;
 use crate::block_entity::entities::ChestBlockEntity;
 use crate::inventory::prelude::*;
 use crate::player::player_inventory::PlayerInventory;

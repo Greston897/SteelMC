@@ -281,10 +281,10 @@ mod tests {
     #[test]
     fn a_payment_must_cover_the_whole_cost() {
         use steel_registry::vanilla_items;
-        let cost = ItemStack::with_count(&vanilla_items::EMERALD, 5);
-        let exact = ItemStack::with_count(&vanilla_items::EMERALD, 5);
-        let short = ItemStack::with_count(&vanilla_items::EMERALD, 4);
-        let other = ItemStack::with_count(&vanilla_items::WHEAT, 5);
+        let cost = ItemStack::with_count(&*vanilla_items::EMERALD, 5);
+        let exact = ItemStack::with_count(&*vanilla_items::EMERALD, 5);
+        let short = ItemStack::with_count(&*vanilla_items::EMERALD, 4);
+        let other = ItemStack::with_count(&*vanilla_items::WHEAT, 5);
 
         assert!(matches_payment(&cost, &exact));
         assert!(!matches_payment(&cost, &short));

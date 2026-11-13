@@ -303,7 +303,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::STICK));
+            .set_selected_item(ItemStack::new(&*vanilla_items::STICK));
         player.set_rotation((10.0, 20.0));
 
         for (sequence, y_rot, x_rot, expected) in [
@@ -354,7 +354,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::DIRT));
+            .set_selected_item(ItemStack::new(&*vanilla_items::DIRT));
         assert!(
             !use_item_on(&player, world, InteractionHand::MainHand, &hit_result).consumes_action()
         );
@@ -372,7 +372,7 @@ mod tests {
         );
         let can_place_on =
             AdventureModePredicate::new(vec![predicate]).expect("one block predicate is valid");
-        let mut dirt = ItemStack::new(&vanilla_items::DIRT);
+        let mut dirt = ItemStack::new(&*vanilla_items::DIRT);
         dirt.set(CAN_PLACE_ON, can_place_on);
         player.inventory.lock().set_selected_item(dirt);
 
@@ -399,7 +399,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::APPLE));
+            .set_selected_item(ItemStack::new(&*vanilla_items::APPLE));
 
         let result = use_item(&player, world, InteractionHand::MainHand);
 
@@ -419,7 +419,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::GOLDEN_APPLE));
+            .set_selected_item(ItemStack::new(&*vanilla_items::GOLDEN_APPLE));
 
         let result = use_item(&player, world, InteractionHand::MainHand);
 

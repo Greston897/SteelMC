@@ -250,7 +250,7 @@ pub trait Leashable: Entity {
             }
 
             if self.tick_count() > DELAYED_LEASH_DROP_TICKS {
-                let _ = self.spawn_at_location(ItemStack::new(&vanilla_items::LEAD), 0.0);
+                let _ = self.spawn_at_location(ItemStack::new(&*vanilla_items::LEAD), 0.0);
                 self.remove_leash_state();
             }
         }
@@ -317,7 +317,7 @@ pub trait Leashable: Entity {
 
         let holder = self.remove_leash_state();
         self.on_leash_removed();
-        let _ = self.spawn_at_location(ItemStack::new(&vanilla_items::LEAD), 0.0);
+        let _ = self.spawn_at_location(ItemStack::new(&*vanilla_items::LEAD), 0.0);
         if let Some(holder) = holder {
             holder.notify_leashee_removed(self.as_entity_event_source());
         }

@@ -487,15 +487,15 @@ pub trait LivingEntity: Entity {
         self.with_equipment_slot(EquipmentSlot::Head, &mut |item_stack| {
             let target_type = targeting_entity.entity_type();
             matches_target = target_type == &vanilla_entities::SKELETON
-                && item_stack.is(&vanilla_items::SKELETON_SKULL)
+                && item_stack.is(&*vanilla_items::SKELETON_SKULL)
                 || target_type == &vanilla_entities::ZOMBIE
-                    && item_stack.is(&vanilla_items::ZOMBIE_HEAD)
+                    && item_stack.is(&*vanilla_items::ZOMBIE_HEAD)
                 || target_type == &vanilla_entities::PIGLIN
-                    && item_stack.is(&vanilla_items::PIGLIN_HEAD)
+                    && item_stack.is(&*vanilla_items::PIGLIN_HEAD)
                 || target_type == &vanilla_entities::PIGLIN_BRUTE
-                    && item_stack.is(&vanilla_items::PIGLIN_HEAD)
+                    && item_stack.is(&*vanilla_items::PIGLIN_HEAD)
                 || target_type == &vanilla_entities::CREEPER
-                    && item_stack.is(&vanilla_items::CREEPER_HEAD);
+                    && item_stack.is(&*vanilla_items::CREEPER_HEAD);
         });
         matches_target
     }
@@ -3587,13 +3587,13 @@ mod shield_tests {
 
     #[test]
     fn shield_component_is_present_on_shield_items() {
-        let shield = ItemStack::new(&vanilla_items::SHIELD);
+        let shield = ItemStack::new(&*vanilla_items::SHIELD);
         assert!(shield.has(BLOCKS_ATTACKS));
     }
 
     #[test]
     fn non_shield_items_do_not_block() {
-        let dirt = ItemStack::new(&vanilla_items::DIRT);
+        let dirt = ItemStack::new(&*vanilla_items::DIRT);
         assert!(!dirt.has(BLOCKS_ATTACKS));
     }
 }

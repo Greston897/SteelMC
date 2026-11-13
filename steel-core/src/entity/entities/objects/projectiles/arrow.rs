@@ -665,7 +665,7 @@ impl ArrowEntity {
             entity_type,
             projectile_base: ProjectileBase::new(),
             arrow: ArrowHandle::new(
-                ItemStack::new(&vanilla_items::ARROW),
+                ItemStack::new(&*vanilla_items::ARROW),
                 DEFAULT_ARROW_DAMAGE,
                 false,
             ),
@@ -680,7 +680,7 @@ impl ArrowEntity {
             entity_type,
             projectile_base: ProjectileBase::new(),
             arrow: ArrowHandle::new(
-                ItemStack::new(&vanilla_items::ARROW),
+                ItemStack::new(&*vanilla_items::ARROW),
                 DEFAULT_ARROW_DAMAGE,
                 false,
             ),
@@ -713,7 +713,7 @@ impl SpectralArrowEntity {
             entity_type,
             projectile_base: ProjectileBase::new(),
             arrow: ArrowHandle::new(
-                ItemStack::new(&vanilla_items::SPECTRAL_ARROW),
+                ItemStack::new(&*vanilla_items::SPECTRAL_ARROW),
                 SPECTRAL_ARROW_DAMAGE,
                 true,
             ),
@@ -728,7 +728,7 @@ impl SpectralArrowEntity {
             entity_type,
             projectile_base: ProjectileBase::new(),
             arrow: ArrowHandle::new(
-                ItemStack::new(&vanilla_items::SPECTRAL_ARROW),
+                ItemStack::new(&*vanilla_items::SPECTRAL_ARROW),
                 SPECTRAL_ARROW_DAMAGE,
                 true,
             ),
@@ -785,7 +785,7 @@ impl ThrownTridentEntity {
             entity_type,
             projectile_base: ProjectileBase::new(),
             arrow: ArrowHandle::new(
-                ItemStack::new(&vanilla_items::TRIDENT),
+                ItemStack::new(&*vanilla_items::TRIDENT),
                 TRIDENT_DAMAGE,
                 false,
             ),
@@ -818,7 +818,7 @@ impl ThrownTridentEntity {
             entity_type,
             projectile_base: ProjectileBase::new(),
             arrow: ArrowHandle::new(
-                ItemStack::new(&vanilla_items::TRIDENT),
+                ItemStack::new(&*vanilla_items::TRIDENT),
                 TRIDENT_DAMAGE,
                 false,
             ),

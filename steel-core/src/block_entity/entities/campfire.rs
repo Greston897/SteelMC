@@ -261,7 +261,7 @@ mod tests {
         let source = campfire();
         {
             let mut cooking = source.cooking.lock();
-            cooking.items[2] = ItemStack::new(&vanilla_items::BEEF);
+            cooking.items[2] = ItemStack::new(&*vanilla_items::BEEF);
             cooking.cooking_progress = [0, 3, 17, 0];
             cooking.cooking_time = [0, 100, 600, 0];
         }
@@ -276,7 +276,7 @@ mod tests {
         loaded.load_additional(&borrowed);
 
         let cooking = loaded.cooking.lock();
-        assert!(cooking.items[2].is(&vanilla_items::BEEF));
+        assert!(cooking.items[2].is(&*vanilla_items::BEEF));
         assert_eq!(cooking.cooking_progress, [0, 3, 17, 0]);
         assert_eq!(cooking.cooking_time, [0, 100, 600, 0]);
     }

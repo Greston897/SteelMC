@@ -27,7 +27,7 @@ pub struct ItemFrameItem;
 impl ItemFrameItem {
     /// Vanilla picks the entity type from the item that places the frame.
     fn entity_type(stack: &ItemStack) -> EntityTypeRef {
-        if stack.is(&vanilla_items::GLOW_ITEM_FRAME) {
+        if stack.is(&*vanilla_items::GLOW_ITEM_FRAME) {
             &vanilla_entities::GLOW_ITEM_FRAME
         } else {
             &vanilla_entities::ITEM_FRAME
@@ -198,7 +198,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::with_count(&vanilla_items::ITEM_FRAME, 3));
+            .set_selected_item(ItemStack::with_count(&*vanilla_items::ITEM_FRAME, 3));
 
         let mut context = place_context(world, &player, wall, Direction::Up);
         assert_eq!(
@@ -227,7 +227,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::GLOW_ITEM_FRAME));
+            .set_selected_item(ItemStack::new(&*vanilla_items::GLOW_ITEM_FRAME));
 
         let mut context = place_context(world, &player, wall, Direction::North);
         assert_eq!(
@@ -253,7 +253,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::with_count(&vanilla_items::ITEM_FRAME, 2));
+            .set_selected_item(ItemStack::with_count(&*vanilla_items::ITEM_FRAME, 2));
 
         // Vanilla `BlockState#isSolid` needs a full cube; a slab is not solid.
         assert!(world.set_block(
@@ -279,7 +279,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::ITEM_FRAME));
+            .set_selected_item(ItemStack::new(&*vanilla_items::ITEM_FRAME));
 
         let occupied = wall.offset(0, 1, 0);
         assert!(world.set_block(
@@ -302,7 +302,7 @@ mod tests {
         let (fixture, player, wall) = wall_fixture("frame_place_custom_name");
         let world = &fixture.world;
 
-        let mut stack = ItemStack::new(&vanilla_items::ITEM_FRAME);
+        let mut stack = ItemStack::new(&*vanilla_items::ITEM_FRAME);
         stack.set(CUSTOM_NAME, TextComponent::plain("Wall Frame"));
         player.inventory.lock().set_selected_item(stack);
 

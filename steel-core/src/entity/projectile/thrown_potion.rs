@@ -10,7 +10,7 @@ use steel_registry::potion::Potion;
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_potion_tags::PotionTag;
 use steel_registry::{level_events, vanilla_damage_types};
-use steel_utils::{BlockPos, BlockStateId, Direction, types::UpdateFlags};
+use steel_utils::{BlockPos, BlockStateId, Direction, Downcast as _, types::UpdateFlags};
 
 use crate::behavior::MOB_EFFECT_BEHAVIORS;
 use crate::behavior::blocks::{CampfireBlock, CandleBlock};

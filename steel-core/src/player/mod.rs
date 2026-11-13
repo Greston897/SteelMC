@@ -1353,8 +1353,8 @@ impl Player {
 
         // Vanilla `ServerPlayer.die` → `awardStat(Stats.DEATHS)` and the
         // `deathCount` dummy scoreboard objective.
-        self.increment_death_count_objective(world);
-        if let Some(killer) = get_kill_credit(self, world.as_ref()) {
+        self.increment_death_count_objective(&world);
+        if let Some(killer) = get_kill_credit(self, &world) {
             self.award_stat(&vanilla_stat_types::ENTITY_KILLED_BY, killer.entity_type());
             killer.award_kill_score(self, source);
             crate::entity::create_wither_rose(self, source);

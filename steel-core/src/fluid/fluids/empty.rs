@@ -24,7 +24,7 @@ impl FluidBehavior for EmptyFluid {
     }
 
     fn bucket(&self) -> ItemRef {
-        &vanilla_items::AIR
+        &*vanilla_items::AIR
     }
 
     fn fluid_type(&self) -> FluidRef {

@@ -183,19 +183,19 @@ fn domain_menu(
         g.paint_all(ItemStack::empty());
         g.paint(
             Rect::cols(..).rows(0),
-            &vanilla_items::GRAY_STAINED_GLASS_PANE,
+            &*vanilla_items::GRAY_STAINED_GLASS_PANE,
         );
         g.paint(
             Rect::cols(..).rows(5),
-            &vanilla_items::GRAY_STAINED_GLASS_PANE,
+            &*vanilla_items::GRAY_STAINED_GLASS_PANE,
         );
         g.paint(
             Rect::cols(8).rows(..),
-            &vanilla_items::GRAY_STAINED_GLASS_PANE,
+            &*vanilla_items::GRAY_STAINED_GLASS_PANE,
         );
         g.paint(
             Rect::cols(0).rows(1..5),
-            &vanilla_items::GRAY_STAINED_GLASS_PANE,
+            &*vanilla_items::GRAY_STAINED_GLASS_PANE,
         );
 
         let page_count = domain_names.len().div_ceil(DOMAINS_PER_PAGE).max(1);
@@ -211,7 +211,7 @@ fn domain_menu(
                 g.subgrid(Rect::cols(..8).rows(i + 1), |g| {
                     g.paint_all(ItemStack::empty());
 
-                    let mut sign = ItemStack::new(&vanilla_items::OAK_SIGN);
+                    let mut sign = ItemStack::new(&*vanilla_items::OAK_SIGN);
                     sign.set(CUSTOM_NAME, domain_name.clone().into());
 
                     g.paint(Rect::cell(0, 0), sign);
@@ -238,7 +238,7 @@ fn domain_menu(
     let page_count = domain_names.len().div_ceil(DOMAINS_PER_PAGE).max(1);
 
     // Page indicator: the bottom bar shows which slice is visible.
-    let mut indicator = ItemStack::new(&vanilla_items::PAPER);
+    let mut indicator = ItemStack::new(&*vanilla_items::PAPER);
     indicator.set(
         CUSTOM_NAME,
         format!("Page {} / {page_count}", page + 1).into(),
@@ -261,11 +261,11 @@ fn icon(world: &Arc<World>, current_world: &Arc<World>) -> ItemStack {
         b if b == &vanilla_dimension_types::OVERWORLD
             || b == &vanilla_dimension_types::OVERWORLD_CAVES =>
         {
-            &vanilla_items::GRASS_BLOCK
+            &*vanilla_items::GRASS_BLOCK
         }
-        b if b == &vanilla_dimension_types::THE_NETHER => &vanilla_items::NETHERRACK,
-        b if b == &vanilla_dimension_types::THE_END => &vanilla_items::END_STONE,
-        _ => &vanilla_items::BEDROCK,
+        b if b == &vanilla_dimension_types::THE_NETHER => &*vanilla_items::NETHERRACK,
+        b if b == &vanilla_dimension_types::THE_END => &*vanilla_items::END_STONE,
+        _ => &*vanilla_items::BEDROCK,
     };
     let mut icon = ItemStack::new(item);
     icon.set(CUSTOM_NAME, world.key.path.to_string().into());

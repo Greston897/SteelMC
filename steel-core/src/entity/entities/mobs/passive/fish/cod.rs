@@ -281,6 +281,6 @@ impl Bucketable for CodEntity {
     }
 
     fn bucket_item(&self) -> ItemRef {
-        &vanilla_items::COD_BUCKET
+        &*vanilla_items::COD_BUCKET
     }
 }

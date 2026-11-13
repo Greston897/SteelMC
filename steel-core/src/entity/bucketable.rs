@@ -86,7 +86,7 @@ where
         stack.copy_with_count(stack.count())
     };
 
-    if !held.is(&vanilla_items::BUCKET) || !Entity::is_alive(entity) {
+    if !held.is(&*vanilla_items::BUCKET) || !Entity::is_alive(entity) {
         return None;
     }
 

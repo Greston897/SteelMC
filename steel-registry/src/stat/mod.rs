@@ -187,9 +187,9 @@ mod tests {
         init_vanilla_registry();
 
         // Test if stat creation succeeds or fails appropriately.
-        let stat = vanilla_stat_types::ITEM_USED.get(&vanilla_items::DIAMOND);
+        let stat = vanilla_stat_types::ITEM_USED.get(&*vanilla_items::DIAMOND);
         let should_panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            UNREGISTERED_STAT_TYPE.get(&vanilla_items::DIAMOND)
+            UNREGISTERED_STAT_TYPE.get(&*vanilla_items::DIAMOND)
         }));
         assert!(
             should_panic.is_err(),

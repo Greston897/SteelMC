@@ -56,7 +56,7 @@ impl BlockBehavior for PumpkinBlock {
 
         let Some(shears) = inv.with_item(|item_stack| {
             item_stack
-                .is(&vanilla_items::SHEARS)
+                .is(&*vanilla_items::SHEARS)
                 .then(|| item_stack.clone())
         }) else {
             return InteractionResult::TryEmptyHandInteraction;
@@ -118,7 +118,7 @@ impl BlockBehavior for PumpkinBlock {
             &GameEventContext::new(Some(player), None),
         );
 
-        player.award_stat(&vanilla_stat_types::ITEM_USED, &vanilla_items::SHEARS);
+        player.award_stat(&vanilla_stat_types::ITEM_USED, &*vanilla_items::SHEARS);
 
         InteractionResult::Success
     }
@@ -156,7 +156,7 @@ mod tests {
             TestPlayerBuilder::new(Arc::clone(world), "PumpkinCarver".to_owned(), 1).build();
         player.inventory.lock().set_item_in_hand(
             InteractionHand::MainHand,
-            ItemStack::new(&vanilla_items::SHEARS),
+            ItemStack::new(&*vanilla_items::SHEARS),
         );
 
         let (sender, receiver) = mpsc::channel();
@@ -212,7 +212,7 @@ mod tests {
             panic!("carved pumpkin drop should be an item entity");
         };
         let seeds = seeds.get_item();
-        assert!(seeds.is(&vanilla_items::PUMPKIN_SEEDS));
+        assert!(seeds.is(&*vanilla_items::PUMPKIN_SEEDS));
         assert_eq!(seeds.count, 4);
     }
 }

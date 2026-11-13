@@ -215,7 +215,7 @@ fn readonly_target_slots_reject_pickup_and_creative_clone() {
     target
         .inventory
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 5));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 5));
     let mut menu = invsee(1, &source, &target, false);
 
     menu.clicked(
@@ -242,7 +242,7 @@ fn modify_view_edits_armor_slots_within_equipment_rules() {
     let target = test_player("Target", 9);
     let mut menu = invsee(1, &source, &target, true);
 
-    *menu.behavior_mut().carried_mut() = ItemStack::new(&vanilla_items::STONE);
+    *menu.behavior_mut().carried_mut() = ItemStack::new(&*vanilla_items::STONE);
     menu.clicked(
         Click::Pickup {
             slot: TARGET_ARMOR_START,
@@ -254,9 +254,9 @@ fn modify_view_edits_armor_slots_within_equipment_rules() {
         target.inventory.lock().get_item(39).is_empty(),
         "a non-equippable item must not enter the head slot"
     );
-    assert!(menu.behavior().carried().is(&vanilla_items::STONE));
+    assert!(menu.behavior().carried().is(&*vanilla_items::STONE));
 
-    *menu.behavior_mut().carried_mut() = ItemStack::new(&vanilla_items::IRON_HELMET);
+    *menu.behavior_mut().carried_mut() = ItemStack::new(&*vanilla_items::IRON_HELMET);
     menu.clicked(
         Click::Pickup {
             slot: TARGET_ARMOR_START,
@@ -270,7 +270,7 @@ fn modify_view_edits_armor_slots_within_equipment_rules() {
             .inventory
             .lock()
             .get_item(39)
-            .is(&vanilla_items::IRON_HELMET)
+            .is(&*vanilla_items::IRON_HELMET)
     );
     assert!(menu.behavior().carried().is_empty());
 }
@@ -284,7 +284,7 @@ fn modify_view_synchronizes_target_armor_without_inventory_locks() {
         Arc::clone(&target.player.inventory),
     ]);
     let mut menu = invsee(1, &source, &target.player, true);
-    *menu.behavior_mut().carried_mut() = ItemStack::new(&vanilla_items::IRON_HELMET);
+    *menu.behavior_mut().carried_mut() = ItemStack::new(&*vanilla_items::IRON_HELMET);
 
     menu.clicked(
         Click::Pickup {
@@ -300,12 +300,12 @@ fn modify_view_synchronizes_target_armor_without_inventory_locks() {
             .inventory
             .lock()
             .get_item(39)
-            .is(&vanilla_items::IRON_HELMET)
+            .is(&*vanilla_items::IRON_HELMET)
     );
     target.player.tick();
     assert_eq!(
         player_inventory_updates(&target.packets),
-        vec![(39, ItemStack::new(&vanilla_items::IRON_HELMET))]
+        vec![(39, ItemStack::new(&*vanilla_items::IRON_HELMET))]
     );
     assert!(
         target
@@ -323,7 +323,7 @@ fn self_invsee_synchronizes_own_armor_slot() {
         .lock()
         .push(Arc::clone(&recording.player.inventory));
     let mut menu = invsee(1, &recording.player, &recording.player, true);
-    *menu.behavior_mut().carried_mut() = ItemStack::new(&vanilla_items::IRON_HELMET);
+    *menu.behavior_mut().carried_mut() = ItemStack::new(&*vanilla_items::IRON_HELMET);
 
     menu.clicked(
         Click::Pickup {
@@ -336,7 +336,7 @@ fn self_invsee_synchronizes_own_armor_slot() {
     recording.player.tick();
     assert_eq!(
         player_inventory_updates(&recording.packets),
-        vec![(39, ItemStack::new(&vanilla_items::IRON_HELMET))]
+        vec![(39, ItemStack::new(&*vanilla_items::IRON_HELMET))]
     );
     assert!(
         recording
@@ -353,7 +353,7 @@ fn modify_view_synchronizes_empty_offhand_after_removal() {
         .player
         .inventory
         .lock()
-        .set_item(40, ItemStack::new(&vanilla_items::SHIELD));
+        .set_item(40, ItemStack::new(&*vanilla_items::SHIELD));
     let mut menu = invsee(1, &source, &target.player, true);
 
     menu.clicked(
@@ -377,7 +377,7 @@ fn modify_view_synchronizes_target_hotbar_slot() {
     let source = test_player("Viewer", 20);
     let target = recording_player("Target", 21);
     let mut menu = invsee(1, &source, &target.player, true);
-    *menu.behavior_mut().carried_mut() = ItemStack::new(&vanilla_items::STONE);
+    *menu.behavior_mut().carried_mut() = ItemStack::new(&*vanilla_items::STONE);
 
     menu.clicked(
         Click::Pickup {
@@ -390,7 +390,7 @@ fn modify_view_synchronizes_target_hotbar_slot() {
 
     assert_eq!(
         player_inventory_updates(&target.packets),
-        vec![(0, ItemStack::new(&vanilla_items::STONE))]
+        vec![(0, ItemStack::new(&*vanilla_items::STONE))]
     );
 }
 
@@ -400,7 +400,7 @@ fn modify_view_coalesces_to_latest_target_inventory_value() {
     let target = recording_player("Target", 16);
     let mut menu = invsee(1, &source, &target.player, true);
 
-    *menu.behavior_mut().carried_mut() = ItemStack::new(&vanilla_items::IRON_HELMET);
+    *menu.behavior_mut().carried_mut() = ItemStack::new(&*vanilla_items::IRON_HELMET);
     menu.clicked(
         Click::Pickup {
             slot: TARGET_ARMOR_START,
@@ -408,7 +408,7 @@ fn modify_view_coalesces_to_latest_target_inventory_value() {
         },
         &source,
     );
-    *menu.behavior_mut().carried_mut() = ItemStack::new(&vanilla_items::DIAMOND_HELMET);
+    *menu.behavior_mut().carried_mut() = ItemStack::new(&*vanilla_items::DIAMOND_HELMET);
     menu.clicked(
         Click::Pickup {
             slot: TARGET_ARMOR_START,
@@ -421,7 +421,7 @@ fn modify_view_coalesces_to_latest_target_inventory_value() {
 
     assert_eq!(
         player_inventory_updates(&target.packets),
-        vec![(39, ItemStack::new(&vanilla_items::DIAMOND_HELMET))]
+        vec![(39, ItemStack::new(&*vanilla_items::DIAMOND_HELMET))]
     );
 }
 
@@ -430,7 +430,7 @@ fn modify_view_drag_queues_each_changed_target_slot() {
     let source = test_player("Viewer", 17);
     let target = recording_player("Target", 18);
     let mut menu = invsee(1, &source, &target.player, true);
-    *menu.behavior_mut().carried_mut() = ItemStack::with_count(&vanilla_items::STONE, 2);
+    *menu.behavior_mut().carried_mut() = ItemStack::with_count(&*vanilla_items::STONE, 2);
 
     for action in [
         QuickCraft::Start {
@@ -451,8 +451,8 @@ fn modify_view_drag_queues_each_changed_target_slot() {
     assert_eq!(
         player_inventory_updates(&target.packets),
         vec![
-            (0, ItemStack::new(&vanilla_items::STONE)),
-            (1, ItemStack::new(&vanilla_items::STONE)),
+            (0, ItemStack::new(&*vanilla_items::STONE)),
+            (1, ItemStack::new(&*vanilla_items::STONE)),
         ]
     );
 }
@@ -468,12 +468,12 @@ fn overriding_menu_defers_main_inventory_sync_until_close() {
         .player
         .inventory
         .lock()
-        .set_item(0, ItemStack::new(&vanilla_items::STONE));
+        .set_item(0, ItemStack::new(&*vanilla_items::STONE));
     recording
         .player
         .inventory
         .lock()
-        .set_item(39, ItemStack::new(&vanilla_items::DIAMOND_HELMET));
+        .set_item(39, ItemStack::new(&*vanilla_items::DIAMOND_HELMET));
 
     let fake_slots = SimpleContainer::new(72).into_shared();
     recording.player.open_menu("Overlay", move |context| {
@@ -489,7 +489,7 @@ fn overriding_menu_defers_main_inventory_sync_until_close() {
 
     assert_eq!(
         player_inventory_updates(&recording.packets),
-        vec![(39, ItemStack::new(&vanilla_items::DIAMOND_HELMET))]
+        vec![(39, ItemStack::new(&*vanilla_items::DIAMOND_HELMET))]
     );
 
     recording.packets.lock().clear();
@@ -498,7 +498,7 @@ fn overriding_menu_defers_main_inventory_sync_until_close() {
 
     let updates = player_inventory_updates(&recording.packets);
     assert_eq!(updates.len(), PlayerInventory::INVENTORY_SIZE);
-    assert_eq!(updates[0], (0, ItemStack::new(&vanilla_items::STONE)));
+    assert_eq!(updates[0], (0, ItemStack::new(&*vanilla_items::STONE)));
     assert_eq!(
         updates.iter().map(|(slot, _)| *slot).collect::<Vec<_>>(),
         (0..PlayerInventory::INVENTORY_SIZE as i32).collect::<Vec<_>>()
@@ -512,7 +512,7 @@ fn replacing_overriding_menu_keeps_main_inventory_sync_deferred() {
         .player
         .inventory
         .lock()
-        .set_item(0, ItemStack::new(&vanilla_items::STONE));
+        .set_item(0, ItemStack::new(&*vanilla_items::STONE));
 
     for title in ["First overlay", "Second overlay"] {
         let fake_slots = SimpleContainer::new(72).into_shared();
@@ -535,7 +535,7 @@ fn replacing_overriding_menu_keeps_main_inventory_sync_deferred() {
 
     let updates = player_inventory_updates(&recording.packets);
     assert_eq!(updates.len(), PlayerInventory::INVENTORY_SIZE);
-    assert_eq!(updates[0], (0, ItemStack::new(&vanilla_items::STONE)));
+    assert_eq!(updates[0], (0, ItemStack::new(&*vanilla_items::STONE)));
 }
 
 #[test]
@@ -545,7 +545,7 @@ fn normal_menu_does_not_defer_main_inventory_sync() {
         .player
         .inventory
         .lock()
-        .set_item(0, ItemStack::new(&vanilla_items::STONE));
+        .set_item(0, ItemStack::new(&*vanilla_items::STONE));
 
     let menu_slots = SimpleContainer::new(9).into_shared();
     let inventory = Arc::clone(&recording.player.inventory);
@@ -562,7 +562,7 @@ fn normal_menu_does_not_defer_main_inventory_sync() {
 
     assert_eq!(
         player_inventory_updates(&recording.packets),
-        vec![(0, ItemStack::new(&vanilla_items::STONE))]
+        vec![(0, ItemStack::new(&*vanilla_items::STONE))]
     );
 }
 
@@ -573,7 +573,7 @@ fn modify_view_moves_inventory_items_in_both_directions() {
     target
         .inventory
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 5));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 5));
     let mut menu = invsee(1, &source, &target, true);
 
     menu.clicked(
@@ -603,7 +603,7 @@ fn modify_view_extracts_but_cannot_insert_crafting_items() {
     handler
         .crafting_container()
         .lock()
-        .set_item(0, ItemStack::new(&vanilla_items::OAK_LOG));
+        .set_item(0, ItemStack::new(&*vanilla_items::OAK_LOG));
     let mut menu = invsee(1, &source, &target, true);
     menu.on_open(&source);
 
@@ -612,7 +612,7 @@ fn modify_view_extracts_but_cannot_insert_crafting_items() {
         let result = guard
             .get(handler.result_id())
             .expect("result container is registered with the menu");
-        assert!(result.get_item(0).is(&vanilla_items::OAK_PLANKS));
+        assert!(result.get_item(0).is(&*vanilla_items::OAK_PLANKS));
         assert_eq!(result.get_item(0).count(), 4);
     }
 
@@ -631,7 +631,7 @@ fn modify_view_extracts_but_cannot_insert_crafting_items() {
             .expect("result container is registered with the menu");
         assert!(result.get_item(0).is_empty());
     }
-    assert!(menu.behavior().carried().is(&vanilla_items::OAK_LOG));
+    assert!(menu.behavior().carried().is(&*vanilla_items::OAK_LOG));
 
     menu.clicked(
         Click::Pickup {
@@ -641,7 +641,7 @@ fn modify_view_extracts_but_cannot_insert_crafting_items() {
         &source,
     );
     assert!(handler.crafting_container().lock().get_item(0).is_empty());
-    assert!(menu.behavior().carried().is(&vanilla_items::OAK_LOG));
+    assert!(menu.behavior().carried().is(&*vanilla_items::OAK_LOG));
 }
 
 #[test]
@@ -650,7 +650,7 @@ fn self_invsee_quick_move_does_not_rearrange_the_aliased_inventory() {
     player
         .inventory
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 5));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 5));
     let mut menu = invsee(1, &player, &player, true);
 
     menu.clicked(

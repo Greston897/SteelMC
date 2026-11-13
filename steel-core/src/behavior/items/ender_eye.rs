@@ -200,7 +200,7 @@ impl ItemBehavior for EnderEyeItem {
             .with_item(|item| item.consume_one(has_infinite_materials));
         context
             .player
-            .award_stat(&vanilla_stat_types::ITEM_USED, &vanilla_items::ENDER_EYE);
+            .award_stat(&vanilla_stat_types::ITEM_USED, &*vanilla_items::ENDER_EYE);
 
         // Vanilla `EnderEyeItem.useOn` awards `used_ender_eye` once the portal
         // frame accepts the eye.

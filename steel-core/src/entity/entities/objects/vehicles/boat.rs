@@ -719,7 +719,7 @@ pub trait AbstractBoat: VehicleEntity {
             .items
             .iter()
             .find_map(|(_, item)| (&item.key == key).then_some(item))
-            .unwrap_or(&vanilla_items::OAK_BOAT)
+            .unwrap_or(&*vanilla_items::OAK_BOAT)
     }
 }
 

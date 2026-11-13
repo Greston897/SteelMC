@@ -186,7 +186,7 @@ impl FireworkRocketEntity {
                 let look_angle = living.look_angle();
                 let movement = living.velocity();
                 living.set_velocity(elytra_boosted_velocity(movement, look_angle));
-                living.hand_holding_item_angle(&vanilla_items::FIREWORK_ROCKET)
+                living.hand_holding_item_angle(&*vanilla_items::FIREWORK_ROCKET)
             } else {
                 DVec3::ZERO
             };
@@ -425,7 +425,7 @@ impl Entity for FireworkRocketEntity {
         let item = nbt
             .compound("FireworksItem")
             .and_then(|item| ItemStack::from_borrowed_compound(&item))
-            .unwrap_or_else(|| ItemStack::new(&vanilla_items::FIREWORK_ROCKET));
+            .unwrap_or_else(|| ItemStack::new(&*vanilla_items::FIREWORK_ROCKET));
         self.set_item(item);
         self.set_shot_at_angle(
             nbt.byte_value("ShotAtAngle")
@@ -510,7 +510,7 @@ mod tests {
     #[test]
     fn launched_rocket_uses_fireworks_flight_duration_for_lifetime() {
         init_vanilla_registry();
-        let mut item = ItemStack::new(&vanilla_items::FIREWORK_ROCKET);
+        let mut item = ItemStack::new(&*vanilla_items::FIREWORK_ROCKET);
         item.set(
             FIREWORKS,
             Fireworks::new(3, Vec::new()).unwrap_or_else(|error| {
@@ -582,7 +582,7 @@ mod tests {
             &vanilla_entities::FIREWORK_ROCKET,
             2,
             Weak::new(),
-            ItemStack::new(&vanilla_items::FIREWORK_ROCKET),
+            ItemStack::new(&*vanilla_items::FIREWORK_ROCKET),
             living_target,
         );
         rocket.set_shot_at_angle(true);
@@ -593,7 +593,7 @@ mod tests {
         assert!(
             data.id_fireworks_item
                 .get()
-                .is(&vanilla_items::FIREWORK_ROCKET)
+                .is(&*vanilla_items::FIREWORK_ROCKET)
         );
         assert_eq!(rocket.owner_uuid(), Some(target.uuid()));
     }
@@ -615,7 +615,7 @@ mod tests {
             &vanilla_entities::FIREWORK_ROCKET,
             20,
             Arc::downgrade(world),
-            ItemStack::new(&vanilla_items::FIREWORK_ROCKET),
+            ItemStack::new(&*vanilla_items::FIREWORK_ROCKET),
             LivingEntityRef::new(&target).expect("living target"),
         );
         assert!(Arc::ptr_eq(
@@ -661,7 +661,7 @@ mod tests {
         world
             .try_add_entity(Arc::clone(&original))
             .expect("register original attachment");
-        let mut item = ItemStack::new(&vanilla_items::FIREWORK_ROCKET);
+        let mut item = ItemStack::new(&*vanilla_items::FIREWORK_ROCKET);
         item.set(
             FIREWORKS,
             Fireworks::new(1, vec![FireworkExplosion::default()]).expect("fireworks"),
@@ -702,7 +702,7 @@ mod tests {
             1,
             DVec3::ZERO,
             Weak::new(),
-            ItemStack::new(&vanilla_items::FIREWORK_ROCKET),
+            ItemStack::new(&*vanilla_items::FIREWORK_ROCKET),
         );
         {
             let mut state = rocket.state.lock();
@@ -733,7 +733,7 @@ mod tests {
         assert_eq!(loaded.life_and_lifetime(), (7, 29));
         assert!(loaded.is_shot_at_angle());
         assert_eq!(loaded.owner_uuid(), Some(uuid::Uuid::from_u128(42)));
-        assert!(loaded.get_item().is(&vanilla_items::FIREWORK_ROCKET));
+        assert!(loaded.get_item().is(&*vanilla_items::FIREWORK_ROCKET));
     }
 
     #[test]

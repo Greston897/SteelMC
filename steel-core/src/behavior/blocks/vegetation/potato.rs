@@ -50,7 +50,7 @@ impl CropLike for PotatoBlock {
     }
 
     fn clone_item_stack(&self) -> ItemStack {
-        ItemStack::new(&vanilla_items::POTATO)
+        ItemStack::new(&*vanilla_items::POTATO)
     }
 }
 

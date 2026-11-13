@@ -411,7 +411,7 @@ mod tests {
         let state_1 = vanilla_blocks::CANDLE.default_state();
         let state_4 = state_1.set_value(CANDLES_PROPERTY, 4);
 
-        let mut candle_item = ItemStack::new(&vanilla_items::CANDLE);
+        let mut candle_item = ItemStack::new(&*vanilla_items::CANDLE);
         let ctx = place_context(
             world,
             BlockPos::ZERO,
@@ -421,7 +421,7 @@ mod tests {
         );
         assert!(candle.can_be_replaced(state_1, &ctx));
 
-        let mut candle_item_sneak = ItemStack::new(&vanilla_items::CANDLE);
+        let mut candle_item_sneak = ItemStack::new(&*vanilla_items::CANDLE);
         let ctx_sneak = place_context(
             world,
             BlockPos::ZERO,
@@ -431,7 +431,7 @@ mod tests {
         );
         assert!(!candle.can_be_replaced(state_1, &ctx_sneak));
 
-        let mut candle_item_full = ItemStack::new(&vanilla_items::CANDLE);
+        let mut candle_item_full = ItemStack::new(&*vanilla_items::CANDLE);
         let ctx_full = place_context(
             world,
             BlockPos::ZERO,
@@ -441,11 +441,11 @@ mod tests {
         );
         assert!(!candle.can_be_replaced(state_4, &ctx_full));
 
-        let mut diff_item = ItemStack::new(&vanilla_items::STONE);
+        let mut diff_item = ItemStack::new(&*vanilla_items::STONE);
         let ctx_diff = place_context(world, BlockPos::ZERO, Direction::Up, &mut diff_item, false);
         assert!(!candle.can_be_replaced(state_1, &ctx_diff));
 
-        let mut other_candle = ItemStack::new(&vanilla_items::RED_CANDLE);
+        let mut other_candle = ItemStack::new(&*vanilla_items::RED_CANDLE);
         let ctx_other = place_context(
             world,
             BlockPos::ZERO,
@@ -474,7 +474,7 @@ mod tests {
             .set_value(WATERLOGGED, false);
         world.set_block(pos, existing, UpdateFlags::UPDATE_ALL_IMMEDIATE);
 
-        let mut item = ItemStack::new(&vanilla_items::CANDLE);
+        let mut item = ItemStack::new(&*vanilla_items::CANDLE);
         let ctx = place_context(world, pos, Direction::Up, &mut item, false);
         let placed_state = candle
             .get_state_for_placement(&ctx)
@@ -506,7 +506,7 @@ mod tests {
             UpdateFlags::UPDATE_ALL_IMMEDIATE,
         );
 
-        let mut candle_item = ItemStack::new(&vanilla_items::CANDLE);
+        let mut candle_item = ItemStack::new(&*vanilla_items::CANDLE);
         let ctx = place_context(world, stone_pos, Direction::Up, &mut candle_item, false);
 
         assert_eq!(ctx.hit_pos(), stone_pos);

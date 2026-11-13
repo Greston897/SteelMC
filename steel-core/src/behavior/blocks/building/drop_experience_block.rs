@@ -96,11 +96,11 @@ mod tests {
         let state = vanilla_blocks::DIAMOND_ORE.default_state();
         let behavior = BLOCK_BEHAVIORS.get_behavior(&vanilla_blocks::DIAMOND_ORE);
 
-        let mut silk_touch_tool = ItemStack::new(&vanilla_items::DIAMOND_PICKAXE);
+        let mut silk_touch_tool = ItemStack::new(&*vanilla_items::DIAMOND_PICKAXE);
         silk_touch_tool.set_enchantments(&[(Identifier::vanilla_static("silk_touch"), 1)], false);
         behavior.spawn_after_break(state, world, pos, &silk_touch_tool, true);
 
-        let plain_tool = ItemStack::new(&vanilla_items::DIAMOND_PICKAXE);
+        let plain_tool = ItemStack::new(&*vanilla_items::DIAMOND_PICKAXE);
         assert!(plain_tool.is_correct_tool_for_drops(state));
         behavior.spawn_after_break(state, world, pos.offset(1, 0, 0), &plain_tool, false);
 

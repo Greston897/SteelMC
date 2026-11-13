@@ -390,7 +390,7 @@ impl World {
 
     /// Drops the loot for a block that had a block entity, so loot functions
     /// such as `copy_name` and `copy_custom_data` can read it.
-    pub(super) fn drop_resources_with_block_entity(
+    pub(crate) fn drop_resources_with_block_entity(
         self: &Arc<Self>,
         state: BlockStateId,
         pos: BlockPos,

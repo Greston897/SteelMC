@@ -66,13 +66,13 @@ mod tests {
 
     #[test]
     fn missing_slot_defaults_to_zero() {
-        assert!(load(vec![item_entry(None)])[0].is(&vanilla_items::STONE));
+        assert!(load(vec![item_entry(None)])[0].is(&*vanilla_items::STONE));
     }
 
     #[test]
     fn numeric_slot_narrows_to_a_byte() {
         let items = load(vec![item_entry(Some(NbtTag::Int(0x102)))]);
-        assert!(items[2].is(&vanilla_items::STONE));
+        assert!(items[2].is(&*vanilla_items::STONE));
     }
 
     #[test]

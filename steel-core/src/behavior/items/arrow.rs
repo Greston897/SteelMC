@@ -49,9 +49,9 @@ impl ArrowItem {
     /// Whether `stack` is any kind of arrow the bow accepts.
     #[must_use]
     pub fn is_arrow(stack: &ItemStack) -> bool {
-        stack.is(&vanilla_items::ARROW)
-            || stack.is(&vanilla_items::SPECTRAL_ARROW)
-            || stack.is(&vanilla_items::TIPPED_ARROW)
+        stack.is(&*vanilla_items::ARROW)
+            || stack.is(&*vanilla_items::SPECTRAL_ARROW)
+            || stack.is(&*vanilla_items::TIPPED_ARROW)
     }
 }
 

@@ -183,7 +183,7 @@ mod tests {
         lectern
             .container
             .lock()
-            .set_item(0, ItemStack::new(&vanilla_items::WRITABLE_BOOK));
+            .set_item(0, ItemStack::new(&*vanilla_items::WRITABLE_BOOK));
         assert!(lectern.has_book());
         lectern.set_page(3);
         assert_eq!(lectern.page(), 3);

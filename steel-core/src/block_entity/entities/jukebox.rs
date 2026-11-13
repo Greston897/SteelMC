@@ -418,7 +418,7 @@ mod tests {
 
     #[test]
     fn saved_song_resumes_before_but_not_at_its_vanilla_finish_tick() {
-        let record = ItemStack::new(&vanilla_items::MUSIC_DISC_CAT);
+        let record = ItemStack::new(&*vanilla_items::MUSIC_DISC_CAT);
         let song = JukeboxBlockEntity::song_value(&record)
             .expect("vanilla music disc should carry a jukebox song");
         let length_in_ticks = (song.length_in_seconds * TICKS_PER_SECOND as f32).ceil() as i32;
@@ -445,7 +445,7 @@ mod tests {
 
     #[test]
     fn item_block_entity_data_merges_with_existing_record_before_loading() {
-        let record = ItemStack::new(&vanilla_items::MUSIC_DISC_PIGSTEP);
+        let record = ItemStack::new(&*vanilla_items::MUSIC_DISC_PIGSTEP);
         let jukebox = jukebox();
         load_owned(&jukebox, &record_payload(&record, None));
         assert!(!jukebox.is_record_playing());
@@ -477,7 +477,7 @@ mod tests {
     #[test]
     fn direct_song_uses_vanilla_unknown_registry_level_event_data() {
         init_vanilla_registry();
-        let mut direct = ItemStack::new(&vanilla_items::STONE);
+        let mut direct = ItemStack::new(&*vanilla_items::STONE);
         direct.set(
             JUKEBOX_PLAYABLE,
             JukeboxPlayable::direct(JukeboxSongValue {
@@ -497,7 +497,7 @@ mod tests {
             UNKNOWN_SONG_REGISTRY_ID
         );
 
-        let reference = ItemStack::new(&vanilla_items::MUSIC_DISC_CAT);
+        let reference = ItemStack::new(&*vanilla_items::MUSIC_DISC_CAT);
         assert_eq!(
             JukeboxBlockEntity::song_event_data(&reference),
             vanilla_jukebox_songs::CAT

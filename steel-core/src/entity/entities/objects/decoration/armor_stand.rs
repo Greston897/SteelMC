@@ -275,7 +275,7 @@ impl ArmorStandEntity {
         if let Some(world) = self.level() {
             world.drop_item_stack(
                 self.block_position(),
-                ItemStack::new(&vanilla_items::ARMOR_STAND),
+                ItemStack::new(&*vanilla_items::ARMOR_STAND),
             );
         }
         self.set_removed(RemovalReason::Killed);
@@ -333,7 +333,7 @@ impl ArmorStandEntity {
             let item = inventory.get_item_in_hand(hand);
             item.copy_with_count(item.count())
         };
-        if item.is_empty() || item.is(&vanilla_items::ARMOR_STAND) {
+        if item.is_empty() || item.is(&*vanilla_items::ARMOR_STAND) {
             return InteractionResult::Pass;
         }
 

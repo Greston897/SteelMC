@@ -127,11 +127,11 @@ mod tests {
     fn command_blocks_are_operator_only() {
         let fixture = Fixture::new("game_master_block_gate");
 
-        let denied = fixture.place(&vanilla_items::COMMAND_BLOCK);
+        let denied = fixture.place(&*vanilla_items::COMMAND_BLOCK);
         assert_eq!(denied, InteractionResult::Fail);
         assert_eq!(fixture.block_at(TARGET.above()), &vanilla_blocks::AIR);
 
-        let placed = fixture.place(&vanilla_items::STONE);
+        let placed = fixture.place(&*vanilla_items::STONE);
         assert_eq!(placed, InteractionResult::Success);
         assert_eq!(fixture.block_at(TARGET.above()), &vanilla_blocks::STONE);
     }

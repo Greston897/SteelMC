@@ -138,7 +138,7 @@ mod tests {
 
     fn hold_banner(fixture: &Fixture) {
         let mut inventory = fixture.player.inventory.lock();
-        inventory.set_item(0, ItemStack::new(&vanilla_items::WHITE_BANNER));
+        inventory.set_item(0, ItemStack::new(&*vanilla_items::WHITE_BANNER));
     }
 
     /// Clicking the top of a block places the standing banner block.

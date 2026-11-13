@@ -93,9 +93,9 @@ impl ItemBehavior for EndCrystalItem {
         context
             .world
             .on_end_crystal_destroyed(steel_utils::BlockPos::new(
-                spawn.x.floor() as i32,
-                spawn.y.floor() as i32,
-                spawn.z.floor() as i32,
+                spawn.x(),
+                spawn.y(),
+                spawn.z(),
             ));
         context.inv.with_item(|stack| stack.consume_one(false));
 
@@ -143,7 +143,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::with_count(&vanilla_items::END_CRYSTAL, 2));
+            .set_selected_item(ItemStack::with_count(&*vanilla_items::END_CRYSTAL, 2));
 
         (world_fixture, player, pos)
     }

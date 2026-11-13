@@ -90,7 +90,7 @@ impl BlockBehavior for NetherWartBlock {
         _block_entity: Option<SharedBlockEntity>,
         _include_data: bool,
     ) -> Option<ItemStack> {
-        Some(ItemStack::new(&vanilla_items::NETHER_WART))
+        Some(ItemStack::new(&*vanilla_items::NETHER_WART))
     }
 }
 

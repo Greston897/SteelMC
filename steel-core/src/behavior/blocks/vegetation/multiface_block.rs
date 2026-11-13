@@ -234,7 +234,7 @@ impl MultifaceSpreader {
         })
     }
 
-    pub(super) fn spread_from_random_face_toward_random_direction<W: LevelAccessor>(
+    pub(crate) fn spread_from_random_face_toward_random_direction<W: LevelAccessor>(
         &self,
         state: BlockStateId,
         world: &W,
@@ -267,7 +267,7 @@ impl MultifaceSpreader {
         None
     }
 
-    pub(super) fn spread_from_face_toward_direction<W: LevelAccessor>(
+    pub(crate) fn spread_from_face_toward_direction<W: LevelAccessor>(
         &self,
         state: BlockStateId,
         world: &W,

@@ -452,7 +452,7 @@ mod tests {
             pattern.len(),
             1,
             pattern.into_boxed_slice(),
-            ItemStackTemplate::new(&vanilla_items::PURPLE_DYE),
+            ItemStackTemplate::new(&*vanilla_items::PURPLE_DYE),
         )
     }
 
@@ -460,23 +460,23 @@ mod tests {
     fn asymmetric_shaped_recipe_matches_both_orientations() {
         init_vanilla_registry();
         let recipe = asymmetric_shaped_recipe(vec![
-            Ingredient::Item(&vanilla_items::RED_DYE),
-            Ingredient::Item(&vanilla_items::BLUE_DYE),
+            Ingredient::Item(&*vanilla_items::RED_DYE),
+            Ingredient::Item(&*vanilla_items::BLUE_DYE),
         ]);
         let forward = CraftingInput::new(
             2,
             1,
             vec![
-                ItemStack::new(&vanilla_items::RED_DYE),
-                ItemStack::new(&vanilla_items::BLUE_DYE),
+                ItemStack::new(&*vanilla_items::RED_DYE),
+                ItemStack::new(&*vanilla_items::BLUE_DYE),
             ],
         );
         let mirrored = CraftingInput::new(
             2,
             1,
             vec![
-                ItemStack::new(&vanilla_items::BLUE_DYE),
-                ItemStack::new(&vanilla_items::RED_DYE),
+                ItemStack::new(&*vanilla_items::BLUE_DYE),
+                ItemStack::new(&*vanilla_items::RED_DYE),
             ],
         );
 
@@ -488,25 +488,25 @@ mod tests {
     fn shaped_recipe_requires_empty_pattern_slots() {
         init_vanilla_registry();
         let recipe = asymmetric_shaped_recipe(vec![
-            Ingredient::Item(&vanilla_items::RED_DYE),
+            Ingredient::Item(&*vanilla_items::RED_DYE),
             Ingredient::Empty,
-            Ingredient::Item(&vanilla_items::BLUE_DYE),
+            Ingredient::Item(&*vanilla_items::BLUE_DYE),
         ]);
         let valid = CraftingInput::new(
             3,
             1,
             vec![
-                ItemStack::new(&vanilla_items::RED_DYE),
+                ItemStack::new(&*vanilla_items::RED_DYE),
                 ItemStack::empty(),
-                ItemStack::new(&vanilla_items::BLUE_DYE),
+                ItemStack::new(&*vanilla_items::BLUE_DYE),
             ],
         );
         let shifted = CraftingInput::new(
             3,
             1,
             vec![
-                ItemStack::new(&vanilla_items::RED_DYE),
-                ItemStack::new(&vanilla_items::BLUE_DYE),
+                ItemStack::new(&*vanilla_items::RED_DYE),
+                ItemStack::new(&*vanilla_items::BLUE_DYE),
                 ItemStack::empty(),
             ],
         );
@@ -520,15 +520,15 @@ mod tests {
         init_vanilla_registry();
         let recipe = FireworkRocketRecipe {
             properties: RecipeProperties::special(),
-            shell: Ingredient::Item(&vanilla_items::PAPER),
-            fuel: Ingredient::Item(&vanilla_items::GUNPOWDER),
-            star: Ingredient::Item(&vanilla_items::FIREWORK_STAR),
-            result: ItemStackTemplate::new(&vanilla_items::FIREWORK_ROCKET),
+            shell: Ingredient::Item(&*vanilla_items::PAPER),
+            fuel: Ingredient::Item(&*vanilla_items::GUNPOWDER),
+            star: Ingredient::Item(&*vanilla_items::FIREWORK_STAR),
+            result: ItemStackTemplate::new(&*vanilla_items::FIREWORK_ROCKET),
         };
         let input_with_fuel = |fuel_count| {
-            let mut items = vec![ItemStack::new(&vanilla_items::PAPER)];
+            let mut items = vec![ItemStack::new(&*vanilla_items::PAPER)];
             items.extend(
-                std::iter::repeat_with(|| ItemStack::new(&vanilla_items::GUNPOWDER))
+                std::iter::repeat_with(|| ItemStack::new(&*vanilla_items::GUNPOWDER))
                     .take(fuel_count),
             );
             CraftingInput::new(items.len(), 1, items)

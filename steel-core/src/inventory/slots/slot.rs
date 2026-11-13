@@ -322,10 +322,10 @@ mod tests {
         assert!(slot.downcast_ref::<SafeInsertOverrideSlot>().is_some());
         let mut guard = ContainerLockGuard::lock_all(&[container_ref]);
 
-        let remaining = slot.safe_insert(&mut guard, ItemStack::new(&vanilla_items::STONE), 1);
+        let remaining = slot.safe_insert(&mut guard, ItemStack::new(&*vanilla_items::STONE), 1);
 
         assert!(called.load(Ordering::Relaxed));
-        assert!(remaining.is(&vanilla_items::STONE));
+        assert!(remaining.is(&*vanilla_items::STONE));
         assert!(slot.get_item(&guard).is_empty());
     }
 }

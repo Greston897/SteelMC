@@ -159,7 +159,7 @@ impl BlockBehavior for CaveVinesBlock {
         _block_entity: Option<SharedBlockEntity>,
         _include_data: bool,
     ) -> Option<ItemStack> {
-        Some(ItemStack::new(&vanilla_items::GLOW_BERRIES))
+        Some(ItemStack::new(&*vanilla_items::GLOW_BERRIES))
     }
 
     fn as_bonemealable(&self) -> Option<&dyn Bonemealable> {
@@ -258,6 +258,6 @@ mod tests {
             )
             .expect("cave vines have a vanilla clone item");
 
-        assert!(item.is(&vanilla_items::GLOW_BERRIES));
+        assert!(item.is(&*vanilla_items::GLOW_BERRIES));
     }
 }

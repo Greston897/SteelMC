@@ -361,13 +361,13 @@ fn equipment_is_living_entity_state() {
 
     base.equipment()
         .lock()
-        .set(EquipmentSlot::Chest, ItemStack::new(&vanilla_items::ELYTRA));
+        .set(EquipmentSlot::Chest, ItemStack::new(&*vanilla_items::ELYTRA));
 
     assert!(
         base.equipment()
             .lock()
             .get_ref(EquipmentSlot::Chest)
-            .is(&vanilla_items::ELYTRA)
+            .is(&*vanilla_items::ELYTRA)
     );
 }
 

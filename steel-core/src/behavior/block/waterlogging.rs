@@ -34,7 +34,7 @@ pub(crate) fn pickup_waterlogged_block<B: BlockBehavior + ?Sized>(
     }
 
     Some(PickupResult {
-        filled_bucket: ItemStack::new(&vanilla_items::WATER_BUCKET),
+        filled_bucket: ItemStack::new(&*vanilla_items::WATER_BUCKET),
         sound: Some(&sound_events::ITEM_BUCKET_FILL),
     })
 }

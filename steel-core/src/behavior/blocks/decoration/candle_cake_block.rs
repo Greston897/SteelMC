@@ -68,8 +68,8 @@ impl BlockBehavior for CandleCakeBlock {
     ) -> InteractionResult {
         let (is_fire_charge, is_flint_and_steel, is_empty) = inv.with_item(|item_stack| {
             (
-                item_stack.is(&vanilla_items::FIRE_CHARGE),
-                item_stack.is(&vanilla_items::FLINT_AND_STEEL),
+                item_stack.is(&*vanilla_items::FIRE_CHARGE),
+                item_stack.is(&*vanilla_items::FLINT_AND_STEEL),
                 item_stack.is_empty(),
             )
         });
@@ -146,7 +146,7 @@ impl BlockBehavior for CandleCakeBlock {
         _on_hit: &mut dyn FnMut(ItemStack, BlockPos),
     ) {
         if state.get_value(LIT) {
-            CandleBlock::extinguish(None, state, world.as_ref(), pos);
+            CandleBlock::extinguish(None, state, world, pos);
         }
     }
 
@@ -157,7 +157,7 @@ impl BlockBehavior for CandleCakeBlock {
         _block_entity: Option<SharedBlockEntity>,
         _include_data: bool,
     ) -> Option<ItemStack> {
-        Some(ItemStack::new(&vanilla_items::CAKE))
+        Some(ItemStack::new(&*vanilla_items::CAKE))
     }
 
     fn get_analog_output_signal(

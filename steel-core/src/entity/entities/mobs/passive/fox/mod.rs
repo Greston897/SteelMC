@@ -544,7 +544,7 @@ mod tests {
     #[test]
     fn sweet_berries_are_fox_food() {
         init_vanilla_registry();
-        assert!(is_fox_food(&ItemStack::new(&vanilla_items::SWEET_BERRIES)));
-        assert!(!is_fox_food(&ItemStack::new(&vanilla_items::STONE)));
+        assert!(is_fox_food(&ItemStack::new(&*vanilla_items::SWEET_BERRIES)));
+        assert!(!is_fox_food(&ItemStack::new(&*vanilla_items::STONE)));
     }
 }

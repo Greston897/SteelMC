@@ -105,7 +105,7 @@ fn sacrifice_enchantments_conflict_with_earlier_merges() {
         Arc::clone(&kind.result_container),
     );
 
-    let mut book = ItemStack::new(&vanilla_items::ENCHANTED_BOOK);
+    let mut book = ItemStack::new(&*vanilla_items::ENCHANTED_BOOK);
     book.set_enchantments(
         &[
             (vanilla_enchantments::SHARPNESS.key.clone(), 1),
@@ -115,7 +115,7 @@ fn sacrifice_enchantments_conflict_with_earlier_merges() {
     );
     {
         let mut input = input_container.lock();
-        input.set_item(0, ItemStack::new(&vanilla_items::DIAMOND_SWORD));
+        input.set_item(0, ItemStack::new(&*vanilla_items::DIAMOND_SWORD));
         input.set_item(1, book);
     }
 
@@ -145,8 +145,8 @@ fn rename_only_result_preserves_unused_second_input() {
     let input_container = Arc::clone(&kind.input_container);
     {
         let mut input = input_container.lock();
-        input.set_item(0, ItemStack::new(&vanilla_items::DIAMOND_SWORD));
-        input.set_item(1, ItemStack::new(&vanilla_items::DIAMOND_SWORD));
+        input.set_item(0, ItemStack::new(&*vanilla_items::DIAMOND_SWORD));
+        input.set_item(1, ItemStack::new(&*vanilla_items::DIAMOND_SWORD));
     }
 
     menu.set_item_name("Renamed", &player);
@@ -160,8 +160,8 @@ fn rename_only_result_preserves_unused_second_input() {
 
     let input = input_container.lock();
     assert!(input.get_item(0).is_empty());
-    assert!(input.get_item(1).is(&vanilla_items::DIAMOND_SWORD));
-    assert!(menu.behavior().carried().is(&vanilla_items::DIAMOND_SWORD));
+    assert!(input.get_item(1).is(&*vanilla_items::DIAMOND_SWORD));
+    assert!(menu.behavior().carried().is(&*vanilla_items::DIAMOND_SWORD));
 }
 
 #[test]
@@ -175,7 +175,7 @@ fn rename_only_result_restores_default_repair_cost_component() {
         Arc::clone(&kind.result_container),
     );
 
-    let mut input = ItemStack::new(&vanilla_items::DIAMOND_SWORD);
+    let mut input = ItemStack::new(&*vanilla_items::DIAMOND_SWORD);
     input.remove(REPAIR_COST);
     assert!(input.components_patch().is_removed(REPAIR_COST.key()));
     input_container.lock().set_item(0, input);
@@ -213,7 +213,7 @@ fn rename_uses_java_blank_rules() {
     );
     input_container
         .lock()
-        .set_item(0, ItemStack::new(&vanilla_items::DIAMOND_SWORD));
+        .set_item(0, ItemStack::new(&*vanilla_items::DIAMOND_SWORD));
 
     menu.set_item_name("\u{0085}", &player);
 
@@ -239,7 +239,7 @@ fn unchanged_extended_potion_name_does_not_create_rename_result() {
         .potions
         .by_key(&steel_utils::Identifier::vanilla_static("long_swiftness"))
         .expect("long swiftness potion should be registered");
-    let mut potion = ItemStack::new(&vanilla_items::POTION);
+    let mut potion = ItemStack::new(&*vanilla_items::POTION);
     potion.set(
         POTION_CONTENTS,
         PotionContents::new(
@@ -266,13 +266,13 @@ fn full_inputs_do_not_fallback_to_the_hotbar() {
     let input_container = Arc::clone(&kind.input_container);
     {
         let mut input = input_container.lock();
-        input.set_item(0, ItemStack::with_count(&vanilla_items::STONE, 64));
-        input.set_item(1, ItemStack::with_count(&vanilla_items::STONE, 64));
+        input.set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 64));
+        input.set_item(1, ItemStack::with_count(&*vanilla_items::STONE, 64));
     }
     player
         .inventory
         .lock()
-        .set_item(9, ItemStack::with_count(&vanilla_items::DIRT, 5));
+        .set_item(9, ItemStack::with_count(&*vanilla_items::DIRT, 5));
 
     menu.clicked(Click::QuickMove { slot: 3 }, &player);
 
@@ -307,7 +307,7 @@ fn partial_result_overflow_is_discarded() {
     );
     input_container
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 64));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 64));
     menu.set_item_name("Renamed", &player);
 
     let result = result_container.lock().get_item(0).clone();
@@ -317,7 +317,7 @@ fn partial_result_overflow_is_discarded() {
     {
         let mut inventory = player.inventory.lock();
         for slot in 0..36 {
-            inventory.set_item(slot, ItemStack::with_count(&vanilla_items::DIRT, 64));
+            inventory.set_item(slot, ItemStack::with_count(&*vanilla_items::DIRT, 64));
         }
         inventory.set_item(8, matching);
     }

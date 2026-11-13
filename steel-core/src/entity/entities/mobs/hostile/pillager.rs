@@ -90,7 +90,7 @@ impl PillagerEntity {
         let entity_data = Arc::new(SyncMutex::new(entity_data));
         living_base.equipment().lock().set(
             EquipmentSlot::MainHand,
-            ItemStack::new(&vanilla_items::CROSSBOW),
+            ItemStack::new(&*vanilla_items::CROSSBOW),
         );
 
         {
@@ -417,7 +417,7 @@ mod tests {
         assert!(
             pillager
                 .equipment_in_slot(EquipmentSlot::MainHand)
-                .is(&vanilla_items::CROSSBOW)
+                .is(&*vanilla_items::CROSSBOW)
         );
         assert!(!*pillager.entity_data.lock().is_charging_crossbow.get());
 

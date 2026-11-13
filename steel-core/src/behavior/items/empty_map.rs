@@ -100,7 +100,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::MAP));
+            .set_selected_item(ItemStack::new(&*vanilla_items::MAP));
 
         let mut context = crate::behavior::UseItemContext::new(
             &player,
@@ -113,7 +113,7 @@ mod tests {
         assert_eq!(result, InteractionResult::Success);
 
         let hand = player.inventory.lock().get_selected_item().clone();
-        assert!(hand.is(&vanilla_items::FILLED_MAP));
+        assert!(hand.is(&*vanilla_items::FILLED_MAP));
         let map_id = hand.get(MAP_ID).expect("filled map carries an id").id();
 
         let (scale, center_x, center_z, stored) = {
@@ -144,7 +144,7 @@ mod tests {
         let player = TestPlayerBuilder::new(Arc::clone(world), "MapStacker", 1).build();
         {
             let mut inventory = player.inventory.lock();
-            let mut stack = ItemStack::new(&vanilla_items::MAP);
+            let mut stack = ItemStack::new(&*vanilla_items::MAP);
             stack.set_count(2);
             inventory.set_selected_item(stack);
         }
@@ -159,12 +159,12 @@ mod tests {
         assert_eq!(result, InteractionResult::Success);
 
         let inventory = player.inventory.lock();
-        assert!(inventory.get_selected_item().is(&vanilla_items::MAP));
+        assert!(inventory.get_selected_item().is(&*vanilla_items::MAP));
         assert_eq!(inventory.get_selected_item().count(), 1);
         let filled_maps = inventory
             .get_items()
             .iter()
-            .filter(|stack| stack.is(&vanilla_items::FILLED_MAP))
+            .filter(|stack| stack.is(&*vanilla_items::FILLED_MAP))
             .count();
         assert_eq!(filled_maps, 1);
     }

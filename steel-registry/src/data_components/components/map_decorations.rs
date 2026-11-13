@@ -309,7 +309,7 @@ mod tests {
         init_vanilla_registry();
         let filled_map = REGISTRY
             .items
-            .by_key(&vanilla_items::FILLED_MAP.key)
+            .by_key(&*vanilla_items::FILLED_MAP.key)
             .expect("filled map should be registered");
         assert_eq!(
             filled_map.components.get(MAP_DECORATIONS),

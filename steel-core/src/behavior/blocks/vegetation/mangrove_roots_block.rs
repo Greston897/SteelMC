@@ -75,7 +75,7 @@ mod tests {
         let behavior = MangroveRootsBlock::new(&vanilla_blocks::MANGROVE_ROOTS);
 
         let wet_state = {
-            let mut stack = ItemStack::new(&vanilla_items::MANGROVE_ROOTS);
+            let mut stack = ItemStack::new(&*vanilla_items::MANGROVE_ROOTS);
             let context = BlockPlaceContext::directional(
                 world,
                 wet_pos,
@@ -88,7 +88,7 @@ mod tests {
                 .expect("mangrove roots should have a wet placement state")
         };
         let dry_state = {
-            let mut stack = ItemStack::new(&vanilla_items::MANGROVE_ROOTS);
+            let mut stack = ItemStack::new(&*vanilla_items::MANGROVE_ROOTS);
             let context = BlockPlaceContext::directional(
                 world,
                 dry_pos,

@@ -120,7 +120,7 @@ mod tests {
             .update_for_game_mode(GameType::Adventure);
 
         let placement_pos = clicked_pos.above();
-        let plain_bucket = ItemStack::new(&vanilla_items::WATER_BUCKET);
+        let plain_bucket = ItemStack::new(&*vanilla_items::WATER_BUCKET);
         assert!(!player.may_use_item_at(placement_pos, Direction::Up, &plain_bucket));
 
         let predicate = BlockPredicate::new(
@@ -173,7 +173,7 @@ mod tests {
             None,
             component_matchers,
         );
-        let mut item = ItemStack::new(&vanilla_items::DIAMOND_PICKAXE);
+        let mut item = ItemStack::new(&*vanilla_items::DIAMOND_PICKAXE);
         item.set(
             CAN_BREAK,
             AdventureModePredicate::new(vec![predicate]).expect("one block predicate is valid"),

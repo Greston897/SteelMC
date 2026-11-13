@@ -177,9 +177,9 @@ mod tests {
         // The 19 template items share one class, so the registry must accept all
         // of them as plain stacks with the vanilla name component.
         for item in [
-            &vanilla_items::NETHERITE_UPGRADE_SMITHING_TEMPLATE,
-            &vanilla_items::SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE,
-            &vanilla_items::SHAPER_ARMOR_TRIM_SMITHING_TEMPLATE,
+            &*vanilla_items::NETHERITE_UPGRADE_SMITHING_TEMPLATE,
+            &*vanilla_items::SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE,
+            &*vanilla_items::SHAPER_ARMOR_TRIM_SMITHING_TEMPLATE,
         ] {
             let stack = ItemStack::new(item);
             assert!(!stack.is_empty());

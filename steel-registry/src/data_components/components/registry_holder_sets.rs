@@ -195,14 +195,14 @@ mod tests {
         init_vanilla_registry();
 
         let wooden = Repairable::new(RegistryHolderSet::Tag(ItemTag::WOODEN_TOOL_MATERIALS));
-        assert!(wooden.is_valid_repair_item(&ItemStack::new(&vanilla_items::OAK_PLANKS)));
-        assert!(!wooden.is_valid_repair_item(&ItemStack::new(&vanilla_items::DIAMOND)));
+        assert!(wooden.is_valid_repair_item(&ItemStack::new(&*vanilla_items::OAK_PLANKS)));
+        assert!(!wooden.is_valid_repair_item(&ItemStack::new(&*vanilla_items::DIAMOND)));
 
         let direct = Repairable::new(RegistryHolderSet::Direct(vec![
-            &vanilla_items::PHANTOM_MEMBRANE,
+            &*vanilla_items::PHANTOM_MEMBRANE,
         ]));
-        assert!(direct.is_valid_repair_item(&ItemStack::new(&vanilla_items::PHANTOM_MEMBRANE)));
-        assert!(!direct.is_valid_repair_item(&ItemStack::new(&vanilla_items::BREEZE_ROD)));
+        assert!(direct.is_valid_repair_item(&ItemStack::new(&*vanilla_items::PHANTOM_MEMBRANE)));
+        assert!(!direct.is_valid_repair_item(&ItemStack::new(&*vanilla_items::BREEZE_ROD)));
         assert_eq!(
             parse::<Repairable>(direct.clone().to_nbt_tag()),
             Some(direct.clone())
@@ -268,27 +268,27 @@ mod tests {
             .count();
         assert_eq!(banner_pattern_count, 10);
 
-        let flower_pattern = ItemStack::new(&vanilla_items::FLOWER_BANNER_PATTERN);
+        let flower_pattern = ItemStack::new(&*vanilla_items::FLOWER_BANNER_PATTERN);
         assert!(
             flower_pattern
                 .get(PROVIDES_BANNER_PATTERNS)
                 .is_some_and(|patterns| patterns.contains(&vanilla_banner_patterns::FLOWER))
         );
 
-        let netherite = ItemStack::new(&vanilla_items::NETHERITE_INGOT);
+        let netherite = ItemStack::new(&*vanilla_items::NETHERITE_INGOT);
         assert!(!netherite.can_be_hurt_by(&vanilla_damage_types::IN_FIRE));
         assert!(netherite.can_be_hurt_by(&vanilla_damage_types::GENERIC));
 
-        let nether_star = ItemStack::new(&vanilla_items::NETHER_STAR);
+        let nether_star = ItemStack::new(&*vanilla_items::NETHER_STAR);
         assert!(!nether_star.can_be_hurt_by(&vanilla_damage_types::EXPLOSION));
         assert!(nether_star.can_be_hurt_by(&vanilla_damage_types::IN_FIRE));
 
-        let elytra = ItemStack::new(&vanilla_items::ELYTRA);
-        assert!(elytra.is_valid_repair_item(&ItemStack::new(&vanilla_items::PHANTOM_MEMBRANE)));
-        assert!(!elytra.is_valid_repair_item(&ItemStack::new(&vanilla_items::BREEZE_ROD)));
+        let elytra = ItemStack::new(&*vanilla_items::ELYTRA);
+        assert!(elytra.is_valid_repair_item(&ItemStack::new(&*vanilla_items::PHANTOM_MEMBRANE)));
+        assert!(!elytra.is_valid_repair_item(&ItemStack::new(&*vanilla_items::BREEZE_ROD)));
 
-        let mace = ItemStack::new(&vanilla_items::MACE);
-        assert!(mace.is_valid_repair_item(&ItemStack::new(&vanilla_items::BREEZE_ROD)));
-        assert!(!mace.is_valid_repair_item(&ItemStack::new(&vanilla_items::PHANTOM_MEMBRANE)));
+        let mace = ItemStack::new(&*vanilla_items::MACE);
+        assert!(mace.is_valid_repair_item(&ItemStack::new(&*vanilla_items::BREEZE_ROD)));
+        assert!(!mace.is_valid_repair_item(&ItemStack::new(&*vanilla_items::PHANTOM_MEMBRANE)));
     }
 }

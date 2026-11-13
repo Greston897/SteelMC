@@ -152,7 +152,7 @@ mod tests {
         const EXPECTED_STACK_COUNT: usize = 2;
 
         init_vanilla_registry();
-        let stack = ItemStack::with_count(&vanilla_items::STONE, INPUT_STACK_SIZE);
+        let stack = ItemStack::with_count(&*vanilla_items::STONE, INPUT_STACK_SIZE);
         let mut stacks = Vec::new();
 
         add_or_append_stack(&mut stacks, stack.clone(), BlockPos::ZERO);

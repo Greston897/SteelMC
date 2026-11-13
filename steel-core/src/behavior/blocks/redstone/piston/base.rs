@@ -702,7 +702,7 @@ mod tests {
             UpdateFlags::UPDATE_NONE,
         ));
 
-        let mut stack = ItemStack::new(&vanilla_items::PISTON);
+        let mut stack = ItemStack::new(&*vanilla_items::PISTON);
         let source = PlacementSource::direct(
             None,
             InteractionHand::MainHand,
@@ -740,7 +740,7 @@ mod tests {
         let world = &world_fixture.world;
         let moving_pos = piston_pos.relative_n(Direction::East, 2);
         let moving_state = world.get_block_state(moving_pos);
-        let tool = ItemStack::new(&vanilla_items::IRON_PICKAXE);
+        let tool = ItemStack::new(&*vanilla_items::IRON_PICKAXE);
         let drops = BlockLootContext::new(world, moving_pos)
             .with_tool(&tool)
             .get_drops(moving_state);

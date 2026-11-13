@@ -179,7 +179,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::with_count(&vanilla_items::PAINTING, 2));
+            .set_selected_item(ItemStack::with_count(&*vanilla_items::PAINTING, 2));
 
         let mut context = place_context(world, &player, wall, Direction::East);
         assert_eq!(
@@ -199,7 +199,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::PAINTING));
+            .set_selected_item(ItemStack::new(&*vanilla_items::PAINTING));
 
         let mut context = place_context(world, &player, wall, Direction::Up);
         assert_eq!(
@@ -217,7 +217,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::PAINTING));
+            .set_selected_item(ItemStack::new(&*vanilla_items::PAINTING));
 
         assert!(world.set_block(
             wall,
@@ -239,7 +239,7 @@ mod tests {
         let (fixture, player, wall) = wall_fixture("painting_place_name");
         let world = &fixture.world;
 
-        let mut stack = ItemStack::new(&vanilla_items::PAINTING);
+        let mut stack = ItemStack::new(&*vanilla_items::PAINTING);
         stack.set(CUSTOM_NAME, TextComponent::plain("The Wall"));
         player.inventory.lock().set_selected_item(stack);
 

@@ -176,7 +176,7 @@ impl BoggedEntity {
     pub fn shear(&self, _world: &World, _tool: &ItemStack) {
         self.play_sound(&sound_events::ENTITY_BOGGED_SHEAR, 1.0, 1.0);
 
-        for item in [&vanilla_items::RED_MUSHROOM, &vanilla_items::BROWN_MUSHROOM] {
+        for item in [&*vanilla_items::RED_MUSHROOM, &*vanilla_items::BROWN_MUSHROOM] {
             let Some(item_entity) = self.spawn_at_location(ItemStack::new(item), 1.0) else {
                 continue;
             };
@@ -348,7 +348,7 @@ impl Mob for BoggedEntity {
             item_stack.copy_with_count(item_stack.count())
         };
 
-        if !item_stack.is(&vanilla_items::SHEARS) {
+        if !item_stack.is(&*vanilla_items::SHEARS) {
             return InteractionResult::Pass;
         }
         if self.is_sheared() {

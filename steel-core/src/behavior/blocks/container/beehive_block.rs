@@ -112,7 +112,7 @@ impl BeehiveBlock {
         // Vanilla spawns one honeycomb item entity at the hive.
         world.drop_item_stack(
             pos,
-            steel_registry::item_stack::ItemStack::new(&vanilla_items::HONEYCOMB),
+            steel_registry::item_stack::ItemStack::new(&*vanilla_items::HONEYCOMB),
         );
         hive.on_honey_harvested(state, world, pos, MAX_HONEY_LEVEL, false);
     }
@@ -164,7 +164,7 @@ impl BeehiveBlock {
                 });
                 // Vanilla gives the honey bottle to the player or drops it.
                 player.add_item_or_drop(
-                    steel_registry::item_stack::ItemStack::new(&vanilla_items::HONEY_BOTTLE),
+                    steel_registry::item_stack::ItemStack::new(&*vanilla_items::HONEY_BOTTLE),
                     Prediction::ServerOnly,
                 );
                 hive.on_honey_harvested(state, world, pos, 0, true);

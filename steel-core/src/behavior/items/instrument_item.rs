@@ -115,7 +115,7 @@ mod tests {
         let player = TestPlayerBuilder::new(Arc::clone(world), "Horn", 1).build();
         player.set_client_loaded(true);
 
-        let stack = ItemStack::new(&vanilla_items::GOAT_HORN);
+        let stack = ItemStack::new(&*vanilla_items::GOAT_HORN);
         let instrument = stack.get(INSTRUMENT).expect("goat horn instrument");
         let use_duration = instrument.value().use_duration();
         let expected_ticks = (use_duration * 20.0).floor() as i32;
@@ -126,7 +126,7 @@ mod tests {
             inventory.set_item_in_hand(InteractionHand::MainHand, horn);
         }
 
-        let behavior = ITEM_BEHAVIORS.get_behavior(&vanilla_items::GOAT_HORN);
+        let behavior = ITEM_BEHAVIORS.get_behavior(&*vanilla_items::GOAT_HORN);
         let animation = behavior.get_use_animation(&stack);
         assert_eq!(animation, ItemUseAnimation::TootHorn);
         let duration = behavior.get_use_duration(&stack, player.as_ref());
@@ -142,7 +142,7 @@ mod tests {
         assert_eq!(result, InteractionResult::Consume);
         assert!(player.is_item_on_cooldown(&stack));
 
-        let used_stat = vanilla_stat_types::ITEM_USED.get(&vanilla_items::GOAT_HORN);
+        let used_stat = vanilla_stat_types::ITEM_USED.get(&*vanilla_items::GOAT_HORN);
         let used = player
             .stats()
             .into_iter()

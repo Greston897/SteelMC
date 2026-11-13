@@ -77,7 +77,8 @@ impl BlockEntity for BannerBlockEntity {
         let nbt_view: NbtCompoundView<'_, '_> = nbt.into();
         let mut layers = Vec::new();
         if let Some(list) = nbt_view.list("patterns") {
-            for entry in &list {
+            let tags = list.to_owned().as_nbt_tags();
+            for entry in tags.iter() {
                 let Some(compound) = entry.compound() else {
                     continue;
                 };

@@ -68,6 +68,15 @@ pub struct TurtleEggBlock {
     block: BlockRef,
 }
 
+/// Pre-dawn check used when the day timeline is unavailable.
+fn in_fallback_hatch_window(world: &Arc<World>) -> bool {
+    let day_time = world
+        .clock_total_ticks(&vanilla_world_clocks::OVERWORLD)
+        .unwrap_or(0)
+        .rem_euclid(TICKS_PER_DAY);
+    (HATCH_WINDOW_START..HATCH_WINDOW_END).contains(&day_time)
+}
+
 impl TurtleEggBlock {
     /// Creates a new turtle egg block behavior.
     #[must_use]
@@ -106,16 +115,7 @@ impl TurtleEggBlock {
         chance > 0.0 && rand::random::<f32>() < chance
     }
 
-    /// Pre-dawn check used when the day timeline is unavailable.
-fn in_fallback_hatch_window(world: &Arc<World>) -> bool {
-    let day_time = world
-        .clock_total_ticks(&vanilla_world_clocks::OVERWORLD)
-        .unwrap_or(0)
-        .rem_euclid(TICKS_PER_DAY);
-    (HATCH_WINDOW_START..HATCH_WINDOW_END).contains(&day_time)
-}
-
-/// Vanilla `TurtleEggBlock.canDestroyEgg`: which entities are able to trample
+    /// Vanilla `TurtleEggBlock.canDestroyEgg`: which entities are able to trample
     /// an egg. Turtles and bats never do, and only living entities can; players
     /// always may, other mobs only when `mobGriefing` is enabled.
     fn can_destroy_egg(world: &Arc<World>, entity: &dyn Entity) -> bool {
@@ -196,7 +196,7 @@ impl BlockBehavior for TurtleEggBlock {
 
     fn can_be_replaced(&self, state: BlockStateId, context: &BlockPlaceContext<'_>) -> bool {
         if !context.is_secondary_use_active()
-            && context.with_item(|item| item.is(&vanilla_items::TURTLE_EGG))
+            && context.with_item(|item| item.is(&*vanilla_items::TURTLE_EGG))
             && state.get_value(EGGS) < MAX_EGGS
         {
             true

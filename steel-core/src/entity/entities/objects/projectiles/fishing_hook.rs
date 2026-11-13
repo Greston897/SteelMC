@@ -214,8 +214,8 @@ impl FishingHookEntity {
             return true;
         }
 
-        let mainhand_fishing = mainhand_item.is(&vanilla_items::FISHING_ROD);
-        let offhand_fishing = offhand_item.is(&vanilla_items::FISHING_ROD);
+        let mainhand_fishing = mainhand_item.is(&*vanilla_items::FISHING_ROD);
+        let offhand_fishing = offhand_item.is(&*vanilla_items::FISHING_ROD);
 
         if (mainhand_fishing || offhand_fishing)
             && self.distance_to_sqr(owner.position()) <= MAX_DISTANCE_SQR
@@ -1052,12 +1052,12 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::FISHING_ROD));
+            .set_selected_item(ItemStack::new(&*vanilla_items::FISHING_ROD));
         let player_owner = Arc::clone(&player);
         let owner: SharedEntity = player_owner;
         let hook = test_hook(world, 51);
         hook.set_owner(&owner);
-        let rod = ItemStack::new(&vanilla_items::FISHING_ROD);
+        let rod = ItemStack::new(&*vanilla_items::FISHING_ROD);
 
         assert_eq!(hook.retrieve(&rod), 0);
         assert!(hook.is_removed());
@@ -1135,7 +1135,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::FISHING_ROD));
+            .set_selected_item(ItemStack::new(&*vanilla_items::FISHING_ROD));
         let player_owner = Arc::clone(&player);
         let owner: SharedEntity = player_owner;
         let hook = test_hook(world, 201);
@@ -1184,7 +1184,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::FISHING_ROD));
+            .set_selected_item(ItemStack::new(&*vanilla_items::FISHING_ROD));
         let player_owner = Arc::clone(&player);
         let owner: SharedEntity = player_owner;
 

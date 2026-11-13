@@ -211,7 +211,7 @@ fn pig_saddle_slot_requires_alive_adult() {
     init_vanilla_registry();
 
     let pig = PigEntity::new(&vanilla_entities::PIG, 1, DVec3::ZERO, Weak::new());
-    let saddle = ItemStack::new(&vanilla_items::SADDLE);
+    let saddle = ItemStack::new(&*vanilla_items::SADDLE);
 
     assert!(LivingEntity::is_equippable_in_slot(
         &pig,
@@ -240,13 +240,13 @@ fn pig_dispenser_can_equip_saddle_only_when_alive_adult_and_empty() {
     init_vanilla_registry();
 
     let pig = PigEntity::new(&vanilla_entities::PIG, 1, DVec3::ZERO, Weak::new());
-    let saddle = ItemStack::new(&vanilla_items::SADDLE);
+    let saddle = ItemStack::new(&*vanilla_items::SADDLE);
 
     assert!(LivingEntity::can_equip_with_dispenser(&pig, &saddle));
 
     pig.living_base.equipment().lock().set(
         EquipmentSlot::Saddle,
-        ItemStack::new(&vanilla_items::SADDLE),
+        ItemStack::new(&*vanilla_items::SADDLE),
     );
     assert!(!LivingEntity::can_equip_with_dispenser(&pig, &saddle));
 
@@ -259,7 +259,7 @@ fn pig_dispenser_can_equip_saddle_only_when_alive_adult_and_empty() {
     assert!(!LivingEntity::can_equip_with_dispenser(&dead, &saddle));
 
     let unequippable_target = PigEntity::new(&vanilla_entities::PIG, 4, DVec3::ZERO, Weak::new());
-    let stone = ItemStack::new(&vanilla_items::STONE);
+    let stone = ItemStack::new(&*vanilla_items::STONE);
     assert!(!LivingEntity::can_equip_with_dispenser(
         &unequippable_target,
         &stone
@@ -289,13 +289,13 @@ fn pig_saddled_state_reads_saddle_equipment() {
 
     pig.living_base.equipment().lock().set(
         EquipmentSlot::Saddle,
-        ItemStack::new(&vanilla_items::CARROT),
+        ItemStack::new(&*vanilla_items::CARROT),
     );
     assert!(!pig.is_saddled());
 
     pig.living_base.equipment().lock().set(
         EquipmentSlot::Saddle,
-        ItemStack::new(&vanilla_items::SADDLE),
+        ItemStack::new(&*vanilla_items::SADDLE),
     );
 
     assert!(pig.is_saddled());
@@ -306,7 +306,7 @@ fn pig_saddle_equip_sound_uses_vanilla_sound() {
     init_vanilla_registry();
 
     let pig = PigEntity::new(&vanilla_entities::PIG, 1, DVec3::ZERO, Weak::new());
-    let saddle = ItemStack::new(&vanilla_items::SADDLE);
+    let saddle = ItemStack::new(&*vanilla_items::SADDLE);
 
     assert_eq!(
         LivingEntity::equip_sound(&pig, EquipmentSlot::Saddle, &saddle)
@@ -428,7 +428,7 @@ fn mob_death_loot_without_world_keeps_preserved_equipment() {
     let pig = PigEntity::new(&vanilla_entities::PIG, 1, DVec3::ZERO, Weak::new());
     pig.living_base.equipment().lock().set(
         EquipmentSlot::Saddle,
-        ItemStack::new(&vanilla_items::SADDLE),
+        ItemStack::new(&*vanilla_items::SADDLE),
     );
     pig.set_guaranteed_drop(EquipmentSlot::Saddle);
 

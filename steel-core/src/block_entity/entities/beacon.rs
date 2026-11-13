@@ -377,6 +377,7 @@ impl BeaconBlockEntity {
     }
 
     fn load_effect(nbt: &BorrowedNbtCompound<'_>, field: &str) -> Option<MobEffectRef> {
+        let nbt: simdnbt::borrow::NbtCompound<'_, '_> = nbt.into();
         let key = Identifier::from_str(&nbt.string(field)?.to_str()).ok()?;
         let effect = REGISTRY.mob_effects.by_key(&key)?;
         BeaconState::filter_effect(Some(effect))

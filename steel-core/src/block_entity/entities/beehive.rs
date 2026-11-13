@@ -15,8 +15,8 @@ use steel_registry::blocks::properties::{BlockStateProperties, Direction};
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::{
-    EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest, Mob as _, SharedEntity,
-    spawn_entity,
+    Entity as _, EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest, Mob as _,
+    SharedEntity, spawn_entity,
 };
 use crate::player::Player;
 use crate::world::World;

@@ -207,7 +207,7 @@ mod tests {
         let player = TestPlayerBuilder::new(Arc::clone(world), "ShearsTester", 1).build();
         player.inventory.lock().set_item_in_hand(
             InteractionHand::MainHand,
-            ItemStack::new(&vanilla_items::SHEARS),
+            ItemStack::new(&*vanilla_items::SHEARS),
         );
 
         let packets = Arc::new(SyncMutex::new(Vec::new()));

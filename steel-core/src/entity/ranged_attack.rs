@@ -75,7 +75,7 @@ pub fn shoot_arrow(
         target_position.z,
     );
 
-    let arrow_stack = ItemStack::new(&vanilla_items::ARROW);
+    let arrow_stack = ItemStack::new(&*vanilla_items::ARROW);
     let arrow = ArrowItem::create_arrow(
         &arrow_stack,
         from,

@@ -42,7 +42,7 @@ impl ItemBehavior for SolidBucketItem {
         {
             context
                 .inv
-                .with_item(|item| *item = ItemStack::new(&vanilla_items::BUCKET));
+                .with_item(|item| *item = ItemStack::new(&*vanilla_items::BUCKET));
         }
 
         result

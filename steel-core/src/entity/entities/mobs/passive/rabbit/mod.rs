@@ -440,7 +440,7 @@ mod tests {
     #[test]
     fn carrots_are_rabbit_food() {
         init_vanilla_registry();
-        assert!(is_rabbit_food(&ItemStack::new(&vanilla_items::CARROT)));
-        assert!(!is_rabbit_food(&ItemStack::new(&vanilla_items::STONE)));
+        assert!(is_rabbit_food(&ItemStack::new(&*vanilla_items::CARROT)));
+        assert!(!is_rabbit_food(&ItemStack::new(&*vanilla_items::STONE)));
     }
 }

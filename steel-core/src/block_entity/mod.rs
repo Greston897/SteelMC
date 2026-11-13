@@ -221,7 +221,7 @@ impl BlockEntityBase {
     }
 
     #[must_use]
-    fn block_state(&self) -> BlockStateId {
+    pub fn block_state(&self) -> BlockStateId {
         self.lifecycle.lock().block_state
     }
 

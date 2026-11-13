@@ -50,7 +50,7 @@ fn mooshroom_milks_bowl_into_mushroom_stew() {
     player
         .inventory
         .lock()
-        .set_selected_item(ItemStack::new(&vanilla_items::BOWL));
+        .set_selected_item(ItemStack::new(&*vanilla_items::BOWL));
 
     let mooshroom =
         MushroomCowEntity::new(&vanilla_entities::MOOSHROOM, 1, DVec3::ZERO, Weak::new());
@@ -64,7 +64,7 @@ fn mooshroom_milks_bowl_into_mushroom_stew() {
             .inventory
             .lock()
             .get_selected_item()
-            .is(&vanilla_items::MUSHROOM_STEW)
+            .is(&*vanilla_items::MUSHROOM_STEW)
     );
 }
 
@@ -78,7 +78,7 @@ fn mooshroom_milks_bucket_into_milk_bucket() {
     player
         .inventory
         .lock()
-        .set_selected_item(ItemStack::new(&vanilla_items::BUCKET));
+        .set_selected_item(ItemStack::new(&*vanilla_items::BUCKET));
 
     let mooshroom =
         MushroomCowEntity::new(&vanilla_entities::MOOSHROOM, 1, DVec3::ZERO, Weak::new());
@@ -92,7 +92,7 @@ fn mooshroom_milks_bucket_into_milk_bucket() {
             .inventory
             .lock()
             .get_selected_item()
-            .is(&vanilla_items::MILK_BUCKET)
+            .is(&*vanilla_items::MILK_BUCKET)
     );
 }
 
@@ -108,7 +108,7 @@ fn brown_mooshroom_eats_flower_and_gives_suspicious_stew() {
         MushroomCowEntity::new(&vanilla_entities::MOOSHROOM, 1, DVec3::ZERO, Weak::new());
     mooshroom.set_variant(MooshroomVariant::Brown);
 
-    let dandelion = ItemStack::new(&vanilla_items::DANDELION);
+    let dandelion = ItemStack::new(&*vanilla_items::DANDELION);
     player.inventory.lock().set_selected_item(dandelion);
 
     assert_eq!(
@@ -120,7 +120,7 @@ fn brown_mooshroom_eats_flower_and_gives_suspicious_stew() {
     player
         .inventory
         .lock()
-        .set_selected_item(ItemStack::new(&vanilla_items::BOWL));
+        .set_selected_item(ItemStack::new(&*vanilla_items::BOWL));
     assert_eq!(
         Mob::mob_interact(&mooshroom, player.as_ref(), InteractionHand::MainHand),
         InteractionResult::Success
@@ -129,14 +129,14 @@ fn brown_mooshroom_eats_flower_and_gives_suspicious_stew() {
     {
         let inventory = player.inventory.lock();
         let stew = inventory.get_selected_item();
-        assert!(stew.is(&vanilla_items::SUSPICIOUS_STEW));
+        assert!(stew.is(&*vanilla_items::SUSPICIOUS_STEW));
         assert!(stew.get(SUSPICIOUS_STEW_EFFECTS).is_some());
     }
 
     player
         .inventory
         .lock()
-        .set_selected_item(ItemStack::new(&vanilla_items::BOWL));
+        .set_selected_item(ItemStack::new(&*vanilla_items::BOWL));
     assert_eq!(
         Mob::mob_interact(&mooshroom, player.as_ref(), InteractionHand::MainHand),
         InteractionResult::Success
@@ -146,7 +146,7 @@ fn brown_mooshroom_eats_flower_and_gives_suspicious_stew() {
             .inventory
             .lock()
             .get_selected_item()
-            .is(&vanilla_items::MUSHROOM_STEW)
+            .is(&*vanilla_items::MUSHROOM_STEW)
     );
 }
 
@@ -181,7 +181,7 @@ fn mooshroom_shearing_converts_to_cow_and_drops_mushrooms() {
     player
         .inventory
         .lock()
-        .set_selected_item(ItemStack::new(&vanilla_items::SHEARS));
+        .set_selected_item(ItemStack::new(&*vanilla_items::SHEARS));
 
     let mooshroom_entity = MushroomCowEntity::new(
         &vanilla_entities::MOOSHROOM,

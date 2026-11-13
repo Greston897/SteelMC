@@ -444,7 +444,7 @@ impl Bucketable for PufferfishEntity {
     }
 
     fn bucket_item(&self) -> ItemRef {
-        &vanilla_items::PUFFERFISH_BUCKET
+        &*vanilla_items::PUFFERFISH_BUCKET
     }
 }
 

@@ -158,7 +158,7 @@ impl<T: AbstractMinecart> VehicleEntity for T {
     }
 
     fn vehicle_drop_item(&self) -> ItemRef {
-        &vanilla_items::MINECART
+        &*vanilla_items::MINECART
     }
 }
 

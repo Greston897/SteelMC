@@ -65,7 +65,7 @@ impl ItemStack {
     #[must_use]
     pub fn empty() -> Self {
         Self {
-            item: &vanilla_items::AIR,
+            item: &*vanilla_items::AIR,
             count: 0,
             patch: DataComponentPatch::new(),
         }
@@ -107,7 +107,7 @@ impl ItemStack {
     #[must_use]
     pub fn item(&self) -> ItemRef {
         if self.is_empty() {
-            &vanilla_items::AIR
+            &*vanilla_items::AIR
         } else {
             self.item
         }
@@ -616,7 +616,7 @@ impl ItemStack {
 
     #[must_use]
     fn enchantment_component(&self) -> DataComponentType<ItemEnchantments> {
-        if self.is(&vanilla_items::ENCHANTED_BOOK) {
+        if self.is(&*vanilla_items::ENCHANTED_BOOK) {
             STORED_ENCHANTMENTS
         } else {
             ENCHANTMENTS
@@ -1965,11 +1965,11 @@ mod consume_tests {
     fn consume_shrinks_only_without_infinite_materials() {
         init_vanilla_registry();
 
-        let mut survival = ItemStack::with_count(&vanilla_items::GLOWSTONE, 2);
+        let mut survival = ItemStack::with_count(&*vanilla_items::GLOWSTONE, 2);
         survival.consume_one(false);
         assert_eq!(survival.count(), 1);
 
-        let mut creative = ItemStack::with_count(&vanilla_items::GLOWSTONE, 2);
+        let mut creative = ItemStack::with_count(&*vanilla_items::GLOWSTONE, 2);
         creative.consume_one(true);
         assert_eq!(creative.count(), 2);
     }
@@ -1978,12 +1978,12 @@ mod consume_tests {
     fn consume_and_return_splits_before_shrinking() {
         init_vanilla_registry();
 
-        let mut survival = ItemStack::with_count(&vanilla_items::GLOWSTONE, 2);
+        let mut survival = ItemStack::with_count(&*vanilla_items::GLOWSTONE, 2);
         let taken = survival.consume_and_return(1, false);
         assert_eq!(taken.count(), 1);
         assert_eq!(survival.count(), 1);
 
-        let mut creative = ItemStack::with_count(&vanilla_items::GLOWSTONE, 2);
+        let mut creative = ItemStack::with_count(&*vanilla_items::GLOWSTONE, 2);
         let taken = creative.consume_and_return(1, true);
         assert_eq!(taken.count(), 1);
         assert_eq!(creative.count(), 2);
@@ -1998,7 +1998,7 @@ mod enchantment_tests {
     #[test]
     fn stored_book_enchantments_are_not_active_item_enchantments() {
         init_vanilla_registry();
-        let mut book = ItemStack::new(&vanilla_items::ENCHANTED_BOOK);
+        let mut book = ItemStack::new(&*vanilla_items::ENCHANTED_BOOK);
         book.upgrade_enchantment(vanilla_enchantments::SHARPNESS.key.clone(), 3);
 
         assert_eq!(
@@ -2035,7 +2035,7 @@ mod name_tests {
         let Ok(content) = content else {
             panic!("test written-book content should be valid");
         };
-        let mut book = ItemStack::new(&vanilla_items::WRITTEN_BOOK);
+        let mut book = ItemStack::new(&*vanilla_items::WRITTEN_BOOK);
         book.set(WRITTEN_BOOK_CONTENT, content);
         book
     }
@@ -2100,8 +2100,8 @@ mod durability_tests {
     #[test]
     fn item_damage_uses_generated_unbreaking_tool_requirements() {
         init_vanilla_registry();
-        let mut armor = with_unbreaking(&vanilla_items::DIAMOND_CHESTPLATE, 3);
-        let mut tool = with_unbreaking(&vanilla_items::DIAMOND_PICKAXE, 3);
+        let mut armor = with_unbreaking(&*vanilla_items::DIAMOND_CHESTPLATE, 3);
+        let mut tool = with_unbreaking(&*vanilla_items::DIAMOND_PICKAXE, 3);
         let mut armor_random = Xoroshiro::from_seed_unmixed(42);
         let mut tool_random = Xoroshiro::from_seed_unmixed(42);
 
@@ -2113,25 +2113,25 @@ mod durability_tests {
         let effects = vanilla_enchantments::UNBREAKING.effects.item_damage;
         assert_eq!(
             effects[0].requirements.and_then(|requirements| {
-                requirements.matches_item_context(&vanilla_items::DIAMOND_CHESTPLATE)
+                requirements.matches_item_context(&*vanilla_items::DIAMOND_CHESTPLATE)
             }),
             Some(true)
         );
         assert_eq!(
             effects[1].requirements.and_then(|requirements| {
-                requirements.matches_item_context(&vanilla_items::DIAMOND_CHESTPLATE)
+                requirements.matches_item_context(&*vanilla_items::DIAMOND_CHESTPLATE)
             }),
             Some(false)
         );
         assert_eq!(
             effects[0].requirements.and_then(|requirements| {
-                requirements.matches_item_context(&vanilla_items::DIAMOND_PICKAXE)
+                requirements.matches_item_context(&*vanilla_items::DIAMOND_PICKAXE)
             }),
             Some(false)
         );
         assert_eq!(
             effects[1].requirements.and_then(|requirements| {
-                requirements.matches_item_context(&vanilla_items::DIAMOND_PICKAXE)
+                requirements.matches_item_context(&*vanilla_items::DIAMOND_PICKAXE)
             }),
             Some(true)
         );
@@ -2145,11 +2145,11 @@ mod durability_tests {
             .expect("Infinity ammo use should have a match_tool requirement");
 
         assert_eq!(
-            requirements.matches_item_context(&vanilla_items::ARROW),
+            requirements.matches_item_context(&*vanilla_items::ARROW),
             Some(true)
         );
         assert_eq!(
-            requirements.matches_item_context(&vanilla_items::SPECTRAL_ARROW),
+            requirements.matches_item_context(&*vanilla_items::SPECTRAL_ARROW),
             Some(false)
         );
     }
@@ -2263,7 +2263,7 @@ mod persistence_tests {
     #[test]
     fn shrunk_to_empty_stack_exposes_no_components() {
         init_vanilla_registry();
-        let mut totem = ItemStack::new(&vanilla_items::TOTEM_OF_UNDYING);
+        let mut totem = ItemStack::new(&*vanilla_items::TOTEM_OF_UNDYING);
         assert!(totem.has(DEATH_PROTECTION));
 
         totem.shrink(1);
@@ -2278,7 +2278,7 @@ mod persistence_tests {
         let mut patch = crate::data_components::DataComponentPatch::new();
         patch.set(MAX_STACK_SIZE, 64);
         patch.remove(CUSTOM_DATA);
-        let mut stack = ItemStack::with_count_and_patch(&vanilla_items::STONE, 1, patch);
+        let mut stack = ItemStack::with_count_and_patch(&*vanilla_items::STONE, 1, patch);
         assert!(stack.components_patch().is_empty());
 
         stack.set(MAX_STACK_SIZE, 16);
@@ -2295,7 +2295,7 @@ mod persistence_tests {
         assert!(stack.components_patch().is_empty());
 
         stack.set(MAX_STACK_SIZE, 16);
-        stack.set_item(&vanilla_items::ENDER_PEARL.key);
+        stack.set_item(&*vanilla_items::ENDER_PEARL.key);
         assert_eq!(stack.max_stack_size(), 16);
         assert!(stack.components_patch().is_empty());
     }
@@ -2305,7 +2305,7 @@ mod persistence_tests {
         init_vanilla_registry();
         let mut patch = crate::data_components::DataComponentPatch::new();
         patch.set(MAX_DAMAGE, 1);
-        let stack = ItemStack::with_count_and_patch(&vanilla_items::STONE, 0, patch);
+        let stack = ItemStack::with_count_and_patch(&*vanilla_items::STONE, 0, patch);
 
         assert!(stack.is_empty());
         assert!(stack.validate_strict().is_ok());
@@ -2314,7 +2314,7 @@ mod persistence_tests {
     #[test]
     fn default_count_is_always_present_in_persistent_encoding() {
         init_vanilla_registry();
-        let stack = ItemStack::new(&vanilla_items::STONE);
+        let stack = ItemStack::new(&*vanilla_items::STONE);
         let NbtTag::Compound(compound) = stack.to_nbt_tag_ref() else {
             panic!("item stack should encode as a compound");
         };
@@ -2378,7 +2378,7 @@ mod persistence_tests {
     #[test]
     fn save_omits_invalid_component_value_but_keeps_present_patch_field() {
         init_vanilla_registry();
-        let mut stack = ItemStack::new(&vanilla_items::STONE);
+        let mut stack = ItemStack::new(&*vanilla_items::STONE);
         stack.set(MAX_STACK_SIZE, 0);
 
         assert!(stack.validate_persistent_encoding().is_err());
@@ -2399,7 +2399,7 @@ mod persistence_tests {
     #[test]
     fn toggle_tooltips_updates_the_typed_display_component() {
         init_vanilla_registry();
-        let mut stack = ItemStack::new(&vanilla_items::STONE);
+        let mut stack = ItemStack::new(&*vanilla_items::STONE);
 
         stack.toggle_tooltips(&[(LORE.key, false)]);
         let display = stack
@@ -2419,7 +2419,7 @@ mod persistence_tests {
     #[test]
     fn set_custom_data_recursively_merges_and_removes_empty_values() {
         init_vanilla_registry();
-        let mut stack = ItemStack::new(&vanilla_items::STONE);
+        let mut stack = ItemStack::new(&*vanilla_items::STONE);
         let empty = CustomData::default();
         stack.set_custom_data(&empty);
         assert!(stack.get(CUSTOM_DATA).is_none());

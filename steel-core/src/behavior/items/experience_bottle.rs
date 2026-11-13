@@ -75,11 +75,11 @@ mod tests {
             let mut inventory = player.inventory.lock();
             inventory.set_item_in_hand(
                 InteractionHand::MainHand,
-                ItemStack::with_count(&vanilla_items::EXPERIENCE_BOTTLE, 2),
+                ItemStack::with_count(&*vanilla_items::EXPERIENCE_BOTTLE, 2),
             );
         }
 
-        let behavior = ITEM_BEHAVIORS.get_behavior(&vanilla_items::EXPERIENCE_BOTTLE);
+        let behavior = ITEM_BEHAVIORS.get_behavior(&*vanilla_items::EXPERIENCE_BOTTLE);
         let inventory = Arc::clone(&player.inventory);
         let mut context = UseItemContext::new(&player, InteractionHand::MainHand, world, inventory);
         let result = behavior.use_item(&mut context);

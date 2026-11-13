@@ -360,7 +360,7 @@ mod tests {
         pig_mob.set_equipment_drop_chance(EquipmentSlot::Head, 0.5);
         pig_mob.living_base().equipment().lock().set(
             EquipmentSlot::Head,
-            ItemStack::new(&vanilla_items::IRON_HELMET),
+            ItemStack::new(&*vanilla_items::IRON_HELMET),
         );
         let pig_ageable = pig.as_ageable_mob().expect("pig is ageable");
         pig_ageable.set_age(-24_000);
@@ -474,7 +474,7 @@ mod tests {
         let pig_mob = pig.as_mob().expect("pig is a mob");
         pig_mob.living_base().equipment().lock().set(
             EquipmentSlot::Head,
-            ItemStack::new(&vanilla_items::IRON_HELMET),
+            ItemStack::new(&*vanilla_items::IRON_HELMET),
         );
         let after_conversion = |converted: &dyn Mob| {
             assert!(pig_mob.equipment_in_slot(EquipmentSlot::Head).is_empty());
@@ -704,7 +704,7 @@ mod tests {
         let pig_mob = pig.as_mob().expect("pig is a mob");
         pig_mob.living_base().equipment().lock().set(
             EquipmentSlot::Head,
-            ItemStack::new(&vanilla_items::IRON_HELMET),
+            ItemStack::new(&*vanilla_items::IRON_HELMET),
         );
 
         let cow = pig

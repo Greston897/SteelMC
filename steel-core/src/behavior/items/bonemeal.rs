@@ -8,7 +8,8 @@ use steel_registry::{
     blocks::{block_state_ext::BlockStateExt, shapes::is_offset_shape_full_block},
     data_components::vanilla_components::USE_EFFECTS,
     item_stack::ItemStack,
-    REGISTRY, level_events, vanilla_blocks, vanilla_game_events, vanilla_particle_types,
+    REGISTRY, RegistryExt as _, level_events, vanilla_blocks, vanilla_game_events,
+    vanilla_particle_types,
 };
 use steel_utils::{BlockPos, Direction, types::UpdateFlags};
 
@@ -52,7 +53,7 @@ impl BoneMealItem {
                 // Vanilla `BoneMealItem.growCrop` emits the happy-villager burst at
                 // the block-specific particle position once growth succeeds.
                 let particle_pos = bonemealable.particle_pos(bonemealable.bonemeal_action_type(), pos);
-                emit_growth_particles(world, particle_pos);
+                Self::emit_growth_particles(world, particle_pos);
             }
 
             return true;

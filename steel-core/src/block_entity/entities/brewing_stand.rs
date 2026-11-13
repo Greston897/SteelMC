@@ -310,7 +310,7 @@ mod tests {
         brewing_stand
             .container
             .lock()
-            .set_item(FUEL_SLOT, ItemStack::with_count(&vanilla_items::BLAZE_POWDER, 5));
+            .set_item(FUEL_SLOT, ItemStack::with_count(&*vanilla_items::BLAZE_POWDER, 5));
         assert_eq!(brewing_stand.container.lock().get_item(FUEL_SLOT).count(), 1);
     }
 

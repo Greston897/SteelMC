@@ -28,8 +28,8 @@ fn cow_initializes_vanilla_living_attributes_and_health() {
 fn cow_uses_vanilla_cow_food_tag() {
     init_vanilla_registry();
 
-    assert!(CowEntity::is_food(&ItemStack::new(&vanilla_items::WHEAT)));
-    assert!(!CowEntity::is_food(&ItemStack::new(&vanilla_items::STONE)));
+    assert!(CowEntity::is_food(&ItemStack::new(&*vanilla_items::WHEAT)));
+    assert!(!CowEntity::is_food(&ItemStack::new(&*vanilla_items::STONE)));
 }
 
 #[test]
@@ -75,7 +75,7 @@ fn cow_milks_bucket_into_milk_bucket_for_adults() {
     player
         .inventory
         .lock()
-        .set_selected_item(ItemStack::new(&vanilla_items::BUCKET));
+        .set_selected_item(ItemStack::new(&*vanilla_items::BUCKET));
 
     let cow = CowEntity::new(&vanilla_entities::COW, 1, DVec3::ZERO, Weak::new());
 
@@ -88,7 +88,7 @@ fn cow_milks_bucket_into_milk_bucket_for_adults() {
             .inventory
             .lock()
             .get_selected_item()
-            .is(&vanilla_items::MILK_BUCKET)
+            .is(&*vanilla_items::MILK_BUCKET)
     );
 }
 
@@ -102,7 +102,7 @@ fn cow_does_not_milk_when_baby() {
     player
         .inventory
         .lock()
-        .set_selected_item(ItemStack::new(&vanilla_items::BUCKET));
+        .set_selected_item(ItemStack::new(&*vanilla_items::BUCKET));
 
     let cow = CowEntity::new(&vanilla_entities::COW, 1, DVec3::ZERO, Weak::new());
     cow.set_baby(true);
@@ -116,7 +116,7 @@ fn cow_does_not_milk_when_baby() {
             .inventory
             .lock()
             .get_selected_item()
-            .is(&vanilla_items::BUCKET)
+            .is(&*vanilla_items::BUCKET)
     );
 }
 

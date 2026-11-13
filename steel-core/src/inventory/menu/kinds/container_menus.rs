@@ -99,9 +99,9 @@ pub fn lectern(
         &container,
         1,
         SectionKind::restricted(|_slot, stack| {
-            stack.is(&vanilla_items::WRITABLE_BOOK)
-                || stack.is(&vanilla_items::WRITTEN_BOOK)
-                || stack.is(&vanilla_items::KNOWLEDGE_BOOK)
+            stack.is(&*vanilla_items::WRITABLE_BOOK)
+                || stack.is(&*vanilla_items::WRITTEN_BOOK)
+                || stack.is(&*vanilla_items::KNOWLEDGE_BOOK)
         }),
     );
     builder.build(BasicKind)

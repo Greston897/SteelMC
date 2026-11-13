@@ -869,7 +869,7 @@ mod tests {
             &vanilla_entities::ITEM,
             1,
             DVec3::ZERO,
-            ItemStack::new(&vanilla_items::STONE),
+            ItemStack::new(&*vanilla_items::STONE),
             Weak::<World>::new(),
         );
         let velocity = item.velocity();
@@ -897,7 +897,7 @@ mod tests {
             &vanilla_entities::ITEM,
             1,
             DVec3::new(8.5, 65.1, 8.5),
-            ItemStack::new(&vanilla_items::STONE),
+            ItemStack::new(&*vanilla_items::STONE),
             Arc::downgrade(world),
         ));
         item.set_velocity(DVec3::new(0.0, -0.2, 0.0));
@@ -914,7 +914,7 @@ mod tests {
             &vanilla_entities::ITEM,
             1,
             DVec3::ZERO,
-            ItemStack::new(&vanilla_items::STONE),
+            ItemStack::new(&*vanilla_items::STONE),
             Weak::<World>::new(),
         );
 
@@ -932,7 +932,7 @@ mod tests {
             &vanilla_entities::ITEM,
             1,
             DVec3::ZERO,
-            ItemStack::with_count(&vanilla_items::STONE, 10),
+            ItemStack::with_count(&*vanilla_items::STONE, 10),
             Weak::<World>::new(),
         );
         source.set_pickup_delay(5);
@@ -942,7 +942,7 @@ mod tests {
             &vanilla_entities::ITEM,
             2,
             DVec3::ZERO,
-            ItemStack::with_count(&vanilla_items::STONE, 20),
+            ItemStack::with_count(&*vanilla_items::STONE, 20),
             Weak::<World>::new(),
         );
         target.set_pickup_delay(1);
@@ -982,7 +982,7 @@ mod tests {
             &vanilla_entities::ITEM,
             1,
             DVec3::ZERO,
-            ItemStack::new(&vanilla_items::NETHERITE_INGOT),
+            ItemStack::new(&*vanilla_items::NETHERITE_INGOT),
             Weak::<World>::new(),
         );
 

@@ -126,7 +126,7 @@ mod tests {
     use super::*;
 
     fn potion(key: &str) -> ItemStack {
-        let mut stack = ItemStack::new(&vanilla_items::POTION);
+        let mut stack = ItemStack::new(&*vanilla_items::POTION);
         stack.set_potion(&Identifier::new("minecraft", key));
         stack
     }
@@ -136,7 +136,7 @@ mod tests {
         init_vanilla_registry();
         let result = mix(
             &potion("water"),
-            &ItemStack::with_count(&vanilla_items::NETHER_WART, 1),
+            &ItemStack::with_count(&*vanilla_items::NETHER_WART, 1),
         )
         .expect("recipe");
         assert_eq!(result, Identifier::vanilla_static("awkward"));
@@ -147,7 +147,7 @@ mod tests {
         init_vanilla_registry();
         let result = mix(
             &potion("swiftness"),
-            &ItemStack::with_count(&vanilla_items::REDSTONE, 1),
+            &ItemStack::with_count(&*vanilla_items::REDSTONE, 1),
         )
         .expect("recipe");
         assert_eq!(result, Identifier::vanilla_static("long_swiftness"));
@@ -159,7 +159,7 @@ mod tests {
         assert!(
             mix(
                 &potion("water"),
-                &ItemStack::with_count(&vanilla_items::SUGAR, 1),
+                &ItemStack::with_count(&*vanilla_items::SUGAR, 1),
             )
             .is_none()
         );
@@ -177,7 +177,7 @@ mod tests {
     #[test]
     fn blaze_powder_is_fuel_and_never_an_ingredient() {
         init_vanilla_registry();
-        let powder = ItemStack::with_count(&vanilla_items::BLAZE_POWDER, 1);
+        let powder = ItemStack::with_count(&*vanilla_items::BLAZE_POWDER, 1);
         assert!(is_fuel(&powder));
         assert!(!is_ingredient(&powder));
     }
@@ -186,9 +186,9 @@ mod tests {
     fn potions_are_brewable() {
         init_vanilla_registry();
         assert!(is_brewable_potion(&potion("water")));
-        assert!(is_brewable_potion(&ItemStack::new(&vanilla_items::GLASS_BOTTLE)));
+        assert!(is_brewable_potion(&ItemStack::new(&*vanilla_items::GLASS_BOTTLE)));
         assert!(!is_brewable_potion(&ItemStack::new(
-            &vanilla_items::NETHER_WART
+            &*vanilla_items::NETHER_WART
         )));
     }
 }

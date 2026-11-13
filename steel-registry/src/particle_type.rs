@@ -1134,7 +1134,7 @@ mod tests {
         ));
         assert_round_trip(ParticleData::new(
             &vanilla_particle_types::ITEM,
-            ItemParticleOption::new(ItemStackTemplate::new(&vanilla_items::STONE)),
+            ItemParticleOption::new(ItemStackTemplate::new(&*vanilla_items::STONE)),
         ));
         assert_round_trip(ParticleData::new(
             &vanilla_particle_types::SCULK_CHARGE,

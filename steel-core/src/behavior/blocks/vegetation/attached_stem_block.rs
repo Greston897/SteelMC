@@ -120,7 +120,7 @@ mod tests {
             &vanilla_blocks::ATTACHED_PUMPKIN_STEM,
             &vanilla_blocks::PUMPKIN_STEM,
             &vanilla_blocks::PUMPKIN,
-            &vanilla_items::PUMPKIN_SEEDS,
+            &*vanilla_items::PUMPKIN_SEEDS,
             BlockTag::SUPPORTS_PUMPKIN_STEM,
         )
     }

@@ -105,7 +105,7 @@ impl CrossbowItem {
     /// Vanilla `CrossbowItem#getShotVelocity`.
     #[must_use]
     pub fn shot_velocity(projectile: &ItemStack) -> f32 {
-        if projectile.is(&vanilla_items::FIREWORK_ROCKET) {
+        if projectile.is(&*vanilla_items::FIREWORK_ROCKET) {
             FIREWORK_SHOT_VELOCITY
         } else {
             ARROW_SHOT_VELOCITY
@@ -131,7 +131,7 @@ impl CrossbowItem {
                     inventory
                         .get_items()
                         .iter()
-                        .position(|candidate| candidate.is(&vanilla_items::FIREWORK_ROCKET))
+                        .position(|candidate| candidate.is(&*vanilla_items::FIREWORK_ROCKET))
                 })
             else {
                 return false;
@@ -199,7 +199,7 @@ impl CrossbowItem {
             let (yaw, pitch) = shooter.rotation();
             let velocity = Self::shot_velocity(projectile);
 
-            if projectile.is(&vanilla_items::FIREWORK_ROCKET) {
+            if projectile.is(&*vanilla_items::FIREWORK_ROCKET) {
                 let rocket = FireworkRocketEntity::launched(
                     &vanilla_entities::FIREWORK_ROCKET,
                     next_entity_id(),
@@ -220,7 +220,7 @@ impl CrossbowItem {
                 continue;
             }
 
-            if projectile.is(&vanilla_items::SPECTRAL_ARROW) {
+            if projectile.is(&*vanilla_items::SPECTRAL_ARROW) {
                 let arrow = SpectralArrowItem::create_arrow(
                     projectile,
                     position,
@@ -383,10 +383,10 @@ mod tests {
     #[test]
     fn charge_duration_shrinks_with_quick_charge() {
         init_vanilla_registry();
-        let stack = ItemStack::new(&vanilla_items::CROSSBOW);
+        let stack = ItemStack::new(&*vanilla_items::CROSSBOW);
         assert_eq!(CrossbowItem::charge_duration(&stack), 25);
 
-        let mut quick = ItemStack::new(&vanilla_items::CROSSBOW);
+        let mut quick = ItemStack::new(&*vanilla_items::CROSSBOW);
         quick.set_enchantments(
             &[(steel_utils::Identifier::vanilla_static("quick_charge"), 2)],
             false,
@@ -397,10 +397,10 @@ mod tests {
     #[test]
     fn multishot_loads_three_projectiles() {
         init_vanilla_registry();
-        let stack = ItemStack::new(&vanilla_items::CROSSBOW);
+        let stack = ItemStack::new(&*vanilla_items::CROSSBOW);
         assert_eq!(CrossbowItem::projectile_count(&stack), 1);
 
-        let mut multishot = ItemStack::new(&vanilla_items::CROSSBOW);
+        let mut multishot = ItemStack::new(&*vanilla_items::CROSSBOW);
         multishot.set_enchantments(
             &[(steel_utils::Identifier::vanilla_static("multishot"), 1)],
             false,
@@ -423,10 +423,10 @@ mod tests {
     #[test]
     fn charged_projectiles_round_trip_through_the_component() {
         init_vanilla_registry();
-        let mut stack = ItemStack::new(&vanilla_items::CROSSBOW);
+        let mut stack = ItemStack::new(&*vanilla_items::CROSSBOW);
         assert!(!CrossbowItem::is_charged(&stack));
 
-        let arrow = ItemStackTemplate::new(&vanilla_items::ARROW);
+        let arrow = ItemStackTemplate::new(&*vanilla_items::ARROW);
         let charged = ChargedProjectiles::new(vec![arrow]).expect("one arrow fits");
         stack.set(vanilla_components::CHARGED_PROJECTILES, charged);
 
@@ -443,8 +443,8 @@ mod tests {
     #[test]
     fn firework_rockets_use_the_slower_shot_velocity() {
         init_vanilla_registry();
-        let arrow = ItemStack::new(&vanilla_items::ARROW);
-        let rocket = ItemStack::new(&vanilla_items::FIREWORK_ROCKET);
+        let arrow = ItemStack::new(&*vanilla_items::ARROW);
+        let rocket = ItemStack::new(&*vanilla_items::FIREWORK_ROCKET);
         assert_eq!(CrossbowItem::shot_velocity(&arrow), ARROW_SHOT_VELOCITY);
         assert_eq!(CrossbowItem::shot_velocity(&rocket), FIREWORK_SHOT_VELOCITY);
     }
@@ -452,7 +452,7 @@ mod tests {
     #[test]
     fn charge_duration_never_drops_below_one_tick() {
         init_vanilla_registry();
-        let mut stack = ItemStack::new(&vanilla_items::CROSSBOW);
+        let mut stack = ItemStack::new(&*vanilla_items::CROSSBOW);
         stack.set_enchantments(
             &[(steel_utils::Identifier::vanilla_static("quick_charge"), 5)],
             false,

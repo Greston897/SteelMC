@@ -128,7 +128,7 @@ mod tests {
     fn cooldown_blocks_until_duration_ticks_pass() {
         init_vanilla_registry();
 
-        let stack = ItemStack::with_count(&vanilla_items::ENDER_PEARL, 1);
+        let stack = ItemStack::with_count(&*vanilla_items::ENDER_PEARL, 1);
         let mut cooldowns = ItemCooldowns::default();
 
         let Some((group, duration)) = cooldowns.add_from_stack(&stack) else {
@@ -156,11 +156,11 @@ mod tests {
         init_vanilla_registry();
 
         let group = steel_utils::Identifier::vanilla_static("test_group");
-        let mut stack = ItemStack::with_count(&vanilla_items::ENDER_PEARL, 1);
+        let mut stack = ItemStack::with_count(&*vanilla_items::ENDER_PEARL, 1);
         stack.set(USE_COOLDOWN, UseCooldown::new(0.5, Some(group.clone())));
-        let mut other = ItemStack::with_count(&vanilla_items::CHORUS_FRUIT, 1);
+        let mut other = ItemStack::with_count(&*vanilla_items::CHORUS_FRUIT, 1);
         other.set(USE_COOLDOWN, UseCooldown::new(1.0, Some(group.clone())));
-        let unrelated = ItemStack::with_count(&vanilla_items::WIND_CHARGE, 1);
+        let unrelated = ItemStack::with_count(&*vanilla_items::WIND_CHARGE, 1);
         let mut cooldowns = ItemCooldowns::default();
 
         let Some((started_group, duration)) = cooldowns.add_from_stack(&stack) else {

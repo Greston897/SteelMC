@@ -54,7 +54,7 @@ fn filled_bucket_success_stack(context: &UseItemContext) -> ItemStack {
             .inv
             .with_item(|item| item.copy_with_count(item.count()))
     } else {
-        ItemStack::new(&vanilla_items::BUCKET)
+        ItemStack::new(&*vanilla_items::BUCKET)
     }
 }
 
@@ -392,7 +392,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::BUCKET));
+            .set_selected_item(ItemStack::new(&*vanilla_items::BUCKET));
         assert_eq!(
             use_item(&player, world, InteractionHand::MainHand),
             InteractionResult::Fail
@@ -408,7 +408,7 @@ mod tests {
             None,
             DataComponentMatchers::ANY,
         );
-        let mut allowed_bucket = ItemStack::new(&vanilla_items::BUCKET);
+        let mut allowed_bucket = ItemStack::new(&*vanilla_items::BUCKET);
         allowed_bucket.set(
             CAN_PLACE_ON,
             AdventureModePredicate::new(vec![predicate]).expect("one block predicate is valid"),
@@ -428,7 +428,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::WATER_BUCKET));
+            .set_selected_item(ItemStack::new(&*vanilla_items::WATER_BUCKET));
         assert_eq!(
             use_item(&player, world, InteractionHand::MainHand),
             InteractionResult::Fail

@@ -320,7 +320,7 @@ mod tests {
         hopper
             .container
             .lock()
-            .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 100));
+            .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 100));
         assert_eq!(hopper.container.lock().get_item(0).count(), 64);
     }
 

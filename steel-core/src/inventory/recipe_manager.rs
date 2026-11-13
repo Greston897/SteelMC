@@ -440,8 +440,8 @@ mod tests {
             2,
             1,
             vec![
-                ItemStack::new(&vanilla_items::RED_DYE),
-                ItemStack::new(&vanilla_items::BLUE_DYE),
+                ItemStack::new(&*vanilla_items::RED_DYE),
+                ItemStack::new(&*vanilla_items::BLUE_DYE),
             ],
         );
         let Some(recipe) = REGISTRY
@@ -453,7 +453,7 @@ mod tests {
 
         let result = assemble_recipe(recipe, &input);
 
-        assert!(result.is(&vanilla_items::PURPLE_DYE));
+        assert!(result.is(&*vanilla_items::PURPLE_DYE));
         assert_eq!(result.get(DYE), Some(&DyeColor::Purple));
     }
 }

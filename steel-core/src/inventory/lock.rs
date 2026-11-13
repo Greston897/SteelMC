@@ -581,7 +581,7 @@ mod tests {
         .expect("barrel should expose a container capability");
         let slot = NormalSlot::new(container_ref.clone(), 0);
         let mut guard = ContainerLockGuard::lock_all(&[&container_ref]);
-        slot.set_item(&mut guard, ItemStack::new(&vanilla_items::STONE));
+        slot.set_item(&mut guard, ItemStack::new(&*vanilla_items::STONE));
         drop(guard);
 
         let analog = BLOCK_BEHAVIORS

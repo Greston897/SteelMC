@@ -253,7 +253,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::with_count(&vanilla_items::DANDELION, 1));
+            .set_selected_item(ItemStack::with_count(&*vanilla_items::DANDELION, 1));
         assert_eq!(
             empty_pot().use_item_on(
                 world.get_block_state(TEST_POS),
@@ -275,7 +275,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::STONE));
+            .set_selected_item(ItemStack::new(&*vanilla_items::STONE));
         assert_eq!(
             potted_dandelion().use_item_on(
                 world.get_block_state(TEST_POS),
@@ -309,7 +309,7 @@ mod tests {
                 .lock()
                 .get_items()
                 .iter()
-                .any(|item| item.is(&vanilla_items::DANDELION))
+                .any(|item| item.is(&*vanilla_items::DANDELION))
         );
 
         assert_eq!(
@@ -355,7 +355,7 @@ mod tests {
                 false,
             )
             .expect("flower pot always yields a clone stack");
-        assert!(empty_clone.is(&vanilla_items::FLOWER_POT));
+        assert!(empty_clone.is(&*vanilla_items::FLOWER_POT));
 
         let filled_clone = potted_dandelion()
             .get_clone_item_stack(
@@ -365,6 +365,6 @@ mod tests {
                 false,
             )
             .expect("potted flower pot always yields a clone stack");
-        assert!(filled_clone.is(&vanilla_items::DANDELION));
+        assert!(filled_clone.is(&*vanilla_items::DANDELION));
     }
 }

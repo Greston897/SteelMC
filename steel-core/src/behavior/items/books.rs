@@ -108,8 +108,8 @@ mod tests {
         let result = use_main_hand(
             &fixture.world,
             &player,
-            ItemStack::new(&vanilla_items::WRITABLE_BOOK),
-            &vanilla_items::WRITABLE_BOOK,
+            ItemStack::new(&*vanilla_items::WRITABLE_BOOK),
+            &*vanilla_items::WRITABLE_BOOK,
         );
 
         assert_eq!(result, InteractionResult::Success);
@@ -122,8 +122,8 @@ mod tests {
         let result = use_main_hand(
             &fixture.world,
             &player,
-            ItemStack::new(&vanilla_items::WRITTEN_BOOK),
-            &vanilla_items::WRITTEN_BOOK,
+            ItemStack::new(&*vanilla_items::WRITTEN_BOOK),
+            &*vanilla_items::WRITTEN_BOOK,
         );
 
         assert_eq!(result, InteractionResult::Success);

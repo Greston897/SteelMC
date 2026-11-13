@@ -413,7 +413,7 @@ mod tests {
         nbt.insert("hit_direction", Direction::North.get_3d_data_value() as i8);
         nbt.insert(
             "item",
-            ItemStack::new(&vanilla_items::STICK).to_nbt_tag_ref(),
+            ItemStack::new(&*vanilla_items::STICK).to_nbt_tag_ref(),
         );
         load_from_owned_nbt(&mut entity, &nbt);
 
@@ -453,7 +453,7 @@ mod tests {
         let mut nbt = NbtCompound::new();
         nbt.insert(
             "item",
-            ItemStack::new(&vanilla_items::STICK).to_nbt_tag_ref(),
+            ItemStack::new(&*vanilla_items::STICK).to_nbt_tag_ref(),
         );
         load_from_owned_nbt(&mut entity, &nbt);
 
@@ -471,7 +471,7 @@ mod tests {
         nbt.insert("LootTable", "minecraft:archaeology/desert_pyramid");
         nbt.insert(
             "item",
-            ItemStack::new(&vanilla_items::STICK).to_nbt_tag_ref(),
+            ItemStack::new(&*vanilla_items::STICK).to_nbt_tag_ref(),
         );
         load_from_owned_nbt(&mut entity, &nbt);
 
@@ -488,14 +488,14 @@ mod tests {
         let mut nbt = NbtCompound::new();
         nbt.insert(
             "item",
-            ItemStack::with_count(&vanilla_items::STICK, 3).to_nbt_tag_ref(),
+            ItemStack::with_count(&*vanilla_items::STICK, 3).to_nbt_tag_ref(),
         );
         load_from_owned_nbt(&mut entity, &nbt);
 
         {
             let state = entity.state.lock();
             assert_eq!(state.item.count(), 3);
-            assert!(state.item.is(&vanilla_items::STICK));
+            assert!(state.item.is(&*vanilla_items::STICK));
         }
 
         let mut saved = NbtCompound::new();
@@ -511,7 +511,7 @@ mod tests {
         nbt.insert("hit_direction", Direction::North.get_3d_data_value() as i8);
         nbt.insert(
             "item",
-            ItemStack::new(&vanilla_items::STICK).to_nbt_tag_ref(),
+            ItemStack::new(&*vanilla_items::STICK).to_nbt_tag_ref(),
         );
         load_from_owned_nbt(&mut entity, &nbt);
 

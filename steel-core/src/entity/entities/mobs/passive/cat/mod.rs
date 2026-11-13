@@ -630,9 +630,9 @@ mod tests {
     #[test]
     fn raw_cod_and_salmon_are_cat_food() {
         init_vanilla_registry();
-        assert!(is_cat_food(&ItemStack::new(&vanilla_items::COD)));
-        assert!(is_cat_food(&ItemStack::new(&vanilla_items::SALMON)));
-        assert!(!is_cat_food(&ItemStack::new(&vanilla_items::STONE)));
+        assert!(is_cat_food(&ItemStack::new(&*vanilla_items::COD)));
+        assert!(is_cat_food(&ItemStack::new(&*vanilla_items::SALMON)));
+        assert!(!is_cat_food(&ItemStack::new(&*vanilla_items::STONE)));
     }
 
     #[test]

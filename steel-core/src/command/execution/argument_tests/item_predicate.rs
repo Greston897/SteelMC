@@ -15,9 +15,9 @@ fn item_predicate_argument_matches_targets_boolean_terms_and_count_ranges() {
         panic!("item predicate should be retained");
     };
 
-    assert!(predicate.matches(&ItemStack::with_count(&vanilla_items::OAK_LOG, 3)));
-    assert!(!predicate.matches(&ItemStack::with_count(&vanilla_items::OAK_LOG, 4)));
-    assert!(!predicate.matches(&ItemStack::with_count(&vanilla_items::STONE, 3)));
+    assert!(predicate.matches(&ItemStack::with_count(&*vanilla_items::OAK_LOG, 3)));
+    assert!(!predicate.matches(&ItemStack::with_count(&*vanilla_items::OAK_LOG, 4)));
+    assert!(!predicate.matches(&ItemStack::with_count(&*vanilla_items::STONE, 3)));
 }
 
 #[test]
@@ -32,7 +32,7 @@ fn item_predicate_argument_decodes_exact_components_before_matching() {
         panic!("item predicate should be retained");
     };
 
-    assert!(predicate.matches(&ItemStack::new(&vanilla_items::STONE)));
+    assert!(predicate.matches(&ItemStack::new(&*vanilla_items::STONE)));
 }
 
 #[test]
@@ -47,7 +47,7 @@ fn item_predicate_argument_supports_damage_and_enchantment_predicates() {
     let Ok(predicate) = chain.top_context().item_predicate("value") else {
         panic!("item predicate should be retained");
     };
-    let mut sword = ItemStack::new(&vanilla_items::DIAMOND_SWORD);
+    let mut sword = ItemStack::new(&*vanilla_items::DIAMOND_SWORD);
     sword.set_damage_value(7);
     sword.set_enchantments(&[(Identifier::vanilla_static("sharpness"), 3)], false);
 
@@ -76,7 +76,7 @@ fn item_predicate_argument_supports_partial_custom_data_matching() {
     nested.insert("extra", 3);
     let mut compound = NbtCompound::new();
     compound.insert("nested", nested);
-    let mut stack = ItemStack::new(&vanilla_items::STONE);
+    let mut stack = ItemStack::new(&*vanilla_items::STONE);
     stack.set(
         vanilla_components::CUSTOM_DATA,
         vanilla_components::CustomData::try_from_compound(compound)
@@ -127,7 +127,7 @@ fn item_predicate_argument_matches_registered_firework_explosion_predicate() {
     let Ok(predicate) = chain.top_context().item_predicate("value") else {
         panic!("item predicate should be retained");
     };
-    let mut stack = ItemStack::new(&vanilla_items::FIREWORK_STAR);
+    let mut stack = ItemStack::new(&*vanilla_items::FIREWORK_STAR);
     stack.set(
         vanilla_components::FIREWORK_EXPLOSION,
         vanilla_components::FireworkExplosion::new(
@@ -175,7 +175,7 @@ fn item_predicate_argument_matches_stream_only_nested_template_without_materiali
     let template = ItemStackTemplate::read(&mut Cursor::new(encoded.as_slice()))
         .expect("count 100 is valid in the stream codec");
 
-    let mut stack = ItemStack::new(&vanilla_items::CHEST);
+    let mut stack = ItemStack::new(&*vanilla_items::CHEST);
     stack.set(
         vanilla_components::CONTAINER,
         vanilla_components::ItemContainerContents::new(vec![Some(template)])
@@ -196,7 +196,7 @@ fn item_predicate_argument_supports_attribute_modifier_collection_predicates() {
     let Ok(predicate) = chain.top_context().item_predicate("value") else {
         panic!("item predicate should be retained");
     };
-    let mut stack = ItemStack::new(&vanilla_items::STONE);
+    let mut stack = ItemStack::new(&*vanilla_items::STONE);
     stack.set(
         vanilla_components::ATTRIBUTE_MODIFIERS,
         vanilla_components::ItemAttributeModifiers {
@@ -254,7 +254,7 @@ fn item_predicate_argument_uses_map_codec_for_component_existence_predicates() {
         let Ok(predicate) = chain.top_context().item_predicate("value") else {
             panic!("item predicate should be retained");
         };
-        let mut stack = ItemStack::new(&vanilla_items::STONE);
+        let mut stack = ItemStack::new(&*vanilla_items::STONE);
         if path == "creative_slot_lock" {
             stack.set(vanilla_components::CREATIVE_SLOT_LOCK, ());
         }

@@ -438,7 +438,7 @@ impl Bucketable for TropicalFishEntity {
     }
 
     fn bucket_item(&self) -> ItemRef {
-        &vanilla_items::TROPICAL_FISH_BUCKET
+        &*vanilla_items::TROPICAL_FISH_BUCKET
     }
 
     fn copy_bucket_data_to_nbt(&self, nbt: &mut owned::NbtCompound) {

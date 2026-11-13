@@ -1565,7 +1565,7 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
 
         let holding_shears = {
             let inventory = player.inventory.lock();
-            inventory.get_item_in_hand(hand).is(&vanilla_items::SHEARS)
+            inventory.get_item_in_hand(hand).is(&*vanilla_items::SHEARS)
         };
         if holding_shears && self.shear_off_all_leash_connections(Some(player)) {
             let has_infinite_materials = player.has_infinite_materials();
@@ -1602,7 +1602,7 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
 
         let holding_lead = {
             let inventory = player.inventory.lock();
-            inventory.get_item_in_hand(hand).is(&vanilla_items::LEAD)
+            inventory.get_item_in_hand(hand).is(&*vanilla_items::LEAD)
         };
         if !holding_lead || !mob.can_have_a_leash_attached_to(player) {
             return InteractionResult::Pass;

@@ -220,9 +220,9 @@ impl ItemFrameEntity {
     #[must_use]
     pub fn placeable_item(&self) -> ItemRef {
         if self.is_glow() {
-            &vanilla_items::GLOW_ITEM_FRAME
+            &*vanilla_items::GLOW_ITEM_FRAME
         } else {
-            &vanilla_items::ITEM_FRAME
+            &*vanilla_items::ITEM_FRAME
         }
     }
 
@@ -726,12 +726,12 @@ mod tests {
         let (fixture, player, support) = support_fixture("frame_rotate");
         let world = &fixture.world;
         let frame = spawn_frame(world, support.offset(0, 1, 0), Direction::Up);
-        frame.set_item(ItemStack::new(&vanilla_items::APPLE));
+        frame.set_item(ItemStack::new(&*vanilla_items::APPLE));
 
         let result = frame.interact(&player, InteractionHand::MainHand, DVec3::ZERO);
         assert_eq!(result, InteractionResult::Success);
         assert_eq!(frame.rotation(), 1);
-        assert!(frame.item().is(&vanilla_items::APPLE));
+        assert!(frame.item().is(&*vanilla_items::APPLE));
     }
 
     #[test]
@@ -742,12 +742,12 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::with_count(&vanilla_items::APPLE, 2));
+            .set_selected_item(ItemStack::with_count(&*vanilla_items::APPLE, 2));
 
         let result = frame.interact(&player, InteractionHand::MainHand, DVec3::ZERO);
 
         assert_eq!(result, InteractionResult::Success);
-        assert!(frame.item().is(&vanilla_items::APPLE));
+        assert!(frame.item().is(&*vanilla_items::APPLE));
         assert_eq!(frame.item().count(), 1);
         assert_eq!(player.inventory.lock().get_selected_item().count(), 1);
     }
@@ -770,7 +770,7 @@ mod tests {
         let (fixture, _player, support) = support_fixture("frame_drop_once");
         let world = &fixture.world;
         let frame = spawn_frame(world, support.offset(0, 1, 0), Direction::Up);
-        frame.set_item(ItemStack::new(&vanilla_items::DIAMOND));
+        frame.set_item(ItemStack::new(&*vanilla_items::DIAMOND));
 
         frame.drop_item(None);
         frame.drop_item(None);
@@ -783,7 +783,7 @@ mod tests {
         let (fixture, _player, support) = support_fixture("frame_drop");
         let world = &fixture.world;
         let frame = spawn_frame(world, support.offset(0, 1, 0), Direction::Up);
-        frame.set_item(ItemStack::new(&vanilla_items::DIAMOND));
+        frame.set_item(ItemStack::new(&*vanilla_items::DIAMOND));
 
         frame.drop_item(None);
 
@@ -820,7 +820,7 @@ mod tests {
             Direction::West,
             Weak::new(),
         );
-        frame.set_item(ItemStack::new(&vanilla_items::ELYTRA));
+        frame.set_item(ItemStack::new(&*vanilla_items::ELYTRA));
 
         let mut nbt = NbtCompound::new();
         frame.save_additional(&mut nbt);
@@ -864,7 +864,7 @@ mod tests {
         );
         assert_eq!(frame.analog_output(), 0);
 
-        frame.set_item_with_update(ItemStack::new(&vanilla_items::ELYTRA), false);
+        frame.set_item_with_update(ItemStack::new(&*vanilla_items::ELYTRA), false);
         assert_eq!(frame.analog_output(), 1);
         frame.entity_data.lock().rotation.set(7);
         assert_eq!(frame.analog_output(), 8);

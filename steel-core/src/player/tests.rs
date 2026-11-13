@@ -560,18 +560,18 @@ fn death_keeps_menu_items_until_entity_removal() {
     insert_ready_full_chunk(world, ChunkPos::new(0, 0));
     assert!(world.set_game_rule(&vanilla_game_rules::KEEP_INVENTORY, true));
     let player = test_player(Arc::clone(world));
-    let kept_item = ItemStack::new(&vanilla_items::DIAMOND);
+    let kept_item = ItemStack::new(&*vanilla_items::DIAMOND);
     player.inventory.lock().set_item(0, kept_item);
     let transient = SimpleContainer::new(9).into_shared();
     transient
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 3));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 3));
     let crafting = player.crafting_container();
     crafting
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::DIRT, 2));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::DIRT, 2));
     *player.inventory_menu.lock().behavior_mut().carried_mut() =
-        ItemStack::new(&vanilla_items::STICK);
+        ItemStack::new(&*vanilla_items::STICK);
     player.inventory_menu.lock().clicked(
         Click::QuickCraft(QuickCraft::Start {
             kind: DragKind::Left,
@@ -604,7 +604,7 @@ fn death_keeps_menu_items_until_entity_removal() {
             .lock()
             .behavior()
             .carried()
-            .is(&vanilla_items::STICK)
+            .is(&*vanilla_items::STICK)
     );
     assert!(
         world
@@ -634,7 +634,7 @@ fn death_keeps_menu_items_until_entity_removal() {
             .inventory
             .lock()
             .get_item(0)
-            .is(&vanilla_items::DIAMOND)
+            .is(&*vanilla_items::DIAMOND)
     );
     let dropped = world.get_entities_in_aabb_matching(
         &WorldAabb::new(-2.0, -1.0, -2.0, 2.0, 3.0, 2.0),
@@ -651,17 +651,17 @@ fn death_keeps_menu_items_until_entity_removal() {
     assert!(
         dropped_stacks
             .iter()
-            .any(|item| item.is(&vanilla_items::STONE) && item.count() == 3)
+            .any(|item| item.is(&*vanilla_items::STONE) && item.count() == 3)
     );
     assert!(
         dropped_stacks
             .iter()
-            .any(|item| item.is(&vanilla_items::DIRT) && item.count() == 2)
+            .any(|item| item.is(&*vanilla_items::DIRT) && item.count() == 2)
     );
     assert!(
         dropped_stacks
             .iter()
-            .any(|item| item.is(&vanilla_items::STICK) && item.count() == 1)
+            .any(|item| item.is(&*vanilla_items::STICK) && item.count() == 1)
     );
 }
 
@@ -726,10 +726,10 @@ fn death_respawn_cleanup_drops_menu_items_before_fresh_player_construction() {
     let transient = SimpleContainer::new(9).into_shared();
     transient
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 3));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 3));
     {
         let mut inventory_menu = player.inventory_menu.lock();
-        *inventory_menu.behavior_mut().carried_mut() = ItemStack::new(&vanilla_items::STICK);
+        *inventory_menu.behavior_mut().carried_mut() = ItemStack::new(&*vanilla_items::STICK);
         inventory_menu.clicked(
             Click::QuickCraft(QuickCraft::Start {
                 kind: DragKind::Left,
@@ -759,7 +759,7 @@ fn death_respawn_cleanup_drops_menu_items_before_fresh_player_construction() {
     {
         let mut inventory_menu = replacement.inventory_menu.lock();
         assert_eq!(inventory_menu.behavior().quickcraft(), None);
-        *inventory_menu.behavior_mut().carried_mut() = ItemStack::new(&vanilla_items::STICK);
+        *inventory_menu.behavior_mut().carried_mut() = ItemStack::new(&*vanilla_items::STICK);
         inventory_menu.clicked(
             Click::QuickCraft(QuickCraft::Start {
                 kind: DragKind::Left,
@@ -776,7 +776,7 @@ fn death_respawn_cleanup_drops_menu_items_before_fresh_player_construction() {
             .lock()
             .items()
             .iter()
-            .all(|item| !item.is(&vanilla_items::STONE))
+            .all(|item| !item.is(&*vanilla_items::STONE))
     );
     let dropped = world.get_entities_in_aabb_matching(
         &WorldAabb::new(-2.0, -1.0, -2.0, 2.0, 3.0, 2.0),
@@ -801,9 +801,9 @@ fn end_credits_removes_all_menus_before_detaching() {
     player
         .crafting_container()
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 2));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 2));
     *player.inventory_menu.lock().behavior_mut().carried_mut() =
-        ItemStack::with_count(&vanilla_items::DIRT, 3);
+        ItemStack::with_count(&*vanilla_items::DIRT, 3);
     let replacement_removals = Arc::new(AtomicUsize::new(0));
     let factory_replacement_removals = Arc::clone(&replacement_removals);
     player.open_menu("Reopen on removal", move |context| {
@@ -828,7 +828,7 @@ fn end_credits_removes_all_menus_before_detaching() {
     );
     assert_eq!(replacement_removals.load(Ordering::Relaxed), 0);
     let inventory = player.inventory.lock();
-    for (item, expected) in [(&vanilla_items::STONE, 2), (&vanilla_items::DIRT, 3)] {
+    for (item, expected) in [(&*vanilla_items::STONE, 2), (&*vanilla_items::DIRT, 3)] {
         let count: i32 = inventory
             .items()
             .iter()
@@ -993,7 +993,7 @@ fn player_damage_hurts_armor_equipment() {
     let player = test_player(Arc::clone(&world));
     player.inventory.lock().set(
         EquipmentSlot::Chest,
-        ItemStack::new(&vanilla_items::DIAMOND_CHESTPLATE),
+        ItemStack::new(&*vanilla_items::DIAMOND_CHESTPLATE),
     );
     let source = DamageSource::environment(&vanilla_damage_types::FIREWORKS);
 
@@ -1017,13 +1017,13 @@ fn player_attack_applies_thorns_damage_and_breaks_enchanted_armor() {
     victim.set_client_loaded(true);
     {
         let mut inventory = attacker.inventory.lock();
-        inventory.set_selected_item(ItemStack::new(&vanilla_items::DIAMOND_SWORD));
-        let mut helmet = ItemStack::new(&vanilla_items::DIAMOND_HELMET);
+        inventory.set_selected_item(ItemStack::new(&*vanilla_items::DIAMOND_SWORD));
+        let mut helmet = ItemStack::new(&*vanilla_items::DIAMOND_HELMET);
         helmet.set_enchantments(&[(vanilla_enchantments::THORNS.key.clone(), 7)], false);
         helmet.set_damage_value(helmet.get_max_damage() - 1);
         inventory.set(EquipmentSlot::Head, helmet);
     }
-    let mut chestplate = ItemStack::new(&vanilla_items::DIAMOND_CHESTPLATE);
+    let mut chestplate = ItemStack::new(&*vanilla_items::DIAMOND_CHESTPLATE);
     // Vanilla's 15% chance per level makes level 7 activate on every attack.
     chestplate.set_enchantments(&[(vanilla_enchantments::THORNS.key.clone(), 7)], false);
     // Leave one durability for the incoming hit and two for the Thorns effect.
@@ -1074,7 +1074,7 @@ fn player_attack_applies_thorns_damage_and_breaks_enchanted_armor() {
         victim
             .stats
             .lock()
-            .get(&vanilla_stat_types::ITEM_BROKEN.get(&vanilla_items::DIAMOND_CHESTPLATE)),
+            .get(&vanilla_stat_types::ITEM_BROKEN.get(&*vanilla_items::DIAMOND_CHESTPLATE)),
         1,
     );
 }
@@ -1085,7 +1085,7 @@ fn equipping_player_target_uses_inventory_equipment_storage() {
     let world = Arc::clone(test_world());
     let source = test_player(Arc::clone(&world));
     let target = TestPlayerBuilder::new(world, "Target", next_entity_id()).build();
-    let mut helmet = ItemStack::new(&vanilla_items::DIAMOND_HELMET);
+    let mut helmet = ItemStack::new(&*vanilla_items::DIAMOND_HELMET);
     let Some(mut equippable) = helmet.get_equippable().cloned() else {
         panic!("diamond helmet should have equippable data");
     };
@@ -1138,7 +1138,7 @@ fn living_tick_detects_raw_inventory_equipment_mutation() {
 
     {
         let mut inventory = player.inventory.lock();
-        inventory.items_mut()[39] = ItemStack::new(&vanilla_items::DIAMOND_HELMET);
+        inventory.items_mut()[39] = ItemStack::new(&*vanilla_items::DIAMOND_HELMET);
     }
 
     LivingEntity::detect_equipment_updates(player.as_ref());
@@ -1162,7 +1162,7 @@ fn living_tick_detects_raw_inventory_equipment_mutation() {
         LivingEntity::drain_dirty_equipment(player.as_ref()),
         vec![EquipmentSlotItem {
             slot: EquipmentSlot::Head,
-            item_stack: ItemStack::new(&vanilla_items::DIAMOND_HELMET),
+            item_stack: ItemStack::new(&*vanilla_items::DIAMOND_HELMET),
         }]
     );
     LivingEntity::detect_equipment_updates(player.as_ref());
@@ -1183,7 +1183,7 @@ fn fresh_death_respawn_redetects_unchanged_kept_equipment() {
             attributes.required_value(vanilla_attributes::ARMOR_TOUGHNESS),
         )
     };
-    let helmet = ItemStack::new(&vanilla_items::DIAMOND_HELMET);
+    let helmet = ItemStack::new(&*vanilla_items::DIAMOND_HELMET);
     player
         .inventory
         .lock()
@@ -1251,7 +1251,7 @@ fn fresh_death_respawn_discards_stale_pending_equipment_change() {
     let player = test_player(Arc::clone(test_world()));
     player.inventory.lock().set(
         EquipmentSlot::Head,
-        ItemStack::new(&vanilla_items::DIAMOND_HELMET),
+        ItemStack::new(&*vanilla_items::DIAMOND_HELMET),
     );
     LivingEntity::detect_equipment_updates(player.as_ref());
 
@@ -1274,8 +1274,8 @@ fn equipment_detection_tracks_selected_main_hand() {
     let player = test_player(Arc::clone(test_world()));
     {
         let mut inventory = player.inventory.lock();
-        inventory.set_item(0, ItemStack::new(&vanilla_items::STICK));
-        inventory.set_item(1, ItemStack::new(&vanilla_items::OAK_LOG));
+        inventory.set_item(0, ItemStack::new(&*vanilla_items::STICK));
+        inventory.set_item(1, ItemStack::new(&*vanilla_items::OAK_LOG));
     }
 
     LivingEntity::detect_equipment_updates(player.as_ref());
@@ -1283,7 +1283,7 @@ fn equipment_detection_tracks_selected_main_hand() {
         LivingEntity::drain_dirty_equipment(player.as_ref()),
         vec![EquipmentSlotItem {
             slot: EquipmentSlot::MainHand,
-            item_stack: ItemStack::new(&vanilla_items::STICK),
+            item_stack: ItemStack::new(&*vanilla_items::STICK),
         }]
     );
 
@@ -1293,7 +1293,7 @@ fn equipment_detection_tracks_selected_main_hand() {
         LivingEntity::drain_dirty_equipment(player.as_ref()),
         vec![EquipmentSlotItem {
             slot: EquipmentSlot::MainHand,
-            item_stack: ItemStack::new(&vanilla_items::OAK_LOG),
+            item_stack: ItemStack::new(&*vanilla_items::OAK_LOG),
         }]
     );
 }
@@ -1304,8 +1304,8 @@ fn equipment_detection_suppresses_exact_hand_swap_packet() {
     let player = test_player(Arc::clone(test_world()));
     {
         let mut inventory = player.inventory.lock();
-        inventory.set_selected_item(ItemStack::new(&vanilla_items::STICK));
-        inventory.set_offhand_item(ItemStack::new(&vanilla_items::SHIELD));
+        inventory.set_selected_item(ItemStack::new(&*vanilla_items::STICK));
+        inventory.set_offhand_item(ItemStack::new(&*vanilla_items::SHIELD));
     }
     LivingEntity::detect_equipment_updates(player.as_ref());
     let initial = LivingEntity::drain_dirty_equipment(player.as_ref());
@@ -1326,13 +1326,13 @@ fn equipment_detection_coalesces_before_tracker_drain() {
     let player = test_player(Arc::clone(test_world()));
     player.inventory.lock().set(
         EquipmentSlot::Head,
-        ItemStack::new(&vanilla_items::IRON_HELMET),
+        ItemStack::new(&*vanilla_items::IRON_HELMET),
     );
     LivingEntity::detect_equipment_updates(player.as_ref());
 
     player.inventory.lock().set(
         EquipmentSlot::Head,
-        ItemStack::new(&vanilla_items::DIAMOND_HELMET),
+        ItemStack::new(&*vanilla_items::DIAMOND_HELMET),
     );
     LivingEntity::detect_equipment_updates(player.as_ref());
 
@@ -1340,7 +1340,7 @@ fn equipment_detection_coalesces_before_tracker_drain() {
         LivingEntity::drain_dirty_equipment(player.as_ref()),
         vec![EquipmentSlotItem {
             slot: EquipmentSlot::Head,
-            item_stack: ItemStack::new(&vanilla_items::DIAMOND_HELMET),
+            item_stack: ItemStack::new(&*vanilla_items::DIAMOND_HELMET),
         }]
     );
 }
@@ -1352,19 +1352,19 @@ fn clear_matching_items_uses_inventory_crafting_then_carried_order() {
     player
         .inventory
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 3));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 3));
     {
         let inventory_menu = player.inventory_menu.lock();
         inventory_menu
             .crafting_container()
             .expect("inventory menu should have a crafting grid")
             .lock()
-            .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 2));
+            .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 2));
     }
     *player.inventory_menu.lock().behavior_mut().carried_mut() =
-        ItemStack::with_count(&vanilla_items::STONE, 4);
+        ItemStack::with_count(&*vanilla_items::STONE, 4);
 
-    let stone = |stack: &ItemStack| stack.is(&vanilla_items::STONE);
+    let stone = |stack: &ItemStack| stack.is(&*vanilla_items::STONE);
     assert_eq!(player.clear_or_count_matching_items(&stone, 5), 5);
     assert!(player.inventory.lock().get_item(0).is_empty());
     assert!(
@@ -1470,8 +1470,8 @@ fn saved_enchantment_seed_round_trips_through_player_data() {
 fn persistent_player_data_restores_equipment_inventory_slots() {
     init_vanilla_registry();
     let player = test_player(Arc::clone(test_world()));
-    let helmet = ItemStack::new(&vanilla_items::DIAMOND_HELMET);
-    let saddle = ItemStack::new(&vanilla_items::SADDLE);
+    let helmet = ItemStack::new(&*vanilla_items::DIAMOND_HELMET);
+    let saddle = ItemStack::new(&*vanilla_items::SADDLE);
     {
         let mut inventory = player.inventory.lock();
         inventory.set(EquipmentSlot::Head, helmet.clone());
@@ -1550,7 +1550,7 @@ fn block_action_restriction_precedes_redstone_ore_attack() {
     );
     let can_break =
         AdventureModePredicate::new(vec![predicate]).expect("one block predicate is valid");
-    let mut tool = ItemStack::new(&vanilla_items::DIAMOND_PICKAXE);
+    let mut tool = ItemStack::new(&*vanilla_items::DIAMOND_PICKAXE);
     tool.set(CAN_BREAK, can_break);
     player.inventory.lock().set_selected_item(tool);
 
@@ -1596,7 +1596,7 @@ fn block_action_restriction_is_rechecked_before_block_destruction() {
         None,
         DataComponentMatchers::ANY,
     );
-    let mut allowed_tool = ItemStack::new(&vanilla_items::DIAMOND_PICKAXE);
+    let mut allowed_tool = ItemStack::new(&*vanilla_items::DIAMOND_PICKAXE);
     allowed_tool.set(
         CAN_BREAK,
         AdventureModePredicate::new(vec![predicate]).expect("one block predicate is valid"),
@@ -1620,7 +1620,7 @@ fn block_action_restriction_is_rechecked_before_block_destruction() {
     player
         .inventory
         .lock()
-        .set_selected_item(ItemStack::new(&vanilla_items::DIAMOND_PICKAXE));
+        .set_selected_item(ItemStack::new(&*vanilla_items::DIAMOND_PICKAXE));
     player.block_breaking.lock().handle_block_break_action(
         &player,
         world,
@@ -1648,7 +1648,7 @@ fn creative_drop_throttle_survives_respawn_replacement() {
 
         let drop_packet = || SSetCreativeModeSlot {
             slot_num: -1,
-            item_stack: ItemStack::new(&vanilla_items::DIAMOND),
+            item_stack: ItemStack::new(&*vanilla_items::DIAMOND),
         };
         for _ in 0..(DROP_SPAM_THROTTLER_THRESHOLD / DROP_SPAM_THROTTLER_INCREMENT_STEP) {
             player.handle_set_creative_mode_slot(drop_packet());
@@ -1674,7 +1674,7 @@ fn extra_items_created_on_use_fill_inventory_when_there_is_room() {
     insert_ready_full_chunk(world, ChunkPos::new(0, 0));
     let player = test_player(Arc::clone(world));
 
-    player.handle_extra_items_created_on_use(ItemStack::new(&vanilla_items::GLASS_BOTTLE));
+    player.handle_extra_items_created_on_use(ItemStack::new(&*vanilla_items::GLASS_BOTTLE));
 
     assert!(
         player
@@ -1682,7 +1682,7 @@ fn extra_items_created_on_use_fill_inventory_when_there_is_room() {
             .lock()
             .items()
             .iter()
-            .any(|item| item.is(&vanilla_items::GLASS_BOTTLE))
+            .any(|item| item.is(&*vanilla_items::GLASS_BOTTLE))
     );
     let dropped = world.get_entities_in_aabb_matching(
         &WorldAabb::new(-2.0, -1.0, -2.0, 2.0, 3.0, 2.0),
@@ -1702,11 +1702,11 @@ fn extra_items_created_on_use_are_dropped_when_inventory_is_full() {
     {
         let mut inventory = player.inventory.lock();
         for slot in 0..36 {
-            inventory.set_item(slot, ItemStack::with_count(&vanilla_items::STONE, 64));
+            inventory.set_item(slot, ItemStack::with_count(&*vanilla_items::STONE, 64));
         }
     }
 
-    player.handle_extra_items_created_on_use(ItemStack::new(&vanilla_items::GLASS_BOTTLE));
+    player.handle_extra_items_created_on_use(ItemStack::new(&*vanilla_items::GLASS_BOTTLE));
 
     assert!(
         player
@@ -1714,7 +1714,7 @@ fn extra_items_created_on_use_are_dropped_when_inventory_is_full() {
             .lock()
             .items()
             .iter()
-            .all(|item| !item.is(&vanilla_items::GLASS_BOTTLE))
+            .all(|item| !item.is(&*vanilla_items::GLASS_BOTTLE))
     );
     let dropped = world.get_entities_in_aabb_matching(
         &WorldAabb::new(-2.0, -1.0, -2.0, 2.0, 3.0, 2.0),
@@ -1724,7 +1724,7 @@ fn extra_items_created_on_use_are_dropped_when_inventory_is_full() {
     let Some(item) = dropped[0].as_ref().downcast_ref::<ItemEntity>() else {
         panic!("dropped entity should retain its concrete item type");
     };
-    assert!(item.get_item().is(&vanilla_items::GLASS_BOTTLE));
+    assert!(item.get_item().is(&*vanilla_items::GLASS_BOTTLE));
 }
 
 /// Regression test: drinking a honey bottle from a full inventory, through
@@ -1743,9 +1743,9 @@ fn drinking_honey_bottle_from_full_inventory_drops_the_remainder_through_the_tic
     {
         let mut inventory = player.inventory.lock();
         for slot in 0..36 {
-            inventory.set_item(slot, ItemStack::with_count(&vanilla_items::STONE, 64));
+            inventory.set_item(slot, ItemStack::with_count(&*vanilla_items::STONE, 64));
         }
-        inventory.set_selected_item(ItemStack::with_count(&vanilla_items::HONEY_BOTTLE, 5));
+        inventory.set_selected_item(ItemStack::with_count(&*vanilla_items::HONEY_BOTTLE, 5));
     }
 
     player.start_using_item(InteractionHand::MainHand);
@@ -1758,7 +1758,7 @@ fn drinking_honey_bottle_from_full_inventory_drops_the_remainder_through_the_tic
         .lock()
         .get_item_in_hand(InteractionHand::MainHand)
         .clone();
-    assert!(hand_item.is(&vanilla_items::HONEY_BOTTLE));
+    assert!(hand_item.is(&*vanilla_items::HONEY_BOTTLE));
     assert_eq!(hand_item.count(), 4);
 
     let dropped = world.get_entities_in_aabb_matching(
@@ -1769,7 +1769,7 @@ fn drinking_honey_bottle_from_full_inventory_drops_the_remainder_through_the_tic
     let Some(item) = dropped[0].as_ref().downcast_ref::<ItemEntity>() else {
         panic!("dropped entity should retain its concrete item type");
     };
-    assert!(item.get_item().is(&vanilla_items::GLASS_BOTTLE));
+    assert!(item.get_item().is(&*vanilla_items::GLASS_BOTTLE));
 }
 
 #[test]
@@ -1911,7 +1911,7 @@ fn sword_does_not_destroy_blocks_in_creative() {
     player
         .inventory
         .lock()
-        .set_selected_item(ItemStack::new(&vanilla_items::DIAMOND_SWORD));
+        .set_selected_item(ItemStack::new(&*vanilla_items::DIAMOND_SWORD));
 
     player.block_breaking.lock().handle_block_break_action(
         &player,

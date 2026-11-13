@@ -106,7 +106,7 @@ mod tests {
             vanilla_blocks::OAK_SIGN.default_state(),
         );
 
-        let mut dye_stack = ItemStack::new(&vanilla_items::RED_DYE);
+        let mut dye_stack = ItemStack::new(&*vanilla_items::RED_DYE);
         dye_stack.set(DYE, DyeColor::Red);
 
         let player = TestPlayerBuilder::new(Arc::clone(world), "SignDyer", 1).build();

@@ -231,7 +231,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::with_count(&vanilla_items::WHITE_CUSHION, 3));
+            .set_selected_item(ItemStack::with_count(&*vanilla_items::WHITE_CUSHION, 3));
 
         let mut context = place_context(world, &player, support);
         assert_eq!(CushionItem.use_on(&mut context), InteractionResult::Success);
@@ -248,7 +248,7 @@ mod tests {
         let (fixture, player, support) = support_fixture("cushion_place_red");
         let world = &fixture.world;
 
-        let mut stack = ItemStack::new(&vanilla_items::RED_CUSHION);
+        let mut stack = ItemStack::new(&*vanilla_items::RED_CUSHION);
         stack.set(CUSHION_COLOR, DyeColor::Red);
         player.inventory.lock().set_selected_item(stack);
 
@@ -271,7 +271,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::with_count(&vanilla_items::WHITE_CUSHION, 2));
+            .set_selected_item(ItemStack::with_count(&*vanilla_items::WHITE_CUSHION, 2));
 
         // A slab does not count as vanilla `isSolid`.
         assert!(world.set_block(
@@ -294,7 +294,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::WHITE_CUSHION));
+            .set_selected_item(ItemStack::new(&*vanilla_items::WHITE_CUSHION));
 
         assert!(world.set_block(
             support.offset(0, 1, 0),
@@ -315,7 +315,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::with_count(&vanilla_items::WHITE_CUSHION, 2));
+            .set_selected_item(ItemStack::with_count(&*vanilla_items::WHITE_CUSHION, 2));
 
         let mut first = place_context(world, &player, support);
         assert_eq!(CushionItem.use_on(&mut first), InteractionResult::Success);
@@ -332,7 +332,7 @@ mod tests {
         let (fixture, player, support) = support_fixture("cushion_place_custom_name");
         let world = &fixture.world;
 
-        let mut stack = ItemStack::new(&vanilla_items::BLUE_CUSHION);
+        let mut stack = ItemStack::new(&*vanilla_items::BLUE_CUSHION);
         stack.set(CUSHION_COLOR, DyeColor::Blue);
         stack.set(CUSTOM_NAME, TextComponent::plain("Reading Nook"));
         player.inventory.lock().set_selected_item(stack);

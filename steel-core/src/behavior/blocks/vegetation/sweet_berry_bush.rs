@@ -122,7 +122,7 @@ impl BlockBehavior for SweetBerryBushBlock {
         _hit_result: &BlockHitResult,
         inv: &mut InventoryAccess,
     ) -> InteractionResult {
-        let is_bone_meal = inv.with_item(|item_stack| item_stack.is(&vanilla_items::BONE_MEAL));
+        let is_bone_meal = inv.with_item(|item_stack| item_stack.is(&*vanilla_items::BONE_MEAL));
         let age = state.get_value(AGE);
         if age != 3 && is_bone_meal {
             InteractionResult::Pass
@@ -181,7 +181,7 @@ impl BlockBehavior for SweetBerryBushBlock {
         _block_entity: Option<SharedBlockEntity>,
         _include_data: bool,
     ) -> Option<ItemStack> {
-        Some(ItemStack::new(&vanilla_items::SWEET_BERRIES))
+        Some(ItemStack::new(&*vanilla_items::SWEET_BERRIES))
     }
 
     fn as_bonemealable(&self) -> Option<&dyn Bonemealable> {

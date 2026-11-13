@@ -376,7 +376,7 @@ impl Bucketable for SalmonEntity {
     }
 
     fn bucket_item(&self) -> ItemRef {
-        &vanilla_items::SALMON_BUCKET
+        &*vanilla_items::SALMON_BUCKET
     }
 
     fn copy_bucket_data_to_nbt(&self, nbt: &mut owned::NbtCompound) {

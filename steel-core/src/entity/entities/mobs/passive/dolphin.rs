@@ -481,7 +481,7 @@ mod tests {
     #[test]
     fn raw_cod_is_dolphin_food() {
         init_vanilla_registry();
-        assert!(is_dolphin_food(&ItemStack::new(&vanilla_items::COD)));
-        assert!(!is_dolphin_food(&ItemStack::new(&vanilla_items::STONE)));
+        assert!(is_dolphin_food(&ItemStack::new(&*vanilla_items::COD)));
+        assert!(!is_dolphin_food(&ItemStack::new(&*vanilla_items::STONE)));
     }
 }

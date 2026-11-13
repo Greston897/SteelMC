@@ -84,15 +84,15 @@ fn perform_partial_swap(world_name: &'static str, game_mode: GameType) -> Partia
     {
         let mut inventory = player.inventory.lock();
         for slot in 0..inventory.get_container_size() {
-            inventory.set_item(slot, ItemStack::with_count(&vanilla_items::DIRT, 64));
+            inventory.set_item(slot, ItemStack::with_count(&*vanilla_items::DIRT, 64));
         }
-        inventory.set_item(0, ItemStack::with_count(&vanilla_items::DIRT, 2));
+        inventory.set_item(0, ItemStack::with_count(&*vanilla_items::DIRT, 2));
     }
 
     let target = SimpleContainer::new(1).into_shared();
     target
         .lock()
-        .set_item(0, ItemStack::new(&vanilla_items::STONE));
+        .set_item(0, ItemStack::new(&*vanilla_items::STONE));
     let target_ref = ContainerRef::from(Arc::clone(&target));
     let mut builder = MenuBuilder::new(None, 1);
     let target_slots = builder.custom_section([SingleItemSlot {
@@ -123,7 +123,7 @@ fn swap_locks_player_inventory_when_menu_has_no_inventory_slots() {
     let container = SimpleContainer::new(45).into_shared();
     container
         .lock()
-        .set_item(0, ItemStack::new(&vanilla_items::STONE));
+        .set_item(0, ItemStack::new(&*vanilla_items::STONE));
 
     let mut builder = MenuBuilder::new(&vanilla_menu_types::GENERIC_9X1, 1);
     let menu_slots = builder.section(Arc::clone(&container), 45);
@@ -143,7 +143,7 @@ fn swap_locks_player_inventory_when_menu_has_no_inventory_slots() {
             .inventory
             .lock()
             .get_item(0)
-            .is(&vanilla_items::STONE)
+            .is(&*vanilla_items::STONE)
     );
 }
 
@@ -172,7 +172,7 @@ fn draining_a_block_entity_slot_marks_its_chunk_dirty() {
         assert!(guard.set_item(
             container.container_id(),
             0,
-            ItemStack::new(&vanilla_items::STONE),
+            ItemStack::new(&*vanilla_items::STONE),
         ));
     }
     holder
@@ -206,11 +206,11 @@ fn one_slot_creative_clone_drag_is_a_vanilla_noop() {
     let container = SimpleContainer::new(1).into_shared();
     container
         .lock()
-        .set_item(0, ItemStack::new(&vanilla_items::STONE));
+        .set_item(0, ItemStack::new(&*vanilla_items::STONE));
     let mut builder = MenuBuilder::new(None, 1);
     let slots = builder.section(Arc::clone(&container), 1);
     let mut menu = builder.build(BasicKind {});
-    *menu.behavior_mut().carried_mut() = ItemStack::new(&vanilla_items::STONE);
+    *menu.behavior_mut().carried_mut() = ItemStack::new(&*vanilla_items::STONE);
 
     menu.clicked(
         Click::QuickCraft(QuickCraft::Start {
@@ -238,7 +238,7 @@ fn partial_swap_overflow_marks_displaced_item_as_thrown() {
 
     assert_eq!(fixture.player.inventory.lock().get_item(0).count(), 1);
     let target_item = fixture.target.lock().get_item(0).clone();
-    assert!(target_item.is(&vanilla_items::DIRT));
+    assert!(target_item.is(&*vanilla_items::DIRT));
     assert_eq!(target_item.count(), 1);
     let dropped = fixture.world_fixture.world.get_entities_in_aabb_matching(
         &WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 68.0, 2.0),
@@ -248,7 +248,7 @@ fn partial_swap_overflow_marks_displaced_item_as_thrown() {
     let Some(item) = dropped[0].as_ref().downcast_ref::<ItemEntity>() else {
         panic!("dropped entity should retain its concrete item type");
     };
-    assert!(item.get_item().is(&vanilla_items::STONE));
+    assert!(item.get_item().is(&*vanilla_items::STONE));
     assert_eq!(item.get_thrower(), Some(player_id));
 }
 
@@ -258,7 +258,7 @@ fn partial_swap_overflow_is_discarded_in_creative() {
 
     assert_eq!(fixture.player.inventory.lock().get_item(0).count(), 1);
     let target_item = fixture.target.lock().get_item(0).clone();
-    assert!(target_item.is(&vanilla_items::DIRT));
+    assert!(target_item.is(&*vanilla_items::DIRT));
     assert_eq!(target_item.count(), 1);
     assert!(
         fixture
@@ -267,7 +267,7 @@ fn partial_swap_overflow_is_discarded_in_creative() {
             .lock()
             .items()
             .iter()
-            .all(|item| !item.is(&vanilla_items::STONE))
+            .all(|item| !item.is(&*vanilla_items::STONE))
     );
     assert!(
         fixture
@@ -351,7 +351,7 @@ fn crafter_menu_refuses_to_disable_an_occupied_slot() {
         assert!(guard.set_item(
             container.container_id(),
             0,
-            ItemStack::new(&vanilla_items::STONE),
+            ItemStack::new(&*vanilla_items::STONE),
         ));
     }
 

@@ -404,8 +404,8 @@ mod tests {
     #[test]
     fn only_slime_balls_are_frog_food() {
         init_vanilla_registry();
-        assert!(is_frog_food(&ItemStack::new(&vanilla_items::SLIME_BALL)));
-        assert!(!is_frog_food(&ItemStack::new(&vanilla_items::STONE)));
+        assert!(is_frog_food(&ItemStack::new(&*vanilla_items::SLIME_BALL)));
+        assert!(!is_frog_food(&ItemStack::new(&*vanilla_items::STONE)));
     }
 
     #[test]

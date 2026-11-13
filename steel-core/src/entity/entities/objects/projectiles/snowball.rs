@@ -170,7 +170,7 @@ impl ThrowableProjectile for SnowballEntity {}
 
 impl ThrowableItemProjectile for SnowballEntity {
     fn get_default_item(&self) -> ItemRef {
-        &vanilla_items::SNOWBALL
+        &*vanilla_items::SNOWBALL
     }
 
     fn set_item(&self, item: ItemStack) {

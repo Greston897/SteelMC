@@ -193,7 +193,7 @@ mod tests {
         chest
             .container
             .lock()
-            .set_item(26, ItemStack::with_count(&vanilla_items::STONE, 100));
+            .set_item(26, ItemStack::with_count(&*vanilla_items::STONE, 100));
         assert_eq!(chest.container.lock().get_item(26).count(), 64);
     }
 }

@@ -252,7 +252,7 @@ mod tests {
             &vanilla_blocks::PUMPKIN_STEM,
             &vanilla_blocks::PUMPKIN,
             &vanilla_blocks::ATTACHED_PUMPKIN_STEM,
-            &vanilla_items::PUMPKIN_SEEDS,
+            &*vanilla_items::PUMPKIN_SEEDS,
             BlockTag::SUPPORTS_PUMPKIN_STEM,
             BlockTag::SUPPORTS_PUMPKIN_STEM_FRUIT,
         )
@@ -263,7 +263,7 @@ mod tests {
             &vanilla_blocks::MELON_STEM,
             &vanilla_blocks::MELON,
             &vanilla_blocks::ATTACHED_MELON_STEM,
-            &vanilla_items::MELON_SEEDS,
+            &*vanilla_items::MELON_SEEDS,
             BlockTag::SUPPORTS_MELON_STEM,
             BlockTag::SUPPORTS_MELON_STEM_FRUIT,
         )

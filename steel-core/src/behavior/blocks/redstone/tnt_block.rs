@@ -188,8 +188,8 @@ impl BlockBehavior for TntBlock {
     ) -> InteractionResult {
         let (is_flint_and_steel, is_fire_charge) = inv.with_item(|item| {
             (
-                item.is(&vanilla_items::FLINT_AND_STEEL),
-                item.is(&vanilla_items::FIRE_CHARGE),
+                item.is(&*vanilla_items::FLINT_AND_STEEL),
+                item.is(&*vanilla_items::FIRE_CHARGE),
             )
         });
         if !is_flint_and_steel && !is_fire_charge {
