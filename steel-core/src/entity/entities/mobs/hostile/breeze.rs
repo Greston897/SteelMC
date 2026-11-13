@@ -1,13 +1,14 @@
 //! Vanilla `net.minecraft.world.entity.monster.breeze.Breeze`.
 //!
-//! Trial-chamber wind mob; wind charges and jumping are not implemented.
+//! Trial-chamber wind mob. Vanilla `Breeze` attacks by firing `BreezeWindCharge`
+//! projectiles and jumps around; the jump goal is documented as missing.
 //!
 //! The AI is the shared `Monster` skeleton (float, melee attack, random stroll,
 //! look goals) plus the standard hostile target selector; attributes and
 //! dimensions come from the extracted `entities.json`.
 //!
 use std::iter::empty;
-use std::sync::Weak;
+use std::sync::{Arc, Weak};
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
@@ -26,10 +27,12 @@ use crate::entity::ai::goal::{
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::entity::entities::objects::projectiles::breeze_wind_charge::BREEZE_WIND_CHARGE_POWER;
+use crate::entity::entities::objects::projectiles::BreezeWindChargeEntity;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
-    SharedEntity, sync_dirty_mob_effects,
+    Projectile, SharedEntity, next_entity_id, sync_dirty_mob_effects,
 };
 use crate::physics::MoveResult;
 use crate::world::World;
@@ -246,6 +249,38 @@ impl Mob for BreezeEntity {
 
     fn set_mob_flags(&self, flags: i8) {
         self.entity_data.lock().mob_mut().mob_flags.set(flags);
+    }
+
+    /// Vanilla `Breeze.performRangedAttack`: spawn a breeze wind charge at eye
+    /// height aimed at the target, with the breeze as its owner.
+    fn perform_ranged_attack(
+        &self,
+        self_entity: &SharedEntity,
+        target: &SharedEntity,
+        _power: f32,
+    ) {
+        let Some(world) = self.level() else {
+            return;
+        };
+        let start = self.position().add(DVec3::new(0.0, f64::from(self.get_eye_height()), 0.0));
+        let charge = BreezeWindChargeEntity::new(
+            &vanilla_entities::BREEZE_WIND_CHARGE,
+            next_entity_id(),
+            start,
+            Arc::downgrade(&world),
+        );
+        let charge = Arc::new(charge);
+        charge.set_owner_entity(Some(self_entity));
+        let aim = (target.position().add(DVec3::new(
+            0.0,
+            f64::from(target.base().dimensions().height) * 0.5,
+            0.0,
+        )) - start)
+            .normalize_or_zero();
+        charge.set_velocity(aim * f64::from(BREEZE_WIND_CHARGE_POWER));
+        if world.try_add_entity(Arc::clone(&charge) as SharedEntity).is_ok() {
+            self.play_sound(&sound_events::ENTITY_BREEZE_SHOOT, 1.0, 1.0);
+        }
     }
 }
 
