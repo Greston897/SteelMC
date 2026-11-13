@@ -137,8 +137,8 @@ impl NumberProvider {
         let ctx_ref = LootContextRef {
             tool: ctx.tool,
             score_resolver: ctx.score_resolver,
-            this_holder: ctx.this_entity.and_then(|entity| entity.holder_name),
-            killer_holder: ctx.killer_entity.and_then(|entity| entity.holder_name),
+            this_holder: ctx.this_entity.as_ref().and_then(|entity| entity.holder_name),
+            killer_holder: ctx.killer_entity.as_ref().and_then(|entity| entity.holder_name),
             storage_resolver: ctx.storage_resolver,
         };
         self.get(ctx.rng, Some(&ctx_ref))
@@ -541,28 +541,28 @@ impl<'a, R: rand::Rng> LootContext<'a, R> {
 
     /// Set the entity being looted.
     #[must_use]
-    pub const fn with_this_entity(mut self, entity: EntityRef<'a>) -> Self {
+    pub fn with_this_entity(mut self, entity: EntityRef<'a>) -> Self {
         self.this_entity = Some(entity);
         self
     }
 
     /// Set the killer entity.
     #[must_use]
-    pub const fn with_killer_entity(mut self, entity: EntityRef<'a>) -> Self {
+    pub fn with_killer_entity(mut self, entity: EntityRef<'a>) -> Self {
         self.killer_entity = Some(entity);
         self
     }
 
     /// Set the direct killer entity (e.g., projectile).
     #[must_use]
-    pub const fn with_direct_killer_entity(mut self, entity: EntityRef<'a>) -> Self {
+    pub fn with_direct_killer_entity(mut self, entity: EntityRef<'a>) -> Self {
         self.direct_killer_entity = Some(entity);
         self
     }
 
     /// Set the player who dealt the final damage.
     #[must_use]
-    pub const fn with_last_damage_player(mut self, entity: EntityRef<'a>) -> Self {
+    pub fn with_last_damage_player(mut self, entity: EntityRef<'a>) -> Self {
         self.last_damage_player = Some(entity);
         self
     }
@@ -583,7 +583,7 @@ impl<'a, R: rand::Rng> LootContext<'a, R> {
 
     /// Set the interacting entity (e.g., player opening a chest).
     #[must_use]
-    pub const fn with_interacting_entity(mut self, entity: EntityRef<'a>) -> Self {
+    pub fn with_interacting_entity(mut self, entity: EntityRef<'a>) -> Self {
         self.interacting_entity = Some(entity);
         self
     }
@@ -599,19 +599,20 @@ impl<'a, R: rand::Rng> LootContext<'a, R> {
     #[must_use]
     pub fn get_attacking_entity_enchantment_level(&self, enchantment: &Identifier) -> i32 {
         self.killer_entity
+            .as_ref()
             .and_then(|entity| entity.equipment)
             .map_or(0, |equipment| equipment.get_enchantment_level(enchantment))
     }
 
     /// Get an entity reference by target.
     #[must_use]
-    pub const fn get_entity(&self, target: LootContextEntity) -> Option<EntityRef<'a>> {
+    pub fn get_entity(&self, target: LootContextEntity) -> Option<EntityRef<'a>> {
         match target {
-            LootContextEntity::This => self.this_entity,
-            LootContextEntity::Killer => self.killer_entity,
-            LootContextEntity::DirectKiller => self.direct_killer_entity,
-            LootContextEntity::KillerPlayer => self.last_damage_player,
-            LootContextEntity::Interacting => self.interacting_entity,
+            LootContextEntity::This => self.this_entity.clone(),
+            LootContextEntity::Killer => self.killer_entity.clone(),
+            LootContextEntity::DirectKiller => self.direct_killer_entity.clone(),
+            LootContextEntity::KillerPlayer => self.last_damage_player.clone(),
+            LootContextEntity::Interacting => self.interacting_entity.clone(),
         }
     }
 }

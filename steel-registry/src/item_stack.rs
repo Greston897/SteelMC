@@ -885,7 +885,7 @@ impl ItemStack {
         };
         let mut encoded = Vec::new();
         raw.write(&mut encoded);
-        let Ok(borrowed) = simdnbt::borrow::read_compound(&mut std::io::Cursor::new(encoded.as_slice()))
+        let Ok(borrowed) = simdnbt::borrow::read_tag(&mut std::io::Cursor::new(encoded.as_slice()))
         else {
             return;
         };
@@ -951,7 +951,13 @@ impl ItemStack {
         let Some(tag) = json_to_nbt(&value) else {
             return;
         };
-        let Some(added) = DataComponentPatch::from_nbt_tag(tag.as_borrowed()) else {
+        let mut bytes = Vec::new();
+        tag.write(&mut bytes);
+        let Ok(borrowed) = simdnbt::borrow::read_tag(&mut std::io::Cursor::new(bytes.as_slice()))
+        else {
+            return;
+        };
+        let Some(added) = DataComponentPatch::from_nbt_tag(borrowed.as_tag()) else {
             return;
         };
         self.patch.apply(&added);
@@ -1123,12 +1129,15 @@ impl ItemStack {
                 .and_then(|block_entity| block_entity.custom_name),
             CopySource::This => ctx
                 .this_entity
+                .as_ref()
                 .and_then(|entity| entity.custom_name.as_deref()),
             CopySource::Attacker => ctx
                 .killer_entity
+                .as_ref()
                 .and_then(|entity| entity.custom_name.as_deref()),
             CopySource::DirectAttacker => ctx
                 .direct_killer_entity
+                .as_ref()
                 .and_then(|entity| entity.custom_name.as_deref()),
         };
         let Some(name) = name else {
@@ -1403,17 +1412,20 @@ impl ItemStack {
         let flight = flight_duration
             .or_else(|| existing.as_ref().map(Fireworks::flight_duration))
             .unwrap_or(0);
-        let converted: Vec<_> = explosions.map(|explosions| {
-            explosions
-                .iter()
-                .map(convert_firework_explosion)
-                .collect()
-        });
-        let explosion_values = converted.unwrap_or_else(|| {
-            existing
-                .map(|fireworks| fireworks.explosions().to_vec())
-                .unwrap_or_default()
-        });
+        let explosion_values = explosions.map_or_else(
+            || {
+                existing
+                    .as_ref()
+                    .map(|fireworks| fireworks.explosions().to_vec())
+                    .unwrap_or_default()
+            },
+            |explosions| {
+                explosions
+                    .iter()
+                    .map(convert_firework_explosion)
+                    .collect()
+            },
+        );
         if let Ok(fireworks) = Fireworks::new(flight, explosion_values) {
             self.set(FIREWORKS, fireworks);
         }

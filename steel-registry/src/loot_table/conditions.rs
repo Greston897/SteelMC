@@ -551,7 +551,7 @@ impl DamageSourcePredicate {
         }
 
         if let Some(predicate) = &self.source_entity {
-            let Some(entity) = ctx.killer_entity else {
+            let Some(entity) = ctx.killer_entity.as_ref() else {
                 return false;
             };
             if !predicate.test(entity, ctx) {
@@ -560,7 +560,7 @@ impl DamageSourcePredicate {
         }
 
         if let Some(predicate) = &self.direct_entity {
-            let Some(entity) = ctx.direct_killer_entity else {
+            let Some(entity) = ctx.direct_killer_entity.as_ref() else {
                 return false;
             };
             if !predicate.test(entity, ctx) {
