@@ -127,7 +127,7 @@ mod tests {
         let container = SimpleContainer::new(9).into_shared();
         let menu = dispenser(inventory, 0, container);
         // 9 grid + 27 main + 9 hotbar
-        assert_eq!(menu.slot_count(), 45);
+        assert_eq!(menu.behavior().slot_count(), 45);
     }
 
     #[test]
@@ -135,13 +135,13 @@ mod tests {
         let inventory = PlayerInventory::new().into_shared();
         let container = SimpleContainer::new(5).into_shared();
         let menu = hopper(inventory, 0, container);
-        assert_eq!(menu.slot_count(), 41);
+        assert_eq!(menu.behavior().slot_count(), 41);
     }
 
     #[test]
     fn the_lectern_menu_has_no_player_inventory() {
         let container = SimpleContainer::new(1).into_shared();
         let menu = lectern(0, container);
-        assert_eq!(menu.slot_count(), 1);
+        assert_eq!(menu.behavior().slot_count(), 1);
     }
 }

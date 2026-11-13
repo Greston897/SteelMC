@@ -298,7 +298,7 @@ fn crafter_menu_toggles_the_block_entity_mask_through_data_slot_zero() {
     let block_entity = world
         .get_block_entity(pos)
         .expect("crafter should create its block entity");
-    let crafter = block_entity
+    let crafter_entity = block_entity
         .downcast_ref::<CrafterBlockEntity>()
         .expect("crafter block entity type");
     let container = ContainerRef::from_block_entity(Arc::clone(&block_entity))
@@ -310,18 +310,18 @@ fn crafter_menu_toggles_the_block_entity_mask_through_data_slot_zero() {
     let mut menu = crafter(inventory, 1, pos, container, block_entity);
 
     assert!(menu.set_crafter_slot_state(3, true));
-    assert_eq!(crafter.disabled_slots() & (1 << 3), 1 << 3);
+    assert_eq!(crafter_entity.disabled_slots() & (1 << 3), 1 << 3);
     assert_eq!(menu.behavior().get_data(0), Some(1 << 3));
 
     // Disabling twice is a no-op.
     assert!(!menu.set_crafter_slot_state(3, true));
     // Re-enabling clears the bit again.
     assert!(menu.set_crafter_slot_state(3, false));
-    assert_eq!(crafter.disabled_slots(), 0);
+    assert_eq!(crafter_entity.disabled_slots(), 0);
 
     // A slot outside the 3x3 grid is rejected instead of panicking.
     assert!(!menu.set_crafter_slot_state(9, true));
-    assert_eq!(crafter.disabled_slots(), 0);
+    assert_eq!(crafter_entity.disabled_slots(), 0);
 }
 
 #[test]
@@ -360,5 +360,5 @@ fn crafter_menu_refuses_to_disable_an_occupied_slot() {
     let mut menu = crafter(inventory, 1, pos, container, block_entity);
 
     assert!(!menu.set_crafter_slot_state(0, true));
-    assert_eq!(crafter.disabled_slots(), 0);
+    assert_eq!(crafter_entity.disabled_slots(), 0);
 }

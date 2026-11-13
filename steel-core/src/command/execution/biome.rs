@@ -1,10 +1,13 @@
 //! Biome registry command arguments.
 
+use std::borrow::Cow;
+
 use steel_registry::{
     BIOMES_REGISTRY, REGISTRY, RegistryEntry as _, RegistryExt as _, TaggedRegistryExt as _,
     biome::BiomeRef,
 };
 use steel_utils::{Identifier, translations};
+use text_components::{TextComponent, TranslatedMessage};
 
 use super::argument::{parse_identifier, unknown_resource};
 use super::suggestions::identifier_matches;
@@ -28,12 +31,15 @@ impl BiomeOrTag {
     pub(crate) fn to_biome_id(&self) -> Result<u16, CommandSyntaxError> {
         match self {
             Self::Biome(biome) => Ok(biome.id() as u16),
-            Self::Tag(tag) => Err(CommandSyntaxError::dynamic(
-                "commands.fillbiome.tag",
-                "Biome tags cannot be used here",
-                tag.to_string(),
-                "#".to_string(),
-            )),
+            Self::Tag(tag) => Err(CommandSyntaxError::dynamic(TextComponent::translated(
+                TranslatedMessage {
+                    key: Cow::Borrowed("commands.fillbiome.tag"),
+                    fallback: Some(Cow::Borrowed("Biome tags cannot be used here")),
+                    args: Some(
+                        vec![TextComponent::plain(format!("#{tag}"))].into_boxed_slice(),
+                    ),
+                },
+            ))),
         }
     }
 

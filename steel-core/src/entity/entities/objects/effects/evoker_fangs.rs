@@ -143,7 +143,8 @@ mod tests {
         init_vanilla_registry();
         let fangs = fangs();
         let box_ = fangs.bounding_box();
-        assert!(box_.max.x > box_.min.x);
+        // `Aabb` exposes its bounds through accessors rather than public fields.
+        assert!(box_.max_x() > box_.min_x());
     }
 
     #[test]

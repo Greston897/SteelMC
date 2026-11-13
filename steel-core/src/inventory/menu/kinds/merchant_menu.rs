@@ -282,7 +282,7 @@ mod tests {
         let inventory = PlayerInventory::new().into_shared();
         let trades = Arc::new(SyncMutex::new(Vec::new()));
         let menu = merchant(inventory, 0, trades);
-        assert_eq!(menu.slot_count(), 39);
+        assert_eq!(menu.behavior().slot_count(), 39);
     }
 
     #[test]

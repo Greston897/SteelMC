@@ -28,7 +28,7 @@ fn position_tree() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         .then(
             argument("delta", SteelArgumentType::vec3(false))
                 .then(
-                    argument("speed", SteelArgumentType::float(0.0, f32::MAX))
+                    argument("speed", ArgumentType::float(0.0, f32::MAX))
                         .then(
                             argument("count", ArgumentType::integer(0, i32::MAX))
                                 .executes(|context| emit(context, None)),

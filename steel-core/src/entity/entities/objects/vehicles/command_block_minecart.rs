@@ -256,7 +256,10 @@ mod tests {
         let cart = cart();
         cart.set_command("say hi");
         assert_eq!(cart.command(), "say hi");
-        assert_eq!(*cart.entity_data.lock().command_name.get(), "say hi");
+        assert_eq!(
+            *cart.entity_data.lock().minecart_command_block_mut().id_command_name.get(),
+            "say hi"
+        );
     }
 
     #[test]
@@ -270,8 +273,8 @@ mod tests {
         nbt.write(&mut encoded);
         assert!(!encoded.is_empty());
         assert_eq!(
-            nbt.string("Command").map(|value| value.to_str()),
-            Some("time set day")
+            nbt.string("Command").map(|value| value.to_string()),
+            Some("time set day".to_owned())
         );
     }
 }

@@ -87,6 +87,7 @@ fn restored_portal_ticket_initializes_both_levels_in_the_first_source_phase() {
             &OVERWORLD,
             TEST_WORLD_SEED,
             WorldConfig {
+                server: std::sync::OnceLock::new(),
                 damage_history: Arc::clone(&damage_history),
                 game_time_source: GameTimeSource::Primary,
                 storage: WorldStorageConfig::RamOnly,

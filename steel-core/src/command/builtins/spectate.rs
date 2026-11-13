@@ -24,6 +24,8 @@ use super::super::{
 };
 use steel_utils::types::GameType;
 
+use crate::entity::Entity as _;
+
 const TARGET_ARGUMENT: &str = "target";
 const PLAYER_ARGUMENT: &str = "player";
 
@@ -94,7 +96,7 @@ fn spectate(
             viewer.set_camera_entity(None);
             if let Some(player) = context.source().player() {
                 viewer.send_packet(steel_protocol::packets::game::CSetCamera {
-                    camera_id: player.id(),
+                    camera_id: player.base().id(),
                 });
             }
             context.source().send_success(

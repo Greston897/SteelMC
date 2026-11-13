@@ -18,7 +18,7 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::WardenEntityData;
-use crate::entity::living_base::MobEffectInstance;
+use crate::entity::MobEffectInstance;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_mob_effects};
 use steel_utils::WorldAabb;
 use steel_utils::locks::SyncMutex;

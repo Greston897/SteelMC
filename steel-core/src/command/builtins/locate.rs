@@ -1,12 +1,13 @@
 //! Structure location command.
 
-use std::{sync::Arc, time::Instant};
+use std::{borrow::Cow, sync::Arc, time::Instant};
 
 use glam::IVec3;
 use steel_registry::biome::BiomeRef;
+use steel_registry::{REGISTRY, RegistryExt as _};
 use steel_utils::{BlockPos, ChunkPos, Identifier, translations};
 use text_components::{
-    Modifier, TextComponent,
+    Modifier, TextComponent, TranslatedMessage,
     format::Color,
     interactivity::{ClickEvent, HoverEvent},
 };
@@ -477,12 +478,17 @@ fn locate_poi(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comma
 
 /// The vanilla "point of interest not found" failure.
 fn poi_not_found(key: &Identifier) -> CommandSyntaxError {
-    CommandSyntaxError::dynamic(
-        "commands.locate.poi.not_found",
-        format!("There is no point of interest of type {key}"),
-        key.to_string(),
-        String::new(),
-    )
+    CommandSyntaxError::dynamic(TextComponent::translated(
+        TranslatedMessage {
+            key: Cow::Borrowed("commands.locate.poi.not_found"),
+            fallback: Some(Cow::Owned(format!(
+                "There is no point of interest of type {key}"
+            ))),
+            args: Some(
+                vec![TextComponent::plain(key.to_string())].into_boxed_slice(),
+            ),
+        },
+    ))
 }
 
 fn horizontal_distance(a: BlockPos, b: BlockPos) -> i32 {

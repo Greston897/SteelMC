@@ -321,11 +321,16 @@ pub trait Animal: AgeableMob {
         {
             // Vanilla `Animal.spawnChildFromBreeding` awards `animals_bred` and fires
             // `bred_animals` for the player whose love cause started the breeding.
+            // The love cause is the initiating player; resolve it through the
+            // player index so the `Arc<Player>` is available for the trigger.
             let breeder = self
                 .love_cause_uuid()
                 .or_else(|| partner.love_cause_uuid())
                 .and_then(|uuid| self.level()?.get_entity_by_uuid(&uuid))
-                .and_then(|entity| entity.as_player().cloned());
+                .and_then(|entity| {
+                    let world = self.level()?;
+                    world.players.get_by_entity_id(entity.as_ref().id())
+                });
             if let Some(breeder) = breeder {
                 breeder.trigger_advancement(&vanilla_criteria_triggers::BRED_ANIMALS);
             }

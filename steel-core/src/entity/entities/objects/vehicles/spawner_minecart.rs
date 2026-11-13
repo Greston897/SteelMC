@@ -8,9 +8,7 @@
 use std::sync::{Arc, Weak};
 
 use glam::DVec3;
-use simdnbt::borrow::{
-    BaseNbtCompound as BorrowedNbtCompound, NbtCompound as BorrowedNbtCompoundView,
-};
+use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
@@ -128,10 +126,8 @@ impl Entity for SpawnerMinecartEntity {
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
-        // `BaseSpawner::load` takes the trait object and converts to the view
-        // itself, so the compound is handed over unchanged.
-        let view: &dyn BorrowedNbtCompound<'_> = &nbt;
-        self.spawner.lock().load(view);
+        // `BaseSpawner::load` borrows the compound directly.
+        self.spawner.lock().load(&nbt);
     }
 }
 

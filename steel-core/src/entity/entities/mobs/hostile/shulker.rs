@@ -274,7 +274,7 @@ impl PathfinderMob for ShulkerEntity {
         };
         // Vanilla spawns the bullet at the shulker's peek height, halfway up its
         // one-block shell centre.
-        let start = self.position().add(DVec3::new(0.0, 0.5, 0.0));
+        let start = self.position() + DVec3::new(0.0, 0.5, 0.0);
         let bullet = ShulkerBulletEntity::new(
             &vanilla_entities::SHULKER_BULLET,
             next_entity_id(),
@@ -283,7 +283,7 @@ impl PathfinderMob for ShulkerEntity {
         );
         let bullet = Arc::new(bullet);
         bullet.set_owner_entity(Some(self_entity));
-        let direction = (target.position().add(DVec3::new(0.0, f64::from(target.base().dimensions().height) * 0.5, 0.0)) - start).normalize_or_zero();
+        let direction = (target.position() + DVec3::new(0.0, f64::from(target.base().dimensions().height) * 0.5, 0.0) - start).normalize_or_zero();
         bullet.set_velocity(direction * SHULKER_BULLET_SPEED);
         if world.try_add_entity(Arc::clone(&bullet) as SharedEntity).is_ok() {
             self.play_sound(&sound_events::ENTITY_SHULKER_SHOOT, 2.0, 1.0);

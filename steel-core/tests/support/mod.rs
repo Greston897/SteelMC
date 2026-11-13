@@ -363,6 +363,7 @@ pub(crate) fn create_test_world_with_damage_history(
             dimension_type,
             0,
             WorldConfig {
+                server: std::sync::OnceLock::new(),
                 damage_history: Arc::clone(history),
                 game_time_source,
                 storage: WorldStorageConfig::RamOnly,

@@ -5,9 +5,8 @@ use std::sync::Arc;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::consume_effect::{ConsumeEffectData, TeleportRandomlyConsumeEffect};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
-use steel_registry::vanilla_block_tags::BlockTag;
-use steel_registry::{sound_events, vanilla_game_events};
-use steel_utils::BlockPos;
+use steel_registry::{REGISTRY, TaggedRegistryExt as _, sound_events, vanilla_game_events};
+use steel_utils::{BlockPos, Identifier};
 
 use super::ConsumeEffectBehavior;
 use crate::entity::LivingEntity;
@@ -96,7 +95,10 @@ fn lands_on_forbidden_block(world: &Arc<World>, pos: glam::DVec3) -> bool {
         pos.z.floor() as i32,
     );
     let state = world.get_block_state(block_pos);
-    state.get_block().has_tag(&BlockTag::CONSUMABLE_DOES_NOT_TELEPORT_TO)
+    REGISTRY.blocks.is_in_tag(
+        state.get_block(),
+        &Identifier::vanilla_static("consumable_does_not_teleport_to"),
+    )
 }
 
 #[cfg(test)]

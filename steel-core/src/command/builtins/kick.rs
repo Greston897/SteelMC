@@ -4,6 +4,8 @@ use steel_utils::Identifier;
 use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
 
+use crate::entity::Entity as _;
+
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
     execution::{

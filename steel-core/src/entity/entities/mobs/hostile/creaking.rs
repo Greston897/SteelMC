@@ -21,7 +21,7 @@ use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::CreakingEntityData;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_damage_types};
 use steel_utils::locks::SyncMutex;
-use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
+use steel_utils::{BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
@@ -220,8 +220,7 @@ impl Entity for CreakingEntity {
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_mob(nbt);
-        let view: simdnbt::borrow::NbtCompound<'_, '_> = (&nbt).into();
-        *self.creaking_heart_pos.lock() = view.int_array("creaking_heart").and_then(|values| {
+        *self.creaking_heart_pos.lock() = nbt.int_array("creaking_heart").and_then(|values| {
             let [x, y, z] = [values.first(), values.get(1), values.get(2)];
             Some(BlockPos::new(*x?, *y?, *z?))
         });

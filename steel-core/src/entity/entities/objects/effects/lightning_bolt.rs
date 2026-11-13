@@ -248,14 +248,14 @@ mod tests {
         init_vanilla_registry();
         let bolt = bolt();
         bolt.set_visual_only(true);
-        let mut nbt = NbtCompound::new();
-        bolt.save_additional(&mut nbt);
-        assert_eq!(nbt.byte_value("visual_only"), Some(1));
-        assert_eq!(nbt.int_value("life"), Some(LIGHTNING_LIFE));
+        let mut saved = NbtCompound::new();
+        bolt.save_additional(&mut saved);
+        assert_eq!(saved.byte_value("visual_only"), Some(1));
+        assert_eq!(saved.int_value("life"), Some(LIGHTNING_LIFE));
 
         let loaded = bolt();
         let mut bytes = Vec::new();
-        nbt.write(&mut bytes);
+        saved.write(&mut bytes);
         let borrowed = simdnbt::borrow::read_compound(&mut std::io::Cursor::new(&bytes))
             .unwrap_or_else(|error| panic!("reborrow failed: {error}"));
         loaded.load_additional((&borrowed).into());
