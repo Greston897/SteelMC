@@ -10,7 +10,7 @@ use steel_registry::{
     items::item::BlockHitResult,
     vanilla_blocks, vanilla_custom_stats,
 };
-use steel_utils::{BlockStateId, Direction, translations};
+use steel_utils::{BlockPos, BlockStateId, Direction, translations};
 use text_components::TextComponent;
 
 use crate::{

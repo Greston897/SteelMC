@@ -167,7 +167,7 @@ impl Entity for RavagerEntity {
     }
 
     fn play_step_sound(&self, _pos: BlockPos, _block_state: BlockStateId) {
-        self.play_sound(&sound_events::entity.ravager.step, 0.15, 1.0);
+        self.play_sound(&sound_events::ENTITY_RAVAGER_STEP, 0.15, 1.0);
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
@@ -199,11 +199,11 @@ impl LivingEntity for RavagerEntity {
     }
 
     fn hurt_sound(&self, _source: &DamageSource) -> Option<SoundEventRef> {
-        Some(&sound_events::entity.ravager.hurt)
+        Some(&sound_events::ENTITY_RAVAGER_HURT)
     }
 
     fn death_sound(&self) -> Option<SoundEventRef> {
-        Some(&sound_events::entity.ravager.death)
+        Some(&sound_events::ENTITY_RAVAGER_DEATH)
     }
 
     fn should_drop_experience(&self) -> bool {
@@ -237,7 +237,7 @@ impl Mob for RavagerEntity {
     }
 
     fn ambient_sound(&self) -> Option<SoundEventRef> {
-        Some(&sound_events::entity.ravager.ambient)
+        Some(&sound_events::ENTITY_RAVAGER_AMBIENT)
     }
 
     fn mob_flags(&self) -> i8 {

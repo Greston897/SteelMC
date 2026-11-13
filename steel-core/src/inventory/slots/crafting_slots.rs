@@ -14,7 +14,6 @@ use crate::{
         recipe_manager,
         slots::result_handler::ResultHandler,
     },
-    player::Player,
 };
 
 /// A Recipe Handler for Crafting Recipes

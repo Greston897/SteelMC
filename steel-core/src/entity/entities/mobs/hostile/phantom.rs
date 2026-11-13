@@ -49,6 +49,16 @@ const ATTACK_TICKS: u32 = 100;
 const START_TICKS: u32 = 40;
 /// Orbit radius in blocks while circling.
 const CIRCLE_RADIUS: f64 = 16.0;
+/// Height above the target that the circling phase holds.
+const CIRCLE_HEIGHT: f64 = 5.0;
+/// Height above the target at which a swoop ends.
+const SWOOP_HEIGHT: f64 = 0.0;
+/// Height above the target held during the attack pass.
+const ATTACK_HEIGHT: f64 = 0.0;
+/// Height above the target after climbing out of an attack.
+const START_HEIGHT: f64 = 8.0;
+/// Blocks per tick the phantom steers towards its target point.
+const PHANTOM_FLY_SPEED: f64 = 0.2;
 
 /// Vanilla `Phantom.PhantomMoveTarget.State`: the phase of the swoop cycle.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

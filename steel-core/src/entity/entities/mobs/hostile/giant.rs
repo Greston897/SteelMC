@@ -11,10 +11,12 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
+use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::GiantEntityData;
+use steel_registry::sound_events;
 use steel_registry::vanilla_attributes;
 use steel_utils::locks::SyncMutex;
-use steel_utils::{DowncastType, DowncastTypeKey};
+use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
@@ -165,7 +167,7 @@ impl Entity for GiantEntity {
     }
 
     fn play_step_sound(&self, _pos: BlockPos, _block_state: BlockStateId) {
-        self.play_sound(&sound_events::entity.giant.step, 0.15, 1.0);
+        self.play_sound(&sound_events::ENTITY_GIANT_STEP, 0.15, 1.0);
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
@@ -197,11 +199,11 @@ impl LivingEntity for GiantEntity {
     }
 
     fn hurt_sound(&self, _source: &DamageSource) -> Option<SoundEventRef> {
-        Some(&sound_events::entity.giant.hurt)
+        Some(&sound_events::ENTITY_GIANT_HURT)
     }
 
     fn death_sound(&self) -> Option<SoundEventRef> {
-        Some(&sound_events::entity.giant.death)
+        Some(&sound_events::ENTITY_GIANT_DEATH)
     }
 
     fn should_drop_experience(&self) -> bool {
@@ -235,7 +237,7 @@ impl Mob for GiantEntity {
     }
 
     fn ambient_sound(&self) -> Option<SoundEventRef> {
-        Some(&sound_events::entity.giant.ambient)
+        Some(&sound_events::ENTITY_GIANT_AMBIENT)
     }
 
     fn mob_flags(&self) -> i8 {

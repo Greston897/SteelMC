@@ -15,7 +15,7 @@ use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::WitchEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
-use steel_utils::{DowncastType, DowncastTypeKey};
+use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
@@ -167,7 +167,7 @@ impl Entity for WitchEntity {
     }
 
     fn play_step_sound(&self, _pos: BlockPos, _block_state: BlockStateId) {
-        self.play_sound(&sound_events::entity.witch.step, 0.15, 1.0);
+        self.play_sound(&sound_events::ENTITY_WITCH_STEP, 0.15, 1.0);
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
@@ -199,11 +199,11 @@ impl LivingEntity for WitchEntity {
     }
 
     fn hurt_sound(&self, _source: &DamageSource) -> Option<SoundEventRef> {
-        Some(&sound_events::entity.witch.hurt)
+        Some(&sound_events::ENTITY_WITCH_HURT)
     }
 
     fn death_sound(&self) -> Option<SoundEventRef> {
-        Some(&sound_events::entity.witch.death)
+        Some(&sound_events::ENTITY_WITCH_DEATH)
     }
 
     fn should_drop_experience(&self) -> bool {
@@ -237,7 +237,7 @@ impl Mob for WitchEntity {
     }
 
     fn ambient_sound(&self) -> Option<SoundEventRef> {
-        Some(&sound_events::entity.witch.ambient)
+        Some(&sound_events::ENTITY_WITCH_AMBIENT)
     }
 
     fn mob_flags(&self) -> i8 {

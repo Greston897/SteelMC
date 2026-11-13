@@ -15,7 +15,7 @@ use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::GhastEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
-use steel_utils::{DowncastType, DowncastTypeKey};
+use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
@@ -167,7 +167,7 @@ impl Entity for GhastEntity {
     }
 
     fn play_step_sound(&self, _pos: BlockPos, _block_state: BlockStateId) {
-        self.play_sound(&sound_events::entity.ghast.step, 0.15, 1.0);
+        self.play_sound(&sound_events::ENTITY_GHAST_STEP, 0.15, 1.0);
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
@@ -199,11 +199,11 @@ impl LivingEntity for GhastEntity {
     }
 
     fn hurt_sound(&self, _source: &DamageSource) -> Option<SoundEventRef> {
-        Some(&sound_events::entity.ghast.hurt)
+        Some(&sound_events::ENTITY_GHAST_HURT)
     }
 
     fn death_sound(&self) -> Option<SoundEventRef> {
-        Some(&sound_events::entity.ghast.death)
+        Some(&sound_events::ENTITY_GHAST_DEATH)
     }
 
     fn should_drop_experience(&self) -> bool {
@@ -237,7 +237,7 @@ impl Mob for GhastEntity {
     }
 
     fn ambient_sound(&self) -> Option<SoundEventRef> {
-        Some(&sound_events::entity.ghast.ambient)
+        Some(&sound_events::ENTITY_GHAST_AMBIENT)
     }
 
     fn mob_flags(&self) -> i8 {

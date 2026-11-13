@@ -149,7 +149,7 @@ use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::stat::vanilla_stat_types;
 use steel_utils::{
-    BlockPos, BlockStateId, ChunkPos, DowncastType, DowncastTypeKey, Identifier, UuidExt as _,
+    BlockPos, BlockStateId, ChunkPos, DowncastType, DowncastTypeKey, UuidExt as _,
 };
 
 use crate::inventory::container::Container;
