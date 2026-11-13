@@ -1,5 +1,6 @@
 use steel_utils::translations;
 
+use super::scoreboard_sync;
 use super::{
     Arc, CPlayerInfoUpdate, CRemovePlayerInfo, CancellationToken, ClientPacket, ConnectionProtocol,
     DomainPlayerState, EncodedPacket, Entity, GlobalPlayerData, Instant, JoinSet,
@@ -304,6 +305,9 @@ impl Server {
             return;
         }
         let previous_name = self.record_known_player(&player.gameprofile);
+        // Vanilla `ServerScoreboard#addPlayer`: the joining player receives the
+        // whole scoreboard so sidebars and tab-list numbers appear immediately.
+        scoreboard_sync::sync_on_join(self, &player);
         self.broadcast_player_join_message(&player, previous_name.as_deref());
         if player.mark_joined_world() {
             player.send_inventory_to_remote();

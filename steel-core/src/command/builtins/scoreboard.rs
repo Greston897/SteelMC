@@ -17,6 +17,7 @@ use super::super::{
     registration::CommandRegistration,
 };
 use crate::scoreboard::{ScoreHolder, Scoreboard, ScoreboardObjective};
+use crate::server::scoreboard_sync;
 
 pub(super) fn registration() -> CommandRegistration<CommandSource> {
     CommandRegistration::new(Identifier::vanilla_static("scoreboard"), |_| command())
@@ -46,6 +47,22 @@ fn objectives_node() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
             ),
         )
         .then(literal("list").executes(list_objectives))
+        .then(
+            literal("modify").then(
+                argument("objective", SteelArgumentType::objective()).then(
+                    literal("displayname")
+                        .then(argument("displayName", ArgumentType::word()).executes(set_display_name))
+                        .then(literal("reset").executes(reset_display_name)),
+                ),
+            ),
+        )
+        .then(
+            literal("setdisplay").then(
+                argument("slot", ArgumentType::word()).then(
+                    argument("objective", SteelArgumentType::objective()).executes(set_display),
+                ),
+            ),
+        )
 }
 
 fn players_node() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
@@ -82,6 +99,11 @@ fn players_node() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         .then(literal("reset").then(targets().executes(reset_score)))
         .then(literal("get").then(targets().executes(get_score)))
         .then(literal("enable").then(targets().executes(enable_trigger)))
+}
+
+/// Domain name owning the scoreboard the command runs against.
+fn domain_of(context: &SteelCommandContext<CommandSource>) -> String {
+    context.source().world().domain().to_owned()
 }
 
 fn scoreboard_of(
@@ -129,6 +151,9 @@ fn create_objective(
     scoreboard
         .add_objective(name)
         .map_err(|error| CommandSyntaxError::dynamic(error.to_string()))?;
+    // Vanilla `ServerScoreboard#onObjectiveAdded` pushes the new objective to
+    // every tracker immediately, so the client can render it right away.
+    scoreboard_sync::sync_objective_added(context.source().server(), &domain_of(context), name);
     context.source().send_success(
         &TextComponent::plain(format!("Created objective '{name}'")),
         false,
@@ -144,8 +169,90 @@ fn remove_objective(
     scoreboard
         .remove_objective(name)
         .map_err(|error| CommandSyntaxError::dynamic(error.to_string()))?;
+    scoreboard_sync::sync_objective_removed(context.source().server(), &domain_of(context), name);
     context.source().send_success(
         &TextComponent::plain(format!("Removed objective '{name}'")),
+        false,
+    );
+    Ok(1)
+}
+
+/// Vanilla `DisplaySlot` names accepted by `/scoreboard objectives setdisplay`.
+const DISPLAY_SLOTS: &[(&str, i32)] = &[
+    ("list", scoreboard_sync::display_slot::LIST),
+    ("sidebar", scoreboard_sync::display_slot::SIDEBAR),
+    ("below_name", 2),
+];
+
+fn set_display_name(
+    context: &SteelCommandContext<CommandSource>,
+) -> Result<i32, CommandSyntaxError> {
+    let scoreboard = scoreboard_of(context)?;
+    let name = context.objective_name("objective")?;
+    let display = context.string("displayName")?.to_owned();
+    scoreboard
+        .set_display_name(name, &display)
+        .map_err(|error| CommandSyntaxError::dynamic(error.to_string()))?;
+    scoreboard_sync::sync_objective_updated(
+        context.source().server(),
+        &domain_of(context),
+        name,
+        &display,
+        scoreboard.is_read_only(name),
+    );
+    context.source().send_success(
+        &TextComponent::plain(format!("Set display name of objective '{name}' to '{display}'")),
+        false,
+    );
+    Ok(1)
+}
+
+fn reset_display_name(
+    context: &SteelCommandContext<CommandSource>,
+) -> Result<i32, CommandSyntaxError> {
+    let scoreboard = scoreboard_of(context)?;
+    let name = context.objective_name("objective")?;
+    // Vanilla resets the display name to the objective name itself.
+    scoreboard
+        .set_display_name(name, name)
+        .map_err(|error| CommandSyntaxError::dynamic(error.to_string()))?;
+    scoreboard_sync::sync_objective_updated(
+        context.source().server(),
+        &domain_of(context),
+        name,
+        name,
+        scoreboard.is_read_only(name),
+    );
+    context.source().send_success(
+        &TextComponent::plain(format!("Reset display name of objective '{name}'")),
+        false,
+    );
+    Ok(1)
+}
+
+fn set_display(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
+    let scoreboard = scoreboard_of(context)?;
+    let slot_name = context.string("slot")?.to_owned();
+    let Some((_, slot)) = DISPLAY_SLOTS.iter().find(|(name, _)| *name == slot_name) else {
+        return Err(CommandSyntaxError::dynamic(format!(
+            "Unknown display slot '{slot_name}'"
+        )));
+    };
+    let objective = context.objective_name("objective")?.to_owned();
+    if scoreboard.objective(&objective).is_none() {
+        return Err(CommandSyntaxError::dynamic(format!(
+            "Unknown objective '{objective}'"
+        )));
+    }
+    scoreboard.set_display_slot(*slot, &objective);
+    scoreboard_sync::sync_display_slot(
+        context.source().server(),
+        &domain_of(context),
+        *slot,
+        &objective,
+    );
+    context.source().send_success(
+        &TextComponent::plain(format!("Set display slot '{slot_name}' to objective '{objective}'")),
         false,
     );
     Ok(1)
@@ -196,6 +303,13 @@ fn write_scores(
         scoreboard
             .set_score(holder, &objective, next)
             .map_err(|error| CommandSyntaxError::dynamic(error.to_string()))?;
+        scoreboard_sync::sync_score_changed(
+            context.source().server(),
+            &domain_of(context),
+            holder.name(),
+            objective.name(),
+            next,
+        );
     }
     Ok(i32::try_from(holders.len()).unwrap_or(0))
 }
@@ -222,6 +336,12 @@ fn reset_score(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comm
         scoreboard
             .remove_score(holder, &objective)
             .map_err(|error| CommandSyntaxError::dynamic(error.to_string()))?;
+        scoreboard_sync::sync_score_removed(
+            context.source().server(),
+            &domain_of(context),
+            holder.name(),
+            objective.name(),
+        );
     }
     Ok(i32::try_from(holders.len()).unwrap_or(0))
 }

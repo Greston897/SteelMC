@@ -4,6 +4,7 @@ use super::{
     TabListTickStats, TextComponent, Uuid, client_permission_event, command_tree_packet,
     translations,
 };
+use crate::scoreboard::Scoreboard;
 
 impl Server {
     /// Logs and broadcasts a system chat message to online players.
@@ -55,6 +56,18 @@ impl Server {
             }
             true
         });
+    }
+
+    /// Returns the objective bound to each display slot of a domain's scoreboard.
+    ///
+    /// Used when a player joins so the sidebar and tab-list numbers appear
+    /// without waiting for the next mutation.
+    #[must_use]
+    pub fn scoreboard_display_slots(&self, domain: &str) -> Vec<(i32, String)> {
+        self.scoreboards
+            .get(domain)
+            .map(Scoreboard::display_slots)
+            .unwrap_or_default()
     }
 
     /// Builds the tab list header/footer with recent and five-second tick statistics.

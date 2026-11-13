@@ -117,6 +117,11 @@ const fn default_score_locked() -> bool {
 #[serde(default, deny_unknown_fields)]
 struct ObjectiveState {
     read_only: bool,
+    /// Name shown to clients; `None` means "same as the objective name".
+    ///
+    /// Vanilla `Objective#getDisplayName`, which defaults to the name.
+    #[serde(default)]
+    display_name: Option<String>,
     /// Statistic this objective tracks, if it was created with a stat criterion.
     ///
     /// Vanilla allows any criterion id here; Steel only models the statistic
@@ -207,6 +212,12 @@ struct PersistentScoreboard {
     /// Vanilla keeps these on the scoreboard so they persist with the level and
     /// are visible to `/execute if stopwatch`.
     stopwatches: BTreeMap<String, StopwatchState>,
+    /// Objective bound to each vanilla `DisplaySlot` ordinal.
+    ///
+    /// Vanilla `Scoreboard#displayObjectives`; slots without an objective are
+    /// absent rather than mapped to an empty string.
+    #[serde(default)]
+    display_slots: BTreeMap<i32, String>,
 }
 
 /// One named stopwatch.
@@ -379,6 +390,7 @@ impl Scoreboard {
             name.clone(),
             ObjectiveState {
                 read_only,
+                display_name: None,
                 criterion: None,
             },
         );
@@ -410,6 +422,7 @@ impl Scoreboard {
             name.clone(),
             ObjectiveState {
                 read_only: false,
+                display_name: None,
                 criterion: Some(criterion),
             },
         );
@@ -754,6 +767,138 @@ impl Scoreboard {
             .map_or_else(BTreeSet::new, |scores| scores.keys().cloned().collect())
     }
 
+    /// Binds an objective to a display slot, or clears it when `objective` is empty.
+    ///
+    /// Mirrors vanilla `Scoreboard#setDisplayObjective`.
+    pub fn set_display_slot(&self, slot: i32, objective: &str) {
+        let mut state = self.state.write();
+        if objective.is_empty() {
+            state.display_slots.remove(&slot);
+        } else {
+            state.display_slots.insert(slot, objective.to_owned());
+        }
+        drop(state);
+        self.mark_dirty();
+    }
+
+    /// Returns every bound display slot as `(slot, objective)` in stable order.
+    #[must_use]
+    pub fn display_slots(&self) -> Vec<(i32, String)> {
+        self.state
+            .read()
+            .display_slots
+            .iter()
+            .map(|(slot, objective)| (*slot, objective.clone()))
+            .collect()
+    }
+
+    /// Sets the client-visible name of an objective.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the objective does not exist.
+    pub fn set_display_name(&self, name: &str, display: &str) -> Result<(), ScoreboardError> {
+        let mut state = self.state.write();
+        let Some(objective) = state.objectives.get_mut(name) else {
+            return Err(ScoreboardError::MissingObjective(name.to_owned()));
+        };
+        objective.display_name = Some(display.to_owned());
+        drop(state);
+        self.mark_dirty();
+        Ok(())
+    }
+
+    /// Returns the client-visible name of an objective, defaulting to its name.
+    #[must_use]
+    pub fn display_name(&self, name: &str) -> Option<String> {
+        let state = self.state.read();
+        let objective = state.objectives.get(name)?;
+        Some(
+            objective
+                .display_name
+                .clone()
+                .unwrap_or_else(|| name.to_owned()),
+        )
+    }
+
+    /// Returns whether an objective exists and is read-only.
+    #[must_use]
+    pub fn is_read_only(&self, name: &str) -> bool {
+        self.state
+            .read()
+            .objectives
+            .get(name)
+            .is_some_and(|objective| objective.read_only)
+    }
+
+    /// Objective names in stable order, with their read-only flag.
+    #[must_use]
+    pub fn objective_states(&self) -> Vec<(String, bool)> {
+        self.state
+            .read()
+            .objectives
+            .iter()
+            .map(|(name, state)| (name.clone(), state.read_only))
+            .collect()
+    }
+
+    /// Objective names in stable order with the client-visible display name.
+    #[must_use]
+    pub fn objective_display_names(&self) -> Vec<(String, String, bool)> {
+        self.state
+            .read()
+            .objectives
+            .iter()
+            .map(|(name, state)| {
+                (
+                    name.clone(),
+                    state.display_name.clone().unwrap_or_else(|| name.clone()),
+                    state.read_only,
+                )
+            })
+            .collect()
+    }
+
+    /// Every stored score as `(holder, objective, value)` in stable order.
+    ///
+    /// Used for the initial client synchronisation: vanilla sends the whole
+    /// scoreboard when a player joins a level.
+    #[must_use]
+    pub fn score_snapshot(&self) -> Vec<(String, String, i32)> {
+        self.state
+            .read()
+            .scores
+            .iter()
+            .flat_map(|(holder, scores)| {
+                scores
+                    .iter()
+                    .map(|(objective, score)| (holder.clone(), objective.clone(), score.value))
+            })
+            .collect()
+    }
+
+    /// Team names with their full state, in stable order.
+    #[must_use]
+    pub fn team_states(&self) -> Vec<(String, TeamState)> {
+        self.state
+            .read()
+            .teams
+            .iter()
+            .map(|(name, state)| (name.clone(), state.clone()))
+            .collect()
+    }
+
+    /// Every team membership as `(team, holder)` in stable order.
+    #[must_use]
+    pub fn team_member_snapshot(&self) -> Vec<(String, String)> {
+        self.state
+            .read()
+            .holder_teams
+            .iter()
+            .map(|(holder, team)| (team.clone(), holder.clone()))
+            .collect()
+    }
+
     fn mark_dirty(&self) {
         self.revision.fetch_add(1, Ordering::Release);
     }
@@ -963,6 +1108,84 @@ mod tests {
         AsyncMutex, DomainScoreboards, PersistentScoreboard, ScoreHolder, Scoreboard,
         ScoreboardError,
     };
+
+    #[test]
+    fn display_slots_bind_and_clear_objectives() {
+        let scoreboard = Scoreboard::new();
+        scoreboard
+            .add_objective("kills")
+            .expect("objective should be added");
+        assert!(scoreboard.display_slots().is_empty());
+
+        scoreboard.set_display_slot(1, "kills");
+        assert_eq!(scoreboard.display_slots(), vec![(1, "kills".to_owned())]);
+
+        // An empty objective name clears the slot, matching vanilla
+        // `Scoreboard#setDisplayObjective(slot, null)`.
+        scoreboard.set_display_slot(1, "");
+        assert!(scoreboard.display_slots().is_empty());
+    }
+
+    #[test]
+    fn display_name_defaults_to_the_objective_name() {
+        let scoreboard = Scoreboard::new();
+        scoreboard
+            .add_objective("kills")
+            .expect("objective should be added");
+        assert_eq!(scoreboard.display_name("kills").as_deref(), Some("kills"));
+
+        scoreboard
+            .set_display_name("kills", "Player Kills")
+            .expect("display name should be settable");
+        assert_eq!(
+            scoreboard.display_name("kills").as_deref(),
+            Some("Player Kills")
+        );
+        // Renaming does not affect the stored objective name.
+        assert!(scoreboard.objective("kills").is_some());
+    }
+
+    #[test]
+    fn snapshots_cover_every_stored_entry() {
+        let scoreboard = Scoreboard::new();
+        let kills = scoreboard
+            .add_objective("kills")
+            .expect("objective should be added");
+        let deaths = scoreboard
+            .add_objective("deaths")
+            .expect("objective should be added");
+        let holder = ScoreHolder::new("Steve");
+        scoreboard
+            .set_score(&holder, &kills, 3)
+            .expect("score should be writable");
+        scoreboard
+            .set_score(&holder, &deaths, 1)
+            .expect("score should be writable");
+        scoreboard
+            .add_team("red")
+            .expect("team should be added");
+        scoreboard
+            .add_holder_to_team(&holder, &scoreboard.team("red").expect("team exists"))
+            .expect("holder should join the team");
+
+        // The join synchronisation sends everything the client needs to render
+        // the scoreboard, so the snapshots must not drop entries.
+        assert_eq!(scoreboard.objective_states().len(), 2);
+        let mut scores = scoreboard.score_snapshot();
+        scores.sort();
+        assert_eq!(
+            scores,
+            vec![
+                ("Steve".to_owned(), "deaths".to_owned(), 1),
+                ("Steve".to_owned(), "kills".to_owned(), 3),
+            ]
+        );
+        assert_eq!(scoreboard.team_states().len(), 1);
+        assert_eq!(
+            scoreboard.team_member_snapshot(),
+            vec![("red".to_owned(), "Steve".to_owned())]
+        );
+    }
 
     #[test]
     fn score_value_and_lock_state_are_independent() {

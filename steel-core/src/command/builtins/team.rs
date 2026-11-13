@@ -14,6 +14,7 @@ use super::super::{
     },
     registration::CommandRegistration,
 };
+use crate::server::scoreboard_sync;
 use crate::scoreboard::{ScoreHolder, TeamState, TeamVisibility};
 
 pub(super) fn registration() -> CommandRegistration<CommandSource> {
@@ -148,6 +149,9 @@ fn add_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Command
     scoreboard
         .add_team(name.clone())
         .map_err(|error| CommandSyntaxError::dynamic(error.to_string()))?;
+    if let Some(state) = scoreboard.team_state(&name) {
+        scoreboard_sync::sync_team_added(context.source().server(), &domain_of(context), &name, &state);
+    }
 
     context.source().send_success(
         &TextComponent::plain(format!("Created new team {name}")),
@@ -164,6 +168,7 @@ fn remove_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comm
             "Team {name} does not exist"
         )));
     }
+    scoreboard_sync::sync_team_removed(context.source().server(), &domain_of(context), &name);
 
     context.source().send_success(
         &TextComponent::plain(format!("Removed team {name}")),
@@ -188,6 +193,13 @@ fn empty_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comma
     for member in &members {
         scoreboard.remove_holder_from_team(&ScoreHolder::new(member.clone()));
     }
+    scoreboard_sync::sync_team_membership(
+        context.source().server(),
+        &domain_of(context),
+        &name,
+        &members,
+        false,
+    );
 
     context.source().send_success(
         &TextComponent::plain(format!("Emptied team {name}")),
@@ -213,6 +225,14 @@ fn join_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
             .add_holder_to_team(holder, &team)
             .map_err(|error| CommandSyntaxError::dynamic(error.to_string()))?;
     }
+    let names: Vec<String> = holders.iter().map(|holder| holder.name().to_owned()).collect();
+    scoreboard_sync::sync_team_membership(
+        context.source().server(),
+        &domain_of(context),
+        &name,
+        &names,
+        true,
+    );
 
     context.source().send_success(
         &TextComponent::plain(format!(
@@ -285,11 +305,12 @@ where
 {
     let name = context.string("team")?.to_owned();
     let scoreboard = scoreboard(context)?;
-    if scoreboard.update_team(&name, f).is_none() {
+    let Some(state) = scoreboard.update_team(&name, f) else {
         return Err(CommandSyntaxError::dynamic(format!(
             "Team {name} does not exist"
         )));
-    }
+    };
+    scoreboard_sync::sync_team_updated(context.source().server(), &domain_of(context), &name, &state);
 
     context.source().send_success(
         &TextComponent::plain(format!("Modified team {name}")),
@@ -311,6 +332,11 @@ fn modify_component(
         ComponentPart::Prefix => team.prefix = text.clone(),
         ComponentPart::Suffix => team.suffix = text.clone(),
     })
+}
+
+/// Domain name owning the scoreboard the command runs against.
+fn domain_of(context: &SteelCommandContext<CommandSource>) -> String {
+    context.source().world().domain().to_owned()
 }
 
 fn scoreboard<'a>(
