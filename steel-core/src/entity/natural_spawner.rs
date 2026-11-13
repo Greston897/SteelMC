@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use rand::RngExt;
+use rand::Rng;
 use steel_registry::entity_type::{EntityTypeRef, MobCategory};
 use steel_utils::{BlockPos, types::Difficulty};
 

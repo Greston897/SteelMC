@@ -6,7 +6,7 @@ use crate::behavior::blocks::MultifaceBlock;
 use crate::behavior::blocks::vegetation::bonemealable::Bonemealable;
 use crate::behavior::context::BlockPlaceContext;
 use crate::world::{LevelReader, ScheduledTickAccess, World};
-use rand::RngExt;
+use rand::Rng;
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;

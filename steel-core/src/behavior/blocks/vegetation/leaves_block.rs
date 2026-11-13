@@ -2,7 +2,7 @@
 //!
 use std::sync::Arc;
 
-use rand::RngExt;
+use rand::Rng;
 
 use crate::{
     behavior::{

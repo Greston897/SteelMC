@@ -3,7 +3,7 @@
 use std::ops::RangeInclusive;
 use std::sync::Arc;
 
-use rand::RngExt;
+use rand::Rng;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::{NbtCompound, NbtTag};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;

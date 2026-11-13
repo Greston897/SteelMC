@@ -1,6 +1,6 @@
 //! Entity-type spawn placement dispatch.
 
-use rand::RngExt;
+use rand::Rng;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_utils::{BlockPos, types::Difficulty};
 

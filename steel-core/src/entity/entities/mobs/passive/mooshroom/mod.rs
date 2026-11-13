@@ -3,7 +3,7 @@
 use std::sync::{Arc, Weak};
 
 use glam::DVec3;
-use rand::RngExt;
+use rand::Rng;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use simdnbt::{FromNbtTag as _, ToNbtTag as _};

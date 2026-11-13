@@ -1,4 +1,4 @@
-use rand::RngExt;
+use rand::Rng;
 use std::sync::Arc;
 use steel_macros::block_behavior;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
