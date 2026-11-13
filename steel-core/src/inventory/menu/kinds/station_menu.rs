@@ -9,7 +9,7 @@
 
 use steel_registry::item_stack::ItemStack;
 use steel_registry::recipe::{SingleItemRecipeInput, vanilla_recipe_types};
-use steel_registry::menu_type::MenuTypeRef;
+use steel_registry::menu_type::MenuType;
 use steel_registry::{REGISTRY, vanilla_menu_types};
 use steel_utils::locks::IntoShared;
 
@@ -62,7 +62,7 @@ pub fn loom(inventory: Shared<PlayerInventory>, container_id: u8) -> Menu {
     let input = SimpleContainer::new(3).into_shared();
     let result = SimpleContainer::new(1).into_shared();
     build_station_with_result(
-        vanilla_menu_types::LOOM,
+        &vanilla_menu_types::LOOM,
         inventory,
         container_id,
         input,
@@ -80,7 +80,7 @@ pub fn cartography_table(inventory: Shared<PlayerInventory>, container_id: u8) -
     let input = SimpleContainer::new(2).into_shared();
     let result = SimpleContainer::new(1).into_shared();
     build_station_with_result(
-        vanilla_menu_types::CARTOGRAPHY_TABLE,
+        &vanilla_menu_types::CARTOGRAPHY_TABLE,
         inventory,
         container_id,
         input,
@@ -99,7 +99,7 @@ pub fn smithing(inventory: Shared<PlayerInventory>, container_id: u8) -> Menu {
     let input = SimpleContainer::new(3).into_shared();
     let result = SimpleContainer::new(1).into_shared();
     build_station_with_result(
-        vanilla_menu_types::SMITHING,
+        &vanilla_menu_types::SMITHING,
         inventory,
         container_id,
         input,
@@ -201,7 +201,7 @@ fn build_stonecutter(
 ) -> Menu {
     let input_ref: ContainerRef = input.into();
     let result_ref: ContainerRef = result.into();
-    let mut builder = MenuBuilder::new(vanilla_menu_types::STONECUTTER, container_id);
+    let mut builder = MenuBuilder::new(&vanilla_menu_types::STONECUTTER, container_id);
     let input_section = builder.section_all(input_ref.clone());
     let _result_section = builder.section_at(result_ref.clone(), [0], SectionKind::take_only());
     let player = builder.player_inventory(&inventory);
@@ -215,7 +215,7 @@ fn build_stonecutter(
 
 /// Builds a station menu with a dedicated result slot after the inputs.
 fn build_station_with_result(
-    menu_type: MenuTypeRef,
+    menu_type: &'static MenuType,
     inventory: Shared<PlayerInventory>,
     container_id: u8,
     input: Shared<SimpleContainer>,
@@ -233,7 +233,7 @@ fn build_station_with_result(
 
 /// Shared builder used by every station menu.
 fn build_station(
-    menu_type: MenuTypeRef,
+    menu_type: &'static MenuType,
     inventory: Shared<PlayerInventory>,
     container_id: u8,
     input: Shared<SimpleContainer>,

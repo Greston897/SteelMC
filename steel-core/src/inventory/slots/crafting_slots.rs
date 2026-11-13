@@ -17,7 +17,6 @@ use crate::{
 };
 
 /// A Recipe Handler for Crafting Recipes
-#[derive(Clone)]
 pub struct CraftingHandler {
     crafting_container: Shared<CraftingContainer>,
     result_container: Shared<ResultContainer>,

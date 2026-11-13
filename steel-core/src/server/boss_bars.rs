@@ -13,6 +13,8 @@ use steel_utils::locks::SyncMutex;
 use text_components::TextComponent;
 use uuid::Uuid;
 
+use crate::entity::Entity as _;
+
 use crate::player::Player;
 
 /// One registered boss bar.

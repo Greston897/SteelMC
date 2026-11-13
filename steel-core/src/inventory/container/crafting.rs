@@ -56,8 +56,8 @@ impl CraftingContainer {
     /// grid slots.
     #[must_use]
     pub fn as_positioned_input(&self) -> PositionedCraftingInput {
-        let mut input =
-            CraftingInput::positioned(self.width, self.height, self.items.clone()).input;
+        let mut positioned =
+            CraftingInput::positioned(self.width, self.height, self.items.clone());
         // Vanilla `MapExtendingRecipe.matches` reads the centre map's saved data:
         // only a non-exploration map below the maximum scale may be extended.
         // Steel has no saved map data yet, so the facts come from the stack's
@@ -70,7 +70,7 @@ impl CraftingContainer {
             }
             // A crafted map tree starts at scale 0 and is never an exploration
             // map, which is exactly the state the extending recipe accepts.
-            input = input.with_map_data(
+            positioned.input = positioned.input.with_map_data(
                 slot,
                 MapRecipeData {
                     exploration_map: false,
@@ -78,7 +78,7 @@ impl CraftingContainer {
                 },
             );
         }
-        input
+        positioned
     }
 
     /// Returns a reference to the items in the grid.
