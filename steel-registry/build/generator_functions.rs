@@ -192,6 +192,19 @@ fn generate_component_patch(components: &serde_json::Value, owner: &str) -> Toke
                     banner_patterns_tokens(component),
                 ),
                 "minecraft:rarity" => (quote! { RARITY }, rarity_tokens(component)),
+                "minecraft:item_name" | "minecraft:custom_name" => (
+                    if key == "minecraft:item_name" {
+                        quote! { ITEM_NAME }
+                    } else {
+                        quote! { CUSTOM_NAME }
+                    },
+                    generate_text_component(
+                        &serde_json::from_value(component.clone()).unwrap_or_else(|error| panic!(
+                            "Invalid {} for {owner}: {error}",
+                            key
+                        )),
+                    ),
+                ),
                 "minecraft:tooltip_display" => (
                     quote! { TOOLTIP_DISPLAY },
                     tooltip_display_tokens(component),
@@ -289,14 +302,14 @@ fn tooltip_display_tokens(value: &serde_json::Value) -> TokenStream {
                     let key = key.parse::<Identifier>().unwrap_or_else(|error| {
                         panic!("Hidden component {key} is not an identifier: {error}")
                     });
-                    quote! { Identifier::vanilla_static(#key) }
+                    generate_identifier(&key)
                 })
                 .collect()
         })
         .unwrap_or_default();
     quote! {{
         let display = TooltipDisplay::new(#hide_tooltip);
-        #(let display = display.with_hidden_key(Identifier::vanilla_static(#hidden), true);)*
+        #(let display = display.with_hidden_key(#hidden, true);)*
         display
     }}
 }
