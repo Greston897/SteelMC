@@ -322,8 +322,9 @@ pub use c_update_mob_effect::{CUpdateMobEffect, MobEffectPacketFlags};
 pub use c_update_recipes::{CUpdateRecipes, RecipeEntry};
 pub use c_waypoint::{CWaypoint, WaypointData, WaypointOperation};
 pub use chat::{
-    ArgumentSignature, LastSeenMessagesUpdate, ProtocolRemoteChatSessionData, SChatCommand,
-    SChatCommandSigned, SChatSessionUpdate,
+    ArgumentSignature, CDisguisedChat, CPlayerChat, CSystemChat, ChatTypeBound, FilterType,
+    LastSeenMessagesUpdate, PreviousMessage, ProtocolRemoteChatSessionData, SChat, SChatAck,
+    SChatCommand, SChatCommandSigned, SChatSessionUpdate,
 };
 pub use chunk::{
     BlockEntityInfo, CChunkBatchFinished, CChunkBatchStart, CForgetLevelChunk,
