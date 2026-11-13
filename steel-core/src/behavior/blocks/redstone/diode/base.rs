@@ -72,7 +72,7 @@ impl DiodeBlock {
         }
 
         let target_state = level.get_block_state(target_pos);
-        let wire_power = if target_state.get_block() == &*vanilla_blocks::REDSTONE_WIRE {
+        let wire_power = if target_state.get_block() == &vanilla_blocks::REDSTONE_WIRE {
             i32::from(target_state.get_value(POWER))
         } else {
             MIN_REDSTONE_SIGNAL

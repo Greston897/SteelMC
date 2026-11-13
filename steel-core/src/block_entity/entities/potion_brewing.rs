@@ -6,7 +6,7 @@
 //! brew operation may start, matching `PotionBrewing` method for method.
 
 use steel_registry::item_stack::ItemStack;
-use steel_registry::{REGISTRY, RegistryExt, vanilla_items};
+use steel_registry::{REGISTRY, RegistryEntry as _, RegistryExt, vanilla_items};
 use steel_utils::Identifier;
 
 /// One base-potion-plus-ingredient brewing recipe.

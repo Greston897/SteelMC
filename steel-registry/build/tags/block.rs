@@ -25,41 +25,11 @@ fn read_all_fabric_tags(tag_file: &str) -> FxHashMap<String, Vec<String>> {
     FxHashMap::default()
 }
 
-/// Tags that vanilla ships but the extracted asset set does not cover yet.
-///
-/// `copper_chests` groups the eight copper chest variants so the chest block can
-/// recognise its own halves; without it the double-chest connection would fall
-/// back to a block-identity comparison and the waxed pairs would not link.
-fn synthetic_tags() -> FxHashMap<String, Vec<String>> {
-    let mut tags = FxHashMap::default();
-    tags.insert(
-        "copper_chests".to_owned(),
-        vec![
-            "copper_chest".to_owned(),
-            "exposed_copper_chest".to_owned(),
-            "weathered_copper_chest".to_owned(),
-            "oxidized_copper_chest".to_owned(),
-            "waxed_copper_chest".to_owned(),
-            "waxed_exposed_copper_chest".to_owned(),
-            "waxed_weathered_copper_chest".to_owned(),
-            "waxed_oxidized_copper_chest".to_owned(),
-        ],
-    );
-    // Vanilla 26.3 ships this tag as an (empty) extension point for datapacks;
-    // registering it here keeps the constant available even when the extracted
-    // asset set predates it.
-    tags.entry("consumable_does_not_teleport_to".to_owned())
-        .or_default();
-
-    tags
-}
-
 pub(crate) fn build() -> TokenStream {
     let tag_dir = "../steel-utils/build_assets/builtin_datapacks/minecraft/tags/block";
     println!("cargo:rerun-if-changed={tag_dir}");
     let mut all_tags = common::read_all_tags(tag_dir);
     all_tags.extend(read_all_fabric_tags("build_assets/tags.json"));
-    all_tags.extend(synthetic_tags());
 
     let sorted_tags = common::resolve_all_tags(&all_tags);
 

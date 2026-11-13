@@ -64,7 +64,7 @@ impl ScaffoldingBlock {
         let below_pos = pos.below();
         let below_state = world.get_block_state(below_pos);
         let mut distance = Self::STABILITY_MAX_DISTANCE;
-        if below_state.get_block() == &*vanilla_blocks::SCAFFOLDING {
+        if below_state.get_block() == &vanilla_blocks::SCAFFOLDING {
             distance = below_state.get_value(STABILITY_DISTANCE);
         } else if world.is_face_sturdy(below_state, below_pos, Direction::Up) {
             return 0;
@@ -72,7 +72,7 @@ impl ScaffoldingBlock {
 
         for direction in Direction::HORIZONTAL {
             let neighbor_state = world.get_block_state(pos.relative(direction));
-            if neighbor_state.get_block() == &*vanilla_blocks::SCAFFOLDING {
+            if neighbor_state.get_block() == &vanilla_blocks::SCAFFOLDING {
                 distance = distance.min(neighbor_state.get_value(STABILITY_DISTANCE) + 1);
                 if distance == 1 {
                     break;

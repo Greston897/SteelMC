@@ -146,7 +146,7 @@ fn compare_ray_mode(expected: &TntExplosionFixture, recorded_rays: bool) {
     assert_tnt_priming(world, &affected, &tnt, &expected.primed_tnt);
     let survivors = tnt
         .into_iter()
-        .filter(|&pos| world.get_block_state(pos).get_block() == &*vanilla_blocks::TNT)
+        .filter(|&pos| world.get_block_state(pos).get_block() == &vanilla_blocks::TNT)
         .map(|pos| [pos.x(), pos.y(), pos.z()])
         .collect::<Vec<_>>();
     assert_eq!(survivors, expected.surviving_tnt);

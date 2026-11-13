@@ -156,7 +156,7 @@ impl FeatureDecorationRunner {
         total_height: i32,
         is_huge: bool,
     ) {
-        let place_vines = hat_state.get_block() == &*vanilla_blocks::NETHER_WART_BLOCK;
+        let place_vines = hat_state.get_block() == &vanilla_blocks::NETHER_WART_BLOCK;
         let hat_height = (random.next_i32_bounded(1 + total_height / 3) + 5).min(total_height);
         let hat_start_y = total_height - hat_height;
 

@@ -63,7 +63,7 @@ impl FeatureDecorationRunner {
     ) -> bool {
         let below_pos = pos.below();
         let below = region.block_state(below_pos);
-        if below.get_block() == &*vanilla_blocks::DIRT_PATH {
+        if below.get_block() == &vanilla_blocks::DIRT_PATH {
             return random.next_bool();
         }
 

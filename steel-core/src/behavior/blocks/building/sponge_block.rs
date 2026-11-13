@@ -89,7 +89,7 @@ impl SpongeBlock {
             return true;
         }
 
-        if state.get_block() == &*vanilla_blocks::WATER {
+        if state.get_block() == &vanilla_blocks::WATER {
             return world.set_block_if_unchanged(
                 pos,
                 state,

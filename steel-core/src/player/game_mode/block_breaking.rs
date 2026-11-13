@@ -32,7 +32,7 @@ use super::adventure_mode;
 
 /// Vanilla `GameMasterBlock` implementors: blocks that only an operator at
 /// creative level two may break.
-fn is_game_master_block(block: &steel_registry::blocks::BlockRef) -> bool {
+fn is_game_master_block(block: steel_registry::blocks::BlockRef) -> bool {
     block.key == vanilla_blocks::COMMAND_BLOCK.key
         || block.key == vanilla_blocks::REPEATING_COMMAND_BLOCK.key
         || block.key == vanilla_blocks::CHAIN_COMMAND_BLOCK.key

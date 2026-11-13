@@ -216,7 +216,7 @@ impl BlockEntityBase {
     }
 
     #[must_use]
-    const fn pos(&self) -> BlockPos {
+    pub const fn pos(&self) -> BlockPos {
         self.pos
     }
 
@@ -284,7 +284,7 @@ impl BlockEntityBase {
     }
 
     #[must_use]
-    fn level(&self) -> Option<Arc<World>> {
+    pub fn level(&self) -> Option<Arc<World>> {
         self.level.upgrade()
     }
 

@@ -60,8 +60,8 @@ impl BeehiveBlock {
         for _ in 0..SMOKE_SEARCH_DISTANCE {
             below = below.below();
             let state = world.get_block_state(below);
-            if state.get_block() == &*vanilla_blocks::CAMPFIRE
-                || state.get_block() == &*vanilla_blocks::SOUL_CAMPFIRE
+            if state.get_block() == &vanilla_blocks::CAMPFIRE
+                || state.get_block() == &vanilla_blocks::SOUL_CAMPFIRE
             {
                 return true;
             }

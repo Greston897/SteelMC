@@ -33,7 +33,7 @@ impl FeatureDecorationRunner {
 
         if is_tall {
             let upper_pos = grass_pos.above();
-            if region.block_state(upper_pos).get_block() == &*vanilla_blocks::WATER {
+            if region.block_state(upper_pos).get_block() == &vanilla_blocks::WATER {
                 let upper_state = state.set_value(
                     &BlockStateProperties::DOUBLE_BLOCK_HALF,
                     DoubleBlockHalf::Upper,

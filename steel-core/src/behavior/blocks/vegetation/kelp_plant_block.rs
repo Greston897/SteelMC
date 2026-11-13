@@ -51,7 +51,7 @@ impl KelpPlantBlock {
     }
 
     fn can_grow_into(state: BlockStateId) -> bool {
-        state.get_block() == &*vanilla_blocks::WATER
+        state.get_block() == &vanilla_blocks::WATER
     }
 }
 

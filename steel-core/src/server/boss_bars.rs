@@ -124,7 +124,7 @@ impl BossBarRegistry {
     /// bar; this method keeps it in sync so later updates only send deltas.
     pub fn sync_viewers(bar: &BossBar, targets: &[Arc<Player>], showing: &mut Vec<Uuid>) {
         for player in targets {
-            let uuid = player.uuid();
+            let uuid = player.base().uuid();
             let already = showing.contains(&uuid);
             if bar.visible && !already {
                 player.send_packet(bar.add_packet());

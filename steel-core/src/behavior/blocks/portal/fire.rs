@@ -91,7 +91,7 @@ impl FireBlock {
         }
 
         let has_obsidian = Direction::ALL.iter().any(|&dir| {
-            world.get_block_state(pos.relative(dir)).get_block() == &*vanilla_blocks::OBSIDIAN
+            world.get_block_state(pos.relative(dir)).get_block() == &vanilla_blocks::OBSIDIAN
         });
         if !has_obsidian {
             return false;

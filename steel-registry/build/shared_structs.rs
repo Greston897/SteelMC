@@ -119,13 +119,7 @@ pub struct ItemStackTemplateJson {
     pub(crate) id: Identifier,
     #[serde(default = "one")]
     pub(crate) count: i32,
-    /// `minecraft:data_components` patch applied to the template, as written in
-    /// the vanilla asset (`{"minecraft:potion_contents": {"potion": "..."}}`).
-    ///
-    /// The supported subset matches recipe results: components that can be
-    /// validated at build time and hashed for the persistent template codec.
-    #[serde(default)]
-    pub(crate) components: Option<serde_json::Value>,
+    // TODO: add components deserialisation
 }
 
 const fn one() -> i32 {

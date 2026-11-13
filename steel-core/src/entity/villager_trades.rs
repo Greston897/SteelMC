@@ -13,7 +13,7 @@
 //! trades that are bought out too often.
 
 use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_items;
+use steel_registry::{RegistryExt as _, vanilla_items};
 
 /// One trade a villager offers.
 #[derive(Clone, Debug)]

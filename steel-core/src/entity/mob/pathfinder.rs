@@ -83,7 +83,7 @@ fn ground_navigation_surface_y<M: Mob + ?Sized>(mob: &M, world: &World, can_floa
         position.z,
     ));
     let mut steps = 0;
-    while state.get_block() == &*vanilla_blocks::WATER {
+    while state.get_block() == &vanilla_blocks::WATER {
         surface += 1;
         state = world.get_block_state(BlockPos::containing(
             position.x,

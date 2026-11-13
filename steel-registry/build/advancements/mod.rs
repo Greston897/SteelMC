@@ -127,24 +127,11 @@ pub(crate) fn build() -> TokenStream {
     stream.extend(quote! {
         use crate::advancement::display::{AdvancementType,DisplayInfo};
         use crate::advancement::{Advancement,AdvancementRewards,AdvancementRequirement};
-        use crate::advancement::criterion::{
-            AnyCriterion, Criterion, ImpossibleInstance, ImpossibleTrigger, SimpleCriterion,
-        };
+        use crate::advancement::criterion::{Criterion,AnyCriterion,ImpossibleInstance,ImpossibleTrigger};
         use crate::advancement::registry::AdvancementRegistry;
         use crate::vanilla_items;
         use crate::vanilla_recipes;
-        use crate::vanilla_mob_effects;
-        use crate::vanilla_potions;
         use crate::ItemStackTemplate;
-        use crate::RegistryReference;
-        use crate::data_components::{DataComponentPatch, vanilla_components};
-        use crate::data_components::vanilla_components::{
-            BannerPatternLayer, BannerPatternLayers, FireworkExplosionShape, PotDecorations,
-            PotionContents, Rarity, SuspiciousStewEffect, SuspiciousStewEffects, TooltipDisplay,
-        };
-        use crate::RegistryHolder;
-        use crate::vanilla_banner_patterns;
-        use crate::DyeColor;
         use crate::recipe::UntypedRecipeRef;
         use text_components::translation::TranslatedMessage;
         use std::collections::BTreeMap;

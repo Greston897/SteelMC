@@ -178,7 +178,7 @@ impl Server {
             if let Some(existing) = existing
                 && !existing.connection.closed()
             {
-                existing.disconnect(translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg());
+                existing.disconnect(text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg()));
             }
 
             tokio::select! {
@@ -206,7 +206,7 @@ impl Server {
             return;
         }
         let Some(reservation) = self.try_reserve_player_join(player.gameprofile.id()) else {
-            player.disconnect(translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg());
+            player.disconnect(text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg()));
             return;
         };
 
@@ -268,13 +268,13 @@ impl Server {
         if let Err(error) = self.admit_reserved_player(Arc::clone(&player)) {
             let reason = match error {
                 PlayerJoinError::DuplicateLogin => {
-                    translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg()
+                    text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg())
                 }
                 PlayerJoinError::ServerFull => {
-                    translations::MULTIPLAYER_DISCONNECT_SERVER_FULL.msg()
+                    text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_SERVER_FULL.msg())
                 }
                 PlayerJoinError::NotWhitelisted => {
-                    translations::MULTIPLAYER_DISCONNECT_NOT_WHITELISTED.msg()
+                    text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_NOT_WHITELISTED.msg())
                 }
                 PlayerJoinError::Banned(reason) => {
                     text_components::TextComponent::plain(reason)

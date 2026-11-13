@@ -71,7 +71,7 @@ impl CampfireBlock {
     }
 
     fn is_smoke_source(state: BlockStateId) -> bool {
-        state.get_block() == &*vanilla_blocks::HAY_BLOCK
+        state.get_block() == &vanilla_blocks::HAY_BLOCK
     }
 
     fn placement_state(

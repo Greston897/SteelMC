@@ -121,7 +121,6 @@ mod c_update_advancement;
 mod c_update_attributes;
 mod c_update_enabled_features;
 mod c_update_mob_effect;
-mod c_update_recipes;
 mod c_waypoint;
 mod chat;
 mod chunk;
@@ -262,7 +261,7 @@ pub use c_player_rotation::CPlayerRotation;
 pub use c_post_effects::{CPostEffects, PostEffect};
 pub use c_projectile_power::CProjectilePower;
 pub use c_recipe_book::{
-    CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, RecipeBookAddEntry,
+    CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CUpdateRecipes, RecipeBookAddEntry,
     RecipeBookTypeSettings, StonecutterEntry,
 };
 pub use c_remove_entities::CRemoveEntities;
@@ -320,7 +319,6 @@ pub use c_update_attributes::{
 };
 pub use c_update_enabled_features::CUpdateEnabledFeatures;
 pub use c_update_mob_effect::{CUpdateMobEffect, MobEffectPacketFlags};
-pub use c_update_recipes::{CUpdateRecipes, RecipeEntry};
 pub use c_waypoint::{CWaypoint, WaypointData, WaypointOperation};
 pub use chat::{
     ArgumentSignature, CDisguisedChat, CPlayerChat, CSystemChat, ChatTypeBound, FilterType,

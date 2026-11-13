@@ -348,13 +348,10 @@ pub(crate) fn generate_arg(
     let json_key = field.json_name.as_deref().unwrap_or(&field.field_name);
 
     // For optional fields, check the sentinel before computing the registry token.
-    // An absent key or an explicit JSON `null` also means "unset": the extractor
-    // omits keys whose Java value is null, so both spellings occur in the assets.
     if let Some(sentinel) = &field.optional_sentinel {
-        match extra.get(json_key) {
-            None | Some(serde_json::Value::Null) => return quote! { None },
-            Some(serde_json::Value::String(raw)) if raw == sentinel => return quote! { None },
-            Some(_) => {}
+        let raw = get_json_str(extra, entry_name, json_key);
+        if raw == sentinel {
+            return quote! { None };
         }
     }
 

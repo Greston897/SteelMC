@@ -1357,7 +1357,7 @@ impl Player {
         if let Some(killer) = get_kill_credit(self, world.as_ref()) {
             self.award_stat(&vanilla_stat_types::ENTITY_KILLED_BY, killer.entity_type());
             killer.award_kill_score(self, source);
-            crate::entity::create_wither_rose(self.as_ref(), source);
+            crate::entity::create_wither_rose(self, source);
         }
 
         self.award_custom_stat(&vanilla_custom_stats::DEATHS);

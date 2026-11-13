@@ -91,8 +91,8 @@ impl<'a> PistonStructureResolver<'a> {
     }
 
     fn is_sticky(state: steel_utils::BlockStateId) -> bool {
-        state.get_block() == &*vanilla_blocks::SLIME_BLOCK
-            || state.get_block() == &*vanilla_blocks::HONEY_BLOCK
+        state.get_block() == &vanilla_blocks::SLIME_BLOCK
+            || state.get_block() == &vanilla_blocks::HONEY_BLOCK
     }
 
     fn can_stick_to_each_other(

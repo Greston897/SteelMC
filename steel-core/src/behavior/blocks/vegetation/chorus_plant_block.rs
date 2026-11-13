@@ -58,28 +58,28 @@ impl ChorusPlantBlock {
         state = state.set_value(
             DOWN,
             down.get_block() == block
-                || down.get_block() == &*vanilla_blocks::CHORUS_FLOWER
+                || down.get_block() == &vanilla_blocks::CHORUS_FLOWER
                 || down.get_block().has_tag(&BlockTag::SUPPORTS_CHORUS_PLANT),
         );
         state = state.set_value(
             UP,
-            up.get_block() == block || up.get_block() == &*vanilla_blocks::CHORUS_FLOWER,
+            up.get_block() == block || up.get_block() == &vanilla_blocks::CHORUS_FLOWER,
         );
         state = state.set_value(
             NORTH,
-            north.get_block() == block || north.get_block() == &*vanilla_blocks::CHORUS_FLOWER,
+            north.get_block() == block || north.get_block() == &vanilla_blocks::CHORUS_FLOWER,
         );
         state = state.set_value(
             EAST,
-            east.get_block() == block || east.get_block() == &*vanilla_blocks::CHORUS_FLOWER,
+            east.get_block() == block || east.get_block() == &vanilla_blocks::CHORUS_FLOWER,
         );
         state = state.set_value(
             SOUTH,
-            south.get_block() == block || south.get_block() == &*vanilla_blocks::CHORUS_FLOWER,
+            south.get_block() == block || south.get_block() == &vanilla_blocks::CHORUS_FLOWER,
         );
         state.set_value(
             WEST,
-            west.get_block() == block || west.get_block() == &*vanilla_blocks::CHORUS_FLOWER,
+            west.get_block() == block || west.get_block() == &vanilla_blocks::CHORUS_FLOWER,
         )
     }
 
@@ -147,7 +147,7 @@ impl BlockBehavior for ChorusPlantBlock {
         }
 
         let connects = neighbor_state.get_block() == self.block
-            || neighbor_state.get_block() == &*vanilla_blocks::CHORUS_FLOWER
+            || neighbor_state.get_block() == &vanilla_blocks::CHORUS_FLOWER
             || direction == Direction::Down
                 && neighbor_state
                     .get_block()

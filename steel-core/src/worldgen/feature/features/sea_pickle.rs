@@ -22,7 +22,7 @@ impl FeatureDecorationRunner {
                 .set_value(&BlockStateProperties::PICKLES, pickle_count);
             let behavior = BLOCK_BEHAVIORS.get_behavior(&vanilla_blocks::SEA_PICKLE);
 
-            if region.block_state(pickle_pos).get_block() == &*vanilla_blocks::WATER
+            if region.block_state(pickle_pos).get_block() == &vanilla_blocks::WATER
                 && behavior.can_survive(pickle_state, region, pickle_pos)
             {
                 let _ =

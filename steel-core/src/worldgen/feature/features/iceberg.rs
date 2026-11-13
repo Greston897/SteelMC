@@ -263,7 +263,7 @@ impl FeatureDecorationRunner {
 
     fn remove_floating_snow_layer(region: &mut WorldGenRegion<'_>, pos: BlockPos) {
         let above = pos.above();
-        if region.block_state(above).get_block() == &*vanilla_blocks::SNOW {
+        if region.block_state(above).get_block() == &vanilla_blocks::SNOW {
             Self::set_iceberg_block(region, above, vanilla_blocks::AIR.default_state());
         }
     }

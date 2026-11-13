@@ -110,7 +110,7 @@ impl TripWireHookBlock {
         for (distance, slot) in wire_states.iter_mut().enumerate().skip(1) {
             let test_pos = pos.relative_n(direction, distance as i32);
             let mut wire_state = world.get_block_state(test_pos);
-            if wire_state.get_block() == &*vanilla_blocks::TRIPWIRE_HOOK {
+            if wire_state.get_block() == &vanilla_blocks::TRIPWIRE_HOOK {
                 if wire_state.get_value(HORIZONTAL_FACING) == direction.opposite() {
                     receiver_distance = distance;
                 }
@@ -192,8 +192,8 @@ impl TripWireHookBlock {
                 };
                 let test_pos = pos.relative_n(direction, distance as i32);
                 let live_state = world.get_block_state(test_pos);
-                if live_state.get_block() == &*vanilla_blocks::TRIPWIRE
-                    || live_state.get_block() == &*vanilla_blocks::TRIPWIRE_HOOK
+                if live_state.get_block() == &vanilla_blocks::TRIPWIRE
+                    || live_state.get_block() == &vanilla_blocks::TRIPWIRE_HOOK
                 {
                     world.set_block(
                         test_pos,

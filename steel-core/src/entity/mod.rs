@@ -418,7 +418,7 @@ fn trapdoor_usable_as_ladder_state(
         return false;
     }
 
-    below_state.get_block() == &*vanilla_blocks::LADDER
+    below_state.get_block() == &vanilla_blocks::LADDER
         && below_state.try_get_value(&BlockStateProperties::FACING)
             == trapdoor_state.try_get_value(&BlockStateProperties::FACING)
 }

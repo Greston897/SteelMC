@@ -1,6 +1,7 @@
 //! This module provides the [`StatsCounter`], which keeps track of stats with their counters, and
 //! implements some stat-related functions for the player.
 
+use crate::entity::Entity as _;
 use crate::player::Player;
 use rustc_hash::FxHashMap;
 use steel_protocol::packets::game::CAwardStats;

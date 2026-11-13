@@ -72,7 +72,7 @@ impl Goal for EatBlockGoal {
         state_at_feet
             .get_block()
             .has_tag(&BlockTag::EDIBLE_FOR_SHEEP)
-            || world.get_block_state(pos.below()).get_block() == &*vanilla_blocks::GRASS_BLOCK
+            || world.get_block_state(pos.below()).get_block() == &vanilla_blocks::GRASS_BLOCK
     }
 
     fn can_continue_to_use(&mut self, _mob: &dyn PathfinderMob) -> bool {
@@ -106,7 +106,7 @@ impl Goal for EatBlockGoal {
                 world.destroy_block(pos, false);
             }
             Mob::ate(mob);
-        } else if world.get_block_state(below).get_block() == &*vanilla_blocks::GRASS_BLOCK {
+        } else if world.get_block_state(below).get_block() == &vanilla_blocks::GRASS_BLOCK {
             if world.get_game_rule(&MOB_GRIEFING) {
                 world.level_event(
                     level_events::PARTICLES_DESTROY_BLOCK,

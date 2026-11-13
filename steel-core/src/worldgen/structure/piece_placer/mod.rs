@@ -242,7 +242,7 @@ impl StructurePiecePlacer {
         for direction in Self::VANILLA_HORIZONTAL_DIRECTIONS {
             let relative_pos = pos.relative(direction);
             let neighbor = region.block_state(relative_pos);
-            if neighbor.get_block() == &*vanilla_blocks::CHEST {
+            if neighbor.get_block() == &vanilla_blocks::CHEST {
                 return state;
             }
 
@@ -286,7 +286,7 @@ impl StructurePiecePlacer {
         loot_table: &'static str,
     ) -> bool {
         if !clip.contains_blockpos(pos)
-            || region.block_state(pos).get_block() == &*vanilla_blocks::CHEST
+            || region.block_state(pos).get_block() == &vanilla_blocks::CHEST
         {
             return false;
         }

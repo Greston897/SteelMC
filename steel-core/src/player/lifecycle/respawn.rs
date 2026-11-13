@@ -681,7 +681,7 @@ impl Player {
 
         if kind == RespawnRequestKind::Death
             && let Some(pos) = spawn.anchor_deplete_sound_pos
-            && target_world.get_block_state(pos).get_block() == &*vanilla_blocks::RESPAWN_ANCHOR
+            && target_world.get_block_state(pos).get_block() == &vanilla_blocks::RESPAWN_ANCHOR
         {
             replacement.send_packet(CSound::new(
                 &sound_events::BLOCK_RESPAWN_ANCHOR_DEPLETE,

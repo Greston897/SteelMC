@@ -568,7 +568,7 @@ impl SpeleothemBlockBehavior {
         }
 
         if existing_state_at_target_pos.is_air()
-            || existing_state_at_target_pos.get_block() == &*vanilla_blocks::WATER
+            || existing_state_at_target_pos.get_block() == &vanilla_blocks::WATER
         {
             self.create_speleothem(
                 world,
@@ -722,7 +722,7 @@ impl SpeleothemBlockBehavior {
             return;
         };
 
-        if fluid_info.source_state.get_block() == &*vanilla_blocks::MUD && is_water {
+        if fluid_info.source_state.get_block() == &vanilla_blocks::MUD && is_water {
             if !world.dimension_type.water_evaporates {
                 let clay_state = vanilla_blocks::CLAY.default_state();
                 let _ =
@@ -770,7 +770,7 @@ impl SpeleothemBlockBehavior {
         let above_pos = root_pos.above();
         let above_state = world.get_block_state(above_pos);
 
-        let fluid = if above_state.get_block() == &*vanilla_blocks::MUD
+        let fluid = if above_state.get_block() == &vanilla_blocks::MUD
             && !world.dimension_type.water_evaporates
         {
             &vanilla_fluids::WATER

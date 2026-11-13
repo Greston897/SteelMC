@@ -986,7 +986,7 @@ fn ensure_objective_exists(
     state
         .objectives
         .get(objective.name())
-        .copied()
+        .cloned()
         .ok_or_else(|| ScoreboardError::MissingObjective(objective.name().to_owned()))
 }
 

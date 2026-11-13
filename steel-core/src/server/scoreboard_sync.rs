@@ -12,6 +12,8 @@
 
 use std::sync::Arc;
 
+use crate::entity::Entity as _;
+
 use crate::player::Player;
 use crate::scoreboard::{Scoreboard, ScoreHolder, TeamState, TeamVisibility};
 use crate::server::Server;

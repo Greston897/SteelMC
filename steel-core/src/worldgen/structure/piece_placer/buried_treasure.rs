@@ -97,7 +97,7 @@ impl StructurePiecePlacer {
         pos: BlockPos,
     ) -> bool {
         if !clip.contains_blockpos(pos)
-            || region.block_state(pos).get_block() == &*vanilla_blocks::CHEST
+            || region.block_state(pos).get_block() == &vanilla_blocks::CHEST
         {
             return false;
         }

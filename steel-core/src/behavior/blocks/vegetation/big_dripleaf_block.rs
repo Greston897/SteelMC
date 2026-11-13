@@ -103,8 +103,8 @@ impl BigDripleafBlock {
 
     fn can_replace(old_state: BlockStateId) -> bool {
         old_state.is_air()
-            || old_state.get_block() == &*vanilla_blocks::WATER
-            || old_state.get_block() == &*vanilla_blocks::SMALL_DRIPLEAF
+            || old_state.get_block() == &vanilla_blocks::WATER
+            || old_state.get_block() == &vanilla_blocks::SMALL_DRIPLEAF
     }
 
     /// Determines whether big dripleaf can grow into target position
@@ -207,8 +207,8 @@ impl BlockBehavior for BigDripleafBlock {
 
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         let below_state = context.world.get_block_state(context.place_pos().below());
-        let below_is_dripleaf_part = below_state.get_block() == &*vanilla_blocks::BIG_DRIPLEAF
-            || below_state.get_block() == &*vanilla_blocks::BIG_DRIPLEAF_STEM;
+        let below_is_dripleaf_part = below_state.get_block() == &vanilla_blocks::BIG_DRIPLEAF
+            || below_state.get_block() == &vanilla_blocks::BIG_DRIPLEAF_STEM;
         let facing = {
             if below_is_dripleaf_part {
                 below_state.get_value(FACING)

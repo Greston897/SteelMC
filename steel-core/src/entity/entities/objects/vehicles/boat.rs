@@ -453,7 +453,7 @@ pub trait AbstractBoat: VehicleEntity {
                     if block_top < ground_min_y || f64::from(y) > bb.min_y() {
                         continue;
                     }
-                    if state.get_block() == &*vanilla_blocks::LILY_PAD {
+                    if state.get_block() == &vanilla_blocks::LILY_PAD {
                         continue;
                     }
                     if state.get_collision_shape_at(pos).is_empty() {

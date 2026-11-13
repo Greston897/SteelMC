@@ -159,7 +159,7 @@ impl FeatureDecorationRunner {
         pos: BlockPos,
     ) -> bool {
         let state = region.block_state(pos);
-        state.is_air() || state.get_block() == &*vanilla_blocks::LAVA && pos.y() <= lava_sea_level
+        state.is_air() || state.get_block() == &vanilla_blocks::LAVA && pos.y() <= lava_sea_level
     }
 
     fn basalt_columns_cannot_place_on(block: BlockRef) -> bool {

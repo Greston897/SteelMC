@@ -333,7 +333,7 @@ impl FeatureDecorationRunner {
                     .try_get_value(&BlockStateProperties::WATERLOGGED)
                     .is_some()
                 {
-                    let waterlogged = place_state.get_block() == &*vanilla_blocks::WATER
+                    let waterlogged = place_state.get_block() == &vanilla_blocks::WATER
                         && get_fluid_state_from_block(place_state).is_source();
                     state = state.set_value(&BlockStateProperties::WATERLOGGED, waterlogged);
                 }
@@ -354,7 +354,7 @@ impl FeatureDecorationRunner {
 
     fn can_grow_amethyst_cluster_at(state: BlockStateId) -> bool {
         state.is_air()
-            || (state.get_block() == &*vanilla_blocks::WATER
+            || (state.get_block() == &vanilla_blocks::WATER
                 && get_fluid_state_from_block(state).is_source())
     }
 }

@@ -74,7 +74,7 @@ impl FeatureDecorationRunner {
     }
 
     fn is_water(state: BlockStateId) -> bool {
-        state.get_block() == &*vanilla_blocks::WATER
+        state.get_block() == &vanilla_blocks::WATER
     }
 
     pub(in crate::worldgen::feature) const fn blue_ice_xz_diff(y_offset: i32) -> i32 {

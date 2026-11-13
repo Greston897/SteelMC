@@ -95,7 +95,7 @@ impl FeatureDecorationRunner {
 
         let mut pos = start_pos;
         Self::build_base_to_tip_dripstone_column(tip_direction, height, merged_tip, |state| {
-            let state = if state.get_block() == &*vanilla_blocks::POINTED_DRIPSTONE {
+            let state = if state.get_block() == &vanilla_blocks::POINTED_DRIPSTONE {
                 state.set_value(
                     &BlockStateProperties::WATERLOGGED,
                     get_fluid_state_from_block(region.block_state(pos)).is_water(),
@@ -182,7 +182,7 @@ impl FeatureDecorationRunner {
     }
 
     pub(in crate::worldgen::feature) fn is_empty_or_water(state: BlockStateId) -> bool {
-        state.is_air() || state.get_block() == &*vanilla_blocks::WATER
+        state.is_air() || state.get_block() == &vanilla_blocks::WATER
     }
 
     fn random_vanilla_direction(random: &mut WorldgenRandom) -> Direction {

@@ -221,7 +221,7 @@ impl PistonMovingState {
                 .set_value(&BlockStateProperties::SHORT, self.progress > 0.25)
                 .set_value(
                     &BlockStateProperties::PISTON_TYPE,
-                    if self.moved_state.get_block() == &*vanilla_blocks::STICKY_PISTON {
+                    if self.moved_state.get_block() == &vanilla_blocks::STICKY_PISTON {
                         PistonType::Sticky
                     } else {
                         PistonType::Normal
@@ -445,7 +445,7 @@ impl PistonMovingState {
         let query =
             WorldAabb::encapsulating(&Self::movement_area(aabb, movement, delta_progress), &aabb);
         let entities = world.get_entities_in_aabb(&query);
-        let cause_bounce = self.moved_state.get_block() == &*vanilla_blocks::SLIME_BLOCK;
+        let cause_bounce = self.moved_state.get_block() == &vanilla_blocks::SLIME_BLOCK;
 
         for entity in entities {
             if !Self::can_move_collided_entity(entity.as_ref(), cause_bounce) {
@@ -527,7 +527,7 @@ impl PistonMovingState {
         }
 
         let mut new_state = world.update_from_neighbor_shapes(self.moved_state, pos);
-        if new_state.get_block() == &*vanilla_blocks::AIR {
+        if new_state.get_block() == &vanilla_blocks::AIR {
             world.set_block(
                 pos,
                 self.moved_state,
@@ -558,7 +558,7 @@ impl PistonMovingState {
     }
 
     fn finish_movement_early(self, world: &Arc<World>, pos: BlockPos) {
-        if world.get_block_state(pos).get_block() == &*vanilla_blocks::MOVING_PISTON {
+        if world.get_block_state(pos).get_block() == &vanilla_blocks::MOVING_PISTON {
             let new_state = if self.source_piston {
                 vanilla_blocks::AIR.default_state()
             } else {

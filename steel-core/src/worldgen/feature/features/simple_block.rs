@@ -35,7 +35,7 @@ impl FeatureDecorationRunner {
                 return false;
             }
             Self::place_double_plant(region, state_to_place, origin);
-        } else if state_to_place.get_block() == &*vanilla_blocks::PALE_MOSS_CARPET {
+        } else if state_to_place.get_block() == &vanilla_blocks::PALE_MOSS_CARPET {
             Self::place_mossy_carpet(region, origin);
         } else {
             let _ = region.set_block_state(origin, state_to_place, UpdateFlags::UPDATE_CLIENTS);
@@ -128,7 +128,7 @@ impl FeatureDecorationRunner {
         let above = pos.above();
         let above_previous_state = region.block_state(above);
         let is_mossy_carpet_above =
-            above_previous_state.get_block() == &*vanilla_blocks::PALE_MOSS_CARPET;
+            above_previous_state.get_block() == &vanilla_blocks::PALE_MOSS_CARPET;
         if (!is_mossy_carpet_above
             || !above_previous_state.get_value(&BlockStateProperties::BOTTOM))
             && (is_mossy_carpet_above || above_previous_state.is_replaceable())

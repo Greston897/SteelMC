@@ -132,7 +132,9 @@ async fn run_operation(
 
     let message = translated(
         action.success_key(),
-        action.fallback(changed).to_owned(),
+        action
+            .fallback(usize::try_from(changed).unwrap_or_default())
+            .to_owned(),
         vec![TextComponent::from(changed.to_string())],
     );
     source.send_success(&message, true);

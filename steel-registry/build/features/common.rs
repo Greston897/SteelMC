@@ -37,7 +37,7 @@ pub(super) fn resource_name(dir: &str, path: &Path) -> String {
         .replace('\\', "/")
 }
 
-pub(crate) fn generate_identifier(identifier: &Identifier) -> TokenStream {
+pub(super) fn generate_identifier(identifier: &Identifier) -> TokenStream {
     let namespace = identifier.namespace.as_ref();
     let path = identifier.path.as_ref();
     if namespace == Identifier::VANILLA_NAMESPACE {

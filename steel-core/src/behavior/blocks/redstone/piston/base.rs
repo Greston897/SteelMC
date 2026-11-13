@@ -116,7 +116,7 @@ impl PistonBaseBlock {
 
         let pushed_pos = pos.relative_n(direction, 2);
         let pushed_state = world.get_block_state(pushed_pos);
-        let event = if pushed_state.get_block() == &*vanilla_blocks::MOVING_PISTON
+        let event = if pushed_state.get_block() == &vanilla_blocks::MOVING_PISTON
             && pushed_state.get_value(FACING) == direction
             && world
                 .get_block_entity(pushed_pos)
@@ -231,7 +231,7 @@ impl PistonBaseBlock {
         extending: bool,
     ) -> bool {
         let arm_pos = piston_pos.relative(direction);
-        if !extending && world.get_block_state(arm_pos).get_block() == &*vanilla_blocks::PISTON_HEAD
+        if !extending && world.get_block_state(arm_pos).get_block() == &vanilla_blocks::PISTON_HEAD
         {
             world.set_block(
                 arm_pos,
@@ -445,7 +445,7 @@ impl PistonBaseBlock {
         if self.sticky {
             let two_pos = pos.relative_n(direction, 2);
             let two_state = world.get_block_state(two_pos);
-            let piston_piece = if two_state.get_block() == &*vanilla_blocks::MOVING_PISTON {
+            let piston_piece = if two_state.get_block() == &vanilla_blocks::MOVING_PISTON {
                 let matches = world.get_block_entity(two_pos).is_some_and(|block_entity| {
                     block_entity
                         .downcast_ref::<PistonMovingBlockEntity>()

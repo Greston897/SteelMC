@@ -55,7 +55,6 @@ mod entities;
 mod entity_data;
 mod features;
 mod fluids;
-mod functions;
 
 mod cat_sound_variants;
 mod chicken_sound_variants;
@@ -154,7 +153,6 @@ const TIMELINES: &str = "timelines";
 const TIMELINE_TAGS: &str = "timeline_tags";
 const ZOMBIE_NAUTILUS_VARIANTS: &str = "zombie_nautilus_variants";
 const RECIPES: &str = "recipes";
-const FUNCTIONS: &str = "functions";
 const VANILLA_ENTITIES: &str = "entities";
 const ENTITY_DATA: &str = "entity_data";
 const FLUIDS: &str = "fluids";
@@ -243,7 +241,6 @@ pub fn main() {
         (tags::timeline(), TIMELINE_TAGS),
         (zombie_nautilus_variants::build(), ZOMBIE_NAUTILUS_VARIANTS),
         (recipes::build(), RECIPES),
-        (functions::build(), FUNCTIONS),
         (entities::build(), VANILLA_ENTITIES),
         (entity_data::build(), ENTITY_DATA),
         (fluids::build(), FLUIDS),

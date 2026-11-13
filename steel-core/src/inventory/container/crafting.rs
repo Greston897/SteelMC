@@ -56,7 +56,8 @@ impl CraftingContainer {
     /// grid slots.
     #[must_use]
     pub fn as_positioned_input(&self) -> PositionedCraftingInput {
-        let mut input = CraftingInput::positioned(self.width, self.height, self.items.clone());
+        let mut input =
+            CraftingInput::positioned(self.width, self.height, self.items.clone()).input;
         // Vanilla `MapExtendingRecipe.matches` reads the centre map's saved data:
         // only a non-exploration map below the maximum scale may be extended.
         // Steel has no saved map data yet, so the facts come from the stack's

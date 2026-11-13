@@ -73,7 +73,7 @@ impl WaypointManager {
     }
 
     fn tick_observer(&self, world: &Arc<World>, observer: &Arc<Player>) {
-        let observer_uuid = observer.uuid();
+        let observer_uuid = observer.base().uuid();
         let observer_pos = observer.position();
         let range = observer
             .attributes()
@@ -83,7 +83,7 @@ impl WaypointManager {
 
         let mut targets = Vec::new();
         world.players.iter_players(|uuid, player| {
-            if player.uuid() != observer_uuid && player.is_alive() {
+            if player.base().uuid() != observer_uuid && Entity::is_alive(player.as_ref()) {
                 targets.push((*uuid, player.position()));
             }
             true
@@ -139,13 +139,13 @@ impl WaypointManager {
                 },
             };
 
-            observer.connection.send_packet(packet);
+            observer.send_packet(packet);
             still_valid.insert(uuid, sent);
         }
 
         for uuid in tracked.keys() {
             if !still_valid.contains_key(uuid) {
-                observer.connection.send_packet(CWaypoint {
+                observer.send_packet(CWaypoint {
                     operation: WaypointOperation::Untrack {
                         source: PLAYER_SOURCE,
                     },

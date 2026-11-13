@@ -106,7 +106,7 @@ impl MossyCarpetBlock {
 
             if side == WallSide::Low {
                 let above = *above_state.get_or_insert_with(|| world.get_block_state(pos.above()));
-                if above.get_block() == &*vanilla_blocks::PALE_MOSS_CARPET
+                if above.get_block() == &vanilla_blocks::PALE_MOSS_CARPET
                     && above.get_value(property) != WallSide::None
                     && !above.get_value(BASE)
                 {
@@ -116,7 +116,7 @@ impl MossyCarpetBlock {
                 if !state.get_value(BASE) {
                     let below =
                         *below_state.get_or_insert_with(|| world.get_block_state(pos.below()));
-                    if below.get_block() == &*vanilla_blocks::PALE_MOSS_CARPET
+                    if below.get_block() == &vanilla_blocks::PALE_MOSS_CARPET
                         && below.get_value(property) == WallSide::None
                     {
                         side = WallSide::None;
@@ -138,7 +138,7 @@ impl MossyCarpetBlock {
         let above = pos.above();
         let above_previous_state = world.get_block_state(above);
         let is_mossy_carpet_above =
-            above_previous_state.get_block() == &*vanilla_blocks::PALE_MOSS_CARPET;
+            above_previous_state.get_block() == &vanilla_blocks::PALE_MOSS_CARPET;
         if (!is_mossy_carpet_above || !above_previous_state.get_value(BASE))
             && (is_mossy_carpet_above || above_previous_state.is_replaceable())
         {

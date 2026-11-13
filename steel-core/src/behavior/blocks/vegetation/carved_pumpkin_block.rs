@@ -34,14 +34,14 @@ impl CarvedPumpkinBlock {
         let below1 = pos.offset(0, -1, 0);
         let below2 = pos.offset(0, -2, 0);
 
-        let has_arms = |center: BlockPos, block: &BlockRef| {
+        let has_arms = |center: BlockPos, block: BlockRef| {
             world.get_block_state(center.offset(-1, 0, 0)).get_block() == block
                 && world.get_block_state(center.offset(1, 0, 0)).get_block() == block
         };
 
         // Snow golem: two snow blocks below the pumpkin.
-        if world.get_block_state(below1).get_block() == &*vanilla_blocks::SNOW_BLOCK
-            && world.get_block_state(below2).get_block() == &*vanilla_blocks::SNOW_BLOCK
+        if world.get_block_state(below1).get_block() == &vanilla_blocks::SNOW_BLOCK
+            && world.get_block_state(below2).get_block() == &vanilla_blocks::SNOW_BLOCK
         {
             return Some(&vanilla_entities::SNOW_GOLEM);
         }
@@ -53,7 +53,7 @@ impl CarvedPumpkinBlock {
         ] {
             if world.get_block_state(below1).get_block() == block
                 && world.get_block_state(below2).get_block() == block
-                && has_arms(below2, block)
+                && has_arms(below2, *block)
             {
                 return Some(entity_type);
             }

@@ -61,7 +61,7 @@ impl LiquidBlock {
         }
         let below_pos = pos.offset(0, -1, 0);
         let below_state = world.get_block_state(below_pos);
-        let has_soul_soil_below = below_state.get_block() == &*vanilla_blocks::SOUL_SOIL;
+        let has_soul_soil_below = below_state.get_block() == &vanilla_blocks::SOUL_SOIL;
 
         let fluid_state = world.get_block_state(pos).get_fluid_state();
 
@@ -83,7 +83,7 @@ impl LiquidBlock {
 
             if has_soul_soil_below {
                 let neighbor_state = world.get_block_state(neighbor_pos);
-                if neighbor_state.get_block() == &*vanilla_blocks::BLUE_ICE {
+                if neighbor_state.get_block() == &vanilla_blocks::BLUE_ICE {
                     Self::convert_and_fizz(world, pos, &vanilla_blocks::BASALT);
                     return false;
                 }

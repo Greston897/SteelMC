@@ -142,11 +142,11 @@ impl BoneMealItem {
 
             if behavior.can_survive(new_state, world, new_pos) {
                 let current_state = world.get_block_state(new_pos);
-                if current_state.get_block() == &*vanilla_blocks::WATER
+                if current_state.get_block() == &vanilla_blocks::WATER
                     && current_state.get_fluid_state().is_full()
                 {
                     world.set_block(new_pos, new_state, UpdateFlags::UPDATE_ALL);
-                } else if current_state.get_block() == &*vanilla_blocks::SEAGRASS
+                } else if current_state.get_block() == &vanilla_blocks::SEAGRASS
                     && bonemealable.is_valid_bonemeal_target(current_state, world.as_ref(), new_pos)
                     && rng.random_range(0..10) == 0
                 {

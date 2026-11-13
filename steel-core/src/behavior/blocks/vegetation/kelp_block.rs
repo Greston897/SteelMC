@@ -48,7 +48,7 @@ impl KelpBlock {
     }
 
     fn can_grow_into(state: BlockStateId) -> bool {
-        state.get_block() == &*vanilla_blocks::WATER
+        state.get_block() == &vanilla_blocks::WATER
     }
 
     fn get_blocks_to_grow_when_bonemealed(_rng: &mut dyn Rng) -> i32 {

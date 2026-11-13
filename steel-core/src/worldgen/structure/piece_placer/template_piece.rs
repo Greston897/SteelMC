@@ -657,7 +657,7 @@ impl StructurePiecePlacer {
         state: BlockStateId,
         random: &mut WorldgenRandom,
     ) {
-        if region.block_state(pos).get_block() == &*vanilla_blocks::CHEST {
+        if region.block_state(pos).get_block() == &vanilla_blocks::CHEST {
             return;
         }
         if !region.set_block_state(pos, state, UpdateFlags::UPDATE_CLIENTS) {
@@ -776,7 +776,7 @@ impl StructurePiecePlacer {
             trapdoor_relative.z(),
         );
         let below_state = region.block_state(trapdoor_pos.below());
-        if below_state.is_air() || below_state.get_block() == &*vanilla_blocks::LADDER {
+        if below_state.is_air() || below_state.get_block() == &vanilla_blocks::LADDER {
             return;
         }
 

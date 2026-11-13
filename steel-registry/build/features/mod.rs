@@ -11,7 +11,7 @@ use steel_utils::value_providers::{
 };
 use steel_utils::{Direction, Identifier, Rotation};
 
-pub(crate) mod common;
+mod common;
 mod configured;
 mod data;
 mod nbt;

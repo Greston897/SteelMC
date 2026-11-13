@@ -65,7 +65,7 @@ impl ItemBehavior for MobBucketItem {
         let (start, end) = context.player.get_ray_endpoints();
         let (hit_block, _direction) = context.world.raytrace(start, end, |pos, world| {
             let state = world.get_block_state(pos);
-            if state.get_block() == &*vanilla_blocks::AIR {
+            if state.get_block() == &vanilla_blocks::AIR {
                 return RaytraceAction::Pass;
             }
             let fluid_state = state.get_fluid_state();

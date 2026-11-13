@@ -17,7 +17,7 @@ impl SpreadingGrassBlock {
     fn can_stay_alive(state: BlockStateId, level: &Arc<World>, pos: BlockPos) -> bool {
         let above = pos.above();
         let above_state: BlockStateId = level.get_block_state(above);
-        if above_state.get_block() == &*vanilla_blocks::SNOW
+        if above_state.get_block() == &vanilla_blocks::SNOW
             && above_state.get_value(&BlockStateProperties::LAYERS) == 1
         {
             return true;

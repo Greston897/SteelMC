@@ -73,8 +73,8 @@ impl FeatureDecorationRunner {
 
     pub(super) fn is_empty_layer_block(state: steel_utils::BlockStateId) -> bool {
         state.is_air()
-            || state.get_block() == &*vanilla_blocks::WATER
-            || state.get_block() == &*vanilla_blocks::LAVA
+            || state.get_block() == &vanilla_blocks::WATER
+            || state.get_block() == &vanilla_blocks::LAVA
     }
 
     pub(super) fn environment_scan_position(

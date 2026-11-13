@@ -6,6 +6,7 @@
 //! deliberately per block entity: a double chest runs one counter per half, so
 //! both halves open together while each keeps its own viewer count.
 
+use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, Ordering};
 
 use steel_registry::blocks::properties::BlockStateProperties;
@@ -70,7 +71,7 @@ impl ContainerOpenersCounter {
     /// Called when a player opens the menu backed by this container.
     pub fn increment_openers(
         &self,
-        world: &World,
+        world: &Arc<World>,
         pos: BlockPos,
         state: BlockStateId,
         block: BlockRef,
@@ -87,7 +88,7 @@ impl ContainerOpenersCounter {
     /// Called when a player closes the menu. Returns the remaining viewer count.
     pub fn decrement_openers(
         &self,
-        world: &World,
+        world: &Arc<World>,
         pos: BlockPos,
         state: BlockStateId,
         block: BlockRef,
@@ -107,7 +108,7 @@ impl ContainerOpenersCounter {
     /// current optimistic count and only refreshes the block state.
     pub fn recheck_openers(
         &self,
-        world: &World,
+        world: &Arc<World>,
         pos: BlockPos,
         state: BlockStateId,
         block: BlockRef,
@@ -116,14 +117,14 @@ impl ContainerOpenersCounter {
         self.sync_open_state(world, pos, state, block, openers > 0);
     }
 
-    fn on_open(&self, world: &World, pos: BlockPos, state: BlockStateId, block: BlockRef) {
+    fn on_open(&self, world: &Arc<World>, pos: BlockPos, state: BlockStateId, block: BlockRef) {
         if self.hooks.sets_open_state {
             self.sync_open_state(world, pos, state, block, true);
         }
         world.play_block_sound(self.hooks.open_sound, pos, 0.5, 0.5, None);
     }
 
-    fn on_close(&self, world: &World, pos: BlockPos, state: BlockStateId, block: BlockRef) {
+    fn on_close(&self, world: &Arc<World>, pos: BlockPos, state: BlockStateId, block: BlockRef) {
         if self.hooks.sets_open_state {
             self.sync_open_state(world, pos, state, block, false);
         }
@@ -132,7 +133,7 @@ impl ContainerOpenersCounter {
 
     fn sync_open_state(
         &self,
-        world: &World,
+        world: &Arc<World>,
         pos: BlockPos,
         state: BlockStateId,
         block: BlockRef,

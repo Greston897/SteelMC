@@ -585,7 +585,7 @@ impl SurfaceSystem {
             let state = column.get(rel_y).copied().unwrap_or(air);
 
             let is_air = state.is_air();
-            let is_water = state.get_block() == &*vanilla_blocks::WATER;
+            let is_water = state.get_block() == &vanilla_blocks::WATER;
 
             if (is_air && y < extension_top as i32 && random.next_f64() > 0.01)
                 || (is_water

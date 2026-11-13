@@ -22,8 +22,8 @@ impl FeatureDecorationRunner {
         let height = 1 + random.next_i32_bounded(10);
 
         for h in 0..=height {
-            if region.block_state(kelp_pos).get_block() == &*vanilla_blocks::WATER
-                && region.block_state(kelp_pos.above()).get_block() == &*vanilla_blocks::WATER
+            if region.block_state(kelp_pos).get_block() == &vanilla_blocks::WATER
+                && region.block_state(kelp_pos.above()).get_block() == &vanilla_blocks::WATER
                 && kelp_plant_behavior.can_survive(kelp_plant, region, kelp_pos)
             {
                 if h == height {

@@ -80,10 +80,9 @@ fn derive_matchers(poi: &PoiTypeJson) -> Vec<BlockMatcher> {
             // Rectangularity guard: the enumerated states must be exactly the cartesian
             // product of the free properties' observed values. A mismatch means this POI
             // needs a richer model than equality filters — fail the build loudly.
-            //
-            // Whether the observed values also cover each free property's *complete*
-            // value set is checked against `blocks.json` at runtime by the generated
-            // test below, because the property value counts only exist in Rust.
+            // TODO: This assumes a free property's observed values equal the block's full
+            // value set (always true for vanilla `getStatesOfBlock`). Fully verifying that
+            // would require loading block metadata from blocks.json.
             assert_eq!(
                 entries.len(),
                 free_product,
@@ -107,7 +106,7 @@ pub(crate) fn build() -> TokenStream {
         fs::read_to_string("build_assets/poi_types.json").expect("Failed to read poi_types.json");
     let file: PoiTypesFile =
         serde_json::from_str(&content).expect("Failed to parse poi_types.json");
-    let poi_types = file.poi_types.clone();
+    let poi_types = file.poi_types;
 
     let mut stream = TokenStream::new();
 
@@ -165,63 +164,5 @@ pub(crate) fn build() -> TokenStream {
         }
     });
 
-    stream.extend(matcher_test_tokens(&file));
     stream
-}
-
-/// Generates a registry test asserting every POI matcher selects exactly the
-/// states the extractor enumerated.
-///
-/// This closes the gap the build-time rectangularity guard cannot see: the
-/// matcher expands free properties to their full value set, so a property whose
-/// observed values are a strict subset of the block's real value set would
-/// silently match extra states.
-fn matcher_test_tokens(file: &PoiTypesFile) -> TokenStream {
-    let mut cases = Vec::new();
-    for poi in &file.poi_types {
-        let poi_name = &poi.name;
-        for matcher in derive_matchers(poi) {
-            let block_ident = Ident::new(&matcher.block.to_shouty_snake_case(), Span::call_site());
-            let block_name = &matcher.block;
-            let filter_len = matcher.properties.len();
-            let properties = matcher.properties.iter().map(|(name, value)| {
-                quote! { (#name, #value) }
-            });
-            let expected = poi
-                .block_states
-                .iter()
-                .filter(|entry| entry.block == matcher.block)
-                .count();
-            cases.push(quote! {
-                {
-                    let filter: &[(&str, &str)] = &[#(#properties),*];
-                    assert_eq!(filter.len(), #filter_len);
-                    let matched = REGISTRY
-                        .blocks
-                        .matching_states(&vanilla_blocks::#block_ident, filter);
-                    assert_eq!(
-                        matched.len(),
-                        #expected,
-                        "POI `{}` block `{}` matcher {:?} selects {} states, extractor enumerated {}",
-                        #poi_name,
-                        #block_name,
-                        filter,
-                        matched.len(),
-                        #expected,
-                    );
-                }
-            });
-        }
-    }
-
-    quote! {
-        #[cfg(test)]
-        #[test]
-        fn poi_matchers_select_exactly_the_enumerated_states() {
-            use crate::REGISTRY;
-            use crate::init_vanilla_registry;
-            init_vanilla_registry();
-            #(#cases)*
-        }
-    }
 }

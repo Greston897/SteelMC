@@ -374,7 +374,7 @@ mod tests {
         );
         assert!(HORIZONTAL_DIRECTIONS.into_iter().any(|direction| {
             let branch = world.get_block_state(pos.relative(direction));
-            branch.get_block() == &*vanilla_blocks::CHORUS_FLOWER && branch.get_value(AGE) == 1
+            branch.get_block() == &vanilla_blocks::CHORUS_FLOWER && branch.get_value(AGE) == 1
         }));
     }
 

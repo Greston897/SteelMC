@@ -307,7 +307,7 @@ impl FishingHookEntity {
                 let splash_block_state =
                     world.get_block_state(BlockPos::containing(fish_x, fish_y - 1.0, fish_z));
 
-                if splash_block_state.get_block() == &*vanilla_blocks::WATER {
+                if splash_block_state.get_block() == &vanilla_blocks::WATER {
                     const PARTICLE_SPAWN_PROBABILITY: f32 = 0.15;
                     if rng().random::<f32>() < PARTICLE_SPAWN_PROBABILITY {
                         world.send_particles(
@@ -407,7 +407,7 @@ impl FishingHookEntity {
                 let splash_block_state =
                     world.get_block_state(BlockPos::containing(fish_x, fish_y - 1.0, fish_z));
 
-                if splash_block_state.get_block() == &*vanilla_blocks::WATER {
+                if splash_block_state.get_block() == &vanilla_blocks::WATER {
                     world.send_particles(
                         ParticleData::simple(&SPLASH),
                         DVec3::new(fish_x, fish_y, fish_z),
@@ -485,7 +485,7 @@ impl FishingHookEntity {
         let block_state = world.get_block_state(pos);
         let collision_shape = block_state.get_collision_shape_at(pos);
 
-        if !block_state.is_air() && !(block_state.get_block() == &*vanilla_blocks::LILY_PAD) {
+        if !block_state.is_air() && !(block_state.get_block() == &vanilla_blocks::LILY_PAD) {
             let fluid_state = block_state.get_fluid_state();
             if fluid_state.is_water() && fluid_state.is_source() && collision_shape.is_empty() {
                 OpenWaterType::InsideWater

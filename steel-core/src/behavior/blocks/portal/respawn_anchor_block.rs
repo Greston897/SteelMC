@@ -116,7 +116,7 @@ impl RespawnAnchorBlock {
         state: BlockStateId,
         forced: bool,
     ) -> bool {
-        state.get_block() == &*vanilla_blocks::RESPAWN_ANCHOR
+        state.get_block() == &vanilla_blocks::RESPAWN_ANCHOR
             && (forced || state.get_value(CHARGES) > 0)
             && Self::can_set_spawn(world, pos)
     }
@@ -455,7 +455,7 @@ mod tests {
                 &vanilla_blocks::RESPAWN_ANCHOR
             );
             assert_eq!(
-                world.get_block_state(glass_pos).get_block() == &*vanilla_blocks::GLASS,
+                world.get_block_state(glass_pos).get_block() == &vanilla_blocks::GLASS,
                 in_water,
             );
         }
