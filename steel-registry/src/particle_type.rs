@@ -4,7 +4,6 @@ use std::str::FromStr as _;
 
 use glam::DVec3;
 use rustc_hash::FxHashMap;
-use simdnbt::ToNbtTag as _;
 use steel_utils::codec::VarInt;
 use steel_utils::nbt::NbtNumeric as _;
 use steel_utils::serial::{ReadFrom, WriteTo};
@@ -989,7 +988,6 @@ impl ParticleOptions for VibrationParticleOption {
     }
 
     fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
-        use simdnbt::FromNbtTag as _;
         Some(Self::new(
             PositionSource::from_nbt_tag(compound.get("destination")?)?,
             compound.get("arrival_in_ticks")?.codec_i32()?,
@@ -997,7 +995,6 @@ impl ParticleOptions for VibrationParticleOption {
     }
 
     fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
-        use simdnbt::ToNbtTag as _;
         let mut compound = simdnbt::owned::NbtCompound::new();
         compound.insert("destination", self.destination.to_nbt_tag());
         compound.insert("arrival_in_ticks", self.arrival_in_ticks);

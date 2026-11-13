@@ -3,7 +3,7 @@ use rustc_hash::FxHashMap;
 use steel_math::trig;
 use steel_utils::{DowncastType, DowncastTypeKey, Identifier};
 
-use crate::{RegistryExt, RegistryTags, TaggedRegistryExt, blocks::behavior::PushReaction};
+use crate::{RegistryTags, TaggedRegistryExt, blocks::behavior::PushReaction};
 
 const DEFAULT_EYE_HEIGHT_FACTOR: f32 = 0.85;
 

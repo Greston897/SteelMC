@@ -116,7 +116,6 @@ pub struct DimensionType {
 }
 
 impl DimensionType {
-    #[must_use]
     /// Returns a boolean `minecraft:gameplay/...` environment attribute as the
     /// dimension type declares it, mirroring vanilla `EnvironmentAttributeMap`.
     ///

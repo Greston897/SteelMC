@@ -353,9 +353,9 @@ fn roll_killed_by_player(
             let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
             let mut ctx = LootContext::new(&mut rng)
                 .with_killed_by_player(true)
-                .with_this_entity(victim)
-                .with_killer_entity(player)
-                .with_direct_killer_entity(player);
+                .with_this_entity(victim.clone())
+                .with_killer_entity(player.clone())
+                .with_direct_killer_entity(player.clone());
             table.get_random_items(&mut ctx)
         })
         .collect()
