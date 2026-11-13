@@ -11,10 +11,12 @@ use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, FrontAndTop};
-use steel_registry::vanilla_block_entity_types;
+use steel_registry::{vanilla_block_entity_types, vanilla_damage_types};
 use steel_utils::{BlockPos, BlockStateId};
 
 use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
+use crate::entity::damage::DamageSource;
+use crate::entity::{Entity as _, LivingEntity as _};
 use crate::behavior::context::{BlockPlaceContext, InteractionResult};
 use crate::block_entity::BLOCK_ENTITIES;
 use crate::world::World;
@@ -170,6 +172,49 @@ block_entity_block!(
     CREAKING_HEART,
     |state: BlockStateId, _context: &BlockPlaceContext<'_>| state
 );
+
+impl CreakingHeartBlock {
+    /// Vanilla `CreakingHeartBlockEntity.removeCreaking`: kills the linked
+    /// creaking when the heart is destroyed.
+    fn kill_creaking(world: &Arc<World>, pos: BlockPos) {
+        let Some(block_entity) = world.get_block_entity(pos) else {
+            return;
+        };
+        let Some(heart) = block_entity
+            .downcast_ref::<crate::block_entity::entities::CreakingHeartBlockEntity>()
+        else {
+            return;
+        };
+        let Some(creaking_uuid) = heart.creaking() else {
+            return;
+        };
+        heart.set_creaking(None);
+        if let Some(entity) = world.get_entity_by_uuid(&uuid::Uuid::from_u128(creaking_uuid)) {
+            let damage = DamageSource::environment(&vanilla_damage_types::GENERIC_KILL);
+            entity.hurt(world, &damage, f32::MAX);
+        }
+    }
+}
+
+impl BlockBehavior for CreakingHeartBlock {
+    /// Vanilla `CreakingHeartBlock`: breaking the heart takes its creaking with
+    /// it, which is the only way to kill a creaking.
+    fn on_place(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        old_state: BlockStateId,
+        _moved_by_piston: bool,
+    ) {
+        if old_state.get_block() == state.get_block() {
+            return;
+        }
+        if old_state.get_block() == &self.block {
+            Self::kill_creaking(world, pos);
+        }
+    }
+}
 block_entity_block!(
     TrialSpawnerBlock,
     TRIAL_SPAWNER,
