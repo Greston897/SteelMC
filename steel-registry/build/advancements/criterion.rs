@@ -6,7 +6,6 @@ use std::collections::BTreeMap;
 use steel_utils::Identifier;
 
 #[derive(Deserialize)]
-#[expect(dead_code)]
 pub(crate) struct CriterionJson {
     trigger: Identifier,
     #[serde(default)]

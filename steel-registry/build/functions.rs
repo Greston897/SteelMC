@@ -31,7 +31,7 @@ pub(crate) fn build() -> TokenStream {
 
     let mut functions = Vec::new();
     collect(function_dir, function_dir, &mut functions);
-    functions.sort_by(|left, right| left.key.to_string().cmp(&right.key.to_string()));
+    functions.sort_by_key(|function| function.key.to_string());
 
     let declarations: Vec<TokenStream> = functions.iter().map(declare).collect();
     let registrations: Vec<TokenStream> = functions
@@ -77,10 +77,10 @@ fn collect(root: &Path, dir: &Path, out: &mut Vec<ParsedFunction>) {
         let path = entry.path();
         if path.is_dir() {
             collect(root, &path, out);
-        } else if path.extension().and_then(|ext| ext.to_str()) == Some("mcfunction") {
-            if let Some(function) = parse(root, &path) {
-                out.push(function);
-            }
+        } else if path.extension().and_then(|ext| ext.to_str()) == Some("mcfunction")
+            && let Some(function) = parse(root, &path)
+        {
+            out.push(function);
         }
     }
 }

@@ -179,7 +179,6 @@ pub(crate) fn build() -> TokenStream {
 fn matcher_test_tokens(file: &PoiTypesFile) -> TokenStream {
     let mut cases = Vec::new();
     for poi in &file.poi_types {
-        let poi_ident = Ident::new(&poi.name.to_shouty_snake_case(), Span::call_site());
         let poi_name = &poi.name;
         for matcher in derive_matchers(poi) {
             let block_ident = Ident::new(&matcher.block.to_shouty_snake_case(), Span::call_site());
@@ -191,7 +190,7 @@ fn matcher_test_tokens(file: &PoiTypesFile) -> TokenStream {
             let expected = poi
                 .block_states
                 .iter()
-                .filter(|entry| &entry.block == &matcher.block)
+                .filter(|entry| entry.block == matcher.block)
                 .count();
             cases.push(quote! {
                 {

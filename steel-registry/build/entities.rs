@@ -182,12 +182,11 @@ pub(crate) fn build() -> TokenStream {
         // Vanilla 26.3 `entity_type.immune_to`: a block tag this type ignores when
         // deciding whether a floor block is dangerous (hoglin on crimson nylium,
         // froglights, striders on lava). Absent means "no immunity".
-        let immune_to = match entity_type.immune_to.as_deref() {
-            Some(key) => {
-                let name = key.trim_start_matches('#');
-                quote! { Some(::steel_utils::Identifier::vanilla_static(#name)) }
-            }
-            None => quote! { None },
+        let immune_to = if let Some(key) = entity_type.immune_to.as_deref() {
+            let name = key.trim_start_matches('#');
+            quote! { Some(::steel_utils::Identifier::vanilla_static(#name)) }
+        } else {
+            quote! { None }
         };
         let summonable = entity_type.summonable;
         let allowed_in_peaceful = entity_type.allowed_in_peaceful;
