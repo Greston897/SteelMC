@@ -1,0 +1,17 @@
+
+✓ arena/8ff5adc9-steelmc Build Report · 43504445288
+Triggered via push about 4 minutes ago
+
+JOBS
+✓ check in 1m17s (ID 132158294921)
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+check: .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+check: .github#1
+
+
+For more information about the job, try: gh run view --job=132158294921
+View this run on GitHub: https://github.com/Greston897/SteelMC/actions/runs/43504445288
