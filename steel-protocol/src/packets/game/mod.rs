@@ -262,7 +262,7 @@ pub use c_player_rotation::CPlayerRotation;
 pub use c_post_effects::{CPostEffects, PostEffect};
 pub use c_projectile_power::CProjectilePower;
 pub use c_recipe_book::{
-    CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, CUpdateRecipes, RecipeBookAddEntry,
+    CRecipeBookAdd, CRecipeBookRemove, CRecipeBookSettings, RecipeBookAddEntry,
     RecipeBookTypeSettings, StonecutterEntry,
 };
 pub use c_remove_entities::CRemoveEntities;
