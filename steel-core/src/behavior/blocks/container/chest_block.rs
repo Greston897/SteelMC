@@ -14,7 +14,7 @@ use steel_registry::blocks::properties::{BlockStateProperties, ChestType};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::types::UpdateFlags;
-use steel_utils::{BlockPos, BlockStateId, Direction};
+use steel_utils::{Downcast as _, BlockPos, BlockStateId, Direction};
 use text_components::TextComponent;
 
 use crate::behavior::block::{

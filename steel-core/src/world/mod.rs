@@ -265,6 +265,11 @@ pub struct World {
     pub dragon_fight: dragon_fight::DragonFight,
     /// Spatial index for player proximity queries.
     pub player_area_map: PlayerAreaMap,
+    /// Server this world belongs to, filled once during startup.
+    ///
+    /// A `OnceLock` keeps the world constructible before the server exists while
+    /// still letting world-local code reach server-owned systems.
+    pub server: std::sync::OnceLock<std::sync::Weak<crate::server::Server>>,
     /// Loaded world identifier (`domain:world`).
     pub key: Identifier,
     /// Vanilla dimension type for this loaded world.

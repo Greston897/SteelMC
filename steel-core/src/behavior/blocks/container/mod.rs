@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use steel_utils::{BlockPos, WorldAabb};
+use steel_utils::{Downcast as _, BlockPos, WorldAabb};
 
 use crate::entity::SharedEntity;
 use crate::entity::entities::PiglinEntity;
@@ -61,7 +61,7 @@ pub(crate) fn anger_nearby_piglins(world: &Arc<World>, pos: BlockPos, player: &P
         let Some(piglin) = entity.as_entity_event_source().downcast_ref::<PiglinEntity>() else {
             continue;
         };
-        piglin.set_target(Some(&player_entity));
+        piglin.set_target(Some(&player_entity), |_| true);
     }
 }
 pub use station_blocks::*;

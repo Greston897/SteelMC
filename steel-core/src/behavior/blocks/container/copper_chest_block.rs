@@ -15,7 +15,7 @@ use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, ChestType};
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_utils::types::UpdateFlags;
-use steel_utils::{BlockPos, BlockStateId, Direction};
+use steel_utils::{Downcast as _, BlockPos, BlockStateId, Direction};
 
 use std::sync::Arc;
 

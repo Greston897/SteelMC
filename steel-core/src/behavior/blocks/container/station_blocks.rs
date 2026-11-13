@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::vanilla_custom_stats;
 use steel_utils::{BlockPos, BlockStateId};
 use text_components::TextComponent;

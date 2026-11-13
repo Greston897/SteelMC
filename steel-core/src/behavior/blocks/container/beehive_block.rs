@@ -43,7 +43,7 @@ const HORIZONTAL_FACING: &EnumProperty<Direction> = &BlockStateProperties::HORIZ
 const LEVEL_HONEY: &IntProperty = &BlockStateProperties::LEVEL_HONEY;
 
 /// Vanilla `BeehiveBlock.MAX_HONEY_LEVEL`.
-const MAX_HONEY_LEVEL: i32 = 5;
+const MAX_HONEY_LEVEL: u8 = 5;
 /// Vanilla `BeehiveBlock` smoke search: a campfire up to this many blocks below.
 const SMOKE_SEARCH_DISTANCE: i32 = 5;
 
@@ -112,7 +112,7 @@ impl BeehiveBlock {
         // Vanilla spawns one honeycomb item entity at the hive.
         world.drop_item_stack(
             pos,
-            &steel_registry::item_stack::ItemStack::new(&vanilla_items::HONEYCOMB),
+            steel_registry::item_stack::ItemStack::new(&vanilla_items::HONEYCOMB),
         );
         hive.on_honey_harvested(state, world, pos, MAX_HONEY_LEVEL, false);
     }
@@ -130,14 +130,14 @@ impl BeehiveBlock {
 
         let action = inv.with_item(|stack| {
             let item = stack.item();
-            if item == &vanilla_items::GLASS_BOTTLE && honey_level == MAX_HONEY_LEVEL {
+            if item == &*vanilla_items::GLASS_BOTTLE && honey_level == MAX_HONEY_LEVEL {
                 return Some(HoneyAction::Bottle);
             }
-            if item == &vanilla_items::SHEARS && honey_level == MAX_HONEY_LEVEL {
+            if item == &*vanilla_items::SHEARS && honey_level == MAX_HONEY_LEVEL {
                 return Some(HoneyAction::Shear);
             }
-            if item == &vanilla_items::CAMPFIRE
-                || item == &vanilla_items::SOUL_CAMPFIRE
+            if item == &*vanilla_items::CAMPFIRE
+                || item == &*vanilla_items::SOUL_CAMPFIRE
             {
                 return Some(HoneyAction::PlaceCampfire);
             }
@@ -159,7 +159,7 @@ impl BeehiveBlock {
         match action {
             HoneyAction::Bottle => {
                 let infinite = player.has_infinite_materials();
-                inv.with_item_mut(|stack| {
+                inv.with_item(|stack| {
                     stack.consume_one(infinite);
                 });
                 // Vanilla gives the honey bottle to the player or drops it.

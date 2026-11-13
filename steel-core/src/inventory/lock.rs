@@ -183,7 +183,8 @@ impl ContainerRef {
     }
 
     /// Locks this container and returns a guard.
-    fn lock(&self) -> LockedContainer {
+    #[must_use]
+    pub fn lock(&self) -> LockedContainer {
         LockedContainer(SyncMutex::lock_arc(&self.source))
     }
 }
