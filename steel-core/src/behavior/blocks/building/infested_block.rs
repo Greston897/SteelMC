@@ -15,15 +15,17 @@ use steel_registry::blocks::properties::{BlockStateProperties, Direction};
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
 
+use glam::DVec3;
+use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_entities;
+
 use crate::behavior::BlockBehavior;
+use crate::entity::{ENTITIES, next_entity_id};
 use crate::behavior::BlockPlaceContext;
 use crate::world::{LevelReader, ScheduledTickAccess, World};
 
-/// Vanilla `InfestedBlock`: breaking it spawns a silverfish.
-///
-/// The entity spawn lives in the block behavior because Steel has no
-/// `spawnAfterBreak` hook that carries the world; the block is otherwise a plain
-/// full block.
+/// Vanilla `InfestedBlock`: breaking it spawns a silverfish instead of dropping
+/// the block itself.
 #[block_behavior]
 pub struct InfestedBlock {
     block: BlockRef,
@@ -37,9 +39,44 @@ impl InfestedBlock {
     }
 }
 
+impl InfestedBlock {
+    /// Vanilla `InfestedBlock.spawnInfestation`: a silverfish pops out of the
+    /// broken block.
+    pub(crate) fn spawn_infestation(world: &Arc<World>, pos: BlockPos) {
+        let position = DVec3::new(
+            f64::from(pos.x()) + 0.5,
+            f64::from(pos.y()) + 0.5,
+            f64::from(pos.z()) + 0.5,
+        );
+        if let Some(silverfish) = ENTITIES.create(
+            &vanilla_entities::SILVERFISH,
+            next_entity_id(),
+            position,
+            Arc::downgrade(world),
+        ) && world.try_add_entity(silverfish).is_ok()
+        {
+            return;
+        }
+        log::warn!("failed to spawn a silverfish from infested block at {pos:?}");
+    }
+}
+
 impl BlockBehavior for InfestedBlock {
     fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(self.block.default_state())
+    }
+
+    /// Vanilla `InfestedBlock.spawnAfterBreak`: the block leaves no drop, only a
+    /// silverfish.
+    fn spawn_after_break(
+        &self,
+        _state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _tool: &ItemStack,
+        _drop_experience: bool,
+    ) {
+        Self::spawn_infestation(world, pos);
     }
 }
 
@@ -59,6 +96,17 @@ impl InfestedRotatedPillarBlock {
 }
 
 impl BlockBehavior for InfestedRotatedPillarBlock {
+    fn spawn_after_break(
+        &self,
+        _state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _tool: &ItemStack,
+        _drop_experience: bool,
+    ) {
+        InfestedBlock::spawn_infestation(world, pos);
+    }
+
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         // Vanilla `RotatedPillarBlock.getStateForPlacement` picks the axis from
         // the clicked face.
