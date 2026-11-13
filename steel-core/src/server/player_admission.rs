@@ -31,6 +31,8 @@ pub(super) enum PlayerJoinError {
     DuplicateLogin,
     ServerFull,
     NotWhitelisted,
+    /// The player or their address is banned; carries the ban screen text.
+    Banned(String),
 }
 
 /// A duplicate-session wait ended before the old session finished leaving.
@@ -274,6 +276,9 @@ impl Server {
                 PlayerJoinError::NotWhitelisted => {
                     translations::MULTIPLAYER_DISCONNECT_NOT_WHITELISTED.msg()
                 }
+                PlayerJoinError::Banned(reason) => {
+                    text_components::TextComponent::plain(reason)
+                }
             };
             player.disconnect(reason);
             return;
@@ -370,7 +375,18 @@ impl Server {
         }
 
         // Keep the final capacity check and insertion atomic with respect to other joins.
-        let result = if !self.whitelist.allows(uuid) {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |elapsed| i64::try_from(elapsed.as_secs()).unwrap_or(i64::MAX));
+        // A ban takes precedence over the capacity and whitelist checks: a banned
+        // player should see why they are blocked, not "server full".
+        let ban_reason = self.bans.active_player_ban(uuid, now).map(|ban| {
+            format!("You are banned: {}", ban.display_reason())
+        });
+
+        let result = if let Some(reason) = ban_reason {
+            Err(PlayerJoinError::Banned(reason))
+        } else if !self.whitelist.allows(uuid) {
             Err(PlayerJoinError::NotWhitelisted)
         } else if self.is_player_limit_reached(uuid) {
             Err(PlayerJoinError::ServerFull)

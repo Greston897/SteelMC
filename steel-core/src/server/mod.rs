@@ -10,6 +10,7 @@ pub mod rcon;
 pub mod registry_cache;
 mod run_loop;
 pub mod schedule;
+pub mod bans;
 pub mod whitelist;
 mod service_keys;
 mod tick_overload;
@@ -263,6 +264,7 @@ pub async fn test_server_with_worlds_and_config(
         command_requests: CommandRequestQueue::new(),
         schedules: Arc::new(schedule::ScheduleRegistry::new()),
         whitelist: Arc::new(whitelist::Whitelist::new()),
+        bans: Arc::new(bans::BanList::new()),
         packet_processor: PacketProcessor::new(),
         chunk_encoding_pool: Arc::new(chunk_encoding_pool),
         jobs: ServerJobQueue::new(),
@@ -527,6 +529,8 @@ pub struct Server {
     pub schedules: Arc<schedule::ScheduleRegistry>,
     /// Login whitelist, backing `/whitelist`.
     pub whitelist: Arc<whitelist::Whitelist>,
+    /// Player and address bans, backing `/ban`, `/banip`, `/pardon` and `/banlist`.
+    pub bans: Arc<bans::BanList>,
     /// Decoded serverbound play packets handled during the inter-tick phase.
     packet_processor: PacketProcessor,
     /// Dedicated worker pool for CPU-heavy chunk persistence and packet encoding.
@@ -579,6 +583,12 @@ impl Drop for GameTickTaskGuard {
 }
 
 impl Server {
+    /// The online player with `uuid`, if any.
+    #[must_use]
+    pub fn player_by_uuid(&self, uuid: Uuid) -> Option<Arc<Player>> {
+        self.online_players.get_by_uuid(&uuid)
+    }
+
     /// The names of every registered top-level command, sorted.
     ///
     /// `/help` lists these; the list lives behind the dispatcher's lock, so it
