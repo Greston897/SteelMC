@@ -1,11 +1,12 @@
 //! Vanilla `net.minecraft.world.entity.npc.wanderingtrader.WanderingTrader`.
 //!
 //! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
-//! * trades, despawn timer and llama escorts are not implemented.
+//! * the trade list is fixed at spawn from the wandering trader table; the
+//!   despawn timer and the llama escorts are not implemented.
 //! * no natural spawning: vanilla villages place villagers through structure
 //!   generation and the wandering trader arrives with the trader event, both of
 //!   which Steel does not run yet.
-use std::sync::Weak;
+use std::sync::{Arc, Weak};
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
@@ -24,12 +25,17 @@ use crate::entity::ai::goal::{
     WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::entity::villager_trades;
+use crate::inventory::menu::kinds::{SharedTrades, merchant};
 use crate::entity::{
     AgeableMob, AgeableMobBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityPose, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase,
     PathfinderMob, SharedEntity, sync_dirty_mob_effects,
 };
+use crate::behavior::InteractionResult;
 use crate::physics::MoveResult;
+use crate::player::Player;
+use steel_utils::types::InteractionHand;
 use crate::world::World;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
@@ -43,6 +49,8 @@ pub struct WanderingTraderEntity {
     mob_base: MobBase,
     ageable_base: AgeableMobBase,
     entity_data: SyncMutex<WanderingTraderEntityData>,
+    /// The wandering trader's trades, shared with the open merchant screen.
+    trades: SharedTrades,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `WanderingTraderEntity`.
@@ -90,6 +98,10 @@ impl WanderingTraderEntity {
             goal_selector.add_goal(7, RandomLookAroundGoal::new());
         }
 
+        let trades = Arc::new(SyncMutex::new(villager_trades::offers_for(
+            "minecraft:wandering_trader",
+        )));
+
         Self {
             base,
             entity_type,
@@ -97,6 +109,7 @@ impl WanderingTraderEntity {
             mob_base,
             ageable_base,
             entity_data: SyncMutex::new(entity_data),
+            trades,
         }
     }
 
@@ -247,7 +260,28 @@ impl AgeableMob for WanderingTraderEntity {
 
 }
 
+impl WanderingTraderEntity {
+    /// Builds the merchant screen for `player` from the trader's offers.
+    fn open_trading_screen(&self, player: &Player) -> InteractionResult {
+        let trades = Arc::clone(&self.trades);
+        if trades.lock().is_empty() {
+            return InteractionResult::Pass;
+        }
+        let inventory = Arc::clone(&player.inventory);
+        player.open_menu(self.display_name(), move |context| {
+            merchant(inventory, context.container_id, trades)
+        });
+        InteractionResult::Success
+    }
+}
+
 impl Mob for WanderingTraderEntity {
+    /// Vanilla `WanderingTrader.mobInteract`: right-clicking opens the trade
+    /// screen. The trader has no age gate in vanilla, so neither does this.
+    fn mob_interact(&self, player: &Player, _hand: InteractionHand) -> InteractionResult {
+        self.open_trading_screen(player)
+    }
+
     fn mob_base(&self) -> &MobBase {
         &self.mob_base
     }
@@ -270,6 +304,11 @@ impl Mob for WanderingTraderEntity {
 
     fn set_mob_flags(&self, flags: i8) {
         self.entity_data.lock().mob_mut().mob_flags.set(flags);
+    }
+
+    /// Vanilla `WanderingTrader.openMenu` through `MenuProvider`.
+    fn open_menu_for(&self, player: &Player) -> InteractionResult {
+        self.open_trading_screen(player)
     }
 }
 

@@ -458,7 +458,7 @@ impl ScheduledPlayPacket {
                 log::debug!("ignoring unimplemented ResourcePack packet: {packet:?}");
             }
             ScheduledPlayPacketKind::SelectTrade(packet) => {
-                log::debug!("ignoring unimplemented SelectTrade packet: {packet:?}");
+                player.handle_select_trade(packet);
             }
             ScheduledPlayPacketKind::SetCommandBlock(packet) => {
                 log::debug!("ignoring unimplemented SetCommandBlock packet: {packet:?}");

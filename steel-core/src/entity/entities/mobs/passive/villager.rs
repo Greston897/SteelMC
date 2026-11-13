@@ -1,12 +1,14 @@
 //! Vanilla `net.minecraft.world.entity.npc.villager.Villager`.
 //!
 //! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
-//! * professions, trades, gossiping and the trading screen are not implemented;
-//!   the `villager_data` synced component is stored as-is.
+//! * trading covers the novice tier of every profession; levelling, restocking
+//!   and gossip-driven prices are not modelled, so the offer list is fixed for
+//!   the villager's lifetime.
+//! * the `villager_data` synced component is stored as-is.
 //! * no natural spawning: vanilla villages place villagers through structure
 //!   generation and the wandering trader arrives with the trader event, both of
 //!   which Steel does not run yet.
-use std::sync::Weak;
+use std::sync::{Arc, Weak};
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
@@ -25,6 +27,11 @@ use crate::entity::ai::goal::{
     WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::entity::villager_trades;
+use crate::inventory::menu::kinds::{SharedTrades, merchant};
+use crate::behavior::InteractionResult;
+use crate::player::Player;
+use steel_utils::types::InteractionHand;
 use crate::entity::{
     AgeableMob, AgeableMobBase, DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity,
@@ -44,6 +51,9 @@ pub struct VillagerEntity {
     mob_base: MobBase,
     ageable_base: AgeableMobBase,
     entity_data: SyncMutex<VillagerEntityData>,
+    /// The villager's trades, shared with the open merchant screen so a
+    /// completed trade lowers the stock the entity reports on the next open.
+    trades: SharedTrades,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `VillagerEntity`.
@@ -92,6 +102,14 @@ impl VillagerEntity {
             goal_selector.add_goal(7, RandomLookAroundGoal::new());
         }
 
+        // The trade list is built once from the profession; vanilla rebuilds it
+        // when the villager levels up, which needs experience tracking that the
+        // villager does not have yet.
+        let profession = *entity_data.villager().villager_data.get();
+        let trades = Arc::new(SyncMutex::new(villager_trades::offers_for_profession_id(
+            profession.profession,
+        )));
+
         Self {
             base,
             entity_type,
@@ -99,6 +117,7 @@ impl VillagerEntity {
             mob_base,
             ageable_base,
             entity_data: SyncMutex::new(entity_data),
+            trades,
         }
     }
 
@@ -127,6 +146,24 @@ impl VillagerEntity {
     }
 }
 
+impl VillagerEntity {
+    /// Builds the merchant screen for `player` from this villager's trades.
+    fn open_trading_screen(&self, player: &Player) -> InteractionResult {
+        let trades = Arc::clone(&self.trades);
+        if trades.lock().is_empty() {
+            // Vanilla `AbstractVillager.mobInteract`: a villager with no trades
+            // (a nitwit, or a baby) cannot be traded with.
+            return InteractionResult::Pass;
+        }
+
+        let inventory = Arc::clone(&player.inventory);
+        player.open_menu(self.display_name(), move |context| {
+            merchant(inventory, context.container_id, trades)
+        });
+        InteractionResult::Success
+    }
+}
+
 impl DefaultEntityPush for VillagerEntity {}
 
 impl Entity for VillagerEntity {
@@ -144,6 +181,12 @@ impl Entity for VillagerEntity {
 
     fn entity_type(&self) -> EntityTypeRef {
         self.entity_type
+    }
+
+    /// Vanilla `Villager.openMenu` through `MenuProvider`: spectators reach the
+    /// trade screen through this path.
+    fn open_menu_for(&self, player: &Player) -> InteractionResult {
+        self.open_trading_screen(player)
     }
 
     fn base_tick(&self) {
@@ -261,6 +304,15 @@ impl AgeableMob for VillagerEntity {
 }
 
 impl Mob for VillagerEntity {
+    /// Vanilla `AbstractVillager.mobInteract`: right-clicking an adult villager
+    /// opens the trade screen.
+    fn mob_interact(&self, player: &Player, _hand: InteractionHand) -> InteractionResult {
+        if AgeableMob::is_baby(self) {
+            return InteractionResult::Pass;
+        }
+        self.open_trading_screen(player)
+    }
+
     fn mob_base(&self) -> &MobBase {
         &self.mob_base
     }

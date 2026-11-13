@@ -13,6 +13,7 @@ mod ender_chest_menu;
 mod furnace_menu;
 mod grindstone_menu;
 mod inventory_menu;
+mod merchant_menu;
 mod shulker_box_menu;
 mod station_menu;
 
@@ -29,5 +30,6 @@ pub use ender_chest_menu::{EnderChestKind, ender_chest};
 pub use furnace_menu::{FurnaceMenuKind, furnace_menu};
 pub use grindstone_menu::{GrindstoneKind, grindstone};
 pub use inventory_menu::{INVENTORY_MENU_CONTAINER_ID, InventoryKind, inventory_menu};
+pub use merchant_menu::{MerchantKind, SharedTrades, merchant};
 pub use shulker_box_menu::{ShulkerBoxKind, shulker_box};
 pub use station_menu::{StationKind, cartography_table, loom, smithing, stonecutter};

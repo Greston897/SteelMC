@@ -19,6 +19,7 @@ use steel_math::trig;
 use steel_protocol::packets::game::SSeenAdvancement::Opened;
 use steel_protocol::packets::game::{
     CContainerClose, COpenScreen, CSetPlayerInventory, ClickType, SContainerButtonClick,
+    SSelectTrade,
     SContainerClick, SContainerClose, SContainerSlotStateChanged, SEditBook, SRenameItem,
     SSeenAdvancement, SSetBeacon, SSetCarriedItem, SSetCreativeModeSlot, SoundSource,
 };
@@ -271,6 +272,25 @@ impl Player {
             }
             Err(OpenMenuUnavailable::Unavailable) => {}
         }
+    }
+
+    /// Handles a trade selection from the merchant screen.
+    ///
+    /// Vanilla `ServerboundSelectTradePacket`: only a merchant menu accepts it,
+    /// and an out-of-range index is dropped without disturbing the screen.
+    pub fn handle_select_trade(&self, packet: SSelectTrade) {
+        self.reset_last_action_time();
+        let Ok(mut menu) = self.take_open_menu_for_callback(None) else {
+            log::debug!("select trade without an open menu");
+            return;
+        };
+        if self.game_mode() != GameType::Spectator
+            && menu.still_valid(self)
+            && menu.select_trade(packet.item, self)
+        {
+            menu.behavior_mut().broadcast_changes(&self.connection);
+        }
+        self.finish_open_menu_callback(menu);
     }
 
     /// Handles a container click packet (slot interaction).

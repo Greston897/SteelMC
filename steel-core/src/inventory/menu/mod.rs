@@ -187,6 +187,15 @@ impl Menu {
         kind.click_menu_button(behavior, button_id, player)
     }
 
+    /// Applies a trade selection from the client.
+    ///
+    /// Returns false for any menu that is not a merchant menu, mirroring
+    /// vanilla's `instanceof MerchantMenu` check on the receiving side.
+    pub fn select_trade(&mut self, index: i32, player: &Player) -> bool {
+        let Self { behavior, kind, .. } = self;
+        kind.select_trade(behavior, index, player)
+    }
+
     /// Applies a crafter slot-state toggle from the client.
     ///
     /// Returns false for any menu that is not a crafter menu, mirroring

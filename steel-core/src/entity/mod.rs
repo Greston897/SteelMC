@@ -793,6 +793,7 @@ mod storage;
 mod synced_data;
 mod ticking;
 mod tracker;
+pub mod villager_trades;
 
 use crate::portal::{
     PortalKind, PortalProcessResult, PortalProcessor, PortalTicketTarget, TeleportPostAction,
