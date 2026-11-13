@@ -998,7 +998,7 @@ impl Player {
 
     /// Vanilla `LevitationMobEffect.applyEffectTick`: while levitation is active the
     /// effect remembers where it started and fires the `levitation` trigger with
-    /// the distance travelled and the effect duration so far.
+    /// the distance traveled and the effect duration so far.
     fn tick_levitation_trigger(&self) {
         let Some(effect) = self.mob_effect(vanilla_mob_effects::LEVITATION) else {
             *self.levitation_start.lock() = None;

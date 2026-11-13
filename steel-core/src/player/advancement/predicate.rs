@@ -41,7 +41,7 @@ pub struct TriggerContext {
     pub from_dimension: Option<Identifier>,
     /// Dimension the player entered, for `changed_dimension`.
     pub to_dimension: Option<Identifier>,
-    /// Distance travelled, for `nether_travel` and `levitation` distances.
+    /// Distance traveled, for `nether_travel` and `levitation` distances.
     pub distance: Option<f64>,
     /// Duration in ticks, for `levitation`.
     pub duration: Option<i32>,
@@ -124,11 +124,11 @@ impl TriggerContext {
         }
     }
 
-    /// A context for `nether_travel`, carrying the travelled distance.
+    /// A context for `nether_travel`, carrying the traveled distance.
     #[must_use]
-    pub fn nether_travel(distance_travelled: f64) -> Self {
+    pub fn nether_travel(distance_traveled: f64) -> Self {
         Self {
-            distance: Some(distance_travelled),
+            distance: Some(distance_traveled),
             ..Self::default()
         }
     }
