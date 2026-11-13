@@ -347,7 +347,7 @@ pub struct WeatherState {
 
 /// A reference to an entity for loot context.
 /// This is intentionally opaque - the actual entity type depends on game implementation.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct EntityRef<'a> {
     /// Type identifier for the entity.
     pub entity_type: Option<&'a Identifier>,

@@ -772,7 +772,7 @@ impl ParticleOptions for ItemParticleOption {
     fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
         use simdnbt::ToNbtTag as _;
         let mut compound = simdnbt::owned::NbtCompound::new();
-        compound.insert("item", self.item.to_nbt_tag());
+        compound.insert("item", self.item.clone().to_nbt_tag());
         compound
     }
 }

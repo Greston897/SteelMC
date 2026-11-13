@@ -27,7 +27,7 @@ impl DataComponentPatch {
     /// The single-component variant above is the common case; extracted item
     /// templates such as vanilla's ominous banner carry several components at
     /// once, and they are all persistent by construction.
-    pub(crate) fn compute_extracted_hash(entries_in: &[(&Identifier, i32)]) -> i32 {
+    pub(crate) fn compute_extracted_hash(entries_in: &[(Identifier, i32)]) -> i32 {
         let mut entries: Vec<_> = entries_in
             .iter()
             .map(|(key, value_hash)| hash_entry(key.to_string().compute_hash(), *value_hash))

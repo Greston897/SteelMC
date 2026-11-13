@@ -17,7 +17,7 @@ use steel_utils::{
 use text_components::TextComponent;
 
 use crate::{
-    REGISTRY, RegistryEntry, RegistryExt,
+    REGISTRY, RegistryEntry, RegistryExt, TaggedRegistryExt,
     damage_type::DamageTypeRef,
     data_components::{
         Component, ComponentData, ComponentPatchEntry, CustomData, DataComponentMap,
@@ -889,9 +889,7 @@ impl ItemStack {
         else {
             return;
         };
-        let Some(patch) = DataComponentPatch::from_nbt_tag(simdnbt::borrow::NbtTag::Compound(
-            borrowed,
-        )) else {
+        let Some(patch) = DataComponentPatch::from_nbt_tag(borrowed.as_tag()) else {
             return;
         };
 

@@ -208,8 +208,11 @@ impl DyeColor {
     ///
     /// Vanilla `DyeColor.getDyeItem` maps each color to its `*_dye` item; the
     /// mapping is data-driven here so callers never hand-roll the lookup.
+    ///
+    /// Not `const`: the item statics are `LazyLock`s, so reaching the item
+    /// behind the `ItemRef` only happens at run time.
     #[must_use]
-    pub const fn dye_item(self) -> crate::items::ItemRef {
+    pub fn dye_item(self) -> crate::items::ItemRef {
         match self {
             Self::White => &crate::vanilla_items::WHITE_DYE,
             Self::Orange => &crate::vanilla_items::ORANGE_DYE,

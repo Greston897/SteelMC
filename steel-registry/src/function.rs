@@ -68,10 +68,7 @@ impl FunctionRegistry {
             return self.functions_by_key.get(key).copied();
         }
         let (namespace, path) = name.split_once(':').unwrap_or(("minecraft", name));
-        let key = Identifier::new(
-            namespace.to_owned().into(),
-            path.to_owned().into(),
-        );
+        let key = Identifier::new(namespace.to_owned(), path.to_owned());
         self.functions_by_key.get(&key).copied()
     }
 

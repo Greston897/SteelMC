@@ -567,6 +567,8 @@ impl LootRngSeed {
     /// Creates the generator for this selection.
     #[must_use]
     pub fn rng(self) -> rand::rngs::StdRng {
+        use rand::SeedableRng as _;
+
         let seed = match self {
             Self::Legacy(seed) | Self::Sequence(seed) => seed,
         };
@@ -580,7 +582,7 @@ mod seed_tests {
 
     use super::{LootRngSeed, LootTable, LootType, sequence_seed};
 
-    fn table(random_sequence: Option<&str>) -> LootTable {
+    fn table(random_sequence: Option<&'static str>) -> LootTable {
         LootTable {
             key: Identifier::vanilla_static("test/table"),
             loot_type: LootType::Chest,
