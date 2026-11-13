@@ -46,6 +46,19 @@ levelling = "levelling"
 recolour = "recolour"
 desynchronise = "desynchronise"
 Modelling = "Modelling"
+modelling = "modelling"
+# More British spellings carried over from vanilla's own wording and the
+# existing docs. Vanilla uses "customisation" for the mannequin skin mask and
+# "defence" for the iron golem, so these are names, not typos.
+customisation = "customisation"
+Customisation = "Customisation"
+defence = "defence"
+specialised = "specialised"
+acknowledgement = "acknowledgement"
+ageing = "ageing"
+grey = "grey"
+cancelled = "cancelled"
+cancelling = "cancelling"
 # Vanilla stronghold piece-type IDs (shs, shsd, shrc, ...).
 shs = "shs"
 # Vanilla carver tag name (minecraft:overworld_carver_replaceables).

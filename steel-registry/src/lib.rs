@@ -247,7 +247,9 @@ pub mod vanilla_position_source_types;
 
 pub mod function;
 
-#[path = "generated/functions.rs"]
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_functions.rs"]
 pub mod functions;
 
 #[path = "generated/vanilla_villager_types.rs"]
