@@ -15,6 +15,7 @@ mod experience;
 mod fill;
 mod fillbiome;
 mod fly;
+mod function;
 pub(crate) mod gamemode;
 mod gamerule;
 mod give;
@@ -125,6 +126,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(say::say_registration())?;
     builder.register(say::me_registration())?;
     builder.register(scoreboard::registration())?;
+    builder.register(function::registration())?;
     builder.register(schedule::registration())?;
     builder.register(seed::registration())?;
     builder.register(setblock::registration())?;
@@ -207,6 +209,7 @@ mod tests {
                 "xp",
                 "fill",
                 "fly",
+                "function",
                 "gamemode",
                 "gamerule",
                 "give",

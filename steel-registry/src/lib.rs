@@ -245,8 +245,11 @@ pub mod vanilla_particle_types;
 #[path = "generated/vanilla_position_source_types.rs"]
 pub mod vanilla_position_source_types;
 
-#[expect(warnings)]
-#[rustfmt::skip]
+pub mod function;
+
+#[path = "generated/functions.rs"]
+pub mod functions;
+
 #[path = "generated/vanilla_villager_types.rs"]
 pub mod vanilla_villager_types;
 

@@ -288,6 +288,8 @@ pub struct Registry {
     pub recipe_types: RecipeTypeRegistry,
     pub recipe_book_categories: RecipeBookCategoryRegistry,
     pub recipes: RecipeRegistry,
+    /// Every function in the built-in datapack, backing `/function`.
+    pub functions: crate::function::FunctionRegistry,
     pub entity_types: EntityTypeRegistry,
     pub loot_tables: LootTableRegistry,
     pub block_entity_types: BlockEntityTypeRegistry,
@@ -408,6 +410,11 @@ impl Registry {
         vanilla_recipe_types::register(&mut registry.recipe_types);
         vanilla_recipe_book_categories::register(&mut registry.recipe_book_categories);
         vanilla_recipes::register_recipes(&mut registry.recipes);
+        for function in crate::functions::FUNCTIONS.ids() {
+            if let Some(function) = crate::functions::FUNCTIONS.by_key(&function) {
+                registry.functions.register(function);
+            }
+        }
         vanilla_entities::register_entity_types(&mut registry.entity_types);
         vanilla_entity_type_tags::EntityTypeTag::register_entity_type_tags(
             &mut registry.entity_types,
@@ -503,6 +510,7 @@ impl Registry {
         self.recipe_types.freeze();
         self.recipe_book_categories.freeze();
         self.recipes.freeze(&self.recipe_types);
+        self.functions.freeze();
         self.entity_types.freeze();
         self.loot_tables.freeze();
         self.block_entity_types.freeze();
@@ -768,6 +776,7 @@ impl Registry {
             recipe_types: RecipeTypeRegistry::new(),
             recipe_book_categories: RecipeBookCategoryRegistry::new(),
             recipes: RecipeRegistry::new(),
+            functions: crate::function::FunctionRegistry::new(),
             entity_types: EntityTypeRegistry::new(),
             loot_tables: LootTableRegistry::new(),
             block_entity_types: BlockEntityTypeRegistry::new(),
