@@ -23,7 +23,6 @@ pub struct MinecartStep {
 #[packet_id(Play = C_MOVE_MINECART_ALONG_TRACK)]
 pub struct CMoveMinecartAlongTrack {
     /// Minecart entity id.
-    #[write(as = VarInt)]
     pub entity_id: i32,
     /// Interpolation steps.
     pub steps: Vec<MinecartStep>,

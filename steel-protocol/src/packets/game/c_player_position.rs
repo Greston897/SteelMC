@@ -11,7 +11,7 @@ use steel_registry::packets::play::C_PLAYER_POSITION;
 ///
 /// When a flag is set, the corresponding value is relative to the player's current value.
 /// When not set, the value is absolute.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, WriteTo)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct RelativeMovement(pub i32);
 
 impl RelativeMovement {
