@@ -100,18 +100,18 @@ impl TradeOffer {
 
 /// A payment item and a result item, the shorthand the trade table uses.
 struct Trade {
-    cost_a: (steel_registry::item::ItemRef, i32),
-    cost_b: Option<(steel_registry::item::ItemRef, i32)>,
-    result: (steel_registry::item::ItemRef, i32),
+    cost_a: (steel_registry::items::ItemRef, i32),
+    cost_b: Option<(steel_registry::items::ItemRef, i32)>,
+    result: (steel_registry::items::ItemRef, i32),
     max_uses: i32,
     xp: i32,
 }
 
 impl Trade {
     const fn new(
-        cost_a: (steel_registry::item::ItemRef, i32),
-        cost_b: Option<(steel_registry::item::ItemRef, i32)>,
-        result: (steel_registry::item::ItemRef, i32),
+        cost_a: (steel_registry::items::ItemRef, i32),
+        cost_b: Option<(steel_registry::items::ItemRef, i32)>,
+        result: (steel_registry::items::ItemRef, i32),
         max_uses: i32,
         xp: i32,
     ) -> Self {

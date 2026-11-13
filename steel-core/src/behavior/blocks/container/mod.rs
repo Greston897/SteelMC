@@ -4,7 +4,7 @@ use steel_utils::{BlockPos, WorldAabb};
 
 use crate::entity::SharedEntity;
 use crate::entity::entities::PiglinEntity;
-use crate::entity::mob::Mob as _;
+use crate::entity::Mob as _;
 use crate::player::Player;
 use crate::world::World;
 

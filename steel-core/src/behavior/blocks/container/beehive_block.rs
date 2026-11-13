@@ -21,7 +21,7 @@ use crate::behavior::InteractionResult;
 use steel_utils::types::InteractionHand;
 use crate::behavior::context::InventoryAccess;
 use crate::block_entity::BLOCK_ENTITIES;
-use crate::block_entity::entities::beehive::BeehiveBlockEntity;
+use crate::block_entity::entities::BeehiveBlockEntity;
 use crate::entity::Entity as _;
 use crate::player::Player;
 use crate::world::World;

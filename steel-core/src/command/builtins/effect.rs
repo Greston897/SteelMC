@@ -11,7 +11,7 @@ use super::super::{
     },
     registration::CommandRegistration,
 };
-use crate::entity::living_base::MobEffectInstance;
+use crate::entity::MobEffectInstance;
 use crate::entity::{Entity, LivingEntity};
 use steel_registry::{REGISTRY, RegistryExt as _};
 

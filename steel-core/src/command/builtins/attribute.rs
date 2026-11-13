@@ -26,7 +26,9 @@ use super::super::{
     },
     registration::CommandRegistration,
 };
-use crate::entity::attribute::{AttributeModifier, AttributeModifierOperation, AttributeRef};
+use steel_registry::attribute::AttributeRef;
+
+use crate::entity::attribute::{AttributeModifier, AttributeModifierOperation};
 
 const TARGET_ARGUMENT: &str = "target";
 const ATTRIBUTE_ARGUMENT: &str = "attribute";

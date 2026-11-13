@@ -167,7 +167,7 @@ impl Entity for EvokerEntity {
     }
 
     fn play_step_sound(&self, _pos: BlockPos, _block_state: BlockStateId) {
-        self.play_sound(&sound_events::ENTITY_EVOKER_STEP, 0.15, 1.0);
+        // No `step` sound exists for this mob in vanilla.
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {

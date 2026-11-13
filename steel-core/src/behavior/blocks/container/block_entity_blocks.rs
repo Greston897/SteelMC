@@ -25,7 +25,7 @@ use text_components::TextComponent;
 use crate::behavior::InventoryAccess;
 use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
 use crate::block_entity::BlockEntityTicker;
-use crate::block_entity::entities::crafter::CrafterBlockEntity;
+use crate::block_entity::entities::CrafterBlockEntity;
 use crate::behavior::context::{BlockHitResult, BlockPlaceContext, InteractionResult};
 use crate::block_entity::BLOCK_ENTITIES;
 use crate::inventory::container::calculate_redstone_signal_from_container;

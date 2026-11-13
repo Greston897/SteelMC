@@ -24,7 +24,7 @@
 //! let behavior = BLOCK_BEHAVIORS.get_behavior(block);
 //! ```
 
-mod block;
+pub mod block;
 pub mod blocks;
 mod consume_effect;
 mod context;
