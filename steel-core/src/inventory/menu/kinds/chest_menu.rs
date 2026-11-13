@@ -8,6 +8,7 @@
 use steel_registry::menu_type::MenuTypeRef;
 use steel_registry::vanilla_menu_types;
 
+use crate::block_entity::entities::ChestBlockEntity;
 use crate::inventory::prelude::*;
 use crate::player::player_inventory::PlayerInventory;
 

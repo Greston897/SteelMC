@@ -16,6 +16,7 @@ use steel_protocol::packets::game::{
     SChangeGameMode, SChat, SChatAck, SChatCommand, SChatCommandSigned, SChatSessionUpdate,
     SChunkBatchReceived, SClientCommand, SClientTickEnd, SCommandSuggestion,
     SConfigurationAcknowledged, SContainerButtonClick, SContainerClick, SContainerClose,
+    SCookieResponse,
     SContainerSlotStateChanged, SCustomClickAction, SDebugSubscriptionRequest, SEditBook,
     SEntityTagQuery, SInteract, SJigsawGenerate, SLockDifficulty, SMovePlayer, SMovePlayerPos,
     SMovePlayerPosRot, SMovePlayerRot, SMovePlayerStatusOnly, SMoveVehicle, SPaddleBoat,

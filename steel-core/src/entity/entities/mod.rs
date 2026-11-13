@@ -20,7 +20,7 @@ pub use mobs::neutral::*;
 pub use mobs::passive::*;
 pub use objects::decoration::{
     ArmorStandEntity, BillboardConstraints, CushionEntity, DisplayTransformation, ItemDisplayEntity,
-    PaintingEntity, TextDisplayEntity,
+    MannequinEntity, PaintingEntity, TextDisplayEntity,
 };
 pub use objects::display_ui::{
     BlockDisplayEntity, GlowItemFrameEntity, ItemFrameEntity, LeashFenceKnotEntity,
@@ -40,5 +40,6 @@ pub use objects::projectiles::{
 pub use objects::technical::{InteractionEntity, MarkerEntity, OminousItemSpawnerEntity};
 pub use objects::vehicles::{
     BoatEntity, ChestBoatEntity, ChestMinecartEntity, ChestRaftEntity, CommandBlockMinecartEntity,
-    FurnaceMinecartEntity, HopperMinecartEntity, MinecartEntity, RaftEntity, TntMinecartEntity,
+    FurnaceMinecartEntity, HopperMinecartEntity, MinecartEntity, RaftEntity, SpawnerMinecartEntity,
+    TntMinecartEntity,
 };
