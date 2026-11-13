@@ -1,4 +1,5 @@
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::config::C_KEEP_ALIVE;
 use steel_registry::packets::play::C_KEEP_ALIVE as PLAY_C_KEEP_ALIVE;
 

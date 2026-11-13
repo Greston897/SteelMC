@@ -1,6 +1,7 @@
 //! Scoreboard score reset packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_RESET_SCORE;
 
 /// Clientbound packet that clears a score from one objective.

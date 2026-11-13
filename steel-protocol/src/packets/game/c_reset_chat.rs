@@ -1,6 +1,7 @@
 //! Reset chat packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::config::C_RESET_CHAT;
 
 /// Clientbound packet that clears the client chat history.

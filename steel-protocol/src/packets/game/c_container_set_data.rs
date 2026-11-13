@@ -1,4 +1,5 @@
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_CONTAINER_SET_DATA;
 
 #[derive(ClientPacket, WriteTo, Clone, Debug)]

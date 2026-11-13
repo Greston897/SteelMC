@@ -1,6 +1,7 @@
 //! Play-state ping packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_PING;
 
 /// Clientbound packet that pings the client during play.

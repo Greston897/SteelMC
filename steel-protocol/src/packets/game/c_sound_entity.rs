@@ -1,6 +1,7 @@
 //! Clientbound packet that plays a sound bound to an entity.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_SOUND_ENTITY;
 use steel_utils::codec::VarInt;
 

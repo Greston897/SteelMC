@@ -1,6 +1,7 @@
 //! Post-processing effects packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::{config, play};
 use steel_utils::Identifier;
 

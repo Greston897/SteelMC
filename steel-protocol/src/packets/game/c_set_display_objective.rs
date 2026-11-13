@@ -1,6 +1,7 @@
 //! Scoreboard display-slot packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_SET_DISPLAY_OBJECTIVE;
 use steel_utils::codec::VarInt;
 

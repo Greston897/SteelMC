@@ -1,6 +1,7 @@
 //! Mount screen packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_MOUNT_SCREEN_OPEN;
 use steel_utils::codec::VarInt;
 

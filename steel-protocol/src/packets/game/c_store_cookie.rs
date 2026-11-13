@@ -1,9 +1,9 @@
 //! Store cookie packet.
 
-use steel_macros::ClientPacket;
+use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::{config, play};
 use steel_utils::Identifier;
-use steel_utils::serial::WriteTo;
+use steel_utils::serial::WriteTo as _;
 
 /// Clientbound packet that asks the client to persist a cookie.
 #[derive(ClientPacket, WriteTo, Clone, Debug)]

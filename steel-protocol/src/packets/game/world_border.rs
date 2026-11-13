@@ -1,4 +1,5 @@
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::{
     C_INITIALIZE_BORDER, C_SET_BORDER_CENTER, C_SET_BORDER_LERP_SIZE, C_SET_BORDER_SIZE,
     C_SET_BORDER_WARNING_DELAY, C_SET_BORDER_WARNING_DISTANCE,

@@ -3,7 +3,7 @@
 use std::io::{self, Write};
 
 use glam::DVec3;
-use steel_macros::{ClientPacket, WriteTo};
+use steel_macros::ClientPacket;
 use steel_registry::packets::play::C_ENTITY_POSITION_SYNC;
 use steel_utils::codec::VarInt;
 use steel_utils::serial::{PrefixedWrite, WriteTo};

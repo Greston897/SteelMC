@@ -1,6 +1,7 @@
 //! Place ghost recipe packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_PLACE_GHOST_RECIPE;
 use steel_utils::codec::VarInt;
 

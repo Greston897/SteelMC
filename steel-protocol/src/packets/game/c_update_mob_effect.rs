@@ -1,6 +1,7 @@
 //! Clientbound update mob effect packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::mob_effect::MobEffectRef;
 use steel_registry::packets::play::C_UPDATE_MOB_EFFECT;
 

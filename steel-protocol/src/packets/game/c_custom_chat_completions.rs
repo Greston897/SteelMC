@@ -1,6 +1,7 @@
 //! Custom chat completions packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_CUSTOM_CHAT_COMPLETIONS;
 use steel_utils::codec::VarInt;
 

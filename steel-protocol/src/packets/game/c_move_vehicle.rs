@@ -1,5 +1,6 @@
 use glam::DVec3;
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_MOVE_VEHICLE;
 
 /// Clientbound controlled-vehicle position correction packet.

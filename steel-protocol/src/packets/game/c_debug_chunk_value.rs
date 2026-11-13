@@ -1,6 +1,7 @@
 //! Debug chunk-value packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_DEBUG_CHUNK_VALUE;
 use steel_utils::codec::VarInt;
 

@@ -1,6 +1,7 @@
 //! Start configuration packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_START_CONFIGURATION;
 
 /// Clientbound packet that asks the client to re-enter the configuration state.

@@ -1,6 +1,7 @@
 //! Code of conduct packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::config::C_CODE_OF_CONDUCT;
 
 /// Clientbound packet that asks the player to accept the code of conduct

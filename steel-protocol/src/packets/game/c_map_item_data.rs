@@ -14,7 +14,7 @@
 //!    `width`, `height`, `start_x`, `start_z` bytes followed by a
 //!    `VarInt`-prefixed color array.
 
-use steel_macros::{ClientPacket, WriteTo};
+use steel_macros::ClientPacket;
 use steel_registry::packets::play::C_MAP_ITEM_DATA;
 use steel_utils::codec::VarInt;
 use steel_utils::serial::WriteTo;

@@ -1,6 +1,7 @@
 //! Clientbound ping packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_PING;
 
 /// Clientbound packet that asks the client to answer with a pong.

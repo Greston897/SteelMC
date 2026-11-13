@@ -1,4 +1,5 @@
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_TICKING_STATE;
 
 /// Packet sent to clients to inform them of the current tick rate and frozen state.

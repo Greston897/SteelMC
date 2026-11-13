@@ -1,5 +1,6 @@
 use glam::DVec3;
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::{
     packets::play::C_EXPLODE, particle_type::ParticleData, sound_event::SoundEventHolder,
 };

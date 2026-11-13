@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::io::{Result, Write};
 
-use steel_macros::{ClientPacket, WriteTo};
+use steel_macros::ClientPacket;
 use steel_registry::packets::play::C_COMMANDS;
 use steel_utils::{
     codec::VarInt,

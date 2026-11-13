@@ -1,4 +1,5 @@
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::config::C_UPDATE_TAGS;
 use steel_registry::packets::play::C_UPDATE_TAGS as PLAY_C_UPDATE_TAGS;
 use steel_utils::Identifier;
