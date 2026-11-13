@@ -201,6 +201,9 @@ pub use c_clear_titles::CClearTitles;
 pub use c_code_of_conduct::CCodeOfConduct;
 pub use c_command_suggestions::{CCommandSuggestions, SuggestionEntry};
 pub use c_commands::{
+    ArgumentStringTypeBehavior, ArgumentType, CCommands, CommandNode, CommandNodeInfo,
+    SuggestionType,
+};
 pub use c_config_ping::CConfigPing;
 pub use c_container_close::CContainerClose;
 pub use c_container_set_content::CContainerSetContent;
@@ -220,6 +223,8 @@ pub use c_delete_chat::{CDeleteChat, MessageSignature};
 pub use c_entity_event::CEntityEvent;
 pub use c_entity_position_sync::{CEntityPositionSync, PositionPath, PositionStep};
 pub use c_explode::{
+    CExplode, ExplosionParticleInfo, ExplosionParticlePalette, ExplosionParticleWeightError,
+};
 pub use c_game_event::{CGameEvent, GameEventType};
 pub use c_game_rule_values::CGameRuleValues;
 pub use c_game_test_highlight_pos::CGameTestHighlightPos;
@@ -232,6 +237,9 @@ pub use c_map_item_data::{CMapItemData, MapDecorationEntry, MapPatch, OptionalMa
 pub use c_merchant_offers::{CMerchantOffers, MerchantOffer};
 pub use c_mount_screen_open::CMountScreenOpen;
 pub use c_move_entity::{
+    CMoveEntityPos, CMoveEntityPosRot, CMoveEntityRot, DeltaStep, PackedEntityDelta, VecDelta,
+    calc_delta, to_angle_byte,
+};
 pub use c_move_minecart_along_track::{CMoveMinecartAlongTrack, MinecartStep};
 pub use c_move_vehicle::CMoveVehicle;
 pub use c_open_book::COpenBook;
@@ -245,12 +253,17 @@ pub use c_player_combat_end::CPlayerCombatEnd;
 pub use c_player_combat_enter::CPlayerCombatEnter;
 pub use c_player_combat_kill::CPlayerCombatKill;
 pub use c_player_info_update::{
+    CPlayerInfoUpdate, PLAYER_INFO_INIT_ACTIONS, PlayerInfoAction, PlayerInfoEntry,
+    PlayerInfoTarget,
+};
 pub use c_player_look_at::{CPlayerLookAt, LookAtAnchor};
 pub use c_player_position::{CPlayerPosition, RelativeMovement};
 pub use c_player_rotation::CPlayerRotation;
 pub use c_post_effects::{CPostEffects, PostEffect};
 pub use c_projectile_power::CProjectilePower;
 pub use c_recipe_book::{
+    CRecipeBookAdd, CRecipeBookRemove, RecipeBookAddEntry, RecipeBookTypeSettings, StonecutterEntry,
+};
 pub use c_remove_entities::CRemoveEntities;
 pub use c_remove_mob_effect::CRemoveMobEffect;
 pub use c_remove_player_info::CRemovePlayerInfo;
@@ -302,6 +315,8 @@ pub use c_ticking_state::CTickingState;
 pub use c_ticking_step::CTickingStep;
 pub use c_update_advancement::CUpdateAdvancements;
 pub use c_update_attributes::{
+    AttributeModifierData, AttributeModifierOperation, AttributeSnapshot, CUpdateAttributes,
+};
 pub use c_update_enabled_features::CUpdateEnabledFeatures;
 pub use c_update_mob_effect::{CUpdateMobEffect, MobEffectPacketFlags};
 pub use c_update_recipes::{CUpdateRecipes, RecipeEntry};
@@ -337,6 +352,8 @@ pub use s_interact::SInteract;
 pub use s_jigsaw_generate::SJigsawGenerate;
 pub use s_lock_difficulty::SLockDifficulty;
 pub use s_move_player::{
+    SMovePlayer, SMovePlayerPos, SMovePlayerPosRot, SMovePlayerRot, SMovePlayerStatusOnly,
+};
 pub use s_move_vehicle::SMoveVehicle;
 pub use s_paddle_boat::SPaddleBoat;
 pub use s_pick_item_from_block::SPickItemFromBlock;
@@ -371,3 +388,6 @@ pub use s_test_instance_block_action::STestInstanceBlockAction;
 pub use s_use_item::SUseItem;
 pub use s_use_item_on::SUseItemOn;
 pub use world_border::{
+    CInitializeBorder, CSetBorderCenter, CSetBorderLerpSize, CSetBorderSize,
+    CSetBorderWarningDelay, CSetBorderWarningDistance,
+};
