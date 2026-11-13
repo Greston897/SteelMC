@@ -15,6 +15,7 @@ use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::MinecartCommandBlockEntityData;
 use steel_utils::locks::SyncMutex;
+use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::BlockStateId;
 use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
@@ -101,7 +102,7 @@ impl CommandBlockMinecartEntity {
     pub fn set_command(&self, command: impl Into<String>) {
         let command = command.into();
         self.state.lock().command = command.clone();
-        self.entity_data.lock().command_name.set(command);
+        self.entity_data.lock().minecart_command_block_mut().id_command_name.set(command);
     }
 
     /// The last time the command executed, in world game time.
@@ -112,7 +113,7 @@ impl CommandBlockMinecartEntity {
 
     /// Mirrors vanilla `MinecartCommandBlock`'s `lastOutput` component.
     pub fn set_last_output(&self, output: TextComponent) {
-        self.entity_data.lock().last_output.set(Box::new(output));
+        self.entity_data.lock().minecart_command_block_mut().id_last_output.set(Box::new(output));
     }
 
     /// Vanilla `MinecartCommandBlock` only executes while riding an activator

@@ -82,14 +82,15 @@ impl BlockEntity for BannerBlockEntity {
                 let Some(compound) = entry.compound() else {
                     continue;
                 };
-                let Some(pattern) = compound.string("pattern").to_str().parse().ok() else {
+                let Some(pattern) = compound
+                    .string("pattern")
+                    .and_then(|value| value.to_str().parse().ok())
+                else {
                     continue;
                 };
                 let color = compound
                     .string("color")
-                    .to_str()
-                    .parse::<Identifier>()
-                    .ok();
+                    .and_then(|value| value.to_str().parse::<Identifier>().ok());
                 layers.push(BannerPatternLayer { pattern, color });
             }
         }

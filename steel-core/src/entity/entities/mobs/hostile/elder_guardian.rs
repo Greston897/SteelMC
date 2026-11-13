@@ -14,7 +14,9 @@ use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
+use steel_registry::fluid::is_water_fluid;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::GuardianEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
@@ -28,10 +30,11 @@ use crate::entity::ai::goal::{
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
-    EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
-    SharedEntity, sync_dirty_mob_effects,
+    EntitySpawnReason, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster,
+    PathfinderMob, SharedEntity, SpawnRule, sync_dirty_mob_effects,
 };
 use crate::physics::MoveResult;
+use crate::world::LevelReader;
 use crate::world::World;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
@@ -52,6 +55,31 @@ unsafe impl DowncastType for ElderGuardianEntity {
 }
 
 impl ElderGuardianEntity {
+    /// Vanilla `Guardian.checkGuardianSpawnRules`: guardians may only pick a
+    /// spot inside water that still has water below it.
+    pub(crate) const SPAWN_RULE: SpawnRule = Self::check_guardian_spawn_rules;
+
+    fn check_guardian_spawn_rules(
+        entity_type: EntityTypeRef,
+        level: &dyn LevelReader,
+        spawn_reason: EntitySpawnReason,
+        pos: BlockPos,
+        random: &mut dyn Rng,
+    ) -> bool {
+        is_water_fluid(level.get_block_state(pos).get_fluid_state().fluid_id)
+            && is_water_fluid(
+                level
+                    .get_block_state(pos.below())
+                    .get_fluid_state()
+                    .fluid_id,
+            )
+            && <Self as Mob>::check_mob_spawn_rules(entity_type, level, spawn_reason, pos)
+            && {
+                let _ = random;
+                true
+            }
+    }
+
     /// Creates a new entity of this vanilla type.
     #[must_use]
     pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {

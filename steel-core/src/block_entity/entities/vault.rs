@@ -125,9 +125,14 @@ impl BlockEntity for VaultBlockEntity {
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
         let view: simdnbt::borrow::NbtCompound<'_, '_> = nbt.into();
         let mut state = self.state.lock();
-        state.loot_table = view.string("loot_table").to_str().to_string();
-        let display = view.string("display_item").to_str();
-        state.display_item = (!display.is_empty()).then(|| display.to_string());
+        state.loot_table = view
+            .string("loot_table")
+            .map(|value| value.to_str().to_string())
+            .unwrap_or_default();
+        state.display_item = view
+            .string("display_item")
+            .map(|value| value.to_str().to_string())
+            .filter(|display| !display.is_empty());
         state.total_players = view.int("total_players").unwrap_or(0);
     }
 

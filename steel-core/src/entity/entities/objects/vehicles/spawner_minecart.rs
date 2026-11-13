@@ -8,10 +8,13 @@
 use std::sync::{Arc, Weak};
 
 use glam::DVec3;
-use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
+use simdnbt::borrow::{
+    BaseNbtCompound as BorrowedNbtCompound, NbtCompound as BorrowedNbtCompoundView,
+};
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
+use steel_registry::vanilla_entity_data::MinecartEntityData;
 use steel_utils::locks::SyncMutex;
 use steel_utils::BlockStateId;
 use steel_utils::types::InteractionHand;
@@ -32,6 +35,7 @@ use crate::world::World;
 pub struct SpawnerMinecartEntity {
     base: EntityBase,
     entity_type: EntityTypeRef,
+    entity_data: SyncMutex<MinecartEntityData>,
     minecart_base: AbstractMinecartBase,
     spawner: SyncMutex<BaseSpawner>,
 }
@@ -48,6 +52,7 @@ impl SpawnerMinecartEntity {
         Self {
             base: EntityBase::new(id, position, entity_type.dimensions, world),
             entity_type,
+            entity_data: SyncMutex::new(MinecartEntityData::new()),
             minecart_base: AbstractMinecartBase::new(),
             spawner: SyncMutex::new(BaseSpawner::new()),
         }
@@ -59,6 +64,7 @@ impl SpawnerMinecartEntity {
         Self {
             base: EntityBase::from_load(load, entity_type.dimensions),
             entity_type,
+            entity_data: SyncMutex::new(MinecartEntityData::new()),
             minecart_base: AbstractMinecartBase::new(),
             spawner: SyncMutex::new(BaseSpawner::new()),
         }
@@ -78,7 +84,7 @@ impl SpawnerMinecartEntity {
 
     /// Vanilla `MinecartSpawner` has no client-side ticking.
     fn server_tick(self: &Arc<Self>) {
-        let Some(world) = self.level().and_then(|world| world.upgrade()) else {
+        let Some(world) = self.level() else {
             return;
         };
         let _ = self
@@ -122,7 +128,8 @@ impl Entity for SpawnerMinecartEntity {
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
-        self.spawner.lock().load(&nbt.into());
+        let view: BorrowedNbtCompound<'_> = nbt.into();
+        self.spawner.lock().load(&view);
     }
 }
 

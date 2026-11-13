@@ -371,21 +371,21 @@ impl BonemealableFeaturePlacerBlock {
     /// weighted plant set the feature scatters.
     fn vegetation_block(&self, rng: &mut dyn Rng) -> BlockRef {
         let pale = self.block.key == vanilla_blocks::PALE_MOSS_BLOCK.key;
-        // `vanilla_blocks::X` are already `BlockRef` (`&'static Block`), so the
-        // array holds the references directly rather than taking them again.
+        // `vanilla_blocks::X` are `Block` statics, and `BlockRef` is
+        // `&'static Block`, so each entry is borrowed here.
         let choices: [BlockRef; 4] = if pale {
             [
-                vanilla_blocks::PALE_HANGING_MOSS,
-                vanilla_blocks::SHORT_GRASS,
-                vanilla_blocks::PALE_MOSS_CARPET,
-                vanilla_blocks::TALL_GRASS,
+                &vanilla_blocks::PALE_HANGING_MOSS,
+                &vanilla_blocks::SHORT_GRASS,
+                &vanilla_blocks::PALE_MOSS_CARPET,
+                &vanilla_blocks::TALL_GRASS,
             ]
         } else {
             [
-                vanilla_blocks::SHORT_GRASS,
-                vanilla_blocks::MOSS_CARPET,
-                vanilla_blocks::TALL_GRASS,
-                vanilla_blocks::AZALEA,
+                &vanilla_blocks::SHORT_GRASS,
+                &vanilla_blocks::MOSS_CARPET,
+                &vanilla_blocks::TALL_GRASS,
+                &vanilla_blocks::AZALEA,
             ]
         };
         let index = rng.random_range(0..choices.len());

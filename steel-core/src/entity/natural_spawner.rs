@@ -186,6 +186,9 @@ fn random_player_position(world: &Arc<World>) -> Option<glam::DVec3> {
             chosen = Some(player.position());
         }
         index += 1;
+        // Keep iterating: `iter_players` stops only when the callback returns
+        // `false`, and every candidate must be counted to match the index.
+        true
     });
     chosen
 }

@@ -135,7 +135,7 @@ impl Entity for OminousItemSpawnerEntity {
     fn save_additional(&self, nbt: &mut NbtCompound) {
         nbt.insert("spawn_item_after_ticks", self.spawn_item_after_ticks());
         if !self.item().is_empty() {
-            nbt.insert("item", self.item().to_nbt_tag());
+            nbt.insert("item", self.item().to_nbt_tag_ref());
         }
     }
 

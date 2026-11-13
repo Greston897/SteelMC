@@ -1196,6 +1196,7 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         };
         world
             .with_scoreboard(|scoreboard| scoreboard.team_state(&team))
+            .flatten()
             .is_none_or(|state| state.allow_friendly_fire)
     }
 

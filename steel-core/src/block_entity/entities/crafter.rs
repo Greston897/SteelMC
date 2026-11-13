@@ -307,7 +307,7 @@ impl CrafterBlockEntity {
     /// Vanilla `CrafterBlock` uses the `orientation` (`front_and_top`) property
     /// instead of a plain `facing`, because the front can point up or down too.
     fn state_facing(&self) -> Direction {
-        self.block_state()
+        self.get_block_state()
             .try_get_value(&BlockStateProperties::ORIENTATION)
             .map_or(Direction::North, FrontAndTop::front)
     }

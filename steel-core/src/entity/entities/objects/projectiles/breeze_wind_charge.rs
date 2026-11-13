@@ -94,7 +94,7 @@ impl BreezeWindChargeEntity {
             ExplosionInteraction::Trigger,
         );
         options.source = Some(Arc::clone(self) as SharedEntity);
-        options.damage_source = Some(self.wind_charge_damage_source());
+        options.damage_source = Some(self.breeze_damage_source());
         options.small_explosion_particle =
             ParticleData::simple(&vanilla_particle_types::GUST_EMITTER_SMALL);
         options.large_explosion_particle =

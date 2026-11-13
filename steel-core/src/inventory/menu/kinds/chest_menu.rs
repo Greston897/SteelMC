@@ -5,6 +5,7 @@
 //! - Slots `rows * 9` to `rows * 9 + 26`: Main inventory (27)
 //! - Slots `rows * 9 + 27` to `rows * 9 + 35`: Hotbar (9)
 
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::menu_type::MenuTypeRef;
 use steel_utils::Downcast as _;
 use steel_registry::vanilla_menu_types;

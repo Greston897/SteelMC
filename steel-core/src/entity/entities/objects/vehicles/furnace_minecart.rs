@@ -86,12 +86,12 @@ impl FurnaceMinecartEntity {
     /// Whether the furnace is currently burning (the synced `fuel` flag).
     #[must_use]
     pub fn is_lit(&self) -> bool {
-        *self.entity_data.lock().fuel.get()
+        *self.entity_data.lock().minecart_furnace().id_fuel.get()
     }
 
     /// Sets the synced burning flag.
     pub fn set_lit(&self, lit: bool) {
-        self.entity_data.lock().fuel.set(lit);
+        self.entity_data.lock().minecart_furnace_mut().id_fuel.set(lit);
     }
 
     /// Remaining push ticks after the last ignition.
@@ -216,7 +216,7 @@ impl AbstractMinecart for FurnaceMinecartEntity {
         }
         // Vanilla pushes the cart forward along its current facing.
         let (yaw, _) = self.rotation();
-        let rotation = yaw.to_radians();
+        let rotation = f64::from(yaw).to_radians();
         let direction = DVec3::new(-rotation.sin(), 0.0, rotation.cos());
         self.push(direction);
     }

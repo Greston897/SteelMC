@@ -12,8 +12,9 @@ use std::{
 };
 
 use glam::DVec3;
-use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
-use simdnbt::borrow::BorrowedNbtCompound as BorrowedNbtCompoundView;
+use simdnbt::borrow::{
+    BaseNbtCompound as BorrowedNbtCompound, NbtCompound as BorrowedNbtCompoundView,
+};
 use simdnbt::owned::NbtCompound;
 use simdnbt::{FromNbtTag as _, ToNbtTag as _};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;

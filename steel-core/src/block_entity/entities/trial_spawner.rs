@@ -111,10 +111,16 @@ impl BlockEntity for TrialSpawnerBlockEntity {
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
         let view: simdnbt::borrow::NbtCompound<'_, '_> = nbt.into();
         let mut state = self.state.lock();
-        state.entity = view.string("entity").to_str().to_string();
+        state.entity = view
+            .string("entity")
+            .map(|value| value.to_str().to_string())
+            .unwrap_or_default();
         state.spawns_per_player = view.int("spawns_per_player").unwrap_or(0);
         state.total_mobs = view.int("total_mobs").unwrap_or(0);
-        state.loot_table = view.string("loot_table").to_str().to_string();
+        state.loot_table = view
+            .string("loot_table")
+            .map(|value| value.to_str().to_string())
+            .unwrap_or_default();
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {

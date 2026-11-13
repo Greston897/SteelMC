@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use steel_registry::vanilla_entities;
+use steel_utils::Downcast as _;
 
 use super::MobEffectBehavior;
 use crate::entity::entities::mobs::hostile::slime::SlimeEntity;

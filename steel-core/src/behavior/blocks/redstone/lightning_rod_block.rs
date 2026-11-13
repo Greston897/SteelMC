@@ -51,7 +51,8 @@ impl LightningRodBlock {
     /// Named apart from the `BlockBehavior::on_lightning_strike` hook so the
     /// call from `WeatheringLightningRodBlock` cannot resolve to the trait
     /// method, which takes `&self`.
-    fn strike(block: BlockRef,
+    pub(crate) fn strike(
+        block: BlockRef,
         state: BlockStateId,
         world: &Arc<World>,
         pos: BlockPos,

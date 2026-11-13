@@ -18,6 +18,7 @@ use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::
 
 use super::potion_brewing;
 use crate::block_entity::{BlockEntity, BlockEntityBase};
+use crate::entity::Entity as _;
 use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerRef, SharedContainer};
 use crate::world::World;

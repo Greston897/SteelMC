@@ -13,6 +13,7 @@ use simdnbt::ToNbtTag as _;
 use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_entity_data::MinecartEntityData;
 use steel_utils::locks::SyncMutex;
 use steel_utils::BlockStateId;
 use steel_utils::types::InteractionHand;
@@ -40,6 +41,7 @@ const HOPPER_PICKUP_HEIGHT: f64 = 0.5;
 pub struct HopperMinecartEntity {
     base: EntityBase,
     entity_type: EntityTypeRef,
+    entity_data: SyncMutex<MinecartEntityData>,
     minecart_base: AbstractMinecartBase,
     container: SyncMutex<SimpleContainer>,
     enabled: SyncMutex<bool>,
@@ -57,6 +59,7 @@ impl HopperMinecartEntity {
         Self {
             base: EntityBase::new(id, position, entity_type.dimensions, world),
             entity_type,
+            entity_data: SyncMutex::new(MinecartEntityData::new()),
             minecart_base: AbstractMinecartBase::new(),
             container: SyncMutex::new(SimpleContainer::new(HOPPER_SLOTS)),
             enabled: SyncMutex::new(true),
@@ -69,6 +72,7 @@ impl HopperMinecartEntity {
         Self {
             base: EntityBase::from_load(load, entity_type.dimensions),
             entity_type,
+            entity_data: SyncMutex::new(MinecartEntityData::new()),
             minecart_base: AbstractMinecartBase::new(),
             container: SyncMutex::new(SimpleContainer::new(HOPPER_SLOTS)),
             enabled: SyncMutex::new(true),

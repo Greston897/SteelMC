@@ -16,6 +16,7 @@ use steel_registry::vanilla_block_entity_types;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
+use crate::entity::Entity as _;
 use crate::world::World;
 use crate::world::game_event::{GameEventContext, GameEventListener, SharedGameEventListener};
 

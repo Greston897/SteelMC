@@ -239,7 +239,7 @@ impl GrindstoneKind {
             if new_enchantments.is_empty() {
                 // Clear before transmuting: BOOK has no default to sanitize against.
                 item.set(STORED_ENCHANTMENTS, new_enchantments);
-                item.set_item(&*vanilla_items::BOOK.key);
+                item.set_item(&vanilla_items::BOOK.key);
                 return item;
             }
             item.set(STORED_ENCHANTMENTS, new_enchantments);

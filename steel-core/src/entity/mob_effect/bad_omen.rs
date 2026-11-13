@@ -44,7 +44,7 @@ impl MobEffectBehavior for BadOmenBehavior {
             &steel_registry::vanilla_criteria_triggers::VOLUNTARY_EXILE,
             &crate::player::advancement::predicate::TriggerContext::at(
                 &player.get_world(),
-                player.block_position(),
+                player.position(),
             ),
         );
         true

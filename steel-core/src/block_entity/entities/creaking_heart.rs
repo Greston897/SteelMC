@@ -10,9 +10,12 @@ use std::sync::{Arc, Weak};
 use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
 use simdnbt::owned::{NbtCompound, NbtTag};
 use steel_registry::vanilla_block_entity_types;
-use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
+use steel_utils::{
+    BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, locks::SyncMutex,
+};
 
 use glam::DVec3;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::{vanilla_blocks, vanilla_entities};
 use steel_utils::Direction;
 
@@ -127,7 +130,7 @@ impl CreakingHeartBlockEntity {
             world
                 .get_block_state(pos.relative(direction))
                 .get_block()
-                == &vanilla_blocks::PALE_OAK_LOG
+                == vanilla_blocks::PALE_OAK_LOG
         };
         (axis(Direction::North) && axis(Direction::South))
             || (axis(Direction::East) && axis(Direction::West))

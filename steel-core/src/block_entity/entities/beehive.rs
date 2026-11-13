@@ -210,7 +210,7 @@ impl BeehiveBlockEntity {
             let request = EntitySpawnRequest {
                 entity_type: &vanilla_entities::BEE,
                 placement: EntitySpawnPlacement::Block {
-                    pos: self.pos(),
+                    pos: self.get_block_pos(),
                     try_move_down: false,
                     moved_up: false,
                 },
@@ -238,7 +238,7 @@ impl BeehiveBlockEntity {
 
     /// Vanilla `BeehiveBlockEntity.angerBees` fallback for bees already outside.
     fn anger_nearby_bees(&self, world: &Arc<World>, player: &SharedEntity) {
-        let pos = self.pos();
+        let pos = self.get_block_pos();
         let aabb = steel_utils::geometry::WorldAabb::new(
             f64::from(pos.x()) - BEEHIVE_ANGER_RADIUS,
             f64::from(pos.y()) - BEEHIVE_ANGER_RADIUS,
@@ -276,7 +276,7 @@ impl BeehiveBlockEntity {
 
     /// Reads the hive's facing from its current block state.
     fn state_facing(&self) -> Direction {
-        self.block_state()
+        self.get_block_state()
             .try_get_value(&BlockStateProperties::HORIZONTAL_FACING)
             .unwrap_or(Direction::North)
     }

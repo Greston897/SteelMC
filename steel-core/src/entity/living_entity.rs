@@ -3670,10 +3670,10 @@ pub fn create_wither_rose(dead: &dyn Entity, source: &DamageSource) {
     }
     let rose = vanilla_blocks::WITHER_ROSE.default_state();
     if !BLOCK_BEHAVIORS
-        .get_behavior(vanilla_blocks::WITHER_ROSE)
-        .can_survive(rose, world.as_ref(), pos)
+        .get_behavior(rose.get_block())
+        .can_survive(rose, &*world, pos)
     {
         return;
     }
-    world.set_block_state(pos, rose, UpdateFlags::UPDATE_ALL);
+    LevelAccessor::set_block_state(&world, pos, rose, UpdateFlags::UPDATE_ALL);
 }

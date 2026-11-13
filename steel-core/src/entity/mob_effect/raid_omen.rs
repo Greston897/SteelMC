@@ -1,5 +1,7 @@
 //! `RaidOmenMobEffect` behavior.
 
+use glam::IVec3;
+
 use super::MobEffectBehavior;
 use crate::entity::{Entity as _, LivingEntity};
 use crate::world::{World, raid};
@@ -27,7 +29,9 @@ impl MobEffectBehavior for RaidOmenBehavior {
         // stores it on the effect. Steel only records the player's position, which
         // serves the same purpose for a pending omen.
         let pos = player.block_position();
-        world.raids.raise_omen(pos, amplifier);
+        world
+            .raids
+            .raise_omen(IVec3::new(pos.x(), pos.y(), pos.z()), amplifier);
         true
     }
 }
