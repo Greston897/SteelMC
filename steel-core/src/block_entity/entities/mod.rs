@@ -66,7 +66,7 @@ pub use brewing_stand::BrewingStandBlockEntity;
 pub use campfire::{CAMPFIRE_SLOTS, CampfireBlockEntity};
 pub use chiseled_bookshelf::{CHISELED_BOOKSHELF_SLOTS, ChiseledBookShelfBlockEntity};
 pub use comparator::ComparatorBlockEntity;
-pub use crafter::CrafterBlockEntity;
+pub use crafter::{CRAFTER_SLOTS, CrafterBlockEntity};
 pub use conduit::ConduitBlockEntity;
 pub use decorated_pot::DecoratedPotBlockEntity;
 pub use daylight_detector::DaylightDetectorBlockEntity;

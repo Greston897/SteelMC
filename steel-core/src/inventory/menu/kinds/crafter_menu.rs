@@ -20,7 +20,7 @@
 use std::sync::Arc;
 
 use crate::block_entity::SharedBlockEntity;
-use crate::block_entity::entities::crafter::{CRAFTER_SLOTS, CrafterBlockEntity};
+use crate::block_entity::entities::{CRAFTER_SLOTS, CrafterBlockEntity};
 use crate::inventory::prelude::*;
 use crate::player::player_inventory::PlayerInventory;
 use steel_registry::vanilla_blocks;

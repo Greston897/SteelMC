@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use steel_protocol::packets::game::{BossBarColor, BossBarOverlay, CBossEvent};
 use steel_utils::locks::SyncMutex;
-use steel_utils::text::TextComponent;
+use text_components::TextComponent;
 use uuid::Uuid;
 
 use crate::player::Player;
