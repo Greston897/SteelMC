@@ -48,6 +48,11 @@ pub struct CrafterBlockEntity {
     disabled_slots: SyncMutex<u16>,
     /// Triggered count, mirrored into the `triggered` block state.
     triggered: SyncMutex<i32>,
+    /// Player who triggered the current craft, credited by
+    /// `crafter_recipe_crafted`. Vanilla `CrafterBlockEntity` tracks the same
+    /// through `CrafterBlockEntity.getOwner()`, which is set by the block's
+    /// neighbour update.
+    triggering_player: SyncMutex<Option<Uuid>>,
 }
 
 pub(crate) struct CrafterContainer {
@@ -86,6 +91,7 @@ impl CrafterBlockEntity {
             container,
             disabled_slots: SyncMutex::new(0),
             triggered: SyncMutex::new(0),
+            triggering_player: SyncMutex::new(None),
         }
     }
 
@@ -185,6 +191,12 @@ impl BlockEntity for CrafterBlockEntity {
 }
 
 impl CrafterBlockEntity {
+    /// Records the player who powered this crafter, so the craft can credit
+    /// `crafter_recipe_crafted` the way vanilla's `CrafterBlockEntity` does.
+    pub fn set_triggering_player(&self, player: Option<Uuid>) {
+        *self.triggering_player.lock() = player;
+    }
+
     /// Vanilla `CrafterBlockEntity.craft`: matches a crafting recipe over the
     /// enabled slots, consumes one item from each of them and **ejects** the
     /// result out of the front face.
@@ -194,6 +206,7 @@ impl CrafterBlockEntity {
     /// `craft` hands the assembled stack to `CraftingRecipe.eject`.
     /// Returns the ejected position when a craft happened.
     fn craft(&self, world: &Arc<World>) -> Option<BlockPos> {
+        let mut recipe_key = None;
         let result = {
             let mut container = self.container.lock();
             let disabled = self.disabled_slots();
@@ -219,6 +232,7 @@ impl CrafterBlockEntity {
             let Some(recipe) = recipe else {
                 return None;
             };
+            recipe_key = Some(recipe.key().clone());
             let assembled = recipe_manager::assemble_recipe(recipe, &input);
             if assembled.is_empty() {
                 return None;
@@ -240,7 +254,27 @@ impl CrafterBlockEntity {
             assembled
         };
 
-        self.eject(world, result)
+        let ejected = self.eject(world, result);
+        if ejected.is_some()
+            && let Some(recipe_key) = recipe_key
+        {
+            // Vanilla `CrafterBlockEntity.craft` fires `crafter_recipe_crafted`
+            // for the player who powered the crafter, with both the recipe and
+            // the assembled stack.
+            let starter = self
+                .triggering_player
+                .lock()
+                .and_then(|uuid| world.players.get_by_uuid(&uuid));
+            if let Some(player) = starter {
+                let context =
+                    crate::player::advancement::predicate::TriggerContext::recipe(&recipe_key);
+                player.trigger_advancement_with_context(
+                    &steel_registry::vanilla_criteria_triggers::CRAFTER_RECIPE_CRAFTED,
+                    &context,
+                );
+            }
+        }
+        ejected
     }
 
     /// Vanilla `CraftingRecipe.eject` as used by the crafter: pushes the

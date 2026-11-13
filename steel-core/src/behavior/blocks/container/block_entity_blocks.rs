@@ -687,6 +687,27 @@ impl BlockBehavior for CrafterBlock {
             // The block entity is ticked every game tick whenever the crafter
             // block entity ticker is registered, so starting the counter here
             // is enough; `serverTick` decrements it and fires the craft.
+            //
+            // Redstone carries no player attribution in Steel, so the crafter
+            // credits the nearest player within reach: the one whose
+            // `crafter_recipe_crafted` vanilla would fire when the crafter is
+            // powered next to them.
+            let mut powering_player = None;
+            world.players.iter_players(|_uuid, player| {
+                // Within eight blocks on every axis, which covers vanilla's
+                // four-block interaction range with slack for the sequence delay.
+                let player_pos = player.block_position();
+                let within = (player_pos.x() - pos.x()).abs() <= 8
+                    && (player_pos.y() - pos.y()).abs() <= 8
+                    && (player_pos.z() - pos.z()).abs() <= 8;
+                if within {
+                    powering_player = Some(player.gameprofile.id());
+                    false
+                } else {
+                    true
+                }
+            });
+            crafter.set_triggering_player(powering_player);
             let _ = crafter.start_crafting(world);
         } else if state.get_value(&BlockStateProperties::TRIGGERED) {
             // The sequence finished or the signal dropped: mirror the falling

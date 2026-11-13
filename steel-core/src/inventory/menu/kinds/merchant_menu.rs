@@ -263,6 +263,12 @@ impl MenuKind for MerchantKind {
             &steel_registry::vanilla_criteria_triggers::VILLAGER_TRADE,
             &crate::player::advancement::predicate::TriggerContext::item(&result.item().key),
         );
+        // Vanilla `MerchantResultSlot.onTake` also fires `trade`, which is the
+        // trigger the wandering trader's own advancements use.
+        player.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::TRADE,
+            &crate::player::advancement::predicate::TriggerContext::item(&result.item().key),
+        );
         ClickOutcome::Consume
     }
 }
