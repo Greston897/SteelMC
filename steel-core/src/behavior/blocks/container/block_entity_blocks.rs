@@ -27,7 +27,7 @@ use crate::behavior::context::{BlockHitResult, BlockPlaceContext, InteractionRes
 use crate::block_entity::BLOCK_ENTITIES;
 use crate::inventory::container::calculate_redstone_signal_from_container;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
-use crate::inventory::menu::kinds::{chest, crafter};
+use crate::inventory::menu::kinds::{brewing_stand, chest, crafter, dispenser, hopper, lectern};
 use crate::entity::SharedEntity;
 use crate::entity::entities::{
     ArrowEntity, EnderPearlEntity, ExperienceBottleEntity, FireworkRocketEntity, ItemEntity,
@@ -146,6 +146,31 @@ impl BlockBehavior for HopperBlock {
         Some(self.block.default_state().set_value(HOPPER_FACING, direction))
     }
 
+    /// Vanilla `HopperBlock.useWithoutItem`: opens the five-slot hopper screen.
+    fn use_without_item(
+        &self,
+        _state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+        _hit_result: &BlockHitResult,
+        _inv: &mut InventoryAccess,
+    ) -> InteractionResult {
+
+        let Some(container) = world
+            .get_block_entity(pos)
+            .and_then(ContainerRef::from_block_entity)
+        else {
+            return InteractionResult::Pass;
+        };
+        let inventory = Arc::clone(&player.inventory);
+        player.open_menu(
+            TextComponent::plain("Item Hopper"),
+            move |context| hopper(inventory, context.container_id, container),
+        );
+        InteractionResult::Success
+    }
+
     fn new_block_entity(
         &self,
         level: Weak<World>,
@@ -260,6 +285,32 @@ macro_rules! funnel_like {
                             context.clicked_face().opposite(),
                         ),
                 )
+            }
+
+            /// Vanilla `DispenserBlock.useWithoutItem` (inherited from
+            /// `BaseContainerBlockEntity`): opens the 3x3 screen.
+            fn use_without_item(
+                &self,
+                _state: BlockStateId,
+                world: &Arc<World>,
+                pos: BlockPos,
+                player: &Player,
+                _hit_result: &BlockHitResult,
+                _inv: &mut InventoryAccess,
+            ) -> InteractionResult {
+
+                let Some(container) = world
+                    .get_block_entity(pos)
+                    .and_then(ContainerRef::from_block_entity)
+                else {
+                    return InteractionResult::Pass;
+                };
+                let inventory = Arc::clone(&player.inventory);
+                player.open_menu(
+                    TextComponent::plain("Dispenser"),
+                    move |context| dispenser(inventory, context.container_id, container),
+                );
+                InteractionResult::Success
             }
 
             fn new_block_entity(
@@ -418,6 +469,31 @@ impl BlockBehavior for BrewingStandBlock {
         ))
     }
 
+    /// Vanilla `BrewingStandBlock.useWithoutItem`: opens the brewing screen.
+    fn use_without_item(
+        &self,
+        _state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+        _hit_result: &BlockHitResult,
+        _inv: &mut InventoryAccess,
+    ) -> InteractionResult {
+
+        let Some(container) = world
+            .get_block_entity(pos)
+            .and_then(ContainerRef::from_block_entity)
+        else {
+            return InteractionResult::Pass;
+        };
+        let inventory = Arc::clone(&player.inventory);
+        player.open_menu(
+            TextComponent::plain("Brewing Stand"),
+            move |context| brewing_stand(inventory, context.container_id, container),
+        );
+        InteractionResult::Success
+    }
+
     fn has_analog_output_signal(&self, _state: BlockStateId) -> bool {
         true
     }
@@ -484,6 +560,35 @@ impl BlockBehavior for LecternBlock {
             state,
         ))
     }
+
+    /// Vanilla `LecternBlock.useWithoutItem`: opens the single book slot.
+    ///
+    /// The reading screen only appears while the lectern holds a book; an empty
+    /// lectern is interacted with through `use_item_on` instead.
+    fn use_without_item(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+        _hit_result: &BlockHitResult,
+        _inv: &mut InventoryAccess,
+    ) -> InteractionResult {
+
+        if !state.get_value(&BlockStateProperties::HAS_BOOK) {
+            return InteractionResult::Pass;
+        }
+        let Some(container) = world
+            .get_block_entity(pos)
+            .and_then(ContainerRef::from_block_entity)
+        else {
+            return InteractionResult::Pass;
+        };
+        player.open_menu(TextComponent::plain("Lectern"), move |context| {
+            lectern(context.container_id, container)
+        });
+        InteractionResult::Success
+    }
 }
 
 /// Vanilla `CrafterBlock`: a nine-slot grid with a slot-disable mask.
@@ -503,13 +608,16 @@ impl CrafterBlock {
 impl BlockBehavior for CrafterBlock {
     /// Vanilla `CrafterBlock.useWithoutItem`: opens the 3x3 grid menu so the
     /// player can fill it and toggle slots.
-    fn open_menu(
+    fn use_without_item(
         &self,
+        _state: BlockStateId,
         world: &Arc<World>,
         pos: BlockPos,
-        _state: BlockStateId,
         player: &Player,
+        _hit_result: &BlockHitResult,
+        _inv: &mut InventoryAccess,
     ) -> InteractionResult {
+
         let Some(block_entity) = world.get_block_entity(pos) else {
             return InteractionResult::Pass;
         };
