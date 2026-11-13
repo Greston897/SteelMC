@@ -272,8 +272,6 @@ impl SheepEntity {
             .recipes
             .find_match(&vanilla_recipe_types::CRAFTING, &input)?;
         recipe_manager::assemble_recipe(recipe, &input).get(DYE).copied()
-
-        None
     }
 }
 
