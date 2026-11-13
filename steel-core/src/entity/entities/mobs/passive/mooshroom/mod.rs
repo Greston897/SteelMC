@@ -43,6 +43,7 @@ use crate::entity::ai::goal::{
 use crate::entity::damage::DamageSource;
 use crate::entity::conversion::{ConversionParams, convert_to};
 use crate::entity::living_entity::shearing_loot_items_with_rng;
+use super::cow::CowEntity;
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityPose, EntitySpawnReason, EntitySyncedData, LivingEntity,

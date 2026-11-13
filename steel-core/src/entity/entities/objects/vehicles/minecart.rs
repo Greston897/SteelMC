@@ -9,6 +9,7 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::MinecartEntityData;
+use steel_registry::item_stack::ItemStack;
 use steel_registry::{items::ItemRef, vanilla_entities, vanilla_items};
 use steel_utils::axis::Axis;
 use steel_utils::block_util::FoundRectangle;

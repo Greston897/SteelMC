@@ -219,7 +219,7 @@ pub enum ConditionalBlockSetResult {
 #[derive(Clone)]
 pub struct WorldConfig {
     /// Server this world belongs to, filled once during startup.
-    server: std::sync::OnceLock<std::sync::Weak<crate::server::Server>>,
+    pub server: std::sync::OnceLock<std::sync::Weak<crate::server::Server>>,
     /// Server-owned history; the caller retains it while the world runs.
     pub damage_history: Arc<DamageHistory>,
     /// Domain game-time authority, bound during construction.

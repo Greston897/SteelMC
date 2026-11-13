@@ -189,6 +189,40 @@ impl AbstractMinecart for CommandBlockMinecartEntity {
         self.state.lock().powered = powered;
     }
 
+    fn custom_display_block(&self) -> Option<BlockStateId> {
+        *self
+            .entity_data
+            .lock()
+            .abstract_minecart()
+            .id_custom_display_block
+            .get()
+    }
+
+    fn set_custom_display_block(&self, value: Option<BlockStateId>) {
+        self.entity_data
+            .lock()
+            .abstract_minecart_mut()
+            .id_custom_display_block
+            .set(value);
+    }
+
+    fn display_offset(&self) -> i32 {
+        *self
+            .entity_data
+            .lock()
+            .abstract_minecart()
+            .id_display_offset
+            .get()
+    }
+
+    fn set_display_offset(&self, value: i32) {
+        self.entity_data
+            .lock()
+            .abstract_minecart_mut()
+            .id_display_offset
+            .set(value);
+    }
+
 }
 
 #[cfg(test)]

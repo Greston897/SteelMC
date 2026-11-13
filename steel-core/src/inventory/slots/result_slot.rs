@@ -1,6 +1,7 @@
 use std::{mem, sync::Arc};
 
 use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_custom_stats;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::{
@@ -98,7 +99,7 @@ impl Slot for ResultSlot {
         // API yet, so only the statistic is recorded here.
         if !stack.is_empty() {
             player.award_stat_with_count(
-                &vanilla_stat_types::ITEM_CRAFTED,
+                &vanilla_custom_stats::ITEM_CRAFTED,
                 stack.item(),
                 stack.count(),
             );
