@@ -116,7 +116,7 @@ impl FluidBehavior for LavaFluid {
             }
             world.set_block(
                 target,
-                crate::behavior::blocks::portal::FireBlock::get_state(world.as_ref(), target),
+                crate::behavior::blocks::FireBlock::get_state(world.as_ref(), target),
                 UpdateFlags::UPDATE_ALL,
             );
         }
