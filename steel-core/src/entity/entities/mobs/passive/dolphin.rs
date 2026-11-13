@@ -27,7 +27,9 @@ use steel_utils::types::InteractionHand;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::behavior::InteractionResult;
-use crate::entity::ai::goal::{LookAtPlayerGoal, RandomLookAroundGoal, RandomSwimmingGoal};
+use crate::entity::ai::goal::{
+    BreathAirGoal, LookAtPlayerGoal, RandomLookAroundGoal, RandomSwimmingGoal,
+};
 use crate::entity::ai::path::PathType;
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::mobs::passive::fish::{
@@ -134,8 +136,11 @@ impl DolphinEntity {
         {
             // Vanilla `Dolphin.registerGoals` (the water-relevant subset).
             let mut goal_selector = mob_base.goal_selector().lock();
+            // Vanilla `Dolphin.registerGoals` starts with `BreathAirGoal`, which
+            // lifts a dolphin that has been submerged too long to the surface.
+            goal_selector.add_goal(0, BreathAirGoal::new());
             goal_selector.add_goal(
-                0,
+                1,
                 RandomSwimmingGoal::new(DOLPHIN_SWIM_SPEED, DOLPHIN_SWIM_INTERVAL),
             );
             goal_selector.add_goal(6, LookAtPlayerGoal::new(6.0));

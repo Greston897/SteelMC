@@ -27,7 +27,9 @@ use steel_utils::types::InteractionHand;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::behavior::InteractionResult;
-use crate::entity::ai::goal::{MeleeAttackGoal, PanicGoal, RandomSwimmingGoal};
+use crate::entity::ai::goal::{
+    BreathAirGoal, MeleeAttackGoal, PanicGoal, RandomSwimmingGoal,
+};
 use crate::entity::ai::path::PathType;
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::mobs::passive::fish::{
@@ -137,6 +139,8 @@ impl AxolotlEntity {
         {
             // Vanilla `Axolotl.registerGoals`.
             let mut goal_selector = mob_base.goal_selector().lock();
+            // Vanilla `Axolotl.registerGoals` starts with `BreathAirGoal` at 0.
+            goal_selector.add_goal(0, BreathAirGoal::new());
             goal_selector.add_goal(1, PanicGoal::new(AXOLOTL_PANIC_SPEED));
             goal_selector.add_goal(2, MeleeAttackGoal::new(AXOLOTL_ATTACK_SPEED, true));
             goal_selector.add_goal(
