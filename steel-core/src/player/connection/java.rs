@@ -44,6 +44,7 @@ use tokio::time::timeout;
 use tokio_util::sync::CancellationToken;
 
 use crate::player::connection::NetworkConnection;
+use crate::player::connection::packet_budget::{PacketBudget, ViolationBudget};
 use crate::player::{Player, PlayerSession};
 use crate::server::Server;
 
@@ -1104,7 +1105,17 @@ impl JavaConnection {
     }
 
     /// Listens for packets from the client.
+    ///
+    /// Every inbound packet passes through a [`PacketBudget`] first, so a client
+    /// that floods the server — millions of book edits, container clicks, or
+    /// oversized custom payloads — is throttled and then disconnected instead of
+    /// queueing unbounded work on the game loop. Malformed packets go through a
+    /// [`ViolationBudget`]: a couple of transient failures are tolerated, but a
+    /// peer that keeps sending garbage is closed, exactly like vanilla's
+    /// `DecoderException` path.
     pub async fn listener(&self, mut reader: JavaNetworkReader, server: Arc<Server>) {
+        let mut budget = PacketBudget::with_packet_limit(server.config.rate_limit);
+        let mut violations = ViolationBudget::default();
         loop {
             select! {
                 () = self.wait_for_close() => {
@@ -1113,17 +1124,43 @@ impl JavaConnection {
                 packet = reader.get_raw_packet() => {
                     match packet {
                         Ok(packet) => {
+                            let payload_bytes = packet.payload().len();
+                            let admission = budget.admit(payload_bytes);
+                            if !admission.is_allowed() {
+                                // The packet is discarded before decoding: no
+                                // allocation, no dispatch, no game-loop work.
+                                if admission.exceeds_drop_threshold() {
+                                    log::warn!(
+                                        "Closing connection {} for exceeding the inbound packet budget",
+                                        self.id
+                                    );
+                                    self.close();
+                                    break;
+                                }
+                                continue;
+                            }
+
                             if let Some(player) = self.session.current_player()
                                 && let Err(err) = self.process_packet(packet, player, &server) {
                                 log::warn!(
-                                    "Failed to get packet from client {}: {err}",
+                                    "Rejected packet from client {}: {err}",
                                     self.id
                                 );
+                                if violations.record() {
+                                    log::warn!(
+                                        "Closing connection {} after {} malformed packets",
+                                        self.id,
+                                        violations.count()
+                                    );
+                                    self.close();
+                                    break;
+                                }
                             }
                         }
                         Err(err) => {
                             log::debug!("Failed to get raw packet from client {}: {err}", self.id);
                             self.close();
+                            break;
                         }
                     }
                 }

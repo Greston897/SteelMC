@@ -664,6 +664,23 @@ impl World {
         self.chunk_map.dimension_kept_active()
     }
 
+    /// Vanilla keeps ticking removed players from their connection.
+    ///
+    /// Steel ticks players through the entity manager, which skips removed
+    /// entities, so a dead player would freeze: death animation, respawn timer,
+    /// and `play_time` would all stop. Ticking them here keeps that behaviour and
+    /// must run before the entity tick so the removal tick is not processed
+    /// twice. Unlike the entity tick this skips `commonTick`, so the tick count
+    /// stays frozen like vanilla.
+    fn tick_removed_players(self: &Arc<Self>) {
+        self.players.iter_players(|_, player| {
+            if player.is_removed() {
+                Arc::clone(player).tick();
+            }
+            true
+        });
+    }
+
     pub fn tick_game(
         self: &Arc<Self>,
         tick_count: u64,
@@ -698,6 +715,8 @@ impl World {
 
         // Vanilla clears this before ticking entities and block entities.
         self.handling_tick.store(false, Ordering::Relaxed);
+
+        self.tick_removed_players();
 
         let entity_tick = {
             let _span = tracing::trace_span!("entity_tick").entered();

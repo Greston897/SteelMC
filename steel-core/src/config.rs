@@ -89,10 +89,25 @@ pub struct RuntimeConfig {
     pub chat_spam_threshold_seconds: i32,
     /// Vanilla command spam threshold window in seconds
     pub command_spam_threshold_seconds: i32,
+    /// Vanilla `server.properties` `rate-limit`: the maximum number of inbound
+    /// packets per second one connection may send before it is disconnected.
+    ///
+    /// `0` disables the limit, which is vanilla's default. Steel always keeps a
+    /// slightly higher hard ceiling per connection so an unconfigured server is
+    /// still protected from a single flooding client.
+    pub rate_limit: i32,
     /// The compression settings for the server.
     pub compression: Option<CompressionInfo>,
     /// All settings and configurations for server links.
     pub server_links: Option<ServerLinks>,
+    /// Number of CPU cores this server is allowed to use.
+    ///
+    /// This is the *effective* count: the smaller of the OS affinity mask and
+    /// any cgroup CPU quota (Pterodactyl `--cpus=6`, Docker `--cpus`, a
+    /// Kubernetes `cpu` limit). Pools that are not configured explicitly are
+    /// sized from it, so a container never spawns threads for cores it will
+    /// never be scheduled on.
+    pub cores: usize,
     /// Optional count of persistent inter-tick gameplay packet workers.
     pub packet_workers: Option<usize>,
     /// Optional worker count for the Rayon chunk generation pool.
@@ -144,8 +159,11 @@ impl Default for RuntimeConfig {
             force_gamemode: false,
             chat_spam_threshold_seconds: DEFAULT_SPAM_THRESHOLD_SECONDS,
             command_spam_threshold_seconds: DEFAULT_SPAM_THRESHOLD_SECONDS,
+            // Vanilla `server.properties` default: `rate-limit=0`, unlimited.
+            rate_limit: 0,
             compression: Some(CompressionInfo::default()),
             server_links: None,
+            cores: 1,
             packet_workers: None,
             chunk_generation_threads: None,
             chunk_encoding_threads: None,

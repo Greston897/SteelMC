@@ -24,7 +24,8 @@ use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal, MoveTowardsRestrictionGoal,
-    OpenDoorGoal, PanicGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    OpenDoorGoal, PanicGoal, RandomLookAroundGoal, RestrictOpenDoorGoal,
+    WaterAvoidingRandomStrollGoal,
 };
 
 use crate::entity::damage::DamageSource;
@@ -101,6 +102,9 @@ impl VillagerEntity {
             // opens doors on the way, so a villager that strayed still returns.
             goal_selector.add_goal(3, MoveTowardsRestrictionGoal::new(0.6));
             goal_selector.add_goal(3, OpenDoorGoal::new(true));
+            // Vanilla also registers `RestrictOpenDoorGoal` at the same priority:
+            // a villager inside its village shuts doors a raider is holding open.
+            goal_selector.add_goal(3, RestrictOpenDoorGoal::new());
             goal_selector.add_goal(4, FollowParentGoal::new(1.25));
             goal_selector.add_goal(5, WaterAvoidingRandomStrollGoal::new(1.0));
             goal_selector.add_goal(6, LookAtPlayerGoal::new(6.0));

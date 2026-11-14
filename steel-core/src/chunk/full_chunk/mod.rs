@@ -239,6 +239,11 @@ impl FullChunkRef<'_> {
                         .get_behavior(state.get_block())
                         .random_tick(state, world, pos);
                 }
+                // Vanilla `SnowAndFreezeFeature` runs on its own per-chunk rain
+                // pass; Steel folds it into the random-tick sample, which the
+                // spawner already visits for every loaded section. The call is a
+                // cheap early-out unless it is actually snowing at this spot.
+                world.try_accumulate_snow(pos);
                 if let Some(fluid) = tick_fluid {
                     fluid_behaviors.get_behavior(fluid).random_tick(world, pos);
                 }

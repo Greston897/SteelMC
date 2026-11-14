@@ -2293,7 +2293,12 @@ impl LivingEntity for Player {
 
         self.default_tick();
         self.detect_equipment_updates();
-        self.ai_step(entity);
+        // Vanilla `ServerPlayer.doTick` keeps ticking a dead player's connection,
+        // but steering and AI only run for a live entity. Running `ai_step` on a
+        // removed player would move a corpse and corrupt its last position.
+        if !self.is_removed() {
+            self.ai_step(entity);
+        }
 
         // Vanilla snaps the player back to firstGood after ServerPlayer.doTick().
         if let Err(error) = self.try_set_position(tick_position) {

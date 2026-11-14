@@ -77,6 +77,11 @@ pub struct ServerConfig {
     /// Vanilla command spam threshold window in seconds
     #[serde(default = "default_spam_threshold_seconds")]
     pub command_spam_threshold_seconds: i32,
+    /// Vanilla `server.properties` `rate-limit`: inbound packets per second one
+    /// connection may send before it is disconnected. `0` disables the limit,
+    /// matching vanilla's default.
+    #[serde(default)]
+    pub rate_limit: i32,
     /// The compression settings for the server.
     pub compression: Option<CompressionInfo>,
     /// All settings and configurations for server links.
@@ -115,6 +120,10 @@ impl ServerConfig {
             force_gamemode: self.force_gamemode,
             chat_spam_threshold_seconds: self.chat_spam_threshold_seconds,
             command_spam_threshold_seconds: self.command_spam_threshold_seconds,
+            rate_limit: self.rate_limit,
+            cores: self.threads.cores.filter(|&cores| cores > 0).unwrap_or_else(|| {
+                steel_utils::threading::available_worker_threads()
+            }),
             compression: self.compression,
             server_links: self.server_links,
             packet_workers: self.threads.packet_workers,
@@ -160,6 +169,14 @@ impl RconSettings {
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct ThreadConfig {
+    /// Total number of CPU cores this server may use.
+    ///
+    /// `0` or an omitted value detects the real limit: the smaller of the OS
+    /// affinity mask and any cgroup CPU quota, so a Pterodactyl/Docker
+    /// container started with `--cpus=6` (600% of one core) counts as six cores
+    /// even when the host exposes many more. Set this explicitly to reserve
+    /// cores for other processes on the same machine.
+    pub cores: Option<usize>,
     /// Worker threads for the primary Tokio runtime.
     pub main_runtime: Option<usize>,
     /// Worker threads for the chunk Tokio runtime.

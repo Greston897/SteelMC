@@ -13,7 +13,7 @@ use super::{
 };
 
 use steel_registry::vanilla_custom_stats;
-use steel_utils::threading::{available_worker_threads, worker_threads_for_available};
+use steel_utils::threading::worker_threads_for_available;
 use steel_utils::translations;
 
 impl Server {
@@ -33,7 +33,7 @@ impl Server {
     pub async fn run(self: Arc<Self>, cancel_token: CancellationToken) {
         self.packet_processor.open_after_tick();
         let packet_worker_count =
-            worker_threads_for_available(self.config.packet_workers, available_worker_threads());
+            worker_threads_for_available(self.config.packet_workers, self.config.cores);
         let mut packet_handles = Vec::with_capacity(packet_worker_count);
         for worker_id in 0..packet_worker_count {
             let s = Arc::clone(&self);

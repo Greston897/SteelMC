@@ -10,14 +10,24 @@ pub struct Weather {
     pub previous_thunder_level: f32,
 }
 
+use std::sync::Arc;
+
 use super::{
     ADVANCE_WEATHER, BiomeRef, BlockPos, CGameEvent, ChunkGenerator, ChunkPos, GameEventType,
     HeightmapType, LazyLock, LegacyRandom, LightLayer, PerlinSimplexNoise, REGISTRY, RandomSource,
-    RegistryEntry, RegistryExt, TemperatureModifier, World, environment, fuzzed_biome_at_block,
-    obfuscate_biome_seed, vanilla_dimension_types,
+    RegistryEntry, RegistryExt, TemperatureModifier, UpdateFlags, World, environment,
+    fuzzed_biome_at_block, obfuscate_biome_seed, vanilla_blocks, vanilla_dimension_types,
 };
 
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::vanilla_game_rules::MAX_SNOW_ACCUMULATION_HEIGHT;
+use steel_registry::blocks::properties::BlockStateProperties;
+
 use crate::chunk::light::MAX_LIGHT_LEVEL;
+
+/// Vanilla `Biome.Precipitation.SNOW` threshold: below this temperature
+/// precipitation falls as snow instead of rain.
+const SNOW_TEMPERATURE: f32 = 0.15;
 
 static BIOME_TEMPERATURE_NOISE: LazyLock<PerlinSimplexNoise> = LazyLock::new(|| {
     let mut random = RandomSource::Legacy(LegacyRandom::from_seed(1234));
@@ -318,6 +328,68 @@ impl World {
 
     /// Requires full sky light and an unobstructed motion-blocking heightmap.
     /// The light check excludes water; the heightmap excludes glass roofs.
+    /// Vanilla `SnowAndFreezeFeature.place`: accumulates snow during snowfall.
+    ///
+    /// Vanilla runs this once per chunk section per tick from `ChunkMap`'s rain
+    /// pass. Steel calls it from the random-tick path for positions that already
+    /// see the sky, which is where vanilla places the feature too.
+    ///
+    /// The layer count is capped by `maxSnowAccumulationHeight`; a value of `0`
+    /// disables accumulation entirely (a layer that is already there is left
+    /// alone), and `8` allows a full block of snow.
+    pub(crate) fn try_accumulate_snow(self: &Arc<Self>, pos: BlockPos) {
+        if !self.can_have_weather() || !self.is_raining() {
+            return;
+        }
+        if self.get_game_rule(&MAX_SNOW_ACCUMULATION_HEIGHT) <= 0 {
+            return;
+        }
+        if !self.can_see_sky_for_precipitation(pos) {
+            return;
+        }
+        // Vanilla requires snowfall: cold enough that the biome precipitates as
+        // snow rather than rain.
+        let Some(biome) = self.biome_at(pos) else {
+            return;
+        };
+        if !biome.has_precipitation || self.biome_temperature(biome, pos) >= SNOW_TEMPERATURE {
+            return;
+        }
+
+        let limit = u8::try_from(self.get_game_rule(&MAX_SNOW_ACCUMULATION_HEIGHT).clamp(0, 8))
+            .unwrap_or(8);
+        let state = self.get_block_state(pos);
+        let below_pos = pos.below();
+        let below = self.get_block_state(below_pos);
+
+        if state.is_air() {
+            // A snow layer needs a block underneath that can hold it; vanilla
+            // only places it on a full solid top face.
+            if below.is_air() || !below.is_solid() {
+                return;
+            }
+            self.set_block(
+                pos,
+                vanilla_blocks::SNOW.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
+            return;
+        }
+
+        if state.get_block() != &vanilla_blocks::SNOW {
+            return;
+        }
+        let layers = state.get_value(&BlockStateProperties::LAYERS);
+        if layers >= limit {
+            return;
+        }
+        self.set_block(
+            pos,
+            state.set_value(&BlockStateProperties::LAYERS, layers + 1),
+            UpdateFlags::UPDATE_ALL,
+        );
+    }
+
     pub(super) fn can_see_sky_for_precipitation(&self, pos: BlockPos) -> bool {
         if !self.can_see_sky(pos) {
             return false;

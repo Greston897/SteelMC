@@ -78,6 +78,8 @@ pub enum SnbtErrorKind {
         /// Number of supplied arguments.
         argument_count: usize,
     },
+    /// The value nested deeper than the supported maximum depth.
+    TooDeep,
     /// A number was required at the cursor.
     ExpectedNumber,
     /// A binary numeral was required at the cursor.
@@ -282,6 +284,7 @@ impl fmt::Display for SnbtErrorKind {
             Self::ExpectedNonNegativeNumber => {
                 formatter.write_str("unsigned integer literal cannot be negative")
             }
+            Self::TooDeep => formatter.write_str("value nests deeper than the supported maximum"),
             Self::IntegerTooLarge => formatter.write_str("integer literal is too large"),
             Self::NumberOutOfRange {
                 number_type,

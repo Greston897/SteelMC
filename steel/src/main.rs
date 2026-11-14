@@ -17,7 +17,9 @@ use steel_core::GIT_HASH_SHORT;
 use steel_utils::text::DisplayResolutor;
 #[cfg(all(windows, debug_assertions))]
 use steel_utils::threading::DEBUG_STACK_SIZE;
-use steel_utils::threading::{available_worker_threads, worker_threads_for_available};
+use steel_utils::threading::{
+    available_worker_threads, pool_sizes_for_available, worker_threads_for_available,
+};
 use text_components::fmt::set_display_resolutor;
 use tokio::runtime::{Builder, Runtime};
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
@@ -159,13 +161,37 @@ fn steel_main() {
         }
     };
 
+    // The effective core count is the smaller of the OS affinity mask and any
+    // cgroup quota, so a Pterodactyl/Docker container limited to 600% CPU sizes
+    // its pools for six cores even when the host has dozens.
+    let cores = steel_config
+        .server
+        .threads
+        .cores
+        .filter(|&cores| cores > 0)
+        .map_or_else(available_worker_threads, |cores| {
+            cores.min(available_worker_threads())
+        });
+    let pools = pool_sizes_for_available(cores);
+    // Printed once at startup so an operator can see what a container limit was
+    // detected as; on a Pterodactyl box this is the cgroup quota, not the host.
+    tracing::info!(
+        cores,
+        main_runtime = pools.main_runtime,
+        chunk_runtime = pools.chunk_runtime,
+        chunk_generation = pools.chunk_generation,
+        chunk_encoding = pools.chunk_encoding,
+        packet_workers = pools.packet_workers,
+        "Selected thread pool sizes"
+    );
+
     let main_worker_threads = worker_threads_for_available(
         steel_config.server.threads.main_runtime,
-        available_worker_threads(),
+        pools.main_runtime,
     );
     let chunk_worker_threads = worker_threads_for_available(
         steel_config.server.threads.chunk_runtime,
-        available_worker_threads(),
+        pools.chunk_runtime,
     );
 
     let chunk_runtime = Arc::new(

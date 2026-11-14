@@ -36,8 +36,8 @@
         },
         "simulation_distance": {
           "type": "integer",
-          "description": "Maximum simulation distance in chunks",
-          "minimum": 1,
+          "description": "Maximum simulation distance in chunks. Vanilla minimum is 4; 0-3 freezes mobs and other activity outside the chunks the player is in.",
+          "minimum": 0,
           "maximum": 128,
           "default": 10
         },
@@ -116,6 +116,13 @@
           "minimum": -2147483648,
           "maximum": 2147483647,
           "default": 10
+        },
+        "rate_limit": {
+          "type": "integer",
+          "description": "Vanilla server.properties rate-limit: inbound packets per second one connection may send before it is disconnected; values <= 0 disable the limit (an internal 500/s ceiling still applies)",
+          "minimum": -2147483648,
+          "maximum": 2147483647,
+          "default": 0
         },
         "compression": {
           "type": "object",
@@ -238,6 +245,13 @@
           "type": "object",
           "description": "Optional worker counts for server thread pools. 0 or omitted uses each pool's automatic default.",
           "properties": {
+            "cores": {
+              "type": "integer",
+              "description": "CPU cores this server may use; 0 detects the smaller of the OS affinity mask and any cgroup CPU quota (Pterodactyl/Docker --cpus)",
+              "minimum": 0,
+              "maximum": 1024,
+              "default": 0
+            },
             "main_runtime": {
               "type": "integer",
               "description": "Worker threads for the primary Tokio runtime",

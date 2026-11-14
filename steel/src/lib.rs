@@ -92,6 +92,16 @@ impl SteelServer {
     ) -> Result<Self, SteelServerError> {
         log::info!("Starting Steel Server ({GIT_HASH_SHORT})");
 
+        // Vanilla itself never reports a simulation distance below 4; values
+        // below it are accepted but despawn and freeze behaviour outside the
+        // player's own chunks, so say so once instead of surprising the operator.
+        if steel_config.server.simulation_distance < 4 {
+            tracing::warn!(
+                simulation_distance = steel_config.server.simulation_distance,
+                "Simulation distance below 4 can cause incorrect or alternate behavior"
+            );
+        }
+
         let permission_group_store = steel_config.permission_group_store();
         let server_port = steel_config.server.server_port;
         let worlds_config = steel_config.worlds;

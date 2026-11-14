@@ -5,10 +5,11 @@
 //! spawn ring, checks the entity's `SpawnPlacements` predicate and the category
 //! mob cap, then spawns a small pack. The constants below are vanilla's.
 
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use rand::{Rng as _, RngExt as _};
 use steel_registry::entity_type::{EntityTypeRef, MobCategory};
+use steel_registry::vanilla_game_rules;
 use steel_utils::{BlockPos, types::Difficulty};
 
 use crate::chunk::heightmap::HeightmapType;
@@ -55,10 +56,7 @@ pub const fn mob_cap(category: MobCategory, players: usize) -> usize {
 pub fn count_category(world: &World, category: MobCategory) -> usize {
     world
         .entity_manager()
-        .get_accessible_entities()
-        .iter()
-        .filter(|entity| entity.entity_type().mob_category == category)
-        .count()
+        .count_accessible_by_category(category)
 }
 
 /// Runs one vanilla natural-spawn pass for `world`.
@@ -72,6 +70,11 @@ pub fn tick_natural_spawning(world: &Arc<World>, tick_count: usize) -> usize {
         // Vanilla suppresses natural spawning on Peaceful.
         return 0;
     }
+    // Vanilla `NaturalSpawner.isValidSpawnPostitionForType` is gated by the
+    // `doMobSpawning` game rule before any per-type work is done.
+    if !world.get_game_rule(&vanilla_game_rules::SPAWN_MOBS) {
+        return 0;
+    }
 
     let players = world.players.len();
     if players == 0 {
@@ -81,6 +84,9 @@ pub fn tick_natural_spawning(world: &Arc<World>, tick_count: usize) -> usize {
     let mut spawned = 0usize;
     for category in SPAWN_CATEGORIES {
         if category == MobCategory::Misc {
+            continue;
+        }
+        if !category_spawning_enabled(world, category) {
             continue;
         }
         let cap = mob_cap(category, players);
@@ -95,6 +101,19 @@ pub fn tick_natural_spawning(world: &Arc<World>, tick_count: usize) -> usize {
         }
     }
     spawned
+}
+
+/// Vanilla's per-category game-rule gates (`doMobSpawning`, `spawnMonsters`,
+/// `spawnPatrols`, `spawnWanderingTraders`, `spawnPhantoms`, `spawnWardens`).
+///
+/// Vanilla checks the monster rule in `NaturalSpawner.spawnCategoryForChunk`
+/// and the special-mob rules in their own spawners; Steel funnels all of them
+/// through the category so a disabled rule stops the whole pipeline.
+fn category_spawning_enabled(world: &Arc<World>, category: MobCategory) -> bool {
+    match category {
+        MobCategory::Monster => world.get_game_rule(&vanilla_game_rules::SPAWN_MONSTERS),
+        _ => true,
+    }
 }
 
 /// Vanilla `NaturalSpawner.SPAWNING_CATEGORIES`.
@@ -113,18 +132,34 @@ const SPAWN_CATEGORIES: [MobCategory; 8] = [
 ///
 /// Vanilla iterates `entityType.getSpawnGroupData(category)` over the registry;
 /// Steel filters the same way, keeping only types it can actually construct.
-fn natural_spawn_types(category: MobCategory) -> Vec<EntityTypeRef> {
-    steel_registry::REGISTRY
-        .entity_types
-        .iter()
-        .filter(|(_, entity_type)| entity_type.mob_category == category)
-        .map(|(_, entity_type)| entity_type)
-        .filter(|entity_type| {
-            ENTITIES
-                .get()
-                .is_some_and(|registry| registry.has_factory(*entity_type))
+///
+/// The result is memoized once per category. The registry never changes after
+/// startup, so rebuilding (and re-allocating) this list on every 400-tick spawn
+/// pass for every category was pure waste: on a map with ~185 entity types it
+/// walked the whole registry 8 times per pass for no benefit.
+fn natural_spawn_types(category: MobCategory) -> &'static [EntityTypeRef] {
+    static CACHE: OnceLock<[Vec<EntityTypeRef>; 8]> = OnceLock::new();
+    let cache = CACHE.get_or_init(|| {
+        std::array::from_fn(|index| {
+            let category = SPAWN_CATEGORIES[index];
+            steel_registry::REGISTRY
+                .entity_types
+                .iter()
+                .filter(|(_, entity_type)| entity_type.mob_category == category)
+                .map(|(_, entity_type)| entity_type)
+                .filter(|entity_type| {
+                    ENTITIES
+                        .get()
+                        .is_some_and(|registry| registry.has_factory(*entity_type))
+                })
+                .collect()
         })
-        .collect()
+    });
+    let index = SPAWN_CATEGORIES
+        .iter()
+        .position(|candidate| *candidate == category)
+        .unwrap_or(0);
+    &cache[index]
 }
 
 /// Attempts one vanilla pack spawn, returning how many mobs appeared.

@@ -15,7 +15,8 @@ use std::ops::Add;
 use steel_math::trig;
 use steel_registry::particle_type::ParticleData;
 use steel_registry::{
-    REGISTRY, sound_events, vanilla_custom_stats, vanilla_item_tags, vanilla_particle_types,
+    REGISTRY, sound_events, vanilla_custom_stats, vanilla_game_rules, vanilla_item_tags,
+    vanilla_particle_types,
 };
 
 impl Player {
@@ -394,6 +395,11 @@ impl Player {
     }
 
     fn cannot_attack(self: &Arc<Self>, entity: &dyn Entity) -> bool {
+        // Vanilla `Player.attack` refuses to hurt another player when the `pvp`
+        // game rule is off; mobs stay attackable either way.
+        if entity.as_player().is_some() && !self.get_world().get_game_rule(&vanilla_game_rules::PVP) {
+            return true;
+        }
         !entity.attackable()
             || entity.skip_attack_interaction(&(Arc::clone(self) as Arc<dyn Entity>))
     }

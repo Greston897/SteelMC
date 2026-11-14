@@ -113,7 +113,7 @@ use steel_utils::{
     locks::{AsyncMutex, SyncMutex, SyncRwLock},
     saved_data::names as saved_data_names,
     text::DisplayResolutor,
-    threading::{DEBUG_STACK_SIZE, available_worker_threads},
+    threading::{DEBUG_STACK_SIZE, pool_sizes_for_available},
     translations,
 };
 use text_components::{Modifier, TextComponent, format::Color};
@@ -176,20 +176,29 @@ const CHUNK_SENDING_TPS: u64 = 20;
 /// Work duration at which background chunk work is considered slow.
 const SLOW_CHUNK_TICK_THRESHOLD: Duration = Duration::from_millis(50);
 
-fn configured_chunk_generation_threads(configured_threads: Option<usize>) -> Option<usize> {
-    cap_positive_thread_count(configured_threads, available_worker_threads())
-}
-
-fn configured_chunk_encoding_threads(configured_threads: Option<usize>) -> Option<usize> {
-    cap_positive_thread_count(configured_threads, available_worker_threads())
-}
-
-fn cap_positive_thread_count(
+/// Pool sizes for one world's Rayon workers, derived from the effective core
+/// count so a container is never sized for cores it cannot use.
+///
+/// An explicit per-pool setting always wins, but it is still capped to the
+/// effective core count: spawning more threads than the cgroup quota allows only
+/// adds context switches.
+fn configured_chunk_generation_threads(
     configured_threads: Option<usize>,
-    available_threads: usize,
+    cores: usize,
 ) -> Option<usize> {
+    cap_positive_thread_count(configured_threads, cores)
+}
+
+fn configured_chunk_encoding_threads(
+    configured_threads: Option<usize>,
+    cores: usize,
+) -> Option<usize> {
+    cap_positive_thread_count(configured_threads, cores)
+}
+
+fn cap_positive_thread_count(configured_threads: Option<usize>, cores: usize) -> Option<usize> {
     let configured_threads = configured_threads.filter(|&threads| threads > 0)?;
-    Some(configured_threads.min(available_threads.max(1)))
+    Some(configured_threads.min(cores.max(1)))
 }
 
 #[cfg(test)]
@@ -723,13 +732,15 @@ impl Server {
 
         let mut world_storage = storage_registry.resolve_worlds(&resolved_worlds)?;
 
+        let pools = pool_sizes_for_available(config.cores);
         let generation_pool: Arc<ThreadPool> = Arc::new({
             let mut builder = ThreadPoolBuilder::new().thread_name(|i| format!("rayon-gen-{i}"));
-            if let Some(chunk_generation_threads) =
-                configured_chunk_generation_threads(config.chunk_generation_threads)
-            {
-                builder = builder.num_threads(chunk_generation_threads);
-            }
+            let generation_threads = configured_chunk_generation_threads(
+                config.chunk_generation_threads,
+                config.cores,
+            )
+            .unwrap_or(pools.chunk_generation);
+            builder = builder.num_threads(generation_threads);
             // Debug builds have deep call chains in density functions that overflow the default 2 MB stack
             if cfg!(debug_assertions) {
                 builder = builder.stack_size(DEBUG_STACK_SIZE);
@@ -741,11 +752,10 @@ impl Server {
         let chunk_encoding_pool = Arc::new({
             let mut builder =
                 ThreadPoolBuilder::new().thread_name(|i| format!("rayon-chunk-encode-{i}"));
-            if let Some(chunk_encoding_threads) =
-                configured_chunk_encoding_threads(config.chunk_encoding_threads)
-            {
-                builder = builder.num_threads(chunk_encoding_threads);
-            }
+            let encoding_threads =
+                configured_chunk_encoding_threads(config.chunk_encoding_threads, config.cores)
+                    .unwrap_or(pools.chunk_encoding);
+            builder = builder.num_threads(encoding_threads);
             builder
                 .build()
                 .map_err(|e| format!("failed to create chunk encoding thread pool: {e}"))?

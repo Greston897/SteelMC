@@ -4,7 +4,11 @@
 //! connections (`JavaConnection`) and test connections (`FlintConnection`).
 
 mod java;
+mod packet_budget;
 
+pub use packet_budget::{
+    Admission, MAX_PACKETS_PER_SECOND, PacketBudget, RejectionCause, ViolationBudget,
+};
 pub use java::{
     BundleBuilder, JavaConnection, JavaNetworkReader, JavaNetworkWriter, JavaTransportRead,
     JavaTransportWrite, OutboundPacket,
