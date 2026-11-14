@@ -5,6 +5,11 @@
 //! them, and the world format still writes their (empty) NBT. Modelling them
 //! explicitly keeps the registry complete instead of falling back to the generic
 //! `UnimplementedBlockEntity`.
+//!
+//! This module is deliberately not a home for blocks whose server side matters.
+//! A marker drops every NBT field the client would need (`/setblock` on a
+//! command block, a jigsaw or a structure block writes data that is then lost),
+//! so any block that gains server behavior must get a real block entity instead.
 
 use std::sync::{Arc, Weak};
 
@@ -19,7 +24,8 @@ use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::world::World;
 
 macro_rules! marker_block_entity {
-    ($name:ident, $key:literal, $type_const:ident) => {
+    ($(#[$meta:meta])* $name:ident, $key:literal, $type_const:ident) => {
+        $(#[$meta])*
         /// Marker block entity: no extra server-side state.
         pub struct $name {
             base: Arc<BlockEntityBase>,
@@ -69,6 +75,12 @@ marker_block_entity!(
     JIGSAW
 );
 marker_block_entity!(
+    /// Vanilla `CommandBlockEntity` runs commands from its block entity; this
+    /// marker persists nothing, so `/setblock` on a command block currently
+    /// yields a block that never executes.
+    ///
+    /// The `commandBlocksWork` and `commandBlockOutput` game rules depend on that
+    /// executor and are therefore declared but unread.
     CommandBlockEntity,
     "steel:block_entity/command_block",
     COMMAND_BLOCK
