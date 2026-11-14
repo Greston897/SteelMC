@@ -65,7 +65,8 @@ use std::sync::{Arc, LazyLock, Weak};
 use std::time::{Duration, Instant};
 use steel_math::RAD_TO_DEG_F64;
 use steel_protocol::packets::game::{
-    CEntityEvent, CHurtAnimation, CPlayerCombatKill, CPlayerLookAt, CRespawn, CTagQuery,
+    CEntityEvent, CHurtAnimation, CPlayerCombatEnd, CPlayerCombatEnter, CPlayerCombatKill,
+    CPlayerLookAt, CRespawn, CTagQuery,
     CPlaceGhostRecipe, CSetChunkCacheRadius, CSetDefaultSpawnPosition, CSetHealth, CSetHeldSlot,
     CSetPassengers, CSetSimulationDistance,
     ClientCommandAction,
@@ -1969,6 +1970,26 @@ impl Player {
                 .record(self.base(), source, &clock);
         }
 
+        // Vanilla `CombatTracker.recordDamage` keeps the combat state that the
+        // `PlayerCombatEnter/End` packets mirror on the client. The player has
+        // its own tick count, so the bookkeeping uses it instead of the shared
+        // entity-tick helper. Vanilla's `shouldEnterCombat` is
+        // `source.getEntity() instanceof LivingEntity`.
+        {
+            let tick_count = self.tick_count();
+            self.tick_combat_status(tick_count);
+            let enters_combat = source
+                .causing_entity()
+                .is_some_and(|causer| causer.as_living_entity().is_some());
+            if self.living_base().record_combat_damage(
+                tick_count,
+                enters_combat,
+                !self.is_dead_or_dying(),
+            ) {
+                self.on_enter_combat();
+            }
+        }
+
         if damage != 0.0 {
             self.cause_food_exhaustion(source.damage_type.exhaustion);
             self.set_health(self.get_health() - damage);
@@ -2923,6 +2944,20 @@ impl LivingEntity for Player {
         Some(&self.entity_data)
     }
 
+    /// Vanilla `ServerPlayer.onEnterCombat`: tell the client combat started, so
+    /// its combat music and the "in combat" HUD agree with the server.
+    fn on_enter_combat(&self) {
+        self.send_packet(CPlayerCombatEnter {});
+    }
+
+    /// Vanilla `ServerPlayer.onLeaveCombat`: send the duration the tracker
+    /// measured, which the client fades the combat state out over.
+    fn on_leave_combat(&self, combat_duration: i32) {
+        self.send_packet(CPlayerCombatEnd {
+            combat_time: combat_duration,
+        });
+    }
+
     fn indicate_damage(&self, xd: f64, zd: f64) {
         let (y_rot, _) = self.rotation();
         let hurt_dir = zd.atan2(xd) * RAD_TO_DEG_F64 - f64::from(y_rot);
@@ -2934,6 +2969,10 @@ impl LivingEntity for Player {
 
     fn tick_living_entity(&self, entity: &SharedEntity) {
         self.advance_tick();
+        // Vanilla `ServerPlayer.tick` runs `this.getCombatTracker().recheckStatus()`
+        // through the living tick; the player has its own tick count, so the
+        // shared hook is fed here.
+        self.tick_combat_status(self.tick_count());
         self.tick_riptide();
         self.tick_item_cooldowns();
         self.tick_attack_strength();

@@ -654,6 +654,17 @@ struct LivingEntityState {
     last_climbable_pos: Option<BlockPos>,
     discard_friction: bool,
     jumping: bool,
+    /// Vanilla `CombatTracker.inCombat`: the entity is in combat and its
+    /// `onEnterCombat` hook has fired.
+    in_combat: bool,
+    /// Vanilla `CombatTracker.takingDamage`: damage arrived since the last reset.
+    taking_damage: bool,
+    /// Vanilla `CombatTracker.lastDamageTime`, in entity ticks.
+    combat_last_damage_time: i32,
+    /// Vanilla `CombatTracker.combatStartTime`, in entity ticks.
+    combat_start_time: i32,
+    /// Vanilla `CombatTracker.combatEndTime`, in entity ticks.
+    combat_end_time: i32,
     /// Vanilla `AbstractHorse.playerJumpPendingScale`: the charge the rider
     /// released, applied on the mount's next grounded `tickRidden`.
     jump_pending_scale: f32,
@@ -694,6 +705,11 @@ impl LivingEntityState {
             last_climbable_pos: None,
             discard_friction: false,
             jumping: false,
+            in_combat: false,
+            taking_damage: false,
+            combat_last_damage_time: 0,
+            combat_start_time: 0,
+            combat_end_time: 0,
             jump_pending_scale: 0.0,
             travel_input: LivingTravelInput::ZERO,
             rotation: LivingRotationState::new(),
@@ -1519,6 +1535,72 @@ impl LivingEntityBase {
     /// Sets whether this living entity is applying jump input.
     pub fn set_jumping(&self, jumping: bool) {
         self.state.lock().jumping = jumping;
+    }
+
+    /// Vanilla `CombatTracker.recordDamage` bookkeeping.
+    ///
+    /// Returns `true` when this call moved the entity into combat, which is
+    /// exactly when vanilla fires `LivingEntity.onEnterCombat`.
+    pub fn record_combat_damage(&self, tick_count: i32, enters_combat: bool, alive: bool) -> bool {
+        let mut state = self.state.lock();
+        state.combat_last_damage_time = tick_count;
+        state.taking_damage = true;
+        if !state.in_combat && alive && enters_combat {
+            state.in_combat = true;
+            state.combat_start_time = tick_count;
+            state.combat_end_time = tick_count;
+            return true;
+        }
+        false
+    }
+
+    /// Vanilla `CombatTracker.recheckStatus`.
+    ///
+    /// Returns `true` when combat was left, which is when vanilla fires
+    /// `LivingEntity.onLeaveCombat`. `combat_duration` receives
+    /// `CombatTracker.getCombatDuration` for the leave packet.
+    pub fn recheck_combat_status(&self, tick_count: i32, alive: bool) -> Option<i32> {
+        let mut state = self.state.lock();
+        if !state.taking_damage {
+            return None;
+        }
+        let reset = if state.in_combat { 300 } else { 100 };
+        if alive && tick_count - state.combat_last_damage_time <= reset {
+            return None;
+        }
+        let was_in_combat = state.in_combat;
+        state.taking_damage = false;
+        state.in_combat = false;
+        state.combat_end_time = tick_count;
+        if !was_in_combat {
+            return None;
+        }
+        Some(if state.in_combat {
+            tick_count - state.combat_start_time
+        } else {
+            state.combat_end_time - state.combat_start_time
+        })
+    }
+
+    /// Vanilla death/respawn path: a fresh `CombatTracker` starts out of combat.
+    ///
+    /// Returns `true` when the entity was in combat and therefore still owes an
+    /// `onLeaveCombat` call to whoever mirrors that state.
+    pub fn reset_combat(&self, tick_count: i32) -> bool {
+        let mut state = self.state.lock();
+        let was_in_combat = state.in_combat;
+        state.in_combat = false;
+        state.taking_damage = false;
+        state.combat_last_damage_time = 0;
+        state.combat_start_time = tick_count;
+        state.combat_end_time = tick_count;
+        was_in_combat
+    }
+
+    /// Returns whether vanilla's combat tracker currently has this entity in combat.
+    #[must_use]
+    pub fn is_in_combat(&self) -> bool {
+        self.state.lock().in_combat
     }
 
     /// Returns vanilla `playerJumpPendingScale`, the jump charge a rider has

@@ -959,11 +959,58 @@ pub trait LivingEntity: Entity {
             );
         }
 
+        // Vanilla `CombatTracker.recordDamage` runs for every accepted hit,
+        // before the health actually moves.
+        self.record_combat_damage(source);
+
         if damage != 0.0 {
             self.set_health(self.get_health() - damage);
             self.set_absorption_amount(self.get_absorption_amount() - damage);
             self.game_event(&vanilla_game_events::ENTITY_DAMAGE);
         }
+    }
+
+    /// Vanilla `LivingEntity.onEnterCombat`; players override it to send
+    /// `ClientboundPlayerCombatEnterPacket`.
+    fn on_enter_combat(&self) {}
+
+    /// Vanilla `LivingEntity.onLeaveCombat`; players override it to send
+    /// `ClientboundPlayerCombatEndPacket` with the combat duration.
+    fn on_leave_combat(&self, _combat_duration: i32) {}
+
+    /// Vanilla `CombatTracker.recordDamage` combat bookkeeping for one hit.
+    ///
+    /// `shouldEnterCombat` is `source.getEntity() instanceof LivingEntity`, and
+    /// `recheckStatus` runs first, so a stale tracker leaves combat before the
+    /// new entry lands.
+    fn record_combat_damage(&self, source: &DamageSource) {
+        let tick_count = self.base().tick_count();
+        self.tick_combat_status(tick_count);
+        let enters_combat = source
+            .causing_entity()
+            .is_some_and(|entity| entity.as_living_entity().is_some());
+        if self.living_base().record_combat_damage(
+            tick_count,
+            enters_combat,
+            !self.is_dead_or_dying(),
+        ) {
+            self.on_enter_combat();
+        }
+    }
+
+    /// Vanilla `CombatTracker.recheckStatus`, fired from the living tick.
+    fn tick_combat_status(&self, tick_count: i32) {
+        if let Some(duration) = self
+            .living_base()
+            .recheck_combat_status(tick_count, !self.is_dead_or_dying())
+        {
+            self.on_leave_combat(duration);
+        }
+    }
+
+    /// Returns whether vanilla's combat tracker has this entity in combat.
+    fn is_in_combat(&self) -> bool {
+        self.living_base().is_in_combat()
     }
 
     /// Applies vanilla hurt knockback for a damage source.
@@ -2340,6 +2387,7 @@ pub trait LivingEntity: Entity {
             self.ai_step(entity);
         }
 
+        self.tick_combat_status(self.base().tick_count());
         self.tick_living_state();
     }
 
