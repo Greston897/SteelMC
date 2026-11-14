@@ -273,3 +273,91 @@ mod tests {
         assert_eq!(packet.payload(), &packet_data[1..]);
     }
 }
+
+#[cfg(test)]
+mod batching_tests {
+    use super::{EncodedPacket, TCPNetworkEncoder};
+    use std::sync::{Arc, Mutex};
+    use steel_utils::FrontVec;
+
+    /// A writer that counts how many times the buffer was flushed.
+    #[derive(Clone, Default)]
+    struct CountingWriter {
+        bytes: Arc<Mutex<Vec<u8>>>,
+        flushes: Arc<Mutex<usize>>,
+    }
+
+    impl tokio::io::AsyncWrite for CountingWriter {
+        fn poll_write(
+            self: std::pin::Pin<&mut Self>,
+            _cx: &mut std::task::Context<'_>,
+            buf: &[u8],
+        ) -> std::task::Poll<std::io::Result<usize>> {
+            self.bytes.lock().unwrap().extend_from_slice(buf);
+            std::task::Poll::Ready(Ok(buf.len()))
+        }
+
+        fn poll_flush(
+            self: std::pin::Pin<&mut Self>,
+            _cx: &mut std::task::Context<'_>,
+        ) -> std::task::Poll<std::io::Result<()>> {
+            *self.flushes.lock().unwrap() += 1;
+            std::task::Poll::Ready(Ok(()))
+        }
+
+        fn poll_shutdown(
+            self: std::pin::Pin<&mut Self>,
+            _cx: &mut std::task::Context<'_>,
+        ) -> std::task::Poll<std::io::Result<()>> {
+            std::task::Poll::Ready(Ok(()))
+        }
+    }
+
+    fn packet(payload: &[u8]) -> EncodedPacket {
+        let mut data = FrontVec::new(0);
+        data.extend_from_slice(payload);
+        EncodedPacket {
+            encoded_data: Arc::new(data),
+        }
+    }
+
+    #[test]
+    fn buffered_writes_share_one_flush() {
+        let sink = CountingWriter::default();
+        let mut encoder = TCPNetworkEncoder::new(sink.clone());
+        let packets = [packet(b"first"), packet(b"second"), packet(b"third")];
+
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(async {
+                for packet in &packets {
+                    encoder.write_packet_buffered(packet).await.unwrap();
+                }
+                encoder.flush().await.unwrap();
+            });
+
+        assert_eq!(*sink.flushes.lock().unwrap(), 1, "one flush per batch");
+        assert_eq!(
+            sink.bytes.lock().unwrap().as_slice(),
+            b"firstsecondthird",
+            "every packet still reaches the socket"
+        );
+    }
+
+    #[test]
+    fn write_packet_keeps_flushing_for_urgent_sends() {
+        let sink = CountingWriter::default();
+        let mut encoder = TCPNetworkEncoder::new(sink.clone());
+
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(async {
+                encoder.write_packet(&packet(b"disconnect")).await.unwrap();
+            });
+
+        assert_eq!(*sink.flushes.lock().unwrap(), 1);
+        assert_eq!(sink.bytes.lock().unwrap().as_slice(), b"disconnect");
+    }
+}
