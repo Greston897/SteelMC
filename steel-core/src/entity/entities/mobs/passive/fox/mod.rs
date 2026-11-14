@@ -35,6 +35,7 @@ use crate::entity::{
     sync_dirty_mob_effects,
 };
 use crate::physics::MoveResult;
+use crate::player::Player;
 use crate::world::World;
 
 /// Vanilla `Fox.Type`: the two coat variants.
@@ -479,6 +480,16 @@ impl Animal for FoxEntity {
     fn is_food(&self, item_stack: &ItemStack) -> bool {
         is_fox_food(item_stack)
     }
+
+    /// Vanilla `Fox.mobInteract`: feeding a fox makes it trust the player.
+    ///
+    /// Without this the `trusted` slots stayed empty forever, so a fed fox kept
+    /// fleeing instead of behaving like a tamed animal.
+    fn on_fed(&self, player: &Player, item_stack: &ItemStack) {
+        if is_fox_food(item_stack) {
+            self.add_trusted(player.gameprofile.id());
+        }
+    }
 }
 
 #[cfg(test)]
@@ -513,6 +524,29 @@ mod tests {
         fox.set_flag(flags::SLEEPING, false);
         assert!(!fox.has_flag(flags::SLEEPING));
         assert!(fox.has_flag(flags::SITTING));
+    }
+
+    /// Vanilla `Fox.mobInteract`: feeding sweet berries makes the fox trust the
+    /// player. Before this hook existed the trusted slots were only writable from
+    /// tests, so feeding a fox had no lasting effect.
+    #[test]
+    fn feeding_sweet_berries_makes_the_fox_trust_the_player() {
+        use std::sync::Arc;
+
+        use crate::test_support::{TestPlayerBuilder, fresh_test_world};
+
+        init_vanilla_registry();
+        let world_fixture = fresh_test_world("fox_trust_from_feeding");
+        let world = Arc::clone(&world_fixture.world);
+        let player = TestPlayerBuilder::new(Arc::clone(&world), "FoxFeeder", 1).build();
+        let fox = FoxEntity::new(&vanilla_entities::FOX, 1, DVec3::ZERO, Arc::downgrade(&world));
+
+        assert_eq!(fox.trusted_count(), 0);
+        fox.on_fed(&player, &ItemStack::new(&*vanilla_items::SWEET_BERRIES));
+        assert!(
+            fox.is_trusted(player.gameprofile.id()),
+            "a fox trusts the player who fed it"
+        );
     }
 
     #[test]

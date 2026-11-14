@@ -169,6 +169,16 @@ impl ContainerRef {
         self.id
     }
 
+    /// Returns the underlying shared container.
+    ///
+    /// Callers that already hold this container's lock use it to hand the
+    /// container itself to contracts such as `Container::can_take_item`, which
+    /// take a `&dyn Container` destination.
+    #[must_use]
+    pub fn shared_container(&self) -> &SharedContainer {
+        &self.source
+    }
+
     /// Returns the world that owns this container, when it is backed by a block
     /// entity. Player inventories and detached containers have no level.
     #[must_use]
@@ -194,6 +204,22 @@ impl ContainerRef {
     #[must_use]
     pub fn lock(&self) -> LockedContainer {
         LockedContainer(SyncMutex::lock_arc(&self.source))
+    }
+
+    /// Marks the owning block entity as changed.
+    ///
+    /// `Container::set_changed` on the storage itself is a deliberate no-op:
+    /// only the owner knows how to mark the block dirty and refresh comparator
+    /// output. Callers that mutated the storage through [`Self::lock`] must
+    /// report the change through this method instead of calling
+    /// `Container::set_changed` on the guard, which does nothing.
+    pub fn mark_changed(&self) {
+        if let Some(owner) = self.owner.as_ref() {
+            owner.block_entity.set_changed();
+            if let Some(after_changed) = owner.after_changed.as_ref() {
+                after_changed();
+            }
+        }
     }
 }
 

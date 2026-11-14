@@ -9,6 +9,7 @@ use steel_core::player::{ClientInformation, Player, PlayerSession};
 use steel_protocol::packets::common::CCustomPayload;
 use steel_protocol::packets::common::{SClientInformation, SCustomPayload};
 use steel_protocol::packets::config::CFinishConfiguration;
+use steel_protocol::packets::game::CUpdateEnabledFeatures;
 use steel_protocol::packets::config::CSelectKnownPacks;
 use steel_protocol::packets::config::SSelectKnownPacks;
 use steel_protocol::packets::shared_implementation::KnownPack;
@@ -63,6 +64,16 @@ impl JavaTcpClient {
         if let Some(server_links) = self.server.config.server_links_packet() {
             self.send_bare_packet_now(server_links).await;
         }
+
+        // Vanilla `ServerConfigurationPacketListenerImpl.startConfiguration` sends
+        // the enabled feature flags unconditionally, after the brand/server links and
+        // before `select_known_packs`. The vanilla client gates feature-flagged
+        // content on this set; omitting it leaves the connection's flag set empty.
+        // Steel runs the vanilla feature set, i.e. just `minecraft:vanilla`.
+        self.send_bare_packet_now(CUpdateEnabledFeatures {
+            features: vec![Identifier::vanilla_static("vanilla")],
+        })
+        .await;
 
         self.send_bare_packet_now(CSelectKnownPacks::new(vec![KnownPack::new(
             "minecraft".to_string(),

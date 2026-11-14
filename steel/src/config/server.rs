@@ -126,13 +126,10 @@ impl ServerConfig {
             // sizes its pools for more than four cores, even when
             // `config.toml` still says sixteen. `0` means "use whatever the
             // container allows".
-            cores: self
-                .threads
-                .cores
-                .filter(|&cores| cores > 0)
-                .map_or_else(steel_utils::threading::available_worker_threads, |cores| {
-                    cores.min(steel_utils::threading::available_worker_threads())
-                }),
+            cores: steel_utils::threading::effective_cores(
+                self.threads.cores,
+                steel_utils::threading::available_worker_threads(),
+            ),
             compression: self.compression,
             server_links: self.server_links,
             packet_workers: self.threads.packet_workers,

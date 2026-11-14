@@ -170,6 +170,14 @@ pub trait Animal: AgeableMob {
         false
     }
 
+    /// Called when `player` feeds `item_stack` to this animal, before the
+    /// breeding and ageing branches run.
+    ///
+    /// Vanilla species override `mobInteract` for side effects that happen on
+    /// every successful feeding. `Fox.mobInteract` is the common case: feeding
+    /// sweet berries makes the fox trust the player.
+    fn on_fed(&self, _player: &Player, _item_stack: &ItemStack) {}
+
     /// Returns whether this animal can breed at all. Vanilla overrides
     /// `Animal.canBreed` to `false` for parrots, mules, skeleton/zombie horses,
     /// camel husks, happy ghasts and sulfur cubes, which still *eat* their food
@@ -248,6 +256,11 @@ pub trait Animal: AgeableMob {
         if !self.is_food(&item_stack) {
             return self.mob_interact_ageable(player, hand);
         }
+
+        // Vanilla `Animal.mobInteract` lets a species react to being fed before
+        // the generic breeding path. `Fox.mobInteract` uses this to trust the
+        // player, which is what changes its behaviour towards them afterwards.
+        self.on_fed(player, &item_stack);
 
         let age = self.get_age();
         if age == 0 && self.can_breed() && self.can_fall_in_love() {

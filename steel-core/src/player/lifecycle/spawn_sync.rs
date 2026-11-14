@@ -1,10 +1,10 @@
 use steel_protocol::packets::game::CommonPlayerSpawnInfo;
 
 use super::{
-    Arc, BlockBreakingManager, CContainerClose, CGameEvent, CRespawn, CSetDefaultSpawnPosition,
-    CSetHeldSlot, CSetPassengers, DVec3, Entity, GameEventType, MenuRemovalStatus,
-    MobEffectSyncChange, MobEffectSyncPacket, Player, RegistryEntry, RelativeMovement, ResetReason,
-    World,
+    Arc, BlockBreakingManager, CContainerClose, CGameEvent, CRespawn, CSetChunkCacheRadius,
+    CSetDefaultSpawnPosition, CSetHeldSlot, CSetPassengers, CSetSimulationDistance, DVec3, Entity,
+    GameEventType, MenuRemovalStatus, MobEffectSyncChange, MobEffectSyncPacket, Player,
+    RegistryEntry, RelativeMovement, ResetReason, World,
 };
 
 impl Player {
@@ -284,6 +284,7 @@ impl Player {
         self.send_time_sync(world);
         self.send_packet(world.initialize_border_packet());
         self.send_default_spawn_position(world);
+        self.send_view_distances(world);
         self.send_weather_sync(world);
         self.send_recipe_book();
     }
@@ -298,6 +299,22 @@ impl Player {
         self.send_packet(packets.settings);
         self.send_packet(packets.add);
         self.send_packet(packets.update);
+    }
+
+    /// Sends the server's view and simulation distances.
+    ///
+    /// Vanilla `PlayerList.sendLevelInfo` sends both packets immediately after
+    /// the default spawn position and before `LEVEL_CHUNKS_LOAD_START`. Without
+    /// them the client keeps its own defaults (a radius the server never
+    /// intended), so chunk loading and entity/simulation ranges disagree with
+    /// what the server actually ticks and tracks.
+    fn send_view_distances(&self, world: &World) {
+        self.send_packet(CSetChunkCacheRadius {
+            radius: i32::from(world.view_distance),
+        });
+        self.send_packet(CSetSimulationDistance {
+            distance: i32::from(world.simulation_distance),
+        });
     }
 
     fn send_time_sync(&self, world: &World) {

@@ -163,7 +163,11 @@ impl Default for RuntimeConfig {
             rate_limit: 0,
             compression: Some(CompressionInfo::default()),
             server_links: None,
-            cores: 1,
+            // Auto-detected, not a hard `1`: a default-constructed config (tests,
+            // embedders, `steel-flint`) must size its pools for the container's
+            // real core budget, the same way the packaged `cores = 0` does. A
+            // literal `1` silently pinned every derived pool to a single thread.
+            cores: steel_utils::threading::available_worker_threads(),
             packet_workers: None,
             chunk_generation_threads: None,
             chunk_encoding_threads: None,
@@ -184,12 +188,8 @@ impl RuntimeConfig {
     /// keeps one place responsible for it instead of relying on each
     /// constructor to remember.
     pub fn clamp_cores_to_available(&mut self, available: usize) {
-        let available = available.max(1);
-        self.cores = if self.cores == 0 {
-            available
-        } else {
-            self.cores.min(available)
-        };
+        self.cores =
+            steel_utils::threading::effective_cores(Some(self.cores), available);
     }
 
     /// Minimum view distance the server accepts from a client.
@@ -975,6 +975,36 @@ mod tests {
         };
         config.clamp_cores_to_available(6);
         assert_eq!(config.cores, 6, "0 means the container decides");
+    }
+
+    /// The operator's rule, stated directly: when the container allows at least
+    /// as many cores as the config asks for, the config value is used as-is;
+    /// when the container allows fewer, the count is reduced to the container.
+    #[test]
+    fn the_effective_core_count_is_min_of_config_and_container() {
+        for configured in [1usize, 2, 4, 8, 16, 64] {
+            for available in [1usize, 2, 3, 6, 16, 64, 128] {
+                let mut config = RuntimeConfig {
+                    cores: configured,
+                    ..RuntimeConfig::default()
+                };
+                config.clamp_cores_to_available(available);
+                assert_eq!(
+                    config.cores,
+                    configured.min(available),
+                    "listed {configured} cores, container allows {available}"
+                );
+            }
+        }
+    }
+
+    /// A default-constructed config must not pin the pools to a single thread.
+    #[test]
+    fn the_default_core_count_follows_detection() {
+        assert_eq!(
+            RuntimeConfig::default().cores,
+            steel_utils::threading::available_worker_threads().max(1)
+        );
     }
 
     #[test]

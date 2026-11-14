@@ -17,11 +17,17 @@ use steel_registry::item_stack::ItemStack;
 use steel_registry::data_components::{
     DataComponentMap, SeededContainerLoot, vanilla_components::CONTAINER_LOOT,
 };
-use steel_registry::vanilla_block_entity_types;
+use steel_registry::{vanilla_block_entity_types, vanilla_entities};
+use smallvec::SmallVec;
 use steel_utils::locks::SyncMutex;
-use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
+use glam::DVec3;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::blocks::properties::{BlockStateProperties, Direction};
+use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, WorldAabb};
 
 use crate::block_entity::randomizable_container::RandomizableContainer;
+use crate::entity::RemovalReason;
+use crate::entity::entities::objects::items::item_entity::ItemEntity;
 use crate::block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter};
 use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef, SharedContainer};
@@ -47,6 +53,25 @@ pub(crate) struct HopperContainer {
 
 /// Vanilla `HopperBlockEntity.MOVE_ITEM_SPEED`: one transfer every eight ticks.
 pub const MOVE_COOLDOWN_TICKS: u8 = 8;
+
+/// Width of the vanilla suck column, in block units.
+///
+/// `Hopper.getSuckShape()` is `Shapes.or(INSIDE, ABOVE)` with
+/// `INSIDE = Block.column(2.0, 11.0, 16.0)` (the bowl mouth, inset 2/16) and
+/// `ABOVE = Block.column(16.0, 16.0, 32.0)` (full width, the block above).
+/// `HopperBlockEntity.getItemsAtAndAbove` queries the *bounding box* of that
+/// shape, so the effective pick-up volume is the full-width column
+/// `Block.column(16.0, 11.0, 32.0)` — which is what this constant describes.
+/// The old "block box grown by 0.25" was wrong in both directions: it missed
+/// items settled low in the bowl and it over-reached sideways.
+const HOPPER_SUCK_COLUMN_WIDTH: f64 = 16.0 / 16.0;
+
+/// Bottom of the vanilla suck column, in block units (11/16).
+const HOPPER_SUCK_MIN_Y: f64 = 11.0 / 16.0;
+
+/// Top of the vanilla suck column, in block units (32/16 = the top of the
+/// block above the hopper).
+const HOPPER_SUCK_MAX_Y: f64 = 32.0 / 16.0;
 
 // SAFETY: This key is owned by Steel and uniquely identifies `HopperBlockEntity`.
 unsafe impl DowncastType for HopperBlockEntity {
@@ -98,62 +123,187 @@ impl HopperBlockEntity {
     }
 
     /// Vanilla `HopperBlockEntity.suckInItems`: pulls one item from the container
-    /// above into this hopper.
+    /// above into this hopper, or, when there is no container, from the item
+    /// entities inside `Hopper.SUCK_AABB`.
     ///
     /// Returns whether an item moved. The source slot is only decremented once the
     /// hopper accepts the item, so a full hopper never deletes items.
     pub fn suck_in_items(&self, world: &World, pos: BlockPos) -> bool {
-        let Some(source) = world
+        // Vanilla `HopperBlockEntity.suckInItems` returns immediately when the
+        // hopper has no empty slot *and* no stack it could top up. Without this
+        // guard a hopper whose five slots hold full stacks of a different item
+        // still scans every item entity above it each tick.
+        if Self::inventory_full(&*self.container.lock()) {
+            return false;
+        }
+        if let Some(source) = world
             .get_block_entity(pos.above())
             .and_then(ContainerRef::from_block_entity)
-        else {
-            return false;
-        };
-        let Some(slot) = ({
-            let guard = ContainerLockGuard::lock_all(&[&source]);
-            guard
-                .get(source.container_id())
-                .and_then(|container| {
-                    (0..container.get_container_size())
-                        .find(|slot| !container.get_item(*slot).is_empty())
-                })
-        }) else {
-            return false;
-        };
-        let mut pulled = {
-            let guard = ContainerLockGuard::lock_all(&[&source]);
+            && self.try_take_from_container(&source)
+        {
+            return true;
+        }
+        // Vanilla falls back to item entities above the hopper: it takes from a
+        // container first and only then looks at dropped items.
+        self.suck_in_item_entities(world, pos)
+    }
+
+    /// Vanilla `HopperBlockEntity.tryTakeInItemFromSlot` over `getSlots(container, DOWN)`.
+    ///
+    /// Vanilla only pulls through slots the source exposes to the `DOWN` face, so
+    /// a hopper under a furnace takes from the result and fuel slots but never
+    /// from the input slot, and a hopper under a chiseled bookshelf takes nothing.
+    fn try_take_from_container(&self, source: &ContainerRef) -> bool {
+        let slots_for_down = {
+            let guard = ContainerLockGuard::lock_all(&[source]);
             let Some(container) = guard.get(source.container_id()) else {
                 return false;
             };
-            container.get_item(slot).copy_with_count(1)
+            // `SmallVec` keeps the common case (five hopper slots, a handful of
+            // furnace slots, 27 chest slots) on the stack: this runs every tick
+            // for every hopper, so a `Vec` allocation per tick is real load.
+            match container.slots_for_face(Direction::Down) {
+                Some(slots) => SmallVec::from_slice(slots),
+                None => (0..container.get_container_size())
+                    .collect::<SmallVec<[usize; 32]>>(),
+            }
         };
+
+        for slot in slots_for_down {
+            // Both containers are taken through `lock_all`, which sorts by id, so
+            // the source/hopper pair can never deadlock against another transfer
+            // that walks them the other way round.
+            let pulled = {
+                let guard = ContainerLockGuard::lock_all(&[source, &self.container_ref]);
+                let Some(container) = guard.get(source.container_id()) else {
+                    return false;
+                };
+                let stack = container.get_item(slot);
+                if stack.is_empty() || !container.can_take_item_through_face(slot, stack, Direction::Down)
+                {
+                    continue;
+                }
+                // Vanilla `canTakeItemFromContainer` also asks the destination's
+                // own `canTakeItem` contract, passing the hopper as `destination`.
+                // Specialized sources use it to refuse transfers that cannot fit.
+                let allowed = guard.get(self.container_ref.container_id()).is_some_and(|hopper| {
+                    container.can_take_item(hopper, slot, stack)
+                });
+                if !allowed {
+                    continue;
+                }
+                stack.copy_with_count(1)
+            };
+
+            {
+                let mut hopper = self.container.lock();
+                let mut moving = pulled;
+                if !Container::add(&mut *hopper, &mut moving) {
+                    continue;
+                }
+            }
+            self.base.set_changed();
+
+            // The hopper took the item, so remove exactly one from the source.
+            //
+            // The change is reported through the guard: `Container::set_changed`
+            // on the storage itself is deliberately empty, and the owner (which
+            // marks the block entity dirty and refreshes comparators) is only
+            // notified by `ContainerLockGuard::set_changed`.
+            let mut guard = ContainerLockGuard::lock_all(&[source]);
+            let source_id = source.container_id();
+            let Some(mut container) = guard.get_mut(source_id) else {
+                return false;
+            };
+            container.get_item_mut(slot).shrink(1);
+            if container.get_item(slot).count() <= 0 {
+                *container.get_item_mut(slot) = ItemStack::empty();
+            }
+            drop(container);
+            guard.set_changed(source_id);
+            return true;
+        }
+        false
+    }
+
+    /// Vanilla `HopperBlockEntity.suckInItems` item-entity fallback.
+    fn suck_in_item_entities(&self, world: &World, pos: BlockPos) -> bool {
+        // Vanilla `Hopper.getSuckShape()` = `Block.column(16.0, 11.0, 32.0)`:
+        // full width in X/Z, from inside the funnel bowl up to the top of the
+        // block above. An item resting on the bowl's rim (y = 11/16 exactly) is
+        // outside, because vanilla intersects the shapes strictly.
+        let half = HOPPER_SUCK_COLUMN_WIDTH / 2.0;
+        let suck_box: WorldAabb = WorldAabb::from_min_max(
+            DVec3::new(
+                pos.0.x as f64 + 0.5 - half,
+                pos.0.y as f64 + HOPPER_SUCK_MIN_Y,
+                pos.0.z as f64 + 0.5 - half,
+            ),
+            DVec3::new(
+                pos.0.x as f64 + 0.5 + half,
+                pos.0.y as f64 + HOPPER_SUCK_MAX_Y,
+                pos.0.z as f64 + 0.5 + half,
+            ),
+        );
+        let candidates = world.get_entities_in_aabb_matching(&suck_box, |entity| {
+            entity.entity_type() == &vanilla_entities::ITEM
+        });
+        for entity in candidates {
+            let Some(item_entity) = entity.as_ref().downcast_ref::<ItemEntity>() else {
+                continue;
+            };
+            if !self.add_item_entity(item_entity) {
+                continue;
+            }
+            return true;
+        }
+        false
+    }
+
+    /// Vanilla `HopperBlockEntity.addItem(Container, ItemEntity)`.
+    ///
+    /// The entity is discarded only when the hopper accepts the whole stack, and
+    /// the remainder is written back otherwise.
+    fn add_item_entity(&self, item_entity: &ItemEntity) -> bool {
+        let mut moving = item_entity.get_item();
+        if moving.is_empty() {
+            return false;
+        }
+        let original = moving.count();
         {
             let mut hopper = self.container.lock();
-            if !hopper.add(&mut pulled) {
-                return false;
-            }
-            hopper.set_changed();
+            Container::add(&mut *hopper, &mut moving);
         }
-        // The hopper took the item, so remove exactly it from the source.
-        let mut guard = ContainerLockGuard::lock_all(&[&source]);
-        let Some(mut container) = guard.get_mut(source.container_id()) else {
+        // Nothing was taken: the hopper is full for this item, so the entity has
+        // to stay where it is (vanilla `addItem` returns the untouched stack).
+        if moving.count() == original {
             return false;
-        };
-        container.get_item_mut(slot).shrink(1);
-        if container.get_item(slot).count() <= 0 {
-            *container.get_item_mut(slot) = ItemStack::empty();
         }
-        container.set_changed();
-        true
+        self.base.set_changed();
+        if moving.is_empty() {
+            item_entity.set_removed(RemovalReason::Discarded);
+            // Vanilla reports `true` only when the whole stack moved, so a
+            // partially absorbed stack keeps the scan going to the next entity.
+            return true;
+        }
+        item_entity.set_item(moving);
+        false
     }
 
     /// Vanilla `HopperBlockEntity.tryMoveItems`: pushes one item from the hopper
-    /// into the container below.
+    /// into the container its `facing` points at.
+    ///
+    /// Vanilla uses `getContainerAt(blockPos.relative(facing))`, so a side-facing
+    /// hopper feeds a chest beside it rather than the block below. The insertion
+    /// goes through the destination's face view (`getSlotsForFace` and
+    /// `canPlaceItemThroughFace`), which is what stops a hopper from pushing fuel
+    /// back into a furnace's input slot or into a sealed container.
     ///
     /// Returns whether an item moved.
     pub fn try_move_items(&self, world: &World, pos: BlockPos) -> bool {
+        let facing = self.facing();
         let Some(destination) = world
-            .get_block_entity(pos.below())
+            .get_block_entity(pos.relative(facing))
             .and_then(ContainerRef::from_block_entity)
         else {
             return false;
@@ -166,27 +316,55 @@ impl HopperBlockEntity {
             return false;
         };
         let mut moving = {
-            let mut hopper = self.container.lock();
+            let hopper = self.container.lock();
             hopper.items[slot].copy_with_count(1)
         };
-        let accepted = {
+
+        let destination_direction = facing.opposite();
+        let destination_id = destination.container_id();
+        let inserted = {
             let mut guard = ContainerLockGuard::lock_all(&[&destination]);
-            let Some(mut container) = guard.get_mut(destination.container_id()) else {
-                return false;
+            let slots: SmallVec<[usize; 32]> = {
+                let Some(container) = guard.get(destination_id) else {
+                    return false;
+                };
+                match container.slots_for_face(destination_direction) {
+                    Some(slots) => SmallVec::from_slice(slots),
+                    None => (0..container.get_container_size()).collect(),
+                }
             };
-            container.add(&mut moving)
+            let inserted = {
+                let Some(container) = guard.get_mut(destination_id) else {
+                    return false;
+                };
+                add_into_slots(container, &slots, destination_direction, &mut moving)
+            };
+            if !inserted {
+                return false;
+            }
+            // The storage-level `set_changed` is a no-op; the destination's owner
+            // is notified through the guard, which is what marks it dirty and
+            // refreshes its comparator output.
+            let _ = guard.set_changed(destination_id);
+            true
         };
-        if !moving.is_empty() {
+        if !inserted {
             return false;
         }
-        let mut hopper = self.container.lock();
-        hopper.items[slot].shrink(1);
-        if hopper.items[slot].count() <= 0 {
-            hopper.items[slot] = ItemStack::empty();
+        {
+            let mut hopper = self.container.lock();
+            hopper.items[slot].shrink(1);
+            if hopper.items[slot].count() <= 0 {
+                hopper.items[slot] = ItemStack::empty();
+            }
         }
-        hopper.set_changed();
-        let _ = accepted;
+        self.base.set_changed();
         true
+    }
+
+    /// Vanilla `HopperBlockEntity.facing`: the block state's `FACING` property.
+    fn facing(&self) -> Direction {
+        self.get_block_state().get_value(&BlockStateProperties::FACING_HOPPER)
     }
 
     /// Remaining cooldown ticks before the next transfer.
@@ -201,7 +379,7 @@ impl HopperBlockEntity {
     }
 
     /// Advances the transfer state by one game tick, matching vanilla's
-    /// `HopperBlockEntity.pushItems` cooldown gate.
+    /// Vanilla `HopperBlockEntity.pushItemsTick` cooldown gate.
     pub fn tick_transfer(&self, world: &World, pos: BlockPos) {
         let mut cooldown = self.cooldown.lock();
         if *cooldown > 0 {
@@ -209,22 +387,78 @@ impl HopperBlockEntity {
             return;
         }
         drop(cooldown);
-        if !self.try_move_items(world, pos) {
-            self.suck_in_items(world, pos);
+        // Vanilla `tryMoveItems` runs as
+        // `tryMoveItems(level, pos, state, entity, () -> suckInItems(level, entity))`
+        // and ORs the two into one `changed` flag, so a single tick both pushes
+        // into the block it faces and pulls from above — an item is never stuck
+        // for a tick in a hopper that could already forward it. The cooldown is
+        // only reset when something actually moved, so an idle hopper retries
+        // every tick and wakes up the tick an item arrives.
+        let moved = self.try_move_items(world, pos) | self.suck_in_items(world, pos);
+        if moved {
+            self.set_cooldown(MOVE_COOLDOWN_TICKS);
         }
-        self.set_cooldown(MOVE_COOLDOWN_TICKS);
     }
 }
 
-/// Returns a single item from the first non-empty slot of a container.
-fn first_present_item(container: &dyn Container) -> Option<ItemStack> {
-    for slot in 0..container.get_container_size() {
-        let item = container.get_item(slot);
-        if !item.is_empty() {
-            return Some(item.copy_with_count(1));
+/// Vanilla `HopperBlockEntity.inventoryFull`: no empty slot and no stack that
+/// could still take another item.
+fn inventory_full(container: &dyn Container) -> bool {
+    let max_stack_size = container.get_max_stack_size();
+    (0..container.get_container_size()).all(|slot| {
+        let stack = container.get_item(slot);
+        !stack.is_empty() && stack.count() >= stack.max_stack_size().min(max_stack_size)
+    })
+}
+
+/// Vanilla `HopperBlockEntity.addItem(Container, Container, ItemStack, Direction)`.
+///
+/// Merges into matching stacks first, then fills empty slots, and only touches
+/// slots the destination exposes to `direction`.
+fn add_into_slots(
+    container: &mut dyn Container,
+    slots: &[usize],
+    direction: Direction,
+    stack: &mut ItemStack,
+) -> bool {
+    let mut changed = false;
+
+    if stack.is_stackable() {
+        for &slot in slots {
+            if stack.is_empty() {
+                break;
+            }
+            let existing = container.get_item(slot);
+            if !existing.is_empty()
+                && ItemStack::is_same_item_same_components(existing, stack)
+                && container.can_place_item_through_face(slot, stack, direction)
+            {
+                let max_size = container.get_max_stack_size_for_item(stack);
+                let space = max_size - existing.count();
+                if space > 0 {
+                    let to_add = stack.count().min(space);
+                    container.get_item_mut(slot).grow(to_add);
+                    stack.shrink(to_add);
+                    changed = true;
+                }
+            }
         }
     }
-    None
+
+    for &slot in slots {
+        if stack.is_empty() {
+            break;
+        }
+        if container.get_item(slot).is_empty() && container.can_place_item_through_face(slot, stack, direction)
+        {
+            let max_size = container.get_max_stack_size_for_item(stack);
+            let to_place = stack.count().min(max_size);
+            container.set_item(slot, stack.split(to_place));
+            changed = true;
+        }
+    }
+
+    changed
 }
 
 impl BlockEntity for HopperBlockEntity {
@@ -359,6 +593,8 @@ mod tests {
     use simdnbt::borrow::read_compound;
     use steel_registry::{init_vanilla_registry, vanilla_blocks, vanilla_items};
 
+    use crate::inventory::container::SimpleContainer;
+
     use super::*;
 
     fn test_hopper() -> HopperBlockEntity {
@@ -393,6 +629,88 @@ mod tests {
         assert_eq!(hopper.cooldown(), 0);
         hopper.set_cooldown(MOVE_COOLDOWN_TICKS);
         assert_eq!(hopper.cooldown(), MOVE_COOLDOWN_TICKS);
+    }
+
+    /// Vanilla `HopperBlockEntity.facing` reads the block state, so a side-facing
+    /// hopper must report that direction rather than always `DOWN`.
+    #[test]
+    fn facing_is_read_from_the_block_state() {
+        init_vanilla_registry();
+        let hopper = HopperBlockEntity::new(
+            Weak::new(),
+            BlockPos::new(1, 2, 3),
+            vanilla_blocks::HOPPER
+                .default_state()
+                .set_value(&BlockStateProperties::FACING_HOPPER, Direction::East),
+        );
+        assert_eq!(hopper.facing(), Direction::East);
+    }
+
+    /// Vanilla only pulls through the slots a source exposes to the `DOWN` face.
+    #[test]
+    fn add_into_slots_only_touches_slots_exposed_to_the_face() {
+        init_vanilla_registry();
+        let mut container = SimpleContainer::new(3);
+        let mut stack = ItemStack::with_count(&*vanilla_items::COAL, 2);
+
+        // Only slot 2 is reachable; slots 0 and 1 must stay empty.
+        assert!(add_into_slots(
+            &mut container,
+            &[2],
+            Direction::Down,
+            &mut stack
+        ));
+        assert!(stack.is_empty());
+        assert!(container.get_item(0).is_empty());
+        assert!(container.get_item(1).is_empty());
+        assert_eq!(container.get_item(2).count(), 2);
+    }
+
+    /// A hopper must not stack past the destination's own maximum.
+    #[test]
+    fn add_into_slots_respects_the_destination_max_stack_size() {
+        init_vanilla_registry();
+        let mut container = SimpleContainer::new(1);
+        container.set_item(0, ItemStack::with_count(&*vanilla_items::COAL, 60));
+
+        let mut stack = ItemStack::with_count(&*vanilla_items::COAL, 10);
+        assert!(add_into_slots(
+            &mut container,
+            &[0],
+            Direction::Up,
+            &mut stack
+        ));
+        assert_eq!(container.get_item(0).count(), 64);
+        assert_eq!(stack.count(), 6);
+    }
+
+    /// Vanilla `Hopper.getSuckShape()` bounding box is
+    /// `Block.column(16.0, 11.0, 32.0)`: full width in X/Z, starting inside the
+    /// bowl at 11/16 and ending at the top of the block above. The previous
+    /// "block box grown by 0.25" reached outside the hopper and never reached
+    /// down into the bowl.
+    #[test]
+    fn suck_column_matches_the_vanilla_shape_bounds() {
+        assert!((HOPPER_SUCK_MIN_Y - 0.6875).abs() < 1e-9);
+        assert!((HOPPER_SUCK_MAX_Y - 2.0).abs() < 1e-9);
+        assert!((HOPPER_SUCK_COLUMN_WIDTH - 1.0).abs() < 1e-9);
+    }
+
+    /// An item whose stack cannot merge and that does not fit in any empty slot
+    /// must not be reported as accepted.
+    #[test]
+    fn a_full_hopper_does_not_claim_an_item_entity() {
+        init_vanilla_registry();
+        let hopper = test_hopper();
+        for slot in 0..HOPPER_SLOTS {
+            hopper
+                .container
+                .lock()
+                .set_item(slot, ItemStack::with_count(&*vanilla_items::COAL, 64));
+        }
+        // The hopper "accepted" nothing, so vanilla keeps the entity alive and
+        // the pickup must not report success.
+        assert!(inventory_full(&*hopper.container.lock()));
     }
 
     #[test]

@@ -18,7 +18,8 @@ use steel_utils::text::DisplayResolutor;
 #[cfg(all(windows, debug_assertions))]
 use steel_utils::threading::DEBUG_STACK_SIZE;
 use steel_utils::threading::{
-    available_worker_threads, pool_sizes_for_available, worker_threads_for_available,
+    available_worker_threads, effective_cores, pool_sizes_for_available,
+    worker_threads_for_available,
 };
 use text_components::fmt::set_display_resolutor;
 use tokio::runtime::{Builder, Runtime};
@@ -167,7 +168,7 @@ fn steel_main() {
     // once: every core decision below must use the same number.
     let available_cores = available_worker_threads();
     let configured_cores = steel_config.server.threads.cores.filter(|&cores| cores > 0);
-    let cores = configured_cores.map_or(available_cores, |cores| cores.min(available_cores));
+    let cores = effective_cores(configured_cores, available_cores);
     // `Server::new_with_commands` applies the same clamp to the runtime config,
     // so the pools created here and the pools created there always agree: the
     // configured value is an upper bound and a container quota wins over it.

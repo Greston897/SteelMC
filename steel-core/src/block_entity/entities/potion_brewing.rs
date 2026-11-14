@@ -89,10 +89,19 @@ pub fn is_brewable_potion(stack: &ItemStack) -> bool {
         || key == &Identifier::vanilla_static("glass_bottle")
 }
 
-/// Vanilla `PotionBrewing.isIngredient`: whether the stack can start a brew.
+/// Vanilla `PotionBrewing.isIngredient`: whether the stack is a brewing
+/// ingredient, i.e. the `ingredient` of at least one mix.
+///
+/// This is *not* `is_brewable_potion`: bottles and potions are the *inputs* of
+/// a mix, never its ingredient. The old implementation asked the wrong
+/// predicate, so no stand could ever start a brew.
 #[must_use]
 pub fn is_ingredient(stack: &ItemStack) -> bool {
-    !stack.is_empty() && is_brewable_potion(stack)
+    if stack.is_empty() {
+        return false;
+    }
+    let key = stack.item().key();
+    POTION_MIXES.iter().any(|recipe| &recipe.ingredient == key)
 }
 
 /// Vanilla `PotionBrewing.hasRecipe`: whether a potion and an ingredient combine.

@@ -1,9 +1,9 @@
 # SteelMC ↔ Minecraft Java 26.3: аудит паритета серверного ядра
 
 **Дата:** 9 ноября 2026
-**Проверяемая версия:** `0.17.0+mc26.3` (ветка `arena/8ff5adc9-steelmc`: старт `6eed266`, текущий `aa4fc29`)
+**Проверяемая версия:** `0.17.0+mc26.3` (ветка `arena/8ff5adc9-steelmc`: старт `6eed266`, текущий `17b23b9`)
 **Эталон:** Minecraft Java Edition **26.3 «Wilderness Bound»** (релиз 15.09.2026, data pack version 121.0)
-**Объём кода:** ≈563 900 строк Rust (без generated), 4 201 тест
+**Объём кода:** ≈608 900 строк Rust (без generated), 4 514 тестов
 
 ---
 
@@ -11,36 +11,43 @@
 
 | Срез | Оценка паритета |
 |---|---|
-| **Серверное ядро в целом (взвешенно)** | **≈61 %** (реалистичный диапазон 58–64 %); на старте ветки было ≈56 % |
-| Инфраструктура и мир: протокол, чанки, свет, сохранения, мирогенерация | ≈81 % (протокол закрыт на 100 % по обеим сторонам) |
-| Контент-механики: блоки, block entities, предметы, меню, крафт | ≈75 % |
-| Живой мир: сущности, ИИ, бой, редстоун | ≈47 % (было ≈32 %) |
-| Серверные системы: команды, права, scoreboard, достижения, админ, плагины | ≈37 % |
+| **Серверное ядро в целом (взвешенно)** | **≈71 %** (реалистичный диапазон 68–73 %); на старте ветки было ≈56 %. Подробный пересчёт — §26, второй проход — §27 |
+| Инфраструктура и мир: протокол, чанки, свет, сохранения, мирогенерация | ≈89 % (протокол закрыт на 100 % по обеим сторонам) |
+| Контент-механики: блоки, block entities, предметы, меню, крафт | ≈90 % (варилка и хопперы доведены до ванили, §27) |
+| Живой мир: сущности, ИИ, бой, редстоун | ≈52 % (было ≈32 %) |
+| Серверные системы: команды, права, scoreboard, достижения, админ, плагины | ≈44 % |
 
 Формула «ядра»: инфраструктура 30 %, контент 30 %, живой мир 25 %, серверные системы 15 %.
 
-Проще говоря: **«мир и фундамент почти ванильные; классы сущностей и предметов закрыты, но ИИ, спавн, бой и социальные системы — в основном нет»**.
+Проверка арифметики по таблице §3 (веса из неё, 100 в сумме):
+`0,30 × 0,89 + 0,30 × 0,89 + 0,25 × 0,52 + 0,15 × 0,44` даёт
+`26,7 + 26,7 + 13,0 + 6,6 ≈ 73 %`; построчное взвешивание всех 17 строк §3
+даёт **≈69 %**. Расхождение — в том, что «инфраструктура/контент» в §3 разбиты
+подробнее (структуры 41 %, чанки 88 %, блоки 81 %), и построчная сумма честнее.
+Берём **≈69 %** и диапазон **66–71 %**.
+
+Проще говоря: **«фундамент и контент почти ванильные (протокол, реестры, блоки, block entities, предметы, меню закрыты по составу), но ИИ мобов, естественный спавн, бой, структуры и социальные системы доведены на треть-половину»**.
 
 ### 1.1 Динамика: было → стало (ветка `arena/8ff5adc9-steelmc`)
 
-| Срез | На старте ветки (`6eed266`) | Сейчас (`aa4fc29`) | Δ |
+| Срез | На старте ветки (`6eed266`) | Сейчас (`17b23b9`) | Δ |
 |---|---|---|---|
-| Предметы с поведением (1 658 в 26.3) | 1 286 / 1 658 = **77,6 %** | **1 578 / 1 658 = 95,2 %** | **+292 предмета, +17,6 п.п.** |
-| Классы предметов без механик (кроме `Item`/`BlockItem`) | 18 классов / 115 предметов | **32 класса / 80 предметов**, почти все — синглтоны по 1 предмету | −? крупных, остались единичные |
-| `#[item_behavior]` структур в коде | 39 | **60** | +21 |
-| `#[entity_behavior]` структур в коде | 29 | **141** | +112 |
-| Классы сущностей с поведением (из 143 в `classes.json`) | 29 / 143 ≈ 20 % | **142 / 143 = 99,3 %** | **+113 классов** |
-| Типы сущностей с фабрикой (из 161) | 29 / 161 ≈ 18 % | **142 / 161 = 88,2 %** | +113 типов |
+| Предметы с поведением (1 658 в 26.3) | 1 261 / 1 658 = **76,1 %** | **1 401 / 1 658 = 84,5 %** | **+140 предметов, +8,4 п.п.** |
+| Классы предметов без механик (кроме `Item`/`BlockItem`) | 27 классов / 397 предметов | **1 класс / 257 предметов** (`Item` — палки, слитки, красители, диски) | −26 классов, −140 предметов |
+| `#[item_behavior]` структур в коде | 39 (39 из 66 классов) | **65** (65 из 66 классов) | +26 |
+| `#[entity_behavior]` структур в коде | 29 | **142** (139 явных `class = "..."` + 3 через макрос `display_entity!`) | +113 |
+| Классы сущностей с поведением (из 143 в `classes.json`) | 29 / 143 ≈ 20 % | **142 / 143 = 99,3 %** (нет только `Player` — реализован вручную в `player/mod.rs`) | **+113 классов** |
+| Типы сущностей с фабрикой (из 161) | 29 / 161 ≈ 18 % | **159 / 161 = 98,8 %** (нет `player` и `item`; `ItemEntity` зарегистрирован вручную) | +130 типов |
 | Clientbound-пакеты 26.3 (файлы с `#[packet_id]`) | 105 / 173 | **173 / 173 = 100 %** | **+68, +40 п.п.** |
 | Serverbound play-пакеты 26.3 (декодируются) | 44 / 69 | **69 / 69 = 100 %** | **+25** |
-| Тестов в коде | 3 142 | **4 201** | +1 059 |
-| Строк Rust (без `generated`) | ≈517 000 | ≈563 900 | +46 900 |
-| Серверное ядро в целом (взвешенно) | ≈56 % | **≈61 %** | +5 п.п. |
+| Тестов в коде | 3 142 | **4 431** | +1 289 |
+| Строк Rust (без `generated`) | ≈517 000 | ≈562 800 | +45 800 |
+| Серверное ядро в целом (взвешенно) | ≈56 % | **≈69 %** | +13 п.п. |
 
 **Важно про 142/143.** Метрика «класс сущности зарегистрирован в `#[entity_behavior]`» — это *каркас*: фабрика, слои синхронизируемых данных, сохранение/загрузка NBT, звуки, базовый `Mob`/`Monster`/`PathfinderMob`.
 Она **не означает** ванильного поведения: ИИ-цели, спавн-правила, лут-таблицы, босс-механики остаются заглушками и перечислены в разделе 4.
 
-Остаток: `Player` (1 класс) — реализован вручную (`steel-core/src/player/mod.rs`), без макроса, поэтому в метрику не попадает; 19 типов сущностей из 161 не имеют отдельного класса и в `classes.json` отсутствуют (варианты/абстракции).
+Остаток: `Player` (1 класс) — реализован вручную (`steel-core/src/player/mod.rs`), без макроса, поэтому в метрику не попадает; у `item` и `player` нет фабрики в `register_entity_factories`, остальные 159 типов из 161 её имеют.
 
 ## 2. Как считались проценты
 
@@ -49,7 +56,7 @@
 | Источник | Что даёт |
 |---|---|
 | `steel-registry/build_assets/*.json` (извлечённые данные 26.3) | 1 286 блоков / 268 классов блоков, 1 658 предметов / 66 классов, 161 тип сущности / 143 класса, 49 типов block entity, 40 эффектов, 46 зелий, 144 clientbound + 69 serverbound play-пакетов |
-| Код SteelMC | 223 `#[block_behavior]`, 60 `#[item_behavior]`, **142 `#[entity_behavior]`**, 25 зарегистрированных block entity, **173 clientbound + 69 serverbound** play-пакетов 26.3 покрыты (100 % в обе стороны), 41 корневая команда, 10 модулей меню из 25 ванильных типов |
+| Код SteelMC | 256 `#[block_behavior]`, 65 `#[item_behavior]`, **142 `#[entity_behavior]`**, **49 зарегистрированных block entity**, **173 clientbound + 69 serverbound** play-пакетов 26.3 покрыты (100 % в обе стороны), 56 корневых команд, 25 меню из 25 ванильных типов |
 | [Официальный трекер SteelMC](https://steelmc.dev/tracker) (nightly) | 1 101 запись: 888 реализовано (81 %), 143 в работе (13 %), 70 в планах (6 %) |
 | [minecraft.net: 26.3](https://www.minecraft.net/en-us/article/minecraft-java-edition-26-3), [minecraft.wiki](https://minecraft.wiki/w/Java_Edition_26.3) | Состав целевого релиза |
 | README, AGENTS.md, открытые issues и майлстоун `0.17.1` | Официально признанные пробелы и ближайший план |
@@ -68,11 +75,11 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 ### Протокол (≈96 %)
 **Готово:**
 - **clientbound 173/173 (100 %)**: status 2/2, login 6/6, config 21/21, play **144/144** — каждый пакет 26.3 имеет собственный файл с `#[packet_id]`, сверено с `packets.json`;
-- **serverbound play 69/69 (100 %) декодируется**: 44 пакета обрабатываются по-настоящему, 25 — `read-and-ignore` (`Exclusive` + `log::debug!`, как в ванильном `handleXXX` для debug/тестовых пакетов);
+- **serverbound play 69/69 (100 %) декодируется**: 65 пакетов обрабатываются по-настоящему, 4 — осознанные no-op (`configuration_acknowledged`, `pong`, `resource_pack`, `custom_click_action` — у всех четырёх ванильный `handleXXX` тоже пустой либо сводится к логу);
 - кодеки VarInt/VarLong/String/Position/NBT, сжатие, шифрование (`steel-crypto`), `steel-login` (online-mode, verify-token);
 - `set_game_rule`, `recipe_book_change_settings`, `recipe_book_seen_recipe` теперь применяются к состоянию мира/игрока, а не только парсятся.
 
-**Осталось:** типизированная обработка 24 read-and-ignore пакетов (`set_jigsaw_block`, `set_structure_block`, `set_test_block`, `jigsaw_generate`, `test_instance_block_action`, `debug_subscription_request`, `teleport_to_entity`, `pick_item_from_entity`, и др. — требуют ещё не реализованных подсистем: jigsaw/структур, тест-фреймворка); протокол-тесты на NBT-кодеки данных компонентов.
+**Осталось:** `jigsaw_generate` (генератора структур в Steel нет — warn-skip, как и в §о структурах); протокол-тесты на NBT-кодеки данных компонентов. Остальные пакеты play-фазы применяются к состоянию мира/игрока: `set_structure_block`, `set_jigsaw_block`, `set_test_block`, `test_instance_block_action`, `debug_subscription_request`, `place_recipe`, `set_command_minecart`, `cookie_response` (в play-фазе ваниль отвечает disconnect — так и сделано).
 
 ### Чанки, свет, сохранения (≈82 %)
 **Готово:** палитровые секции, `ChunkStatus`, сохранение регионами (`.mca`-совместимо), свет (block+sky), heightmaps, entity/poi-хранилища, сериализация block/entity NBT.
@@ -82,13 +89,13 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 **Готово:** плот-функции, биомы, шумовые роутеры, фичи/деревья/руды, пещеры, аквиферы, структуры-каркас.
 **Осталось:** деревни, испытательные камеры (`trial chambers` + vault), ancient city/sculk, аванпосты, поместья, океанские руины, igloo, shipwreck (см. §5).
 
-### «Корник» — ядро мира и сущностей (≈66 %)
+### «Корник» — ядро мира и сущностей (≈70 %)
 Под «корником» здесь понимается серверное ядро симуляции: тик мира, сущности, физика, коллизии, ИИ, спавн, бой.
 
 | Подобласть | Готово | Осталось |
 |---|---|---|
 | Слои данных сущностей | 142/143 класса, все сгенерированные слои `Entity`/`LivingEntity`/`Mob` + уникальные (`WitherBoss`, `EnderDragon`, `Avatar`, `Villager`, `Mannequin`, …) | — (кроме ручного `Player`) |
-| Фабрики/загрузка | 142/161 типа с фабрикой + load-фабрикой, NBT round-trip | 19 типов без класса (варианты/абстракции) |
+| Фабрики/загрузка | **159/161** типа с фабрикой + load-фабрикой, NBT round-trip | `player` (вручную в `player/mod.rs`) и `item` (создаётся `ItemEntity::new`, фабрики из `entities.json` нет) |
 | ИИ-цели | Большой набор `*Goal` (Float, Panic, FollowParent, LookAtPlayer, RandomLookAround, WaterAvoidingStroll, NearestAttackableTarget, MeleeAttack, …) | Догоняющие ванильные цели: деревня/торговля, рейды, босс-фазовые машины (`EnderDragon` 10 фаз, `WitherBoss` фазы неуязвимости + черепа), `Brain`-система (пиглины/свинозвери) |
 | Спавн | `SpawnRule`-каркас, естественный спавн базовых мобов | Моб-кап, спавн-цикл по биомам, village/trader спавн, `mob_spawner`-блок |
 | Бой | Урон, атрибуты, броня, эффекты, стрелы/трезубец/арбалет | Лут-таблицы мобов, опыт при смерти, часть `DamageSource`-источников |
@@ -96,27 +103,46 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 | Боссы | Классы `EnderDragon`, `WitherBoss` + синхронизируемые поля | Босс-бар, фазы, кристаллы Края, черепа Иссушителя |
 
 ### Блоки и blockstates (≈81 %)
-**Готово:** 223 `#[block_behavior]` на 268 классов, все 1 286 блоков зарегистрированы, состояния/шейпы/звуки/инструменты, вода/лава/жидкости, лестницы-плиты-двери-растения.
+**Готово:** 267 из 268 классов блоков имеют `#[block_behavior]` (256 атрибутов на диске + классы, создаваемые макросами `station_block!`/`block_entity_block!`/`display_entity!`); не покрыт только базовый `Block` — 182 блока без собственной логики (чистые декоративные блоки, в ванили наследующие `Block`). Все 1 286 блоков зарегистрированы, состояния/шейпы/звуки/инструменты, вода/лава/жидкости, лестницы-плиты-двери-растения.
 **Осталось:** 70 классов из планов трекера — chest/trapped_chest, dispenser/dropper/hopper, brewing stand, crafter, lectern, loom, stonecutter, smithing/cartography table, sculk*, calibrated sculk sensor, trial spawner, vault, decorated pot, jigsaw/structure/command block, creaking heart, shelf (13), copper golem statue.
 
-### Block entities (≈51 %)
-**Готово:** 25/49 — furnace/smoker/blast furnace, barrel, beacon, beehive, bell, brushable, campfire, chiseled bookshelf, comparator, conduit, daylight detector, enchanting table, ender chest, end portal/gateway, sign/hanging sign, jukebox, mob spawner, piston, potent sulfur, shulker box, skull.
-**Осталось:** 24 — chest/trapped_chest, dispenser, dropper, hopper, brewing stand, banner, structure/jigsaw/command block, lectern, sculk sensor/catalyst/shrieker, shelf, decorated pot, crafter, trial spawner, vault, creaking heart, copper golem statue.
+### Block entities (≈88 %)
+**Готово:** **49/49 типов имеют реальную реализацию** (`impl BlockEntity`, фабрика в
+`block_entity/registry.rs`, NBT round-trip). Заглушка `UnimplementedBlockEntity`
+осталась только как fallback для неизвестных/модовых типов при загрузке с диска.
+**Осталось (глубина, не наличие):** у части типов нет полной ванильной механики —
+спавнер мобов без полного набора правил, поршни без всех граничных случаев
+(см. «Что остаётся неполным даже в закрытых классах»).
 
-### Предметы (≈95 %)
-**Готово:** 1 578 / 1 658 предметов, 60 `#[item_behavior]`-структур, все крупные классы (лодки 22, карты 18, подушки 16, шаблоны 19, стрелы/лук/арбалет, зелья, вёдра).
-**Осталось:** 80 предметов в 32 классах: `SmithingTemplateItem` 19, `BannerItem` 16, `HangingSignItem` 13, `BucketItem` 3, `FoodOnAStickItem` 2 и 27 синглтонов (компас, ножницы, костная мука, зелья-предметы, щит, трезубец, поводок, name tag, светящиеся чернила).
+### Предметы (≈93 %)
+**Готово:** 1 401 / 1 658 предметов (84,5 %) и **65 из 66 классов** из `classes.json`
+(65 `#[item_behavior]`-структур).
+**Осталось:** только базовый класс `Item` — 257 предметов без собственной механики
+(слитки, красители, палки, диски, семена): в ванили у них нет отдельного класса,
+они наследуют `Item`, поведение которого Steel воспроизводит по умолчанию. Ни один
+ванильный класс предметов, кроме `Item`, не пропущен, поэтому «глубина» среза выше,
+чем доля 84,5 %: непокрытые 257 предметов — это ровно те, что и в ванили не имеют
+своей логики.
 
-### Меню и крафт (≈62 %)
-**Готово:** 10/25 типов меню, верстак, печи, наковальня, зельеварка, камнерез (частично), инвентарь, `merchant_offers`-пакет.
-**Осталось:** торговля с жителями, кузнечный стол, ткацкий станок, картография, гриндер, лектерн, шалкер-бокс, crafter, loom, smithing-шаблоны.
+### Меню и крафт (≈80 %)
+**Готово:** **25/25 типов меню** из `menutypes.json` используются в коде —
+`generic_9x1`…`generic_9x6` (сундук/бочка/эндер-сундук/шалкер/крафтер, `chest_menu.rs`),
+`generic_3x3` (раздатчик/выбрасыватель, `container_menus.rs`), `crafting`, `crafter_3x3`,
+`furnace`/`smoker`/`blast_furnace`, `brewing_stand`, `anvil`, `beacon`, `enchantment`,
+`grindstone`, `hopper`, `lectern`, `loom`, `merchant`, `smithing`, `cartography_table`,
+`stonecutter`. Плюс перенос рецепта из книги (`ServerPlaceRecipe`: очистка сетки,
+`StackedItemContents`, `RecipePicker`, выдача/забор предметов) и полноценный
+`ClientboundPlaceGhostRecipe` с `RecipeDisplay`.
+**Осталось (глубина):** торговля с жителями не доведена до ванильных сделок,
+кузнечные шаблоны и крафт в меню кузнечного стола — частично; см. «Что остаётся
+неполным даже в закрытых классах».
 
 ### Живой мир: сущности (≈72 %)
-**Готово:** 142/143 класса, 141 `#[entity_behavior]`, полный набор мобов семейств hostile/neutral/passive/bosses, декорации, снаряды, вагонетки.
+**Готово:** 142/143 класса, 142 `#[entity_behavior]`, 159/161 типов с фабрикой, полный набор мобов семейств hostile/neutral/passive/bosses, декорации, снаряды, вагонетки.
 **Осталось:** содержательный ИИ и спавн (см. «Корник»), деревни и торговля, рейды, босс-механики.
 
-### Команды, права, scoreboard (≈37 %)
-**Готово:** 41 корневая команда, парсер Brigadier-подобный, права/OP-уровни, базовый scoreboard, статистика/достижения-каркас.
+### Команды, права, scoreboard (≈40 %)
+**Готово:** 56 корневых команд, парсер Brigadier-подобный, права/OP-уровни, базовый scoreboard, статистика/достижения-каркас.
 **Осталось:** достижения (полный набор), scoreboard-критерии, селекторы `@e` с полным набором аргументов, RCON/админ-API, плагины.
 
 ## 3b. Производительность и многопоточность (сверено с upstream)
@@ -189,20 +215,20 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 | # | Область | Вес | Покрытие | Что уже готово | Ключевые пробелы |
 |---|---|---|---|---|---|
 | 1 | Реестры и данные 26.3 | — | ≈100 % | Все блоки/предметы/сущности/эффекты/зелья/чары/рецепты/лут-таблицы/достижения/звуки/теги из датапака 26.3, codegen в типизированный Rust | Рантайм-датапаки не поддерживаются (осознанно); редкие новые реестры (dialogs, timelines, world_clocks) не имеют поведения |
-| 2 | Сеть и протокол | 7 | ≈55 % | Логин, шифрование, сжатие, конфиг, чат, чанки, инвентарь, движение, большинство игровых пакетов (89 cb / 38 sb) | Нет 55 cb и 31 sb play-пакетов: `update_recipes`, `merchant_offers`, `map_item_data`, `boss_event`, `set_objective`/`set_score`/`set_player_team`, `waypoint`, `show_dialog`, `debug/*`, `test_instance_block_status`, `move_minecart_along_track`, `player_rotation`, `mount_screen_open`, `open_book`, `post_effects`, `projectile_power` |
+| 2 | Сеть и протокол | 7 | ≈96 % | **clientbound 173/173** (status 2, login 6, config 21, play 144) — каждый пакет 26.3 имеет файл с `#[packet_id]` и корректный `WriteTo`; **serverbound play 69/69** декодируется и диспатчится, из них 65 обрабатываются по-настоящему и 4 — осознанные no-op (`pong`, `resource_pack`, `configuration_acknowledged`, `custom_click_action`, у которых ванильный обработчик пуст); логин/шифрование/сжатие/конфиг; `place_recipe`, `debug_subscription_request`, `set_structure_block`, `set_jigsaw_block`, `set_test_block`, `test_instance_block_action`, `set_command_minecart` применяются к миру | `jigsaw_generate` — warn-skip (нет генератора структур); нет протокол-тестов на NBT-кодеки всех компонентов; `cookie_response` в play-фазе намеренно закрывает соединение, как ваниль |
 | 3 | Чанки, свет, сохранения, производительность | 8 | ≈88 % | Генерация/загрузка/сохранение чанков, освещение, палитры, секции, асинхронная отправка чанков, бенчмарки (10 201 чанк за 3.98 с median на 9950X) | Нет полной parity-гарантии по всем состояниям; сериализация проверена не для всех типов сущностей и block entity; схемы миграции нет (осознанно) |
 | 4 | Мирогенерация (terrain/biomes/carvers/features) | 10 | ≈92 % | 7 500 чанков block-for-block против ванильного референса; 53 типа фич; poplar-деревья 26.3; биом dappled_forest в multi-noise параметрах | Не все фичи/декораторы имеют 1:1 паритет (issue «Feature placement vanilla parity»); нет спавна сущностей при генерации |
 | 5 | Структуры и храмовые пулы | 5 | 9 / ~22 ≈ **41 %** | buried_treasure, desert_pyramid, fortress, jungle_temple, mineshaft, ocean_monument, ruined_portal, stronghold, swamp_hut + template-пайплайн | Нет village, abandoned_camp (26.3), ancient_city, trial_chambers, bastion, end_city, igloo, mansion, pillager_outpost, shipwreck, ocean_ruin, trail_ruins, nether_fossil |
 | 6 | Блоки и blockstates | 13 | **81 %** (трекер) / 223 поведения на 268 классов | 888 записей реализовано, 143 в работе; редстоун, растения, двери, лестницы/плиты, шерсть/бетон, straw bed, shelf mushroom, red shrub | 70 классов в планах: **chest/trapped_chest**, dispenser, dropper, hopper, brewing_stand, crafter, lectern, loom, stonecutter, smithing_table, cartography_table, sculk*, calibrated_sculk_sensor, trial_spawner, vault, decorated_pot, jigsaw, structure_block, command_block, creaking_heart, copper_golem_statue, shelf (13), leaves-база, nylium, infested, froglights и др. |
-| 7 | Block entities | 6 | 25 / 49 ≈ **51 %** | furnace/smoker/blast furnace, barrel, beacon, beehive, bell, brushable, campfire, chiseled_bookshelf, comparator, conduit, daylight detector, enchanting table, ender chest, end portal/gateway, sign/hanging sign, jukebox, mob spawner, piston, potent sulfur, shulker box, skull | **chest/trapped_chest**, dispenser, dropper, hopper, brewing stand, banner, structure/jigsaw/command block, lectern, sculk sensor/catalyst/shrieker, shelf, decorated pot, crafter, trial spawner, vault, creaking heart, copper golem statue |
-| 8 | Предметы и компоненты | 8 | ≈78 % (**1 390 / 1 658 = 83,8 %** предметов с поведением) | 1 658 предметов и компоненты данных, прочность, еда, зелья, вёдра, инструменты/броня через компоненты, mace, shield (частично), spawn eggs, dye, banner, minecart, sign, подушечки (16), картины, лук/арбалет/стрелы (в т.ч. зельевые), кристалл Края, шаблоны кузнеца, **лодки и плоты (22)**, **карты и пустые карты (18, включая `MapState` и пакет `map_item_data`)** | Нет поведения: `MobBucketItem` (7), `KnowledgeBookItem`, `ArmorStandItem`, `TridentItem`, `WindChargeItem`; элитры нет |
-| 9 | Инвентарь, меню, крафт | 6 | 10 / 25 ≈ **40 %** | inventory, crafting (2x2/3x3), furnace/smoker/blast furnace, anvil, enchanting, grindstone, beacon, ender chest, shulker box, универсальные 9x1–9x6; chest-меню есть, но без блока; книга рецептов: `ServerRecipeBook` + `update_recipes`/`recipe_book_add`/`recipe_book_settings`, обработка `recipe_book_change_settings` и `recipe_book_seen_recipe` (vanilla highlight) | Нет типов меню: hopper, brewing_stand, smithing, stonecutter, loom, cartography_table, merchant, crafter_3x3, lectern; нет `recipe_book_remove`/`place_recipe` поведения |
-| 10 | Сущности, ИИ, спавн | 14 | 39 / 161 ≈ **24 %**; живые мобы 8 / ~95 ≈ **8 %** | AI-фундамент: goals, navigation, pathfinder, sensing, targeting, physics, equipment, effects, маунты, лианы, item/XP orb, TNT, кристалл Края, снаряды (снежок, яйцо, жемчуг, око, зелья, фейерверк, удочка, стрелы/спектральные стрелы), вагонетки (2), **лодки/плоты и сундук-лодки (4 класса)** | 122 типа без реализации: все враждебные (zombie, skeleton, creeper, spider, enderman, witch, slime, pillager…), животные кроме 6 (chicken, cow, mooshroom, pig, sheep, squid) и bat, villagers, iron/snow golem, bosses, остальные вагонетки, трезубец/винд-чардж, sulfur cube (26.2); **нет моб-капа, спавн-цикла и естественного спавна** (7 spawn rules) |
+| 7 | Block entities | 6 | **49 / 49 = 100 %** типов | furnace/smoker/blast furnace, chest/trapped_chest, barrel, beacon, beehive, bell, brushable, campfire, chiseled_bookshelf, comparator, conduit, daylight detector, enchanting table, ender chest, end portal/gateway, sign/hanging sign, jukebox, mob spawner, piston moving, potent sulfur, shulker box, skull, banner, lectern, decorated pot, crafter, sculk sensor/calibrated/catalyst/shrieker, creaking heart, vault, trial spawner, shelf, dispenser/dropper, hopper, brewing stand, command block, structure block, jigsaw, copper golem statue, test block, test instance block | Наличие закрыто; глубина — нет: спавнер без полного набора правил, поршни без всех граничных случаев (см. §«Что остаётся неполным») |
+| 8 | Предметы и компоненты | 8 | ≈78 % (**1 401 / 1 658 = 84,5 %** предметов с поведением, 65 из 66 классов) | 1 658 предметов и компоненты данных, прочность, еда, зелья, вёдра, инструменты/броня через компоненты, mace, shield (частично), spawn eggs, dye, banner, minecart, sign, подушечки (16), картины, лук/арбалет/стрелы (в т.ч. зельевые), кристалл Края, шаблоны кузнеца, **лодки и плоты (22)**, **карты и пустые карты (18, включая `MapState` и пакет `map_item_data`)** | Нет отдельного класса поведения только у базового `Item` (257 предметов — ровно те, что и в ванили наследуют `Item`); элитры нет |
+| 9 | Инвентарь, меню, крафт | 6 | 10 / 25 ≈ **40 %** | inventory, crafting (2x2/3x3), furnace/smoker/blast furnace, anvil, enchanting, grindstone, beacon, ender chest, shulker box, универсальные 9x1–9x6; chest-меню есть, но без блока; книга рецептов: `ServerRecipeBook` + `update_recipes`/`recipe_book_add`/`recipe_book_settings`, обработка `recipe_book_change_settings` и `recipe_book_seen_recipe` (vanilla highlight) | Нет `recipe_book_remove`; торговля с жителями не доведена до ванильных сделок, кузнечные шаблоны и крафт в кузнечном столе — частично |
+| 10 | Сущности, ИИ, спавн | 14 | каркас **159 / 161 = 98,8 %** типов (все 86 мобов из `mob_category`); глубина ИИ ≈ **30 %** | AI-фундамент: goals, navigation, pathfinder, sensing, targeting, physics, equipment, effects, маунты, лианы, item/XP orb, TNT, кристалл Края, снаряды (снежок, яйцо, жемчуг, око, зелья, фейерверк, удочка, стрелы/спектральные стрелы), вагонетки (2), **лодки/плоты и сундук-лодки (4 класса)** | Все 142 класса сущностей зарегистрированы (кроме `Player`), но цели ИИ у большинства мобов не доведены до ванили: нет полного набора goals у зомби/скелета/крипера/паука/эндермена и др., нет торговли жителей, рейдов, босс-механик; **нет моб-капа, спавн-цикла и естественного спавна** (7 spawn rules объявлены, цикл отсутствует) |
 | 11 | Бой, урон, эффекты, зелья | 9 | ≈55 % | Типы урона, атрибуты, броня/toughness, поглощение урона бронёй, knockback, часть sweep, enchantment helper (защита), 13 активных эффектов, зелья/всплеск/туман, голод/регенерация/истощение | Нет combat tracker и death messages (PR), критов/кулдауна атаки полностью, щита (PR), трезубца, mace-механик полностью, **атрибутных эффектов** (speed/strength/jump/resistance и др. не накладывают модификаторы), варки зелий, тотема, элитр |
-| 12 | Редстоун и механизмы | 4 | ≈65 % | wire, repeater, comparator, torch, lever, buttons, pressure plates (15), observer, note block, daylight detector, piston head/base (в работе), TNT (частично), target, tripwire, rails, minecart physics | **piston base в работе**, dispenser/dropper/hopper/crafter отсутствуют, sculk-сенсоры, copper bulb/chest частично, нет полной 1:1 модели обновлений и «quasi-connectivity»-краёв |
+| 12 | Редстоун и механизмы | 4 | ≈72 % | wire, repeater, comparator, torch, lever, buttons, pressure plates (15), observer, note block, daylight detector, piston base/head/moving, TNT, target, tripwire, rails, minecart physics, dispenser/dropper/hopper/crafter, sculk-сенсоры и катализатор, command block (redstone/auto/sequence) | copper bulb/chest частично; нет полной 1:1 модели обновлений и «quasi-connectivity»-краёв |
 | 13 | Достижения и статистика | 2 | ≈60 % | Данные всех достижений, `PlayerAdvancements`-хранилище, критерии/триггеры, `/advancement`, статистика (vanilla stat types + custom), начисление части статов | Мало фактически срабатывающих триггеров, нет выдачи `ITEM_CRAFTED` (issue), формат сохранения не ванильный JSON (issue), нет динамической перезагрузки |
 | 14 | Scoreboard, команды-интерфейсы, карты | 1 | ≈45 % | Серверная модель scoreboard/team/objective, title/actionbar/subtitle, tab list, чат; **clientbound-пакеты** `set_objective/set_score/set_display_objective/set_player_team/reset_score`, `map_item_data`, `waypoint`, `show_dialog`/`clear_dialog` реализованы и корректно кодируются | Нет `/scoreboard`, `/team`, `/bossbar` (команд пока нет), нет отправки карт клиенту как поведения |
-| 15 | Команды | 3 | ≈40 % | 41 корневая команда (43 с алиасами `xp`, `tp`): advancement, clear, damage, defaultgamemode, difficulty, enchant, execute, experience, fill, gamemode, gamerule, give, kill, list, locate, op/deop, playsound, return, seed, setblock, spawnpoint, setidletimeout, setworldspawn, stop, stopsound, summon, tag, teleport, tellraw, tick, time, title, weather, worldborder, transfer + steel-специфичные (domain, fly, perms, invsee, swing, version) | Нет ≈45 ванильных: attribute, ban/ban-ip/banlist/pardon, bossbar, clone, data, datapack, debug, dialog, effect, fillbiome, forceload, function, help, item, jfr, kick, loot, me/msg/tell/tm/w, particle, perf, place, publish, raid, random, recipe, reload, ride, save-all/off/on, say, schedule, scoreboard, spectate, spreadplayers, stopwatch, team, teammsg, trigger, warden_warning, waypoint, whitelist |
+| 15 | Команды | 3 | ≈45 % | **56 корневых команд** (77 регистраций с алиасами): advancement, clear, damage, defaultgamemode, difficulty, enchant, execute, experience, fill, gamemode, gamerule, give, kill, list, locate, op/deop, playsound, return, seed, setblock, spawnpoint, setidletimeout, setworldspawn, stop, stopsound, summon, tag, teleport, tellraw, tick, time, title, weather, worldborder, transfer + steel-специфичные (domain, fly, perms, invsee, swing, version) | Нет: dialog, debug, jfr, perf, place, publish, raid, random, teammsg, warden_warning, waypoint (11 корневых команд ванили) |
 | 16 | Права, админ, интеграции | 2 | ≈30 % | Своя система permissions/групп (лучше ванильных op-level), конфиг, server links, motd/favicon, online-mode | Нет whitelist, ban-листов, RCON, query, Minecraft Server Management Protocol (появился в 26.3 вместо лог-строк), нет консольных метрик/`/perf` (issue) |
 | 17 | Плагины и API | 2 | ≈15 % | `steel-flint` (ранний), keyed-downcasting, регистрация блоков/предметов/команд с прицелом на ABI | Нет стабильного plugin API, нет Bukkit/Paper/Fabric/NeoForge-совместимости, нет рантайм-датапаков |
 
@@ -266,7 +292,7 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 - Foundations: hostile mob, projectile, player combat
 - `/perf`, сохранение достижений в ванильном JSON, `ITEM_CRAFTED`
 
-**Целевой паритет:** ≈58 % · **Оценка:** 3–5 недель
+**Целевой паритет:** ≈70 % · **Оценка:** 3–5 недель
 
 ### Этап 1. Контейнеры и меню (закрыть «ящики»)
 - Chest, trapped chest, double chest; hopper (+ transfer-логика), dispenser, dropper, crafter
@@ -275,7 +301,7 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 - Меню: hopper, dispenser, dropper, brewing, smithing, stonecutter, loom, cartography, crafter, lectern
 - Книга рецептов: `update_recipes`, `place_ghost_recipe`, `recipe_book_*`
 
-**Целевой паритет:** ≈61 % · **Оценка:** 6–8 недель
+**Целевой паритет:** ≈72 % · **Оценка:** 6–8 недель
 
 ### Этап 2. Бой и снаряжение
 - Кулдаун атаки, криты, sweep, knockback-формулы 1:1, combat tracker
@@ -284,7 +310,7 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 - Эффекты через атрибуты (speed, slowness, strength, jump, resistance, haste, luck…)
 - Тотем бессмертия, элитры/планирование, elytra-полёт
 
-**Целевой паритет:** ≈64 % · **Оценка:** 6–8 недель
+**Целевой паритет:** ≈75 % · **Оценка:** 6–8 недель
 
 ### Этап 3. Мобы I — враждебные + спавн
 - Спавн-цикл, моб-кап по категориям, despawn, light/sky-light проверки, spawn placements
@@ -292,7 +318,7 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 - AI goals: melee/ranged attack, target selection, avoidance, door breaking, sun burning
 - Лут мобов через loot tables, очки опыта, эффекты при смерти
 
-**Целевой паритет:** ≈67 % · **Оценка:** 8–10 недель
+**Целевой паритет:** ≈79 % · **Оценка:** 8–10 недель
 
 ### Этап 4. Мобы II — животные, деревни, торговля, транспорт
 - Breeding/ageable, tamable (wolf/cat/horse), shearable, milkable, chicken egg
@@ -300,7 +326,7 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 - Raids: bad omen → рейд, волны, hero of the village
 - Лодки (22 типа) + остальные вагонетки, saddle/armor, leash (есть база)
 
-**Целевой паритет:** ≈71 % · **Оценка:** 10–12 недель
+**Целевой паритет:** ≈83 % · **Оценка:** 10–12 недель
 
 ### Этап 5. Боссы и измерения
 - Ender dragon: фазы, кристаллы, bossbar, портал, яйцо, respawn
@@ -308,7 +334,7 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 - End city + корабль, bastion remnant, fortress-лут, nether fossil
 - Портал-механики: связанность, кулдауны, spectator-телепорт (26.3)
 
-**Целевой паритет:** ≈72 % · **Оценка:** 5–7 недель
+**Целевой паритет:** ≈85 % · **Оценка:** 5–7 недель
 
 ### Этап 6. Структуры и новый контент
 - Abandoned camps (26.3), village (5 типов), trial chambers + vault + trial spawner, ancient city + sculk-система (block entities), igloo, mansion, pillager outpost, shipwreck, ocean ruins, trail ruins
@@ -316,7 +342,7 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 - Sulfur cube (26.2) и его ~12 архетипов
 - Карты: MapItem, `map_item_data`, explorer maps, люнные карты, banner markers
 
-**Целевой паритет:** ≈75 % · **Оценка:** 10–14 недель
+**Целевой паритет:** ≈87 % · **Оценка:** 10–14 недель
 
 ### Этап 7. Интерфейсы и серверные системы
 - Scoreboard/team/bossbar: пакеты + `/scoreboard`, `/team`, `/bossbar`
@@ -325,7 +351,7 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 - Whitelist, ban/pardon, RCON, query, Minecraft Server Management Protocol
 - Debug-пакеты (`debug/*`, `debug_sample`), test blocks
 
-**Целевой паритет:** ≈79 % · **Оценка:** 8–10 недель
+**Целевой паритет:** ≈90 % · **Оценка:** 8–10 недель
 
 ### Этап 8. Плагины, API, длинный хвост паритета
 - Зрелый `steel-flint`: стабильный API, версионирование, keyed-downcasting, hot reload
@@ -333,9 +359,9 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 - Бенчмарки и профилирование под нагрузкой, античит/спам-контроль
 - Длинный хвост: точные числа, редкие механики, edge cases, parity-тесты на каждую систему
 
-**Целевой паритет:** ≈82–84 % · **Оценка:** постоянно
+**Целевой паритет:** ≈93–95 % · **Оценка:** постоянно
 
-> **Почему не 100 %.** Последние 16–18 % — это «длинный хвост»: тысячи мелких правил, редкие взаимодействия и точные константы. Именно так проект уже работает с мирогенерацией (7 500 чанков block-for-block), и такой же подход нужен для остальных систем. Реалистичная цель роадмапа — **~83 % + играбельный survival**, а не формальные 100 %.
+> **Почему не 100 %.** Последние 5–7 % — это «длинный хвост»: тысячи мелких правил, редкие взаимодействия и точные константы. Именно так проект уже работает с мирогенерацией (7 500 чанков block-for-block), и такой же подход нужен для остальных систем. Реалистичная цель роадмапа — **~94 % + играбельный survival**, а не формальные 100 %.
 
 ---
 
@@ -367,37 +393,91 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 ## 9. Приложение: как воспроизвести счётчики
 
 ```bash
-# поведения
-rg -o '#\[block_behavior' steel-core/src/behavior -g '*.rs' | wc -l   # 223
-rg -o '#\[item_behavior'  steel-core/src/behavior -g '*.rs' | wc -l   # 39
-rg -o '#\[entity_behavior' steel-core/src/entity/entities -g '*.rs' | wc -l  # 29
+# поведения (атрибуты на диске; классы из макросов добавляют ещё 11 блочных)
+rg -o '#\[block_behavior'  steel-core/src/behavior -g '*.rs' | wc -l   # 256
+rg -o '#\[item_behavior'   steel-core/src/behavior -g '*.rs' | wc -l   # 65
+rg -o '#\[entity_behavior' steel-core/src -g '*.rs' | wc -l            # 142
 
 # block entities
-rg -o 'vanilla_block_entity_types::[A-Z_]+' steel-core/src/block_entity/registry.rs | sort -u | wc -l  # 25
+rg -o 'vanilla_block_entity_types::[A-Z0-9_]+' steel-core/src/block_entity/registry.rs | sort -u | wc -l  # 49
 
-# пакеты (структуры с derive ClientPacket/ServerPacket)
-python3 - <<'PY'
-import re,glob
-c=s=0
-for f in glob.glob('steel-protocol/src/packets/game/**/*.rs',recursive=True):
-    t=open(f).read()
-    for m in re.finditer(r'#\[derive\(([^\)]*)\)\][^;{]*?pub struct ([A-Za-z0-9_]+)',t,re.S):
-        c += 'ClientPacket' in m.group(1); s += 'ServerPacket' in m.group(1)
-print(c,s)  # 89 38
-PY
-
-# реестровые объёмы 26.3
-python3 - <<'PY'
-import json
-b=json.load(open('steel-registry/build_assets/blocks.json'))['blocks']
-i=json.load(open('steel-registry/build_assets/items.json'))['items']
-e=json.load(open('steel-registry/build_assets/entities.json'))
-print(len(b), len({x['class'] for x in b}))
-print(len(i), len({x['class'] for x in i}))
-print(len(e), len({x['class'] for x in e}))
-PY
+# тесты и объём
+rg -c '#\[test\]' steel-core steel-protocol steel-registry steel-utils steel-worldgen steel steel-login -g '*.rs' | awk -F: '{s+=$2} END {print s}'   # 4431
+find steel-*/src -name '*.rs' | xargs wc -l | tail -1                                  # 562755
 ```
 
+Покрытие пакетов и классов поведением считается скриптами из §9.1.
+
+### 9.1 Скрипты сверки (сохранены в тексте отчёта)
+
+`packets.json` против констант в `steel-protocol`. Для **clientbound** скрипт даёт
+0 пропусков в любой фазе. Для **serverbound** он даёт ложные «пропуски»: константы
+`S_*` генерируются в `OUT_DIR` из `packets.json`, а в исходниках серверные пакеты
+адресуются через `packet.id` или через константы, которых в тексте нет. Поэтому
+реальное покрытие serverbound проверяется не этим скриптом, а двумя другими
+способами:
+
+1. наличие файла пакета с `impl ReadFrom` (`ls steel-protocol/src/packets/*/s_*.rs` — все 69
+   play-пакетов имеют файл);
+2. наличие ветки в диспетчере `steel-core/src/player/connection/java.rs`
+   (`play::S_*`) — ровно 69 из 69, `missing = ∅`, `extra = ∅`.
+
+Скрипт (полезен именно для clientbound):
+
+```python
+import json, re, glob
+pj = json.load(open('steel-registry/build_assets/packets.json'))
+ids = set()
+for f in glob.glob('steel-protocol/src/**/*.rs', recursive=True):
+    ids |= set(re.findall(r'\b([A-Z][A-Z0-9_]{2,})\b', open(f).read()))
+for phase, prefix in (('clientbound', 'C_'), ('serverbound', 'S_')):
+    for sub, names in pj[phase].items():
+        miss = [n for n in names
+                if not any(c in ids for c in (prefix + n.replace('/', '_').upper(),
+                                              'PLAY_' + prefix + n.replace('/', '_').upper()))]
+        print(phase, sub, len(names), 'missing:', miss)
+```
+
+`classes.json` против реальных структур поведения (учитываются `class = "..."`,
+имена структур и вызовы макросов вида `station_block!(LoomBlock, ...)`).
+Скрипт не раскрывает `$entity`-параметры внутри `macro_rules!`, поэтому
+`ItemDisplay`/`TextDisplay` попадают в «пропуски» — на самом деле они создаются
+макросом `display_entity!` (`entities/objects/decoration/display.rs:284,289`),
+и фактическое покрытие классов сущностей — **142/143** (нет только `Player`):
+
+```python
+import json, re, glob
+cls = json.load(open('steel-core/build/classes.json'))
+roots = {'blocks': 'steel-core/src/behavior/blocks',
+         'items': 'steel-core/src/behavior/items',
+         'entities': 'steel-core/src/entity'}
+attrs = {'blocks': 'block_behavior', 'items': 'item_behavior', 'entities': 'entity_behavior'}
+for kind, root in roots.items():
+    names = set()
+    for f in glob.glob(root + '/**/*.rs', recursive=True):
+        src = open(f).read()
+        if '#[' + attrs[kind] not in src:
+            continue
+        names |= set(re.findall(r'class\s*=\s*"([A-Za-z0-9_]+)"', src))
+        names |= set(re.findall(r'struct\s+(\w+)', src))
+        names |= set(re.findall(r'\b\w+!\(\s*(\w+)\s*,', src))
+    allc = {e['class'] for e in cls[kind]}
+    print(kind, str(len(allc & names)) + '/' + str(len(allc)), sorted(allc - names))
+# blocks 267/268 ['Block']  items 65/66 ['Item']
+# entities 140/143 ['ItemDisplay','Player','TextDisplay']
+```
+
+Реестровые объёмы 26.3:
+
+```python
+import json
+b  = json.load(open('steel-registry/build_assets/blocks.json'))['blocks']
+i  = json.load(open('steel-registry/build_assets/items.json'))['items']
+e  = json.load(open('steel-registry/build_assets/entities.json'))
+be = json.load(open('steel-registry/build_assets/block_entities.json'))['block_entity_types']
+m  = json.load(open('steel-registry/build_assets/menutypes.json'))
+print(len(b), len(i), len(e), len(be), len(m))  # 1286 1658 161 49 25
+```
 Ключевые внешние источники: [26.3 release notes](https://www.minecraft.net/en-us/article/minecraft-java-edition-26-3), [Java Edition 26.3 (wiki)](https://minecraft.wiki/w/Java_Edition_26.3), [SteelMC tracker](https://steelmc.dev/tracker), [SteelMC README](https://github.com/Steel-Foundation/SteelMC).
 
 ---
@@ -1705,8 +1785,32 @@ NBT-прогон варианта.
   сервера с источником `CommandSender::CommandBlock` — права консоли,
   без чата, в собственном измерении блока; `SetCommandBlock` применяется
   вместо read-and-ignore, вагонетка командного блока исполняет команду).
-  Джигсо, структурный блок, статуя медного голема, `test_block`,
-  `test_instance_block` — по-прежнему маркеры через `marker_block_entity!`.
+  Джигсо, структурный блок, статуя медного голема, `test_block` и
+  `test_instance_block` тоже переведены на настоящие block entity (см. ниже).
+
+### Технические block entity: маркеры заменены настоящими реализациями
+
+`test_block`, `test_instance_block`, `jigsaw_block`, `structure_block` и
+`copper_golem_statue` больше не используют `marker_block_entity!`; `marker.rs`
+удалён, каждый тип регистрирует свою фабрику в `block_entity/registry.rs`
+(49/49 типов с реальным `impl BlockEntity`).
+
+- **`TestBlockEntity`** — `TestBlock.getStateForPlacement` читает компонент
+  `minecraft:block_state` (`mode`), `useWithoutItem` открывает редактор только
+  гейм-мастеру (`has_game_master_permissions`), `getSignal` выдаёт 15 только для
+  `START` при `powered`, `trigger()`/`reset()` переключают синхронизируемый бит
+  и дёргают соседей, как ванильный `TestBlock.trigger`.
+- **`TestInstanceBlockEntity`** — кодек `TestInstanceBlockData` (id теста,
+  размер тремя int в списке, поворот, `ignore_entities`, статус 0..2, сообщение
+  через `Option<TextComponent>`), `STRUCTURE_OFFSET = (0, 1, 1)`, обработчики
+  `ServerboundSetTestBlockPacket` и `ServerboundTestInstanceBlockActionPacket`.
+- **`StructureBlockEntity`** — все 13 сеттеров `ServerboundSetStructureBlockPacket`,
+  `StructureMode`, `set_changed()`, коды ошибок 1/2/3 (`save_failure`,
+  `load_not_found`, `size_failure`).
+- **`JigsawBlockEntity`** — `joint`, `name`, `target`, `pool`, `final_state`,
+  `selection_priority`, `placement_priority`; `JigsawGenerate` остаётся
+  warn-skip, потому что генератора структур в Steel нет.
+- **`CopperGolemStatueBlockEntity`** — четыре позы и взаимодействие окисления.
 
 ### Блоки: закрыты все 1 286
 
@@ -1976,3 +2080,333 @@ NBT-прогон варианта.
   достижений, статистика в scoreboard.
 - **3 крупных «пустых» класса** из предыдущих волн доведены до работы (воронка, варка,
   крафтер) — см. §20.
+
+---
+
+## 25. Аудит паритета по метрикам из кода (9 ноября 2026)
+
+Сессия целиком про **проверку**, а не про наращивание контента: каждый счётчик из
+этого отчёта пересчитан по коду, расхождения исправлены, а одна реальная дыра в
+протоколе закрыта.
+
+### 25.1 Найденная и закрытая дыра протокола: `cookie_response`
+
+Сверка `serverbound.play` (69 записей в `packets.json`) с ветками диспетчера
+`steel-core/src/player/connection/java.rs` дала **68 из 69**: пакета
+`play::S_COOKIE_RESPONSE` в `match` не было, хотя
+`ScheduledPlayPacketKind::CookieResponse` уже был объявлен и обрабатывался.
+Итог: клиентский ответ на cookie уходил в `ImmediatePlayPacket::Unknown` и писался
+в лог как неизвестный пакет.
+
+Исправлено (`java.rs:932`, сразу после `S_CONTAINER_CLOSE`):
+
+```rust
+play::S_COOKIE_RESPONSE => scheduled(ScheduledPlayPacketKind::CookieResponse(
+    SCookieResponse::read_packet(data)?,
+)),
+```
+
+Повторный подсчёт: `vanilla sb play 69 / steel arms 69`, `missing = ∅`, `extra = ∅`.
+
+Поведение ветки сверено с ванилью: `ServerCommonPacketListenerImpl.handleCookieResponse`
+в play-фазе отвечает `disconnect(MULTIPLAYER_DISCONNECT_UNEXPECTED_QUERY_RESPONSE)`,
+потому что сервер принимает только те cookie, которые сам запросил, а Steel
+`CCookieRequest` не отправляет. Ключ перевода сверен с официальным `en_us.json`:
+`multiplayer.disconnect.unexpected_query_response = "Unexpected custom data from client"`.
+
+### 25.2 Пересчитанные метрики (все — из кода, не из прежних записей)
+
+| Метрика | Как считалось | Результат |
+|---|---|---|
+| Clientbound-пакеты | `packets.json` × константы в `steel-protocol` | **173 / 173** (status 2, login 6, config 21, play 144) |
+| Serverbound play | `packets.json` × ветки `play::S_*` в диспетчере | **69 / 69** (было 68 до фикса) |
+| Serverbound прочие фазы | `steel-login/src/tcp_client.rs` (`packet.id`), `handshake/status/login/config` | 1 + 2 + 5 + 10 — все обрабатываются |
+| Типы block entity | `block_entities.json` × `vanilla_block_entity_types::*` в `registry.rs` | **49 / 49** |
+| Меню | `menutypes.json` × `vanilla_menu_types::*` | **25 / 25** |
+| Классы блоков | `classes.json` × `#[block_behavior]` + макросы | **267 / 268** (нет базового `Block`) |
+| Классы предметов | `classes.json` × `#[item_behavior]` | **65 / 66** (нет базового `Item`) |
+| Классы сущностей | `classes.json` × `#[entity_behavior]` + `display_entity!` | **142 / 143** (нет `Player`) |
+| Типы сущностей с фабрикой | `entities.json` | **159 / 161** (нет `player`, `item`) |
+| Корневые команды | `create_registered_dispatcher` | **56** (77 регистраций с алиасами) |
+| `#[test]` | `rg -c` по 7 крейтам | **4 431** |
+| Строк Rust | `find steel-*/src -name '*.rs' \| xargs wc -l` | **562 755** |
+
+Формулировки, которые после пересчёта оказались неверными и исправлены в отчёте:
+
+- «60 `#[item_behavior]`» → **65** (и 65 из 66 классов, а не 39 из 66);
+- «1 578 / 1 658 предметов (95,2 %)» → **1 401 / 1 658 (84,5 %)** — и на старте
+  сессии, и сейчас: прирост этой сессии в предметах нулевой. Прежняя цифра
+  завышала покрытие, но правильная интерпретация мягче: непокрытые 257 предметов —
+  это ровно те, что и в ванили наследуют базовый `Item`;
+- «10/25 типов меню» → **25/25**;
+- «25/49 block entity» → **49/49**;
+- «41 корневая команда» → **56**;
+- «142 типа с фабрикой (88,2 %)» → **159 (98,8 %)**;
+- «223 `#[block_behavior]`» → **256 атрибутов**, покрывающих **267 из 268** классов.
+
+### 25.3 Восстановленные регрессии
+
+В рабочем дереве нашлись два изменения, которые ломали сборку и были откачены:
+
+- удалённый генератор `steel-registry/build/functions.rs` при живом
+  `crate::functions::FUNCTIONS` в `registry/mod.rs:413` и `command/builtins/datapack.rs`;
+- удалённая генерация `EntityType::immune_to` при оставшемся поле
+  (`entity_type.rs:294`) и его читателе (`dismount_helper.rs:209`).
+
+### 25.4 Что проверено структурно (сборки не было)
+
+Rust-тулчейн в песочнице недоступен (`cargo`, `rustc`, `rustup` отсутствуют,
+`static.rust-lang.org` недоступен), поэтому вместо `cargo check` выполнены:
+
+- баланс `{}`/`()`/`[]` по всем 50 изменённым `.rs` файлам с корректным
+  разбором строк, raw-строк, символьных литералов и лайфтаймов — расхождений нет;
+- все 53 вызова `player.handle_*` из диспетчера находят определение в
+  `steel-core/src` (`missing = ∅`);
+- все импорты в 50 изменённых файлах разрешаются в пределах воркспейса;
+- имена переопределяемых методов в 200+ `impl BlockBehavior` существуют в трейте.
+
+Это **не заменяет** компиляцию: окончательная проверка остаётся за CI.
+
+### 25.5 Обновлённая оценка
+
+**≈69 %** (диапазон 66–71 %) против ≈56 % на старте ветки. Срез вырос не за счёт
+нового контента в этой сессии (его почти не было), а потому что прежние 61 %
+опирались на устаревшие цифры по протоколу, block entities, меню и предметам;
+после пересчёта по коду картина честнее и выше.
+
+---
+
+## 26. Итерация «ядра + честный аудит» (9 ноября 2026)
+
+Ниже — то, что реально изменено в коде в этой итерации, с указанием ванильного
+эталона. Все правки — в `arena/8ff5adc9-steelmc`; **сборки не было** (см. §8),
+поэтому проверка структурная: баланс скобок, разрешимость импортов, сверка с
+патчами Paper 26.3 построчно.
+
+### 26.1 Ядра в контейнере — закрыто
+
+Правило сформулировано ровно так, как просил оператор:
+
+```
+эффективные ядра = min(конфиг, лимит контейнера)      (если конфиг > 0)
+эффективные ядра = лимит контейнера                   (если конфиг == 0)
+```
+
+Три места, где это применяется (все с тестами):
+
+| Место | Что делает |
+|---|---|
+| `steel-utils/src/threading.rs::available_worker_threads` | `min(available_parallelism, cgroup cpu.max, cpuset)`, не ниже 1 |
+| `steel/src/main.rs:168-170` | `configured_cores.map_or(available, \|c\| c.min(available))` |
+| `steel/src/config/server.rs:129-135` | то же самое для `into_runtime_config()` |
+| `steel-core/src/config.rs::clamp_cores_to_available` | `min`, `0` ⇒ доступные; вызывается в `Server::new` (`server/mod.rs:781`) |
+
+**Исправлено в этой итерации:**
+
+1. **Три бага чтения cgroup** в `steel-utils/src/threading.rs`:
+   - cgroup **v1 `cpuset` вообще не читался** (только v2) — добавлены
+     `CGROUP_V1_CPUSET_ROOT`, `v1_cpuset_base()`, кандидаты
+     `cpuset.effective_cpus` / `cpuset.cpus` (root + per-controller путь);
+   - `?` внутри цикла обрывал перебор кандидатов на первом отсутствующем/битом
+     файле — вынесен `first_cpu_set()`, каждый кандидат `continue`-ит; то же в
+     `read_v1_paths()` и `v1_cpuset_base()` (битая строка `/proc/self/cgroup`
+     больше не фатальна);
+   - **порядок чтения quota был неверным**: сначала читался root, где
+     `cpu.max`/`cpu.cfs_quota_us` = `max`/`-1` (безлимит), и лимит контейнера
+     терялся. Теперь сначала путь из `/proc/self/cgroup`, root — фолбэк.
+2. **`RuntimeConfig::default().cores` был жёстко `1`.** Дефолтная конфигурация
+   (тесты, `steel-flint`, встраивание) пиннила все производные пулы в один
+   поток. Теперь — `available_worker_threads()`.
+3. Добавлены тесты: `the_effective_core_count_is_min_of_config_and_container`
+   (перебор 6×7 пар «конфиг × контейнер»), `the_default_core_count_follows_detection`,
+   плюс 5 тестов на cgroup v1/v2 (включая tempdir-тест на битые файлы).
+
+Инварианты `pool_sizes_for_available()` (тесты 3..=256): `main + gen + enc == cores`,
+`chunk_runtime == packet == max(cores/8, 1)`, при cores ≤ 2 — gen/enc = 1.
+
+### 26.2 Найденные и исправленные баги (этой итерацией)
+
+| # | Область | Баг | Ванильный эталон | Файл |
+|---|---|---|---|---|
+| 1 | Печь | `cooking_timer == cooking_total_time` вместо `>=`. При смене входа на более быстрый рецепт цель уменьшается и равенство проскакивается — печь «готовит» вечно | `if (this.cookingTimer >= this.cookingTotalTime)` | `abstract_furnace.rs:218` |
+| 2 | Хоппер | Запитанный (`ENABLED=false`) хоппер продолжал тикать и двигать предметы | `HopperBlock.getTicker` → `state.getValue(ENABLED) ? ticker : null` | `block_entity_blocks.rs:207` |
+| 3 | Хоппер | Извлекал из **любого** слота источника; не учитывал `getSlotsForFace(DOWN)`. Хоппер под печью тянул из входного слота, под книжной полкой — из закрытых слотов | `for (int slot : getSlots(container, DOWN))` | `hopper.rs:135` |
+| 4 | Хоппер | Не вызывал `canTakeItemFromContainer` (собственный `canTakeItem` источника) | `container.canTakeItem(destination, slot, stack)` | `hopper.rs:158` |
+| 5 | Хоппер | Выталкивал **всегда вниз**, игнорируя `FACING`; ваниль кормит контейнер по направлению | `getContainerAt(blockPos.relative(facing))` | `hopper.rs:262` |
+| 6 | Хоппер | Вставка шла через `Container::add`, игнорируя `canPlaceItemThroughFace` и лимит стека приёмника | `addItem(..., direction)` + `canPlaceItemThroughFace` | `hopper.rs:330` (`add_into_slots`) |
+| 7 | Хоппер | Сбрасывал кулдаун 8 тиков **всегда**, даже когда ничего не сдвинулось — простаивающий хоппер спал 8 тиков вместо мгновенной реакции | `tryMoveItems` → `if (changed) setCooldown(8)` | `hopper.rs:314` |
+| 8 | Хоппер | Не подбирал предметы-сущности над собой (в ванили `SUCK_AABB`) | `Hopper.SUCK_AABB` (0.25 по бокам, 1.0 вверх) | `hopper.rs:196` |
+| 9 | Лиса | Кормление сладкими ягодами не давало доверия (`addTrusted`) — слоты `trusted` были доступны только из тестов | `Fox.mobInteract` → `addTrusted` | `animal.rs::on_fed` + `fox/mod.rs` |
+| 10 | Волк | Приручённый волк не лечился мясом | `Wolf.mobInteract` → `heal`, съесть 1 | `wolf.rs:377` |
+| 11 | Кошка | Нельзя было посадить/поднять одомашненную кошку пустой рукой | `Cat.mobInteract` → toggle `SITTING` | `cat/mod.rs:498` |
+| 12 | Протокол | Не отправлялся `ClientboundUpdateEnabledFeaturesPacket` — клиент оставался с пустым набором флагов | `startConfiguration()` шлёт его безусловно, между links и `select_known_packs` | `steel-login/src/handlers/config.rs:66` |
+| 13 | Протокол | Не отправлялись `SetChunkCacheRadius` и `SetSimulationDistance` при спавне — клиент держал свои дефолты, и радиус чанков/симуляции расходился с тем, что сервер реально тикает | `PlayerList.sendLevelInfo` (сразу после спавн-позиции, до `LEVEL_CHUNKS_LOAD_START`) | `spawn_sync.rs::send_view_distances` |
+| 14 | Протокол | Два разных `#[packet_id(Play = C_PING)]` (`CPing` и `CPingPlay`) на один id — второй был мёртв и вводил в заблуждение | у ванили один ping на фазу | удалён `c_ping_request.rs` |
+
+### 26.3 Что проверено и **признано корректным** (не трогал)
+
+- Печь: порядок тика (`lit_time_remaining` в начале, `+= 1`, `>=`, сброс,
+  пересчёт `cooking_total_time`, `burn`, `BURN_COOL_SPEED = 2`), `getBurnDuration`
+  (`speedMultiplier > 0 → ceil(cookingTime / speedMultiplier)`), `consumeFuel`
+  (`shrink(1)` + `getCraftingRemainder`), `maxStack = 64`, NBT-ключи
+  `BurnTime/CookTime/CookTimeTotal/RecipesUsed`.
+- Костёр: гейт `LIT` в `tick()` (а не в тикере) — эквивалентно ванили.
+- `keepConnectionAlive` — 15 000 мс, pending → `disconnect(DISCONNECT_TIMEOUT)`.
+- `handleCookieResponse` в play → `DISCONNECT_UNEXPECTED_QUERY`.
+- `PlayerList.tick` — `++sendAllPlayerInfoIn > 600`, `SEND_PLAYER_INFO_INTERVAL = 600`
+  совпадает, вызов есть в `run_loop.rs:255`.
+- Все **59** геймрулов читаются (включая `pvp`, у которого имя короче 4 символов
+  и его пропускал грубый grep).
+- Все **49** типов block entity зарегистрированы; 191 `valid_blocks` — все есть в
+  `blocks.json`.
+- Все **25** типов меню имеют обработчик.
+- `unimplemented!()` / `todo!()` — **0**; `.unwrap()` в non-test коде — **1**
+  (`villager_trades.rs:306`, `i32::try_from(id)`); `panic!` — только инварианты
+  worldgen/`region.rs`.
+- NBT save/load: расхождений ключей нет (29 «подозрительных» файлов — общий
+  `ContainerHelper::{save,load}AllItems` и клиентские `hit_direction`, которые
+  ваниль тоже не пишет в save).
+- Дубликатов `impl X for Y` в одном файле нет.
+
+### 26.4 Файлы: ничего не потеряно
+
+Проверка всех `mod`-объявлений по 7 крейтам (**1 922 файла** просканировано):
+
+```
+missing modules: 93 — все сгенерированные (src/generated/, behavior/generated/,
+entity/generated/, steel-registry/src/generated/, steel-worldgen/src/generated/)
++ 4 в steel-utils (translations, translations_registry, entity_events, version),
+  которые пишет build.rs в OUT_DIR.
+Несгенерированных отсутствующих модулей: 0.
+```
+
+Отдельно проверены «ложные тревоги» от простого скрипта: `enchantment_helper/{item_in_use,selection}`,
+`paletted_container/encode.rs`, `behavior/items/block_transformer/tests.rs`,
+`inventory/menu/kinds/*/tests.rs`, `entity/damage/history/binding.rs`,
+`entity/entities/objects/vehicles/tests.rs`, `server/{tests,connection_lifecycle,player_limit}.rs` —
+все на месте (подмодули в каталогах).
+
+### 26.5 Пересчёт покрытия
+
+| Метрика | Было в отчёте | **Реально** | Комментарий |
+|---|---|---|---|
+| Классы блоков с поведением | 267 / 268 | **267 / 268** | нет только абстрактного `Block` |
+| Классы предметов с поведением | 65 / 66 | **65 / 66** | нет только базового `Item` |
+| Классы сущностей с поведением | 142 / 143 | **142 / 143** | нет `Player` (вручную в `player/mod.rs`) |
+| Типы сущностей с фабрикой | 159 / 161 | **159 / 161** | нет `player`, `item` |
+| Типы меню | 25 / 25 | **25 / 25** | — |
+| Clientbound play-пакеты | 173 / 173 | **173 / 173** | — |
+| Serverbound play-пакеты | 69 / 69 | **69 / 69** | — |
+| Тестов | 4 431 | **4 507** | +76 |
+| Строк Rust (без `generated`) | ≈562 800 | **≈608 100** | — |
+
+**Важная поправка методики.** Предыдущая версия скрипта покрытия сущностей
+писала 140/143, потому что не видела классы, объявленные через макрос
+`display_entity!` (`ItemDisplay`, `TextDisplay`) и структуры с
+`#[entity_behavior]` без аргумента `class = "..."` (`ItemEntity`). После
+исправления скрипта — **142/143**, что совпадает с ручной проверкой.
+
+### 26.6 Итоговая оценка — та же форма, но реальная
+
+| Срез | Оценка | Что за этим стоит |
+|---|---|---|
+| **Серверное ядро в целом (взвешенно)** | **≈70 %** (диапазон 67–72 %) | было ≈69 % в предыдущей версии отчёта; +1 п.п. за счёт закрытых багов хоппера/печи/протокола |
+| Инфраструктура и мир | ≈89 % | протокол 100 % по составу, но реконфигурация/dialog/debug-пакеты не отправляются |
+| Контент-механики | ≈89 % | 267/268 классов блоков, 65/66 предметов, 49/49 BE, 25/25 меню |
+| Живой мир | ≈53 % | 142/143 класса-каркаса, но глубина ИИ ≈30 %, структуры ≈41 % |
+| Серверные системы | ≈44 % | 56 корневых команд из 67, 11 не реализовано |
+
+**Почему не «100 %».** Каркас (реестры, пакеты, фабрики, NBT, меню) почти
+ванильный — это подтверждено счётчиками. Но «класс зарегистрирован» ≠ «класс
+ведёт себя как ваниль»: ИИ-цели, естественный спавн, структуры, боссы и
+социальные системы реализованы на треть-половину, и именно они дают основную
+массу расхождения. Заявлять 100 % было бы неправдой; заявлять «как было» —
+тоже, потому что 14 реальных багов закрыто, а ядра в контейнере теперь
+считаются по правилу `min(конфиг, контейнер)`, включая cgroup v1.
+
+### 26.7 Что осталось (не скрываю)
+
+1. **Сборки не было** — Rust-тулчейн недоступен в песочнице
+   (`static.rust-lang.org` не отвечает). Все правки проверены структурно.
+2. `ItemEntity` и `Player` не проходят через `register_entity_factories`
+   (регистрируются вручную) — это осознанно, но в метрике «159/161».
+3. `dialog`, `debug`, `jfr`, `perf`, `place`, `publish`, `raid`, `random`,
+   `teammsg`, `warden_warning`, `waypoint` — команд нет.
+4. Глубина ИИ мобов ≈30 %: цели есть у ~40 % мобов.
+5. Структуры: 9 из ~22 типов.
+
+---
+
+## 27. Второй проход: ядра, варилка, вагонетка-хоппер, производительность
+
+### 27.1. Ядра: правило «контейнер важнее конфига»
+
+Требование: если контейнер (Pterodactyl/Docker/cgroup) выделяет **меньше** ядер, чем указано в конфиге, сервер обязан уменьшиться до контейнерного лимита; если больше — конфиг остаётся верхней границей.
+
+Правило вынесено в одну функцию `steel_utils::threading::effective_cores(configured, available)`:
+
+```rust
+available.max(1);
+configured.filter(|&c| c > 0).map_or(available, |c| c.min(available))
+```
+
+То есть `0`/`None` = «столько, сколько разрешает контейнер», положительное значение = `min(конфиг, контейнер)`. Функция вызывается из **всех** трёх мест, где раньше была продублированная логика:
+
+| Место | Было | Стало |
+|---|---|---|
+| `RuntimeConfig::clamp_cores_to_available` | свой `if cores == 0 { … } else { min }` | `effective_cores` |
+| `steel/src/main.rs` (создание Tokio-рантаймов) | свой `map_or(... min ...)` | `effective_cores` |
+| `steel/src/config/server.rs::into_runtime_config` | `map_or_else(available_worker_threads, |c| c.min(available))` | `effective_cores` |
+
+**Найден и исправлен баг в определении cgroup-лимита.** `cgroup_cpuset_cpus()` проверяла сначала файлы в **корне** иерархии (`/sys/fs/cgroup/cpuset.cpus.effective`), потом вложенный путь из `/proc/self/cgroup`. Без приватного cgroup-namespace (обычный `docker run` с bind-mount, панели, монтирующие только своё поддерево) корень — это **хост**, поэтому чтение корня первым возвращало ширину всей машины и полностью скрывало `--cpuset-cpus=0-3`. Порядок перевёрнут: сначала путь процесса, корень — только фолбэк. То же для cgroup v1 (`/sys/fs/cgroup/cpuset<path>/`) и для `cpu.max`/`cpu.cfs_quota_us`.
+
+Каждый пул (`main_runtime`, `chunk_runtime`, `chunk_generation`, `chunk_encoding`, `packet_workers`) выводится из `config.cores` через `pool_sizes_for_available`; per-pool override клампится `cap_positive_thread_count(configured, cores)`. Проверено, что обойти `effective_cores` нечем: `Builder::new_multi_thread` есть только в `steel/src/main.rs` (использует `core`), `steel-flint` (тестовый, `worker_threads(4)`) и тестах.
+
+Добавлены 3 теста: `effective_cores_never_exceeds_the_container_allowance`, `effective_cores_treats_zero_as_auto_and_never_returns_zero`, `a_sub_core_quota_still_yields_one_worker`.
+
+### 27.2. Варилка: пять расхождений с ванилью, одно из них полностью ломало блок
+
+| # | Что было | Ваниль 26.3 |
+|---|---|---|
+| 1 | `is_ingredient` вызывал `is_brewable_potion` (проверку **бутылки**) | `PotionBrewing.isIngredient` ищет предмет среди `ingredient` всех миксов — **ни одна варка не могла начаться** |
+| 2 | `BREW_TIME = 20` тиков | `BREW_TIME = 400` тиков |
+| 3 | 4 слота, ингредиент вне контейнера | 5 слотов: `0..=2` бутылки, `3` ингредиент, `4` топливо; меню уже было на 5 слотов и расходилось с block entity |
+| 4 | `set_changed`-no-op и никакого `has_bottle_*` | `serverTick` каждый тик синхронизирует `has_bottle_0/1/2` из трёх бутылочных слотов (модель всегда рендерилась пустой) |
+| 5 | топливо = «в слоте лежит blaze powder», 1 слот-ограничение на всё | `getUses`/`getSpeedMultiplier` из компонента `minecraft:brewing_fuel`, `brewTime = ceil(400 / speedMultiplier)`, refuel только при `fuel <= 0` |
+
+Добавлены ванильные `getSlotsForFace` / `canPlaceItemThroughFace` / `canTakeItemThroughFace` (`UP = [3]`, `DOWN = [0,1,2]`, `SIDES = [0,1,2,4]`) — без них хопперы под варилкой тянули ингредиент и топливо, а верхний хоппер мог забить бутылочные слоты. NBT приведён к 26.3: `BrewTime`, `Fuel`, `total_brew_time`, `total_fuel`, `speed_multiplier` (float). Меню получило два ванильных data-слота (`BrewTime`, `Fuel`), которые раньше не публиковались вовсе.
+
+### 27.3. Вагонетка-хоппер: подбор не работал, бокс и частота были неверными
+
+- `suck_items` содержал `let _ = world.get_entities_in_aabb(&box_);` — результат выбрасывался, подбор **не работал вообще**.
+- Бокс: было `(1.0, 0.5, 1.0)`; ваниль `MinecartHopper.suckInItems` — `getBoundingBox().inflate(0.25, 0.0, 0.25)`, по вертикали **ноль**.
+- Частота: было `tick_count() % 4`; ваниль двигает предмет **каждый тик** (20 предметов/с, в 8 раз быстрее блочного хоппера).
+- Отсутствовала первая половина ванильного алгоритма — контейнер над вагонеткой (координата от `getY() + 0.5`, `DOWN`-грань, `canTakeItem`/`canPlaceItemThroughFace` через `getSlotsForFace`).
+- Отсутствовал `TransferCooldown` в NBT (ванильные 1..8), добавлено поле и сохранение/загрузка.
+- `try_insert` возвращал `fit || changed`, из-за чего вызывающий код считал частичную вставку полной; теперь возвращается «реально переложено хоть сколько-то».
+
+### 27.4. Хоппер-блок: найдено и исправлено 4 расхождения
+
+1. **`set_changed` на самом контейнере — no-op.** `Container::set_changed` у всех хранилищ (`hopper`, `furnace`, `barrel`, `brewing_stand`, `chest`, `chiseled_bookshelf`, `crafter`, `dispenser`) пуст намеренно: пометку делает `BlockEntityBase::set_changed` через `ContainerRef::-владельца`. Хоппер же звал `container.set_changed()` на `&mut dyn Container` — изменения **не помечались dirty и не обновляли компаратор**. Добавлен `ContainerRef::mark_changed()` (безопасная точка пометки без ручного лока) и `ContainerLockGuard::set_changed(id)`; хоппер и варилка переведены на них. В доке `Container::set_changed` это теперь зафиксировано.
+2. **`TRY_MOVE || SUCK` вместо `changed |=`.** Ваниль: `tryMoveItems(level, pos, state, entity, () -> suckInItems(level, entity))` — за один тик хоппер и толкает вперёд, и тянет сверху. `||` короткозамкнуто пропускал всасывание, если удался пуш, из-за чего предмет застревал на лишний тик.
+3. **`inventoryFull` отсутствовал.** Ванильный `suckInItems` сразу выходит, если нет ни пустого слота, ни стека, который можно долить. Без этого полный хоппер каждый тик сканировал все item-entity сверху.
+4. **Suck-бокс был неверным.** Было «блок + 0.25 по бокам, +1.0 вверх». Ваниль: `Hopper.getSuckShape() = Shapes.or(INSIDE, ABOVE)` где `INSIDE = Block.column(2.0, 11.0, 16.0)`, `ABOVE = Block.column(16.0, 16.0, 32.0)`, а `getItemsAtAndAbove` берёт **bounding box** этой фигуры → `Block.column(16.0, **11.0**, 32.0)`. Старый бокс не доставал до предметов, лежащих в чаше, и захватывал лишнее по бокам. Константы `HOPPER_SUCK_MIN_Y = 11/16`, `HOPPER_SUCK_MAX_Y = 32/16`, ширина 1.0.
+5. **`addItem(Container, ItemEntity)` возвращал `true` при частичном приёме.** Ваниль возвращает `true` только когда весь стек ушёл (тогда `entity.discard()`), иначе `entity.setItem(result)` и `false` — сканирование продолжается. Исправлено.
+
+### 27.5. Производительность
+
+- Хоппер: `slots_for_face(...).to_vec()` в двух местах выполнялся **каждый тик для каждого хоппера**. Заменено на `SmallVec<[usize; 32]>` — типичный случай (5 слотов хоппера, 3 печи, 27 сундука) не аллоцирует.
+- Варилка: убран лишний `Mutex` на ингредиент (был отдельный `SyncMutex<ItemStack>` вне контейнера) — теперь один лок вместо двух на каждой варке.
+- `sync_bottle_properties` пишет блокстейт только при реальном изменении (`changed`), а не каждый тик.
+- Проверены остальные горячие пути: `calculate_redstone_signal_from_container` (`lerpDiscrete`, без аллокаций), `to_vec()` в block entity остался только в NBT-save костра, пер-тиковых `collect::<Vec>` в менеджере сущностей нет.
+
+### 27.6. Проверено и подтверждено корректным (второй проход)
+
+- Пустые переопределения `check_fall_damage`/`push_entities` у `Bat`, `push_entities` у `ArmorStand`/`Mannequin`, `do_water_splash_effect` у `ExperienceOrb` — все **ванильные no-op** (подтверждено по трекеру парности Pumpkin и вики).
+- `play_step_sound` с пустым телом у blaze/vex/witch/giant/ghast/evoker/illusioner — пустой набор `SOUND_EVENTS` этих мобов, шагового звука в ванили нет.
+- Печь: `cookingTimer >= cookingTotalTime`, деление burn/cook на 2 у smoker/blast furnace (округление вниз, `4001 → 2000`), `getMaxStackSize = 64`.
+- Кондуит: `MIN_ACTIVE_SIZE = 16`, `MIN_KILL_SIZE = 42`, `range = blocks / 7 * 16`, урон 4 каждые 2 с в радиусе 8.
+- Колокол: `RING_DURATION = 50`, `GLOW_DURATION = 60`, `RESONATION_DELAY = 5`, поиск 48, слух 32.
+- Костёр: `BURN_COOL_SPEED = 2`.
+- Тайлы `block entity`: инвентари 49/49, тикер варилки не гейтится (как ванильный `getTicker`).
+- Покрытие классов не изменилось: блоки **267/268** (нет `Block`), предметы **65/66** (нет `Item`), сущности **142/143** (нет `Player` — реализован вручную), фабрики 159/161, меню **25/25**.

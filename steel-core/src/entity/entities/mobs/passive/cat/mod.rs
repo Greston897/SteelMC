@@ -41,7 +41,11 @@ use crate::entity::{
     LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity, SpawnGroupData, SpawnRule,
     sync_dirty_mob_effects,
 };
+use steel_utils::types::InteractionHand;
+
+use crate::behavior::InteractionResult;
 use crate::physics::MoveResult;
+use crate::player::Player;
 use crate::world::World;
 
 /// Vanilla `TamableAnimal.DATA_FLAGS_ID` bits.
@@ -490,6 +494,26 @@ impl AgeableMob for CatEntity {
 impl Mob for CatEntity {
     fn mob_base(&self) -> &MobBase {
         &self.mob_base
+    }
+
+    /// Vanilla `Cat.mobInteract`: an owned cat toggles sitting when its owner
+    /// right-clicks it with an empty hand.
+    ///
+    /// The interaction is what lets an owner park a cat; without it the sitting
+    /// flag was only reachable from tests.
+    fn mob_interact(&self, player: &Player, hand: InteractionHand) -> InteractionResult {
+        if self.is_tame() && self.is_owned_by(Some(player.base().uuid())) {
+            let stack = {
+                let inventory = player.inventory.lock();
+                inventory.get_item_in_hand(hand)
+            };
+            if stack.is_empty() {
+                let sitting = self.is_sitting();
+                self.set_sitting(!sitting);
+                return InteractionResult::SuccessServer;
+            }
+        }
+        Animal::mob_interact_animal(self, player, hand)
     }
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {

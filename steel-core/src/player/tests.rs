@@ -47,7 +47,10 @@ use steel_registry::blocks::properties::{BlockStateProperties, Direction};
 use steel_registry::data_component_predicate::DataComponentMatchers;
 use steel_registry::data_components::vanilla_components::{CAN_BREAK, EQUIPPABLE};
 use steel_registry::data_components::{AdventureModePredicate, BlockPredicate};
-use steel_registry::packets::play::C_REMOVE_ENTITIES;
+use steel_registry::packets::play::{
+    C_REMOVE_ENTITIES, C_SET_CHUNK_CACHE_RADIUS, C_SET_DEFAULT_SPAWN_POSITION,
+    C_SET_SIMULATION_DISTANCE,
+};
 use steel_registry::stat::vanilla_stat_types;
 use steel_registry::{
     RegistryHolderSet, entity_data::EntityData, init_vanilla_registry, item_stack::ItemStack,
@@ -1924,5 +1927,62 @@ fn sword_does_not_destroy_blocks_in_creative() {
         world.get_block_state(pos),
         dirt,
         "swords should not destroy blocks when player is in creative mode."
+    );
+}
+
+/// `PlayerList.sendLevelInfo` always sends the view and simulation distances,
+/// right after the default spawn position and before `LEVEL_CHUNKS_LOAD_START`.
+///
+/// Missing these packets leaves the client on its own defaults: it then keeps a
+/// chunk radius the server never agreed to, so chunk loading, entity tracking
+/// and simulation ranges silently disagree with what the server actually ticks.
+#[test]
+fn spawn_sends_view_and_simulation_distances_in_vanilla_order() {
+    init_vanilla_registry();
+    let world_fixture = fresh_test_world("spawn_view_distance_packets");
+    let world = &world_fixture.world;
+    let sent_packets = Arc::new(SyncMutex::new(Vec::new()));
+    let connection = Arc::new(PlayerConnection::Other(Box::new(RecordingConnection {
+        sent_packets: Arc::clone(&sent_packets),
+        closed: AtomicBool::new(false),
+    })));
+    let player = TestPlayerBuilder::new(Arc::clone(world), "ViewDistanceTester", 1)
+        .connection(connection)
+        .build();
+    sent_packets.lock().clear();
+
+    assert!(player.spawn(DVec3::ZERO, (0.0, 0.0), ResetReason::InitialJoin));
+
+    let ids = sent_packets
+        .lock()
+        .iter()
+        .map(|packet| {
+            let mut cursor = Cursor::new(packet.encoded_data.as_slice());
+            let _ = VarInt::read(&mut cursor);
+            VarInt::read(&mut cursor).ok().map(|id| id.0)
+        })
+        .collect::<Vec<_>>();
+
+    let radius = ids
+        .iter()
+        .position(|id| *id == Some(C_SET_CHUNK_CACHE_RADIUS))
+        .expect("spawn must send ClientboundSetChunkCacheRadiusPacket");
+    let simulation = ids
+        .iter()
+        .position(|id| *id == Some(C_SET_SIMULATION_DISTANCE))
+        .expect("spawn must send ClientboundSetSimulationDistancePacket");
+    assert_eq!(
+        simulation,
+        radius + 1,
+        "vanilla sends the radius immediately followed by the simulation distance"
+    );
+
+    let spawn_position = ids
+        .iter()
+        .position(|id| *id == Some(C_SET_DEFAULT_SPAWN_POSITION))
+        .expect("spawn must send the default spawn position");
+    assert!(
+        radius > spawn_position,
+        "both distance packets follow ClientboundSetDefaultSpawnPositionPacket"
     );
 }

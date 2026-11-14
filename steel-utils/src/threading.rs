@@ -40,6 +40,9 @@ const PROC_SELF_CGROUP: &str = "/proc/self/cgroup";
 const CGROUP_V1_QUOTA: &str = "/sys/fs/cgroup/cpu/cpu.cfs_quota_us";
 const CGROUP_V1_PERIOD: &str = "/sys/fs/cgroup/cpu/cpu.cfs_period_us";
 
+/// cgroup v1 mounts the `cpuset` controller under its own hierarchy.
+const CGROUP_V1_CPUSET_ROOT: &str = "/sys/fs/cgroup/cpuset";
+
 /// Returns the number of cores this process may actually run on.
 ///
 /// Takes the smallest of the OS-reported parallelism and any cgroup CPU limit.
@@ -59,31 +62,99 @@ pub fn available_worker_threads() -> usize {
 
 /// Reads a cgroup `cpuset` allowance as a core count.
 ///
-/// `cpuset.cpus` (v2) and `cpuset.effective_cpus` (v1) list the cores a
-/// container may run on, e.g. `"0-3,8"`. Returns `None` when the file is absent
-/// (no cpuset controller) or lists nothing usable.
+/// Both hierarchy versions are probed, because a panel can pin cores either way
+/// and a v1 host never has a v2 file:
+///
+/// * v2 — `cpuset.cpus.effective` (the cpuset actually granted after ancestor
+///   intersection) and then the requested `cpuset.cpus`, at the hierarchy root
+///   and under the path `/proc/self/cgroup` reports for nested mounts;
+/// * v1 — `cpuset.effective_cpus` and `cpuset.cpus` from the controller root and
+///   from the per-controller path (`/sys/fs/cgroup/cpuset<path>/`).
+///
+/// Each candidate is tried in turn: a file that does not exist, cannot be read,
+/// or holds an unusable value must not abort the search, otherwise a single
+/// missing control file would silently hide the real allowance and let the
+/// server size its pools for the whole host.
+///
+/// Returns `None` when no cpuset controller restricts this process, in which
+/// case the caller falls back to the OS parallelism.
 #[must_use]
 pub fn cgroup_cpuset_cpus() -> Option<usize> {
     let relative = std::fs::read_to_string(PROC_SELF_CGROUP).ok();
-    let candidates = [
-        format!("{CGROUP_V2_ROOT}/cpuset.cpus.effective"),
-        format!("{CGROUP_V2_ROOT}/cpuset.cpus"),
-    ];
-    for path in candidates {
-        if let Ok(contents) = std::fs::read_to_string(&path) {
-            if let Some(count) = parse_cpu_set(&contents) {
-                return Some(count);
-            }
+
+    // cgroup v2: the process's own cgroup first, then the hierarchy root.
+    //
+    // The order is load-bearing. Without a private cgroup namespace (the default
+    // for a plain `docker run` with a host bind mount, and for a panel that only
+    // mounts its own subtree) `/sys/fs/cgroup` *is* the host root, so
+    // `cpuset.cpus.effective` there lists every core of the machine. Reading it
+    // first would report the host width and hide a `--cpuset-cpus=0-3` pin
+    // entirely — the pools would then be sized for the whole box. The nested
+    // path `/proc/self/cgroup` reports is the container's real allowance, so it
+    // is probed first and the root is only a fallback.
+    let mut v2_candidates = Vec::with_capacity(4);
+    if let Some(Some(path)) = relative.as_deref().map(v2_relative_path) {
+        for name in ["cpuset.cpus.effective", "cpuset.cpus"] {
+            v2_candidates.push(format!("{CGROUP_V2_ROOT}{path}/{name}"));
         }
     }
-
-    // Nested cgroups: use the path `/proc/self/cgroup` reports.
-    let path = v2_relative_path(relative.as_deref()?)?;
     for name in ["cpuset.cpus.effective", "cpuset.cpus"] {
-        let contents = std::fs::read_to_string(format!("{CGROUP_V2_ROOT}{path}/{name}")).ok()?;
+        v2_candidates.push(format!("{CGROUP_V2_ROOT}/{name}"));
+    }
+    if let Some(count) = first_cpu_set(&v2_candidates) {
+        return Some(count);
+    }
+
+    // cgroup v1: same rule — the per-controller path this process reports wins
+    // over the controller root, because the root file describes the host.
+    let mut v1_candidates = Vec::with_capacity(4);
+    if let Some(base) = v1_cpuset_base(relative.as_deref()) {
+        for name in ["cpuset.effective_cpus", "cpuset.cpus"] {
+            v1_candidates.push(format!("{base}/{name}"));
+        }
+    }
+    for name in ["cpuset.effective_cpus", "cpuset.cpus"] {
+        v1_candidates.push(format!("{CGROUP_V1_CPUSET_ROOT}/{name}"));
+    }
+    first_cpu_set(&v1_candidates)
+}
+
+/// Returns the first candidate file that holds a usable CPU set.
+fn first_cpu_set(candidates: &[String]) -> Option<usize> {
+    for path in candidates {
+        let Ok(contents) = std::fs::read_to_string(path) else {
+            continue;
+        };
         if let Some(count) = parse_cpu_set(&contents) {
             return Some(count);
         }
+    }
+    None
+}
+
+/// Returns the cgroup v1 `cpuset` controller directory of this process.
+///
+/// v1 writes the per-controller path in `/proc/self/cgroup` as
+/// `<id>:<controllers>:<path>`, so the controller's directory is
+/// `/sys/fs/cgroup/cpuset<path>`.
+#[must_use]
+pub fn v1_cpuset_base(proc_self_cgroup: Option<&str>) -> Option<String> {
+    let contents = proc_self_cgroup?;
+    for line in contents.lines() {
+        // A malformed hierarchy line is skipped, not fatal — see `read_v1_paths`.
+        let mut fields = line.splitn(3, ':');
+        let (Some(_id), Some(controllers), Some(path)) =
+            (fields.next(), fields.next(), fields.next())
+        else {
+            continue;
+        };
+        if !controllers
+            .split(',')
+            .any(|controller| controller == "cpuset")
+        {
+            continue;
+        }
+        return Some(format!("{CGROUP_V1_CPUSET_ROOT}{path}"));
     }
     None
 }
@@ -136,44 +207,68 @@ pub fn cgroup_cpu_limit() -> Option<usize> {
 }
 
 /// Parses cgroup v2 `cpu.max`, whose format is `"<quota> <period>"` or `"max <period>"`.
+///
+/// The process's own cgroup is consulted first and the hierarchy root second.
+/// The order matters: inside a nested cgroup the root `cpu.max` usually says
+/// `max` (the host is unlimited) while the child file carries the container's
+/// quota, so reading the root first would report "no limit" and size the pools
+/// for the whole machine. A file that is absent or unparsable must not abort the
+/// search either, so every candidate is tried in turn.
 fn cgroup_v2_cpu_limit() -> Option<usize> {
-    let root = std::fs::read_to_string(CGROUP_V2_ROOT.to_owned() + "/cpu.max");
-    if let Ok(contents) = root {
-        return parse_cgroup_v2_cpu_max(&contents);
+    // The container may not be mounted at the hierarchy root (a host cgroup
+    // namespace, or a panel that bind-mounts only its own subtree), so the
+    // limit lives at the path `/proc/self/cgroup` reports.
+    if let Some(path) = std::fs::read_to_string(PROC_SELF_CGROUP)
+        .ok()
+        .as_deref()
+        .and_then(v2_relative_path)
+        && let Ok(contents) = std::fs::read_to_string(format!("{CGROUP_V2_ROOT}{path}/cpu.max"))
+        && let Some(cores) = parse_cgroup_v2_cpu_max(&contents)
+    {
+        return Some(cores);
     }
 
-    // The container may not be mounted at the hierarchy root (a host
-    // cgroup namespace, or a panel that bind-mounts only its own subtree). In
-    // that case the limit lives at the path `/proc/self/cgroup` reports, with
-    // the hierarchy root as the mount point.
-    let path = v2_relative_path(&std::fs::read_to_string(PROC_SELF_CGROUP).ok()?)?;
-    let contents = std::fs::read_to_string(format!("{CGROUP_V2_ROOT}{path}/cpu.max")).ok()?;
+    let contents = std::fs::read_to_string(CGROUP_V2_ROOT.to_owned() + "/cpu.max").ok()?;
     parse_cgroup_v2_cpu_max(&contents)
 }
 
 /// Parses cgroup v1 `cpu.cfs_quota_us` / `cpu.cfs_period_us`.
 fn cgroup_v1_cpu_limit() -> Option<usize> {
-    let quota_path = CGROUP_V1_QUOTA.to_owned();
-    let period_path = CGROUP_V1_PERIOD.to_owned();
-
-    // Same fallback as v2: a nested cgroup puts the controller files under the
-    // path this process reports instead of the controller root.
-    let (quota_path, period_path) = match read_v1_paths() {
-        Some((quota, period)) => (quota, period),
-        None => (quota_path, period_path),
-    };
-
-    let quota: i64 = std::fs::read_to_string(quota_path).ok()?.trim().parse().ok()?;
-    if quota <= 0 {
-        // The cgroup v1 "no limit" value is `-1`.
-        return None;
+    // Same fallback as v2, in the same order: the nested per-controller path this
+    // process reports wins over the controller root, because a v1 host leaves the
+    // root at `-1` (unlimited) and only the child file carries the container
+    // quota. Reading the root first would report "no limit".
+    let mut candidates = Vec::with_capacity(2);
+    if let Some(pair) = read_v1_paths() {
+        candidates.push(pair);
     }
-    let period: i64 = std::fs::read_to_string(period_path)
-        .ok()?
-        .trim()
-        .parse()
-        .ok()?;
-    quota_to_cores(quota, period)
+    candidates.push((
+        CGROUP_V1_QUOTA.to_owned(),
+        CGROUP_V1_PERIOD.to_owned(),
+    ));
+
+    for (quota_path, period_path) in candidates {
+        let Ok(quota) = std::fs::read_to_string(quota_path) else {
+            continue;
+        };
+        let Ok(quota) = quota.trim().parse::<i64>() else {
+            continue;
+        };
+        if quota <= 0 {
+            // The cgroup v1 "no limit" value is `-1`; try the next candidate.
+            continue;
+        }
+        let Ok(period) = std::fs::read_to_string(period_path) else {
+            continue;
+        };
+        let Ok(period) = period.trim().parse::<i64>() else {
+            continue;
+        };
+        if let Some(cores) = quota_to_cores(quota, period) {
+            return Some(cores);
+        }
+    }
+    None
 }
 
 /// Finds the nested cgroup v1 `cpu` controller files, if this process is not at
@@ -183,10 +278,16 @@ fn read_v1_paths() -> Option<(String, String)> {
     for line in contents.lines() {
         // v1 lines look like `<id>:<controllers>:<path>`; a pure `<id>::<path>`
         // line is the v2 hierarchy and carries no cpu controller files.
+        //
+        // A malformed line is skipped, not fatal: `/proc/self/cgroup` always
+        // carries several hierarchies, and letting one of them abort the scan
+        // would hide the cpu controller that follows it.
         let mut fields = line.splitn(3, ':');
-        let _id = fields.next()?;
-        let controllers = fields.next()?;
-        let path = fields.next()?;
+        let (Some(_id), Some(controllers), Some(path)) =
+            (fields.next(), fields.next(), fields.next())
+        else {
+            continue;
+        };
         if !controllers.split(',').any(|controller| controller == "cpu") {
             continue;
         }
@@ -237,6 +338,26 @@ pub fn parse_cgroup_v2_cpu_max(contents: &str) -> Option<usize> {
     let quota: i64 = quota.parse().ok()?;
     let period: i64 = fields.next()?.parse().ok()?;
     quota_to_cores(quota, period)
+}
+
+/// Resolves the effective core budget for this process.
+///
+/// This is the single rule every caller must use: the configured value is an
+/// *upper bound*, never a promotion. A server configured for 16 cores inside a
+/// container limited to 600 % CPU runs on 6, and a 4-core configuration on a
+/// 64-core host still uses only 4. `None`, `0`, and negative-as-`0` all mean
+/// "whatever this container actually allows", which is
+/// [`available_worker_threads`].
+///
+/// `configured` is `Option<usize>`, so the `0`-means-auto convention only has to
+/// be applied once by the config parser (`ThreadConfig::cores` is already
+/// filtered to a positive value there).
+#[must_use]
+pub fn effective_cores(configured: Option<usize>, available: usize) -> usize {
+    let available = available.max(1);
+    configured
+        .filter(|&cores| cores > 0)
+        .map_or(available, |cores| cores.min(available))
 }
 
 /// Caps an explicit positive worker count to available parallelism, or uses
@@ -352,8 +473,8 @@ pub fn pool_sizes_for_available(cores: usize) -> PoolSizes {
 #[cfg(test)]
 mod tests {
     use super::{
-        PoolSizes, parse_cgroup_v2_cpu_max, parse_cpu_set, pool_sizes_for_available,
-        quota_to_cores, v2_relative_path, worker_threads_for_available,
+        PoolSizes, first_cpu_set, parse_cgroup_v2_cpu_max, parse_cpu_set, pool_sizes_for_available,
+        quota_to_cores, v1_cpuset_base, v2_relative_path, worker_threads_for_available,
     };
 
     #[test]
@@ -512,6 +633,87 @@ mod tests {
         assert_eq!(parse_cpu_set("0-3,8"), Some(5));
         assert_eq!(parse_cpu_set("2"), Some(1));
         assert_eq!(parse_cpu_set("0-0"), Some(1));
+    }
+
+    #[test]
+    fn a_v1_cpuset_hierarchy_is_found_by_its_controller() {
+        // v1 lists one hierarchy per controller; cpuset is one of them.
+        let proc_self =
+            "1:name=systemd:/docker/abc123\n2:cpu,cpuacct:/docker/abc123\n5:cpuset:/docker/abc123\n";
+        assert_eq!(
+            v1_cpuset_base(Some(proc_self)).as_deref(),
+            Some("/sys/fs/cgroup/cpuset/docker/abc123")
+        );
+    }
+
+    #[test]
+    fn a_host_without_a_cpuset_controller_has_no_v1_base() {
+        let proc_self = "2:cpu,cpuacct:/docker/abc123\n0::/docker/abc123\n";
+        assert_eq!(v1_cpuset_base(Some(proc_self)), None);
+        assert_eq!(v1_cpuset_base(None), None);
+    }
+
+    #[test]
+    fn malformed_hierarchy_lines_do_not_hide_the_cpuset_controller() {
+        // A short line in front of the cpuset line used to abort the scan.
+        let proc_self = "0::\n5:cpuset:/docker/abc123\n";
+        assert_eq!(
+            v1_cpuset_base(Some(proc_self)).as_deref(),
+            Some("/sys/fs/cgroup/cpuset/docker/abc123")
+        );
+    }
+
+    #[test]
+    fn the_first_usable_cpu_set_wins_and_missing_files_are_skipped() {
+        // A candidate that cannot be read must not abort the search: otherwise a
+        // single missing control file would size the pools for the whole host.
+        let dir = std::env::temp_dir().join(format!("steel-cpuset-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("create temp dir");
+        let present = dir.join("cpuset.cpus.effective");
+        std::fs::write(&present, "0-3\n").expect("write cpu set");
+        let missing = dir.join("does_not_exist");
+        let candidates = vec![
+            missing.to_string_lossy().into_owned(),
+            present.to_string_lossy().into_owned(),
+        ];
+        assert_eq!(first_cpu_set(&candidates), Some(4));
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn a_cpuset_of_max_is_not_a_core_count() {
+        // v1 writes `cpuset.cpus` verbatim, but `cpuset.effective_cpus` on some
+        // kernels reports an unconstrained set; parsing must reject junk instead
+        // of inventing a limit.
+        assert_eq!(first_cpu_set(&["/definitely/not/here".to_owned()]), None);
+    }
+
+    /// The configured value is an upper bound: a container serving six cores
+    /// must shrink a sixteen-core configuration to six, never promote it.
+    #[test]
+    fn effective_cores_never_exceeds_the_container_allowance() {
+        assert_eq!(effective_cores(Some(16), 6), 6);
+        assert_eq!(effective_cores(Some(4), 64), 4);
+        assert_eq!(effective_cores(Some(6), 6), 6);
+    }
+
+    /// `0`/`None` mean "use whatever the container allows", and the result is
+    /// never zero even when the OS reports nothing usable.
+    #[test]
+    fn effective_cores_treats_zero_as_auto_and_never_returns_zero() {
+        assert_eq!(effective_cores(None, 8), 8);
+        assert_eq!(effective_cores(Some(0), 8), 8);
+        assert_eq!(effective_cores(None, 0), 1);
+        assert_eq!(effective_cores(Some(0), 0), 1);
+    }
+
+    /// A quota below one core still has to run the server, so every scheduling
+    /// helper clamps to one instead of spawning zero workers.
+    #[test]
+    fn a_sub_core_quota_still_yields_one_worker() {
+        assert_eq!(quota_to_cores(50_000, 100_000), Some(0));
+        assert!(pool_sizes_for_available(0).main_runtime >= 1);
+        assert!(worker_threads_for_available(Some(0), 0) >= 1);
     }
 
     #[test]

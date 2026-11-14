@@ -369,6 +369,16 @@ impl Mob for WolfEntity {
             return InteractionResult::Success;
         }
 
+        // Vanilla `Wolf.mobInteract`: a tamed wolf eats meat to heal.
+        if stack.item().has_tag(&ItemTag::WOLF_FOOD) {
+            let max_health = self.get_max_health();
+            if self.get_health() < max_health {
+                LivingEntity::heal(self, max_health - self.get_health());
+                player.inventory.lock().shrink_item_in_hand(hand, 1);
+                return InteractionResult::Success;
+            }
+        }
+
         InteractionResult::Pass
     }
 

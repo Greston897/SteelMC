@@ -206,12 +206,21 @@ impl BlockBehavior for HopperBlock {
     fn get_block_entity_ticker(
         &self,
         _world: &Arc<World>,
-        _state: BlockStateId,
+        state: BlockStateId,
         block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
     ) -> Option<BlockEntityTicker> {
-        // Vanilla `HopperBlock.getTicker`: enabled hoppers tick, disabled ones do
-        // not. The state is read per tick by the world, so the enabled gate is
-        // expressed by the ticker always being present for the hopper type.
+        // Vanilla `HopperBlock.getTicker`:
+        //
+        //     return state.getValue(ENABLED)
+        //         ? (level, pos, state, hopper) -> HopperBlockEntity.pushItemsTick(...)
+        //         : null;
+        //
+        // A powered hopper keeps its contents and cooldown frozen, so the gate has
+        // to live here. Returning a ticker for a disabled hopper let a redstone-
+        // powered hopper keep moving items.
+        if !state.get_value(&BlockStateProperties::ENABLED) {
+            return None;
+        }
         BlockEntityTicker::for_matching_entity_tick(
             block_entity_type,
             &vanilla_block_entity_types::HOPPER,

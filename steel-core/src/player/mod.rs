@@ -66,7 +66,8 @@ use std::time::{Duration, Instant};
 use steel_math::RAD_TO_DEG_F64;
 use steel_protocol::packets::game::{
     CEntityEvent, CHurtAnimation, CPlayerCombatKill, CPlayerLookAt, CRespawn, CTagQuery,
-    CPlaceGhostRecipe, CSetDefaultSpawnPosition, CSetHealth, CSetHeldSlot, CSetPassengers,
+    CPlaceGhostRecipe, CSetChunkCacheRadius, CSetDefaultSpawnPosition, CSetHealth, CSetHeldSlot,
+    CSetPassengers, CSetSimulationDistance,
     ClientCommandAction,
     LookAtAnchor, RelativeMovement, SRecipeBookChangeSettings, SRecipeBookSeenRecipe,
     SLockDifficulty, SBlockEntityTagQuery, SEntityTagQuery, SJigsawGenerate, SPlaceRecipe,
