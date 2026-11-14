@@ -482,10 +482,12 @@ impl Scoreboard {
         })
     }
 
-    /// Adds a writable objective that tracks a statistic criterion.
+    /// Adds an objective that tracks `criterion`.
     ///
-    /// Mirrors `/scoreboard objectives add <name> <criterion>` where the criterion
-    /// names a statistic such as `minecraft.mined:minecraft.stone`.
+    /// Mirrors `/scoreboard objectives add <name> <criterion>`. Vanilla keys the
+    /// objective's behaviour off the criterion, so a statistic criterion
+    /// (`minecraft.mined:minecraft.stone`) is filled by its statistic and refuses
+    /// command writes, while `dummy` and `trigger` stay command-writable.
     ///
     /// # Errors
     ///
@@ -516,53 +518,6 @@ impl Scoreboard {
             name,
             read_only,
             criterion: Some(criterion),
-        })
-    }
-
-    /// Objective names that track `criterion`, in name order.
-    #[must_use]
-    pub fn objectives_with_criterion(&self, criterion: &str) -> Vec<String> {
-        self.state
-            .read()
-            .objectives
-            .iter()
-            .filter(|(_, objective)| objective.criterion.as_deref() == Some(criterion))
-            .map(|(name, _)| name.clone())
-            .collect()
-    }
-
-    /// Adds a writable objective that tracks a statistic criterion.
-    ///
-    /// Mirrors `/scoreboard objectives add <name> <criterion>` where the criterion
-    /// names a statistic such as `minecraft.mined:minecraft.stone`.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the objective name is empty or already exists.
-    pub fn add_objective_with_criterion(
-        &self,
-        name: impl Into<String>,
-        criterion: impl Into<String>,
-    ) -> Result<ScoreboardObjective, ScoreboardError> {
-        let name = name.into();
-        let criterion = criterion.into();
-        ensure_objective_name(&name)?;
-        let mut state = self.state.write();
-        if state.objectives.contains_key(&name) {
-            return Err(ScoreboardError::DuplicateObjective(name));
-        }
-        state.objectives.insert(
-            name.clone(),
-            ObjectiveState {
-                read_only: false,
-                display_name: None,
-                criterion: Some(criterion),
-            },
-        );
-        self.mark_dirty();
-        Ok(ScoreboardObjective {
-            name,
-            read_only: false,
         })
     }
 
