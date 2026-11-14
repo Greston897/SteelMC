@@ -399,12 +399,16 @@ impl BlockBehavior for SoulFireBlock {
         let i32_age = i32::from(state.get_value(AGE));
         let age = state.get_value(AGE);
         let below_state = world.get_block_state(pos.below());
-        // Vanilla `infiniBurn` reads the dimension's `infiniburn` tag; a nether
-        // world keeps fire alive on netherrack. Steel has no per-dimension tag
-        // yet, so fire on a block that cannot burn behaves like normal fire.
-        let infini_burn = false;
+        // Vanilla `infiniBurn`: a nether world keeps fire alive on netherrack,
+        // and the end does the same on its own infiniburn block.
+        let infini_burn = world.is_infiniburn(below_state);
 
+        let ignore_rain = world
+            .get_block_state(pos.above())
+            .try_get_value(&BlockStateProperties::WATERLOGGED)
+            == Some(true);
         if !infini_burn
+            && !ignore_rain
             && world.is_raining()
             && Self::is_near_rain(world, pos)
             && rand::random::<f32>() < 0.2 + (i32_age as f32) * 0.03
