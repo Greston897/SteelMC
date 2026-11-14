@@ -1,12 +1,12 @@
 //! Vanilla `net.minecraft.world.entity.animal.equine.Donkey`.
 //!
 //! Built on the shared `Animal` skeleton with the vanilla `AbstractHorse` flags
-//! (`id_flags`) mirrored into the generated entity data. Horse-specific
-//! mechanics are intentionally not wired yet.
+//! (`id_flags`) mirrored into the generated entity data. Saddling and riding are
+//! implemented; jumping, galloping and the chest inventory are not.
 //!
 //! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
-//! * the `AbstractHorse` behaviour (saddling, jumping, galloping, chest
-//!   inventory, breeding stats) is not implemented; only the flag byte is kept.
+//! * jumping, galloping, the chest inventory and breeding stats are not
+//!   implemented.
 
 use std::sync::Weak;
 
@@ -34,6 +34,7 @@ use crate::entity::{
 };
 use crate::physics::MoveResult;
 use crate::world::World;
+use crate::player::Player;
 
 /// Vanilla `AbstractHorse.DATA_ID_FLAGS` bit: the horse is tamed.
 const HORSE_FLAG_TAME: i8 = 0x02;
@@ -161,6 +162,35 @@ impl DonkeyEntity {
             flags & !HORSE_FLAG_SADDLE
         };
         self.set_horse_flags(flags);
+    }
+
+    /// Vanilla `AbstractHorse.travel` steers with the rider's look direction:
+    /// only a saddled mount follows the reins.
+    fn tick_ridden(&self, controller: &Player, _ridden_input: DVec3) {
+        if !self.is_saddled() {
+            return;
+        }
+        let (yaw, pitch) = controller.rotation();
+        self.set_ridden_rotation(yaw, pitch);
+    }
+
+    /// Vanilla `AbstractHorse.getRiddenSpeed`, i.e. the entity's own
+    /// `MOVEMENT_SPEED` attribute rather than the generic `getSpeed()`.
+    fn ridden_speed(&self, _controller: &Player) -> f32 {
+        self.living_base
+            .attributes()
+            .lock()
+            .required_value(vanilla_attributes::MOVEMENT_SPEED) as f32
+    }
+
+    /// Vanilla `AbstractHorse.travel`: face the rider's look direction, damping
+    /// the pitch so the mount does not nose-dive.
+    fn set_ridden_rotation(&self, controller_yaw: f32, controller_pitch: f32) {
+        self.set_rotation((controller_yaw, controller_pitch * 0.5));
+        self.base.set_old_yaw_to_current();
+        let yaw = self.rotation().0;
+        self.set_y_body_rot(yaw);
+        self.set_y_head_rot(yaw);
     }
 
     fn update_dirty_mob_effect_entity_data(&self) {

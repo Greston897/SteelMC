@@ -406,7 +406,8 @@ impl Mob for HorseEntity {
     /// no override at all, so a ridden horse moved at the generic `getSpeed()`
     /// and could not be steered at more than a walk.
     fn ridden_speed(&self, _controller: &Player) -> f32 {
-        self.attributes()
+        self.living_base
+            .attributes()
             .lock()
             .required_value(vanilla_attributes::MOVEMENT_SPEED) as f32
     }
