@@ -3,7 +3,7 @@
 use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_MOVE_MINECART_ALONG_TRACK;
 use steel_utils::codec::VarInt;
-use steel_utils::serial::WriteTo;
+use steel_utils::serial::WriteTo as _;
 
 /// One step of the client-side interpolation path.
 #[derive(Debug, Clone, WriteTo)]
@@ -16,6 +16,20 @@ pub struct MinecartStep {
     pub yaw: f32,
     /// Step pitch in degrees.
     pub pitch: f32,
+    /// Vanilla `MinecartStep.weight`, the share of the lerp window this step
+    /// covers. `ServerEntity` always sends `1.0`.
+    pub weight: f32,
+}
+
+impl MinecartStep {
+    /// Vanilla `MinecartStep.ZERO`.
+    pub const ZERO: Self = Self {
+        position: glam::DVec3::ZERO,
+        movement: glam::DVec3::ZERO,
+        yaw: 0.0,
+        pitch: 0.0,
+        weight: 0.0,
+    };
 }
 
 /// Clientbound packet that moves a minecart along rails smoothly.
@@ -35,8 +49,10 @@ impl WriteTo for CMoveMinecartAlongTrack {
         for step in &self.steps {
             write_position(writer, step.position)?;
             write_position(writer, step.movement)?;
-            step.yaw.write(writer)?;
-            step.pitch.write(writer)?;
+            // Vanilla `ByteBufCodecs.ROTATION_BYTE` for both rotations.
+            crate::packets::game::to_angle_byte(step.yaw).write(writer)?;
+            crate::packets::game::to_angle_byte(step.pitch).write(writer)?;
+            step.weight.write(writer)?;
         }
         Ok(())
     }
