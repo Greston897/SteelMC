@@ -1,6 +1,7 @@
 //! Wither skull projectile (`WitherSkull`).
 //!
-//! Vanilla `WitherSkull`: `8.0` impact damage on an entity hit, and a blast of
+//! Vanilla `WitherSkull`: `8.0` impact damage plus wither II on an entity hit,
+//! and a blast of
 //! power `1.0` when it hits a block (or anything else), which is the same power
 //! as a ghast fireball and enough to break any block below blast resistance 4.
 //!
@@ -16,12 +17,13 @@ use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_damage_types;
+use steel_registry::vanilla_mob_effects;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::damage::DamageSource;
 use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, Projectile, ProjectileBase, ProjectileHit, RemovalReason,
-    SharedEntity, ThrowableProjectile,
+    Entity, EntityBase, EntityBaseLoad, LivingEntity as _, MobEffectInstance, Projectile,
+    ProjectileBase, ProjectileHit, RemovalReason, SharedEntity, ThrowableProjectile,
 };
 use crate::world::World;
 use crate::world::explosion::{ExplosionInteraction, ExplosionOptions};
@@ -31,6 +33,12 @@ pub const WITHER_SKULL_DAMAGE: f32 = 8.0;
 
 /// Vanilla black wither skull blast power, the same as a ghast fireball.
 pub const WITHER_SKULL_EXPLOSION_POWER: f32 = 1.0;
+
+/// Vanilla `WitherSkull` wither duration on Normal, in ticks (10 seconds).
+pub const WITHER_SKULL_WITHER_TICKS: i32 = 200;
+
+/// Vanilla `WitherSkull` wither amplifier: wither II.
+pub const WITHER_SKULL_WITHER_AMPLIFIER: i32 = 1;
 
 /// A WitherSkull projectile.
 #[entity_behavior(class = "WitherSkull")]
@@ -149,6 +157,15 @@ impl Projectile for WitherSkullEntity {
                     let source = self.impact_damage_source();
                     entity.hurt(&world, &source, WITHER_SKULL_DAMAGE);
                 }
+                // Vanilla `WitherSkull.onHitEntity`: wither II for 10s on
+                // Normal (40s on Hard) after the damage.
+                if let Some(living) = entity.as_living_entity() {
+                    living.add_mob_effect(MobEffectInstance::simple(
+                        vanilla_mob_effects::WITHER,
+                        WITHER_SKULL_WITHER_TICKS,
+                        WITHER_SKULL_WITHER_AMPLIFIER,
+                    ));
+                }
             }
             // Vanilla `WitherSkull.onHitBlock` explodes, which is why a shot
             // that misses every entity still leaves a crater.
@@ -175,6 +192,14 @@ mod tests {
         // 8 on Normal; the test used to compare the damage against the blast
         // power and so asserted 1.0 against a constant of 8.0.
         assert_eq!(WITHER_SKULL_DAMAGE, 8.0);
+    }
+
+    #[test]
+    #[test]
+    fn wither_skull_wither_effect_matches_vanilla() {
+        // Wither II for 10 seconds on Normal.
+        assert_eq!(WITHER_SKULL_WITHER_TICKS, 10 * 20);
+        assert_eq!(WITHER_SKULL_WITHER_AMPLIFIER, 1);
     }
 
     #[test]
