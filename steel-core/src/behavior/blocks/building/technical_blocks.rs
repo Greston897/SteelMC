@@ -36,7 +36,7 @@ use crate::block_entity::{BLOCK_ENTITIES, BlockEntityTicker};
 use crate::world::World;
 
 macro_rules! block_entity_block {
-    ($name:ident, $type_const:ident, $placement:expr $(, $hook:item)?) => {
+    ($name:ident, $type_const:ident, $placement:expr $(, $hook:item)*) => {
         #[block_behavior]
         pub struct $name {
             block: BlockRef,
@@ -73,7 +73,7 @@ macro_rules! block_entity_block {
                 ))
             }
 
-            $( $hook )?
+            $( $hook )*
         }
     };
 }
@@ -602,6 +602,26 @@ block_entity_block_with_on_place!(
     |state: BlockStateId, _context: &BlockPlaceContext<'_>| state,
     |world, pos, _behavior| kill_linked_creaking(world, pos)
 );
+
+impl BlockBehavior for CreakingHeartBlock {
+    /// Vanilla `CreakingHeartBlock.getTicker` returns
+    /// `CreakingHeartBlockEntity::serverTick`.
+    ///
+    /// The heart block entity already knows how to keep exactly one creaking
+    /// alive, but without this ticker it was never ticked, so a heart never
+    /// spawned anything.
+    fn get_block_entity_ticker(
+        &self,
+        _world: &Arc<World>,
+        _state: BlockStateId,
+        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+    ) -> Option<BlockEntityTicker> {
+        BlockEntityTicker::for_matching_entity_tick(
+            block_entity_type,
+            &vanilla_block_entity_types::CREAKING_HEART,
+        )
+    }
+}
 
 impl CreakingHeartBlock {
     /// Vanilla `CreakingHeartBlockEntity.removeCreaking`: kills the linked
