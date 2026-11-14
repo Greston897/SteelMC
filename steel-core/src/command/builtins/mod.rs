@@ -12,6 +12,7 @@ mod data;
 mod datapack;
 mod defaultgamemode;
 mod difficulty;
+mod reload;
 mod domain;
 mod enchant;
 mod effect;
@@ -116,6 +117,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(data::registration())?;
     builder.register(datapack::registration())?;
     builder.register(defaultgamemode::registration())?;
+    builder.register(reload::registration())?;
     builder.register(difficulty::registration())?;
     builder.register(effect::registration())?;
     builder.register(domain::registration())?;

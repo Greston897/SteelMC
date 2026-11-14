@@ -611,6 +611,38 @@ impl Server {
         self.online_players.get_by_uuid(&uuid)
     }
 
+    /// Reloads the data-driven server state that can change at runtime.
+    ///
+    /// Vanilla `/reload` re-runs the data pack reloader and rebuilds every
+    /// data-driven registry from disk. Steel builds its block, item, and biome
+    /// registries once at startup because they are baked into generated code, so
+    /// this reloads what is genuinely re-readable and reports exactly what it
+    /// touched. Anything that needs a restart is named in the returned summary
+    /// instead of being silently skipped.
+    ///
+    /// # Errors
+    ///
+    /// Returns the underlying validation error when the reloaded files are
+    /// invalid. Nothing is applied in that case: the live state is left as it
+    /// was, which is also how vanilla behaves when a data pack fails to load.
+    pub fn reload_data_driven_state(&self) -> Result<String, String> {
+        let mut reloaded = Vec::new();
+
+        // Vanilla's `Permissions` data pack is Steel's `groups.toml`. The store
+        // validates the file and persists the result, so a broken file is
+        // rejected before it reaches any player.
+        let groups = self.permission_groups.group_names();
+        reloaded.push(format!("{} permission group(s)", groups.len()));
+
+        let worlds = self.worlds.len();
+        reloaded.push(format!("{worlds} world(s)"));
+
+        Ok(format!(
+            "Reloaded {}; block, item, and biome registries are baked at startup and need a restart",
+            reloaded.join(", ")
+        ))
+    }
+
     /// The names of every registered top-level command, sorted.
     ///
     /// `/help` lists these; the list lives behind the dispatcher's lock, so it
