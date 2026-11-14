@@ -638,17 +638,39 @@ impl Server {
     /// Returns the underlying validation error when the reloaded files are
     /// invalid. Nothing is applied in that case: the live state is left as it
     /// was, which is also how vanilla behaves when a data pack fails to load.
-    pub fn reload_data_driven_state(&self) -> Result<String, String> {
+    pub async fn reload_data_driven_state(&self) -> Result<String, String> {
         let mut reloaded = Vec::new();
 
-        // Vanilla's `Permissions` data pack is Steel's `groups.toml`. The store
-        // validates the file and persists the result, so a broken file is
-        // rejected before it reaches any player.
-        let groups = self.permission_groups.group_names();
-        reloaded.push(format!("{} permission group(s)", groups.len()));
+        // Vanilla's `Permissions` data pack is Steel's `groups.toml`: the file is
+        // re-read from disk, validated, and only then swapped in, so a broken
+        // file leaves the running groups untouched.
+        match self.permission_groups.reload_from_store().await {
+            Ok(true) => reloaded.push(format!(
+                "{} permission group(s)",
+                self.permission_groups.group_names().len()
+            )),
+            Ok(false) => reloaded.push("permission groups (no store)".to_owned()),
+            Err(error) => return Err(format!("permission groups: {error}")),
+        }
 
-        let worlds = self.worlds.len();
-        reloaded.push(format!("{worlds} world(s)"));
+        // Vanilla re-reads the level's data too; game rules are the part of
+        // `level.toml` that is safe to swap under live chunks.
+        let worlds: Vec<Arc<crate::world::World>> =
+            self.worlds.iter().map(|(_, world)| Arc::clone(world)).collect();
+        let mut changed_rules = 0_usize;
+        for world in &worlds {
+            // `LevelDataManager` lives behind a synchronous lock; the reload does
+            // a blocking file read, so the guard is held only for that read.
+            let changed = world.level_data.write().reload_game_rules();
+            match changed {
+                Ok(changed) => changed_rules += changed,
+                Err(error) => return Err(format!("game rules for {}: {error}", world.key)),
+            }
+        }
+        reloaded.push(format!(
+            "{changed_rules} game rule(s) across {} world(s)",
+            worlds.len()
+        ));
 
         Ok(format!(
             "Reloaded {}; block, item, and biome registries are baked at startup and need a restart",

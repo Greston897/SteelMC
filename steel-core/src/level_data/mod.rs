@@ -572,6 +572,44 @@ impl LevelDataManager {
         Ok(())
     }
 
+    /// Re-reads `level.toml` and applies its game rules to the runtime store.
+    ///
+    /// Vanilla `/reload` re-reads the world's data pack state, and game rules are
+    /// the part of `level.toml` that is safe to swap while the world runs. The
+    /// seed, generation settings, and clocks are *not* re-read: changing them
+    /// under live chunks would desynchronise the world.
+    ///
+    /// Returns the number of rules that changed value, so `/reload` can report it.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the file cannot be read or parsed; the runtime rules
+    /// are left untouched in that case.
+    pub fn reload_game_rules(&mut self) -> io::Result<usize> {
+        let Some(world_path) = &self.path else {
+            return Ok(0);
+        };
+        if !world_path.exists() {
+            return Ok(0);
+        }
+
+        let content = std::fs::read_to_string(world_path)?;
+        let table: toml::Table = toml::from_str(&content)
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        let loaded: LevelData = table
+            .try_into()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+        let changed = loaded
+            .game_rules
+            .iter()
+            .filter(|(name, value)| self.data.game_rules.get(*name) != Some(value))
+            .count();
+        self.data.game_rules = loaded.game_rules;
+        self.data.load_game_rules();
+        Ok(changed)
+    }
+
     /// Gets the seed.
     #[must_use]
     pub const fn seed(&self) -> i64 {

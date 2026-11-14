@@ -15,6 +15,18 @@ pub trait PermissionGroupStore: Send + Sync {
         &self,
         config: PermissionGroupsConfig,
     ) -> BoxFuture<'static, Result<(), PermissionGroupStoreError>>;
+
+    /// Re-reads the configuration from its backing store.
+    ///
+    /// This is what `/reload` needs: vanilla re-reads the permission data pack
+    /// from disk rather than re-using the in-memory config. Stores without an
+    /// on-disk form return `Ok(None)` and keep the current config.
+    fn load_groups(
+        &self,
+    ) -> BoxFuture<'static, Result<Option<PermissionGroupsConfig>, PermissionGroupStoreError>>
+    {
+        Box::pin(async { Ok(None) })
+    }
 }
 
 /// Permission group persistence failure.
@@ -147,6 +159,28 @@ impl PermissionGroupManager {
     ) -> Result<(), PermissionGroupManagerError> {
         let _guard = self.updates.lock().await;
         self.replace_config_locked(config).await
+    }
+
+    /// Re-reads the config from the backing store and applies it.
+    ///
+    /// Mirrors vanilla's data-pack reload for the permissions pack: the file is
+    /// read again, validated, and only then swapped in, so a broken file leaves
+    /// the running config untouched.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the file cannot be read or the new config is invalid.
+    pub async fn reload_from_store(&self) -> Result<bool, PermissionGroupManagerError> {
+        let Some(store) = &self.store else {
+            return Ok(false);
+        };
+        let Some(config) = store.load_groups().await? else {
+            return Ok(false);
+        };
+        let _guard = self.updates.lock().await;
+        let groups = PermissionGroups::from_config(config.clone())?;
+        *self.state.write() = PermissionGroupManagerState { config, groups };
+        Ok(true)
     }
 
     /// Updates the latest config under the manager update lock.
