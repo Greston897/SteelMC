@@ -1,6 +1,8 @@
-use std::sync::{
-    Arc, Weak,
-    atomic::{AtomicI32, Ordering},
+use std::{
+    sync::{
+        Arc, Weak,
+        atomic::{AtomicI32, Ordering},
+    },
 };
 
 use glam::DVec3;
@@ -15,7 +17,8 @@ use steel_registry::{
         behavior::PushReaction, block_state_ext::BlockStateExt, properties::BlockStateProperties,
     },
     data_components::{
-        DataComponentMap, DataComponentPatch, ItemContainerContents, vanilla_components::CONTAINER,
+        DataComponentMap, DataComponentPatch, ItemContainerContents, SeededContainerLoot,
+        vanilla_components::{CONTAINER, CONTAINER_LOOT},
     },
     item_stack::ItemStack,
     vanilla_block_entity_types,
@@ -29,7 +32,10 @@ use steel_utils::{
 
 use crate::{
     behavior::blocks::ShulkerBoxBlock,
-    block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter},
+    block_entity::{
+        BlockEntity, BlockEntityBase, ImplicitComponentGetter,
+        randomizable_container::RandomizableContainer,
+    },
     inventory::{
         container::{Container, load_all_items},
         lock::{ContainerRef, SharedContainer},
@@ -78,6 +84,8 @@ pub struct ShulkerBoxBlockEntity {
     container_ref: ContainerRef,
     animation: SyncMutex<ShulkerBoxAnimation>,
     open_count: AtomicI32,
+    /// Loot state for shulker boxes placed by a structure template.
+    loot: SyncMutex<RandomizableContainer>,
 }
 
 struct ShulkerBoxContainer {
@@ -125,7 +133,22 @@ impl ShulkerBoxBlockEntity {
                 old_progress: 0,
             }),
             open_count: AtomicI32::new(0),
+            loot: SyncMutex::new(RandomizableContainer::none()),
         }
+    }
+
+    /// Vanilla `RandomizableContainerBlockEntity.unpackLootTable`.
+    ///
+    /// Returns whether a pending table was rolled.
+    pub fn unpack_loot(&self) -> bool {
+        if !self.loot.lock().has_loot_table() {
+            return false;
+        }
+        let world_seed = self.get_level().map_or(0, |world| world.seed());
+        // Lock order matches the save path: container first, loot state second.
+        let mut container = self.container.lock();
+        let mut loot = self.loot.lock();
+        loot.unpack_loot_table(&mut container.items, world_seed)
     }
 
     fn update_animation(&self, world: &Arc<World>, pos: BlockPos, state: BlockStateId) {
@@ -346,6 +369,10 @@ impl BlockEntity for ShulkerBoxBlockEntity {
         container.items.fill(ItemStack::empty());
 
         load_all_items(nbt_view, &mut container.items);
+        drop(container);
+
+        // Vanilla `RandomizableContainerBlockEntity.loadAdditional`.
+        RandomizableContainer::load_from_nbt(nbt_view, &self.loot);
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
@@ -362,6 +389,11 @@ impl BlockEntity for ShulkerBoxBlockEntity {
             items.push(item_nbt);
         }
         nbt.insert("Items", NbtList::Compound(items));
+        drop(container);
+
+        // Vanilla `RandomizableContainer.trySaveLootTable`: an unopened
+        // structure container keeps its table, an unpacked one writes nothing.
+        self.loot.lock().save_to_nbt(nbt);
     }
 
     /// Copies the container component into the block entity inventory
@@ -382,15 +414,38 @@ impl BlockEntity for ShulkerBoxBlockEntity {
                 );
             }
         }
+        drop(container);
+
+        // Vanilla `RandomizableContainerBlockEntity.applyImplicitComponents`: a
+        // box item can carry `minecraft:container_loot` instead of contents.
+        if let Some(loot) = components.get(CONTAINER_LOOT) {
+            self.loot
+                .lock()
+                .set_loot_table(Some(loot.loot_table().clone()), loot.seed());
+        }
     }
 
     /// Stores the block entity inventory in the container component
     fn collect_implicit_components(&self, components: &mut DataComponentMap) {
         components.set(CONTAINER, Some(self.container_contents()));
+        let loot = self.loot.lock();
+        if let Some(table) = loot.loot_table() {
+            components.set(
+                CONTAINER_LOOT,
+                Some(SeededContainerLoot::new(
+                    table.clone(),
+                    loot.loot_table_seed(),
+                )),
+            );
+        }
     }
 
     fn container_ref(&self) -> Option<ContainerRef> {
         Some(self.container_ref.clone())
+    }
+
+    fn unpack_loot_table(&self) {
+        self.unpack_loot();
     }
 }
 

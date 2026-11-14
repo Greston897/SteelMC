@@ -6,9 +6,9 @@ use steel_math::{DEGREE_90, DEGREE_180, DEGREE_270};
 use steel_registry::blocks::properties::Direction;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
-use steel_utils::BlockPos;
 use steel_utils::locks::Shared;
 use steel_utils::types::InteractionHand;
+use steel_utils::{BlockPos, BlockStateId};
 
 use crate::behavior::{BlockStateBehaviorExt, ITEM_BEHAVIORS};
 use crate::entity::{Entity, LivingEntity};
@@ -804,6 +804,44 @@ impl<'a> InventoryTickContext<'a> {
     }
 }
 
+/// Context for vanilla's `ItemStack#canMine` check, run right before a block is destroyed.
+///
+/// Returning `false` keeps the block in place and, for the debug stick, is the
+/// path that selects the next block property instead of breaking anything.
+pub struct CanMineContext<'a> {
+    /// The player mining the block.
+    pub player: &'a Player,
+    /// The world the block lives in.
+    pub world: &'a Arc<World>,
+    /// The position of the block being mined.
+    pub pos: BlockPos,
+    /// The state of the block being mined.
+    pub state: BlockStateId,
+    /// Mutable inventory access for the mining hand.
+    pub inv: InventoryAccess,
+}
+
+impl<'a> CanMineContext<'a> {
+    /// Creates a new `CanMineContext`.
+    #[must_use]
+    pub const fn new(
+        player: &'a Player,
+        world: &'a Arc<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+        inventory: Shared<PlayerInventory>,
+        hand: InteractionHand,
+    ) -> Self {
+        Self {
+            player,
+            world,
+            pos,
+            state,
+            inv: InventoryAccess::new(inventory, hand),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
@@ -839,7 +877,7 @@ mod tests {
         let inventory = Arc::new(SyncMutex::new(PlayerInventory::new()));
         inventory
             .lock()
-            .set_item(0, ItemStack::with_count(&vanilla_items::LIGHT, 2));
+            .set_item(0, ItemStack::with_count(&*vanilla_items::LIGHT, 2));
         let access = InventoryAccess::new(Arc::clone(&inventory), InteractionHand::MainHand);
         let mut source = PlacementSource {
             player: None,
@@ -871,7 +909,7 @@ mod tests {
         let inventory = Arc::new(SyncMutex::new(PlayerInventory::new()));
         inventory
             .lock()
-            .set_item(0, ItemStack::new(&vanilla_items::STONE));
+            .set_item(0, ItemStack::new(&*vanilla_items::STONE));
         let source = PlacementSource {
             player: None,
             hand: InteractionHand::MainHand,
@@ -904,7 +942,7 @@ mod tests {
     fn direct_source_mutates_the_callers_exact_stack() {
         init_vanilla_registry();
 
-        let mut stack = ItemStack::with_count(&vanilla_items::LIGHT, 2);
+        let mut stack = ItemStack::with_count(&*vanilla_items::LIGHT, 2);
         {
             let mut source = PlacementSource::direct(
                 None,
@@ -926,7 +964,7 @@ mod tests {
         init_vanilla_registry();
         init_behaviors();
 
-        let mut stack = ItemStack::new(&vanilla_items::STONE);
+        let mut stack = ItemStack::new(&*vanilla_items::STONE);
         let hit_result = BlockHitResult {
             location: DVec3::ZERO,
             direction: Direction::Up,
@@ -954,7 +992,7 @@ mod tests {
         assert_eq!(shifted.clicked_face(), Direction::East);
         assert_eq!(shifted.click_location(), DVec3::new(5.0, 90.5, 7.5));
         assert!(!shifted.is_inside());
-        assert!(shifted.with_item(|item| item.is(&vanilla_items::STONE)));
+        assert!(shifted.with_item(|item| item.is(&*vanilla_items::STONE)));
         shifted.with_item_mut(ItemStack::shrink_one);
         drop(shifted);
         assert!(stack.is_empty());
@@ -965,7 +1003,7 @@ mod tests {
         init_vanilla_registry();
         init_behaviors();
 
-        let mut stack = ItemStack::new(&vanilla_items::STONE);
+        let mut stack = ItemStack::new(&*vanilla_items::STONE);
         let context = BlockPlaceContext::directional(
             test_world(),
             BlockPos::new(2, 80, 3),
@@ -994,7 +1032,7 @@ mod tests {
         init_vanilla_registry();
         init_behaviors();
 
-        let mut stack = ItemStack::new(&vanilla_items::PISTON);
+        let mut stack = ItemStack::new(&*vanilla_items::PISTON);
         let source = PlacementSource::direct(
             None,
             InteractionHand::MainHand,

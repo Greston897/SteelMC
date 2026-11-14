@@ -70,13 +70,17 @@ fn packaged_config_matches_the_runtime_config_defaults() {
         use_favicon,
         favicon,
         enforce_secure_chat,
+        force_gamemode,
         chat_spam_threshold_seconds,
         command_spam_threshold_seconds,
+        rate_limit,
+        cores,
         compression,
         server_links,
         packet_workers,
         chunk_generation_threads,
         chunk_encoding_threads,
+        rcon,
     } = config.server.into_runtime_config();
     let defaults = RuntimeConfig::default();
 
@@ -97,6 +101,7 @@ fn packaged_config_matches_the_runtime_config_defaults() {
     assert_eq!(use_favicon, defaults.use_favicon);
     assert_eq!(favicon, defaults.favicon);
     assert_eq!(enforce_secure_chat, defaults.enforce_secure_chat);
+    assert_eq!(force_gamemode, defaults.force_gamemode);
     assert_eq!(
         chat_spam_threshold_seconds,
         defaults.chat_spam_threshold_seconds
@@ -105,6 +110,10 @@ fn packaged_config_matches_the_runtime_config_defaults() {
         command_spam_threshold_seconds,
         defaults.command_spam_threshold_seconds
     );
+    assert_eq!(rate_limit, defaults.rate_limit);
+    // The packaged config leaves `cores` to auto-detection, which always yields
+    // at least one usable core.
+    assert!(cores >= 1);
 
     let packaged_compression = compression.expect("packaged config enables compression");
     let default_compression = defaults
@@ -122,6 +131,7 @@ fn packaged_config_matches_the_runtime_config_defaults() {
     assert_eq!(packet_workers, Some(0));
     assert_eq!(chunk_generation_threads, Some(0));
     assert_eq!(chunk_encoding_threads, Some(0));
+    assert_eq!(rcon, defaults.rcon);
 }
 
 #[test]
@@ -284,6 +294,35 @@ fn configured_services_server_flows_to_runtime_config() {
 }
 
 #[test]
+fn validate_allows_zero_simulation_distance() {
+    // Vanilla's own simulation distance floor is 4, but 0-3 is a valid operator
+    // choice that freezes activity outside the player's chunks.
+    let config_toml = DEFAULT_CONFIG.replace("simulation_distance = 10", "simulation_distance = 0");
+    let config: SteelConfig = toml::from_str(&config_toml).expect("config parses");
+
+    assert_eq!(config.server.simulation_distance, 0);
+    validate(&config.server).expect("zero simulation distance validates");
+}
+
+#[test]
+fn configured_core_count_flows_to_the_runtime_config() {
+    // A Pterodactyl/Docker container limit expressed in cores: the operator sets
+    // `cores` and every auto-sized pool follows it.
+    let config_toml = DEFAULT_CONFIG.replace("cores = 0", "cores = 6");
+    let config: SteelConfig = toml::from_str(&config_toml).expect("config parses");
+
+    assert_eq!(config.server.threads.cores, Some(6));
+    assert_eq!(config.server.into_runtime_config().cores, 6);
+}
+
+#[test]
+fn a_zero_core_setting_falls_back_to_detection() {
+    let config: SteelConfig = toml::from_str(DEFAULT_CONFIG).expect("config parses");
+    let detected = config.server.into_runtime_config().cores;
+    assert!(detected >= 1, "detection must always report a usable core");
+}
+
+#[test]
 fn configured_thread_counts_parse_and_flow_to_runtime_config() {
     let config_toml = DEFAULT_CONFIG
         .replace("main_runtime = 0", "main_runtime = 3")
@@ -293,6 +332,7 @@ fn configured_thread_counts_parse_and_flow_to_runtime_config() {
         .replace("chunk_encoding = 0", "chunk_encoding = 7");
     let config: SteelConfig = toml::from_str(&config_toml).expect("config parses");
 
+    assert_eq!(config.server.threads.cores, None);
     assert_eq!(config.server.threads.main_runtime, Some(3));
     assert_eq!(config.server.threads.chunk_runtime, Some(4));
     assert_eq!(config.server.threads.packet_workers, Some(5));

@@ -12,13 +12,20 @@ use simdnbt::ToNbtTag;
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_registry::item_stack::ItemStack;
+use steel_registry::data_components::{
+    DataComponentMap, SeededContainerLoot, vanilla_components::CONTAINER_LOOT,
+};
 use steel_registry::vanilla_block_entity_types;
-use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
+use steel_utils::{
+    BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex,
+};
 
-use crate::block_entity::{BlockEntity, BlockEntityBase};
+use crate::block_entity::randomizable_container::RandomizableContainer;
+use crate::block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter};
 use crate::inventory::container::Container;
 use crate::inventory::container::load_all_items;
 use crate::inventory::lock::{ContainerRef, SharedContainer};
+use crate::inventory::openers_counter::{ContainerOpenersCounter, OpenerHooks};
 use crate::world::World;
 
 /// Number of slots in a barrel (3 rows of 9).
@@ -31,6 +38,9 @@ pub struct BarrelBlockEntity {
     base: Arc<BlockEntityBase>,
     container: Arc<SyncMutex<BarrelContainer>>,
     container_ref: ContainerRef,
+    openers_counter: ContainerOpenersCounter,
+    /// Loot state for barrels placed by a structure template.
+    loot: SyncMutex<RandomizableContainer>,
 }
 
 struct BarrelContainer {
@@ -67,7 +77,31 @@ impl BarrelBlockEntity {
             container_ref: ContainerRef::owned_by_block_entity(shared_container, Arc::clone(&base)),
             base,
             container,
+            openers_counter: ContainerOpenersCounter::new(OpenerHooks {
+                open_sound: &steel_registry::sound_events::BLOCK_BARREL_OPEN,
+                close_sound: &steel_registry::sound_events::BLOCK_BARREL_CLOSE,
+                sets_open_state: true,
+            }),
+            loot: SyncMutex::new(RandomizableContainer::none()),
         }
+    }
+
+    /// Vanilla `RandomizableContainerBlockEntity.unpackLootTable`.
+    pub fn unpack_loot(&self) -> bool {
+        if !self.loot.lock().has_loot_table() {
+            return false;
+        }
+        let world_seed = self.get_level().map_or(0, |world| world.seed());
+        // Lock order matches the save path: container first, loot state second.
+        let mut container = self.container.lock();
+        let mut loot = self.loot.lock();
+        loot.unpack_loot_table(&mut container.items, world_seed)
+    }
+
+    /// Viewer counter driving the `open` block state and the open/close sounds.
+    #[must_use]
+    pub fn openers_counter(&self) -> &ContainerOpenersCounter {
+        &self.openers_counter
     }
 }
 
@@ -77,6 +111,10 @@ impl BlockEntity for BarrelBlockEntity {
     }
 
     fn pre_remove_side_effects(&self, pos: BlockPos, _state: BlockStateId) {
+        // Vanilla `RandomizableContainerBlockEntity.playerWillDestroy` unpacks a
+        // pending table into the container, so breaking a generated container
+        // drops its loot instead of nothing.
+        self.unpack_loot();
         let items = {
             let mut container = self.container.lock();
             mem::replace(&mut container.items, vec![ItemStack::empty(); BARREL_SLOTS])
@@ -96,6 +134,11 @@ impl BlockEntity for BarrelBlockEntity {
         container.items.fill(ItemStack::empty());
 
         load_all_items(nbt_view, &mut container.items);
+        drop(container);
+
+        // Vanilla `RandomizableContainerBlockEntity.loadAdditional`: village and
+        // outpost barrels store a loot table instead of items.
+        RandomizableContainer::load_from_nbt(nbt_view, &self.loot);
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
@@ -112,6 +155,11 @@ impl BlockEntity for BarrelBlockEntity {
             }
         }
         nbt.insert("Items", NbtList::Compound(items));
+        drop(container);
+
+        // Vanilla `RandomizableContainer.trySaveLootTable`: an unopened
+        // structure container keeps its table, an unpacked one writes nothing.
+        self.loot.lock().save_to_nbt(nbt);
     }
 
     fn get_update_tag(&self) -> Option<NbtCompound> {
@@ -122,6 +170,33 @@ impl BlockEntity for BarrelBlockEntity {
 
     fn container_ref(&self) -> Option<ContainerRef> {
         Some(self.container_ref.clone())
+    }
+
+    fn unpack_loot_table(&self) {
+        self.unpack_loot();
+    }
+
+    /// Vanilla `RandomizableContainerBlockEntity.applyImplicitComponents`.
+    fn apply_implicit_components(&self, components: &mut ImplicitComponentGetter<'_>) {
+        if let Some(loot) = components.get(CONTAINER_LOOT) {
+            self.loot
+                .lock()
+                .set_loot_table(Some(loot.loot_table().clone()), loot.seed());
+        }
+    }
+
+    /// Vanilla `RandomizableContainerBlockEntity.collectImplicitComponents`.
+    fn collect_implicit_components(&self, components: &mut DataComponentMap) {
+        let loot = self.loot.lock();
+        if let Some(table) = loot.loot_table() {
+            components.set(
+                CONTAINER_LOOT,
+                Some(SeededContainerLoot::new(
+                    table.clone(),
+                    loot.loot_table_seed(),
+                )),
+            );
+        }
     }
 }
 
@@ -176,7 +251,7 @@ mod tests {
         barrel
             .container
             .lock()
-            .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 100));
+            .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 100));
 
         assert_eq!(barrel.container.lock().get_item(0).count(), 64);
     }
@@ -187,7 +262,7 @@ mod tests {
         barrel
             .container
             .lock()
-            .set_item(0, ItemStack::new(&vanilla_items::STONE));
+            .set_item(0, ItemStack::new(&*vanilla_items::STONE));
 
         barrel.pre_remove_side_effects(
             BlockPos::new(1, 2, 3),

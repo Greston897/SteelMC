@@ -117,7 +117,7 @@ mod tests {
             }
         }
 
-        let mut compass = ItemStack::new(&vanilla_items::COMPASS);
+        let mut compass = ItemStack::new(&*vanilla_items::COMPASS);
         compass.set(
             LODESTONE_TRACKER,
             LodestoneTracker::new(
@@ -130,11 +130,11 @@ mod tests {
         );
         assert_eq!(translated_key(&compass), "item.minecraft.lodestone_compass");
 
-        let mut shield = ItemStack::new(&vanilla_items::SHIELD);
+        let mut shield = ItemStack::new(&*vanilla_items::SHIELD);
         shield.set(BASE_COLOR, DyeColor::Blue);
         assert_eq!(translated_key(&shield), "item.minecraft.shield.blue");
 
-        let mut head = ItemStack::new(&vanilla_items::PLAYER_HEAD);
+        let mut head = ItemStack::new(&*vanilla_items::PLAYER_HEAD);
         head.set(
             PROFILE,
             ResolvableProfile::dynamic_name("Notch".to_owned(), PlayerSkinPatch::default())
@@ -160,7 +160,7 @@ mod tests {
     fn air_name_ignores_stack_item_name_patch() {
         init_vanilla_registry();
         init_behaviors();
-        let mut air = ItemStack::new(&vanilla_items::AIR);
+        let mut air = ItemStack::new(&*vanilla_items::AIR);
         air.set(ITEM_NAME, TextComponent::plain("patched"));
         let Some(prototype_name) = vanilla_items::AIR.components.get_ref(ITEM_NAME) else {
             panic!("air item prototype should have a name");
@@ -177,7 +177,7 @@ mod tests {
             .potions
             .by_key(&Identifier::vanilla_static("healing"))
             .expect("healing potion should be registered");
-        let mut potion = ItemStack::new(&vanilla_items::POTION);
+        let mut potion = ItemStack::new(&*vanilla_items::POTION);
         potion.set(
             POTION_CONTENTS,
             PotionContents::new(

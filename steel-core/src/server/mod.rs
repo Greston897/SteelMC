@@ -1,16 +1,23 @@
 //! This module contains the `Server` struct, which is the main entry point for the server.
+pub mod boss_bars;
 mod broadcasting;
+pub mod scoreboard_sync;
 /// Tick-polled server jobs.
 pub mod jobs;
 mod packet_processor;
 mod pregen;
+pub mod rcon;
 /// The registry cache for the server.
 pub mod registry_cache;
 mod run_loop;
+pub mod schedule;
+pub mod bans;
+pub mod whitelist;
 mod service_keys;
 mod tick_overload;
 /// The tick rate manager for the server.
 pub mod tick_rate_manager;
+mod tps_bar;
 mod world_tick_workers;
 /// Domain-aware loaded world map.
 pub mod worlds;
@@ -79,8 +86,8 @@ use crate::worldgen::registry::GeneratorOutput;
 use crossbeam::queue::SegQueue;
 use glam::DVec3;
 use rayon::{ThreadPool, ThreadPoolBuilder};
-use rustc_hash::FxHashMap;
-use std::sync::atomic::AtomicI32;
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::sync::atomic::{AtomicBool, AtomicI32};
 use std::{
     collections::BTreeSet,
     io, mem,
@@ -104,8 +111,9 @@ use steel_registry::{
 use steel_utils::{
     BlockPos, ChunkPos, Identifier,
     locks::{AsyncMutex, SyncMutex, SyncRwLock},
+    saved_data::names as saved_data_names,
     text::DisplayResolutor,
-    threading::{DEBUG_STACK_SIZE, available_worker_threads},
+    threading::{DEBUG_STACK_SIZE, available_worker_threads, pool_sizes_for_available},
     translations,
 };
 use text_components::{Modifier, TextComponent, format::Color};
@@ -152,6 +160,10 @@ pub struct CommandDataSaveResults {
     pub scoreboards: io::Result<usize>,
     /// Number of dirty domain command-storage values written, or the save error.
     pub storage: io::Result<usize>,
+    /// Whether the whitelist was written, or the save error.
+    pub whitelist: io::Result<bool>,
+    /// Whether the ban lists were written, or the save error.
+    pub bans: io::Result<bool>,
 }
 
 mod known_players;
@@ -164,20 +176,29 @@ const CHUNK_SENDING_TPS: u64 = 20;
 /// Work duration at which background chunk work is considered slow.
 const SLOW_CHUNK_TICK_THRESHOLD: Duration = Duration::from_millis(50);
 
-fn configured_chunk_generation_threads(configured_threads: Option<usize>) -> Option<usize> {
-    cap_positive_thread_count(configured_threads, available_worker_threads())
-}
-
-fn configured_chunk_encoding_threads(configured_threads: Option<usize>) -> Option<usize> {
-    cap_positive_thread_count(configured_threads, available_worker_threads())
-}
-
-fn cap_positive_thread_count(
+/// Pool sizes for one world's Rayon workers, derived from the effective core
+/// count so a container is never sized for cores it cannot use.
+///
+/// An explicit per-pool setting always wins, but it is still capped to the
+/// effective core count: spawning more threads than the cgroup quota allows only
+/// adds context switches.
+fn configured_chunk_generation_threads(
     configured_threads: Option<usize>,
-    available_threads: usize,
+    cores: usize,
 ) -> Option<usize> {
+    cap_positive_thread_count(configured_threads, cores)
+}
+
+fn configured_chunk_encoding_threads(
+    configured_threads: Option<usize>,
+    cores: usize,
+) -> Option<usize> {
+    cap_positive_thread_count(configured_threads, cores)
+}
+
+fn cap_positive_thread_count(configured_threads: Option<usize>, cores: usize) -> Option<usize> {
     let configured_threads = configured_threads.filter(|&threads| threads > 0)?;
-    Some(configured_threads.min(available_threads.max(1)))
+    Some(configured_threads.min(cores.max(1)))
 }
 
 #[cfg(test)]
@@ -236,11 +257,12 @@ pub async fn test_server_with_worlds_and_config(
         return Err("test worlds must share the server's history owner".to_owned());
     }
 
-    Ok(Arc::new(Server {
+    let server = Arc::new(Server {
         damage_history,
         config,
         permission_groups,
         cancel_token: CancellationToken::new(),
+        auto_save_enabled: std::sync::atomic::AtomicBool::new(true),
         key_store: KeyStore::create(),
         registry_cache,
         worlds,
@@ -249,11 +271,17 @@ pub async fn test_server_with_worlds_and_config(
         player_admission_changed: Notify::new(),
         server_tick_changed: Notify::new(),
         tick_rate_manager: SyncRwLock::new(TickRateManager::new()),
+        tps_bar_enabled: AtomicBool::new(false),
+        tps_bar_shown: SyncMutex::new(FxHashSet::default()),
         scoreboards,
         command_storage,
         command_dispatcher: SyncRwLock::new(registered_commands.dispatcher),
         command_permission_keys,
         command_requests: CommandRequestQueue::new(),
+        schedules: Arc::new(schedule::ScheduleRegistry::new()),
+        whitelist: Arc::new(whitelist::Whitelist::new()),
+        bans: Arc::new(bans::BanList::new()),
+        boss_bars: Arc::new(boss_bars::BossBarRegistry::new()),
         packet_processor: PacketProcessor::new(),
         chunk_encoding_pool: Arc::new(chunk_encoding_pool),
         jobs: ServerJobQueue::new(),
@@ -269,7 +297,19 @@ pub async fn test_server_with_worlds_and_config(
         pending_world_changes: SyncMutex::new(Vec::new()),
         pending_domain_switches: SyncMutex::new(Vec::new()),
         player_idle_timeout: AtomicI32::new(0),
-    }))
+    });
+    attach_server_to_worlds(&server);
+    Ok(server)
+}
+
+/// Links every already loaded world back to the server that owns it.
+///
+/// Worlds are fields of the server, so the `Weak` back-reference can only be
+/// filled once the `Arc` exists; startup and the test constructor share this.
+pub fn attach_server_to_worlds(server: &Arc<Server>) {
+    for world in server.worlds.values() {
+        world.attach_server(server);
+    }
 }
 
 fn apply_default_spawn(player: &Arc<Player>, world: &Arc<World>, spawn: PreparedSpawn) {
@@ -469,6 +509,9 @@ pub struct Server {
     pub permission_groups: PermissionGroupManager,
     /// The cancellation token for graceful shutdown.
     pub cancel_token: CancellationToken,
+    /// Whether periodic saves run. Vanilla `MinecraftServer.saveEverything`
+    /// consults the same flag, toggled by `/save-off` and `/save-on`.
+    auto_save_enabled: std::sync::atomic::AtomicBool,
     /// The key store for the server.
     pub key_store: KeyStore,
     /// The registry cache for the server.
@@ -485,6 +528,10 @@ pub struct Server {
     server_tick_changed: Notify,
     /// The tick rate manager for the server.
     pub tick_rate_manager: SyncRwLock<TickRateManager>,
+    /// Whether the `/tpsbar` boss bar is enabled server-wide.
+    pub tps_bar_enabled: AtomicBool,
+    /// Players that already received the `add` action of the `/tpsbar` bar.
+    tps_bar_shown: SyncMutex<FxHashSet<Uuid>>,
     /// The number of minutes required for a player to be idle for them to be kicked (timed out) from the server.
     /// If this is equal to 0, no kicking will happen.
     pub player_idle_timeout: AtomicI32,
@@ -498,6 +545,14 @@ pub struct Server {
     command_permission_keys: Vec<String>,
     /// Command work submitted from connection and console tasks.
     command_requests: CommandRequestQueue,
+    /// Commands waiting for their tick, backing `/schedule`.
+    pub schedules: Arc<schedule::ScheduleRegistry>,
+    /// Login whitelist, backing `/whitelist`.
+    pub whitelist: Arc<whitelist::Whitelist>,
+    /// Player and address bans, backing `/ban`, `/banip`, `/pardon` and `/banlist`.
+    pub bans: Arc<bans::BanList>,
+    /// Custom boss bars, backing `/bossbar`.
+    pub boss_bars: Arc<boss_bars::BossBarRegistry>,
     /// Decoded serverbound play packets handled during the inter-tick phase.
     packet_processor: PacketProcessor,
     /// Dedicated worker pool for CPU-heavy chunk persistence and packet encoding.
@@ -550,6 +605,63 @@ impl Drop for GameTickTaskGuard {
 }
 
 impl Server {
+    /// The worker pool used for chunk encoding and persistence.
+    ///
+    /// Exposed so the chunk-sending tick can fan a whole wave of per-player
+    /// batches across every encoding worker instead of encoding players one
+    /// after another on the tick thread.
+    #[must_use]
+    pub(crate) const fn chunk_encoding_pool(&self) -> &Arc<ThreadPool> {
+        &self.chunk_encoding_pool
+    }
+
+    /// The online player with `uuid`, if any.
+    #[must_use]
+    pub fn player_by_uuid(&self, uuid: Uuid) -> Option<Arc<Player>> {
+        self.online_players.get_by_uuid(&uuid)
+    }
+
+    /// Reloads the data-driven server state that can change at runtime.
+    ///
+    /// Vanilla `/reload` re-runs the data pack reloader and rebuilds every
+    /// data-driven registry from disk. Steel builds its block, item, and biome
+    /// registries once at startup because they are baked into generated code, so
+    /// this reloads what is genuinely re-readable and reports exactly what it
+    /// touched. Anything that needs a restart is named in the returned summary
+    /// instead of being silently skipped.
+    ///
+    /// # Errors
+    ///
+    /// Returns the underlying validation error when the reloaded files are
+    /// invalid. Nothing is applied in that case: the live state is left as it
+    /// was, which is also how vanilla behaves when a data pack fails to load.
+    pub fn reload_data_driven_state(&self) -> Result<String, String> {
+        let mut reloaded = Vec::new();
+
+        // Vanilla's `Permissions` data pack is Steel's `groups.toml`. The store
+        // validates the file and persists the result, so a broken file is
+        // rejected before it reaches any player.
+        let groups = self.permission_groups.group_names();
+        reloaded.push(format!("{} permission group(s)", groups.len()));
+
+        let worlds = self.worlds.len();
+        reloaded.push(format!("{worlds} world(s)"));
+
+        Ok(format!(
+            "Reloaded {}; block, item, and biome registries are baked at startup and need a restart",
+            reloaded.join(", ")
+        ))
+    }
+
+    /// The names of every registered top-level command, sorted.
+    ///
+    /// `/help` lists these; the list lives behind the dispatcher's lock, so it
+    /// is copied rather than borrowed.
+    #[must_use]
+    pub fn command_names(&self) -> Vec<String> {
+        self.command_dispatcher.read().command_names()
+    }
+
     /// Returns the current server tick number.
     pub fn current_tick(&self) -> u64 {
         self.tick_rate_manager.read().tick_count
@@ -662,13 +774,21 @@ impl Server {
 
         let mut world_storage = storage_registry.resolve_worlds(&resolved_worlds)?;
 
+        // The configured core count is an upper bound: inside a cgroup-limited
+        // container the pools must shrink to the quota even when the config asks
+        // for more, otherwise every CPU-bound pool oversubscribes the quota.
+        let mut config = config;
+        config.clamp_cores_to_available(available_worker_threads());
+
+        let pools = pool_sizes_for_available(config.cores);
         let generation_pool: Arc<ThreadPool> = Arc::new({
             let mut builder = ThreadPoolBuilder::new().thread_name(|i| format!("rayon-gen-{i}"));
-            if let Some(chunk_generation_threads) =
-                configured_chunk_generation_threads(config.chunk_generation_threads)
-            {
-                builder = builder.num_threads(chunk_generation_threads);
-            }
+            let generation_threads = configured_chunk_generation_threads(
+                config.chunk_generation_threads,
+                config.cores,
+            )
+            .unwrap_or(pools.chunk_generation);
+            builder = builder.num_threads(generation_threads);
             // Debug builds have deep call chains in density functions that overflow the default 2 MB stack
             if cfg!(debug_assertions) {
                 builder = builder.stack_size(DEBUG_STACK_SIZE);
@@ -680,11 +800,10 @@ impl Server {
         let chunk_encoding_pool = Arc::new({
             let mut builder =
                 ThreadPoolBuilder::new().thread_name(|i| format!("rayon-chunk-encode-{i}"));
-            if let Some(chunk_encoding_threads) =
-                configured_chunk_encoding_threads(config.chunk_encoding_threads)
-            {
-                builder = builder.num_threads(chunk_encoding_threads);
-            }
+            let encoding_threads =
+                configured_chunk_encoding_threads(config.chunk_encoding_threads, config.cores)
+                    .unwrap_or(pools.chunk_encoding);
+            builder = builder.num_threads(encoding_threads);
             builder
                 .build()
                 .map_err(|e| format!("failed to create chunk encoding thread pool: {e}"))?
@@ -743,6 +862,7 @@ impl Server {
                 generator_output.dimension_type,
                 world_seed,
                 WorldConfig {
+                    server: std::sync::OnceLock::new(),
                     damage_history: Arc::clone(&damage_history),
                     game_time_source,
                     storage: storage_output.storage,
@@ -818,11 +938,12 @@ impl Server {
             log::error!("Minecraft services key fetch task stopped before its initial attempt");
         }
 
-        Ok(Server {
+        let server = Arc::new(Server {
             damage_history,
             config,
             permission_groups,
             cancel_token,
+            auto_save_enabled: std::sync::atomic::AtomicBool::new(true),
             key_store: KeyStore::create(),
             worlds,
             online_players: PlayerMap::new(),
@@ -831,9 +952,15 @@ impl Server {
             server_tick_changed: Notify::new(),
             registry_cache,
             tick_rate_manager: SyncRwLock::new(TickRateManager::new()),
+            tps_bar_enabled: AtomicBool::new(false),
+            tps_bar_shown: SyncMutex::new(FxHashSet::default()),
             player_idle_timeout: AtomicI32::new(0),
             scoreboards,
             command_storage,
+            schedules: Arc::new(schedule::ScheduleRegistry::new()),
+            whitelist: Arc::new(whitelist::Whitelist::new()),
+            bans: Arc::new(bans::BanList::new()),
+            boss_bars: Arc::new(boss_bars::BossBarRegistry::new()),
             command_dispatcher: SyncRwLock::new(registered_commands.dispatcher),
             command_permission_keys,
             command_requests: CommandRequestQueue::new(),
@@ -851,7 +978,17 @@ impl Server {
             pending_player_disconnects: PlayerDisconnectQueue::new(),
             pending_world_changes: SyncMutex::new(vec![]),
             pending_domain_switches: SyncMutex::new(vec![]),
-        })
+        });
+        // Whitelist and bans live in world saved data, so they are read once the
+        // server handle exists and its worlds are reachable.
+        server
+            .load_access_lists()
+            .await
+            .map_err(|error| format!("failed to load whitelist and bans: {error}"))?;
+        // The caller wraps the returned server in `Arc` and only then links it
+        // into the worlds, so this stays a plain `Server` and the `Arc` built
+        // for the startup-only work above is unwrapped here.
+        Arc::try_unwrap(server).map_err(|_| "server Arc was cloned during startup".to_owned())
     }
 
     /// Returns the current player-certificate validator, if service keys are available.
@@ -877,7 +1014,66 @@ impl Server {
         CommandDataSaveResults {
             scoreboards: self.scoreboards.save(&self.worlds).await,
             storage: self.save_command_storage().await,
+            whitelist: self.save_whitelist().await,
+            bans: self.save_bans().await,
         }
+    }
+
+    /// Whether automatic saves are currently enabled.
+    #[must_use]
+    pub fn is_auto_save_enabled(&self) -> bool {
+        self.auto_save_enabled.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Enables or disables automatic saves, as `/save-on` and `/save-off` do.
+    pub fn set_auto_save_enabled(&self, enabled: bool) {
+        self.auto_save_enabled
+            .store(enabled, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// Writes the whitelist through the overworld's saved data.
+    ///
+    /// Vanilla keeps `whitelist.json` beside the server jar; Steel writes it with
+    /// the other world-owned data so one world directory is self-contained.
+    pub async fn save_whitelist(&self) -> io::Result<bool> {
+        let Some(world) = self.worlds.server_default_world() else {
+            return Ok(false);
+        };
+        world
+            .saved_data
+            .save(saved_data_names::WHITELIST, &self.whitelist.to_saved())
+            .await?;
+        Ok(true)
+    }
+
+    /// Writes the ban lists through the overworld's saved data.
+    pub async fn save_bans(&self) -> io::Result<bool> {
+        let Some(world) = self.worlds.server_default_world() else {
+            return Ok(false);
+        };
+        world
+            .saved_data
+            .save(saved_data_names::BANS, &self.bans.to_saved())
+            .await?;
+        Ok(true)
+    }
+
+    /// Loads the whitelist and ban lists that a previous run persisted.
+    pub async fn load_access_lists(&self) -> io::Result<()> {
+        let Some(world) = self.worlds.server_default_world() else {
+            return Ok(());
+        };
+        let whitelist = world
+            .saved_data
+            .load_or_default(saved_data_names::WHITELIST)
+            .await?;
+        self.whitelist.apply_saved(whitelist);
+        let bans = world
+            .saved_data
+            .load_or_default(saved_data_names::BANS)
+            .await?;
+        self.bans.apply_saved(bans);
+        Ok(())
     }
 
     /// Queues a command for execution at the start of the next game tick.

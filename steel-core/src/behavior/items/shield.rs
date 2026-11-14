@@ -9,7 +9,10 @@ use crate::behavior::ItemBehavior;
 use super::dynamic_name::{default_name, description_id, translated};
 
 /// Shield behavior providing the base-color-specific name.
-// TODO: Complete the shared Item.use BLOCKS_ATTACKS path so shields can block.
+///
+/// Blocking itself lives in the shared item path: `Item::use_item` starts the
+/// timed use for any `blocks_attacks` component, and `LivingEntity::block_using_item`
+/// applies the reduction.
 #[item_behavior]
 pub struct ShieldItem;
 

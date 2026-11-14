@@ -1329,10 +1329,40 @@ impl ChunkMap {
     /// Mirrors vanilla `ServerPlayer.placeEnderPearlTicket` →
     /// `chunkSource.addTicketWithRadius(ENDER_PEARL, chunk, 2)`. Re-placing the
     /// same ticket resets its countdown rather than stacking duplicates.
-    // TODO: Steel records vanilla's FLAG_KEEP_DIMENSION_ACTIVE, but has no
-    // idle-dimension system that consumes it yet.
     pub fn place_ender_pearl_ticket(&self, chunk: ChunkPos) {
         self.scheduling.add_or_refresh_ender_pearl_ticket(chunk);
+    }
+
+    /// Force-loads `chunk`, keeping it generated and ticked with or without a
+    /// player nearby. The ticket is persistent, so it survives a restart the
+    /// same way vanilla's `/forceload` does.
+    pub fn force_load(&self, chunk: ChunkPos) {
+        self.scheduling.add_forced_ticket(chunk);
+    }
+
+    /// Returns whether `chunk` is force-loaded.
+    #[must_use]
+    pub fn is_force_loaded(&self, chunk: ChunkPos) -> bool {
+        self.scheduling.is_forced(chunk)
+    }
+
+    /// The number of force-loaded chunks in this dimension.
+    #[must_use]
+    pub fn forced_chunk_count(&self) -> usize {
+        self.scheduling.forced_count()
+    }
+
+    /// Stops force-loading `chunk`. Returns whether it was force-loaded.
+    pub fn remove_force_load(&self, chunk: ChunkPos) -> bool {
+        self.scheduling.remove_forced_ticket(chunk)
+    }
+
+    /// Returns whether any ticket keeps this dimension active.
+    ///
+    /// Consulted by the idle-dimension check so a dimension with only
+    /// force-loaded chunks or a portal ticket keeps ticking without players.
+    pub fn dimension_kept_active(&self) -> bool {
+        self.scheduling.dimension_kept_active()
     }
 }
 

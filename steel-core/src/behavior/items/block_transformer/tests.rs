@@ -83,7 +83,7 @@ fn rooted_dirt_drops_loot_from_each_clicked_face_even_with_a_block_above() {
     );
     for face in Direction::ALL {
         interaction.block(interaction.pos, vanilla_blocks::ROOTED_DIRT.default_state());
-        interaction.tool(&vanilla_items::WOODEN_HOE);
+        interaction.tool(&*vanilla_items::WOODEN_HOE);
         let before = interaction
             .world_fixture
             .world
@@ -111,7 +111,7 @@ fn rooted_dirt_drops_loot_from_each_clicked_face_even_with_a_block_above() {
             .collect();
         assert_eq!(dropped.len(), 1);
         let drop = dropped[0].downcast_ref::<ItemEntity>().expect("item drop");
-        assert!(drop.get_item().is(&vanilla_items::HANGING_ROOTS));
+        assert!(drop.get_item().is(&*vanilla_items::HANGING_ROOTS));
         assert_eq!(drop.get_item().count(), 1);
         let position = drop.position();
         match face {
@@ -132,7 +132,7 @@ fn copper_door_transforms_both_halves_without_restoring_the_old_neighbor_shape()
         interaction.pos.below(),
         vanilla_blocks::STONE.default_state(),
     );
-    interaction.tool(&vanilla_items::WOODEN_AXE);
+    interaction.tool(&*vanilla_items::WOODEN_AXE);
     for clicked_half in [DoubleBlockHalf::Lower, DoubleBlockHalf::Upper] {
         let lower = vanilla_blocks::WEATHERED_COPPER_DOOR
             .default_state()
@@ -190,17 +190,17 @@ fn copper_chest_transforms_both_halves_and_preserves_independent_properties() {
             (
                 &vanilla_blocks::WEATHERED_COPPER_CHEST,
                 &vanilla_blocks::EXPOSED_COPPER_CHEST,
-                &vanilla_items::WOODEN_AXE,
+                &*vanilla_items::WOODEN_AXE,
             ),
             (
                 &vanilla_blocks::WAXED_WEATHERED_COPPER_CHEST,
                 &vanilla_blocks::WEATHERED_COPPER_CHEST,
-                &vanilla_items::WOODEN_AXE,
+                &*vanilla_items::WOODEN_AXE,
             ),
             (
                 &vanilla_blocks::WEATHERED_COPPER_CHEST,
                 &vanilla_blocks::WAXED_WEATHERED_COPPER_CHEST,
-                &vanilla_items::HONEYCOMB,
+                &*vanilla_items::HONEYCOMB,
             ),
         ] {
             for direction in Direction::HORIZONTAL {

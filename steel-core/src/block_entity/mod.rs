@@ -26,6 +26,7 @@
 pub(crate) mod block_state_nbt;
 mod components;
 pub mod entities;
+pub mod randomizable_container;
 mod registry;
 mod storage;
 
@@ -216,12 +217,12 @@ impl BlockEntityBase {
     }
 
     #[must_use]
-    const fn pos(&self) -> BlockPos {
+    pub const fn pos(&self) -> BlockPos {
         self.pos
     }
 
     #[must_use]
-    fn block_state(&self) -> BlockStateId {
+    pub fn block_state(&self) -> BlockStateId {
         self.lifecycle.lock().block_state
     }
 
@@ -284,7 +285,7 @@ impl BlockEntityBase {
     }
 
     #[must_use]
-    fn level(&self) -> Option<Arc<World>> {
+    pub fn level(&self) -> Option<Arc<World>> {
         self.level.upgrade()
     }
 
@@ -541,6 +542,14 @@ pub trait BlockEntity: ErasedType + Send + Sync {
     fn container_ref(&self) -> Option<ContainerRef> {
         None
     }
+
+    /// Vanilla `RandomizableContainer.unpackLootTable`: rolls a pending loot
+    /// table into the container.
+    ///
+    /// Vanilla calls this from `getItem`, `setItem` and `isEmpty`, so a hopper
+    /// pulling from an untouched structure chest sees the rolled contents. Every
+    /// path that hands a container out therefore unpacks first.
+    fn unpack_loot_table(&self) {}
 
     /// Returns this entity's fixed game-event listener, if it provides one.
     ///

@@ -59,6 +59,17 @@ pub trait MenuKind: ErasedType + Send + Sync {
     ) {
     }
 
+    /// Applies a merchant trade selection. Returns false for menus that are not
+    /// merchant screens, which is what vanilla's `instanceof` check does.
+    fn select_trade(
+        &mut self,
+        _behavior: &mut MenuBehavior,
+        _index: i32,
+        _player: &Player,
+    ) -> bool {
+        false
+    }
+
     /// Runs once per tick per viewer while open, before changes are synced.
     fn on_tick(
         &mut self,

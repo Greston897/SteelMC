@@ -375,23 +375,23 @@ mod tests {
     fn bookshelf_book_tag_and_slot_capacity_control_container_capability() {
         let bookshelf = test_bookshelf();
         let valid_items = [
-            &vanilla_items::BOOK,
-            &vanilla_items::WRITABLE_BOOK,
-            &vanilla_items::WRITTEN_BOOK,
-            &vanilla_items::KNOWLEDGE_BOOK,
-            &vanilla_items::ENCHANTED_BOOK,
+            &*vanilla_items::BOOK,
+            &*vanilla_items::WRITABLE_BOOK,
+            &*vanilla_items::WRITTEN_BOOK,
+            &*vanilla_items::KNOWLEDGE_BOOK,
+            &*vanilla_items::ENCHANTED_BOOK,
         ];
 
         for (slot, item) in valid_items.into_iter().enumerate() {
             assert!(bookshelf.insert_book(slot, ItemStack::new(item)));
         }
-        let invalid_item = ItemStack::new(&vanilla_items::STONE);
+        let invalid_item = ItemStack::new(&*vanilla_items::STONE);
         assert!(!bookshelf.insert_book(LAST_SLOT_INDEX, invalid_item));
 
         let container = bookshelf.container.lock();
         assert_eq!(container.get_max_stack_size(), MAX_BOOKS_PER_SLOT);
-        let valid_item = ItemStack::new(&vanilla_items::BOOK);
-        let invalid_item = ItemStack::new(&vanilla_items::STONE);
+        let valid_item = ItemStack::new(&*vanilla_items::BOOK);
+        let invalid_item = ItemStack::new(&*vanilla_items::STONE);
         assert!(!container.can_place_item(FIRST_SLOT_INDEX, &valid_item));
         assert!(!container.can_place_item(FIRST_SLOT_INDEX, &invalid_item));
         assert!(container.can_place_item(LAST_SLOT_INDEX, &valid_item));
@@ -409,7 +409,7 @@ mod tests {
 
         assert!(bookshelf.insert_book(
             INTERACTION_TEST_SLOT,
-            ItemStack::with_count(&vanilla_items::WRITTEN_BOOK, OVERSIZED_TEST_STACK_COUNT),
+            ItemStack::with_count(&*vanilla_items::WRITTEN_BOOK, OVERSIZED_TEST_STACK_COUNT),
         ));
         assert_eq!(
             bookshelf.last_interacted_slot(),
@@ -421,11 +421,11 @@ mod tests {
                 .map(|item| item.count()),
             Some(OVERSIZED_TEST_STACK_COUNT),
         );
-        let replacement = ItemStack::new(&vanilla_items::BOOK);
+        let replacement = ItemStack::new(&*vanilla_items::BOOK);
         assert!(!bookshelf.insert_book(INTERACTION_TEST_SLOT, replacement));
 
         let removed = bookshelf.remove_book(INTERACTION_TEST_SLOT);
-        assert!(removed.is(&vanilla_items::WRITTEN_BOOK));
+        assert!(removed.is(&*vanilla_items::WRITTEN_BOOK));
         assert_eq!(removed.count(), OVERSIZED_TEST_STACK_COUNT);
         assert_eq!(
             bookshelf.last_interacted_slot(),
@@ -442,7 +442,7 @@ mod tests {
     #[test]
     fn extraction_requires_space_somewhere_in_destination() {
         let bookshelf = test_bookshelf();
-        let source = ItemStack::new(&vanilla_items::BOOK);
+        let source = ItemStack::new(&*vanilla_items::BOOK);
         let container = bookshelf.container.lock();
         let mut destination = SimpleContainer::new(DESTINATION_SLOT_COUNT);
         let full_stack_size = source.max_stack_size();
@@ -451,17 +451,17 @@ mod tests {
         assert!(container.can_take_item(&destination, DESTINATION_SLOT_INDEX, &source));
         destination.set_item(
             DESTINATION_SLOT_INDEX,
-            ItemStack::new(&vanilla_items::STONE),
+            ItemStack::new(&*vanilla_items::STONE),
         );
         assert!(!container.can_take_item(&destination, DESTINATION_SLOT_INDEX, &source));
         destination.set_item(
             DESTINATION_SLOT_INDEX,
-            ItemStack::with_count(&vanilla_items::BOOK, one_item_short_of_full_stack),
+            ItemStack::with_count(&*vanilla_items::BOOK, one_item_short_of_full_stack),
         );
         assert!(container.can_take_item(&destination, DESTINATION_SLOT_INDEX, &source));
         destination.set_item(
             DESTINATION_SLOT_INDEX,
-            ItemStack::with_count(&vanilla_items::BOOK, full_stack_size),
+            ItemStack::with_count(&*vanilla_items::BOOK, full_stack_size),
         );
         assert!(!container.can_take_item(&destination, DESTINATION_SLOT_INDEX, &source));
     }
@@ -470,11 +470,11 @@ mod tests {
     fn persistence_and_container_component_preserve_all_slots_and_last_slot() {
         let bookshelf = test_bookshelf();
         for slot in 0..LAST_SLOT_INDEX {
-            assert!(bookshelf.insert_book(slot, ItemStack::new(&vanilla_items::BOOK)));
+            assert!(bookshelf.insert_book(slot, ItemStack::new(&*vanilla_items::BOOK)));
         }
         assert!(bookshelf.insert_book(
             LAST_SLOT_INDEX,
-            ItemStack::new(&vanilla_items::ENCHANTED_BOOK),
+            ItemStack::new(&*vanilla_items::ENCHANTED_BOOK),
         ));
 
         let component = bookshelf
@@ -507,26 +507,26 @@ mod tests {
             assert!(
                 loaded
                     .item(slot)
-                    .is_some_and(|item| item.is(&vanilla_items::BOOK))
+                    .is_some_and(|item| item.is(&*vanilla_items::BOOK))
             );
         }
         assert!(
             loaded
                 .item(LAST_SLOT_INDEX)
-                .is_some_and(|item| item.is(&vanilla_items::ENCHANTED_BOOK))
+                .is_some_and(|item| item.is(&*vanilla_items::ENCHANTED_BOOK))
         );
     }
 
     #[test]
     fn component_application_replaces_all_six_slots_without_changing_last_slot() {
         let bookshelf = test_bookshelf();
-        let previously_inserted_book = ItemStack::new(&vanilla_items::BOOK);
+        let previously_inserted_book = ItemStack::new(&*vanilla_items::BOOK);
         assert!(bookshelf.insert_book(INTERACTION_TEST_SLOT, previously_inserted_book));
 
         bookshelf.apply_container_items(vec![
-            ItemStack::new(&vanilla_items::WRITABLE_BOOK),
+            ItemStack::new(&*vanilla_items::WRITABLE_BOOK),
             ItemStack::empty(),
-            ItemStack::new(&vanilla_items::ENCHANTED_BOOK),
+            ItemStack::new(&*vanilla_items::ENCHANTED_BOOK),
         ]);
 
         assert_eq!(
@@ -536,7 +536,7 @@ mod tests {
         assert!(
             bookshelf
                 .item(WRITABLE_BOOK_COMPONENT_SLOT)
-                .is_some_and(|item| item.is(&vanilla_items::WRITABLE_BOOK))
+                .is_some_and(|item| item.is(&*vanilla_items::WRITABLE_BOOK))
         );
         assert!(
             bookshelf
@@ -546,7 +546,7 @@ mod tests {
         assert!(
             bookshelf
                 .item(ENCHANTED_BOOK_COMPONENT_SLOT)
-                .is_some_and(|item| item.is(&vanilla_items::ENCHANTED_BOOK))
+                .is_some_and(|item| item.is(&*vanilla_items::ENCHANTED_BOOK))
         );
         for slot in FIRST_UNSPECIFIED_COMPONENT_SLOT..CHISELED_BOOKSHELF_SLOTS {
             assert!(bookshelf.item(slot).is_some_and(|item| item.is_empty()));

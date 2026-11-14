@@ -1,5 +1,6 @@
 use steel_utils::translations;
 
+use super::scoreboard_sync;
 use super::{
     Arc, CPlayerInfoUpdate, CRemovePlayerInfo, CancellationToken, ClientPacket, ConnectionProtocol,
     DomainPlayerState, EncodedPacket, Entity, GlobalPlayerData, Instant, JoinSet,
@@ -29,6 +30,9 @@ pub(super) enum PlayerAdmissionState {
 pub(super) enum PlayerJoinError {
     DuplicateLogin,
     ServerFull,
+    NotWhitelisted,
+    /// The player or their address is banned; carries the ban screen text.
+    Banned(String),
 }
 
 /// A duplicate-session wait ended before the old session finished leaving.
@@ -174,7 +178,7 @@ impl Server {
             if let Some(existing) = existing
                 && !existing.connection.closed()
             {
-                existing.disconnect(translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg());
+                existing.disconnect(text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg()));
             }
 
             tokio::select! {
@@ -202,7 +206,7 @@ impl Server {
             return;
         }
         let Some(reservation) = self.try_reserve_player_join(player.gameprofile.id()) else {
-            player.disconnect(translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg());
+            player.disconnect(text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg()));
             return;
         };
 
@@ -264,10 +268,16 @@ impl Server {
         if let Err(error) = self.admit_reserved_player(Arc::clone(&player)) {
             let reason = match error {
                 PlayerJoinError::DuplicateLogin => {
-                    translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg()
+                    text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg())
                 }
                 PlayerJoinError::ServerFull => {
-                    translations::MULTIPLAYER_DISCONNECT_SERVER_FULL.msg()
+                    text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_SERVER_FULL.msg())
+                }
+                PlayerJoinError::NotWhitelisted => {
+                    text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_NOT_WHITELISTED.msg())
+                }
+                PlayerJoinError::Banned(reason) => {
+                    text_components::TextComponent::plain(reason)
                 }
             };
             player.disconnect(reason);
@@ -280,6 +290,9 @@ impl Server {
 
         player.reset(Arc::clone(&state.world), ResetReason::InitialJoin);
         Self::apply_domain_player_state(&player, &state);
+        // Vanilla `PlayerList.placeNewPlayer` applies the forced game type after
+        // restoring the saved one.
+        Self::apply_forced_game_mode(&player, &state.world);
         let residence_token = player.domain_residence_token();
         let restores = self.prepare_domain_restores(&player, &state, true);
         if !Self::install_domain_restores(&player, residence_token, &restores) {
@@ -304,6 +317,9 @@ impl Server {
             return;
         }
         let previous_name = self.record_known_player(&player.gameprofile);
+        // Vanilla `ServerScoreboard#addPlayer`: the joining player receives the
+        // whole scoreboard so sidebars and tab-list numbers appear immediately.
+        scoreboard_sync::sync_on_join(self, &player);
         self.broadcast_player_join_message(&player, previous_name.as_deref());
         if player.mark_joined_world() {
             player.send_inventory_to_remote();
@@ -362,7 +378,20 @@ impl Server {
         }
 
         // Keep the final capacity check and insertion atomic with respect to other joins.
-        let result = if self.is_player_limit_reached(uuid) {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |elapsed| i64::try_from(elapsed.as_secs()).unwrap_or(i64::MAX));
+        // A ban takes precedence over the capacity and whitelist checks: a banned
+        // player should see why they are blocked, not "server full".
+        let ban_reason = self.bans.active_player_ban(uuid, now).map(|ban| {
+            format!("You are banned: {}", ban.display_reason())
+        });
+
+        let result = if let Some(reason) = ban_reason {
+            Err(PlayerJoinError::Banned(reason))
+        } else if !self.whitelist.allows(uuid) {
+            Err(PlayerJoinError::NotWhitelisted)
+        } else if self.is_player_limit_reached(uuid) {
             Err(PlayerJoinError::ServerFull)
         } else if self.online_players.insert(player) {
             Ok(())

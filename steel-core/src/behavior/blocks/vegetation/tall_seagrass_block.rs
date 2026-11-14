@@ -115,7 +115,7 @@ impl BlockBehavior for TallSeagrassBlock {
         _block_entity: Option<SharedBlockEntity>,
         _include_data: bool,
     ) -> Option<ItemStack> {
-        Some(ItemStack::new(&vanilla_items::SEAGRASS))
+        Some(ItemStack::new(&*vanilla_items::SEAGRASS))
     }
 
     fn is_liquid_container(&self, _state: BlockStateId) -> bool {

@@ -1,14 +1,15 @@
 //! `RaidOmenMobEffect` behavior.
 
+use glam::IVec3;
+
 use super::MobEffectBehavior;
-use crate::entity::LivingEntity;
-use crate::world::World;
+use crate::entity::{Entity as _, LivingEntity};
+use crate::world::{World, raid};
 
 /// Raid omen mob effect behavior.
-// TODO: `applyEffectTick` checks the mob is a non-spectator `ServerPlayer`
-// with a pending raid-omen position, then calls `level.getRaids()
-// .createOrExtendRaid(player, pos)` and clears the position, removing this
-// effect (returns `false`).
+///
+/// Vanilla applies it on the first tick: the stored omen position becomes the
+/// raid center, then the effect is consumed.
 pub struct RaidOmenBehavior;
 
 impl MobEffectBehavior for RaidOmenBehavior {
@@ -16,7 +17,21 @@ impl MobEffectBehavior for RaidOmenBehavior {
         tick_count == 1
     }
 
-    fn apply_effect_tick(&self, _world: &World, _user: &dyn LivingEntity, _amplifier: i32) -> bool {
+    fn apply_effect_tick(&self, world: &World, user: &dyn LivingEntity, amplifier: i32) -> bool {
+        let Some(player) = user.as_player() else {
+            return true;
+        };
+        if player.is_spectator() {
+            return true;
+        }
+
+        // The raid that raid omen starts is centered on the omen source; vanilla
+        // stores it on the effect. Steel only records the player's position, which
+        // serves the same purpose for a pending omen.
+        let pos = player.block_position();
+        world
+            .raids
+            .raise_omen(IVec3::new(pos.x(), pos.y(), pos.z()), amplifier);
         true
     }
 }

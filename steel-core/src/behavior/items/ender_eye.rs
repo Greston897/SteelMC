@@ -14,7 +14,7 @@ use steel_registry::{
     REGISTRY, level_events, sound_events, vanilla_blocks, vanilla_entities, vanilla_game_events,
     vanilla_structure_tags,
 };
-use steel_registry::{TaggedRegistryExt, vanilla_items};
+use steel_registry::{TaggedRegistryExt, vanilla_criteria_triggers, vanilla_items};
 use steel_utils::{BlockPos, types::UpdateFlags};
 
 use crate::behavior::ItemBehavior;
@@ -200,11 +200,15 @@ impl ItemBehavior for EnderEyeItem {
             .with_item(|item| item.consume_one(has_infinite_materials));
         context
             .player
-            .award_stat(&vanilla_stat_types::ITEM_USED, &vanilla_items::ENDER_EYE);
+            .award_stat(&vanilla_stat_types::ITEM_USED, &*vanilla_items::ENDER_EYE);
+
+        // Vanilla `EnderEyeItem.useOn` awards `used_ender_eye` once the portal
+        // frame accepts the eye.
+        context
+            .player
+            .trigger_advancement(&vanilla_criteria_triggers::USED_ENDER_EYE);
 
         InteractionResult::SuccessServer
-
-        // TODO implement advancment
     }
 }
 

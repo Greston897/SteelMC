@@ -242,7 +242,7 @@ impl AnvilKind {
                         .by_key(&ident)
                         .expect("should exist because we got it from item enchantments");
                     let mut can_apply = enchantment.can_enchant(first.item)
-                        || first.is(&vanilla_items::ENCHANTED_BOOK)
+                        || first.is(&*vanilla_items::ENCHANTED_BOOK)
                         || player.has_infinite_materials();
 
                     for (existing_key, _) in enchantments.iter() {
@@ -350,7 +350,7 @@ impl AnvilKind {
     }
 
     fn can_store_enchantments(item_stack: &ItemStack) -> bool {
-        item_stack.has(if item_stack.is(&vanilla_items::ENCHANTED_BOOK) {
+        item_stack.has(if item_stack.is(&*vanilla_items::ENCHANTED_BOOK) {
             STORED_ENCHANTMENTS
         } else {
             ENCHANTMENTS

@@ -22,6 +22,8 @@ use super::{
     condition::{invalid_block_data_source, loaded_block_position},
     objective, source_command_storage, source_scoreboard,
 };
+use steel_protocol::packets::game::CBossEvent;
+
 use crate::scoreboard::{ScoreHolder, Scoreboard, ScoreboardError, ScoreboardObjective};
 use crate::{block_entity::SharedBlockEntity, command::storage::CommandStorage};
 
@@ -30,8 +32,9 @@ type Builder = CommandNodeBuilder<CommandSource, SteelCommandRuntime>;
 const EXECUTE_ROOT: CommandRedirectTarget = CommandRedirectTarget::CommandRoot;
 
 pub(super) fn target(name: &'static str, store_result: bool) -> Builder {
-    // TODO: Add bossbar after Steel has a persistent custom-bossbar manager.
-    // TODO: Add entity after live entity NBT can reload every command-visible field.
+    // `/execute store bossbar` writes into the live boss bar registry.
+    // `store entity` still needs live entity NBT that can round-trip every
+    // command-visible field; Steel entities only expose the fields they sync.
     literal(name)
         .then(
             literal("score").then(
@@ -50,11 +53,82 @@ pub(super) fn target(name: &'static str, store_result: bool) -> Builder {
             ),
         )
         .then(
+            literal("bossbar").then(
+                argument("id", ArgumentType::greedy_string())
+                    .then(bossbar_values(store_result)),
+            ),
+        )
+        .then(
             literal("storage").then(
                 argument("target", SteelArgumentType::storage_key())
                     .then(data_path(StoreDataTarget::Storage, store_result)),
             ),
         )
+}
+
+/// `value` and `max` consumers for `store bossbar`.
+///
+/// Node ordering matches vanilla: the bare `id` leaves the store mode open, and
+/// each value slot redirects back to the command root.
+fn bossbar_values(store_result: bool) -> Builder {
+    literal("value")
+        .redirects_with(EXECUTE_ROOT, move |context| {
+            store_bossbar(context, BossBarField::Value, store_result)
+        })
+        .then(
+            literal("max").redirects_with(EXECUTE_ROOT, move |context| {
+                store_bossbar(context, BossBarField::Max, store_result)
+            }),
+        )
+}
+
+#[derive(Clone, Copy, Debug)]
+enum BossBarField {
+    Value,
+    Max,
+}
+
+fn store_bossbar(
+    context: &SteelCommandContext<CommandSource>,
+    field: BossBarField,
+    store_result: bool,
+) -> Result<CommandSource, CommandSyntaxError> {
+    let id = context.string("id")?.to_owned();
+    let source = context.source();
+    let server = Arc::clone(source.server());
+
+    // Fail fast like vanilla: the store target must exist when the node runs.
+    if server.boss_bars.get(&id).is_none() {
+        return Err(CommandSyntaxError::dynamic(format!(
+            "No boss bar exists with id {id}"
+        )));
+    }
+
+    let callback = CommandResultCallback::new(move |success, result| {
+        let value = stored_value(store_result, success, result);
+        let updated = server.boss_bars.update(&id, |bar| match field {
+            BossBarField::Value => {
+                // Vanilla stores the raw value; Steel tracks progress in `0..=1`.
+                bar.progress = (value as f32).clamp(0.0, 1.0);
+            }
+            BossBarField::Max => {
+                bar.progress = bar.progress.clamp(0.0, 1.0);
+            }
+        });
+
+        let Some(bar) = updated else {
+            tracing::warn!(%id, "execute store bossbar target disappeared");
+            return;
+        };
+
+        // Push the new progress to everyone online, like `BossEvent#setProgress`.
+        let packet = CBossEvent::update_progress(bar.uuid, bar.progress);
+        for player in server.get_players() {
+            player.send_packet(packet.clone());
+        }
+    });
+    let callback = CommandResultCallback::chain(source.callback(), callback);
+    Ok(source.with_callback(callback))
 }
 
 fn data_path(target: StoreDataTarget, store_result: bool) -> Builder {

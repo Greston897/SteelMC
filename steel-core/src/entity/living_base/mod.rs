@@ -710,6 +710,29 @@ impl LivingEntityState {
     }
 }
 
+/// How [`LivingEntityBase::add_mob_effect`] changed the active-effect map.
+///
+/// Steel-specific: vanilla `LivingEntity.addEffect` branches inline on insert
+/// versus `MobEffectInstance.update`, while Steel splits the map update from the
+/// behavior dispatch, so the branch taken is returned to drive `on_effect_added`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MobEffectAddResult {
+    /// The effect was not active and has been inserted.
+    Added,
+    /// An already active instance was upgraded or extended.
+    Updated,
+    /// An already active instance was kept as is.
+    Unchanged,
+}
+
+impl MobEffectAddResult {
+    /// Returns whether the active-effect map changed.
+    #[must_use]
+    pub const fn changed(self) -> bool {
+        !matches!(self, Self::Unchanged)
+    }
+}
+
 /// Common runtime fields shared by all living entities.
 ///
 /// **Deviation from vanilla:** Vanilla calls this guard `LivingEntity.dead`,
@@ -1010,6 +1033,30 @@ impl LivingEntityBase {
         self.state.lock().no_action_time += 1;
     }
 
+    /// Refreshes transient item attribute modifiers for every equipment slot.
+    ///
+    /// Vanilla re-runs the location-based enchantment effects on the whole
+    /// entity (spectator transitions, respawns), which is equivalent to
+    /// refreshing each slot's modifiers.
+    pub fn refresh_all_equipment_attribute_modifiers(&self) {
+        for slot in EquipmentSlot::ALL {
+            let item_stack = self.equipment.lock().get_ref(slot).clone();
+            self.refresh_equipment_attribute_modifiers(slot, &item_stack);
+        }
+    }
+
+    /// Drops every transient item attribute modifier, mirroring vanilla
+    /// `ServerPlayer.setGameMode(Spectator)` emptying the effect map.
+    pub fn clear_equipment_attribute_modifiers(&self) {
+        let mut attributes = self.attributes.lock();
+        let mut installed_modifiers = self.equipment_attribute_modifiers.lock();
+        for slot_modifiers in installed_modifiers.iter_mut() {
+            for key in slot_modifiers.drain(..) {
+                attributes.remove_modifier(key.attribute, &key.id);
+            }
+        }
+    }
+
     /// Refreshes transient item attribute modifiers for an equipment slot.
     pub fn refresh_equipment_attribute_modifiers(
         &self,
@@ -1081,7 +1128,10 @@ impl LivingEntityBase {
     }
 
     /// Adds or updates active vanilla mob-effect state.
-    pub fn add_mob_effect(&self, effect: MobEffectInstance) -> bool {
+    ///
+    /// Returns how the active-effect map changed, so the caller can fire the
+    /// vanilla `on_effect_added` sound only for a genuinely new effect.
+    pub fn add_mob_effect(&self, effect: MobEffectInstance) -> MobEffectAddResult {
         let effect_key = effect.effect;
         let mut existing_effect = None;
         let mut changed_effect = None;
@@ -1104,7 +1154,7 @@ impl LivingEntityBase {
                 effect,
                 blend_for_self: true,
             });
-            return true;
+            return MobEffectAddResult::Added;
         }
 
         if let Some(effect) = changed_effect {
@@ -1114,10 +1164,10 @@ impl LivingEntityBase {
                 effect,
                 blend_for_self: false,
             });
-            return true;
+            return MobEffectAddResult::Updated;
         }
 
-        false
+        MobEffectAddResult::Unchanged
     }
 
     /// Sets active vanilla mob-effect state.
@@ -1554,6 +1604,11 @@ impl LivingEntityBase {
     #[must_use]
     pub fn hurt_time(&self) -> i32 {
         self.state.lock().hurt_time
+    }
+
+    /// Sets the hurt-flash counter, used when copying state between entities.
+    pub fn set_hurt_time(&self, hurt_time: i32) {
+        self.state.lock().hurt_time = hurt_time;
     }
 
     /// Returns the current hurt duration

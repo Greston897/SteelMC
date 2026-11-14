@@ -11,7 +11,7 @@ use steel_registry::stat::vanilla_stat_types;
 /// This implements the logic from Java's `ServerPlayerGameMode.useItemOn()`.
 ///
 /// # Flow
-/// 1. Spectator mode: Only allow opening menus (currently returns Pass)
+/// 1. Spectator mode: Only allow opening container menus
 /// 2. Check if block interaction should be suppressed (sneaking + holding items)
 /// 3. If not suppressed: Call block's `use_item_on` method
 /// 4. If block returns `TryEmptyHandInteraction` and main hand: Call block's `use_without_item`
@@ -26,10 +26,26 @@ pub fn use_item_on(
     let pos = hit_result.block_pos;
     let state = world.get_block_state(pos);
 
-    // Spectator mode: can only open menus
-    // TODO: Implement menu providers for blocks like chests
+    // Vanilla `ServerPlayerGameMode.useItemOn`: in spectator mode the only
+    // permitted block interaction is opening a container menu. Unlike survival,
+    // the hand-held item is ignored and no block-use logic runs.
     if player.game_mode() == GameType::Spectator {
-        return InteractionResult::Pass;
+        let Some(block) = REGISTRY.blocks.by_state_id(state) else {
+            return InteractionResult::Pass;
+        };
+        let behavior = BLOCK_BEHAVIORS.get_behavior(block);
+        if !behavior.allows_spectator_menu(state, world, pos) {
+            return InteractionResult::Pass;
+        }
+        let mut inventory_access = InventoryAccess::new(Arc::clone(&player.inventory), hand);
+        return behavior.use_without_item(
+            state,
+            world,
+            pos,
+            player,
+            hit_result,
+            &mut inventory_access,
+        );
     }
 
     // Check if block interaction should be suppressed (sneaking + holding items in either hand)
@@ -90,6 +106,26 @@ pub fn use_item_on(
     let inventory_access = InventoryAccess::new(Arc::clone(&player.inventory), hand);
     let (is_empty, original_count, item_ref, stack_before_use) =
         inventory_access.with_item(|item| (item.is_empty(), item.count, item.item, item.clone()));
+
+    // Vanilla `ServerPlayerGameMode.useItemOn` fires `any_block_use` (any hand) and
+    // `default_block_use` (the main-hand fallthrough) before the item's own
+    // `useOn` runs, with a context holding both the item and the clicked block.
+    if let Some(block) = REGISTRY.blocks.by_state_id(state) {
+        let context = crate::player::advancement::predicate::TriggerContext::block(
+            &block.key,
+            Some(&item_ref.key),
+        );
+        player.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::ANY_BLOCK_USE,
+            &context,
+        );
+        if hand == InteractionHand::MainHand {
+            player.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::DEFAULT_BLOCK_USE,
+                &context,
+            );
+        }
+    }
 
     if !is_empty {
         if player.is_item_on_cooldown(&stack_before_use) {
@@ -287,7 +323,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::STICK));
+            .set_selected_item(ItemStack::new(&*vanilla_items::STICK));
         player.set_rotation((10.0, 20.0));
 
         for (sequence, y_rot, x_rot, expected) in [
@@ -338,7 +374,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::DIRT));
+            .set_selected_item(ItemStack::new(&*vanilla_items::DIRT));
         assert!(
             !use_item_on(&player, world, InteractionHand::MainHand, &hit_result).consumes_action()
         );
@@ -356,7 +392,7 @@ mod tests {
         );
         let can_place_on =
             AdventureModePredicate::new(vec![predicate]).expect("one block predicate is valid");
-        let mut dirt = ItemStack::new(&vanilla_items::DIRT);
+        let mut dirt = ItemStack::new(&*vanilla_items::DIRT);
         dirt.set(CAN_PLACE_ON, can_place_on);
         player.inventory.lock().set_selected_item(dirt);
 
@@ -383,7 +419,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::APPLE));
+            .set_selected_item(ItemStack::new(&*vanilla_items::APPLE));
 
         let result = use_item(&player, world, InteractionHand::MainHand);
 
@@ -403,7 +439,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::GOLDEN_APPLE));
+            .set_selected_item(ItemStack::new(&*vanilla_items::GOLDEN_APPLE));
 
         let result = use_item(&player, world, InteractionHand::MainHand);
 

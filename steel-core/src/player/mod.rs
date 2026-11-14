@@ -21,6 +21,7 @@ pub mod player_data;
 pub mod player_data_storage;
 pub mod player_inventory;
 mod profile;
+pub mod recipe_book;
 mod session;
 mod sleep;
 mod sleep_state;
@@ -43,6 +44,7 @@ use health_sync::HealthSyncState;
 use item_cooldowns::ItemCooldowns;
 use lifecycle::PlayerLifecycleState;
 pub use lifecycle::PlayerRespawnConfig;
+pub(crate) use lifecycle::resolve_personal_respawn_for_world_change;
 pub(crate) use lifecycle::ResetReason;
 pub use movement::PlayerInput;
 use movement::{MovementState, TeleportState};
@@ -63,7 +65,8 @@ use steel_math::RAD_TO_DEG_F64;
 use steel_protocol::packets::game::{
     CEntityEvent, CHurtAnimation, CPlayerCombatKill, CPlayerLookAt, CRespawn,
     CSetDefaultSpawnPosition, CSetHealth, CSetHeldSlot, CSetPassengers, ClientCommandAction,
-    LookAtAnchor, RelativeMovement, SoundSource,
+    LookAtAnchor, RelativeMovement, SRecipeBookChangeSettings, SRecipeBookSeenRecipe, SSetGameRule,
+    SoundSource,
 };
 use steel_protocol::packets::game::{CLevelEvent, CSetEntityData, CSetExperience};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
@@ -78,10 +81,10 @@ use steel_registry::vanilla_game_rules::{
     SHOW_DEATH_MESSAGES,
 };
 use steel_registry::{
-    level_events, sound_events, vanilla_attributes, vanilla_custom_stats, vanilla_damage_type_tags,
-    vanilla_entities, vanilla_game_events,
+    REGISTRY, level_events, sound_events, vanilla_attributes, vanilla_blocks, vanilla_custom_stats,
+    vanilla_damage_type_tags, vanilla_entities, vanilla_game_events, vanilla_mob_effects,
 };
-use steel_utils::{entity_events::EntityStatus, locks::Shared, translations};
+use steel_utils::{Identifier, entity_events::EntityStatus, locks::Shared, translations};
 use tick_state::PlayerTickState;
 use uuid::Uuid;
 
@@ -139,7 +142,7 @@ use steel_registry::vanilla_damage_types;
 
 use steel_protocol::packets::{
     common::SCustomPayload,
-    game::{CContainerClose, CGameEvent, CSystemChat, GameEventType},
+    game::{CContainerClose, CGameEvent, GameEventType},
 };
 use steel_registry::RegistryEntry;
 use steel_registry::damage_type::DeathMessageType;
@@ -147,7 +150,7 @@ use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::stat::vanilla_stat_types;
 use steel_utils::{
-    BlockPos, BlockStateId, ChunkPos, DowncastType, DowncastTypeKey, Identifier, UuidExt as _,
+    BlockPos, BlockStateId, ChunkPos, DowncastType, DowncastTypeKey, UuidExt as _,
 };
 
 use crate::inventory::container::Container;
@@ -165,6 +168,7 @@ static INTENTIONAL_GAME_DESIGN_STYLE: LazyLock<Interactivity> = LazyLock::new(||
     ..Interactivity::new()
 });
 
+use crate::behavior::items::filled_map;
 use crate::chunk::player_chunk_view::PlayerChunkView;
 use crate::entity::entities::objects::projectiles::FishingHookEntity;
 use crate::inventory::ender_chest::{PlayerEnderChestContainer, SyncPlayerEnderChest};
@@ -209,6 +213,17 @@ pub struct Player {
     pub last_chunk_pos: SyncMutex<ChunkPos>,
     /// The last chunk tracking view of the player.
     pub last_tracking_view: SyncMutex<Option<PlayerChunkView>>,
+    /// Whether the chunk map currently skips this player's chunk ticket.
+    ///
+    /// Vanilla `ChunkMap` keeps the per-player `skippedPlayer` flag; it is set
+    /// by `spectatorsGenerateChunks` together with the spectator game mode and
+    /// decides whether the player loads terrain around itself.
+    pub skip_player: std::sync::atomic::AtomicBool,
+    /// Entity the player's camera is attached to, if any.
+    ///
+    /// Vanilla `ServerPlayer.camera`/`setCamera`; a spectator's `set_camera`
+    /// stores the target here so later packets and teardown can restore it.
+    camera_entity: SyncMutex<Option<SharedEntity>>,
     /// The client's settings/information (language, view distance, chat visibility, etc.).
     /// Updated when the client sends `SClientInformation` during config or play phase.
     client_information: SyncMutex<ClientInformation>,
@@ -249,6 +264,9 @@ pub struct Player {
     sleep_state: SyncMutex<PlayerSleepState>,
     /// Persisted personal bed or respawn-anchor target.
     respawn_config: SyncMutex<Option<PlayerRespawnConfig>>,
+
+    /// Recipes this player has unlocked and the state of their recipe book tabs.
+    pub recipe_book: SyncMutex<recipe_book::ServerRecipeBook>,
 
     /// Player abilities (flight, invulnerability, build permissions, speeds, etc.)
     pub abilities: SyncMutex<Abilities>,
@@ -299,6 +317,27 @@ pub struct Player {
 
     /// Manage the advancements of the player
     pub advancements: SyncMutex<PlayerAdvancement>,
+
+    /// Remaining ticks of an active riptide spin attack, plus the enchantment
+    /// level that scales its knockback. Vanilla `LivingEntity.autoSpinAttackTicks`.
+    riptide: SyncMutex<Option<RiptideSpin>>,
+
+    /// Where and when the current levitation started, for the `levitation`
+    /// advancement trigger. Vanilla `LevitationMobEffect` keeps the same pair in
+    /// `startLevitation`.
+    levitation_start: SyncMutex<Option<(glam::DVec3, i32)>>,
+}
+
+/// Vanilla `LivingEntity` spin-attack duration per riptide level.
+pub const RIPTIDE_TICKS_PER_LEVEL: i32 = 20;
+
+/// State of an in-progress riptide spin attack.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RiptideSpin {
+    /// Ticks of spin attack left; vanilla starts at 20 per riptide level.
+    pub remaining_ticks: i32,
+    /// Riptide level, which scales both speed and damage.
+    pub level: i32,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `Player`.
@@ -344,6 +383,60 @@ impl PlayerResidenceState {
 }
 
 impl Player {
+    /// Fires the `recipe_crafted` trigger for a recipe this player just used.
+    ///
+    /// Vanilla carries the crafted stack in the predicate; Steel only knows the
+    /// recipe key, so every `recipe_crafted` criterion of that recipe progresses.
+    /// Fires `recipe_unlocked`, mirroring vanilla `ServerPlayer.awardRecipes`.
+    pub fn trigger_recipe_unlocked(&self, recipe: &Identifier) -> usize {
+        self.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::RECIPE_UNLOCKED,
+            &crate::player::advancement::predicate::TriggerContext::recipe(recipe),
+        )
+    }
+
+    pub fn trigger_recipe_crafted(&self, recipe: &Identifier) -> usize {
+        let _ = recipe;
+        self.trigger_advancement(&steel_registry::vanilla_criteria_triggers::RECIPE_CRAFTED)
+    }
+
+    /// Returns the entity this player's camera is attached to.
+    #[must_use]
+    pub fn camera_entity(&self) -> Option<SharedEntity> {
+        self.camera_entity.lock().clone()
+    }
+
+    /// Attaches the player's camera to `entity`, or restores the player's own
+    /// camera when `None`.
+    ///
+    /// Vanilla `ServerPlayer.setCamera`; callers are responsible for sending the
+    /// matching `SetCamera` packet.
+    pub fn set_camera_entity(&self, entity: Option<SharedEntity>) {
+        *self.camera_entity.lock() = entity;
+    }
+
+    /// Fires an advancement trigger for this player, granting every matching
+    /// criterion. Mirrors vanilla's `CriteriaTriggers` dispatch.
+    pub fn trigger_advancement(&self, trigger: &Identifier) -> usize {
+        self.advancements.lock().trigger(self, trigger)
+    }
+
+    /// Fires a trigger together with the event that caused it.
+    ///
+    /// Criteria carry vanilla `conditions` objects; passing the event lets
+    /// [`crate::player::advancement::predicate::matches`] decide which
+    /// advancements actually apply instead of granting every criterion with a
+    /// matching trigger id.
+    pub fn trigger_advancement_with_context(
+        &self,
+        trigger: &Identifier,
+        context: &crate::player::advancement::predicate::TriggerContext,
+    ) -> usize {
+        self.advancements
+            .lock()
+            .trigger_with_context(self, trigger, context)
+    }
+
     const USING_ITEM_FLAG: i8 = 1;
     const OFF_HAND_ACTIVE_ITEM_FLAG: i8 = 1 << 1;
 
@@ -482,6 +575,13 @@ impl Player {
         let Some(user) = LivingEntityRef::new(entity) else {
             panic!("active item use requires a living entity");
         };
+        // Vanilla `Item.use` fires `using_item` once per tick while the item is
+        // held in use, which is how `adventure/salvage_sherd`-style criteria see
+        // sustained use.
+        self.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::USING_ITEM,
+            &crate::player::advancement::predicate::TriggerContext::item(&item.item().key),
+        );
         behavior.on_use_tick(&world, user, &mut item, active.remaining_ticks());
 
         if self.active_item_use_hand() != Some(hand) {
@@ -501,6 +601,139 @@ impl Player {
         }
 
         self.inventory.lock().set_item_in_hand(hand, item);
+    }
+
+    /// Vanilla `LivingEntity.isAutoSpinAttack()`.
+    #[must_use]
+    pub fn is_auto_spin_attack(&self) -> bool {
+        self.riptide.lock().is_some()
+    }
+
+    /// Starts a riptide spin attack, mirroring `LivingEntity.startAutoSpinAttack`.
+    ///
+    /// Vanilla scales the duration with the riptide level (20 ticks each) and
+    /// gives the player an immediate forward burst along the look vector.
+    pub fn start_auto_spin_attack(&self, riptide_level: i32, look: DVec3) {
+        let level = riptide_level.max(1);
+        *self.riptide.lock() = Some(RiptideSpin {
+            remaining_ticks: level * RIPTIDE_TICKS_PER_LEVEL,
+            level,
+        });
+
+        // Vanilla `startAutoSpinAttack` pushes along look with a level-scaled
+        // strength, and the trident launches the player with a matching impulse.
+        let strength = f64::from(level).mul_add(-0.1, 1.0);
+        let velocity = DVec3::new(
+            look.x * 3.0 * strength,
+            look.y * 3.0 * strength,
+            look.z * 3.0 * strength,
+        );
+        self.set_velocity(velocity);
+        self.set_on_ground(false);
+        self.mark_velocity_sync();
+        self.sync_pose_from_state();
+    }
+
+    /// Vanilla `LivingEntity.livingEntityTick` riptide branch: refresh the
+    /// forward impulse, apply rain-only spin, and damage nearby entities.
+    pub(crate) fn tick_riptide(&self) {
+        let Some(spin) = *self.riptide.lock() else {
+            return;
+        };
+        if spin.remaining_ticks <= 0 {
+            self.stop_auto_spin_attack();
+            return;
+        }
+
+        let world = self.get_world();
+        let look = self.rotation_vector();
+        // Vanilla keeps pushing the player forward while the spin is active so
+        // it carries through water and rain instead of stalling.
+        let strength = f64::from(spin.level).mul_add(-0.1, 1.0);
+        let velocity = self.velocity();
+        self.set_velocity(DVec3::new(
+            look.x * 3.0 * strength,
+            look.y * 3.0 * strength,
+            look.z * 3.0 * strength,
+        ));
+        self.mark_velocity_sync();
+        let _ = velocity;
+
+        self.damage_riptide_targets(&world, look, spin.level);
+        world.play_sound(
+            &steel_registry::sound_events::ITEM_TRIDENT_RIPTIDE_3,
+            SoundSource::Players,
+            self.block_position(),
+            1.0,
+            1.0,
+            None,
+        );
+
+        let mut guard = self.riptide.lock();
+        if let Some(spin) = guard.as_mut() {
+            spin.remaining_ticks -= 1;
+            if spin.remaining_ticks <= 0 {
+                *guard = None;
+            }
+        }
+        drop(guard);
+        self.sync_pose_from_state();
+    }
+
+    /// Stops an active spin attack and restores the normal pose.
+    pub fn stop_auto_spin_attack(&self) {
+        if self.riptide.lock().take().is_some() {
+            self.sync_pose_from_state();
+        }
+    }
+
+    /// Vanilla `SpinAttackEffect` melee sweep: every living entity within a
+    /// level-scaled box in front of the player takes trident damage and knockback.
+    fn damage_riptide_targets(&self, world: &crate::world::World, look: DVec3, level: i32) {
+        let reach = 2.0 + f64::from(level) * 0.5;
+        let pos = self.position();
+        let center = pos + look.normalize_or_zero() * reach * 0.5;
+        let radius = (reach * 0.5).max(1.0);
+        let aabb = steel_utils::geometry::WorldAabb::new(
+            center.x - radius,
+            center.y - radius,
+            center.z - radius,
+            center.x + radius,
+            center.y + radius,
+            center.z + radius,
+        );
+
+        let self_id = self.id();
+        let damage = 4.0 + f64::from(level) as f32 * 1.5;
+        let Some(source) = world.get_entity_by_id(self_id) else {
+            return;
+        };
+        for target in world.get_entities_in_aabb(&aabb) {
+            if target.id() == self_id || !target.is_living_entity() || target.is_spectator() {
+                continue;
+            }
+            let damage_source =
+                DamageSource::direct(&vanilla_damage_types::TRIDENT, source.clone());
+            if target.hurt(world, &damage_source, damage) {
+                let push = (target.position() - pos).normalize_or_zero() * f64::from(level);
+                target.set_velocity(target.velocity() + push);
+            }
+        }
+    }
+
+    /// Unit vector along the player's look direction (vanilla `Entity.getLookAngle`).
+    fn rotation_vector(&self) -> DVec3 {
+        let (yaw, pitch) = self.rotation();
+        let yaw = f64::from(yaw).to_radians();
+        let pitch = f64::from(pitch).to_radians();
+        let xz = pitch.cos();
+        DVec3::new(-yaw.sin() * xz, -pitch.sin(), yaw.cos() * xz)
+    }
+
+    /// Recomputes the synced pose, including the riptide spin pose.
+    fn sync_pose_from_state(&self) {
+        let pose = self.get_desired_pose();
+        self.set_pose(pose);
     }
 
     /// Returns the player's configured main arm.
@@ -561,7 +794,14 @@ impl Player {
 
     /// Changes the current game mode and records the old current mode as previous.
     fn change_game_mode_state(&self, game_mode: GameType) -> bool {
-        self.game_modes.lock().change_current(game_mode)
+        let was_spectator = self.game_modes.lock().current() == GameType::Spectator;
+        let changed = self.game_modes.lock().change_current(game_mode);
+        // Vanilla `ServerPlayer.setGameMode` drops a spectator camera when the
+        // player leaves spectator mode.
+        if changed && was_spectator && game_mode != GameType::Spectator {
+            self.set_camera_entity(None);
+        }
+        changed
     }
 
     /// Creates a new player.
@@ -614,6 +854,8 @@ impl Player {
             }),
             last_chunk_pos: SyncMutex::new(ChunkPos::new(0, 0)),
             last_tracking_view: SyncMutex::new(None),
+            skip_player: std::sync::atomic::AtomicBool::new(false),
+            camera_entity: SyncMutex::new(None),
             client_information: SyncMutex::new(client_information),
             game_modes: SyncMutex::new(PlayerGameModeState::new(GameType::Survival)),
             inventory: Arc::clone(&inventory),
@@ -624,10 +866,12 @@ impl Player {
             open_menu: SyncMutex::new(player_inventory::OpenMenuState::new()),
             container_counter: SyncMutex::new(ContainerCounter::new()),
             teleport_state: SyncMutex::new(TeleportState::new()),
+            levitation_start: SyncMutex::new(None),
             item_cooldowns: SyncMutex::new(ItemCooldowns::default()),
             tick_state: SyncMutex::new(PlayerTickState::new()),
             sleep_state: SyncMutex::new(PlayerSleepState::new()),
             respawn_config: SyncMutex::new(None),
+            recipe_book: SyncMutex::new(recipe_book::ServerRecipeBook::new()),
             abilities: SyncMutex::new(Abilities::default()),
             block_breaking: SyncMutex::new(BlockBreakingManager::new()),
             living_base,
@@ -643,7 +887,8 @@ impl Player {
             fishing: SyncMutex::new(None),
             stats: SyncMutex::new(StatsCounter::new()),
             last_action_time: SyncMutex::new(Instant::now()),
-            advancements: SyncMutex::new(PlayerAdvancement::default()), // TODO save the advancement
+            advancements: SyncMutex::new(PlayerAdvancement::default()),
+            riptide: SyncMutex::new(None),
         }
     }
 
@@ -723,6 +968,18 @@ impl Player {
         }
     }
 
+    /// Returns the value of a custom statistic for this player.
+    ///
+    /// Vanilla `ServerPlayer.getStats().getValue(Stats.CUSTOM.get(...))`.
+    #[must_use]
+    pub fn custom_stat(&self, stat: steel_registry::stat::custom::CustomStatRef) -> i32 {
+        self.stats
+            .lock()
+            .stats
+            .get(&vanilla_stat_types::CUSTOM.get(stat))
+            .map_or(0, |(count, _)| *count)
+    }
+
     /// Ticks to award stats that are awarded based on ticks.
     fn tick_stats(&self) {
         // These stats are expressed in ticks.
@@ -756,6 +1013,46 @@ impl Player {
                 1,
             );
         }
+    }
+
+    /// Vanilla `LevitationMobEffect.applyEffectTick`: while levitation is active the
+    /// effect remembers where it started and fires the `levitation` trigger with
+    /// the distance traveled and the effect duration so far.
+    fn tick_levitation_trigger(&self) {
+        let Some(effect) = self.mob_effect(vanilla_mob_effects::LEVITATION) else {
+            *self.levitation_start.lock() = None;
+            return;
+        };
+        let position = self.position();
+        let mut start = self.levitation_start.lock();
+        let (start_position, start_tick) = *start.get_or_insert((position, self.tick_count()));
+        let distance = position.distance(start_position);
+        let duration = self.tick_count().saturating_sub(start_tick);
+        drop(start);
+        let mut context =
+            crate::player::advancement::predicate::TriggerContext::nether_travel(distance);
+        context.duration = Some(duration);
+        self.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::LEVITATION,
+            &context,
+        );
+    }
+
+    /// Vanilla `Entity.baseTick`: a player riding a vehicle while submerged in
+    /// lava fires `ride_entity_in_lava` for the vehicle's type.
+    fn tick_ride_entity_in_lava_trigger(&self) {
+        if !self.is_passenger() || !self.is_in_lava() {
+            return;
+        }
+        let Some(vehicle) = self.vehicle() else {
+            return;
+        };
+        self.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::RIDE_ENTITY_IN_LAVA,
+            &crate::player::advancement::predicate::TriggerContext::entity(
+                &vehicle.entity_type().key,
+            ),
+        );
     }
 
     /// Immediately flushes dirty player entity data to tracking players and self.
@@ -792,9 +1089,126 @@ impl Player {
             .set_base_glowing_flag(self.has_glowing_tag() || display.glowing);
     }
 
+    /// Vanilla `ServerPlayer.die` dummy objective: `deathCount` on this domain's
+    /// scoreboard, created on demand and incremented by one.
+    fn increment_death_count_objective(&self, world: &Arc<World>) {
+        self.increment_dummy_objective(world, "deathCount");
+    }
+
+    /// Vanilla `ServerPlayer.awardKillScore` dummy objective: `playerKillCount`.
+    /// Returns whether `self` and `other` belong to the same scoreboard team.
+    ///
+    /// Vanilla asks the scoreboard for both holder teams; unteamed holders are
+    /// never teammates, matching `PlayerTeam == null` checks.
+    fn is_on_same_team_as(&self, world: &Arc<World>, other: &dyn Entity) -> bool {
+        let server = self.server();
+        let Some(scoreboard) = server.scoreboards.get(world.domain()) else {
+            return false;
+        };
+        let Some(other) = other.as_player() else {
+            return false;
+        };
+        let own = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+        let theirs = crate::scoreboard::ScoreHolder::new(other.scoreboard_name());
+        let own_team = scoreboard.holder_team_name(&own);
+        let other_team = scoreboard.holder_team_name(&theirs);
+        own_team.is_some() && own_team == other_team
+    }
+
+    fn increment_player_kill_count_objective(&self) {
+        let world = self.get_world();
+        self.increment_dummy_objective(&world, "playerKillCount");
+    }
+
+    /// Increments one vanilla dummy scoreboard objective for this player,
+    /// creating the objective when a server-side scoreboard exists for the
+    /// domain. Missing scoreboards are ignored, like vanilla when the objective
+    /// is not registered.
+    fn increment_dummy_objective(&self, world: &Arc<World>, objective_name: &str) {
+        let server = self.server();
+        let Some(scoreboard) = server.scoreboards.get(world.domain()) else {
+            return;
+        };
+        let objective = scoreboard
+            .objective(objective_name)
+            .or_else(|| scoreboard.add_objective(objective_name).ok());
+        let Some(objective) = objective else {
+            return;
+        };
+        let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+        let current = scoreboard.score(&holder, &objective).unwrap_or(0);
+        let _ = scoreboard.set_score(&holder, &objective, current.saturating_add(1));
+    }
+
     /// Handles a custom payload packet.
     #[expect(clippy::unused_self, reason = "this is an api function")]
     pub fn handle_custom_payload(&self, _packet: SCustomPayload) {}
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetGameRule`: applies one
+    /// game rule value sent by the client, silently dropping unknown rules and
+    /// malformed values.
+    pub fn handle_set_game_rule(&self, packet: SSetGameRule) {
+        use steel_registry::game_rules::{GameRuleType, GameRuleValue};
+
+        // Vanilla resolves `gamerule` ids with the `minecraft:` default namespace.
+        let key = match packet.rule.parse::<Identifier>() {
+            Ok(key) => key,
+            Err(_) => return,
+        };
+        let Some(rule) = REGISTRY.game_rules.by_key(&key) else {
+            return;
+        };
+        let value = match rule.value_type() {
+            GameRuleType::Bool => match packet.value.as_str() {
+                "true" => GameRuleValue::new(true),
+                "false" => GameRuleValue::new(false),
+                _ => return,
+            },
+            GameRuleType::Int => match packet.value.parse::<i32>() {
+                Ok(value) if value >= rule.min_value().unwrap_or(i32::MIN) => {
+                    GameRuleValue::new(value)
+                }
+                _ => return,
+            },
+        };
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        world.set_erased_game_rule(rule, value);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleRecipeBookChangeSettingsPacket`:
+    /// stores the tab state and echoes it to other listeners, exactly as the
+    /// server does for every tab change.
+    pub fn handle_recipe_book_change_settings(&self, packet: SRecipeBookChangeSettings) {
+        let Some(book_type) = recipe_book::RecipeBookType::from_ordinal(packet.book_type) else {
+            return;
+        };
+        {
+            let mut book = self.recipe_book.lock();
+            book.set_settings(
+                book_type,
+                recipe_book::BookTypeSettings {
+                    open: packet.open,
+                    filtering: packet.filtering,
+                },
+            );
+        }
+        let settings = self.recipe_book.lock().settings_packet();
+        self.send_packet(settings);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleRecipeBookSeenRecipePacket`:
+    /// marks one recipe as seen for this player.
+    pub fn handle_recipe_book_seen_recipe(&self, packet: SRecipeBookSeenRecipe) {
+        // Vanilla `ServerGamePacketListenerImpl.handleRecipeBookSeenRecipePacket`
+        // only drops the "new" highlight; it never unlocks the recipe.
+        let mut book = self.recipe_book.lock();
+        if !book.is_highlighted(&packet.recipe) {
+            return;
+        }
+        book.remove_highlight(&packet.recipe);
+    }
 
     /// Handles the end of a client tick.
     pub fn handle_client_tick_end(&self) {
@@ -817,7 +1231,12 @@ impl Player {
             }
         }
 
-        // TODO: reset player noActionTime and remove shoulder entities.
+        // Vanilla `Player.hurtServer` clears the idle timer so mobs stop
+        // treating a freshly damaged player as inactive.
+        self.set_no_action_time(0);
+        // Vanilla also drops both shoulder entities here; Steel has no
+        // shoulder-riding entities (parrots) yet, so there is nothing to
+        // detach.
         if self.get_health() <= 0.0 {
             return false;
         }
@@ -881,7 +1300,17 @@ impl Player {
             );
         }
 
-        // TODO: combat tracker (getCombatTracker().recordDamage)
+        // Vanilla `CombatTracker.recordDamage` keeps the last damage source so
+        // the death message and `getLastDamageSource` see it. Steel records into
+        // the shared `DamageHistory` instead of a per-player tracker.
+        {
+            let world = self.get_world();
+            let clock = world.level_data.read().game_time_handle();
+            self.server()
+                .damage_history
+                .record(self.base(), source, &clock);
+        }
+
         if damage != 0.0 {
             self.cause_food_exhaustion(source.damage_type.exhaustion);
             self.set_health(self.get_health() - damage);
@@ -917,13 +1346,19 @@ impl Player {
                 .component()
             }
             DeathMessageType::Default | DeathMessageType::FallVariants => {
-                // TODO: use CombatTracker for killer name items and fall variants
+                // Vanilla `DamageSource.getLocalizedDeathMessage`: the message
+                // gets the victim plus, when a living entity caused the damage,
+                // that entity's display name.
+                let mut args = vec![TextComponent::plain(self.gameprofile.name().to_owned())];
+                if let Some(killer) = source.causing_entity()
+                    && killer.as_living_entity().is_some()
+                {
+                    args.push(killer.display_name());
+                }
                 TranslatedMessage {
                     key: death_key.into(),
                     fallback: None,
-                    args: Some(Box::new([TextComponent::plain(
-                        self.gameprofile.name().to_owned(),
-                    )])),
+                    args: Some(args.into_boxed_slice()),
                 }
                 .component()
             }
@@ -973,12 +1408,17 @@ impl Player {
             },
         });
 
-        // TODO: team death message visibility (ALWAYS / HIDE_FOR_OTHER_TEAMS / HIDE_FOR_OWN_TEAM)
         if show_death_messages {
-            world.broadcast_system_chat(CSystemChat {
-                content: death_message,
-                overlay: false,
-            });
+            // Vanilla routes death messages through `PlayerTeam.sendMessage`, so a
+            // team's `death_message_visibility` decides who receives them.
+            let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+            let server = self.server();
+            let team = server
+                .scoreboards
+                .get(world.domain())
+                .and_then(|scoreboard| scoreboard.holder_team_name(&holder));
+
+            server.broadcast_team_message(&death_message, team.as_deref(), None);
         }
 
         if !world.get_game_rule(&KEEP_INVENTORY) && self.game_mode() != GameType::Spectator {
@@ -993,11 +1433,13 @@ impl Player {
             }
         }
 
-        // TODO: Increment DEATH_COUNT objective criterion
-        if let Some(killer) = get_kill_credit(self, world.as_ref()) {
+        // Vanilla `ServerPlayer.die` → `awardStat(Stats.DEATHS)` and the
+        // `deathCount` dummy scoreboard objective.
+        self.increment_death_count_objective(&world);
+        if let Some(killer) = get_kill_credit(self, &world) {
             self.award_stat(&vanilla_stat_types::ENTITY_KILLED_BY, killer.entity_type());
             killer.award_kill_score(self, source);
-            // TODO: Create wither rose
+            crate::entity::create_wither_rose(self, source);
         }
 
         self.award_custom_stat(&vanilla_custom_stats::DEATHS);
@@ -1562,7 +2004,9 @@ impl Entity for Player {
             self.default_make_stuck_in_block(state, speed_multiplier);
         }
 
-        // TODO: Reset current impulse context once vehicle/player impulse contexts exist.
+        // Vanilla `Player.makeStuckInBlock` clears the impulse context so the
+        // following movement ticks are exempt from the stuck-in-block speed cap.
+        self.reset_current_impulse_context();
     }
 
     fn can_be_hit_by_projectile(&self) -> bool {
@@ -1752,21 +2196,59 @@ impl Entity for Player {
         entity: &dyn LivingEntity,
         _source: &DamageSource,
     ) -> bool {
-        log::debug!("1");
         self.award_stat(&vanilla_stat_types::ENTITY_KILLED, entity.entity_type());
         true
     }
 
     fn award_kill_score(&self, victim: &dyn Entity, _killing_blow: &DamageSource) {
         if self.id() != victim.id() {
-            // TODO: Trigger advancement criteria.
-            // TODO: Increment the score of some objectives of this player.
+            // Vanilla `ServerPlayer.awardKillScore` → `playerKillCount` objective.
+            if victim.as_player().is_some() {
+                self.increment_player_kill_count_objective();
+            }
             self.award_custom_stat(if victim.as_player().is_some() {
                 &vanilla_custom_stats::PLAYER_KILLS
             } else {
                 &vanilla_custom_stats::MOB_KILLS
             });
-            // TODO: Handle team kill
+            // Vanilla `ServerPlayer.awardKillScore` fires
+            // `CriteriaTriggers.PLAYER_KILLED_ENTITY`, which the `kill_a_mob` and
+            // `monster_hunter` advancements listen for.
+            self.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::PLAYER_KILLED_ENTITY,
+                &crate::player::advancement::predicate::TriggerContext::entity(
+                    &victim.entity_type().key,
+                ),
+            );
+            // Vanilla `ServerPlayer.awardKillScore` fires
+            // `CriteriaTriggers.KILL_MOB_NEAR_SCULK_CATALYST` when the victim is
+            // a mob killed within eight blocks of a sculk catalyst.
+            if victim.as_player().is_none()
+                && let Some(world) = self.level()
+            {
+                let victim_pos = victim.block_position();
+                let near_catalyst = BlockPos::between_closed(
+                    victim_pos.offset(-8, -8, -8),
+                    victim_pos.offset(8, 8, 8),
+                )
+                .any(|pos| {
+                    world.get_block_state(pos).get_block() == &vanilla_blocks::SCULK_CATALYST
+                });
+                if near_catalyst {
+                    self.trigger_advancement_with_context(
+                        &steel_registry::vanilla_criteria_triggers::KILL_MOB_NEAR_SCULK_CATALYST,
+                        &crate::player::advancement::predicate::TriggerContext::entity(
+                            &victim.entity_type().key,
+                        ),
+                    );
+                }
+            }
+            // Vanilla `ServerPlayer.awardKillScore` also bumps `teamKillCount`
+            // when killer and victim share a team.
+            let world = self.get_world();
+            if self.is_on_same_team_as(&world, victim) {
+                self.increment_dummy_objective(&world, "teamKillCount");
+            }
         }
     }
 }
@@ -1794,6 +2276,7 @@ impl LivingEntity for Player {
 
     fn tick_living_entity(&self, entity: &SharedEntity) {
         self.advance_tick();
+        self.tick_riptide();
         self.tick_item_cooldowns();
         self.tick_attack_strength();
         self.tick_throttlers();
@@ -1829,7 +2312,12 @@ impl LivingEntity for Player {
 
         self.default_tick();
         self.detect_equipment_updates();
-        self.ai_step(entity);
+        // Vanilla `ServerPlayer.doTick` keeps ticking a dead player's connection,
+        // but steering and AI only run for a live entity. Running `ai_step` on a
+        // removed player would move a corpse and corrupt its last position.
+        if !self.is_removed() {
+            self.ai_step(entity);
+        }
 
         // Vanilla snaps the player back to firstGood after ServerPlayer.doTick().
         if let Err(error) = self.try_set_position(tick_position) {
@@ -1845,7 +2333,8 @@ impl LivingEntity for Player {
         self.living_base.decrement_invulnerable_time();
         self.tick_mob_effects();
         self.tick_active_item_use(entity);
-        // TODO: Tick stats even when the player has been dead for more than 20 ticks.
+        // Vanilla `Player.tick` runs the stat tick before the death branch, so
+        // `play_time` keeps counting while dead.
         self.tick_stats();
 
         if self.get_health() <= 0.0 {
@@ -1855,7 +2344,25 @@ impl LivingEntity for Player {
             self.block_breaking.lock().tick(self, &world);
 
             self.update_player_attributes();
-            self.advancements.lock().flush_dirty(self, true);
+            // Vanilla `Player.tick` calls `advancements.tick()`, which re-runs the
+            // registered `location` predicates against the player's new position.
+            let location_context = {
+                let position = self.position();
+                let mut context = crate::player::advancement::predicate::TriggerContext::at(
+                    &world,
+                    glam::DVec3::from(position),
+                );
+                context.player_sneaking = Some(self.is_discrete());
+                context
+            };
+            {
+                let mut advancements = self.advancements.lock();
+                advancements.trigger_location(self, &location_context);
+                advancements.trigger_tick(self, &location_context);
+                advancements.flush_dirty(self, true);
+            }
+            self.tick_levitation_trigger();
+            self.tick_ride_entity_in_lava_trigger();
             self.living_base.refresh_speed_from_attributes();
             self.tick_food_data();
 
@@ -1949,19 +2456,6 @@ impl LivingEntity for Player {
         }
 
         !self.has_client_loaded()
-    }
-
-    fn hurt_armor(&self, source: &DamageSource, damage: f32) {
-        self.do_hurt_equipment(
-            source,
-            damage,
-            &[
-                EquipmentSlot::Feet,
-                EquipmentSlot::Legs,
-                EquipmentSlot::Chest,
-                EquipmentSlot::Head,
-            ],
-        );
     }
 
     fn actually_hurt(&self, world: &World, source: &DamageSource, amount: f32) {
@@ -2082,8 +2576,9 @@ impl LivingEntity for Player {
             self.inventory.lock().set_changed();
         }
 
+        // `on_equip_item` runs the vanilla attribute refresh, the equip sound
+        // and the `GameEvent.EQUIP` dispatch.
         self.on_equip_item(slot, &ItemStack::empty(), &equipped);
-        // TODO: Emit EQUIP game event once game-event dispatch is implemented.
         InteractionResult::Success
     }
 
@@ -2143,6 +2638,9 @@ impl LivingEntity for Player {
     fn ai_step(&self, entity: &SharedEntity) -> Option<MoveResult> {
         self.tick_regeneration();
         InventoryTickContext::tick_player_inventory(&self.get_world(), self);
+        // Vanilla `ServerPlayerEntity.playerTick` sends map updates for every
+        // carried map, independently of the per-item color update.
+        filled_map::send_map_packets(self);
         if self.is_flying() && !self.is_passenger() {
             self.reset_fall_distance();
         }
@@ -2216,16 +2714,43 @@ impl LivingEntity for Player {
 }
 
 impl TextResolutor for Player {
-    fn resolve_content(&self, _resolvable: &Resolvable) -> TextComponent {
-        TextComponent::new()
+    /// Vanilla resolves entity and score content against the viewer. The
+    /// player is the only entity reachable here, so a selector resolves to its
+    /// own display name and a score resolves for its own scoreboard holder.
+    fn resolve_content(&self, resolvable: &Resolvable) -> TextComponent {
+        match resolvable {
+            Resolvable::Entity { .. } => self.display_name(),
+            Resolvable::Scoreboard { objective, .. } => {
+                let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+                let world = self.get_world();
+                let score = self
+                    .server()
+                    .scoreboards
+                    .get(world.domain())
+                    .and_then(|scoreboard| {
+                        let objective = scoreboard.objective(objective)?;
+                        scoreboard.score(&holder, &objective)
+                    });
+                TextComponent::plain(score.unwrap_or(0).to_string())
+            }
+            // NBT content needs a live entity NBT snapshot, which the player
+            // has no viewer-scoped copy of.
+            Resolvable::NBT { .. } => TextComponent::new(),
+        }
     }
 
+    /// Vanilla resolves `custom` content from the client's registered custom
+    /// text data; the server has no client-side copy, so nothing resolves.
     fn resolve_custom(&self, _data: &CustomData) -> Option<TextComponent> {
         None
     }
 
-    fn translate(&self, _key: &str) -> Option<String> {
-        None
+    /// Vanilla `TranslatableContents.resolve` for a server-side view: the
+    /// English translation table.
+    fn translate(&self, key: &str) -> Option<String> {
+        steel_utils::translations_registry::TRANSLATIONS
+            .get(key)
+            .map(|value| (*value).to_owned())
     }
 }
 

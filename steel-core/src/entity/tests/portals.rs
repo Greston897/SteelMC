@@ -166,7 +166,7 @@ fn remove_after_changing_dimensions_clears_old_mob_leash_and_equipment() {
     assert!(mob.set_leashed_to(&holder));
     pig.living_base().equipment().lock().set(
         EquipmentSlot::Saddle,
-        ItemStack::new(&vanilla_items::SADDLE),
+        ItemStack::new(&*vanilla_items::SADDLE),
     );
 
     remove_after_changing_dimensions(&pig);

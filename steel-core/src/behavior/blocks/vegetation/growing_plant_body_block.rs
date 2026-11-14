@@ -248,13 +248,13 @@ mod tests {
             &vanilla_blocks::CAVE_VINES,
             CaveVinesBlock::can_grow_into,
         );
-        let mut glow_berries = ItemStack::new(&vanilla_items::GLOW_BERRIES);
+        let mut glow_berries = ItemStack::new(&*vanilla_items::GLOW_BERRIES);
         let context = place_context(&mut glow_berries);
         let replaceable_state = vanilla_blocks::SHORT_GRASS.default_state();
         assert!(default_can_be_replaced(replaceable_state, &context));
         assert!(!behavior.can_be_replaced(replaceable_state, &context));
 
-        let mut stone = ItemStack::new(&vanilla_items::STONE);
+        let mut stone = ItemStack::new(&*vanilla_items::STONE);
         let context = place_context(&mut stone);
         let body_state = vanilla_blocks::CAVE_VINES_PLANT.default_state();
         assert_eq!(

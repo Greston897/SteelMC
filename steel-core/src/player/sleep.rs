@@ -4,7 +4,7 @@ use steel_registry::{
     blocks::{block_state_ext::BlockStateExt as _, properties::BlockStateProperties},
     dimension_type::{BedRule, BedRuleValue},
     stat::custom::CustomStatRef,
-    vanilla_blocks, vanilla_custom_stats,
+    vanilla_blocks, vanilla_criteria_triggers, vanilla_custom_stats,
 };
 use steel_utils::{BlockPos, Direction, WorldAabb, types::GameType};
 use text_components::{TextComponent, translation::TranslatedMessage};
@@ -231,7 +231,8 @@ impl Player {
         self.sync_entity_data();
         self.award_custom_stat(slept_in_stat);
 
-        // TODO: trigger CriteriaTriggers.SLEPT_IN_BED once the foundation for advancements exist.
+        // Vanilla `ServerPlayer.startSleepInBed` fires `slept_in_bed`.
+        self.trigger_advancement(&vanilla_criteria_triggers::SLEPT_IN_BED);
         if !world.can_sleep_through_nights() {
             self.send_overlay_message(
                 &TranslatedMessage {

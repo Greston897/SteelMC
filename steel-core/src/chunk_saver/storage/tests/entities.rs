@@ -96,7 +96,7 @@ fn block_entity_stored_components_survive_chunk_save_load() {
         state,
     );
     let name = TextComponent::from("Arcane Desk".to_owned());
-    let mut item = ItemStack::new(&vanilla_items::ENCHANTING_TABLE);
+    let mut item = ItemStack::new(&*vanilla_items::ENCHANTING_TABLE);
     item.set(CUSTOM_NAME, name.clone());
     item.set(REPAIR_COST, 3);
     entity.apply_components_from_item_stack(&item);

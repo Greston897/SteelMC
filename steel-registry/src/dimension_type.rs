@@ -116,7 +116,28 @@ pub struct DimensionType {
 }
 
 impl DimensionType {
+    /// Returns a boolean `minecraft:gameplay/...` environment attribute as the
+    /// dimension type declares it, mirroring vanilla `EnvironmentAttributeMap`.
+    ///
+    /// Unknown attributes and attributes the dimension leaves at their default are
+    /// reported as `None`, so callers fall back to the vanilla default.
     #[must_use]
+    pub fn gameplay_attribute_bool(&self, key: &str) -> Option<bool> {
+        let attribute = match key {
+            "minecraft:gameplay/nether_portal_spawns_piglin" => {
+                Some(self.nether_portal_spawns_piglin)
+            }
+            "minecraft:gameplay/piglins_zombify" => Some(self.piglins_zombify),
+            "minecraft:gameplay/can_start_raid" => Some(self.can_start_raid),
+            "minecraft:gameplay/respawn_anchor_works" => Some(self.respawn_anchor_works),
+            "minecraft:gameplay/snow_golem_melts" => Some(self.snow_golem_melts),
+            "minecraft:gameplay/water_evaporates" => Some(self.water_evaporates),
+            "minecraft:gameplay/fast_lava" => Some(self.fast_lava),
+            _ => None,
+        };
+        attribute
+    }
+
     pub fn get_teleportation_scale(last_dimension_type: &Self, new_dimension_type: &Self) -> f64 {
         last_dimension_type.coordinate_scale / new_dimension_type.coordinate_scale
     }

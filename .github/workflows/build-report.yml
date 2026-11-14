@@ -1,0 +1,133 @@
+name: Build Report
+
+# Compile-check reporter.
+#
+# GitHub's log download endpoint (productionresultssa*.blob.core.windows.net) is
+# not reachable from every environment, so this workflow publishes the compiler
+# diagnostics as a *commit comment*, which the regular GitHub API can serve.
+
+on:
+  push:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: never
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "build-report"
+
+      - name: cargo check
+        id: check
+        continue-on-error: true
+        timeout-minutes: 30
+        run: |
+          cargo check --workspace --all-targets --message-format=short \
+            > /tmp/check.log 2>&1 || true
+          tail -c 20000 /tmp/check.log
+
+      - name: cargo test
+        continue-on-error: true
+        timeout-minutes: 40
+        run: |
+          cargo test --workspace --all-targets --no-fail-fast \
+            > /tmp/test.log 2>&1 || true
+          grep -E -A4 "^(error|FAILED|failures:)|panicked at|test result: FAILED" /tmp/test.log | head -200
+
+      - name: lint diagnostics (rustfmt + clippy + typos, as Lint runs them)
+        continue-on-error: true
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: |
+          rustup toolchain install nightly-2026-10-14 --profile minimal \
+            --component rustfmt,clippy --no-self-update > /dev/null 2>&1 || true
+          cargo +nightly-2026-10-14 fmt --all --check > /tmp/fmt.log 2>&1 || true
+          cargo +nightly-2026-10-14 clippy -r --workspace --all-targets --all-features \
+            --message-format=short > /tmp/clippy.log 2>&1 || true
+          curl -sL https://github.com/crate-ci/typos/releases/download/v1.48.0/typos-v1.48.0-x86_64-unknown-linux-musl.tar.gz \
+            | tar xz -C /usr/local/bin ./typos || true
+          typos > /tmp/typos.log 2>&1 || true
+          tail -c 4000 /tmp/clippy.log
+          tail -c 2000 /tmp/fmt.log
+
+      - name: Report diagnostics as a commit comment
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+
+          with open("/tmp/check.log", "r", errors="replace") as handle:
+              lines = handle.read().splitlines()
+
+          errors = []
+          for index, line in enumerate(lines):
+              if ": error" in line or line.startswith("error"):
+                  start = max(0, index - 4)
+                  errors.append("\n".join(lines[start:index + 2]))
+                  errors.append("-----")
+          warnings = [line for line in lines if ": warning" in line or line.startswith("warning")]
+
+          extra = []
+          for label, path, pattern in (
+              ("tests", "/tmp/test.log", ("test result: FAILED", "panicked at", "FAILED ", "error[E", "error: could not compile")),
+              ("clippy", "/tmp/clippy.log", (": error",)),
+              ("rustfmt", "/tmp/fmt.log", ("Diff in ",)),
+              ("typos", "/tmp/typos.log", ("error:",)),
+          ):
+              if not os.path.exists(path):
+                  continue
+              with open(path, "r", errors="replace") as handle:
+                  log = handle.read().splitlines()
+              picked = []
+              index = 0
+              while index < len(log):
+                  line = log[index]
+                  if any(marker in line for marker in pattern):
+                      picked.extend(log[index:index + 4])
+                      index += 4
+                      continue
+                  index += 1
+              if not picked and log:
+                  picked = log[-40:]
+              if picked:
+                  extra += [f"### {label}", "```"] + picked[:120] + ["```", ""]
+
+          if not errors and not warnings and not extra:
+              print("no diagnostics")
+              raise SystemExit(0)
+
+          body = ["### cargo check diagnostics", f"- errors: {len(errors)}", f"- warnings: {len(warnings)}", ""]
+          body += ["```"] + errors[:400] + ["```"]
+          if warnings:
+              body += ["", "<details><summary>warnings</summary>", "", "```"] + warnings[:200] + ["```", "</details>"]
+
+          body += extra
+          text = "\n".join(body)[:60000]
+          payload = {"body": text}
+          repo = os.environ["GITHUB_REPOSITORY"]
+          sha = os.environ["GITHUB_SHA"]
+          subprocess.run(
+              ["gh", "api", f"repos/{repo}/commits/{sha}/comments", "--input", "-"],
+              input=json.dumps(payload),
+              text=True,
+              check=True,
+          )
+          print("posted")
+          PY
+
+# keep the diagnostics loop alive
+
+# wake

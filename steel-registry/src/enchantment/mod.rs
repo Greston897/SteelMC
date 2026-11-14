@@ -239,10 +239,10 @@ mod tests {
     fn sharpness_is_primary_for_swords_but_only_supported_for_axes() {
         init_vanilla_registry();
         let sharpness = &vanilla_enchantments::SHARPNESS;
-        assert!(sharpness.can_enchant(&vanilla_items::DIAMOND_AXE));
-        assert!(!sharpness.is_primary_item(&vanilla_items::DIAMOND_AXE));
-        assert!(sharpness.is_primary_item(&vanilla_items::DIAMOND_SWORD));
-        assert!(!sharpness.is_primary_item(&vanilla_items::STONE));
+        assert!(sharpness.can_enchant(&*vanilla_items::DIAMOND_AXE));
+        assert!(!sharpness.is_primary_item(&*vanilla_items::DIAMOND_AXE));
+        assert!(sharpness.is_primary_item(&*vanilla_items::DIAMOND_SWORD));
+        assert!(!sharpness.is_primary_item(&*vanilla_items::STONE));
     }
 
     #[test]
@@ -273,7 +273,7 @@ mod tests {
     #[test]
     fn existing_identical_or_exclusive_enchantments_are_incompatible() {
         init_vanilla_registry();
-        let mut sword = ItemStack::new(&vanilla_items::DIAMOND_SWORD);
+        let mut sword = ItemStack::new(&*vanilla_items::DIAMOND_SWORD);
         sword.upgrade_enchantment(vanilla_enchantments::SHARPNESS.key.clone(), 1);
 
         assert!(!Enchantment::is_compatible_with_existing(
@@ -293,7 +293,7 @@ mod tests {
     #[test]
     fn compatibility_checks_stored_enchantments_on_enchanted_books() {
         init_vanilla_registry();
-        let mut book = ItemStack::new(&vanilla_items::ENCHANTED_BOOK);
+        let mut book = ItemStack::new(&*vanilla_items::ENCHANTED_BOOK);
         book.upgrade_enchantment(vanilla_enchantments::SHARPNESS.key.clone(), 1);
 
         assert!(!Enchantment::is_compatible_with_existing(

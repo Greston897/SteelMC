@@ -85,7 +85,7 @@ impl BlockBehavior for KelpBlock {
         _block_entity: Option<SharedBlockEntity>,
         _include_data: bool,
     ) -> Option<ItemStack> {
-        Some(ItemStack::new(&vanilla_items::KELP))
+        Some(ItemStack::new(&*vanilla_items::KELP))
     }
 
     fn random_tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {

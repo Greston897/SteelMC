@@ -1,7 +1,14 @@
 use steel_math::{DEGREE_90, trig};
-use steel_registry::data_components::vanilla_components::{DEATH_PROTECTION, USE_EFFECTS};
+use steel_registry::data_components::vanilla_components::{
+    BLOCKS_ATTACKS, DEATH_PROTECTION, USE_EFFECTS,
+};
+use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::stat::vanilla_stat_types;
-use steel_registry::{DyeColor, vanilla_custom_stats};
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::{
+    DyeColor, REGISTRY, TaggedRegistryExt as _, vanilla_blocks, vanilla_custom_stats,
+};
 
 use super::*;
 use crate::behavior::{BLOCK_BEHAVIORS, InventoryTickContext, MOB_EFFECT_BEHAVIORS};
@@ -150,9 +157,13 @@ pub trait LivingEntity: Entity {
         self.living_base().attributes()
     }
 
-    /// Vanilla `LivingEntity.getLuck` - non-players contribute no luck to loot.
+    /// Vanilla `LivingEntity.getLuck`: the `luck` attribute value, for every
+    /// living entity (mobs can carry the attribute too).
     fn get_luck(&self) -> f32 {
-        0.0
+        self.attributes()
+            .lock()
+            .get_value(vanilla_attributes::LUCK)
+            .unwrap_or(0.0) as f32
     }
 
     /// Packs syncable attributes for initial spawn pairing.
@@ -399,6 +410,16 @@ pub trait LivingEntity: Entity {
         self.make_sound(self.hurt_sound(source));
     }
 
+    /// Vanilla `playSecondaryHurtSound`.
+    ///
+    /// Equipment-driven damage sources carry their own sound; thorns is the only
+    /// one vanilla registers today, so the table lives here next to the source.
+    fn play_secondary_hurt_sound(&self, source: &DamageSource) {
+        if source.damage_type.key == vanilla_damage_types::THORNS.key {
+            self.make_sound(Some(&sound_events::ENCHANT_THORNS_HIT));
+        }
+    }
+
     /// Plays vanilla's death sound for this living entity.
     fn play_death_sound(&self) {
         self.make_sound(self.death_sound());
@@ -469,15 +490,15 @@ pub trait LivingEntity: Entity {
         self.with_equipment_slot(EquipmentSlot::Head, &mut |item_stack| {
             let target_type = targeting_entity.entity_type();
             matches_target = target_type == &vanilla_entities::SKELETON
-                && item_stack.is(&vanilla_items::SKELETON_SKULL)
+                && item_stack.is(&*vanilla_items::SKELETON_SKULL)
                 || target_type == &vanilla_entities::ZOMBIE
-                    && item_stack.is(&vanilla_items::ZOMBIE_HEAD)
+                    && item_stack.is(&*vanilla_items::ZOMBIE_HEAD)
                 || target_type == &vanilla_entities::PIGLIN
-                    && item_stack.is(&vanilla_items::PIGLIN_HEAD)
+                    && item_stack.is(&*vanilla_items::PIGLIN_HEAD)
                 || target_type == &vanilla_entities::PIGLIN_BRUTE
-                    && item_stack.is(&vanilla_items::PIGLIN_HEAD)
+                    && item_stack.is(&*vanilla_items::PIGLIN_HEAD)
                 || target_type == &vanilla_entities::CREEPER
-                    && item_stack.is(&vanilla_items::CREEPER_HEAD);
+                    && item_stack.is(&*vanilla_items::CREEPER_HEAD);
         });
         matches_target
     }
@@ -709,7 +730,11 @@ pub trait LivingEntity: Entity {
             damage = 0.0;
         }
 
-        // TODO: apply item blocking before actually_hurt once shield/use-item hooks exist.
+        // Vanilla `LivingEntity.blockUsingItem`: a blocking entity facing the
+        // damage source reduces the damage by the `blocks_attacks` rule.
+        if !source.is(&vanilla_damage_type_tags::DamageTypeTag::BYPASSES_SHIELD) {
+            damage = self.block_using_item(world, source, damage);
+        }
         if source.is(&vanilla_damage_type_tags::DamageTypeTag::IS_FREEZING)
             && REGISTRY
                 .entity_types
@@ -717,7 +742,9 @@ pub trait LivingEntity: Entity {
         {
             damage *= 5.0;
         }
-        // TODO: apply helmet damage once those equipment hooks exist.
+        // Vanilla `LivingEntity.hurtServer` → `damageHelmet`: a damaging hit
+        // wears down the helmet in the head slot.
+        self.damage_helmet(source, damage);
         if !damage.is_finite() {
             damage = f32::MAX;
         }
@@ -729,8 +756,23 @@ pub trait LivingEntity: Entity {
             return false;
         };
 
+        // Vanilla `Player.hurtServer` fires `entity_hurt_player` on the victim with
+        // the damaging entity, which is what `adventure/kill_a_mob`'s sibling
+        // `adventure/very_very_frightening` and the datapack predicates watch.
+        if let Some(victim) = self.as_player()
+            && let Some(attacker) = source.causing_entity()
+        {
+            victim.trigger_advancement_with_context(
+                &vanilla_criteria_triggers::ENTITY_HURT_PLAYER,
+                &crate::player::advancement::predicate::TriggerContext::entity(
+                    &attacker.entity_type().key,
+                ),
+            );
+        }
+
         self.before_actually_hurt(source, effective_amount);
         self.actually_hurt(world, source, effective_amount);
+        self.run_mob_hurt_effect_hooks(source);
         if took_full_damage {
             self.living_base().begin_hurt_animation();
         }
@@ -755,7 +797,12 @@ pub trait LivingEntity: Entity {
         } else if took_full_damage {
             self.play_hurt_sound(source);
         }
-        // TODO: Play secondary hurt sounds once equipment effects expose them.
+
+        // Vanilla `playSecondaryHurtSound`: thorns retaliation announces itself
+        // with the enchantment's own clip, independently of the hurt sound.
+        if took_full_damage {
+            self.play_secondary_hurt_sound(source);
+        }
 
         self.record_last_damage_source(source);
 
@@ -770,7 +817,22 @@ pub trait LivingEntity: Entity {
     }
 
     /// Damages equipment that participates in vanilla armor absorption.
-    fn hurt_armor(&self, _source: &DamageSource, _damage: f32) {}
+    ///
+    /// Vanilla `LivingEntity.hurtArmor` damages the four armor slots; mobs and
+    /// players share the same path, so it lives on the trait instead of being
+    /// re-implemented per type.
+    fn hurt_armor(&self, source: &DamageSource, damage: f32) {
+        self.do_hurt_equipment(
+            source,
+            damage,
+            &[
+                EquipmentSlot::Feet,
+                EquipmentSlot::Legs,
+                EquipmentSlot::Chest,
+                EquipmentSlot::Head,
+            ],
+        );
+    }
 
     /// Damages equipped items in the given slots that are eligible to absorb this damage source.
     fn do_hurt_equipment(&self, source: &DamageSource, damage: f32, slots: &[EquipmentSlot]) {
@@ -781,6 +843,7 @@ pub trait LivingEntity: Entity {
         let durability_damage = (damage / 4.0).max(1.0) as i32;
         for &slot in slots {
             let mut item_broke = false;
+            let mut durability_changed = false;
             let mut item_ref = &*vanilla_items::AIR;
             self.with_equipment_slot_mut(slot, &mut |item| {
                 item_ref = item.item;
@@ -791,10 +854,17 @@ pub trait LivingEntity: Entity {
                     && item.is_damageable_item()
                     && item.can_be_hurt_by(source.damage_type)
                 {
+                    let before = item.get_damage_value();
                     item_broke =
                         item.hurt_and_break(durability_damage, self.has_infinite_materials());
+                    durability_changed = item.get_damage_value() != before;
                 }
             });
+            // Vanilla `ItemStack.hurtAndBreak` fires `item_durability_changed` for the
+            // owning player; `ItemStack` has no player reference, so it happens here.
+            if durability_changed && let Some(player) = self.as_player() {
+                player.trigger_advancement(&vanilla_criteria_triggers::ITEM_DURABILITY_CHANGED);
+            }
             if item_broke {
                 self.on_equipped_item_broken(item_ref, slot);
             }
@@ -990,6 +1060,65 @@ pub trait LivingEntity: Entity {
         );
     }
 
+    /// Vanilla `LivingEntity.blockUsingItem`: applies the shield's
+    /// `blocks_attacks` damage reduction when the entity blocks an attack that
+    /// arrives inside the blocking arc.
+    ///
+    /// Vanilla also checks `block_delay_seconds`; Steel starts blocking on the
+    /// first use tick and has no shield-disable timer yet, so only the arc and
+    /// the per-rule reduction are applied.
+    fn block_using_item(&self, _world: &World, source: &DamageSource, damage: f32) -> f32 {
+        if !self.is_blocking() {
+            return damage;
+        }
+        let Some(use_state) = self.living_base().active_item_use() else {
+            return damage;
+        };
+        let Some(blocks_attacks) = ItemStack::new(use_state.item())
+            .get(BLOCKS_ATTACKS)
+            .cloned()
+        else {
+            return damage;
+        };
+        if blocks_attacks
+            .bypassed_by()
+            .is_some_and(|types| types.contains(source.damage_type))
+        {
+            return damage;
+        }
+        // Vanilla falls back to the target position when the source has none.
+        let source_position = source
+            .source_position()
+            .unwrap_or_else(|| self.position());
+        let delta = source_position - self.position();
+        let horizontal = DVec3::new(delta.x, 0.0, delta.z);
+        if horizontal.length_squared() < f64::EPSILON {
+            return damage;
+        }
+        let view = DVec3::new(self.look_angle().x, 0.0, self.look_angle().z);
+        if view.length_squared() < f64::EPSILON {
+            return damage;
+        }
+        // `DVec3::angle_between` returns radians in `[0, PI]`.
+        let angle_degrees = view.angle_between(horizontal).to_degrees() as f32;
+        for reduction in blocks_attacks.damage_reductions() {
+            let applies = reduction
+                .damage_types()
+                .is_none_or(|types| types.contains(source.damage_type));
+            if !applies || angle_degrees > reduction.horizontal_blocking_angle() {
+                continue;
+            }
+            let reduced = damage * reduction.base() + damage * reduction.factor();
+            let reduced = reduced.min(damage);
+            if reduced < damage {
+                // Vanilla plays the shield's own block sound on a successful block.
+                self.play_sound(&sound_events::ITEM_SHIELD_BLOCK, 1.0, 1.0);
+            }
+            return reduced;
+        }
+        damage
+    }
+
     /// Uses a held death-protection item to survive lethal damage. Returns whether one was used.
     fn check_totem_death_protection(&self, source: &DamageSource) -> bool {
         if source.bypasses_invulnerability() {
@@ -1014,7 +1143,8 @@ pub trait LivingEntity: Entity {
 
         if let Some(player) = self.as_player() {
             player.award_stat(&vanilla_stat_types::ITEM_USED, protection_item.item());
-            // TODO: trigger the `used_totem` advancement criterion once advancements exist.
+            // Vanilla `LivingEntity.checkTotemDeathProtection` fires `used_totem`.
+            player.trigger_advancement(&vanilla_criteria_triggers::USED_TOTEM);
             if protection_item
                 .get(USE_EFFECTS)
                 .is_some_and(|effects| effects.interact_vibrations)
@@ -1054,13 +1184,62 @@ pub trait LivingEntity: Entity {
             {
                 self.game_event(&vanilla_game_events::ENTITY_DIE);
                 self.drop_all_death_loot(source);
-                // TODO: Create wither rose for killer
+                create_wither_rose(self_entity, source);
             }
         }
 
         self.broadcast_entity_event(EntityStatus::Death);
         self.set_pose(EntityPose::Dying);
+        self.on_death(source);
+        self.run_mob_removed_effect_hooks();
     }
+
+    /// Vanilla `LivingEntity.hurtServer` fires `MobEffect.onMobHurt` for every
+    /// active effect right after the damage lands.
+    fn run_mob_hurt_effect_hooks(&self, _source: &DamageSource) {
+        let Some(world) = self.level() else {
+            return;
+        };
+        let effects = self.living_base().active_mob_effects();
+        if effects.is_empty() {
+            return;
+        }
+        let Some(mob) = self.as_living_entity() else {
+            return;
+        };
+        for effect in effects {
+            crate::behavior::MOB_EFFECT_BEHAVIORS
+                .get_behavior(effect.effect())
+                .on_mob_hurt(&world, mob, effect.amplifier());
+        }
+    }
+
+    /// Vanilla `LivingEntity` fires `MobEffect.onMobRemoved` for every active
+    /// effect when the entity leaves the world. Steel only removes entities on
+    /// death, so `die` is the single dispatch point.
+    fn run_mob_removed_effect_hooks(&self) {
+        let Some(world) = self.level() else {
+            return;
+        };
+        let effects = self.living_base().active_mob_effects();
+        if effects.is_empty() {
+            return;
+        }
+        let Some(mob) = self.as_living_entity() else {
+            return;
+        };
+        for effect in effects {
+            crate::behavior::MOB_EFFECT_BEHAVIORS
+                .get_behavior(effect.effect())
+                .on_mob_removed(&world, mob);
+        }
+    }
+
+    /// Runs one subtype-specific hook after vanilla death effects have been processed.
+    ///
+    /// Slime-family mobs use this to split into child entities without replacing
+    /// the shared loot, death-event, or removal lifecycle.
+    fn on_death(&self, _source: &DamageSource) {}
 
     /// Runs vanilla `LivingEntity.handleKillingBlow`.
     ///
@@ -1108,12 +1287,42 @@ pub trait LivingEntity: Entity {
         self.as_mob().map_or(0, Mob::base_experience_reward_mob)
     }
 
-    /// Returns the experience reward for this entity's death; currently
-    /// equal to the base reward (see TODO).
-    fn experience_reward(&self, _world: &World, _killer_entity: Option<&dyn Entity>) -> i32 {
-        // TODO: Apply EnchantmentHelper.processMobExperience once enchantment
-        // value-effect hooks can receive the killer/living-entity context.
-        self.base_experience_reward()
+    /// Returns the experience reward for this entity's death, after the
+    /// killer's `mob_experience` enchantment effects.
+    ///
+    /// Vanilla `LivingEntity.getExperienceReward`: the base reward is scaled by
+    /// the killer's main-hand enchantments.
+    fn experience_reward(
+        &self,
+        world: &World,
+        killer_entity: Option<&dyn Entity>,
+        source: &DamageSource,
+    ) -> i32 {
+        let base = self.base_experience_reward();
+        if base <= 0 {
+            return base;
+        }
+        let Some(killer) = killer_entity else {
+            return base;
+        };
+        let Some(killer_living) = killer.as_living_entity() else {
+            return base;
+        };
+        let mut attacking_item = None;
+        killer_living.with_equipment_slot(EquipmentSlot::MainHand, &mut |item| {
+            attacking_item = Some(item.clone());
+        });
+        let Some(attacking_item) = attacking_item else {
+            return base;
+        };
+        let context = enchantment_helper::EnchantmentDamageContext::new(
+            self.entity_type(),
+            Some(killer.entity_type()),
+            Some(killer.entity_type()),
+            source,
+        );
+        let _ = world;
+        enchantment_helper::process_mob_experience(&attacking_item, &context, base)
     }
 
     /// Runs the currently implemented subset of vanilla `LivingEntity.dropAllDeathLoot`.
@@ -1129,12 +1338,20 @@ pub trait LivingEntity: Entity {
                 mob.drop_custom_death_loot_mob(source, killed_by_player);
             }
         }
-        self.drop_experience(&world, source.causing_entity().map(AsRef::as_ref));
-        // TODO: Drop non-mob equipment overrides once those foundations exist.
+        self.drop_experience(&world, source.causing_entity().map(AsRef::as_ref), source);
+        // Vanilla `LivingEntity.dropAllDeathLoot` ends with `dropEquipment()`,
+        // which is a no-op on the base class. `Mob` overrides it through
+        // `drop_custom_death_loot_mob` above; non-mob wearers such as armor
+        // stands drop their own equipment from their death path.
     }
 
     /// Awards experience for this entity's death when eligible, spawning an experience orb.
-    fn drop_experience(&self, world: &Arc<World>, killer_entity: Option<&dyn Entity>) {
+    fn drop_experience(
+        &self,
+        world: &Arc<World>,
+        killer_entity: Option<&dyn Entity>,
+        source: &DamageSource,
+    ) {
         if self.was_experience_consumed() {
             return;
         }
@@ -1147,7 +1364,7 @@ pub trait LivingEntity: Entity {
             return;
         }
 
-        let reward = self.experience_reward(world, killer_entity);
+        let reward = self.experience_reward(world, killer_entity, source);
         if reward > 0 {
             ExperienceOrbEntity::award(world, self.position(), reward);
         }
@@ -1316,6 +1533,30 @@ pub trait LivingEntity: Entity {
             return false;
         }
 
+        // Vanilla `FallFromHeightTrigger`/`FallAfterExplosionTrigger` fire from
+        // `Entity.checkFallDamage`: both carry the distance fallen, and the latter
+        // requires an active impulse (the explosion that launched the entity).
+        if let Some(player) = self.as_player() {
+            let had_impulse = self.living_base().current_impulse_impact_pos().is_some();
+            let mut context =
+                crate::player::advancement::predicate::TriggerContext::nether_travel(
+                    effective_fall_distance,
+                );
+            context.position = Some({
+                let position = self.position();
+                (position.x, position.y, position.z)
+            });
+            player.trigger_advancement_with_context(
+                &vanilla_criteria_triggers::FALL_FROM_HEIGHT,
+                &context,
+            );
+            if had_impulse {
+                player.trigger_advancement_with_context(
+                    &vanilla_criteria_triggers::FALL_AFTER_EXPLOSION,
+                    &context,
+                );
+            }
+        }
         self.reset_current_impulse_context();
         self.play_sound(self.fall_damage_sound(damage), 1.0, 1.0);
         self.play_block_fall_sound();
@@ -1431,18 +1672,25 @@ pub trait LivingEntity: Entity {
             return false;
         }
         let (effect_key, amplifier) = (effect.effect(), effect.amplifier());
-        let changed = self.living_base().add_mob_effect(effect);
-        // TODO: Trigger CriteriaTriggers.EFFECTS_CHANGED with `source` when `changed`,
-        // once the advancement-criteria foundation exists.
+        let result = self.living_base().add_mob_effect(effect);
+        // Vanilla `LivingEntity.addEffect` fires `effects_changed` for the affected
+        // player whenever an effect was actually added or upgraded.
+        if result.changed() && let Some(player) = self.as_player() {
+            player.trigger_advancement(&vanilla_criteria_triggers::EFFECTS_CHANGED);
+        }
         let _ = source;
-        // Calls on_effect_started unconditionally, even when it didn't replace a stronger instance.
         let dyn_self = self
             .as_living_entity()
             .expect("Self implements LivingEntity");
-        MOB_EFFECT_BEHAVIORS
-            .get_behavior(effect_key)
-            .on_effect_started(dyn_self, amplifier);
-        changed
+        let behavior = MOB_EFFECT_BEHAVIORS.get_behavior(effect_key);
+        // Vanilla plays the effect's `sound_on_added` only for a genuinely new
+        // effect, so a beacon refreshing speed stays silent.
+        if result == MobEffectAddResult::Added {
+            behavior.on_effect_added(dyn_self, effect_key, amplifier);
+        }
+        // Calls on_effect_started unconditionally, even when it didn't replace a stronger instance.
+        behavior.on_effect_started(dyn_self, amplifier);
+        result.changed()
     }
 
     /// Sets the presence of a vanilla mob effect.
@@ -1658,8 +1906,18 @@ pub trait LivingEntity: Entity {
     }
 
     /// Checks if the entity is blocking with a shield or similar item.
+    ///
+    /// Vanilla `LivingEntity.isBlocking`: the entity must be using an item and
+    /// the active use item must carry the `blocks_attacks` component. Vanilla
+    /// also excludes a `disabled_shield` entity; Steel has no shield-disable
+    /// timer yet, so that term is always false here.
     fn is_blocking(&self) -> bool {
-        false
+        if !self.is_using_item() {
+            return false;
+        }
+        self.living_base().active_item_use().is_some_and(|use_state| {
+            ItemStack::new(use_state.item()).has(BLOCKS_ATTACKS)
+        })
     }
 
     /// Checks if the entity is fall flying (using elytra).
@@ -1716,6 +1974,30 @@ pub trait LivingEntity: Entity {
     ) {
         let mut equipment = self.living_base().equipment().lock();
         visitor(equipment.get_mut(slot));
+    }
+
+    /// Vanilla `LivingEntity.damageHelmet`: damage the helmet by the incoming
+    /// damage (rounded up), honouring the item's durability. Unbreakable and
+    /// non-damageable head items are left alone, as are hits that bypass armour.
+    fn damage_helmet(&self, source: &DamageSource, damage: f32) {
+        if damage < 1.0 {
+            return;
+        }
+        let amount = (damage as i32).max(1);
+        self.with_equipment_slot_mut(EquipmentSlot::Head, &mut |helmet| {
+            // `is_damageable_item` already excludes unbreakable items.
+            if !helmet.is_damageable_item() {
+                return;
+            }
+            if source.is(&vanilla_damage_type_tags::DamageTypeTag::BYPASSES_ARMOR) {
+                return;
+            }
+            // Vanilla `ItemStack.hurtAndBreak` keeps the stack in the slot and
+            // removes it when the durability runs out.
+            if helmet.hurt_and_break(amount, false) {
+                *helmet = ItemStack::empty();
+            }
+        });
     }
 
     /// Returns whether this entity currently has an item in `slot`.
@@ -1779,7 +2061,8 @@ pub trait LivingEntity: Entity {
             .flatten()
     }
 
-    /// Applies the sound portion of vanilla's equipment-change hook.
+    /// Applies vanilla's equipment-change hook: enchantment `attributes`
+    /// modifiers (Efficiency, Aqua Affinity, ...) plus the equip sound.
     fn on_equip_item(&self, slot: EquipmentSlot, previous: &ItemStack, stack: &ItemStack) {
         if self.is_spectator()
             || self.is_first_tick()
@@ -1787,6 +2070,18 @@ pub trait LivingEntity: Entity {
         {
             return;
         }
+
+        // Vanilla `EnchantmentHelper.runLocationChangedEffects`: drop the old
+        // item's modifiers, then install the new item's.
+        {
+            let mut attributes = self.attributes().lock();
+            enchantment_helper::remove_attribute_effects(&mut attributes, slot, previous);
+            enchantment_helper::apply_attribute_effects(&mut attributes, slot, stack);
+        }
+
+        // Vanilla `LivingEntity.onEquipItem` ends with `GameEvent.EQUIP`, which
+        // is what sculk sensors and vibration listeners react to.
+        self.game_event(&vanilla_game_events::EQUIP);
 
         let Some(sound) = self.equip_sound(slot, stack) else {
             return;
@@ -1846,7 +2141,6 @@ pub trait LivingEntity: Entity {
         if let Some(mob) = self.as_mob() {
             mob.set_guaranteed_drop(slot);
         }
-        // TODO: Emit EQUIP game event once game-event dispatch is implemented.
         InteractionResult::Success
     }
 
@@ -1897,6 +2191,17 @@ pub trait LivingEntity: Entity {
             changes.retain(|(slot, _, _)| {
                 !matches!(slot, EquipmentSlot::MainHand | EquipmentSlot::OffHand)
             });
+        }
+
+        // Vanilla `LivingEntity.tick` broadcasts `GameEvent.EQUIP` when any
+        // slot ends up non-empty and `GameEvent.UNEQUIP` when it ends up empty.
+        for (_, _, current) in &changes {
+            let event = if current.is_empty() {
+                &vanilla_game_events::UNEQUIP
+            } else {
+                &vanilla_game_events::EQUIP
+            };
+            self.game_event(event);
         }
 
         self.living_base().queue_equipment_changes(
@@ -2554,10 +2859,24 @@ pub trait LivingEntity: Entity {
         }
     }
 
+    /// Returns whether this entity uses vanilla `FlyingAnimal` physics.
+    ///
+    /// Only bats implement the interface today; it only changes the vertical
+    /// friction applied by [`Self::air_travel_vertical_friction`].
+    fn is_flying_animal(&self) -> bool {
+        false
+    }
+
     /// Returns the vertical friction used by `travelInAir`.
-    fn air_travel_vertical_friction(&self, _horizontal_friction: f32) -> f32 {
-        // TODO: FlyingAnimal uses horizontal friction here once animal types exist.
-        0.98
+    ///
+    /// Vanilla `FlyingAnimal.travelInAir` replaces the hard-coded `0.98` with the
+    /// entity's horizontal friction so flying animals keep momentum.
+    fn air_travel_vertical_friction(&self, horizontal_friction: f32) -> f32 {
+        if self.is_flying_animal() {
+            horizontal_friction
+        } else {
+            0.98
+        }
     }
 
     /// Clamps movement while on a climbable block: caps horizontal and
@@ -2580,6 +2899,21 @@ pub trait LivingEntity: Entity {
             && self.entity_type() == &vanilla_entities::PLAYER
         {
             y = 0.0;
+        }
+
+        // Vanilla `LivingEntity.travel` fires `slide_down_block` when the entity
+        // is actually sliding down a climbable block, which `cave_vines`/`ladder`
+        // data packs observe.
+        if y < 0.0
+            && let Some(player) = self.as_player()
+        {
+            player.trigger_advancement_with_context(
+                &vanilla_criteria_triggers::SLIDE_DOWN_BLOCK,
+                &crate::player::advancement::predicate::TriggerContext::block(
+                    &block_state.get_block().key,
+                    None,
+                ),
+            );
         }
 
         DVec3::new(
@@ -3165,14 +3499,30 @@ pub trait LivingEntity: Entity {
             } else if attr.key == vanilla_attributes::SCALE.key {
                 self.refresh_dimensions();
             }
-            // TODO: WAYPOINT_TRANSMIT_RANGE → waypoint manager
+            // `WAYPOINT_TRANSMIT_RANGE` needs no push here: `WaypointManager::tick`
+            // reads the current attribute value each tick, so a change takes effect
+            // on the next locator-bar refresh.
         }
     }
 
     /// Returns `true` and commits the move on success, or
     /// `false` and leaves the entity untouched on failure.
     fn random_teleport(&self, world: &Arc<World>, x: f64, y: f64, z: f64, broadcast: bool) -> bool {
-        let Some(landing_y) = random_teleport_ground_y(world, x, y, z) else {
+        self.random_teleport_avoiding(world, x, y, z, broadcast, None)
+    }
+
+    /// Vanilla `Entity.randomTeleport(x, y, z, broadcastTeleport, blockedTag)`:
+    /// the optional tag names blocks the entity must not land on.
+    fn random_teleport_avoiding(
+        &self,
+        world: &Arc<World>,
+        x: f64,
+        y: f64,
+        z: f64,
+        broadcast: bool,
+        blocked_tag: Option<&Identifier>,
+    ) -> bool {
+        let Some(landing_y) = random_teleport_ground_y_avoiding(world, x, y, z, blocked_tag) else {
             return false;
         };
 
@@ -3211,11 +3561,31 @@ pub trait LivingEntity: Entity {
 /// mirroring the descent loop in vanilla `Entity.randomTeleport`. Returns
 /// `None` if the world's floor is reached without finding solid ground.
 fn random_teleport_ground_y(world: &Arc<World>, x: f64, y: f64, z: f64) -> Option<f64> {
+    random_teleport_ground_y_avoiding(world, x, y, z, None)
+}
+
+/// Descent loop with the vanilla `blockedTag` filter applied to every candidate
+/// landing block.
+fn random_teleport_ground_y_avoiding(
+    world: &Arc<World>,
+    x: f64,
+    y: f64,
+    z: f64,
+    blocked_tag: Option<&Identifier>,
+) -> Option<f64> {
     let mut pos = BlockPos::containing(x, y, z);
     let mut current_y = y;
     while pos.y() > world.get_min_y() {
         let below = pos.below();
-        if world.get_block_state(below).blocks_motion() {
+        let state = world.get_block_state(below);
+        if state.blocks_motion() {
+            // Vanilla rejects the candidate when the supporting block is tagged
+            // as forbidden for this teleport.
+            if let Some(tag) = blocked_tag
+                && REGISTRY.blocks.is_in_tag(state.get_block(), tag)
+            {
+                return None;
+            }
             return Some(current_y);
         }
         current_y -= 1.0;
@@ -3245,7 +3615,11 @@ fn death_loot_items_with_rng<R: rand::Rng, E: LivingEntity + ?Sized>(
     let causing_equipment = causing_entity.and_then(loot_equipment);
     let direct_equipment = direct_entity.and_then(loot_equipment);
     let last_damage_player_equipment = last_damage_player.as_deref().and_then(loot_equipment);
-    let this_entity = entity_loot_ref(entity.as_entity_event_source(), Some(&this_equipment));
+    let this_entity = entity_loot_ref_with_name(
+        entity.as_entity_event_source(),
+        Some(&this_equipment),
+        entity.custom_name().map(|_| entity.plain_text_name()),
+    );
     let causing_entity =
         causing_entity.map(|causing| entity_loot_ref(causing, causing_equipment.as_ref()));
     let direct_entity =
@@ -3299,4 +3673,49 @@ pub(crate) fn shearing_loot_items_with_rng<R: rand::Rng, E: LivingEntity + ?Size
         context = context.with_game_time(level.game_time());
     }
     loot_table.get_random_items(&mut context)
+}
+
+#[cfg(test)]
+mod shield_tests {
+    use super::*;
+
+    #[test]
+    fn shield_component_is_present_on_shield_items() {
+        let shield = ItemStack::new(&*vanilla_items::SHIELD);
+        assert!(shield.has(BLOCKS_ATTACKS));
+    }
+
+    #[test]
+    fn non_shield_items_do_not_block() {
+        let dirt = ItemStack::new(&*vanilla_items::DIRT);
+        assert!(!dirt.has(BLOCKS_ATTACKS));
+    }
+}
+
+/// Vanilla `WitherRoseBlock.createWitherRose`: when the causing entity is a
+/// wither skeleton and the victim's position accepts the rose, place it.
+pub fn create_wither_rose(dead: &dyn Entity, source: &DamageSource) {
+    let Some(causing) = source.causing_entity() else {
+        return;
+    };
+    if causing.entity_type() != &vanilla_entities::WITHER_SKELETON {
+        return;
+    }
+    let Some(world) = dead.level() else {
+        return;
+    };
+    let dead_position = dead.position();
+    let pos = BlockPos::containing(dead_position.x, dead_position.y, dead_position.z);
+    let current = world.get_block_state(pos);
+    if !current.is_air() && !current.is_replaceable() {
+        return;
+    }
+    let rose = vanilla_blocks::WITHER_ROSE.default_state();
+    if !BLOCK_BEHAVIORS
+        .get_behavior(rose.get_block())
+        .can_survive(rose, &*world, pos)
+    {
+        return;
+    }
+    crate::world::LevelAccessor::set_block_state(&world, pos, rose, UpdateFlags::UPDATE_ALL);
 }

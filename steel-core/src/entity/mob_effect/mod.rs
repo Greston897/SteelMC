@@ -31,6 +31,10 @@ pub use weaving::WeavingBehavior;
 pub use wind_charged::WindChargedBehavior;
 pub use wither::WitherBehavior;
 
+use std::sync::Arc;
+
+use steel_registry::mob_effect::MobEffectRef;
+
 use crate::entity::LivingEntity;
 use crate::entity::SharedEntity;
 use crate::world::World;
@@ -58,6 +62,27 @@ pub trait MobEffectBehavior: Send + Sync {
 
     /// Called when the effect starts.
     fn on_effect_started(&self, _user: &dyn LivingEntity, _amplifier: i32) {}
+
+    /// Vanilla `MobEffect.onEffectAdded` → the effect's `sound_on_added`.
+    ///
+    /// Only the omen effects carry a sound, and vanilla plays it once when the
+    /// effect is newly applied, not when an active instance is refreshed.
+    fn on_effect_added(&self, user: &dyn LivingEntity, effect: MobEffectRef, _amplifier: i32) {
+        let Some(sound) = effect.sound_on_added else {
+            return;
+        };
+        let Some(world) = user.level() else {
+            return;
+        };
+        world.play_sound_at(sound, user.sound_source(), user.position(), 1.0, 1.0, None);
+    }
+
+    /// Vanilla `MobEffect.onMobRemoved`: runs once when the affected mob is
+    /// removed from the world (death is the only removal path Steel models).
+    fn on_mob_removed(&self, _world: &Arc<World>, _mob: &dyn LivingEntity) {}
+
+    /// Vanilla `MobEffect.onMobHurt`: runs after the mob took damage.
+    fn on_mob_hurt(&self, _world: &Arc<World>, _mob: &dyn LivingEntity, _amplifier: i32) {}
 }
 
 /// The instantaneous-only half of a [`MobEffectBehavior`] that also extends

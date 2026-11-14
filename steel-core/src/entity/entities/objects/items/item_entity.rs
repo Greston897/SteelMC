@@ -20,6 +20,7 @@ use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey};
 use uuid::Uuid;
 
+use crate::behavior::ITEM_BEHAVIORS;
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     DEFAULT_AIR_DRAG, DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityBaseState,
@@ -719,7 +720,9 @@ impl Entity for ItemEntity {
     }
 
     fn hurt(&self, world: &World, source: &DamageSource, amount: f32) -> bool {
-        // TODO: Check isInvulnerableToBase once the shared non-living entity hook is ported.
+        if self.is_invulnerable_to_base(source) {
+            return false;
+        }
         if !world.get_game_rule(&MOB_GRIEFING)
             && source
                 .causing_entity()
@@ -736,7 +739,12 @@ impl Entity for ItemEntity {
             state.health
         };
         if new_health <= 0 {
-            // TODO: Call item.onDestroyed() when implemented
+            // Vanilla `ItemEntity.hurt`: the stack gets a last callback before
+            // the entity is discarded, which is how bundles spill contents.
+            let stack = self.get_item();
+            ITEM_BEHAVIORS
+                .get_behavior(stack.item())
+                .on_item_entity_destroyed(self);
             self.set_removed(RemovalReason::Killed);
         }
         true
@@ -861,7 +869,7 @@ mod tests {
             &vanilla_entities::ITEM,
             1,
             DVec3::ZERO,
-            ItemStack::new(&vanilla_items::STONE),
+            ItemStack::new(&*vanilla_items::STONE),
             Weak::<World>::new(),
         );
         let velocity = item.velocity();
@@ -889,7 +897,7 @@ mod tests {
             &vanilla_entities::ITEM,
             1,
             DVec3::new(8.5, 65.1, 8.5),
-            ItemStack::new(&vanilla_items::STONE),
+            ItemStack::new(&*vanilla_items::STONE),
             Arc::downgrade(world),
         ));
         item.set_velocity(DVec3::new(0.0, -0.2, 0.0));
@@ -906,7 +914,7 @@ mod tests {
             &vanilla_entities::ITEM,
             1,
             DVec3::ZERO,
-            ItemStack::new(&vanilla_items::STONE),
+            ItemStack::new(&*vanilla_items::STONE),
             Weak::<World>::new(),
         );
 
@@ -924,7 +932,7 @@ mod tests {
             &vanilla_entities::ITEM,
             1,
             DVec3::ZERO,
-            ItemStack::with_count(&vanilla_items::STONE, 10),
+            ItemStack::with_count(&*vanilla_items::STONE, 10),
             Weak::<World>::new(),
         );
         source.set_pickup_delay(5);
@@ -934,7 +942,7 @@ mod tests {
             &vanilla_entities::ITEM,
             2,
             DVec3::ZERO,
-            ItemStack::with_count(&vanilla_items::STONE, 20),
+            ItemStack::with_count(&*vanilla_items::STONE, 20),
             Weak::<World>::new(),
         );
         target.set_pickup_delay(1);
@@ -974,7 +982,7 @@ mod tests {
             &vanilla_entities::ITEM,
             1,
             DVec3::ZERO,
-            ItemStack::new(&vanilla_items::NETHERITE_INGOT),
+            ItemStack::new(&*vanilla_items::NETHERITE_INGOT),
             Weak::<World>::new(),
         );
 

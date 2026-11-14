@@ -20,7 +20,7 @@ use steel_utils::{
     types::{GameType, InteractionHand, UpdateFlags},
 };
 
-use crate::behavior::{BLOCK_BEHAVIORS, BlockLootContext};
+use crate::behavior::{BLOCK_BEHAVIORS, BlockLootContext, CanMineContext, ITEM_BEHAVIORS};
 use crate::block_entity::BlockEntity;
 use crate::entity::{ActiveMobEffect, Entity, LivingEntity};
 use crate::fluid::fluid_state_to_block;
@@ -29,6 +29,18 @@ use crate::player::food_data::food_constants;
 use crate::world::{ConditionalBlockSetResult, World, game_event::GameEventContext};
 
 use super::adventure_mode;
+
+/// Vanilla `GameMasterBlock` implementors: blocks that only an operator at
+/// creative level two may break.
+fn is_game_master_block(block: steel_registry::blocks::BlockRef) -> bool {
+    block.key == vanilla_blocks::COMMAND_BLOCK.key
+        || block.key == vanilla_blocks::REPEATING_COMMAND_BLOCK.key
+        || block.key == vanilla_blocks::CHAIN_COMMAND_BLOCK.key
+        || block.key == vanilla_blocks::STRUCTURE_BLOCK.key
+        || block.key == vanilla_blocks::JIGSAW.key
+        || block.key == vanilla_blocks::TEST_BLOCK.key
+        || block.key == vanilla_blocks::TEST_INSTANCE_BLOCK.key
+}
 
 impl Player {
     /// Mining speed for `state` with the held item, after attributes, effects and
@@ -47,9 +59,9 @@ impl Player {
                 .unwrap_or(attribute.default_value) as f32
         };
 
-        // TODO: Efficiency and Aqua Affinity have no effect until the enchantment
-        // `attributes` effect (`EnchantmentHelper.runLocationChangedEffects`) installs
-        // its attribute modifiers on equipment changes.
+        // Efficiency and Aqua Affinity arrive through enchantment `attributes`
+        // modifiers installed by `LivingEntity::on_equip_item`; the attribute
+        // reads below already include them.
         if speed > 1.0 {
             speed += attribute_value(vanilla_attributes::MINING_EFFICIENCY);
         }
@@ -293,7 +305,10 @@ impl BlockBreakingManager {
                 let block_state = world.get_block_state(pos);
 
                 if !is_air(block_state) {
-                    // TODO: Call EnchantmentHelper.onHitBlock before blockState.attack.
+                    // Vanilla calls `EnchantmentHelper.onHitBlock` here, which runs
+                    // the `hit_block`/`item_damage` enchantment effects that wear
+                    // the tool down. Steel has no per-block tool-damage path yet;
+                    // block behaviors are told about the hit directly.
                     BLOCK_BEHAVIORS
                         .get_behavior(block_state.get_block())
                         .attack(block_state, world, pos, player);
@@ -390,19 +405,36 @@ impl BlockBreakingManager {
         clippy::unused_self,
         reason = "method belongs logically to BlockBreakingManager and will use self when additional state is added"
     )]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "linear port of vanilla ServerPlayerInteractionManager#tryBreakBlock"
+    )]
     fn destroy_block(&self, player: &Player, world: &Arc<World>, pos: BlockPos) -> bool {
         let state = world.get_block_state(pos);
+
+        // Vanilla `ServerPlayerInteractionManager#tryBreakBlock` asks the held item
+        // whether it may mine the block before anything else happens. The debug
+        // stick refuses and selects a property instead.
+        if !held_item_can_mine(player, world, pos, state) {
+            return false;
+        }
 
         if player.get_abilities().instabuild && !held_item_can_destroy_in_creative(player) {
             return false;
         }
 
         // Get block info
-        let Some(_block) = REGISTRY.blocks.by_state_id(state) else {
+        let Some(block) = REGISTRY.blocks.by_state_id(state) else {
             return false;
         };
 
-        // TODO: Check for GameMasterBlock (command blocks, etc.)
+        // Vanilla `ServerPlayerGameMode.destroyBlock` refuses game-master blocks
+        // (command, structure, jigsaw and test blocks) for anybody below creative
+        // level two operator. Steel models that level with its operator group,
+        // the same gate `GameMasterBlockItem` uses for placement.
+        if is_game_master_block(block) && !player.is_operator() {
+            return false;
+        }
 
         if player.block_action_restricted(world, pos) {
             return false;
@@ -544,6 +576,32 @@ fn held_item_can_destroy_in_creative(player: &Player) -> bool {
     let inventory = player.inventory.lock();
     let main_hand = inventory.get_item_in_hand(InteractionHand::MainHand);
     main_hand.can_destroy_blocks_in_creative()
+}
+
+/// Vanilla `ItemStack#canMine` for the stack in the player's main hand.
+///
+/// The inventory lock is released before the behavior runs so item code is free
+/// to mutate the held stack.
+fn held_item_can_mine(
+    player: &Player,
+    world: &Arc<World>,
+    pos: BlockPos,
+    state: BlockStateId,
+) -> bool {
+    let main_hand_item = {
+        let inventory = player.inventory.lock();
+        inventory.get_item_in_hand(InteractionHand::MainHand).item()
+    };
+    ITEM_BEHAVIORS
+        .get_behavior(main_hand_item)
+        .can_mine(&CanMineContext::new(
+            player,
+            world,
+            pos,
+            state,
+            Arc::clone(&player.inventory),
+            InteractionHand::MainHand,
+        ))
 }
 
 /// Checks if a block state is air.

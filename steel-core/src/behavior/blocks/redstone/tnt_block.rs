@@ -188,8 +188,8 @@ impl BlockBehavior for TntBlock {
     ) -> InteractionResult {
         let (is_flint_and_steel, is_fire_charge) = inv.with_item(|item| {
             (
-                item.is(&vanilla_items::FLINT_AND_STEEL),
-                item.is(&vanilla_items::FIRE_CHARGE),
+                item.is(&*vanilla_items::FLINT_AND_STEEL),
+                item.is(&*vanilla_items::FIRE_CHARGE),
             )
         });
         if !is_flint_and_steel && !is_fire_charge {
@@ -238,9 +238,17 @@ impl BlockBehavior for TntBlock {
 
         let owner = projectile.get_owner();
         let living_owner = owner.as_deref().filter(|owner| owner.is_living_entity());
-        // TODO: Check an arrow's pickup stack once arrows exist. Other projectiles use an empty
-        // stack, which never permits Adventure-mode breaking.
-        if Self::prime_with_source(world, hit.block_pos, living_owner, || false) {
+        // Vanilla consults the projectile's `getCloneItemStack`: an arrow reports its
+        // own item, every other projectile reports an empty stack that can never
+        // satisfy the Adventure-mode check.
+        let pickup_stack = projectile.pickup_item_stack();
+        let can_break = || {
+            pickup_stack.as_ref().is_some_and(|stack| {
+                crate::player::game_mode::can_break(stack, world, hit.block_pos)
+            })
+        };
+
+        if Self::prime_with_source(world, hit.block_pos, living_owner, can_break) {
             world.remove_block(hit.block_pos, false);
         }
     }

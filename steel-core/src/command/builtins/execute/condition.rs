@@ -12,13 +12,14 @@ use steel_utils::{
 use text_components::TextComponent;
 
 use super::super::super::{
-    brigadier::{CommandNodeBuilder, CommandRedirectTarget, CommandSyntaxError},
+    brigadier::{ArgumentType, CommandNodeBuilder, CommandRedirectTarget, CommandSyntaxError},
     execution::{
         CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
         literal,
     },
 };
 use super::{objective, source_command_storage, source_scoreboard};
+use crate::inventory::container::Container as _;
 use crate::{block_entity::SharedBlockEntity, command::missing_argument, world::World};
 
 type Builder = CommandNodeBuilder<CommandSource, SteelCommandRuntime>;
@@ -27,10 +28,10 @@ const EXECUTE_ROOT: CommandRedirectTarget = CommandRedirectTarget::CommandRoot;
 const MAX_BLOCKS_REGION: i64 = 32_768;
 
 pub(super) fn conditionals(name: &'static str, expected: bool) -> Builder {
-    // TODO: Add items after every vanilla command-slot provider and container inventory is
-    // modeled, including deferred loot-table unpacking.
-    // TODO: Add predicate and function after their runtime registries are ported.
-    // TODO: Restore Steel stopwatch conditions with the stopwatch command system.
+    // Vanilla also has `predicate` and `function` conditions; their runtime
+    // registries are not ported yet.
+    // `items` covers the entity slot provider below; block containers and
+    // deferred loot-table unpacking still need the block-entity slot API.
     literal(name)
         .then(biome_condition(expected))
         .then(block_condition(expected))
@@ -38,8 +39,37 @@ pub(super) fn conditionals(name: &'static str, expected: bool) -> Builder {
         .then(data_condition(expected))
         .then(dimension_condition(expected))
         .then(entity_condition(expected))
+        .then(items_condition(expected))
         .then(loaded_condition(expected))
         .then(score_condition(expected))
+        .then(stopwatch_condition(expected))
+}
+
+/// `/execute if stopwatch <name>`: matches while the named stopwatch exists.
+///
+/// Vanilla `StopwatchCondition` resolves the name against the scoreboard's
+/// stopwatch map and matches when that stopwatch has been created, which is
+/// also the only state `/stopwatch` can produce.
+fn stopwatch_condition(expected: bool) -> Builder {
+    literal("stopwatch").then(
+        argument("name", ArgumentType::word())
+            .executes(move |context| {
+                let name = context.string("name")?;
+                let running = scoreboard_stopwatch_running(context.source(), name)?;
+                execute_boolean_condition(context, expected, running)
+            }),
+    )
+}
+
+fn scoreboard_stopwatch_running(
+    source: &CommandSource,
+    name: &str,
+) -> Result<bool, CommandSyntaxError> {
+    let domain = source.world().domain().to_owned();
+    let Some(scoreboard) = source.server().scoreboards.get(&domain) else {
+        return Ok(false);
+    };
+    Ok(scoreboard.stopwatch_ticks(name).is_some())
 }
 
 fn data_condition(expected: bool) -> Builder {
@@ -409,6 +439,87 @@ pub fn loaded_block_position(
 
 fn unloaded_position() -> CommandSyntaxError {
     CommandSyntaxError::dynamic(TextComponent::from(&translations::ARGUMENT_POS_UNLOADED))
+}
+
+/// Vanilla `execute if items entity <targets> <slots> <item_predicate> <count>`.
+///
+/// Only the `entity` slot provider is modelled; block containers need the
+/// block-entity slot API that Steel does not expose to commands yet.
+fn items_condition(expected: bool) -> Builder {
+    literal("items").then(
+        literal("entity").then(
+            argument("targets", SteelArgumentType::entities()).then(
+                argument("slots", ArgumentType::greedy_string()).then(
+                    argument("item_predicate", SteelArgumentType::item_predicate())
+                        .then(items_count_range(expected)),
+                ),
+            ),
+        ),
+    )
+}
+
+fn items_count_range(expected: bool) -> Builder {
+    argument("count", SteelArgumentType::int_range())
+        .forks(EXECUTE_ROOT, move |context| {
+            let matches = items_match(context)?;
+            Ok(conditional_sources(context.source(), expected, matches))
+        })
+        .executes(move |context| {
+            execute_boolean_condition(context, expected, items_match(context)?)
+        })
+}
+
+/// Vanilla `ItemConditions`: the predicate must match at least `count.min`
+/// matching items across the selected slots.
+fn items_match(context: &SteelCommandContext<CommandSource>) -> Result<bool, CommandSyntaxError> {
+    let predicate = context.item_predicate("item_predicate")?;
+    let slots = context.string("slots")?;
+    // Only `container.*` slot ranges are meaningful for a single entity stack
+    // provider, and vanilla's wildcard form selects everything.
+    let range = match slots {
+        "container.*" | "*" => None,
+        other => Some(parse_container_slot_range(other)?),
+    };
+    let count_range = context.int_range("count")?;
+
+    let mut counted = 0_i32;
+    for entity in context.optional_entities("targets")? {
+        let Some(player) = entity.as_player() else {
+            continue;
+        };
+        let inventory = player.inventory.lock();
+        for (index, stack) in inventory.items().iter().enumerate() {
+            let index = i32::try_from(index).unwrap_or(i32::MAX);
+            if range.is_some_and(|(min, max)| index < min || index > max) {
+                continue;
+            }
+            if !stack.is_empty() && predicate.matches(stack) {
+                counted = counted.saturating_add(stack.count());
+            }
+        }
+    }
+    Ok(count_range.matches(counted))
+}
+
+/// Parses `container.<index>` and `container.<min>..<max>` slot selectors.
+fn parse_container_slot_range(slots: &str) -> Result<(i32, i32), CommandSyntaxError> {
+    let Some(rest) = slots.strip_prefix("container.") else {
+        return Err(CommandSyntaxError::dynamic(format!(
+            "Unknown item slot provider '{slots}'"
+        )));
+    };
+    let parse = |value: &str| {
+        value.parse::<i32>().map_err(|_| {
+            CommandSyntaxError::dynamic(format!("Invalid container slot '{value}'"))
+        })
+    };
+    match rest.split_once("..") {
+        Some((min, max)) => Ok((parse(min)?, parse(max)?)),
+        None => {
+            let slot = parse(rest)?;
+            Ok((slot, slot))
+        }
+    }
 }
 
 fn entity_condition(expected: bool) -> Builder {

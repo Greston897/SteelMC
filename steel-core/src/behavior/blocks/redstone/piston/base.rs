@@ -260,9 +260,14 @@ impl PistonBaseBlock {
         let mut to_update = Vec::with_capacity(to_push.len() + to_destroy.len());
         for &pos in to_destroy.iter().rev() {
             let state = world.get_block_state(pos);
-            // TODO: Pass the block entity to loot evaluation once block-entity components and
-            // post-refactor container item slices are available, as Vanilla does here.
-            world.drop_resources(state, pos);
+            // Vanilla drops the destroyed block with its block entity attached so
+            // loot functions can read container contents and custom names.
+            let block_entity = if state.has_block_entity() {
+                world.get_block_entity(pos)
+            } else {
+                None
+            };
+            world.drop_resources_with_block_entity(state, pos, block_entity.as_deref());
             world.set_block(
                 pos,
                 vanilla_blocks::AIR.default_state(),
@@ -697,7 +702,7 @@ mod tests {
             UpdateFlags::UPDATE_NONE,
         ));
 
-        let mut stack = ItemStack::new(&vanilla_items::PISTON);
+        let mut stack = ItemStack::new(&*vanilla_items::PISTON);
         let source = PlacementSource::direct(
             None,
             InteractionHand::MainHand,
@@ -735,7 +740,7 @@ mod tests {
         let world = &world_fixture.world;
         let moving_pos = piston_pos.relative_n(Direction::East, 2);
         let moving_state = world.get_block_state(moving_pos);
-        let tool = ItemStack::new(&vanilla_items::IRON_PICKAXE);
+        let tool = ItemStack::new(&*vanilla_items::IRON_PICKAXE);
         let drops = BlockLootContext::new(world, moving_pos)
             .with_tool(&tool)
             .get_drops(moving_state);

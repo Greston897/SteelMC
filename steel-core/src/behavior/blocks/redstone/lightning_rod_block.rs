@@ -34,16 +34,24 @@ impl LightningRodBlock {
     pub const fn new(block: BlockRef) -> Self {
         Self { block }
     }
+    /// Returns the block this behavior is attached to.
+    #[must_use]
+    pub const fn block_ref(&self) -> BlockRef {
+        self.block
+    }
+
     fn update_neighbors(block: BlockRef, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
         let front = state.get_value(FACING).opposite();
         // Experimental redstone orientations are intentionally omitted.
         world.update_neighbors_at(pos.relative(front), block);
     }
-    #[expect(
-        dead_code,
-        reason = "We need to call this function once on_lightning_strike gets implemented in BlockBehavior"
-    )]
-    fn on_lightning_strike(
+    /// Vanilla `LightningRodBlock.onLightningStrike`: powers the rod and
+    /// schedules its deactivation.
+    ///
+    /// Named apart from the `BlockBehavior::on_lightning_strike` hook so the
+    /// call from `WeatheringLightningRodBlock` cannot resolve to the trait
+    /// method, which takes `&self`.
+    pub(crate) fn strike(
         block: BlockRef,
         state: BlockStateId,
         world: &Arc<World>,

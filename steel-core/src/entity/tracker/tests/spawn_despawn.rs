@@ -25,7 +25,7 @@ fn spawn_pairing_includes_non_empty_equipment() {
     init_vanilla_registry();
 
     let entity_typed = PairingTestEntity::new(1, Vec::new());
-    let stack = ItemStack::new(&vanilla_items::ELYTRA);
+    let stack = ItemStack::new(&*vanilla_items::ELYTRA);
     entity_typed.set_equipment(vec![EquipmentSlotItem {
         slot: EquipmentSlot::Chest,
         item_stack: stack.clone(),

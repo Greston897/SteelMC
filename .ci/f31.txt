@@ -1,0 +1,200 @@
+### cargo check diagnostics
+- errors: 2
+- warnings: 5
+
+```
+   Compiling steel-macros v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-macros)
+    Checking steel-math v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-math)
+   Compiling steel-core v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-core)
+    Checking steel-crypto v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-crypto)
+error: failed to run custom build command for `steel-core v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-core)`
+
+-----
+```
+
+<details><summary>warnings</summary>
+
+```
+warning: build failed, waiting for other jobs to finish...
+warning: steel-utils@0.17.0+mc26.3: Assets not found or version mismatch for Minecraft 26.3. Fetching...
+warning: steel-utils@0.17.0+mc26.3: Downloading server jar for 26.3...
+warning: steel-utils@0.17.0+mc26.3: Detected bootstrap jar. Extracting nested jar META-INF/versions/26.3/server-26.3.jar...
+warning: steel-utils@0.17.0+mc26.3: Successfully extracted datapack and translation files for Minecraft 26.3.
+```
+</details>
+### tests
+```
+  thread 'main' (3015) panicked at steel-core/build/common.rs:237:28:
+  Entry 'copper_golem_statue' missing JSON field 'weather_state'
+  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+warning: build failed, waiting for other jobs to finish...
+```
+
+### clippy
+```
+    Checking rustls-pki-types v1.15.1
+    Checking sync_wrapper v1.0.2
+    Checking aws-lc-sys v0.46.0
+    Checking serde_core v1.0.229
+    Checking futures-io v0.3.34
+    Checking tower-layer v0.3.3
+    Checking zeroize v1.9.1
+    Checking slab v0.4.12
+    Checking futures-task v0.3.34
+    Checking tower v0.5.3
+    Checking futures-util v0.3.34
+    Checking sha2 v0.11.1
+    Checking icu_normalizer_data v2.3.0
+    Checking icu_properties_data v2.3.0
+    Checking cpubits v0.1.1
+    Checking base64ct v1.8.3
+    Checking untrusted v0.9.0
+   Compiling glob v0.3.4
+    Checking pem-rfc7468 v1.0.0
+    Checking rustls-webpki v0.103.15
+   Compiling steel-core v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-core)
+    Checking icu_properties v2.3.0
+    Checking icu_normalizer v2.3.0
+    Checking http-body-util v0.1.5
+    Checking zerofrom v0.1.8
+    Checking subtle v2.6.1
+    Checking stable_deref_trait v1.2.1
+    Checking yoke v0.8.3
+    Checking idna_adapter v1.2.2
+    Checking der v0.8.2
+error: failed to run custom build command for `steel-core v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-core)`
+
+Caused by:
+  process didn't exit successfully: `/home/runner/work/SteelMC/SteelMC/target/release/build/steel-core/55a7b2fec4ca7d2e/out/build_script_build` (exit status: 101)
+  --- stderr
+
+  thread 'main' (3559) panicked at steel-core/build/common.rs:237:28:
+  Entry 'copper_golem_statue' missing JSON field 'weather_state'
+  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+warning: build failed, waiting for other jobs to finish...
+```
+
+### rustfmt
+```
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/block/mod.rs:101:
+             .and_then(|tag| tag.string())
+             .map(|value| value.to_str().into_owned())
+     });
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/block/mod.rs:109:
+             data: block_entity_data.as_ref(),
+-        }
+-    });
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/building/infested_block.rs:62:
+     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+         // Vanilla `RotatedPillarBlock.getStateForPlacement` picks the axis from
+         // the clicked face.
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/building/infested_block.rs:164:
+         _neighbor_state: BlockStateId,
+     ) -> BlockStateId {
+         if direction == Direction::Down && !self.can_survive(state, world, pos) {
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/building/infested_block.rs:204:
+         _neighbor_state: BlockStateId,
+     ) -> BlockStateId {
+         if direction == Direction::Down && !self.can_survive(state, world, pos) {
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/building/infested_block.rs:227:
+ 
+ impl BlockBehavior for DriedGhastBlock {
+     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/building/mod.rs:1:
+ mod amethyst_block;
+-mod simple_marker_blocks;
+-mod infested_block;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/building/mod.rs:22:
+ mod heavy_core;
+ mod honey_block;
+ mod ice_block;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/building/mod.rs:31:
+ mod powder_snow_block;
+ mod rotated_pillar_block;
+ mod scaffolding_block;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/building/mod.rs:39:
+ mod sponge_block;
+ mod stair_block;
+ mod straw_bed_block;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/building/mod.rs:47:
+ mod wet_sponge_block;
+ 
+ pub use amethyst_block::*;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/building/mod.rs:70:
+ pub use heavy_core::*;
+ pub use honey_block::*;
+ pub use ice_block::*;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/building/mod.rs:79:
+ pub use powder_snow_block::*;
+ pub use rotated_pillar_block::*;
+ pub use scaffolding_block::*;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/building/mod.rs:87:
+ pub use sponge_block::*;
+ pub use stair_block::*;
+ pub use straw_bed_block::*;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/building/simple_marker_blocks.rs:39:
+     fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+         Some(self.block.default_state())
+     }
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/building/technical_blocks.rs:135:
+     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+         // Vanilla `JigsawBlock.getStateForPlacement` derives `orientation` from
+         // the clicked face (front) with `north_up` as the top.
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/container/beehive_block.rs:11:
+ use steel_registry::vanilla_block_entity_types;
+ use steel_registry::{sound_events, vanilla_blocks, vanilla_items};
+ use steel_utils::types::UpdateFlags;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/container/beehive_block.rs:27:
++use crate::player::player_inventory::Prediction;
+ use crate::world::World;
++use steel_utils::types::InteractionHand;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/container/beehive_block.rs:136:
+             if item == &*vanilla_items::SHEARS && i32::from(honey_level) == MAX_HONEY_LEVEL {
+                 return Some(HoneyAction::Shear);
+             }
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/container/block_entity_blocks.rs:7:
+ 
+ use std::sync::{Arc, Weak};
+ 
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/container/block_entity_blocks.rs:14:
+     BlockStateProperties, Direction, EnumProperty, FrontAndTop,
+ };
+-use steel_registry::vanilla_block_entity_types;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/container/block_entity_blocks.rs:25:
+ use crate::behavior::InventoryAccess;
+ use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
+-use crate::block_entity::BlockEntityTicker;
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/container/block_entity_blocks.rs:39:
+     ThrownEggEntity,
+ };
++use crate::entity::{SharedEntity, next_entity_id};
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/container/block_entity_blocks.rs:44:
+-
+ const HOPPER_FACING: &EnumProperty<Direction> = &BlockStateProperties::FACING_HOPPER;
+ 
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/container/block_entity_blocks.rs:147:
+         } else {
+             Direction::Down
+         };
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/container/block_entity_blocks.rs:160:
+         _hit_result: &BlockHitResult,
+         _inv: &mut InventoryAccess,
+     ) -> InteractionResult {
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/container/block_entity_blocks.rs:168:
+             return InteractionResult::Pass;
+         };
+         let inventory = Arc::clone(&player.inventory);
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/container/block_entity_blocks.rs:281:
+             ) -> Option<BlockStateId> {
+                 // Vanilla `DispenserBlock.getStateForPlacement`: the funnel faces
+                 // the player, i.e. away from the clicked face.
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/container/block_entity_blocks.rs:302:
+                 _hit_result: &BlockHitResult,
+                 _inv: &mut InventoryAccess,
+             ) -> InteractionResult {
+Diff in /home/runner/work/SteelMC/SteelMC/steel-core/src/behavior/blocks/container/block_entity_blocks.rs:310:
+                     return InteractionResult::Pass;
+                 };
+                 let inventory = Arc::clone(&player.inventory);
+```
+

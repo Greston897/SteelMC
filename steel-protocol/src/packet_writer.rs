@@ -116,17 +116,40 @@ impl<W: AsyncWrite + Unpin> TCPNetworkEncoder<W> {
         replace_with::replace_with_or_abort(&mut self.writer, |encoder| encoder.upgrade(cipher));
     }
 
-    /// Writes a packet to the stream.
+    /// Writes a packet to the stream and flushes it immediately.
     ///
     /// # Errors
     /// - If the packet fails to write.
     /// - If the stream fails to flush.
     pub async fn write_packet(&mut self, packet: &EncodedPacket) -> Result<(), PacketError> {
+        self.write_packet_buffered(packet).await?;
+        self.flush().await
+    }
+
+    /// Writes a packet into the buffered stream without flushing it.
+    ///
+    /// Vanilla writes every packet of a tick into a `Channel`-backed buffer and
+    /// flushes once per tick, so a burst of small packets leaves as one TCP
+    /// segment instead of one write syscall each. Callers batch with this and a
+    /// single [`Self::flush`].
+    ///
+    /// # Errors
+    /// - If the packet fails to write.
+    pub async fn write_packet_buffered(
+        &mut self,
+        packet: &EncodedPacket,
+    ) -> Result<(), PacketError> {
         self.writer
             .write_all(&packet.encoded_data)
             .await
-            .map_err(|e| PacketError::EncryptionFailed(e.to_string()))?;
+            .map_err(|e| PacketError::EncryptionFailed(e.to_string()))
+    }
 
+    /// Flushes everything written since the last flush.
+    ///
+    /// # Errors
+    /// - If the stream fails to flush.
+    pub async fn flush(&mut self) -> Result<(), PacketError> {
         self.writer
             .flush()
             .await
@@ -139,382 +162,202 @@ impl<W: AsyncWrite + Unpin> TCPNetworkEncoder<W> {
 #[error("Invalid compression Level")]
 pub struct CompressionLevelError;
 
-/* TODO: Tests.
 #[cfg(test)]
 mod tests {
-    use std::io::Read;
+    use std::sync::Arc;
 
     use super::*;
-    use crate::java::client::status::CStatusResponse;
-    use crate::packet::Packet;
-    use crate::{ClientPacket, ReadingError};
-    use aes::Aes128;
-    use cfb8::Decryptor as Cfb8Decryptor;
-    use cfb8::cipher::AsyncStreamCipher;
-    use flate2::read::ZlibDecoder;
-    use pumpkin_data::packet::client:STATUS_STATUS_RESPONSE;
-    use pumpkin_macros::packet;
-    use serde::Serialize;
 
-    /// Define a custom packet for testing maximum packet size
-    #[derive(Serialize)]
-    #[packet(STATUS_STATUS_RESPONSE)]
-    pub struct MaxSizePacket {
-        data: Vec<u8>,
+    const VARINT_DATA_MASK: u8 = 0x7f;
+    const VARINT_CONTINUE_BIT: u8 = 0x80;
+
+    fn write_varint(mut value: u32, output: &mut Vec<u8>) {
+        loop {
+            if value <= u32::from(VARINT_DATA_MASK) {
+                output.push(value as u8);
+                return;
+            }
+            output.push((value as u8 & VARINT_DATA_MASK) | VARINT_CONTINUE_BIT);
+            value >>= 7;
+        }
     }
 
-    impl MaxSizePacket {
-        pub fn new(size: usize) -> Self {
-            Self {
-                data: vec![0xAB; size], // Fill with arbitrary data
+    /// Builds the encoded frame a packet with this payload should produce.
+    fn expected_frame(packet_data: &[u8]) -> Vec<u8> {
+        let mut framed = Vec::with_capacity(packet_data.len() + 5);
+        write_varint(packet_data.len() as u32, &mut framed);
+        framed.extend_from_slice(packet_data);
+        framed
+    }
+
+    fn encoded(packet_data: &[u8]) -> EncodedPacket {
+        EncodedPacket::from_raw_data(packet_data)
+    }
+
+    #[tokio::test]
+    async fn writes_length_prefixed_frame() {
+        let packet_data = b"\x01payload";
+        let mut buf = Vec::new();
+        {
+            let mut encoder = TCPNetworkEncoder::new(&mut buf);
+            encoder
+                .write_packet(&encoded(packet_data))
+                .await
+                .expect("frame writes");
+        }
+
+        assert_eq!(buf, expected_frame(packet_data));
+    }
+
+    #[tokio::test]
+    async fn writes_multi_byte_length_prefix() {
+        let packet_data = vec![0x5a; 300];
+        let mut buf = Vec::new();
+        {
+            let mut encoder = TCPNetworkEncoder::new(&mut buf);
+            encoder
+                .write_packet(&encoded(&packet_data))
+                .await
+                .expect("frame writes");
+        }
+
+        assert_eq!(buf, expected_frame(&packet_data));
+        // A 300 byte frame needs a two byte VarInt length.
+        assert_eq!(buf[1] & VARINT_CONTINUE_BIT, VARINT_CONTINUE_BIT);
+    }
+
+    #[tokio::test]
+    async fn appends_packets_in_order() {
+        let mut buf = Vec::new();
+        {
+            let mut encoder = TCPNetworkEncoder::new(&mut buf);
+            for byte in [1u8, 2] {
+                encoder
+                    .write_packet(&encoded(&[byte; 4]))
+                    .await
+                    .expect("frame writes");
             }
         }
+
+        let mut expected = expected_frame(&[1; 4]);
+        expected.extend(expected_frame(&[2; 4]));
+        assert_eq!(buf, expected);
     }
 
-    /// Helper function to decode a `VarInt` from bytes
-    fn decode_varint(buffer: &mut &[u8]) -> Result<i32, ReadingError> {
-        Ok(buffer.get_var_int()?.0)
-    }
-
-    /// Helper function to decompress data using libdeflater's Zlib decompressor
-    fn decompress_zlib(data: &[u8], expected_size: usize) -> Result<Vec<u8>, std::io::Error> {
-        assert!(!data.is_empty());
-        let mut decompressed = vec![0u8; expected_size];
-        ZlibDecoder::new(data).read_exact(&mut decompressed)?;
-        Ok(decompressed)
-    }
-
-    /// Helper function to decrypt data using AES-128 CFB-8 mode
-    fn decrypt_aes128(encrypted_data: &mut [u8], key: &[u8; 16], iv: &[u8; 16]) {
-        let decryptor = Cfb8Decryptor::<Aes128>::new_from_slices(key, iv).expect("Invalid key/iv");
-        decryptor.decrypt(encrypted_data);
-    }
-
-    /// Helper function to build a packet with optional compression and encryption
-    async fn build_packet_with_encoder<T: ClientPacket>(
-        packet: &T,
-        compression_info: Option<(CompressionThreshold, CompressionLevel)>,
-        key: Option<&[u8; 16]>,
-    ) -> Box<[u8]> {
+    /// Encryption must be transparent to the frame layout once decrypted; the
+    /// same key on both sides restores the plaintext frame.
+    #[tokio::test]
+    async fn encryption_round_trips_the_frame() {
+        let key = [7u8; 16];
+        let packet_data = b"\x02secret payload";
         let mut buf = Vec::new();
-        let mut encoder = TCPNetworkEncoder::new(&mut buf);
-        if let Some(compression_info) = compression_info {
-            encoder.set_compression(compression_info);
+        {
+            let mut encoder = TCPNetworkEncoder::new(&mut buf);
+            encoder.set_encryption(&key);
+            encoder
+                .write_packet(&encoded(packet_data))
+                .await
+                .expect("encrypted frame writes");
         }
 
-        if let Some(key) = key {
-            encoder.set_encryption(key);
-        }
-
-        let mut packet_buf = Vec::new();
-        let writer = &mut packet_buf;
-        writer.write_var_int(&VarInt(T::PACKET_ID)).unwrap();
-        packet.write_packet_data(writer).unwrap();
-
-        encoder.write_packet(packet_buf.into()).await.unwrap();
-
-        buf.into_boxed_slice()
-    }
-
-    /// Test encoding without compression and encryption
-    #[tokio::test]
-    async fn test_encode_without_compression_and_encryption() {
-        // Create a CStatusResponse packet
-        let packet =
-            CStatusResponse::new(String::from("{\"description\": \"A Minecraft Server\"}"));
-
-        // Build the packet without compression and encryption
-        let packet_bytes = build_packet_with_encoder(&packet, None, None).await;
-
-        // Decode the packet manually to verify correctness
-        let mut buffer = &packet_bytes[..];
-
-        // Read packet length VarInt
-        let packet_length = decode_varint(&mut buffer).expect("Failed to decode packet length");
-        assert_eq!(
-            packet_length as usize,
-            buffer.len(),
-            "Packet length mismatch"
-        );
-
-        // Read packet ID VarInt
-        let decoded_packet_id = decode_varint(&mut buffer).expect("Failed to decode packet ID");
-        assert_eq!(decoded_packet_id, CStatusResponse::PACKET_ID);
-
-        // Remaining buffer is the payload
-        // We need to obtain the expected payload
-        let mut expected_payload = Vec::new();
-        packet.write_packet_data(&mut expected_payload).unwrap();
-
-        assert_eq!(buffer, expected_payload);
-    }
-
-    /// Test encoding with compression
-    #[tokio::test]
-    async fn test_encode_with_compression() {
-        // Create a CStatusResponse packet
-        let packet =
-            CStatusResponse::new("{\"description\": \"A Minecraft Server\"}".parse().unwrap());
-
-        // Build the packet with compression enabled
-        let packet_bytes = build_packet_with_encoder(&packet, Some((0, 6)), None).await;
-
-        // Decode the packet manually to verify correctness
-        let mut buffer = &packet_bytes[..];
-
-        // Read packet length VarInt
-        let packet_length = decode_varint(&mut buffer).expect("Failed to decode packet length");
-        assert_eq!(
-            packet_length as usize,
-            buffer.len(),
-            "Packet length mismatch"
-        );
-
-        // Read data length VarInt (uncompressed data length)
-        let data_length = decode_varint(&mut buffer).expect("Failed to decode data length");
-        let mut expected_payload = Vec::new();
-        packet.write_packet_data(&mut expected_payload).unwrap();
-        let uncompressed_data_length =
-            VarInt(CStatusResponse::PACKET_ID).written_size() + expected_payload.len();
-        assert_eq!(data_length as usize, uncompressed_data_length);
-
-        // Remaining buffer is the compressed data
-        let compressed_data = buffer;
-
-        // Decompress the data
-        let decompressed_data = decompress_zlib(compressed_data, data_length as usize)
-            .expect("Failed to decompress data");
-
-        // Verify packet ID and payload
-        let mut decompressed_buffer = &decompressed_data[..];
-
-        // Read packet ID VarInt
-        let decoded_packet_id =
-            decode_varint(&mut decompressed_buffer).expect("Failed to decode packet ID");
-        assert_eq!(decoded_packet_id, CStatusResponse::PACKET_ID);
-
-        // Remaining buffer is the payload
-        assert_eq!(decompressed_buffer, expected_payload);
-    }
-
-    /// Test encoding with encryption
-    #[tokio::test]
-    async fn test_encode_with_encryption() {
-        // Create a CStatusResponse packet
-        let packet =
-            CStatusResponse::new("{\"description\": \"A Minecraft Server\"}".parse().unwrap());
-
-        // Encryption key and IV (IV is the same as key in this case)
-        let key = [0x00u8; 16]; // Example key
-
-        // Build the packet with encryption enabled (no compression)
-        let mut packet_bytes = build_packet_with_encoder(&packet, None, Some(&key)).await;
-
-        // Decrypt the packet
-        decrypt_aes128(&mut packet_bytes, &key, &key);
-
-        // Decode the packet manually to verify correctness
-        let mut buffer = &packet_bytes[..];
-
-        // Read packet length VarInt
-        let packet_length = decode_varint(&mut buffer).expect("Failed to decode packet length");
-        assert_eq!(
-            packet_length as usize,
-            buffer.len(),
-            "Packet length mismatch"
-        );
-
-        // Read packet ID VarInt
-        let decoded_packet_id = decode_varint(&mut buffer).expect("Failed to decode packet ID");
-        assert_eq!(decoded_packet_id, CStatusResponse::PACKET_ID);
-
-        // Remaining buffer is the payload
-        let mut expected_payload = Vec::new();
-        packet.write_packet_data(&mut expected_payload).unwrap();
-        assert_eq!(buffer, expected_payload);
-    }
-
-    /// Test encoding with both compression and encryption
-    #[tokio::test]
-    async fn test_encode_with_compression_and_encryption() {
-        // Create a CStatusResponse packet
-        let packet =
-            CStatusResponse::new("{\"description\": \"A Minecraft Server\"}".parse().unwrap());
-
-        // Encryption key and IV (IV is the same as key in this case)
-        let key = [0x01u8; 16]; // Example key
-
-        // Build the packet with both compression and encryption enabled
-        // Compression threshold is set to 0 to force compression
-        let mut packet_bytes = build_packet_with_encoder(&packet, Some((0, 6)), Some(&key)).await;
-
-        // Decrypt the packet
-        decrypt_aes128(&mut packet_bytes, &key, &key);
-
-        // Decode the packet manually to verify correctness
-        let mut buffer = &packet_bytes[..];
-
-        // Read packet length VarInt
-        let packet_length = decode_varint(&mut buffer).expect("Failed to decode packet length");
-        assert_eq!(
-            packet_length as usize,
-            buffer.len(),
-            "Packet length mismatch"
-        );
-
-        // Read data length VarInt (uncompressed data length)
-        let data_length = decode_varint(&mut buffer).expect("Failed to decode data length");
-        let mut expected_payload = Vec::new();
-        packet.write_packet_data(&mut expected_payload).unwrap();
-        let uncompressed_data_length =
-            VarInt(CStatusResponse::PACKET_ID).written_size() + expected_payload.len();
-        assert_eq!(data_length as usize, uncompressed_data_length);
-
-        // Remaining buffer is the compressed data
-        let compressed_data = buffer;
-
-        // Decompress the data
-        let decompressed_data = decompress_zlib(compressed_data, data_length as usize)
-            .expect("Failed to decompress data");
-
-        // Verify packet ID and payload
-        let mut decompressed_buffer = &decompressed_data[..];
-
-        // Read packet ID VarInt
-        let decoded_packet_id =
-            decode_varint(&mut decompressed_buffer).expect("Failed to decode packet ID");
-        assert_eq!(decoded_packet_id, CStatusResponse::PACKET_ID);
-
-        // Remaining buffer is the payload
-        assert_eq!(decompressed_buffer, expected_payload);
-    }
-
-    /// Test encoding with zero-length payload
-    #[tokio::test]
-    async fn test_encode_with_zero_length_payload() {
-        // Create a CStatusResponse packet with empty payload
-        let packet = CStatusResponse::new(String::from(""));
-
-        // Build the packet without compression and encryption
-        let packet_bytes = build_packet_with_encoder(&packet, None, None).await;
-
-        // Decode the packet manually to verify correctness
-        let mut buffer = &packet_bytes[..];
-
-        // Read packet length VarInt
-        let packet_length = decode_varint(&mut buffer).expect("Failed to decode packet length");
-        assert_eq!(
-            packet_length as usize,
-            buffer.len(),
-            "Packet length mismatch"
-        );
-
-        // Read packet ID VarInt
-        let decoded_packet_id = decode_varint(&mut buffer).expect("Failed to decode packet ID");
-        assert_eq!(decoded_packet_id, CStatusResponse::PACKET_ID);
-
-        // Remaining buffer is the payload (empty)
-        let mut expected_payload = Vec::new();
-        packet.write_packet_data(&mut expected_payload).unwrap();
-
-        assert_eq!(
-            buffer.len(),
-            expected_payload.len(),
-            "Payload length mismatch"
-        );
-        assert_eq!(buffer, expected_payload);
-    }
-
-    /// Test encoding with maximum length payload
-    #[tokio::test]
-    async fn test_encode_with_maximum_string_length() {
-        // Maximum allowed string length is 32767 bytes
-        let max_string_length = 32767;
-        let payload_str = "A".repeat(max_string_length);
-        let packet = CStatusResponse::new(payload_str);
-
-        // Build the packet without compression and encryption
-        let packet_bytes = build_packet_with_encoder(&packet, None, None).await;
-
-        // Verify that the packet size does not exceed MAX_PACKET_SIZE as usize
-        assert!(
-            packet_bytes.len() <= MAX_PACKET_SIZE as usize,
-            "Packet size exceeds maximum allowed size"
-        );
-
-        // Decode the packet manually to verify correctness
-        let mut buffer = &packet_bytes[..];
-
-        // Read packet length VarInt
-        let packet_length = decode_varint(&mut buffer).expect("Failed to decode packet length");
-        assert_eq!(
-            packet_length as usize,
-            buffer.len(),
-            "Packet length mismatch"
-        );
-
-        // Read packet ID VarInt
-        let decoded_packet_id = decode_varint(&mut buffer).expect("Failed to decode packet ID");
-        // Assume packet ID is 0 for CStatusResponse
-        assert_eq!(decoded_packet_id, CStatusResponse::PACKET_ID);
-
-        // Remaining buffer is the payload
-        let mut expected_payload = Vec::new();
-        packet.write_packet_data(&mut expected_payload).unwrap();
-
-        assert_eq!(buffer, expected_payload);
-    }
-
-    /// Test encoding a packet that exceeds MAX_PACKET_SIZE as usize
-    #[tokio::test]
-    #[should_panic(expected = "TooLong")]
-    async fn test_encode_packet_exceeding_maximum_size() {
-        // Create a custom packet with data exceeding MAX_PACKET_SIZE as usize
-        let data_size = MAX_PACKET_SIZE as usize + 1; // Exceed by 1 byte
-        let packet = MaxSizePacket::new(data_size);
-
-        // Build the packet without compression and encryption
-        // This should panic with PacketEncodeError::TooLong
-        build_packet_with_encoder(&packet, None, None).await;
-    }
-
-    /// Test encoding with a small payload that should not be compressed
-    #[tokio::test]
-    async fn test_encode_small_payload_no_compression() {
-        // Create a CStatusResponse packet with small payload
-        let packet = CStatusResponse::new(String::from("Hi"));
-
-        // Build the packet with compression enabled
-        // Compression threshold is set to a value higher than payload length
-        let packet_bytes = build_packet_with_encoder(&packet, Some((10, 6)), None).await;
-
-        // Decode the packet manually to verify that it was not compressed
-        let mut buffer = &packet_bytes[..];
-
-        // Read packet length VarInt
-        let packet_length = decode_varint(&mut buffer).expect("Failed to decode packet length");
-        assert_eq!(
-            packet_length as usize,
-            buffer.len(),
-            "Packet length mismatch"
-        );
-
-        // Read data length VarInt (should be 0 indicating no compression)
-        let data_length = decode_varint(&mut buffer).expect("Failed to decode data length");
-        assert_eq!(
-            data_length, 0,
-            "Data length should be 0 indicating no compression"
-        );
-
-        // Read packet ID VarInt
-        let decoded_packet_id = decode_varint(&mut buffer).expect("Failed to decode packet ID");
-        assert_eq!(decoded_packet_id, CStatusResponse::PACKET_ID);
-
-        // Remaining buffer is the payload
-        let mut expected_payload = Vec::new();
-        packet.write_packet_data(&mut expected_payload).unwrap();
-
-        assert_eq!(buffer, expected_payload);
+        assert_ne!(buf, expected_frame(packet_data));
+
+        let mut decoder = crate::packet_reader::TCPNetworkDecoder::new(buf.as_slice());
+        decoder.set_encryption(&key);
+        let packet = decoder
+            .get_raw_packet()
+            .await
+            .expect("encrypted frame decodes");
+
+        assert_eq!(packet.id, i32::from(packet_data[0]));
+        assert_eq!(packet.payload(), &packet_data[1..]);
     }
 }
-*/
+
+#[cfg(test)]
+mod batching_tests {
+    use super::{EncodedPacket, TCPNetworkEncoder};
+    use std::sync::{Arc, Mutex};
+    use steel_utils::FrontVec;
+
+    /// A writer that counts how many times the buffer was flushed.
+    #[derive(Clone, Default)]
+    struct CountingWriter {
+        bytes: Arc<Mutex<Vec<u8>>>,
+        flushes: Arc<Mutex<usize>>,
+    }
+
+    impl tokio::io::AsyncWrite for CountingWriter {
+        fn poll_write(
+            self: std::pin::Pin<&mut Self>,
+            _cx: &mut std::task::Context<'_>,
+            buf: &[u8],
+        ) -> std::task::Poll<std::io::Result<usize>> {
+            self.bytes.lock().unwrap().extend_from_slice(buf);
+            std::task::Poll::Ready(Ok(buf.len()))
+        }
+
+        fn poll_flush(
+            self: std::pin::Pin<&mut Self>,
+            _cx: &mut std::task::Context<'_>,
+        ) -> std::task::Poll<std::io::Result<()>> {
+            *self.flushes.lock().unwrap() += 1;
+            std::task::Poll::Ready(Ok(()))
+        }
+
+        fn poll_shutdown(
+            self: std::pin::Pin<&mut Self>,
+            _cx: &mut std::task::Context<'_>,
+        ) -> std::task::Poll<std::io::Result<()>> {
+            std::task::Poll::Ready(Ok(()))
+        }
+    }
+
+    fn packet(payload: &[u8]) -> EncodedPacket {
+        let mut data = FrontVec::new(0);
+        data.extend_from_slice(payload);
+        EncodedPacket {
+            encoded_data: Arc::new(data),
+        }
+    }
+
+    #[test]
+    fn buffered_writes_share_one_flush() {
+        let sink = CountingWriter::default();
+        let mut encoder = TCPNetworkEncoder::new(sink.clone());
+        let packets = [packet(b"first"), packet(b"second"), packet(b"third")];
+
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(async {
+                for packet in &packets {
+                    encoder.write_packet_buffered(packet).await.unwrap();
+                }
+                encoder.flush().await.unwrap();
+            });
+
+        assert_eq!(*sink.flushes.lock().unwrap(), 1, "one flush per batch");
+        assert_eq!(
+            sink.bytes.lock().unwrap().as_slice(),
+            b"firstsecondthird",
+            "every packet still reaches the socket"
+        );
+    }
+
+    #[test]
+    fn write_packet_keeps_flushing_for_urgent_sends() {
+        let sink = CountingWriter::default();
+        let mut encoder = TCPNetworkEncoder::new(sink.clone());
+
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(async {
+                encoder.write_packet(&packet(b"disconnect")).await.unwrap();
+            });
+
+        assert_eq!(*sink.flushes.lock().unwrap(), 1);
+        assert_eq!(sink.bytes.lock().unwrap().as_slice(), b"disconnect");
+    }
+}

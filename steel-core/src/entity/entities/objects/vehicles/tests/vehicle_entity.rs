@@ -87,7 +87,7 @@ fn destruction_respects_entity_drops_and_preserves_the_custom_name() {
             .expect("the vehicle drop should be an item entity");
         let stack = item_entity.get_item();
 
-        assert!(stack.is(&vanilla_items::MINECART));
+        assert!(stack.is(&*vanilla_items::MINECART));
         assert_eq!(stack.count(), 1);
         assert_eq!(stack.get(CUSTOM_NAME), Some(&name));
     }

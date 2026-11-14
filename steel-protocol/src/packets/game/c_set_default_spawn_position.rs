@@ -1,6 +1,7 @@
 //! Clientbound default spawn position packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_SET_DEFAULT_SPAWN_POSITION;
 use steel_utils::GlobalPos;
 

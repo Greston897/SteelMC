@@ -17,7 +17,9 @@ use steel_core::GIT_HASH_SHORT;
 use steel_utils::text::DisplayResolutor;
 #[cfg(all(windows, debug_assertions))]
 use steel_utils::threading::DEBUG_STACK_SIZE;
-use steel_utils::threading::{available_worker_threads, worker_threads_for_available};
+use steel_utils::threading::{
+    available_worker_threads, pool_sizes_for_available, worker_threads_for_available,
+};
 use text_components::fmt::set_display_resolutor;
 use tokio::runtime::{Builder, Runtime};
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
@@ -159,13 +161,39 @@ fn steel_main() {
         }
     };
 
+    // The effective core count is the smaller of the OS affinity mask and any
+    // cgroup quota, so a Pterodactyl/Docker container limited to 600% CPU sizes
+    // its pools for six cores even when the host has dozens. The files are read
+    // once: every core decision below must use the same number.
+    let available_cores = available_worker_threads();
+    let configured_cores = steel_config.server.threads.cores.filter(|&cores| cores > 0);
+    let cores = configured_cores.map_or(available_cores, |cores| cores.min(available_cores));
+    // `Server::new_with_commands` applies the same clamp to the runtime config,
+    // so the pools created here and the pools created there always agree: the
+    // configured value is an upper bound and a container quota wins over it.
+    let pools = pool_sizes_for_available(cores);
+    // Printed once at startup so an operator can see what a container limit was
+    // detected as; on a Pterodactyl box this is the cgroup quota, not the host.
+    tracing::info!(
+        cores,
+        configured_cores = configured_cores.unwrap_or(0),
+        detected_cores = available_cores,
+        container_limited = configured_cores.is_some_and(|cores| cores > available_cores),
+        main_runtime = pools.main_runtime,
+        chunk_runtime = pools.chunk_runtime,
+        chunk_generation = pools.chunk_generation,
+        chunk_encoding = pools.chunk_encoding,
+        packet_workers = pools.packet_workers,
+        "Selected thread pool sizes"
+    );
+
     let main_worker_threads = worker_threads_for_available(
         steel_config.server.threads.main_runtime,
-        available_worker_threads(),
+        pools.main_runtime,
     );
     let chunk_worker_threads = worker_threads_for_available(
         steel_config.server.threads.chunk_runtime,
-        available_worker_threads(),
+        pools.chunk_runtime,
     );
 
     let chunk_runtime = Arc::new(

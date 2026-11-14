@@ -188,7 +188,7 @@ mod tests {
         secondary_use: bool,
         yaw: f32,
     ) -> Option<BlockPos> {
-        let mut stack = ItemStack::new(&vanilla_items::SCAFFOLDING);
+        let mut stack = ItemStack::new(&*vanilla_items::SCAFFOLDING);
         let context = place_context(
             world,
             &mut stack,
@@ -326,7 +326,7 @@ mod tests {
         let item = ScaffoldingBlockItem::new(&vanilla_blocks::SCAFFOLDING);
         let end = BlockPos::new(start.x() + last_stable_offset, start.y(), start.z());
         let placed = end.east();
-        let mut stack = ItemStack::with_count(&vanilla_items::SCAFFOLDING, 2);
+        let mut stack = ItemStack::with_count(&*vanilla_items::SCAFFOLDING, 2);
         let context = place_context(
             world,
             &mut stack,
@@ -351,7 +351,7 @@ mod tests {
         let world = &world_fixture.world;
         let pos = BlockPos::new(8, 64, 8);
         let item = ScaffoldingBlockItem::new(&vanilla_blocks::SCAFFOLDING);
-        let mut stack = ItemStack::with_count(&vanilla_items::SCAFFOLDING, 2);
+        let mut stack = ItemStack::with_count(&*vanilla_items::SCAFFOLDING, 2);
         let context = place_context(world, &mut stack, pos, Direction::Up, false, false, 0.0);
 
         assert_eq!(item.place(context), InteractionResult::Fail);
@@ -367,7 +367,7 @@ mod tests {
         set_block(world, pos.below(), vanilla_blocks::STONE.default_state());
         set_block(world, pos, vanilla_blocks::WATER.default_state());
         let item = ScaffoldingBlockItem::new(&vanilla_blocks::SCAFFOLDING);
-        let mut stack = ItemStack::new(&vanilla_items::SCAFFOLDING);
+        let mut stack = ItemStack::new(&*vanilla_items::SCAFFOLDING);
         let context = place_context(world, &mut stack, pos, Direction::Up, false, false, 0.0);
 
         assert_eq!(item.place(context), InteractionResult::Success);

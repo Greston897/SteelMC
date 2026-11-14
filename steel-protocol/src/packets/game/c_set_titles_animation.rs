@@ -1,4 +1,5 @@
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_SET_TITLES_ANIMATION;
 
 /// Sets the title fade-in, stay, and fade-out durations on the client.

@@ -1,8 +1,8 @@
 //! `FlowerPotBlock` behavior (`net.minecraft.world.level.block.FlowerPotBlock`).
 //!
-//! TODO: Potted open/closed eyeblossoms do not transform at day/night yet.
-//! Vanilla reads `EnvironmentAttributes.EYEBLOSSOM_OPEN`, which Steel lacks
-//! (the same gap documented on `EyeblossomBlock`).
+//! Potted eyeblossoms follow the same day/night swap as the flowers themselves:
+//! vanilla reads `EnvironmentAttributes.EYEBLOSSOM_OPEN` on the potted block and
+//! replaces the pot content, which Steel does through `random_tick`.
 
 use crate::player::player_inventory::Prediction;
 use std::sync::{Arc, LazyLock};
@@ -10,6 +10,7 @@ use std::sync::{Arc, LazyLock};
 use rustc_hash::FxHashMap;
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::item::BlockHitResult;
 use steel_registry::vanilla_custom_stats;
@@ -63,6 +64,31 @@ impl FlowerPotBlock {
 impl BlockBehavior for FlowerPotBlock {
     fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(self.block.default_state())
+    }
+
+    fn random_tick(&self, _state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        // Vanilla `FlowerPotBlock.tick`: a potted eyeblossom swaps with the
+        // environment's open/closed attribute, keeping the pot itself.
+        let (potted, target) = if self.potted == &vanilla_blocks::POTTED_OPEN_EYEBLOSSOM {
+            (
+                &vanilla_blocks::POTTED_OPEN_EYEBLOSSOM,
+                &vanilla_blocks::POTTED_CLOSED_EYEBLOSSOM,
+            )
+        } else if self.potted == &vanilla_blocks::POTTED_CLOSED_EYEBLOSSOM {
+            (
+                &vanilla_blocks::POTTED_CLOSED_EYEBLOSSOM,
+                &vanilla_blocks::POTTED_OPEN_EYEBLOSSOM,
+            )
+        } else {
+            return;
+        };
+        let should_be_open =
+            world.environment_attribute("minecraft:gameplay/eyeblossom_open", 0.0) >= 0.5;
+        let is_open = potted == &vanilla_blocks::POTTED_OPEN_EYEBLOSSOM;
+        if should_be_open == is_open {
+            return;
+        }
+        world.set_block(pos, target.default_state(), UpdateFlags::UPDATE_ALL);
     }
 
     fn use_item_on(
@@ -227,7 +253,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::with_count(&vanilla_items::DANDELION, 1));
+            .set_selected_item(ItemStack::with_count(&*vanilla_items::DANDELION, 1));
         assert_eq!(
             empty_pot().use_item_on(
                 world.get_block_state(TEST_POS),
@@ -249,7 +275,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::STONE));
+            .set_selected_item(ItemStack::new(&*vanilla_items::STONE));
         assert_eq!(
             potted_dandelion().use_item_on(
                 world.get_block_state(TEST_POS),
@@ -283,7 +309,7 @@ mod tests {
                 .lock()
                 .get_items()
                 .iter()
-                .any(|item| item.is(&vanilla_items::DANDELION))
+                .any(|item| item.is(&*vanilla_items::DANDELION))
         );
 
         assert_eq!(
@@ -329,7 +355,7 @@ mod tests {
                 false,
             )
             .expect("flower pot always yields a clone stack");
-        assert!(empty_clone.is(&vanilla_items::FLOWER_POT));
+        assert!(empty_clone.is(&*vanilla_items::FLOWER_POT));
 
         let filled_clone = potted_dandelion()
             .get_clone_item_stack(
@@ -339,6 +365,6 @@ mod tests {
                 false,
             )
             .expect("potted flower pot always yields a clone stack");
-        assert!(filled_clone.is(&vanilla_items::DANDELION));
+        assert!(filled_clone.is(&*vanilla_items::DANDELION));
     }
 }

@@ -2,7 +2,7 @@
 
 use steel_registry::{
     item_stack::ItemStack,
-    recipe::{CraftingInput, PositionedCraftingInput},
+    recipe::{CraftingInput, MapRecipeData, PositionedCraftingInput},
 };
 use steel_utils::{DowncastType, DowncastTypeKey};
 
@@ -56,7 +56,29 @@ impl CraftingContainer {
     /// grid slots.
     #[must_use]
     pub fn as_positioned_input(&self) -> PositionedCraftingInput {
-        CraftingInput::positioned(self.width, self.height, self.items.clone())
+        let mut positioned =
+            CraftingInput::positioned(self.width, self.height, self.items.clone());
+        // Vanilla `MapExtendingRecipe.matches` reads the centre map's saved data:
+        // only a non-exploration map below the maximum scale may be extended.
+        // Steel has no saved map data yet, so the facts come from the stack's
+        // components instead: a filled map carries `minecraft:map_id`, and the
+        // created map is never an exploration map, so it stays extendable.
+        for slot in 0..self.items.len() {
+            let stack = &self.items[slot];
+            if !stack.is(&steel_registry::vanilla_items::FILLED_MAP) {
+                continue;
+            }
+            // A crafted map tree starts at scale 0 and is never an exploration
+            // map, which is exactly the state the extending recipe accepts.
+            positioned.input = positioned.input.with_map_data(
+                slot,
+                MapRecipeData {
+                    exploration_map: false,
+                    scale: 0,
+                },
+            );
+        }
+        positioned
     }
 
     /// Returns a reference to the items in the grid.

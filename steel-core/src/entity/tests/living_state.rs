@@ -125,7 +125,7 @@ fn attack_animation_uses_held_item_component() {
     let entity = LivingFluidTestEntity::new(0.0, 0.0, true);
     entity.equip(
         EquipmentSlot::MainHand,
-        ItemStack::new(&vanilla_items::WOODEN_SPEAR),
+        ItemStack::new(&*vanilla_items::WOODEN_SPEAR),
     );
 
     assert_eq!(

@@ -198,6 +198,11 @@ impl Player {
         let behavior = block_behaviors.get_behavior(block);
 
         let block_entity = world.get_block_entity(packet.pos);
+        // Saved before the block entity is handed to the behavior, which may
+        // consume the shared handle.
+        let picked_data = block_entity
+            .as_ref()
+            .map(|block_entity| (block_entity.get_type(), block_entity.save_custom_only()));
 
         let include_data = self.has_infinite_materials() && packet.include_data;
 
@@ -211,7 +216,18 @@ impl Player {
             return;
         }
 
-        // TODO: If include_data, copy the block entity data into the picked item stack.
+        // Vanilla `ServerGameMode.handlePickItemFromBlock`: with data included
+        // (`hasInfiniteMaterials` + the request flag) the block entity's saved
+        // NBT becomes the item's `block_entity_data` component.
+        let mut item_stack = item_stack;
+        if include_data && let Some((block_entity_type, nbt)) = picked_data {
+            if let Some(data) = CustomData::try_from_compound(nbt) {
+                item_stack.set(
+                    vanilla_components::BLOCK_ENTITY_DATA,
+                    BlockEntityData::new(block_entity_type, data),
+                );
+            }
+        }
 
         let mut inventory = self.inventory.lock();
 
@@ -362,7 +378,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::FIREWORK_ROCKET));
+            .set_selected_item(ItemStack::new(&*vanilla_items::FIREWORK_ROCKET));
 
         for (sequence, location) in [
             (1, DVec3::new(f64::NAN, 0.5, 0.5)),
@@ -385,7 +401,7 @@ mod tests {
 
         let inventory = player.inventory.lock();
         let held_item = inventory.get_item_in_hand(InteractionHand::MainHand);
-        assert!(held_item.is(&vanilla_items::FIREWORK_ROCKET));
+        assert!(held_item.is(&*vanilla_items::FIREWORK_ROCKET));
         assert_eq!(held_item.count(), 1);
         assert!(!player.connection.closed());
     }

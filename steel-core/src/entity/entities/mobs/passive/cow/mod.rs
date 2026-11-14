@@ -207,7 +207,7 @@ impl CowEntity {
 
         let is_bucket = {
             let inventory = player.inventory.lock();
-            inventory.get_item_in_hand(hand).is(&vanilla_items::BUCKET)
+            inventory.get_item_in_hand(hand).is(&*vanilla_items::BUCKET)
         };
         if !is_bucket {
             return false;
@@ -219,7 +219,7 @@ impl CowEntity {
             let mut inventory = player.inventory.lock();
             inventory.apply_filled_result(
                 hand,
-                ITEM_BEHAVIORS.default_instance(&vanilla_items::MILK_BUCKET),
+                ITEM_BEHAVIORS.default_instance(&*vanilla_items::MILK_BUCKET),
                 player.has_infinite_materials(),
                 true,
             )

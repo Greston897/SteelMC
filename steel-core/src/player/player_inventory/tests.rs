@@ -25,8 +25,12 @@ use simdnbt::owned::{NbtList, NbtTag};
 use steel_protocol::{
     packet_traits::{CompressionInfo, EncodedPacket},
     packets::game::{
-        ClickType, HashedStack, SContainerButtonClick, SContainerClick, SSetCreativeModeSlot,
+        ClickType, HashedStack, SContainerButtonClick, SContainerClick, SEditBook,
+        SSetCreativeModeSlot,
     },
+};
+use steel_registry::data_components::vanilla_components::{
+    WRITABLE_BOOK_CONTENT, WRITTEN_BOOK_CONTENT,
 };
 use steel_registry::{
     RegistryEntry, init_vanilla_registry, item_stack::ItemStack, vanilla_entities, vanilla_items,
@@ -47,25 +51,25 @@ use super::{
 fn death_drops_destroy_vanishing_items() {
     init_vanilla_registry();
     let mut inventory = PlayerInventory::new();
-    let mut vanishing = ItemStack::new(&vanilla_items::DIAMOND_SWORD);
+    let mut vanishing = ItemStack::new(&*vanilla_items::DIAMOND_SWORD);
     vanishing.set_enchantments(&[(Identifier::vanilla_static("vanishing_curse"), 1)], false);
-    inventory.set_item(0, ItemStack::new(&vanilla_items::STONE));
+    inventory.set_item(0, ItemStack::new(&*vanilla_items::STONE));
     inventory.set_item(1, vanishing);
 
     let drops = inventory.take_death_drops();
 
     assert!(inventory.is_empty());
-    assert_eq!(drops, [ItemStack::new(&vanilla_items::STONE)]);
+    assert_eq!(drops, [ItemStack::new(&*vanilla_items::STONE)]);
 }
 
 #[test]
 fn vanilla_inventory_nbt_contains_main_slots_only() {
     init_vanilla_registry();
     let mut inventory = PlayerInventory::new();
-    inventory.items[2] = ItemStack::new(&vanilla_items::STONE);
+    inventory.items[2] = ItemStack::new(&*vanilla_items::STONE);
     inventory.set(
         EquipmentSlot::Head,
-        ItemStack::new(&vanilla_items::DIAMOND_HELMET),
+        ItemStack::new(&*vanilla_items::DIAMOND_HELMET),
     );
 
     let NbtList::Compound(items) = inventory.to_vanilla_inventory_nbt() else {
@@ -88,7 +92,7 @@ fn replacement_copy_preserves_all_logical_slots_and_selection() {
     for slot in 0..PlayerInventory::CONTAINER_SIZE {
         source.set_item(
             slot,
-            ItemStack::with_count(&vanilla_items::OAK_LOG, slot as i32 + 1),
+            ItemStack::with_count(&*vanilla_items::OAK_LOG, slot as i32 + 1),
         );
     }
     source.set_selected_slot(8);
@@ -106,12 +110,12 @@ fn replacement_copy_does_not_drain_or_share_storage_with_source() {
     init_vanilla_registry();
 
     let mut source = PlayerInventory::new();
-    let mut sword = ItemStack::new(&vanilla_items::DIAMOND_SWORD);
+    let mut sword = ItemStack::new(&*vanilla_items::DIAMOND_SWORD);
     sword.set_damage_value(3);
     source.set_item(0, sword);
     source.set_item(
         PlayerInventory::SLOT_OFFHAND,
-        ItemStack::with_count(&vanilla_items::OAK_LOG, 4),
+        ItemStack::with_count(&*vanilla_items::OAK_LOG, 4),
     );
     source.set_selected_slot(1);
 
@@ -142,10 +146,10 @@ fn add_marks_changed_when_stack_fills_existing_slot() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.items[0] = ItemStack::with_count(&vanilla_items::OAK_LOG, 63);
+    inventory.items[0] = ItemStack::with_count(&*vanilla_items::OAK_LOG, 63);
     let before = inventory.get_times_changed();
 
-    let mut stack = ItemStack::new(&vanilla_items::OAK_LOG);
+    let mut stack = ItemStack::new(&*vanilla_items::OAK_LOG);
     assert!(inventory.add(&mut stack));
 
     assert!(stack.is_empty());
@@ -158,10 +162,10 @@ fn add_to_selected_existing_slot_marks_inventory_changed() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.items[0] = ItemStack::with_count(&vanilla_items::OAK_LOG, 63);
+    inventory.items[0] = ItemStack::with_count(&*vanilla_items::OAK_LOG, 63);
     let before = inventory.get_times_changed();
 
-    let mut stack = ItemStack::new(&vanilla_items::OAK_LOG);
+    let mut stack = ItemStack::new(&*vanilla_items::OAK_LOG);
     assert!(inventory.add(&mut stack));
 
     assert_eq!(inventory.get_selected_item().count(), 64);
@@ -175,7 +179,7 @@ fn add_to_empty_selected_slot_marks_inventory_changed() {
     let mut inventory = PlayerInventory::new();
     let before = inventory.get_times_changed();
 
-    let mut stack = ItemStack::with_count(&vanilla_items::OAK_LOG, 3);
+    let mut stack = ItemStack::with_count(&*vanilla_items::OAK_LOG, 3);
     assert!(inventory.add(&mut stack));
 
     assert_eq!(inventory.get_selected_item().count(), 3);
@@ -189,10 +193,10 @@ fn add_merges_into_existing_offhand_stack_before_main_inventory() {
     let mut inventory = PlayerInventory::new();
     inventory.set(
         EquipmentSlot::OffHand,
-        ItemStack::with_count(&vanilla_items::OAK_LOG, 63),
+        ItemStack::with_count(&*vanilla_items::OAK_LOG, 63),
     );
 
-    let mut stack = ItemStack::new(&vanilla_items::OAK_LOG);
+    let mut stack = ItemStack::new(&*vanilla_items::OAK_LOG);
     assert!(inventory.add(&mut stack));
 
     assert!(stack.is_empty());
@@ -205,13 +209,13 @@ fn contains_stack_compares_components() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    let mut damaged_in_inventory = ItemStack::new(&vanilla_items::DIAMOND_PICKAXE);
+    let mut damaged_in_inventory = ItemStack::new(&*vanilla_items::DIAMOND_PICKAXE);
     damaged_in_inventory.set_damage_value(3);
     inventory.items[0] = damaged_in_inventory;
 
-    let mut damaged_search = ItemStack::new(&vanilla_items::DIAMOND_PICKAXE);
+    let mut damaged_search = ItemStack::new(&*vanilla_items::DIAMOND_PICKAXE);
     damaged_search.set_damage_value(3);
-    let undamaged_search = ItemStack::new(&vanilla_items::DIAMOND_PICKAXE);
+    let undamaged_search = ItemStack::new(&*vanilla_items::DIAMOND_PICKAXE);
 
     assert!(inventory.contains_stack(&damaged_search));
     assert!(!inventory.contains_stack(&undamaged_search));
@@ -222,11 +226,11 @@ fn filled_result_replaces_single_survival_hand_stack() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.set_selected_item(ItemStack::new(&vanilla_items::WATER_BUCKET));
+    inventory.set_selected_item(ItemStack::new(&*vanilla_items::WATER_BUCKET));
 
     let overflow = inventory.apply_filled_result(
         InteractionHand::MainHand,
-        ItemStack::new(&vanilla_items::BUCKET),
+        ItemStack::new(&*vanilla_items::BUCKET),
         false,
         true,
     );
@@ -234,7 +238,7 @@ fn filled_result_replaces_single_survival_hand_stack() {
     assert!(overflow.is_empty());
     assert_eq!(
         inventory.get_selected_item(),
-        &ItemStack::new(&vanilla_items::BUCKET)
+        &ItemStack::new(&*vanilla_items::BUCKET)
     );
 }
 
@@ -243,11 +247,11 @@ fn filled_result_adds_result_for_stacked_survival_hand_stack() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.set_selected_item(ItemStack::with_count(&vanilla_items::BUCKET, 2));
+    inventory.set_selected_item(ItemStack::with_count(&*vanilla_items::BUCKET, 2));
 
     let overflow = inventory.apply_filled_result(
         InteractionHand::MainHand,
-        ItemStack::new(&vanilla_items::WATER_BUCKET),
+        ItemStack::new(&*vanilla_items::WATER_BUCKET),
         false,
         true,
     );
@@ -255,11 +259,11 @@ fn filled_result_adds_result_for_stacked_survival_hand_stack() {
     assert!(overflow.is_empty());
     assert_eq!(
         inventory.get_selected_item(),
-        &ItemStack::new(&vanilla_items::BUCKET)
+        &ItemStack::new(&*vanilla_items::BUCKET)
     );
     assert_eq!(
         inventory.get_item(1),
-        &ItemStack::new(&vanilla_items::WATER_BUCKET)
+        &ItemStack::new(&*vanilla_items::WATER_BUCKET)
     );
 }
 
@@ -268,11 +272,11 @@ fn filled_result_creative_limited_keeps_matching_held_stack() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.set_selected_item(ItemStack::new(&vanilla_items::WATER_BUCKET));
+    inventory.set_selected_item(ItemStack::new(&*vanilla_items::WATER_BUCKET));
 
     let overflow = inventory.apply_filled_result(
         InteractionHand::MainHand,
-        ItemStack::new(&vanilla_items::WATER_BUCKET),
+        ItemStack::new(&*vanilla_items::WATER_BUCKET),
         true,
         true,
     );
@@ -280,7 +284,7 @@ fn filled_result_creative_limited_keeps_matching_held_stack() {
     assert!(overflow.is_empty());
     assert_eq!(
         inventory.get_selected_item(),
-        &ItemStack::new(&vanilla_items::WATER_BUCKET)
+        &ItemStack::new(&*vanilla_items::WATER_BUCKET)
     );
     assert_eq!(
         (0..PlayerInventory::INVENTORY_SIZE)
@@ -295,11 +299,11 @@ fn filled_result_creative_limited_adds_missing_result_without_consuming_hand() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.set_selected_item(ItemStack::with_count(&vanilla_items::BUCKET, 16));
+    inventory.set_selected_item(ItemStack::with_count(&*vanilla_items::BUCKET, 16));
 
     let overflow = inventory.apply_filled_result(
         InteractionHand::MainHand,
-        ItemStack::new(&vanilla_items::WATER_BUCKET),
+        ItemStack::new(&*vanilla_items::WATER_BUCKET),
         true,
         true,
     );
@@ -307,11 +311,11 @@ fn filled_result_creative_limited_adds_missing_result_without_consuming_hand() {
     assert!(overflow.is_empty());
     assert_eq!(
         inventory.get_selected_item(),
-        &ItemStack::with_count(&vanilla_items::BUCKET, 16)
+        &ItemStack::with_count(&*vanilla_items::BUCKET, 16)
     );
     assert_eq!(
         inventory.get_item(1),
-        &ItemStack::new(&vanilla_items::WATER_BUCKET)
+        &ItemStack::new(&*vanilla_items::WATER_BUCKET)
     );
 }
 
@@ -320,7 +324,7 @@ fn filled_result_empty_result_still_consumes_survival_hand_stack() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.set_selected_item(ItemStack::new(&vanilla_items::BUCKET));
+    inventory.set_selected_item(ItemStack::new(&*vanilla_items::BUCKET));
 
     let overflow =
         inventory.apply_filled_result(InteractionHand::MainHand, ItemStack::empty(), false, true);
@@ -334,22 +338,22 @@ fn filled_result_creative_unlimited_returns_unadded_result_to_drop() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.set_selected_item(ItemStack::new(&vanilla_items::LAVA_BUCKET));
+    inventory.set_selected_item(ItemStack::new(&*vanilla_items::LAVA_BUCKET));
     for item in &mut inventory.items[1..PlayerInventory::INVENTORY_SIZE] {
-        *item = ItemStack::with_count(&vanilla_items::OAK_LOG, 64);
+        *item = ItemStack::with_count(&*vanilla_items::OAK_LOG, 64);
     }
 
     let overflow = inventory.apply_filled_result(
         InteractionHand::MainHand,
-        ItemStack::new(&vanilla_items::WATER_BUCKET),
+        ItemStack::new(&*vanilla_items::WATER_BUCKET),
         true,
         false,
     );
 
-    assert_eq!(overflow, ItemStack::new(&vanilla_items::WATER_BUCKET));
+    assert_eq!(overflow, ItemStack::new(&*vanilla_items::WATER_BUCKET));
     assert_eq!(
         inventory.get_selected_item(),
-        &ItemStack::new(&vanilla_items::LAVA_BUCKET)
+        &ItemStack::new(&*vanilla_items::LAVA_BUCKET)
     );
 }
 
@@ -358,10 +362,10 @@ fn clear_content_counts_equipment_items() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.items[0] = ItemStack::with_count(&vanilla_items::OAK_LOG, 3);
+    inventory.items[0] = ItemStack::with_count(&*vanilla_items::OAK_LOG, 3);
     inventory.set(
         EquipmentSlot::Head,
-        ItemStack::new(&vanilla_items::DIAMOND_HELMET),
+        ItemStack::new(&*vanilla_items::DIAMOND_HELMET),
     );
 
     assert_eq!(inventory.clear_content(), 4);
@@ -377,7 +381,7 @@ fn container_traversal_matches_visible_slot_indices() {
     for slot in 0..size {
         inventory.set_item(
             slot,
-            ItemStack::with_count(&vanilla_items::OAK_LOG, slot as i32 + 1),
+            ItemStack::with_count(&*vanilla_items::OAK_LOG, slot as i32 + 1),
         );
     }
 
@@ -442,20 +446,20 @@ fn mutable_container_slice_exposes_all_logical_slots() {
     let mut inventory = PlayerInventory::new();
     {
         let items = inventory.items_mut();
-        items[0] = ItemStack::new(&vanilla_items::STICK);
-        items[39] = ItemStack::new(&vanilla_items::DIAMOND_HELMET);
+        items[0] = ItemStack::new(&*vanilla_items::STICK);
+        items[39] = ItemStack::new(&*vanilla_items::DIAMOND_HELMET);
     }
     inventory.set_changed();
 
     assert!(
         inventory
             .get_ref(EquipmentSlot::MainHand)
-            .is(&vanilla_items::STICK)
+            .is(&*vanilla_items::STICK)
     );
     assert!(
         inventory
             .get_ref(EquipmentSlot::Head)
-            .is(&vanilla_items::DIAMOND_HELMET)
+            .is(&*vanilla_items::DIAMOND_HELMET)
     );
 }
 
@@ -465,13 +469,13 @@ fn main_inventory_search_does_not_use_equipment_slots() {
 
     let mut inventory = PlayerInventory::new();
     for item in &mut inventory.items[..PlayerInventory::INVENTORY_SIZE] {
-        *item = ItemStack::with_count(&vanilla_items::OAK_LOG, 64);
+        *item = ItemStack::with_count(&*vanilla_items::OAK_LOG, 64);
     }
-    inventory.set(EquipmentSlot::Head, ItemStack::new(&vanilla_items::STONE));
+    inventory.set(EquipmentSlot::Head, ItemStack::new(&*vanilla_items::STONE));
 
     assert_eq!(inventory.get_free_slot(), None);
     assert_eq!(
-        inventory.find_slot_matching_item(&ItemStack::new(&vanilla_items::STONE)),
+        inventory.find_slot_matching_item(&ItemStack::new(&*vanilla_items::STONE)),
         None
     );
 }
@@ -481,21 +485,21 @@ fn equipment_main_hand_follows_selected_slot() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.items[0] = ItemStack::new(&vanilla_items::STICK);
-    inventory.items[1] = ItemStack::new(&vanilla_items::OAK_LOG);
+    inventory.items[0] = ItemStack::new(&*vanilla_items::STICK);
+    inventory.items[1] = ItemStack::new(&*vanilla_items::OAK_LOG);
 
     assert!(
         inventory
             .get_ref(EquipmentSlot::MainHand)
-            .is(&vanilla_items::STICK)
+            .is(&*vanilla_items::STICK)
     );
     inventory.set_selected_slot(1);
     assert!(
         inventory
             .get_ref(EquipmentSlot::MainHand)
-            .is(&vanilla_items::OAK_LOG)
+            .is(&*vanilla_items::OAK_LOG)
     );
-    assert!(inventory.items[0].is(&vanilla_items::STICK));
+    assert!(inventory.items[0].is(&*vanilla_items::STICK));
 }
 
 #[test]
@@ -503,8 +507,8 @@ fn non_empty_equipment_items_uses_selected_item_as_main_hand() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    let main_hand = ItemStack::with_count(&vanilla_items::OAK_LOG, 2);
-    let head = ItemStack::new(&vanilla_items::DIAMOND_HELMET);
+    let main_hand = ItemStack::with_count(&*vanilla_items::OAK_LOG, 2);
+    let head = ItemStack::new(&*vanilla_items::DIAMOND_HELMET);
     inventory.items[0] = main_hand.clone();
     inventory.set(EquipmentSlot::Head, head.clone());
 
@@ -546,8 +550,8 @@ fn shrink_item_in_hand_marks_inventory_changed() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.set_selected_item(ItemStack::with_count(&vanilla_items::OAK_LOG, 3));
-    inventory.set_offhand_item(ItemStack::with_count(&vanilla_items::SHIELD, 2));
+    inventory.set_selected_item(ItemStack::with_count(&*vanilla_items::OAK_LOG, 3));
+    inventory.set_offhand_item(ItemStack::with_count(&*vanilla_items::SHIELD, 2));
 
     let before = inventory.get_times_changed();
     inventory.shrink_item_in_hand(InteractionHand::MainHand, 1);
@@ -567,12 +571,12 @@ fn split_item_in_hand_marks_inventory_changed() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.set_selected_item(ItemStack::with_count(&vanilla_items::OAK_LOG, 3));
+    inventory.set_selected_item(ItemStack::with_count(&*vanilla_items::OAK_LOG, 3));
 
     let before = inventory.get_times_changed();
     let split = inventory.split_item_in_hand(InteractionHand::MainHand, 1);
 
-    assert_eq!(split, ItemStack::with_count(&vanilla_items::OAK_LOG, 1));
+    assert_eq!(split, ItemStack::with_count(&*vanilla_items::OAK_LOG, 1));
     assert_eq!(inventory.get_selected_item().count(), 2);
     assert_ne!(inventory.get_times_changed(), before);
 }
@@ -582,7 +586,7 @@ fn mutating_only_held_item_components_marks_inventory_changed() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.set_selected_item(ItemStack::new(&vanilla_items::DIAMOND_SWORD));
+    inventory.set_selected_item(ItemStack::new(&*vanilla_items::DIAMOND_SWORD));
 
     let before = inventory.get_times_changed();
     inventory.mutate_item_in_hand(InteractionHand::MainHand, |stack| {
@@ -603,13 +607,13 @@ fn hurt_item_in_hand_marks_inventory_changed() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.set_selected_item(ItemStack::new(&vanilla_items::SHEARS));
+    inventory.set_selected_item(ItemStack::new(&*vanilla_items::SHEARS));
 
     let before = inventory.get_times_changed();
     inventory.hurt_item_in_hand(InteractionHand::MainHand, 1, false);
 
     let main_hand = inventory.get_selected_item();
-    assert!(main_hand.is(&vanilla_items::SHEARS));
+    assert!(main_hand.is(&*vanilla_items::SHEARS));
     assert_eq!(main_hand.get_damage_value(), 1);
     assert_ne!(inventory.get_times_changed(), before);
 }
@@ -619,18 +623,18 @@ fn hurt_and_convert_item_in_hand_damages_without_breaking() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.set_offhand_item(ItemStack::new(&vanilla_items::CARROT_ON_A_STICK));
+    inventory.set_offhand_item(ItemStack::new(&*vanilla_items::CARROT_ON_A_STICK));
 
     let before = inventory.get_times_changed();
     inventory.hurt_and_convert_item_in_hand_on_break(
         InteractionHand::OffHand,
         1,
-        &vanilla_items::FISHING_ROD,
+        &*vanilla_items::FISHING_ROD,
         false,
     );
 
     let offhand = inventory.get_offhand_item();
-    assert!(offhand.is(&vanilla_items::CARROT_ON_A_STICK));
+    assert!(offhand.is(&*vanilla_items::CARROT_ON_A_STICK));
     assert_eq!(offhand.get_damage_value(), 1);
     assert_ne!(inventory.get_times_changed(), before);
 }
@@ -640,7 +644,7 @@ fn hurt_and_convert_item_in_hand_replaces_broken_item() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.set_selected_item(ItemStack::new(&vanilla_items::CARROT_ON_A_STICK));
+    inventory.set_selected_item(ItemStack::new(&*vanilla_items::CARROT_ON_A_STICK));
     let max_damage = inventory.get_selected_item().get_max_damage();
     inventory
         .get_selected_item_mut()
@@ -650,12 +654,12 @@ fn hurt_and_convert_item_in_hand_replaces_broken_item() {
     inventory.hurt_and_convert_item_in_hand_on_break(
         InteractionHand::MainHand,
         7,
-        &vanilla_items::FISHING_ROD,
+        &*vanilla_items::FISHING_ROD,
         false,
     );
 
     let main_hand = inventory.get_selected_item();
-    assert!(main_hand.is(&vanilla_items::FISHING_ROD));
+    assert!(main_hand.is(&*vanilla_items::FISHING_ROD));
     assert_eq!(main_hand.count(), 1);
     assert_eq!(main_hand.get_damage_value(), 0);
     assert_ne!(inventory.get_times_changed(), before);
@@ -666,8 +670,8 @@ fn swap_hands_swaps_selected_and_offhand() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    let main_hand = ItemStack::with_count(&vanilla_items::OAK_LOG, 3);
-    let offhand = ItemStack::new(&vanilla_items::SHIELD);
+    let main_hand = ItemStack::with_count(&*vanilla_items::OAK_LOG, 3);
+    let offhand = ItemStack::new(&*vanilla_items::SHIELD);
     inventory.set_selected_item(main_hand.clone());
     inventory.set_offhand_item(offhand.clone());
 
@@ -682,7 +686,7 @@ fn equippable_single_item_moves_to_empty_armor_slot() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.set_selected_item(ItemStack::new(&vanilla_items::DIAMOND_HELMET));
+    inventory.set_selected_item(ItemStack::new(&*vanilla_items::DIAMOND_HELMET));
 
     let result = inventory.try_swap_with_equipment_slot(
         InteractionHand::MainHand,
@@ -694,7 +698,7 @@ fn equippable_single_item_moves_to_empty_armor_slot() {
     assert!(inventory.get_selected_item().is_empty());
     assert_eq!(
         inventory.get_ref(EquipmentSlot::Head),
-        &ItemStack::new(&vanilla_items::DIAMOND_HELMET)
+        &ItemStack::new(&*vanilla_items::DIAMOND_HELMET)
     );
 }
 
@@ -703,9 +707,9 @@ fn equippable_swap_respects_prevent_armor_change_effect() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    let mut bound_helmet = ItemStack::new(&vanilla_items::DIAMOND_HELMET);
+    let mut bound_helmet = ItemStack::new(&*vanilla_items::DIAMOND_HELMET);
     bound_helmet.set_enchantments(&[(Identifier::vanilla_static("binding_curse"), 1)], false);
-    inventory.set_selected_item(ItemStack::new(&vanilla_items::CARVED_PUMPKIN));
+    inventory.set_selected_item(ItemStack::new(&*vanilla_items::CARVED_PUMPKIN));
     inventory.set(EquipmentSlot::Head, bound_helmet.copy_with_count(1));
 
     let result = inventory.try_swap_with_equipment_slot(
@@ -717,7 +721,7 @@ fn equippable_swap_respects_prevent_armor_change_effect() {
     assert_eq!(result, EquipmentSwapResult::Fail);
     assert_eq!(
         inventory.get_selected_item(),
-        &ItemStack::new(&vanilla_items::CARVED_PUMPKIN)
+        &ItemStack::new(&*vanilla_items::CARVED_PUMPKIN)
     );
     assert_eq!(inventory.get_ref(EquipmentSlot::Head), &bound_helmet);
 }
@@ -727,7 +731,7 @@ fn repair_with_xp_repairs_damaged_mending_item() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    let mut pickaxe = ItemStack::new(&vanilla_items::DIAMOND_PICKAXE);
+    let mut pickaxe = ItemStack::new(&*vanilla_items::DIAMOND_PICKAXE);
     pickaxe.set_damage_value(10);
     pickaxe.set_enchantments(&[(Identifier::vanilla_static("mending"), 1)], false);
     inventory.set_selected_item(pickaxe);
@@ -745,7 +749,7 @@ fn repair_with_xp_returns_leftover_when_item_is_fully_repaired() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    let mut pickaxe = ItemStack::new(&vanilla_items::DIAMOND_PICKAXE);
+    let mut pickaxe = ItemStack::new(&*vanilla_items::DIAMOND_PICKAXE);
     pickaxe.set_damage_value(3);
     pickaxe.set_enchantments(&[(Identifier::vanilla_static("mending"), 1)], false);
     inventory.set_selected_item(pickaxe);
@@ -761,10 +765,10 @@ fn equippable_stack_moves_one_item_and_returns_old_equipment_to_inventory() {
     init_vanilla_registry();
 
     let mut inventory = PlayerInventory::new();
-    inventory.set_selected_item(ItemStack::with_count(&vanilla_items::CARVED_PUMPKIN, 2));
+    inventory.set_selected_item(ItemStack::with_count(&*vanilla_items::CARVED_PUMPKIN, 2));
     inventory.set(
         EquipmentSlot::Head,
-        ItemStack::new(&vanilla_items::DIAMOND_HELMET),
+        ItemStack::new(&*vanilla_items::DIAMOND_HELMET),
     );
 
     let result = inventory.try_swap_with_equipment_slot(
@@ -777,13 +781,13 @@ fn equippable_stack_moves_one_item_and_returns_old_equipment_to_inventory() {
     assert_eq!(inventory.get_selected_item().count(), 1);
     assert_eq!(
         inventory.get_ref(EquipmentSlot::Head),
-        &ItemStack::new(&vanilla_items::CARVED_PUMPKIN)
+        &ItemStack::new(&*vanilla_items::CARVED_PUMPKIN)
     );
     assert!(
         inventory
             .get_items()
             .iter()
-            .any(|stack| stack.is(&vanilla_items::DIAMOND_HELMET))
+            .any(|stack| stack.is(&*vanilla_items::DIAMOND_HELMET))
     );
 }
 
@@ -1178,7 +1182,7 @@ fn disconnected_menu_removal_drops_transient_items() {
     let transient = SimpleContainer::new(9).into_shared();
     transient
         .lock()
-        .set_item(0, ItemStack::new(&vanilla_items::STONE));
+        .set_item(0, ItemStack::new(&*vanilla_items::STONE));
 
     let probe_state = Arc::new(LockProbeState {
         armed: AtomicBool::new(false),
@@ -1227,7 +1231,7 @@ fn disconnected_menu_removal_drops_transient_items() {
             .lock()
             .items()
             .iter()
-            .all(|item| !item.is(&vanilla_items::STONE))
+            .all(|item| !item.is(&*vanilla_items::STONE))
     );
 
     let dropped = world.get_entities_in_aabb_matching(
@@ -1238,7 +1242,7 @@ fn disconnected_menu_removal_drops_transient_items() {
     let Some(item) = dropped[0].as_ref().downcast_ref::<ItemEntity>() else {
         panic!("dropped entity should retain its concrete item type");
     };
-    assert!(item.get_item().is(&vanilla_items::STONE));
+    assert!(item.get_item().is(&*vanilla_items::STONE));
 
     probe_state.armed.store(false, Ordering::Release);
     world.remove_player_for_world_change(&observer);
@@ -1251,7 +1255,7 @@ fn drained_items_return_without_player_inventory_slots() {
     let transient = SimpleContainer::new(1).into_shared();
     transient
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 3));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 3));
     let mut builder = MenuBuilder::new(None, 1);
     let transient_slots = builder.section(Arc::clone(&transient), 1);
     builder.drain([transient_slots]);
@@ -1322,7 +1326,7 @@ fn dead_player_container_click_only_resynchronizes() {
     player
         .inventory
         .lock()
-        .set_item(0, ItemStack::new(&vanilla_items::STONE));
+        .set_item(0, ItemStack::new(&*vanilla_items::STONE));
     player.set_health(0.0);
 
     player.handle_container_click(SContainerClick {
@@ -1340,7 +1344,7 @@ fn dead_player_container_click_only_resynchronizes() {
             .inventory
             .lock()
             .get_item(0)
-            .is(&vanilla_items::STONE)
+            .is(&*vanilla_items::STONE)
     );
     assert!(player.inventory_menu.lock().behavior().carried().is_empty());
 }
@@ -1351,7 +1355,7 @@ fn malformed_quickcraft_encoding_resets_active_drag() {
     let player = test_player(Arc::clone(test_world()));
     {
         let mut menu = player.inventory_menu.lock();
-        *menu.behavior_mut().carried_mut() = ItemStack::new(&vanilla_items::STONE);
+        *menu.behavior_mut().carried_mut() = ItemStack::new(&*vanilla_items::STONE);
         menu.clicked(
             Click::QuickCraft(QuickCraft::Start {
                 kind: DragKind::Left,
@@ -1392,7 +1396,7 @@ fn malformed_non_quickcraft_click_resets_active_drag() {
     player.set_client_loaded(true);
     let out_of_range_slot = {
         let mut menu = player.inventory_menu.lock();
-        *menu.behavior_mut().carried_mut() = ItemStack::with_count(&vanilla_items::STONE, 2);
+        *menu.behavior_mut().carried_mut() = ItemStack::with_count(&*vanilla_items::STONE, 2);
         menu.clicked(
             Click::QuickCraft(QuickCraft::Start {
                 kind: DragKind::Left,
@@ -1457,7 +1461,7 @@ fn closing_menu_while_dead_does_not_return_items_to_inventory() {
     let transient = SimpleContainer::new(9).into_shared();
     transient
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 3));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 3));
     let menu_container = Arc::clone(&transient);
     let inventory = Arc::clone(&player.inventory);
     player.open_menu("Dead close", move |context| {
@@ -1478,7 +1482,7 @@ fn closing_menu_while_dead_does_not_return_items_to_inventory() {
             .lock()
             .items()
             .iter()
-            .all(|item| !item.is(&vanilla_items::STONE))
+            .all(|item| !item.is(&*vanilla_items::STONE))
     );
 }
 
@@ -1607,7 +1611,7 @@ fn terminal_menu_removal_returns_carried_item_and_rejects_replacement() {
     player
         .inventory
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 3));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 3));
     let replacement_removals = Arc::new(AtomicUsize::new(0));
     let opened_container_id = Arc::new(AtomicU8::new(0));
     let factory_container_id = Arc::clone(&opened_container_id);
@@ -1642,7 +1646,7 @@ fn terminal_menu_removal_returns_carried_item_and_rejects_replacement() {
     let stone_count: i32 = inventory
         .items()
         .iter()
-        .filter(|item| item.is(&vanilla_items::STONE))
+        .filter(|item| item.is(&*vanilla_items::STONE))
         .map(ItemStack::count)
         .sum();
     assert_eq!(stone_count, 3);
@@ -1655,13 +1659,13 @@ fn terminal_menu_removal_skips_queued_factory_and_drains_base_menu() {
     let crafting = player.crafting_container();
     crafting
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 2));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 2));
     *player.inventory_menu.lock().behavior_mut().carried_mut() =
-        ItemStack::with_count(&vanilla_items::DIRT, 3);
+        ItemStack::with_count(&*vanilla_items::DIRT, 3);
     let transient = SimpleContainer::new(9).into_shared();
     transient
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::OAK_LOG, 4));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::OAK_LOG, 4));
 
     let menu_transient = Arc::clone(&transient);
     player.open_menu("Terminal on open", move |context| {
@@ -1680,7 +1684,7 @@ fn terminal_menu_removal_skips_queued_factory_and_drains_base_menu() {
     assert_eq!(transient.lock().get_item(0).count(), 4);
 
     let inventory = player.inventory.lock();
-    for (item, expected) in [(&vanilla_items::STONE, 2), (&vanilla_items::DIRT, 3)] {
+    for (item, expected) in [(&*vanilla_items::STONE, 2), (&*vanilla_items::DIRT, 3)] {
         let count: i32 = inventory
             .items()
             .iter()
@@ -1693,7 +1697,7 @@ fn terminal_menu_removal_skips_queued_factory_and_drains_base_menu() {
         inventory
             .items()
             .iter()
-            .all(|stack| !stack.is(&vanilla_items::OAK_LOG))
+            .all(|stack| !stack.is(&*vanilla_items::OAK_LOG))
     );
 }
 
@@ -1705,7 +1709,7 @@ fn pending_terminal_removal_preserves_drop_disposition() {
     insert_ready_full_chunk(world, ChunkPos::new(0, 0));
     let player = test_player(Arc::clone(world));
     *player.inventory_menu.lock().behavior_mut().carried_mut() =
-        ItemStack::with_count(&vanilla_items::STONE, 2);
+        ItemStack::with_count(&*vanilla_items::STONE, 2);
 
     player.open_menu("Terminal drop on open", |context| {
         empty_test_menu(context.player, context.container_id, DropAllMenusOnOpen)
@@ -1728,7 +1732,7 @@ fn pending_terminal_removal_preserves_drop_disposition() {
     let Some(item) = dropped[0].as_ref().downcast_ref::<ItemEntity>() else {
         panic!("dropped entity should retain its concrete item type");
     };
-    assert!(item.get_item().is(&vanilla_items::STONE));
+    assert!(item.get_item().is(&*vanilla_items::STONE));
     assert_eq!(item.get_item().count(), 2);
 }
 
@@ -1769,7 +1773,7 @@ fn prepared_menu_is_cleaned_when_replacement_removal_turns_terminal() {
     let transient = SimpleContainer::new(9).into_shared();
     transient
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 2));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 2));
 
     let menu_transient = Arc::clone(&transient);
     let menu_final_removals = Arc::clone(&final_removals);
@@ -1802,7 +1806,7 @@ fn prepared_menu_is_cleaned_when_replacement_removal_turns_terminal() {
     let Some(item) = dropped[0].as_ref().downcast_ref::<ItemEntity>() else {
         panic!("dropped entity should retain its concrete item type");
     };
-    assert!(item.get_item().is(&vanilla_items::STONE));
+    assert!(item.get_item().is(&*vanilla_items::STONE));
     assert_eq!(item.get_item().count(), 2);
 }
 
@@ -1816,7 +1820,7 @@ fn deferred_factory_is_not_run_when_earlier_close_turns_terminal() {
     let transient = SimpleContainer::new(9).into_shared();
     transient
         .lock()
-        .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 4));
+        .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 4));
 
     let menu_transient = Arc::clone(&transient);
     player.open_menu("Queue then remove", move |context| {
@@ -1933,7 +1937,7 @@ fn creative_crafting_grid_updates_the_result_slot() {
 
     player.handle_set_creative_mode_slot(SSetCreativeModeSlot {
         slot_num: 1,
-        item_stack: ItemStack::new(&vanilla_items::OAK_LOG),
+        item_stack: ItemStack::new(&*vanilla_items::OAK_LOG),
     });
 
     {
@@ -1942,7 +1946,7 @@ fn creative_crafting_grid_updates_the_result_slot() {
         let result = guard
             .get(crafting.result_id())
             .expect("result container is registered with the menu");
-        assert!(result.get_item(0).is(&vanilla_items::OAK_PLANKS));
+        assert!(result.get_item(0).is(&*vanilla_items::OAK_PLANKS));
         assert_eq!(result.get_item(0).count(), 4);
     }
 
@@ -2035,4 +2039,110 @@ fn resolve_beacon_effect_separates_absent_from_unknown_ids() {
 
     assert_eq!(Player::resolve_beacon_effect(Some(9999)), Err(()));
     assert_eq!(Player::resolve_beacon_effect(Some(-1)), Err(()));
+}
+
+#[test]
+fn editing_a_writable_book_stores_the_pages() {
+    init_vanilla_registry();
+    let player = test_player(Arc::clone(test_world()));
+    player
+        .inventory
+        .lock()
+        .set_item(0, ItemStack::new(&*vanilla_items::WRITABLE_BOOK));
+
+    player.handle_edit_book(SEditBook {
+        slot: 0,
+        pages: vec!["first page".to_owned(), "second page".to_owned()],
+        title: None,
+    });
+
+    let stack = player.inventory.lock().get_item(0).clone();
+    assert!(stack.is(&*vanilla_items::WRITABLE_BOOK));
+    let contents = stack
+        .get(WRITABLE_BOOK_CONTENT)
+        .expect("edited pages are stored on the writable book");
+    assert_eq!(contents.pages().len(), 2);
+    assert_eq!(contents.pages()[0].raw(), "first page");
+    assert_eq!(contents.pages()[1].raw(), "second page");
+    assert!(stack.get(WRITTEN_BOOK_CONTENT).is_none());
+}
+
+#[test]
+fn signing_a_writable_book_creates_a_written_book() {
+    init_vanilla_registry();
+    let player = test_player(Arc::clone(test_world()));
+    player
+        .inventory
+        .lock()
+        .set_item(0, ItemStack::new(&*vanilla_items::WRITABLE_BOOK));
+
+    player.handle_edit_book(SEditBook {
+        slot: 0,
+        pages: vec!["signed page".to_owned()],
+        title: Some("My Diary".to_owned()),
+    });
+
+    let stack = player.inventory.lock().get_item(0).clone();
+    assert!(stack.is(&*vanilla_items::WRITTEN_BOOK));
+    assert!(stack.get(WRITABLE_BOOK_CONTENT).is_none());
+    let contents = stack
+        .get(WRITTEN_BOOK_CONTENT)
+        .expect("signing stores written book content");
+    assert_eq!(contents.title().raw(), "My Diary");
+    assert_eq!(contents.author(), "TestPlayer");
+    assert_eq!(contents.generation(), 0);
+    assert_eq!(contents.pages().len(), 1);
+}
+
+#[test]
+fn book_updates_outside_the_hotbar_and_offhand_are_ignored() {
+    init_vanilla_registry();
+    let player = test_player(Arc::clone(test_world()));
+    // Main inventory slot 9 is not editable through the book packet.
+    player
+        .inventory
+        .lock()
+        .set_item(9, ItemStack::new(&*vanilla_items::WRITABLE_BOOK));
+
+    let before = player
+        .inventory
+        .lock()
+        .get_item(9)
+        .get(WRITABLE_BOOK_CONTENT)
+        .cloned();
+
+    player.handle_edit_book(SEditBook {
+        slot: 9,
+        pages: vec!["ignored".to_owned()],
+        title: None,
+    });
+
+    // The book keeps its default (empty) content: the packet is ignored.
+    let after = player
+        .inventory
+        .lock()
+        .get_item(9)
+        .get(WRITABLE_BOOK_CONTENT)
+        .cloned();
+    assert_eq!(before, after);
+}
+
+#[test]
+fn book_updates_on_a_non_book_slot_are_ignored() {
+    init_vanilla_registry();
+    let player = test_player(Arc::clone(test_world()));
+    player
+        .inventory
+        .lock()
+        .set_item(0, ItemStack::with_count(&*vanilla_items::DIRT, 3));
+
+    player.handle_edit_book(SEditBook {
+        slot: 0,
+        pages: vec!["ignored".to_owned()],
+        title: Some("Nope".to_owned()),
+    });
+
+    let stack = player.inventory.lock().get_item(0).clone();
+    assert!(stack.is(&*vanilla_items::DIRT));
+    assert_eq!(stack.count(), 3);
 }

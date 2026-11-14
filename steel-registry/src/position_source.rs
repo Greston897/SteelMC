@@ -97,6 +97,73 @@ impl PositionSource {
     }
 }
 
+impl PositionSource {
+    /// Decodes a vanilla `worldgen/position_source` tag.
+    ///
+    /// Vanilla shape: `{type:"minecraft:block", pos:[x,y,z]}` or
+    /// `{type:"minecraft:entity", source_entity:{...}, y_offset:0.0}`.
+    pub fn from_nbt_tag(tag: simdnbt::borrow::NbtTag<'_, '_>) -> Option<Self> {
+        use steel_utils::nbt::NbtNumeric as _;
+
+        let compound = tag.compound()?;
+        let kind = compound.string("type")?;
+        let kind = kind.to_str();
+        if kind == "minecraft:block" {
+            let pos = compound.int_array("pos")?;
+            let (x, y, z) = (*pos.get(0)?, *pos.get(1)?, *pos.get(2)?);
+            let source_type = REGISTRY
+                .position_source_types
+                .by_key(&crate::vanilla_position_source_types::BLOCK.key)?;
+            return Some(Self::new(
+                source_type,
+                BlockPositionSource::new(BlockPos::new(x, y, z)),
+            ));
+        }
+        if kind == "minecraft:entity" {
+            // Vanilla only stores the numeric id; `source_entity` is a runtime-only
+            // cache, so inventories that predate the entity read as id 0.
+            let entity_id = match compound.get("source_entity") {
+                Some(entity) => entity.compound()?.get("id")?.codec_i32()?,
+                None => 0,
+            };
+            let y_offset = match compound.get("y_offset") {
+                Some(offset) => offset.codec_f32()?,
+                None => 0.0,
+            };
+            let source_type = REGISTRY
+                .position_source_types
+                .by_key(&crate::vanilla_position_source_types::ENTITY.key)?;
+            return Some(Self::new(
+                source_type,
+                EntityPositionSource::new(entity_id, y_offset),
+            ));
+        }
+        None
+    }
+
+    /// Encodes this source into its vanilla tag form.
+    #[must_use]
+    pub fn to_nbt_tag(&self) -> simdnbt::owned::NbtTag {
+        use simdnbt::owned::{NbtList, NbtTag};
+
+        let mut compound = simdnbt::owned::NbtCompound::new();
+        if let Some(block) = self.downcast_ref::<BlockPositionSource>() {
+            compound.insert("type", "minecraft:block");
+            compound.insert(
+                "pos",
+                NbtList::Int(vec![block.pos().x(), block.pos().y(), block.pos().z()]),
+            );
+        } else if let Some(entity) = self.downcast_ref::<EntityPositionSource>() {
+            compound.insert("type", "minecraft:entity");
+            let mut source_entity = simdnbt::owned::NbtCompound::new();
+            source_entity.insert("id", entity.entity_id());
+            compound.insert("source_entity", source_entity);
+            compound.insert("y_offset", entity.y_offset());
+        }
+        NbtTag::Compound(compound)
+    }
+}
+
 impl Clone for PositionSource {
     fn clone(&self) -> Self {
         Self {

@@ -366,7 +366,7 @@ impl ThrowableProjectile for EnderPearlEntity {}
 
 impl ThrowableItemProjectile for EnderPearlEntity {
     fn get_default_item(&self) -> ItemRef {
-        &vanilla_items::ENDER_PEARL
+        &*vanilla_items::ENDER_PEARL
     }
 
     fn set_item(&self, item: ItemStack) {

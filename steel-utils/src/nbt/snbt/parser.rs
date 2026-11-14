@@ -83,7 +83,16 @@ struct Parser<'a> {
     input: &'a str,
     cursor: usize,
     recorded_error: Option<SnbtError>,
+    /// Current compound/list nesting, bounded by [`MAX_SNBT_DEPTH`].
+    depth: usize,
 }
+
+/// Maximum compound/list nesting accepted from SNBT input.
+///
+/// The parser recurses once per nesting level, so an adversarial
+/// `{"a":{"a":{"a":...}}}` string would otherwise exhaust the stack. Vanilla's
+/// tag readers cap at 512 levels; SNBT keeps the same ceiling.
+pub const MAX_SNBT_DEPTH: usize = 512;
 
 impl<'a> Parser<'a> {
     const fn new(input: &'a str) -> Self {
@@ -91,6 +100,7 @@ impl<'a> Parser<'a> {
             input,
             cursor: 0,
             recorded_error: None,
+            depth: 0,
         }
     }
 
@@ -185,6 +195,22 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_compound(&mut self) -> Result<NbtCompound, SnbtError> {
+        self.enter_depth()?;
+        let result = self.parse_compound_inner();
+        self.depth -= 1;
+        result
+    }
+
+    /// Track one level of nesting, refusing input past [`MAX_SNBT_DEPTH`].
+    fn enter_depth(&mut self) -> Result<(), SnbtError> {
+        if self.depth >= MAX_SNBT_DEPTH {
+            return Err(self.error(SnbtErrorKind::TooDeep));
+        }
+        self.depth += 1;
+        Ok(())
+    }
+
+    fn parse_compound_inner(&mut self) -> Result<NbtCompound, SnbtError> {
         self.expect_char('{')?;
         let mut compound = NbtCompound::new();
         if self.consume_char('}') {
@@ -226,6 +252,13 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_list_or_array(&mut self) -> Result<NbtTag, SnbtError> {
+        self.enter_depth()?;
+        let result = self.parse_list_or_array_inner();
+        self.depth -= 1;
+        result
+    }
+
+    fn parse_list_or_array_inner(&mut self) -> Result<NbtTag, SnbtError> {
         self.expect_char('[')?;
         if self.consume_char(']') {
             return Ok(NbtTag::List(NbtList::Empty));

@@ -40,7 +40,10 @@ use crate::{
     player::{Player, PlayerConnection},
 };
 
-use crate::inventory::click::{Click, ClickOutcome, SwapTarget, can_item_quick_replace};
+use crate::behavior::ITEM_BEHAVIORS;
+use crate::inventory::click::{
+    Click, ClickOutcome, MouseButton, SwapTarget, can_item_quick_replace,
+};
 
 /// A menu opened by a player: the shared click machinery plus one
 /// [`MenuKind`].
@@ -184,6 +187,40 @@ impl Menu {
         kind.click_menu_button(behavior, button_id, player)
     }
 
+    /// Applies a trade selection from the client.
+    ///
+    /// Returns false for any menu that is not a merchant menu, mirroring
+    /// vanilla's `instanceof MerchantMenu` check on the receiving side.
+    pub fn select_trade(&mut self, index: i32, player: &Player) -> bool {
+        let Self { behavior, kind, .. } = self;
+        kind.select_trade(behavior, index, player)
+    }
+
+    /// Applies a crafter slot-state toggle from the client.
+    ///
+    /// Returns false for any menu that is not a crafter menu, mirroring
+    /// vanilla's `instanceof CrafterMenu` check on the receiving side.
+    pub fn set_crafter_slot_state(&mut self, slot: usize, disabled: bool) -> bool {
+        let Self { behavior, kind, .. } = self;
+        if kind.downcast_ref::<kinds::CrafterKind>().is_none() {
+            return false;
+        }
+        // Slot occupancy gates disabling, and reading a slot needs the container
+        // locks. Take them here, then drop them before touching the kind so the
+        // click path and the mutation never hold locks at the same time.
+        let occupied = {
+            let guard = behavior.lock_all_containers();
+            behavior
+                .slots()
+                .get(slot)
+                .is_some_and(|slot| !slot.get_item(&guard).is_empty())
+        };
+        let Some(crafter) = kind.downcast_mut::<kinds::CrafterKind>() else {
+            return false;
+        };
+        crafter.apply_slot_state(behavior, slot, disabled, occupied)
+    }
+
     /// Clears or counts crafting-grid items in the base inventory menu,
     /// returning the number cleared or counted. Returns 0 for any other menu.
     pub(crate) fn clear_or_count_crafting_items(
@@ -265,10 +302,55 @@ impl Menu {
         }
     }
 
+    /// Vanilla `ScreenHandler.handleSlotClick`: gives the item on the cursor
+    /// (`Item.onStackClicked`) and the item in the clicked slot
+    /// (`Item.onClicked`) a chance to handle the click themselves.
+    ///
+    /// Runs after the menu's own [`MenuKind`] hook and before the default
+    /// pickup/drop arms. Returns `true` when an item consumed the click.
+    fn item_click_override(
+        &mut self,
+        slot_index: usize,
+        button: MouseButton,
+        player: &Player,
+    ) -> bool {
+        let mut guard = self.behavior().lock_all_containers();
+        let Self { behavior, .. } = self;
+        let (slots, carried) = behavior.slots_and_carried_mut();
+        let Some(slot) = slots.get(slot_index) else {
+            return false;
+        };
+
+        if !carried.is_empty() {
+            let cursor_item = carried.item();
+            if ITEM_BEHAVIORS.get_behavior(cursor_item).on_stack_clicked(
+                carried,
+                slot.as_ref(),
+                button,
+                player,
+                &mut guard,
+            ) {
+                return true;
+            }
+        }
+
+        let slot_stack = slot.get_item(&guard);
+        if slot_stack.is_empty() {
+            return false;
+        }
+        let slot_item = slot_stack.item();
+        ITEM_BEHAVIORS.get_behavior(slot_item).on_clicked(
+            slot.as_ref(),
+            button,
+            player,
+            &mut guard,
+            carried,
+        )
+    }
+
     /// Handles a click action in this menu. Packet clicks are validated via
     /// [`Click::parse`]; invalid programmatically constructed clicks are ignored.
     ///
-    /// TODO: Add `tryItemClickBehaviorOverride` for bundle item support.
     pub fn clicked(&mut self, click: Click, player: &Player) {
         if !click.is_valid_for(self.behavior().slot_count()) {
             log::debug!(
@@ -308,7 +390,18 @@ impl Menu {
                 kind.on_slot_clicked(behavior, &mut guard, click, player)
             };
 
-            if outcome == ClickOutcome::Fallthrough {
+            // Vanilla `ScreenHandler.handleSlotClick`: the item on the cursor or
+            // in the clicked slot may consume the click before the default
+            // pickup/drop logic runs.
+            let handled_by_item = outcome == ClickOutcome::Fallthrough
+                && match click {
+                    Click::Pickup { slot, button } => {
+                        self.item_click_override(slot, button, player)
+                    }
+                    _ => false,
+                };
+
+            if outcome == ClickOutcome::Fallthrough && !handled_by_item {
                 match click {
                     Click::Pickup { slot, button } => {
                         self.behavior_mut().do_pickup(slot, button, player);
@@ -448,6 +541,10 @@ impl Menu {
                 };
                 inventory.set_item(inventory_slot, target_item.clone());
                 target_slot.set_by_player(&mut guard, ItemStack::empty(), &target_item);
+                // Vanilla `AbstractContainerMenu.doClick` (SWAP) reports the count
+                // to the slot, which is how a furnace result reached by a number
+                // key still counts as crafted.
+                target_slot.on_swap_craft(target_item.count());
                 if let Some(remainder) = target_slot.on_take(&mut guard, &target_item, player) {
                     player.add_item_or_drop_with_guard(
                         &mut guard,

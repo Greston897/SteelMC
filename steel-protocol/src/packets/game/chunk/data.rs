@@ -1,5 +1,6 @@
 use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_LEVEL_CHUNK_WITH_LIGHT;
+use steel_utils::serial::PrefixedWrite as _;
 use steel_utils::serial::OptionalNbt;
 use steel_utils::{PackedChunkLocalXZ, codec::BitSet};
 

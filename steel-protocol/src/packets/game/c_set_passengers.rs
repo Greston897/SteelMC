@@ -1,6 +1,8 @@
 //! Clientbound set passengers packet.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::PrefixedWrite as _;
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_SET_PASSENGERS;
 
 /// Updates the direct passengers riding a vehicle entity.

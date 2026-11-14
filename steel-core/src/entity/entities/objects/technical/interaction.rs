@@ -14,6 +14,7 @@ use steel_macros::entity_behavior;
 use steel_registry::blocks::behavior::PushReaction;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::vanilla_entity_data::InteractionEntityData;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtNumeric as _;
@@ -156,7 +157,9 @@ impl Entity for InteractionEntity {
                 player: player.uuid(),
                 timestamp: world.game_time(),
             });
-            // TODO: Trigger PLAYER_HURT_ENTITY advancement criterion trigger
+            // Vanilla `Interaction.hurtServer` fires `player_hurt_entity` on the
+            // attacking player.
+            player.trigger_advancement(&vanilla_criteria_triggers::PLAYER_HURT_ENTITY);
         }
         !self.entity_data.lock().response.get()
     }

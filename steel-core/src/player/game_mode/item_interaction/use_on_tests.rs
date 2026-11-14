@@ -132,7 +132,7 @@ impl Interaction {
 }
 
 fn consuming_transformer(count: i32) -> ItemStack {
-    let mut stack = ItemStack::with_count(&vanilla_items::STICK, count);
+    let mut stack = ItemStack::with_count(&*vanilla_items::STICK, count);
     let transformer = vanilla_items::WOODEN_SHOVEL
         .components
         .get_ref(BLOCK_TRANSFORMER)
@@ -149,12 +149,12 @@ fn extra_remainder_merges_into_the_other_hand_without_losing_inventory_changes()
     let interaction = Interaction::new("use_on_remainder_merge");
     interaction.hold(
         InteractionHand::MainHand,
-        ItemStack::with_count(&vanilla_items::DIAMOND, 63),
+        ItemStack::with_count(&*vanilla_items::DIAMOND, 63),
     );
     let mut stack = consuming_transformer(3);
     stack.set(
         USE_REMAINDER,
-        UseRemainder::new(ItemStackTemplate::new(&vanilla_items::DIAMOND)),
+        UseRemainder::new(ItemStackTemplate::new(&*vanilla_items::DIAMOND)),
     );
     interaction.hold(InteractionHand::OffHand, stack);
     interaction.block(vanilla_blocks::DIRT.default_state());
@@ -173,13 +173,13 @@ fn extra_remainder_drops_when_the_inventory_is_full() {
     {
         let mut inv = interaction.player.inventory.lock();
         for slot in 0..36 {
-            inv.set_item(slot, ItemStack::with_count(&vanilla_items::STONE, 64));
+            inv.set_item(slot, ItemStack::with_count(&*vanilla_items::STONE, 64));
         }
     }
     let mut stack = consuming_transformer(3);
     stack.set(
         USE_REMAINDER,
-        UseRemainder::new(ItemStackTemplate::new(&vanilla_items::DIAMOND)),
+        UseRemainder::new(ItemStackTemplate::new(&*vanilla_items::DIAMOND)),
     );
     interaction.hold(InteractionHand::MainHand, stack);
     interaction.block(vanilla_blocks::DIRT.default_state());
@@ -187,7 +187,7 @@ fn extra_remainder_drops_when_the_inventory_is_full() {
         interaction.use_on(InteractionHand::MainHand),
         InteractionResult::Success
     );
-    assert_eq!(interaction.count(&vanilla_items::DIAMOND), 0);
+    assert_eq!(interaction.count(&*vanilla_items::DIAMOND), 0);
     let entities = interaction
         .world_fixture
         .world
@@ -198,7 +198,7 @@ fn extra_remainder_drops_when_the_inventory_is_full() {
         .filter_map(|entity| entity.downcast_ref::<ItemEntity>())
         .collect();
     assert_eq!(drops.len(), 1);
-    assert!(drops[0].get_item().is(&vanilla_items::DIAMOND));
+    assert!(drops[0].get_item().is(&*vanilla_items::DIAMOND));
     assert_eq!(drops[0].get_item().count(), 1);
     assert_eq!(
         interaction
@@ -214,11 +214,11 @@ fn extra_remainder_drops_when_the_inventory_is_full() {
 #[test]
 fn broken_tool_uses_the_original_statistics_remainder_and_cooldown() {
     let interaction = Interaction::new("use_on_broken_tool_remainder");
-    let mut axe = ItemStack::new(&vanilla_items::WOODEN_AXE);
+    let mut axe = ItemStack::new(&*vanilla_items::WOODEN_AXE);
     axe.set_damage_value(axe.get_max_damage() - 1);
     axe.set(
         USE_REMAINDER,
-        UseRemainder::new(ItemStackTemplate::new(&vanilla_items::DIAMOND)),
+        UseRemainder::new(ItemStackTemplate::new(&*vanilla_items::DIAMOND)),
     );
     axe.set(USE_COOLDOWN, UseCooldown::new(1.0, None));
     let before_use = axe.clone();
@@ -234,19 +234,19 @@ fn broken_tool_uses_the_original_statistics_remainder_and_cooldown() {
             .inventory
             .lock()
             .get_item_in_hand(InteractionHand::OffHand)
-            .is(&vanilla_items::DIAMOND)
+            .is(&*vanilla_items::DIAMOND)
     );
-    assert_eq!(interaction.used(&vanilla_items::WOODEN_AXE), 1);
-    assert_eq!(interaction.used(&vanilla_items::DIAMOND), 0);
+    assert_eq!(interaction.used(&*vanilla_items::WOODEN_AXE), 1);
+    assert_eq!(interaction.used(&*vanilla_items::DIAMOND), 0);
     assert!(interaction.player.is_item_on_cooldown(&before_use));
 }
 
 #[test]
 fn sign_applicators_count_once_without_item_use_component_side_effects() {
     let applicators: [ItemRef; 3] = [
-        &vanilla_items::GLOW_INK_SAC,
-        &vanilla_items::INK_SAC,
-        &vanilla_items::HONEYCOMB,
+        &*vanilla_items::GLOW_INK_SAC,
+        &*vanilla_items::INK_SAC,
+        &*vanilla_items::HONEYCOMB,
     ];
     for block in [
         &vanilla_blocks::OAK_SIGN,
@@ -270,7 +270,7 @@ fn sign_applicators_count_once_without_item_use_component_side_effects() {
             stack.set(USE_COOLDOWN, UseCooldown::new(1.0, None));
             stack.set(
                 USE_REMAINDER,
-                UseRemainder::new(ItemStackTemplate::new(&vanilla_items::DIAMOND)),
+                UseRemainder::new(ItemStackTemplate::new(&*vanilla_items::DIAMOND)),
             );
             let before_use = stack.clone();
             interaction.hold(hand, stack);
@@ -292,7 +292,7 @@ fn sign_applicators_count_once_without_item_use_component_side_effects() {
             }
             assert_eq!(interaction.used(item), 1);
             assert_eq!(interaction.count(item), 0);
-            assert_eq!(interaction.count(&vanilla_items::DIAMOND), 0);
+            assert_eq!(interaction.count(&*vanilla_items::DIAMOND), 0);
             assert!(!interaction.player.is_item_on_cooldown(&before_use));
         }
     }
@@ -348,13 +348,13 @@ fn glow_ink_rejections_do_not_consume_or_change_the_sign() {
         }
         interaction.hold(
             InteractionHand::MainHand,
-            ItemStack::with_count(&vanilla_items::GLOW_INK_SAC, 2),
+            ItemStack::with_count(&*vanilla_items::GLOW_INK_SAC, 2),
         );
 
         interaction.use_on(InteractionHand::MainHand);
 
-        assert_eq!(interaction.count(&vanilla_items::GLOW_INK_SAC), 2);
-        assert_eq!(interaction.used(&vanilla_items::GLOW_INK_SAC), 0);
+        assert_eq!(interaction.count(&*vanilla_items::GLOW_INK_SAC), 2);
+        assert_eq!(interaction.used(&*vanilla_items::GLOW_INK_SAC), 0);
         for slot in [SignTextSlot::Front, SignTextSlot::Back] {
             assert!(!sign.get_text(slot).has_glowing_text);
         }
@@ -371,7 +371,7 @@ fn honeycomb_can_wax_blank_signs_without_consuming_in_creative() {
         .restore_game_modes(GameType::Creative, None);
     interaction.hold(
         InteractionHand::MainHand,
-        ItemStack::new(&vanilla_items::HONEYCOMB),
+        ItemStack::new(&*vanilla_items::HONEYCOMB),
     );
 
     let result = interaction.use_on(InteractionHand::MainHand);
@@ -380,6 +380,6 @@ fn honeycomb_can_wax_blank_signs_without_consuming_in_creative() {
     assert!(result.should_swing());
     assert!(sign.is_waxed());
     assert_eq!(sign.get_player_who_may_edit(), None);
-    assert_eq!(interaction.count(&vanilla_items::HONEYCOMB), 1);
-    assert_eq!(interaction.used(&vanilla_items::HONEYCOMB), 1);
+    assert_eq!(interaction.count(&*vanilla_items::HONEYCOMB), 1);
+    assert_eq!(interaction.used(&*vanilla_items::HONEYCOMB), 1);
 }

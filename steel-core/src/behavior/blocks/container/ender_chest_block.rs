@@ -47,6 +47,17 @@ impl BlockBehavior for EnderChestBlock {
         )
     }
 
+    fn allows_spectator_menu(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+    ) -> bool {
+        // Vanilla `allowsSpectatorMenu` for container blocks.
+        let _ = (state, world, pos);
+        true
+    }
+
     fn use_without_item(
         &self,
         _state: BlockStateId,
@@ -82,7 +93,7 @@ impl BlockBehavior for EnderChestBlock {
         );
 
         player.award_custom_stat(&vanilla_custom_stats::OPEN_ENDERCHEST);
-        // TODO: Anger nearby piglins
+        super::anger_nearby_piglins(world, pos, player);
 
         InteractionResult::Success
     }

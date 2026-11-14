@@ -12,9 +12,14 @@ use std::{
 };
 
 use glam::DVec3;
-use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
+use simdnbt::borrow::{
+    BaseNbtCompound as BorrowedNbtCompound, NbtCompound as BorrowedNbtCompoundView,
+};
 use simdnbt::owned::NbtCompound;
+use simdnbt::{FromNbtTag as _, ToNbtTag as _};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::data_components::{DataComponentMap, vanilla_components::CUSTOM_NAME};
+use steel_registry::item_predicate::LockCode;
 use steel_registry::mob_effect::MobEffectRef;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::{
@@ -23,21 +28,26 @@ use steel_registry::{
 };
 use steel_utils::color::ArgbColor;
 use steel_utils::locks::SyncMutex;
+use text_components::TextComponent;
 use steel_utils::{
     BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, Identifier, WorldAabb,
 };
 
 use crate::behavior::BLOCK_BEHAVIORS;
-use crate::block_entity::{BlockEntity, BlockEntityBase};
+use crate::block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter};
 use crate::chunk::heightmap::HeightmapType;
 use crate::chunk::light::MAX_LIGHT_LEVEL;
-use crate::entity::{LivingEntity as _, MobEffectInstance};
+use crate::entity::{Entity as _, LivingEntity as _, MobEffectInstance};
 use crate::player::Player;
 use crate::world::World;
 
 const MAX_LEVELS: i32 = 4;
 
 const BEACON_TICK_INTERVAL: i64 = 80;
+
+/// Squared vanilla radius (`10` blocks) within which a new beacon beam grants
+/// the `construct_beacon` advancement.
+const BEACON_TRIGGER_RADIUS_SQUARED: f64 = 100.0;
 
 /// Blocks of beam column scanned per tick.
 const BLOCKS_CHECK_PER_TICK: i32 = 10;
@@ -57,7 +67,6 @@ pub(crate) const BEACON_EFFECTS: [&[MobEffectRef]; 4] = [
 ];
 
 /// A contiguous run of beam blocks sharing one tint.
-// TODO: Expose a `getBeamSections` equivalent when server-side callers need it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BeamSection {
     color: ArgbColor,
@@ -65,6 +74,18 @@ pub struct BeamSection {
 }
 
 impl BeamSection {
+    /// Returns the tint of this beam run.
+    #[must_use]
+    pub const fn color(&self) -> ArgbColor {
+        self.color
+    }
+
+    /// Returns the number of beam blocks in this run.
+    #[must_use]
+    pub const fn height(&self) -> i32 {
+        self.height
+    }
+
     const fn new(color: ArgbColor) -> Self {
         Self { color, height: 1 }
     }
@@ -150,6 +171,10 @@ impl BeaconState {
 pub struct BeaconBlockEntity {
     base: Arc<BlockEntityBase>,
     state: Arc<SyncMutex<BeaconState>>,
+    /// Vanilla `BaseContainerBlockEntity.name`.
+    name: SyncMutex<Option<TextComponent>>,
+    /// Vanilla `BaseContainerBlockEntity.lockKey`.
+    lock_key: SyncMutex<LockCode>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `BeaconBlockEntity`.
@@ -170,11 +195,37 @@ impl BeaconBlockEntity {
         Self {
             base,
             state: Arc::new(SyncMutex::new(BeaconState::new())),
+            name: SyncMutex::new(None),
+            lock_key: SyncMutex::new(LockCode::NO_LOCK),
         }
+    }
+
+    /// Returns the beam sections from the last completed scan.
+    ///
+    /// Modeled on vanilla `BeaconBlockEntity.getBeamSections`, which the renderer
+    /// and the beacon's own ambient sound logic share. An empty vector means the
+    /// beacon currently has no beam.
+    #[must_use]
+    pub fn beam_sections(&self) -> Vec<BeamSection> {
+        self.state.lock().beam_sections.clone()
     }
 
     pub(crate) fn state(&self) -> Arc<SyncMutex<BeaconState>> {
         Arc::clone(&self.state)
+    }
+
+    #[must_use]
+    pub fn custom_name(&self) -> Option<TextComponent> {
+        self.name.lock().clone()
+    }
+
+    pub fn set_custom_name(&self, name: Option<TextComponent>) {
+        *self.name.lock() = name;
+    }
+
+    #[must_use]
+    pub fn lock_key(&self) -> LockCode {
+        self.lock_key.lock().clone()
     }
 
     /// Handle the menu uses to mark this beacon changed.
@@ -330,8 +381,8 @@ impl BeaconBlockEntity {
     }
 
     fn load_effect(nbt: &BorrowedNbtCompound<'_>, field: &str) -> Option<MobEffectRef> {
-        let nbt_view: NbtCompoundView<'_, '_> = nbt.into();
-        let key = Identifier::from_str(&nbt_view.string(field)?.to_string()).ok()?;
+        let nbt: simdnbt::borrow::NbtCompound<'_, '_> = nbt.into();
+        let key = Identifier::from_str(&nbt.string(field)?.to_str()).ok()?;
         let effect = REGISTRY.mob_effects.by_key(&key)?;
         BeaconState::filter_effect(Some(effect))
     }
@@ -342,19 +393,45 @@ impl BlockEntity for BeaconBlockEntity {
         &self.base
     }
 
-    // TODO: Persist `CustomName` and `Lock` like Vanilla. Both need foundations Steel lacks: a
-    //       block-entity display name and a `LockCode` type.
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
+        // The `BaseNbtCompound` trait itself has no map access; the borrowed
+        // view is what exposes `get` and `byte_value`.
+        let view: BorrowedNbtCompoundView<'_, '_> = nbt.into();
+        *self.name.lock() = view
+            .get("CustomName")
+            .and_then(|tag| TextComponent::from_nbt(&tag.to_owned()));
+        *self.lock_key.lock() = view
+            .get("Lock")
+            .and_then(LockCode::from_nbt_tag)
+            .unwrap_or(LockCode::NO_LOCK);
+
         let mut state = self.state.lock();
         state.primary_power = Self::load_effect(nbt, "primary_effect");
         state.secondary_power = Self::load_effect(nbt, "secondary_effect");
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
+        if let Some(name) = self.name.lock().as_ref() {
+            nbt.insert("CustomName", name.to_codec_nbt());
+        }
+        {
+            let lock_key = self.lock_key.lock().clone();
+            if lock_key != LockCode::NO_LOCK {
+                nbt.insert("Lock", lock_key.to_nbt_tag());
+            }
+        }
         let state = self.state.lock();
         Self::store_effect(nbt, "primary_effect", state.primary_power);
         Self::store_effect(nbt, "secondary_effect", state.secondary_power);
         nbt.insert("Levels", state.levels);
+    }
+
+    fn apply_implicit_components(&self, components: &mut ImplicitComponentGetter<'_>) {
+        *self.name.lock() = components.get(CUSTOM_NAME);
+    }
+
+    fn collect_implicit_components(&self, components: &mut DataComponentMap) {
+        components.set(CUSTOM_NAME, self.custom_name());
     }
 
     fn get_update_tag(&self) -> Option<NbtCompound> {
@@ -399,14 +476,37 @@ impl BlockEntity for BeaconBlockEntity {
         }
 
         if scan_complete {
-            // TODO: Trigger the CONSTRUCT_BEACON criterion for nearby players on activation once
-            //       Steel's shared advancement foundations exist.
             let sound = match (previous_levels > 0, levels > 0) {
                 (false, true) => &sound_events::BLOCK_BEACON_ACTIVATE,
                 (true, false) => &sound_events::BLOCK_BEACON_DEACTIVATE,
                 _ => return,
             };
             Self::play_sound(world, pos, sound);
+        }
+
+        // Vanilla `BeaconBlockEntity.tick` fires `construct_beacon` for the players
+        // around the beacon the moment its pyramid becomes valid again, which is
+        // what `story/construct_beacon` waits for.
+        if scan_complete
+            && previous_levels <= 0
+            && levels > 0
+        {
+            let (center_x, center_y, center_z) = pos.get_center();
+            let center = DVec3::new(center_x, center_y, center_z);
+            world.players.iter_players(|_uuid, player| {
+                if player.position().distance_squared(center) <= BEACON_TRIGGER_RADIUS_SQUARED {
+                    let mut context =
+                        crate::player::advancement::predicate::TriggerContext::at(
+                            world, center,
+                        );
+                    context.dimension_level = Some(levels);
+                    player.trigger_advancement_with_context(
+                        &steel_registry::vanilla_criteria_triggers::CONSTRUCT_BEACON,
+                        &context,
+                    );
+                }
+                true
+            });
         }
     }
 

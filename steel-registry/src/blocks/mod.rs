@@ -8,6 +8,7 @@
 
 pub mod behavior;
 pub mod block_state_ext;
+pub mod block_state_nbt;
 pub mod properties;
 pub mod shapes;
 
@@ -76,6 +77,47 @@ impl StateBooleanData {
 
     #[must_use]
     pub fn value(self, offset: u16) -> bool {
+        self.overwrites
+            .iter()
+            .find(|overwrite| overwrite.offset == offset)
+            .map_or(self.default, |overwrite| overwrite.value)
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct StateByteOverwrite {
+    pub offset: u16,
+    pub value: u8,
+}
+
+impl StateByteOverwrite {
+    #[must_use]
+    pub const fn new(offset: u16, value: u8) -> Self {
+        Self { offset, value }
+    }
+}
+
+/// Extracted per-state `u8` values such as vanilla `BlockState.getMapColor`.
+#[derive(Debug, Clone, Copy)]
+pub struct StateByteData {
+    pub default: u8,
+    pub overwrites: &'static [StateByteOverwrite],
+}
+
+impl StateByteData {
+    /// Vanilla `MapColor.CLEAR` for every state.
+    pub const CLEAR: Self = Self::new(0, &[]);
+
+    #[must_use]
+    pub const fn new(default: u8, overwrites: &'static [StateByteOverwrite]) -> Self {
+        Self {
+            default,
+            overwrites,
+        }
+    }
+
+    #[must_use]
+    pub fn value(self, offset: u16) -> u8 {
         self.overwrites
             .iter()
             .find(|overwrite| overwrite.offset == offset)
@@ -204,6 +246,8 @@ pub struct Block {
     pub fluid_state: StateFluidData,
     /// Vanilla `BlockState.isRandomlyTicking` values indexed by block-local state offset.
     pub randomly_ticking: StateBooleanData,
+    /// Vanilla `BlockState.getMapColor` palette ids indexed by block-local state offset.
+    pub map_color: StateByteData,
     /// Extracted vanilla light properties indexed by block-local state offset.
     pub light_properties: LightPropertiesFn,
     /// Function to get collision shape for a state offset
@@ -265,6 +309,7 @@ impl Block {
             redstone_conductor: StateBooleanData::TRUE,
             fluid_state: StateFluidData::EMPTY,
             randomly_ticking,
+            map_color: StateByteData::CLEAR,
             light_properties: opaque_full_block_light_properties,
             collision_shape: full_block_shape,
             support_shape: full_block_shape,
@@ -317,6 +362,12 @@ impl Block {
     /// Sets the extracted per-state random-tick predicate.
     pub const fn with_randomly_ticking(mut self, randomly_ticking: StateBooleanData) -> Self {
         self.randomly_ticking = randomly_ticking;
+        self
+    }
+
+    /// Sets the extracted vanilla `BlockState.getMapColor` palette ids for this block.
+    pub const fn with_map_color(mut self, map_color: StateByteData) -> Self {
+        self.map_color = map_color;
         self
     }
 
@@ -442,6 +493,30 @@ impl Block {
     /// Returns `true` if this block is tagged with the given tag.
     pub fn has_tag(&'static self, tag: &Identifier) -> bool {
         crate::REGISTRY.blocks.is_in_tag(self, tag)
+    }
+
+    /// Vanilla `InfestedBlock.getHostBlock`: the plain block an infested block
+    /// turns back into when a silverfish merges with it.
+    ///
+    /// Returns the block itself for every non-infested block, matching vanilla,
+    /// where `InfestedBlock` overrides the method and everything else inherits
+    /// the identity implementation.
+    #[must_use]
+    pub fn host_block(&'static self) -> Option<BlockRef> {
+        const INFESTED_TO_HOST: [(&str, &str); 7] = [
+            ("infested_stone", "stone"),
+            ("infested_cobblestone", "cobblestone"),
+            ("infested_stone_bricks", "stone_bricks"),
+            ("infested_mossy_stone_bricks", "mossy_stone_bricks"),
+            ("infested_cracked_stone_bricks", "cracked_stone_bricks"),
+            ("infested_chiseled_stone_bricks", "chiseled_stone_bricks"),
+            ("infested_deepslate", "deepslate"),
+        ];
+        let path = self.key.path.as_ref();
+        let (_, host) = INFESTED_TO_HOST.iter().find(|(plain, _)| *plain == path)?;
+        crate::REGISTRY
+            .blocks
+            .by_key(&Identifier::vanilla_static(host))
     }
 }
 
@@ -999,6 +1074,18 @@ impl BlockRegistry {
             return false;
         };
         block.suffocating.value(offset)
+    }
+
+    /// Returns the extracted vanilla `BlockState.getMapColor` palette id for a state.
+    ///
+    /// Palette ids index [`crate::map_color::MAP_COLORS`]; `0` means vanilla
+    /// `MapColor.CLEAR`, which the map renderer treats as "skip this block".
+    #[must_use]
+    pub fn map_color(&self, state_id: BlockStateId) -> u8 {
+        let Some((block, offset)) = self.block_and_state_offset(state_id) else {
+            return 0;
+        };
+        block.map_color.value(offset)
     }
 
     /// Returns the extracted static `BlockState.isRedstoneConductor` value.

@@ -101,7 +101,8 @@ impl ItemBehavior for CompassItem {
 
         let pos = target.pos();
         if world.is_in_world_bounds(pos) {
-            // TODO: validate unloaded targets once POI persistence exists.
+            // Unloaded chunks are skipped rather than validated: lodestone
+            // targets are only resolved once POI data is persisted per chunk.
             if !world.is_full_chunk_loaded_at(pos) {
                 return;
             }
@@ -158,7 +159,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::COMPASS));
+            .set_selected_item(ItemStack::new(&*vanilla_items::COMPASS));
 
         let hit_result = BlockHitResult {
             location: DVec3::new(0.5, 64.5, 0.5),
@@ -228,7 +229,7 @@ mod tests {
         let tracker =
             LodestoneTracker::new(Some(GlobalPos::new(world.key.clone(), invalid_pos)), true);
 
-        let mut compass = ItemStack::new(&vanilla_items::COMPASS);
+        let mut compass = ItemStack::new(&*vanilla_items::COMPASS);
         compass.set(LODESTONE_TRACKER, tracker);
 
         player.inventory.lock().set_offhand_item(compass);

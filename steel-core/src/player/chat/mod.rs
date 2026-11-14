@@ -126,7 +126,10 @@ impl Player {
         is_operator: bool,
     ) -> bool {
         throttler.increment();
-        // TODO: Also exempt the singleplayer owner once Steel models that state.
+        // Vanilla also exempts the singleplayer owner (`isSingleplayerOwner`),
+        // which only exists on an integrated server. Steel runs a dedicated
+        // server, so operators are the only exemption and this matches vanilla
+        // for every connection it can see.
         !throttler.is_under_threshold() && !is_operator
     }
 

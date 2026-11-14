@@ -293,7 +293,7 @@ impl CommandSource {
                 world.key.clone(),
                 server.command_permission_snapshot(player.gameprofile.id()),
             ),
-            CommandSender::Console | CommandSender::Rcon => {
+            CommandSender::Console | CommandSender::Rcon(_) => {
                 CommandAuthorizationContext::unrestricted(world.key.clone())
             }
         };
@@ -325,6 +325,16 @@ impl CommandSource {
 
     pub(crate) const fn player(&self) -> Option<&Arc<Player>> {
         self.player.as_ref()
+    }
+
+    /// Vanilla `CommandSourceStack.getTextName`: the player's profile name, or
+    /// `Server` / `Rcon` for the non-player senders.
+    pub(crate) fn source_name(&self) -> String {
+        match &self.sender {
+            CommandSender::Player(player) => player.gameprofile.name().to_owned(),
+            CommandSender::Console => "Server".to_owned(),
+            CommandSender::Rcon(_) => "Rcon".to_owned(),
+        }
     }
 
     pub(crate) const fn entity(&self) -> Option<&SharedEntity> {

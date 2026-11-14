@@ -13,8 +13,8 @@ use crate::behavior::init_behaviors;
 use crate::inventory::equipment::EquipmentSlot;
 
 use super::{
-    ActiveMobEffect, LivingEntityBase, LivingTravelInput, MobEffectInstance, MobEffectSyncChange,
-    POST_IMPULSE_GRACE_TICKS,
+    ActiveMobEffect, LivingEntityBase, LivingTravelInput, MobEffectAddResult, MobEffectInstance,
+    MobEffectSyncChange, POST_IMPULSE_GRACE_TICKS,
 };
 
 /// An infinite-duration effect never "ends within" anything, and the bound is inclusive.
@@ -361,13 +361,13 @@ fn equipment_is_living_entity_state() {
 
     base.equipment()
         .lock()
-        .set(EquipmentSlot::Chest, ItemStack::new(&vanilla_items::ELYTRA));
+        .set(EquipmentSlot::Chest, ItemStack::new(&*vanilla_items::ELYTRA));
 
     assert!(
         base.equipment()
             .lock()
             .get_ref(EquipmentSlot::Chest)
-            .is(&vanilla_items::ELYTRA)
+            .is(&*vanilla_items::ELYTRA)
     );
 }
 
@@ -447,11 +447,14 @@ fn mob_effect_attribute_modifiers_use_extracted_vanilla_data() {
     let speed_modifier = &vanilla_mob_effects::SPEED.attribute_modifiers[0];
 
     assert_eq!(speed_modifier.attribute.key, movement_speed.key);
-    assert!(base.add_mob_effect(MobEffectInstance::with_duration(
-        vanilla_mob_effects::SPEED,
-        200,
-        1
-    )));
+    assert_eq!(
+        base.add_mob_effect(MobEffectInstance::with_duration(
+            vanilla_mob_effects::SPEED,
+            200,
+            1
+        )),
+        MobEffectAddResult::Added
+    );
 
     let boosted_speed = base
         .attributes()
@@ -633,4 +636,39 @@ fn poison_and_regeneration_tick_schedules_match_vanilla_interval_formulas() {
     // An effect with no vanilla tick schedule (e.g. Speed) never ticks.
     let speed = MobEffectInstance::with_duration(vanilla_mob_effects::SPEED, 100, 0);
     assert!(!speed.should_apply_effect_tick_this_tick(0));
+
+#[test]
+fn refreshing_an_active_effect_is_not_reported_as_added() {
+    // Vanilla `LivingEntity.addEffect` only plays `sound_on_added` for a new
+    // effect: a beacon refreshing speed must not replay the omen sound.
+    init_vanilla_registry();
+    let base = LivingEntityBase::new(&vanilla_entities::PLAYER);
+    assert_eq!(
+        base.add_mob_effect(MobEffectInstance::with_duration(
+            vanilla_mob_effects::SPEED,
+            200,
+            0
+        )),
+        MobEffectAddResult::Added
+    );
+    // A longer duration extends the active instance: changed, but not added.
+    assert_eq!(
+        base.add_mob_effect(MobEffectInstance::with_duration(
+            vanilla_mob_effects::SPEED,
+            400,
+            0
+        )),
+        MobEffectAddResult::Updated
+    );
+    // A weaker, shorter instance is ignored entirely.
+    assert_eq!(
+        base.add_mob_effect(MobEffectInstance::with_duration(
+            vanilla_mob_effects::SPEED,
+            20,
+            0
+        )),
+        MobEffectAddResult::Unchanged
+    );
+    assert!(!MobEffectAddResult::Unchanged.changed());
+}
 }

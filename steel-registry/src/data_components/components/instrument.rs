@@ -169,7 +169,7 @@ mod tests {
     #[test]
     fn extracted_goat_horn_uses_ponder_instrument() {
         init_vanilla_registry();
-        let goat_horn = ItemStack::new(&vanilla_items::GOAT_HORN);
+        let goat_horn = ItemStack::new(&*vanilla_items::GOAT_HORN);
 
         assert_eq!(
             goat_horn

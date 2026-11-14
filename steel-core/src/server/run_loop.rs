@@ -13,7 +13,7 @@ use super::{
 };
 
 use steel_registry::vanilla_custom_stats;
-use steel_utils::threading::{available_worker_threads, worker_threads_for_available};
+use steel_utils::threading::worker_threads_for_available;
 use steel_utils::translations;
 
 impl Server {
@@ -33,7 +33,7 @@ impl Server {
     pub async fn run(self: Arc<Self>, cancel_token: CancellationToken) {
         self.packet_processor.open_after_tick();
         let packet_worker_count =
-            worker_threads_for_available(self.config.packet_workers, available_worker_threads());
+            worker_threads_for_available(self.config.packet_workers, self.config.cores);
         let mut packet_handles = Vec::with_capacity(packet_worker_count);
         for worker_id in 0..packet_worker_count {
             let s = Arc::clone(&self);
@@ -241,6 +241,7 @@ impl Server {
             let (tick_count, runs_normally) = self.advance_server_tick();
 
             self.tick_pending_command_executions(&mut pending_command_executions);
+            self.tick_scheduled_commands();
             self.tick_command_requests(&mut pending_command_executions);
             if let Err(error) = self
                 .tick_worlds_game(&world_tick_workers, tick_count, runs_normally)
@@ -280,6 +281,7 @@ impl Server {
 
             if let Some(tick_stats) = tab_list_tick_stats {
                 self.broadcast_tab_list(tick_stats);
+                self.broadcast_tps_bar(tick_stats);
             }
 
             if should_sprint_this_tick {
@@ -349,6 +351,12 @@ impl Server {
         if Instant::now() < *next_autosave {
             return;
         }
+        // Vanilla `MinecraftServer.saveEverything` returns early while `/save-off`
+        // has disabled automatic saving; the cadence keeps ticking either way.
+        if !self.is_auto_save_enabled() {
+            *next_autosave = Instant::now() + COMMAND_DATA_AUTOSAVE_INTERVAL;
+            return;
+        }
         if saves.is_empty() {
             let server = Arc::clone(self);
             saves.spawn(async move {
@@ -372,6 +380,39 @@ impl Server {
                 pending = stats.pending,
                 "Command resumption tick reached per-tick processing limit"
             );
+        }
+    }
+
+    /// Runs the commands whose scheduled tick has arrived.
+    ///
+    /// Each command is submitted through the ordinary request queue, so a
+    /// scheduled function runs with console permissions and cannot starve the
+    /// tick loop — the queue caps how many run per tick.
+    fn tick_scheduled_commands(self: &Arc<Self>) {
+        let tick = self.current_tick();
+        let due = self.schedules.due(tick);
+        if due.is_empty() {
+            return;
+        }
+
+        for scheduled in due {
+            if self
+                .submit_command(CommandSender::Console, scheduled.command.clone())
+                .is_err()
+            {
+                // The queue is full: keep the schedule rather than dropping it,
+                // so the command runs on a later tick instead of vanishing.
+                tracing::warn!(
+                    command = %scheduled.command,
+                    "Command queue full while running a scheduled command; requeueing"
+                );
+                self.schedules.schedule(
+                    scheduled.key,
+                    scheduled.command,
+                    tick + 1,
+                    crate::server::schedule::ScheduleMode::Append,
+                );
+            }
         }
     }
 
@@ -514,20 +555,48 @@ impl Server {
 
     /// Executes one chunk sending tick across all worlds and players.
     ///
-    /// A per-world per-tick encode cache is used so overlapping view areas
-    /// don't re-encode the same chunk within a single tick.
+    /// Players are fanned out across the encoding pool: loading a fresh view can
+    /// mean hundreds of chunks per player, and encoding them all on the tick
+    /// thread left every encoding core idle while one player's queue drained.
+    /// `scope` only hands out work, so the per-player state (chunk sender,
+    /// connection, tracker) stays owned by whoever processes that player.
+    ///
+    /// Each player keeps a private encode cache. A shared cache would need to be
+    /// mutated from several workers at once, and a chunk only overlaps between
+    /// players whose view areas meet, so the duplicated work is negligible next
+    /// to the serialization that would otherwise be needed.
+    ///
+    /// The batch encoder inside `send_chunks_for_player` fans out over the same
+    /// pool. That nesting is safe: `Rayon` hands the worker's share of the inner
+    /// work to whatever threads are free, and every thread waiting on an inner
+    /// `install` also executes part of it, so the pool cannot starve itself.
     fn tick_chunk_sending(&self) {
         let tick_start = Instant::now();
+        let encoding_pool = self.chunk_encoding_pool.as_ref();
         for world in self.worlds.values() {
-            let mut encode_cache = rustc_hash::FxHashMap::default();
+            let mut players = Vec::new();
             world.players.iter_players(|_uuid, player| {
-                Self::send_chunks_for_player(
-                    player,
-                    world,
-                    &mut encode_cache,
-                    self.chunk_encoding_pool.as_ref(),
-                );
+                players.push(Arc::clone(player));
                 true
+            });
+
+            // `install` moves the whole scope onto the encoding pool, so the
+            // spawned players are distributed across its workers instead of
+            // running on whichever thread happens to call in.
+            encoding_pool.install(|| {
+                rayon::scope(|scope| {
+                    for player in &players {
+                        scope.spawn(|_| {
+                            let mut encode_cache = rustc_hash::FxHashMap::default();
+                            Self::send_chunks_for_player(
+                                player,
+                                world,
+                                &mut encode_cache,
+                                encoding_pool,
+                            );
+                        });
+                    }
+                });
             });
         }
 
@@ -596,6 +665,19 @@ impl Server {
     ) -> Result<(), WorldTickWorkerError> {
         if runs_normally {
             self.worlds.advance_domain_game_times();
+            // Vanilla advances `ServerScoreboard` stopwatches once per tick,
+            // alongside the game time.
+            self.scoreboards.tick_stopwatches();
+        }
+        // Vanilla ticks locator-bar transmission after the world tick, from the
+        // per-world `WaypointManager`; it only needs the post-move positions.
+        for world in self.worlds.values() {
+            world.waypoints.tick(world);
+            // Vanilla ticks `ServerLevel.raidManager` every tick: it advances the
+            // waves, stops finished raids and grants hero of the village.
+            if runs_normally {
+                world.raids.tick(world);
+            }
         }
         self.damage_history.expire();
         let all_timings = workers.tick_all(tick_count, runs_normally).await?;

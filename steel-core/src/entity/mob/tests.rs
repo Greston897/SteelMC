@@ -440,7 +440,7 @@ fn mob_control_flags_disable_jump_when_riding_boat() {
 fn mob_attack_damage_source_uses_item_damage_type_component() {
     let mob = Arc::new(DespawnTestMob::new(None, false));
     let mob_entity: SharedEntity = Arc::<DespawnTestMob>::clone(&mob);
-    let spear = ItemStack::new(&vanilla_items::WOODEN_SPEAR);
+    let spear = ItemStack::new(&*vanilla_items::WOODEN_SPEAR);
 
     let source = mob.mob_attack_damage_source(&spear, &mob_entity);
 
@@ -1049,7 +1049,7 @@ fn looting_collects_nearby_item_into_main_hand() {
         &vanilla_entities::ITEM,
         2,
         DVec3::new(8.0, 65.0, 8.0),
-        ItemStack::new(&vanilla_items::STONE),
+        ItemStack::new(&*vanilla_items::STONE),
         Arc::downgrade(world),
     ));
     item.set_no_pickup_delay();
@@ -1071,7 +1071,7 @@ fn looting_collects_nearby_item_into_main_hand() {
     );
     let mut held_is_stone = false;
     mob.with_equipment_slot(EquipmentSlot::MainHand, &mut |item_stack| {
-        held_is_stone = item_stack.is(&vanilla_items::STONE);
+        held_is_stone = item_stack.is(&*vanilla_items::STONE);
     });
     assert!(
         held_is_stone,
@@ -1113,7 +1113,7 @@ fn looting_runs_through_ai_step_even_with_no_ai() {
         &vanilla_entities::ITEM,
         2,
         DVec3::new(8.0, 65.0, 8.0),
-        ItemStack::new(&vanilla_items::STONE),
+        ItemStack::new(&*vanilla_items::STONE),
         Arc::downgrade(world),
     ));
     item.set_no_pickup_delay();
@@ -1135,7 +1135,7 @@ fn looting_runs_through_ai_step_even_with_no_ai() {
     );
     let mut held_is_stone = false;
     mob.with_equipment_slot(EquipmentSlot::MainHand, &mut |item_stack| {
-        held_is_stone = item_stack.is(&vanilla_items::STONE);
+        held_is_stone = item_stack.is(&*vanilla_items::STONE);
     });
     assert!(
         held_is_stone,
@@ -1163,7 +1163,7 @@ fn looting_skips_when_mob_cannot_pick_up_loot() {
         &vanilla_entities::ITEM,
         2,
         DVec3::new(8.0, 65.0, 8.0),
-        ItemStack::new(&vanilla_items::STONE),
+        ItemStack::new(&*vanilla_items::STONE),
         Arc::downgrade(world),
     ));
     item.set_no_pickup_delay();
@@ -1195,14 +1195,14 @@ fn pick_up_item_leaves_an_occupied_main_hand_untouched() {
     let mob = DespawnTestMob::new(None, false);
     mob.living_base().equipment().lock().set(
         EquipmentSlot::MainHand,
-        ItemStack::new(&vanilla_items::WOODEN_SPEAR),
+        ItemStack::new(&*vanilla_items::WOODEN_SPEAR),
     );
 
     let item = ItemEntity::with_item(
         &vanilla_entities::ITEM,
         2,
         DVec3::ZERO,
-        ItemStack::new(&vanilla_items::STONE),
+        ItemStack::new(&*vanilla_items::STONE),
         Weak::<World>::new(),
     );
     item.set_no_pickup_delay();
@@ -1215,7 +1215,7 @@ fn pick_up_item_leaves_an_occupied_main_hand_untouched() {
     );
     let mut still_holding_spear = false;
     mob.with_equipment_slot(EquipmentSlot::MainHand, &mut |item_stack| {
-        still_holding_spear = item_stack.is(&vanilla_items::WOODEN_SPEAR);
+        still_holding_spear = item_stack.is(&*vanilla_items::WOODEN_SPEAR);
     });
     assert!(
         still_holding_spear,
@@ -1228,15 +1228,15 @@ fn equip_routes_armor_to_its_armor_slot() {
     init_vanilla_registry();
     let mob = DespawnTestMob::new(None, false);
 
-    let equipped = Mob::equip_item_if_possible(&mob, ItemStack::new(&vanilla_items::IRON_HELMET));
+    let equipped = Mob::equip_item_if_possible(&mob, ItemStack::new(&*vanilla_items::IRON_HELMET));
 
     assert!(
-        equipped.is(&vanilla_items::IRON_HELMET),
+        equipped.is(&*vanilla_items::IRON_HELMET),
         "the helmet should be reported as equipped"
     );
     let mut head_is_helmet = false;
     mob.with_equipment_slot(EquipmentSlot::Head, &mut |item_stack| {
-        head_is_helmet = item_stack.is(&vanilla_items::IRON_HELMET);
+        head_is_helmet = item_stack.is(&*vanilla_items::IRON_HELMET);
     });
     assert!(
         head_is_helmet,
@@ -1270,20 +1270,20 @@ fn equip_replaces_worse_armor_and_drops_the_old_piece() {
     // deterministic rather than riding on the drop-chance roll.
     mob.living_base().equipment().lock().set(
         EquipmentSlot::Head,
-        ItemStack::new(&vanilla_items::LEATHER_HELMET),
+        ItemStack::new(&*vanilla_items::LEATHER_HELMET),
     );
     mob.set_guaranteed_drop(EquipmentSlot::Head);
 
     let equipped =
-        Mob::equip_item_if_possible(mob.as_ref(), ItemStack::new(&vanilla_items::DIAMOND_HELMET));
+        Mob::equip_item_if_possible(mob.as_ref(), ItemStack::new(&*vanilla_items::DIAMOND_HELMET));
 
     assert!(
-        equipped.is(&vanilla_items::DIAMOND_HELMET),
+        equipped.is(&*vanilla_items::DIAMOND_HELMET),
         "the stronger helmet should be equipped"
     );
     let mut head_is_diamond = false;
     mob.with_equipment_slot(EquipmentSlot::Head, &mut |item_stack| {
-        head_is_diamond = item_stack.is(&vanilla_items::DIAMOND_HELMET);
+        head_is_diamond = item_stack.is(&*vanilla_items::DIAMOND_HELMET);
     });
     assert!(head_is_diamond, "the head slot should now hold diamond");
 
@@ -1293,7 +1293,7 @@ fn equip_replaces_worse_armor_and_drops_the_old_piece() {
         .filter_map(|entity| {
             entity
                 .downcast_ref::<ItemEntity>()
-                .map(|item| item.get_item().is(&vanilla_items::LEATHER_HELMET))
+                .map(|item| item.get_item().is(&*vanilla_items::LEATHER_HELMET))
         })
         .any(|is_leather_helmet| is_leather_helmet);
     assert!(
@@ -1310,19 +1310,19 @@ fn equip_carries_worse_armor_in_a_free_hand() {
     let mob = DespawnTestMob::new(None, false);
     mob.living_base().equipment().lock().set(
         EquipmentSlot::Head,
-        ItemStack::new(&vanilla_items::DIAMOND_HELMET),
+        ItemStack::new(&*vanilla_items::DIAMOND_HELMET),
     );
 
     let equipped =
-        Mob::equip_item_if_possible(&mob, ItemStack::new(&vanilla_items::LEATHER_HELMET));
+        Mob::equip_item_if_possible(&mob, ItemStack::new(&*vanilla_items::LEATHER_HELMET));
 
     assert!(
-        equipped.is(&vanilla_items::LEATHER_HELMET),
+        equipped.is(&*vanilla_items::LEATHER_HELMET),
         "the worse helmet should still be taken into the free hand"
     );
     let mut head_is_diamond = false;
     mob.with_equipment_slot(EquipmentSlot::Head, &mut |item_stack| {
-        head_is_diamond = item_stack.is(&vanilla_items::DIAMOND_HELMET);
+        head_is_diamond = item_stack.is(&*vanilla_items::DIAMOND_HELMET);
     });
     assert!(
         head_is_diamond,
@@ -1330,7 +1330,7 @@ fn equip_carries_worse_armor_in_a_free_hand() {
     );
     let mut hand_is_leather = false;
     mob.with_equipment_slot(EquipmentSlot::MainHand, &mut |item_stack| {
-        hand_is_leather = item_stack.is(&vanilla_items::LEATHER_HELMET);
+        hand_is_leather = item_stack.is(&*vanilla_items::LEATHER_HELMET);
     });
     assert!(
         hand_is_leather,
@@ -1344,15 +1344,15 @@ fn equip_rejects_worse_armor_when_the_hands_are_full() {
     let mob = DespawnTestMob::new(None, false);
     mob.living_base().equipment().lock().set(
         EquipmentSlot::Head,
-        ItemStack::new(&vanilla_items::DIAMOND_HELMET),
+        ItemStack::new(&*vanilla_items::DIAMOND_HELMET),
     );
     mob.living_base().equipment().lock().set(
         EquipmentSlot::MainHand,
-        ItemStack::new(&vanilla_items::STONE),
+        ItemStack::new(&*vanilla_items::STONE),
     );
 
     let equipped =
-        Mob::equip_item_if_possible(&mob, ItemStack::new(&vanilla_items::LEATHER_HELMET));
+        Mob::equip_item_if_possible(&mob, ItemStack::new(&*vanilla_items::LEATHER_HELMET));
 
     assert!(
         equipped.is_empty(),
@@ -1360,12 +1360,12 @@ fn equip_rejects_worse_armor_when_the_hands_are_full() {
     );
     let mut head_is_diamond = false;
     mob.with_equipment_slot(EquipmentSlot::Head, &mut |item_stack| {
-        head_is_diamond = item_stack.is(&vanilla_items::DIAMOND_HELMET);
+        head_is_diamond = item_stack.is(&*vanilla_items::DIAMOND_HELMET);
     });
     assert!(head_is_diamond, "the worn diamond helmet must be untouched");
     let mut hand_is_stone = false;
     mob.with_equipment_slot(EquipmentSlot::MainHand, &mut |item_stack| {
-        hand_is_stone = item_stack.is(&vanilla_items::STONE);
+        hand_is_stone = item_stack.is(&*vanilla_items::STONE);
     });
     assert!(hand_is_stone, "the occupied main hand must be untouched");
 }
@@ -1374,7 +1374,7 @@ fn equip_rejects_worse_armor_when_the_hands_are_full() {
 fn equip_respects_prevent_armor_change_on_worn_gear() {
     init_vanilla_registry();
     let mob = DespawnTestMob::new(None, false);
-    let mut bound_helmet = ItemStack::new(&vanilla_items::DIAMOND_HELMET);
+    let mut bound_helmet = ItemStack::new(&*vanilla_items::DIAMOND_HELMET);
     bound_helmet.set_enchantments(&[(Identifier::vanilla_static("binding_curse"), 1)], false);
     mob.living_base()
         .equipment()
@@ -1383,11 +1383,11 @@ fn equip_respects_prevent_armor_change_on_worn_gear() {
     // Block the main-hand fallback so we test the armor slot in isolation.
     mob.living_base().equipment().lock().set(
         EquipmentSlot::MainHand,
-        ItemStack::new(&vanilla_items::STONE),
+        ItemStack::new(&*vanilla_items::STONE),
     );
 
     let equipped =
-        Mob::equip_item_if_possible(&mob, ItemStack::new(&vanilla_items::NETHERITE_HELMET));
+        Mob::equip_item_if_possible(&mob, ItemStack::new(&*vanilla_items::NETHERITE_HELMET));
 
     assert!(
         equipped.is_empty(),
@@ -1395,7 +1395,7 @@ fn equip_respects_prevent_armor_change_on_worn_gear() {
     );
     let mut head_is_diamond = false;
     mob.with_equipment_slot(EquipmentSlot::Head, &mut |item_stack| {
-        head_is_diamond = item_stack.is(&vanilla_items::DIAMOND_HELMET);
+        head_is_diamond = item_stack.is(&*vanilla_items::DIAMOND_HELMET);
     });
     assert!(head_is_diamond, "the bound helmet must stay on");
 }
@@ -1422,7 +1422,7 @@ fn pick_up_item_takes_one_from_a_stack_and_leaves_the_rest() {
         &vanilla_entities::ITEM,
         2,
         DVec3::new(8.0, 65.0, 8.0),
-        ItemStack::new(&vanilla_items::IRON_HELMET).copy_with_count(3),
+        ItemStack::new(&*vanilla_items::IRON_HELMET).copy_with_count(3),
         Arc::downgrade(world),
     ));
     item.set_no_pickup_delay();
@@ -1449,7 +1449,7 @@ fn pick_up_item_takes_one_from_a_stack_and_leaves_the_rest() {
     );
     let mut head_is_helmet = false;
     mob.with_equipment_slot(EquipmentSlot::Head, &mut |item_stack| {
-        head_is_helmet = item_stack.is(&vanilla_items::IRON_HELMET) && item_stack.count() == 1;
+        head_is_helmet = item_stack.is(&*vanilla_items::IRON_HELMET) && item_stack.count() == 1;
     });
     assert!(
         head_is_helmet,
@@ -1467,9 +1467,9 @@ fn equip_keeps_a_preferred_weapon_over_a_stronger_one() {
     mob.living_base()
         .equipment()
         .lock()
-        .set(EquipmentSlot::MainHand, ItemStack::new(&vanilla_items::BOW));
+        .set(EquipmentSlot::MainHand, ItemStack::new(&*vanilla_items::BOW));
 
-    let equipped = Mob::equip_item_if_possible(&mob, ItemStack::new(&vanilla_items::DIAMOND_SWORD));
+    let equipped = Mob::equip_item_if_possible(&mob, ItemStack::new(&*vanilla_items::DIAMOND_SWORD));
 
     assert!(
         equipped.is_empty(),
@@ -1477,7 +1477,7 @@ fn equip_keeps_a_preferred_weapon_over_a_stronger_one() {
     );
     let mut hand_is_bow = false;
     mob.with_equipment_slot(EquipmentSlot::MainHand, &mut |item_stack| {
-        hand_is_bow = item_stack.is(&vanilla_items::BOW);
+        hand_is_bow = item_stack.is(&*vanilla_items::BOW);
     });
     assert!(hand_is_bow, "the bow must stay in the main hand");
 }
@@ -1491,18 +1491,18 @@ fn equip_takes_a_preferred_weapon_over_a_held_non_preferred_one() {
     mob.set_preferred_weapon_type(ItemTag::SKELETON_PREFERRED_WEAPONS);
     mob.living_base().equipment().lock().set(
         EquipmentSlot::MainHand,
-        ItemStack::new(&vanilla_items::STONE_SWORD),
+        ItemStack::new(&*vanilla_items::STONE_SWORD),
     );
 
-    let equipped = Mob::equip_item_if_possible(&mob, ItemStack::new(&vanilla_items::BOW));
+    let equipped = Mob::equip_item_if_possible(&mob, ItemStack::new(&*vanilla_items::BOW));
 
     assert!(
-        equipped.is(&vanilla_items::BOW),
+        equipped.is(&*vanilla_items::BOW),
         "the preferred bow should replace the held sword"
     );
     let mut hand_is_bow = false;
     mob.with_equipment_slot(EquipmentSlot::MainHand, &mut |item_stack| {
-        hand_is_bow = item_stack.is(&vanilla_items::BOW);
+        hand_is_bow = item_stack.is(&*vanilla_items::BOW);
     });
     assert!(hand_is_bow, "the bow should now be held");
 }
@@ -1594,7 +1594,7 @@ fn daylight_burning_damages_a_protecting_helmet_without_igniting() {
     let world_fixture = daylight_test_world("daylight_burn_helmet", OVERWORLD_DAY_TICKS);
     let world = &world_fixture.world;
     let mob = daylit_mob(world, &vanilla_entities::ZOMBIE);
-    let mut helmet = ItemStack::new(&vanilla_items::IRON_HELMET);
+    let mut helmet = ItemStack::new(&*vanilla_items::IRON_HELMET);
     assert!(
         helmet.is_damageable_item(),
         "an iron helmet must be damageable for the sun-protection test"

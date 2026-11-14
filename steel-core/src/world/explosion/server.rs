@@ -107,6 +107,7 @@ impl<'a> ServerExplosion<'a> {
         self.block_interaction != BlockInteraction::Keep
     }
 
+
     pub(super) fn is_small(&self) -> bool {
         self.radius < SMALL_EXPLOSION_RADIUS || !self.interacts_with_blocks()
     }

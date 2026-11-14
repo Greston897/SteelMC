@@ -204,6 +204,10 @@ impl MenuKind for FurnaceMenuKind {
         if remaining.count() == clicked.count() {
             return Some(ItemStack::empty());
         }
+        // Vanilla `AbstractContainerMenu.doClick` reports the moved amount to the
+        // slot, which is how the furnace result counts a shift-clicked craft.
+        let taken = clicked.copy_with_count(clicked.count - remaining.count);
+        behavior.slots()[slot_index].on_quick_craft(&taken, player);
         if let Some(remainder) = behavior.slots()[slot_index].on_take(guard, &remaining, player) {
             player.add_item_or_drop_with_guard(guard, remainder, Prediction::Predicted);
         }
@@ -228,8 +232,8 @@ mod tests {
         init_vanilla_registry();
 
         for (kind, item) in [
-            (FurnaceKind::Furnace, &vanilla_items::FURNACE),
-            (FurnaceKind::Smoker, &vanilla_items::RAW_IRON),
+            (FurnaceKind::Furnace, &*vanilla_items::FURNACE),
+            (FurnaceKind::Smoker, &*vanilla_items::RAW_IRON),
         ] {
             let stack = ItemStack::new(item);
             assert!(

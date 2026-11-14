@@ -120,6 +120,12 @@ impl MenuBehavior {
         &self.slots
     }
 
+    /// Disjoint borrows of the menu slots and the cursor stack, used by
+    /// item-level click overrides that need both at once.
+    pub(crate) fn slots_and_carried_mut(&mut self) -> (&[Box<dyn Slot>], &mut ItemStack) {
+        (&self.slots, &mut self.carried)
+    }
+
     /// The item carried by the cursor.
     #[must_use]
     pub const fn carried(&self) -> &ItemStack {
@@ -1068,7 +1074,7 @@ mod tests {
     fn recording_menu() -> (Menu, ContainerRef) {
         init_vanilla_registry();
         let container = Arc::new(SyncMutex::new(RecordingContainer {
-            item: ItemStack::with_count(&vanilla_items::STONE, 5),
+            item: ItemStack::with_count(&*vanilla_items::STONE, 5),
             set_item_calls: 0,
             set_changed_calls: 0,
         }));
@@ -1084,8 +1090,8 @@ mod tests {
         let behavior = menu.behavior();
         let container_id = container_ref.container_id();
         let mut guard = behavior.lock_all_containers();
-        let previous = ItemStack::with_count(&vanilla_items::STONE, 5);
-        let remainder = ItemStack::with_count(&vanilla_items::STONE, 2);
+        let previous = ItemStack::with_count(&*vanilla_items::STONE, 5);
+        let remainder = ItemStack::with_count(&*vanilla_items::STONE, 2);
 
         behavior.update_quick_move_source(&mut guard, 0, &remainder, &previous);
         let state = guard
@@ -1113,7 +1119,7 @@ mod tests {
 
         let remainder = behavior.slots()[0].safe_insert(
             &mut guard,
-            ItemStack::with_count(&vanilla_items::STONE, 3),
+            ItemStack::with_count(&*vanilla_items::STONE, 3),
             3,
         );
         behavior.slots()[0].set_changed(&mut guard);
@@ -1133,7 +1139,7 @@ mod tests {
         let container = SimpleContainer::new(2).into_shared();
         container
             .lock()
-            .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 5));
+            .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 5));
         let container_ref = ContainerRef::from(container);
 
         let mut builder = MenuBuilder::new(None, 1);

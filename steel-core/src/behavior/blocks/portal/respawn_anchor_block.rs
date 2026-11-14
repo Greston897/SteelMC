@@ -208,7 +208,7 @@ impl RespawnAnchorBlock {
     }
 
     fn is_respawn_fuel(item_stack: &ItemStack) -> bool {
-        item_stack.is(&vanilla_items::GLOWSTONE)
+        item_stack.is(&*vanilla_items::GLOWSTONE)
     }
 
     fn analog_output_signal(charges: u8) -> i32 {
@@ -220,7 +220,7 @@ impl RespawnAnchorBlock {
             .inventory
             .lock()
             .get_item_in_hand(InteractionHand::OffHand)
-            .is(&vanilla_items::GLOWSTONE)
+            .is(&*vanilla_items::GLOWSTONE)
     }
 
     fn is_water_that_would_flow(world: &Arc<World>, pos: BlockPos) -> bool {

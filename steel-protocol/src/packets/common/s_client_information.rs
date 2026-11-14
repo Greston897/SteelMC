@@ -33,7 +33,8 @@ pub struct SClientInformation {
 mod tests {
     use std::io::Cursor;
 
-    use steel_utils::serial::ReadFrom as _;
+    use steel_utils::serial::PrefixedWrite as _;
+use steel_utils::serial::ReadFrom as _;
 
     use super::{ChatVisibility, HumanoidArm, ParticleStatus, SClientInformation};
 

@@ -127,6 +127,18 @@ pub trait Slot: ErasedType + Send + Sync {
         self.get_max_stack_size(guard).min(stack.max_stack_size())
     }
 
+    /// Called after a shift-click moved items out of this slot.
+    ///
+    /// Vanilla `Slot.onQuickCraft`; only the furnace result slot uses it, to
+    /// count the crafted items for `ITEM_CRAFTED`.
+    fn on_quick_craft(&self, _stack: &ItemStack, _player: &Player) {}
+
+    /// Called when a hotbar swap took items out of this slot.
+    ///
+    /// Vanilla `Slot.onSwapCraft`; the furnace result slot uses it to count the
+    /// crafted items for `ITEM_CRAFTED`.
+    fn on_swap_craft(&self, _count: i32) {}
+
     /// Removes up to `amount` items from this slot and returns them.
     fn remove(&self, guard: &mut ContainerLockGuard, amount: i32) -> ItemStack {
         let item = self.get_item_mut(guard);
@@ -322,10 +334,10 @@ mod tests {
         assert!(slot.downcast_ref::<SafeInsertOverrideSlot>().is_some());
         let mut guard = ContainerLockGuard::lock_all(&[container_ref]);
 
-        let remaining = slot.safe_insert(&mut guard, ItemStack::new(&vanilla_items::STONE), 1);
+        let remaining = slot.safe_insert(&mut guard, ItemStack::new(&*vanilla_items::STONE), 1);
 
         assert!(called.load(Ordering::Relaxed));
-        assert!(remaining.is(&vanilla_items::STONE));
+        assert!(remaining.is(&*vanilla_items::STONE));
         assert!(slot.get_item(&guard).is_empty());
     }
 }

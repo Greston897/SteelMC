@@ -10,6 +10,7 @@ use std::{collections::BTreeMap, error::Error, fmt, iter::FusedIterator, mem, sl
 use glam::DVec3;
 use rustc_hash::{FxHashMap, FxHashSet};
 use smallvec::SmallVec;
+use steel_registry::entity_type::MobCategory;
 use steel_registry::vanilla_entities;
 use steel_utils::locks::SyncRwLock;
 use steel_utils::{BlockPos, ChunkPos, PackedSectionPos, SectionPos, WorldAabb};
@@ -1686,6 +1687,24 @@ impl WorldEntityManager {
 
     /// Gets all live entities visible to vanilla gameplay lookups.
     #[must_use]
+    /// Counts accessible entities of one mob category without cloning any
+    /// `Arc` or allocating a `Vec`.
+    ///
+    /// Vanilla `NaturalSpawner.getFilteredEntities` only needs this count, and it
+    /// is queried repeatedly inside the spawn loop; the `Vec`-returning
+    /// [`Self::get_accessible_entities`] made that call allocate and bump a
+    /// strong count per entity per iteration.
+    pub fn count_accessible_by_category(&self, category: MobCategory) -> usize {
+        let state = self.state.read();
+        state
+            .accessible_order
+            .iter()
+            .filter_map(|entity_id| state.live_by_id.get(*entity_id))
+            .filter(|entry| entry.accessible)
+            .filter(|entry| entry.entity.entity_type().mob_category == category)
+            .count()
+    }
+
     pub fn get_accessible_entities(&self) -> Vec<SharedEntity> {
         let state = self.state.read();
         state

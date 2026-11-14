@@ -40,7 +40,7 @@ pub use components::{
     InvalidEnchantableValue, ItemContainerContents, JukeboxPlayable, MapDecorationEntry,
     MapDecorations, MapId, MapItemColor, OminousBottleAmplifier, PaintingVariantComponent,
     PotDecorations, PotionContents, ProvidesBannerPatterns, ProvidesTrimMaterial, Recipes,
-    SulfurCubeContent, Tool, ToolRule, ToolRuleBlocks, UseRemainder,
+    SeededContainerLoot, SulfurCubeContent, Tool, ToolRule, ToolRuleBlocks, UseRemainder,
 };
 pub use registry::{
     ComponentEntry,

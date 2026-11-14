@@ -42,7 +42,8 @@ pub fn inventory_menu(inventory: Shared<PlayerInventory>) -> Menu {
 
     let mut builder = MenuBuilder::new(None, INVENTORY_MENU_CONTAINER_ID);
 
-    let result = builder.result_slot(handler.clone());
+    // Vanilla `InventoryMenu` uses `ResultSlot`, which awards `ITEM_CRAFTED`.
+    let result = builder.crafting_result_slot(handler.clone());
     let grid = builder.section_all(crafting_container);
     let armor = builder.section_at(
         &inventory,

@@ -660,7 +660,7 @@ fn player_stats_file_roundtrips() {
     assert_eq!(stats.len(), 5);
 
     stats.push(PersistentStat {
-        stat: vanilla_stat_types::ITEM_PICKED_UP.get(&vanilla_items::DIAMOND),
+        stat: vanilla_stat_types::ITEM_PICKED_UP.get(&*vanilla_items::DIAMOND),
         count: 934,
     });
     stats.push(PersistentStat {
@@ -691,11 +691,11 @@ fn duplicate_stat_fails_conversion() {
 
     let stats = vec![
         PersistentStat {
-            stat: vanilla_stat_types::ITEM_PICKED_UP.get(&vanilla_items::DIAMOND),
+            stat: vanilla_stat_types::ITEM_PICKED_UP.get(&*vanilla_items::DIAMOND),
             count: 123,
         },
         PersistentStat {
-            stat: vanilla_stat_types::ITEM_PICKED_UP.get(&vanilla_items::DIAMOND),
+            stat: vanilla_stat_types::ITEM_PICKED_UP.get(&*vanilla_items::DIAMOND),
             count: 456,
         },
     ];

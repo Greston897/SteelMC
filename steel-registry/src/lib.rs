@@ -60,6 +60,7 @@ pub mod items;
 pub mod jukebox_song;
 pub mod loot_table;
 mod macros;
+pub mod map_color;
 pub mod map_decoration_type;
 pub mod menu_type;
 pub mod mob_effect;
@@ -73,6 +74,7 @@ pub mod position_source;
 pub mod potion;
 pub mod recipe;
 pub mod registry;
+pub mod slot_display;
 pub use registry::holder;
 pub use registry::holder_set;
 pub use registry::reference as registry_reference;
@@ -90,6 +92,7 @@ pub mod ticket_type;
 pub mod timeline;
 pub mod trim_material;
 pub mod trim_pattern;
+pub mod vanilla_criteria_triggers;
 pub mod vanilla_ticket_types;
 pub mod villager_profession;
 pub mod villager_type;
@@ -242,8 +245,13 @@ pub mod vanilla_particle_types;
 #[path = "generated/vanilla_position_source_types.rs"]
 pub mod vanilla_position_source_types;
 
+pub mod function;
+
 #[expect(warnings)]
 #[rustfmt::skip]
+#[path = "generated/vanilla_functions.rs"]
+pub mod functions;
+
 #[path = "generated/vanilla_villager_types.rs"]
 pub mod vanilla_villager_types;
 

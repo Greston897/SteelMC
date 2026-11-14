@@ -29,6 +29,21 @@ pub mod names {
     pub const SCOREBOARD: SavedDataName = SavedDataName::trusted("scoreboard");
     /// Domain command storage, persisted through the domain default world.
     pub const COMMAND_STORAGE: SavedDataName = SavedDataName::trusted("command_storage");
+    /// Map saved data (`MapState` color grids, decorations and next id),
+    /// persisted as `data/maps.bin` per loaded world.
+    pub const MAPS: WincodeSavedDataName = WincodeSavedDataName::trusted("maps", *b"STLM", 1);
+    /// Server whitelist and its enabled flag, persisted as `data/whitelist.toml`.
+    ///
+    /// Vanilla keeps this in `whitelist.json` at the server root; Steel stores it
+    /// with the world's other saved data so a single world directory is enough.
+    pub const WHITELIST: SavedDataName = SavedDataName::trusted("whitelist");
+    /// Player and address bans with their expiry, persisted as `data/bans.toml`.
+    pub const BANS: SavedDataName = SavedDataName::trusted("bans");
+    /// Active village raids, persisted as `data/raids.toml`.
+    pub const RAIDS: SavedDataName = SavedDataName::trusted("raids");
+    /// Vanilla `WanderingTraderSpawner` day counter and roll chance, persisted
+    /// as `data/wandering_traders.toml`.
+    pub const WANDERING_TRADERS: SavedDataName = SavedDataName::trusted("wandering_traders");
 }
 
 /// Name of a per-world saved data entry.

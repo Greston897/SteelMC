@@ -1,19 +1,24 @@
 //! Structure location command.
 
-use std::{sync::Arc, time::Instant};
+use std::{borrow::Cow, sync::Arc, time::Instant};
 
-use steel_utils::{BlockPos, Identifier, translations};
+use glam::IVec3;
+use steel_registry::biome::BiomeRef;
+use steel_registry::RegistryExt as _;
+use steel_utils::{BlockPos, ChunkPos, Identifier, translations};
 use text_components::{
     Modifier, TextComponent,
     format::Color,
     interactivity::{ClickEvent, HoverEvent},
+    translation::TranslatedMessage,
 };
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
     execution::{
-        CommandResultSuspension, CommandResultSuspensionPoll, CommandSource, SteelArgumentType,
-        SteelCommandContext, SteelCommandRuntime, StructureOrTagKey, argument, literal,
+        BiomeOrTag, CommandResultSuspension, CommandResultSuspensionPoll, CommandSource,
+        SteelArgumentType, SteelCommandContext, SteelCommandRuntime, StructureOrTagKey, argument,
+        literal,
     },
     registration::CommandRegistration,
 };
@@ -28,8 +33,17 @@ use crate::{
         structure::{StructureLocateCandidate, StructureLocatePlan, squared_distance},
     },
 };
+use crate::poi::poi_storage::OccupationStatus;
+use crate::worldgen::generator::context::ChunkGeneratorType;
 
 const MAX_STRUCTURE_SEARCH_RADIUS: i32 = 100;
+
+/// Vanilla `LocateCommand` searches a 6400-quart ring before giving up.
+const BIOME_SEARCH_RADIUS_QUARTS: i32 = 6400;
+
+/// Vanilla samples biomes every 32 blocks (`BiomeSearchTree`'s spacing) to keep
+/// the ring scan bounded.
+const BIOME_SEARCH_STEP_QUARTS: i32 = 8;
 
 pub(super) fn registration() -> CommandRegistration<CommandSource> {
     CommandRegistration::new(Identifier::vanilla_static("locate"), |_| command())
@@ -40,10 +54,19 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         literal("structure").then(
             argument("structure", SteelArgumentType::structure_or_tag_key())
                 .executes_suspended(start_structure_search),
+        )
+        .then(
+            literal("biome").then(
+                argument("biome", SteelArgumentType::biome_or_tag())
+                    .executes(locate_biome),
+            ),
+        )
+        .then(
+            literal("poi").then(
+                argument("poi", SteelArgumentType::identifier()).executes(locate_poi),
+            ),
         ),
     )
-    // TODO: Add `locate biome` once Steel has an asynchronous closest-biome search.
-    // TODO: Add `locate poi` once Steel has a point-of-interest manager.
 }
 
 fn start_structure_search(
@@ -342,6 +365,131 @@ fn structure_not_found(query: &StructureOrTagKey) -> CommandSyntaxError {
             .message([TextComponent::from(query.as_printable())])
             .component(),
     )
+}
+
+/// `locate biome <biome>` — closest block whose biome matches, searched in
+/// expanding rings on vanilla's quart grid.
+///
+/// Vanilla runs this through `AsyncLocateHandler`; Steel's biome lookup is a pure
+/// sampler call (`ChunkGenerator::noise_biome`), so the search is cheap enough to
+/// run inline without loading chunks.
+fn locate_biome(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
+    let query = context.biome_or_tag("biome")?;
+    let world = context.source().world();
+    let origin = BlockPos::from(context.source().position());
+
+    let generator = &world.chunk_map.world_gen_context.generator;
+    let origin_quart = IVec3::new(origin.0.x >> 2, 0, origin.0.z >> 2);
+
+    let (found_quart, found_biome) = search_biome_rings(generator, origin_quart, query)
+        .ok_or_else(|| biome_not_found(query))?;
+
+    let pos = BlockPos::new(found_quart.x << 2, 0, found_quart.z << 2);
+    let distance = horizontal_distance(origin, pos);
+    context.source().send_success(
+        &locate_success_component(found_biome.key.to_string(), pos, distance),
+        false,
+    );
+
+    Ok(distance)
+}
+
+/// Walks outward in square rings until a quart cell matching `query` is found.
+///
+/// Returns the matching quart coordinate together with the biome it resolved to,
+/// or `None` when the whole search radius is exhausted.
+fn search_biome_rings(
+    generator: &ChunkGeneratorType,
+    origin: IVec3,
+    query: &BiomeOrTag,
+) -> Option<(IVec3, BiomeRef)> {
+    let max_rings = BIOME_SEARCH_RADIUS_QUARTS / BIOME_SEARCH_STEP_QUARTS;
+
+    for ring in 0..=max_rings {
+        let offset = ring * BIOME_SEARCH_STEP_QUARTS;
+        for dx in -offset..=offset {
+            for dz in -offset..=offset {
+                // Only the ring border, so earlier rings are not rescanned.
+                if ring != 0 && dx.abs() != offset && dz.abs() != offset {
+                    continue;
+                }
+                let qx = origin.x + dx;
+                let qz = origin.z + dz;
+                let biome = generator.noise_biome(qx, 0, qz);
+                if query.matches(biome) {
+                    return Some((IVec3::new(qx, 0, qz), biome));
+                }
+            }
+        }
+    }
+
+    None
+}
+
+fn biome_not_found(query: &BiomeOrTag) -> CommandSyntaxError {
+    CommandSyntaxError::dynamic(format!("Could not find a biome of type {query:?}"))
+}
+
+/// Vanilla `LocateCommand` searches a 100-block ring for POIs. Steel widens it to
+/// 256 blocks because its index answers per chunk, so a match in a neighbouring
+/// chunk is still inside the box.
+const POI_SEARCH_RADIUS_BLOCKS: i32 = 256;
+
+/// Vanilla `/locate poi <type>`: the nearest block of a point-of-interest type.
+///
+/// Vanilla answers from the per-server `PoiManager`. Steel has the same index:
+/// `World::poi_storage` records every POI block as it is placed or loaded, keyed
+/// by type id. The nearest match in vanilla's 100-block ring wins; Steel widens
+/// the ring to 256 blocks because the index is chunk-granular.
+fn locate_poi(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
+    let key = context.identifier("poi")?.clone();
+    let world = context.source().world();
+    let origin = BlockPos::from(context.source().position());
+
+    let Some(target_id) = steel_registry::REGISTRY.poi_types.id_from_key(&key) else {
+        return Err(poi_not_found(&key));
+    };
+
+    let matches: Vec<(BlockPos, usize)> = {
+        let storage = world.poi_storage.lock();
+        storage.get_in_horizontal_square(
+            &|poi_type_id| poi_type_id == target_id,
+            origin,
+            POI_SEARCH_RADIUS_BLOCKS,
+            OccupationStatus::Any,
+        )
+    };
+
+    let Some((pos, _)) = matches.into_iter().min_by_key(|(pos, _)| {
+        let dx = i64::from(pos.0.x.wrapping_sub(origin.0.x));
+        let dz = i64::from(pos.0.z.wrapping_sub(origin.0.z));
+        let dy = i64::from(pos.0.y.wrapping_sub(origin.0.y));
+        dx * dx + dy * dy + dz * dz
+    }) else {
+        return Err(poi_not_found(&key));
+    };
+
+    let distance = horizontal_distance(origin, pos);
+    context.source().send_success(
+        &locate_success_component(key.to_string(), pos, distance),
+        false,
+    );
+    Ok(distance)
+}
+
+/// The vanilla "point of interest not found" failure.
+fn poi_not_found(key: &Identifier) -> CommandSyntaxError {
+    CommandSyntaxError::dynamic(TextComponent::translated(
+        TranslatedMessage {
+            key: Cow::Borrowed("commands.locate.poi.not_found"),
+            fallback: Some(Cow::Owned(format!(
+                "There is no point of interest of type {key}"
+            ))),
+            args: Some(
+                vec![TextComponent::plain(key.to_string())].into_boxed_slice(),
+            ),
+        },
+    ))
 }
 
 fn horizontal_distance(a: BlockPos, b: BlockPos) -> i32 {

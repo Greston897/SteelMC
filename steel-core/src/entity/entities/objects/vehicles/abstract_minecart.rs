@@ -10,7 +10,7 @@ use steel_registry::blocks::properties::{Direction, RailShape};
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_block_tags::BlockTag;
-use steel_registry::{vanilla_blocks, vanilla_entities};
+use steel_registry::{items::ItemRef, vanilla_blocks, vanilla_entities, vanilla_items};
 use steel_utils::axis::Axis;
 use steel_utils::block_util::FoundRectangle;
 use steel_utils::locks::SyncMutex;
@@ -55,6 +55,12 @@ pub struct AbstractMinecartBase {
 struct AbstractMinecartState {
     on_rails: bool,
     flipped: bool,
+    /// Vanilla `VehicleEntity.id_hurt`: ticks of hurt flash remaining.
+    hurt_time: i32,
+    /// Vanilla `VehicleEntity.id_hurtdir`: direction the hurt wobble leans.
+    hurt_dir: i32,
+    /// Vanilla `VehicleEntity.id_damage`: accumulated shake damage.
+    damage: i32,
 }
 
 impl AbstractMinecartBase {
@@ -88,6 +94,71 @@ impl AbstractMinecartBase {
     pub fn toggle_flipped(&self) {
         let mut state = self.state.lock();
         state.flipped = !state.flipped;
+    }
+
+    /// Remaining hurt flash ticks.
+    #[must_use]
+    pub fn hurt_time(&self) -> i32 {
+        self.state.lock().hurt_time
+    }
+
+    /// Sets the remaining hurt flash ticks.
+    pub fn set_hurt_time(&self, value: i32) {
+        self.state.lock().hurt_time = value;
+    }
+
+    /// Direction the hurt wobble leans.
+    #[must_use]
+    pub fn hurt_dir(&self) -> i32 {
+        self.state.lock().hurt_dir
+    }
+
+    /// Sets the direction the hurt wobble leans.
+    pub fn set_hurt_dir(&self, value: i32) {
+        self.state.lock().hurt_dir = value;
+    }
+
+    /// Accumulated shake damage.
+    #[must_use]
+    pub fn damage(&self) -> i32 {
+        self.state.lock().damage
+    }
+
+    /// Sets the accumulated shake damage.
+    pub fn set_damage(&self, value: i32) {
+        self.state.lock().damage = value;
+    }
+}
+
+/// Every minecart answers the shared `VehicleEntity` questions from its
+/// `AbstractMinecartBase`, so the accessors are written once here.
+impl<T: AbstractMinecart> VehicleEntity for T {
+    fn hurt_time(&self) -> i32 {
+        self.minecart_base().hurt_time()
+    }
+
+    fn set_hurt_time(&self, value: i32) {
+        self.minecart_base().set_hurt_time(value);
+    }
+
+    fn hurt_dir(&self) -> i32 {
+        self.minecart_base().hurt_dir()
+    }
+
+    fn set_hurt_dir(&self, value: i32) {
+        self.minecart_base().set_hurt_dir(value);
+    }
+
+    fn damage(&self) -> f32 {
+        self.minecart_base().damage() as f32
+    }
+
+    fn set_damage(&self, value: f32) {
+        self.minecart_base().set_damage(value as i32);
+    }
+
+    fn vehicle_drop_item(&self) -> ItemRef {
+        &*vanilla_items::MINECART
     }
 }
 

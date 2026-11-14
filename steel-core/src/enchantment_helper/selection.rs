@@ -98,7 +98,7 @@ fn get_available_enchantment_results(
     stack: &ItemStack,
     source: impl Iterator<Item = EnchantmentRef>,
 ) -> Vec<EnchantmentInstance> {
-    let is_book = stack.is(&vanilla_items::BOOK);
+    let is_book = stack.is(&*vanilla_items::BOOK);
     let mut results = Vec::new();
     for enchantment in source {
         if !is_book && !enchantment.is_primary_item(stack.item()) {
@@ -145,7 +145,7 @@ mod tests {
     #[test]
     fn third_offer_costs_at_least_twice_the_bookcases() {
         init_vanilla_registry();
-        let sword = ItemStack::new(&vanilla_items::DIAMOND_SWORD);
+        let sword = ItemStack::new(&*vanilla_items::DIAMOND_SWORD);
         for seed in 0..64 {
             let mut random = LegacyRandom::from_seed(seed);
             assert!(
@@ -158,7 +158,7 @@ mod tests {
     #[test]
     fn available_results_pick_the_highest_level_whose_window_contains_the_value() {
         init_vanilla_registry();
-        let sword = ItemStack::new(&vanilla_items::DIAMOND_SWORD);
+        let sword = ItemStack::new(&*vanilla_items::DIAMOND_SWORD);
         // Sharpness level n spans [1 + 11(n - 1), 21 + 11(n - 1)]; 30 fits levels 2 and 3.
         let results = get_available_enchantment_results(
             SHARPNESS_OVERLAP_COST,
@@ -172,13 +172,13 @@ mod tests {
     fn books_accept_enchantments_that_are_not_primary_for_other_items() {
         init_vanilla_registry();
         let sharpness = once(&vanilla_enchantments::SHARPNESS as EnchantmentRef);
-        let book = ItemStack::new(&vanilla_items::BOOK);
+        let book = ItemStack::new(&*vanilla_items::BOOK);
         assert_eq!(
             get_available_enchantment_results(SHARPNESS_OVERLAP_COST, &book, sharpness.clone())
                 .len(),
             1
         );
-        let axe = ItemStack::new(&vanilla_items::DIAMOND_AXE);
+        let axe = ItemStack::new(&*vanilla_items::DIAMOND_AXE);
         assert_eq!(
             get_available_enchantment_results(SHARPNESS_OVERLAP_COST, &axe, sharpness),
             Vec::new()

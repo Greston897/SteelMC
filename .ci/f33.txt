@@ -1,0 +1,469 @@
+### cargo check diagnostics
+- errors: 326
+- warnings: 8
+
+```
+warning: steel-utils@0.17.0+mc26.3: Successfully extracted datapack and translation files for Minecraft 26.3.
+   Compiling steel-registry v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-registry)
+   Compiling steel-worldgen v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-worldgen)
+warning: steel-registry@0.17.0+mc26.3: Function directory ../steel-utils/build_assets/builtin_datapacks/minecraft/function is missing; no functions will be loaded
+steel-registry/src/generated/vanilla_entities.rs:1:86943: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:88287: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+   Compiling steel-registry v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-registry)
+   Compiling steel-worldgen v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-worldgen)
+warning: steel-registry@0.17.0+mc26.3: Function directory ../steel-utils/build_assets/builtin_datapacks/minecraft/function is missing; no functions will be loaded
+steel-registry/src/generated/vanilla_entities.rs:1:86943: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:88287: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:89597: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+   Compiling steel-worldgen v0.17.0+mc26.3 (/home/runner/work/SteelMC/SteelMC/steel-worldgen)
+warning: steel-registry@0.17.0+mc26.3: Function directory ../steel-utils/build_assets/builtin_datapacks/minecraft/function is missing; no functions will be loaded
+steel-registry/src/generated/vanilla_entities.rs:1:86943: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:88287: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:89597: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:90898: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+warning: steel-registry@0.17.0+mc26.3: Function directory ../steel-utils/build_assets/builtin_datapacks/minecraft/function is missing; no functions will be loaded
+steel-registry/src/generated/vanilla_entities.rs:1:86943: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:88287: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:89597: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:90898: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:92203: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:86943: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:88287: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:89597: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:90898: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:92203: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:93550: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:88287: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:89597: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:90898: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:92203: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:93550: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:94835: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:89597: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:90898: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:92203: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:93550: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:94835: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:96133: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:90898: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:92203: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:93550: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:94835: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:96133: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:98346: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:92203: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:93550: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:94835: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:96133: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:98346: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:100527: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:93550: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:94835: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:96133: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:98346: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:100527: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:101851: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:94835: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:96133: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:98346: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:100527: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:101851: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:103997: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:96133: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:98346: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:100527: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:101851: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:103997: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:106332: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:98346: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:100527: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:101851: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:103997: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:106332: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:108484: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:100527: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:101851: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:103997: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:106332: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:108484: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:109788: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:101851: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:103997: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:106332: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:108484: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:109788: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:111963: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:103997: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:106332: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:108484: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:109788: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:111963: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:114192: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:106332: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:108484: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:109788: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:111963: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:114192: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:116382: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:108484: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:109788: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:111963: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:114192: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:116382: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:118613: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:109788: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:111963: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:114192: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:116382: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:118613: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:119936: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:111963: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:114192: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:116382: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:118613: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:119936: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:122119: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:114192: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:116382: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:118613: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:119936: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:122119: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:124369: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:116382: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:118613: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:119936: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:122119: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:124369: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:126565: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:118613: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:119936: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:122119: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:124369: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:126565: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:127848: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:119936: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:122119: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:124369: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:126565: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:127848: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:130031: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:122119: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:124369: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:126565: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:127848: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:130031: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:131328: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:124369: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:126565: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:127848: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:130031: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:131328: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:132613: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:126565: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:127848: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:130031: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:131328: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:132613: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:133913: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:127848: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:130031: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:131328: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:132613: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:133913: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:135227: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:130031: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:131328: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:132613: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:133913: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:135227: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:136540: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:131328: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:132613: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:133913: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:135227: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:136540: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:137851: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:132613: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:133913: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:135227: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:136540: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:137851: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:139139: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:133913: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:135227: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:136540: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:137851: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:139139: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:141318: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:135227: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:136540: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:137851: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:139139: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:141318: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:142618: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:136540: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:137851: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:139139: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:141318: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:142618: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:144834: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:137851: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:139139: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:141318: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:142618: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:144834: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:146152: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:139139: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:141318: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:142618: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:144834: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:146152: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:147466: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:141318: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:142618: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:144834: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:146152: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:147466: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:149599: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:142618: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:144834: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:146152: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:147466: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:149599: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:150875: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:144834: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:146152: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:147466: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:149599: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:150875: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:280: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:146152: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:147466: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:149599: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:150875: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:280: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:152195: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:147466: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:149599: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:150875: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:280: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:152195: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:1594: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:149599: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:150875: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:280: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:152195: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:1594: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:154393: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:150875: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:280: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:152195: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:1594: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:154393: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:2902: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:280: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:152195: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:1594: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:154393: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:2902: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:156578: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:152195: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:1594: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:154393: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:2902: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:156578: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:5179: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:1594: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:154393: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:2902: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:156578: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:5179: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:158819: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:154393: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:2902: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:156578: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:5179: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:158819: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:6489: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:2902: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:156578: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:5179: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:158819: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:6489: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:160127: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:156578: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:5179: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:158819: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:6489: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:160127: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:8685: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:5179: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:158819: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:6489: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:160127: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:8685: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:161433: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:158819: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:6489: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:160127: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:8685: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:161433: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:10814: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:6489: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:160127: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:8685: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:161433: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:10814: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:163674: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:160127: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:8685: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:161433: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:10814: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:163674: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:12098: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:8685: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:161433: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:10814: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:163674: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:12098: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:164985: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:161433: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:10814: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:163674: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:12098: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:164985: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:14326: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:10814: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:163674: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:12098: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:164985: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:14326: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:166289: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:163674: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:12098: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:164985: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:14326: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:166289: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:15640: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:12098: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:164985: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:14326: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:166289: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:15640: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:167607: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:164985: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:14326: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:166289: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:15640: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:167607: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:16940: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:14326: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:166289: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:15640: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:167607: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:16940: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:168917: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:166289: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:15640: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:167607: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:16940: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:168917: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:19093: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:15640: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:167607: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:16940: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:168917: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:19093: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:21320: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:167607: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:16940: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:168917: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:19093: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:21320: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:22632: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:16940: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:168917: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:19093: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:21320: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:22632: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:23939: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:168917: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:19093: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:21320: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:22632: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:23939: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:26144: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:19093: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:21320: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:22632: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:23939: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:26144: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:27426: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+-----
+steel-registry/src/generated/vanilla_entities.rs:1:21320: error[E0063]: missing field `immune_to` in initializer of `EntityType`: missing `immune_to`
+steel-registry/src/generated/vanilla_entities.rs:1:22632:

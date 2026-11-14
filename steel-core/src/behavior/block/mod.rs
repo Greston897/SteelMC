@@ -18,7 +18,7 @@ use steel_registry::enchantment_effect::EnchantmentEffectComponent;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::fluid::{FluidRef, FluidState};
 use steel_registry::item_stack::ItemStack;
-use steel_registry::loot_table::{LootContext, LootTableRef};
+use steel_registry::loot_table::{BlockEntityRef, LootContext, LootTableRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_entities;
@@ -41,14 +41,16 @@ use crate::entity::{
     Entity, InsideBlockEffectCollector, damage::DamageSource, entity_loot_ref, loot_equipment,
 };
 use crate::fluid::is_water_fluid;
+use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::physics::collide;
 use crate::player::Player;
-use crate::world::game_event::SharedGameEventListener;
+use crate::world::game_event::{GameEventContext, SharedGameEventListener};
 use crate::world::{
     BlockInteraction, ClipHitResult, ConditionalBlockSetResult, Explosion, LevelAccessor,
     LevelReader, ScheduledTickAccess, SignalQueryContext, World,
 };
 use steel_registry::vanilla_fluids;
+use steel_registry::vanilla_game_events;
 
 /// Exclusive block-emission limit for the default mob spawn predicate.
 pub(crate) const MAX_MOB_SPAWN_LIGHT_EMISSION: u8 = 14;
@@ -69,14 +71,49 @@ pub(crate) fn default_can_be_replaced(
 pub(crate) fn drop_from_block_interact_loot_table(
     key: LootTableRef,
     interacted_block_state: BlockStateId,
-    _interacted_block_entity: Option<SharedBlockEntity>,
+    interacted_block_entity: Option<SharedBlockEntity>,
     tool: Option<&ItemStack>,
     interacting_entity: Option<&dyn Entity>,
     rng: &mut ThreadRng,
 ) -> Vec<ItemStack> {
-    let mut ctx = LootContext::new(rng).with_block_state(interacted_block_state);
+    // Vanilla `LootParams` carries the block entity so `copy_name` and
+    // `copy_components` can read its saved state.
+    let block_entity_data = interacted_block_entity
+        .as_ref()
+        .map(|block_entity| block_entity.save_custom_only());
+    // Vanilla `LootParams` exposes the live container inventory so `dynamic`
+    // (`contents`) and `slots` entries can read it. Steel snapshots it because
+    // the guard cannot outlive this function.
+    let block_entity_inventory = interacted_block_entity.as_ref().and_then(|block_entity| {
+        let container_ref =
+            ContainerRef::from_block_entity(SharedBlockEntity::clone(block_entity))?;
+        let guard = ContainerLockGuard::lock_all(&[&container_ref]);
+        // Keep the slot layout intact: `slots` entries index into it directly.
+        guard
+            .get(container_ref.container_id())
+            .map(|container| container.items().to_vec())
+    });
+    // Vanilla `BlockEntity` exposes its display name for `copy_name`. When the
+    // name is a plain NBT string the text is taken verbatim; JSON text
+    // components need a resolver the loot registry does not have.
+    let block_entity_custom_name = block_entity_data.as_ref().and_then(|data| {
+        data.get("CustomName")
+            .and_then(|tag| tag.string())
+            .map(|value| value.to_str().into_owned())
+    });
+    let block_entity_ref = interacted_block_entity.as_ref().map(|block_entity| {
+        BlockEntityRef {
+            block_entity_type: Some(&block_entity.get_type().key),
+            custom_name: block_entity_custom_name.as_deref(),
+            inventory: block_entity_inventory.as_deref(),
+            data: block_entity_data.as_ref(),
+        }
+    });
 
-    // TODO: Add the block entity to the context when it can be done.
+    let mut ctx = LootContext::new(rng).with_block_state(interacted_block_state);
+    if let Some(block_entity_ref) = block_entity_ref {
+        ctx = ctx.with_block_entity(block_entity_ref);
+    }
 
     let interacting_equipment = interacting_entity.and_then(loot_equipment);
     if let Some(interacting_entity) = interacting_entity {
@@ -171,10 +208,6 @@ pub trait BlockBehavior: Send + Sync {
     /// - Return the filled bucket stack to give
     ///
     /// Return None if pickup failed.
-    #[expect(
-        unused_variables,
-        reason = "default trait implementation ignores all params"
-    )]
     fn pickup_block(
         &self,
         world: &Arc<World>,
@@ -182,7 +215,9 @@ pub trait BlockBehavior: Send + Sync {
         state: BlockStateId,
         player: Option<&Player>,
     ) -> Option<PickupResult> {
-        None
+        // Vanilla `BucketItem` drains any `SimpleWaterloggedBlock` through
+        // `pickupBlock`; blocks opt into that by having a `waterlogged` property.
+        pickup_waterlogged_block(self, world, pos, state, player)
     }
     /// Called when a neighboring block changes shape.
     /// Returns the new state for this block after considering the neighbor change.
@@ -239,7 +274,9 @@ pub trait BlockBehavior: Send + Sync {
         pos: BlockPos,
         _entity_type: EntityTypeRef,
     ) -> bool {
-        // TODO: extract the correct rules from block spawn rule
+        // Vanilla's default `BlockState.isValidSpawn` is the full-up-support plus
+        // light-emission check; blocks with their own rules (magma, soul sand,
+        // spawner-specific blocks) override this hook.
         world.is_face_sturdy_for(state, pos, Direction::Up, SupportType::Full)
             && state.get_light_emission() < MAX_MOB_SPAWN_LIGHT_EMISSION
     }
@@ -425,6 +462,18 @@ pub trait BlockBehavior: Send + Sync {
             return;
         }
 
+        // Vanilla `BlockInteraction.Trigger` (wind charges) never destroys the
+        // block; it dispatches a `BLOCK_ACTIVATE` game event so the block's own
+        // listeners (buttons, levers, doors) react as if touched.
+        if explosion.block_interaction() == BlockInteraction::Trigger {
+            world.game_event(
+                &vanilla_game_events::BLOCK_ACTIVATE,
+                pos,
+                &GameEventContext::new(None, Some(state)),
+            );
+            return;
+        }
+
         if self.drop_from_explosion(explosion) {
             let empty_tool = ItemStack::empty();
             let block_entity = if state.has_block_entity() {
@@ -538,6 +587,22 @@ pub trait BlockBehavior: Send + Sync {
         inv: &mut InventoryAccess,
     ) -> InteractionResult {
         InteractionResult::Pass
+    }
+
+    /// Vanilla `BlockState.useWithoutItem` under spectator mode: whether a
+    /// spectator may open this block's menu. Containers opt in; everything else
+    /// stays impassable.
+    #[expect(
+        unused_variables,
+        reason = "default trait implementation ignores all params"
+    )]
+    fn allows_spectator_menu(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+    ) -> bool {
+        false
     }
 
     /// Called when a neighboring block changes (not shape-related).
@@ -942,6 +1007,15 @@ pub trait BlockBehavior: Send + Sync {
     )]
     fn random_tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
         // Default: no-op
+    }
+
+    /// Called when a lightning bolt strikes this block position.
+    ///
+    /// Vanilla `LightningBolt.tick` calls `BlockState.onLightningStrike` for the
+    /// block it landed on. Lightning rods use this to become powered; most blocks
+    /// ignore it.
+    fn on_lightning_strike(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        let _ = (state, world, pos);
     }
 
     /// Called when a scheduled tick fires for this block.

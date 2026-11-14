@@ -26,10 +26,10 @@ fn chicken_uses_vanilla_chicken_food_tag() {
     init_vanilla_registry();
 
     assert!(ChickenEntity::is_food(&ItemStack::new(
-        &vanilla_items::WHEAT_SEEDS
+        &*vanilla_items::WHEAT_SEEDS
     )));
     assert!(!ChickenEntity::is_food(&ItemStack::new(
-        &vanilla_items::STONE
+        &*vanilla_items::STONE
     )));
 }
 

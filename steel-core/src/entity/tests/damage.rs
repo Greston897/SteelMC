@@ -81,7 +81,7 @@ fn damage_reductions_use_the_retained_attacker_after_removal() {
         DVec3::ZERO,
         Arc::downgrade(attached_world),
     ));
-    let mut mace = ItemStack::new(&vanilla_items::MACE);
+    let mut mace = ItemStack::new(&*vanilla_items::MACE);
     mace.set_enchantments(&[(Identifier::vanilla_static("breach"), 4)], false);
     attacker
         .living_base()
@@ -117,7 +117,7 @@ fn damage_reductions_use_the_retained_attacker_after_removal() {
 fn generic_living_hurt_applies_damage_protection_enchantments() {
     init_vanilla_registry();
     let entity = LivingFluidTestEntity::new_in_world(0.0, 0.0, true, test_world());
-    let mut boots = ItemStack::new(&vanilla_items::DIAMOND_BOOTS);
+    let mut boots = ItemStack::new(&*vanilla_items::DIAMOND_BOOTS);
     boots.set_enchantments(&[(Identifier::vanilla_static("protection"), 4)], false);
     entity.equip(EquipmentSlot::Feet, boots);
     let source = DamageSource::environment(&vanilla_damage_types::FIREWORKS);
@@ -134,7 +134,7 @@ fn generic_living_default_does_not_damage_armor_equipment() {
     let entity = LivingFluidTestEntity::new_in_world(0.0, 0.0, true, test_world());
     entity.equip(
         EquipmentSlot::Chest,
-        ItemStack::new(&vanilla_items::DIAMOND_CHESTPLATE),
+        ItemStack::new(&*vanilla_items::DIAMOND_CHESTPLATE),
     );
     let source = DamageSource::environment(&vanilla_damage_types::FIREWORKS);
 
@@ -205,7 +205,7 @@ fn living_equipment_attribute_modifiers_refresh_for_slot() {
 
     entity.equip(
         EquipmentSlot::Head,
-        ItemStack::new(&vanilla_items::DIAMOND_HELMET),
+        ItemStack::new(&*vanilla_items::DIAMOND_HELMET),
     );
     LivingEntity::refresh_equipment_attribute_modifiers(&entity, EquipmentSlot::Head);
 
@@ -361,7 +361,7 @@ fn lethal_hurts_consume_main_hand_totem_then_off_hand_totem() {
     let entity = LivingFluidTestEntity::new_in_world(0.0, 0.0, true, test_world()).with_health(3.0);
     for slot in [EquipmentSlot::MainHand, EquipmentSlot::OffHand] {
         entity.with_equipment_slot_mut(slot, &mut |stack| {
-            *stack = ItemStack::new(&vanilla_items::TOTEM_OF_UNDYING);
+            *stack = ItemStack::new(&*vanilla_items::TOTEM_OF_UNDYING);
         });
     }
     let source = DamageSource::environment(&vanilla_damage_types::GENERIC);

@@ -1146,9 +1146,12 @@ fn parse_attribute_holder_set(tag: &NbtTag) -> Option<Vec<AttributeRef>> {
 }
 
 fn parse_attribute_holder(value: &str) -> Option<Vec<AttributeRef>> {
-    if value.starts_with('#') {
-        // TODO: Support attribute tags once Steel's attribute registry stores them.
-        return None;
+    if let Some(tag_name) = value.strip_prefix('#') {
+        // Vanilla accepts `#namespace:tag` here and expands it to every attribute
+        // in that tag, so `equippable`-style predicates can match families.
+        let tag = parse_identifier_with_default_namespace(tag_name)?;
+        let entries = REGISTRY.attributes.get_tag(&tag)?;
+        return (!entries.is_empty()).then_some(entries);
     }
     let key = parse_identifier_with_default_namespace(value)?;
     REGISTRY

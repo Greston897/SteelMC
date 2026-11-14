@@ -69,6 +69,27 @@ impl Player {
             }
             self.reset_flying_ticks();
         } else {
+            // Vanilla `ServerPlayer.changeDimension` fires `changed_dimension` with the
+            // source and target dimension keys, and `nether_travel` when one side of
+            // the trip is the Nether (used by `nether/fast_travel` and the
+            // `nether/return_to_sender` distances).
+            let source_dimension = current_world.key.clone();
+            let target_dimension = new_world.key.clone();
+            self.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::CHANGED_DIMENSION,
+                &crate::player::advancement::predicate::TriggerContext::dimension(
+                    &source_dimension,
+                    &target_dimension,
+                ),
+            );
+            if is_nether_dimension(&source_dimension) || is_nether_dimension(&target_dimension) {
+                self.trigger_advancement_with_context(
+                    &steel_registry::vanilla_criteria_triggers::NETHER_TRAVEL,
+                    &crate::player::advancement::predicate::TriggerContext::nether_travel(
+                        position.distance(current_position),
+                    ),
+                );
+            }
             self.reset(new_world, ResetReason::WorldChange);
             if !self.spawn_with_velocity_packet(
                 position,
@@ -88,4 +109,9 @@ impl Player {
         self.apply_post_teleport_transition(&teleport_transition.post_transition);
         true
     }
+}
+
+/// Whether a dimension key names the Nether, as vanilla's `Level.NETHER` check does.
+fn is_nether_dimension(dimension: &Identifier) -> bool {
+    dimension.namespace == "minecraft" && dimension.path.as_ref() == "the_nether"
 }

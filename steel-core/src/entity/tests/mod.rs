@@ -256,7 +256,7 @@ fn command_data_compare_nbt_contains_implemented_living_data() {
     );
     entity.equip(
         EquipmentSlot::Head,
-        ItemStack::new(&vanilla_items::DIAMOND_HELMET),
+        ItemStack::new(&*vanilla_items::DIAMOND_HELMET),
     );
 
     let nbt = entity.nbt_for_data_compare();

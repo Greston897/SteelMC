@@ -1,46 +1,77 @@
 //! Steel-owned built-in command declarations.
 
 pub mod advancement;
+mod attribute;
+mod ban;
+mod banip;
+mod bossbar;
 mod clear;
+mod clone;
 mod damage;
+mod data;
+mod datapack;
 mod defaultgamemode;
 mod difficulty;
+mod reload;
 mod domain;
 mod enchant;
+mod effect;
 mod execute;
 mod experience;
 mod fill;
+mod fillbiome;
 mod fly;
+mod forceload;
+mod help;
+mod function;
 pub(crate) mod gamemode;
 mod gamerule;
 mod give;
 mod invsee;
+mod item;
+mod kick;
 mod kill;
 mod list;
 mod locate;
+mod loot;
+mod msg;
 mod operator;
+mod particle;
 mod perms;
 mod playsound;
+mod recipe;
 mod position;
 mod return_command;
+mod ride;
+mod save;
+mod say;
+mod schedule;
+mod scoreboard;
 mod seed;
 mod setblock;
 mod setidletimeout;
 mod setworldspawn;
 mod spawnpoint;
+mod spectate;
+mod spreadplayers;
 mod stop;
+mod stopwatch;
 mod stopsound;
 mod summon;
 mod swing;
 mod tag;
+mod team;
 mod teleport;
 mod tellraw;
+mod trigger;
 mod tick;
 mod time;
 mod title;
+mod tpsbar;
 mod transfer;
 mod version;
 mod weather;
+mod whitelist;
 mod worldborder;
 
 pub(crate) use difficulty::player_can_change_difficulty;
@@ -73,46 +104,81 @@ pub(crate) fn create_registered_dispatcher(
     builder.declare_permission(perms::GROUP_ALL_PERMISSION)?;
     builder.declare_permission(perms::METADATA_PERMISSION)?;
     builder.register(advancement::registration())?;
+    builder.register(attribute::registration())?;
+    builder.register(ban::ban_registration())?;
+    builder.register(ban::pardon_registration())?;
+    builder.register(ban::banlist_registration())?;
+    builder.register(banip::banip_registration())?;
+    builder.register(banip::pardonip_registration())?;
+    builder.register(bossbar::registration())?;
     builder.register(clear::registration())?;
+    builder.register(clone::registration())?;
     builder.register(operator::deop_registration())?;
     builder.register(damage::registration())?;
+    builder.register(data::registration())?;
+    builder.register(datapack::registration())?;
     builder.register(defaultgamemode::registration())?;
+    builder.register(reload::registration())?;
     builder.register(difficulty::registration())?;
+    builder.register(effect::registration())?;
     builder.register(domain::registration())?;
     builder.register(enchant::registration())?;
     builder.register(execute::registration())?;
     builder.register(experience::registration())?;
     builder.register(fill::registration())?;
+    builder.register(fillbiome::registration())?;
     builder.register(fly::registration())?;
     builder.register(gamemode::registration()?)?;
     builder.register(gamerule::registration())?;
     builder.register(give::registration())?;
+    builder.register(kick::registration())?;
     builder.register(kill::registration())?;
     builder.register(list::registration())?;
     builder.register(locate::registration())?;
+    builder.register(loot::registration())?;
+    builder.register(msg::registration())?;
     builder.register(operator::op_registration())?;
+    builder.register(particle::registration())?;
     builder.register(perms::registration())?;
     builder.register(playsound::registration())?;
+    builder.register(recipe::registration())?;
     builder.register(return_command::registration())?;
+    builder.register(ride::registration())?;
+    builder.register(save::registration())?;
+    builder.register(say::say_registration())?;
+    builder.register(say::me_registration())?;
+    builder.register(scoreboard::registration())?;
+    builder.register(forceload::registration())?;
+    builder.register(help::registration())?;
+    builder.register(function::registration())?;
+    builder.register(schedule::registration())?;
+    builder.register(spectate::registration())?;
     builder.register(seed::registration())?;
     builder.register(setblock::registration())?;
     builder.register(spawnpoint::registration())?;
+    builder.register(spreadplayers::registration())?;
     builder.register(setidletimeout::registration())?;
     builder.register(setworldspawn::registration())?;
     builder.register(stop::registration())?;
+    builder.register(stopwatch::registration())?;
     builder.register(stopsound::registration())?;
     builder.register(summon::registration())?;
     builder.register(swing::registration())?;
     builder.register(tag::registration())?;
+    builder.register(team::registration())?;
     builder.register(teleport::registration())?;
     builder.register(tellraw::registration())?;
+    builder.register(trigger::registration())?;
     builder.register(tick::registration())?;
     builder.register(time::registration())?;
     builder.register(title::registration())?;
+    builder.register(tpsbar::registration())?;
     builder.register(version::registration())?;
     builder.register(weather::registration())?;
+    builder.register(whitelist::registration())?;
     builder.register(worldborder::registration())?;
     builder.register(invsee::registration()?)?;
+    builder.register(item::registration())?;
     builder.register(transfer::registration())?;
     builder.extend(extension_commands.into_inner())?;
     builder.build_with_permissions()
@@ -158,9 +224,15 @@ mod tests {
             names,
             [
                 "advancement",
+                "attribute",
+                "ban",
+                "banip",
+                "banlist",
                 "clear",
                 "deop",
                 "damage",
+                "data",
+                "datapack",
                 "defaultgamemode",
                 "difficulty",
                 "domain",
@@ -170,6 +242,8 @@ mod tests {
                 "xp",
                 "fill",
                 "fly",
+                "forceload",
+                "function",
                 "gamemode",
                 "gamerule",
                 "give",
@@ -177,11 +251,15 @@ mod tests {
                 "list",
                 "locate",
                 "op",
+                "pardon",
+                "pardonip",
                 "perms",
                 "playsound",
                 "return",
+                "schedule",
                 "seed",
                 "setblock",
+                "spectate",
                 "spawnpoint",
                 "setidletimeout",
                 "setworldspawn",
@@ -196,9 +274,12 @@ mod tests {
                 "tick",
                 "time",
                 "title",
+                "tpsbar",
                 "version",
                 "weather",
+                "whitelist",
                 "worldborder",
+                "help",
                 "invsee",
                 "transfer"
             ]

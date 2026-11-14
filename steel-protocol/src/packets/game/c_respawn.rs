@@ -1,6 +1,7 @@
 //! Clientbound respawn packet - sent to respawn a player or change dimensions.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_RESPAWN;
 
 use super::c_login::CommonPlayerSpawnInfo;

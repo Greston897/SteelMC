@@ -1,5 +1,6 @@
 //! Minimal persistent item-frame entity used by structure generation.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Weak};
 
 use glam::DVec3;
@@ -7,37 +8,49 @@ use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_math::DEGREE_90;
+use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::data_components::vanilla_components::MAP_ID;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_blocks;
+use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::ItemFrameEntityData;
+use steel_registry::{
+    sound_events, vanilla_blocks, vanilla_entities, vanilla_game_events, vanilla_items,
+};
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtNumeric as _;
 use steel_utils::nbt::NbtValueInput as _;
+use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, Direction, DowncastType, DowncastTypeKey, WorldAabb, axis::Axis};
 
+use crate::behavior::InteractionResult;
 use crate::entity::block_attached_entity::{BlockAttachedEntity, BlockAttachedEntityBase};
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityBaseState, EntityMoveError, EntitySyncedData,
     ItemFrame, SharedEntity,
 };
+use crate::physics::collision;
 use crate::physics::{MoveResult, MoverType};
+use crate::player::Player;
+use crate::world::game_event::GameEventContext;
 use crate::world::{Explosion, World};
+use steel_registry::items::ItemRef;
 
 /// Item frame state needed by end-city structure markers.
 ///
-/// This intentionally implements only placement, synced item/facing data,
-/// persistence, and comparator integration.
-///
-/// TODO: Add interaction, drops, map tracking, and support checks.
+/// Covers placement, support checks, synced item/facing data, persistence,
+/// player interaction (insert/rotate/pop-out), drops, comparator output, and map
+/// tracking so filled maps in a frame update their held state.
 #[entity_behavior(class = "ItemFrame")]
 pub struct ItemFrameEntity {
     base: EntityBase,
     entity_type: EntityTypeRef,
     entity_data: SyncMutex<ItemFrameEntityData>,
     block_attached_entity_base: BlockAttachedEntityBase,
+    /// Set once the frame has dropped its contents, so a second removal path
+    /// (hurt + survival tick) cannot duplicate the drops.
+    dropped: AtomicBool,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `ItemFrameEntity`.
@@ -85,6 +98,7 @@ impl ItemFrameEntity {
             entity_type,
             entity_data: SyncMutex::new(ItemFrameEntityData::new()),
             block_attached_entity_base: BlockAttachedEntityBase::new(block_pos),
+            dropped: AtomicBool::new(false),
         };
         entity
             .entity_data
@@ -108,6 +122,7 @@ impl ItemFrameEntity {
                 position.y.floor() as i32,
                 position.z.floor() as i32,
             )),
+            dropped: AtomicBool::new(false),
         }
     }
 
@@ -129,6 +144,156 @@ impl ItemFrameEntity {
                 &vanilla_blocks::AIR,
             );
         }
+    }
+
+    /// Number of rotations a framed item cycles through (vanilla `ROTATION_COUNT`).
+    const ROTATION_COUNT: i32 = 8;
+
+    /// Vanilla `ItemFrameEntity#canStayAttached`.
+    ///
+    /// The frame needs free space for its own volume and a solid support block
+    /// directly behind it.
+    #[must_use]
+    pub fn can_stay_attached(&self) -> bool {
+        let Some(world) = self.base.level() else {
+            return false;
+        };
+
+        let check_box = self.base.bounding_box();
+        let collision = crate::physics::collision::WorldCollisionProvider::new(&world);
+        if collision::has_block_collision(&collision, check_box) {
+            return false;
+        }
+        // Vanilla `isSpaceBlocked` rejects any other entity inside the frame's own
+        // box, which also covers `hasNoIntersectingDecoration` for frames.
+        if world.has_entity_in_aabb_matching(&check_box, |entity| entity.id() != self.base.id()) {
+            return false;
+        }
+
+        let (dx, dy, dz) = self.direction().opposite().offset();
+        let support_pos = self.block_attached_entity_base.pos().offset(dx, dy, dz);
+        world.get_block_state(support_pos).is_solid()
+    }
+
+    /// Returns whether this is a glow item frame.
+    fn is_glow(&self) -> bool {
+        self.entity_type == &vanilla_entities::GLOW_ITEM_FRAME
+    }
+
+    /// Sound played when the frame is broken.
+    fn break_sound(&self) -> SoundEventRef {
+        if self.is_glow() {
+            &sound_events::ENTITY_GLOW_ITEM_FRAME_BREAK
+        } else {
+            &sound_events::ENTITY_ITEM_FRAME_BREAK
+        }
+    }
+
+    /// Sound played when the framed item is rotated.
+    fn rotate_item_sound(&self) -> SoundEventRef {
+        if self.is_glow() {
+            &sound_events::ENTITY_GLOW_ITEM_FRAME_ROTATE_ITEM
+        } else {
+            &sound_events::ENTITY_ITEM_FRAME_ROTATE_ITEM
+        }
+    }
+
+    /// Sound played when an item is inserted into the frame.
+    fn add_item_sound(&self) -> SoundEventRef {
+        if self.is_glow() {
+            &sound_events::ENTITY_GLOW_ITEM_FRAME_ADD_ITEM
+        } else {
+            &sound_events::ENTITY_ITEM_FRAME_ADD_ITEM
+        }
+    }
+
+    /// Sound played when the frame is placed.
+    pub fn place_sound(&self) -> SoundEventRef {
+        if self.is_glow() {
+            &sound_events::ENTITY_GLOW_ITEM_FRAME_PLACE
+        } else {
+            &sound_events::ENTITY_ITEM_FRAME_PLACE
+        }
+    }
+
+    /// Returns the item that places this frame (vanilla `getAsItemStack`).
+    #[must_use]
+    pub fn placeable_item(&self) -> ItemRef {
+        if self.is_glow() {
+            &*vanilla_items::GLOW_ITEM_FRAME
+        } else {
+            &*vanilla_items::ITEM_FRAME
+        }
+    }
+
+    /// Rotation of the framed item in 45° steps (vanilla `getRotation`).
+    #[must_use]
+    pub fn rotation(&self) -> i32 {
+        *self.entity_data.lock().rotation.get()
+    }
+
+    /// The framed item, if any (vanilla `getHeldItemStack`).
+    #[must_use]
+    pub fn item(&self) -> ItemStack {
+        self.entity_data.lock().item.get().clone()
+    }
+
+    /// Rotates the framed item by 45° (vanilla `setRotation(getRotation() + 1)`).
+    pub fn rotate(&self) {
+        let rotation = {
+            let entity_data = self.entity_data.lock();
+            (*entity_data.rotation.get() + 1).rem_euclid(Self::ROTATION_COUNT)
+        };
+        self.entity_data.lock().rotation.set(rotation);
+
+        if let Some(world) = self.base.level() {
+            world.update_neighbor_for_output_signal(
+                self.block_attached_entity_base.pos(),
+                &vanilla_blocks::AIR,
+            );
+        }
+    }
+
+    /// Emits the vanilla `BLOCK_CHANGE` game event for the attached block.
+    fn emit_block_change(&self, player: Option<&dyn Entity>) {
+        let Some(world) = self.base.level() else {
+            return;
+        };
+        world.game_event(
+            &vanilla_game_events::BLOCK_CHANGE,
+            self.block_attached_entity_base.pos(),
+            &GameEventContext::new(player, None),
+        );
+    }
+
+    /// Vanilla `ItemFrameEntity#interact`: rotate a filled frame, otherwise insert
+    /// the held item and consume one of it.
+    fn interact_with_player(&self, player: &Player, hand: InteractionHand) -> InteractionResult {
+        let held = player.inventory.lock().get_item_in_hand(hand).clone();
+        let has_framed_item = !self.entity_data.lock().item.get().is_empty();
+
+        if has_framed_item {
+            self.play_sound(self.rotate_item_sound(), 1.0, 1.0);
+            self.rotate();
+            self.emit_block_change(Some(player));
+            return InteractionResult::Success;
+        }
+
+        if held.is_empty() || self.is_removed() {
+            return InteractionResult::Pass;
+        }
+
+        self.set_item(held);
+        self.play_sound(self.add_item_sound(), 1.0, 1.0);
+        self.emit_block_change(Some(player));
+
+        let infinite = player.has_infinite_materials();
+        player
+            .inventory
+            .lock()
+            .mutate_item_in_hand(hand, |stack| stack.consume_one(infinite));
+
+        InteractionResult::Success
     }
 
     fn set_direction(&self, direction: Direction) {
@@ -272,6 +437,15 @@ impl Entity for ItemFrameEntity {
         self.is_pickable_block_attached_entity()
     }
 
+    fn interact(
+        &self,
+        player: &Player,
+        hand: InteractionHand,
+        _location: DVec3,
+    ) -> InteractionResult {
+        self.interact_with_player(player, hand)
+    }
+
     fn ignore_explosion(&self, explosion: &dyn Explosion) -> bool {
         explosion
             .direct_source_entity()
@@ -355,10 +529,33 @@ impl BlockAttachedEntity for ItemFrameEntity {
     }
 
     fn survives(&self) -> bool {
-        true
+        self.can_stay_attached()
     }
 
-    fn drop_item(&self, _caused_by: Option<&dyn Entity>) {}
+    fn drop_item(&self, _caused_by: Option<&dyn Entity>) {
+        if self.dropped.swap(true, Ordering::AcqRel) {
+            return;
+        }
+
+        let Some(world) = self.base.level() else {
+            return;
+        };
+
+        self.play_sound(self.break_sound(), 1.0, 1.0);
+
+        let pos = self.block_attached_entity_base.pos();
+        let framed = {
+            let entity_data = self.entity_data.lock();
+            entity_data.item.get().clone()
+        };
+        if !framed.is_empty() {
+            // The frame is going away: skip the comparator notification.
+            self.set_item_with_update(ItemStack::empty(), false);
+            world.drop_item_stack(pos, framed);
+        }
+
+        world.drop_item_stack(pos, ItemStack::new(self.placeable_item()));
+    }
 
     fn recalculate_bounding_box(&self) -> Result<(), EntityMoveError> {
         self.try_recalculate_position()
@@ -409,6 +606,191 @@ mod tests {
         frame
     }
 
+    // --- Placement / support / interaction tests -------------------------------
+
+    use std::sync::Arc;
+
+    use steel_registry::init_vanilla_registry;
+    use steel_utils::types::{InteractionHand, UpdateFlags};
+    use steel_utils::{ChunkPos, WorldAabb};
+
+    use steel_utils::Downcast as _;
+
+    use crate::behavior::InteractionResult;
+    use crate::entity;
+    use crate::entity::block_attached_entity::CHECK_SURVIVAL_FREQUENCY_TICKS;
+    use crate::entity::entities::ItemEntity;
+    use crate::test_support::{
+        TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
+    };
+
+    fn frame_area() -> WorldAabb {
+        WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 68.0, 2.0)
+    }
+
+    /// Builds a world containing a stone support block at `(0, 64, 0)`.
+    fn support_fixture(name: &str) -> (TestWorld, Arc<Player>, BlockPos) {
+        init_vanilla_registry();
+
+        let world_fixture = fresh_test_world(name);
+        let world = Arc::clone(&world_fixture.world);
+        let support = BlockPos::new(0, 64, 0);
+        insert_ready_full_chunk(&world, ChunkPos::from_block_pos(support));
+        assert!(world.set_block(
+            support,
+            vanilla_blocks::STONE.default_state(),
+            UpdateFlags::UPDATE_ALL
+        ));
+
+        let player = TestPlayerBuilder::new(Arc::clone(&world), "FrameOwner", 1).build();
+        player.set_client_loaded(true);
+
+        (world_fixture, player, support)
+    }
+
+    fn spawn_frame(
+        world: &Arc<World>,
+        block_pos: BlockPos,
+        direction: Direction,
+    ) -> Arc<ItemFrameEntity> {
+        let frame = Arc::new(ItemFrameEntity::new_attached(
+            &vanilla_entities::ITEM_FRAME,
+            entity::next_entity_id(),
+            block_pos,
+            direction,
+            Arc::downgrade(world),
+        ));
+        let shared = Arc::clone(&frame) as SharedEntity;
+        world
+            .try_add_entity(shared)
+            .expect("frame should enter a loaded chunk");
+        frame
+    }
+
+    fn item_entity_count(world: &Arc<World>) -> usize {
+        world
+            .get_entities_in_aabb(&frame_area())
+            .iter()
+            .filter(|entity| entity.downcast_ref::<ItemEntity>().is_some())
+            .count()
+    }
+
+    #[test]
+    fn frame_survives_only_with_a_solid_support_behind_it() {
+        let (fixture, _player, support) = support_fixture("frame_support");
+        let world = &fixture.world;
+
+        let attached = ItemFrameEntity::new_attached(
+            &vanilla_entities::ITEM_FRAME,
+            1,
+            support.offset(0, 1, 0),
+            Direction::Up,
+            Arc::downgrade(world),
+        );
+        assert!(attached.can_stay_attached());
+
+        let floating = ItemFrameEntity::new_attached(
+            &vanilla_entities::ITEM_FRAME,
+            2,
+            support.offset(0, 4, 0),
+            Direction::Up,
+            Arc::downgrade(world),
+        );
+        assert!(!floating.can_stay_attached());
+    }
+
+    #[test]
+    fn broken_support_removes_and_drops_the_frame() {
+        let (fixture, player, support) = support_fixture("frame_support_removed");
+        let world = &fixture.world;
+        let frame = spawn_frame(world, support.offset(0, 1, 0), Direction::Up);
+
+        assert!(world.set_block(
+            support,
+            vanilla_blocks::AIR.default_state(),
+            UpdateFlags::UPDATE_ALL
+        ));
+
+        // Vanilla only re-checks attachment every `CHECK_SURVIVAL_FREQUENCY_TICKS`.
+        for _ in 0..=CHECK_SURVIVAL_FREQUENCY_TICKS {
+            Arc::clone(&frame).tick();
+        }
+
+        assert!(frame.is_removed());
+        assert_eq!(item_entity_count(world), 1, "the frame item should drop");
+        let _ = player;
+    }
+
+    #[test]
+    fn clicking_a_filled_frame_rotates_its_item() {
+        let (fixture, player, support) = support_fixture("frame_rotate");
+        let world = &fixture.world;
+        let frame = spawn_frame(world, support.offset(0, 1, 0), Direction::Up);
+        frame.set_item(ItemStack::new(&*vanilla_items::APPLE));
+
+        let result = frame.interact(&player, InteractionHand::MainHand, DVec3::ZERO);
+        assert_eq!(result, InteractionResult::Success);
+        assert_eq!(frame.rotation(), 1);
+        assert!(frame.item().is(&*vanilla_items::APPLE));
+    }
+
+    #[test]
+    fn clicking_an_empty_frame_inserts_the_held_item_and_consumes_one() {
+        let (fixture, player, support) = support_fixture("frame_insert");
+        let world = &fixture.world;
+        let frame = spawn_frame(world, support.offset(0, 1, 0), Direction::Up);
+        player
+            .inventory
+            .lock()
+            .set_selected_item(ItemStack::with_count(&*vanilla_items::APPLE, 2));
+
+        let result = frame.interact(&player, InteractionHand::MainHand, DVec3::ZERO);
+
+        assert_eq!(result, InteractionResult::Success);
+        assert!(frame.item().is(&*vanilla_items::APPLE));
+        assert_eq!(frame.item().count(), 1);
+        assert_eq!(player.inventory.lock().get_selected_item().count(), 1);
+    }
+
+    #[test]
+    fn clicking_an_empty_frame_with_an_empty_hand_passes() {
+        let (fixture, player, support) = support_fixture("frame_empty_hand");
+        let world = &fixture.world;
+        let frame = spawn_frame(world, support.offset(0, 1, 0), Direction::Up);
+
+        assert_eq!(
+            frame.interact(&player, InteractionHand::MainHand, DVec3::ZERO),
+            InteractionResult::Pass
+        );
+        assert!(frame.item().is_empty());
+    }
+
+    #[test]
+    fn dropping_the_frame_twice_does_not_duplicate_items() {
+        let (fixture, _player, support) = support_fixture("frame_drop_once");
+        let world = &fixture.world;
+        let frame = spawn_frame(world, support.offset(0, 1, 0), Direction::Up);
+        frame.set_item(ItemStack::new(&*vanilla_items::DIAMOND));
+
+        frame.drop_item(None);
+        frame.drop_item(None);
+
+        assert_eq!(item_entity_count(world), 2);
+    }
+
+    #[test]
+    fn removing_a_filled_frame_drops_the_item_and_the_frame() {
+        let (fixture, _player, support) = support_fixture("frame_drop");
+        let world = &fixture.world;
+        let frame = spawn_frame(world, support.offset(0, 1, 0), Direction::Up);
+        frame.set_item(ItemStack::new(&*vanilla_items::DIAMOND));
+
+        frame.drop_item(None);
+
+        assert!(frame.item().is_empty());
+        assert_eq!(item_entity_count(world), 2);
+    }
+
     #[test]
     fn load_wraps_facing_and_keeps_rotation_sign_like_java() {
         let mut nbt = NbtCompound::new();
@@ -438,7 +820,7 @@ mod tests {
             Direction::West,
             Weak::new(),
         );
-        frame.set_item(ItemStack::new(&vanilla_items::ELYTRA));
+        frame.set_item(ItemStack::new(&*vanilla_items::ELYTRA));
 
         let mut nbt = NbtCompound::new();
         frame.save_additional(&mut nbt);
@@ -482,7 +864,7 @@ mod tests {
         );
         assert_eq!(frame.analog_output(), 0);
 
-        frame.set_item_with_update(ItemStack::new(&vanilla_items::ELYTRA), false);
+        frame.set_item_with_update(ItemStack::new(&*vanilla_items::ELYTRA), false);
         assert_eq!(frame.analog_output(), 1);
         frame.entity_data.lock().rotation.set(7);
         assert_eq!(frame.analog_output(), 8);

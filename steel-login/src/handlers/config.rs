@@ -31,14 +31,14 @@ impl JavaTcpClient {
     pub async fn handle_client_information(&self, packet: SClientInformation) {
         log::debug!("Client information packet: {packet:?}");
 
-        // TODO: Centralize the minimum with config validation when zero view distance is supported.
         let info = ClientInformation {
             language: packet.language,
-            view_distance: packet
-                .view_distance
-                .max(2)
-                .cast_unsigned()
-                .min(self.server.config.view_distance.max(2)),
+            // `RuntimeConfig::clamp_view_distance` owns the floor and ceiling, so
+            // the config- and play-state handlers stay in sync.
+            view_distance: self
+                .server
+                .config
+                .clamp_view_distance(packet.view_distance.cast_unsigned()),
             chat_visibility: packet.chat_visibility,
             chat_colors: packet.chat_colors,
             model_customization: packet.model_customization,

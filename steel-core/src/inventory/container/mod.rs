@@ -503,12 +503,12 @@ mod tests {
     fn clear_or_count_matching_items_counts_without_mutating() {
         init_vanilla_registry();
         let mut container = TestContainer::new(3);
-        container.set_item(0, ItemStack::with_count(&vanilla_items::STONE, 3));
-        container.set_item(1, ItemStack::with_count(&vanilla_items::DIRT, 4));
-        container.set_item(2, ItemStack::with_count(&vanilla_items::STONE, 2));
+        container.set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 3));
+        container.set_item(1, ItemStack::with_count(&*vanilla_items::DIRT, 4));
+        container.set_item(2, ItemStack::with_count(&*vanilla_items::STONE, 2));
 
         let count = container.clear_or_count_matching_items(
-            &|stack| stack.is(&vanilla_items::STONE),
+            &|stack| stack.is(&*vanilla_items::STONE),
             0,
             true,
         );
@@ -522,11 +522,11 @@ mod tests {
     fn clear_or_count_matching_items_applies_cap_in_slot_order() {
         init_vanilla_registry();
         let mut container = TestContainer::new(2);
-        container.set_item(0, ItemStack::with_count(&vanilla_items::STONE, 3));
-        container.set_item(1, ItemStack::with_count(&vanilla_items::STONE, 4));
+        container.set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 3));
+        container.set_item(1, ItemStack::with_count(&*vanilla_items::STONE, 4));
 
         let count = container.clear_or_count_matching_items(
-            &|stack| stack.is(&vanilla_items::STONE),
+            &|stack| stack.is(&*vanilla_items::STONE),
             5,
             false,
         );
@@ -540,11 +540,11 @@ mod tests {
     fn clear_or_count_matching_items_removes_every_match_for_negative_limit() {
         init_vanilla_registry();
         let mut container = TestContainer::new(2);
-        container.set_item(0, ItemStack::with_count(&vanilla_items::STONE, 3));
-        container.set_item(1, ItemStack::with_count(&vanilla_items::STONE, 4));
+        container.set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 3));
+        container.set_item(1, ItemStack::with_count(&*vanilla_items::STONE, 4));
 
         let count = container.clear_or_count_matching_items(
-            &|stack| stack.is(&vanilla_items::STONE),
+            &|stack| stack.is(&*vanilla_items::STONE),
             -1,
             false,
         );
@@ -557,11 +557,11 @@ mod tests {
     fn comparator_signal_uses_vanilla_discrete_non_empty_floor() {
         init_vanilla_registry();
         let mut container = TestContainer::new(27);
-        container.set_item(0, ItemStack::new(&vanilla_items::STONE));
+        container.set_item(0, ItemStack::new(&*vanilla_items::STONE));
         assert_eq!(calculate_redstone_signal_from_container(&container), 1);
 
         for slot in 0..container.get_container_size() {
-            container.set_item(slot, ItemStack::with_count(&vanilla_items::STONE, 64));
+            container.set_item(slot, ItemStack::with_count(&*vanilla_items::STONE, 64));
         }
         assert_eq!(calculate_redstone_signal_from_container(&container), 15);
     }

@@ -184,9 +184,9 @@ mod tests {
     fn named_sides_round_trip_both_codecs_and_hash() {
         init_vanilla_registry();
         let decorations = PotDecorations::new(
-            Some(ItemStackTemplate::new(&vanilla_items::ANGLER_POTTERY_SHERD)),
+            Some(ItemStackTemplate::new(&*vanilla_items::ANGLER_POTTERY_SHERD)),
             None,
-            Some(ItemStackTemplate::new(&vanilla_items::ARCHER_POTTERY_SHERD)),
+            Some(ItemStackTemplate::new(&*vanilla_items::ARCHER_POTTERY_SHERD)),
             None,
         );
         assert!(decorations.back().is_some());

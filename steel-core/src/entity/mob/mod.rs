@@ -19,7 +19,9 @@ use steel_protocol::packets::game::CTakeItemEntity;
 use steel_registry::attribute::AttributeRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::data_components::components::ItemEnchantments;
-use steel_registry::data_components::vanilla_components::CUSTOM_NAME;
+use steel_registry::data_components::vanilla_components::{
+    ATTACK_RANGE, CUSTOM_NAME, USE_REMAINDER,
+};
 use steel_registry::enchantment_effect::EnchantmentEffectComponent;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
@@ -56,8 +58,8 @@ use crate::entity::conversion::{AfterConversion, convert_to as convert_mob};
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::objects::items::ItemEntity;
 use crate::entity::{
-    ConversionParams, Entity, EntitySpawnReason, LivingEntity, LivingTravelInput, RemovalReason,
-    SharedEntity, SpawnGroupData, WeakEntity, aabb_contains_any_liquid,
+    ConversionParams, ENTITIES, Entity, EntitySpawnReason, LivingEntity, LivingTravelInput,
+    RemovalReason, SharedEntity, SpawnGroupData, WeakEntity, aabb_contains_any_liquid,
 };
 use crate::inventory::equipment::EquipmentSlot;
 use crate::physics::MoveResult;
@@ -359,9 +361,35 @@ pub trait Mob: LivingEntity + Leashable {
 
     fn set_mob_flags(&self, flags: i8);
 
-    /// Returns whether the entity-specific spawn predicate accepts this spawn.
-    fn check_spawn_rules(&self, _world: &Arc<World>, _reason: EntitySpawnReason) -> bool {
-        true
+    /// Vanilla `Mob.checkSpawnRules`.
+    ///
+    /// Vanilla dispatches to the type's registered `SpawnPlacements` predicate
+    /// (`Monster.checkMonsterSpawnRules`, `Animal.checkAnimalSpawnRules`, …).
+    /// Steel stores that predicate as the type's `SpawnRule`, so the default
+    /// implementation runs it; types with a genuinely unconditional predicate
+    /// (or no registered rule) accept the spawn.
+    fn check_spawn_rules(&self, world: &Arc<World>, reason: EntitySpawnReason) -> bool {
+        let entity = self.as_entity_event_source();
+        let entity_type = entity.entity_type();
+        let Some(registry) = ENTITIES.get() else {
+            return true;
+        };
+        let Some(rule) = registry.spawn_rule(entity_type) else {
+            return true;
+        };
+        let mut random = rand::rng();
+        let position = entity.position();
+        rule(
+            entity_type,
+            world,
+            reason,
+            BlockPos::new(
+                position.x.floor() as i32,
+                position.y.floor() as i32,
+                position.z.floor() as i32,
+            ),
+            &mut random,
+        )
     }
 
     /// Sets the vanilla baby state. Vanilla `Mob.setBaby` is a no-op; ageable
@@ -690,10 +718,35 @@ pub trait Mob: LivingEntity + Leashable {
         !self.is_vehicle()
     }
 
-    /// Consumes one of the player's held item after this mob uses it in an interaction.
+    /// Consumes one of the player's held item after this mob uses it in an
+    /// interaction, converting it to the vanilla `use_remainder` result.
     fn use_player_item(&self, player: &Player, hand: InteractionHand) {
-        player.inventory.lock().shrink_item_in_hand(hand, 1);
-        // TODO: Apply USE_REMAINDER components once item use-remainder support exists.
+        let mut produced = None;
+        {
+            let mut inventory = player.inventory.lock();
+            let original = inventory.get_item_in_hand(hand).copy_with_count(
+                inventory.get_item_in_hand(hand).count(),
+            );
+            inventory.shrink_item_in_hand(hand, 1);
+            let mut used = inventory
+                .get_item_in_hand(hand)
+                .copy_with_count(inventory.get_item_in_hand(hand).count());
+            if let Some(remainder) = original.get(USE_REMAINDER)
+                && let Some(extra) = remainder.convert_into_remainder(
+                    &mut used,
+                    original.count(),
+                    player.has_infinite_materials(),
+                )
+            {
+                produced = Some(extra);
+            }
+            // `convert_into_remainder` may have swapped the emptied stack for
+            // the remainder.
+            *inventory.get_item_in_hand_mut(hand) = used;
+        }
+        if let Some(extra) = produced {
+            player.handle_extra_items_created_on_use(extra);
+        }
     }
 
     fn remove_when_far_away(&self, dist_sqr: f64) -> bool {
@@ -729,6 +782,25 @@ pub trait Mob: LivingEntity + Leashable {
 
     fn equipment_drop_chance(&self, slot: EquipmentSlot) -> f32 {
         self.mob_base().drop_chances().lock().by_equipment(slot)
+    }
+
+    /// Vanilla `EnchantmentHelper.processEquipmentDropChance`: the item's
+    /// `equipment_drops` enchantment effects adjust the base drop chance, but
+    /// only for effects whose requirements match the killing blow.
+    fn equipment_drop_chance_with_enchantments(
+        &self,
+        slot: EquipmentSlot,
+        context: &EnchantmentDamageContext<'_>,
+    ) -> f32 {
+        let base = self.equipment_drop_chance(slot);
+        let mut stack = None;
+        self.with_equipment_slot(slot, &mut |item| {
+            stack = Some(item.clone());
+        });
+        let Some(stack) = stack else {
+            return base;
+        };
+        enchantment_helper::process_equipment_drop_chance(&stack, context, base).clamp(0.0, 1.0)
     }
 
     fn set_equipment_drop_chance(&self, slot: EquipmentSlot, chance: f32) {
@@ -780,9 +852,31 @@ pub trait Mob: LivingEntity + Leashable {
         }
 
         let count = equipped.count();
-        // TODO(advancements): vanilla calls LivingEntity.onItemPickup here, before
-        // the take packet, which fires the THROWN_ITEM_PICKED_UP_BY_ENTITY criterion.
-        // Add that once Steel has the advancement-criteria foundation.
+        // Vanilla `LivingEntity.onItemPickup` runs before the take packet and fires
+        // the `thrown_item_picked_up_by_entity` criterion on the picking entity,
+        // which for a player is the advancement owner.
+        if let Some(player) = self.as_player() {
+            let context = crate::player::advancement::predicate::TriggerContext::item(
+                &equipped.item().key,
+            );
+            player.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_ENTITY,
+                &context,
+            );
+            // Vanilla `ItemEntity.playerTouch` additionally fires
+            // `thrown_item_picked_up_by_player` when the thrown item's owner is
+            // the picking player, which is how `husbandry/throw_trident` and
+            // `adventure/throw_and_retrieve` complete.
+            if item_entity
+                .get_owner()
+                .is_some_and(|owner| owner == player.gameprofile.id())
+            {
+                player.trigger_advancement_with_context(
+                    &steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_PLAYER,
+                    &context,
+                );
+            }
+        }
         let chunk_pos = ChunkPos::from_entity_pos(item_entity.position());
         world.broadcast_to_nearby(
             chunk_pos,
@@ -1050,13 +1144,16 @@ pub trait Mob: LivingEntity + Leashable {
         }
     }
 
-    fn drop_custom_death_loot_mob(&self, _source: &DamageSource, killed_by_player: bool) {
+    fn drop_custom_death_loot_mob(&self, source: &DamageSource, killed_by_player: bool) {
         if self.level().is_none() {
             return;
         }
+        let enchantment_context =
+            EnchantmentDamageContext::from_damage_source(self.entity_type(), source);
 
         for slot in EquipmentSlot::ALL {
-            let drop_chance = self.equipment_drop_chance(slot);
+            let drop_chance =
+                self.equipment_drop_chance_with_enchantments(slot, &enchantment_context);
             let preserve = self.is_equipment_drop_preserved(slot);
             if !can_attempt_equipment_drop(drop_chance, preserve, killed_by_player) {
                 continue;
@@ -1073,8 +1170,6 @@ pub trait Mob: LivingEntity + Leashable {
                 continue;
             }
 
-            // TODO: Apply EquipmentDrops enchantment value effects once damage
-            // sources can resolve their living attacker context.
             let random_roll = rand::random::<f32>();
             if random_roll >= drop_chance {
                 continue;
@@ -1487,10 +1582,28 @@ pub trait Mob: LivingEntity + Leashable {
     fn play_attack_sound(&self) {}
 
     /// Returns whether `target` is within this mob's melee attack range.
+    ///
+    /// Vanilla `Mob.isWithinMeleeAttackRange` reads the held item's
+    /// `attack_range` component and scales it by the component's `mob_factor`
+    /// (mobs reach 0.5x the player reach by default).
     fn is_within_melee_attack_range(&self, target: &dyn LivingEntity) -> bool {
-        // TODO: Use the held item's ATTACK_RANGE component once it has typed component data.
-        let max_range = default_attack_reach();
-        let min_range = 0.0;
+        let mut held = None;
+        self.with_equipment_slot(EquipmentSlot::MainHand, &mut |item| {
+            held = Some(item.clone());
+        });
+        let (max_range, min_range) = held
+            .as_ref()
+            .and_then(|item| item.get(ATTACK_RANGE))
+            .map_or_else(
+                || (default_attack_reach(), 0.0),
+                |range| {
+                    let factor = f64::from(range.mob_factor);
+                    (
+                        f64::from(range.max_reach) * factor,
+                        f64::from(range.min_reach) * factor,
+                    )
+                },
+            );
         let target_hitbox = target.bounding_box();
         self.attack_bounding_box(max_range)
             .intersects(target_hitbox)

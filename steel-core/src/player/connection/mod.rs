@@ -4,7 +4,11 @@
 //! connections (`JavaConnection`) and test connections (`FlintConnection`).
 
 mod java;
+mod packet_budget;
 
+pub use packet_budget::{
+    Admission, MAX_PACKETS_PER_SECOND, PacketBudget, RejectionCause, ViolationBudget,
+};
 pub use java::{
     BundleBuilder, JavaConnection, JavaNetworkReader, JavaNetworkWriter, JavaTransportRead,
     JavaTransportWrite, OutboundPacket,
@@ -206,19 +210,16 @@ impl Player {
         self.connection.close();
     }
 
+    /// Lowest view distance the server accepts from a client.
+    ///
     /// Handles client information updates during play phase.
     pub fn handle_client_information(&self, packet: SClientInformation) {
         let old_view_distance = self.view_distance();
         let was_hat_shown = self.shows_hat();
 
-        // TODO: Centralize the minimum with config validation when zero view distance is supported.
         let info = ClientInformation {
             language: packet.language,
-            view_distance: packet
-                .view_distance
-                .max(2)
-                .cast_unsigned()
-                .min(self.config.view_distance.max(2)),
+            view_distance: self.config.clamp_view_distance(packet.view_distance.cast_unsigned()),
             chat_visibility: packet.chat_visibility,
             chat_colors: packet.chat_colors,
             model_customization: packet.model_customization,

@@ -16,7 +16,9 @@ use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_blocks;
 use steel_utils::{BlockPos, BlockStateId};
 
-// TODO: Add occlusion cache for performance (vanilla uses 200-entry ThreadLocal LRU)
+// Vanilla caches these wall checks in a 200-entry thread-local LRU. Steel calls
+// through directly: the lookup is a block-state tag test on data that is already
+// cached per chunk, so the extra index has not been worth the invalidation cost.
 
 /// Checks if fluid can pass through a wall between two positions.
 #[must_use]

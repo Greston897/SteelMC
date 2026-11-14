@@ -64,6 +64,20 @@ impl ChunkPos {
         Self(IVec2::new(x, y))
     }
 
+    /// Vanilla `ChunkPos.x`: the chunk's x coordinate.
+    #[must_use]
+    #[inline]
+    pub const fn x(self) -> i32 {
+        self.0.x
+    }
+
+    /// Vanilla `ChunkPos.z`: the chunk's z coordinate.
+    #[must_use]
+    #[inline]
+    pub const fn z(self) -> i32 {
+        self.0.y
+    }
+
     /// Creates a `ChunkPos` from a world block position.
     #[must_use]
     pub const fn from_block_pos(pos: BlockPos) -> Self {

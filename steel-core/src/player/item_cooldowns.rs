@@ -43,10 +43,18 @@ impl ItemCooldowns {
     pub(super) fn add_from_stack(&mut self, stack: &ItemStack) -> Option<(Identifier, i32)> {
         let cooldown = stack.get(USE_COOLDOWN)?;
         let duration = cooldown.ticks();
+        self.set(cooldown_group(stack), duration)
+    }
+
+    /// Starts a cooldown of `duration` ticks on `group`.
+    ///
+    /// Mirrors vanilla `ItemCooldownManager.set(stack, ticks)`, which is used by
+    /// items that start their cooldown manually (e.g. the goat horn) instead of
+    /// carrying a `minecraft:use_cooldown` component.
+    pub(super) fn set(&mut self, group: Identifier, duration: i32) -> Option<(Identifier, i32)> {
         if duration <= 0 {
             return None;
         }
-        let group = cooldown_group(stack);
         self.cooldowns.insert(
             group.clone(),
             CooldownInstance {
@@ -81,6 +89,22 @@ impl Player {
         }
     }
 
+    /// Starts a manual cooldown of `duration` ticks on `group`.
+    ///
+    /// Mirrors vanilla `ItemCooldownManager.set(stack, ticks)` as used by
+    /// `GoatHornItem.use`: the cooldown group of a stack without a
+    /// `minecraft:use_cooldown` component is the item itself, which is why the
+    /// group is passed in directly instead of the stack.
+    pub fn set_item_cooldown(&self, group: Identifier, duration: i32) {
+        let cooldown = self.item_cooldowns.lock().set(group, duration);
+        if let Some((cooldown_group, duration)) = cooldown {
+            self.send_packet(CCooldown {
+                cooldown_group,
+                duration,
+            });
+        }
+    }
+
     pub(super) fn tick_item_cooldowns(&self) {
         let ended = self.item_cooldowns.lock().tick();
         for cooldown_group in ended {
@@ -104,7 +128,7 @@ mod tests {
     fn cooldown_blocks_until_duration_ticks_pass() {
         init_vanilla_registry();
 
-        let stack = ItemStack::with_count(&vanilla_items::ENDER_PEARL, 1);
+        let stack = ItemStack::with_count(&*vanilla_items::ENDER_PEARL, 1);
         let mut cooldowns = ItemCooldowns::default();
 
         let Some((group, duration)) = cooldowns.add_from_stack(&stack) else {
@@ -132,11 +156,11 @@ mod tests {
         init_vanilla_registry();
 
         let group = steel_utils::Identifier::vanilla_static("test_group");
-        let mut stack = ItemStack::with_count(&vanilla_items::ENDER_PEARL, 1);
+        let mut stack = ItemStack::with_count(&*vanilla_items::ENDER_PEARL, 1);
         stack.set(USE_COOLDOWN, UseCooldown::new(0.5, Some(group.clone())));
-        let mut other = ItemStack::with_count(&vanilla_items::CHORUS_FRUIT, 1);
+        let mut other = ItemStack::with_count(&*vanilla_items::CHORUS_FRUIT, 1);
         other.set(USE_COOLDOWN, UseCooldown::new(1.0, Some(group.clone())));
-        let unrelated = ItemStack::with_count(&vanilla_items::WIND_CHARGE, 1);
+        let unrelated = ItemStack::with_count(&*vanilla_items::WIND_CHARGE, 1);
         let mut cooldowns = ItemCooldowns::default();
 
         let Some((started_group, duration)) = cooldowns.add_from_stack(&stack) else {
