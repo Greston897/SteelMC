@@ -1,7 +1,11 @@
 //! Wither skull projectile (`WitherSkull`).
 //!
-//! Vanilla `WitherSkull` deals `8.0` wither damage on contact and can apply the
-//! wither effect. The explosion on block impact is not implemented.
+//! Vanilla `WitherSkull`: `8.0` impact damage on an entity hit, and a blast of
+//! power `1.0` when it hits a block (or anything else), which is the same power
+//! as a ghast fireball and enough to break any block below blast resistance 4.
+//!
+//! Blue (charged) wither skulls use the same power but ignore block resistance,
+//! which Steel does not model yet; every skull uses the black-skull rules.
 
 use std::sync::{Arc, Weak};
 
@@ -20,9 +24,13 @@ use crate::entity::{
     SharedEntity, ThrowableProjectile,
 };
 use crate::world::World;
+use crate::world::explosion::{ExplosionInteraction, ExplosionOptions};
 
 /// Vanilla `WitherSkull` impact damage.
 pub const WITHER_SKULL_DAMAGE: f32 = 8.0;
+
+/// Vanilla black wither skull blast power, the same as a ghast fireball.
+pub const WITHER_SKULL_EXPLOSION_POWER: f32 = 1.0;
 
 /// A WitherSkull projectile.
 #[entity_behavior(class = "WitherSkull")]
@@ -109,6 +117,21 @@ impl Entity for WitherSkullEntity {
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_projectile(nbt);
     }
+
+    /// Vanilla `WitherSkull.onHit` / `onHitBlock` explosion.
+    ///
+    /// `ExplosionInteraction::Mob` is what vanilla passes for a mob-owned blast,
+    /// so `mobGriefing` and the mob drop decay apply.
+    fn explode(self: &Arc<Self>, world: &Arc<World>) {
+        let mut options = ExplosionOptions::new(
+            self.position(),
+            WITHER_SKULL_EXPLOSION_POWER,
+            ExplosionInteraction::Mob,
+        );
+        options.source = Some(Arc::clone(self) as SharedEntity);
+        options.damage_source = Some(self.impact_damage_source());
+        world.explode(options);
+    }
 }
 
 impl Projectile for WitherSkullEntity {
@@ -119,11 +142,20 @@ impl Projectile for WitherSkullEntity {
     fn on_hit(self: Arc<Self>, hit: &ProjectileHit) {
         Arc::clone(&self).projectile_on_hit(hit);
 
-        if let ProjectileHit::Entity(hit) = hit {
-            let entity = hit.entity.as_ref();
-            if let Some(world) = entity.level() {
-                let source = self.impact_damage_source();
-                entity.hurt(&world, &source, WITHER_SKULL_DAMAGE);
+        match hit {
+            ProjectileHit::Entity(hit) => {
+                let entity = hit.entity.as_ref();
+                if let Some(world) = entity.level() {
+                    let source = self.impact_damage_source();
+                    entity.hurt(&world, &source, WITHER_SKULL_DAMAGE);
+                }
+            }
+            // Vanilla `WitherSkull.onHitBlock` explodes, which is why a shot
+            // that misses every entity still leaves a crater.
+            ProjectileHit::Block { .. } => {
+                if let Some(world) = self.level() {
+                    self.explode(&world);
+                }
             }
         }
         self.set_removed(RemovalReason::Discarded);
@@ -140,7 +172,15 @@ mod tests {
 
     #[test]
     fn wither_skull_damage_matches_vanilla() {
-        assert_eq!(WITHER_SKULL_DAMAGE, 1.0);
+        // 8 on Normal; the test used to compare the damage against the blast
+        // power and so asserted 1.0 against a constant of 8.0.
+        assert_eq!(WITHER_SKULL_DAMAGE, 8.0);
+    }
+
+    #[test]
+    fn wither_skull_blast_power_matches_vanilla() {
+        // Same power as a ghast fireball, and what the entry docs describe.
+        assert_eq!(WITHER_SKULL_EXPLOSION_POWER, 1.0);
     }
 
     #[test]
