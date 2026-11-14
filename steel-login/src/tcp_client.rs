@@ -29,6 +29,7 @@ use steel_protocol::{
         common::{CDisconnect, SClientInformation, SCustomPayload, SPingRequest},
         config::SSelectKnownPacks,
         handshake::{ClientIntent, SClientIntention},
+        game::SResourcePack,
         login::{CLoginDisconnect, SHello, SKey},
     },
     utils::{ConnectionProtocol, PacketError, RawPacket},
@@ -882,6 +883,13 @@ impl JavaTcpClient {
                     return Ok(self.reject_unexpected_packet(error).await);
                 }
                 self.handle_select_known_packs(SSelectKnownPacks::read_packet(data)?)
+                    .await;
+                Ok(ConnectionAction::none())
+            }
+            config::S_RESOURCE_PACK => {
+                // Vanilla `ServerCommonPacketListenerImpl.handleResourcePackResponse`:
+                // only a declined required pack has an effect.
+                self.handle_resource_pack_response(SResourcePack::read_packet(data)?)
                     .await;
                 Ok(ConnectionAction::none())
             }

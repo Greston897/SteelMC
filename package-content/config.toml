@@ -101,6 +101,15 @@ url = "https://discord.com/channels/1428487339759370322/1428487584966774795"
 label = { text = "Visit the SteelMC Discord", color = "blue", bold = true }
 url = "https://discord.gg/suSXXNdVSf"
 
+# Resource pack pushed to every joining client (vanilla `resource-pack*`).
+# Omit the section to send none. `hash` is the lowercase hex SHA-1 of the zip;
+# leaving it out means the client does not verify the download.
+# [server.resource_pack]
+# url = "https://example.com/pack.zip"
+# hash = "0000000000000000000000000000000000000000"
+# required = false
+# prompt = { text = "Please accept the resource pack", color = "gold" }
+
 # Logging configuration
 [log]
 # Path where store the log files and history

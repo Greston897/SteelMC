@@ -4,7 +4,7 @@ use steel_core::{
     chunk::chunk_ticket_manager::MAX_SUPPORTED_VIEW_DISTANCE,
     config::{
         CompressionInfo, DEFAULT_MAX_CHAINED_NEIGHBOR_UPDATES, DEFAULT_SPAM_THRESHOLD_SECONDS,
-        RconConfig, RuntimeConfig, ServerLinks, validate_login_security,
+        RconConfig, ResourcePackConfig, RuntimeConfig, ServerLinks, validate_login_security,
     },
 };
 
@@ -86,6 +86,9 @@ pub struct ServerConfig {
     pub compression: Option<CompressionInfo>,
     /// All settings and configurations for server links.
     pub server_links: Option<ServerLinks>,
+    /// The resource pack every joining client is asked to download
+    /// (vanilla `server.properties` `resource-pack*`).
+    pub resource_pack: Option<ResourcePackConfig>,
     /// Thread counts for server thread pools.
     #[serde(default)]
     pub threads: ThreadConfig,
@@ -132,6 +135,7 @@ impl ServerConfig {
             ),
             compression: self.compression,
             server_links: self.server_links,
+            resource_pack: self.resource_pack,
             packet_workers: self.threads.packet_workers,
             chunk_generation_threads: self.threads.chunk_generation,
             chunk_encoding_threads: self.threads.chunk_encoding,

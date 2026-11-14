@@ -77,6 +77,7 @@ fn packaged_config_matches_the_runtime_config_defaults() {
         cores,
         compression,
         server_links,
+        resource_pack,
         packet_workers,
         chunk_generation_threads,
         chunk_encoding_threads,
@@ -128,6 +129,8 @@ fn packaged_config_matches_the_runtime_config_defaults() {
     // These four diverge by design, so only the packaged side is pinned: links are the
     // embedder's to choose, and a thread count of zero means the automatic default `None` does.
     assert!(server_links.is_some());
+    // No resource pack ships by default: the packaged config only documents one.
+    assert!(resource_pack.is_none());
     assert_eq!(packet_workers, Some(0));
     assert_eq!(chunk_generation_threads, Some(0));
     assert_eq!(chunk_encoding_threads, Some(0));

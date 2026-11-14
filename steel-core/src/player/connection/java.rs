@@ -12,6 +12,7 @@ use steel_protocol::packets::common::{
 };
 use steel_protocol::packets::game::{
     CBundleDelimiter, CCommandSuggestions, ClientCommandAction, PlayerAction, PlayerCommandAction,
+    ResourcePackAction,
     SAcceptTeleportation, SAttack, SBlockEntityTagQuery, SBundleItemSelected, SChangeDifficulty,
     SChangeGameMode, SChat, SChatAck, SChatCommand, SChatCommandSigned, SChatSessionUpdate,
     SChunkBatchReceived, SClientCommand, SClientTickEnd, SCommandSuggestion,
@@ -36,6 +37,7 @@ use steel_utils::translations;
 use text_components::content::Resolvable;
 use text_components::custom::CustomData;
 use text_components::resolving::TextResolutor;
+use text_components::translation::TranslatedMessage;
 use text_components::{Modifier, TextComponent, format::Color};
 use tokio::io::{AsyncRead, AsyncWrite, BufReader, BufWriter};
 use tokio::select;
@@ -490,9 +492,26 @@ impl ScheduledPlayPacket {
             }
             ScheduledPlayPacketKind::ResourcePack(packet) => {
                 // Vanilla `ServerCommonPacketListenerImpl.handleResourcePackResponse`
-                // only reacts to `DECLINED` when the server requires a pack. Steel
-                // never sends `CResourcePackPush`, so every action is a no-op.
-                log::debug!("ignoring ResourcePack packet, Steel sends no packs: {packet:?}");
+                // only reacts to `DECLINED` when the server requires a pack.
+                let declined = packet.decoded_action() == Some(ResourcePackAction::Declined);
+                let required = player
+                    .server()
+                    .config
+                    .resource_pack
+                    .as_ref()
+                    .is_some_and(|pack| pack.required);
+                if declined && required {
+                    log::info!(
+                        "Disconnecting {} due to resource pack {} rejection",
+                        player.gameprofile.name(),
+                        packet.id
+                    );
+                    player.disconnect(TextComponent::translated(TranslatedMessage {
+                        key: "multiplayer.requiredTexturePrompt.disconnect".into(),
+                        fallback: None,
+                        args: None,
+                    }));
+                }
             }
             ScheduledPlayPacketKind::SelectTrade(packet) => {
                 player.handle_select_trade(packet);

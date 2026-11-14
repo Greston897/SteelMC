@@ -12,6 +12,8 @@ use std::{
 };
 pub use steel_protocol::packet_traits::CompressionInfo;
 use steel_protocol::packets::config::{CServerLinks, Link, ServerLinksType};
+use steel_protocol::packets::game::CResourcePackPush;
+use uuid::Uuid;
 use steel_registry::vanilla_dimension_types;
 use steel_utils::Identifier;
 use steel_utils::codec::Or;
@@ -100,6 +102,10 @@ pub struct RuntimeConfig {
     pub compression: Option<CompressionInfo>,
     /// All settings and configurations for server links.
     pub server_links: Option<ServerLinks>,
+    /// The resource pack every joining client is asked to download.
+    ///
+    /// Vanilla `server.properties` `resource-pack*`: absent means no pack.
+    pub resource_pack: Option<ResourcePackConfig>,
     /// Number of CPU cores this server is allowed to use.
     ///
     /// This is the *effective* count: the smaller of the OS affinity mask and
@@ -163,6 +169,7 @@ impl Default for RuntimeConfig {
             rate_limit: 0,
             compression: Some(CompressionInfo::default()),
             server_links: None,
+            resource_pack: None,
             // Auto-detected, not a hard `1`: a default-constructed config (tests,
             // embedders, `steel-flint`) must size its pools for the container's
             // real core budget, the same way the packaged `cores = 0` does. A
@@ -224,6 +231,28 @@ impl RuntimeConfig {
         }
     }
 
+    /// Builds the `CResourcePackPush` packet from config, if a pack is configured.
+    ///
+    /// Vanilla `ServerResourcePackConfigurationTask.start` sends exactly one
+    /// `ClientboundResourcePackPushPacket` with the server's pack, so this
+    /// mirrors that: one packet, no batching.
+    #[must_use]
+    pub fn resource_pack_push_packet(&self) -> Option<CResourcePackPush> {
+        let pack = self.resource_pack.as_ref()?;
+        if pack.url.trim().is_empty() {
+            return None;
+        }
+        Some(CResourcePackPush {
+            // Vanilla derives the id from the URL the same way, so a changed
+            // URL looks like a different pack to the client.
+            id: Uuid::new_v3(&Uuid::NAMESPACE_URL, pack.url.as_bytes()),
+            url: pack.url.clone(),
+            hash: pack.hash.clone().unwrap_or_default(),
+            required: pack.required,
+            prompt: pack.prompt.clone(),
+        })
+    }
+
     /// Builds the `CServerLinks` packet from config, if server links are enabled.
     #[must_use]
     pub fn server_links_packet(&self) -> Option<CServerLinks> {
@@ -270,6 +299,20 @@ pub struct ConfigLink {
     pub label: ConfigLabel,
     /// The URL for this link
     pub url: String,
+}
+
+/// Vanilla `server.properties` `resource-pack*` settings.
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(default, deny_unknown_fields)]
+pub struct ResourcePackConfig {
+    /// Download URL of the pack zip.
+    pub url: String,
+    /// Lowercase hex SHA-1 of the zip; empty means the client does not verify it.
+    pub hash: Option<String>,
+    /// Vanilla `resource-pack-required`: declining the pack disconnects.
+    pub required: bool,
+    /// Vanilla `resource-pack-prompt`: the text shown in the download prompt.
+    pub prompt: Option<TextComponent>,
 }
 
 /// Server links configuration.
@@ -1510,5 +1553,65 @@ default = true
         config.view_distance = 1;
         assert_eq!(config.clamp_view_distance(1), 2);
         assert_eq!(config.clamp_view_distance(8), 2);
+    }
+}
+
+#[cfg(test)]
+mod resource_pack_tests {
+    use super::*;
+    use steel_protocol::packets::game::MAX_RESOURCE_PACK_HASH_LENGTH;
+
+    fn config_with_pack(pack: ResourcePackConfig) -> RuntimeConfig {
+        RuntimeConfig {
+            resource_pack: Some(pack),
+            ..RuntimeConfig::default()
+        }
+    }
+
+    #[test]
+    fn no_pack_means_no_packet() {
+        assert!(RuntimeConfig::default().resource_pack_push_packet().is_none());
+    }
+
+    #[test]
+    fn an_empty_url_is_treated_as_unconfigured() {
+        let config = config_with_pack(ResourcePackConfig {
+            url: "   ".to_owned(),
+            ..ResourcePackConfig::default()
+        });
+        assert!(config.resource_pack_push_packet().is_none());
+    }
+
+    #[test]
+    fn the_push_packet_carries_the_configured_fields() {
+        let config = config_with_pack(ResourcePackConfig {
+            url: "https://example.com/pack.zip".to_owned(),
+            hash: Some("0000000000000000000000000000000000000000".to_owned()),
+            required: true,
+            prompt: None,
+        });
+
+        let packet = config
+            .resource_pack_push_packet()
+            .expect("configured pack produces a packet");
+        assert_eq!(packet.url, "https://example.com/pack.zip");
+        assert!(packet.required);
+        assert_eq!(packet.hash.len(), MAX_RESOURCE_PACK_HASH_LENGTH);
+        // Vanilla treats the URL as the pack's identity.
+        assert_eq!(
+            packet.id,
+            Uuid::new_v3(&Uuid::NAMESPACE_URL, b"https://example.com/pack.zip")
+        );
+    }
+
+    #[test]
+    fn a_missing_hash_is_sent_empty() {
+        let config = config_with_pack(ResourcePackConfig {
+            url: "https://example.com/pack.zip".to_owned(),
+            ..ResourcePackConfig::default()
+        });
+        let packet = config.resource_pack_push_packet().expect("packet");
+        assert!(packet.hash.is_empty());
+        assert!(!packet.required);
     }
 }

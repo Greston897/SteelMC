@@ -9,13 +9,14 @@ use steel_core::player::{ClientInformation, Player, PlayerSession};
 use steel_protocol::packets::common::CCustomPayload;
 use steel_protocol::packets::common::{SClientInformation, SCustomPayload};
 use steel_protocol::packets::config::CFinishConfiguration;
-use steel_protocol::packets::game::CUpdateEnabledFeatures;
+use steel_protocol::packets::game::{CUpdateEnabledFeatures, ResourcePackAction, SResourcePack};
 use steel_protocol::packets::config::CSelectKnownPacks;
 use steel_protocol::packets::config::SSelectKnownPacks;
 use steel_protocol::packets::shared_implementation::KnownPack;
 use steel_protocol::utils::ConnectionProtocol;
 use steel_utils::{Identifier, translations};
 use text_components::TextComponent;
+use text_components::translation::TranslatedMessage;
 
 use crate::tcp_client::{ConnectionAction, ConnectionUpdate, JavaTcpClient};
 
@@ -81,6 +82,42 @@ impl JavaTcpClient {
             steel_utils::MC_VERSION.to_string(),
         )]))
         .await;
+
+        // Vanilla `ServerConfigurationPacketListenerImpl` registers this as a
+        // configuration task, so the pack is pushed before the client can
+        // finish configuration. A declined required pack disconnects in
+        // `handle_resource_pack_response`.
+        if let Some(pack) = self.server.config.resource_pack_push_packet() {
+            self.send_bare_packet_now(pack).await;
+        }
+    }
+
+    /// Vanilla `ServerCommonPacketListenerImpl.handleResourcePackResponse`.
+    ///
+    /// Every action except `DECLINED` on a required pack is informational: the
+    /// server keeps no per-pack state, so only the refusal matters.
+    pub async fn handle_resource_pack_response(&self, packet: SResourcePack) {
+        let declined = packet.decoded_action() == Some(ResourcePackAction::Declined);
+        let required = self
+            .server
+            .config
+            .resource_pack
+            .as_ref()
+            .is_some_and(|pack| pack.required);
+        if declined && required {
+            log::info!(
+                "Disconnecting {} due to resource pack {} rejection",
+                self.id,
+                packet.id
+            );
+            // Vanilla key: `multiplayer.requiredTexturePrompt.disconnect`.
+            self.kick(TextComponent::translated(TranslatedMessage {
+                key: "multiplayer.requiredTexturePrompt.disconnect".into(),
+                fallback: None,
+                args: None,
+            }))
+            .await;
+        }
     }
 
     /// Handles the select known packs packet during the configuration state.
