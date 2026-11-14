@@ -7,6 +7,7 @@ use std::sync::Arc;
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
+use steel_registry::blocks::properties::{BlockStateProperties, IntProperty};
 use steel_registry::level_events;
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_blocks;
@@ -17,6 +18,8 @@ use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, Direction};
 
 use crate::behavior::block::BlockBehavior;
+
+const AGE: &IntProperty = &BlockStateProperties::AGE_15;
 use crate::behavior::context::BlockPlaceContext;
 use crate::entity::damage::DamageSource;
 use crate::entity::{Entity, InsideBlockEffectCollector, InsideBlockEffectType};
@@ -67,6 +70,11 @@ impl FireBlock {
         } else {
             vanilla_blocks::FIRE.default_state()
         }
+    }
+
+    /// Vanilla `FireBlock.getFireTickDelay`: `30 + random.nextInt(10)`.
+    fn tick_delay() -> i32 {
+        30 + rand::random_range(0..10)
     }
 
     fn selected_fire_can_survive_at(world: &dyn LevelReader, pos: BlockPos) -> bool {
@@ -200,7 +208,15 @@ impl BlockBehavior for FireBlock {
                 vanilla_blocks::AIR.default_state(),
                 UpdateFlags::UPDATE_ALL,
             );
+            return;
         }
+
+        // Vanilla `FireBlock.onPlace` ends with
+        // `level.scheduleTick(pos, this, getFireTickDelay(level.random))`.
+        // Without that line a freshly placed fire never enters the block-tick
+        // queue, so it would never age or burn out: fire has
+        // `isRandomlyTicking() == false` and therefore no random-tick fallback.
+        world.schedule_block_tick_default(pos, self.block, Self::tick_delay());
     }
     fn player_will_destroy(
         &self,
@@ -263,29 +279,42 @@ impl BlockBehavior for SoulFireBlock {
         Self::can_survive_at(world, pos)
     }
 
-    fn random_tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
-        // Vanilla `FireBlock.tick`: fire dies without fuel and is extinguished by
-        // rain. Spreading to flammable neighbours needs the vanilla
-        // `ignite_odds`/`burn_odds` tables, which the extracted assets do not
-        // carry yet (only their summary statistics are available).
-        if !Self::can_survive_at(world.as_ref(), pos) {
+    /// Vanilla `FireBlock.tick`.
+    ///
+    /// Fire is **not** randomly ticking in vanilla (`isRandomlyTicking()` is
+    /// `false`), it re-schedules itself through the block-tick queue, so the
+    /// engine's random-tick dispatcher never reaches this behaviour. The order
+    /// below is the vanilla order: re-schedule first, then die without support,
+    /// then age, then get rained on.
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        // Vanilla re-queues before doing any work so a surviving fire keeps its
+        // 30–39 tick cadence, and a fire that this tick removes simply loses it.
+        world.schedule_block_tick_default(pos, self.block, Self::tick_delay());
+
+        // Vanilla checks `canSpreadFireAround`, which the
+        // `fire_spread_radius_around_player` game rule gates.
+        if world.get_game_rule(
+            &steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER,
+        ) >= 0
+            && !Self::can_survive_at(world.as_ref(), pos)
+        {
             world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
             return;
         }
 
-        if world.get_game_rule(&steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER)
-            < 0
-        {
+        let age = state.get_value(AGE);
+        // Vanilla: `random.nextFloat() < 0.2F + age * 0.03F` when rain reaches
+        // the fire and the block above does not shield it.
+        if world.is_raining_at(pos) && rand::random::<f32>() < 0.2 + f32::from(age) * 0.03 {
+            world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
             return;
         }
 
-        // Vanilla `FireBlock.tick` extinguishes fire the rain can reach when the
-        // block above is not rain-shielded.
-        if world.is_raining_at(pos)
-            && world.can_see_sky(pos)
-            && rand::random::<f32>() < 0.2
-        {
-            world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+        // Vanilla ages fire by `random.nextInt(3) / 2`, i.e. 0 or 1.
+        let new_age = u8::min(15, age.saturating_add(rand::random_range(0..3) / 2));
+        if new_age != age {
+            let aged = state.set_value(AGE, new_age);
+            world.set_block(pos, aged, UpdateFlags::UPDATE_CLIENTS);
         }
     }
 
@@ -320,6 +349,8 @@ mod tests {
     use steel_utils::{BlockPos, BlockStateId, Direction};
 
     use crate::behavior::block::BlockBehavior;
+
+/// Vanilla `FireBlock.AGE`.
     use crate::test_support::TestLevel;
 
     use super::{FireBlock, SoulFireBlock};
