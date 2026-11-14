@@ -32,6 +32,7 @@ use crate::entity::{
     EntityBaseLoad, EntityDimensions, EntityMovementEmission, EntitySyncedData, LivingEntity,
     LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity, sync_dirty_mob_effects,
 };
+use crate::entity::mount::{SharedMountInventory, open_mount_menu};
 use crate::physics::MoveResult;
 use crate::world::World;
 use crate::player::Player;
@@ -52,6 +53,8 @@ pub struct MuleEntity {
     mob_base: MobBase,
     ageable_base: AgeableMobBase,
     animal_base: AnimalBase,
+    /// Vanilla `AbstractHorse.inventory`: saddle, body armor and storage.
+    mount_inventory: SharedMountInventory,
     entity_data: SyncMutex<MuleEntityData>,
 }
 
@@ -111,8 +114,22 @@ impl MuleEntity {
             mob_base,
             ageable_base,
             animal_base,
+            mount_inventory: crate::entity::mount::shared_inventory(1),
             entity_data: SyncMutex::new(entity_data),
         }
+    }
+
+    /// Vanilla `AbstractHorse.openCustomInventoryScreen`: the mount screen with
+    /// the saddle slot, the body-armor slot and the storage rows.
+    pub fn open_mount_inventory(&self, player: &Player) {
+        if !self.is_tamed() {
+            return;
+        }
+        let inventory = self.mount_inventory.lock();
+        let container = std::sync::Arc::clone(inventory.container());
+        let columns = inventory.columns();
+        drop(inventory);
+        open_mount_menu(self, player, &container, columns);
     }
 
     /// Vanilla `AbstractHorse` flag byte.
@@ -206,6 +223,16 @@ impl DefaultEntityPush for MuleEntity {}
 impl Entity for MuleEntity {
     fn as_default_entity_push(&self) -> Option<&dyn DefaultEntityPush> {
         Some(self)
+    }
+
+    /// Vanilla `AbstractHorse.openCustomInventoryScreen` reached through the
+    /// spectator path.
+    fn open_menu_for(&self, player: &Player) -> crate::behavior::InteractionResult {
+        if !self.is_tamed() {
+            return crate::behavior::InteractionResult::Pass;
+        }
+        self.open_mount_inventory(player);
+        crate::behavior::InteractionResult::Success
     }
 
     fn is_hard_collision_relevant(&self) -> bool {
@@ -345,6 +372,23 @@ impl Animal for MuleEntity {
 impl Mob for MuleEntity {
     fn mob_base(&self) -> &MobBase {
         &self.mob_base
+    }
+
+    /// Vanilla `AbstractHorse.mobInteract`: a tamed mount opens its inventory on
+    /// a secondary use, everything else falls back to the shared animal
+    /// interaction (feeding, saddling and riding).
+    fn mob_interact(
+        &self,
+        player: &Player,
+        hand: steel_utils::types::InteractionHand,
+    ) -> crate::behavior::InteractionResult {
+        if !Entity::is_vehicle(self) && !LivingEntity::is_baby(self) && self.is_tamed()
+            && player.is_secondary_use_active()
+        {
+            self.open_mount_inventory(player);
+            return crate::behavior::InteractionResult::Success;
+        }
+        Animal::mob_interact_animal(self, player, hand)
     }
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {
