@@ -3,7 +3,7 @@
 **Дата:** 9 ноября 2026
 **Проверяемая версия:** `0.17.0+mc26.3` (ветка `arena/8ff5adc9-steelmc`: старт `6eed266`, текущий `17b23b9`)
 **Эталон:** Minecraft Java Edition **26.3 «Wilderness Bound»** (релиз 15.09.2026, data pack version 121.0)
-**Объём кода:** ≈608 900 строк Rust (без generated), 4 514 тестов; 256 block-behavior, 65 item-behavior, 142 entity-behavior
+**Объём кода:** ≈609 100 строк Rust (без generated), 4 516 тестов; 256 block-behavior, 65 item-behavior, 142 entity-behavior
 
 ---
 
@@ -217,8 +217,8 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 | 1 | Реестры и данные 26.3 | — | ≈100 % | Все блоки/предметы/сущности/эффекты/зелья/чары/рецепты/лут-таблицы/достижения/звуки/теги из датапака 26.3, codegen в типизированный Rust | Рантайм-датапаки не поддерживаются (осознанно); редкие новые реестры (dialogs, timelines, world_clocks) не имеют поведения |
 | 2 | Сеть и протокол | 7 | ≈96 % | **clientbound 173/173** (status 2, login 6, config 21, play 144) — каждый пакет 26.3 имеет файл с `#[packet_id]` и корректный `WriteTo`; **serverbound play 69/69** декодируется и диспатчится, из них 65 обрабатываются по-настоящему и 4 — осознанные no-op (`pong`, `resource_pack`, `configuration_acknowledged`, `custom_click_action`, у которых ванильный обработчик пуст); логин/шифрование/сжатие/конфиг; `place_recipe`, `debug_subscription_request`, `set_structure_block`, `set_jigsaw_block`, `set_test_block`, `test_instance_block_action`, `set_command_minecart` применяются к миру | `jigsaw_generate` — warn-skip (нет генератора структур); нет протокол-тестов на NBT-кодеки всех компонентов; `cookie_response` в play-фазе намеренно закрывает соединение, как ваниль |
 | 3 | Чанки, свет, сохранения, производительность | 8 | ≈88 % | Генерация/загрузка/сохранение чанков, освещение, палитры, секции, асинхронная отправка чанков, бенчмарки (10 201 чанк за 3.98 с median на 9950X) | Нет полной parity-гарантии по всем состояниям; сериализация проверена не для всех типов сущностей и block entity; схемы миграции нет (осознанно) |
-| 4 | Мирогенерация (terrain/biomes/carvers/features) | 10 | ≈92 % | 7 500 чанков block-for-block против ванильного референса; 53 типа фич; poplar-деревья 26.3; биом dappled_forest в multi-noise параметрах | Не все фичи/декораторы имеют 1:1 паритет (issue «Feature placement vanilla parity»); нет спавна сущностей при генерации |
-| 5 | Структуры и храмовые пулы | 5 | 9 / ~22 ≈ **41 %** | buried_treasure, desert_pyramid, fortress, jungle_temple, mineshaft, ocean_monument, ruined_portal, stronghold, swamp_hut + template-пайплайн | Нет village, abandoned_camp (26.3), ancient_city, trial_chambers, bastion, end_city, igloo, mansion, pillager_outpost, shipwreck, ocean_ruin, trail_ruins, nether_fossil |
+| 4 | Мирогенерация (terrain/biomes/carvers/features) | 10 | ≈94 % (добавлен спавн мобов при генерации, §28.1) | 7 500 чанков block-for-block против ванильного референса; 53 типа фич; poplar-деревья 26.3; биом dappled_forest в multi-noise параметрах | Не все фичи/декораторы имеют 1:1 паритет (issue «Feature placement vanilla parity»); спавн мобов при генерации добавлен в §28.1 |
+| 5 | Структуры и храмовые пулы | 5 | **16 / 16 ≈ 95 %** (в §3 ранее было указано 41 % — ошибка, см. §28.2) | Все 16 ванильных типов `structure` зарегистрированы в `vanilla_structure_impls`: jigsaw (деревни, бастионы, ancient_city, trial_chambers, trail_ruins, outpost), nether_fossil, fortress, end_city, woodland_mansion, ocean_monument, mineshaft, desert_pyramid, jungle_temple, swamp_hut, buried_treasure, shipwreck, igloo, ocean_ruin, stronghold, ruined_portal | Не глубина типов, а их полнота: редкие маркеры шаблонов и граничные случаи размещения |
 | 6 | Блоки и blockstates | 13 | **81 %** (трекер) / 223 поведения на 268 классов | 888 записей реализовано, 143 в работе; редстоун, растения, двери, лестницы/плиты, шерсть/бетон, straw bed, shelf mushroom, red shrub | 70 классов в планах: **chest/trapped_chest**, dispenser, dropper, hopper, brewing_stand, crafter, lectern, loom, stonecutter, smithing_table, cartography_table, sculk*, calibrated_sculk_sensor, trial_spawner, vault, decorated_pot, jigsaw, structure_block, command_block, creaking_heart, copper_golem_statue, shelf (13), leaves-база, nylium, infested, froglights и др. |
 | 7 | Block entities | 6 | **49 / 49 = 100 %** типов | furnace/smoker/blast furnace, chest/trapped_chest, barrel, beacon, beehive, bell, brushable, campfire, chiseled_bookshelf, comparator, conduit, daylight detector, enchanting table, ender chest, end portal/gateway, sign/hanging sign, jukebox, mob spawner, piston moving, potent sulfur, shulker box, skull, banner, lectern, decorated pot, crafter, sculk sensor/calibrated/catalyst/shrieker, creaking heart, vault, trial spawner, shelf, dispenser/dropper, hopper, brewing stand, command block, structure block, jigsaw, copper golem statue, test block, test instance block | Наличие закрыто; глубина — нет: спавнер без полного набора правил, поршни без всех граничных случаев (см. §«Что остаётся неполным») |
 | 8 | Предметы и компоненты | 8 | ≈78 % (**1 401 / 1 658 = 84,5 %** предметов с поведением, 65 из 66 классов) | 1 658 предметов и компоненты данных, прочность, еда, зелья, вёдра, инструменты/броня через компоненты, mace, shield (частично), spawn eggs, dye, banner, minecart, sign, подушечки (16), картины, лук/арбалет/стрелы (в т.ч. зельевые), кристалл Края, шаблоны кузнеца, **лодки и плоты (22)**, **карты и пустые карты (18, включая `MapState` и пакет `map_item_data`)** | Нет отдельного класса поведения только у базового `Item` (257 предметов — ровно те, что и в ванили наследуют `Item`); элитры нет |
@@ -2410,3 +2410,90 @@ configured.filter(|&c| c > 0).map_or(available, |c| c.min(available))
 - Костёр: `BURN_COOL_SPEED = 2`.
 - Тайлы `block entity`: инвентари 49/49, тикер варилки не гейтится (как ванильный `getTicker`).
 - Покрытие классов не изменилось: блоки **267/268** (нет `Block`), предметы **65/66** (нет `Item`), сущности **142/143** (нет `Player` — реализован вручную), фабрики 159/161, меню **25/25**.
+
+---
+
+## 28. Третий проход: спавн при генерации, ревизия структур
+
+### 28.1. Закрыт реальный пробел: чанк генерировался без мобов
+
+`steel-core/src/worldgen/stages/spawn.rs` (стадия `Spawn`, ванильный
+`ChunkStatusTasks.generateSpawn` → `NoiseBasedChunkGenerator.spawnOriginalMobs` →
+`NaturalSpawner.spawnMobsForChunkGeneration`) представлял собой **пустую
+функцию**: ни один чанк никогда не получал «оригинальных» мобов. Тиковый
+`NaturalSpawner` при этом работал, поэтому дефект не был заметен в игре —
+но новая карта оставалась пустой до первого 400-тикового цикла, а сохранение
+без тиков (генератор сидов) не получало животных вообще.
+
+Реализовано строго по ванильному алгоритму:
+
+| Аспект | Ваниль | Реализация |
+|---|---|---|
+| Категория | только `creature` из `biome.spawners` | `biome.spawners.get("creature")` |
+| Условие цикла | `while random.nextFloat() < creatureSpawnProbability` | так же, вероятность клампится `< 1.0` |
+| Моб-кап | игнорируется | игнорируется |
+| Spawn costs | игнорируются | игнорируются |
+| Размер пачки | `minCount..=maxCount` записи | так же |
+| Позиция пачки | одна точка в чанке, далее шаг `nextInt(5)-nextInt(5)` по X/Z | так же (треугольное распределение) |
+| Высота | `MOTION_BLOCKING` heightmap | так же |
+| Куда попадают | `ProtoChunk.addEntity` | `Chunk::add_entity` → proto-хранилище |
+
+Анти-баг: первая версия была написана по формуле **тиковой** стадии (все
+категории + `1 + nextInt(2) + nextInt(2)`). Это неверно — ванильная
+`spawnMobsForChunkGeneration` устроена иначе, и такая реализация спавнила бы
+монстров внутри неосвещённых чанков. Формула `getRandomSpawnCount`
+принадлежит `NaturalSpawner.tick`, а не генерации.
+
+Проверено, что сущности действительно доходят до мира:
+`FullChunkPromotion.pending_entities` = `proto_chunk.entities.close_and_drain()`
+(`chunk/full_chunk/mod.rs:309`), то есть proto-хранилище дренируется при
+промоушене в `Full`.
+
+### 28.2. Ревизия структур: отчёт недооценивал на 7 типов
+
+§3 строка 5 заявляла «9 из ~22 ≈ 41 %». Фактически в
+`vanilla_structure_impls()` (`steel-worldgen/src/structure/generator.rs:967-982`)
+зарегистрированы **все 16** ванильных типов `structure`:
+
+`jigsaw`, `nether_fossil`, `fortress`, `end_city`, `woodland_mansion`,
+`ocean_monument`, `mineshaft`, `desert_pyramid`, `jungle_temple`, `swamp_hut`,
+`buried_treasure`, `shipwreck`, `igloo`, `ocean_ruin`, `stronghold`,
+`ruined_portal`.
+
+Деревни, бастионы, ancient_city, trial_chambers, trail_ruins, pillager_outpost
+и остальные пуловые структуры идут через `jigsaw` и не требуют отдельного
+класса — именно так устроена ваниль. Файлы `end_city.rs` (625 строк),
+`mansion/` (1 300), `ocean_ruin.rs` (393), `shipwreck.rs` (187), `igloo.rs` (192),
+`nether_fossil.rs` (234) существуют и подключены.
+
+**Честная оценка строки 5: ≈95 %**, а не 41 %. Остаток — не типы, а глубина:
+полнота маркеров в шаблонах и редкие граничные случаи размещения.
+
+### 28.3. Проверено и подтверждено корректным (третий проход)
+
+- `stages/full.rs` — `holder.upgrade_to_full()`, это и есть ванильная задача
+  `Full` (промоушен proto → Full), а не заглушка.
+- `stages/biomes.rs` — делегирует `generator.create_biomes(chunk)`, корректно.
+- `stages/structures.rs::load_starts` — пустой намеренно: при загрузке с диска
+  структурные старты приходят из сейва, отдельной работы нет.
+- `stages/light.rs` (470 строк) и `leaf_distance.rs` (494) — содержательные.
+- Заглушек `todo!`/`unimplemented!` в мировом коде нет (только `unreachable!`
+  в защитных ветках, что ванильно).
+
+### 28.4. Что осталось в «инфраструктуре и мире» — прямо
+
+1. **`jigsaw_generate` доведён не был, и я его откатил.** Рантайм-генерация
+   структуры из джагсо-блока — единственный известный пробел инфраструктуры,
+   который я начал закрывать и откатил: `StructureTemplate::place_in_world`
+   глубоко завязан на `WorldGenRegion` (запись через
+   `set_block_state_for_generation`, постпроцессинг, обновление шейпов), а
+   регион поверх живых чанков потребовал бы правок в `WorldGenAccessMode`,
+   `ChunkStep` и правах записи, которые **без компилятора я не могу
+   верифицировать**. Оставлять это как «сделано» — хуже, чем признать пробел:
+   сейчас `handle_jigsaw_generate` логирует пропуск.
+2. **Сборки не было.** Rust-тулчейн в песочнице отсутствует,
+   `static.rust-lang.org` недоступен, `apt` без root. Все правки проверены
+   структурно (`bal.py`, `imports.py`, `modcheck.py`, сверка сигнатур), но
+   **не скомпилированы**. Перед мержем нужен `cargo check`.
+3. **Спавн при генерации не проверен в рантайме** — тесты покрывают только
+   взвешенный выбор; сквозной прогон требует сборки.
