@@ -17,7 +17,7 @@ use steel_utils::{BlockPos, BlockStateId};
 
 use glam::DVec3;
 use steel_registry::item_stack::ItemStack;
-use steel_registry::{vanilla_entities, vanilla_items};
+use steel_registry::{vanilla_blocks, vanilla_entities, vanilla_items};
 
 use crate::behavior::BlockBehavior;
 use crate::behavior::block::BlockEntityCreation;
@@ -261,8 +261,16 @@ impl BlockBehavior for SnifferEggBlock {
     }
 }
 
-/// Vanilla `DriedGhastBlock`: a waterloggable block that rehydrates into a ghast
-/// when placed in water.
+/// Vanilla `DriedGhastBlock.HYDRATION_TICK_DELAY`: 5000 game ticks, roughly one
+/// full in-game day between hydration stages.
+const DRIED_GHAST_HYDRATION_TICK_DELAY: i32 = 5000;
+
+/// Vanilla `DriedGhastBlock.MAX_HYDRATION_LEVEL`, the stage that spawns a
+/// ghastling.
+const DRIED_GHAST_MAX_HYDRATION_LEVEL: i32 = 3;
+
+/// Vanilla `DriedGhastBlock`: a waterloggable block that rehydrates into a
+/// ghastling when kept in water.
 #[block_behavior]
 pub struct DriedGhastBlock {
     block: BlockRef,
@@ -274,6 +282,87 @@ impl DriedGhastBlock {
     pub const fn new(block: BlockRef) -> Self {
         Self { block }
     }
+
+    /// Vanilla `DriedGhastBlock.tickWaterlogged`: one step up the hydration
+    /// ladder, or the ghastling once the block is fully hydrated.
+    fn tick_waterlogged(world: &Arc<World>, pos: BlockPos, state: BlockStateId) {
+        let hydration: i32 = state.get_value(&BlockStateProperties::DRIED_GHAST_HYDRATION_LEVELS);
+        if hydration < DRIED_GHAST_MAX_HYDRATION_LEVEL {
+            world.play_sound_at(
+                &steel_registry::sound_events::BLOCK_DRIED_GHAST_TRANSITION,
+                steel_protocol::packets::game::SoundSource::Blocks,
+                center_of(pos),
+                1.0,
+                1.0,
+                None,
+            );
+            let next = state.set_value(
+                &BlockStateProperties::DRIED_GHAST_HYDRATION_LEVELS,
+                hydration + 1,
+            );
+            world.set_block(pos, next, UpdateFlags::UPDATE_CLIENTS);
+            world.game_event(
+                &steel_registry::vanilla_game_events::BLOCK_CHANGE,
+                pos,
+                &crate::world::game_event::GameEventContext::new(None, Some(state)),
+            );
+        } else {
+            Self::spawn_ghastling(world, pos, state);
+        }
+    }
+
+    /// Vanilla `DriedGhastBlock.spawnGhastling`: the block disappears and a baby
+    /// happy ghast takes its place, facing the direction the block faced.
+    fn spawn_ghastling(world: &Arc<World>, pos: BlockPos, state: BlockStateId) {
+        world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+        let Some(ghastling) = ENTITIES.create(
+            &vanilla_entities::HAPPY_GHAST,
+            next_entity_id(),
+            DVec3::new(
+                f64::from(pos.x()) + 0.5,
+                f64::from(pos.y()),
+                f64::from(pos.z()) + 0.5,
+            ),
+            Arc::downgrade(world),
+        ) else {
+            return;
+        };
+        // Vanilla `Mob.setBaby` is a no-op on non-ageable mobs, so a missing
+        // mob view simply leaves the ghastling at its default age.
+        if let Some(mob) = ghastling.as_mob() {
+            mob.set_baby(true);
+        }
+        ghastling.snap_to(
+            DVec3::new(
+                f64::from(pos.x()) + 0.5,
+                f64::from(pos.y()),
+                f64::from(pos.z()) + 0.5,
+            ),
+            state
+                .get_value(&BlockStateProperties::HORIZONTAL_FACING)
+                .to_yaw(),
+            0.0,
+        );
+        if world.try_add_entity(ghastling).is_ok() {
+            world.play_sound_at(
+                &steel_registry::sound_events::ENTITY_GHASTLING_SPAWN,
+                steel_protocol::packets::game::SoundSource::Blocks,
+                center_of(pos),
+                1.0,
+                1.0,
+                None,
+            );
+        }
+    }
+}
+
+/// Centre of a block, the anchor vanilla uses for block sounds and particles.
+fn center_of(pos: BlockPos) -> DVec3 {
+    DVec3::new(
+        f64::from(pos.x()) + 0.5,
+        f64::from(pos.y()) + 0.5,
+        f64::from(pos.z()) + 0.5,
+    )
 }
 
 impl BlockBehavior for DriedGhastBlock {
@@ -284,8 +373,51 @@ impl BlockBehavior for DriedGhastBlock {
                 .set_value(
                     &BlockStateProperties::WATERLOGGED,
                     context.is_water_source(),
+                )
+                .set_value(
+                    &BlockStateProperties::HORIZONTAL_FACING,
+                    context.horizontal_direction().opposite(),
                 ),
         )
+    }
+
+    /// Vanilla `DriedGhastBlock.randomTick`: a waterlogged block, or one that is
+    /// still partly hydrated, schedules the slow hydration tick.
+    fn random_tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        let waterlogged: bool = state.get_value(&BlockStateProperties::WATERLOGGED);
+        let hydration: i32 = state.get_value(&BlockStateProperties::DRIED_GHAST_HYDRATION_LEVELS);
+        if (waterlogged || hydration > 0) && !world.has_scheduled_block_tick(pos, self.block) {
+            world.schedule_block_tick_default(
+                pos,
+                self.block,
+                DRIED_GHAST_HYDRATION_TICK_DELAY,
+            );
+        }
+    }
+
+    /// Vanilla `DriedGhastBlock.tick`: water adds hydration, dry air drains it.
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        let waterlogged: bool = state.get_value(&BlockStateProperties::WATERLOGGED);
+        if waterlogged {
+            Self::tick_waterlogged(world, pos, state);
+            return;
+        }
+        let hydration: i32 = state.get_value(&BlockStateProperties::DRIED_GHAST_HYDRATION_LEVELS);
+        if hydration > 0 {
+            world.set_block(
+                pos,
+                state.set_value(
+                    &BlockStateProperties::DRIED_GHAST_HYDRATION_LEVELS,
+                    hydration - 1,
+                ),
+                UpdateFlags::UPDATE_CLIENTS,
+            );
+            world.game_event(
+                &steel_registry::vanilla_game_events::BLOCK_CHANGE,
+                pos,
+                &crate::world::game_event::GameEventContext::new(None, Some(state)),
+            );
+        }
     }
 }
 
