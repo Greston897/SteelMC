@@ -3,7 +3,7 @@
 **Дата:** 9 ноября 2026
 **Проверяемая версия:** `0.17.0+mc26.3` (ветка `arena/8ff5adc9-steelmc`: старт `6eed266`, текущий `17b23b9`)
 **Эталон:** Minecraft Java Edition **26.3 «Wilderness Bound»** (релиз 15.09.2026, data pack version 121.0)
-**Объём кода:** ≈608 900 строк Rust (без generated), 4 514 тестов
+**Объём кода:** ≈608 900 строк Rust (без generated), 4 514 тестов; 256 block-behavior, 65 item-behavior, 142 entity-behavior
 
 ---
 
