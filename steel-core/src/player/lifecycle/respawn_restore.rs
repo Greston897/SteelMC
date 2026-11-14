@@ -74,6 +74,9 @@ impl Player {
         }
         *self.advancements.lock() = old_player.advancements.lock().clone();
         *self.seen_credits.lock() = *old_player.seen_credits.lock();
+        // Vanilla `ServerPlayer.restoreFrom` copies the post-effect list, and the
+        // replacement player starts dirty so the client re-applies the pipeline.
+        self.replace_post_effects(old_player.post_effects());
         let residence = old_player.residence.lock().clone();
         *self.residence.lock() = residence;
 

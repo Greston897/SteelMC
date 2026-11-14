@@ -29,9 +29,10 @@ use crate::{
 /// Increment when making breaking changes to the format.
 ///
 /// Version 8 added the vanilla `warden_spawn_tracker` (warning level, cooldown
-/// and quiet ticks). Older saves simply start with a fresh tracker, which is
-/// exactly vanilla's behaviour for a player that never triggered a shrieker.
-pub const PLAYER_DATA_VERSION: i32 = 8;
+/// and quiet ticks), version 9 the vanilla `post_effects` list. Older saves
+/// start with the defaults, which is exactly vanilla's behaviour for a player
+/// that never triggered a shrieker and never had a screen effect applied.
+pub const PLAYER_DATA_VERSION: i32 = 9;
 
 /// Persistent player data saved by Steel's storage backend.
 ///
@@ -143,6 +144,10 @@ pub struct PersistentPlayerData {
 
     /// Vanilla `warden_spawn_tracker` (warning level, cooldown, quiet ticks).
     pub warden_spawn_tracker: PersistentWardenSpawnTracker,
+
+    /// Vanilla `post_effects`: the ordered list of screen effects the client
+    /// applies, stored as registry ids.
+    pub post_effects: Vec<Identifier>,
 }
 
 /// Vanilla `WardenSpawnTracker` saved with the player.
@@ -268,6 +273,7 @@ impl PersistentPlayerData {
         let ender_pearls = Self::ender_pearls_from_player(player);
         let stats = Self::stats_from_player(player);
         let advancements = player.advancements.lock().persisted_progress();
+        let post_effects = player.post_effects();
 
         Self {
             pos: [pos.x, pos.y, pos.z],
@@ -323,6 +329,7 @@ impl PersistentPlayerData {
                     cooldown_ticks: tracker.cooldown_ticks(),
                 }
             },
+            post_effects,
         }
     }
 
@@ -398,6 +405,9 @@ impl Player {
 
         self.set_score(0);
         self.set_seen_credits(false);
+        // A first visit has no saved render state, so the empty list is the
+        // vanilla default and still has to reach the client.
+        self.replace_post_effects(Vec::new());
     }
 }
 
@@ -555,6 +565,7 @@ impl PersistentPlayerData {
         }
         player.set_score(self.score);
         player.set_seen_credits(self.seen_credits);
+        player.replace_post_effects(self.post_effects.clone());
 
         // Statistics
         {

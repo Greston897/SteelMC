@@ -4,14 +4,33 @@ use steel_macros::{ClientPacket, WriteTo};
 use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_PLAYER_ROTATION;
 
-/// Clientbound packet that forces the player's body rotation.
+/// Clientbound packet that forces the player's rotation.
+///
+/// Vanilla `ClientboundPlayerRotationPacket`: yaw, yaw relative flag, pitch,
+/// pitch relative flag. The relative flags are for `Entity.forceSetRotation`
+/// callers such as `EntitySelector`; a plain absolute move sends `false, false`.
 #[derive(ClientPacket, WriteTo, Clone, Debug)]
 #[packet_id(Play = C_PLAYER_ROTATION)]
 pub struct CPlayerRotation {
-    /// Body yaw in degrees.
+    /// Yaw in degrees.
     pub yaw: f32,
-    /// Head pitch in degrees.
+    /// Whether the client should rotate by `yaw` instead of setting it.
+    pub relative_yaw: bool,
+    /// Pitch in degrees.
     pub pitch: f32,
-    /// Whether the head rotates relative to the body.
-    pub relative: bool,
+    /// Whether the client should rotate by `pitch` instead of setting it.
+    pub relative_pitch: bool,
+}
+
+impl CPlayerRotation {
+    /// An absolute rotation, which is what a teleport or `/rotate` sets.
+    #[must_use]
+    pub const fn absolute(yaw: f32, pitch: f32) -> Self {
+        Self {
+            yaw,
+            relative_yaw: false,
+            pitch,
+            relative_pitch: false,
+        }
+    }
 }

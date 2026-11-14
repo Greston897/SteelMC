@@ -322,7 +322,8 @@
                 "null"
               ],
               "description": "Lowercase hex SHA-1 of the zip; empty means the client does not verify it",
-              "maxLength": 40
+              "maxLength": 40,
+              "pattern": "^[0-9a-f]{0,40}$"
             },
             "required": {
               "type": "boolean",
@@ -334,7 +335,8 @@
                 "object",
                 "null"
               ],
-              "description": "Text shown in the client's download prompt (a TextComponent)"
+              "description": "Text shown in the client's download prompt (a TextComponent)",
+              "additionalProperties": true
             }
           },
           "required": [

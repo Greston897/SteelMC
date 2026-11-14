@@ -39,13 +39,14 @@ use steel_utils::{BlockPos, Identifier};
 const PLAYER_MAGIC: [u8; 4] = *b"STLP";
 const GLOBAL_MAGIC: [u8; 4] = *b"STLG";
 /// Current on-disk layout version of a player data file.
-const PLAYER_STORAGE_VERSION: u16 = 11;
+const PLAYER_STORAGE_VERSION: u16 = 12;
 /// Oldest on-disk layout this build can still read.
 ///
 /// Version 10 lacked the vanilla `warden_spawn_tracker` block that version 11
-/// appended. Instead of rejecting every save written by an earlier build, the
-/// reader decodes version 10 into [`PlayerDataFileV10`] and fills the missing
-/// tracker with vanilla defaults. Bump this only together with a reader.
+/// appended, and version 12 appended `post_effects`. Instead of rejecting every
+/// save written by an earlier build, the reader decodes the older layouts and
+/// fills the missing fields with vanilla defaults. Bump this only together with
+/// a reader.
 const OLDEST_READABLE_PLAYER_STORAGE_VERSION: u16 = 10;
 const GLOBAL_STORAGE_VERSION: u16 = 1;
 const GLOBAL_PLAYER_DATA_VERSION: i32 = 1;
@@ -102,6 +103,8 @@ struct PlayerDataFile {
     ender_pearls: Vec<EnderPearlFile>,
     ender_items: Vec<SlotFile>,
     warden_spawn_tracker: WardenSpawnTrackerFile,
+    /// Vanilla `post_effects` ids; empty for every save older than version 12.
+    post_effects: Vec<String>,
 }
 
 /// Vanilla `warden_spawn_tracker` in the player save.
@@ -397,6 +400,88 @@ impl PlayerDataFileV10 {
                 warning_level: 0,
                 cooldown_ticks: 0,
             },
+            // Vanilla default: no screen effect was ever added.
+            post_effects: Vec::new(),
+        }
+    }
+}
+
+/// Player data layout written before version 12 appended `post_effects`.
+#[derive(SchemaWrite, SchemaRead)]
+struct PlayerDataFileV11 {
+    data_version: i32,
+    pos: [f64; 3],
+    motion: [f64; 3],
+    rotation: [f32; 2],
+    on_ground: bool,
+    fall_flying: bool,
+    remaining_fire_ticks: i32,
+    ticks_frozen: i32,
+    is_in_powder_snow: bool,
+    was_in_powder_snow: bool,
+    has_visual_fire: bool,
+    health: f32,
+    game_mode: i32,
+    prev_game_mode: Option<i32>,
+    abilities: AbilitiesFile,
+    inventory: Vec<SlotFile>,
+    selected_slot: i32,
+    world: String,
+    food_level: i32,
+    food_saturation_level: f32,
+    food_exhaustion_level: f32,
+    food_tick_timer: i32,
+    experience_level: i32,
+    experience_progress: f32,
+    experience_total: i32,
+    enchantment_seed: i32,
+    score: i32,
+    seen_credits: bool,
+    root_vehicle: Option<RootVehicleFile>,
+    respawn_config: Option<RespawnConfigFile>,
+    ender_pearls: Vec<EnderPearlFile>,
+    ender_items: Vec<SlotFile>,
+    warden_spawn_tracker: WardenSpawnTrackerFile,
+}
+
+impl PlayerDataFileV11 {
+    /// Fills in the field added in version 12.
+    fn into_current(self) -> PlayerDataFile {
+        PlayerDataFile {
+            data_version: self.data_version,
+            pos: self.pos,
+            motion: self.motion,
+            rotation: self.rotation,
+            on_ground: self.on_ground,
+            fall_flying: self.fall_flying,
+            remaining_fire_ticks: self.remaining_fire_ticks,
+            ticks_frozen: self.ticks_frozen,
+            is_in_powder_snow: self.is_in_powder_snow,
+            was_in_powder_snow: self.was_in_powder_snow,
+            has_visual_fire: self.has_visual_fire,
+            health: self.health,
+            game_mode: self.game_mode,
+            prev_game_mode: self.prev_game_mode,
+            abilities: self.abilities,
+            inventory: self.inventory,
+            selected_slot: self.selected_slot,
+            world: self.world,
+            food_level: self.food_level,
+            food_saturation_level: self.food_saturation_level,
+            food_exhaustion_level: self.food_exhaustion_level,
+            food_tick_timer: self.food_tick_timer,
+            experience_level: self.experience_level,
+            experience_progress: self.experience_progress,
+            experience_total: self.experience_total,
+            enchantment_seed: self.enchantment_seed,
+            score: self.score,
+            seen_credits: self.seen_credits,
+            root_vehicle: self.root_vehicle,
+            respawn_config: self.respawn_config,
+            ender_pearls: self.ender_pearls,
+            ender_items: self.ender_items,
+            warden_spawn_tracker: self.warden_spawn_tracker,
+            post_effects: Vec::new(),
         }
     }
 }
@@ -480,6 +565,11 @@ impl PlayerDataFile {
                 warning_level: data.warden_spawn_tracker.warning_level,
                 cooldown_ticks: data.warden_spawn_tracker.cooldown_ticks,
             },
+            post_effects: data
+                .post_effects
+                .iter()
+                .map(ToString::to_string)
+                .collect(),
         })
     }
 
@@ -577,6 +667,11 @@ impl PlayerDataFile {
                 warning_level: self.warden_spawn_tracker.warning_level,
                 cooldown_ticks: self.warden_spawn_tracker.cooldown_ticks,
             },
+            post_effects: self
+                .post_effects
+                .iter()
+                .filter_map(|id| id.parse::<Identifier>().ok())
+                .collect(),
         })
     }
 }
@@ -650,6 +745,14 @@ fn decode_player_file(bytes: &[u8]) -> io::Result<PlayerDataFile> {
             let payload = decode_file(PLAYER_MAGIC, PLAYER_STORAGE_VERSION, bytes)?;
             wincode::deserialize(&payload)
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))
+        }
+        11 => {
+            // Saves written before `post_effects` existed: the payload is a
+            // strict prefix of the current layout.
+            let payload = decode_file(PLAYER_MAGIC, 11, bytes)?;
+            let old: PlayerDataFileV11 = wincode::deserialize(&payload)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))?;
+            Ok(old.into_current())
         }
         10 => {
             // Saves written before the warden spawn tracker existed. The layout

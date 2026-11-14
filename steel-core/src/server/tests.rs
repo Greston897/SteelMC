@@ -30,7 +30,9 @@ use steel_registry::{
     init_vanilla_registry, stat::vanilla_stat_types, vanilla_blocks, vanilla_custom_stats,
     vanilla_dimension_types, vanilla_entities, vanilla_game_rules::RESPAWN_RADIUS, vanilla_items,
 };
-use steel_utils::{BlockPos, ChunkPos, UuidExt as _, translations, types::UpdateFlags};
+use steel_utils::{
+    BlockPos, ChunkPos, Identifier, UuidExt as _, translations, types::UpdateFlags,
+};
 use steel_utils::{codec::VarInt, serial::ReadFrom, text::DisplayResolutor};
 use text_components::TextComponent;
 use tokio::{
@@ -3709,6 +3711,9 @@ fn death_respawn_replaces_the_live_player_incarnation() {
             .with_direct_entity(old_entity);
         old_player.record_last_damage_source(&source);
 
+        // Vanilla `ServerPlayer.restoreFrom` keeps the post-effect list across a
+        // respawn, so the replacement must inherit it.
+        old_player.add_post_effect(Identifier::vanilla_static("invert"));
         let requested_chunks_per_tick = 2;
         assert_ne!(
             send_test_chunk_batch(&server, &old_player, world),
@@ -3874,6 +3879,10 @@ fn end_credits_respawn_replaces_the_detached_player_incarnation() {
             1
         );
         assert!(replacement.has_seen_credits());
+        assert_eq!(
+            replacement.post_effects(),
+            [Identifier::vanilla_static("invert")]
+        );
         assert!(replacement.last_damage_source().is_none());
         assert!(old_player.last_damage_source().is_some());
         assert!(Arc::ptr_eq(

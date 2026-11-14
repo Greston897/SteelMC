@@ -274,6 +274,10 @@ impl Player {
             self.server().resend_player_context(self);
         }
         self.send_active_effects_for_self();
+        // Vanilla `PlayerList.respawn`/`placeNewPlayer` push the post-effect
+        // list right after the active effects, so the client never keeps a
+        // pipeline from the previous life.
+        self.flush_post_effects();
         world
     }
 

@@ -20,6 +20,7 @@ mod permissions;
 pub mod player_data;
 pub mod player_data_storage;
 pub mod player_inventory;
+mod post_effects;
 mod profile;
 pub mod recipe_book;
 pub mod recipe_placement;
@@ -34,6 +35,7 @@ mod title;
 use crate::player::player_inventory::Prediction;
 use crate::player::recipe_placement::{PlacementOutcome, PostPlaceAction};
 pub use abilities::{Abilities, DEFAULT_FLYING_SPEED};
+pub use post_effects::PlayerPostEffects;
 use chat::ChatState;
 pub use chat::{LastSeen, LastSeenMessagesValidator, MessageCache};
 use connection::NetworkConnection as _;
@@ -66,7 +68,7 @@ use std::time::{Duration, Instant};
 use steel_math::RAD_TO_DEG_F64;
 use steel_protocol::packets::game::{
     CEntityEvent, CHurtAnimation, CPlayerCombatEnd, CPlayerCombatEnter, CPlayerCombatKill,
-    CPlayerLookAt, CRespawn, CTagQuery,
+    CPlayerLookAt, CPlayerRotation, CRespawn, CTagQuery,
     CPlaceGhostRecipe, CSetChunkCacheRadius, CSetDefaultSpawnPosition, CSetHealth, CSetHeldSlot,
     CSetPassengers, CSetSimulationDistance,
     ClientCommandAction,
@@ -307,6 +309,11 @@ pub struct Player {
 
     /// Whether the player has completed the vanilla End credits flow.
     seen_credits: SyncMutex<bool>,
+
+    /// Vanilla `ServerPlayer.postEffects`: the ordered set of `post_effect`
+    /// registry ids the client applies to the whole screen, plus the dirty flag
+    /// that makes the play tick push them.
+    post_effects: SyncMutex<PlayerPostEffects>,
 
     /// Vanilla `ServerPlayer.wonGame`; transient while the End credits screen is open.
     won_game: SyncMutex<bool>,
@@ -921,6 +928,7 @@ impl Player {
             permissions: SyncMutex::new(PlayerPermissionState::default()),
             requested_debug_subscriptions: SyncMutex::new(Vec::new()),
             seen_credits: SyncMutex::new(false),
+            post_effects: SyncMutex::new(PlayerPostEffects::new_pending()),
             won_game: SyncMutex::new(false),
             chunk_send_epoch: SyncMutex::new(0),
             residence: SyncMutex::new(PlayerResidenceState::new()),
@@ -1029,6 +1037,44 @@ impl Player {
     /// Vanilla keeps `WardenSpawnTracker` on the `ServerPlayer` and mutates it
     /// through the optional; the shrieker reads, bumps and copies it.
     #[must_use]
+    /// Vanilla `ServerPlayer.addPostEffect`; returns whether the list changed.
+    pub fn add_post_effect(&self, effect: Identifier) -> bool {
+        self.post_effects.lock().add(effect)
+    }
+
+    /// Vanilla `ServerPlayer.removePostEffect`.
+    pub fn remove_post_effect(&self, effect: &Identifier) -> bool {
+        self.post_effects.lock().remove(effect)
+    }
+
+    /// Vanilla `ServerPlayer.clearPostEffects`.
+    pub fn clear_post_effects(&self) -> bool {
+        self.post_effects.lock().clear()
+    }
+
+    /// Vanilla `ServerPlayer.getPostEffects`.
+    #[must_use]
+    pub fn post_effects(&self) -> Vec<Identifier> {
+        self.post_effects.lock().effects().to_vec()
+    }
+
+    /// Replaces the list, used when a saved player is restored.
+    pub fn replace_post_effects(&self, effects: Vec<Identifier>) {
+        self.post_effects.lock().replace(effects);
+    }
+
+    /// Pushes the list when it changed since the last push.
+    ///
+    /// Vanilla does this at the end of `ServerPlayer.tick` and again from
+    /// `PlayerList.placeNewPlayer`, which is why a fresh player always receives
+    /// one packet.
+    pub(crate) fn flush_post_effects(&self) {
+        let packet = self.post_effects.lock().take_update();
+        if let Some(packet) = packet {
+            self.send_packet(packet);
+        }
+    }
+
     pub fn warden_spawn_tracker(&self) -> crate::block_entity::entities::WardenSpawnTracker {
         *self.warden_spawn_tracker.lock()
     }
@@ -2519,6 +2565,18 @@ impl Entity for Player {
         self.gameprofile.name().to_owned()
     }
 
+    fn force_set_rotation(&self, yaw: f32, relative_yaw: bool, pitch: f32, relative_pitch: bool) {
+        self.default_force_set_rotation(yaw, relative_yaw, pitch, relative_pitch);
+        // Vanilla `ServerPlayer.forceSetRotation` also pushes the new values so
+        // the client does not snap back on its next movement packet.
+        self.send_packet(CPlayerRotation {
+            yaw,
+            relative_yaw,
+            pitch,
+            relative_pitch,
+        });
+    }
+
     fn look_at(&self, from_anchor: EntityAnchor, target: DVec3) {
         apply_entity_look_at(self, from_anchor, target);
         self.send_packet(CPlayerLookAt::position(
@@ -3071,6 +3129,9 @@ impl LivingEntity for Player {
                 advancements.trigger_tick(self, &location_context);
                 advancements.flush_dirty(self, true);
             }
+            // Vanilla `ServerPlayer.tick`: the post-effect push follows the
+            // advancement flush and only runs for a live player.
+            self.flush_post_effects();
             self.tick_levitation_trigger();
             self.tick_ride_entity_in_lava_trigger();
             self.living_base.refresh_speed_from_attributes();

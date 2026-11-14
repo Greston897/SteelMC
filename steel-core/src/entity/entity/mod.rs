@@ -1947,6 +1947,33 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         self.base().set_rotation(rotation);
     }
 
+    /// Vanilla `Entity.forceSetRotation`: applies a rotation that may be
+    /// relative, snaps the old rotation and mirrors the yaw into the head yaw.
+    ///
+    /// Used by `/rotate`, which resolves the argument against the command source
+    /// and hands the client an offset when the argument was relative.
+    fn force_set_rotation(&self, yaw: f32, relative_yaw: bool, pitch: f32, relative_pitch: bool) {
+        self.default_force_set_rotation(yaw, relative_yaw, pitch, relative_pitch);
+    }
+
+    /// Vanilla `Entity.forceSetRotation` without the player packet, shared by
+    /// entities whose subclasses add their own notification.
+    fn default_force_set_rotation(
+        &self,
+        yaw: f32,
+        relative_yaw: bool,
+        pitch: f32,
+        relative_pitch: bool,
+    ) {
+        let rotation = forced_rotation(self.rotation(), yaw, relative_yaw, pitch, relative_pitch);
+        self.set_rotation(rotation);
+        let rotation = self.rotation();
+        if let Some(living) = self.as_living_entity() {
+            living.set_y_head_rot(rotation.0);
+        }
+        self.base().set_old_rotation_to_current();
+    }
+
     /// Gets the nearest horizontal direction to the entity's yaw (horizontal rotation).
     fn direction_yaw(&self) -> Direction {
         let (yaw, _) = self.rotation();
@@ -4264,6 +4291,28 @@ pub(crate) fn apply_entity_look_at(entity: &dyn Entity, from_anchor: EntityAncho
         living.set_y_head_rot(rotation.0);
     }
     entity.base().set_old_rotation_to_current();
+}
+
+/// Vanilla `PositionMoveRotation.calculateAbsolute` for a rotation-only change.
+fn forced_rotation(
+    current: (f32, f32),
+    yaw: f32,
+    relative_yaw: bool,
+    pitch: f32,
+    relative_pitch: bool,
+) -> (f32, f32) {
+    (
+        wrap_degrees(if relative_yaw {
+            current.0 + yaw
+        } else {
+            yaw
+        }),
+        wrap_degrees(if relative_pitch {
+            current.1 + pitch
+        } else {
+            pitch
+        }),
+    )
 }
 
 fn look_at_rotation(from: DVec3, target: DVec3) -> (f32, f32) {

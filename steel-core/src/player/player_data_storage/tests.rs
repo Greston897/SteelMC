@@ -78,6 +78,7 @@ fn sample_player_file(data_version: i32) -> PlayerDataFile {
             warning_level: 2,
             cooldown_ticks: 40,
         },
+        post_effects: vec!["minecraft:invert".to_owned(), "minecraft:blur".to_owned()],
     }
 }
 
@@ -506,6 +507,54 @@ fn a_version_10_player_file_still_loads() {
 }
 
 #[test]
+fn a_version_11_player_file_still_loads() {
+    // `post_effects` was appended in version 12. A save written before it must
+    // decode as an empty list, which is vanilla's "no screen effect" default.
+    let current = sample_player_file(PLAYER_DATA_VERSION);
+    let old = PlayerDataFileV11 {
+        data_version: 11,
+        pos: current.pos,
+        motion: current.motion,
+        rotation: current.rotation,
+        on_ground: current.on_ground,
+        fall_flying: current.fall_flying,
+        remaining_fire_ticks: current.remaining_fire_ticks,
+        ticks_frozen: current.ticks_frozen,
+        is_in_powder_snow: current.is_in_powder_snow,
+        was_in_powder_snow: current.was_in_powder_snow,
+        has_visual_fire: current.has_visual_fire,
+        health: current.health,
+        game_mode: current.game_mode,
+        prev_game_mode: current.prev_game_mode,
+        abilities: current.abilities,
+        inventory: current.inventory,
+        selected_slot: current.selected_slot,
+        world: current.world,
+        food_level: current.food_level,
+        food_saturation_level: current.food_saturation_level,
+        food_exhaustion_level: current.food_exhaustion_level,
+        food_tick_timer: current.food_tick_timer,
+        experience_level: current.experience_level,
+        experience_progress: current.experience_progress,
+        experience_total: current.experience_total,
+        enchantment_seed: current.enchantment_seed,
+        score: current.score,
+        seen_credits: current.seen_credits,
+        root_vehicle: current.root_vehicle,
+        respawn_config: current.respawn_config,
+        ender_pearls: current.ender_pearls,
+        ender_items: current.ender_items,
+        warden_spawn_tracker: current.warden_spawn_tracker,
+    };
+    let encoded = encode_file(PLAYER_MAGIC, 11, wincode::serialize(&old))
+        .expect("version 11 player file should encode");
+
+    let decoded = decode_player_file(&encoded).expect("version 11 player file should decode");
+    assert!(decoded.post_effects.is_empty());
+    assert_eq!(decoded.warden_spawn_tracker.warning_level, 2);
+}
+
+#[test]
 fn an_unknown_player_storage_version_is_rejected() {
     let current = sample_player_file(PLAYER_DATA_VERSION);
     let encoded = encode_file(PLAYER_MAGIC, 3, wincode::serialize(&current))
@@ -547,6 +596,20 @@ fn player_file_roundtrip_preserves_domain_world_data() {
     assert_eq!(decoded.warden_spawn_tracker.warning_level, 2);
     assert_eq!(decoded.warden_spawn_tracker.cooldown_ticks, 40);
     assert_eq!(decoded.warden_spawn_tracker.ticks_since_last_warning, 12);
+    assert_eq!(
+        decoded.post_effects,
+        ["minecraft:invert".to_owned(), "minecraft:blur".to_owned()]
+    );
+    let persistent = decoded
+        .into_persistent()
+        .expect("player file should convert to persistent data");
+    assert_eq!(
+        persistent.post_effects,
+        [
+            Identifier::vanilla_static("invert"),
+            Identifier::vanilla_static("blur")
+        ]
+    );
 }
 
 #[test]

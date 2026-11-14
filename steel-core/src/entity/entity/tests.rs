@@ -1,6 +1,8 @@
 use glam::DVec3;
 
-use super::{landing_particle_count, landing_particle_position, look_at_rotation};
+use super::{
+    forced_rotation, landing_particle_count, landing_particle_position, look_at_rotation,
+};
 use steel_utils::BlockPos;
 
 #[test]
@@ -21,6 +23,18 @@ fn look_at_rotation_matches_vanilla_axes() {
         look_at_rotation(DVec3::ZERO, DVec3::new(-1.0, 0.0, -1.0)),
         (135.0, 0.0)
     );
+}
+
+#[test]
+fn forced_rotation_offsets_relative_arguments() {
+    // Vanilla `Entity.forceSetRotation` hands `PositionMoveRotation` either an
+    // absolute angle or an offset, and the relative flag decides which.
+    assert_eq!(forced_rotation((30.0, 10.0), 15.0, true, 5.0, true), (45.0, 15.0));
+    assert_eq!(forced_rotation((30.0, 10.0), 15.0, false, 5.0, false), (15.0, 5.0));
+    assert_eq!(forced_rotation((350.0, 0.0), 20.0, true, 0.0, false), (10.0, 0.0));
+    // The helper only sums and wraps; `set_rotation` performs the pitch clamp
+    // that vanilla applies inside `calculateAbsolute`.
+    assert_eq!(forced_rotation((0.0, 80.0), 0.0, false, 40.0, true), (0.0, 120.0));
 }
 
 #[test]

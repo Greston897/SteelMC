@@ -4,7 +4,6 @@ use std::io;
 
 use steel_macros::ClientPacket;
 use steel_registry::packets::{config, play};
-use steel_utils::codec::VarInt;
 use steel_utils::serial::WriteTo as _;
 use text_components::TextComponent;
 use uuid::Uuid;
@@ -45,5 +44,41 @@ impl steel_utils::serial::WriteTo for CResourcePackPush {
         self.hash.write(writer)?;
         self.required.write(writer)?;
         self.prompt.write(writer)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use steel_utils::serial::WriteTo as _;
+
+    fn encode(packet: &CResourcePackPush) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        packet
+            .write(&mut bytes)
+            .unwrap_or_else(|error| panic!("resource pack push encoding failed: {error}"));
+        bytes
+    }
+
+    #[test]
+    fn pack_push_writes_vanilla_field_order() {
+        let id = Uuid::from_u128(0x0011_2233_4455_6677_8899_aabb_ccdd_eeff);
+        let bytes = encode(&CResourcePackPush {
+            id,
+            url: "http://a".to_owned(),
+            hash: "ab".to_owned(),
+            required: true,
+            prompt: None,
+        });
+
+        // uuid, url length 1 + 6 bytes, hash length 1 + 2 bytes, required, no prompt.
+        assert_eq!(bytes.len(), 16 + 7 + 3 + 1 + 1);
+        assert_eq!(&bytes[..16], id.as_bytes());
+        assert_eq!(bytes[16], 6);
+        assert_eq!(&bytes[17..23], b"http://a");
+        assert_eq!(bytes[23], 2);
+        assert_eq!(&bytes[24..26], b"ab");
+        assert_eq!(bytes[26], 1, "required is a plain bool");
+        assert_eq!(bytes[27], 0, "an absent prompt is a false option");
     }
 }

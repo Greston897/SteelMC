@@ -39,10 +39,12 @@ mod operator;
 mod particle;
 mod perms;
 mod playsound;
+mod posteffect;
 mod recipe;
 mod position;
 mod return_command;
 mod ride;
+mod rotate;
 mod save;
 mod say;
 mod schedule;
@@ -141,9 +143,11 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(particle::registration())?;
     builder.register(perms::registration())?;
     builder.register(playsound::registration())?;
+    builder.register(posteffect::registration())?;
     builder.register(recipe::registration())?;
     builder.register(return_command::registration())?;
     builder.register(ride::registration())?;
+    builder.register(rotate::registration())?;
     builder.register(save::registration())?;
     builder.register(say::say_registration())?;
     builder.register(say::me_registration())?;
@@ -210,7 +214,7 @@ mod tests {
         let Some(roots) = dispatcher.children(dispatcher.root()) else {
             panic!("dispatcher root should exist");
         };
-        let names = roots
+        let mut names = roots
             .iter()
             .map(|root| {
                 let Some(root) = dispatcher.node(*root) else {
@@ -219,7 +223,10 @@ mod tests {
                 root.name()
             })
             .collect::<Vec<_>>();
+        names.sort_unstable();
 
+        // Sorted, so the assertion pins the command surface rather than the
+        // order the registrations happen to run in.
         assert_eq!(
             names,
             [
@@ -228,60 +235,84 @@ mod tests {
                 "ban",
                 "banip",
                 "banlist",
+                "bossbar",
                 "clear",
-                "deop",
+                "clone",
                 "damage",
                 "data",
                 "datapack",
                 "defaultgamemode",
+                "deop",
                 "difficulty",
                 "domain",
+                "effect",
                 "enchant",
                 "execute",
                 "experience",
-                "xp",
                 "fill",
+                "fillbiome",
                 "fly",
                 "forceload",
                 "function",
                 "gamemode",
                 "gamerule",
                 "give",
+                "help",
+                "invsee",
+                "item",
+                "kick",
                 "kill",
                 "list",
                 "locate",
+                "loot",
+                "me",
+                "msg",
                 "op",
                 "pardon",
                 "pardonip",
+                "particle",
                 "perms",
                 "playsound",
+                "posteffect",
+                "recipe",
+                "reload",
                 "return",
+                "ride",
+                "rotate",
+                "save-all",
+                "say",
                 "schedule",
+                "scoreboard",
                 "seed",
                 "setblock",
-                "spectate",
-                "spawnpoint",
                 "setidletimeout",
                 "setworldspawn",
+                "spawnpoint",
+                "spectate",
+                "spreadplayers",
                 "stop",
                 "stopsound",
+                "stopwatch",
                 "summon",
                 "swing",
                 "tag",
+                "team",
                 "teleport",
-                "tp",
+                "tell",
                 "tellraw",
                 "tick",
                 "time",
                 "title",
+                "tp",
                 "tpsbar",
+                "transfer",
+                "trigger",
                 "version",
+                "w",
                 "weather",
                 "whitelist",
                 "worldborder",
-                "help",
-                "invsee",
-                "transfer"
+                "xp",
             ]
         );
 
