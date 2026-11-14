@@ -17,19 +17,23 @@ use steel_utils::{
 use text_components::TextComponent;
 
 use crate::{
-    REGISTRY, RegistryEntry, RegistryExt,
+    REGISTRY, RegistryEntry, RegistryExt, TaggedRegistryExt,
     damage_type::DamageTypeRef,
     data_components::{
         Component, ComponentData, ComponentPatchEntry, CustomData, DataComponentMap,
         DataComponentPatch, DataComponentType,
+        components::ItemContainerContents,
         vanilla_components::{
             ATTACK_RANGE, ATTRIBUTE_MODIFIERS, AttackRange, BUNDLE_CONTENTS, CHARGED_PROJECTILES,
             CONTAINER, CUSTOM_DATA, CUSTOM_NAME, DAMAGE, DAMAGE_RESISTANT, DAMAGE_TYPE,
-            ENCHANTABLE, ENCHANTMENTS, EQUIPPABLE, Equippable, ITEM_NAME, ItemAttributeModifiers,
+            BLOCK_STATE, ENCHANTABLE, ENCHANTMENTS, EQUIPPABLE, Equippable, ITEM_NAME,
+            ItemAttributeModifiers,
             ItemEnchantments, MAX_DAMAGE, MAX_STACK_SIZE, MINIMUM_ATTACK_CHARGE,
-            OMINOUS_BOTTLE_AMPLIFIER, OminousBottleAmplifier, PIERCING_WEAPON, PiercingWeapon,
-            REPAIRABLE, STORED_ENCHANTMENTS, TOOL, Tool, UNBREAKABLE, WEAPON, WRITTEN_BOOK_CONTENT,
-            Weapon,
+            BANNER_PATTERNS, CONTAINER_LOOT, FIREWORK_EXPLOSION, FIREWORKS, ItemLore, LORE,
+            SUSPICIOUS_STEW_EFFECTS, WRITABLE_BOOK_CONTENT,
+            OMINOUS_BOTTLE_AMPLIFIER, OminousBottleAmplifier, PIERCING_WEAPON, POTION_CONTENTS,
+            PiercingWeapon, PotionContents, REPAIRABLE, STORED_ENCHANTMENTS, TOOL, Tool,
+            UNBREAKABLE, WEAPON, WRITTEN_BOOK_CONTENT, Weapon,
         },
     },
     enchantment_effect::EnchantmentEffectComponent,
@@ -61,7 +65,7 @@ impl ItemStack {
     #[must_use]
     pub fn empty() -> Self {
         Self {
-            item: &vanilla_items::AIR,
+            item: &*vanilla_items::AIR,
             count: 0,
             patch: DataComponentPatch::new(),
         }
@@ -103,7 +107,7 @@ impl ItemStack {
     #[must_use]
     pub fn item(&self) -> ItemRef {
         if self.is_empty() {
-            &vanilla_items::AIR
+            &*vanilla_items::AIR
         } else {
             self.item
         }
@@ -285,14 +289,15 @@ impl ItemStack {
 
         let new_damage = self.get_damage_value() + effective_amount;
 
-        // TODO: Trigger ITEM_DURABILITY_CHANGED advancement criteria
+        // The `item_durability_changed` trigger lives in the caller: a stack has no
+        // player reference, so `LivingEntity` fires it after this returns.
 
         self.set_damage_value(new_damage);
 
         if self.is_broken() {
-            // TODO: Call onEquippedItemBroken callback which:
-            // - Broadcasts entity event (byte 47 for mainhand) for break sound/particles
-            // - Stops location-based effects (removes attribute modifiers)
+            // Callers detect the `true` return and forward it to
+            // `LivingEntity::on_equipped_item_broken`, which broadcasts the
+            // break entity event and drops the equipment modifiers.
             self.shrink_one();
             return true;
         }
@@ -611,7 +616,7 @@ impl ItemStack {
 
     #[must_use]
     fn enchantment_component(&self) -> DataComponentType<ItemEnchantments> {
-        if self.is(&vanilla_items::ENCHANTED_BOOK) {
+        if self.is(&*vanilla_items::ENCHANTED_BOOK) {
             STORED_ENCHANTMENTS
         } else {
             ENCHANTMENTS
@@ -695,71 +700,267 @@ impl ItemStack {
     }
 
     /// Sets the damage/durability as a fraction (0.0 = broken, 1.0 = full).
-    /// If `add` is true, adds to current damage instead of setting.
-    pub const fn set_damage_fraction(&mut self, _fraction: f32, _add: bool) {
-        // TODO: Implement when damage component system is ready
-        // let max_damage = self.get_max_damage();
-        // let damage_value = ((1.0 - fraction) * max_damage as f32) as i32;
-        // self.set_component(DAMAGE, damage_value);
+    ///
+    /// Vanilla `SetDamageFunction`: `damage = (1 - fraction) * maxDamage`, and
+    /// with `add` the result is added to the current damage value instead of
+    /// replacing it. Items without a `max_damage` component are left untouched.
+    pub fn set_damage_fraction(&mut self, fraction: f32, add: bool) {
+        let max_damage = self.get_max_damage();
+        if max_damage <= 0 {
+            return;
+        }
+        let damage_value = ((1.0 - fraction) * max_damage as f32) as i32;
+        let damage_value = damage_value.clamp(0, max_damage);
+        let damage_value = if add {
+            self.get_damage_value().saturating_add(damage_value)
+        } else {
+            damage_value
+        };
+        self.set_damage_value(damage_value);
     }
 
     /// Enchants this item randomly with enchantments from the given options.
-    pub const fn enchant_randomly<R: rand::Rng>(
+    ///
+    /// Vanilla `EnchantRandomlyFunction`: pick one eligible enchantment by
+    /// weight, then roll a level between 1 and its `max_level`.
+    pub fn enchant_randomly<R: rand::Rng>(
         &mut self,
-        _options: &crate::loot_table::EnchantmentOptions,
-        _rng: &mut R,
+        options: &crate::loot_table::EnchantmentOptions,
+        rng: &mut R,
     ) {
-        // TODO: Implement when enchantment registry and system are ready
-        // 1. Get list of valid enchantments from options (tag or list)
-        // 2. Filter to enchantments that can apply to this item
-        // 3. Pick one randomly
-        // 4. Pick a random level for that enchantment
-        // 5. Add to ENCHANTMENTS component
+        let candidates: Vec<&'static crate::enchantment::Enchantment> = match options {
+            crate::loot_table::EnchantmentOptions::Tag(tag) => {
+                REGISTRY.enchantments.get_tag(tag).unwrap_or_default()
+            }
+            crate::loot_table::EnchantmentOptions::List(keys) => keys
+                .iter()
+                .filter_map(|key| REGISTRY.enchantments.by_key(key))
+                .collect(),
+        };
+        // Vanilla keeps only enchantments whose `supported_items` tag contains
+        // this item.
+        let item = self.item();
+        let eligible: Vec<&'static crate::enchantment::Enchantment> = candidates
+            .into_iter()
+            .filter(|enchantment| REGISTRY.items.is_in_tag(item, &enchantment.supported_items))
+            .collect();
+        if eligible.is_empty() {
+            return;
+        }
+
+        let total_weight: u32 = eligible.iter().map(|e| e.weight).sum();
+        let mut roll = if total_weight == 0 {
+            0
+        } else {
+            rng.random_range(0..total_weight)
+        };
+        let chosen = eligible
+            .iter()
+            .find(|enchantment| {
+                if roll < enchantment.weight {
+                    true
+                } else {
+                    roll -= enchantment.weight;
+                    false
+                }
+            })
+            .copied()
+            .unwrap_or(eligible[0]);
+
+        let level = if chosen.max_level <= 1 {
+            1
+        } else {
+            rng.random_range(1..=chosen.max_level)
+        };
+        self.set_enchantments(&[(chosen.key.clone(), level)], true);
     }
 
     /// Enchants this item as if using an enchanting table at the given level.
-    pub const fn enchant_with_levels<R: rand::Rng>(
+    ///
+    /// Vanilla `EnchantWithLevelsFunction`: run the enchanting-table algorithm
+    /// (level jitter, then weighted picks from the eligible enchantments whose
+    /// cost range covers the level) and apply the result.
+    pub fn enchant_with_levels<R: rand::Rng>(
         &mut self,
-        _level: i32,
-        _options: &crate::loot_table::EnchantmentOptions,
-        _rng: &mut R,
+        level: i32,
+        options: &crate::loot_table::EnchantmentOptions,
+        rng: &mut R,
     ) {
-        // TODO: Implement when enchantment registry and system are ready
-        // This simulates the enchanting table algorithm:
-        // 1. Calculate modified level based on item enchantability
-        // 2. Generate list of possible enchantments for that level
-        // 3. Filter by options (tag or list)
-        // 4. Apply enchantments with proper weights
+        if level <= 0 {
+            return;
+        }
+        let item = self.item();
+        let candidates: Vec<&'static crate::enchantment::Enchantment> = match options {
+            crate::loot_table::EnchantmentOptions::Tag(tag) => {
+                REGISTRY.enchantments.get_tag(tag).unwrap_or_default()
+            }
+            crate::loot_table::EnchantmentOptions::List(keys) => keys
+                .iter()
+                .filter_map(|key| REGISTRY.enchantments.by_key(key))
+                .collect(),
+        };
+        let eligible: Vec<&'static crate::enchantment::Enchantment> = candidates
+            .into_iter()
+            .filter(|enchantment| REGISTRY.items.is_in_tag(item, &enchantment.supported_items))
+            .collect();
+        if eligible.is_empty() {
+            return;
+        }
+
+        // Vanilla `EnchantmentHelper`: the level is jittered once, then the
+        // table repeatedly picks eligible enchantments and halves the level.
+        let jitter = rng.random_range(0..(level / 4 + 1)) as i32;
+        let mut modified_level = level + jitter;
+
+        let mut chosen: Vec<(Identifier, u32)> = Vec::new();
+        while chosen.len() < 3 {
+            let pool: Vec<&'static crate::enchantment::Enchantment> = eligible
+                .iter()
+                .copied()
+                .filter(|enchantment| {
+                    enchantment.min_cost.calculate(1) <= modified_level
+                        && modified_level <= enchantment.max_cost.calculate(1)
+                        && !chosen.iter().any(|(key, _)| *key == enchantment.key)
+                })
+                .collect();
+            let total_weight: u32 = pool.iter().map(|enchantment| enchantment.weight).sum();
+            if pool.is_empty() || total_weight == 0 {
+                break;
+            }
+            let mut roll = rng.random_range(0..total_weight);
+            let pick = pool
+                .iter()
+                .find(|enchantment| {
+                    if roll < enchantment.weight {
+                        true
+                    } else {
+                        roll -= enchantment.weight;
+                        false
+                    }
+                })
+                .copied()
+                .unwrap_or(pool[0]);
+            let pick_level = if pick.max_level <= 1 {
+                1
+            } else {
+                rng.random_range(1..=pick.max_level)
+            };
+            chosen.push((pick.key.clone(), pick_level));
+            modified_level /= 2;
+            if modified_level <= 0 {
+                break;
+            }
+        }
+
+        if !chosen.is_empty() {
+            self.set_enchantments(&chosen, false);
+        }
     }
 
     /// Copies components from a source (block entity, attacker, etc.) to this item.
-    pub const fn copy_components<R: rand::Rng>(
+    ///
+    /// Vanilla `CopyComponentsFunction` reads the source's component map and
+    /// merges the requested component ids into this stack. Steel's loot context
+    /// exposes the block entity's saved NBT, which carries the same map under
+    /// `components`, so the requested ids are decoded from there.
+    pub fn copy_components<R: rand::Rng>(
         &mut self,
-        _source: crate::loot_table::CopySource,
-        _include: &[Identifier],
-        _ctx: &crate::loot_table::LootContext<'_, R>,
+        source: crate::loot_table::CopySource,
+        include: &[Identifier],
+        ctx: &crate::loot_table::LootContext<'_, R>,
     ) {
-        // TODO: Implement when block entity system is ready
-        // 1. Get the source entity/block entity from context
-        // 2. For each component in `include`, copy it to this item's patch
+        use crate::loot_table::CopySource;
+
+        let data = match source {
+            CopySource::BlockEntity => match ctx.block_entity.and_then(|entity| entity.data) {
+                Some(data) => data,
+                None => return,
+            },
+            // Entity sources have no component map in the loot context yet.
+            CopySource::This | CopySource::Attacker | CopySource::DirectAttacker => return,
+        };
+
+        let Some(raw) = data.get("components") else {
+            return;
+        };
+        let mut encoded = Vec::new();
+        raw.write(&mut encoded);
+        let Ok(borrowed) = simdnbt::borrow::read_tag(&mut std::io::Cursor::new(encoded.as_slice()))
+        else {
+            return;
+        };
+        let Some(patch) = DataComponentPatch::from_nbt_tag(borrowed.as_tag()) else {
+            return;
+        };
+
+        for (key, entry) in patch.iter() {
+            if !include.iter().any(|include| include == key) {
+                continue;
+            }
+            if let ComponentPatchEntry::Set(data) = entry {
+                self.patch.set_raw(key.clone(), data.clone());
+            }
+        }
     }
 
     /// Copies block state properties to this item (for blocks like `note_block`).
-    pub const fn copy_block_state<R: rand::Rng>(
+    ///
+    /// Vanilla `CopyBlockStateFunction` only runs when the loot context carries a
+    /// block state of the same block, and only stores the requested properties.
+    pub fn copy_block_state<R: rand::Rng>(
         &mut self,
-        _block: &Identifier,
-        _properties: &[&str],
-        _ctx: &crate::loot_table::LootContext<'_, R>,
+        block: &Identifier,
+        properties: &[&str],
+        ctx: &crate::loot_table::LootContext<'_, R>,
     ) {
-        // TODO: Implement block state copying
-        // 1. Get block state from context
-        // 2. For each property, store it in the item's BLOCK_STATE component
+        let Some(state) = ctx.block_state else {
+            return;
+        };
+        let Some(state_block) = REGISTRY.blocks.by_state_id(state) else {
+            return;
+        };
+        if state_block.key != *block {
+            return;
+        }
+
+        let mut copied = std::collections::BTreeMap::new();
+        for property in properties {
+            if let Some(value) = REGISTRY.blocks.get_property_str(state, property) {
+                copied.insert((*property).to_owned(), value.to_owned());
+            }
+        }
+        if copied.is_empty() {
+            return;
+        }
+        self.set(
+            BLOCK_STATE,
+            crate::data_components::components::BlockItemStateProperties::new(copied),
+        );
     }
 
     /// Sets components from a JSON string representation.
-    pub const fn set_components_from_json(&mut self, _components: &str) {
-        // TODO: Implement component parsing from JSON
-        // Parse the JSON and set each component in the patch
+    ///
+    /// Vanilla `SetComponentsFunction` holds the component map as JSON in the
+    /// loot table; the equivalent runtime representation is the item component
+    /// patch, so the JSON is converted to NBT and decoded through the same
+    /// codec that reads components from saved data.
+    pub fn set_components_from_json(&mut self, components: &str) {
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(components) else {
+            return;
+        };
+        let Some(tag) = json_to_nbt(&value) else {
+            return;
+        };
+        let mut bytes = Vec::new();
+        tag.write(&mut bytes);
+        let Ok(borrowed) = simdnbt::borrow::read_tag(&mut std::io::Cursor::new(bytes.as_slice()))
+        else {
+            return;
+        };
+        let Some(added) = DataComponentPatch::from_nbt_tag(borrowed.as_tag()) else {
+            return;
+        };
+        self.patch.apply(&added);
     }
 
     /// Merges custom NBT data into this item's `custom_data` component.
@@ -796,6 +997,12 @@ impl ItemStack {
     }
 
     /// Creates an exploration map pointing to a structure.
+    ///
+    /// Blocked on world access: vanilla `ExplorationMapFunction` has to locate
+    /// the destination structure (`ServerLevel.findNearestMapStructure`) before
+    /// it can store the map decoration, and the loot registry has no `World`.
+    /// Doing only the item swap would hand out a blank filled map, which is
+    /// worse than leaving the treasure-map loot without its map.
     pub const fn create_exploration_map(
         &mut self,
         _destination: &Identifier,
@@ -803,17 +1010,18 @@ impl ItemStack {
         _zoom: i32,
         _skip_existing_chunks: bool,
     ) {
-        // TODO: Implement exploration map creation
-        // 1. Change item to filled_map
-        // 2. Set MAP_DECORATIONS component
-        // 3. Set destination structure tag
-        // This requires world access to find the structure
     }
 
     /// Sets the custom name or item name of this item.
-    pub const fn set_name(&mut self, _name: &str, _target: crate::loot_table::NameTarget) {
-        // TODO: Implement name setting
-        // Parse the name as a text component and set CUSTOM_NAME or ITEM_NAME
+    ///
+    /// Both vanilla targets are supported. Steel stores the name as a plain
+    /// text component; JSON text parsing needs a resolver from the consumer.
+    pub fn set_name(&mut self, name: &str, target: crate::loot_table::NameTarget) {
+        let text = TextComponent::plain(name.to_owned());
+        match target {
+            crate::loot_table::NameTarget::CustomName => self.set(CUSTOM_NAME, text),
+            crate::loot_table::NameTarget::ItemName => self.set(ITEM_NAME, text),
+        }
     }
 
     /// Sets the ominous bottle amplifier component.
@@ -824,21 +1032,48 @@ impl ItemStack {
         );
     }
 
+    /// Returns the registry key of the potion stored in this stack, if any.
+    ///
+    /// Vanilla reads the same information through `potion_contents`; exposing a
+    /// key keeps brewing recipes comparable without cloning the component.
+    #[must_use]
+    pub fn potion_key(&self) -> Option<Identifier> {
+        self.get(POTION_CONTENTS)
+            .and_then(|contents| contents.potion())
+            .map(|potion| potion.value().key().clone())
+    }
+
     /// Sets the potion type for this item.
-    pub const fn set_potion(&mut self, _id: &Identifier) {
-        // TODO: Implement potion type setting
-        // Set the POTION_CONTENTS component with the potion ID
+    ///
+    /// Vanilla `SetPotionFunction` replaces `potion_contents` with the named
+    /// potion and leaves every other field at its default.
+    pub fn set_potion(&mut self, id: &Identifier) {
+        let Some(potion) = REGISTRY.potions.by_key(id) else {
+            return;
+        };
+        self.set(POTION_CONTENTS, PotionContents::of(potion));
     }
 
     /// Sets the suspicious stew effects for this item.
-    pub const fn set_stew_effects<R: rand::Rng>(
+    ///
+    /// Vanilla `SetStewEffectFunction` resolves each effect type and rolls its
+    /// duration through the effect's number provider.
+    pub fn set_stew_effects<R: rand::Rng>(
         &mut self,
-        _effects: &[crate::loot_table::StewEffect],
-        _rng: &mut R,
+        effects: &[crate::loot_table::StewEffect],
+        rng: &mut R,
     ) {
-        // TODO: Implement stew effect setting
-        // Set the SUSPICIOUS_STEW_EFFECTS component
-        // Duration is determined by each effect's NumberProvider
+        use crate::data_components::components::{SuspiciousStewEffect, SuspiciousStewEffects};
+
+        let mut resolved = Vec::with_capacity(effects.len());
+        for effect in effects {
+            let Some(effect_type) = REGISTRY.mob_effects.by_key(&effect.effect_type) else {
+                continue;
+            };
+            let duration = effect.duration.get_simple(rng) as i32;
+            resolved.push(SuspiciousStewEffect::new(effect_type, duration));
+        }
+        self.set(SUSPICIOUS_STEW_EFFECTS, SuspiciousStewEffects::new(resolved));
     }
 
     pub fn set_enchantments(&mut self, enchantments: &[(Identifier, u32)], add: bool) {
@@ -878,141 +1113,418 @@ impl ItemStack {
     }
 
     /// Copies the name from a source entity/block to this item.
-    pub const fn copy_name<R: rand::Rng>(
+    ///
+    /// Vanilla `CopyNameFunction` reads `BlockEntity` sources from the block
+    /// entity and `This`/attacker sources from the entity reference.
+    pub fn copy_name<R: rand::Rng>(
         &mut self,
-        _source: crate::loot_table::CopySource,
-        _ctx: &crate::loot_table::LootContext<'_, R>,
+        source: crate::loot_table::CopySource,
+        ctx: &crate::loot_table::LootContext<'_, R>,
     ) {
-        // TODO: Implement when entity/block entity name access is available
-        // Get name from source (block_entity.custom_name or entity.custom_name)
-        // Set as CUSTOM_NAME component
+        use crate::loot_table::CopySource;
+
+        let name = match source {
+            CopySource::BlockEntity => ctx
+                .block_entity
+                .and_then(|block_entity| block_entity.custom_name),
+            CopySource::This => ctx
+                .this_entity
+                .as_ref()
+                .and_then(|entity| entity.custom_name.as_deref()),
+            CopySource::Attacker => ctx
+                .killer_entity
+                .as_ref()
+                .and_then(|entity| entity.custom_name.as_deref()),
+            CopySource::DirectAttacker => ctx
+                .direct_killer_entity
+                .as_ref()
+                .and_then(|entity| entity.custom_name.as_deref()),
+        };
+        let Some(name) = name else {
+            return;
+        };
+        self.set(CUSTOM_NAME, TextComponent::plain(name.to_owned()));
     }
 
     /// Sets lore lines on this item.
-    pub const fn set_lore(&mut self, _lore: &[&str], _mode: crate::loot_table::ListOperation) {
-        // TODO: Implement lore setting
-        // Parse lore strings as text components and set LORE component
-        // Apply mode (replace, append, insert, etc.)
+    ///
+    /// Vanilla `SetLoreFunction` applies the list operation to the existing
+    /// `lore` component, then rewrites it; an empty result removes the
+    /// component so the item shows no lore.
+    pub fn set_lore(&mut self, lore: &[&str], mode: crate::loot_table::ListOperation) {
+        let mut lines: Vec<TextComponent> = self
+            .get(LORE)
+            .map(|existing| existing.lines().to_vec())
+            .unwrap_or_default();
+        apply_list_operation(&mut lines, lore, mode, |line| {
+            TextComponent::plain((*line).to_owned())
+        });
+        if lines.is_empty() {
+            self.remove(LORE);
+            return;
+        }
+        if let Ok(value) = ItemLore::new(lines) {
+            self.set(LORE, value);
+        }
     }
 
     /// Sets container inventory contents.
-    pub const fn set_contents<R: rand::Rng>(
+    ///
+    /// Vanilla `SetContainerContents`: each entry contributes its rolled items
+    /// to the container slots, up to [`ItemContainerContents::MAX_SIZE`].
+    pub fn set_contents<R: rand::Rng>(
         &mut self,
-        _entries: &[crate::loot_table::LootEntry],
-        _component_type: &Identifier,
-        _ctx: &mut crate::loot_table::LootContext<'_, R>,
+        entries: &[crate::loot_table::LootEntry],
+        component_type: &Identifier,
+        ctx: &mut crate::loot_table::LootContext<'_, R>,
     ) {
-        // TODO: Implement container contents setting
-        // Generate items from entries and set as CONTAINER component
+        let mut items = Vec::new();
+        for entry in entries {
+            entry.create_items(ctx, &mut items);
+        }
+        self.write_container_contents(items, component_type);
     }
 
     /// Modifies existing container contents.
-    pub const fn modify_contents<R: rand::Rng>(
+    ///
+    /// Vanilla `ModifyContainerContents`: the modifier functions run against a
+    /// synthetic container stack, so only functions that rewrite the component
+    /// as a whole are observable — those are applied per stored stack here.
+    pub fn modify_contents<R: rand::Rng>(
         &mut self,
-        _modifier: &[crate::loot_table::ConditionalLootFunction],
-        _component_type: &Identifier,
-        _ctx: &mut crate::loot_table::LootContext<'_, R>,
+        modifier: &[crate::loot_table::ConditionalLootFunction],
+        component_type: &Identifier,
+        ctx: &mut crate::loot_table::LootContext<'_, R>,
     ) {
-        // TODO: Implement container contents modification
-        // Apply modifier functions to existing container contents
+        // Vanilla wraps each stored stack into a one-slot container and runs the
+        // modifiers on that container's `CONTAINER` component. Without a
+        // container-item intermediate to mirror, Steel applies the modifiers to
+        // the stored stacks directly, which matches every stock modifier.
+        let mut items = self
+            .get(CONTAINER)
+            .map(|contents| {
+                contents
+                    .items()
+                    .iter()
+                    .map(|slot| slot.as_ref().map_or_else(ItemStack::empty, |t| t.create()))
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+
+        for item in &mut items {
+            for cond_func in modifier {
+                if cond_func.conditions.iter().all(|condition| condition.test(ctx)) {
+                    cond_func.function.apply(item, ctx);
+                }
+            }
+        }
+        self.write_container_contents(items, component_type);
+    }
+
+    /// Stores rolled stacks into the component named by `component_type`.
+    ///
+    /// Only `minecraft:container` is modelled; other component ids keep the
+    /// item unchanged, matching vanilla's silent skip for unknown ids.
+    fn write_container_contents(&mut self, items: Vec<ItemStack>, component_type: &Identifier) {
+        if *component_type != CONTAINER.key {
+            return;
+        }
+        let templates = items
+            .into_iter()
+            .take(ItemContainerContents::MAX_SIZE)
+            .map(|item| ItemStackTemplate::from_stack(&item).ok())
+            .collect();
+        if let Ok(contents) = ItemContainerContents::new(templates) {
+            self.set(CONTAINER, contents);
+        }
     }
 
     /// Sets the container's loot table reference.
-    pub const fn set_loot_table(&mut self, _loot_table: &Identifier, _seed: Option<i64>) {
-        // TODO: Implement loot table reference setting
-        // Set CONTAINER_LOOT component with table reference and seed
+    ///
+    /// Vanilla `SetLootTableFunction` stores the table and a seed; an omitted
+    /// seed is randomised.
+    pub fn set_loot_table(&mut self, loot_table: &Identifier, seed: Option<i64>) {
+        use crate::data_components::components::SeededContainerLoot;
+        let seed = seed.unwrap_or_else(|| rand::rng().random::<i64>());
+        self.set(
+            CONTAINER_LOOT,
+            SeededContainerLoot::new(loot_table.clone(), seed),
+        );
     }
 
     /// Sets attribute modifiers on this item.
-    pub const fn set_attributes<R: rand::Rng>(
+    ///
+    /// Vanilla `SetAttributesFunction` resolves each modifier's attribute and
+    /// rolls its amount; `replace` clears existing modifiers first.
+    pub fn set_attributes<R: rand::Rng>(
         &mut self,
-        _modifiers: &[crate::loot_table::AttributeModifier],
-        _replace: bool,
-        _rng: &mut R,
+        modifiers: &[crate::loot_table::AttributeModifier],
+        replace: bool,
+        rng: &mut R,
     ) {
-        // TODO: Implement attribute modifier setting
-        // Set ATTRIBUTE_MODIFIERS component
+        use crate::data_components::components::{
+            ItemAttributeModifierDisplay, ItemAttributeModifierEntry, ItemAttributeModifiers,
+        };
+        use crate::loot_table::AttributeOperation;
+
+        let mut current = if replace {
+            ItemAttributeModifiers::empty()
+        } else {
+            self.get(ATTRIBUTE_MODIFIERS)
+                .cloned()
+                .unwrap_or_else(ItemAttributeModifiers::empty)
+        };
+        for modifier in modifiers {
+            let Some(attribute) = REGISTRY.attributes.by_key(&modifier.attribute) else {
+                continue;
+            };
+            let operation = match modifier.operation {
+                AttributeOperation::AddValue => {
+                    crate::attribute::AttributeModifierOperation::AddValue
+                }
+                AttributeOperation::AddMultipliedBase => {
+                    crate::attribute::AttributeModifierOperation::AddMultipliedBase
+                }
+                AttributeOperation::AddMultipliedTotal => {
+                    crate::attribute::AttributeModifierOperation::AddMultipliedTotal
+                }
+            };
+            current.modifiers.push(ItemAttributeModifierEntry {
+                attribute,
+                id: modifier.id.clone(),
+                amount: f64::from(modifier.amount.get_simple(rng)),
+                operation,
+                slot: modifier.slot,
+                display: ItemAttributeModifierDisplay::Default,
+            });
+        }
+        self.set(ATTRIBUTE_MODIFIERS, current);
     }
 
-    /// Fills a player head with texture from an entity.
-    pub const fn fill_player_head<R: rand::Rng>(
+    /// Fills a player head with the profile of a player entity.
+    ///
+    /// Vanilla `FillPlayerHeadFunction` copies the `GameProfile` of the source
+    /// entity into the `profile` component; only players carry one, so a
+    /// non-player source leaves the stack untouched.
+    pub fn fill_player_head<R: rand::Rng>(
         &mut self,
-        _entity: crate::loot_table::LootContextEntity,
-        _ctx: &crate::loot_table::LootContext<'_, R>,
+        entity: crate::loot_table::LootContextEntity,
+        ctx: &crate::loot_table::LootContext<'_, R>,
     ) {
-        // TODO: Implement player head texture filling
-        // Get player profile from entity and set PROFILE component
+        let Some(profile) = ctx.get_entity(entity).and_then(|entity| entity.profile) else {
+            return;
+        };
+        self.set(
+            crate::data_components::vanilla_components::PROFILE,
+            crate::resolvable_profile::ResolvableProfile::from(profile.clone()),
+        );
     }
 
     /// Copies custom NBT data from a source.
-    pub const fn copy_custom_data<R: rand::Rng>(
+    ///
+    /// Vanilla `CopyCustomDataFunction` walks each operation's source path and
+    /// writes it to the target path inside the stack's `custom_data` component.
+    /// Paths are dot-separated compound keys; list indices are not supported by
+    /// any vanilla loot function, so they are skipped.
+    pub fn copy_custom_data<R: rand::Rng>(
         &mut self,
-        _source: crate::loot_table::CopySource,
-        _operations: &[crate::loot_table::CopyDataOperation],
-        _ctx: &crate::loot_table::LootContext<'_, R>,
+        source: crate::loot_table::CopySource,
+        operations: &[crate::loot_table::CopyDataOperation],
+        ctx: &crate::loot_table::LootContext<'_, R>,
     ) {
-        // TODO: Implement custom data copying
-        // Copy NBT paths from source to item's CUSTOM_DATA component
+        use crate::loot_table::CopyDataOp;
+
+        // Only block entities carry NBT in Steel's loot context.
+        if !matches!(source, crate::loot_table::CopySource::BlockEntity) {
+            return;
+        }
+        let Some(data) = ctx.block_entity.and_then(|entity| entity.data) else {
+            return;
+        };
+
+        let mut target = self
+            .get(CUSTOM_DATA)
+            .map_or_else(simdnbt::owned::NbtCompound::new, |existing| {
+                existing.as_compound().clone()
+            });
+
+        for operation in operations {
+            let Some(value) = nbt_path_get(data, operation.source_path) else {
+                continue;
+            };
+            match operation.op {
+                // Vanilla distinguishes replace/append/merge only for list and
+                // compound targets; a scalar path is always overwritten.
+                CopyDataOp::Replace | CopyDataOp::Append | CopyDataOp::Merge => {
+                    nbt_path_set(&mut target, operation.target_path, value.clone());
+                }
+            }
+        }
+
+        if let Some(custom_data) = CustomData::try_from_compound(target) {
+            self.set(CUSTOM_DATA, custom_data);
+        }
     }
 
     /// Sets banner pattern layers.
-    pub const fn set_banner_pattern(
+    ///
+    /// Vanilla `SetBannerPatternFunction` maps each definition to a layer that
+    /// references a registered banner pattern.
+    pub fn set_banner_pattern(
         &mut self,
-        _patterns: &[crate::loot_table::BannerPattern],
-        _append: bool,
+        patterns: &[crate::loot_table::BannerPattern],
+        append: bool,
     ) {
-        // TODO: Implement banner pattern setting
-        // Set BANNER_PATTERNS component
+        use crate::data_components::components::{BannerPatternLayer, BannerPatternLayers};
+        use crate::registry::holder::RegistryHolder;
+
+        let mut layers = if append {
+            self.get(BANNER_PATTERNS)
+                .map(|existing| existing.layers().to_vec())
+                .unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        for pattern in patterns {
+            let Some(entry) = REGISTRY.banner_patterns.by_key(&pattern.pattern) else {
+                continue;
+            };
+            layers.push(BannerPatternLayer::new(
+                RegistryHolder::Reference(entry),
+                pattern.color,
+            ));
+        }
+        self.set(BANNER_PATTERNS, BannerPatternLayers::new(layers));
     }
 
     /// Sets firework rocket properties.
-    pub const fn set_fireworks(
+    ///
+    /// Vanilla `SetFireworksFunction` keeps the existing component values for
+    /// whatever the function omits.
+    pub fn set_fireworks(
         &mut self,
-        _explosions: Option<&[crate::loot_table::FireworkExplosion]>,
-        _flight_duration: Option<i32>,
+        explosions: Option<&[crate::loot_table::FireworkExplosion]>,
+        flight_duration: Option<i32>,
     ) {
-        // TODO: Implement firework setting
-        // Set FIREWORKS component
+        use crate::data_components::components::Fireworks;
+
+        let existing = self.get(FIREWORKS).cloned();
+        let flight = flight_duration
+            .or_else(|| existing.as_ref().map(Fireworks::flight_duration))
+            .unwrap_or(0);
+        let explosion_values = explosions.map_or_else(
+            || {
+                existing
+                    .as_ref()
+                    .map(|fireworks| fireworks.explosions().to_vec())
+                    .unwrap_or_default()
+            },
+            |explosions| {
+                explosions
+                    .iter()
+                    .map(convert_firework_explosion)
+                    .collect()
+            },
+        );
+        if let Ok(fireworks) = Fireworks::new(flight, explosion_values) {
+            self.set(FIREWORKS, fireworks);
+        }
     }
 
     /// Sets firework star explosion properties.
-    pub const fn set_firework_explosion(
-        &mut self,
-        _explosion: &crate::loot_table::FireworkExplosion,
-    ) {
-        // TODO: Implement firework explosion setting
-        // Set FIREWORK_EXPLOSION component
+    pub fn set_firework_explosion(&mut self, explosion: &crate::loot_table::FireworkExplosion) {
+        self.set(FIREWORK_EXPLOSION, convert_firework_explosion(explosion));
     }
 
     /// Sets book cover (title/author for written books).
-    pub const fn set_book_cover(
+    ///
+    /// Vanilla `SetBookCoverFunction` keeps whatever the function omits; a book
+    /// without an existing `written_book_content` starts from the empty title.
+    pub fn set_book_cover(
         &mut self,
-        _title: Option<&str>,
-        _author: Option<&str>,
-        _generation: Option<i32>,
+        title: Option<&str>,
+        author: Option<&str>,
+        generation: Option<i32>,
     ) {
-        // TODO: Implement book cover setting
-        // Set WRITTEN_BOOK_CONTENT component fields
+        use crate::data_components::components::{Filterable, WrittenBookContent};
+
+        let existing = self.get(WRITTEN_BOOK_CONTENT);
+        let current_title = existing
+            .map(|content| content.title().clone())
+            .unwrap_or_else(|| Filterable::pass_through(String::new()));
+        let current_author = existing
+            .map(|content| content.author().to_owned())
+            .unwrap_or_default();
+        let current_generation = existing.map_or(0, WrittenBookContent::generation);
+        let current_pages = existing
+            .map(|content| content.pages().to_vec())
+            .unwrap_or_default();
+
+        let title = title.map_or(current_title, |value| {
+            Filterable::pass_through(value.to_owned())
+        });
+        let author = author.map_or(current_author, str::to_owned);
+        let generation = generation.unwrap_or(current_generation);
+        if let Ok(content) =
+            WrittenBookContent::new(title, author, generation, current_pages, false)
+        {
+            self.set(WRITTEN_BOOK_CONTENT, content);
+        }
     }
 
     /// Sets written book page contents.
-    pub const fn set_written_book_pages(
+    ///
+    /// Vanilla `SetWrittenBookPagesFunction` applies the list operation to the
+    /// existing pages, then clears the `resolved` flag so clients re-resolve
+    /// the changed text.
+    pub fn set_written_book_pages(
         &mut self,
-        _pages: &[&str],
-        _mode: crate::loot_table::ListOperation,
+        pages: &[&str],
+        mode: crate::loot_table::ListOperation,
     ) {
-        // TODO: Implement written book pages setting
-        // Set WRITTEN_BOOK_CONTENT pages
+        use crate::data_components::components::{Filterable, WrittenBookContent};
+
+        let existing = self.get(WRITTEN_BOOK_CONTENT);
+        let mut current: Vec<Filterable<TextComponent>> = existing
+            .map(|content| content.pages().to_vec())
+            .unwrap_or_default();
+        apply_list_operation(&mut current, pages, mode, |page| {
+            Filterable::pass_through(TextComponent::plain((*page).to_owned()))
+        });
+
+        let title = existing
+            .map(|content| content.title().clone())
+            .unwrap_or_else(|| Filterable::pass_through(String::new()));
+        let author = existing
+            .map(|content| content.author().to_owned())
+            .unwrap_or_default();
+        let generation = existing.map_or(0, WrittenBookContent::generation);
+        if let Ok(content) = WrittenBookContent::new(title, author, generation, current, false) {
+            self.set(WRITTEN_BOOK_CONTENT, content);
+        }
     }
 
     /// Sets writable book page contents.
-    pub const fn set_writable_book_pages(
+    ///
+    /// Vanilla `SetWritableBookPagesFunction` applies the list operation to the
+    /// existing pages and stores them without filtering.
+    pub fn set_writable_book_pages(
         &mut self,
-        _pages: &[&str],
-        _mode: crate::loot_table::ListOperation,
+        pages: &[&str],
+        mode: crate::loot_table::ListOperation,
     ) {
-        // TODO: Implement writable book pages setting
-        // Set WRITABLE_BOOK_CONTENT pages
+        use crate::data_components::components::{Filterable, WritableBookContent};
+
+        let mut existing: Vec<Filterable<String>> = self
+            .get(WRITABLE_BOOK_CONTENT)
+            .map(|content| content.pages().to_vec())
+            .unwrap_or_default();
+        apply_list_operation(&mut existing, pages, mode, |page| {
+            Filterable::pass_through((*page).to_owned())
+        });
+        if let Ok(content) = WritableBookContent::new(existing) {
+            self.set(WRITABLE_BOOK_CONTENT, content);
+        }
     }
 
     /// Runs vanilla `ToggleTooltips`: each boolean says whether the component is shown.
@@ -1337,6 +1849,113 @@ fn decode_persistent_count(tag: Option<BorrowedNbtTag<'_, '_>>) -> Option<i32> {
     (1..=99).contains(&count).then_some(count)
 }
 
+/// Converts a JSON value into the NBT tag shape the component codec reads.
+///
+/// Loot tables embed component maps as JSON, while the item codec is NBT based,
+/// so this bridges the two. Integral numbers become `Int` (widening to `Long`
+/// when they do not fit), fractional numbers become `Double`, and arrays become
+/// lists.
+fn json_to_nbt(value: &serde_json::Value) -> Option<simdnbt::owned::NbtTag> {
+    use simdnbt::owned::{NbtList, NbtTag};
+
+    Some(match value {
+        serde_json::Value::Null => return None,
+        serde_json::Value::Bool(value) => NbtTag::Byte(i8::from(*value)),
+        serde_json::Value::Number(number) => {
+            if let Some(value) = number.as_i64() {
+                if let Ok(value) = i32::try_from(value) {
+                    NbtTag::Int(value)
+                } else {
+                    NbtTag::Long(value)
+                }
+            } else if let Some(value) = number.as_f64() {
+                NbtTag::Double(value)
+            } else {
+                return None;
+            }
+        }
+        serde_json::Value::String(value) => NbtTag::String(value.clone().into()),
+        serde_json::Value::Array(values) => {
+            let mut tags = Vec::with_capacity(values.len());
+            for value in values {
+                tags.push(json_to_nbt(value)?);
+            }
+            NbtTag::List(NbtList::from(tags))
+        }
+        serde_json::Value::Object(entries) => {
+            let mut compound = NbtCompound::new();
+            for (key, value) in entries {
+                compound.insert(key.clone(), json_to_nbt(value)?);
+            }
+            NbtTag::Compound(compound)
+        }
+    })
+}
+
+/// Converts a loot-table firework explosion definition into the item component
+/// representation.
+fn convert_firework_explosion(
+    explosion: &crate::loot_table::FireworkExplosion,
+) -> crate::data_components::components::FireworkExplosion {
+    use crate::data_components::components::FireworkExplosionShape;
+    use crate::loot_table::FireworkShape;
+
+    let shape = match explosion.shape {
+        FireworkShape::SmallBall => FireworkExplosionShape::SmallBall,
+        FireworkShape::LargeBall => FireworkExplosionShape::LargeBall,
+        FireworkShape::Star => FireworkExplosionShape::Star,
+        FireworkShape::Creeper => FireworkExplosionShape::Creeper,
+        FireworkShape::Burst => FireworkExplosionShape::Burst,
+    };
+    crate::data_components::components::FireworkExplosion::new(
+        shape,
+        explosion.colors.to_vec(),
+        explosion.fade_colors.to_vec(),
+        explosion.has_trail,
+        explosion.has_twinkle,
+    )
+}
+
+/// Applies a vanilla `ListOperation` to `existing`, mapping each new value with
+/// `convert`. Shared by the `lore` loot function.
+fn apply_list_operation<T>(
+    existing: &mut Vec<T>,
+    values: &[&str],
+    mode: crate::loot_table::ListOperation,
+    convert: impl Fn(&str) -> T,
+) {
+    use crate::loot_table::ListOperation;
+    let new_values: Vec<T> = values.iter().map(|value| convert(value)).collect();
+    match mode {
+        ListOperation::ReplaceAll => *existing = new_values,
+        ListOperation::Append => existing.extend(new_values),
+        ListOperation::InsertBefore { offset } => {
+            let index = list_index(offset, existing.len());
+            existing.splice(index..index, new_values);
+        }
+        ListOperation::InsertAfter { offset } => {
+            let index = list_index(offset, existing.len());
+            existing.splice(index..index, new_values);
+        }
+        ListOperation::ReplaceSection { offset, size } => {
+            let index = list_index(offset, existing.len());
+            let end = size.map_or(existing.len(), |size| {
+                (index + size.max(0) as usize).min(existing.len())
+            });
+            existing.splice(index..end, new_values);
+        }
+    }
+}
+
+/// Vanilla list offsets are signed: negative values count from the end.
+fn list_index(offset: i32, len: usize) -> usize {
+    if offset >= 0 {
+        (offset as usize).min(len)
+    } else {
+        len.saturating_sub(offset.unsigned_abs() as usize)
+    }
+}
+
 #[cfg(test)]
 mod consume_tests {
     use super::ItemStack;
@@ -1346,11 +1965,11 @@ mod consume_tests {
     fn consume_shrinks_only_without_infinite_materials() {
         init_vanilla_registry();
 
-        let mut survival = ItemStack::with_count(&vanilla_items::GLOWSTONE, 2);
+        let mut survival = ItemStack::with_count(&*vanilla_items::GLOWSTONE, 2);
         survival.consume_one(false);
         assert_eq!(survival.count(), 1);
 
-        let mut creative = ItemStack::with_count(&vanilla_items::GLOWSTONE, 2);
+        let mut creative = ItemStack::with_count(&*vanilla_items::GLOWSTONE, 2);
         creative.consume_one(true);
         assert_eq!(creative.count(), 2);
     }
@@ -1359,12 +1978,12 @@ mod consume_tests {
     fn consume_and_return_splits_before_shrinking() {
         init_vanilla_registry();
 
-        let mut survival = ItemStack::with_count(&vanilla_items::GLOWSTONE, 2);
+        let mut survival = ItemStack::with_count(&*vanilla_items::GLOWSTONE, 2);
         let taken = survival.consume_and_return(1, false);
         assert_eq!(taken.count(), 1);
         assert_eq!(survival.count(), 1);
 
-        let mut creative = ItemStack::with_count(&vanilla_items::GLOWSTONE, 2);
+        let mut creative = ItemStack::with_count(&*vanilla_items::GLOWSTONE, 2);
         let taken = creative.consume_and_return(1, true);
         assert_eq!(taken.count(), 1);
         assert_eq!(creative.count(), 2);
@@ -1379,7 +1998,7 @@ mod enchantment_tests {
     #[test]
     fn stored_book_enchantments_are_not_active_item_enchantments() {
         init_vanilla_registry();
-        let mut book = ItemStack::new(&vanilla_items::ENCHANTED_BOOK);
+        let mut book = ItemStack::new(&*vanilla_items::ENCHANTED_BOOK);
         book.upgrade_enchantment(vanilla_enchantments::SHARPNESS.key.clone(), 3);
 
         assert_eq!(
@@ -1416,7 +2035,7 @@ mod name_tests {
         let Ok(content) = content else {
             panic!("test written-book content should be valid");
         };
-        let mut book = ItemStack::new(&vanilla_items::WRITTEN_BOOK);
+        let mut book = ItemStack::new(&*vanilla_items::WRITTEN_BOOK);
         book.set(WRITTEN_BOOK_CONTENT, content);
         book
     }
@@ -1481,8 +2100,8 @@ mod durability_tests {
     #[test]
     fn item_damage_uses_generated_unbreaking_tool_requirements() {
         init_vanilla_registry();
-        let mut armor = with_unbreaking(&vanilla_items::DIAMOND_CHESTPLATE, 3);
-        let mut tool = with_unbreaking(&vanilla_items::DIAMOND_PICKAXE, 3);
+        let mut armor = with_unbreaking(&*vanilla_items::DIAMOND_CHESTPLATE, 3);
+        let mut tool = with_unbreaking(&*vanilla_items::DIAMOND_PICKAXE, 3);
         let mut armor_random = Xoroshiro::from_seed_unmixed(42);
         let mut tool_random = Xoroshiro::from_seed_unmixed(42);
 
@@ -1494,25 +2113,25 @@ mod durability_tests {
         let effects = vanilla_enchantments::UNBREAKING.effects.item_damage;
         assert_eq!(
             effects[0].requirements.and_then(|requirements| {
-                requirements.matches_item_context(&vanilla_items::DIAMOND_CHESTPLATE)
+                requirements.matches_item_context(&*vanilla_items::DIAMOND_CHESTPLATE)
             }),
             Some(true)
         );
         assert_eq!(
             effects[1].requirements.and_then(|requirements| {
-                requirements.matches_item_context(&vanilla_items::DIAMOND_CHESTPLATE)
+                requirements.matches_item_context(&*vanilla_items::DIAMOND_CHESTPLATE)
             }),
             Some(false)
         );
         assert_eq!(
             effects[0].requirements.and_then(|requirements| {
-                requirements.matches_item_context(&vanilla_items::DIAMOND_PICKAXE)
+                requirements.matches_item_context(&*vanilla_items::DIAMOND_PICKAXE)
             }),
             Some(false)
         );
         assert_eq!(
             effects[1].requirements.and_then(|requirements| {
-                requirements.matches_item_context(&vanilla_items::DIAMOND_PICKAXE)
+                requirements.matches_item_context(&*vanilla_items::DIAMOND_PICKAXE)
             }),
             Some(true)
         );
@@ -1526,11 +2145,11 @@ mod durability_tests {
             .expect("Infinity ammo use should have a match_tool requirement");
 
         assert_eq!(
-            requirements.matches_item_context(&vanilla_items::ARROW),
+            requirements.matches_item_context(&*vanilla_items::ARROW),
             Some(true)
         );
         assert_eq!(
-            requirements.matches_item_context(&vanilla_items::SPECTRAL_ARROW),
+            requirements.matches_item_context(&*vanilla_items::SPECTRAL_ARROW),
             Some(false)
         );
     }
@@ -1644,7 +2263,7 @@ mod persistence_tests {
     #[test]
     fn shrunk_to_empty_stack_exposes_no_components() {
         init_vanilla_registry();
-        let mut totem = ItemStack::new(&vanilla_items::TOTEM_OF_UNDYING);
+        let mut totem = ItemStack::new(&*vanilla_items::TOTEM_OF_UNDYING);
         assert!(totem.has(DEATH_PROTECTION));
 
         totem.shrink(1);
@@ -1659,7 +2278,7 @@ mod persistence_tests {
         let mut patch = crate::data_components::DataComponentPatch::new();
         patch.set(MAX_STACK_SIZE, 64);
         patch.remove(CUSTOM_DATA);
-        let mut stack = ItemStack::with_count_and_patch(&vanilla_items::STONE, 1, patch);
+        let mut stack = ItemStack::with_count_and_patch(&*vanilla_items::STONE, 1, patch);
         assert!(stack.components_patch().is_empty());
 
         stack.set(MAX_STACK_SIZE, 16);
@@ -1686,7 +2305,7 @@ mod persistence_tests {
         init_vanilla_registry();
         let mut patch = crate::data_components::DataComponentPatch::new();
         patch.set(MAX_DAMAGE, 1);
-        let stack = ItemStack::with_count_and_patch(&vanilla_items::STONE, 0, patch);
+        let stack = ItemStack::with_count_and_patch(&*vanilla_items::STONE, 0, patch);
 
         assert!(stack.is_empty());
         assert!(stack.validate_strict().is_ok());
@@ -1695,7 +2314,7 @@ mod persistence_tests {
     #[test]
     fn default_count_is_always_present_in_persistent_encoding() {
         init_vanilla_registry();
-        let stack = ItemStack::new(&vanilla_items::STONE);
+        let stack = ItemStack::new(&*vanilla_items::STONE);
         let NbtTag::Compound(compound) = stack.to_nbt_tag_ref() else {
             panic!("item stack should encode as a compound");
         };
@@ -1759,7 +2378,7 @@ mod persistence_tests {
     #[test]
     fn save_omits_invalid_component_value_but_keeps_present_patch_field() {
         init_vanilla_registry();
-        let mut stack = ItemStack::new(&vanilla_items::STONE);
+        let mut stack = ItemStack::new(&*vanilla_items::STONE);
         stack.set(MAX_STACK_SIZE, 0);
 
         assert!(stack.validate_persistent_encoding().is_err());
@@ -1780,7 +2399,7 @@ mod persistence_tests {
     #[test]
     fn toggle_tooltips_updates_the_typed_display_component() {
         init_vanilla_registry();
-        let mut stack = ItemStack::new(&vanilla_items::STONE);
+        let mut stack = ItemStack::new(&*vanilla_items::STONE);
 
         stack.toggle_tooltips(&[(LORE.key, false)]);
         let display = stack
@@ -1800,7 +2419,7 @@ mod persistence_tests {
     #[test]
     fn set_custom_data_recursively_merges_and_removes_empty_values() {
         init_vanilla_registry();
-        let mut stack = ItemStack::new(&vanilla_items::STONE);
+        let mut stack = ItemStack::new(&*vanilla_items::STONE);
         let empty = CustomData::default();
         stack.set_custom_data(&empty);
         assert!(stack.get(CUSTOM_DATA).is_none());
@@ -1829,4 +2448,45 @@ mod persistence_tests {
         assert_eq!(nested.int("kept"), Some(1));
         assert_eq!(nested.int("changed"), Some(2));
     }
+}
+
+/// Reads a dot-separated compound path from `data`.
+fn nbt_path_get<'a>(
+    data: &'a simdnbt::owned::NbtCompound,
+    path: &str,
+) -> Option<&'a simdnbt::owned::NbtTag> {
+    let mut current = data;
+    let mut segments = path.split('.').peekable();
+    while let Some(segment) = segments.next() {
+        let tag = current.get(segment)?;
+        if segments.peek().is_none() {
+            return Some(tag);
+        }
+        current = tag.compound()?;
+    }
+    None
+}
+
+/// Writes `value` at a dot-separated compound path, creating intermediates.
+///
+/// `simdnbt` exposes no mutable compound child, so the subtree is rebuilt from
+/// the existing value plus the new leaf and written back with `insert`.
+fn nbt_path_set(data: &mut simdnbt::owned::NbtCompound, path: &str, value: simdnbt::owned::NbtTag) {
+    let mut segments = path.split('.').peekable();
+    let Some(first) = segments.next() else {
+        return;
+    };
+    if segments.peek().is_none() {
+        data.insert(first, value);
+        return;
+    }
+
+    let rest = segments.collect::<Vec<_>>().join(".");
+    let mut child = data
+        .get(first)
+        .and_then(simdnbt::owned::NbtTag::compound)
+        .cloned()
+        .unwrap_or_else(simdnbt::owned::NbtCompound::new);
+    nbt_path_set(&mut child, &rest, value);
+    data.insert(first, simdnbt::owned::NbtTag::Compound(child));
 }

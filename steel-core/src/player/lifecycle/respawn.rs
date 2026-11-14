@@ -15,10 +15,11 @@ use crate::{
     player::Player,
 };
 use steel_math::{DEGREE_90, wrap_degrees};
-use steel_protocol::packets::game::{CSound, SoundSource};
+use steel_protocol::packets::game::{CGameRuleValues, CSound, SoundSource};
 use steel_registry::blocks::{
     block_state_ext::BlockStateExt as _, properties::BlockStateProperties,
 };
+use steel_registry::game_rules::ErasedGameRule as _;
 use steel_registry::{sound_events, vanilla_blocks};
 
 // Bed candidates reach two blocks out and collision checks read one block farther.
@@ -49,11 +50,12 @@ impl PlayerRespawnConfig {
 }
 
 #[derive(Clone, Copy)]
-struct DeathRespawnSpawn {
-    position: DVec3,
-    rotation: (f32, f32),
-    anchor_deplete_sound_pos: Option<BlockPos>,
-    missing_respawn_block: bool,
+/// A resolved personal respawn position and the side effects its spawn block implies.
+pub(crate) struct DeathRespawnSpawn {
+    pub(crate) position: DVec3,
+    pub(crate) rotation: (f32, f32),
+    pub(crate) anchor_deplete_sound_pos: Option<BlockPos>,
+    pub(crate) missing_respawn_block: bool,
 }
 
 struct PlayerRespawnJob {
@@ -87,6 +89,27 @@ enum PlayerRespawnJobPhase {
         request: ChunkRequestHandle,
     },
     Searching(PlayerSpawnSearch),
+}
+
+/// Resolves a player's personal respawn position for a world change that is not
+/// a death, such as the End portal return.
+///
+/// Returns `None` when the player has no usable bed or anchor in `target_world`,
+/// which tells the caller to fall back to the world spawn search.
+pub(crate) fn resolve_personal_respawn_for_world_change(
+    target_world: &Arc<World>,
+    player: &Player,
+) -> Option<(DVec3, (f32, f32))> {
+    let config = player.respawn_config()?;
+    // The config records the dimension the bed lives in; only use it when that
+    // dimension is the one being entered.
+    if config.respawn_data.dimension() != &target_world.key {
+        return None;
+    }
+    // A world change must not consume the anchor's charge: vanilla only depletes
+    // charges when the player actually respawns after dying.
+    let spawn = PlayerRespawnJob::resolve_personal_respawn(target_world, player, &config, false)?;
+    Some((spawn.position, spawn.rotation))
 }
 
 impl PlayerRespawnJob {
@@ -337,7 +360,12 @@ impl PlayerRespawnJob {
         }
     }
 
-    fn resolve_personal_respawn(
+    /// Vanilla `ServerPlayer.findRespawnPositionAndUseSpawnBlock`: resolves the
+    /// player's bed or respawn anchor into a stand-up position.
+    ///
+    /// Shared by the death-respawn flow and the End portal return so both use
+    /// the same rules instead of the portal falling back to the world spawn.
+    pub(crate) fn resolve_personal_respawn(
         world: &Arc<World>,
         player: &Player,
         config: &PlayerRespawnConfig,
@@ -602,6 +630,9 @@ impl Player {
             RespawnRequestKind::Death => ResetReason::Respawn,
             RespawnRequestKind::EndCredits => ResetReason::EndCredits,
         };
+        // Vanilla `PlayerList.respawn` assigns the forced game type *before* the
+        // client is told to respawn, so the respawn packet already carries it.
+        crate::server::Server::apply_forced_game_mode(&replacement, target_world);
         replacement.prepare_respawn_replacement(reason);
         replacement.experience.lock().dirty = true;
         replacement.synchronize_respawn_replacement(spawn.position, spawn.rotation);
@@ -699,10 +730,28 @@ impl Player {
                 }
             }
             ClientCommandAction::RequestStats => self.send_stats(),
-            ClientCommandAction::RequestGameRuleValues => {
-                // TODO: implement requesting for game rule values
-            }
+            ClientCommandAction::RequestGameRuleValues => self.send_game_rule_values(),
         }
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleClientCommand` reply to
+    /// `REQUEST_GAME_RULE_VALUES`: every rule with its current value, which the
+    /// client uses to render its own rule-dependent UI.
+    fn send_game_rule_values(&self) {
+        let Some(world) = self.level() else {
+            return;
+        };
+        let rules = REGISTRY
+            .game_rules
+            .iter()
+            .map(|(_, rule)| {
+                (
+                    rule.key().to_string(),
+                    world.get_erased_game_rule(rule).to_string(),
+                )
+            })
+            .collect();
+        self.send_packet(CGameRuleValues { rules });
     }
 
     /// Vanilla accepts a client respawn request only when player health is dead-or-dying.

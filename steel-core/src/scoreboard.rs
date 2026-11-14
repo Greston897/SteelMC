@@ -113,19 +113,126 @@ const fn default_score_locked() -> bool {
     true
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 struct ObjectiveState {
     read_only: bool,
+    /// Name shown to clients; `None` means "same as the objective name".
+    ///
+    /// Vanilla `Objective#getDisplayName`, which defaults to the name.
+    #[serde(default)]
+    display_name: Option<String>,
+    /// Statistic this objective tracks, if it was created with a stat criterion.
+    ///
+    /// Vanilla allows any criterion id here; Steel only models the statistic
+    /// criteria, which are the ones with a data source on the server.
+    #[serde(default)]
+    criterion: Option<String>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+/// Vanilla `Team.Visibility`: who may see a message routed through the team.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TeamVisibility {
+    /// Every player sees the message.
+    #[default]
+    Always,
+    /// Only players on other teams see the message.
+    HideForOwnTeam,
+    /// Only players on the same team see the message.
+    HideForOtherTeams,
+    /// Nobody sees the message.
+    Never,
+}
+
+impl TeamVisibility {
+    /// Returns whether `viewer_team` (the viewer's team name, if any) may see a
+    /// message emitted on `message_team`.
+    #[must_use]
+    pub fn visible_to(&self, message_team: &str, viewer_team: Option<&str>) -> bool {
+        let same_team = viewer_team == Some(message_team);
+        match self {
+            Self::Always => true,
+            Self::HideForOwnTeam => !same_team,
+            Self::HideForOtherTeams => same_team,
+            Self::Never => false,
+        }
+    }
+
+    /// Vanilla command name (`always`, `hideForOtherTeams`, `hideForOwnTeam`, `never`).
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Always => "always",
+            Self::HideForOwnTeam => "hideForOwnTeam",
+            Self::HideForOtherTeams => "hideForOtherTeams",
+            Self::Never => "never",
+        }
+    }
+}
+
+/// Persisted state of one scoreboard team.
+///
+/// Mirrors the fields vanilla's `PlayerTeam` writes to `scoreboard.dat` and to the
+/// client packet, so `/team modify` can round-trip every option.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct TeamState {
+    /// Who may see messages routed through this team.
+    #[serde(default)]
+    pub visibility: TeamVisibility,
+    /// Who may see nametags of members.
+    #[serde(default)]
+    pub name_tag_visibility: TeamVisibility,
+    /// Whether members may push each other.
+    #[serde(default)]
+    pub allow_friendly_fire: bool,
+    /// Whether death messages are shown for members.
+    #[serde(default)]
+    pub death_message_visibility: TeamVisibility,
+    /// Colour for member names, if any.
+    #[serde(default)]
+    pub color: Option<String>,
+    /// Prefix shown before member names.
+    #[serde(default)]
+    pub prefix: String,
+    /// Suffix shown after member names.
+    #[serde(default)]
+    pub suffix: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 struct PersistentScoreboard {
     objectives: BTreeMap<String, ObjectiveState>,
     scores: BTreeMap<String, BTreeMap<String, ScoreboardScore>>,
-    teams: BTreeSet<String>,
+    teams: BTreeMap<String, TeamState>,
     holder_teams: BTreeMap<String, String>,
+    /// Named server tick counters driven by `/stopwatch`.
+    ///
+    /// Vanilla keeps these on the scoreboard so they persist with the level and
+    /// are visible to `/execute if stopwatch`.
+    stopwatches: BTreeMap<String, StopwatchState>,
+    /// Objective bound to each vanilla `DisplaySlot` ordinal.
+    ///
+    /// Vanilla `Scoreboard#displayObjectives`; slots without an objective are
+    /// absent rather than mapped to an empty string.
+    #[serde(default)]
+    display_slots: BTreeMap<i32, String>,
+}
+
+/// One named stopwatch.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct StopwatchState {
+    ticks: i64,
+}
+
+impl StopwatchState {
+    /// Ticks this stopwatch has accumulated.
+    #[must_use]
+    pub const fn ticks(self) -> i64 {
+        self.ticks
+    }
 }
 
 /// Invalid scoreboard operation or persisted state.
@@ -137,6 +244,9 @@ pub enum ScoreboardError {
     /// Team names may not be empty.
     #[error("team name cannot be empty")]
     EmptyTeamName,
+    /// Stopwatch names may not be empty.
+    #[error("stopwatch name cannot be empty")]
+    EmptyStopwatchName,
     /// Score holder names may not be empty.
     #[error("score holder name cannot be empty")]
     EmptyScoreHolderName,
@@ -201,6 +311,65 @@ impl Scoreboard {
         self.add_objective_with_read_only(name, false)
     }
 
+    /// Creates a named stopwatch (vanilla `/stopwatch create`).
+    ///
+    /// Returns `false` when a stopwatch with that name already exists, matching
+    /// vanilla's "already exists" failure without clobbering its counter.
+    pub fn create_stopwatch(&self, name: &str) -> bool {
+        if name.is_empty() {
+            return false;
+        }
+        let mut state = self.state.write();
+        if state.stopwatches.contains_key(name) {
+            return false;
+        }
+        state
+            .stopwatches
+            .insert(name.to_owned(), StopwatchState::default());
+        self.mark_dirty();
+        true
+    }
+
+    /// Removes a named stopwatch, returning whether it existed.
+    pub fn remove_stopwatch(&self, name: &str) -> bool {
+        let mut state = self.state.write();
+        let removed = state.stopwatches.remove(name).is_some();
+        if removed {
+            self.mark_dirty();
+        }
+        removed
+    }
+
+    /// Reads a stopwatch's accumulated ticks.
+    #[must_use]
+    pub fn stopwatch_ticks(&self, name: &str) -> Option<i64> {
+        self.state
+            .read()
+            .stopwatches
+            .get(name)
+            .map(|stopwatch| stopwatch.ticks())
+    }
+
+    /// Names of every stopwatch, sorted.
+    #[must_use]
+    pub fn stopwatch_names(&self) -> Vec<String> {
+        self.state.read().stopwatches.keys().cloned().collect()
+    }
+
+    /// Advances every stopwatch by one tick.
+    ///
+    /// Called once per game tick from the world tick phase, exactly where
+    /// vanilla advances `ServerScoreboard` stopwatches.
+    pub fn tick_stopwatches(&self) {
+        let mut state = self.state.write();
+        if state.stopwatches.is_empty() {
+            return;
+        }
+        for stopwatch in state.stopwatches.values_mut() {
+            stopwatch.ticks = stopwatch.ticks.saturating_add(1);
+        }
+    }
+
     /// Adds an objective with explicit command mutability.
     ///
     /// # Errors
@@ -217,11 +386,63 @@ impl Scoreboard {
         if state.objectives.contains_key(&name) {
             return Err(ScoreboardError::DuplicateObjective(name));
         }
-        state
-            .objectives
-            .insert(name.clone(), ObjectiveState { read_only });
+        state.objectives.insert(
+            name.clone(),
+            ObjectiveState {
+                read_only,
+                display_name: None,
+                criterion: None,
+            },
+        );
         self.mark_dirty();
         Ok(ScoreboardObjective { name, read_only })
+    }
+
+    /// Adds a writable objective that tracks a statistic criterion.
+    ///
+    /// Mirrors `/scoreboard objectives add <name> <criterion>` where the criterion
+    /// names a statistic such as `minecraft.mined:minecraft.stone`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the objective name is empty or already exists.
+    pub fn add_objective_with_criterion(
+        &self,
+        name: impl Into<String>,
+        criterion: impl Into<String>,
+    ) -> Result<ScoreboardObjective, ScoreboardError> {
+        let name = name.into();
+        let criterion = criterion.into();
+        ensure_objective_name(&name)?;
+        let mut state = self.state.write();
+        if state.objectives.contains_key(&name) {
+            return Err(ScoreboardError::DuplicateObjective(name));
+        }
+        state.objectives.insert(
+            name.clone(),
+            ObjectiveState {
+                read_only: false,
+                display_name: None,
+                criterion: Some(criterion),
+            },
+        );
+        self.mark_dirty();
+        Ok(ScoreboardObjective {
+            name,
+            read_only: false,
+        })
+    }
+
+    /// Objective names that track `criterion`, in name order.
+    #[must_use]
+    pub fn objectives_with_criterion(&self, criterion: &str) -> Vec<String> {
+        self.state
+            .read()
+            .objectives
+            .iter()
+            .filter(|(_, objective)| objective.criterion.as_deref() == Some(criterion))
+            .map(|(name, _)| name.clone())
+            .collect()
     }
 
     /// Returns an objective by name.
@@ -252,7 +473,11 @@ impl Scoreboard {
         let name = name.into();
         ensure_team_name(&name)?;
         let mut state = self.state.write();
-        if !state.teams.insert(name.clone()) {
+        if state
+            .teams
+            .insert(name.clone(), TeamState::default())
+            .is_some()
+        {
             return Err(ScoreboardError::DuplicateTeam(name));
         }
         self.mark_dirty();
@@ -265,16 +490,101 @@ impl Scoreboard {
         self.state
             .read()
             .teams
-            .contains(name)
+            .contains_key(name)
             .then(|| ScoreboardTeam {
                 name: name.to_owned(),
             })
     }
 
+    /// Returns the persisted state of a team.
+    #[must_use]
+    pub fn team_state(&self, name: &str) -> Option<TeamState> {
+        self.state.read().teams.get(name).cloned()
+    }
+
+    /// Mutates a team's state in place and returns the result.
+    ///
+    /// Returns `None` when the team does not exist.
+    pub fn update_team<F>(&self, name: &str, f: F) -> Option<TeamState>
+    where
+        F: FnOnce(&mut TeamState),
+    {
+        let mut state = self.state.write();
+        let team = state.teams.get_mut(name)?;
+        f(team);
+        let result = team.clone();
+        drop(state);
+        self.mark_dirty();
+        Some(result)
+    }
+
+    /// Removes a team and every membership pointing at it.
+    ///
+    /// Returns whether the team existed.
+    pub fn remove_team(&self, name: &str) -> bool {
+        let mut state = self.state.write();
+        if state.teams.remove(name).is_none() {
+            return false;
+        }
+        state.holder_teams.retain(|_, team| team != name);
+        drop(state);
+        self.mark_dirty();
+        true
+    }
+
+    /// Removes a holder from its team.
+    ///
+    /// Returns whether the holder was on a team.
+    pub fn remove_holder_from_team(&self, holder: &ScoreHolder) -> bool {
+        let mut state = self.state.write();
+        if state.holder_teams.remove(holder.name()).is_none() {
+            return false;
+        }
+        drop(state);
+        self.mark_dirty();
+        true
+    }
+
+    /// Returns the team the holder belongs to, if any.
+    #[must_use]
+    pub fn team_of(&self, holder: &ScoreHolder) -> Option<String> {
+        self.state
+            .read()
+            .holder_teams
+            .get(holder.name())
+            .cloned()
+    }
+
+    /// Returns every holder currently on `team_name`, in stable order.
+    #[must_use]
+    pub fn team_members(&self, team_name: &str) -> Vec<String> {
+        self.state
+            .read()
+            .holder_teams
+            .iter()
+            .filter(|(_, team)| team.as_str() == team_name)
+            .map(|(holder, _)| holder.clone())
+            .collect()
+    }
+
+    /// Returns whether `viewer` may see a message emitted on `team_name`.
+    ///
+    /// `viewer` resolves through their own team membership, so callers only pass
+    /// the score holder.
+    #[must_use]
+    pub fn can_see_team_message(&self, viewer: &ScoreHolder, team_name: &str) -> bool {
+        let state = self.state.read();
+        let Some(team) = state.teams.get(team_name) else {
+            return true;
+        };
+        let viewer_team = state.holder_teams.get(viewer.name()).map(String::as_str);
+        team.visibility.visible_to(team_name, viewer_team)
+    }
+
     /// Returns team names in stable order.
     #[must_use]
     pub fn team_names(&self) -> Vec<String> {
-        self.state.read().teams.iter().cloned().collect()
+        self.state.read().teams.keys().cloned().collect()
     }
 
     /// Returns the current team name for a score holder.
@@ -295,7 +605,7 @@ impl Scoreboard {
     ) -> Result<(), ScoreboardError> {
         ensure_holder_name(holder.name())?;
         let mut state = self.state.write();
-        if !state.teams.contains(team.name()) {
+        if !state.teams.contains_key(team.name()) {
             return Err(ScoreboardError::MissingTeam(team.name().to_owned()));
         }
         if state
@@ -402,6 +712,51 @@ impl Scoreboard {
         Ok(())
     }
 
+    /// Removes an objective and every score stored against it.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the objective is missing or read-only.
+    pub fn remove_objective(&self, name: &str) -> Result<(), ScoreboardError> {
+        let mut state = self.state.write();
+        let Some(_) = state.objectives.get(name) else {
+            return Err(ScoreboardError::MissingObjective(name.to_owned()));
+        };
+        if state
+            .objectives
+            .get(name)
+            .is_some_and(|objective| objective.read_only)
+        {
+            return Err(ScoreboardError::ReadOnlyObjective(name.to_owned()));
+        }
+        state.objectives.remove(name);
+        for scores in state.scores.values_mut() {
+            scores.remove(name);
+        }
+        self.mark_dirty();
+        Ok(())
+    }
+
+    /// Removes one holder's score for an objective.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the objective is missing or read-only.
+    pub fn remove_score(
+        &self,
+        holder: &ScoreHolder,
+        objective: &ScoreboardObjective,
+    ) -> Result<(), ScoreboardError> {
+        ensure_holder_name(holder.name())?;
+        let mut state = self.state.write();
+        ensure_writable_objective(&state, objective)?;
+        if let Some(scores) = state.scores.get_mut(holder.name()) {
+            scores.remove(objective.name());
+        }
+        self.mark_dirty();
+        Ok(())
+    }
+
     /// Returns objective names that have a score for the holder.
     #[must_use]
     pub fn holder_objectives(&self, holder: &ScoreHolder) -> BTreeSet<String> {
@@ -410,6 +765,138 @@ impl Scoreboard {
             .scores
             .get(holder.name())
             .map_or_else(BTreeSet::new, |scores| scores.keys().cloned().collect())
+    }
+
+    /// Binds an objective to a display slot, or clears it when `objective` is empty.
+    ///
+    /// Mirrors vanilla `Scoreboard#setDisplayObjective`.
+    pub fn set_display_slot(&self, slot: i32, objective: &str) {
+        let mut state = self.state.write();
+        if objective.is_empty() {
+            state.display_slots.remove(&slot);
+        } else {
+            state.display_slots.insert(slot, objective.to_owned());
+        }
+        drop(state);
+        self.mark_dirty();
+    }
+
+    /// Returns every bound display slot as `(slot, objective)` in stable order.
+    #[must_use]
+    pub fn display_slots(&self) -> Vec<(i32, String)> {
+        self.state
+            .read()
+            .display_slots
+            .iter()
+            .map(|(slot, objective)| (*slot, objective.clone()))
+            .collect()
+    }
+
+    /// Sets the client-visible name of an objective.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the objective does not exist.
+    pub fn set_display_name(&self, name: &str, display: &str) -> Result<(), ScoreboardError> {
+        let mut state = self.state.write();
+        let Some(objective) = state.objectives.get_mut(name) else {
+            return Err(ScoreboardError::MissingObjective(name.to_owned()));
+        };
+        objective.display_name = Some(display.to_owned());
+        drop(state);
+        self.mark_dirty();
+        Ok(())
+    }
+
+    /// Returns the client-visible name of an objective, defaulting to its name.
+    #[must_use]
+    pub fn display_name(&self, name: &str) -> Option<String> {
+        let state = self.state.read();
+        let objective = state.objectives.get(name)?;
+        Some(
+            objective
+                .display_name
+                .clone()
+                .unwrap_or_else(|| name.to_owned()),
+        )
+    }
+
+    /// Returns whether an objective exists and is read-only.
+    #[must_use]
+    pub fn is_read_only(&self, name: &str) -> bool {
+        self.state
+            .read()
+            .objectives
+            .get(name)
+            .is_some_and(|objective| objective.read_only)
+    }
+
+    /// Objective names in stable order, with their read-only flag.
+    #[must_use]
+    pub fn objective_states(&self) -> Vec<(String, bool)> {
+        self.state
+            .read()
+            .objectives
+            .iter()
+            .map(|(name, state)| (name.clone(), state.read_only))
+            .collect()
+    }
+
+    /// Objective names in stable order with the client-visible display name.
+    #[must_use]
+    pub fn objective_display_names(&self) -> Vec<(String, String, bool)> {
+        self.state
+            .read()
+            .objectives
+            .iter()
+            .map(|(name, state)| {
+                (
+                    name.clone(),
+                    state.display_name.clone().unwrap_or_else(|| name.clone()),
+                    state.read_only,
+                )
+            })
+            .collect()
+    }
+
+    /// Every stored score as `(holder, objective, value)` in stable order.
+    ///
+    /// Used for the initial client synchronisation: vanilla sends the whole
+    /// scoreboard when a player joins a level.
+    #[must_use]
+    pub fn score_snapshot(&self) -> Vec<(String, String, i32)> {
+        self.state
+            .read()
+            .scores
+            .iter()
+            .flat_map(|(holder, scores)| {
+                scores
+                    .iter()
+                    .map(|(objective, score)| (holder.clone(), objective.clone(), score.value))
+            })
+            .collect()
+    }
+
+    /// Team names with their full state, in stable order.
+    #[must_use]
+    pub fn team_states(&self) -> Vec<(String, TeamState)> {
+        self.state
+            .read()
+            .teams
+            .iter()
+            .map(|(name, state)| (name.clone(), state.clone()))
+            .collect()
+    }
+
+    /// Every team membership as `(team, holder)` in stable order.
+    #[must_use]
+    pub fn team_member_snapshot(&self) -> Vec<(String, String)> {
+        self.state
+            .read()
+            .holder_teams
+            .iter()
+            .map(|(holder, team)| (team.clone(), holder.clone()))
+            .collect()
     }
 
     fn mark_dirty(&self) {
@@ -443,8 +930,13 @@ fn validate_persistent_scoreboard(state: &PersistentScoreboard) -> Result<(), Sc
     for name in state.objectives.keys() {
         ensure_objective_name(name)?;
     }
-    for name in &state.teams {
+    for name in state.teams.keys() {
         ensure_team_name(name)?;
+    }
+    for name in state.stopwatches.keys() {
+        if name.is_empty() {
+            return Err(ScoreboardError::EmptyStopwatchName);
+        }
     }
     for (holder, scores) in &state.scores {
         ensure_holder_name(holder)?;
@@ -456,7 +948,7 @@ fn validate_persistent_scoreboard(state: &PersistentScoreboard) -> Result<(), Sc
     }
     for (holder, team) in &state.holder_teams {
         ensure_holder_name(holder)?;
-        if !state.teams.contains(team) {
+        if !state.teams.contains_key(team) {
             return Err(ScoreboardError::MissingTeam(team.clone()));
         }
     }
@@ -494,7 +986,7 @@ fn ensure_objective_exists(
     state
         .objectives
         .get(objective.name())
-        .copied()
+        .cloned()
         .ok_or_else(|| ScoreboardError::MissingObjective(objective.name().to_owned()))
 }
 
@@ -546,6 +1038,18 @@ impl DomainScoreboards {
 
     /// Returns the scoreboard for a domain.
     #[must_use]
+    /// Advances the stopwatches of every domain scoreboard by one tick.
+    pub fn tick_stopwatches(&self) {
+        for scoreboard in self.scoreboards.values() {
+            scoreboard.tick_stopwatches();
+        }
+    }
+
+    /// Domains that own a scoreboard, in sorted order.
+    pub fn domain_names(&self) -> impl Iterator<Item = &str> {
+        self.scoreboards.keys().map(String::as_str)
+    }
+
     pub fn get(&self, domain: &str) -> Option<&Scoreboard> {
         self.scoreboards.get(domain)
     }
@@ -606,6 +1110,84 @@ mod tests {
     };
 
     #[test]
+    fn display_slots_bind_and_clear_objectives() {
+        let scoreboard = Scoreboard::new();
+        scoreboard
+            .add_objective("kills")
+            .expect("objective should be added");
+        assert!(scoreboard.display_slots().is_empty());
+
+        scoreboard.set_display_slot(1, "kills");
+        assert_eq!(scoreboard.display_slots(), vec![(1, "kills".to_owned())]);
+
+        // An empty objective name clears the slot, matching vanilla
+        // `Scoreboard#setDisplayObjective(slot, null)`.
+        scoreboard.set_display_slot(1, "");
+        assert!(scoreboard.display_slots().is_empty());
+    }
+
+    #[test]
+    fn display_name_defaults_to_the_objective_name() {
+        let scoreboard = Scoreboard::new();
+        scoreboard
+            .add_objective("kills")
+            .expect("objective should be added");
+        assert_eq!(scoreboard.display_name("kills").as_deref(), Some("kills"));
+
+        scoreboard
+            .set_display_name("kills", "Player Kills")
+            .expect("display name should be settable");
+        assert_eq!(
+            scoreboard.display_name("kills").as_deref(),
+            Some("Player Kills")
+        );
+        // Renaming does not affect the stored objective name.
+        assert!(scoreboard.objective("kills").is_some());
+    }
+
+    #[test]
+    fn snapshots_cover_every_stored_entry() {
+        let scoreboard = Scoreboard::new();
+        let kills = scoreboard
+            .add_objective("kills")
+            .expect("objective should be added");
+        let deaths = scoreboard
+            .add_objective("deaths")
+            .expect("objective should be added");
+        let holder = ScoreHolder::new("Steve");
+        scoreboard
+            .set_score(&holder, &kills, 3)
+            .expect("score should be writable");
+        scoreboard
+            .set_score(&holder, &deaths, 1)
+            .expect("score should be writable");
+        scoreboard
+            .add_team("red")
+            .expect("team should be added");
+        scoreboard
+            .add_holder_to_team(&holder, &scoreboard.team("red").expect("team exists"))
+            .expect("holder should join the team");
+
+        // The join synchronisation sends everything the client needs to render
+        // the scoreboard, so the snapshots must not drop entries.
+        assert_eq!(scoreboard.objective_states().len(), 2);
+        let mut scores = scoreboard.score_snapshot();
+        scores.sort();
+        assert_eq!(
+            scores,
+            vec![
+                ("Steve".to_owned(), "deaths".to_owned(), 1),
+                ("Steve".to_owned(), "kills".to_owned(), 3),
+            ]
+        );
+        assert_eq!(scoreboard.team_states().len(), 1);
+        assert_eq!(
+            scoreboard.team_member_snapshot(),
+            vec![("red".to_owned(), "Steve".to_owned())]
+        );
+    }
+
+    #[test]
     fn score_value_and_lock_state_are_independent() {
         let scoreboard = Scoreboard::new();
         let objective = scoreboard
@@ -628,6 +1210,26 @@ mod tests {
             .expect("score should exist");
         assert_eq!(entry.value(), 9);
         assert!(!entry.is_locked());
+    }
+
+    #[test]
+    fn stopwatches_advance_one_tick_at_a_time() {
+        let scoreboard = Scoreboard::new();
+        assert!(scoreboard.create_stopwatch("raid"));
+        // Duplicate creation keeps the existing counter instead of resetting it.
+        assert!(!scoreboard.create_stopwatch("raid"));
+        assert!(!scoreboard.create_stopwatch(""));
+
+        scoreboard.tick_stopwatches();
+        scoreboard.tick_stopwatches();
+        assert_eq!(scoreboard.stopwatch_ticks("raid"), Some(2));
+        assert_eq!(scoreboard.stopwatch_names(), vec!["raid".to_owned()]);
+
+        assert!(scoreboard.remove_stopwatch("raid"));
+        assert!(!scoreboard.remove_stopwatch("raid"));
+        assert_eq!(scoreboard.stopwatch_ticks("raid"), None);
+        // Ticking with no stopwatches is a no-op, not a panic.
+        scoreboard.tick_stopwatches();
     }
 
     #[test]

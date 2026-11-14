@@ -7,6 +7,7 @@
 use std::sync::Arc;
 
 use steel_macros::block_behavior;
+use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, IntProperty};
@@ -24,7 +25,9 @@ use crate::behavior::block::{
 };
 use crate::behavior::context::BlockPlaceContext;
 use crate::block_entity::SharedBlockEntity;
-use crate::entity::Entity;
+use crate::entity::{
+    Entity, EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest, spawn_entity,
+};
 use crate::player::Player;
 use crate::world::World;
 use crate::world::game_event::GameEventContext;
@@ -34,14 +37,18 @@ const MAX_HATCH_LEVEL: u8 = 2;
 /// Maximum number of eggs that can occupy a single block space.
 const MAX_EGGS: u8 = 4;
 
-/// Length of one full Minecraft day, in ticks.
-const TICKS_PER_DAY: i64 = 24_000;
+/// Vanilla `gameplay/turtle_egg_hatch_chance` attribute key.
+const HATCH_CHANCE_ATTRIBUTE: &str = "minecraft:gameplay/turtle_egg_hatch_chance";
 /// Base per-random-tick chance that an egg advances a cracking stage.
 const BASE_HATCH_CHANCE: f32 = 0.002;
+/// Length of one full Minecraft day, in ticks (fallback window maths).
+const TICKS_PER_DAY: i64 = 24_000;
 /// Start (inclusive) of the pre-dawn window where eggs always advance.
 const HATCH_WINDOW_START: i64 = 21_062;
 /// End (exclusive) of the pre-dawn window where eggs always advance.
 const HATCH_WINDOW_END: i64 = 21_905;
+/// Dimension timeline tag carrying the overworld day timeline.
+const OVERWORLD_TIMELINE_TAG: &str = "#minecraft:in_overworld";
 
 /// One in this many chance to trample an egg while standing on it each tick.
 const STEP_TRAMPLE_ODDS: i32 = 100;
@@ -51,11 +58,6 @@ const FALL_TRAMPLE_ODDS: i32 = 3;
 /// Particle count for the "egg placed on sand" effect.
 const TURTLE_EGG_PLACEMENT_PARTICLE_COUNT: i32 = 15;
 
-/// Dimension timeline tag that carries the day timeline. Only dimensions on this
-/// tag (the overworld and its caves variant) apply the pre-dawn hatch boost;
-/// nether and end eggs stay at the base chance, matching vanilla's per-dimension
-/// resolution of the `gameplay/turtle_egg_hatch_chance` attribute.
-const OVERWORLD_TIMELINE_TAG: &str = "#minecraft:in_overworld";
 
 const HATCH: &IntProperty = &BlockStateProperties::HATCH;
 const EGGS: &IntProperty = &BlockStateProperties::EGGS;
@@ -64,6 +66,15 @@ const EGGS: &IntProperty = &BlockStateProperties::EGGS;
 #[block_behavior]
 pub struct TurtleEggBlock {
     block: BlockRef,
+}
+
+/// Pre-dawn check used when the day timeline is unavailable.
+fn in_fallback_hatch_window(world: &Arc<World>) -> bool {
+    let day_time = world
+        .clock_total_ticks(&vanilla_world_clocks::OVERWORLD)
+        .unwrap_or(0)
+        .rem_euclid(TICKS_PER_DAY);
+    (HATCH_WINDOW_START..HATCH_WINDOW_END).contains(&day_time)
 }
 
 impl TurtleEggBlock {
@@ -84,34 +95,23 @@ impl TurtleEggBlock {
 
     /// Rolls whether an egg should advance its cracking stage this random tick.
     ///
-    /// In vanilla this chance comes from the `gameplay/turtle_egg_hatch_chance`
-    /// environment attribute: base 0.002, raised to 1.0 by a day-timeline
-    /// `maximum` modifier during the pre-dawn window (ticks 21062 to 21904).
-    /// Vanilla resolves the attribute per dimension, and only dimensions tagged
-    /// `#minecraft:in_overworld` include that day timeline, so eggs in the nether
-    /// or end keep the 0.002 base regardless of the overworld time of day.
-    ///
-    /// Steel's timeline sampler in `world::environment` only handles
-    /// `multiply`/replace modifiers and exposes sky light and sun angle, so it
-    /// cannot resolve this attribute yet; the turtle curve is reproduced inline
-    /// off the overworld day clock, gated on the same timeline tag.
-    // TODO(environment-attributes): replace this inline curve with a single
-    // attribute lookup once the timeline sampler learns the `maximum` modifier
-    // and exposes a public environment-attribute getter.
+    /// Vanilla resolves `gameplay/turtle_egg_hatch_chance` through the dimension's
+    /// environment attributes: the base is 0.002 and the overworld day timeline
+    /// raises it to 1.0 with a `maximum` modifier during the pre-dawn window. Only
+    /// dimensions on `#minecraft:in_overworld` carry that timeline, so nether and
+    /// end eggs keep the base chance — which the sampler reproduces for free.
     fn should_update_hatch_level(world: &Arc<World>) -> bool {
-        let day_time = world
-            .clock_total_ticks(&vanilla_world_clocks::OVERWORLD)
-            .unwrap_or(0)
-            .rem_euclid(TICKS_PER_DAY);
-
-        let in_hatch_window = (HATCH_WINDOW_START..HATCH_WINDOW_END).contains(&day_time)
-            && world.dimension_type.timelines == Some(OVERWORLD_TIMELINE_TAG);
-        let chance = if in_hatch_window {
+        let chance = world.environment_attribute(HATCH_CHANCE_ATTRIBUTE, BASE_HATCH_CHANCE);
+        // Environments whose datapacks do not ship the day timeline yet still get
+        // the vanilla curve, so hatching works without extracted assets.
+        let chance = if chance == BASE_HATCH_CHANCE
+            && world.dimension_type.timelines == Some(OVERWORLD_TIMELINE_TAG)
+            && in_fallback_hatch_window(world)
+        {
             1.0
         } else {
-            BASE_HATCH_CHANCE
+            chance
         };
-
         chance > 0.0 && rand::random::<f32>() < chance
     }
 
@@ -196,7 +196,7 @@ impl BlockBehavior for TurtleEggBlock {
 
     fn can_be_replaced(&self, state: BlockStateId, context: &BlockPlaceContext<'_>) -> bool {
         if !context.is_secondary_use_active()
-            && context.with_item(|item| item.is(&vanilla_items::TURTLE_EGG))
+            && context.with_item(|item| item.is(&*vanilla_items::TURTLE_EGG))
             && state.get_value(EGGS) < MAX_EGGS
         {
             true
@@ -271,10 +271,27 @@ impl BlockBehavior for TurtleEggBlock {
                     level_events::encode_block_state_data(u32::from(state.0)),
                     None,
                 );
-                // TODO(turtle-entity): spawn one baby Turtle per egg here once the
-                // Turtle entity lands. Vanilla creates it with age -24000, calls
-                // setHomePos(pos), snaps it just above the nest, and adds it to the
-                // world. Wired up in the follow-up entity PR.
+                // Vanilla `TurtleEggBlock.randomTick`: one baby turtle per egg,
+                // spawned just above the nest with a negative age.
+                let request = EntitySpawnRequest {
+                    entity_type: &vanilla_entities::TURTLE,
+                    placement: EntitySpawnPlacement::Block {
+                        pos,
+                        try_move_down: false,
+                        moved_up: false,
+                    },
+                    reason: EntitySpawnReason::Natural,
+                    finalize_spawn: true,
+                    play_ambient_sound: false,
+                    item_stack: None,
+                    user_is_operator: false,
+                };
+                if let Ok(turtle) = spawn_entity(world, request)
+                    && let Some(ageable) = turtle.as_ageable_mob()
+                {
+                    // Vanilla sets `age = -24000` (a fresh baby).
+                    ageable.set_age(ageable.get_baby_start_age());
+                }
             }
         }
     }
@@ -294,15 +311,11 @@ impl BlockBehavior for TurtleEggBlock {
         pos: BlockPos,
         context: EntityFallOnContext<'_>,
     ) -> Option<EntityFallDamage> {
+        // Vanilla excludes `instanceof Zombie`, which covers husks, drowned,
+        // zombie villagers and zombified piglins via the shared `#zombies` tag.
         if let Some(entity) = context.source_entity()
-            && entity.entity_type() != &vanilla_entities::ZOMBIE
+            && !entity.entity_type().has_tag(&EntityTypeTag::ZOMBIES)
         {
-            // Vanilla excludes `instanceof Zombie`, which also covers husks,
-            // drowned, zombie villagers, and zombified piglins. None of those
-            // exist in Steel yet, so this single-type check is currently exact.
-            // TODO(zombie-family): widen this to the whole zombie set (a shared
-            // "is a zombie" predicate or an entity-type tag) once those entities
-            // land, so falling zombies do not double up with their trample AI.
             self.destroy_egg(world, state, pos, entity, FALL_TRAMPLE_ODDS);
         }
         self.default_fall_on(state, world, pos, context)

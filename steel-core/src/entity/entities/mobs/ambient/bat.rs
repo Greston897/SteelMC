@@ -400,6 +400,10 @@ impl LivingEntity for BatEntity {
         &self.living_base
     }
 
+    fn is_flying_animal(&self) -> bool {
+        true
+    }
+
     fn get_health(&self) -> f32 {
         *self.entity_data.lock().living_entity().health.get()
     }

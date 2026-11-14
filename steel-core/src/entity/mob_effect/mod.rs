@@ -31,6 +31,8 @@ pub use weaving::WeavingBehavior;
 pub use wind_charged::WindChargedBehavior;
 pub use wither::WitherBehavior;
 
+use std::sync::Arc;
+
 use crate::entity::LivingEntity;
 use crate::entity::SharedEntity;
 use crate::world::World;
@@ -58,6 +60,13 @@ pub trait MobEffectBehavior: Send + Sync {
 
     /// Called when the effect starts.
     fn on_effect_started(&self, _user: &dyn LivingEntity, _amplifier: i32) {}
+
+    /// Vanilla `MobEffect.onMobRemoved`: runs once when the affected mob is
+    /// removed from the world (death is the only removal path Steel models).
+    fn on_mob_removed(&self, _world: &Arc<World>, _mob: &dyn LivingEntity) {}
+
+    /// Vanilla `MobEffect.onMobHurt`: runs after the mob took damage.
+    fn on_mob_hurt(&self, _world: &Arc<World>, _mob: &dyn LivingEntity, _amplifier: i32) {}
 }
 
 /// The instantaneous-only half of a [`MobEffectBehavior`] that also extends

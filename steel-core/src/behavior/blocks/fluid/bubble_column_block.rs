@@ -228,7 +228,7 @@ impl BlockBehavior for BubbleColumnBlock {
             return None;
         }
         Some(PickupResult {
-            filled_bucket: ItemStack::new(&vanilla_items::WATER_BUCKET),
+            filled_bucket: ItemStack::new(&*vanilla_items::WATER_BUCKET),
             sound: Some(&sound_events::ITEM_BUCKET_FILL),
         })
     }

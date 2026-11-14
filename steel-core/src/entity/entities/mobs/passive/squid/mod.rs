@@ -1,3 +1,7 @@
+mod glow;
+
+pub use glow::GlowSquidEntity;
+
 use std::{
     f64::consts::{PI, TAU},
     sync::{Arc, Weak},
@@ -65,10 +69,10 @@ const SQUID_SQUIRT_SOUND: SoundEventRef = &sound_events::ENTITY_SQUID_SQUIRT;
 const SQUID_MOVEMENT_THRESHOLD: f64 = 1.0e-5;
 const SQUID_TENTICLE_SCALE_MOVEMENT_THRESHOLD: f32 = 7.5;
 
-// TODO(ageable-water-creature): vanilla `Squid extends AgeableWaterCreature`.
-// Still missing from that layer: `checkSpawnObstruction`.
-// Functions `getAmbientSoundInterval` and `getBaseExperienceReward` sit on this
-// entity until the trait exists; `Dolphin` is the only other consumer.
+// Vanilla `Squid extends AgeableWaterCreature`. The shared pieces live here while
+// `Dolphin` is the only other consumer: `getAmbientSoundInterval` is returned from
+// [`Mob::ambient_sound_interval`] and the aquatic spawn rule is the
+// `check_spawn_obstruction` override below.
 #[entity_behavior(class = "Squid")]
 /// Vanilla Squid entity
 pub struct SquidEntity {
@@ -219,9 +223,9 @@ impl SquidEntity {
         if let Some(living_entity) = self.as_living_entity() {
             self.set_velocity(DVec3::new(
                 0.0,
-                // TODO: depending on how `LivingEntity.air_travel_vertical_friction` implements `FlyingAnimal`'s
-                // different base friction value, the input value may change here (e.g. replace with
-                // a const value added to `LivingEntity`).
+                // Squid is not a `FlyingAnimal`, so
+                // `air_travel_vertical_friction` returns the plain `0.98` base
+                // value and the squid drag below is the only modification.
                 y * f64::from(living_entity.air_travel_vertical_friction(SQUID_AIR_DRAG)),
                 0.0,
             ));
@@ -492,6 +496,12 @@ impl Mob for SquidEntity {
         group_data: Option<SpawnGroupData>,
     ) -> Option<SpawnGroupData> {
         self.finalize_spawn_ageable_mob(world, spawn_reason, group_data)
+    }
+
+    /// Vanilla `AgeableWaterCreature.checkSpawnObstruction` returns the inverse
+    /// of the land-mob rule: an aquatic mob needs its box fully inside liquid.
+    fn check_spawn_obstruction(&self, world: &Arc<World>) -> bool {
+        crate::entity::aabb_contains_any_liquid(world, self.bounding_box())
     }
 }
 

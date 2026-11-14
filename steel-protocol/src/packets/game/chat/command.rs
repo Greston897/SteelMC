@@ -4,6 +4,8 @@ use steel_macros::{ReadFrom, ServerPacket};
 #[expect(unused_imports)]
 use steel_registry::packets::play::S_CHAT_COMMAND;
 use steel_utils::codec::VarInt;
+use steel_utils::serial::PrefixedWrite as _;
+use steel_utils::serial::ReadFrom as _;
 use steel_utils::serial::PrefixedRead;
 
 #[derive(ServerPacket, ReadFrom)]

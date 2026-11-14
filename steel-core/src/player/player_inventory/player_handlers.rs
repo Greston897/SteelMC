@@ -19,16 +19,22 @@ use steel_math::trig;
 use steel_protocol::packets::game::SSeenAdvancement::Opened;
 use steel_protocol::packets::game::{
     CContainerClose, COpenScreen, CSetPlayerInventory, ClickType, SContainerButtonClick,
-    SContainerClick, SContainerClose, SContainerSlotStateChanged, SRenameItem, SSeenAdvancement,
-    SSetBeacon, SSetCarriedItem, SSetCreativeModeSlot, SoundSource,
+    SSelectTrade,
+    SContainerClick, SContainerClose, SContainerSlotStateChanged, SEditBook, SRenameItem,
+    SSeenAdvancement, SSetBeacon, SSetCarriedItem, SSetCreativeModeSlot, SoundSource,
 };
-use steel_registry::data_components::vanilla_components::SwingAnimation;
+use steel_registry::data_components::components::{
+    Filterable, WritableBookContent, WrittenBookContent,
+};
+use steel_registry::data_components::vanilla_components::{
+    SwingAnimation, WRITABLE_BOOK_CONTENT, WRITTEN_BOOK_CONTENT,
+};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::mob_effect::MobEffectRef;
 use steel_registry::sound_events;
 use steel_registry::stat::vanilla_stat_types;
-use steel_registry::vanilla_custom_stats;
 use steel_registry::{REGISTRY, RegistryExt};
+use steel_registry::{vanilla_custom_stats, vanilla_items};
 use steel_utils::{
     Downcast as _,
     locks::Shared,
@@ -42,6 +48,9 @@ use super::{
     OpenMenuUnavailable, PendingMenuOpen, PlayerInventory, Prediction, PreparedMenu,
     TerminalMenuRemoval,
 };
+
+/// Offhand inventory index, matching vanilla `PlayerInventory.OFF_HAND_SLOT`.
+const OFFHAND_INVENTORY_SLOT: i32 = 40;
 
 impl Player {
     fn take_open_menu_for_callback(
@@ -265,6 +274,25 @@ impl Player {
         }
     }
 
+    /// Handles a trade selection from the merchant screen.
+    ///
+    /// Vanilla `ServerboundSelectTradePacket`: only a merchant menu accepts it,
+    /// and an out-of-range index is dropped without disturbing the screen.
+    pub fn handle_select_trade(&self, packet: SSelectTrade) {
+        self.reset_last_action_time();
+        let Ok(mut menu) = self.take_open_menu_for_callback(None) else {
+            log::debug!("select trade without an open menu");
+            return;
+        };
+        if self.game_mode() != GameType::Spectator
+            && menu.still_valid(self)
+            && menu.select_trade(packet.item, self)
+        {
+            menu.behavior_mut().broadcast_changes(&self.connection);
+        }
+        self.finish_open_menu_callback(menu);
+    }
+
     /// Handles a container click packet (slot interaction).
     pub fn handle_container_click(&self, packet: SContainerClick) {
         self.reset_last_action_time();
@@ -443,8 +471,33 @@ impl Player {
             packet.new_state,
             packet.container_id
         );
-        // TODO: Implement slot state change handling
-        // This is used for the crafter block to enable/disable slots
+        self.reset_last_action_time();
+        match self.take_open_menu_for_callback(Some(packet.container_id)) {
+            Ok(mut menu) => {
+                if self.game_mode() != GameType::Spectator
+                    && menu.still_valid(self)
+                    && i32::from(menu.behavior().container_id()) == packet.container_id
+                {
+                    let Ok(slot) = usize::try_from(packet.slot_id) else {
+                        self.finish_open_menu_callback(menu);
+                        return;
+                    };
+                    // Vanilla only honours the toggle from the crafter menu; any
+                    // other menu ignores the packet.
+                    if menu.set_crafter_slot_state(slot, packet.new_state) {
+                        menu.behavior_mut().broadcast_changes(&self.connection);
+                    }
+                }
+                self.finish_open_menu_callback(menu);
+            }
+            Err(OpenMenuUnavailable::Closed) => {
+                log::debug!(
+                    "Player {} sent a slot state change without an open menu",
+                    self.gameprofile.name()
+                );
+            }
+            Err(OpenMenuUnavailable::Unavailable) => {}
+        }
     }
 
     /// Handles a creative mode slot set packet.
@@ -485,6 +538,72 @@ impl Player {
             }
             let _ = self.drop_item(item_stack, true, Prediction::Predicted);
         }
+    }
+
+    /// Handles a `play:edit_book` packet.
+    ///
+    /// Mirrors vanilla `ServerPlayNetworkHandler.onBookUpdate`: the edited
+    /// pages are stored on the writable book, and a packet carrying a title
+    /// signs the book into a written book authored by the player. Only hotbar
+    /// slots and the offhand slot may be edited, exactly like vanilla.
+    pub fn handle_edit_book(&self, packet: SEditBook) {
+        let slot = packet.slot;
+        if !((0..=8).contains(&slot) || slot == OFFHAND_INVENTORY_SLOT) {
+            return;
+        }
+        let slot_index = slot as usize;
+
+        let stack = {
+            let inventory = self.inventory.lock();
+            inventory.get_item(slot_index).clone()
+        };
+        if !stack.has(WRITABLE_BOOK_CONTENT) {
+            return;
+        }
+
+        // Vanilla filters the incoming texts through the chat filter first;
+        // Steel has no chat filtering, so every page stays pass-through.
+        let updated = if let Some(title) = packet.title {
+            let Ok(content) = WrittenBookContent::new(
+                Filterable::pass_through(title),
+                self.gameprofile.name().to_owned(),
+                0,
+                packet
+                    .pages
+                    .into_iter()
+                    .map(|page| Filterable::pass_through(TextComponent::plain(page)))
+                    .collect(),
+                true,
+            ) else {
+                return;
+            };
+
+            let mut written = stack.copy_with_count(stack.count());
+            written.set_item(&vanilla_items::WRITTEN_BOOK.key);
+            written.remove::<WritableBookContent>(WRITABLE_BOOK_CONTENT);
+            written.set(WRITTEN_BOOK_CONTENT, content);
+            written
+        } else {
+            let Ok(content) = WritableBookContent::new(
+                packet
+                    .pages
+                    .into_iter()
+                    .map(Filterable::pass_through)
+                    .collect(),
+            ) else {
+                return;
+            };
+
+            let mut editable = stack;
+            editable.set(WRITABLE_BOOK_CONTENT, content);
+            editable
+        };
+
+        self.inventory.lock().set_item(slot_index, updated);
+        // Vanilla writes straight into the inventory and then calls
+        // `sendContentUpdates`, which is what `broadcast_changes` mirrors.
+        let mut menu = self.inventory_menu.lock();
+        menu.behavior_mut().broadcast_changes(&self.connection);
     }
 
     /// Sets selected slot
@@ -1108,8 +1227,8 @@ impl Player {
     /// Returns false if the player is dead, removed, or has a flag preventing item drops.
     #[must_use]
     pub fn can_drop_items(&self) -> bool {
-        !self.is_removed()
-        // TODO: Check if player is alive (health > 0)
+        // Vanilla `Player.canDropItems`: `!isRemoved() && getHealth() > 0`.
+        !self.is_removed() && self.get_health() > 0.0
     }
 
     /// Returns whether items from a closing menu (crafting grid, anvil inputs,
@@ -1174,10 +1293,33 @@ impl Player {
             return;
         }
 
+        let count_before = item.count();
         let added = self.inventory.lock().add(&mut item);
+        let moved = count_before.saturating_sub(item.count());
+        if moved > 0 {
+            // Vanilla `Inventory.add` → `InventoryChangeTrigger`: the predicate
+            // sees the inventory slots and the items that changed, which is what
+            // every "obtain item" advancement keys off. Steel fires it with the
+            // acquired item, the shape the vanilla predicates actually use.
+            self.notify_inventory_changed(&item, moved);
+        }
         if !added || !item.is_empty() {
             let _ = self.drop_item(item, false, prediction);
         }
+    }
+
+    /// Fires `inventory_changed` for items that just entered the inventory.
+    ///
+    /// Vanilla `InventoryChangeTrigger#trigger` compares the inventory against
+    /// the predicate's `items`; passing the acquired stack lets
+    /// [`crate::player::advancement::predicate::matches`] decide which
+    /// advancements apply.
+    fn notify_inventory_changed(&self, acquired: &ItemStack, count: i32) {
+        let _ = count;
+        self.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::INVENTORY_CHANGED,
+            &crate::player::advancement::predicate::TriggerContext::item(&acquired.item().key),
+        );
     }
 
     /// Tries to add an item to the player's inventory using an existing lock guard,

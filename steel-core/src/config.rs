@@ -82,20 +82,59 @@ pub struct RuntimeConfig {
     pub favicon: String,
     /// Whether to enforce secure chat.
     pub enforce_secure_chat: bool,
+    /// Whether `defaultgamemode` forces the new mode onto every online player
+    /// (vanilla `force-gamemode`).
+    pub force_gamemode: bool,
     /// Vanilla chat spam threshold window in seconds
     pub chat_spam_threshold_seconds: i32,
     /// Vanilla command spam threshold window in seconds
     pub command_spam_threshold_seconds: i32,
+    /// Vanilla `server.properties` `rate-limit`: the maximum number of inbound
+    /// packets per second one connection may send before it is disconnected.
+    ///
+    /// `0` disables the limit, which is vanilla's default. Steel always keeps a
+    /// slightly higher hard ceiling per connection so an unconfigured server is
+    /// still protected from a single flooding client.
+    pub rate_limit: i32,
     /// The compression settings for the server.
     pub compression: Option<CompressionInfo>,
     /// All settings and configurations for server links.
     pub server_links: Option<ServerLinks>,
+    /// Number of CPU cores this server is allowed to use.
+    ///
+    /// This is the *effective* count: the smaller of the OS affinity mask and
+    /// any cgroup CPU quota (Pterodactyl `--cpus=6`, Docker `--cpus`, a
+    /// Kubernetes `cpu` limit). Pools that are not configured explicitly are
+    /// sized from it, so a container never spawns threads for cores it will
+    /// never be scheduled on.
+    pub cores: usize,
     /// Optional count of persistent inter-tick gameplay packet workers.
     pub packet_workers: Option<usize>,
     /// Optional worker count for the Rayon chunk generation pool.
     pub chunk_generation_threads: Option<usize>,
     /// Optional worker count for the Rayon chunk encoding pool.
     pub chunk_encoding_threads: Option<usize>,
+    /// Remote-console settings; disabled unless a password is configured.
+    pub rcon: RconConfig,
+}
+
+/// Vanilla `server.properties` RCON settings.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RconConfig {
+    /// TCP port the RCON listener binds; unused when `password` is empty.
+    pub port: u16,
+    /// Shared secret every client must authenticate with. Empty disables RCON.
+    pub password: String,
+}
+
+impl Default for RconConfig {
+    /// Vanilla `server.properties` defaults `rcon.port` to 25575.
+    fn default() -> Self {
+        Self {
+            port: 25575,
+            password: String::new(),
+        }
+    }
 }
 
 impl Default for RuntimeConfig {
@@ -117,18 +156,55 @@ impl Default for RuntimeConfig {
             use_favicon: true,
             favicon: "config/favicon.png".to_owned(),
             enforce_secure_chat: false,
+            force_gamemode: false,
             chat_spam_threshold_seconds: DEFAULT_SPAM_THRESHOLD_SECONDS,
             command_spam_threshold_seconds: DEFAULT_SPAM_THRESHOLD_SECONDS,
+            // Vanilla `server.properties` default: `rate-limit=0`, unlimited.
+            rate_limit: 0,
             compression: Some(CompressionInfo::default()),
             server_links: None,
+            cores: 1,
             packet_workers: None,
             chunk_generation_threads: None,
             chunk_encoding_threads: None,
+            rcon: RconConfig::default(),
         }
     }
 }
 
 impl RuntimeConfig {
+    /// Minimum view distance the server accepts from a client.
+    ///
+    /// Vanilla never sends fewer than two chunks, because a one-chunk view
+    /// leaves the client unable to render a full chunk column.
+    pub const MIN_VIEW_DISTANCE: u8 = 2;
+
+    /// Clamps a client-requested view distance to the server's configured range.
+    ///
+    /// This is the single place both the configuration-state handler and the
+    /// play-state client-information handler apply the bound, so the two can
+    /// never disagree about the effective distance.
+    #[must_use]
+    pub const fn clamp_view_distance(&self, requested: u8) -> u8 {
+        // Both bounds are lifted to the floor first: a config that asks for one
+        // chunk still yields a usable distance instead of propagating the value.
+        let requested = if requested < Self::MIN_VIEW_DISTANCE {
+            Self::MIN_VIEW_DISTANCE
+        } else {
+            requested
+        };
+        let ceiling = if self.view_distance < Self::MIN_VIEW_DISTANCE {
+            Self::MIN_VIEW_DISTANCE
+        } else {
+            self.view_distance
+        };
+        if requested > ceiling {
+            ceiling
+        } else {
+            requested
+        }
+    }
+
     /// Builds the `CServerLinks` packet from config, if server links are enabled.
     #[must_use]
     pub fn server_links_packet(&self) -> Option<CServerLinks> {
@@ -1315,5 +1391,22 @@ default = true
             validate_relative_path("region", "storage.config.path"),
             Ok(())
         );
+    }
+
+    #[test]
+    fn view_distance_clamp_lifts_the_floor_on_both_sides() {
+        let mut config = RuntimeConfig::default();
+
+        config.view_distance = 10;
+        assert_eq!(config.clamp_view_distance(0), 2);
+        assert_eq!(config.clamp_view_distance(1), 2);
+        assert_eq!(config.clamp_view_distance(2), 2);
+        assert_eq!(config.clamp_view_distance(7), 7);
+        assert_eq!(config.clamp_view_distance(32), 10);
+
+        // A server configured below vanilla's floor still yields a usable value.
+        config.view_distance = 1;
+        assert_eq!(config.clamp_view_distance(1), 2);
+        assert_eq!(config.clamp_view_distance(8), 2);
     }
 }

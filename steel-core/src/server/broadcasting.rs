@@ -4,6 +4,7 @@ use super::{
     TabListTickStats, TextComponent, Uuid, client_permission_event, command_tree_packet,
     translations,
 };
+use crate::scoreboard::Scoreboard;
 
 impl Server {
     /// Logs and broadcasts a system chat message to online players.
@@ -15,6 +16,58 @@ impl Server {
             }
             true
         });
+    }
+
+    /// Logs and broadcasts a system chat message, honouring a team's
+    /// `death_message_visibility` when the message belongs to a team.
+    ///
+    /// Players on the emitting team see it according to that team's visibility,
+    /// matching vanilla `PlayerTeam.sendMessage`. When `team` is `None` the call
+    /// degrades to a normal broadcast.
+    pub fn broadcast_team_message(
+        &self,
+        message: &TextComponent,
+        team: Option<&str>,
+        excluded_player: Option<Uuid>,
+    ) {
+        log::info!("{}", message.to_plain(&DisplayResolutor));
+
+        let Some(team) = team else {
+            self.broadcast_system_chat(message, excluded_player);
+            return;
+        };
+
+        self.online_players.iter_players(|uuid, player| {
+            if Some(*uuid) == excluded_player {
+                return true;
+            }
+            let world = player.get_world();
+            let can_see = self
+                .scoreboards
+                .get(world.domain())
+                .is_none_or(|scoreboard| {
+                    scoreboard.can_see_team_message(
+                        &crate::scoreboard::ScoreHolder::new(player.scoreboard_name()),
+                        team,
+                    )
+                });
+            if can_see {
+                player.send_packet(CSystemChat::new(message, false, player));
+            }
+            true
+        });
+    }
+
+    /// Returns the objective bound to each display slot of a domain's scoreboard.
+    ///
+    /// Used when a player joins so the sidebar and tab-list numbers appear
+    /// without waiting for the next mutation.
+    #[must_use]
+    pub fn scoreboard_display_slots(&self, domain: &str) -> Vec<(i32, String)> {
+        self.scoreboards
+            .get(domain)
+            .map(Scoreboard::display_slots)
+            .unwrap_or_default()
     }
 
     /// Builds the tab list header/footer with recent and five-second tick statistics.

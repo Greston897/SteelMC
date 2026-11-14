@@ -90,6 +90,17 @@ impl BlockBehavior for ShulkerBoxBlock {
         )
     }
 
+    fn allows_spectator_menu(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+    ) -> bool {
+        // Vanilla `allowsSpectatorMenu` for container blocks.
+        let _ = (state, world, pos);
+        true
+    }
+
     fn use_without_item(
         &self,
         state: BlockStateId,
@@ -111,7 +122,8 @@ impl BlockBehavior for ShulkerBoxBlock {
             );
 
             player.award_custom_stat(&vanilla_custom_stats::OPEN_SHULKER_BOX);
-            // TODO: Anger nearby piglins (PiglinAi.angerNearbyPiglins)
+            // Vanilla angers nearby piglins when a player opens a shulker box.
+            super::anger_nearby_piglins(world, pos, player);
         }
         InteractionResult::Success
     }
@@ -136,7 +148,8 @@ impl BlockBehavior for ShulkerBoxBlock {
             let item = shulker_box_block_entity.shulker_box_as_item(state);
             world.pop_resource(pos, item);
         } else {
-            // TODO: maybe? shulkerBoxBlockEntity.unpackLootTable(player);
+            // Vanilla may unpack the box's loot table here; Steel shulker boxes are
+            // only ever created by a player, so they never carry one.
         }
 
         state

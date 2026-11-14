@@ -64,11 +64,11 @@ fn set_bookshelf_ring(world: &Arc<World>, pos: BlockPos, state: BlockStateId) {
 }
 
 fn sword() -> ItemStack {
-    ItemStack::new(&vanilla_items::DIAMOND_SWORD)
+    ItemStack::new(&*vanilla_items::DIAMOND_SWORD)
 }
 
 fn lapis() -> ItemStack {
-    ItemStack::with_count(&vanilla_items::LAPIS_LAZULI, HIGH_OFFER_LAPIS_COST)
+    ItemStack::with_count(&*vanilla_items::LAPIS_LAZULI, HIGH_OFFER_LAPIS_COST)
 }
 
 /// Puts `stack` in hotbar slot `hotbar_slot` and shift-clicks it into the table.
@@ -129,7 +129,7 @@ fn full_bookshelf_ring_rolls_three_offers_with_clues() {
     let (_world, player, _pos, mut menu) = test_table("enchant_menu_offers", SEED);
     place_in_table(&mut menu, &player, sword(), 0);
 
-    assert!(table_item(&menu).is(&vanilla_items::DIAMOND_SWORD));
+    assert!(table_item(&menu).is(&*vanilla_items::DIAMOND_SWORD));
     let kind = kind(&menu);
     assert!(kind.costs[0] >= 1);
     assert!(
@@ -160,10 +160,10 @@ fn offers_are_identical_for_the_same_seed_and_cleared_for_unenchantable_items() 
     place_in_table(
         &mut stone,
         &player,
-        ItemStack::new(&vanilla_items::STONE),
+        ItemStack::new(&*vanilla_items::STONE),
         2,
     );
-    assert!(table_item(&stone).is(&vanilla_items::STONE));
+    assert!(table_item(&stone).is(&*vanilla_items::STONE));
     assert_eq!(kind(&stone).costs, [0; OFFER_COUNT]);
     assert_eq!(kind(&stone).enchant_clue, [None; OFFER_COUNT]);
     assert_eq!(kind(&stone).level_clue, [None; OFFER_COUNT]);
@@ -204,7 +204,7 @@ fn offers_only_reroll_when_the_table_slots_change() {
     player
         .inventory
         .lock()
-        .set_item(1, ItemStack::new(&vanilla_items::STONE));
+        .set_item(1, ItemStack::new(&*vanilla_items::STONE));
     menu.clicked(
         Click::Pickup {
             slot: HOTBAR_FIRST_MENU_SLOT + 1,
@@ -264,13 +264,13 @@ fn creative_players_skip_lapis_but_still_spend_levels() {
 #[test]
 fn books_become_enchanted_books_with_stored_enchantments() {
     let (_world, player, _pos, mut menu) = test_table("enchant_menu_book", SEED);
-    place_in_table(&mut menu, &player, ItemStack::new(&vanilla_items::BOOK), 0);
+    place_in_table(&mut menu, &player, ItemStack::new(&*vanilla_items::BOOK), 0);
     place_in_table(&mut menu, &player, lapis(), 1);
     player.experience.lock().set_levels(FULL_POWER_LEVELS);
 
     assert!(menu.click_menu_button(HIGH_OFFER_INDEX as i32, &player));
     let result = table_item(&menu);
-    assert!(result.is(&vanilla_items::ENCHANTED_BOOK));
+    assert!(result.is(&*vanilla_items::ENCHANTED_BOOK));
     assert!(
         result
             .get(STORED_ENCHANTMENTS)

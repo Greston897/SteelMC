@@ -200,7 +200,7 @@ impl Entity for LeashFenceKnotEntity {
 
         let holding_shears = {
             let inventory = player.inventory.lock();
-            inventory.get_item_in_hand(hand).is(&vanilla_items::SHEARS)
+            inventory.get_item_in_hand(hand).is(&*vanilla_items::SHEARS)
         };
         if holding_shears {
             let result = self.interact_entity(player, hand, location);
@@ -310,7 +310,7 @@ impl BlockAttachedEntity for LeashFenceKnotEntity {
         // is supposed in drop in Vanilla, the holder is `None`. So, a lead does not drop
         // in `leash_tick`. We can replicate this behavior by dropping it for each entity instead.
         for entity in self.leashables_leashed_to() {
-            entity.spawn_at_location(ItemStack::new(&vanilla_items::LEAD), 0.0);
+            entity.spawn_at_location(ItemStack::new(&*vanilla_items::LEAD), 0.0);
         }
     }
 

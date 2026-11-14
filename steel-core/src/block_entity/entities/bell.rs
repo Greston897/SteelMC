@@ -196,10 +196,16 @@ impl BlockEntity for BellBlockEntity {
         state.shaking = true;
         true
     }
-    // TODO: make bell sleep when not used
     fn tick(&self, world: &Arc<World>) {
         let pos = self.get_block_pos();
         let mut state = self.state.lock();
+
+        // Vanilla keeps a bell asleep until it is rung or still resonating; an
+        // idle bell costs nothing, which is what `BellBlockEntity.shouldTick`
+        // expresses through the block-state ticker.
+        if !state.shaking && !state.resonating {
+            return;
+        }
 
         if state.shaking {
             state.ticks += 1;

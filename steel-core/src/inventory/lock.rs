@@ -12,12 +12,13 @@ use std::mem;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use steel_utils::locks::Shared;
-use steel_utils::{Downcast as _, DowncastType, locks::SyncMutex};
+use steel_utils::{BlockPos, Downcast as _, DowncastType, locks::SyncMutex};
 
 use crate::{
     block_entity::{BlockEntityBase, SharedBlockEntity},
     inventory::container::Container,
     player::{Player, player_inventory::PlayerInventory},
+    world::World,
 };
 use steel_registry::item_stack::ItemStack;
 
@@ -32,7 +33,8 @@ struct ContainerOwner {
 /// Thread-safe reference to an erased container.
 pub type SharedContainer = Shared<dyn Container>;
 
-struct LockedContainer(ArcMutexGuard<RawMutex, dyn Container>);
+/// Guard returned by [`ContainerRef::lock`], dereferencing to the container.
+pub struct LockedContainer(ArcMutexGuard<RawMutex, dyn Container>);
 
 impl Deref for LockedContainer {
     type Target = dyn Container;
@@ -160,6 +162,19 @@ impl ContainerRef {
         self.id
     }
 
+    /// Returns the world that owns this container, when it is backed by a block
+    /// entity. Player inventories and detached containers have no level.
+    #[must_use]
+    pub fn level(&self) -> Option<Arc<World>> {
+        self.owner.as_ref()?.block_entity.level()
+    }
+
+    /// Returns the block position of the owning block entity, if any.
+    #[must_use]
+    pub fn owner_pos(&self) -> Option<BlockPos> {
+        Some(self.owner.as_ref()?.block_entity.pos())
+    }
+
     /// Checks container access without locking its item storage.
     #[must_use]
     pub fn still_valid(&self, player: &Player) -> bool {
@@ -169,7 +184,8 @@ impl ContainerRef {
     }
 
     /// Locks this container and returns a guard.
-    fn lock(&self) -> LockedContainer {
+    #[must_use]
+    pub fn lock(&self) -> LockedContainer {
         LockedContainer(SyncMutex::lock_arc(&self.source))
     }
 }
@@ -566,7 +582,7 @@ mod tests {
         .expect("barrel should expose a container capability");
         let slot = NormalSlot::new(container_ref.clone(), 0);
         let mut guard = ContainerLockGuard::lock_all(&[&container_ref]);
-        slot.set_item(&mut guard, ItemStack::new(&vanilla_items::STONE));
+        slot.set_item(&mut guard, ItemStack::new(&*vanilla_items::STONE));
         drop(guard);
 
         let analog = BLOCK_BEHAVIORS

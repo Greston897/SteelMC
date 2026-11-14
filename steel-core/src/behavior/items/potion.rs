@@ -100,7 +100,7 @@ pub(super) fn potion_use_on(context: &mut UseOnContext) -> InteractionResult {
     context.inv.with_inventory(|inv| {
         inv.apply_filled_result(
             context.hand,
-            ItemStack::new(&vanilla_items::GLASS_BOTTLE),
+            ItemStack::new(&*vanilla_items::GLASS_BOTTLE),
             context.player.has_infinite_materials(),
             true,
         );

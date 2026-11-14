@@ -416,7 +416,7 @@ mod tests {
     fn generated_diamond_sword_has_main_hand_attack_modifiers() {
         init_vanilla_registry();
 
-        let stack = ItemStack::new(&vanilla_items::DIAMOND_SWORD);
+        let stack = ItemStack::new(&*vanilla_items::DIAMOND_SWORD);
         let modifiers = stack
             .get_attribute_modifiers()
             .expect("diamond sword should have attribute modifiers");
@@ -444,7 +444,7 @@ mod tests {
     fn generated_carved_pumpkin_has_hidden_head_modifier() {
         init_vanilla_registry();
 
-        let stack = ItemStack::new(&vanilla_items::CARVED_PUMPKIN);
+        let stack = ItemStack::new(&*vanilla_items::CARVED_PUMPKIN);
         let modifiers = stack
             .get_attribute_modifiers()
             .expect("carved pumpkin should have attribute modifiers");

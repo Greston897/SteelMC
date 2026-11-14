@@ -157,6 +157,58 @@ pub(crate) fn modify_smash_damage_per_fallen_block(
     )
 }
 
+/// Vanilla `EnchantmentHelper.processMobExperience`: the killer's main-hand
+/// `mob_experience` effects scale the dropped experience.
+pub(crate) fn process_mob_experience(
+    item: &ItemStack,
+    context: &EnchantmentDamageContext<'_>,
+    experience: i32,
+) -> i32 {
+    let scaled = apply_value_effects(
+        item,
+        EnchantmentEffectComponent::MobExperience,
+        context,
+        experience as f32,
+    );
+    scaled.max(0.0) as i32
+}
+
+/// Vanilla `EnchantmentHelper.processEquipmentDropChance`: each
+/// `equipment_drops` effect whose requirements match the killing blow's damage
+/// source adjusts the mob's drop chance for that slot.
+pub(crate) fn process_equipment_drop_chance(
+    item: &ItemStack,
+    context: &EnchantmentDamageContext<'_>,
+    chance: f32,
+) -> f32 {
+    if item.is_empty() {
+        return chance;
+    }
+    let Some(enchantments) = item.get_enchantments() else {
+        return chance;
+    };
+
+    let mut value = chance;
+    for (key, level) in enchantments.iter() {
+        if *level == 0 {
+            continue;
+        }
+        let Some(enchantment) = REGISTRY.enchantments.by_key(key) else {
+            continue;
+        };
+        let level = *level as i32;
+        for effect in enchantment.effects.equipment_drops {
+            if !requirements_match(effect.requirements, context) {
+                continue;
+            }
+            if let Some(updated) = effect.effect.process_without_random(level, value) {
+                value = updated;
+            }
+        }
+    }
+    value
+}
+
 pub(crate) fn is_immune_to_damage<V: LivingEntity + ?Sized>(
     victim: &V,
     damage_source: &DamageSource,
@@ -248,6 +300,83 @@ pub(crate) fn do_post_attack_effects_with_item_source(
         EnchantmentTarget::Attacker,
         context,
     );
+}
+
+/// Applies the `attributes` enchantment component of every equipped item to
+/// `attributes`, matching vanilla `EnchantmentHelper.runLocationChangedEffects`.
+///
+/// Each modifier uses the enchantment's declared id, so removing it later only
+/// needs that id. Returns whether any modifier changed.
+pub(crate) fn apply_attribute_effects(
+    attributes: &mut crate::entity::attribute::AttributeMap,
+    slot: EquipmentSlot,
+    item: &ItemStack,
+) -> bool {
+    if item.is_empty() {
+        return false;
+    }
+    let Some(enchantments) = item.get_enchantments() else {
+        return false;
+    };
+    let mut changed = false;
+    for (key, level) in enchantments.iter() {
+        if *level == 0 {
+            continue;
+        }
+        let Some(enchantment) = REGISTRY.enchantments.by_key(key) else {
+            continue;
+        };
+        if !enchantment.matching_slot(slot) {
+            continue;
+        }
+        for effect in enchantment.effects.attributes {
+            let amount = f64::from(effect.amount.calculate(*level as i32));
+            if amount == 0.0 {
+                continue;
+            }
+            changed |= attributes.add_modifier(
+                effect.attribute,
+                crate::entity::attribute::AttributeModifier {
+                    id: effect.id.clone(),
+                    amount,
+                    operation: effect.operation,
+                },
+                false,
+            );
+        }
+    }
+    changed
+}
+
+/// Removes every attribute modifier installed by [`apply_attribute_effects`]
+/// for `item`. Mirrors the removal half of vanilla's location-changed hook.
+pub(crate) fn remove_attribute_effects(
+    attributes: &mut crate::entity::attribute::AttributeMap,
+    slot: EquipmentSlot,
+    item: &ItemStack,
+) -> bool {
+    if item.is_empty() {
+        return false;
+    }
+    let Some(enchantments) = item.get_enchantments() else {
+        return false;
+    };
+    let mut changed = false;
+    for (key, level) in enchantments.iter() {
+        if *level == 0 {
+            continue;
+        }
+        let Some(enchantment) = REGISTRY.enchantments.by_key(key) else {
+            continue;
+        };
+        if !enchantment.matching_slot(slot) {
+            continue;
+        }
+        for effect in enchantment.effects.attributes {
+            changed |= attributes.remove_modifier(effect.attribute, &effect.id);
+        }
+    }
+    changed
 }
 
 fn apply_value_effects(
@@ -1141,7 +1270,7 @@ mod tests {
         init_vanilla_registry();
 
         let stack = enchanted_item(
-            &vanilla_items::DIAMOND_SWORD,
+            &*vanilla_items::DIAMOND_SWORD,
             Identifier::vanilla_static("smite"),
             5,
         );
@@ -1168,7 +1297,7 @@ mod tests {
         init_vanilla_registry();
 
         let stack = enchanted_item(
-            &vanilla_items::MACE,
+            &*vanilla_items::MACE,
             Identifier::vanilla_static("breach"),
             2,
         );
@@ -1190,7 +1319,7 @@ mod tests {
     fn projectile_knockback_checks_direct_attacker_entity_tag() {
         init_vanilla_registry();
 
-        let stack = enchanted_item(&vanilla_items::BOW, Identifier::vanilla_static("punch"), 2);
+        let stack = enchanted_item(&*vanilla_items::BOW, Identifier::vanilla_static("punch"), 2);
         let damage_source = DamageSource::environment(&vanilla_damage_types::ARROW);
         let melee_context = EnchantmentDamageContext::new(
             &vanilla_entities::ZOMBIE,
@@ -1214,7 +1343,7 @@ mod tests {
         init_vanilla_registry();
 
         let stack = enchanted_item(
-            &vanilla_items::DIAMOND_SWORD,
+            &*vanilla_items::DIAMOND_SWORD,
             Identifier::vanilla_static("fire_protection"),
             4,
         );
@@ -1253,7 +1382,7 @@ mod tests {
         victim.equip(
             EquipmentSlot::Feet,
             enchanted_item(
-                &vanilla_items::DIAMOND_BOOTS,
+                &*vanilla_items::DIAMOND_BOOTS,
                 Identifier::vanilla_static("protection"),
                 2,
             ),
@@ -1261,7 +1390,7 @@ mod tests {
         victim.equip(
             EquipmentSlot::Chest,
             enchanted_item(
-                &vanilla_items::DIAMOND_CHESTPLATE,
+                &*vanilla_items::DIAMOND_CHESTPLATE,
                 Identifier::vanilla_static("blast_protection"),
                 3,
             ),
@@ -1279,7 +1408,7 @@ mod tests {
         victim.equip(
             EquipmentSlot::MainHand,
             enchanted_item(
-                &vanilla_items::DIAMOND_BOOTS,
+                &*vanilla_items::DIAMOND_BOOTS,
                 Identifier::vanilla_static("protection"),
                 4,
             ),
@@ -1294,7 +1423,7 @@ mod tests {
         init_vanilla_registry();
 
         let mut broken_chestplate = enchanted_item(
-            &vanilla_items::DIAMOND_CHESTPLATE,
+            &*vanilla_items::DIAMOND_CHESTPLATE,
             Identifier::vanilla_static("protection"),
             4,
         );
@@ -1311,7 +1440,7 @@ mod tests {
         init_vanilla_registry();
 
         let boots = enchanted_item(
-            &vanilla_items::LEATHER_BOOTS,
+            &*vanilla_items::LEATHER_BOOTS,
             Identifier::vanilla_static("frost_walker"),
             1,
         );
@@ -1328,7 +1457,7 @@ mod tests {
         ));
 
         let helmet = enchanted_item(
-            &vanilla_items::LEATHER_HELMET,
+            &*vanilla_items::LEATHER_HELMET,
             Identifier::vanilla_static("frost_walker"),
             1,
         );
@@ -1348,7 +1477,7 @@ mod tests {
         let attacker = Arc::new(TestLivingEntity::new(1, &vanilla_entities::PLAYER));
         let victim = Arc::new(TestLivingEntity::new(2, &vanilla_entities::ZOMBIE));
         let stack = enchanted_item(
-            &vanilla_items::DIAMOND_SWORD,
+            &*vanilla_items::DIAMOND_SWORD,
             Identifier::vanilla_static("fire_aspect"),
             2,
         );
@@ -1375,7 +1504,7 @@ mod tests {
             Weak::new(),
         );
         let mut rocket = enchanted_item(
-            &vanilla_items::FIREWORK_ROCKET,
+            &*vanilla_items::FIREWORK_ROCKET,
             Identifier::vanilla_static("flame"),
             1,
         );
@@ -1392,7 +1521,7 @@ mod tests {
         let attacker = Arc::new(TestLivingEntity::new(1, &vanilla_entities::PLAYER));
         let victim = Arc::new(TestLivingEntity::new(2, &vanilla_entities::ZOMBIE));
         let mut stack = enchanted_item(
-            &vanilla_items::DIAMOND_SWORD,
+            &*vanilla_items::DIAMOND_SWORD,
             Identifier::vanilla_static("fire_aspect"),
             1,
         );
@@ -1429,7 +1558,7 @@ mod tests {
         let attacker = Arc::new(TestLivingEntity::new(1, &vanilla_entities::ZOMBIE));
         let victim = Arc::new(TestLivingEntity::new(2, &vanilla_entities::PLAYER));
         let mut chestplate = enchanted_item(
-            &vanilla_items::DIAMOND_CHESTPLATE,
+            &*vanilla_items::DIAMOND_CHESTPLATE,
             Identifier::vanilla_static("thorns"),
             10,
         );
@@ -1473,7 +1602,7 @@ mod tests {
         let direct_entity = Arc::new(TestLivingEntity::new(2, &vanilla_entities::PLAYER));
         let victim = Arc::new(TestLivingEntity::new(3, &vanilla_entities::ZOMBIE));
         let stack = enchanted_item(
-            &vanilla_items::DIAMOND_SWORD,
+            &*vanilla_items::DIAMOND_SWORD,
             Identifier::vanilla_static("fire_aspect"),
             2,
         );
@@ -1497,7 +1626,7 @@ mod tests {
         let spider = Arc::new(TestLivingEntity::new(2, &vanilla_entities::SPIDER));
         let zombie = Arc::new(TestLivingEntity::new(3, &vanilla_entities::ZOMBIE));
         let stack = enchanted_item(
-            &vanilla_items::DIAMOND_SWORD,
+            &*vanilla_items::DIAMOND_SWORD,
             Identifier::vanilla_static("bane_of_arthropods"),
             1,
         );

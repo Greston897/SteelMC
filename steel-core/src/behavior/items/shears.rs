@@ -4,7 +4,10 @@
 //! vanilla `ShearsItem.useOn`.
 
 use steel_macros::item_behavior;
-use steel_registry::{blocks::block_state_ext::BlockStateExt, sound_events, vanilla_game_events};
+use steel_registry::{
+    blocks::block_state_ext::BlockStateExt, sound_events, vanilla_criteria_triggers,
+    vanilla_game_events,
+};
 use steel_utils::{BlockPos, BlockStateId, types::UpdateFlags};
 
 use crate::behavior::blocks::vegetation::GrowingPlantHeadBehavior;
@@ -48,7 +51,11 @@ impl ItemBehavior for ShearsItem {
             return InteractionResult::Pass;
         }
 
-        // TODO: Trigger ITEM_USED_ON_BLOCK once advancement criteria dispatch is implemented.
+        // Vanilla `ShearsItem.useOnBlock` runs the `item_used_on_block` trigger
+        // after a successful interaction.
+        context
+            .player
+            .trigger_advancement(&vanilla_criteria_triggers::ITEM_USED_ON_BLOCK);
         context.world.play_block_sound(
             &sound_events::BLOCK_GROWING_PLANT_CROP,
             pos,
@@ -200,7 +207,7 @@ mod tests {
         let player = TestPlayerBuilder::new(Arc::clone(world), "ShearsTester", 1).build();
         player.inventory.lock().set_item_in_hand(
             InteractionHand::MainHand,
-            ItemStack::new(&vanilla_items::SHEARS),
+            ItemStack::new(&*vanilla_items::SHEARS),
         );
 
         let packets = Arc::new(SyncMutex::new(Vec::new()));

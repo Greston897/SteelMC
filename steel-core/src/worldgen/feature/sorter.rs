@@ -244,6 +244,10 @@ impl FeatureStepData {
             .copied()
     }
 
+    pub(super) fn len(&self) -> usize {
+        self.features.len()
+    }
+
     pub(super) fn feature(&self, index: usize) -> Option<PlacedFeatureEntryRef> {
         self.features.get(index).copied()
     }

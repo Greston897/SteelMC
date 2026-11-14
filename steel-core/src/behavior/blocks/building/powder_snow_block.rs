@@ -63,7 +63,7 @@ impl PowderSnowBlock {
         };
         let mut has_leather_boots = false;
         living.with_equipment_slot(EquipmentSlot::Feet, &mut |item_stack| {
-            has_leather_boots = item_stack.is(&vanilla_items::LEATHER_BOOTS);
+            has_leather_boots = item_stack.is(&*vanilla_items::LEATHER_BOOTS);
         });
         has_leather_boots
     }
@@ -108,7 +108,7 @@ impl BlockBehavior for PowderSnowBlock {
         world.destroy_block_effect(pos, u32::from(state.0), None);
 
         Some(PickupResult {
-            filled_bucket: ItemStack::new(&vanilla_items::POWDER_SNOW_BUCKET),
+            filled_bucket: ItemStack::new(&*vanilla_items::POWDER_SNOW_BUCKET),
             sound: Some(&sound_events::ITEM_BUCKET_FILL_POWDER_SNOW),
         })
     }

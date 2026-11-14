@@ -1,10 +1,12 @@
-use crate::player::player_inventory::Prediction;
 use std::sync::Arc;
 
 use steel_registry::item_stack::ItemStack;
-use steel_utils::locks::Shared;
+use steel_utils::Identifier;
+use steel_utils::locks::{Shared, SyncMutex};
 
 use crate::inventory::container::{CraftingContainer, ResultContainer};
+use crate::player::Player;
+use crate::player::player_inventory::Prediction;
 use crate::{
     inventory::{
         container::Container,
@@ -12,20 +14,26 @@ use crate::{
         recipe_manager,
         slots::result_handler::ResultHandler,
     },
-    player::Player,
 };
 
 /// A Recipe Handler for Crafting Recipes
+///
+/// Cloning shares the same containers and the same remembered recipe: the
+/// player's 2x2 grid and the crafting table's 3x3 grid each hold one handler,
+/// and every menu that displays a grid clones it.
 #[derive(Clone)]
 pub struct CraftingHandler {
     crafting_container: Shared<CraftingContainer>,
     result_container: Shared<ResultContainer>,
     grid_size: usize,
+    /// The recipe currently shown in the result slot, retained so the limited
+    /// crafting rule can re-check the same recipe on every grid change.
+    last_recipe: Arc<SyncMutex<Option<Identifier>>>,
 }
 
 impl CraftingHandler {
     /// Creates a new Crafting Recipe Handler
-    pub const fn new(
+    pub fn new(
         crafting_container: Shared<CraftingContainer>,
         result_container: Shared<ResultContainer>,
         grid_size: usize,
@@ -34,6 +42,7 @@ impl CraftingHandler {
             crafting_container,
             result_container,
             grid_size,
+            last_recipe: Arc::new(SyncMutex::new(None)),
         }
     }
 
@@ -54,6 +63,28 @@ impl CraftingHandler {
     pub fn result_id(&self) -> ContainerId {
         ContainerId::from_arc(&self.result_container)
     }
+
+    /// Vanilla `ResultSlot.checkTakeAchievements` recipe-unlock half.
+    ///
+    /// Every recipe that matches the current grid and that the player does not
+    /// know yet is added to the recipe book. Returns how many were unlocked.
+    fn unlock_new_recipes(&self, player: &Player) -> usize {
+        let grid = self.crafting_container.lock();
+        let mut unlocked = 0;
+        let mut book = player.recipe_book.lock();
+        for recipe in recipe_manager::matching_recipes_for(&grid) {
+            if book.add(recipe.key()).is_some() {
+                unlocked += 1;
+            }
+        }
+        unlocked
+    }
+
+    /// Returns the key of the recipe the current grid produces, if any.
+    fn crafted_recipe(&self, guard: &ContainerLockGuard) -> Option<steel_utils::Identifier> {
+        let crafting = guard.get_typed::<CraftingContainer>(self.crafting_id())?;
+        recipe_manager::find_recipe(crafting).map(|recipe| recipe.key().clone())
+    }
 }
 
 impl ResultHandler for CraftingHandler {
@@ -65,11 +96,18 @@ impl ResultHandler for CraftingHandler {
         vec![ContainerRef::from(Arc::clone(&self.crafting_container))]
     }
 
+
     fn update_result(&self, guard: &mut ContainerLockGuard) {
-        // TODO: Enforce limited crafting and retain the recipe once player recipe books exist.
         let crafting = guard
             .get_typed::<CraftingContainer>(self.crafting_id())
             .expect("crafting container not locked");
+
+        let recipe = recipe_manager::find_recipe(crafting);
+        // Vanilla `CraftingMenu.slotChangedCraftingGrid` keeps the previous recipe
+        // in `lastRecipe` and clears the result when the new one is blocked by the
+        // server's limited-crafting rule.
+        let recipe_key = recipe.as_ref().map(|recipe| recipe.key().clone());
+        *self.last_recipe.lock() = recipe_key;
 
         let result_stack =
             recipe_manager::assemble_for_container(crafting).unwrap_or_else(ItemStack::empty);
@@ -86,7 +124,10 @@ impl ResultHandler for CraftingHandler {
         guard: &mut ContainerLockGuard,
         player: &Player,
     ) -> Option<ItemStack> {
-        // TODO: Unlock the recipe and trigger RECIPE_CRAFTED once their foundations exist.
+        // Vanilla `ResultSlot.checkTakeAchievements`: unlock every recipe the player
+        // can now craft, then fire `recipe_crafted` for the crafted result.
+        let unlocked = self.unlock_new_recipes(player);
+        let crafted_recipe = self.crafted_recipe(guard);
         let mut remainder_overflow: Vec<ItemStack> = Vec::new();
 
         let remainders_and_positioned = {
@@ -150,6 +191,13 @@ impl ResultHandler for CraftingHandler {
 
         self.update_result(guard);
 
+        // Vanilla fires the triggers after the grid was consumed, so a failed craft
+        // never unlocks anything.
+        let _ = unlocked;
+        if let Some(recipe) = crafted_recipe {
+            player.trigger_recipe_crafted(&recipe);
+        }
+
         for remainder in remainder_overflow {
             player.add_item_or_drop_with_guard(guard, remainder, Prediction::Predicted);
         }
@@ -157,12 +205,24 @@ impl ResultHandler for CraftingHandler {
         None
     }
 
-    fn is_result_valid(&self, guard: &ContainerLockGuard, _player: &Player) -> bool {
+    fn is_result_valid(&self, guard: &ContainerLockGuard, player: &Player) -> bool {
         let Some(result) = guard.get(self.result_id()) else {
             return false;
         };
         let result_item = result.get_item(0);
         if result_item.is_empty() {
+            return false;
+        }
+
+        // Vanilla `CraftingMenu.slotChangedCraftingGrid`: with the
+        // `limited_crafting` game rule on, a player who has not unlocked the
+        // recipe in their recipe book cannot take the result.
+        if player
+            .get_world()
+            .get_game_rule(&steel_registry::vanilla_game_rules::LIMITED_CRAFTING)
+            && let Some(key) = self.last_recipe.lock().clone()
+            && !player.recipe_book.lock().contains(&key)
+        {
             return false;
         }
 

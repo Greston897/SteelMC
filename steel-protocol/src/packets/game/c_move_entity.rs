@@ -28,7 +28,7 @@ const MIN_DELTA: i64 = i16::MIN as i64;
 ///
 /// The client replays each step in order, `ticks` apart, to interpolate sub-tick
 /// movement instead of sliding straight to the end position.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, WriteTo)]
 pub struct DeltaStep {
     /// Delta X from the previous step.
     pub dx: PackedEntityDelta,

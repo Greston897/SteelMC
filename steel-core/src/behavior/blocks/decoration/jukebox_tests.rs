@@ -286,7 +286,7 @@ fn insertion_consumption_ejection_and_no_duplication_match_vanilla() {
 
     player.inventory.lock().set_item_in_hand(
         InteractionHand::MainHand,
-        ItemStack::new(&vanilla_items::STONE),
+        ItemStack::new(&*vanilla_items::STONE),
     );
     let empty_state = world.get_block_state(pos);
     assert_eq!(
@@ -319,7 +319,7 @@ fn insertion_consumption_ejection_and_no_duplication_match_vanilla() {
         InteractionResult::Pass,
     );
 
-    let cat = ItemStack::new(&vanilla_items::MUSIC_DISC_CAT);
+    let cat = ItemStack::new(&*vanilla_items::MUSIC_DISC_CAT);
     let cat_output = song_comparator(&cat);
     player
         .inventory
@@ -351,7 +351,7 @@ fn insertion_consumption_ejection_and_no_duplication_match_vanilla() {
     let Some(record) = stored_record(jukebox) else {
         panic!("inserted record should be stored");
     };
-    assert!(record.is(&vanilla_items::MUSIC_DISC_CAT));
+    assert!(record.is(&*vanilla_items::MUSIC_DISC_CAT));
     assert_eq!(record.count(), 1);
     assert!(jukebox.is_record_playing());
     assert_eq!(
@@ -394,7 +394,7 @@ fn insertion_consumption_ejection_and_no_duplication_match_vanilla() {
     let Some(item_entity) = dropped[0].downcast_ref::<ItemEntity>() else {
         panic!("ejected record should be an item entity");
     };
-    assert!(item_entity.get_item().is(&vanilla_items::MUSIC_DISC_CAT));
+    assert!(item_entity.get_item().is(&*vanilla_items::MUSIC_DISC_CAT));
     assert_eq!(
         item_entity.get_pickup_delay(),
         DEFAULT_ITEM_PICKUP_DELAY_TICKS
@@ -424,7 +424,7 @@ fn insertion_consumption_ejection_and_no_duplication_match_vanilla() {
     assert_eq!(dropped_items(world, pos).len(), 1);
 
     player.restore_game_modes(GameType::Creative, Some(GameType::Survival));
-    let pigstep = ItemStack::new(&vanilla_items::MUSIC_DISC_PIGSTEP);
+    let pigstep = ItemStack::new(&*vanilla_items::MUSIC_DISC_PIGSTEP);
     let pigstep_output = song_comparator(&pigstep);
     assert_ne!(cat_output, pigstep_output);
     player
@@ -454,7 +454,7 @@ fn insertion_consumption_ejection_and_no_duplication_match_vanilla() {
     let Some(record) = stored_record(jukebox) else {
         panic!("creative insertion should store one record");
     };
-    assert!(record.is(&vanilla_items::MUSIC_DISC_PIGSTEP));
+    assert!(record.is(&*vanilla_items::MUSIC_DISC_PIGSTEP));
     assert_eq!(record.count(), 1);
     assert_eq!(
         behavior.get_analog_output_signal(
@@ -473,7 +473,7 @@ fn stackable_component_backed_record_consumes_one_item() {
     let world = &world_fixture.world;
     let player = test_player(world, 2);
     let mut access = InventoryAccess::new(Arc::clone(&player.inventory), InteractionHand::MainHand);
-    let mut stacked_record = ItemStack::with_count(&vanilla_items::STONE, 2);
+    let mut stacked_record = ItemStack::with_count(&*vanilla_items::STONE, 2);
     stacked_record.set(
         JUKEBOX_PLAYABLE,
         JukeboxPlayable::new(&vanilla_jukebox_songs::CAT),
@@ -510,7 +510,7 @@ fn stackable_component_backed_record_consumes_one_item() {
     let Some(stored) = stored_record(jukebox) else {
         panic!("component-backed record should be stored");
     };
-    assert!(stored.is(&vanilla_items::STONE));
+    assert!(stored.is(&*vanilla_items::STONE));
     assert_eq!(stored.count(), 1);
     assert!(jukebox.is_record_playing());
     assert_eq!(jukebox.analog_output_signal(), song_comparator(&stored));
@@ -528,7 +528,7 @@ fn level_events_periodic_game_events_and_duration_completion_match_song_data() {
     });
     world.register_game_event_listener(SectionPos::from_block_pos(pos), listener);
 
-    let record = ItemStack::new(&vanilla_items::MUSIC_DISC_11);
+    let record = ItemStack::new(&*vanilla_items::MUSIC_DISC_11);
     let expected_output = song_comparator(&record);
     let Some(playable) = record.get(JUKEBOX_PLAYABLE) else {
         panic!("test record should have a song");
@@ -586,7 +586,7 @@ fn level_events_periodic_game_events_and_duration_completion_match_song_data() {
     let Some(stored) = stored_record(jukebox) else {
         panic!("completed song should retain its record");
     };
-    assert!(stored.is(&vanilla_items::MUSIC_DISC_11));
+    assert!(stored.is(&*vanilla_items::MUSIC_DISC_11));
     assert_eq!(
         behavior.get_analog_output_signal(
             world.get_block_state(pos),
@@ -628,7 +628,7 @@ fn placement_data_and_nonzero_persistence_resume_without_restarting_audio() {
     ));
     let (_observer, packets) = recording_player(world, pos);
 
-    let record = ItemStack::new(&vanilla_items::MUSIC_DISC_CAT);
+    let record = ItemStack::new(&*vanilla_items::MUSIC_DISC_CAT);
     let mut payload = NbtCompound::new();
     payload.insert("RecordItem", record.to_nbt_tag_ref());
     // Vanilla's ValueInput coerces every numeric NBT tag for `getLong`.
@@ -636,7 +636,7 @@ fn placement_data_and_nonzero_persistence_resume_without_restarting_audio() {
     let Some(custom_data) = CustomData::try_from_compound(payload) else {
         panic!("placement payload should be valid custom data");
     };
-    let mut placing_stack = ItemStack::new(&vanilla_items::JUKEBOX);
+    let mut placing_stack = ItemStack::new(&*vanilla_items::JUKEBOX);
     placing_stack.set(
         BLOCK_ENTITY_DATA,
         BlockEntityData::new(&vanilla_block_entity_types::JUKEBOX, custom_data),
@@ -681,7 +681,7 @@ fn placement_data_and_nonzero_persistence_resume_without_restarting_audio() {
     let Some(stored) = stored_record(jukebox) else {
         panic!("placement payload should preload the record");
     };
-    assert!(stored.is(&vanilla_items::MUSIC_DISC_CAT));
+    assert!(stored.is(&*vanilla_items::MUSIC_DISC_CAT));
     assert!(
         !level_events(&packets)
             .iter()
@@ -716,7 +716,7 @@ fn placement_data_and_nonzero_persistence_resume_without_restarting_audio() {
     let Some(stored) = stored_record(&resumed) else {
         panic!("resumed jukebox should retain the record");
     };
-    assert!(stored.is(&vanilla_items::MUSIC_DISC_CAT));
+    assert!(stored.is(&*vanilla_items::MUSIC_DISC_CAT));
 }
 
 #[test]
@@ -728,7 +728,7 @@ fn breaking_a_playing_jukebox_drops_one_record_and_runs_vanilla_cleanup() {
     let Some(jukebox) = block_entity.downcast_ref::<JukeboxBlockEntity>() else {
         panic!("jukebox should retain its concrete entity");
     };
-    jukebox.set_the_item(ItemStack::new(&vanilla_items::MUSIC_DISC_CAT));
+    jukebox.set_the_item(ItemStack::new(&*vanilla_items::MUSIC_DISC_CAT));
     packets.lock().clear();
 
     assert!(world.set_block(
@@ -743,7 +743,7 @@ fn breaking_a_playing_jukebox_drops_one_record_and_runs_vanilla_cleanup() {
     let Some(item_entity) = dropped[0].downcast_ref::<ItemEntity>() else {
         panic!("broken jukebox record should be an item entity");
     };
-    assert!(item_entity.get_item().is(&vanilla_items::MUSIC_DISC_CAT));
+    assert!(item_entity.get_item().is(&*vanilla_items::MUSIC_DISC_CAT));
     assert_eq!(
         level_events(&packets)
             .iter()

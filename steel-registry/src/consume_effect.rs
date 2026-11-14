@@ -413,30 +413,40 @@ impl ConsumeEffectCodec for ClearAllStatusEffectsConsumeEffect {
 #[derive(Debug, Clone, Copy)]
 pub struct TeleportRandomlyConsumeEffect {
     diameter: f32,
+    directional_particles: bool,
 }
 
 impl TeleportRandomlyConsumeEffect {
     pub const DEFAULT_DIAMETER: f32 = 16.0;
+    /// Vanilla 26.3 defaults `directional_particles` to `true`.
+    pub const DEFAULT_DIRECTIONAL_PARTICLES: bool = true;
 
-    pub fn new(diameter: f32) -> Result<Self> {
+    pub fn new(diameter: f32, directional_particles: bool) -> Result<Self> {
         if !is_positive_float(diameter) {
             return Err(Error::other("Random teleport diameter must be positive"));
         }
-        Ok(Self { diameter })
+        Ok(Self {
+            diameter,
+            directional_particles,
+        })
     }
 
-    pub(crate) const fn from_extracted(diameter: f32) -> Self {
+    pub(crate) const fn from_extracted(diameter: f32, directional_particles: bool) -> Self {
         assert!(
             is_positive_float(diameter),
             "extracted random teleport diameter must be positive"
         );
-        Self { diameter }
+        Self {
+            diameter,
+            directional_particles,
+        }
     }
 
     #[must_use]
     pub const fn default_value() -> Self {
         Self {
             diameter: Self::DEFAULT_DIAMETER,
+            directional_particles: Self::DEFAULT_DIRECTIONAL_PARTICLES,
         }
     }
 
@@ -444,11 +454,19 @@ impl TeleportRandomlyConsumeEffect {
     pub const fn diameter(self) -> f32 {
         self.diameter
     }
+
+    /// Vanilla 26.3 `directional_particles`: whether the teleport trail is
+    /// rendered along the teleport direction.
+    #[must_use]
+    pub const fn directional_particles(self) -> bool {
+        self.directional_particles
+    }
 }
 
 impl PartialEq for TeleportRandomlyConsumeEffect {
     fn eq(&self, other: &Self) -> bool {
         float_equals(self.diameter, other.diameter)
+            && self.directional_particles == other.directional_particles
     }
 }
 
@@ -460,10 +478,13 @@ unsafe impl DowncastType for TeleportRandomlyConsumeEffect {
 
 impl ConsumeEffectCodec for TeleportRandomlyConsumeEffect {
     fn read_fields(compound: &NbtCompound) -> Option<Self> {
-        Self::new(optional_f32(
-            compound.get("diameter"),
-            Self::DEFAULT_DIAMETER,
-        )?)
+        Self::new(
+            optional_f32(compound.get("diameter"), Self::DEFAULT_DIAMETER)?,
+            optional_bool(
+                compound.get("directional_particles"),
+                Self::DEFAULT_DIRECTIONAL_PARTICLES,
+            )?,
+        )
         .ok()
     }
 
@@ -471,19 +492,26 @@ impl ConsumeEffectCodec for TeleportRandomlyConsumeEffect {
         if !float_equals(self.diameter, Self::DEFAULT_DIAMETER) {
             compound.insert("diameter", self.diameter);
         }
+        if self.directional_particles != Self::DEFAULT_DIRECTIONAL_PARTICLES {
+            compound.insert("directional_particles", self.directional_particles);
+        }
     }
 
     fn read_network(data: &mut Cursor<&[u8]>) -> Result<Self> {
-        Self::new(f32::read(data)?)
+        Self::new(f32::read(data)?, bool::read(data)?)
     }
 
     fn write_network(&self, writer: &mut Vec<u8>) -> Result<()> {
-        self.diameter.write(writer)
+        self.diameter.write(writer)?;
+        self.directional_particles.write(writer)
     }
 
     fn hash_fields(&self, entries: &mut Vec<HashEntry>) {
         if !float_equals(self.diameter, Self::DEFAULT_DIAMETER) {
             push_hash_entry(entries, "diameter", &self.diameter);
+        }
+        if self.directional_particles != Self::DEFAULT_DIRECTIONAL_PARTICLES {
+            push_hash_entry(entries, "directional_particles", &self.directional_particles);
         }
     }
 }
@@ -639,6 +667,13 @@ const fn is_float_in_unit_range(value: f32) -> bool {
 fn optional_f32(tag: Option<&NbtTag>, default: f32) -> Option<f32> {
     match tag {
         Some(tag) => tag.codec_f32(),
+        None => Some(default),
+    }
+}
+
+fn optional_bool(tag: Option<&NbtTag>, default: bool) -> Option<bool> {
+    match tag {
+        Some(tag) => tag.codec_bool(),
         None => Some(default),
     }
 }

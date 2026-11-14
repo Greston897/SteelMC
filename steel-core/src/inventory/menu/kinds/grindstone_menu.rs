@@ -235,7 +235,7 @@ impl GrindstoneKind {
         }
 
         item.set(REPAIR_COST, repair_cost);
-        if item.is(&vanilla_items::ENCHANTED_BOOK) {
+        if item.is(&*vanilla_items::ENCHANTED_BOOK) {
             if new_enchantments.is_empty() {
                 // Clear before transmuting: BOOK has no default to sanitize against.
                 item.set(STORED_ENCHANTMENTS, new_enchantments);

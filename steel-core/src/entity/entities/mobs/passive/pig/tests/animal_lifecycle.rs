@@ -69,8 +69,8 @@ fn pig_uses_mob_passenger_as_controller_when_not_player_controlled() {
 fn pig_uses_vanilla_pig_food_tag() {
     init_vanilla_registry();
 
-    assert!(PigEntity::is_food(&ItemStack::new(&vanilla_items::CARROT)));
-    assert!(!PigEntity::is_food(&ItemStack::new(&vanilla_items::STONE)));
+    assert!(PigEntity::is_food(&ItemStack::new(&*vanilla_items::CARROT)));
+    assert!(!PigEntity::is_food(&ItemStack::new(&*vanilla_items::STONE)));
 }
 
 #[test]

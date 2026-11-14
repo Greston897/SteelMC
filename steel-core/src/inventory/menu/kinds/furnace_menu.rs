@@ -228,8 +228,8 @@ mod tests {
         init_vanilla_registry();
 
         for (kind, item) in [
-            (FurnaceKind::Furnace, &vanilla_items::FURNACE),
-            (FurnaceKind::Smoker, &vanilla_items::RAW_IRON),
+            (FurnaceKind::Furnace, &*vanilla_items::FURNACE),
+            (FurnaceKind::Smoker, &*vanilla_items::RAW_IRON),
         ] {
             let stack = ItemStack::new(item);
             assert!(

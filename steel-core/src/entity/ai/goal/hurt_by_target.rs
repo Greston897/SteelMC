@@ -85,8 +85,14 @@ impl HurtByTargetGoal {
                 return false;
             };
 
-            //TODO tamable animal owner check is required here
-            other.target().is_none() && !other.is_allied_to(hurt_by_mob.as_ref())
+            // Vanilla `HurtByTargetGoal.canAttack`: a tamed animal never turns
+            // on its own owner.
+            let owned_by_attacker = hurt_by_mob
+                .as_living_entity()
+                .is_some_and(|attacker| other.is_tame_owned_by(attacker));
+            !owned_by_attacker
+                && other.target().is_none()
+                && !other.is_allied_to(hurt_by_mob.as_ref())
         }) {
             if let Some(other) = entity.as_mob() {
                 let _ = other.set_target(Some(hurt_by_mob));

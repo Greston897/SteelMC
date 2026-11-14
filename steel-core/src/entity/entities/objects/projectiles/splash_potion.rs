@@ -185,7 +185,7 @@ impl ThrowableProjectile for SplashPotionEntity {}
 
 impl ThrowableItemProjectile for SplashPotionEntity {
     fn get_default_item(&self) -> ItemRef {
-        &vanilla_items::SPLASH_POTION
+        &*vanilla_items::SPLASH_POTION
     }
 
     fn set_item(&self, item: ItemStack) {

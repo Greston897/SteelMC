@@ -32,7 +32,7 @@ impl FluidBehavior for WaterFluid {
     }
 
     fn bucket(&self) -> ItemRef {
-        &vanilla_items::WATER_BUCKET
+        &*vanilla_items::WATER_BUCKET
     }
 
     fn fluid_type(&self) -> FluidRef {

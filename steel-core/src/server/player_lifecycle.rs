@@ -261,6 +261,22 @@ impl Server {
         }
     }
 
+    /// Applies vanilla `force-gamemode` on join and respawn.
+    ///
+    /// `MinecraftServer.getForcedGameType` returns the level's default game type
+    /// when the option is enabled (spectator in hardcore worlds), and
+    /// `PlayerList.placeNewPlayer`/`respawn` assign it after the saved game type
+    /// has been restored. Dimension changes deliberately keep the current mode.
+    pub(crate) fn apply_forced_game_mode(player: &Arc<Player>, world: &Arc<World>) {
+        let Some(server) = world.server() else {
+            return;
+        };
+        if !server.config.force_gamemode {
+            return;
+        }
+        player.set_game_mode(world.default_gamemode());
+    }
+
     pub(super) fn prepare_domain_restores(
         &self,
         player: &Player,

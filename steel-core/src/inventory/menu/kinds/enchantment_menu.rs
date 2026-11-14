@@ -5,7 +5,8 @@ use std::sync::Arc;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::{
     REGISTRY, RegistryEntry, TaggedRegistryExt, item_stack::ItemStack, sound_events,
-    vanilla_blocks, vanilla_custom_stats, vanilla_enchantment_tags::EnchantmentTag, vanilla_items,
+    vanilla_blocks, vanilla_criteria_triggers, vanilla_custom_stats,
+    vanilla_enchantment_tags::EnchantmentTag, vanilla_items,
     vanilla_menu_types,
 };
 use steel_utils::random::Random as _;
@@ -53,7 +54,7 @@ pub fn enchantment(
     let lapis = builder.section_at(
         enchant_slots_ref,
         [LAPIS_SLOT],
-        SectionKind::restricted(|_, stack| stack.is(&vanilla_items::LAPIS_LAZULI)),
+        SectionKind::restricted(|_, stack| stack.is(&*vanilla_items::LAPIS_LAZULI)),
     );
     let player_slots = builder.player_inventory(&inventory);
 
@@ -184,7 +185,7 @@ impl EnchantmentKind {
                 .enchantments
                 .iter_tag(&EnchantmentTag::IN_ENCHANTING_TABLE),
         );
-        if stack.is(&vanilla_items::BOOK) && list.len() > 1 {
+        if stack.is(&*vanilla_items::BOOK) && list.len() > 1 {
             let removed = random.next_i32_bounded(list.len() as i32) as usize;
             list.remove(removed);
         }
@@ -314,9 +315,9 @@ impl MenuKind for EnchantmentKind {
 
         // Unlike vanilla transmuteCopy, sanitizing only drops patches equal to the new
         // prototype's defaults. Custom patches can therefore survive the conversion.
-        let mut enchanted = if stack.is(&vanilla_items::BOOK) {
+        let mut enchanted = if stack.is(&*vanilla_items::BOOK) {
             ItemStack::with_count_and_patch(
-                &vanilla_items::ENCHANTED_BOOK,
+                &*vanilla_items::ENCHANTED_BOOK,
                 stack.count(),
                 stack.components_patch().clone(),
             )
@@ -336,7 +337,9 @@ impl MenuKind for EnchantmentKind {
         container.set_changed();
 
         player.award_custom_stat(&vanilla_custom_stats::ENCHANT_ITEM);
-        // TODO: Trigger CriteriaTriggers.ENCHANTED_ITEM once Steel has shared advancement foundations.
+        // Vanilla `EnchantmentMenu.clickMenuButton` fires `enchanted_item` for the
+        // player who paid for the enchantment.
+        player.trigger_advancement(&vanilla_criteria_triggers::ENCHANTED_ITEM);
 
         self.update_offers(behavior, &mut guard);
         drop(guard);
@@ -379,7 +382,7 @@ impl MenuKind for EnchantmentKind {
                 self.player_slots.all().end(),
                 FillDirection::Backward,
             )
-        } else if clicked.is(&vanilla_items::LAPIS_LAZULI) {
+        } else if clicked.is(&*vanilla_items::LAPIS_LAZULI) {
             behavior.move_item_stack_to(
                 guard,
                 slot_index,

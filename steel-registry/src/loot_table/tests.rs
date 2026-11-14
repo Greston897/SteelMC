@@ -34,7 +34,7 @@ fn set_instrument_selects_from_the_configured_holder_set() {
     init_test_registries();
     let mut rng = test_rng();
     let mut ctx = LootContext::new(&mut rng);
-    let mut goat_horn = ItemStack::new(&vanilla_items::GOAT_HORN);
+    let mut goat_horn = ItemStack::new(&*vanilla_items::GOAT_HORN);
     let function = LootFunction::SetInstrument {
         options: InstrumentOptions::Tag(InstrumentTag::REGULAR_GOAT_HORNS),
     };
@@ -110,6 +110,8 @@ fn test_pig_loot_drops_raw_porkchop_when_not_on_fire() {
         sheep_color: None,
         sheep_sheared: None,
         chicken_variant: None,
+        holder_name: None,
+        profile: None,
     };
 
     let mut ctx = LootContext::new(&mut rng).with_this_entity(pig);
@@ -216,6 +218,8 @@ fn chicken_lay_drops_the_egg_matching_the_chicken_variant() {
             sheep_color: None,
             sheep_sheared: None,
             chicken_variant: Some(variant),
+            holder_name: None,
+            profile: None,
         };
 
         let mut ctx = LootContext::new(&mut rng).with_this_entity(chicken);
@@ -247,6 +251,8 @@ fn sheared_predicate_rejects_non_sheep_entities() {
         sheep_color: None,
         sheep_sheared: None,
         chicken_variant: None,
+        holder_name: None,
+        profile: None,
     };
     let mut ctx = LootContext::new(&mut rng).with_this_entity(pig);
 
@@ -283,6 +289,8 @@ fn test_pig_loot_smelt_condition_uses_entity_fire_flag() {
         sheep_color: None,
         sheep_sheared: None,
         chicken_variant: None,
+        holder_name: None,
+        profile: None,
     };
 
     let mut ctx = LootContext::new(&mut rng).with_this_entity(pig);
@@ -322,6 +330,8 @@ fn living_entity_ref<'a>(
         sheep_color: None,
         sheep_sheared: None,
         chicken_variant: None,
+        holder_name: None,
+        profile: None,
     }
 }
 
@@ -343,9 +353,9 @@ fn roll_killed_by_player(
             let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
             let mut ctx = LootContext::new(&mut rng)
                 .with_killed_by_player(true)
-                .with_this_entity(victim)
-                .with_killer_entity(player)
-                .with_direct_killer_entity(player);
+                .with_this_entity(victim.clone())
+                .with_killer_entity(player.clone())
+                .with_direct_killer_entity(player.clone());
             table.get_random_items(&mut ctx)
         })
         .collect()
@@ -365,7 +375,7 @@ fn roll_pig_killed_by_player(
 
 #[test]
 fn pig_loot_smelts_when_direct_attacker_holds_fire_aspect() {
-    let sword = enchanted_item(&vanilla_items::DIAMOND_SWORD, "fire_aspect", 1);
+    let sword = enchanted_item(&*vanilla_items::DIAMOND_SWORD, "fire_aspect", 1);
     let items = roll_pig_killed_by_player(&equipment_with(EquipmentSlot::MainHand, sword), 1);
 
     assert_eq!(items.len(), 1);
@@ -377,7 +387,7 @@ fn pig_loot_smelts_when_direct_attacker_holds_fire_aspect() {
 
 #[test]
 fn pig_loot_stays_raw_when_direct_attacker_holds_plain_sword() {
-    let sword = ItemStack::new(&vanilla_items::DIAMOND_SWORD);
+    let sword = ItemStack::new(&*vanilla_items::DIAMOND_SWORD);
     let items = roll_pig_killed_by_player(&equipment_with(EquipmentSlot::MainHand, sword), 1);
 
     assert_eq!(items.len(), 1);
@@ -386,7 +396,7 @@ fn pig_loot_stays_raw_when_direct_attacker_holds_plain_sword() {
 
 #[test]
 fn pig_loot_count_uses_attacker_looting_level() {
-    let sword = enchanted_item(&vanilla_items::DIAMOND_SWORD, "looting", 3);
+    let sword = enchanted_item(&*vanilla_items::DIAMOND_SWORD, "looting", 3);
     let items = roll_pig_killed_by_player(&equipment_with(EquipmentSlot::MainHand, sword), 200);
 
     assert!(items.iter().all(|item| (1..=6).contains(&item.count)));
@@ -395,7 +405,7 @@ fn pig_loot_count_uses_attacker_looting_level() {
 
 #[test]
 fn pig_loot_ignores_looting_outside_its_enchantment_slots() {
-    let helmet = enchanted_item(&vanilla_items::DIAMOND_HELMET, "looting", 3);
+    let helmet = enchanted_item(&*vanilla_items::DIAMOND_HELMET, "looting", 3);
     let items = roll_pig_killed_by_player(&equipment_with(EquipmentSlot::Head, helmet), 200);
 
     assert!(items.iter().all(|item| (1..=3).contains(&item.count)));
@@ -403,7 +413,7 @@ fn pig_loot_ignores_looting_outside_its_enchantment_slots() {
 
 #[test]
 fn enchanted_count_increase_limit_caps_the_stack_not_the_bonus() {
-    let sword = enchanted_item(&vanilla_items::DIAMOND_SWORD, "looting", 3);
+    let sword = enchanted_item(&*vanilla_items::DIAMOND_SWORD, "looting", 3);
     let tipped_arrow = Identifier::vanilla_static("tipped_arrow");
     let arrows: Vec<ItemStack> = roll_killed_by_player(
         &vanilla_loot_tables::ENTITIES_STRAY,
@@ -428,7 +438,7 @@ fn random_chance_with_enchanted_bonus_reads_attacker_not_tool() {
         enchanted_chance: EnchantedChance::Constant(1.0),
     };
     let player_key = Identifier::vanilla_static("player");
-    let looting_sword = enchanted_item(&vanilla_items::DIAMOND_SWORD, "looting", 3);
+    let looting_sword = enchanted_item(&*vanilla_items::DIAMOND_SWORD, "looting", 3);
     let looting_equipment = equipment_with(EquipmentSlot::MainHand, looting_sword.clone());
     let empty_equipment = EntityEquipmentSlots::default();
 
@@ -447,7 +457,7 @@ fn random_chance_with_enchanted_bonus_reads_attacker_not_tool() {
 #[test]
 fn equipment_enchantment_level_ignores_empty_stacks() {
     init_test_registries();
-    let mut empty_sword = enchanted_item(&vanilla_items::DIAMOND_SWORD, "looting", 3);
+    let mut empty_sword = enchanted_item(&*vanilla_items::DIAMOND_SWORD, "looting", 3);
     empty_sword.count = 0;
     let equipment = equipment_with(EquipmentSlot::MainHand, empty_sword);
 
@@ -467,9 +477,9 @@ fn enchanted_count_increase_rounds_like_java_math_round() {
         limit: 0,
     };
     let player_key = Identifier::vanilla_static("player");
-    let sword = enchanted_item(&vanilla_items::DIAMOND_SWORD, "looting", 1);
+    let sword = enchanted_item(&*vanilla_items::DIAMOND_SWORD, "looting", 1);
     let equipment = equipment_with(EquipmentSlot::MainHand, sword);
-    let mut item = ItemStack::with_count(&vanilla_items::PORKCHOP, 2);
+    let mut item = ItemStack::with_count(&*vanilla_items::PORKCHOP, 2);
 
     let mut rng = test_rng();
     let mut ctx =

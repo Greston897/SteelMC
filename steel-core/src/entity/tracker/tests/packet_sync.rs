@@ -67,7 +67,7 @@ fn send_changes_broadcasts_dirty_equipment_once() {
     let entity: SharedEntity = Arc::<PairingTestEntity>::clone(&entity_typed);
     tracker.add(&entity, |_| Vec::new(), |_| None);
 
-    let stack = ItemStack::new(&vanilla_items::ELYTRA);
+    let stack = ItemStack::new(&*vanilla_items::ELYTRA);
     entity_typed.set_dirty_equipment(vec![EquipmentSlotItem {
         slot: EquipmentSlot::Chest,
         item_stack: stack.clone(),
@@ -125,7 +125,7 @@ fn send_changes_broadcasts_equipment_before_attributes() {
 
     entity_typed.set_dirty_equipment(vec![EquipmentSlotItem {
         slot: EquipmentSlot::Chest,
-        item_stack: ItemStack::new(&vanilla_items::ELYTRA),
+        item_stack: ItemStack::new(&*vanilla_items::ELYTRA),
     }]);
     entity_typed.set_dirty_attributes(vec![AttributeSnapshot {
         attribute_id: 7,

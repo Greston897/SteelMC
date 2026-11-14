@@ -177,7 +177,7 @@ fn face_directed_item_drops_respect_block_drops_game_rule() {
     let dropped = world.pop_resource_from_face(
         BlockPos::new(8, 64, 8),
         Direction::Up,
-        ItemStack::new(&vanilla_items::HANGING_ROOTS),
+        ItemStack::new(&*vanilla_items::HANGING_ROOTS),
     );
 
     assert!(dropped.is_none());

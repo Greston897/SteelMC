@@ -5,7 +5,7 @@ use steel_utils::types::Difficulty;
 
 use crate::entity::registry::ENTITIES;
 use crate::entity::{
-    Entity, Mob, RemovalReason, SharedEntity, next_entity_id, start_riding_entities,
+    Entity, LivingEntity, Mob, RemovalReason, SharedEntity, next_entity_id, start_riding_entities,
 };
 use crate::inventory::equipment::EquipmentSlot;
 
@@ -81,7 +81,9 @@ pub(crate) fn convert_to(
         return None;
     }
     let world = from.level()?;
-    // TODO: Check feature flags once supported cause currently only checks difficulty
+    // Vanilla `EntityType.create` gates on the difficulty's `isAllowedInPeaceful`
+    // flag; feature/experiment flags do not exist in Steel yet, so difficulty is
+    // the whole check.
     if !entity_type.allowed_in_peaceful && world.difficulty() == Difficulty::Peaceful {
         return None;
     }
@@ -165,7 +167,12 @@ fn convert_single(from: &dyn Mob, to: &dyn Mob, to_arc: &SharedEntity, params: C
 
     // Vanilla copies only the timer, not the remembered player.
     to.set_last_hurt_by_player_memory_time(from.last_hurt_by_player_memory_time());
-    // TODO: Copy vanilla `hurtTime` once Steel supports the hurt-flash counter.
+    // Vanilla `Mob.convertTo` copies the hurt-flash counter as well.
+    if let (Some(from_living), Some(to_living)) =
+        (from.as_living_entity(), to.as_living_entity())
+    {
+        to_living.living_base().set_hurt_time(from_living.living_base().hurt_time());
+    }
 
     to.set_y_body_rot(from.y_body_rot());
     to.set_on_ground(from.on_ground());
@@ -353,7 +360,7 @@ mod tests {
         pig_mob.set_equipment_drop_chance(EquipmentSlot::Head, 0.5);
         pig_mob.living_base().equipment().lock().set(
             EquipmentSlot::Head,
-            ItemStack::new(&vanilla_items::IRON_HELMET),
+            ItemStack::new(&*vanilla_items::IRON_HELMET),
         );
         let pig_ageable = pig.as_ageable_mob().expect("pig is ageable");
         pig_ageable.set_age(-24_000);
@@ -467,7 +474,7 @@ mod tests {
         let pig_mob = pig.as_mob().expect("pig is a mob");
         pig_mob.living_base().equipment().lock().set(
             EquipmentSlot::Head,
-            ItemStack::new(&vanilla_items::IRON_HELMET),
+            ItemStack::new(&*vanilla_items::IRON_HELMET),
         );
         let after_conversion = |converted: &dyn Mob| {
             assert!(pig_mob.equipment_in_slot(EquipmentSlot::Head).is_empty());
@@ -527,14 +534,14 @@ mod tests {
             .downcast_ref::<PigEntity>()
             .expect("pig is concrete")
             .convert_to(
-                &vanilla_entities::ZOMBIE,
+                &vanilla_entities::ENDER_DRAGON,
                 ConversionParams::single(true, true),
                 None,
             );
 
         assert!(
             converted.is_none(),
-            "no zombie factory is registered, so conversion cannot happen"
+            "no ender dragon factory is registered, so conversion cannot happen"
         );
         assert!(
             !pig.is_removed(),
@@ -559,7 +566,7 @@ mod tests {
             .downcast_ref::<PigEntity>()
             .expect("pig is concrete")
             .convert_to(
-                &vanilla_entities::ZOMBIE,
+                &vanilla_entities::ENDER_DRAGON,
                 ConversionParams::single(true, true),
                 None,
             );
@@ -593,7 +600,7 @@ mod tests {
             .downcast_ref::<PigEntity>()
             .expect("pig is concrete")
             .convert_to(
-                &vanilla_entities::ZOMBIE,
+                &vanilla_entities::ENDER_DRAGON,
                 ConversionParams::single(true, true),
                 None,
             );
@@ -628,7 +635,7 @@ mod tests {
             .downcast_ref::<PigEntity>()
             .expect("pig is concrete")
             .convert_to(
-                &vanilla_entities::ZOMBIE,
+                &vanilla_entities::ENDER_DRAGON,
                 ConversionParams::single(true, true),
                 None,
             );
@@ -697,7 +704,7 @@ mod tests {
         let pig_mob = pig.as_mob().expect("pig is a mob");
         pig_mob.living_base().equipment().lock().set(
             EquipmentSlot::Head,
-            ItemStack::new(&vanilla_items::IRON_HELMET),
+            ItemStack::new(&*vanilla_items::IRON_HELMET),
         );
 
         let cow = pig

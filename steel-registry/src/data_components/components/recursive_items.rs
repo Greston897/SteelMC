@@ -161,26 +161,186 @@ impl ValidatePersistentComponent for ChargedProjectiles {
     }
 }
 
-/// The ordered item templates stored in a bundle.
-#[derive(Debug, Default, Clone, PartialEq)]
+/// The ordered item templates stored in a bundle together with the index the
+/// player has selected.
+///
+/// Mirrors Vanilla `BundleContentsComponent`; the selected index is not part of
+/// the persistent or network codecs there, and neither is it here.
+#[derive(Debug, Clone)]
 pub struct BundleContents {
     items: Vec<ItemStackTemplate>,
+    selected_stack_index: i32,
+}
+
+impl Default for BundleContents {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
+impl PartialEq for BundleContents {
+    /// Vanilla compares only the stored stacks: the selected index is transient
+    /// UI state and must not make two otherwise equal bundles distinct.
+    fn eq(&self, other: &Self) -> bool {
+        self.items == other.items
+    }
 }
 
 impl BundleContents {
+    /// Vanilla `BundleContentsComponent.NO_SELECTED_SLOT`.
+    pub const NO_SELECTED_SLOT: i32 = -1;
+
+    /// Vanilla `BundleContentsComponent.NESTED_BUNDLE_OCCUPANCY` (`1 / 16`).
+    const NESTED_BUNDLE_OCCUPANCY: CheckedFraction = CheckedFraction {
+        numerator: 1,
+        denominator: 16,
+    };
+
     #[must_use]
     pub const fn empty() -> Self {
-        Self { items: Vec::new() }
+        Self {
+            items: Vec::new(),
+            selected_stack_index: Self::NO_SELECTED_SLOT,
+        }
     }
 
     #[must_use]
     pub const fn new(items: Vec<ItemStackTemplate>) -> Self {
-        Self { items }
+        Self {
+            items,
+            selected_stack_index: Self::NO_SELECTED_SLOT,
+        }
     }
 
     #[must_use]
     pub fn items(&self) -> &[ItemStackTemplate] {
         &self.items
+    }
+
+    /// The index of the stack the player selected, or [`Self::NO_SELECTED_SLOT`].
+    #[must_use]
+    pub const fn selected_stack_index(&self) -> i32 {
+        self.selected_stack_index
+    }
+
+    /// The selected stack, if the index still points at one.
+    #[must_use]
+    pub fn selected_stack(&self) -> Option<ItemStack> {
+        let index = usize::try_from(self.selected_stack_index).ok()?;
+        Some(self.items.get(index)?.create())
+    }
+
+    /// Vanilla `Builder.setSelectedStackIndex`: out-of-range indices clear the
+    /// selection instead of being stored.
+    pub fn set_selected_stack_index(&mut self, index: i32) {
+        self.selected_stack_index = if index != self.selected_stack_index
+            && index >= 0
+            && usize::try_from(index).is_ok_and(|index| index < self.items.len())
+        {
+            index
+        } else {
+            Self::NO_SELECTED_SLOT
+        };
+    }
+
+    /// Vanilla `getOccupancy().floatValue()`; an over-full bundle reports 1.0.
+    #[must_use]
+    pub fn occupancy(&self) -> f32 {
+        self.compute_weight().map_or(1.0, CheckedFraction::as_f32)
+    }
+
+    /// Vanilla `occupancy.compareTo(Fraction.ONE) >= 0`.
+    #[must_use]
+    pub fn is_full(&self) -> bool {
+        self.compute_weight()
+            .map_or(true, CheckedFraction::is_at_least_one)
+    }
+
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
+    /// Vanilla `canBeBundled`: the stack is non-empty and its item allows
+    /// nesting.
+    #[must_use]
+    pub fn can_be_bundled(stack: &ItemStack) -> bool {
+        !stack.is_empty() && can_be_nested(stack.item())
+    }
+
+    /// Vanilla `Builder.getMaxAllowed`: how many copies of `stack` still fit.
+    #[must_use]
+    pub fn max_allowed(&self, stack: &ItemStack) -> i32 {
+        let Ok(occupancy) = self.compute_weight() else {
+            return 0;
+        };
+        let Ok(weight) = item_stack_weight(stack) else {
+            return 0;
+        };
+        CheckedFraction::ONE
+            .sub(occupancy)
+            .and_then(|remaining| remaining.divide(weight))
+            .map_or(0, |allowed| allowed.int_value().max(0))
+    }
+
+    /// Vanilla `Builder.add(ItemStack)`: inserts up to the remaining capacity,
+    /// decrements `stack` by the inserted amount, and returns that amount.
+    pub fn add_stack(&mut self, stack: &mut ItemStack) -> i32 {
+        if !Self::can_be_bundled(stack) {
+            return 0;
+        }
+
+        let to_add = stack.count().min(self.max_allowed(stack));
+        if to_add <= 0 {
+            return 0;
+        }
+
+        if let Some(index) = self.insertion_index(stack) {
+            let existing = self.items.remove(index);
+            let Ok(merged) = ItemStackTemplate::try_with_count_and_patch(
+                existing.item(),
+                existing.count() + to_add,
+                existing.components().clone(),
+            ) else {
+                self.items.insert(index, existing);
+                return 0;
+            };
+            stack.shrink(to_add);
+            self.items.insert(0, merged);
+        } else {
+            let Ok(added) = ItemStackTemplate::try_with_count_and_patch(
+                stack.item(),
+                to_add,
+                stack.patch().clone(),
+            ) else {
+                return 0;
+            };
+            stack.shrink(to_add);
+            self.items.insert(0, added);
+        }
+
+        to_add
+    }
+
+    /// Vanilla `Builder.removeSelected`: removes the selected stack, or the
+    /// first one when nothing is selected, and clears the selection.
+    pub fn remove_selected(&mut self) -> Option<ItemStack> {
+        if self.items.is_empty() {
+            return None;
+        }
+        let index = usize::try_from(self.selected_stack_index)
+            .ok()
+            .filter(|index| *index < self.items.len())
+            .unwrap_or(0);
+        let removed = self.items.remove(index).create();
+        self.selected_stack_index = Self::NO_SELECTED_SLOT;
+        Some(removed)
+    }
+
+    /// Removes every stored stack, e.g. when the bundle item entity is destroyed.
+    pub fn drain_items(&mut self) -> Vec<ItemStack> {
+        self.selected_stack_index = Self::NO_SELECTED_SLOT;
+        self.items.drain(..).map(|item| item.create()).collect()
     }
 
     /// Validates the checked rational weight used by Vanilla's strict item-stack validation.
@@ -196,6 +356,40 @@ impl BundleContents {
         }
         Ok(weight)
     }
+
+    /// Vanilla `Builder.getInsertionIndex`: only stackable stacks merge.
+    fn insertion_index(&self, stack: &ItemStack) -> Option<usize> {
+        if !stack.is_stackable() {
+            return None;
+        }
+        self.items.iter().position(|template| {
+            template.item() == stack.item() && template.components() == stack.patch()
+        })
+    }
+}
+
+/// Vanilla `Item.canBeNested`, which only `BlockItem` narrows: shulker box
+/// items cannot be bundled.
+fn can_be_nested(item: crate::items::ItemRef) -> bool {
+    !item
+        .block
+        .is_some_and(|block| block.has_tag(&crate::vanilla_block_tags::BlockTag::SHULKER_BOXES))
+}
+
+/// Vanilla `BundleContentsComponent.getOccupancy(ItemStack)`.
+fn item_stack_weight(stack: &ItemStack) -> Result<CheckedFraction> {
+    if let Some(bundle) = stack.get(BUNDLE_CONTENTS) {
+        return bundle
+            .compute_weight()?
+            .add(BundleContents::NESTED_BUNDLE_OCCUPANCY);
+    }
+    if stack
+        .get(BEES)
+        .is_some_and(|bees: &Bees| !bees.bees().is_empty())
+    {
+        return Ok(CheckedFraction::ONE);
+    }
+    CheckedFraction::new(1, stack.max_stack_size())
 }
 
 fn bundle_item_weight(item: &ItemStackTemplate) -> Result<CheckedFraction> {
@@ -274,6 +468,41 @@ impl CheckedFraction {
             numerator,
             denominator,
         })
+    }
+
+    /// Mirrors the positive branch of Commons Lang `Fraction.subtract`.
+    fn sub(self, other: Self) -> Result<Self> {
+        let denominator = checked_mul(self.denominator, other.denominator)?;
+        let left = checked_mul(self.numerator, other.denominator)?;
+        let right = checked_mul(other.numerator, self.denominator)?;
+        let numerator = left
+            .checked_sub(right)
+            .ok_or_else(|| Error::other("Bundle weight is not a positive fraction"))?;
+        Self::new(numerator, denominator)
+    }
+
+    /// Mirrors Commons Lang `Fraction.divideBy` for positive fractions.
+    fn divide(self, other: Self) -> Result<Self> {
+        if other.numerator == 0 {
+            return Err(Error::other("Division by zero bundle weight"));
+        }
+        Self::new(
+            checked_mul(self.numerator, other.denominator)?,
+            checked_mul(self.denominator, other.numerator)?,
+        )
+    }
+
+    /// Commons Lang `Fraction.intValue`: truncation towards zero.
+    const fn int_value(self) -> i32 {
+        self.numerator / self.denominator
+    }
+
+    fn as_f32(self) -> f32 {
+        self.numerator as f32 / self.denominator as f32
+    }
+
+    const fn is_at_least_one(self) -> bool {
+        self.numerator >= self.denominator
     }
 
     /// Mirrors multiplying by Commons Lang `Fraction.getFraction(value, 1)`.
@@ -688,6 +917,7 @@ mod tests {
         BEES, BUNDLE_CONTENTS, CHARGED_PROJECTILES, CONTAINER, MAX_STACK_SIZE, USE_REMAINDER,
     };
     use crate::init_vanilla_registry;
+    use crate::item_stack::ItemStack;
     use crate::{ItemStackTemplate, REGISTRY, vanilla_entities, vanilla_items};
 
     fn round_trip<T>(value: T)
@@ -722,10 +952,10 @@ mod tests {
     #[test]
     fn recursive_item_components_round_trip_both_codecs() {
         init_vanilla_registry();
-        let arrow = ItemStackTemplate::new(&vanilla_items::ARROW);
-        let diamond = ItemStackTemplate::new(&vanilla_items::DIAMOND);
+        let arrow = ItemStackTemplate::new(&*vanilla_items::ARROW);
+        let diamond = ItemStackTemplate::new(&*vanilla_items::DIAMOND);
         round_trip(UseRemainder::new(ItemStackTemplate::new(
-            &vanilla_items::BOWL,
+            &*vanilla_items::BOWL,
         )));
         round_trip(
             ChargedProjectiles::new(vec![arrow.clone()]).expect("one projectile should fit"),
@@ -742,7 +972,7 @@ mod tests {
         init_vanilla_registry();
         let contents = ItemContainerContents::new(vec![
             None,
-            Some(ItemStackTemplate::new(&vanilla_items::DIAMOND)),
+            Some(ItemStackTemplate::new(&*vanilla_items::DIAMOND)),
             None,
         ])
         .expect("three slots should fit");
@@ -761,7 +991,7 @@ mod tests {
     #[test]
     fn recursive_collection_limits_are_enforced() {
         init_vanilla_registry();
-        let projectile = ItemStackTemplate::new(&vanilla_items::ARROW);
+        let projectile = ItemStackTemplate::new(&*vanilla_items::ARROW);
         assert!(
             ChargedProjectiles::new(vec![projectile; ChargedProjectiles::MAX_SIZE + 1]).is_err()
         );
@@ -777,10 +1007,10 @@ mod tests {
         let mut inner_patch = DataComponentPatch::new();
         inner_patch.set(
             BUNDLE_CONTENTS,
-            BundleContents::new(vec![ItemStackTemplate::new(&vanilla_items::STONE)]),
+            BundleContents::new(vec![ItemStackTemplate::new(&*vanilla_items::STONE)]),
         );
         let nested_bundle =
-            ItemStackTemplate::try_with_count_and_patch(&vanilla_items::STONE, 1, inner_patch)
+            ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::STONE, 1, inner_patch)
                 .expect("nested bundle should persist");
         let nested_weight = BundleContents::new(vec![nested_bundle])
             .compute_weight()
@@ -798,7 +1028,7 @@ mod tests {
         let mut beehive_patch = DataComponentPatch::new();
         beehive_patch.set(BEES, Bees::new(vec![occupant]));
         let beehive =
-            ItemStackTemplate::try_with_count_and_patch(&vanilla_items::BEEHIVE, 1, beehive_patch)
+            ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::BEEHIVE, 1, beehive_patch)
                 .expect("occupied beehive should persist");
         let beehive_weight = BundleContents::new(vec![beehive])
             .compute_weight()
@@ -818,7 +1048,7 @@ mod tests {
             .map(|max_stack_size| {
                 let mut patch = DataComponentPatch::new();
                 patch.set(MAX_STACK_SIZE, max_stack_size);
-                ItemStackTemplate::try_with_count_and_patch(&vanilla_items::STONE, 1, patch)
+                ItemStackTemplate::try_with_count_and_patch(&*vanilla_items::STONE, 1, patch)
                     .expect("prime max stack size should be persistable")
             })
             .collect();
@@ -868,6 +1098,112 @@ mod tests {
                 .get(USE_REMAINDER)
                 .map(|remainder| remainder.convert_into().item()),
             Some(&*vanilla_items::BUCKET)
+        );
+    }
+
+    #[test]
+    fn bundle_contents_enforces_the_vanilla_weight_limit() {
+        let mut contents = BundleContents::empty();
+        let mut dirt = ItemStack::with_count(&*vanilla_items::DIRT, 64);
+        assert_eq!(contents.add_stack(&mut dirt), 64);
+        assert_eq!(dirt.count(), 0);
+        assert!(contents.is_full());
+        assert!((contents.occupancy() - 1.0).abs() < f32::EPSILON);
+
+        let mut extra = ItemStack::new(&*vanilla_items::DIRT);
+        assert_eq!(contents.add_stack(&mut extra), 0);
+        assert_eq!(extra.count(), 1);
+    }
+
+    #[test]
+    fn bundle_contents_merges_matching_stacks() {
+        let mut contents = BundleContents::empty();
+        let mut first = ItemStack::with_count(&*vanilla_items::DIRT, 10);
+        let mut second = ItemStack::with_count(&*vanilla_items::DIRT, 5);
+        assert_eq!(contents.add_stack(&mut first), 10);
+        assert_eq!(contents.add_stack(&mut second), 5);
+        assert_eq!(contents.items().len(), 1);
+        assert_eq!(contents.items()[0].count(), 15);
+        assert!((contents.occupancy() - 15.0 / 64.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn bundle_contents_rejects_shulker_boxes() {
+        let shulker = ItemStack::new(&*vanilla_items::SHULKER_BOX);
+        assert!(!BundleContents::can_be_bundled(&shulker));
+
+        let mut contents = BundleContents::empty();
+        let mut stack = shulker;
+        assert_eq!(contents.add_stack(&mut stack), 0);
+        assert!(contents.is_empty());
+    }
+
+    #[test]
+    fn nested_bundles_cost_themselves_plus_one_sixteenth() {
+        let mut inner_contents = BundleContents::empty();
+        let mut dirt = ItemStack::with_count(&*vanilla_items::DIRT, 16);
+        assert_eq!(inner_contents.add_stack(&mut dirt), 16);
+
+        let mut inner_bundle = ItemStack::new(&*vanilla_items::BUNDLE);
+        inner_bundle.set(BUNDLE_CONTENTS, inner_contents);
+
+        // 1/16 nested-bundle cost + 16/64 contents = 5/16, so three fit.
+        let mut outer = BundleContents::empty();
+        assert_eq!(outer.max_allowed(&inner_bundle), 3);
+        let mut to_add = inner_bundle;
+        assert_eq!(outer.add_stack(&mut to_add), 1);
+        assert_eq!(outer.items().len(), 1);
+        assert_eq!(outer.items()[0].count(), 1);
+        assert!((outer.occupancy() - 5.0 / 16.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn remove_selected_pops_the_selected_stack_and_clears_the_selection() {
+        let mut contents = BundleContents::empty();
+        let mut dirt = ItemStack::with_count(&*vanilla_items::DIRT, 4);
+        let mut stone = ItemStack::with_count(&*vanilla_items::STONE, 2);
+        assert_eq!(contents.add_stack(&mut dirt), 4);
+        assert_eq!(contents.add_stack(&mut stone), 2);
+        // Vanilla inserts new stacks at the front: [stone, dirt].
+        assert_eq!(contents.items().len(), 2);
+
+        contents.set_selected_stack_index(1);
+        let removed = contents.remove_selected().expect("selected stack");
+        assert!(removed.is(&*vanilla_items::DIRT));
+        assert_eq!(removed.count(), 4);
+        assert_eq!(
+            contents.selected_stack_index(),
+            BundleContents::NO_SELECTED_SLOT
+        );
+        assert_eq!(contents.items().len(), 1);
+
+        contents.set_selected_stack_index(9);
+        assert_eq!(
+            contents.selected_stack_index(),
+            BundleContents::NO_SELECTED_SLOT
+        );
+    }
+
+    #[test]
+    fn selected_index_is_transient_ui_state() {
+        let mut contents = BundleContents::empty();
+        let mut dirt = ItemStack::new(&*vanilla_items::DIRT);
+        assert_eq!(contents.add_stack(&mut dirt), 1);
+
+        let mut selected = contents.clone();
+        selected.set_selected_stack_index(0);
+        assert!(selected.selected_stack().is_some());
+        assert_eq!(contents, selected);
+
+        let mut cursor = Cursor::new(Vec::new());
+        selected.write(&mut cursor).expect("write bundle contents");
+        let bytes = cursor.into_inner();
+        let decoded =
+            BundleContents::read(&mut Cursor::new(bytes.as_slice())).expect("read bundle contents");
+        assert_eq!(
+            decoded.selected_stack_index(),
+            BundleContents::NO_SELECTED_SLOT,
+            "the selected index is not part of the persistent codec"
         );
     }
 }

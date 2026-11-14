@@ -1,6 +1,8 @@
 //! Clientbound update attributes packet - sent to sync entity attributes with modifiers.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::PrefixedWrite as _;
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_UPDATE_ATTRIBUTES;
 use steel_utils::Identifier;
 

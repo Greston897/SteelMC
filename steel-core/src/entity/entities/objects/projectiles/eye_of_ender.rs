@@ -127,7 +127,7 @@ impl EyeOfEnderEntity {
 
     /// Vanilla `EyeOfEnderEntity.getItem` (private default): a plain ender eye.
     fn default_item() -> ItemStack {
-        ItemStack::new(&vanilla_items::ENDER_EYE)
+        ItemStack::new(&*vanilla_items::ENDER_EYE)
     }
 
     /// Gets a clone of the displayed item stack.

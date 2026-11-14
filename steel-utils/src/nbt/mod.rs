@@ -101,10 +101,17 @@ const fn double_tags_equal(left: f64, right: f64) -> bool {
 /// so codecs crossing a trust boundary normalize them explicitly.
 #[must_use]
 pub fn normalize_nbt_compound(compound: NbtCompound) -> Option<NbtCompound> {
+    normalize_nbt_compound_at(compound, 0)
+}
+
+fn normalize_nbt_compound_at(compound: NbtCompound, depth: usize) -> Option<NbtCompound> {
+    if depth > MAX_NBT_DEPTH {
+        return None;
+    }
     let mut normalized = NbtCompound::new();
     for (key, value) in compound {
         let key = key.try_into_string().ok()?;
-        let value = normalize_nbt_tag(value)?;
+        let value = normalize_nbt_tag_at(value, depth)?;
         while normalized.remove(&key).is_some() {}
         normalized.insert(key, value);
     }
@@ -113,16 +120,31 @@ pub fn normalize_nbt_compound(compound: NbtCompound) -> Option<NbtCompound> {
 
 /// Converts an NBT value and all descendants to Vanilla's canonical in-memory
 /// representation.
+///
+/// Returns `None` for malformed modified UTF-8 or a tree nested deeper than
+/// [`MAX_NBT_DEPTH`], so untrusted input cannot exhaust the stack.
 pub fn normalize_nbt_tag(tag: NbtTag) -> Option<NbtTag> {
+    normalize_nbt_tag_at(tag, 0)
+}
+
+fn normalize_nbt_tag_at(tag: NbtTag, depth: usize) -> Option<NbtTag> {
+    if depth > MAX_NBT_DEPTH {
+        return None;
+    }
     match tag {
         NbtTag::String(value) => Some(NbtTag::String(value.try_into_string().ok()?.into())),
-        NbtTag::List(list) => normalize_nbt_list(list).map(NbtTag::List),
-        NbtTag::Compound(compound) => normalize_nbt_compound(compound).map(NbtTag::Compound),
+        NbtTag::List(list) => normalize_nbt_list_at(list, depth + 1).map(NbtTag::List),
+        NbtTag::Compound(compound) => {
+            normalize_nbt_compound_at(compound, depth + 1).map(NbtTag::Compound)
+        }
         tag => Some(tag),
     }
 }
 
-fn normalize_nbt_list(list: NbtList) -> Option<NbtList> {
+fn normalize_nbt_list_at(list: NbtList, depth: usize) -> Option<NbtList> {
+    if depth > MAX_NBT_DEPTH {
+        return None;
+    }
     match list {
         NbtList::String(values) => values
             .into_iter()
@@ -131,12 +153,12 @@ fn normalize_nbt_list(list: NbtList) -> Option<NbtList> {
             .map(NbtList::String),
         NbtList::List(values) => values
             .into_iter()
-            .map(normalize_nbt_list)
+            .map(|value| normalize_nbt_list_at(value, depth + 1))
             .collect::<Option<Vec<_>>>()
             .map(NbtList::List),
         NbtList::Compound(values) => values
             .into_iter()
-            .map(normalize_nbt_compound)
+            .map(|value| normalize_nbt_compound_at(value, depth + 1))
             .collect::<Option<Vec<_>>>()
             .map(NbtList::Compound),
         list => Some(list),
@@ -159,11 +181,29 @@ pub fn merge_nbt_compounds(target: &mut NbtCompound, source: &NbtCompound) {
     }
 }
 
+/// Vanilla `NbtAccounter` depth ceiling for a decoded tag tree.
+///
+/// Vanilla additionally caps the *nesting* of a network tag at 512 levels
+/// (`readUnnamedTag` recursion guard). Steel walks the tree recursively when it
+/// charges the heap quota, so an adversarial 100 000-deep compound would abort
+/// the process with a stack overflow before the quota could ever reject it. The
+/// walk therefore refuses anything past this depth, which turns that crash into
+/// a normal decode error.
+pub const MAX_NBT_DEPTH: usize = 512;
+
 /// Returns the heap usage charged by Vanilla's `NbtAccounter` while decoding.
 ///
-/// `None` indicates malformed modified UTF-8 or arithmetic overflow.
+/// `None` indicates malformed modified UTF-8, arithmetic overflow, or a tag
+/// nested deeper than [`MAX_NBT_DEPTH`].
 #[must_use]
 pub fn vanilla_nbt_heap_size(tag: &NbtTag) -> Option<u64> {
+    vanilla_nbt_heap_size_at(tag, 0)
+}
+
+fn vanilla_nbt_heap_size_at(tag: &NbtTag, depth: usize) -> Option<u64> {
+    if depth > MAX_NBT_DEPTH {
+        return None;
+    }
     match tag {
         NbtTag::Byte(_) => Some(9),
         NbtTag::Short(_) => Some(10),
@@ -171,31 +211,37 @@ pub fn vanilla_nbt_heap_size(tag: &NbtTag) -> Option<u64> {
         NbtTag::Long(_) | NbtTag::Double(_) => Some(16),
         NbtTag::ByteArray(values) => sized_array(24, 1, values.len()),
         NbtTag::String(value) => sized_string(36, value),
-        NbtTag::List(values) => vanilla_nbt_list_heap_size(values),
-        NbtTag::Compound(values) => vanilla_nbt_compound_heap_size(values),
+        NbtTag::List(values) => vanilla_nbt_list_heap_size(values, depth + 1),
+        NbtTag::Compound(values) => vanilla_nbt_compound_heap_size(values, depth + 1),
         NbtTag::IntArray(values) => sized_array(24, 4, values.len()),
         NbtTag::LongArray(values) => sized_array(24, 8, values.len()),
     }
 }
 
-fn vanilla_nbt_list_heap_size(list: &NbtList) -> Option<u64> {
+fn vanilla_nbt_list_heap_size(list: &NbtList, depth: usize) -> Option<u64> {
+    if depth > MAX_NBT_DEPTH {
+        return None;
+    }
     let values = list.as_nbt_tags();
     let count = u64::try_from(values.len()).ok()?;
     let mut size = 36_u64.checked_add(4_u64.checked_mul(count)?)?;
     for value in &values {
-        size = size.checked_add(vanilla_nbt_heap_size(value)?)?;
+        size = size.checked_add(vanilla_nbt_heap_size_at(value, depth)?)?;
     }
     Some(size)
 }
 
-fn vanilla_nbt_compound_heap_size(compound: &NbtCompound) -> Option<u64> {
+fn vanilla_nbt_compound_heap_size(compound: &NbtCompound, depth: usize) -> Option<u64> {
+    if depth > MAX_NBT_DEPTH {
+        return None;
+    }
     let mut size = 48_u64;
     let mut keys = FxHashSet::default();
     for (key, value) in compound.iter() {
         let key = key.to_owned().try_into_string().ok()?;
         let key_units = u64::try_from(key.encode_utf16().count()).ok()?;
         size = size.checked_add(28_u64.checked_add(2_u64.checked_mul(key_units)?)?)?;
-        size = size.checked_add(vanilla_nbt_heap_size(value)?)?;
+        size = size.checked_add(vanilla_nbt_heap_size_at(value, depth)?)?;
         if keys.insert(key) {
             size = size.checked_add(36)?;
         }

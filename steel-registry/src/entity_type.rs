@@ -3,7 +3,7 @@ use rustc_hash::FxHashMap;
 use steel_math::trig;
 use steel_utils::{DowncastType, DowncastTypeKey, Identifier};
 
-use crate::{RegistryTags, blocks::behavior::PushReaction};
+use crate::{RegistryTags, TaggedRegistryExt, blocks::behavior::PushReaction};
 
 const DEFAULT_EYE_HEIGHT_FACTOR: f32 = 0.85;
 
@@ -286,6 +286,12 @@ pub struct EntityType {
     pub mob_category: MobCategory,
     /// Whether this entity is immune to fire damage.
     pub fire_immune: bool,
+    /// Block tag this entity ignores when scanning floor blocks for danger.
+    ///
+    /// Vanilla 26.3 `EntityType.immune_to`. Striders use `#strider_warm_blocks`,
+    /// hoglins `#hoglin_repellents` is separate; the common case is a mob that may
+    /// stand on a block other mobs treat as harmful.
+    pub immune_to: Option<Identifier>,
     /// Whether this entity can be summoned via commands.
     pub summonable: bool,
     /// Whether this entity type is allowed to exist in Peaceful difficulty.
@@ -320,6 +326,18 @@ pub struct EntityType {
 }
 
 pub type EntityTypeRef = &'static EntityType;
+
+impl EntityType {
+    /// Returns `true` if this entity type is tagged with the given tag.
+    ///
+    /// Mirrors `Block::has_tag`: the check goes through the global registry so
+    /// data-pack tags (`#minecraft:zombies`, `#minecraft:sensitive_to_smite`, …)
+    /// resolve against whatever the last reload registered.
+    #[must_use]
+    pub fn has_tag(&'static self, tag: &Identifier) -> bool {
+        crate::REGISTRY.entity_types.is_in_tag(self, tag)
+    }
+}
 
 pub struct EntityTypeRegistry {
     types_by_id: Vec<EntityTypeRef>,

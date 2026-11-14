@@ -486,7 +486,7 @@ mod tests {
 
         let mut messages = array::from_fn(|_| TextComponent::new());
         messages[0] = TextComponent::plain("front");
-        let mut item = ItemStack::new(&vanilla_items::OAK_SIGN);
+        let mut item = ItemStack::new(&*vanilla_items::OAK_SIGN);
         item.set(
             SIGN_TEXT_FRONT,
             SignTextComponent::new(messages.clone(), None, DyeColor::Red, true),

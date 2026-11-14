@@ -67,7 +67,7 @@ impl BlockBehavior for KelpPlantBlock {
         _block_entity: Option<SharedBlockEntity>,
         _include_data: bool,
     ) -> Option<ItemStack> {
-        Some(ItemStack::new(&vanilla_items::KELP))
+        Some(ItemStack::new(&*vanilla_items::KELP))
     }
 
     fn update_shape(

@@ -18,7 +18,7 @@ use crate::{
 };
 
 use super::super::{
-    brigadier::{CommandNodeBuilder, CommandSyntaxError},
+    brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
     execution::{
         CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
         literal,
@@ -33,22 +33,15 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("domain")
-        .executes(|ctx: &SteelCommandContext<CommandSource>| {
-            let Some(player) = ctx.source().player() else {
-                return Err(CommandSyntaxError::dynamic(
-                    "you cannot use this command from the console",
-                ));
-            };
-            let server = Arc::clone(ctx.source().server());
-            let player = Arc::clone(player);
-            let menu_player = Arc::clone(&player);
-
-            player.open_menu("Domains", move |context| {
-                domain_menu(context.container_id, menu_player, context.world, &server)
-            });
-
-            Ok(1)
-        })
+        .executes(|ctx: &SteelCommandContext<CommandSource>| open_domain_menu(ctx, 0))
+        .then(
+            argument("page", ArgumentType::integer(1, 1024))
+                .executes(|ctx: &SteelCommandContext<CommandSource>| {
+                    // Command pages are one-based; the menu works zero-based.
+                    let page = ctx.integer("page")?.saturating_sub(1) as usize;
+                    open_domain_menu(ctx, page)
+                }),
+        )
         .then(
             argument("world", SteelArgumentType::world())
                 .executes(switch_world)
@@ -147,11 +140,36 @@ fn switch_world_to(
     Ok(1)
 }
 
+/// Opens the domain menu on `page`, defaulting to the first page.
+fn open_domain_menu(
+    ctx: &SteelCommandContext<CommandSource>,
+    page: usize,
+) -> Result<i32, CommandSyntaxError> {
+    let Some(player) = ctx.source().player() else {
+        return Err(CommandSyntaxError::dynamic(
+            "you cannot use this command from the console",
+        ));
+    };
+    let server = Arc::clone(ctx.source().server());
+    let player = Arc::clone(player);
+    let menu_player = Arc::clone(&player);
+
+    player.open_menu("Domains", move |context| {
+        domain_menu(context.container_id, menu_player, context.world, &server, page)
+    });
+
+    Ok(1)
+}
+
+/// Domains shown per menu page; the grid has four usable rows.
+const DOMAINS_PER_PAGE: usize = 4;
+
 fn domain_menu(
     container_id: u8,
     player: Arc<Player>,
     current_world: &Arc<World>,
     server: &Arc<Server>,
+    page: usize,
 ) -> Menu {
     let mut b = MenuBuilder::new(&vanilla_menu_types::GENERIC_9X6, container_id);
 
@@ -161,35 +179,49 @@ fn domain_menu(
         .map(ToOwned::to_owned)
         .collect();
 
+    // Both are needed by the menu record below and by the grid painter, so they
+    // are resolved before the layout scope opens.
+    let page_count = domain_names.len().div_ceil(DOMAINS_PER_PAGE).max(1);
+    let page = page.min(page_count - 1);
+    let start = page * DOMAINS_PER_PAGE;
+
     let map: Vec<(Section, Vec<Arc<World>>)> = b.grid(6, |g| {
         g.paint_all(ItemStack::empty());
         g.paint(
             Rect::cols(..).rows(0),
-            &vanilla_items::GRAY_STAINED_GLASS_PANE,
+            &*vanilla_items::GRAY_STAINED_GLASS_PANE,
         );
         g.paint(
             Rect::cols(..).rows(5),
-            &vanilla_items::GRAY_STAINED_GLASS_PANE,
+            &*vanilla_items::GRAY_STAINED_GLASS_PANE,
         );
         g.paint(
             Rect::cols(8).rows(..),
-            &vanilla_items::GRAY_STAINED_GLASS_PANE,
+            &*vanilla_items::GRAY_STAINED_GLASS_PANE,
         );
         g.paint(
             Rect::cols(0).rows(1..5),
-            &vanilla_items::GRAY_STAINED_GLASS_PANE,
+            &*vanilla_items::GRAY_STAINED_GLASS_PANE,
         );
 
-        // TODO: Add pagination for domains and worlds instead of truncating to the grid capacity.
+        // Page indicator: the bottom bar shows which slice is visible.
+        let mut indicator = ItemStack::new(&*vanilla_items::PAPER);
+        indicator.set(
+            CUSTOM_NAME,
+            format!("Page {} / {page_count}", page + 1).into(),
+        );
+        g.paint(Rect::cell(4, 5), indicator);
+
         domain_names
             .iter()
-            .take(4)
+            .skip(start)
+            .take(DOMAINS_PER_PAGE)
             .enumerate()
             .map(|(i, domain_name)| {
                 g.subgrid(Rect::cols(..8).rows(i + 1), |g| {
                     g.paint_all(ItemStack::empty());
 
-                    let mut sign = ItemStack::new(&vanilla_items::OAK_SIGN);
+                    let mut sign = ItemStack::new(&*vanilla_items::OAK_SIGN);
                     sign.set(CUSTOM_NAME, domain_name.clone().into());
 
                     g.paint(Rect::cell(0, 0), sign);
@@ -219,6 +251,8 @@ fn domain_menu(
         map,
         server: Arc::clone(server),
         player,
+        page,
+        page_count,
     })
 }
 
@@ -227,11 +261,11 @@ fn icon(world: &Arc<World>, current_world: &Arc<World>) -> ItemStack {
         b if b == &vanilla_dimension_types::OVERWORLD
             || b == &vanilla_dimension_types::OVERWORLD_CAVES =>
         {
-            &vanilla_items::GRASS_BLOCK
+            &*vanilla_items::GRASS_BLOCK
         }
-        b if b == &vanilla_dimension_types::THE_NETHER => &vanilla_items::NETHERRACK,
-        b if b == &vanilla_dimension_types::THE_END => &vanilla_items::END_STONE,
-        _ => &vanilla_items::BEDROCK,
+        b if b == &vanilla_dimension_types::THE_NETHER => &*vanilla_items::NETHERRACK,
+        b if b == &vanilla_dimension_types::THE_END => &*vanilla_items::END_STONE,
+        _ => &*vanilla_items::BEDROCK,
     };
     let mut icon = ItemStack::new(item);
     icon.set(CUSTOM_NAME, world.key.path.to_string().into());
@@ -245,6 +279,10 @@ struct DomainMenuKind {
     map: Vec<(Section, Vec<Arc<World>>)>,
     server: Arc<Server>,
     player: Arc<Player>,
+    /// Page currently displayed, zero-based.
+    page: usize,
+    /// Total number of pages for the current domain list.
+    page_count: usize,
 }
 
 // SAFETY: This Steel-owned key uniquely identifies the concrete menu kind

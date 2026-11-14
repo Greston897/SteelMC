@@ -16,7 +16,39 @@ pub enum CommandSender {
     /// The command was sent via the server's console.
     Console,
     /// The command was sent via Rcon.
-    Rcon,
+    ///
+    /// Carries the reply channel of the connection so the console output of the
+    /// command reaches the RCON client, exactly like vanilla
+    /// `RconConsoleSource.sendSystemMessage`.
+    Rcon(RconOutput),
+}
+
+/// Sink for the text a command sends to an RCON client.
+#[derive(Clone)]
+pub struct RconOutput {
+    sender: tokio::sync::mpsc::UnboundedSender<String>,
+}
+
+impl RconOutput {
+    /// Creates an output sink backed by `sender`.
+    #[must_use]
+    pub fn new(sender: tokio::sync::mpsc::UnboundedSender<String>) -> Self {
+        Self { sender }
+    }
+
+    /// Appends one line to the client's reply.
+    ///
+    /// A closed receiver means the client disconnected mid-command, which is
+    /// normal and therefore ignored.
+    pub fn send(&self, line: String) {
+        let _ = self.sender.send(line);
+    }
+}
+
+impl fmt::Debug for RconOutput {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.debug_struct("RconOutput").finish_non_exhaustive()
+    }
 }
 
 /// Stable identity used to preserve top-level command ordering while work is suspended.
@@ -89,7 +121,7 @@ impl CommandExecutionOwner {
                 residence: self.player_residence,
             },
             CommandSender::Console => CommandSuggestionKey::Console,
-            CommandSender::Rcon => CommandSuggestionKey::Rcon,
+            CommandSender::Rcon(_) => CommandSuggestionKey::Rcon,
         }
     }
 
@@ -114,7 +146,7 @@ impl CommandSender {
         match self {
             Self::Player(player) => CommandSenderKey::Player(player.gameprofile.id()),
             Self::Console => CommandSenderKey::Console,
-            Self::Rcon => CommandSenderKey::Rcon,
+            Self::Rcon(_) => CommandSenderKey::Rcon,
         }
     }
 
@@ -132,8 +164,12 @@ impl CommandSender {
         match self {
             Self::Player(player) => player.send_message(text),
             Self::Console => log::info!("{text}"),
-            // TODO: Implement Rcon message sending
-            Self::Rcon => log::warn!("Dropping Rcon command message until Rcon output is wired"),
+            Self::Rcon(output) => {
+                // Vanilla's RCON source keeps every message in a buffer that is
+                // packetized into one reply once the command finishes.
+                let plain = text.to_string();
+                output.send(plain);
+            }
         }
     }
 }
@@ -146,7 +182,7 @@ impl fmt::Display for CommandSender {
             match self {
                 Self::Player(p) => &p.gameprofile.name(),
                 Self::Console => "Server",
-                Self::Rcon => "Rcon",
+                Self::Rcon(_) => "Rcon",
             }
         )
     }

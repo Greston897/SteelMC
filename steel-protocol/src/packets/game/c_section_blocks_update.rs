@@ -53,7 +53,8 @@ mod tests {
     };
 
     use super::{BlockChange, CSectionBlocksUpdate};
-    use steel_utils::serial::WriteTo;
+    use steel_utils::serial::ReadFrom as _;
+use steel_utils::serial::WriteTo;
 
     #[test]
     fn writes_changes_with_section_relative_positions() {

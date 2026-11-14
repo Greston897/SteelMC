@@ -60,7 +60,7 @@ pub(super) fn sky_darkening(sky_light_level: f32) -> u8 {
     (MAX_SKY_LIGHT_LEVEL - sky_light_level.clamp(MIN_SKY_LIGHT_LEVEL, MAX_SKY_LIGHT_LEVEL)) as u8
 }
 
-fn apply_timeline_float_attribute(
+pub(crate) fn apply_timeline_float_attribute(
     mut value: f32,
     dimension_type: DimensionTypeRef,
     clock_manager: &WorldClockManager,
@@ -214,6 +214,8 @@ fn apply_timeline_float_track(
     };
     match track.modifier {
         Some("multiply") => value * sample,
+        // Vanilla `FloatModifier.MAXIMUM`: the timeline can only raise the value.
+        Some("maximum") => value.max(sample),
         None => sample,
         _ => value,
     }

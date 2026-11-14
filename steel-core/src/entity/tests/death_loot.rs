@@ -63,7 +63,7 @@ fn melee_kill_with_fire_aspect_drops_cooked_porkchop() {
     let player = player_holding(
         world,
         enchanted_item(
-            &vanilla_items::DIAMOND_SWORD,
+            &*vanilla_items::DIAMOND_SWORD,
             Identifier::vanilla_static("fire_aspect"),
             1,
         ),
@@ -76,7 +76,7 @@ fn melee_kill_with_fire_aspect_drops_cooked_porkchop() {
 
     let drops = dropped_item_stacks(world);
     assert_eq!(drops.len(), 1);
-    assert!(drops[0].is(&vanilla_items::COOKED_PORKCHOP));
+    assert!(drops[0].is(&*vanilla_items::COOKED_PORKCHOP));
 }
 
 #[test]
@@ -87,7 +87,7 @@ fn arrow_kill_smelts_by_direct_attacker_and_loots_by_attacker() {
     let world = &world_fixture.world;
     let weapon = with_enchantment(
         enchanted_item(
-            &vanilla_items::DIAMOND_SWORD,
+            &*vanilla_items::DIAMOND_SWORD,
             Identifier::vanilla_static("fire_aspect"),
             1,
         ),
@@ -114,6 +114,6 @@ fn arrow_kill_smelts_by_direct_attacker_and_loots_by_attacker() {
 
     let drops = dropped_item_stacks(world);
     assert_eq!(drops.len(), KILLS as usize);
-    assert!(drops.iter().all(|drop| drop.is(&vanilla_items::PORKCHOP)));
+    assert!(drops.iter().all(|drop| drop.is(&*vanilla_items::PORKCHOP)));
     assert!(drops.iter().any(|drop| drop.count > 3));
 }

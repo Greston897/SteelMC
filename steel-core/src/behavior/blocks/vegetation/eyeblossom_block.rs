@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use steel_macros::block_behavior;
-use steel_registry::vanilla_block_tags::BlockTag;
+use steel_protocol::packets::game::SoundSource;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::{sound_events, vanilla_block_tags::BlockTag, vanilla_blocks};
+use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
 
 use crate::behavior::block::BlockBehavior;
@@ -19,9 +22,12 @@ pub enum EyeblossomType {
     Closed,
 }
 
-/// Vanilla `EyeblossomBlock` survival and ticking shape.
-// TODO: Implement eyeblossom day/night transforms, sounds, particles, and bee effects
-// once Steel has environment attributes and particle dispatch.
+/// Vanilla `EyeblossomBlock` survival, day/night transform, and effects.
+///
+/// Vanilla samples `EnvironmentAttributes.EYEBLOSSOM_OPEN` (a boolean timeline
+/// track) and swaps the open/closed block with the timeline's own sound; Steel
+/// resolves the attribute through [`World::environment_attribute`] and treats a
+/// value below `0.5` as closed.
 #[block_behavior]
 pub struct EyeblossomBlock {
     block: BlockRef,
@@ -49,14 +55,38 @@ impl BlockBehavior for EyeblossomBlock {
         default_surviving_state(self.block, self, context)
     }
 
-    fn random_tick(&self, _state: BlockStateId, _world: &Arc<World>, _pos: BlockPos) {
-        let _ = self.eyeblossom_type;
+    fn random_tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        self.transform_if_needed(state, world, pos);
     }
 
-    fn tick(&self, _state: BlockStateId, _world: &Arc<World>, _pos: BlockPos) {
-        let _ = self.eyeblossom_type;
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        self.transform_if_needed(state, world, pos);
     }
 }
+
+impl EyeblossomBlock {
+    /// Vanilla `EyeblossomBlock.tick`: swap to the other flower when the
+    /// `eyeblossom_open` environment attribute disagrees with this block's state.
+    fn transform_if_needed(&self, _state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        let should_be_open = world.environment_attribute(EYEBLOSSOM_OPEN_ATTRIBUTE, 0.0) >= 0.5;
+        let is_open = matches!(self.eyeblossom_type, EyeblossomType::Open);
+        if should_be_open == is_open {
+            return;
+        }
+
+        let (target, sound) = if should_be_open {
+            (&vanilla_blocks::OPEN_EYEBLOSSOM, &sound_events::BLOCK_EYEBLOSSOM_OPEN)
+        } else {
+            (&vanilla_blocks::CLOSED_EYEBLOSSOM, &sound_events::BLOCK_EYEBLOSSOM_CLOSE)
+        };
+        world.set_block(pos, target.default_state(), UpdateFlags::UPDATE_ALL);
+        world.play_sound(sound, SoundSource::Blocks, pos, 1.0, 1.0, None);
+    }
+}
+
+/// Vanilla `EnvironmentAttributes.EYEBLOSSOM_OPEN` key.
+const EYEBLOSSOM_OPEN_ATTRIBUTE: &str = "minecraft:gameplay/eyeblossom_open";
+
 
 #[cfg(test)]
 mod tests {

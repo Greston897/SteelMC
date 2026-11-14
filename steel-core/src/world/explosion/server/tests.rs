@@ -564,7 +564,7 @@ fn non_destructive_explosion_ignores_blocklike_entities_without_mob_griefing() {
     let world = &fixture.world;
     assert!(world.set_game_rule(&MOB_GRIEFING, false));
     let item = item_entity(world, TEST_BLOCK_BOTTOM_CENTER + DVec3::X);
-    item.set_item(ItemStack::new(&vanilla_items::STONE));
+    item.set_item(ItemStack::new(&*vanilla_items::STONE));
     let item = add_entity(world, item);
     let (item_frame, leash_knot) = add_block_attached_targets(world);
 
@@ -668,6 +668,6 @@ fn destructive_explosion_removes_stone_and_spawns_its_loot() {
         entity
             .as_ref()
             .downcast_ref::<ItemEntity>()
-            .is_some_and(|item| item.get_item().is(&vanilla_items::COBBLESTONE))
+            .is_some_and(|item| item.get_item().is(&*vanilla_items::COBBLESTONE))
     }));
 }

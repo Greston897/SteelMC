@@ -1,0 +1,420 @@
+### cargo check diagnostics
+- errors: 652
+- warnings: 261
+
+```
+steel-core/src/entity/entities/mobs/passive/allay.rs:270:9: warning: unused import: `simdnbt::borrow::read_compound`
+steel-core/src/entity/entities/mobs/passive/allay.rs:271:9: warning: unused import: `simdnbt::owned::NbtCompound`
+steel-core/src/entity/entities/mobs/passive/allay.rs:275:25: warning: unused imports: `Entity` and `LivingEntity`
+steel-core/src/inventory/menu/tests.rs:5:24: warning: unused import: `crafter`
+steel-core/src/command/builtins/whitelist.rs:135:25: error[E0308]: mismatched types: expected `usize`, found `i32`
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+-----
+steel-core/src/entity/entities/mobs/passive/allay.rs:271:9: warning: unused import: `simdnbt::owned::NbtCompound`
+steel-core/src/entity/entities/mobs/passive/allay.rs:275:25: warning: unused imports: `Entity` and `LivingEntity`
+steel-core/src/inventory/menu/tests.rs:5:24: warning: unused import: `crafter`
+steel-core/src/command/builtins/whitelist.rs:135:25: error[E0308]: mismatched types: expected `usize`, found `i32`
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/beehive_block.rs:117:52: error[E0308]: mismatched types: expected `i32`, found `u8`
+-----
+steel-core/src/entity/entities/mobs/passive/allay.rs:275:25: warning: unused imports: `Entity` and `LivingEntity`
+steel-core/src/inventory/menu/tests.rs:5:24: warning: unused import: `crafter`
+steel-core/src/command/builtins/whitelist.rs:135:25: error[E0308]: mismatched types: expected `usize`, found `i32`
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/beehive_block.rs:117:52: error[E0308]: mismatched types: expected `i32`, found `u8`
+steel-core/src/behavior/blocks/container/mod.rs:59:60: error[E0308]: mismatched types: expected `&Arc<Player>`, found `&Player`
+-----
+steel-core/src/inventory/menu/tests.rs:5:24: warning: unused import: `crafter`
+steel-core/src/command/builtins/whitelist.rs:135:25: error[E0308]: mismatched types: expected `usize`, found `i32`
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/beehive_block.rs:117:52: error[E0308]: mismatched types: expected `i32`, found `u8`
+steel-core/src/behavior/blocks/container/mod.rs:59:60: error[E0308]: mismatched types: expected `&Arc<Player>`, found `&Player`
+steel-core/src/behavior/blocks/container/mod.rs:64:16: error[E0061]: this method takes 1 argument but 2 arguments were supplied
+-----
+steel-core/src/command/builtins/whitelist.rs:135:25: error[E0308]: mismatched types: expected `usize`, found `i32`
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/beehive_block.rs:117:52: error[E0308]: mismatched types: expected `i32`, found `u8`
+steel-core/src/behavior/blocks/container/mod.rs:59:60: error[E0308]: mismatched types: expected `&Arc<Player>`, found `&Player`
+steel-core/src/behavior/blocks/container/mod.rs:64:16: error[E0061]: this method takes 1 argument but 2 arguments were supplied
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+-----
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/beehive_block.rs:117:52: error[E0308]: mismatched types: expected `i32`, found `u8`
+steel-core/src/behavior/blocks/container/mod.rs:59:60: error[E0308]: mismatched types: expected `&Arc<Player>`, found `&Player`
+steel-core/src/behavior/blocks/container/mod.rs:64:16: error[E0061]: this method takes 1 argument but 2 arguments were supplied
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/world/waypoint.rs:86:57: error[E0034]: multiple applicable items in scope: multiple `is_alive` found
+-----
+steel-core/src/behavior/blocks/container/beehive_block.rs:117:52: error[E0308]: mismatched types: expected `i32`, found `u8`
+steel-core/src/behavior/blocks/container/mod.rs:59:60: error[E0308]: mismatched types: expected `&Arc<Player>`, found `&Player`
+steel-core/src/behavior/blocks/container/mod.rs:64:16: error[E0061]: this method takes 1 argument but 2 arguments were supplied
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/world/waypoint.rs:86:57: error[E0034]: multiple applicable items in scope: multiple `is_alive` found
+steel-core/src/world/waypoint.rs:142:33: error[E0599]: no method named `send_packet` found for struct `std::sync::Arc<PlayerConnection>` in the current scope: method not found in `std::sync::Arc<PlayerConnection>`
+-----
+steel-core/src/behavior/blocks/container/mod.rs:59:60: error[E0308]: mismatched types: expected `&Arc<Player>`, found `&Player`
+steel-core/src/behavior/blocks/container/mod.rs:64:16: error[E0061]: this method takes 1 argument but 2 arguments were supplied
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/world/waypoint.rs:86:57: error[E0034]: multiple applicable items in scope: multiple `is_alive` found
+steel-core/src/world/waypoint.rs:142:33: error[E0599]: no method named `send_packet` found for struct `std::sync::Arc<PlayerConnection>` in the current scope: method not found in `std::sync::Arc<PlayerConnection>`
+steel-core/src/behavior/blocks/redstone/piston/base.rs:270:19: error[E0624]: method `drop_resources_with_block_entity` is private: private method
+-----
+steel-core/src/behavior/blocks/container/mod.rs:64:16: error[E0061]: this method takes 1 argument but 2 arguments were supplied
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/world/waypoint.rs:86:57: error[E0034]: multiple applicable items in scope: multiple `is_alive` found
+steel-core/src/world/waypoint.rs:142:33: error[E0599]: no method named `send_packet` found for struct `std::sync::Arc<PlayerConnection>` in the current scope: method not found in `std::sync::Arc<PlayerConnection>`
+steel-core/src/behavior/blocks/redstone/piston/base.rs:270:19: error[E0624]: method `drop_resources_with_block_entity` is private: private method
+steel-core/src/world/waypoint.rs:148:37: error[E0599]: no method named `send_packet` found for struct `std::sync::Arc<PlayerConnection>` in the current scope: method not found in `std::sync::Arc<PlayerConnection>`
+-----
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/world/waypoint.rs:86:57: error[E0034]: multiple applicable items in scope: multiple `is_alive` found
+steel-core/src/world/waypoint.rs:142:33: error[E0599]: no method named `send_packet` found for struct `std::sync::Arc<PlayerConnection>` in the current scope: method not found in `std::sync::Arc<PlayerConnection>`
+steel-core/src/behavior/blocks/redstone/piston/base.rs:270:19: error[E0624]: method `drop_resources_with_block_entity` is private: private method
+steel-core/src/world/waypoint.rs:148:37: error[E0599]: no method named `send_packet` found for struct `std::sync::Arc<PlayerConnection>` in the current scope: method not found in `std::sync::Arc<PlayerConnection>`
+steel-core/src/behavior/blocks/redstone/weathering_lightning_rod_block.rs:87:13: error[E0308]: mismatched types: expected `&LightningRodBlock`, found `&Block`
+-----
+steel-core/src/world/waypoint.rs:86:57: error[E0034]: multiple applicable items in scope: multiple `is_alive` found
+steel-core/src/world/waypoint.rs:142:33: error[E0599]: no method named `send_packet` found for struct `std::sync::Arc<PlayerConnection>` in the current scope: method not found in `std::sync::Arc<PlayerConnection>`
+steel-core/src/behavior/blocks/redstone/piston/base.rs:270:19: error[E0624]: method `drop_resources_with_block_entity` is private: private method
+steel-core/src/world/waypoint.rs:148:37: error[E0599]: no method named `send_packet` found for struct `std::sync::Arc<PlayerConnection>` in the current scope: method not found in `std::sync::Arc<PlayerConnection>`
+steel-core/src/behavior/blocks/redstone/weathering_lightning_rod_block.rs:87:13: error[E0308]: mismatched types: expected `&LightningRodBlock`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:38:72: error[E0277]: can't compare `steel_registry::blocks::Block` with `&steel_registry::blocks::Block`: no implementation for `steel_registry::blocks::Block == &steel_registry::blocks::Block`
+-----
+steel-core/src/world/waypoint.rs:142:33: error[E0599]: no method named `send_packet` found for struct `std::sync::Arc<PlayerConnection>` in the current scope: method not found in `std::sync::Arc<PlayerConnection>`
+steel-core/src/behavior/blocks/redstone/piston/base.rs:270:19: error[E0624]: method `drop_resources_with_block_entity` is private: private method
+steel-core/src/world/waypoint.rs:148:37: error[E0599]: no method named `send_packet` found for struct `std::sync::Arc<PlayerConnection>` in the current scope: method not found in `std::sync::Arc<PlayerConnection>`
+steel-core/src/behavior/blocks/redstone/weathering_lightning_rod_block.rs:87:13: error[E0308]: mismatched types: expected `&LightningRodBlock`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:38:72: error[E0277]: can't compare `steel_registry::blocks::Block` with `&steel_registry::blocks::Block`: no implementation for `steel_registry::blocks::Block == &steel_registry::blocks::Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:39:78: error[E0277]: can't compare `steel_registry::blocks::Block` with `&steel_registry::blocks::Block`: no implementation for `steel_registry::blocks::Block == &steel_registry::blocks::Block`
+-----
+steel-core/src/behavior/blocks/redstone/piston/base.rs:270:19: error[E0624]: method `drop_resources_with_block_entity` is private: private method
+steel-core/src/world/waypoint.rs:148:37: error[E0599]: no method named `send_packet` found for struct `std::sync::Arc<PlayerConnection>` in the current scope: method not found in `std::sync::Arc<PlayerConnection>`
+steel-core/src/behavior/blocks/redstone/weathering_lightning_rod_block.rs:87:13: error[E0308]: mismatched types: expected `&LightningRodBlock`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:38:72: error[E0277]: can't compare `steel_registry::blocks::Block` with `&steel_registry::blocks::Block`: no implementation for `steel_registry::blocks::Block == &steel_registry::blocks::Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:39:78: error[E0277]: can't compare `steel_registry::blocks::Block` with `&steel_registry::blocks::Block`: no implementation for `steel_registry::blocks::Block == &steel_registry::blocks::Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:56:37: error[E0308]: mismatched types: expected `&&Block`, found `&Block`
+-----
+steel-core/src/world/waypoint.rs:148:37: error[E0599]: no method named `send_packet` found for struct `std::sync::Arc<PlayerConnection>` in the current scope: method not found in `std::sync::Arc<PlayerConnection>`
+steel-core/src/behavior/blocks/redstone/weathering_lightning_rod_block.rs:87:13: error[E0308]: mismatched types: expected `&LightningRodBlock`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:38:72: error[E0277]: can't compare `steel_registry::blocks::Block` with `&steel_registry::blocks::Block`: no implementation for `steel_registry::blocks::Block == &steel_registry::blocks::Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:39:78: error[E0277]: can't compare `steel_registry::blocks::Block` with `&steel_registry::blocks::Block`: no implementation for `steel_registry::blocks::Block == &steel_registry::blocks::Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:56:37: error[E0308]: mismatched types: expected `&&Block`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:80:22: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+-----
+steel-core/src/behavior/blocks/redstone/weathering_lightning_rod_block.rs:87:13: error[E0308]: mismatched types: expected `&LightningRodBlock`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:38:72: error[E0277]: can't compare `steel_registry::blocks::Block` with `&steel_registry::blocks::Block`: no implementation for `steel_registry::blocks::Block == &steel_registry::blocks::Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:39:78: error[E0277]: can't compare `steel_registry::blocks::Block` with `&steel_registry::blocks::Block`: no implementation for `steel_registry::blocks::Block == &steel_registry::blocks::Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:56:37: error[E0308]: mismatched types: expected `&&Block`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:80:22: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/server/player_admission.rs:280:21: error[E0308]: `match` arms have incompatible types: expected `TranslatedMessage`, found `TextComponent`
+-----
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:38:72: error[E0277]: can't compare `steel_registry::blocks::Block` with `&steel_registry::blocks::Block`: no implementation for `steel_registry::blocks::Block == &steel_registry::blocks::Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:39:78: error[E0277]: can't compare `steel_registry::blocks::Block` with `&steel_registry::blocks::Block`: no implementation for `steel_registry::blocks::Block == &steel_registry::blocks::Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:56:37: error[E0308]: mismatched types: expected `&&Block`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:80:22: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/server/player_admission.rs:280:21: error[E0308]: `match` arms have incompatible types: expected `TranslatedMessage`, found `TextComponent`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:124:18: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+-----
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:39:78: error[E0277]: can't compare `steel_registry::blocks::Block` with `&steel_registry::blocks::Block`: no implementation for `steel_registry::blocks::Block == &steel_registry::blocks::Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:56:37: error[E0308]: mismatched types: expected `&&Block`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:80:22: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/server/player_admission.rs:280:21: error[E0308]: `match` arms have incompatible types: expected `TranslatedMessage`, found `TextComponent`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:124:18: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/turtle_egg_block.rs:100:16: error[E0425]: cannot find function `in_fallback_hatch_window` in this scope: not found in this scope
+-----
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:56:37: error[E0308]: mismatched types: expected `&&Block`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:80:22: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/server/player_admission.rs:280:21: error[E0308]: `match` arms have incompatible types: expected `TranslatedMessage`, found `TextComponent`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:124:18: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/turtle_egg_block.rs:100:16: error[E0425]: cannot find function `in_fallback_hatch_window` in this scope: not found in this scope
+steel-core/src/behavior/item.rs:448:5: error[E0061]: this function takes 3 arguments but 2 arguments were supplied
+-----
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:80:22: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/server/player_admission.rs:280:21: error[E0308]: `match` arms have incompatible types: expected `TranslatedMessage`, found `TextComponent`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:124:18: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/turtle_egg_block.rs:100:16: error[E0425]: cannot find function `in_fallback_hatch_window` in this scope: not found in this scope
+steel-core/src/behavior/item.rs:448:5: error[E0061]: this function takes 3 arguments but 2 arguments were supplied
+steel-core/src/scoreboard.rs:989:10: error[E0277]: the trait bound `ObjectiveState: std::marker::Copy` is not satisfied: unsatisfied trait bound
+-----
+steel-core/src/server/player_admission.rs:280:21: error[E0308]: `match` arms have incompatible types: expected `TranslatedMessage`, found `TextComponent`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:124:18: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/turtle_egg_block.rs:100:16: error[E0425]: cannot find function `in_fallback_hatch_window` in this scope: not found in this scope
+steel-core/src/behavior/item.rs:448:5: error[E0061]: this function takes 3 arguments but 2 arguments were supplied
+steel-core/src/scoreboard.rs:989:10: error[E0277]: the trait bound `ObjectiveState: std::marker::Copy` is not satisfied: unsatisfied trait bound
+steel-core/src/behavior/items/bonemeal.rs:55:17: error[E0425]: cannot find function `emit_growth_particles` in this scope: not found in this scope
+-----
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:124:18: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/turtle_egg_block.rs:100:16: error[E0425]: cannot find function `in_fallback_hatch_window` in this scope: not found in this scope
+steel-core/src/behavior/item.rs:448:5: error[E0061]: this function takes 3 arguments but 2 arguments were supplied
+steel-core/src/scoreboard.rs:989:10: error[E0277]: the trait bound `ObjectiveState: std::marker::Copy` is not satisfied: unsatisfied trait bound
+steel-core/src/behavior/items/bonemeal.rs:55:17: error[E0425]: cannot find function `emit_growth_particles` in this scope: not found in this scope
+steel-core/src/behavior/items/bonemeal.rs:73:18: error[E0599]: no method named `iter_tag` found for struct `BlockRegistry` in the current scope
+-----
+steel-core/src/behavior/blocks/vegetation/turtle_egg_block.rs:100:16: error[E0425]: cannot find function `in_fallback_hatch_window` in this scope: not found in this scope
+steel-core/src/behavior/item.rs:448:5: error[E0061]: this function takes 3 arguments but 2 arguments were supplied
+steel-core/src/scoreboard.rs:989:10: error[E0277]: the trait bound `ObjectiveState: std::marker::Copy` is not satisfied: unsatisfied trait bound
+steel-core/src/behavior/items/bonemeal.rs:55:17: error[E0425]: cannot find function `emit_growth_particles` in this scope: not found in this scope
+steel-core/src/behavior/items/bonemeal.rs:73:18: error[E0599]: no method named `iter_tag` found for struct `BlockRegistry` in the current scope
+steel-core/src/server/boss_bars.rs:127:31: error[E0599]: no method named `uuid` found for reference `&std::sync::Arc<player::Player>` in the current scope
+-----
+steel-core/src/behavior/item.rs:448:5: error[E0061]: this function takes 3 arguments but 2 arguments were supplied
+steel-core/src/scoreboard.rs:989:10: error[E0277]: the trait bound `ObjectiveState: std::marker::Copy` is not satisfied: unsatisfied trait bound
+steel-core/src/behavior/items/bonemeal.rs:55:17: error[E0425]: cannot find function `emit_growth_particles` in this scope: not found in this scope
+steel-core/src/behavior/items/bonemeal.rs:73:18: error[E0599]: no method named `iter_tag` found for struct `BlockRegistry` in the current scope
+steel-core/src/server/boss_bars.rs:127:31: error[E0599]: no method named `uuid` found for reference `&std::sync::Arc<player::Player>` in the current scope
+steel-core/src/server/scoreboard_sync.rs:308:29: error[E0599]: no method named `scoreboard_name` found for reference `&player::Player` in the current scope
+-----
+steel-core/src/scoreboard.rs:989:10: error[E0277]: the trait bound `ObjectiveState: std::marker::Copy` is not satisfied: unsatisfied trait bound
+steel-core/src/behavior/items/bonemeal.rs:55:17: error[E0425]: cannot find function `emit_growth_particles` in this scope: not found in this scope
+steel-core/src/behavior/items/bonemeal.rs:73:18: error[E0599]: no method named `iter_tag` found for struct `BlockRegistry` in the current scope
+steel-core/src/server/boss_bars.rs:127:31: error[E0599]: no method named `uuid` found for reference `&std::sync::Arc<player::Player>` in the current scope
+steel-core/src/server/scoreboard_sync.rs:308:29: error[E0599]: no method named `scoreboard_name` found for reference `&player::Player` in the current scope
+steel-core/src/behavior/items/end_crystal.rs:96:23: error[E0615]: attempted to take value of method `x` on type `steel_utils::BlockPos`: method, not a field
+-----
+steel-core/src/behavior/items/bonemeal.rs:55:17: error[E0425]: cannot find function `emit_growth_particles` in this scope: not found in this scope
+steel-core/src/behavior/items/bonemeal.rs:73:18: error[E0599]: no method named `iter_tag` found for struct `BlockRegistry` in the current scope
+steel-core/src/server/boss_bars.rs:127:31: error[E0599]: no method named `uuid` found for reference `&std::sync::Arc<player::Player>` in the current scope
+steel-core/src/server/scoreboard_sync.rs:308:29: error[E0599]: no method named `scoreboard_name` found for reference `&player::Player` in the current scope
+steel-core/src/behavior/items/end_crystal.rs:96:23: error[E0615]: attempted to take value of method `x` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:97:23: error[E0615]: attempted to take value of method `y` on type `steel_utils::BlockPos`: method, not a field
+-----
+steel-core/src/behavior/items/bonemeal.rs:73:18: error[E0599]: no method named `iter_tag` found for struct `BlockRegistry` in the current scope
+steel-core/src/server/boss_bars.rs:127:31: error[E0599]: no method named `uuid` found for reference `&std::sync::Arc<player::Player>` in the current scope
+steel-core/src/server/scoreboard_sync.rs:308:29: error[E0599]: no method named `scoreboard_name` found for reference `&player::Player` in the current scope
+steel-core/src/behavior/items/end_crystal.rs:96:23: error[E0615]: attempted to take value of method `x` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:97:23: error[E0615]: attempted to take value of method `y` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:98:23: error[E0615]: attempted to take value of method `z` on type `steel_utils::BlockPos`: method, not a field
+-----
+steel-core/src/server/boss_bars.rs:127:31: error[E0599]: no method named `uuid` found for reference `&std::sync::Arc<player::Player>` in the current scope
+steel-core/src/server/scoreboard_sync.rs:308:29: error[E0599]: no method named `scoreboard_name` found for reference `&player::Player` in the current scope
+steel-core/src/behavior/items/end_crystal.rs:96:23: error[E0615]: attempted to take value of method `x` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:97:23: error[E0615]: attempted to take value of method `y` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:98:23: error[E0615]: attempted to take value of method `z` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/player/recipe_book.rs:339:9: error[E0560]: struct `CUpdateRecipes` has no field named `property_sets`: `CUpdateRecipes` does not have this field
+-----
+steel-core/src/server/scoreboard_sync.rs:308:29: error[E0599]: no method named `scoreboard_name` found for reference `&player::Player` in the current scope
+steel-core/src/behavior/items/end_crystal.rs:96:23: error[E0615]: attempted to take value of method `x` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:97:23: error[E0615]: attempted to take value of method `y` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:98:23: error[E0615]: attempted to take value of method `z` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/player/recipe_book.rs:339:9: error[E0560]: struct `CUpdateRecipes` has no field named `property_sets`: `CUpdateRecipes` does not have this field
+steel-core/src/player/recipe_book.rs:340:9: error[E0560]: struct `CUpdateRecipes` has no field named `stonecutter`: `CUpdateRecipes` does not have this field
+-----
+steel-core/src/behavior/items/end_crystal.rs:96:23: error[E0615]: attempted to take value of method `x` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:97:23: error[E0615]: attempted to take value of method `y` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:98:23: error[E0615]: attempted to take value of method `z` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/player/recipe_book.rs:339:9: error[E0560]: struct `CUpdateRecipes` has no field named `property_sets`: `CUpdateRecipes` does not have this field
+steel-core/src/player/recipe_book.rs:340:9: error[E0560]: struct `CUpdateRecipes` has no field named `stonecutter`: `CUpdateRecipes` does not have this field
+steel-core/src/player/mod.rs:1356:46: error[E0308]: mismatched types: expected `&Arc<World>`, found `Arc<World>`
+-----
+steel-core/src/behavior/items/end_crystal.rs:97:23: error[E0615]: attempted to take value of method `y` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:98:23: error[E0615]: attempted to take value of method `z` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/player/recipe_book.rs:339:9: error[E0560]: struct `CUpdateRecipes` has no field named `property_sets`: `CUpdateRecipes` does not have this field
+steel-core/src/player/recipe_book.rs:340:9: error[E0560]: struct `CUpdateRecipes` has no field named `stonecutter`: `CUpdateRecipes` does not have this field
+steel-core/src/player/mod.rs:1356:46: error[E0308]: mismatched types: expected `&Arc<World>`, found `Arc<World>`
+steel-core/src/player/mod.rs:1360:52: error[E0599]: the method `as_ref` exists for reference `&player::Player`, but its trait bounds were not satisfied
+-----
+steel-core/src/behavior/items/end_crystal.rs:98:23: error[E0615]: attempted to take value of method `z` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/player/recipe_book.rs:339:9: error[E0560]: struct `CUpdateRecipes` has no field named `property_sets`: `CUpdateRecipes` does not have this field
+steel-core/src/player/recipe_book.rs:340:9: error[E0560]: struct `CUpdateRecipes` has no field named `stonecutter`: `CUpdateRecipes` does not have this field
+steel-core/src/player/mod.rs:1356:46: error[E0308]: mismatched types: expected `&Arc<World>`, found `Arc<World>`
+steel-core/src/player/mod.rs:1360:52: error[E0599]: the method `as_ref` exists for reference `&player::Player`, but its trait bounds were not satisfied
+steel-core/src/player/stats_counter.rs:195:32: error[E0599]: no method named `level` found for reference `&player::Player` in the current scope: method not found in `&player::Player`
+-----
+steel-core/src/player/recipe_book.rs:339:9: error[E0560]: struct `CUpdateRecipes` has no field named `property_sets`: `CUpdateRecipes` does not have this field
+steel-core/src/player/recipe_book.rs:340:9: error[E0560]: struct `CUpdateRecipes` has no field named `stonecutter`: `CUpdateRecipes` does not have this field
+steel-core/src/player/mod.rs:1356:46: error[E0308]: mismatched types: expected `&Arc<World>`, found `Arc<World>`
+steel-core/src/player/mod.rs:1360:52: error[E0599]: the method `as_ref` exists for reference `&player::Player`, but its trait bounds were not satisfied
+steel-core/src/player/stats_counter.rs:195:32: error[E0599]: no method named `level` found for reference `&player::Player` in the current scope: method not found in `&player::Player`
+steel-core/src/player/stats_counter.rs:203:63: error[E0599]: no method named `scoreboard_name` found for reference `&player::Player` in the current scope
+-----
+steel-core/src/player/recipe_book.rs:340:9: error[E0560]: struct `CUpdateRecipes` has no field named `stonecutter`: `CUpdateRecipes` does not have this field
+steel-core/src/player/mod.rs:1356:46: error[E0308]: mismatched types: expected `&Arc<World>`, found `Arc<World>`
+steel-core/src/player/mod.rs:1360:52: error[E0599]: the method `as_ref` exists for reference `&player::Player`, but its trait bounds were not satisfied
+steel-core/src/player/stats_counter.rs:195:32: error[E0599]: no method named `level` found for reference `&player::Player` in the current scope: method not found in `&player::Player`
+steel-core/src/player/stats_counter.rs:203:63: error[E0599]: no method named `scoreboard_name` found for reference `&player::Player` in the current scope
+steel-core/src/player/game_mode/block_breaking.rs:435:33: error[E0308]: mismatched types: expected `&&Block`, found `&Block`
+-----
+steel-core/src/player/mod.rs:1356:46: error[E0308]: mismatched types: expected `&Arc<World>`, found `Arc<World>`
+steel-core/src/player/mod.rs:1360:52: error[E0599]: the method `as_ref` exists for reference `&player::Player`, but its trait bounds were not satisfied
+steel-core/src/player/stats_counter.rs:195:32: error[E0599]: no method named `level` found for reference `&player::Player` in the current scope: method not found in `&player::Player`
+steel-core/src/player/stats_counter.rs:203:63: error[E0599]: no method named `scoreboard_name` found for reference `&player::Player` in the current scope
+steel-core/src/player/game_mode/block_breaking.rs:435:33: error[E0308]: mismatched types: expected `&&Block`, found `&Block`
+steel-core/src/block_entity/entities/beacon.rs:380:45: error[E0599]: no method named `string` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+-----
+steel-core/src/player/mod.rs:1360:52: error[E0599]: the method `as_ref` exists for reference `&player::Player`, but its trait bounds were not satisfied
+steel-core/src/player/stats_counter.rs:195:32: error[E0599]: no method named `level` found for reference `&player::Player` in the current scope: method not found in `&player::Player`
+steel-core/src/player/stats_counter.rs:203:63: error[E0599]: no method named `scoreboard_name` found for reference `&player::Player` in the current scope
+steel-core/src/player/game_mode/block_breaking.rs:435:33: error[E0308]: mismatched types: expected `&&Block`, found `&Block`
+steel-core/src/block_entity/entities/beacon.rs:380:45: error[E0599]: no method named `string` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:393:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+-----
+steel-core/src/player/stats_counter.rs:195:32: error[E0599]: no method named `level` found for reference `&player::Player` in the current scope: method not found in `&player::Player`
+steel-core/src/player/stats_counter.rs:203:63: error[E0599]: no method named `scoreboard_name` found for reference `&player::Player` in the current scope
+steel-core/src/player/game_mode/block_breaking.rs:435:33: error[E0308]: mismatched types: expected `&&Block`, found `&Block`
+steel-core/src/block_entity/entities/beacon.rs:380:45: error[E0599]: no method named `string` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:393:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:396:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+-----
+steel-core/src/player/stats_counter.rs:203:63: error[E0599]: no method named `scoreboard_name` found for reference `&player::Player` in the current scope
+steel-core/src/player/game_mode/block_breaking.rs:435:33: error[E0308]: mismatched types: expected `&&Block`, found `&Block`
+steel-core/src/block_entity/entities/beacon.rs:380:45: error[E0599]: no method named `string` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:393:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:396:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:64:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+-----
+steel-core/src/player/game_mode/block_breaking.rs:435:33: error[E0308]: mismatched types: expected `&&Block`, found `&Block`
+steel-core/src/block_entity/entities/beacon.rs:380:45: error[E0599]: no method named `string` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:393:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:396:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:64:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:82:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+-----
+steel-core/src/block_entity/entities/beacon.rs:380:45: error[E0599]: no method named `string` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:393:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:396:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:64:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:82:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:101:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+-----
+steel-core/src/block_entity/entities/beacon.rs:393:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:396:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:64:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:82:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:101:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:224:40: error[E0277]: the trait bound `std::option::Option<&'static MenuType>: From<&&MenuType>` is not satisfied: the trait `From<&&MenuType>` is not implemented for `std::option::Option<&'static MenuType>`
+-----
+steel-core/src/block_entity/entities/beacon.rs:396:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:64:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:82:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:101:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:224:40: error[E0277]: the trait bound `std::option::Option<&'static MenuType>: From<&&MenuType>` is not satisfied: the trait `From<&&MenuType>` is not implemented for `std::option::Option<&'static MenuType>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:241:40: error[E0277]: the trait bound `std::option::Option<&'static MenuType>: From<&&MenuType>` is not satisfied: the trait `From<&&MenuType>` is not implemented for `std::option::Option<&'static MenuType>`
+-----
+steel-core/src/inventory/menu/kinds/station_menu.rs:64:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:82:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:101:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:224:40: error[E0277]: the trait bound `std::option::Option<&'static MenuType>: From<&&MenuType>` is not satisfied: the trait `From<&&MenuType>` is not implemented for `std::option::Option<&'static MenuType>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:241:40: error[E0277]: the trait bound `std::option::Option<&'static MenuType>: From<&&MenuType>` is not satisfied: the trait `From<&&MenuType>` is not implemented for `std::option::Option<&'static MenuType>`
+steel-core/src/block_entity/entities/beehive.rs:191:20: error[E0599]: no method named `set_position` found for struct `std::sync::Arc<dyn entity::entity::Entity>` in the current scope
+-----
+steel-core/src/inventory/menu/kinds/station_menu.rs:82:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:101:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:224:40: error[E0277]: the trait bound `std::option::Option<&'static MenuType>: From<&&MenuType>` is not satisfied: the trait `From<&&MenuType>` is not implemented for `std::option::Option<&'static MenuType>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:241:40: error[E0277]: the trait bound `std::option::Option<&'static MenuType>: From<&&MenuType>` is not satisfied: the trait `From<&&MenuType>` is not implemented for `std::option::Option<&'static MenuType>`
+steel-core/src/block_entity/entities/beehive.rs:191:20: error[E0599]: no method named `set_position` found for struct `std::sync::Arc<dyn entity::entity::Entity>` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:213:31: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+-----
+steel-core/src/inventory/menu/kinds/station_menu.rs:101:9: error[E0308]: mismatched types: expected `&&MenuType`, found `&MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:224:40: error[E0277]: the trait bound `std::option::Option<&'static MenuType>: From<&&MenuType>` is not satisfied: the trait `From<&&MenuType>` is not implemented for `std::option::Option<&'static MenuType>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:241:40: error[E0277]: the trait bound `std::option::Option<&'static MenuType>: From<&&MenuType>` is not satisfied: the trait `From<&&MenuType>` is not implemented for `std::option::Option<&'static MenuType>`
+steel-core/src/block_entity/entities/beehive.rs:191:20: error[E0599]: no method named `set_position` found for struct `std::sync::Arc<dyn entity::entity::Entity>` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:213:31: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/inventory/openers_counter.rs:149:15: error[E0599]: no method named `set_block` found for reference `&world::World` in the current scope
+-----
+steel-core/src/inventory/menu/kinds/station_menu.rs:224:40: error[E0277]: the trait bound `std::option::Option<&'static MenuType>: From<&&MenuType>` is not satisfied: the trait `From<&&MenuType>` is not implemented for `std::option::Option<&'static MenuType>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:241:40: error[E0277]: the trait bound `std::option::Option<&'static MenuType>: From<&&MenuType>` is not satisfied: the trait `From<&&MenuType>` is not implemented for `std::option::Option<&'static MenuType>`
+steel-core/src/block_entity/entities/beehive.rs:191:20: error[E0599]: no method named `set_position` found for struct `std::sync::Arc<dyn entity::entity::Entity>` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:213:31: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/inventory/openers_counter.rs:149:15: error[E0599]: no method named `set_block` found for reference `&world::World` in the current scope
+steel-core/src/inventory/menu/kinds/chest_menu.rs:180:36: error[E0599]: no method named `downcast_ref` found for struct `std::sync::Arc<dyn block_entity::BlockEntity>` in the current scope
+-----
+steel-core/src/inventory/menu/kinds/station_menu.rs:241:40: error[E0277]: the trait bound `std::option::Option<&'static MenuType>: From<&&MenuType>` is not satisfied: the trait `From<&&MenuType>` is not implemented for `std::option::Option<&'static MenuType>`
+steel-core/src/block_entity/entities/beehive.rs:191:20: error[E0599]: no method named `set_position` found for struct `std::sync::Arc<dyn entity::entity::Entity>` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:213:31: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/inventory/openers_counter.rs:149:15: error[E0599]: no method named `set_block` found for reference `&world::World` in the current scope
+steel-core/src/inventory/menu/kinds/chest_menu.rs:180:36: error[E0599]: no method named `downcast_ref` found for struct `std::sync::Arc<dyn block_entity::BlockEntity>` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:241:24: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+-----
+steel-core/src/block_entity/entities/beehive.rs:191:20: error[E0599]: no method named `set_position` found for struct `std::sync::Arc<dyn entity::entity::Entity>` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:213:31: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/inventory/openers_counter.rs:149:15: error[E0599]: no method named `set_block` found for reference `&world::World` in the current scope
+steel-core/src/inventory/menu/kinds/chest_menu.rs:180:36: error[E0599]: no method named `downcast_ref` found for struct `std::sync::Arc<dyn block_entity::BlockEntity>` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:241:24: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/inventory/recipe_manager.rs:52:25: error[E0599]: no method named `is_empty` found for struct `CraftingInput` in the current scope: method not found in `CraftingInput`
+-----
+steel-core/src/block_entity/entities/beehive.rs:213:31: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/inventory/openers_counter.rs:149:15: error[E0599]: no method named `set_block` found for reference `&world::World` in the current scope
+steel-core/src/inventory/menu/kinds/chest_menu.rs:180:36: error[E0599]: no method named `downcast_ref` found for struct `std::sync::Arc<dyn block_entity::BlockEntity>` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:241:24: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/inventory/recipe_manager.rs:52:25: error[E0599]: no method named `is_empty` found for struct `CraftingInput` in the current scope: method not found in `CraftingInput`
+steel-core/src/inventory/container/crafting.rs:72:27: error[E0599]: no method named `with_map_data` found for struct `PositionedCraftingInput` in the current scope: method not found in `PositionedCraftingInput`
+-----
+steel-core/src/inventory/openers_counter.rs:149:15: error[E0599]: no method named `set_block` found for reference `&world::World` in the current scope
+steel-core/src/inventory/menu/kinds/chest_menu.rs:180:36: error[E0599]: no method named `downcast_ref` found for struct `std::sync::Arc<dyn block_entity::BlockEntity>` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:241:24: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/inventory/recipe_manager.rs:52:25: error[E0599]: no method named `is_empty` found for struct `CraftingInput` in the current scope: method not found in `CraftingInput`
+steel-core/src/inventory/container/crafting.rs:72:27: error[E0599]: no method named `with_map_data` found for struct `PositionedCraftingInput` in the current scope: method not found in `PositionedCraftingInput`
+steel-core/src/block_entity/entities/beehive.rs:270:73: error[E0308]: mismatched types: expected `u8`, found `i32`
+-----
+steel-core/src/inventory/menu/kinds/chest_menu.rs:180:36: error[E0599]: no method named `downcast_ref` found for struct `std::sync::Arc<dyn block_entity::BlockEntity>` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:241:24: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/inventory/recipe_manager.rs:52:25: error[E0599]: no method named `is_empty` found for struct `CraftingInput` in the current scope: method not found in `CraftingInput`
+steel-core/src/inventory/container/crafting.rs:72:27: error[E0599]: no method named `with_map_data` found for struct `PositionedCraftingInput` in the current scope: method not found in `PositionedCraftingInput`
+steel-core/src/block_entity/entities/beehive.rs:270:73: error[E0308]: mismatched types: expected `u8`, found `i32`
+steel-core/src/inventory/slots/crafting_slots.rs:27:5: error[E0277]: the trait bound `Mutex<RawMutex, Option<Identifier>>: Clone` is not satisfied: the trait `std::clone::Clone` is not implemented for `Mutex<RawMutex, Option<Identifier>>`
+-----
+steel-core/src/block_entity/entities/beehive.rs:241:24: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/inventory/recipe_manager.rs:52:25: error[E0599]: no method named `is_empty` found for struct `CraftingInput` in the current scope: method not found in `CraftingInput`
+steel-core/src/inventory/container/crafting.rs:72:27: error[E0599]: no method named `with_map_data` found for struct `PositionedCraftingInput` in the current scope: method not found in `PositionedCraftingInput`
+steel-core/src/block_entity/entities/beehive.rs:270:73: error[E0308]: mismatched types: expected `u8`, found `i32`
+steel-core/src/inventory/slots/crafting_slots.rs:27:5: error[E0277]: the trait bound `Mutex<RawMutex, Option<Identifier>>: Clone` is not satisfied: the trait `std::clone::Clone` is not implemented for `Mutex<RawMutex, Option<Identifier>>`
+steel-core/src/entity/villager_trades.rs:250:74: error[E0599]: no method named `by_id` found for struct `VillagerProfessionRegistry` in the current scope: method not found in `VillagerProfessionRegistry`
+-----
+steel-core/src/inventory/recipe_manager.rs:52:25: error[E0599]: no method named `is_empty` found for struct `CraftingInput` in the current scope: method not found in `CraftingInput`
+steel-core/src/inventory/container/crafting.rs:72:27: error[E0599]: no method named `with_map_data` found for struct `PositionedCraftingInput` in the current scope: method not found in `PositionedCraftingInput`
+steel-core/src/block_entity/entities/beehive.rs:270:73: error[E0308]: mismatched types: expected `u8`, found `i32`
+steel-core/src/inventory/slots/crafting_slots.rs:27:5: error[E0277]: the trait bound `Mutex<RawMutex, Option<Identifier>>: Clone` is not satisfied: the trait `std::clone::Clone` is not implemented for `Mutex<RawMutex, Option<Identifier>>`
+steel-core/src/entity/villager_trades.rs:250:74: error[E0599]: no method named `by_id` found for struct `VillagerProfessionRegistry` in the current scope: method not found in `VillagerProfessionRegistry`
+steel-core/src/inventory/lock.rs:168:43: error[E0624]: method `level` is private: private method
+-----
+steel-core/src/inventory/container/crafting.rs:72:27: error[E0599]: no method named `with_map_data` found for struct `PositionedCraftingInput` in the current scope: method not found in `PositionedCraftingInput`
+steel-core/src/block_entity/entities/beehive.rs:270:73: error[E0308]: mismatched types: expected `u8`, found `i32`
+steel-core/src/inventory/slots/crafting_slots.rs:27:5: error[E0277]: the trait bound `Mutex<RawMutex, Option<Identifier>>: Clone` is not satisfied: the trait `std::clone::Clone` is not implemented for `Mutex<RawMutex, Option<Identifier>>`
+steel-core/src/entity/villager_trades.rs:250:74: error[E0599]: no method named `by_id` found for struct `VillagerProfessionRegistry` in the current scope: method not found in `VillagerProfessionRegistry`
+steel-core/src/inventory/lock.rs:168:43: error[E0624]: method `level` is private: private method
+steel-core/src/inventory/lock.rs:174:48: error[E0624]: method `pos` is private: private method
+-----
+steel-core/src/block_entity/entities/beehive.rs:270:73: error[E0308]: mismatched types: expected `u8`, found `i32`
+steel-core/src/inventory/slots/crafting_slots.rs:27:5: error[E0277]: the trait bound `Mutex<RawMutex, Option<Identifier>>: Clone` is not satisfied: the trait `std::clone::Clone` is not implemented for `Mutex<RawMutex, Option<Identifier>>`
+steel-core/src/entity/villager_trades.rs:250:74: error[E0599]: no method named `by_id` found for struct `VillagerProfessionRegistry` in the current scope: method not found in `VillagerProfessionRegistry`
+steel-core/src/inventory/lock.rs:168:43: error[E0624]: method `level` is private: private method
+steel-core/src/inventory/lock.rs:174:48: error[E0624]: method `pos` is private: private method
+steel-core/src/block_entity/entities/beehive.rs:276:14: error[E0599]: no method named `block_state` found for reference `&beehive::BeehiveBlockEntity` in the current scope
+-----
+steel-core/src/inventory/slots/crafting_slots.rs:27:5: error[E0277]: the trait bound `Mutex<RawMutex, Option<Identifier>>: Clone` is not satisfied: the trait `std::clone::Clone` is not implemented for `Mutex<RawMutex, Option<Identifier>>`
+steel-core/src/entity/villager_trades.rs:250:74: error[E0599]: no method named `by_id` found for struct `VillagerProfessionRegistry` in the current scope: method not found in `VillagerProfessionRegistry`
+steel-core/src/inventory/lock.rs:168:43: error[E0624]: method `level` is private: private method
+steel-core/src/inventory/lock.rs:174:48: error[E0624]: method `pos` is private: private method
+steel-core/src/block_entity/entities/beehive.rs:276:14: error[E0599]: no method named `block_state` found for reference `&beehive::BeehiveBlockEntity` in the current scope
+steel-core/src/block_entity/entities/banner.rs:80:26: error[E0277]: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator
+-----
+steel-core/src/entity/villager_trades.rs:250:74: error[E0599]: no method named `by_id` found for struct `VillagerProfessionRegistry` in the current scope: method not found in `VillagerProfessionRegistry`
+steel-core/src/inventory/lock.rs:168:43: error[E0624]: method `level` is private: private method
+steel-core/src/inventory/lock.rs:174:48: error[E0624]: method `pos` is private: private method
+steel-core/src/block_entity/entities/beehive.rs:276:14: error[E0599]: no method named `block_state` found for reference `&beehive::BeehiveBlockEntity` in the current scope
+steel-core/src/block_entity/entities/banner.rs:80:26: error[E0277]: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator
+steel-core/src/fluid/fluids/lava.rs:107:21: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+-----
+steel-core/src/inventory/lock.rs:168:43: error[E0624]: method `level` is private: private method
+steel-core/src/inventory/lock.rs:174:48: error[E0624]: method `pos` is private: private method
+steel-core/src/block_entity/entities/beehive.rs:276:14: error[E0599]: no method named `block_state` found for reference `&beehive::BeehiveBlockEntity` in the current scope
+steel-core/src/block_entity/entities/banner.rs:80:26: error[E0277]: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator
+steel-core/src/fluid/fluids/lava.rs:107:21: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/fluid/fluids/lava.rs:108:21: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+-----
+steel-core/src/inventory/lock.rs:174:48: error[E0624]: method `pos` is private: private method
+steel-core/src/block_entity/entities/beehive.rs:276:14: error[E0599]: no method named `block_state` found for reference `&beehive::BeehiveBlockEntity` in the current scope
+steel-core/src/block_entity/entities/banner.rs:80:26: error[E0277]: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator
+steel-core/src/fluid/fluids/lava.rs:107:21: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/fluid/fluids/lava.rs:108:21: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/fluid/fluids/lava.rs:109:21: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+-----
+steel-core/src/block_entity/entities/beehive.rs:276:14: error[E0599]: no method named `block_state` found for reference `&beehive::BeehiveBlockEntity` in the current scope
+steel-core/src/block_entity/entities/banner.rs:80:26: error[E0277]: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator
+steel-core/src/fluid/fluids/lava.rs:107:21: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/fluid/fluids/lava.rs:108:21: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/fluid/fluids/lava.rs:109:21: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/block_entity/entities/potion_brewing.rs:75:44: error[E0599]: no method named `key` found for reference `&'static steel_registry::items::Item` in the current scope: field, not a method
+-----
+steel-core/src/block_entity/entities/banner.rs:80:26: error[E0277]: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator
+steel-core/src/fluid/fl

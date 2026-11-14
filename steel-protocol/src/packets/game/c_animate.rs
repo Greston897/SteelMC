@@ -1,6 +1,7 @@
 //! Clientbound animate packet - sent to play an entity animation.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_ANIMATE;
 
 /// Animation action types.

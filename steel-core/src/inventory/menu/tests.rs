@@ -1,8 +1,12 @@
 use std::sync::Arc;
 
-use super::{MenuBuilder, kinds::BasicKind};
+use super::{
+    MenuBuilder,
+    kinds::{BasicKind, crafter},
+};
 use crate::{
     behavior::init_behaviors,
+    block_entity::entities::CrafterBlockEntity,
     block_entity::init_block_entities,
     chunk::{Chunk, status::ChunkStatus},
     entity::{Entity as _, entities::ItemEntity},
@@ -80,15 +84,15 @@ fn perform_partial_swap(world_name: &'static str, game_mode: GameType) -> Partia
     {
         let mut inventory = player.inventory.lock();
         for slot in 0..inventory.get_container_size() {
-            inventory.set_item(slot, ItemStack::with_count(&vanilla_items::DIRT, 64));
+            inventory.set_item(slot, ItemStack::with_count(&*vanilla_items::DIRT, 64));
         }
-        inventory.set_item(0, ItemStack::with_count(&vanilla_items::DIRT, 2));
+        inventory.set_item(0, ItemStack::with_count(&*vanilla_items::DIRT, 2));
     }
 
     let target = SimpleContainer::new(1).into_shared();
     target
         .lock()
-        .set_item(0, ItemStack::new(&vanilla_items::STONE));
+        .set_item(0, ItemStack::new(&*vanilla_items::STONE));
     let target_ref = ContainerRef::from(Arc::clone(&target));
     let mut builder = MenuBuilder::new(None, 1);
     let target_slots = builder.custom_section([SingleItemSlot {
@@ -119,7 +123,7 @@ fn swap_locks_player_inventory_when_menu_has_no_inventory_slots() {
     let container = SimpleContainer::new(45).into_shared();
     container
         .lock()
-        .set_item(0, ItemStack::new(&vanilla_items::STONE));
+        .set_item(0, ItemStack::new(&*vanilla_items::STONE));
 
     let mut builder = MenuBuilder::new(&vanilla_menu_types::GENERIC_9X1, 1);
     let menu_slots = builder.section(Arc::clone(&container), 45);
@@ -139,7 +143,7 @@ fn swap_locks_player_inventory_when_menu_has_no_inventory_slots() {
             .inventory
             .lock()
             .get_item(0)
-            .is(&vanilla_items::STONE)
+            .is(&*vanilla_items::STONE)
     );
 }
 
@@ -168,7 +172,7 @@ fn draining_a_block_entity_slot_marks_its_chunk_dirty() {
         assert!(guard.set_item(
             container.container_id(),
             0,
-            ItemStack::new(&vanilla_items::STONE),
+            ItemStack::new(&*vanilla_items::STONE),
         ));
     }
     holder
@@ -202,11 +206,11 @@ fn one_slot_creative_clone_drag_is_a_vanilla_noop() {
     let container = SimpleContainer::new(1).into_shared();
     container
         .lock()
-        .set_item(0, ItemStack::new(&vanilla_items::STONE));
+        .set_item(0, ItemStack::new(&*vanilla_items::STONE));
     let mut builder = MenuBuilder::new(None, 1);
     let slots = builder.section(Arc::clone(&container), 1);
     let mut menu = builder.build(BasicKind {});
-    *menu.behavior_mut().carried_mut() = ItemStack::new(&vanilla_items::STONE);
+    *menu.behavior_mut().carried_mut() = ItemStack::new(&*vanilla_items::STONE);
 
     menu.clicked(
         Click::QuickCraft(QuickCraft::Start {
@@ -234,7 +238,7 @@ fn partial_swap_overflow_marks_displaced_item_as_thrown() {
 
     assert_eq!(fixture.player.inventory.lock().get_item(0).count(), 1);
     let target_item = fixture.target.lock().get_item(0).clone();
-    assert!(target_item.is(&vanilla_items::DIRT));
+    assert!(target_item.is(&*vanilla_items::DIRT));
     assert_eq!(target_item.count(), 1);
     let dropped = fixture.world_fixture.world.get_entities_in_aabb_matching(
         &WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 68.0, 2.0),
@@ -244,7 +248,7 @@ fn partial_swap_overflow_marks_displaced_item_as_thrown() {
     let Some(item) = dropped[0].as_ref().downcast_ref::<ItemEntity>() else {
         panic!("dropped entity should retain its concrete item type");
     };
-    assert!(item.get_item().is(&vanilla_items::STONE));
+    assert!(item.get_item().is(&*vanilla_items::STONE));
     assert_eq!(item.get_thrower(), Some(player_id));
 }
 
@@ -254,7 +258,7 @@ fn partial_swap_overflow_is_discarded_in_creative() {
 
     assert_eq!(fixture.player.inventory.lock().get_item(0).count(), 1);
     let target_item = fixture.target.lock().get_item(0).clone();
-    assert!(target_item.is(&vanilla_items::DIRT));
+    assert!(target_item.is(&*vanilla_items::DIRT));
     assert_eq!(target_item.count(), 1);
     assert!(
         fixture
@@ -263,7 +267,7 @@ fn partial_swap_overflow_is_discarded_in_creative() {
             .lock()
             .items()
             .iter()
-            .all(|item| !item.is(&vanilla_items::STONE))
+            .all(|item| !item.is(&*vanilla_items::STONE))
     );
     assert!(
         fixture
@@ -275,4 +279,91 @@ fn partial_swap_overflow_is_discarded_in_creative() {
             )
             .is_empty()
     );
+}
+
+#[test]
+fn crafter_menu_toggles_the_block_entity_mask_through_data_slot_zero() {
+    init_vanilla_registry();
+    init_behaviors();
+    init_block_entities();
+    let world_fixture = fresh_test_world("crafter_menu_toggle");
+    let world = &world_fixture.world;
+    let pos = steel_utils::BlockPos::new(0, 64, 0);
+    insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+    assert!(world.set_block(
+        pos,
+        vanilla_blocks::CRAFTER.default_state(),
+        UpdateFlags::UPDATE_NONE,
+    ));
+    let block_entity = world
+        .get_block_entity(pos)
+        .expect("crafter should create its block entity");
+    let container = ContainerRef::from_block_entity(Arc::clone(&block_entity))
+        .expect("crafter should expose a container");
+
+    let player = TestPlayerBuilder::new(Arc::clone(world), "CrafterTester", 1).build();
+    player.base().set_position_local(DVec3::new(0.5, 64.0, 0.5));
+    let inventory = Arc::clone(&player.inventory);
+    let crafter_handle = Arc::clone(&block_entity);
+    let mut menu = crafter(inventory, 1, pos, container, block_entity);
+
+    assert!(menu.set_crafter_slot_state(3, true));
+    let crafter_entity = crafter_handle
+        .downcast_ref::<CrafterBlockEntity>()
+        .expect("crafter block entity type");
+    assert_eq!(crafter_entity.disabled_slots() & (1 << 3), 1 << 3);
+    assert_eq!(menu.behavior().get_data(0), Some(1 << 3));
+
+    // Disabling twice is a no-op.
+    assert!(!menu.set_crafter_slot_state(3, true));
+    // Re-enabling clears the bit again.
+    assert!(menu.set_crafter_slot_state(3, false));
+    assert_eq!(crafter_entity.disabled_slots(), 0);
+
+    // A slot outside the 3x3 grid is rejected instead of panicking.
+    assert!(!menu.set_crafter_slot_state(9, true));
+    assert_eq!(crafter_entity.disabled_slots(), 0);
+}
+
+#[test]
+fn crafter_menu_refuses_to_disable_an_occupied_slot() {
+    init_vanilla_registry();
+    init_behaviors();
+    init_block_entities();
+    let world_fixture = fresh_test_world("crafter_menu_occupied");
+    let world = &world_fixture.world;
+    let pos = steel_utils::BlockPos::new(0, 64, 0);
+    insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+    assert!(world.set_block(
+        pos,
+        vanilla_blocks::CRAFTER.default_state(),
+        UpdateFlags::UPDATE_NONE,
+    ));
+    let block_entity = world
+        .get_block_entity(pos)
+        .expect("crafter should create its block entity");
+    let crafter_entity = block_entity
+        .downcast_ref::<CrafterBlockEntity>()
+        .expect("crafter block entity type");
+    let container =
+        ContainerRef::from_block_entity(Arc::clone(&block_entity)).expect("container");
+    {
+        let mut guard = ContainerLockGuard::lock_all(&[&container]);
+        assert!(guard.set_item(
+            container.container_id(),
+            0,
+            ItemStack::new(&*vanilla_items::STONE),
+        ));
+    }
+
+    let player = TestPlayerBuilder::new(Arc::clone(world), "CrafterOccupied", 1).build();
+    let inventory = Arc::clone(&player.inventory);
+    let crafter_handle = Arc::clone(&block_entity);
+    let mut menu = crafter(inventory, 1, pos, container, block_entity);
+    let crafter_entity = crafter_handle
+        .downcast_ref::<CrafterBlockEntity>()
+        .expect("crafter block entity type");
+
+    assert!(!menu.set_crafter_slot_state(0, true));
+    assert_eq!(crafter_entity.disabled_slots(), 0);
 }

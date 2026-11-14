@@ -1,3 +1,4 @@
+use steel_utils::serial::PrefixedWrite as _;
 use steel_macros::{ReadFrom, WriteTo};
 
 #[derive(Clone, Debug, WriteTo, ReadFrom)]

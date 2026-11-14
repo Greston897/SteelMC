@@ -17,7 +17,7 @@
 //!
 //!     let items = b.grid(3, |g| {
 //!         let items = g.place(Rect::cols(3..6).rows(1), storage).section();
-//!         g.paint_all(&vanilla_items::GRAY_STAINED_GLASS_PANE);
+//!         g.paint_all(&*vanilla_items::GRAY_STAINED_GLASS_PANE);
 //!         items
 //!     });
 //!

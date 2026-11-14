@@ -264,7 +264,7 @@ fn pig_saves_and_loads_saddle_equipment() {
     init_vanilla_registry();
 
     let pig = PigEntity::new(&vanilla_entities::PIG, 1, DVec3::ZERO, Weak::new());
-    let saddle = ItemStack::new(&vanilla_items::SADDLE);
+    let saddle = ItemStack::new(&*vanilla_items::SADDLE);
     pig.living_base()
         .equipment()
         .lock()

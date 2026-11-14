@@ -149,7 +149,7 @@ impl ThrowableProjectile for LingeringPotionEntity {}
 
 impl ThrowableItemProjectile for LingeringPotionEntity {
     fn get_default_item(&self) -> ItemRef {
-        &vanilla_items::LINGERING_POTION
+        &*vanilla_items::LINGERING_POTION
     }
 
     fn set_item(&self, item: ItemStack) {

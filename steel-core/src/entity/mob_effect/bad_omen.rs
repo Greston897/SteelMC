@@ -1,13 +1,14 @@
 //! `BadOmenMobEffect` behavior.
 
 use super::MobEffectBehavior;
-use crate::entity::LivingEntity;
-use crate::world::World;
+use crate::entity::{Entity as _, LivingEntity};
+use crate::world::{World, raid};
 
 /// Bad omen mob effect behavior.
-// TODO: `applyEffectTick` checks the mob is a non-spectator `ServerPlayer`
-// standing in a village (`ServerLevel.isVillage`) with no raid already at its
-// max omen level, then starts/extends a `Raid`
+///
+/// Vanilla `BadOmenMobEffect.applyEffectTick`: a non-spectator player standing in
+/// a village with no raid at the maximum omen level starts (or extends) a raid and
+/// then loses the effect.
 pub struct BadOmenBehavior;
 
 impl MobEffectBehavior for BadOmenBehavior {
@@ -15,7 +16,43 @@ impl MobEffectBehavior for BadOmenBehavior {
         true
     }
 
-    fn apply_effect_tick(&self, _world: &World, _user: &dyn LivingEntity, _amplifier: i32) -> bool {
+    fn apply_effect_tick(&self, world: &World, user: &dyn LivingEntity, amplifier: i32) -> bool {
+        let Some(player) = user.as_player() else {
+            return true;
+        };
+        if player.is_spectator() {
+            return true;
+        }
+
+        // Vanilla `BadOmenMobEffect` bails out when the `raids` game rule is off,
+        // so a disabled rule never starts or extends a raid.
+        if !world.get_game_rule(&steel_registry::vanilla_game_rules::RAIDS) {
+            return true;
+        }
+
+        let pos = player.block_position();
+        let Some(center) = raid::village_center_world(world, pos) else {
+            return true;
+        };
+
+        // Vanilla refuses to extend a raid that already reached the omen cap.
+        if let Some(existing) = world.raids.raid_at(center) {
+            if existing.omen_level >= raid::MAX_OMEN_LEVEL {
+                return true;
+            }
+        }
+
+        world.raids.raise_omen(center, amplifier);
+        // Vanilla `BadOmenMobEffect.applyEffectTick` fires `CriteriaTriggers.
+        // VOLUNTARY_EXILE` on the player that caused the raid, which is exactly
+        // this player walking bad omen into a village.
+        player.trigger_advancement_with_context(
+            &steel_registry::vanilla_criteria_triggers::VOLUNTARY_EXILE,
+            &crate::player::advancement::predicate::TriggerContext::at(
+                &player.get_world(),
+                player.position(),
+            ),
+        );
         true
     }
 }

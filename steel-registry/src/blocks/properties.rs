@@ -335,6 +335,43 @@ pub enum FrontAndTop {
     SouthUp,
 }
 
+impl FrontAndTop {
+    /// The direction the front face points at.
+    ///
+    /// Vanilla `FrontAndTop.getFront`; the enum is stored `front_top` and the
+    /// front part is the first six variants.
+    #[must_use]
+    pub const fn front(self) -> Direction {
+        match self {
+            FrontAndTop::DownEast | FrontAndTop::DownNorth | FrontAndTop::DownSouth
+            | FrontAndTop::DownWest => Direction::Down,
+            FrontAndTop::UpEast | FrontAndTop::UpNorth | FrontAndTop::UpSouth
+            | FrontAndTop::UpWest => Direction::Up,
+            FrontAndTop::WestUp => Direction::West,
+            FrontAndTop::EastUp => Direction::East,
+            FrontAndTop::NorthUp => Direction::North,
+            FrontAndTop::SouthUp => Direction::South,
+        }
+    }
+
+    /// Builds `front_top` for a mostly-horizontal front, as vanilla
+    /// `FrontAndTop.fromFrontAndTop(front, Direction.UP)` does.
+    ///
+    /// Vertical fronts pair with `East` as their top, which is what the
+    /// vanilla helper produces for a `Down`/`Up` front.
+    #[must_use]
+    pub const fn from_front_and_top(front: Direction) -> Self {
+        match front {
+            Direction::Down => FrontAndTop::DownEast,
+            Direction::Up => FrontAndTop::UpEast,
+            Direction::North => FrontAndTop::NorthUp,
+            Direction::South => FrontAndTop::SouthUp,
+            Direction::West => FrontAndTop::WestUp,
+            Direction::East => FrontAndTop::EastUp,
+        }
+    }
+}
+
 impl PropertyEnum for FrontAndTop {
     fn as_str(&self) -> &str {
         match self {
@@ -989,51 +1026,98 @@ impl PropertyEnum for Axis {
 
 pub struct BlockStateProperties;
 
-//TODO: These got quickly implemented so the ordering might be off. Fix in the future.
+/// Block state properties shared by the vanilla block set.
+///
+/// Constants are kept in alphabetical order; the order is irrelevant to game
+/// logic but keeps the list reviewable next to vanilla's `BlockStateProperties`.
 impl BlockStateProperties {
+    pub const AGE_1: IntProperty = IntProperty::new("age", 0, 1);
+    pub const AGE_15: IntProperty = IntProperty::new("age", 0, 15);
+    pub const AGE_2: IntProperty = IntProperty::new("age", 0, 2);
+    pub const AGE_25: IntProperty = IntProperty::new("age", 0, 25);
+    pub const AGE_3: IntProperty = IntProperty::new("age", 0, 3);
+    pub const AGE_4: IntProperty = IntProperty::new("age", 0, 4);
+    pub const AGE_5: IntProperty = IntProperty::new("age", 0, 5);
+    pub const AGE_7: IntProperty = IntProperty::new("age", 0, 7);
     pub const ATTACHED: BoolProperty = BoolProperty::new("attached");
+    pub const ATTACH_FACE: EnumProperty<AttachFace> = EnumProperty::new(
+        "face",
+        &[AttachFace::Floor, AttachFace::Wall, AttachFace::Ceiling],
+    );
+    pub const AXIS: EnumProperty<Axis> = EnumProperty::new("axis", &[Axis::X, Axis::Y, Axis::Z]);
+    pub const BAMBOO_LEAVES: EnumProperty<BambooLeaves> = EnumProperty::new(
+        "leaves",
+        &[BambooLeaves::None, BambooLeaves::Small, BambooLeaves::Large],
+    );
+    pub const BED_PART: EnumProperty<BedPart> =
+        EnumProperty::new("part", &[BedPart::Head, BedPart::Foot]);
+    pub const BELL_ATTACHMENT: EnumProperty<BellAttachType> = EnumProperty::new(
+        "attachment",
+        &[
+            BellAttachType::Floor,
+            BellAttachType::Ceiling,
+            BellAttachType::SingleWall,
+            BellAttachType::DoubleWall,
+        ],
+    );
     pub const BERRIES: BoolProperty = BoolProperty::new("berries");
+    pub const BITES: IntProperty = IntProperty::new("bites", 0, 6);
     pub const BLOOM: BoolProperty = BoolProperty::new("bloom");
     pub const BOTTOM: BoolProperty = BoolProperty::new("bottom");
+    pub const CANDLES: IntProperty = IntProperty::new("candles", 1, 4);
     pub const CAN_SUMMON: BoolProperty = BoolProperty::new("can_summon");
+    pub const CHEST_TYPE: EnumProperty<ChestType> = EnumProperty::new(
+        "type",
+        &[ChestType::Single, ChestType::Left, ChestType::Right],
+    );
     pub const CONDITIONAL: BoolProperty = BoolProperty::new("conditional");
+    pub const COPPER_GOLEM_POSE: EnumProperty<Pose> = EnumProperty::new(
+        "copper_golem_pose",
+        &[Pose::Standing, Pose::Sitting, Pose::Running, Pose::Star],
+    );
+    pub const CRACKED: BoolProperty = BoolProperty::new("cracked");
+    pub const CRAFTING: BoolProperty = BoolProperty::new("crafting");
+    pub const CREAKING_HEART_STATE: EnumProperty<CreakingHeartState> = EnumProperty::new(
+        "creaking_heart_state",
+        &[
+            CreakingHeartState::Uprooted,
+            CreakingHeartState::Dormant,
+            CreakingHeartState::Awake,
+        ],
+    );
+    pub const DELAY: IntProperty = IntProperty::new("delay", 1, 4);
     pub const DISARMED: BoolProperty = BoolProperty::new("disarmed");
+    pub const DISTANCE: IntProperty = IntProperty::new("distance", 1, 7);
+    pub const DOOR_HINGE: EnumProperty<DoorHingeSide> =
+        EnumProperty::new("hinge", &[DoorHingeSide::Left, DoorHingeSide::Right]);
+    pub const DOUBLE_BLOCK_HALF: EnumProperty<DoubleBlockHalf> =
+        EnumProperty::new("half", &[DoubleBlockHalf::Upper, DoubleBlockHalf::Lower]);
+    pub const DOWN: BoolProperty = BoolProperty::new("down");
     pub const DRAG: BoolProperty = BoolProperty::new("drag");
+    pub const DRIED_GHAST_HYDRATION_LEVELS: IntProperty = IntProperty::new("hydration", 0, 3);
+    pub const DRIPSTONE_THICKNESS: EnumProperty<DripstoneThickness> = EnumProperty::new(
+        "thickness",
+        &[
+            DripstoneThickness::TipMerge,
+            DripstoneThickness::Tip,
+            DripstoneThickness::Frustum,
+            DripstoneThickness::Middle,
+            DripstoneThickness::Base,
+        ],
+    );
+    pub const DUSTED: IntProperty = IntProperty::new("dusted", 0, 3);
+
+    pub const EAST: BoolProperty = BoolProperty::new("east");
+    pub const EAST_REDSTONE: EnumProperty<RedstoneSide> = EnumProperty::new(
+        "east",
+        &[RedstoneSide::Up, RedstoneSide::Side, RedstoneSide::None],
+    );
+    pub const EAST_WALL: EnumProperty<WallSide> =
+        EnumProperty::new("east", &[WallSide::None, WallSide::Low, WallSide::Tall]);
+    pub const EGGS: IntProperty = IntProperty::new("eggs", 1, 4);
     pub const ENABLED: BoolProperty = BoolProperty::new("enabled");
     pub const EXTENDED: BoolProperty = BoolProperty::new("extended");
     pub const EYE: BoolProperty = BoolProperty::new("eye");
-    pub const FALLING: BoolProperty = BoolProperty::new("falling");
-    pub const HANGING: BoolProperty = BoolProperty::new("hanging");
-    pub const HAS_BOTTLE_0: BoolProperty = BoolProperty::new("has_bottle_0");
-    pub const HAS_BOTTLE_1: BoolProperty = BoolProperty::new("has_bottle_1");
-    pub const HAS_BOTTLE_2: BoolProperty = BoolProperty::new("has_bottle_2");
-    pub const HAS_RECORD: BoolProperty = BoolProperty::new("has_record");
-    pub const HAS_BOOK: BoolProperty = BoolProperty::new("has_book");
-    pub const INVERTED: BoolProperty = BoolProperty::new("inverted");
-    pub const IN_WALL: BoolProperty = BoolProperty::new("in_wall");
-    pub const LIT: BoolProperty = BoolProperty::new("lit");
-    pub const LOCKED: BoolProperty = BoolProperty::new("locked");
-    pub const NATURAL: BoolProperty = BoolProperty::new("natural");
-    pub const OCCUPIED: BoolProperty = BoolProperty::new("occupied");
-    pub const OPEN: BoolProperty = BoolProperty::new("open");
-    pub const PERSISTENT: BoolProperty = BoolProperty::new("persistent");
-    pub const POWERED: BoolProperty = BoolProperty::new("powered");
-    pub const SHORT: BoolProperty = BoolProperty::new("short");
-    pub const SHRIEKING: BoolProperty = BoolProperty::new("shrieking");
-    pub const SIGNAL_FIRE: BoolProperty = BoolProperty::new("signal_fire");
-    pub const SNOWY: BoolProperty = BoolProperty::new("snowy");
-    pub const TIP: BoolProperty = BoolProperty::new("tip");
-    pub const TRIGGERED: BoolProperty = BoolProperty::new("triggered");
-    pub const UNSTABLE: BoolProperty = BoolProperty::new("unstable");
-    pub const WATERLOGGED: BoolProperty = BoolProperty::new("waterlogged");
-    pub const HORIZONTAL_AXIS: EnumProperty<Axis> = EnumProperty::new("axis", &[Axis::X, Axis::Z]);
-    pub const AXIS: EnumProperty<Axis> = EnumProperty::new("axis", &[Axis::X, Axis::Y, Axis::Z]);
-    pub const UP: BoolProperty = BoolProperty::new("up");
-    pub const DOWN: BoolProperty = BoolProperty::new("down");
-    pub const NORTH: BoolProperty = BoolProperty::new("north");
-    pub const EAST: BoolProperty = BoolProperty::new("east");
-    pub const SOUTH: BoolProperty = BoolProperty::new("south");
-    pub const WEST: BoolProperty = BoolProperty::new("west");
     pub const FACING: EnumProperty<Direction> = EnumProperty::with_comparison_order(
         "facing",
         &[
@@ -1063,6 +1147,17 @@ impl BlockStateProperties {
             Direction::East,
         ],
     );
+    pub const FALLING: BoolProperty = BoolProperty::new("falling");
+    pub const FLOWER_AMOUNT: IntProperty = IntProperty::new("flower_amount", 1, 4);
+    pub const HALF: EnumProperty<Half> = EnumProperty::new("half", &[Half::Top, Half::Bottom]);
+    pub const HANGING: BoolProperty = BoolProperty::new("hanging");
+    pub const HAS_BOOK: BoolProperty = BoolProperty::new("has_book");
+    pub const HAS_BOTTLE_0: BoolProperty = BoolProperty::new("has_bottle_0");
+    pub const HAS_BOTTLE_1: BoolProperty = BoolProperty::new("has_bottle_1");
+    pub const HAS_BOTTLE_2: BoolProperty = BoolProperty::new("has_bottle_2");
+    pub const HAS_RECORD: BoolProperty = BoolProperty::new("has_record");
+    pub const HATCH: IntProperty = IntProperty::new("hatch", 0, 2);
+    pub const HORIZONTAL_AXIS: EnumProperty<Axis> = EnumProperty::new("axis", &[Axis::X, Axis::Z]);
     pub const HORIZONTAL_FACING: EnumProperty<Direction> = EnumProperty::new(
         "facing",
         &[
@@ -1072,148 +1167,29 @@ impl BlockStateProperties {
             Direction::East,
         ],
     );
-    pub const FLOWER_AMOUNT: IntProperty = IntProperty::new("flower_amount", 1, 4);
-    pub const SEGMENT_AMOUNT: IntProperty = IntProperty::new("segment_amount", 1, 4);
-
-    // Additional enum types needed for properties
-    pub const ORIENTATION: EnumProperty<FrontAndTop> = EnumProperty::new(
-        "orientation",
-        &[
-            FrontAndTop::DownEast,
-            FrontAndTop::DownNorth,
-            FrontAndTop::DownSouth,
-            FrontAndTop::DownWest,
-            FrontAndTop::UpEast,
-            FrontAndTop::UpNorth,
-            FrontAndTop::UpSouth,
-            FrontAndTop::UpWest,
-            FrontAndTop::WestUp,
-            FrontAndTop::EastUp,
-            FrontAndTop::NorthUp,
-            FrontAndTop::SouthUp,
-        ],
-    );
-    pub const ATTACH_FACE: EnumProperty<AttachFace> = EnumProperty::new(
-        "face",
-        &[AttachFace::Floor, AttachFace::Wall, AttachFace::Ceiling],
-    );
-    pub const BELL_ATTACHMENT: EnumProperty<BellAttachType> = EnumProperty::new(
-        "attachment",
-        &[
-            BellAttachType::Floor,
-            BellAttachType::Ceiling,
-            BellAttachType::SingleWall,
-            BellAttachType::DoubleWall,
-        ],
-    );
-    pub const EAST_WALL: EnumProperty<WallSide> =
-        EnumProperty::new("east", &[WallSide::None, WallSide::Low, WallSide::Tall]);
-    pub const NORTH_WALL: EnumProperty<WallSide> =
-        EnumProperty::new("north", &[WallSide::None, WallSide::Low, WallSide::Tall]);
-    pub const SOUTH_WALL: EnumProperty<WallSide> =
-        EnumProperty::new("south", &[WallSide::None, WallSide::Low, WallSide::Tall]);
-    pub const WEST_WALL: EnumProperty<WallSide> =
-        EnumProperty::new("west", &[WallSide::None, WallSide::Low, WallSide::Tall]);
-    pub const EAST_REDSTONE: EnumProperty<RedstoneSide> = EnumProperty::new(
-        "east",
-        &[RedstoneSide::Up, RedstoneSide::Side, RedstoneSide::None],
-    );
-    pub const NORTH_REDSTONE: EnumProperty<RedstoneSide> = EnumProperty::new(
-        "north",
-        &[RedstoneSide::Up, RedstoneSide::Side, RedstoneSide::None],
-    );
-    pub const SOUTH_REDSTONE: EnumProperty<RedstoneSide> = EnumProperty::new(
-        "south",
-        &[RedstoneSide::Up, RedstoneSide::Side, RedstoneSide::None],
-    );
-    pub const WEST_REDSTONE: EnumProperty<RedstoneSide> = EnumProperty::new(
-        "west",
-        &[RedstoneSide::Up, RedstoneSide::Side, RedstoneSide::None],
-    );
-    pub const DOUBLE_BLOCK_HALF: EnumProperty<DoubleBlockHalf> =
-        EnumProperty::new("half", &[DoubleBlockHalf::Upper, DoubleBlockHalf::Lower]);
-    pub const HALF: EnumProperty<Half> = EnumProperty::new("half", &[Half::Top, Half::Bottom]);
-    pub const SIDE_CHAIN_PART: EnumProperty<SideChainPart> = EnumProperty::new(
-        "side_chain",
-        &[
-            SideChainPart::Unconnected,
-            SideChainPart::Right,
-            SideChainPart::Center,
-            SideChainPart::Left,
-        ],
-    );
-    pub const RAIL_SHAPE: EnumProperty<RailShape> = EnumProperty::new(
-        "shape",
-        &[
-            RailShape::NorthSouth,
-            RailShape::EastWest,
-            RailShape::AscendingEast,
-            RailShape::AscendingWest,
-            RailShape::AscendingNorth,
-            RailShape::AscendingSouth,
-            RailShape::SouthEast,
-            RailShape::SouthWest,
-            RailShape::NorthWest,
-            RailShape::NorthEast,
-        ],
-    );
-    pub const RAIL_SHAPE_STRAIGHT: EnumProperty<RailShape> = EnumProperty::new(
-        "shape",
-        &[
-            RailShape::NorthSouth,
-            RailShape::EastWest,
-            RailShape::AscendingEast,
-            RailShape::AscendingWest,
-            RailShape::AscendingNorth,
-            RailShape::AscendingSouth,
-        ],
-    );
-
-    // Age properties
-    pub const AGE_1: IntProperty = IntProperty::new("age", 0, 1);
-    pub const AGE_2: IntProperty = IntProperty::new("age", 0, 2);
-    pub const AGE_3: IntProperty = IntProperty::new("age", 0, 3);
-    pub const AGE_4: IntProperty = IntProperty::new("age", 0, 4);
-    pub const AGE_5: IntProperty = IntProperty::new("age", 0, 5);
-    pub const AGE_7: IntProperty = IntProperty::new("age", 0, 7);
-    pub const AGE_15: IntProperty = IntProperty::new("age", 0, 15);
-    pub const AGE_25: IntProperty = IntProperty::new("age", 0, 25);
-
-    // Other integer properties
-    pub const BITES: IntProperty = IntProperty::new("bites", 0, 6);
-    pub const CANDLES: IntProperty = IntProperty::new("candles", 1, 4);
-    pub const DELAY: IntProperty = IntProperty::new("delay", 1, 4);
-    pub const DISTANCE: IntProperty = IntProperty::new("distance", 1, 7);
-    pub const EGGS: IntProperty = IntProperty::new("eggs", 1, 4);
-    pub const HATCH: IntProperty = IntProperty::new("hatch", 0, 2);
+    pub const INVERTED: BoolProperty = BoolProperty::new("inverted");
+    pub const IN_WALL: BoolProperty = BoolProperty::new("in_wall");
     pub const LAYERS: IntProperty = IntProperty::new("layers", 1, 8);
+    pub const LEVEL: IntProperty = IntProperty::new("level", 0, 15);
     pub const LEVEL_CAULDRON: IntProperty = IntProperty::new("level", 1, 3);
     pub const LEVEL_COMPOSTER: IntProperty = IntProperty::new("level", 0, 8);
     pub const LEVEL_FLOWING: IntProperty = IntProperty::new("level", 1, 8);
     pub const LEVEL_HONEY: IntProperty = IntProperty::new("honey_level", 0, 5);
-    pub const LEVEL: IntProperty = IntProperty::new("level", 0, 15);
-    pub const MOISTURE: IntProperty = IntProperty::new("moisture", 0, 7);
-    pub const NOTE: IntProperty = IntProperty::new("note", 0, 24);
-    pub const PICKLES: IntProperty = IntProperty::new("pickles", 1, 4);
-    pub const POWER: IntProperty = IntProperty::new("power", 0, 15);
-    pub const STAGE: IntProperty = IntProperty::new("stage", 0, 1);
-    pub const STABILITY_DISTANCE: IntProperty = IntProperty::new("distance", 0, 7);
-    pub const RESPAWN_ANCHOR_CHARGES: IntProperty = IntProperty::new("charges", 0, 4);
-    pub const DRIED_GHAST_HYDRATION_LEVELS: IntProperty = IntProperty::new("hydration", 0, 3);
-    pub const ROTATION_16: IntProperty = IntProperty::new("rotation", 0, 15);
-    pub const DUSTED: IntProperty = IntProperty::new("dusted", 0, 3);
-
-    // Enum properties
-    pub const BED_PART: EnumProperty<BedPart> =
-        EnumProperty::new("part", &[BedPart::Head, BedPart::Foot]);
-    pub const CHEST_TYPE: EnumProperty<ChestType> = EnumProperty::new(
-        "type",
-        &[ChestType::Single, ChestType::Left, ChestType::Right],
-    );
+    pub const LIT: BoolProperty = BoolProperty::new("lit");
+    pub const LOCKED: BoolProperty = BoolProperty::new("locked");
+    pub const MAP: BoolProperty = BoolProperty::new("map");
     pub const MODE_COMPARATOR: EnumProperty<ComparatorMode> =
         EnumProperty::new("mode", &[ComparatorMode::Compare, ComparatorMode::Subtract]);
-    pub const DOOR_HINGE: EnumProperty<DoorHingeSide> =
-        EnumProperty::new("hinge", &[DoorHingeSide::Left, DoorHingeSide::Right]);
+    pub const MOISTURE: IntProperty = IntProperty::new("moisture", 0, 7);
+    pub const NATURAL: BoolProperty = BoolProperty::new("natural");
+    pub const NORTH: BoolProperty = BoolProperty::new("north");
+    pub const NORTH_REDSTONE: EnumProperty<RedstoneSide> = EnumProperty::new(
+        "north",
+        &[RedstoneSide::Up, RedstoneSide::Side, RedstoneSide::None],
+    );
+    pub const NORTH_WALL: EnumProperty<WallSide> =
+        EnumProperty::new("north", &[WallSide::None, WallSide::Low, WallSide::Tall]);
+    pub const NOTE: IntProperty = IntProperty::new("note", 0, 24);
     pub const NOTEBLOCK_INSTRUMENT: EnumProperty<NoteBlockInstrument> = EnumProperty::new(
         "instrument",
         &[
@@ -1246,10 +1222,122 @@ impl BlockStateProperties {
             NoteBlockInstrument::CustomHead,
         ],
     );
+    pub const OCCUPIED: BoolProperty = BoolProperty::new("occupied");
+    pub const OMINOUS: BoolProperty = BoolProperty::new("ominous");
+    pub const OPEN: BoolProperty = BoolProperty::new("open");
+    pub const ORIENTATION: EnumProperty<FrontAndTop> = EnumProperty::new(
+        "orientation",
+        &[
+            FrontAndTop::DownEast,
+            FrontAndTop::DownNorth,
+            FrontAndTop::DownSouth,
+            FrontAndTop::DownWest,
+            FrontAndTop::UpEast,
+            FrontAndTop::UpNorth,
+            FrontAndTop::UpSouth,
+            FrontAndTop::UpWest,
+            FrontAndTop::WestUp,
+            FrontAndTop::EastUp,
+            FrontAndTop::NorthUp,
+            FrontAndTop::SouthUp,
+        ],
+    );
+    pub const PERSISTENT: BoolProperty = BoolProperty::new("persistent");
+    pub const PICKLES: IntProperty = IntProperty::new("pickles", 1, 4);
     pub const PISTON_TYPE: EnumProperty<PistonType> =
         EnumProperty::new("type", &[PistonType::Normal, PistonType::Sticky]);
+    pub const POTENT_SULFUR_STATE: EnumProperty<PotentSulfurState> = EnumProperty::new(
+        "potent_sulfur_state",
+        &[
+            PotentSulfurState::Dry,
+            PotentSulfurState::Wet,
+            PotentSulfurState::Dormant,
+            PotentSulfurState::Erupting,
+            PotentSulfurState::Continuous,
+        ],
+    );
+
+    pub const POWER: IntProperty = IntProperty::new("power", 0, 15);
+    pub const POWERED: BoolProperty = BoolProperty::new("powered");
+    pub const RAIL_SHAPE: EnumProperty<RailShape> = EnumProperty::new(
+        "shape",
+        &[
+            RailShape::NorthSouth,
+            RailShape::EastWest,
+            RailShape::AscendingEast,
+            RailShape::AscendingWest,
+            RailShape::AscendingNorth,
+            RailShape::AscendingSouth,
+            RailShape::SouthEast,
+            RailShape::SouthWest,
+            RailShape::NorthWest,
+            RailShape::NorthEast,
+        ],
+    );
+    pub const RAIL_SHAPE_STRAIGHT: EnumProperty<RailShape> = EnumProperty::new(
+        "shape",
+        &[
+            RailShape::NorthSouth,
+            RailShape::EastWest,
+            RailShape::AscendingEast,
+            RailShape::AscendingWest,
+            RailShape::AscendingNorth,
+            RailShape::AscendingSouth,
+        ],
+    );
+
+    pub const RESPAWN_ANCHOR_CHARGES: IntProperty = IntProperty::new("charges", 0, 4);
+    pub const ROTATION_16: IntProperty = IntProperty::new("rotation", 0, 15);
+    pub const SCULK_SENSOR_PHASE: EnumProperty<SculkSensorPhase> = EnumProperty::new(
+        "sculk_sensor_phase",
+        &[
+            SculkSensorPhase::Inactive,
+            SculkSensorPhase::Active,
+            SculkSensorPhase::Cooldown,
+        ],
+    );
+    pub const SEGMENT_AMOUNT: IntProperty = IntProperty::new("segment_amount", 1, 4);
+
+    pub const SHORT: BoolProperty = BoolProperty::new("short");
+    pub const SHRIEKING: BoolProperty = BoolProperty::new("shrieking");
+    pub const SIDE_CHAIN_PART: EnumProperty<SideChainPart> = EnumProperty::new(
+        "side_chain",
+        &[
+            SideChainPart::Unconnected,
+            SideChainPart::Right,
+            SideChainPart::Center,
+            SideChainPart::Left,
+        ],
+    );
+    pub const SIGNAL_FIRE: BoolProperty = BoolProperty::new("signal_fire");
     pub const SLAB_TYPE: EnumProperty<SlabType> =
         EnumProperty::new("type", &[SlabType::Top, SlabType::Bottom, SlabType::Double]);
+    pub const SLOT_0_OCCUPIED: BoolProperty = BoolProperty::new("slot_0_occupied");
+    pub const SLOT_1_OCCUPIED: BoolProperty = BoolProperty::new("slot_1_occupied");
+    pub const SLOT_2_OCCUPIED: BoolProperty = BoolProperty::new("slot_2_occupied");
+    pub const SLOT_3_OCCUPIED: BoolProperty = BoolProperty::new("slot_3_occupied");
+    pub const SLOT_4_OCCUPIED: BoolProperty = BoolProperty::new("slot_4_occupied");
+    pub const SLOT_5_OCCUPIED: BoolProperty = BoolProperty::new("slot_5_occupied");
+    pub const SNOWY: BoolProperty = BoolProperty::new("snowy");
+    pub const SOUTH: BoolProperty = BoolProperty::new("south");
+    pub const SOUTH_REDSTONE: EnumProperty<RedstoneSide> = EnumProperty::new(
+        "south",
+        &[RedstoneSide::Up, RedstoneSide::Side, RedstoneSide::None],
+    );
+    pub const SOUTH_WALL: EnumProperty<WallSide> =
+        EnumProperty::new("south", &[WallSide::None, WallSide::Low, WallSide::Tall]);
+    pub const SPELEOTHEM_THICKNESS: EnumProperty<SpeleothemThickness> = EnumProperty::new(
+        "thickness",
+        &[
+            SpeleothemThickness::TipMerge,
+            SpeleothemThickness::Tip,
+            SpeleothemThickness::Frustum,
+            SpeleothemThickness::Middle,
+            SpeleothemThickness::Base,
+        ],
+    );
+    pub const STABILITY_DISTANCE: IntProperty = IntProperty::new("distance", 0, 7);
+    pub const STAGE: IntProperty = IntProperty::new("stage", 0, 1);
     pub const STAIRS_SHAPE: EnumProperty<StairsShape> = EnumProperty::new(
         "shape",
         &[
@@ -1269,47 +1357,20 @@ impl BlockStateProperties {
             StructureMode::Data,
         ],
     );
-    pub const BAMBOO_LEAVES: EnumProperty<BambooLeaves> = EnumProperty::new(
-        "leaves",
-        &[BambooLeaves::None, BambooLeaves::Small, BambooLeaves::Large],
+    pub const TEST_BLOCK_MODE: EnumProperty<TestBlockMode> = EnumProperty::new(
+        "mode",
+        &[
+            TestBlockMode::Start,
+            TestBlockMode::Log,
+            TestBlockMode::Fail,
+            TestBlockMode::Accept,
+        ],
     );
     pub const TILT: EnumProperty<Tilt> = EnumProperty::new(
         "tilt",
         &[Tilt::None, Tilt::Unstable, Tilt::Partial, Tilt::Full],
     );
-    pub const VERTICAL_DIRECTION: EnumProperty<Direction> = EnumProperty::with_comparison_order(
-        "vertical_direction",
-        &[Direction::Up, Direction::Down],
-        &[Direction::Down, Direction::Up],
-    );
-    pub const DRIPSTONE_THICKNESS: EnumProperty<DripstoneThickness> = EnumProperty::new(
-        "thickness",
-        &[
-            DripstoneThickness::TipMerge,
-            DripstoneThickness::Tip,
-            DripstoneThickness::Frustum,
-            DripstoneThickness::Middle,
-            DripstoneThickness::Base,
-        ],
-    );
-    pub const SPELEOTHEM_THICKNESS: EnumProperty<SpeleothemThickness> = EnumProperty::new(
-        "thickness",
-        &[
-            SpeleothemThickness::TipMerge,
-            SpeleothemThickness::Tip,
-            SpeleothemThickness::Frustum,
-            SpeleothemThickness::Middle,
-            SpeleothemThickness::Base,
-        ],
-    );
-    pub const SCULK_SENSOR_PHASE: EnumProperty<SculkSensorPhase> = EnumProperty::new(
-        "sculk_sensor_phase",
-        &[
-            SculkSensorPhase::Inactive,
-            SculkSensorPhase::Active,
-            SculkSensorPhase::Cooldown,
-        ],
-    );
+    pub const TIP: BoolProperty = BoolProperty::new("tip");
     pub const TRIAL_SPAWNER_STATE: EnumProperty<TrialSpawnerState> = EnumProperty::new(
         "trial_spawner_state",
         &[
@@ -1321,6 +1382,9 @@ impl BlockStateProperties {
             TrialSpawnerState::Cooldown,
         ],
     );
+    pub const TRIGGERED: BoolProperty = BoolProperty::new("triggered");
+    pub const UNSTABLE: BoolProperty = BoolProperty::new("unstable");
+    pub const UP: BoolProperty = BoolProperty::new("up");
     pub const VAULT_STATE: EnumProperty<VaultState> = EnumProperty::new(
         "vault_state",
         &[
@@ -1330,47 +1394,17 @@ impl BlockStateProperties {
             VaultState::Ejecting,
         ],
     );
-    pub const CREAKING_HEART_STATE: EnumProperty<CreakingHeartState> = EnumProperty::new(
-        "creaking_heart_state",
-        &[
-            CreakingHeartState::Uprooted,
-            CreakingHeartState::Dormant,
-            CreakingHeartState::Awake,
-        ],
+    pub const VERTICAL_DIRECTION: EnumProperty<Direction> = EnumProperty::with_comparison_order(
+        "vertical_direction",
+        &[Direction::Up, Direction::Down],
+        &[Direction::Down, Direction::Up],
     );
-    pub const TEST_BLOCK_MODE: EnumProperty<TestBlockMode> = EnumProperty::new(
-        "mode",
-        &[
-            TestBlockMode::Start,
-            TestBlockMode::Log,
-            TestBlockMode::Fail,
-            TestBlockMode::Accept,
-        ],
+    pub const WATERLOGGED: BoolProperty = BoolProperty::new("waterlogged");
+    pub const WEST: BoolProperty = BoolProperty::new("west");
+    pub const WEST_REDSTONE: EnumProperty<RedstoneSide> = EnumProperty::new(
+        "west",
+        &[RedstoneSide::Up, RedstoneSide::Side, RedstoneSide::None],
     );
-    pub const COPPER_GOLEM_POSE: EnumProperty<Pose> = EnumProperty::new(
-        "copper_golem_pose",
-        &[Pose::Standing, Pose::Sitting, Pose::Running, Pose::Star],
-    );
-    pub const POTENT_SULFUR_STATE: EnumProperty<PotentSulfurState> = EnumProperty::new(
-        "potent_sulfur_state",
-        &[
-            PotentSulfurState::Dry,
-            PotentSulfurState::Wet,
-            PotentSulfurState::Dormant,
-            PotentSulfurState::Erupting,
-            PotentSulfurState::Continuous,
-        ],
-    );
-
-    // Additional boolean properties
-    pub const SLOT_0_OCCUPIED: BoolProperty = BoolProperty::new("slot_0_occupied");
-    pub const SLOT_1_OCCUPIED: BoolProperty = BoolProperty::new("slot_1_occupied");
-    pub const SLOT_2_OCCUPIED: BoolProperty = BoolProperty::new("slot_2_occupied");
-    pub const SLOT_3_OCCUPIED: BoolProperty = BoolProperty::new("slot_3_occupied");
-    pub const SLOT_4_OCCUPIED: BoolProperty = BoolProperty::new("slot_4_occupied");
-    pub const SLOT_5_OCCUPIED: BoolProperty = BoolProperty::new("slot_5_occupied");
-    pub const CRACKED: BoolProperty = BoolProperty::new("cracked");
-    pub const CRAFTING: BoolProperty = BoolProperty::new("crafting");
-    pub const OMINOUS: BoolProperty = BoolProperty::new("ominous");
-    pub const MAP: BoolProperty = BoolProperty::new("map");
+    pub const WEST_WALL: EnumProperty<WallSide> =
+        EnumProperty::new("west", &[WallSide::None, WallSide::Low, WallSide::Tall]);
 }

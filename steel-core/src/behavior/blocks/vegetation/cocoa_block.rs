@@ -127,7 +127,7 @@ impl BlockBehavior for CocoaBlock {
         _block_entity: Option<SharedBlockEntity>,
         _include_data: bool,
     ) -> Option<ItemStack> {
-        Some(ItemStack::new(&vanilla_items::COCOA_BEANS))
+        Some(ItemStack::new(&*vanilla_items::COCOA_BEANS))
     }
 }
 

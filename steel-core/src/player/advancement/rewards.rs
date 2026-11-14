@@ -3,10 +3,15 @@
 use crate::entity::{Entity, entity_loot_ref, living_loot_equipment};
 use crate::player::Player;
 use steel_registry::advancement::AdvancementRewards;
+use steel_registry::advancement::registry::AdvancementRef;
 use steel_registry::loot_table::LootContext;
 
 /// Grants experience and loot rewards but recipes and functions are not handled yet
-pub fn grant_reward(player: &Player, reward: &AdvancementRewards) {
+pub fn grant_reward(
+    player: &Player,
+    reward: &AdvancementRewards,
+    advancement: AdvancementRef,
+) {
     player.give_experience_points(reward.experience);
 
     let position = player.position();
@@ -34,5 +39,18 @@ pub fn grant_reward(player: &Player, reward: &AdvancementRewards) {
         player.broadcast_inventory_changes();
     }
 
-    //TODO grant recipes and functions when implemented
+    // Vanilla `AdvancementRewards.grant`: unlocked recipes go into the player's
+    // recipe book. Functions still have no runtime, so they are skipped.
+    let recipes: Vec<steel_utils::Identifier> = advancement
+        .rewards()
+        .recipes
+        .iter()
+        .map(|recipe| recipe.key().clone())
+        .collect();
+    if !recipes.is_empty() {
+        let mut book = player.recipe_book.lock();
+        for key in recipes {
+            book.add(&key);
+        }
+    }
 }

@@ -296,7 +296,7 @@ mod tests {
         let behavior = MangrovePropaguleBlock::new(&vanilla_blocks::MANGROVE_PROPAGULE);
 
         let wet_state = {
-            let mut stack = ItemStack::new(&vanilla_items::MANGROVE_PROPAGULE);
+            let mut stack = ItemStack::new(&*vanilla_items::MANGROVE_PROPAGULE);
             let context = BlockPlaceContext::directional(
                 world,
                 wet_pos,
@@ -309,7 +309,7 @@ mod tests {
                 .expect("wet propagule should have a placement state")
         };
         let dry_state = {
-            let mut stack = ItemStack::new(&vanilla_items::MANGROVE_PROPAGULE);
+            let mut stack = ItemStack::new(&*vanilla_items::MANGROVE_PROPAGULE);
             let context = BlockPlaceContext::directional(
                 world,
                 dry_pos,

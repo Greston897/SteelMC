@@ -18,6 +18,7 @@ use std::sync::{Arc, Weak};
 use steel_macros::entity_behavior;
 use steel_math::{DEG_TO_RAD, DEGREE_360, trig};
 use steel_registry::blocks::block_state_ext::BlockStateExt;
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::fluid::FluidStateExt;
 use steel_registry::item_stack::ItemStack;
@@ -183,7 +184,10 @@ impl FishingHookEntity {
             entity_type,
             entity_data: SyncMutex::new(FishingBobberEntityData::new()),
             projectile_base: ProjectileBase::new(),
-            // FIXME: `lure_speed` and `luck` are taken from the existing rod, but auto generation fails when doing this, refer to: https://mcsrc.dev/2/26.2/net/minecraft/world/entity/projectile/FishingHook#L75
+            // Loaded hooks start with neutral fishing state; the owning rod
+            // re-applies `lure_speed` and `luck` through `update_owner_info`
+            // once the owner is known, which is what vanilla's constructor does
+            // with the `FishingRodItem` passed in from the shooter.
             hook_state: SyncMutex::new(FishingHookState::new(0, 0)),
             synchronized_random: SyncMutex::new(LegacyRandom::from_seed(0)),
         }
@@ -210,8 +214,8 @@ impl FishingHookEntity {
             return true;
         }
 
-        let mainhand_fishing = mainhand_item.is(&vanilla_items::FISHING_ROD);
-        let offhand_fishing = offhand_item.is(&vanilla_items::FISHING_ROD);
+        let mainhand_fishing = mainhand_item.is(&*vanilla_items::FISHING_ROD);
+        let offhand_fishing = offhand_item.is(&*vanilla_items::FISHING_ROD);
 
         if (mainhand_fishing || offhand_fishing)
             && self.distance_to_sqr(owner.position()) <= MAX_DISTANCE_SQR
@@ -516,7 +520,13 @@ impl FishingHookEntity {
 
                 if let Some(hooked_in) = hooked_in {
                     self.pull_entity(&hooked_in);
-                    // TODO: criteria triggers (advancements)
+                    // Vanilla `FishingHook.pullEntity` fires `fishing_rod_hooked`.
+                    if let Some(owner) = self.get_owner()
+                        && let Some(player) = owner.as_player()
+                    {
+                        player
+                            .trigger_advancement(&vanilla_criteria_triggers::FISHING_ROD_HOOKED);
+                    }
                     self.broadcast_entity_event(EntityStatus::FishingRodReelIn);
                     damage = if hooked_in.as_ref().is::<ItemEntity>() {
                         DMG_ITEM_ENTITY
@@ -543,7 +553,15 @@ impl FishingHookEntity {
                         let items =
                             vanilla_loot_tables::GAMEPLAY_FISHING.get_random_items(&mut loot_ctx);
 
-                        // TODO: criteria triggers (advancements)
+                        // Vanilla `FishingHook.retrieve` fires `fishing_rod_hooked`
+                        // once the loot actually exists.
+                        if let Some(owner) = self.get_owner()
+                            && let Some(player) = owner.as_player()
+                        {
+                            player.trigger_advancement(
+                                &vanilla_criteria_triggers::FISHING_ROD_HOOKED,
+                            );
+                        }
 
                         let Some(world) = self.level() else {
                             return damage;
@@ -652,7 +670,6 @@ impl FishingHookEntity {
         }
     }
 
-    // TODO: check if passing a lock is better here
     /// Determines if the player should stop fishing.
     fn should_stop(&self) -> bool {
         let state = self.hook_state.lock();
@@ -895,7 +912,6 @@ impl Entity for FishingHookEntity {
                     self.apply_effects_from_blocks();
                     self.update_rotation();
 
-                    // TODO: check if passing a lock is better here
                     if self.should_stop() {
                         self.base.set_velocity(DVec3::ZERO);
                     }
@@ -1036,12 +1052,12 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::FISHING_ROD));
+            .set_selected_item(ItemStack::new(&*vanilla_items::FISHING_ROD));
         let player_owner = Arc::clone(&player);
         let owner: SharedEntity = player_owner;
         let hook = test_hook(world, 51);
         hook.set_owner(&owner);
-        let rod = ItemStack::new(&vanilla_items::FISHING_ROD);
+        let rod = ItemStack::new(&*vanilla_items::FISHING_ROD);
 
         assert_eq!(hook.retrieve(&rod), 0);
         assert!(hook.is_removed());
@@ -1119,7 +1135,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::FISHING_ROD));
+            .set_selected_item(ItemStack::new(&*vanilla_items::FISHING_ROD));
         let player_owner = Arc::clone(&player);
         let owner: SharedEntity = player_owner;
         let hook = test_hook(world, 201);
@@ -1168,7 +1184,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::FISHING_ROD));
+            .set_selected_item(ItemStack::new(&*vanilla_items::FISHING_ROD));
         let player_owner = Arc::clone(&player);
         let owner: SharedEntity = player_owner;
 

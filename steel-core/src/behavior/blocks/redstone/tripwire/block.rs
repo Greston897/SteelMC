@@ -202,7 +202,7 @@ impl BlockBehavior for TripWireBlock {
         let held_shears = {
             let inventory = player.inventory.lock();
             let main_hand = inventory.get_item_in_hand(InteractionHand::MainHand);
-            !main_hand.is_empty() && main_hand.is(&vanilla_items::SHEARS)
+            !main_hand.is_empty() && main_hand.is(&*vanilla_items::SHEARS)
         };
         if held_shears {
             world.set_block(

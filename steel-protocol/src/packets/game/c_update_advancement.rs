@@ -1,4 +1,5 @@
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::advancement::AdvancementProgressData;
 use steel_registry::advancement::registry::AdvancementNodeRef;
 use steel_registry::packets::play::C_UPDATE_ADVANCEMENTS;

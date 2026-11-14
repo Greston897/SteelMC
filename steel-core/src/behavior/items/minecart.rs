@@ -65,8 +65,8 @@ impl ItemBehavior for MinecartItem {
             Some(context.player),
         ) {
             Ok(cart) => cart,
-            // TODO: Place chest, furnace, TNT, hopper, spawner and command block minecarts once
-            // their entities implement `AbstractMinecart`.
+            // A variant whose entity has no factory cannot be placed; every vanilla
+            // minecart type is registered, so this only guards modded types.
             Err(CreateMinecartError::Unsupported) => return InteractionResult::Pass,
             Err(CreateMinecartError::Spawn(error)) => {
                 log::warn!(
@@ -194,7 +194,7 @@ mod tests {
     fn prepare_hand(player: &Player, hand: InteractionHand, stack: ItemStack) {
         let mut inventory = player.inventory.lock();
         inventory.set_item_in_hand(hand, stack);
-        inventory.set_item_in_hand(other_hand(hand), ItemStack::new(&vanilla_items::STONE));
+        inventory.set_item_in_hand(other_hand(hand), ItemStack::new(&*vanilla_items::STONE));
     }
 
     fn held_stack(player: &Player, hand: InteractionHand) -> ItemStack {
@@ -219,7 +219,7 @@ mod tests {
     }
 
     fn minecart_use_count(player: &Player) -> i32 {
-        let target = vanilla_stat_types::ITEM_USED.get(&vanilla_items::MINECART);
+        let target = vanilla_stat_types::ITEM_USED.get(&*vanilla_items::MINECART);
 
         player
             .stats()
@@ -273,7 +273,7 @@ mod tests {
                 GameType::Survival,
             );
 
-            let mut stack = ItemStack::new(&vanilla_items::MINECART);
+            let mut stack = ItemStack::new(&*vanilla_items::MINECART);
             stack.set(CUSTOM_NAME, TextComponent::plain("Unused Cart"));
             let original = stack.clone();
             prepare_hand(&fixture.player, hand, stack);
@@ -282,7 +282,7 @@ mod tests {
             assert_eq!(held_stack(&fixture.player, hand), original);
             assert_eq!(
                 held_stack(&fixture.player, other_hand(hand)),
-                ItemStack::new(&vanilla_items::STONE),
+                ItemStack::new(&*vanilla_items::STONE),
             );
             assert!(carts_at(&fixture).is_empty());
             assert_eq!(minecart_use_count(&fixture.player), 0);
@@ -294,11 +294,11 @@ mod tests {
         init_globals();
 
         for item in [
-            &vanilla_items::CHEST_MINECART,
-            &vanilla_items::FURNACE_MINECART,
-            &vanilla_items::TNT_MINECART,
-            &vanilla_items::HOPPER_MINECART,
-            &vanilla_items::COMMAND_BLOCK_MINECART,
+            &*vanilla_items::CHEST_MINECART,
+            &*vanilla_items::FURNACE_MINECART,
+            &*vanilla_items::TNT_MINECART,
+            &*vanilla_items::HOPPER_MINECART,
+            &*vanilla_items::COMMAND_BLOCK_MINECART,
         ] {
             let fixture = create_fixture(
                 "minecart_item_unimplemented_variant",
@@ -373,7 +373,7 @@ mod tests {
                     prepare_hand(
                         &fixture.player,
                         hand,
-                        ItemStack::new(&vanilla_items::MINECART),
+                        ItemStack::new(&*vanilla_items::MINECART),
                     );
 
                     assert_eq!(use_cart(&fixture, hand), InteractionResult::Success);
@@ -390,7 +390,7 @@ mod tests {
                     assert!(held_stack(&fixture.player, hand).is_empty());
                     assert_eq!(
                         held_stack(&fixture.player, other_hand(hand)),
-                        ItemStack::new(&vanilla_items::STONE),
+                        ItemStack::new(&*vanilla_items::STONE),
                     );
                     assert_eq!(minecart_use_count(&fixture.player), 1);
                 }
@@ -410,7 +410,7 @@ mod tests {
             GameType::Survival,
         );
         let name = TextComponent::plain("Rail Runner");
-        let mut stack = ItemStack::new(&vanilla_items::MINECART);
+        let mut stack = ItemStack::new(&*vanilla_items::MINECART);
         stack.set(CUSTOM_NAME, name.clone());
         prepare_hand(&fixture.player, InteractionHand::MainHand, stack);
 

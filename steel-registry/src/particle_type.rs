@@ -1,9 +1,11 @@
 use std::fmt::{self, Debug, Formatter};
 use std::io::{Cursor, Error, Result, Write};
+use std::str::FromStr as _;
 
 use glam::DVec3;
 use rustc_hash::FxHashMap;
 use steel_utils::codec::VarInt;
+use steel_utils::nbt::NbtNumeric as _;
 use steel_utils::serial::{ReadFrom, WriteTo};
 use steel_utils::{
     ArgbColor, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, ErasedType, Identifier,
@@ -20,6 +22,16 @@ pub trait ParticleOptions:
 {
     fn read_network(data: &mut Cursor<&[u8]>) -> Result<Self>;
     fn write_network(&self, writer: &mut Vec<u8>) -> Result<()>;
+
+    /// Decodes this payload from its vanilla SNBT/NBT form.
+    ///
+    /// Vanilla stores particle options as a `{type:"...", ...fields}` compound in
+    /// `custom_particle` and in `/particle`, so every concrete payload owns its
+    /// field layout here instead of relying on the network shape.
+    fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self>;
+
+    /// Encodes this payload into its vanilla NBT form.
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound;
 }
 
 trait ErasedParticleOptions: ErasedType + Debug + Send + Sync {
@@ -39,6 +51,9 @@ impl<T: ParticleOptions> ErasedParticleOptions for T {
 
 type NetworkReader = fn(&mut Cursor<&[u8]>) -> Result<Box<dyn ErasedParticleOptions>>;
 type NetworkWriter = fn(&dyn ErasedParticleOptions, &mut Vec<u8>) -> Result<()>;
+type NbtReader =
+    for<'a, 'b> fn(simdnbt::borrow::NbtTag<'a, 'b>) -> Option<Box<dyn ErasedParticleOptions>>;
+type NbtWriter = fn(&dyn ErasedParticleOptions) -> simdnbt::owned::NbtCompound;
 
 /// A registered particle discriminator, limiter behavior, and payload codec.
 pub struct ParticleType {
@@ -47,6 +62,8 @@ pub struct ParticleType {
     expected_type_key: DowncastTypeKey,
     network_reader: NetworkReader,
     network_writer: NetworkWriter,
+    nbt_reader: NbtReader,
+    nbt_writer: NbtWriter,
 }
 
 impl ParticleType {
@@ -58,6 +75,8 @@ impl ParticleType {
             expected_type_key: T::TYPE_KEY,
             network_reader: read_network::<T>,
             network_writer: write_network::<T>,
+            nbt_reader: read_nbt::<T>,
+            nbt_writer: write_nbt::<T>,
         }
     }
 }
@@ -108,6 +127,47 @@ impl ParticleData {
     #[must_use]
     pub fn downcast_ref<T: DowncastType>(&self) -> Option<&T> {
         self.options.downcast_ref::<T>()
+    }
+}
+
+impl ParticleData {
+    /// Decodes a particle from an owned command/NBT compound.
+    ///
+    /// The command `[payload]` argument carries the fields without the `type`
+    /// key, so the caller-supplied type name is merged in before decoding.
+    #[must_use]
+    pub fn from_nbt_compound(compound: &simdnbt::owned::NbtCompound) -> Option<Self> {
+        let mut bytes = Vec::new();
+        simdnbt::owned::NbtTag::Compound(compound.clone()).write(&mut bytes);
+        let mut cursor = Cursor::new(bytes.as_slice());
+        let read = simdnbt::borrow::read_tag(&mut cursor).ok()?;
+        Self::from_nbt_tag(read.as_tag())
+    }
+
+    /// Decodes a vanilla particle payload from its NBT form.
+    ///
+    /// Vanilla shape: `{type:"minecraft:block", block_state:{...}}`. Unknown or
+    /// unsupported payloads read as `None`, which matches how vanilla drops
+    /// malformed `custom_particle` data.
+    #[must_use]
+    pub fn from_nbt_tag(tag: simdnbt::borrow::NbtTag<'_, '_>) -> Option<Self> {
+        let compound = tag.compound()?;
+        let key = compound.string("type")?;
+        let key = Identifier::from_str(key.to_str().as_ref()).ok()?;
+        let particle_type = REGISTRY.particle_types.by_key(&key)?;
+        let options = (particle_type.nbt_reader)(tag)?;
+        Some(Self {
+            particle_type,
+            options,
+        })
+    }
+
+    /// Encodes this payload into its vanilla NBT form, including the `type` key.
+    #[must_use]
+    pub fn to_nbt_tag(&self) -> simdnbt::owned::NbtTag {
+        let mut compound = (self.particle_type.nbt_writer)(self.options.as_ref());
+        compound.insert("type", self.particle_type.key.to_string());
+        simdnbt::owned::NbtTag::Compound(compound)
     }
 }
 
@@ -231,7 +291,16 @@ impl ParticleOptions for SimpleParticleOptions {
     fn write_network(&self, _writer: &mut Vec<u8>) -> Result<()> {
         Ok(())
     }
+
+    fn from_nbt(_compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
+        Some(Self)
+    }
+
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
+        simdnbt::owned::NbtCompound::new()
+    }
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BlockParticleOption {
@@ -276,7 +345,20 @@ impl ParticleOptions for BlockParticleOption {
         }
         self.state.write(writer)
     }
+
+    fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
+        let state = compound.get("block_state")?;
+        let state = crate::blocks::block_state_nbt::load(state.compound()?)?;
+        Some(Self::new(state))
+    }
+
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
+        let mut compound = simdnbt::owned::NbtCompound::new();
+        compound.insert("block_state", crate::blocks::block_state_nbt::save(self.state));
+        compound
+    }
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ColorParticleOption {
@@ -308,7 +390,18 @@ impl ParticleOptions for ColorParticleOption {
     fn write_network(&self, writer: &mut Vec<u8>) -> Result<()> {
         self.color.write(writer)
     }
+
+    fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
+        Some(Self::new(ArgbColor::new(compound.get("color")?.codec_i32()?)))
+    }
+
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
+        let mut compound = simdnbt::owned::NbtCompound::new();
+        compound.insert("color", self.color.raw());
+        compound
+    }
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DustParticleOptions {
@@ -350,7 +443,22 @@ impl ParticleOptions for DustParticleOptions {
         self.color.write(writer)?;
         self.scale.write(writer)
     }
+
+    fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
+        Some(Self::new(
+            RgbColor::new(compound.get("color")?.codec_i32()?),
+            compound.get("scale")?.codec_f32()?,
+        ))
+    }
+
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
+        let mut compound = simdnbt::owned::NbtCompound::new();
+        compound.insert("color", self.color.raw());
+        compound.insert("scale", self.scale);
+        compound
+    }
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DustColorTransitionOptions {
@@ -405,7 +513,26 @@ impl ParticleOptions for DustColorTransitionOptions {
         self.to_color.write(writer)?;
         self.scale.write(writer)
     }
+
+    fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
+        let from = compound.get("from_color")?.compound()?;
+        let to = compound.get("to_color")?.compound()?;
+        Some(Self::new(
+            decode_rgb(from)?,
+            decode_rgb(to)?,
+            compound.get("scale")?.codec_f32()?,
+        ))
+    }
+
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
+        let mut compound = simdnbt::owned::NbtCompound::new();
+        compound.insert("from_color", encode_rgb(self.from_color));
+        compound.insert("to_color", encode_rgb(self.to_color));
+        compound.insert("scale", self.scale);
+        compound
+    }
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GeyserParticleOptions {
@@ -437,7 +564,18 @@ impl ParticleOptions for GeyserParticleOptions {
     fn write_network(&self, writer: &mut Vec<u8>) -> Result<()> {
         self.water_blocks.write(writer)
     }
+
+    fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
+        Some(Self::new(compound.get("water_blocks")?.codec_i32()?))
+    }
+
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
+        let mut compound = simdnbt::owned::NbtCompound::new();
+        compound.insert("water_blocks", self.water_blocks);
+        compound
+    }
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct GeyserBaseParticleOptions {
@@ -479,7 +617,22 @@ impl ParticleOptions for GeyserBaseParticleOptions {
         self.water_blocks.write(writer)?;
         self.burst_impulse_base.write(writer)
     }
+
+    fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
+        Some(Self::new(
+            compound.get("water_blocks")?.codec_i32()?,
+            compound.get("burst_impulse_base")?.codec_f32()?,
+        ))
+    }
+
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
+        let mut compound = simdnbt::owned::NbtCompound::new();
+        compound.insert("water_blocks", self.water_blocks);
+        compound.insert("burst_impulse_base", self.burst_impulse_base);
+        compound
+    }
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PowerParticleOption {
@@ -511,7 +664,18 @@ impl ParticleOptions for PowerParticleOption {
     fn write_network(&self, writer: &mut Vec<u8>) -> Result<()> {
         self.power.write(writer)
     }
+
+    fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
+        Some(Self::new(compound.get("power")?.codec_f32()?))
+    }
+
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
+        let mut compound = simdnbt::owned::NbtCompound::new();
+        compound.insert("power", self.power);
+        compound
+    }
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SpellParticleOption {
@@ -550,7 +714,22 @@ impl ParticleOptions for SpellParticleOption {
         self.color.write(writer)?;
         self.power.write(writer)
     }
+
+    fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
+        Some(Self::new(
+            RgbColor::new(compound.get("color")?.codec_i32()?),
+            compound.get("power")?.codec_f32()?,
+        ))
+    }
+
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
+        let mut compound = simdnbt::owned::NbtCompound::new();
+        compound.insert("color", self.color.raw());
+        compound.insert("power", self.power);
+        compound
+    }
 }
+
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ItemParticleOption {
@@ -582,7 +761,21 @@ impl ParticleOptions for ItemParticleOption {
     fn write_network(&self, writer: &mut Vec<u8>) -> Result<()> {
         self.item.write(writer)
     }
+
+    fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
+        use simdnbt::FromNbtTag as _;
+        let tag = compound.get("item")?;
+        Some(Self::new(ItemStackTemplate::from_nbt_tag(tag)?))
+    }
+
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
+        use simdnbt::ToNbtTag as _;
+        let mut compound = simdnbt::owned::NbtCompound::new();
+        compound.insert("item", self.item.clone().to_nbt_tag());
+        compound
+    }
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SculkChargeParticleOptions {
@@ -614,7 +807,18 @@ impl ParticleOptions for SculkChargeParticleOptions {
     fn write_network(&self, writer: &mut Vec<u8>) -> Result<()> {
         self.roll.write(writer)
     }
+
+    fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
+        Some(Self::new(compound.get("roll")?.codec_f32()?))
+    }
+
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
+        let mut compound = simdnbt::owned::NbtCompound::new();
+        compound.insert("roll", self.roll);
+        compound
+    }
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ShriekParticleOption {
@@ -646,7 +850,18 @@ impl ParticleOptions for ShriekParticleOption {
     fn write_network(&self, writer: &mut Vec<u8>) -> Result<()> {
         VarInt(self.delay).write(writer)
     }
+
+    fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
+        Some(Self::new(compound.get("delay")?.codec_i32()?))
+    }
+
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
+        let mut compound = simdnbt::owned::NbtCompound::new();
+        compound.insert("delay", self.delay);
+        compound
+    }
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TrailParticleOption {
@@ -700,7 +915,33 @@ impl ParticleOptions for TrailParticleOption {
         self.color.write(writer)?;
         VarInt(self.duration).write(writer)
     }
+
+    fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
+        let target = compound.get("target")?.compound()?;
+        Some(Self::new(
+            DVec3::new(
+                target.get("x")?.codec_f64()?,
+                target.get("y")?.codec_f64()?,
+                target.get("z")?.codec_f64()?,
+            ),
+            RgbColor::new(compound.get("color")?.codec_i32()?),
+            compound.get("duration")?.codec_i32()?,
+        ))
+    }
+
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
+        let mut compound = simdnbt::owned::NbtCompound::new();
+        let mut target = simdnbt::owned::NbtCompound::new();
+        target.insert("x", self.target.x);
+        target.insert("y", self.target.y);
+        target.insert("z", self.target.z);
+        compound.insert("target", target);
+        compound.insert("color", self.color.raw());
+        compound.insert("duration", self.duration);
+        compound
+    }
 }
+
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct VibrationParticleOption {
@@ -745,6 +986,52 @@ impl ParticleOptions for VibrationParticleOption {
         self.destination.write(writer)?;
         VarInt(self.arrival_in_ticks).write(writer)
     }
+
+    fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
+        Some(Self::new(
+            PositionSource::from_nbt_tag(compound.get("destination")?)?,
+            compound.get("arrival_in_ticks")?.codec_i32()?,
+        ))
+    }
+
+    fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
+        let mut compound = simdnbt::owned::NbtCompound::new();
+        compound.insert("destination", self.destination.to_nbt_tag());
+        compound.insert("arrival_in_ticks", self.arrival_in_ticks);
+        compound
+    }
+}
+
+
+/// Encodes an `RGB` color as the `{r,g,b}` compound vanilla writes.
+fn encode_rgb(color: RgbColor) -> simdnbt::owned::NbtCompound {
+    let mut compound = simdnbt::owned::NbtCompound::new();
+    compound.insert("r", i32::from(color.red()));
+    compound.insert("g", i32::from(color.green()));
+    compound.insert("b", i32::from(color.blue()));
+    compound
+}
+
+/// Reads the `{r,g,b}` compound vanilla writes for transition colors.
+fn decode_rgb(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<RgbColor> {
+    let r = compound.get("r")?.codec_i32()?.clamp(0, 255);
+    let g = compound.get("g")?.codec_i32()?.clamp(0, 255);
+    let b = compound.get("b")?.codec_i32()?.clamp(0, 255);
+    Some(RgbColor::new((r << 16) | (g << 8) | b))
+}
+
+fn read_nbt<T: ParticleOptions>(
+    tag: simdnbt::borrow::NbtTag<'_, '_>,
+) -> Option<Box<dyn ErasedParticleOptions>> {
+    Some(Box::new(T::from_nbt(tag.compound()?)?))
+}
+
+fn write_nbt<T: ParticleOptions>(
+    options: &dyn ErasedParticleOptions,
+) -> simdnbt::owned::NbtCompound {
+    options
+        .downcast_ref::<T>()
+        .map_or_else(simdnbt::owned::NbtCompound::new, ParticleOptions::to_nbt)
 }
 
 fn read_network<T: ParticleOptions>(
@@ -785,9 +1072,9 @@ mod tests {
     use super::{
         BlockParticleOption, ColorParticleOption, DustColorTransitionOptions, DustParticleOptions,
         GeyserBaseParticleOptions, GeyserParticleOptions, ItemParticleOption, ParticleData,
-        ParticleOptions, ParticleType, ParticleTypeRegistry, PowerParticleOption,
-        SculkChargeParticleOptions, ShriekParticleOption, SpellParticleOption, TrailParticleOption,
-        VibrationParticleOption,
+        ParticleOptions, ParticleType, ParticleTypeRef, ParticleTypeRegistry, PowerParticleOption,
+        SculkChargeParticleOptions, ShriekParticleOption, SimpleParticleOptions,
+        SpellParticleOption, TrailParticleOption, VibrationParticleOption,
     };
 
     static FORGED_FLAME: ParticleType =
@@ -847,7 +1134,7 @@ mod tests {
         ));
         assert_round_trip(ParticleData::new(
             &vanilla_particle_types::ITEM,
-            ItemParticleOption::new(ItemStackTemplate::new(&vanilla_items::STONE)),
+            ItemParticleOption::new(ItemStackTemplate::new(&*vanilla_items::STONE)),
         ));
         assert_round_trip(ParticleData::new(
             &vanilla_particle_types::SCULK_CHARGE,
@@ -927,6 +1214,45 @@ mod tests {
         let result = BlockParticleOption::new(invalid_state).write_network(&mut encoded);
         assert!(result.is_err());
         assert_eq!(encoded.len(), 0);
+    }
+
+    fn round_trip_nbt<T: ParticleOptions>(particle_type: ParticleTypeRef, options: T) {
+        let particle = ParticleData::new(particle_type, options);
+        let mut bytes = Vec::new();
+        particle.to_nbt_tag().write(&mut bytes);
+        let read = simdnbt::borrow::read_tag(&mut Cursor::new(bytes.as_slice()))
+            .expect("particle NBT should reborrow");
+        let decoded = ParticleData::from_nbt_tag(read.as_tag()).expect("particle should decode");
+        assert_eq!(decoded, particle);
+    }
+
+    #[test]
+    fn particle_payloads_round_trip_through_nbt() {
+        init_vanilla_registry();
+        let state = crate::vanilla_blocks::STONE.default_state();
+
+        round_trip_nbt(&vanilla_particle_types::BLOCK, BlockParticleOption::new(state));
+        round_trip_nbt(
+            &vanilla_particle_types::DUST,
+            DustParticleOptions::new(RgbColor::new(0x11_22_33), 1.5),
+        );
+        round_trip_nbt(
+            &vanilla_particle_types::DUST_COLOR_TRANSITION,
+            DustColorTransitionOptions::new(
+                RgbColor::new(0x11_22_33),
+                RgbColor::new(0x44_55_66),
+                0.75,
+            ),
+        );
+        round_trip_nbt(
+            &vanilla_particle_types::ENTITY_EFFECT,
+            ColorParticleOption::new(ArgbColor::new(-1)),
+        );
+        round_trip_nbt(
+            &vanilla_particle_types::TRAIL,
+            TrailParticleOption::new(DVec3::new(1.0, 2.0, 3.0), RgbColor::new(0x00_FF_00), 20),
+        );
+        round_trip_nbt(&vanilla_particle_types::EXPLOSION, SimpleParticleOptions);
     }
 
     #[test]

@@ -31,7 +31,7 @@ fn partial_result_overflow_has_no_thrower() {
     };
     let (crafting_container, result_id) = (handler.crafting_container(), handler.result_id());
 
-    *menu.behavior_mut().carried_mut() = ItemStack::new(&vanilla_items::OAK_LOG);
+    *menu.behavior_mut().carried_mut() = ItemStack::new(&*vanilla_items::OAK_LOG);
     menu.clicked(
         Click::Pickup {
             slot: 1,
@@ -46,7 +46,7 @@ fn partial_result_overflow_has_no_thrower() {
         .expect("result container is registered with the menu")
         .get_item(0)
         .clone();
-    assert!(result.is(&vanilla_items::OAK_PLANKS));
+    assert!(result.is(&*vanilla_items::OAK_PLANKS));
     assert_eq!(result.count(), 4);
 
     let mut matching = result;
@@ -54,7 +54,7 @@ fn partial_result_overflow_has_no_thrower() {
     {
         let mut inventory = player.inventory.lock();
         for slot in 0..36 {
-            inventory.set_item(slot, ItemStack::with_count(&vanilla_items::DIRT, 64));
+            inventory.set_item(slot, ItemStack::with_count(&*vanilla_items::DIRT, 64));
         }
         inventory.set_item(8, matching);
     }
@@ -79,7 +79,7 @@ fn partial_result_overflow_has_no_thrower() {
     let Some(item) = dropped[0].as_ref().downcast_ref::<ItemEntity>() else {
         panic!("dropped entity should retain its concrete item type");
     };
-    assert!(item.get_item().is(&vanilla_items::OAK_PLANKS));
+    assert!(item.get_item().is(&*vanilla_items::OAK_PLANKS));
     assert_eq!(item.get_item().count(), 3);
     assert_eq!(item.get_thrower(), None);
 }

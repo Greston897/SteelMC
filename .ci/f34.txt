@@ -1,0 +1,470 @@
+### cargo check diagnostics
+- errors: 594
+- warnings: 266
+
+```
+steel-protocol/src/packets/game/c_section_blocks_update.rs:56:9: warning: unused import: `steel_utils::serial::ReadFrom`
+steel-protocol/src/packets/game/s_container_click.rs:159:9: warning: unused import: `steel_utils::serial::ReadFrom`
+warning: `steel-protocol` (lib) generated 166 warnings (run `cargo fix --lib -p steel-protocol` to apply 50 suggestions)
+warning: `steel-protocol` (lib test) generated 170 warnings (164 duplicates) (run `cargo fix --lib -p steel-protocol --tests` to apply 3 suggestions)
+steel-core/src/behavior/blocks/container/mod.rs:64:14: error[E0433]: cannot find type `EntityEventSource` in this scope: use of undeclared type `EntityEventSource`
+steel-core/src/world/waypoint.rs:86:57: error[E0433]: cannot find type `Entity` in this scope: use of undeclared type `Entity`
+-----
+steel-protocol/src/packets/game/s_container_click.rs:159:9: warning: unused import: `steel_utils::serial::ReadFrom`
+warning: `steel-protocol` (lib) generated 166 warnings (run `cargo fix --lib -p steel-protocol` to apply 50 suggestions)
+warning: `steel-protocol` (lib test) generated 170 warnings (164 duplicates) (run `cargo fix --lib -p steel-protocol --tests` to apply 3 suggestions)
+steel-core/src/behavior/blocks/container/mod.rs:64:14: error[E0433]: cannot find type `EntityEventSource` in this scope: use of undeclared type `EntityEventSource`
+steel-core/src/world/waypoint.rs:86:57: error[E0433]: cannot find type `Entity` in this scope: use of undeclared type `Entity`
+steel-core/src/behavior/blocks/building/technical_blocks.rs:8:17: warning: unused import: `Arc`
+-----
+steel-core/src/entity/entities/mobs/passive/allay.rs:270:9: warning: unused import: `simdnbt::borrow::read_compound`
+steel-core/src/entity/entities/mobs/passive/allay.rs:271:9: warning: unused import: `simdnbt::owned::NbtCompound`
+steel-core/src/entity/entities/mobs/passive/allay.rs:275:25: warning: unused imports: `Entity` and `LivingEntity`
+steel-core/src/inventory/menu/tests.rs:5:24: warning: unused import: `crafter`
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/mod.rs:63:34: error[E0599]: no method named `id` found for reference `&player::Player` in the current scope
+-----
+steel-core/src/entity/entities/mobs/passive/allay.rs:271:9: warning: unused import: `simdnbt::owned::NbtCompound`
+steel-core/src/entity/entities/mobs/passive/allay.rs:275:25: warning: unused imports: `Entity` and `LivingEntity`
+steel-core/src/inventory/menu/tests.rs:5:24: warning: unused import: `crafter`
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/mod.rs:63:34: error[E0599]: no method named `id` found for reference `&player::Player` in the current scope
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+-----
+steel-core/src/entity/entities/mobs/passive/allay.rs:275:25: warning: unused imports: `Entity` and `LivingEntity`
+steel-core/src/inventory/menu/tests.rs:5:24: warning: unused import: `crafter`
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/mod.rs:63:34: error[E0599]: no method named `id` found for reference `&player::Player` in the current scope
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/behavior/blocks/redstone/piston/base.rs:270:19: error[E0624]: method `drop_resources_with_block_entity` is private: private method
+-----
+steel-core/src/inventory/menu/tests.rs:5:24: warning: unused import: `crafter`
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/mod.rs:63:34: error[E0599]: no method named `id` found for reference `&player::Player` in the current scope
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/behavior/blocks/redstone/piston/base.rs:270:19: error[E0624]: method `drop_resources_with_block_entity` is private: private method
+steel-core/src/behavior/blocks/redstone/weathering_lightning_rod_block.rs:87:13: error[E0308]: mismatched types: expected `&LightningRodBlock`, found `&Block`
+-----
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/mod.rs:63:34: error[E0599]: no method named `id` found for reference `&player::Player` in the current scope
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/behavior/blocks/redstone/piston/base.rs:270:19: error[E0624]: method `drop_resources_with_block_entity` is private: private method
+steel-core/src/behavior/blocks/redstone/weathering_lightning_rod_block.rs:87:13: error[E0308]: mismatched types: expected `&LightningRodBlock`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:56:37: error[E0308]: mismatched types: expected `&Block`, found `Block`
+-----
+steel-core/src/behavior/blocks/container/mod.rs:63:34: error[E0599]: no method named `id` found for reference `&player::Player` in the current scope
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/behavior/blocks/redstone/piston/base.rs:270:19: error[E0624]: method `drop_resources_with_block_entity` is private: private method
+steel-core/src/behavior/blocks/redstone/weathering_lightning_rod_block.rs:87:13: error[E0308]: mismatched types: expected `&LightningRodBlock`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:56:37: error[E0308]: mismatched types: expected `&Block`, found `Block`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:80:22: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+-----
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/behavior/blocks/redstone/piston/base.rs:270:19: error[E0624]: method `drop_resources_with_block_entity` is private: private method
+steel-core/src/behavior/blocks/redstone/weathering_lightning_rod_block.rs:87:13: error[E0308]: mismatched types: expected `&LightningRodBlock`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:56:37: error[E0308]: mismatched types: expected `&Block`, found `Block`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:80:22: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:124:18: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+-----
+steel-core/src/behavior/blocks/redstone/piston/base.rs:270:19: error[E0624]: method `drop_resources_with_block_entity` is private: private method
+steel-core/src/behavior/blocks/redstone/weathering_lightning_rod_block.rs:87:13: error[E0308]: mismatched types: expected `&LightningRodBlock`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:56:37: error[E0308]: mismatched types: expected `&Block`, found `Block`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:80:22: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:124:18: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/turtle_egg_block.rs:100:16: error[E0425]: cannot find function `in_fallback_hatch_window` in this scope: not found in this scope
+-----
+steel-core/src/behavior/blocks/redstone/weathering_lightning_rod_block.rs:87:13: error[E0308]: mismatched types: expected `&LightningRodBlock`, found `&Block`
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:56:37: error[E0308]: mismatched types: expected `&Block`, found `Block`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:80:22: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:124:18: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/turtle_egg_block.rs:100:16: error[E0425]: cannot find function `in_fallback_hatch_window` in this scope: not found in this scope
+steel-core/src/behavior/item.rs:448:5: error[E0061]: this function takes 3 arguments but 2 arguments were supplied
+-----
+steel-core/src/behavior/blocks/vegetation/carved_pumpkin_block.rs:56:37: error[E0308]: mismatched types: expected `&Block`, found `Block`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:80:22: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:124:18: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/turtle_egg_block.rs:100:16: error[E0425]: cannot find function `in_fallback_hatch_window` in this scope: not found in this scope
+steel-core/src/behavior/item.rs:448:5: error[E0061]: this function takes 3 arguments but 2 arguments were supplied
+steel-core/src/server/boss_bars.rs:127:31: error[E0599]: no method named `base` found for reference `&std::sync::Arc<player::Player>` in the current scope: private field, not a method
+-----
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:80:22: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:124:18: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/turtle_egg_block.rs:100:16: error[E0425]: cannot find function `in_fallback_hatch_window` in this scope: not found in this scope
+steel-core/src/behavior/item.rs:448:5: error[E0061]: this function takes 3 arguments but 2 arguments were supplied
+steel-core/src/server/boss_bars.rs:127:31: error[E0599]: no method named `base` found for reference `&std::sync::Arc<player::Player>` in the current scope: private field, not a method
+steel-core/src/behavior/items/bonemeal.rs:55:17: error[E0425]: cannot find function `emit_growth_particles` in this scope: not found in this scope
+-----
+steel-core/src/behavior/blocks/vegetation/sculk_vein_block.rs:124:18: error[E0599]: no method named `spread_from_face_toward_direction` found for struct `multiface_block::MultifaceBlock` in the current scope: method not found in `multiface_block::MultifaceBlock`
+steel-core/src/behavior/blocks/vegetation/turtle_egg_block.rs:100:16: error[E0425]: cannot find function `in_fallback_hatch_window` in this scope: not found in this scope
+steel-core/src/behavior/item.rs:448:5: error[E0061]: this function takes 3 arguments but 2 arguments were supplied
+steel-core/src/server/boss_bars.rs:127:31: error[E0599]: no method named `base` found for reference `&std::sync::Arc<player::Player>` in the current scope: private field, not a method
+steel-core/src/behavior/items/bonemeal.rs:55:17: error[E0425]: cannot find function `emit_growth_particles` in this scope: not found in this scope
+steel-core/src/behavior/items/bonemeal.rs:73:18: error[E0599]: no method named `iter_tag` found for struct `BlockRegistry` in the current scope
+-----
+steel-core/src/behavior/blocks/vegetation/turtle_egg_block.rs:100:16: error[E0425]: cannot find function `in_fallback_hatch_window` in this scope: not found in this scope
+steel-core/src/behavior/item.rs:448:5: error[E0061]: this function takes 3 arguments but 2 arguments were supplied
+steel-core/src/server/boss_bars.rs:127:31: error[E0599]: no method named `base` found for reference `&std::sync::Arc<player::Player>` in the current scope: private field, not a method
+steel-core/src/behavior/items/bonemeal.rs:55:17: error[E0425]: cannot find function `emit_growth_particles` in this scope: not found in this scope
+steel-core/src/behavior/items/bonemeal.rs:73:18: error[E0599]: no method named `iter_tag` found for struct `BlockRegistry` in the current scope
+steel-core/src/behavior/items/end_crystal.rs:96:23: error[E0615]: attempted to take value of method `x` on type `steel_utils::BlockPos`: method, not a field
+-----
+steel-core/src/behavior/item.rs:448:5: error[E0061]: this function takes 3 arguments but 2 arguments were supplied
+steel-core/src/server/boss_bars.rs:127:31: error[E0599]: no method named `base` found for reference `&std::sync::Arc<player::Player>` in the current scope: private field, not a method
+steel-core/src/behavior/items/bonemeal.rs:55:17: error[E0425]: cannot find function `emit_growth_particles` in this scope: not found in this scope
+steel-core/src/behavior/items/bonemeal.rs:73:18: error[E0599]: no method named `iter_tag` found for struct `BlockRegistry` in the current scope
+steel-core/src/behavior/items/end_crystal.rs:96:23: error[E0615]: attempted to take value of method `x` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:97:23: error[E0615]: attempted to take value of method `y` on type `steel_utils::BlockPos`: method, not a field
+-----
+steel-core/src/server/boss_bars.rs:127:31: error[E0599]: no method named `base` found for reference `&std::sync::Arc<player::Player>` in the current scope: private field, not a method
+steel-core/src/behavior/items/bonemeal.rs:55:17: error[E0425]: cannot find function `emit_growth_particles` in this scope: not found in this scope
+steel-core/src/behavior/items/bonemeal.rs:73:18: error[E0599]: no method named `iter_tag` found for struct `BlockRegistry` in the current scope
+steel-core/src/behavior/items/end_crystal.rs:96:23: error[E0615]: attempted to take value of method `x` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:97:23: error[E0615]: attempted to take value of method `y` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:98:23: error[E0615]: attempted to take value of method `z` on type `steel_utils::BlockPos`: method, not a field
+-----
+steel-core/src/behavior/items/bonemeal.rs:55:17: error[E0425]: cannot find function `emit_growth_particles` in this scope: not found in this scope
+steel-core/src/behavior/items/bonemeal.rs:73:18: error[E0599]: no method named `iter_tag` found for struct `BlockRegistry` in the current scope
+steel-core/src/behavior/items/end_crystal.rs:96:23: error[E0615]: attempted to take value of method `x` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:97:23: error[E0615]: attempted to take value of method `y` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:98:23: error[E0615]: attempted to take value of method `z` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/player/mod.rs:1356:46: error[E0308]: mismatched types: expected `&Arc<World>`, found `Arc<World>`
+-----
+steel-core/src/behavior/items/bonemeal.rs:73:18: error[E0599]: no method named `iter_tag` found for struct `BlockRegistry` in the current scope
+steel-core/src/behavior/items/end_crystal.rs:96:23: error[E0615]: attempted to take value of method `x` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:97:23: error[E0615]: attempted to take value of method `y` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:98:23: error[E0615]: attempted to take value of method `z` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/player/mod.rs:1356:46: error[E0308]: mismatched types: expected `&Arc<World>`, found `Arc<World>`
+steel-core/src/block_entity/entities/beacon.rs:380:45: error[E0599]: no method named `string` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+-----
+steel-core/src/behavior/items/end_crystal.rs:96:23: error[E0615]: attempted to take value of method `x` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:97:23: error[E0615]: attempted to take value of method `y` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:98:23: error[E0615]: attempted to take value of method `z` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/player/mod.rs:1356:46: error[E0308]: mismatched types: expected `&Arc<World>`, found `Arc<World>`
+steel-core/src/block_entity/entities/beacon.rs:380:45: error[E0599]: no method named `string` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:393:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+-----
+steel-core/src/behavior/items/end_crystal.rs:97:23: error[E0615]: attempted to take value of method `y` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/behavior/items/end_crystal.rs:98:23: error[E0615]: attempted to take value of method `z` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/player/mod.rs:1356:46: error[E0308]: mismatched types: expected `&Arc<World>`, found `Arc<World>`
+steel-core/src/block_entity/entities/beacon.rs:380:45: error[E0599]: no method named `string` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:393:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:65:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+-----
+steel-core/src/behavior/items/end_crystal.rs:98:23: error[E0615]: attempted to take value of method `z` on type `steel_utils::BlockPos`: method, not a field
+steel-core/src/player/mod.rs:1356:46: error[E0308]: mismatched types: expected `&Arc<World>`, found `Arc<World>`
+steel-core/src/block_entity/entities/beacon.rs:380:45: error[E0599]: no method named `string` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:393:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:65:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:83:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+-----
+steel-core/src/player/mod.rs:1356:46: error[E0308]: mismatched types: expected `&Arc<World>`, found `Arc<World>`
+steel-core/src/block_entity/entities/beacon.rs:380:45: error[E0599]: no method named `string` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:393:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:65:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:83:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:102:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+-----
+steel-core/src/block_entity/entities/beacon.rs:380:45: error[E0599]: no method named `string` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/block_entity/entities/beacon.rs:393:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:65:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:83:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:102:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:204:40: error[E0277]: the trait bound `MenuType: Into<std::option::Option<&'static MenuType>>` is not satisfied: the trait `Into<std::option::Option<&'static MenuType>>` is not implemented for `MenuType`
+-----
+steel-core/src/block_entity/entities/beacon.rs:393:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/menu/kinds/station_menu.rs:65:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:83:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:102:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:204:40: error[E0277]: the trait bound `MenuType: Into<std::option::Option<&'static MenuType>>` is not satisfied: the trait `Into<std::option::Option<&'static MenuType>>` is not implemented for `MenuType`
+steel-core/src/block_entity/entities/beacon.rs:396:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+-----
+steel-core/src/inventory/menu/kinds/station_menu.rs:65:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:83:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:102:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:204:40: error[E0277]: the trait bound `MenuType: Into<std::option::Option<&'static MenuType>>` is not satisfied: the trait `Into<std::option::Option<&'static MenuType>>` is not implemented for `MenuType`
+steel-core/src/block_entity/entities/beacon.rs:396:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/slots/crafting_slots.rs:27:5: error[E0277]: the trait bound `Mutex<RawMutex, Option<Identifier>>: Clone` is not satisfied: the trait `std::clone::Clone` is not implemented for `Mutex<RawMutex, Option<Identifier>>`
+-----
+steel-core/src/inventory/menu/kinds/station_menu.rs:83:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:102:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:204:40: error[E0277]: the trait bound `MenuType: Into<std::option::Option<&'static MenuType>>` is not satisfied: the trait `Into<std::option::Option<&'static MenuType>>` is not implemented for `MenuType`
+steel-core/src/block_entity/entities/beacon.rs:396:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/slots/crafting_slots.rs:27:5: error[E0277]: the trait bound `Mutex<RawMutex, Option<Identifier>>: Clone` is not satisfied: the trait `std::clone::Clone` is not implemented for `Mutex<RawMutex, Option<Identifier>>`
+steel-core/src/inventory/container/crafting.rs:81:9: error[E0308]: mismatched types: expected `PositionedCraftingInput`, found `CraftingInput`
+-----
+steel-core/src/inventory/menu/kinds/station_menu.rs:102:9: error[E0308]: mismatched types: expected `&MenuType`, found `MenuType`
+steel-core/src/inventory/menu/kinds/station_menu.rs:204:40: error[E0277]: the trait bound `MenuType: Into<std::option::Option<&'static MenuType>>` is not satisfied: the trait `Into<std::option::Option<&'static MenuType>>` is not implemented for `MenuType`
+steel-core/src/block_entity/entities/beacon.rs:396:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/slots/crafting_slots.rs:27:5: error[E0277]: the trait bound `Mutex<RawMutex, Option<Identifier>>: Clone` is not satisfied: the trait `std::clone::Clone` is not implemented for `Mutex<RawMutex, Option<Identifier>>`
+steel-core/src/inventory/container/crafting.rs:81:9: error[E0308]: mismatched types: expected `PositionedCraftingInput`, found `CraftingInput`
+steel-core/src/block_entity/entities/beehive.rs:191:20: error[E0599]: no method named `set_position` found for struct `std::sync::Arc<dyn entity::entity::Entity>` in the current scope
+-----
+steel-core/src/inventory/menu/kinds/station_menu.rs:204:40: error[E0277]: the trait bound `MenuType: Into<std::option::Option<&'static MenuType>>` is not satisfied: the trait `Into<std::option::Option<&'static MenuType>>` is not implemented for `MenuType`
+steel-core/src/block_entity/entities/beacon.rs:396:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/slots/crafting_slots.rs:27:5: error[E0277]: the trait bound `Mutex<RawMutex, Option<Identifier>>: Clone` is not satisfied: the trait `std::clone::Clone` is not implemented for `Mutex<RawMutex, Option<Identifier>>`
+steel-core/src/inventory/container/crafting.rs:81:9: error[E0308]: mismatched types: expected `PositionedCraftingInput`, found `CraftingInput`
+steel-core/src/block_entity/entities/beehive.rs:191:20: error[E0599]: no method named `set_position` found for struct `std::sync::Arc<dyn entity::entity::Entity>` in the current scope
+steel-core/src/inventory/menu/kinds/chest_menu.rs:184:23: error[E0599]: no method named `get_block_state` found for reference `&chest::ChestBlockEntity` in the current scope
+-----
+steel-core/src/block_entity/entities/beacon.rs:396:14: error[E0599]: no method named `get` found for reference `&BaseNbtCompound<'_>` in the current scope: method not found in `&BaseNbtCompound<'_>`
+steel-core/src/inventory/slots/crafting_slots.rs:27:5: error[E0277]: the trait bound `Mutex<RawMutex, Option<Identifier>>: Clone` is not satisfied: the trait `std::clone::Clone` is not implemented for `Mutex<RawMutex, Option<Identifier>>`
+steel-core/src/inventory/container/crafting.rs:81:9: error[E0308]: mismatched types: expected `PositionedCraftingInput`, found `CraftingInput`
+steel-core/src/block_entity/entities/beehive.rs:191:20: error[E0599]: no method named `set_position` found for struct `std::sync::Arc<dyn entity::entity::Entity>` in the current scope
+steel-core/src/inventory/menu/kinds/chest_menu.rs:184:23: error[E0599]: no method named `get_block_state` found for reference `&chest::ChestBlockEntity` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:213:31: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+-----
+steel-core/src/inventory/slots/crafting_slots.rs:27:5: error[E0277]: the trait bound `Mutex<RawMutex, Option<Identifier>>: Clone` is not satisfied: the trait `std::clone::Clone` is not implemented for `Mutex<RawMutex, Option<Identifier>>`
+steel-core/src/inventory/container/crafting.rs:81:9: error[E0308]: mismatched types: expected `PositionedCraftingInput`, found `CraftingInput`
+steel-core/src/block_entity/entities/beehive.rs:191:20: error[E0599]: no method named `set_position` found for struct `std::sync::Arc<dyn entity::entity::Entity>` in the current scope
+steel-core/src/inventory/menu/kinds/chest_menu.rs:184:23: error[E0599]: no method named `get_block_state` found for reference `&chest::ChestBlockEntity` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:213:31: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/block_entity/entities/beehive.rs:241:24: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+-----
+steel-core/src/inventory/container/crafting.rs:81:9: error[E0308]: mismatched types: expected `PositionedCraftingInput`, found `CraftingInput`
+steel-core/src/block_entity/entities/beehive.rs:191:20: error[E0599]: no method named `set_position` found for struct `std::sync::Arc<dyn entity::entity::Entity>` in the current scope
+steel-core/src/inventory/menu/kinds/chest_menu.rs:184:23: error[E0599]: no method named `get_block_state` found for reference `&chest::ChestBlockEntity` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:213:31: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/block_entity/entities/beehive.rs:241:24: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/block_entity/entities/beehive.rs:279:14: error[E0599]: no method named `block_state` found for reference `&beehive::BeehiveBlockEntity` in the current scope
+-----
+steel-core/src/block_entity/entities/beehive.rs:191:20: error[E0599]: no method named `set_position` found for struct `std::sync::Arc<dyn entity::entity::Entity>` in the current scope
+steel-core/src/inventory/menu/kinds/chest_menu.rs:184:23: error[E0599]: no method named `get_block_state` found for reference `&chest::ChestBlockEntity` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:213:31: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/block_entity/entities/beehive.rs:241:24: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/block_entity/entities/beehive.rs:279:14: error[E0599]: no method named `block_state` found for reference `&beehive::BeehiveBlockEntity` in the current scope
+steel-core/src/block_entity/entities/banner.rs:80:26: error[E0277]: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator
+-----
+steel-core/src/inventory/menu/kinds/chest_menu.rs:184:23: error[E0599]: no method named `get_block_state` found for reference `&chest::ChestBlockEntity` in the current scope
+steel-core/src/block_entity/entities/beehive.rs:213:31: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/block_entity/entities/beehive.rs:241:24: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/block_entity/entities/beehive.rs:279:14: error[E0599]: no method named `block_state` found for reference `&beehive::BeehiveBlockEntity` in the current scope
+steel-core/src/block_entity/entities/banner.rs:80:26: error[E0277]: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator
+steel-core/src/entity/projectile/thrown_potion.rs:127:22: error[E0599]: no method named `downcast_ref` found for reference `&(dyn entity::entity::Entity + 'static)` in the current scope
+-----
+steel-core/src/block_entity/entities/beehive.rs:213:31: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/block_entity/entities/beehive.rs:241:24: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/block_entity/entities/beehive.rs:279:14: error[E0599]: no method named `block_state` found for reference `&beehive::BeehiveBlockEntity` in the current scope
+steel-core/src/block_entity/entities/banner.rs:80:26: error[E0277]: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator
+steel-core/src/entity/projectile/thrown_potion.rs:127:22: error[E0599]: no method named `downcast_ref` found for reference `&(dyn entity::entity::Entity + 'static)` in the current scope
+steel-core/src/entity/natural_spawner.rs:137:46: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+-----
+steel-core/src/block_entity/entities/beehive.rs:241:24: error[E0599]: no method named `pos` found for reference `&beehive::BeehiveBlockEntity` in the current scope: method not found in `&beehive::BeehiveBlockEntity`
+steel-core/src/block_entity/entities/beehive.rs:279:14: error[E0599]: no method named `block_state` found for reference `&beehive::BeehiveBlockEntity` in the current scope
+steel-core/src/block_entity/entities/banner.rs:80:26: error[E0277]: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator
+steel-core/src/entity/projectile/thrown_potion.rs:127:22: error[E0599]: no method named `downcast_ref` found for reference `&(dyn entity::entity::Entity + 'static)` in the current scope
+steel-core/src/entity/natural_spawner.rs:137:46: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/natural_spawner.rs:138:46: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+-----
+steel-core/src/block_entity/entities/beehive.rs:279:14: error[E0599]: no method named `block_state` found for reference `&beehive::BeehiveBlockEntity` in the current scope
+steel-core/src/block_entity/entities/banner.rs:80:26: error[E0277]: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator
+steel-core/src/entity/projectile/thrown_potion.rs:127:22: error[E0599]: no method named `downcast_ref` found for reference `&(dyn entity::entity::Entity + 'static)` in the current scope
+steel-core/src/entity/natural_spawner.rs:137:46: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/natural_spawner.rs:138:46: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:149:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/block_entity/entities/banner.rs:80:26: error[E0277]: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator: `&simdnbt::borrow::NbtList<'_, '_>` is not an iterator
+steel-core/src/entity/projectile/thrown_potion.rs:127:22: error[E0599]: no method named `downcast_ref` found for reference `&(dyn entity::entity::Entity + 'static)` in the current scope
+steel-core/src/entity/natural_spawner.rs:137:46: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/natural_spawner.rs:138:46: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:149:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:149:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/projectile/thrown_potion.rs:127:22: error[E0599]: no method named `downcast_ref` found for reference `&(dyn entity::entity::Entity + 'static)` in the current scope
+steel-core/src/entity/natural_spawner.rs:137:46: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/natural_spawner.rs:138:46: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:149:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:149:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:150:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/natural_spawner.rs:137:46: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/natural_spawner.rs:138:46: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:149:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:149:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:150:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:150:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/natural_spawner.rs:138:46: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:149:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:149:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:150:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:150:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/block_entity/entities/crafter.rs:275:14: error[E0599]: no method named `block_state` found for reference `&crafter::CrafterBlockEntity` in the current scope
+-----
+steel-core/src/entity/villager_trades.rs:149:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:149:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:150:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:150:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/block_entity/entities/crafter.rs:275:14: error[E0599]: no method named `block_state` found for reference `&crafter::CrafterBlockEntity` in the current scope
+steel-core/src/entity/villager_trades.rs:151:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:149:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:150:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:150:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/block_entity/entities/crafter.rs:275:14: error[E0599]: no method named `block_state` found for reference `&crafter::CrafterBlockEntity` in the current scope
+steel-core/src/entity/villager_trades.rs:151:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:151:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:150:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:150:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/block_entity/entities/crafter.rs:275:14: error[E0599]: no method named `block_state` found for reference `&crafter::CrafterBlockEntity` in the current scope
+steel-core/src/entity/villager_trades.rs:151:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:151:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:152:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:150:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/block_entity/entities/crafter.rs:275:14: error[E0599]: no method named `block_state` found for reference `&crafter::CrafterBlockEntity` in the current scope
+steel-core/src/entity/villager_trades.rs:151:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:151:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:152:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:152:50: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/block_entity/entities/crafter.rs:275:14: error[E0599]: no method named `block_state` found for reference `&crafter::CrafterBlockEntity` in the current scope
+steel-core/src/entity/villager_trades.rs:151:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:151:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:152:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:152:50: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:153:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:151:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:151:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:152:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:152:50: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:153:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:153:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:151:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:152:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:152:50: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:153:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:153:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:156:23: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+-----
+steel-core/src/entity/villager_trades.rs:152:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:152:50: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:153:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:153:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:156:23: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:154:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:152:50: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:153:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:153:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:156:23: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:154:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:154:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:153:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:153:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:156:23: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:154:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:154:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:155:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:153:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:156:23: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:154:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:154:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:155:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:155:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/natural_spawner.rs:156:23: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:154:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:154:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:155:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:155:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:158:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:154:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:154:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:155:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:155:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:158:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:158:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:154:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:155:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:155:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:158:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:158:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:159:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:155:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:155:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:158:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:158:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:159:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:159:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:155:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:158:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:158:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:159:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:159:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:160:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:158:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:158:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:159:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:159:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:160:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:160:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:158:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:159:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:159:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:160:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:160:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:183:30: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+-----
+steel-core/src/entity/villager_trades.rs:159:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:159:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:160:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:160:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:183:30: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:160:62: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:159:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:160:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:160:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:183:30: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:160:62: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:184:48: error[E0308]: mismatched types: expected `bool`, found `()`
+-----
+steel-core/src/entity/villager_trades.rs:160:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:160:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:183:30: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:160:62: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:184:48: error[E0308]: mismatched types: expected `bool`, found `()`
+steel-core/src/entity/villager_trades.rs:161:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:160:47: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:183:30: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:160:62: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:184:48: error[E0308]: mismatched types: expected `bool`, found `()`
+steel-core/src/entity/villager_trades.rs:161:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:161:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/natural_spawner.rs:183:30: error[E0599]: no method named `random_range` found for struct `ThreadRng` in the current scope
+steel-core/src/entity/villager_trades.rs:160:62: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:184:48: error[E0308]: mismatched types: expected `bool`, found `()`
+steel-core/src/entity/villager_trades.rs:161:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:161:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:164:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:160:62: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/natural_spawner.rs:184:48: error[E0308]: mismatched types: expected `bool`, found `()`
+steel-core/src/entity/villager_trades.rs:161:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:161:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:164:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:164:46: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/natural_spawner.rs:184:48: error[E0308]: mismatched types: expected `bool`, found `()`
+steel-core/src/entity/villager_trades.rs:161:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:161:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:164:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:164:46: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:165:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+-----
+steel-core/src/entity/villager_trades.rs:161:25: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+steel-core/src/entity/villager_trades.rs:161:48: error[E0308]: mismatched types: expected `&Item`, found `LazyLock<Item>`
+

@@ -73,7 +73,18 @@ impl BlockBehavior for WitherWallSkullBlock {
     ) -> Option<Vec<ItemStack>> {
         self.base.get_drops(state, context)
     }
-    // TODO implement set_placed_by (requires WitherSkullBlock::check_spawn to be implemented)
+    fn set_placed_by(
+        &self,
+        _state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _source: &crate::behavior::context::PlacementSource<'_>,
+    ) {
+        // A wall skull completes the wither pattern exactly like a floor skull.
+        crate::behavior::blocks::decoration::skull::wither_skull_block::WitherSkullBlock::check_spawn(
+            world, pos,
+        );
+    }
 }
 
 impl AbstractSkullBlock for WitherWallSkullBlock {

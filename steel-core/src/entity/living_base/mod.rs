@@ -1010,6 +1010,30 @@ impl LivingEntityBase {
         self.state.lock().no_action_time += 1;
     }
 
+    /// Refreshes transient item attribute modifiers for every equipment slot.
+    ///
+    /// Vanilla re-runs the location-based enchantment effects on the whole
+    /// entity (spectator transitions, respawns), which is equivalent to
+    /// refreshing each slot's modifiers.
+    pub fn refresh_all_equipment_attribute_modifiers(&self) {
+        for slot in EquipmentSlot::ALL {
+            let item_stack = self.equipment.lock().get_ref(slot).clone();
+            self.refresh_equipment_attribute_modifiers(slot, &item_stack);
+        }
+    }
+
+    /// Drops every transient item attribute modifier, mirroring vanilla
+    /// `ServerPlayer.setGameMode(Spectator)` emptying the effect map.
+    pub fn clear_equipment_attribute_modifiers(&self) {
+        let mut attributes = self.attributes.lock();
+        let mut installed_modifiers = self.equipment_attribute_modifiers.lock();
+        for slot_modifiers in installed_modifiers.iter_mut() {
+            for key in slot_modifiers.drain(..) {
+                attributes.remove_modifier(key.attribute, &key.id);
+            }
+        }
+    }
+
     /// Refreshes transient item attribute modifiers for an equipment slot.
     pub fn refresh_equipment_attribute_modifiers(
         &self,
@@ -1554,6 +1578,11 @@ impl LivingEntityBase {
     #[must_use]
     pub fn hurt_time(&self) -> i32 {
         self.state.lock().hurt_time
+    }
+
+    /// Sets the hurt-flash counter, used when copying state between entities.
+    pub fn set_hurt_time(&self, hurt_time: i32) {
+        self.state.lock().hurt_time = hurt_time;
     }
 
     /// Returns the current hurt duration

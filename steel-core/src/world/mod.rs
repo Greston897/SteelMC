@@ -122,17 +122,21 @@ pub mod explosion;
 pub mod game_event;
 mod level_effects;
 mod level_reader;
+pub mod map_state;
 mod player_index;
 pub(crate) mod player_spawn_finder;
 mod portals;
 mod properties;
-mod raycast;
+pub(crate) mod raycast;
 mod redstone;
 mod signal_getter;
 mod sleep;
 mod sleep_status;
 mod spawn;
 pub mod tick_scheduler;
+mod waypoint;
+pub mod dragon_fight;
+pub mod raid;
 mod weather;
 mod world_entities;
 
@@ -214,6 +218,8 @@ pub enum ConditionalBlockSetResult {
 /// Configuration for creating a new world.
 #[derive(Clone)]
 pub struct WorldConfig {
+    /// Server this world belongs to, filled once during startup.
+    pub server: std::sync::OnceLock<std::sync::Weak<crate::server::Server>>,
     /// Server-owned history; the caller retains it while the world runs.
     pub damage_history: Arc<DamageHistory>,
     /// Domain game-time authority, bound during construction.
@@ -251,8 +257,19 @@ pub struct World {
     pub chunk_map: Arc<ChunkMap>,
     /// All players in the world with dual indexing by UUID and entity ID.
     pub players: PlayerMap,
+    /// Vanilla `WaypointManager` state for the locator bar.
+    pub waypoints: waypoint::WaypointManager,
+    /// Vanilla `Raid` list for bad/raid omen.
+    pub raids: raid::RaidManager,
+    /// Vanilla `EnderDragonFight` state for this world (only meaningful in the End).
+    pub dragon_fight: dragon_fight::DragonFight,
     /// Spatial index for player proximity queries.
     pub player_area_map: PlayerAreaMap,
+    /// Server this world belongs to, filled once during startup.
+    ///
+    /// A `OnceLock` keeps the world constructible before the server exists while
+    /// still letting world-local code reach server-owned systems.
+    pub server: std::sync::OnceLock<std::sync::Weak<crate::server::Server>>,
     /// Loaded world identifier (`domain:world`).
     pub key: Identifier,
     /// Vanilla dimension type for this loaded world.
@@ -266,6 +283,8 @@ pub struct World {
     pub(crate) game_time: Arc<GameTime>,
     /// Per-world saved data storage.
     pub(crate) saved_data: SavedDataManager,
+    /// Vanilla `MapState` saved data: color grids, decorations and next map id.
+    pub map_states: SyncMutex<map_state::MapStates>,
     /// Runtime world border state.
     world_border: SyncMutex<WorldBorder>,
     /// Vanilla sleeping player counts for night-skip checks.
@@ -353,6 +372,10 @@ impl World {
         .await
     }
 
+    #[expect(
+        clippy::too_many_lines,
+        reason = "single-pass constructor mirroring the vanilla ServerWorld init order"
+    )]
     pub(crate) async fn new_with_config_and_encoding_pool(
         chunk_runtime: Arc<Runtime>,
         key: Identifier,
@@ -395,6 +418,24 @@ impl World {
             level_data.save().await?;
         }
         let ticket_storage = ChunkTicketStorage::load(&saved_data, &key).await;
+        let raids = match saved_data.load_or_default::<Vec<raid::Raid>>(saved_data_names::RAIDS).await
+        {
+            Ok(raids) => raid::RaidManager::from_raids(raids),
+            Err(error) => {
+                log::warn!("Could not load raids for world {key}; starting empty: {error}");
+                raid::RaidManager::new()
+            }
+        };
+        let map_states = match saved_data
+            .sync_load_wincode::<map_state::PersistentMapStates>(saved_data_names::MAPS)
+        {
+            Ok(Some(persistent)) => map_state::MapStates::from_persistent(persistent),
+            Ok(None) => map_state::MapStates::new(),
+            Err(error) => {
+                log::warn!("Could not load map data for world {key}; starting empty: {error}");
+                map_state::MapStates::new()
+            }
+        };
         let world_border = WorldBorder::new(level_data.data().world_border)
             .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
         // let generator = Arc::new(ChunkGeneratorType::Flat(FlatChunkGenerator::new(
@@ -435,12 +476,17 @@ impl World {
                 damage_history: Arc::downgrade(&config.damage_history),
                 chunk_map,
                 players: PlayerMap::new(),
+                waypoints: waypoint::WaypointManager::new(),
+                raids,
+                dragon_fight: dragon_fight::DragonFight::new(),
                 player_area_map: PlayerAreaMap::new(),
+                server: std::sync::OnceLock::new(),
                 key,
                 dimension_type,
                 game_time: level_data.game_time_handle(),
                 level_data: SyncRwLock::new(level_data),
                 saved_data,
+                map_states: SyncMutex::new(map_states),
                 world_border: SyncMutex::new(world_border),
                 sleep_status: SyncMutex::new(sleep_status::SleepStatus::default()),
                 view_distance,
@@ -494,10 +540,86 @@ impl World {
             Err(e) => log::error!("Failed to save world chunk ticket data: {e}"),
         }
 
+        {
+            let map_states = self.map_states.lock();
+            let has_changes = map_states.is_dirty();
+            let persistent = has_changes.then(|| map_states.to_persistent());
+            drop(map_states);
+            if let Some(persistent) = persistent {
+                match self
+                    .saved_data
+                    .sync_save_wincode(saved_data_names::MAPS, &persistent)
+                {
+                    Ok(()) => {
+                        self.map_states.lock().clear_dirty();
+                        log::info!("World {} saved map data successfully", self.key);
+                    }
+                    Err(e) => log::error!("Failed to save world map data: {e}"),
+                }
+            }
+        }
+
+        // Active raids must survive a restart, otherwise a raid in progress is
+        // silently forgotten when the server stops.
+        let raids = self.raids.to_persistent();
+        match self.saved_data.save(saved_data_names::RAIDS, &raids).await {
+            Ok(()) => log::info!("World {} saved {} raid(s)", self.key, raids.len()),
+            Err(e) => log::error!("Failed to save world raids: {e}"),
+        }
+
         match self.save_all_chunks().await {
             Ok(count) => *total_saved += count,
             Err(e) => log::error!("Failed to save world chunks: {e}"),
         }
+    }
+
+    /// Attaches the owning server so world-scoped gameplay can reach
+    /// server-owned state such as scoreboards.
+    ///
+    /// Worlds are constructed before the server (they are fields of it), so the
+    /// link is filled once during startup; callers must tolerate `None` in tests.
+    pub fn attach_server(&self, server: &Arc<crate::server::Server>) {
+        let _ = self.server.set(Arc::downgrade(server));
+    }
+
+    /// Returns the owning server, if this world has been attached to one.
+    #[must_use]
+    pub fn server(&self) -> Option<Arc<crate::server::Server>> {
+        self.server.get().and_then(std::sync::Weak::upgrade)
+    }
+
+    /// Returns the scoreboard for this world's domain, if a server is attached.
+    ///
+    /// The scoreboard is built once from all worlds, so it borrows from the
+    /// server; callers clone whatever slice of state they need.
+    #[must_use]
+    pub fn with_scoreboard<R>(
+        &self,
+        f: impl FnOnce(&crate::scoreboard::Scoreboard) -> R,
+    ) -> Option<R> {
+        let server = self.server()?;
+        server.scoreboards.get(self.domain()).map(f)
+    }
+
+    /// Returns the block position crystals should beam at, if a dragon is alive.
+    ///
+    /// Vanilla only links crystals to the dragon in the End; other dimensions have
+    /// no dragon fight, so this yields `None` there.
+    #[must_use]
+    pub fn dragon_fight_target(&self) -> Option<BlockPos> {
+        if !self.is_end_dimension_type() {
+            return None;
+        }
+        self.dragon_fight.dragon_target().map(|pos| BlockPos::new(pos.x, pos.y, pos.z))
+    }
+
+    /// Vanilla `EndCrystal` removal hook: a crystal that dies on the exit portal
+    /// column starts the dragon respawn.
+    pub fn on_end_crystal_destroyed(&self, pos: BlockPos) {
+        if !self.is_end_dimension_type() {
+            return;
+        }
+        self.dragon_fight.try_respawn(pos.0);
     }
 
     /// Returns the domain this loaded world belongs to.
@@ -532,6 +654,33 @@ impl World {
         clippy::too_many_lines,
         reason = "world tick orchestration keeps vanilla subsystem order explicit"
     )]
+    /// Returns whether this dimension is kept active without players.
+    ///
+    /// Mirrors vanilla `ServerLevel`'s `FLAG_KEEP_DIMENSION_ACTIVE` check: a
+    /// dimension whose tickets carry the flag keeps its game time and chunk
+    /// simulation running even with no players inside.
+    #[must_use]
+    pub fn is_kept_active(&self) -> bool {
+        self.chunk_map.dimension_kept_active()
+    }
+
+    /// Vanilla keeps ticking removed players from their connection.
+    ///
+    /// Steel ticks players through the entity manager, which skips removed
+    /// entities, so a dead player would freeze: death animation, respawn timer,
+    /// and `play_time` would all stop. Ticking them here keeps that behaviour and
+    /// must run before the entity tick so the removal tick is not processed
+    /// twice. Unlike the entity tick this skips `commonTick`, so the tick count
+    /// stays frozen like vanilla.
+    fn tick_removed_players(self: &Arc<Self>) {
+        self.players.iter_players(|_, player| {
+            if player.is_removed() {
+                Arc::clone(player).tick();
+            }
+            true
+        });
+    }
+
     pub fn tick_game(
         self: &Arc<Self>,
         tick_count: u64,
@@ -567,6 +716,8 @@ impl World {
         // Vanilla clears this before ticking entities and block entities.
         self.handling_tick.store(false, Ordering::Relaxed);
 
+        self.tick_removed_players();
+
         let entity_tick = {
             let _span = tracing::trace_span!("entity_tick").entered();
             let start = Instant::now();
@@ -584,6 +735,12 @@ impl World {
             let start = Instant::now();
             self.block_entity_tickers.tick(self, runs_normally);
             chunk_map_timings.tick_block_entities = start.elapsed();
+        }
+
+        if runs_normally {
+            // Vanilla `ServerChunkCache.tickChunks` → `NaturalSpawner`.
+            let _span = tracing::trace_span!("natural_spawning").entered();
+            crate::entity::natural_spawner::tick_natural_spawning(self, tick_count as usize);
         }
 
         {

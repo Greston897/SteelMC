@@ -113,7 +113,7 @@ impl PigEntity {
                 4,
                 TemptGoal::new(
                     1.2,
-                    |item_stack| item_stack.is(&vanilla_items::CARROT_ON_A_STICK),
+                    |item_stack| item_stack.is(&*vanilla_items::CARROT_ON_A_STICK),
                     false,
                 ),
             );
@@ -270,7 +270,7 @@ impl Entity for PigEntity {
             && let Some(passenger) = self.first_passenger()
             && passenger.as_player().is_some_and(|player| {
                 let mut is_holding_carrot_on_a_stick =
-                    |item_stack: &ItemStack| item_stack.is(&vanilla_items::CARROT_ON_A_STICK);
+                    |item_stack: &ItemStack| item_stack.is(&*vanilla_items::CARROT_ON_A_STICK);
                 player.is_holding(&mut is_holding_carrot_on_a_stick)
             })
         {

@@ -10,7 +10,8 @@ max_players = 20
 allow_extended_view_distance = false
 # Maximum view distance in chunks. Normally 1-32; 1-128 when allow_extended_view_distance is true.
 view_distance = 10
-# Maximum simulation distance in chunks
+# Maximum simulation distance in chunks. Vanilla minimum is 4; 0-3 freezes
+# mobs and other activity outside the chunks the player is in.
 simulation_distance = 10
 # Maximum chained neighbor-update tasks. Negative values disable the limit.
 max_chained_neighbor_updates = 1000000
@@ -35,14 +36,31 @@ use_favicon = true
 favicon = "config/favicon.png"
 # Whether to enforce secure chat
 enforce_secure_chat = false
+force_gamemode = false
 # Vanilla chat spam threshold window in seconds
 chat_spam_threshold_seconds = 10
 # Vanilla command spam threshold window in seconds
 command_spam_threshold_seconds = 10
+# Vanilla server.properties "rate-limit": inbound packets per second one
+# connection may send before it is disconnected. 0 disables the limit (vanilla
+# default); Steel still enforces an internal 500 packets/second ceiling.
+rate_limit = 0
+
+# Remote console (RCON). Disabled while "password" is empty.
+[server.rcon]
+# TCP port the RCON listener binds.
+port = 25575
+# Shared secret every RCON client must authenticate with. Empty disables RCON.
+password = ""
 
 # Optional worker counts for server thread pools. 0 or omitted uses each pool's automatic default.
 [server.threads]
-# Worker threads for the primary Tokio runtime.
+# CPU cores this server may use. 0 detects the real limit: the smaller of the
+# OS affinity mask and any cgroup quota, so a Pterodactyl/Docker container
+# started with --cpus=6 (600% of one core) counts as six cores, not the whole
+# host. Set this to reserve cores for other processes.
+cores = 0
+# Worker threads for the primary Tokio runtime. 0 = automatic share of `cores`.
 main_runtime = 0
 # Worker threads for the chunk Tokio runtime.
 chunk_runtime = 0

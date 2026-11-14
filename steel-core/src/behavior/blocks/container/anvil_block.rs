@@ -10,7 +10,7 @@ use steel_registry::{
     items::item::BlockHitResult,
     vanilla_blocks, vanilla_custom_stats,
 };
-use steel_utils::{BlockStateId, Direction, translations};
+use steel_utils::{BlockPos, BlockStateId, Direction, translations};
 use text_components::TextComponent;
 
 use crate::{
@@ -64,6 +64,17 @@ impl BlockBehavior for AnvilBlock {
             HORIZONTAL_FACING,
             context.horizontal_direction().rotate_y_clockwise(),
         ))
+    }
+
+    fn allows_spectator_menu(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+    ) -> bool {
+        // Vanilla `allowsSpectatorMenu` for container blocks.
+        let _ = (state, world, pos);
+        true
     }
 
     fn use_without_item(

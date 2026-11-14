@@ -25,8 +25,19 @@ use tokio::task::yield_now;
 use super::Server;
 
 // Per-session count limits bound tick-drain work; byte limits bound retained decoded payloads.
-// Vanilla's optional connection rate limit is disabled by default. This higher safety ceiling is
-// intended to catch unbounded backlogs without treating ordinary traffic during a long tick as spam.
+//
+// Vanilla's `ServerGamePacketListenerImpl` kicks once the *pending incoming*
+// queue passes `DROP_THRESHOLD` (8) packets, but it drains that queue on the
+// packet-handling thread as fast as it arrives. Steel schedules work onto the
+// game loop and must tolerate one slow tick: a player who is teleporting or
+// opening a large container can legitimately have a few hundred packets
+// buffered while the tick finishes. A limit of 8 would kick those players.
+//
+// The flood protection lives one layer earlier instead, in the per-connection
+// `PacketBudget` (`player::connection::packet_budget`): a client can only ever
+// push 500 packets/second into this queue, so reaching 8 192 still requires
+// ~16 seconds of unbroken flooding with a *stalled* game loop. This number is
+// therefore a backstop for that pathological case, not the primary defence.
 const MAX_OUTSTANDING_PACKETS_PER_PLAYER: usize = 8_192;
 const MAX_OUTSTANDING_BYTES_PER_PLAYER: usize = 32 * 1024 * 1024;
 // Approximate fixed queue, lane, and scheduling-index storage per admitted packet.

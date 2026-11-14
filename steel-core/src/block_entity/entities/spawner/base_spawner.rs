@@ -91,9 +91,9 @@ struct SpawnerState {
 }
 
 #[derive(Debug, Default)]
-pub(super) struct SpawnerTickResult {
-    pub(super) state_changed: bool,
-    pub(super) next_spawn_data_changed: bool,
+pub struct SpawnerTickResult {
+    pub state_changed: bool,
+    pub next_spawn_data_changed: bool,
 }
 
 impl Default for SpawnerState {
@@ -164,7 +164,15 @@ impl BaseSpawner {
 
     /// Loads the vanilla spawner fields from NBT.
     pub fn load(&self, nbt: &BorrowedNbtCompound<'_>) {
-        let nbt: NbtCompoundView<'_, '_> = nbt.into();
+        let view: NbtCompoundView<'_, '_> = nbt.into();
+        self.load_view(&view);
+    }
+
+    /// Loads the vanilla spawner fields from an already-borrowed compound view.
+    ///
+    /// Callers that hold a typed [`NbtCompoundView`] rather than the erased
+    /// `BaseNbtCompound` reborrow before reaching this entry point.
+    pub fn load_view(&self, nbt: &NbtCompoundView<'_, '_>) {
         let mut state = self.state.lock();
         state.spawn_delay = nbt
             .get("Delay")
@@ -355,7 +363,7 @@ impl BaseSpawner {
         clippy::too_many_lines,
         reason = "The order of this method mirrors vanilla BaseSpawner.serverTick."
     )]
-    pub(super) fn server_tick(&self, world: &Arc<World>, pos: BlockPos) -> SpawnerTickResult {
+    pub(crate) fn server_tick(&self, world: &Arc<World>, pos: BlockPos) -> SpawnerTickResult {
         let center = DVec3::from(pos.get_center());
         let config = self.config();
         let Some(_) =

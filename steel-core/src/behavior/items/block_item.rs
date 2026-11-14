@@ -176,9 +176,31 @@ impl BlockItem {
     }
 
     pub(super) fn place_block(context: &BlockPlaceContext<'_>, state: BlockStateId) -> bool {
-        context
+        let pos = context.place_pos();
+        let placed = context
             .world
-            .set_block(context.place_pos(), state, Self::PLACE_BLOCK_FLAGS)
+            .set_block(pos, state, Self::PLACE_BLOCK_FLAGS);
+        if placed {
+            // Vanilla `BlockItem#place` → `CriteriaTriggers.PLACED_BLOCK`: the
+            // predicate carries the placed block and its item form.
+            if let Some(player) = context.player() {
+                let block_key = steel_registry::REGISTRY
+                    .blocks
+                    .by_state_id(state)
+                    .map(|block| block.key.clone());
+                let item_key = context.with_item(|stack| stack.item().key.clone());
+                if let Some(block_key) = block_key {
+                    player.trigger_advancement_with_context(
+                        &steel_registry::vanilla_criteria_triggers::PLACED_BLOCK,
+                        &crate::player::advancement::predicate::TriggerContext::block(
+                            &block_key,
+                            Some(&item_key),
+                        ),
+                    );
+                }
+            }
+        }
+        placed
     }
 
     pub(super) fn get_state_for_placement(

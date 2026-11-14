@@ -2,10 +2,13 @@ use std::collections::BTreeSet;
 
 use super::*;
 use crate::entity::{
-    entities::objects::vehicles::AbstractMinecart, leash::Leashable, pushing::EntityPush,
+    entities::objects::vehicles::{AbstractBoat, AbstractMinecart},
+    leash::Leashable,
+    pushing::EntityPush,
 };
 use rand::{RngExt, rng};
 use steel_math::DEGREE_90;
+use steel_registry::vanilla_criteria_triggers;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::nbt::{NbtNumeric, nbt_collection_values};
 
@@ -170,6 +173,17 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     /// broadcastable; players override this for spectator visibility rules.
     fn broadcast_to_player(&self, _player: &Player) -> bool {
         true
+    }
+
+    /// Opens this entity's menu for `player`, if it provides one.
+    ///
+    /// Mirrors vanilla `Entity.openMenu` / `MenuProvider.createMenu`, which is
+    /// how villagers, horses, donkeys and llamas expose a container. Steel has
+    /// no entity-owned menu yet, so the default passes; the hook exists so
+    /// spectator interaction already routes through the same call vanilla uses
+    /// and so the first entity menu only has to override this method.
+    fn open_menu_for(&self, _player: &Player) -> crate::behavior::InteractionResult {
+        crate::behavior::InteractionResult::Pass
     }
 
     /// Gets the entity's unique network ID (session-local).
@@ -687,7 +701,13 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
 
     /// Stops riding the current vehicle, if any.
     fn stop_riding(&self) {
+        let was_riding = self.is_passenger();
         self.base().stop_riding();
+        // Vanilla `Entity.stopRiding` dispatches `GameEvent.ENTITY_DISMOUNT`
+        // from the passenger that left.
+        if was_riding {
+            self.game_event(&vanilla_game_events::ENTITY_DISMOUNT);
+        }
     }
 
     /// Dismounts every passenger from this entity.
@@ -1153,6 +1173,33 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         self.base().level()
     }
 
+    /// Returns the scoreboard team this entity belongs to, if any.
+    ///
+    /// Vanilla `Entity.getTeam` reads the server scoreboard; Steel reaches it
+    /// through the world's server link, so worlds without a server report none.
+    fn team_name(&self) -> Option<String> {
+        let world = self.level()?;
+        let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+        world.with_scoreboard(|scoreboard| scoreboard.team_of(&holder))?
+    }
+
+    /// Vanilla `Team.canCollideWith` for this entity's own team.
+    ///
+    /// Returns `true` when no team is set, because vanilla only constrains
+    /// collisions between members of the same team.
+    fn team_allows_friendly_fire(&self) -> bool {
+        let Some(team) = self.team_name() else {
+            return true;
+        };
+        let Some(world) = self.level() else {
+            return true;
+        };
+        world
+            .with_scoreboard(|scoreboard| scoreboard.team_state(&team))
+            .flatten()
+            .is_none_or(|state| state.allow_friendly_fire)
+    }
+
     /// Packs dirty entity data for network synchronization.
     ///
     /// Returns `Some(values)` if there are dirty values to sync, `None` otherwise.
@@ -1254,6 +1301,14 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     /// Returns why this entity was removed, if it has been removed.
     fn removal_reason(&self) -> Option<RemovalReason> {
         self.base().removal_reason()
+    }
+
+    /// Returns the item produced by picking this entity in creative mode.
+    ///
+    /// Vanilla `Entity.getPickResult`. Most entities yield nothing; minecarts,
+    /// boats and similar vehicles override it with their own item.
+    fn pick_result(&self) -> Option<steel_registry::item_stack::ItemStack> {
+        None
     }
 
     /// Marks the entity as removed with the given reason.
@@ -1453,7 +1508,9 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
                 .attachments
                 .get_average(EntityAttachment::Passenger, dimensions);
             let _ = self.spawn_at_location_with_offset(item_stack, spawn_offset);
-            // TODO: Trigger PLAYER_SHEARED_EQUIPMENT once advancement criteria exist.
+            // Vanilla `LivingEntity.shear` fires `player_sheared_equipment` for the
+            // shearer when an equipment slot was actually emptied.
+            player.trigger_advancement(&vanilla_criteria_triggers::PLAYER_SHEARED_EQUIPMENT);
             return true;
         }
 
@@ -1509,7 +1566,7 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
 
         let holding_shears = {
             let inventory = player.inventory.lock();
-            inventory.get_item_in_hand(hand).is(&vanilla_items::SHEARS)
+            inventory.get_item_in_hand(hand).is(&*vanilla_items::SHEARS)
         };
         if holding_shears && self.shear_off_all_leash_connections(Some(player)) {
             let has_infinite_materials = player.has_infinite_materials();
@@ -1546,7 +1603,7 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
 
         let holding_lead = {
             let inventory = player.inventory.lock();
-            inventory.get_item_in_hand(hand).is(&vanilla_items::LEAD)
+            inventory.get_item_in_hand(hand).is(&*vanilla_items::LEAD)
         };
         if !holding_lead || !mob.can_have_a_leash_attached_to(player) {
             return InteractionResult::Pass;
@@ -1638,6 +1695,11 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     /// Returns this entity as an `AbstractMinecart` if it has `AbstractMinecart` behavior.
     fn as_abstract_minecart(&self) -> Option<&dyn AbstractMinecart> {
         try_as_dyn::<Self, dyn AbstractMinecart>(self)
+    }
+
+    /// Returns this entity as an `AbstractBoat` if it has `AbstractBoat` behavior.
+    fn as_abstract_boat(&self) -> Option<&dyn AbstractBoat> {
+        try_as_dyn::<Self, dyn AbstractBoat>(self)
     }
 
     /// Returns true for entities that implement vanilla animal behavior.
@@ -2686,11 +2748,18 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     }
 
     /// Moves this entity to `pos`, keeping its current rotation.
-    // TODO: Recursively reposition this entity's passengers (vanilla
-    // `Entity.teleportPassengers`, via `getSelfAndPassengers`)
+    ///
+    /// Vanilla `Entity.teleportTo` follows the move with `teleportPassengers`,
+    /// which re-runs `positionRider` for every passenger so the whole stack
+    /// lands together.
     #[must_use = "movement commits can fail when world entity state rejects the update"]
     fn teleport_to(&self, pos: DVec3) -> Result<(), EntityMoveError> {
-        self.try_set_position(pos)
+        self.try_set_position(pos)?;
+        for passenger in self.passengers() {
+            passenger.set_old_position_to_current();
+            self.position_rider(passenger.as_ref());
+        }
+        Ok(())
     }
 
     /// Sets the vanilla movement-trace old position to the current position.
@@ -3143,6 +3212,27 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
 
         if let Some(world) = self.level() {
             world.play_sound_at(
+                sound,
+                self.sound_source(),
+                self.position(),
+                volume,
+                pitch,
+                None,
+            );
+        }
+    }
+
+    /// Plays a sound holder (registry or direct) at the entity's position.
+    ///
+    /// Vanilla entity sounds are `Holder<SoundEvent>`, which may be a direct
+    /// sound id rather than a registry entry.
+    fn play_sound_holder(&self, sound: &SoundEventHolder, volume: f32, pitch: f32) {
+        if self.is_silent() {
+            return;
+        }
+
+        if let Some(world) = self.level() {
+            world.play_sound_holder_at(
                 sound,
                 self.sound_source(),
                 self.position(),
@@ -4105,8 +4195,14 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     }
 
     /// Runs when this entity kills another entity.
-    fn award_kill_score(&self, _victim: &dyn Entity, _killing_blow: &DamageSource) {
-        // TODO: Trigger advancement criterion ENTITY_KILLED_PLAYER if the victim is a player.
+    fn award_kill_score(&self, victim: &dyn Entity, _killing_blow: &DamageSource) {
+        // Vanilla `LivingEntity.awardKillScore` fires `entity_killed_player` on
+        // the killer when the victim is a player.
+        if victim.as_player().is_some()
+            && let Some(killer) = self.as_player()
+        {
+            killer.trigger_advancement(&vanilla_criteria_triggers::ENTITY_KILLED_PLAYER);
+        }
     }
 }
 

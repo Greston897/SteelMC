@@ -1,6 +1,7 @@
 //! Packet for updating an entity's head rotation.
 
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_ROTATE_HEAD;
 
 /// Updates an entity's head yaw rotation.

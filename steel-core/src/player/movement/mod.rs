@@ -16,7 +16,7 @@ use std::sync::Arc;
 use steel_math::wrap_degrees;
 use steel_protocol::packets::game::{
     CMoveVehicle, CPlayerPosition, PlayerCommandAction, RelativeMovement, SAcceptTeleportation,
-    SMovePlayer, SMoveVehicle, SPlayerCommand, SPlayerInput,
+    SMovePlayer, SMoveVehicle, SPaddleBoat, SPlayerCommand, SPlayerInput,
 };
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::stat::custom::CustomStatRef;
@@ -27,7 +27,7 @@ use steel_utils::{TICKS_PER_SECOND, translations};
 
 use crate::entity::{
     AcceptedClientMovement, AcceptedClientMovementOutcome, Entity, EntityMoveError, LivingEntity,
-    get_input_vector,
+    SharedEntity, get_input_vector,
 };
 use crate::physics::{
     MOVEMENT_ERROR_THRESHOLD, MovementCollisionValidation, MoverType, WorldCollisionProvider,
@@ -98,6 +98,9 @@ struct PlayerFloatingValidation {
     may_fly: bool,
     has_levitation: bool,
     is_fall_flying: bool,
+    /// Vanilla exempts the riptide spin attack from the floating check, because
+    /// the spin moves the player vertically on its own.
+    is_auto_spin_attack: bool,
 }
 
 impl PlayerFloatingValidation {
@@ -109,6 +112,7 @@ impl PlayerFloatingValidation {
             && !self.may_fly
             && !self.has_levitation
             && !self.is_fall_flying
+            && !self.is_auto_spin_attack
     }
 }
 
@@ -686,7 +690,6 @@ impl Player {
         is_spectator: bool,
         is_fall_flying: bool,
     ) {
-        // TODO: Add auto-spin exemption when riptide/spin attack state exists.
         let can_violate_floating = PlayerFloatingValidation {
             y_dist,
             player_stands_on_something,
@@ -695,6 +698,7 @@ impl Player {
             may_fly: self.abilities.lock().may_fly,
             has_levitation: self.has_mob_effect(vanilla_mob_effects::LEVITATION),
             is_fall_flying,
+            is_auto_spin_attack: self.is_auto_spin_attack(),
         }
         .can_violate();
 
@@ -954,6 +958,18 @@ impl Player {
         let input = PlayerInput::from_flags(packet.flags);
         self.movement.lock().set_last_client_input(input);
 
+        // Vanilla also forwards the input to the boat being ridden.
+        if let Some(vehicle) = self.controlled_vehicle()
+            && let Some(boat) = vehicle.as_abstract_boat()
+        {
+            boat.set_inputs(
+                input.left(),
+                input.right(),
+                input.forward(),
+                input.backward(),
+            );
+        }
+
         if !self.has_client_loaded() {
             return;
         }
@@ -961,6 +977,20 @@ impl Player {
         self.reset_last_action_time();
 
         self.set_crouching(input.shift());
+    }
+
+    /// Handles a boat paddle state packet.
+    ///
+    /// Vanilla `ServerPlayNetworkHandler#onBoatPaddleState`: the flags are only
+    /// accepted while the player controls an `AbstractBoatEntity`.
+    pub fn handle_paddle_boat(&self, packet: SPaddleBoat) {
+        let Some(vehicle) = self.controlled_vehicle() else {
+            return;
+        };
+        let Some(boat) = vehicle.as_abstract_boat() else {
+            return;
+        };
+        boat.set_paddles_moving(packet.left_paddling, packet.right_paddling);
     }
 
     /// Handles a player command packet (sprinting, elytra, leaving bed, etc).
@@ -998,14 +1028,49 @@ impl Player {
                     self.stop_sleep_in_bed(false, true);
                 }
             }
-            PlayerCommandAction::StartRidingJump
-            | PlayerCommandAction::StopRidingJump
-            | PlayerCommandAction::OpenVehicleInventory => {
-                // TODO: Implement once controlled vehicle jumping and vehicle inventory interfaces exist.
+            PlayerCommandAction::StartRidingJump => {
+                // Vanilla `ServerboundPlayerCommandPacket.Action.START_RIDING_JUMP`:
+                // the player is the controlling passenger of a mob, so the
+                // mounted mob jumps.
+                if let Some(vehicle) = self.controlling_vehicle_mob()
+                    && let Some(mob) = vehicle.as_mob()
+                {
+                    mob.jump_control_jump();
+                }
+            }
+            PlayerCommandAction::StopRidingJump => {
+                // Vanilla has no "stop jump" behaviour beyond clearing the
+                // pending input, which `JumpControl::tick` does on the next
+                // entity tick.
+            }
+            PlayerCommandAction::OpenVehicleInventory => {
+                // Vanilla opens the mount's inventory menu; Steel routes it
+                // through the same entity menu hook as any other interaction so
+                // a mount that grows a menu starts working without new wiring
+                // here.
+                if let Some(vehicle) = self.vehicle() {
+                    let _ = vehicle.open_menu_for(self);
+                }
             }
         }
 
         // Dirty shared flags are synced once per tick by sync_entity_data().
+    }
+
+    /// Returns the mounted mob this player controls, mirroring vanilla
+    /// `Mob.getControllingPassenger` from the passenger side.
+    fn controlling_vehicle_mob(&self) -> Option<SharedEntity> {
+        let vehicle = self.vehicle()?;
+        if vehicle
+            .controlling_passenger()
+            .is_none_or(|passenger| passenger.id() != self.id())
+        {
+            return None;
+        }
+        if vehicle.as_mob().is_none() {
+            return None;
+        }
+        Some(vehicle)
     }
 
     /// Checks new player non-riding movement provided to award stats for it,
@@ -1194,6 +1259,31 @@ mod tests {
     }
 
     #[test]
+    fn floating_validation_exempts_the_riptide_spin_attack() {
+        let validation = PlayerFloatingValidation {
+            y_dist: 0.0,
+            player_stands_on_something: false,
+            is_spectator: false,
+            server_allows_flight: false,
+            may_fly: false,
+            has_levitation: false,
+            is_fall_flying: false,
+            is_auto_spin_attack: false,
+        };
+
+        assert!(validation.can_violate());
+        // An active spin attack moves the player vertically, so vanilla does not
+        // treat the resulting delta as illegal flight.
+        assert!(
+            !PlayerFloatingValidation {
+                is_auto_spin_attack: true,
+                ..validation
+            }
+            .can_violate()
+        );
+    }
+
+    #[test]
     fn floating_validation_exempts_levitation_like_vanilla() {
         let validation = PlayerFloatingValidation {
             y_dist: 0.0,
@@ -1203,6 +1293,7 @@ mod tests {
             may_fly: false,
             has_levitation: false,
             is_fall_flying: false,
+            is_auto_spin_attack: false,
         };
 
         assert!(validation.can_violate());

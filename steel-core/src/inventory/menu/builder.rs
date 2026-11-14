@@ -9,7 +9,7 @@
 //! fn example(container_id: u8, inventory: Shared<PlayerInventory>) -> Menu {
 //!     let mut builder = MenuBuilder::new(&vanilla_menu_types::GENERIC_9X1, container_id);
 //!
-//!     let items = vec![ItemStack::new(&vanilla_items::FLINT_AND_STEEL); 9];
+//!     let items = vec![ItemStack::new(&*vanilla_items::FLINT_AND_STEEL); 9];
 //!     let container = SimpleContainer::from_items(items).into_shared();
 //!
 //!     let section = builder.section_all(container);
@@ -553,7 +553,7 @@ impl MenuBuilder {
     ///
     /// let container = SimpleContainer::new(9).into_shared();
     /// let fuel = b.section_with(container, 9, SectionKind::restricted(|_slot, stack| {
-    ///     stack.is(&vanilla_items::COAL)
+    ///     stack.is(&*vanilla_items::COAL)
     /// }));
     ///
     /// b.build(BasicKind);
@@ -833,7 +833,7 @@ impl MenuBuilder {
     /// let items = vec![ItemStack::empty(); 9];
     /// let upper_container = SimpleContainer::from_items(items).into_shared();
     ///
-    /// let items = vec![ItemStack::new(&vanilla_items::BARRIER); 9];
+    /// let items = vec![ItemStack::new(&*vanilla_items::BARRIER); 9];
     /// let lower_container = SimpleContainer::from_items(items).into_shared();
     ///
     /// let display = b.section_with(lower_container, 9, SectionKind::Display);
@@ -1236,7 +1236,7 @@ mod tests {
         let _ = b.section_at(container, [0], SectionKind::Display);
         let menu = b.build(BasicKind);
 
-        let stack = ItemStack::new(&vanilla_items::STONE);
+        let stack = ItemStack::new(&*vanilla_items::STONE);
         assert!(!menu.behavior().slots()[0].may_place(&stack));
     }
 

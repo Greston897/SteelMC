@@ -89,14 +89,14 @@ impl ChiseledBookShelfBlock {
     }
 
     fn insert_sound(item: &ItemStack) -> SoundEventRef {
-        if item.is(&vanilla_items::ENCHANTED_BOOK) {
+        if item.is(&*vanilla_items::ENCHANTED_BOOK) {
             return &sound_events::BLOCK_CHISELED_BOOKSHELF_INSERT_ENCHANTED;
         }
         &sound_events::BLOCK_CHISELED_BOOKSHELF_INSERT
     }
 
     fn pickup_sound(item: &ItemStack) -> SoundEventRef {
-        if item.is(&vanilla_items::ENCHANTED_BOOK) {
+        if item.is(&*vanilla_items::ENCHANTED_BOOK) {
             return &sound_events::BLOCK_CHISELED_BOOKSHELF_PICKUP_ENCHANTED;
         }
         &sound_events::BLOCK_CHISELED_BOOKSHELF_PICKUP
@@ -465,7 +465,7 @@ mod tests {
         let behavior = ChiseledBookShelfBlock::new(&vanilla_blocks::CHISELED_BOOKSHELF);
 
         for facing in Direction::HORIZONTAL {
-            let mut stack = ItemStack::new(&vanilla_items::CHISELED_BOOKSHELF);
+            let mut stack = ItemStack::new(&*vanilla_items::CHISELED_BOOKSHELF);
             let is_secondary_use_active = false;
             let source = PlacementSource::direct(
                 None,
@@ -498,7 +498,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::STONE));
+            .set_selected_item(ItemStack::new(&*vanilla_items::STONE));
         assert_eq!(
             behavior.use_item_on(
                 state,
@@ -516,7 +516,7 @@ mod tests {
                 .inventory
                 .lock()
                 .get_selected_item()
-                .is(&vanilla_items::STONE)
+                .is(&*vanilla_items::STONE)
         );
     }
 
@@ -563,7 +563,7 @@ mod tests {
                 .lock()
                 .items()
                 .iter()
-                .any(|item| item.is(&vanilla_items::BOOK))
+                .any(|item| item.is(&*vanilla_items::BOOK))
         );
     }
 
@@ -587,7 +587,7 @@ mod tests {
             .inventory
             .lock()
             .set_selected_item(ItemStack::with_count(
-                &vanilla_items::BOOK,
+                &*vanilla_items::BOOK,
                 SURVIVAL_STARTING_BOOK_COUNT,
             ));
         assert_eq!(
@@ -626,7 +626,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::ENCHANTED_BOOK));
+            .set_selected_item(ItemStack::new(&*vanilla_items::ENCHANTED_BOOK));
         let creative_book_count = player.inventory.lock().get_selected_item().count();
         assert_eq!(
             behavior.use_item_on(
@@ -660,7 +660,7 @@ mod tests {
             &BlockStateProperties::SLOT_5_OCCUPIED,
         ];
         for (slot, property) in occupied_properties.iter().enumerate().skip(TOP_RIGHT_SLOT) {
-            assert!(bookshelf.insert_book(slot, ItemStack::new(&vanilla_items::BOOK)));
+            assert!(bookshelf.insert_book(slot, ItemStack::new(&*vanilla_items::BOOK)));
             assert!(world.get_block_state(TEST_POS).get_value(*property));
             assert_eq!(
                 behavior.get_analog_output_signal(
@@ -680,20 +680,20 @@ mod tests {
     fn enchanted_books_select_the_enchanted_insert_and_pickup_sounds() {
         init_globals();
         assert_eq!(
-            ChiseledBookShelfBlock::insert_sound(&ItemStack::new(&vanilla_items::BOOK)).key,
+            ChiseledBookShelfBlock::insert_sound(&ItemStack::new(&*vanilla_items::BOOK)).key,
             sound_events::BLOCK_CHISELED_BOOKSHELF_INSERT.key,
         );
         assert_eq!(
-            ChiseledBookShelfBlock::insert_sound(&ItemStack::new(&vanilla_items::ENCHANTED_BOOK))
+            ChiseledBookShelfBlock::insert_sound(&ItemStack::new(&*vanilla_items::ENCHANTED_BOOK))
                 .key,
             sound_events::BLOCK_CHISELED_BOOKSHELF_INSERT_ENCHANTED.key,
         );
         assert_eq!(
-            ChiseledBookShelfBlock::pickup_sound(&ItemStack::new(&vanilla_items::BOOK)).key,
+            ChiseledBookShelfBlock::pickup_sound(&ItemStack::new(&*vanilla_items::BOOK)).key,
             sound_events::BLOCK_CHISELED_BOOKSHELF_PICKUP.key,
         );
         assert_eq!(
-            ChiseledBookShelfBlock::pickup_sound(&ItemStack::new(&vanilla_items::ENCHANTED_BOOK))
+            ChiseledBookShelfBlock::pickup_sound(&ItemStack::new(&*vanilla_items::ENCHANTED_BOOK))
                 .key,
             sound_events::BLOCK_CHISELED_BOOKSHELF_PICKUP_ENCHANTED.key,
         );
@@ -710,12 +710,12 @@ mod tests {
         let behavior = ChiseledBookShelfBlock::new(&vanilla_blocks::CHISELED_BOOKSHELF);
 
         let contents = ItemContainerContents::new(vec![
-            Some(ItemStackTemplate::new(&vanilla_items::BOOK)),
+            Some(ItemStackTemplate::new(&*vanilla_items::BOOK)),
             None,
-            Some(ItemStackTemplate::new(&vanilla_items::ENCHANTED_BOOK)),
+            Some(ItemStackTemplate::new(&*vanilla_items::ENCHANTED_BOOK)),
         ])
         .expect("three component slots are valid");
-        let mut placed_item = ItemStack::new(&vanilla_items::CHISELED_BOOKSHELF);
+        let mut placed_item = ItemStack::new(&*vanilla_items::CHISELED_BOOKSHELF);
         placed_item.set(CONTAINER, contents);
         let initial_last_interacted_slot = world
             .get_block_entity(TEST_POS)
@@ -746,7 +746,7 @@ mod tests {
         assert!(
             bookshelf
                 .item(TOP_LEFT_SLOT)
-                .is_some_and(|item| item.is(&vanilla_items::BOOK))
+                .is_some_and(|item| item.is(&*vanilla_items::BOOK))
         );
         assert!(
             bookshelf
@@ -756,7 +756,7 @@ mod tests {
         assert!(
             bookshelf
                 .item(TOP_RIGHT_SLOT)
-                .is_some_and(|item| item.is(&vanilla_items::ENCHANTED_BOOK))
+                .is_some_and(|item| item.is(&*vanilla_items::ENCHANTED_BOOK))
         );
         assert_eq!(
             bookshelf.last_interacted_slot(),
@@ -779,11 +779,11 @@ mod tests {
             .downcast_ref::<ChiseledBookShelfBlockEntity>()
             .expect("registered chiseled bookshelf should use its concrete block entity");
         for slot in 0..BOTTOM_RIGHT_SLOT {
-            assert!(bookshelf.insert_book(slot, ItemStack::new(&vanilla_items::BOOK)));
+            assert!(bookshelf.insert_book(slot, ItemStack::new(&*vanilla_items::BOOK)));
         }
         assert!(bookshelf.insert_book(
             BOTTOM_RIGHT_SLOT,
-            ItemStack::new(&vanilla_items::ENCHANTED_BOOK),
+            ItemStack::new(&*vanilla_items::ENCHANTED_BOOK),
         ));
 
         assert!(world.set_block(
@@ -819,7 +819,7 @@ mod tests {
         assert_eq!(
             dropped_items
                 .iter()
-                .filter(|item| item.is(&vanilla_items::BOOK))
+                .filter(|item| item.is(&*vanilla_items::BOOK))
                 .map(ItemStack::count)
                 .sum::<i32>(),
             BOTTOM_RIGHT_SLOT as i32,
@@ -827,7 +827,7 @@ mod tests {
         assert_eq!(
             dropped_items
                 .iter()
-                .filter(|item| item.is(&vanilla_items::ENCHANTED_BOOK))
+                .filter(|item| item.is(&*vanilla_items::ENCHANTED_BOOK))
                 .map(ItemStack::count)
                 .sum::<i32>(),
             EXPECTED_ENCHANTED_BOOK_DROP_COUNT,

@@ -19,6 +19,7 @@ use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::inventory::container::Container;
 use crate::inventory::container::load_all_items;
 use crate::inventory::lock::{ContainerRef, SharedContainer};
+use crate::inventory::openers_counter::{ContainerOpenersCounter, OpenerHooks};
 use crate::world::World;
 
 /// Number of slots in a barrel (3 rows of 9).
@@ -31,6 +32,7 @@ pub struct BarrelBlockEntity {
     base: Arc<BlockEntityBase>,
     container: Arc<SyncMutex<BarrelContainer>>,
     container_ref: ContainerRef,
+    openers_counter: ContainerOpenersCounter,
 }
 
 struct BarrelContainer {
@@ -67,7 +69,18 @@ impl BarrelBlockEntity {
             container_ref: ContainerRef::owned_by_block_entity(shared_container, Arc::clone(&base)),
             base,
             container,
+            openers_counter: ContainerOpenersCounter::new(OpenerHooks {
+                open_sound: &steel_registry::sound_events::BLOCK_BARREL_OPEN,
+                close_sound: &steel_registry::sound_events::BLOCK_BARREL_CLOSE,
+                sets_open_state: true,
+            }),
         }
+    }
+
+    /// Viewer counter driving the `open` block state and the open/close sounds.
+    #[must_use]
+    pub fn openers_counter(&self) -> &ContainerOpenersCounter {
+        &self.openers_counter
     }
 }
 
@@ -176,7 +189,7 @@ mod tests {
         barrel
             .container
             .lock()
-            .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 100));
+            .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 100));
 
         assert_eq!(barrel.container.lock().get_item(0).count(), 64);
     }
@@ -187,7 +200,7 @@ mod tests {
         barrel
             .container
             .lock()
-            .set_item(0, ItemStack::new(&vanilla_items::STONE));
+            .set_item(0, ItemStack::new(&*vanilla_items::STONE));
 
         barrel.pre_remove_side_effects(
             BlockPos::new(1, 2, 3),

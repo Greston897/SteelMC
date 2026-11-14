@@ -8,8 +8,10 @@ use super::{
     SoundSource, UpdateFlags, World, WorldEntityManager, entity_loot_ref, fluid_state_to_block,
     level_events, vanilla_blocks, vanilla_game_events,
 };
+use crate::block_entity::BlockEntity;
 use crate::entity::loot_equipment;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
+use crate::loot::resolvers::{WorldScoreResolver, WorldStorageResolver};
 use steel_registry::sound_event::SoundEventHolder;
 use steel_registry::vanilla_particle_types::{BUBBLE, SPLASH};
 
@@ -337,22 +339,26 @@ impl World {
         }
 
         if drop_items {
-            self.drop_resources_with_entity(state, pos, entity);
-            // TODO: This only covers the `drop_items` path. In vanilla, container
-            // content dropping runs unconditionally on any block-entity removal
-            // (BlockEntity.preRemoveSideEffects via LevelChunk.setBlockState) —
-            // independent of drop_items — so explosions, pistons, etc. still need
-            // a similar hook once Steel's block-update pipeline has one.
-            if let Some(block_entity) = self.get_block_entity(pos)
-                && let Some(container_ref) = ContainerRef::from_block_entity(block_entity)
-            {
-                let mut guard = ContainerLockGuard::lock_all(&[&container_ref]);
-                if let Some(container) = guard.get_mut(container_ref.container_id()) {
-                    for slot in 0..container.get_container_size() {
-                        let item = container.remove_item_no_update(slot);
-                        if !item.is_empty() {
-                            self.pop_resource(pos, item);
-                        }
+            let block_entity = if state.has_block_entity() {
+                self.get_block_entity(pos)
+            } else {
+                None
+            };
+            self.drop_resources_with_entity(state, pos, entity, block_entity.as_deref());
+        }
+
+        // Vanilla `BlockEntity.preRemoveSideEffects` drops container contents on
+        // *any* removal, independent of the `drop_items` loot flag: a container
+        // destroyed by a piston or explosion still spills its items.
+        if let Some(block_entity) = self.get_block_entity(pos)
+            && let Some(container_ref) = ContainerRef::from_block_entity(block_entity)
+        {
+            let mut guard = ContainerLockGuard::lock_all(&[&container_ref]);
+            if let Some(container) = guard.get_mut(container_ref.container_id()) {
+                for slot in 0..container.get_container_size() {
+                    let item = container.remove_item_no_update(slot);
+                    if !item.is_empty() {
+                        self.pop_resource(pos, item);
                     }
                 }
             }
@@ -378,9 +384,19 @@ impl World {
     /// This is the no-tool/no-entity overload. Player block breaking uses
     /// `block_breaking::drop_block_loot` which includes tool context for
     /// fortune/silk touch.
-    // TODO: block entity and entity drops
     pub fn drop_resources(self: &Arc<Self>, state: BlockStateId, pos: BlockPos) {
-        self.drop_resources_with_entity(state, pos, None);
+        self.drop_resources_with_entity(state, pos, None, None);
+    }
+
+    /// Drops the loot for a block that had a block entity, so loot functions
+    /// such as `copy_name` and `copy_custom_data` can read it.
+    pub(crate) fn drop_resources_with_block_entity(
+        self: &Arc<Self>,
+        state: BlockStateId,
+        pos: BlockPos,
+        block_entity: Option<&dyn BlockEntity>,
+    ) {
+        self.drop_resources_with_entity(state, pos, None, block_entity);
     }
 
     pub(super) fn drop_resources_with_entity(
@@ -388,8 +404,11 @@ impl World {
         state: BlockStateId,
         pos: BlockPos,
         entity: Option<&dyn Entity>,
+        block_entity: Option<&dyn BlockEntity>,
     ) {
-        let context = BlockLootContext::new(self, pos).with_entity(entity);
+        let context = BlockLootContext::new(self, pos)
+            .with_entity(entity)
+            .with_block_entity(block_entity);
         for item in context.get_drops(state) {
             if !item.is_empty() {
                 self.pop_resource(pos, item);
@@ -425,6 +444,7 @@ impl World {
             loot_table
         };
 
+        let world = context.world();
         let mut rng = rand::rng();
         let mut ctx = LootContext::new(&mut rng)
             .with_luck(context.luck())
@@ -443,6 +463,18 @@ impl World {
         }
         if let Some(radius) = context.explosion_radius() {
             ctx = ctx.with_explosion(radius);
+        }
+
+        // Vanilla binds the scoreboard and command storage to the loot params;
+        // both live on the server, so install the adapters here.
+        if let Some(server) = world.server() {
+            let domain = world.domain();
+            let score_resolver = WorldScoreResolver::new(&server, domain);
+            let storage_resolver = WorldStorageResolver::new(&server, domain);
+            ctx = ctx
+                .with_score_resolver(&score_resolver)
+                .with_storage_resolver(&storage_resolver);
+            return loot_table.get_random_items(&mut ctx);
         }
 
         loot_table.get_random_items(&mut ctx)

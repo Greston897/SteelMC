@@ -90,10 +90,13 @@ impl Slot for ResultSlot {
     fn on_take(
         &self,
         guard: &mut ContainerLockGuard,
-        _stack: &ItemStack,
+        stack: &ItemStack,
         player: &Player,
     ) -> Option<ItemStack> {
-        // TODO: Track the crafted count and run ITEM_CRAFTED/item callbacks.
+        // Vanilla `ResultSlot.onTake` awards ITEM_CRAFTED for the stack the player
+        // just took. Vanilla 26.3 no longer carries a `craft_item` statistic, and
+        // `Item.onCraftedBy` is not part of Steel's item API yet, so there is
+        // nothing to record here.
         self.handler.on_result_taken(guard, player)
     }
 

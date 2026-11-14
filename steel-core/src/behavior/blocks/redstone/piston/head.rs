@@ -123,8 +123,8 @@ impl BlockBehavior for PistonHeadBlock {
         _include_data: bool,
     ) -> Option<ItemStack> {
         Some(ItemStack::new(match state.get_value(PISTON_TYPE) {
-            PistonType::Normal => &vanilla_items::PISTON,
-            PistonType::Sticky => &vanilla_items::STICKY_PISTON,
+            PistonType::Normal => &*vanilla_items::PISTON,
+            PistonType::Sticky => &*vanilla_items::STICKY_PISTON,
         }))
     }
 

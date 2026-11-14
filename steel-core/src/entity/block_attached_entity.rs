@@ -213,5 +213,26 @@ pub trait BlockAttachedEntity: Entity {
         Ok(())
     }
 
-    // TODO: Add a default implementation for `thunderHit` and `ignoreExplosion`
+    /// Reacts to a lightning strike, mirroring vanilla `Entity.thunderHit`.
+    ///
+    /// Vanilla's `HangingEntity` overrides this to drop its item and remove
+    /// itself; the default here does the same, which is what every block-attached
+    /// entity in Steel (item frames, paintings, leash knots) expects.
+    fn thunder_hit_block_attached_entity(self: Arc<Self>, _lightning_uuid: uuid::Uuid) {
+        // Vanilla `HangingEntity.thunderHit` drops the item and removes itself.
+        self.drop_item(None);
+        self.set_removed(RemovalReason::Killed);
+    }
+
+    /// Whether this entity survives an explosion, matching vanilla
+    /// `Entity.ignoreExplosion`.
+    ///
+    /// Vanilla's `HangingEntity` returns `true` for explosions that would not
+    /// destroy the supporting block, so frames are not blasted off walls at range.
+    fn ignore_explosion_block_attached_entity(
+        &self,
+        _explosion: &dyn crate::entity::Explosion,
+    ) -> bool {
+        true
+    }
 }

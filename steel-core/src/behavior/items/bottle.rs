@@ -64,7 +64,7 @@ impl ItemBehavior for BottleItem {
         });
         create_filled_result(
             context,
-            PotionContents::create_item_stack(&vanilla_items::POTION, &vanilla_potions::WATER),
+            PotionContents::create_item_stack(&*vanilla_items::POTION, &vanilla_potions::WATER),
             true,
         );
 
@@ -115,7 +115,7 @@ mod tests {
     fn use_bottle(player: &Arc<Player>, world: &Arc<World>, count: i32) -> InteractionResult {
         player.inventory.lock().set_item_in_hand(
             InteractionHand::MainHand,
-            ItemStack::with_count(&vanilla_items::GLASS_BOTTLE, count),
+            ItemStack::with_count(&*vanilla_items::GLASS_BOTTLE, count),
         );
         let mut context = UseItemContext::new(
             player,

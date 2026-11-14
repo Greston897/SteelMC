@@ -7,6 +7,7 @@ use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, IntProperty};
 use steel_registry::vanilla_custom_stats;
+use steel_registry::vanilla_criteria_triggers;
 use steel_utils::axis::Axis;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
@@ -99,7 +100,8 @@ impl BlockBehavior for TargetBlock {
             && let Some(player) = owner.as_player()
         {
             player.award_custom_stat(&vanilla_custom_stats::TARGET_HIT);
-            // TODO: The advancement criterion awaits Steel's shared advancement foundations.
+            // Vanilla `TargetBlock.hit` fires the `target_hit` trigger for the owner.
+            player.trigger_advancement(&vanilla_criteria_triggers::TARGET_HIT);
         }
     }
 

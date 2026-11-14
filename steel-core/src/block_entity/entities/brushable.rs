@@ -9,6 +9,7 @@ use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as Nbt
 use simdnbt::owned::NbtCompound;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::BlockStateProperties;
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::loot_table::{LootContext, LootTableRef};
 use steel_registry::{
@@ -226,7 +227,11 @@ impl BrushableBlockEntity {
     ) {
         let loot = match loot_table {
             Some(table) => {
-                // TODO: Trigger CriteriaTriggers.GENERATE_LOOT once criteria triggers exist.
+                // Vanilla `BrushableBlockEntity` fires `player_generates_container_loot`
+                // for the brushing player when the loot table is rolled.
+                player.trigger_advancement(
+                    &vanilla_criteria_triggers::PLAYER_GENERATES_CONTAINER_LOOT,
+                );
                 let equipment = living_loot_equipment(player);
                 let mut ctx = LootContext::new(rng)
                     .with_luck(player.get_luck())
@@ -408,7 +413,7 @@ mod tests {
         nbt.insert("hit_direction", Direction::North.get_3d_data_value() as i8);
         nbt.insert(
             "item",
-            ItemStack::new(&vanilla_items::STICK).to_nbt_tag_ref(),
+            ItemStack::new(&*vanilla_items::STICK).to_nbt_tag_ref(),
         );
         load_from_owned_nbt(&mut entity, &nbt);
 
@@ -448,7 +453,7 @@ mod tests {
         let mut nbt = NbtCompound::new();
         nbt.insert(
             "item",
-            ItemStack::new(&vanilla_items::STICK).to_nbt_tag_ref(),
+            ItemStack::new(&*vanilla_items::STICK).to_nbt_tag_ref(),
         );
         load_from_owned_nbt(&mut entity, &nbt);
 
@@ -466,7 +471,7 @@ mod tests {
         nbt.insert("LootTable", "minecraft:archaeology/desert_pyramid");
         nbt.insert(
             "item",
-            ItemStack::new(&vanilla_items::STICK).to_nbt_tag_ref(),
+            ItemStack::new(&*vanilla_items::STICK).to_nbt_tag_ref(),
         );
         load_from_owned_nbt(&mut entity, &nbt);
 
@@ -483,14 +488,14 @@ mod tests {
         let mut nbt = NbtCompound::new();
         nbt.insert(
             "item",
-            ItemStack::with_count(&vanilla_items::STICK, 3).to_nbt_tag_ref(),
+            ItemStack::with_count(&*vanilla_items::STICK, 3).to_nbt_tag_ref(),
         );
         load_from_owned_nbt(&mut entity, &nbt);
 
         {
             let state = entity.state.lock();
             assert_eq!(state.item.count(), 3);
-            assert!(state.item.is(&vanilla_items::STICK));
+            assert!(state.item.is(&*vanilla_items::STICK));
         }
 
         let mut saved = NbtCompound::new();
@@ -506,7 +511,7 @@ mod tests {
         nbt.insert("hit_direction", Direction::North.get_3d_data_value() as i8);
         nbt.insert(
             "item",
-            ItemStack::new(&vanilla_items::STICK).to_nbt_tag_ref(),
+            ItemStack::new(&*vanilla_items::STICK).to_nbt_tag_ref(),
         );
         load_from_owned_nbt(&mut entity, &nbt);
 

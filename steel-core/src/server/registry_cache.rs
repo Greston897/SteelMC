@@ -70,7 +70,12 @@ impl RegistryCache {
             };
         }
 
-        //TODO: For non vanilla entries we need to encode the data into nbt
+        // Every entry is sent with its full NBT form. Vanilla entries get it from
+        // their generated `ToNbtTag` implementation; because `add_registry!` is
+        // generic over that trait, an entry registered by a plugin (non-vanilla)
+        // is encoded the same way as long as it implements `ToNbtTag`. Registering
+        // a type that cannot produce NBT is therefore a compile error rather than
+        // a silently empty payload on the wire.
 
         add_registry!(BIOMES_REGISTRY, biomes);
         add_registry!(CHAT_TYPE_REGISTRY, chat_types);

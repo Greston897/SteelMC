@@ -9,7 +9,8 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::MinecartEntityData;
-use steel_registry::{items::ItemRef, vanilla_items};
+use steel_registry::item_stack::ItemStack;
+use steel_registry::{items::ItemRef, vanilla_entities, vanilla_items};
 use steel_utils::axis::Axis;
 use steel_utils::block_util::FoundRectangle;
 use steel_utils::locks::SyncMutex;
@@ -70,48 +71,6 @@ impl MinecartEntity {
             entity_data: SyncMutex::new(MinecartEntityData::new()),
             minecart_base: AbstractMinecartBase::new(),
         }
-    }
-}
-
-impl VehicleEntity for MinecartEntity {
-    fn hurt_time(&self) -> i32 {
-        *self.entity_data.lock().vehicle_entity().id_hurt.get()
-    }
-
-    fn set_hurt_time(&self, value: i32) {
-        self.entity_data
-            .lock()
-            .vehicle_entity_mut()
-            .id_hurt
-            .set(value);
-    }
-
-    fn hurt_dir(&self) -> i32 {
-        *self.entity_data.lock().vehicle_entity().id_hurtdir.get()
-    }
-
-    fn set_hurt_dir(&self, value: i32) {
-        self.entity_data
-            .lock()
-            .vehicle_entity_mut()
-            .id_hurtdir
-            .set(value);
-    }
-
-    fn damage(&self) -> f32 {
-        *self.entity_data.lock().vehicle_entity().id_damage.get()
-    }
-
-    fn set_damage(&self, value: f32) {
-        self.entity_data
-            .lock()
-            .vehicle_entity_mut()
-            .id_damage
-            .set(value);
-    }
-
-    fn vehicle_drop_item(&self) -> ItemRef {
-        &vanilla_items::MINECART
     }
 }
 
@@ -302,7 +261,24 @@ impl Entity for MinecartEntity {
         self.load_abstract_minecart_data(nbt);
     }
 
-    // TODO: Implement getPickResult.
+    fn pick_result(&self) -> Option<ItemStack> {
+        // Vanilla `AbstractMinecart.getPickResult` returns the minecart item that
+        // matches this entity type, which also covers the specialised variants.
+        let item = if self.entity_type == &vanilla_entities::MINECART {
+            &*vanilla_items::MINECART
+        } else if self.entity_type == &vanilla_entities::CHEST_MINECART {
+            &*vanilla_items::CHEST_MINECART
+        } else if self.entity_type == &vanilla_entities::FURNACE_MINECART {
+            &*vanilla_items::FURNACE_MINECART
+        } else if self.entity_type == &vanilla_entities::TNT_MINECART {
+            &*vanilla_items::TNT_MINECART
+        } else if self.entity_type == &vanilla_entities::HOPPER_MINECART {
+            &*vanilla_items::HOPPER_MINECART
+        } else {
+            return None;
+        };
+        Some(ItemStack::new(item))
+    }
 }
 
 #[cfg(test)]

@@ -48,7 +48,7 @@ use crate::command::execution::{
     CommandSource, ExecutionCommandSource, ExecutionStop, parse_entity_selector_text,
 };
 use crate::command::sender::{CommandExecutionOwner, CommandSender};
-use crate::config::{ResolvedDomainConfig, RuntimeConfig, WorldsConfig};
+use crate::config::{RconConfig, ResolvedDomainConfig, RuntimeConfig, WorldsConfig};
 
 use crate::entity::damage::DamageSource;
 use crate::entity::{
@@ -178,6 +178,7 @@ fn test_runtime_config_with_max_players(max_players: u32) -> Arc<RuntimeConfig> 
         packet_workers: Some(1),
         chunk_generation_threads: Some(1),
         chunk_encoding_threads: Some(1),
+        rcon: RconConfig::default(),
         ..RuntimeConfig::default()
     })
 }
@@ -1345,7 +1346,7 @@ fn apply_non_default_domain_data(player: &Player) {
     source_data.abilities.walking_speed = 0.3;
     source_data.inventory = vec![PersistentSlot {
         slot: 0,
-        item: ItemStack::new(&vanilla_items::STICK),
+        item: ItemStack::new(&*vanilla_items::STICK),
     }];
     source_data.selected_slot = 4;
     source_data.food_level = 6;
@@ -1359,7 +1360,7 @@ fn apply_non_default_domain_data(player: &Player) {
     source_data.seen_credits = true;
     source_data.ender_items = vec![PersistentSlot {
         slot: 3,
-        item: ItemStack::new(&vanilla_items::STICK),
+        item: ItemStack::new(&*vanilla_items::STICK),
     }];
     source_data.apply_to_player_without_location(player);
 }
@@ -1581,7 +1582,12 @@ fn command_world_scope_survives_entity_transforms() {
 
         let console_source = CommandSource::new(CommandSender::Console, Arc::clone(&server));
         assert!(console_source.with_world(Arc::clone(beta)).is_ok());
-        let rcon_source = CommandSource::new(CommandSender::Rcon, Arc::clone(&server));
+        let rcon_source = CommandSource::new(
+            CommandSender::Rcon(crate::command::sender::RconOutput::new(
+                tokio::sync::mpsc::unbounded_channel().0,
+            )),
+            Arc::clone(&server),
+        );
         assert!(rcon_source.with_world(Arc::clone(beta)).is_ok());
 
         drop((

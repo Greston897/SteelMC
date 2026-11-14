@@ -253,6 +253,7 @@ fn create_test_world(
             dim_type,
             seed as i64,
             WorldConfig {
+                server: std::sync::OnceLock::new(),
                 damage_history: Arc::clone(damage_history),
                 game_time_source: GameTimeSource::Primary,
                 storage: WorldStorageConfig::RamOnly,

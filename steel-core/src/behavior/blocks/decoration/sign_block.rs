@@ -1024,7 +1024,7 @@ mod tests {
         assert!(world.set_block_entity(block_entity));
 
         let player = TestPlayerBuilder::new(Arc::clone(world), "Painter", 2).build();
-        let mut dye_stack = ItemStack::new(&vanilla_items::RED_DYE);
+        let mut dye_stack = ItemStack::new(&*vanilla_items::RED_DYE);
         dye_stack.set(DYE, DyeColor::Red);
         player
             .inventory

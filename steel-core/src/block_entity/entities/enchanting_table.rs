@@ -118,7 +118,7 @@ mod tests {
         let world = &world_fixture.world;
         let table = table(world);
         let name = TextComponent::from("Arcane Desk".to_string());
-        let mut stack = ItemStack::new(&vanilla_items::ENCHANTING_TABLE);
+        let mut stack = ItemStack::new(&*vanilla_items::ENCHANTING_TABLE);
         stack.set(CUSTOM_NAME, name.clone());
         stack.set(REPAIR_COST, 3);
 
@@ -143,7 +143,7 @@ mod tests {
         let Some(custom_data) = CustomData::try_from_compound(NbtCompound::new()) else {
             panic!("an empty compound should be valid custom data");
         };
-        let mut stack = ItemStack::new(&vanilla_items::ENCHANTING_TABLE);
+        let mut stack = ItemStack::new(&*vanilla_items::ENCHANTING_TABLE);
         stack.set(
             BLOCK_ENTITY_DATA,
             BlockEntityData::new(&vanilla_block_entity_types::ENCHANTING_TABLE, custom_data),
@@ -163,7 +163,7 @@ mod tests {
         let table = table(world);
         table.set_custom_name(Some(TextComponent::from("Old".to_string())));
 
-        table.apply_components_from_item_stack(&ItemStack::new(&vanilla_items::ENCHANTING_TABLE));
+        table.apply_components_from_item_stack(&ItemStack::new(&*vanilla_items::ENCHANTING_TABLE));
 
         assert_eq!(table.custom_name(), None);
     }

@@ -15,7 +15,7 @@ fn item_stack_argument_parses_supported_components_and_registered_removals() {
         panic!("item stack should be retained");
     };
 
-    assert!(stack.is(&vanilla_items::STONE));
+    assert!(stack.is(&*vanilla_items::STONE));
     assert_eq!(stack.max_stack_size(), 16);
     assert_eq!(
         stack.get(vanilla_components::ENCHANTMENT_GLINT_OVERRIDE),
@@ -234,8 +234,8 @@ fn item_stack_argument_parses_registry_holder_set_components() {
 
     assert!(!stack.can_be_hurt_by(&vanilla_damage_types::IN_FIRE));
     assert!(stack.can_be_hurt_by(&vanilla_damage_types::GENERIC));
-    assert!(stack.is_valid_repair_item(&ItemStack::new(&vanilla_items::PHANTOM_MEMBRANE)));
-    assert!(!stack.is_valid_repair_item(&ItemStack::new(&vanilla_items::BREEZE_ROD)));
+    assert!(stack.is_valid_repair_item(&ItemStack::new(&*vanilla_items::PHANTOM_MEMBRANE)));
+    assert!(!stack.is_valid_repair_item(&ItemStack::new(&*vanilla_items::BREEZE_ROD)));
 }
 
 #[test]

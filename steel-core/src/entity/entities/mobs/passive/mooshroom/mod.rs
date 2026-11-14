@@ -41,13 +41,13 @@ use crate::entity::ai::goal::{
     TemptGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
-use crate::entity::entities::CowEntity;
+use crate::entity::conversion::{ConversionParams, convert_to};
 use crate::entity::living_entity::shearing_loot_items_with_rng;
+use super::cow::CowEntity;
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityPose, EntitySpawnReason, EntitySyncedData, LivingEntity,
-    LivingEntityBase, Mob, MobBase, PathfinderMob, RemovalReason, SharedEntity, SpawnGroupData,
-    SpawnRule, next_entity_id,
+    LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity, SpawnGroupData, SpawnRule,
 };
 use crate::physics::MoveResult;
 use crate::player::Player;
@@ -206,7 +206,8 @@ impl MushroomCowEntity {
 
     /// Handles a lightning strike hitting the mooshroom.
     pub fn thunder_hit(&self, lightning_uuid: Uuid) {
-        // TODO: Route server-side LightningBolt hits here once that shared entity and dispatch exist.
+        // Reached from `LightningBoltEntity::hit_entities`, which dispatches before
+        // applying lightning damage.
         let mut last_uuid = self.last_lightning_bolt_uuid.lock();
         if last_uuid.as_ref() == Some(&lightning_uuid) {
             return;
@@ -241,30 +242,18 @@ impl MushroomCowEntity {
             self.spawn_shearing_drop(&drop);
         }
 
-        // TODO: Replace these local transfers with the shared conversion state transfer API.
-        let cow = Arc::new(CowEntity::new(
+        // Vanilla `Mooshroom.shear` calls `convertTo(EntityType.COW, false)`,
+        // which carries name, effects, age and position across. The explosion
+        // particle is the only extra.
+        let converted = convert_to(
+            self,
             &vanilla_entities::COW,
-            next_entity_id(),
-            self.position(),
-            Arc::downgrade(world),
-        ));
-        cow.set_rotation(self.rotation());
-        if let Some(custom_name) = self.custom_name() {
-            cow.set_custom_name(Some(custom_name));
+            ConversionParams::single(false, false),
+            None,
+        );
+        if converted.is_none() {
+            return;
         }
-        cow.set_custom_name_visible(self.is_custom_name_visible());
-        cow.set_invulnerable(self.is_invulnerable());
-        if self.is_no_ai() {
-            cow.set_no_ai(true);
-        }
-        cow.set_age(self.get_age());
-        cow.set_age_locked(self.is_age_locked());
-        for effect in self.active_mob_effects() {
-            cow.add_mob_effect(effect);
-        }
-
-        let _ = world.try_add_entity(cow);
-        self.set_removed(RemovalReason::Discarded);
         world.send_particles(
             ParticleData::simple(&vanilla_particle_types::EXPLOSION),
             self.position() + DVec3::Y * (self.bounding_box().height() * 0.5),
@@ -289,19 +278,19 @@ impl MushroomCowEntity {
             .inventory
             .lock()
             .get_item_in_hand(hand)
-            .is(&vanilla_items::BOWL)
+            .is(&*vanilla_items::BOWL)
         {
             return false;
         }
 
         let stew_effects = self.stew_effects.lock().take();
         let (stew_stack, sound) = if let Some(effects) = stew_effects {
-            let mut stack = ItemStack::new(&vanilla_items::SUSPICIOUS_STEW);
+            let mut stack = ItemStack::new(&*vanilla_items::SUSPICIOUS_STEW);
             stack.set(SUSPICIOUS_STEW_EFFECTS, effects);
             (stack, &sound_events::ENTITY_MOOSHROOM_SUSPICIOUS_MILK)
         } else {
             (
-                ItemStack::new(&vanilla_items::MUSHROOM_STEW),
+                ItemStack::new(&*vanilla_items::MUSHROOM_STEW),
                 &sound_events::ENTITY_MOOSHROOM_MILK,
             )
         };
@@ -385,7 +374,7 @@ impl MushroomCowEntity {
             .inventory
             .lock()
             .get_item_in_hand(hand)
-            .is(&vanilla_items::BUCKET)
+            .is(&*vanilla_items::BUCKET)
         {
             return false;
         }
@@ -396,7 +385,7 @@ impl MushroomCowEntity {
             let mut inventory = player.inventory.lock();
             inventory.apply_filled_result(
                 hand,
-                ItemStack::new(&vanilla_items::MILK_BUCKET),
+                ItemStack::new(&*vanilla_items::MILK_BUCKET),
                 player.has_infinite_materials(),
                 true,
             )
@@ -679,7 +668,7 @@ impl Mob for MushroomCowEntity {
             stack.copy_with_count(stack.count())
         };
 
-        if item_stack.is(&vanilla_items::SHEARS) {
+        if item_stack.is(&*vanilla_items::SHEARS) {
             let result = self.try_interact_shears(player, hand);
             if result != InteractionResult::Pass {
                 return result;

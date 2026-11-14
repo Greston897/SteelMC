@@ -239,6 +239,11 @@ impl FullChunkRef<'_> {
                         .get_behavior(state.get_block())
                         .random_tick(state, world, pos);
                 }
+                // Vanilla `SnowAndFreezeFeature` runs on its own per-chunk rain
+                // pass; Steel folds it into the random-tick sample, which the
+                // spawner already visits for every loaded section. The call is a
+                // cheap early-out unless it is actually snowing at this spot.
+                world.try_accumulate_snow(pos);
                 if let Some(fluid) = tick_fluid {
                     fluid_behaviors.get_behavior(fluid).random_tick(world, pos);
                 }
@@ -1554,6 +1559,27 @@ impl FullChunkRef<'_> {
             FullChunkBlockSetResult::Changed(old_state) => Some(old_state),
             FullChunkBlockSetResult::Unchanged | FullChunkBlockSetResult::Stale(_) => None,
         }
+    }
+
+    /// Writes `biome_id` into the 4x4x4 biome cell that contains `pos`.
+    ///
+    /// Vanilla `LevelChunk.setBiome(BlockPos, Holder<Biome>)` writes the quart
+    /// cell, so a `/fillbiome` over a partial cell still covers the whole cell.
+    /// Returns whether the stored value actually changed.
+    pub fn set_biome_cell(&self, pos: BlockPos, biome_id: u16) -> bool {
+        let section_index =
+            usize::try_from((pos.y() - self.min_y()) >> 4).ok().filter(|index| {
+                *index < self.chunk.sections.sections.len()
+            });
+        let Some(section_index) = section_index else {
+            return false;
+        };
+        let local_x = (pos.x() & 15) as usize >> 2;
+        let local_y = (pos.y() & 15) as usize >> 2;
+        let local_z = (pos.z() & 15) as usize >> 2;
+        let mut section = self.chunk.sections.sections[section_index].write();
+        let previous = section.biomes.set(local_x, local_y, local_z, biome_id);
+        previous != biome_id
     }
 
     pub(crate) fn set_block_state_if_unchanged(

@@ -126,13 +126,13 @@ mod tests {
         init_behaviors();
 
         let leaf_litter = vanilla_blocks::LEAF_LITTER.default_state();
-        let mut leaf_litter_item = ItemStack::new(&vanilla_items::LEAF_LITTER);
+        let mut leaf_litter_item = ItemStack::new(&*vanilla_items::LEAF_LITTER);
         assert!(leaf_litter.can_be_replaced(&place_context(&mut leaf_litter_item, false)));
         assert!(!leaf_litter.can_be_replaced(&place_context(&mut leaf_litter_item, true)));
 
         let full_leaf_litter = leaf_litter.set_value(SEGMENT_AMOUNT, MAX_SEGMENT_AMOUNT);
         assert!(!full_leaf_litter.can_be_replaced(&place_context(&mut leaf_litter_item, false,)));
-        let mut stone = ItemStack::new(&vanilla_items::STONE);
+        let mut stone = ItemStack::new(&*vanilla_items::STONE);
         assert!(leaf_litter.can_be_replaced(&place_context(&mut stone, false)));
         let mut empty = ItemStack::empty();
         assert!(leaf_litter.can_be_replaced(&place_context(&mut empty, false)));

@@ -93,15 +93,38 @@ impl NumberProvider {
                 }
                 count as f32
             }
-            Self::Score { .. } => {
-                // TODO: Implement when scoreboard system is available
-                let _ = ctx;
-                0.0
+            Self::Score {
+                target,
+                score,
+                scale,
+            } => {
+                let Some(ctx) = ctx else {
+                    return 0.0;
+                };
+                let Some(resolver) = ctx.score_resolver else {
+                    return 0.0;
+                };
+                let holder = match target {
+                    ScoreboardTarget::This => ctx.this_holder,
+                    _ => ctx.killer_holder,
+                };
+                let Some(holder) = holder else {
+                    return 0.0;
+                };
+                resolver.score(holder, score).map_or(0.0, |value| {
+                    value as f32 * scale
+                })
             }
-            Self::Storage { .. } => {
-                // TODO: Implement when command storage system is available
-                let _ = ctx;
-                0.0
+            Self::Storage { storage, path } => {
+                let Some(ctx) = ctx else {
+                    return 0.0;
+                };
+                let Some(resolver) = ctx.storage_resolver else {
+                    return 0.0;
+                };
+                resolver
+                    .storage_number(storage, path)
+                    .map_or(0.0, |value| value as f32)
             }
             Self::EnchantmentLevel { enchantment } => ctx
                 .and_then(|c| c.tool)
@@ -111,7 +134,13 @@ impl NumberProvider {
 
     /// Get a value using the loot context's RNG and parameters.
     pub fn get_float<R: rand::Rng>(&self, ctx: &mut LootContext<'_, R>) -> f32 {
-        let ctx_ref = LootContextRef { tool: ctx.tool };
+        let ctx_ref = LootContextRef {
+            tool: ctx.tool,
+            score_resolver: ctx.score_resolver,
+            this_holder: ctx.this_entity.as_ref().and_then(|entity| entity.holder_name),
+            killer_holder: ctx.killer_entity.as_ref().and_then(|entity| entity.holder_name),
+            storage_resolver: ctx.storage_resolver,
+        };
         self.get(ctx.rng, Some(&ctx_ref))
     }
 
@@ -234,7 +263,14 @@ impl NumberProviderRange {
 /// This is a simplified view to avoid circular references.
 pub struct LootContextRef<'a> {
     pub tool: Option<&'a ItemStack>,
-    // Add more fields as needed for Score/Storage providers
+    /// Resolves scoreboard values for the `Score` number provider.
+    pub score_resolver: Option<&'a dyn ScoreResolver>,
+    /// Holder name for `ScoreboardTarget::This`.
+    pub this_holder: Option<&'a str>,
+    /// Holder name for the killer targets.
+    pub killer_holder: Option<&'a str>,
+    /// Resolves command storage values for the `Storage` number provider.
+    pub storage_resolver: Option<&'a dyn StorageResolver>,
 }
 
 /// Context for loot table evaluation, containing all relevant game state.
@@ -275,6 +311,31 @@ pub struct LootContext<'a, R: rand::Rng> {
     pub block_entity: Option<BlockEntityRef<'a>>,
     /// The entity interacting with a block/entity (e.g., player opening a chest).
     pub interacting_entity: Option<EntityRef<'a>>,
+    /// Resolves scoreboard values for `EntityScores` conditions and `Score`
+    /// number providers. The scoreboard itself lives on the server, so the
+    /// game layer installs this hook when the launch context needs it.
+    pub score_resolver: Option<&'a dyn ScoreResolver>,
+    /// Resolves command storage values for the `Storage` number provider.
+    pub storage_resolver: Option<&'a dyn StorageResolver>,
+}
+
+/// Resolves a named entity's scoreboard value for an objective.
+pub trait ScoreResolver {
+    /// Returns the score, or `None` when the holder or objective is unknown.
+    fn score(&self, holder: &str, objective: &str) -> Option<i32>;
+}
+
+/// Reads a numeric value out of command storage (`/data` NBT) for the
+/// `minecraft:storage` number provider.
+///
+/// Command storage lives on the server, which sits above this crate, so the
+/// game layer installs this hook alongside the scoreboard resolver.
+pub trait StorageResolver {
+    /// Returns the number at `path` in `storage`, or `None` when the storage,
+    /// the path, or the value's numeric type is unknown.
+    ///
+    /// Vanilla accepts every numeric NBT tag and rejects non-numeric ones.
+    fn storage_number(&self, storage: &Identifier, path: &str) -> Option<f64>;
 }
 
 /// Weather state for `WeatherCheck` condition.
@@ -286,7 +347,7 @@ pub struct WeatherState {
 
 /// A reference to an entity for loot context.
 /// This is intentionally opaque - the actual entity type depends on game implementation.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct EntityRef<'a> {
     /// Type identifier for the entity.
     pub entity_type: Option<&'a Identifier>,
@@ -295,7 +356,10 @@ pub struct EntityRef<'a> {
     /// Equipment slots for equipment predicates. `None` for non-living entities.
     pub equipment: Option<EntityEquipmentRef<'a>>,
     /// Entity name (for `copy_name` function).
-    pub custom_name: Option<&'a str>,
+    ///
+    /// Owned because a live entity's custom name is resolved from a component
+    /// under a lock; the loot context snapshots it when it is built.
+    pub custom_name: Option<String>,
     /// Vanilla `minecraft:components.sheep/color` entity data component.
     pub sheep_color: Option<DyeColor>,
     /// Vanilla `minecraft:type_specific/sheep.sheared`. `None` when the entity is
@@ -303,6 +367,10 @@ pub struct EntityRef<'a> {
     pub sheep_sheared: Option<bool>,
     /// Vanilla `minecraft:components.chicken/variant` entity data component key.
     pub chicken_variant: Option<&'a Identifier>,
+    /// Scoreboard holder name, used by score-backed loot conditions.
+    pub holder_name: Option<&'a str>,
+    /// Full player profile, used by `fill_player_head`.
+    pub profile: Option<&'a crate::game_profile::GameProfile>,
 }
 
 /// Entity flags for predicate checking.
@@ -372,6 +440,8 @@ pub struct BlockEntityRef<'a> {
     pub custom_name: Option<&'a str>,
     /// Inventory contents (for dynamic/slots entries).
     pub inventory: Option<&'a [ItemStack]>,
+    /// Saved block entity NBT, used by `copy_components` and `copy_custom_data`.
+    pub data: Option<&'a simdnbt::owned::NbtCompound>,
 }
 
 impl<'a, R: rand::Rng> LootContext<'a, R> {
@@ -394,7 +464,23 @@ impl<'a, R: rand::Rng> LootContext<'a, R> {
             damage_source: None,
             block_entity: None,
             interacting_entity: None,
+            score_resolver: None,
+            storage_resolver: None,
         }
+    }
+
+    /// Installs a scoreboard resolver for score-backed loot conditions.
+    #[must_use]
+    pub const fn with_score_resolver(mut self, resolver: &'a dyn ScoreResolver) -> Self {
+        self.score_resolver = Some(resolver);
+        self
+    }
+
+    /// Installs a command-storage resolver for storage-backed number providers.
+    #[must_use]
+    pub const fn with_storage_resolver(mut self, resolver: &'a dyn StorageResolver) -> Self {
+        self.storage_resolver = Some(resolver);
+        self
     }
 
     /// Set the luck value.
@@ -455,28 +541,28 @@ impl<'a, R: rand::Rng> LootContext<'a, R> {
 
     /// Set the entity being looted.
     #[must_use]
-    pub const fn with_this_entity(mut self, entity: EntityRef<'a>) -> Self {
+    pub fn with_this_entity(mut self, entity: EntityRef<'a>) -> Self {
         self.this_entity = Some(entity);
         self
     }
 
     /// Set the killer entity.
     #[must_use]
-    pub const fn with_killer_entity(mut self, entity: EntityRef<'a>) -> Self {
+    pub fn with_killer_entity(mut self, entity: EntityRef<'a>) -> Self {
         self.killer_entity = Some(entity);
         self
     }
 
     /// Set the direct killer entity (e.g., projectile).
     #[must_use]
-    pub const fn with_direct_killer_entity(mut self, entity: EntityRef<'a>) -> Self {
+    pub fn with_direct_killer_entity(mut self, entity: EntityRef<'a>) -> Self {
         self.direct_killer_entity = Some(entity);
         self
     }
 
     /// Set the player who dealt the final damage.
     #[must_use]
-    pub const fn with_last_damage_player(mut self, entity: EntityRef<'a>) -> Self {
+    pub fn with_last_damage_player(mut self, entity: EntityRef<'a>) -> Self {
         self.last_damage_player = Some(entity);
         self
     }
@@ -497,7 +583,7 @@ impl<'a, R: rand::Rng> LootContext<'a, R> {
 
     /// Set the interacting entity (e.g., player opening a chest).
     #[must_use]
-    pub const fn with_interacting_entity(mut self, entity: EntityRef<'a>) -> Self {
+    pub fn with_interacting_entity(mut self, entity: EntityRef<'a>) -> Self {
         self.interacting_entity = Some(entity);
         self
     }
@@ -513,19 +599,20 @@ impl<'a, R: rand::Rng> LootContext<'a, R> {
     #[must_use]
     pub fn get_attacking_entity_enchantment_level(&self, enchantment: &Identifier) -> i32 {
         self.killer_entity
+            .as_ref()
             .and_then(|entity| entity.equipment)
             .map_or(0, |equipment| equipment.get_enchantment_level(enchantment))
     }
 
     /// Get an entity reference by target.
     #[must_use]
-    pub const fn get_entity(&self, target: LootContextEntity) -> Option<EntityRef<'a>> {
+    pub fn get_entity(&self, target: LootContextEntity) -> Option<EntityRef<'a>> {
         match target {
-            LootContextEntity::This => self.this_entity,
-            LootContextEntity::Killer => self.killer_entity,
-            LootContextEntity::DirectKiller => self.direct_killer_entity,
-            LootContextEntity::KillerPlayer => self.last_damage_player,
-            LootContextEntity::Interacting => self.interacting_entity,
+            LootContextEntity::This => self.this_entity.clone(),
+            LootContextEntity::Killer => self.killer_entity.clone(),
+            LootContextEntity::DirectKiller => self.direct_killer_entity.clone(),
+            LootContextEntity::KillerPlayer => self.last_damage_player.clone(),
+            LootContextEntity::Interacting => self.interacting_entity.clone(),
         }
     }
 }

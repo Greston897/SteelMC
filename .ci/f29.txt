@@ -1,0 +1,440 @@
+### cargo check diagnostics
+- errors: 982
+- warnings: 264
+
+```
+steel-protocol/src/packets/game/s_container_click.rs:159:9: warning: unused import: `steel_utils::serial::ReadFrom`
+steel-protocol/src/packets/game/c_recipe_book.rs:38:12: warning: struct `CUpdateRecipes` is never constructed
+warning: `steel-protocol` (lib) generated 167 warnings (run `cargo fix --lib -p steel-protocol` to apply 50 suggestions)
+warning: `steel-protocol` (lib test) generated 170 warnings (164 duplicates) (run `cargo fix --lib -p steel-protocol --tests` to apply 3 suggestions)
+steel-core/src/behavior/blocks/container/mod.rs:64:14: error[E0433]: cannot find type `EntityEventSource` in this scope: use of undeclared type `EntityEventSource`
+steel-core/src/behavior/blocks/building/technical_blocks.rs:8:17: warning: unused import: `Arc`
+-----
+steel-core/src/entity/entities/mobs/passive/allay.rs:270:9: warning: unused import: `simdnbt::borrow::read_compound`
+steel-core/src/entity/entities/mobs/passive/allay.rs:271:9: warning: unused import: `simdnbt::owned::NbtCompound`
+steel-core/src/entity/entities/mobs/passive/allay.rs:275:25: warning: unused imports: `Entity` and `LivingEntity`
+steel-core/src/inventory/menu/tests.rs:5:24: warning: unused import: `crafter`
+steel-core/src/command/builtins/whitelist.rs:135:25: error[E0308]: mismatched types: expected `usize`, found `i32`
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:926:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/entity/entities/mobs/passive/allay.rs:271:9: warning: unused import: `simdnbt::owned::NbtCompound`
+steel-core/src/entity/entities/mobs/passive/allay.rs:275:25: warning: unused imports: `Entity` and `LivingEntity`
+steel-core/src/inventory/menu/tests.rs:5:24: warning: unused import: `crafter`
+steel-core/src/command/builtins/whitelist.rs:135:25: error[E0308]: mismatched types: expected `usize`, found `i32`
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:926:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:927:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/entity/entities/mobs/passive/allay.rs:275:25: warning: unused imports: `Entity` and `LivingEntity`
+steel-core/src/inventory/menu/tests.rs:5:24: warning: unused import: `crafter`
+steel-core/src/command/builtins/whitelist.rs:135:25: error[E0308]: mismatched types: expected `usize`, found `i32`
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:926:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:927:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:928:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/inventory/menu/tests.rs:5:24: warning: unused import: `crafter`
+steel-core/src/command/builtins/whitelist.rs:135:25: error[E0308]: mismatched types: expected `usize`, found `i32`
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:926:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:927:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:928:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/campfire_block.rs:74:31: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/command/builtins/whitelist.rs:135:25: error[E0308]: mismatched types: expected `usize`, found `i32`
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:926:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:927:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:928:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/campfire_block.rs:74:31: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/ruined_portal.rs:70:52: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:926:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:927:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:928:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/campfire_block.rs:74:31: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/ruined_portal.rs:70:52: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/ruined_portal.rs:120:60: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:927:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:928:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/campfire_block.rs:74:31: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/ruined_portal.rs:70:52: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/ruined_portal.rs:120:60: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:219:61: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/mineshaft.rs:928:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/campfire_block.rs:74:31: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/ruined_portal.rs:70:52: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/ruined_portal.rs:120:60: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:219:61: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:339:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/behavior/blocks/building/campfire_block.rs:74:31: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/ruined_portal.rs:70:52: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/ruined_portal.rs:120:60: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:219:61: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:339:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:340:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/ruined_portal.rs:70:52: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/ruined_portal.rs:120:60: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:219:61: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:339:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:340:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:341:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/ruined_portal.rs:120:60: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:219:61: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:339:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:340:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:341:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/scaffolding_block.rs:67:40: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:219:61: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:339:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:340:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:341:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/scaffolding_block.rs:67:40: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/scaffolding_block.rs:75:47: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:339:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:340:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:341:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/scaffolding_block.rs:67:40: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/scaffolding_block.rs:75:47: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/template_piece.rs:660:52: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:340:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:341:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/scaffolding_block.rs:67:40: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/scaffolding_block.rs:75:47: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/template_piece.rs:660:52: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/template_piece.rs:779:64: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/scattered_feature.rs:341:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/scaffolding_block.rs:67:40: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/scaffolding_block.rs:75:47: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/template_piece.rs:660:52: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/template_piece.rs:779:64: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/sponge_block.rs:92:34: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/behavior/blocks/building/scaffolding_block.rs:67:40: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/scaffolding_block.rs:75:47: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/template_piece.rs:660:52: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/template_piece.rs:779:64: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/sponge_block.rs:92:34: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mod.rs:245:41: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/behavior/blocks/building/scaffolding_block.rs:75:47: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/template_piece.rs:660:52: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/template_piece.rs:779:64: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/sponge_block.rs:92:34: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mod.rs:245:41: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mod.rs:289:56: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/template_piece.rs:660:52: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/template_piece.rs:779:64: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/sponge_block.rs:92:34: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mod.rs:245:41: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mod.rs:289:56: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/surface/mod.rs:588:50: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/template_piece.rs:779:64: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/building/sponge_block.rs:92:34: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mod.rs:245:41: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mod.rs:289:56: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/surface/mod.rs:588:50: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/buried_treasure.rs:100:56: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/behavior/blocks/building/sponge_block.rs:92:34: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mod.rs:245:41: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mod.rs:289:56: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/surface/mod.rs:588:50: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/buried_treasure.rs:100:56: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:712:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/mod.rs:245:41: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/mod.rs:289:56: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/surface/mod.rs:588:50: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/buried_treasure.rs:100:56: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:712:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:713:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/mod.rs:289:56: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/surface/mod.rs:588:50: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/buried_treasure.rs:100:56: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:712:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:713:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:714:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/surface/mod.rs:588:50: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/buried_treasure.rs:100:56: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:712:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:713:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:714:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+-----
+steel-core/src/worldgen/structure/piece_placer/buried_treasure.rs:100:56: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:712:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:713:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:714:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/beehive_block.rs:63:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:712:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:713:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:714:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/beehive_block.rs:63:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/container/beehive_block.rs:64:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:713:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:714:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/beehive_block.rs:63:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/container/beehive_block.rs:64:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/placement.rs:76:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/structure/piece_placer/desert_pyramid.rs:714:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/beehive_block.rs:63:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/container/beehive_block.rs:64:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/placement.rs:76:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/placement.rs:77:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/entity/entity/mod.rs:2087:8: error[E0599]: no method named `set_velocity` found for struct `item_entity::ItemEntity` in the current scope
+steel-core/src/behavior/blocks/container/beehive_block.rs:63:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/container/beehive_block.rs:64:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/placement.rs:76:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/placement.rs:77:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/container/mod.rs:63:34: error[E0599]: no method named `id` found for reference `&player::Player` in the current scope
+-----
+steel-core/src/behavior/blocks/container/beehive_block.rs:63:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/container/beehive_block.rs:64:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/placement.rs:76:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/placement.rs:77:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/container/mod.rs:63:34: error[E0599]: no method named `id` found for reference `&player::Player` in the current scope
+steel-core/src/worldgen/feature/features/speleothem.rs:552:49: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/behavior/blocks/container/beehive_block.rs:64:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/placement.rs:76:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/placement.rs:77:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/container/mod.rs:63:34: error[E0599]: no method named `id` found for reference `&player::Player` in the current scope
+steel-core/src/worldgen/feature/features/speleothem.rs:552:49: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+-----
+steel-core/src/worldgen/feature/placement.rs:76:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/placement.rs:77:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/container/mod.rs:63:34: error[E0599]: no method named `id` found for reference `&player::Player` in the current scope
+steel-core/src/worldgen/feature/features/speleothem.rs:552:49: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/worldgen/feature/features/tree/decorators.rs:599:77: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/placement.rs:77:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/container/mod.rs:63:34: error[E0599]: no method named `id` found for reference `&player::Player` in the current scope
+steel-core/src/worldgen/feature/features/speleothem.rs:552:49: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/worldgen/feature/features/tree/decorators.rs:599:77: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/tree/decorators.rs:600:59: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/behavior/blocks/container/mod.rs:63:34: error[E0599]: no method named `id` found for reference `&player::Player` in the current scope
+steel-core/src/worldgen/feature/features/speleothem.rs:552:49: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/worldgen/feature/features/tree/decorators.rs:599:77: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/tree/decorators.rs:600:59: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/tree/decorators.rs:604:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/speleothem.rs:552:49: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/worldgen/feature/features/tree/decorators.rs:599:77: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/tree/decorators.rs:600:59: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/tree/decorators.rs:604:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/geode.rs:336:67: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/behavior/blocks/decoration/candle_cake_block.rs:149:50: error[E0277]: the trait bound `world::World: level_reader::LevelAccessor` is not satisfied: unsatisfied trait bound
+steel-core/src/worldgen/feature/features/tree/decorators.rs:599:77: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/tree/decorators.rs:600:59: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/tree/decorators.rs:604:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/geode.rs:336:67: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/geode.rs:357:39: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/tree/decorators.rs:599:77: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/tree/decorators.rs:600:59: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/tree/decorators.rs:604:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/geode.rs:336:67: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/geode.rs:357:39: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/huge_fungus.rs:159:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/tree/decorators.rs:600:59: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/tree/decorators.rs:604:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/geode.rs:336:67: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/geode.rs:357:39: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/huge_fungus.rs:159:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/iceberg.rs:266:54: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/tree/decorators.rs:604:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/geode.rs:336:67: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/geode.rs:357:39: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/huge_fungus.rs:159:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/iceberg.rs:266:54: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/kelp.rs:25:61: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/geode.rs:336:67: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/geode.rs:357:39: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/huge_fungus.rs:159:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/iceberg.rs:266:54: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/kelp.rs:25:61: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/kelp.rs:26:73: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/geode.rs:357:39: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/huge_fungus.rs:159:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/iceberg.rs:266:54: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/kelp.rs:25:61: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/kelp.rs:26:73: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/monster_room.rs:156:41: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/huge_fungus.rs:159:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/iceberg.rs:266:54: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/kelp.rs:25:61: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/kelp.rs:26:73: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/monster_room.rs:156:41: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:281:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/iceberg.rs:266:54: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/kelp.rs:25:61: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/kelp.rs:26:73: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/monster_room.rs:156:41: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:281:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:282:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/kelp.rs:25:61: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/kelp.rs:26:73: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/monster_room.rs:156:41: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:281:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:282:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:283:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/kelp.rs:26:73: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/monster_room.rs:156:41: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:281:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:282:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:283:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:327:48: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/monster_room.rs:156:41: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:281:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:282:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:283:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:327:48: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:475:49: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/multiface_growth.rs:281:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:282:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:283:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:327:48: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:475:49: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/bubble_column_block.rs:89:45: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/multiface_growth.rs:282:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:283:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:327:48: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:475:49: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/bubble_column_block.rs:89:45: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/liquid_block.rs:64:63: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/multiface_growth.rs:283:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:327:48: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:475:49: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/bubble_column_block.rs:89:45: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/liquid_block.rs:64:63: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/liquid_block.rs:86:51: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/multiface_growth.rs:327:48: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/multiface_growth.rs:475:49: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/bubble_column_block.rs:89:45: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/liquid_block.rs:64:63: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/liquid_block.rs:86:51: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/portal/fire.rs:94:70: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/multiface_growth.rs:475:49: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/bubble_column_block.rs:89:45: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/liquid_block.rs:64:63: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/liquid_block.rs:86:51: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/portal/fire.rs:94:70: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/portal/respawn_anchor_block.rs:119:31: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/behavior/blocks/fluid/bubble_column_block.rs:89:45: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/liquid_block.rs:64:63: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/liquid_block.rs:86:51: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/portal/fire.rs:94:70: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/portal/respawn_anchor_block.rs:119:31: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:427:50: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/behavior/blocks/fluid/liquid_block.rs:64:63: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/fluid/liquid_block.rs:86:51: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/portal/fire.rs:94:70: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/portal/respawn_anchor_block.rs:119:31: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:427:50: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:579:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/behavior/blocks/fluid/liquid_block.rs:86:51: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/portal/fire.rs:94:70: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/portal/respawn_anchor_block.rs:119:31: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:427:50: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:579:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:580:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/behavior/blocks/portal/fire.rs:94:70: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/portal/respawn_anchor_block.rs:119:31: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:427:50: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:579:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:580:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:581:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/behavior/blocks/portal/respawn_anchor_block.rs:119:31: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:427:50: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:579:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:580:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:581:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:613:47: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/sculk_patch.rs:427:50: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:579:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:580:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:581:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:613:47: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:614:48: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/sculk_patch.rs:579:42: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:580:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:581:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:613:47: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:614:48: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:633:58: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/sculk_patch.rs:580:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:581:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:613:47: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:614:48: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:633:58: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:654:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/sculk_patch.rs:581:46: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:613:47: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:614:48: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:633:58: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:654:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/tree/mod.rs:256:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/sculk_patch.rs:613:47: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:614:48: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:633:58: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:654:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/tree/mod.rs:256:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:701:80: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/sculk_patch.rs:614:48: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:633:58: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:654:38: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/tree/mod.rs:256:53: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/worldgen/feature/features/sculk_patch.rs:701:80: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+steel-core/src/behavior/blocks/redstone/diode/base.rs:75:58: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be dereferenced
+-----
+steel-core/src/worldgen/feature/features/sculk_patch.rs:633:58: error[E0614]: type `steel_registry::blocks::Block` cannot be dereferenced: can't be derefer

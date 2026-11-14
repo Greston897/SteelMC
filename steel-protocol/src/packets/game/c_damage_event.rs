@@ -2,6 +2,7 @@
 
 use glam::DVec3;
 use steel_macros::{ClientPacket, WriteTo};
+use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_DAMAGE_EVENT;
 
 /// Sent when an entity takes damage. Used for hit animations and damage direction indicator.
