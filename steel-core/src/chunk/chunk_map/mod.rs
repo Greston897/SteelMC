@@ -1179,6 +1179,27 @@ impl ChunkMap {
             .collect()
     }
 
+    /// Picks a random entity-ticking full chunk without materialising the list.
+    ///
+    /// The natural spawner asks once per category per player, so the previous
+    /// `tickable_full_chunk_positions().get(random)` shape allocated a fresh
+    /// `Vec` on every attempt — up to `categories * players` allocations per
+    /// 400-tick pass.
+    pub fn random_entity_ticking_chunk(&self, random_index: usize) -> Option<ChunkPos> {
+        let snapshot = self.ticking_chunks.load();
+        if snapshot.entity_indices.is_empty() {
+            return None;
+        }
+        let index = snapshot.entity_indices[random_index % snapshot.entity_indices.len()];
+        Some(snapshot.block[index].pos)
+    }
+
+    /// Number of chunks whose simulation level currently allows entity ticks.
+    #[must_use]
+    pub fn entity_ticking_chunk_count(&self) -> usize {
+        self.ticking_chunks.load().entity_indices.len()
+    }
+
     /// Returns whether the chunk is full and currently allows entity ticks.
     pub fn is_entity_ticking_full_chunk_loaded(&self, pos: ChunkPos) -> bool {
         self.chunks

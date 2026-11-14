@@ -212,12 +212,18 @@ fn world_biome_at(world: &Arc<World>, pos: BlockPos) -> Option<BiomeRef> {
 ///   spawns possible. Steel used to force the surface height, so nothing ever
 ///   spawned below ground and most of the mob cap was unreachable.
 fn try_spawn_category_in_random_chunk(world: &Arc<World>, category: MobCategory) -> usize {
-    let chunks = world.chunk_map.tickable_full_chunk_positions();
-    if chunks.is_empty() {
+    let chunk_count = world.chunk_map.entity_ticking_chunk_count();
+    if chunk_count == 0 {
         return 0;
     }
     let mut random = rand::rng();
-    let Some(chunk_pos) = chunks.get(random.random_range(0..chunks.len())).copied() else {
+    // Selecting straight from the snapshot avoids the `Vec` that
+    // `tickable_full_chunk_positions` built on every call.
+    let Some(chunk_pos) =
+        world
+            .chunk_map
+            .random_entity_ticking_chunk(random.random_range(0..chunk_count))
+    else {
         return 0;
     };
 
