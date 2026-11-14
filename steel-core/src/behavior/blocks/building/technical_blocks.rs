@@ -24,7 +24,7 @@ use crate::entity::damage::DamageSource;
 use crate::world::LevelReader;
 use crate::entity::{Entity as _, LivingEntity as _};
 use crate::behavior::context::{BlockPlaceContext, InteractionResult};
-use crate::block_entity::BLOCK_ENTITIES;
+use crate::block_entity::{BLOCK_ENTITIES, BlockEntityTicker};
 use crate::world::World;
 
 macro_rules! block_entity_block {
@@ -285,7 +285,33 @@ block_entity_block!(
 block_entity_block!(
     SculkShriekerBlock,
     SCULK_SHRIEKER,
-    |state: BlockStateId, _context: &BlockPlaceContext<'_>| state
+    |state: BlockStateId, _context: &BlockPlaceContext<'_>| state,
+    /// Vanilla `SculkShriekerBlock` is an `EntityBlock` with a ticker: the block
+    /// entity counts its shriek cooldown down, so the block needs one even
+    /// though the logic lives on the entity.
+    fn get_block_entity_ticker(
+        &self,
+        _world: &Arc<World>,
+        _state: BlockStateId,
+        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+    ) -> Option<BlockEntityTicker> {
+        BlockEntityTicker::for_matching_entity_tick(
+            block_entity_type,
+            &vanilla_block_entity_types::SCULK_SHRIEKER,
+        )
+    }
+
+    /// Vanilla `SculkShriekerBlock.tick`: the scheduled tick that ends the shriek
+    /// animation clears the `shrieking` state again.
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        if state.get_value(&BlockStateProperties::SHRIEKING) {
+            world.set_block(
+                pos,
+                state.set_value(&BlockStateProperties::SHRIEKING, false),
+                UpdateFlags::UPDATE_ALL,
+            );
+        }
+    }
 );
 
 /// Attempts vanilla's moss feature makes to find a valid position.

@@ -802,6 +802,7 @@ pub(crate) mod natural_spawner;
 pub(crate) mod phantom_spawner;
 mod spawn;
 mod spawn_placements;
+pub(crate) mod spawn_util;
 mod storage;
 mod synced_data;
 mod ticking;
