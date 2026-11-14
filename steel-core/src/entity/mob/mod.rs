@@ -515,13 +515,14 @@ pub trait Mob: LivingEntity + Leashable {
 
     /// Runs the shared living-entity base tick, then mob-specific per-tick behavior.
     ///
-    /// Vanilla `Mob.tick()` is `baseTick()` followed by `checkDespawn()`, so the
-    /// despawn rules belong here; without this call `check_mob_despawn` was dead
-    /// code and mobs never disappeared, no matter how far the player walked.
+    /// `checkDespawn` is *not* called here: Steel's `EntityManager::tick_entities`
+    /// runs `Entity::check_despawn` for every ticking entity before this, which is
+    /// where vanilla's `ServerLevel.tickNonPassenger` sits relative to `Mob.tick`.
+    /// Calling it here as well would roll the 1-in-800 far-away check twice per
+    /// tick and halve the effective despawn period.
     fn base_tick_mob(&self) {
         self.base_tick_living_entity();
         self.mob_base_tick();
-        self.check_mob_despawn();
     }
 
     /// Runs the mob-owned portion of vanilla `Mob.baseTick`.

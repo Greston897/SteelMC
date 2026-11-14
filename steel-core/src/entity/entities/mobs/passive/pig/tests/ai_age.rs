@@ -34,10 +34,10 @@ fn pig_breeding_offspring_inherits_parent_variant() {
     );
 }
 
-/// Vanilla `Mob.tick()` runs `checkDespawn()` every tick; the peaceful branch
-/// discards a mob whose type is not allowed in peaceful worlds.
+/// `Entity::check_despawn` is the hook the entity manager calls every tick; its
+/// peaceful branch discards a mob whose type is not allowed in peaceful worlds.
 #[test]
-fn mob_base_tick_checks_despawn() {
+fn entity_check_despawn_discards_in_peaceful() {
     init_vanilla_registry();
 
     let fixture = crate::test_support::fresh_test_world_with_difficulty(
@@ -52,7 +52,7 @@ fn mob_base_tick_checks_despawn() {
     ));
 
     assert!(!crate::entity::Entity::is_removed(pig.as_ref()));
-    Mob::base_tick_mob(pig.as_ref());
+    crate::entity::Entity::check_despawn(pig.as_ref());
     assert!(crate::entity::Entity::is_removed(pig.as_ref()));
 }
 
