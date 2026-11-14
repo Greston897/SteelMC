@@ -196,6 +196,56 @@ impl FrogspawnBlock {
     }
 }
 
+/// Vanilla `FrogspawnBlock` hatch delay bounds, in game ticks.
+const FROGSPAWN_MIN_HATCH_DELAY: i32 = 3600;
+/// Vanilla `FrogspawnBlock` upper hatch delay bound.
+const FROGSPAWN_MAX_HATCH_DELAY: i32 = 12000;
+
+impl FrogspawnBlock {
+    /// Vanilla `FrogspawnBlock.getFrogspawnHatchDelay`.
+    fn hatch_delay() -> i32 {
+        rand::random_range(FROGSPAWN_MIN_HATCH_DELAY..FROGSPAWN_MAX_HATCH_DELAY)
+    }
+
+    /// Vanilla `FrogspawnBlock.hatchFrogspawn`: the block pops, plays the hatch
+    /// sound and leaves 2-5 tadpoles behind.
+    fn hatch(world: &Arc<World>, pos: BlockPos) {
+        world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+        world.play_sound_at(
+            &steel_registry::sound_events::BLOCK_FROGSPAWN_HATCH,
+            steel_protocol::packets::game::SoundSource::Blocks,
+            center_of(pos),
+            1.0,
+            1.0,
+            None,
+        );
+        let tadpole_count = rand::random_range(2..=5);
+        for _ in 0..tadpole_count {
+            let x = f64::from(pos.x()) + Self::tadpole_offset();
+            let z = f64::from(pos.z()) + Self::tadpole_offset();
+            let Some(tadpole) = ENTITIES.create(
+                &vanilla_entities::TADPOLE,
+                next_entity_id(),
+                DVec3::new(x, f64::from(pos.y()) - 0.5, z),
+                Arc::downgrade(world),
+            ) else {
+                continue;
+            };
+            if let Some(mob) = tadpole.as_mob() {
+                // Vanilla `Tadpole.setPersistenceRequired`: hatched tadpoles never
+                // despawn on their own.
+                mob.set_persistence_required();
+            }
+            let _ = world.try_add_entity(tadpole);
+        }
+    }
+
+    /// Vanilla `getRandomTadpolePositionOffset`: clamped into the block face.
+    fn tadpole_offset() -> f64 {
+        rand::random_range(0.2..0.8)
+    }
+}
+
 impl BlockBehavior for FrogspawnBlock {
     fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(self.block.default_state())
@@ -203,6 +253,27 @@ impl BlockBehavior for FrogspawnBlock {
 
     fn can_survive(&self, _state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
         world.get_block_state(pos.below()).is_solid()
+    }
+
+    /// Vanilla `FrogspawnBlock.onPlace`: schedule the hatch tick.
+    fn on_place(
+        &self,
+        _state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _old_state: BlockStateId,
+        _moved_by_piston: bool,
+    ) {
+        world.schedule_block_tick_default(pos, self.block, Self::hatch_delay());
+    }
+
+    /// Vanilla `FrogspawnBlock.tick`: hatch, or break when the support is gone.
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        if !self.can_survive(state, world.as_ref(), pos) {
+            world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+            return;
+        }
+        Self::hatch(world, pos);
     }
 
     fn update_shape(
@@ -740,5 +811,51 @@ impl BlockBehavior for WeatheringCopperGolemStatueBlock {
             return InteractionResult::Success;
         }
         InteractionResult::Pass
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use steel_registry::init_vanilla_registry;
+    use steel_registry::vanilla_blocks;
+
+    use crate::test_support::TestLevel;
+
+    use super::*;
+
+    #[test]
+    fn frogspawn_schedules_its_hatch_tick_on_placement() {
+        init_vanilla_registry();
+        let behavior = FrogspawnBlock::new(&vanilla_blocks::FROGSPAWN);
+
+        // Vanilla picks a delay inside [3600, 12000) game ticks.
+        for _ in 0..32 {
+            let delay = FrogspawnBlock::hatch_delay();
+            assert!(
+                (FROGSPAWN_MIN_HATCH_DELAY..FROGSPAWN_MAX_HATCH_DELAY).contains(&delay),
+                "hatch delay {delay} outside the vanilla window"
+            );
+        }
+
+        // The tadpole offsets stay inside the block, as `getRandomTadpolePositionOffset` clamps them.
+        for _ in 0..32 {
+            let offset = FrogspawnBlock::tadpole_offset();
+            assert!((0.2..0.8).contains(&offset));
+        }
+        let _ = behavior;
+    }
+
+    #[test]
+    fn frogspawn_breaks_when_its_support_disappears() {
+        init_vanilla_registry();
+        let level = TestLevel::default();
+        let pos = BlockPos::new(0, 64, 0);
+        let state = vanilla_blocks::FROGSPAWN.default_state();
+        let behavior = FrogspawnBlock::new(&vanilla_blocks::FROGSPAWN);
+
+        assert!(
+            !behavior.can_survive(state, &level, pos),
+            "frogspawn over air must not survive, matching vanilla `mayPlaceOn`"
+        );
     }
 }
