@@ -12,6 +12,7 @@ use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, ChestType};
 use steel_registry::sound_event::SoundEventRef;
+use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{Downcast as _, BlockPos, BlockStateId, Direction};
@@ -22,7 +23,9 @@ use crate::behavior::block::{
 };
 use crate::behavior::context::{BlockHitResult, BlockPlaceContext, InteractionResult};
 use crate::behavior::{InventoryAccess, PlacementSource};
-use crate::block_entity::{BLOCK_ENTITIES, entities::ChestBlockEntity};
+use crate::block_entity::{
+    BLOCK_ENTITIES, BlockEntityTicker, entities::ChestBlockEntity,
+};
 use crate::inventory::container::calculate_redstone_signal_from_container;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::inventory::menu::kinds::{chest, double_chest};
@@ -192,6 +195,26 @@ impl BlockBehavior for ChestBlock {
             pos,
             state,
         ))
+    }
+
+    /// Vanilla `ChestBlock.getTicker` returns `ChestBlockEntity::lidAnimateTick`.
+    ///
+    /// Chests have no `open` block state, so without this ticker the lid never
+    /// animates and the chest looks permanently shut even while it is open.
+    fn get_block_entity_ticker(
+        &self,
+        _world: &Arc<World>,
+        _state: BlockStateId,
+        block_entity_type: BlockEntityTypeRef,
+    ) -> Option<BlockEntityTicker> {
+        // Vanilla registers the same ticker for the plain and trapped chest.
+        if block_entity_type == &vanilla_block_entity_types::CHEST
+            || block_entity_type == &vanilla_block_entity_types::TRAPPED_CHEST
+        {
+            Some(BlockEntityTicker::for_entity_tick(block_entity_type))
+        } else {
+            None
+        }
     }
 
     fn has_analog_output_signal(&self, _state: BlockStateId) -> bool {

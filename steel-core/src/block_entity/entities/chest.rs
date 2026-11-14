@@ -33,6 +33,51 @@ use crate::world::World;
 /// Number of slots in a single chest block (3 rows of 9).
 pub const CHEST_SLOTS: usize = 27;
 
+/// Vanilla `ChestLidController.shouldBeOpen` latch: how many ticks the lid stays
+/// open after the last viewer closed (10 ticks, i.e. half a second).
+const LID_KEEP_OPEN_TICKS: i32 = 10;
+
+/// Vanilla `ChestBlockEntity.eventId` value for the lid animation.
+///
+/// The client animates a chest lid from this block event; without it the lid
+/// snaps instead of swinging.
+const LID_EVENT_ID: i32 = 1;
+
+/// Vanilla `LidBlockEntity.getOpenNess`.
+///
+/// The client is never told the lid angle: it re-derives it from the event, the
+/// same way the server does here so other code can query it.
+#[derive(Debug, Default)]
+struct ChestLidController {
+    should_be_open: bool,
+    open: bool,
+    open_ticks: f32,
+    ticks_since_last_open: i32,
+}
+
+impl ChestLidController {
+    /// Vanilla `ChestLidController.tickLid`.
+    fn tick_lid(&mut self, openers: i32) {
+        self.should_be_open |= openers > 0;
+        self.ticks_since_last_open += 1;
+        if !self.should_be_open && self.ticks_since_last_open > LID_KEEP_OPEN_TICKS {
+            self.open = false;
+        } else {
+            self.open = true;
+            self.ticks_since_last_open = 0;
+        }
+
+        // Vanilla lerps the angle by 0.1 per tick and clamps it to [0, 1].
+        let target = if self.open { 1.0 } else { 0.0 };
+        let delta = (target - self.open_ticks).clamp(-0.1, 0.1);
+        self.open_ticks = (self.open_ticks + delta).clamp(0.0, 1.0);
+
+        if self.open_ticks < 0.5 && self.should_be_open {
+            self.should_be_open = false;
+        }
+    }
+}
+
 /// Chest block entity.
 pub struct ChestBlockEntity {
     base: Arc<BlockEntityBase>,
@@ -42,6 +87,8 @@ pub struct ChestBlockEntity {
     /// Loot state for chests placed by a structure template, which carry a
     /// `LootTable` instead of items.
     loot: SyncMutex<RandomizableContainer>,
+    /// Vanilla `ChestBlockEntity.chestLidController`.
+    lid: SyncMutex<ChestLidController>,
 }
 
 pub(crate) struct ChestContainer {
@@ -85,6 +132,7 @@ impl ChestBlockEntity {
                 &steel_registry::sound_events::BLOCK_CHEST_CLOSE,
             ),
             loot: SyncMutex::new(RandomizableContainer::none()),
+            lid: SyncMutex::new(ChestLidController::default()),
         }
     }
 
@@ -126,6 +174,24 @@ impl ChestBlockEntity {
 impl BlockEntity for ChestBlockEntity {
     fn base(&self) -> &BlockEntityBase {
         &self.base
+    }
+
+    /// Vanilla `ChestBlockEntity.tick`.
+    ///
+    /// A chest has no `open` block state; the lid is animated purely by the
+    /// block event the server broadcasts when the lid starts to move, so the
+    /// only work here is driving the lid controller and emitting event 1 on the
+    /// transition.
+    fn tick(&self, world: &Arc<World>) {
+        let mut lid = self.lid.lock();
+        let was_open = lid.open;
+        lid.tick_lid(self.openers_counter.openers());
+        // Vanilla broadcasts the event whenever `shouldBeOpen` or `open`
+        // changes, which for a closed chest is exactly once per open.
+        if lid.open != was_open {
+            let pos = self.get_block_pos();
+            world.block_event(pos, self.base.block_state().get_block(), LID_EVENT_ID, 0);
+        }
     }
 
     fn pre_remove_side_effects(&self, pos: BlockPos, _state: BlockStateId) {
@@ -359,5 +425,40 @@ mod tests {
         // emptied chest stays empty instead of refilling on the next open.
         assert!(!chest.unpack_loot());
         assert_eq!(first, chest.container.lock().items);
+    }
+
+    #[test]
+    fn lid_opens_while_viewed_and_closes_after_the_latch() {
+        let mut lid = ChestLidController::default();
+
+        // A viewer opens the chest: the lid starts moving up immediately.
+        lid.tick_lid(1);
+        assert!(lid.open);
+        assert!(lid.open_ticks > 0.0);
+
+        // Ten more ticks with the viewer gone keeps it open (vanilla's latch).
+        for _ in 0..LID_KEEP_OPEN_TICKS {
+            lid.tick_lid(0);
+            assert!(lid.open, "the lid must stay open for the latch window");
+        }
+
+        // Past the latch the lid closes again and the angle returns to 0.
+        for _ in 0..(LID_KEEP_OPEN_TICKS * 3) {
+            lid.tick_lid(0);
+        }
+        assert!(!lid.open);
+        assert_eq!(lid.open_ticks, 0.0);
+    }
+
+    #[test]
+    fn lid_angle_lerps_by_a_tenth_per_tick() {
+        let mut lid = ChestLidController::default();
+        lid.tick_lid(1);
+        // One tick moves the angle by vanilla's 0.1 step, never a snap.
+        assert!((lid.open_ticks - 0.1).abs() < f32::EPSILON);
+        for _ in 0..20 {
+            lid.tick_lid(1);
+        }
+        assert!((lid.open_ticks - 1.0).abs() < f32::EPSILON);
     }
 }
