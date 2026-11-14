@@ -362,8 +362,6 @@ mod tests {
     fn every_core_is_used_by_the_cpu_bound_pools() {
         // Idle cores are wasted cores: the CPU-bound pools must add up to the
         // budget, not to less.
-        // Idle cores are wasted cores: the CPU-bound pools must add up to the
-        // budget, not to less.
         for cores in 3..=256 {
             let sizes = pool_sizes_for_available(cores);
             assert_eq!(
