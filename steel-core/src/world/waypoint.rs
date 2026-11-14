@@ -54,6 +54,12 @@ impl WaypointManager {
     /// Called once per world tick; the diff keeps packet volume at vanilla levels
     /// by only emitting `track`/`update`/`untrack` when the state actually moved.
     pub fn tick(&self, world: &Arc<World>) {
+        // Vanilla `ServerWaypointManager.tick` runs only when the `locatorBar`
+        // game rule is on; with it off no waypoint packet is ever transmitted.
+        if !world.get_game_rule(&steel_registry::vanilla_game_rules::LOCATOR_BAR) {
+            return;
+        }
+
         let mut observers = Vec::new();
         world.players.iter_players(|_uuid, player| {
             observers.push(Arc::clone(player));
