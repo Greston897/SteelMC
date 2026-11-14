@@ -23,9 +23,9 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal, MoveTowardsRestrictionGoal,
-    OpenDoorGoal, PanicGoal, RandomLookAroundGoal, RestrictOpenDoorGoal,
-    WaterAvoidingRandomStrollGoal,
+    AvoidEntityGoal, BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal,
+    MoveTowardsRestrictionGoal, OpenDoorGoal, PanicGoal, RandomLookAroundGoal,
+    RestrictOpenDoorGoal, SleepInBedGoal, WaterAvoidingRandomStrollGoal,
 };
 
 use crate::entity::damage::DamageSource;
@@ -43,6 +43,15 @@ use crate::physics::MoveResult;
 use crate::world::World;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
+
+/// Vanilla `Villager.registerGoals` avoidance selector.
+///
+/// Vanilla avoids the whole `Zombie` class, which covers husks, drowned, zombie
+/// villagers and zombified piglins, so the generated class-hierarchy flag is the
+/// right test rather than a single entity-type comparison.
+fn is_zombie(entity: &dyn crate::entity::Entity, _world: &World) -> bool {
+    entity.entity_type().is_zombie
+}
 
 #[entity_behavior(class = "Villager")]
 /// The vanilla villager (profession, type and level live in the synced data).
@@ -97,6 +106,12 @@ impl VillagerEntity {
             let mut goal_selector = mob_base.goal_selector().lock();
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
             goal_selector.add_goal(1, PanicGoal::new(2.0));
+            // Vanilla `Villager.registerGoals`: `AvoidEntityGoal<Zombie>` at
+            // priority 1 with an 8 block radius and 0.6 speed modifiers.
+            goal_selector.add_goal(
+                1,
+                AvoidEntityGoal::with_selector(8.0, 0.6, 0.6, is_zombie),
+            );
             goal_selector.add_goal(2, BreedGoal::new(1.0));
             // Vanilla `Villager.registerGoals` walks back toward its home POI and
             // opens doors on the way, so a villager that strayed still returns.
@@ -106,6 +121,9 @@ impl VillagerEntity {
             // a villager inside its village shuts doors a raider is holding open.
             goal_selector.add_goal(3, RestrictOpenDoorGoal::new());
             goal_selector.add_goal(4, FollowParentGoal::new(1.25));
+            // Vanilla `Villager.eatAndDigestFood`/`SleepInBedGoal` keeps a villager
+            // in its bed from dusk to dawn instead of wandering all night.
+            goal_selector.add_goal(0, SleepInBedGoal::new());
             goal_selector.add_goal(5, WaterAvoidingRandomStrollGoal::new(1.0));
             goal_selector.add_goal(6, LookAtPlayerGoal::new(6.0));
             goal_selector.add_goal(7, RandomLookAroundGoal::new());

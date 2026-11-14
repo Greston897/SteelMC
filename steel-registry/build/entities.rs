@@ -221,6 +221,12 @@ pub(crate) fn build() -> TokenStream {
             .class_hierarchy
             .iter()
             .any(|class| class.simple_name == "AbstractNautilus");
+        // Vanilla `Zombie` and its subtypes (husk, drowned, zombie villager,
+        // zombified piglin, ...) are what `Villager.registerGoals` avoids.
+        let is_zombie = entity_type
+            .class_hierarchy
+            .iter()
+            .any(|class| class.simple_name == "Zombie");
 
         // Flags (with defaults for entities that don't have them, like fishing_bobber)
         let flags = entity_type.flags.as_ref();
@@ -285,6 +291,7 @@ pub(crate) fn build() -> TokenStream {
                 is_projectile: #is_projectile,
                 is_abstract_arrow: #is_abstract_arrow,
                 is_abstract_hurting_projectile: #is_abstract_hurting_projectile,
+                is_zombie: #is_zombie,
                 is_abstract_horse: #is_abstract_horse,
                 is_abstract_nautilus: #is_abstract_nautilus,
                 flags: EntityFlags {

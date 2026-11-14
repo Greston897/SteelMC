@@ -338,6 +338,9 @@ pub struct EntityType {
     pub is_abstract_horse: bool,
     /// Whether vanilla class hierarchy makes this entity an `AbstractNautilus`.
     pub is_abstract_nautilus: bool,
+    /// Whether this type descends from vanilla `Zombie` (zombie, husk, drowned,
+    /// zombie villager, zombified piglin, ...). Villagers avoid these.
+    pub is_zombie: bool,
 
     /// Behavioral flags for collision and interaction.
     pub flags: EntityFlags,
