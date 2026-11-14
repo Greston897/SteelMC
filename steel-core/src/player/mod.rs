@@ -2127,6 +2127,9 @@ impl Player {
 
         self.clear_fire();
         self.set_ticks_frozen(0);
+        // Vanilla `ServerPlayer.die` ends with `getCombatTracker().recheckStatus()`
+        // so the death always closes out combat before the respawn screen shows.
+        self.recheck_combat_status();
 
         if world.get_game_rule(&IMMEDIATE_RESPAWN) {
             self.respawn();
@@ -2965,6 +2968,13 @@ impl LivingEntity for Player {
             entity_id: self.id(),
             yaw: hurt_dir as f32,
         });
+    }
+
+    /// Vanilla `ServerPlayer.tickCount` is the player's own counter, not the
+    /// shared `EntityBase` one; the combat tracker compares damage times against
+    /// it, so the trait default must be overridden here.
+    fn tick_count(&self) -> i32 {
+        self.tick_count()
     }
 
     fn tick_living_entity(&self, entity: &SharedEntity) {

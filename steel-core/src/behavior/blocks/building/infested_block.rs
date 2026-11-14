@@ -17,13 +17,15 @@ use steel_utils::{BlockPos, BlockStateId};
 
 use glam::DVec3;
 use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_block_tags::BlockTag;
+use steel_registry::vanilla_fluid_tags::FluidTag;
 use steel_registry::{vanilla_blocks, vanilla_entities, vanilla_items};
 
 use crate::behavior::BlockBehavior;
 use crate::behavior::block::BlockEntityCreation;
 use crate::block_entity::SharedBlockEntity;
 use crate::block_entity::entities::CopperGolemStatueBlockEntity;
-use crate::entity::{ENTITIES, next_entity_id};
+use crate::entity::{ENTITIES, Entity, InsideBlockEffectCollector, next_entity_id};
 use crate::behavior::BlockPlaceContext;
 use crate::world::{LevelReader, ScheduledTickAccess, World};
 
@@ -202,6 +204,25 @@ const FROGSPAWN_MIN_HATCH_DELAY: i32 = 3600;
 const FROGSPAWN_MAX_HATCH_DELAY: i32 = 12000;
 
 impl FrogspawnBlock {
+    /// Vanilla `FrogspawnBlock.destroyBlock`: no drops, no xp, just air.
+    fn destroy(world: &Arc<World>, pos: BlockPos) {
+        world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+    }
+
+    /// Vanilla `FrogspawnBlock.mayPlaceOn`: the block below must be in
+    /// `BlockTags.SUPPORTS_FROGSPAWN` or carry a fluid in
+    /// `FluidTags.SUPPORTS_FROGSPAWN`, and no fluid may sit above the spawn.
+    fn may_place_on(world: &dyn LevelReader, pos: BlockPos) -> bool {
+        let below = world.get_block_state(pos);
+        let below_fluid = crate::fluid::get_fluid_state_from_block(below);
+        let above_fluid =
+            crate::fluid::get_fluid_state_from_block(world.get_block_state(pos.above()));
+
+        (below_fluid.fluid_id.has_tag(&FluidTag::SUPPORTS_FROGSPAWN)
+            || below.get_block().has_tag(&BlockTag::SUPPORTS_FROGSPAWN))
+            && above_fluid.is_empty()
+    }
+
     /// Vanilla `FrogspawnBlock.getFrogspawnHatchDelay`.
     fn hatch_delay() -> i32 {
         rand::random_range(FROGSPAWN_MIN_HATCH_DELAY..FROGSPAWN_MAX_HATCH_DELAY)
@@ -251,10 +272,29 @@ impl BlockBehavior for FrogspawnBlock {
         Some(self.block.default_state())
     }
 
+    /// Vanilla `FrogspawnBlock.canSurvive`: `mayPlaceOn(level, pos.below())`.
     fn can_survive(&self, _state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
-        world.get_block_state(pos.below()).is_solid()
+        Self::may_place_on(world, pos.below())
     }
 
+    /// Vanilla `FrogspawnBlock.entityInside`: a falling block on the spawn
+    /// destroys it.
+    fn entity_inside(
+        &self,
+        _state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        entity: &dyn Entity,
+        _effect_collector: &mut InsideBlockEffectCollector,
+        _is_precise: bool,
+    ) {
+        if entity.entity_type() == &vanilla_entities::FALLING_BLOCK {
+            Self::destroy(world, pos);
+        }
+    }
+}
+
+impl FrogspawnBlock {
     /// Vanilla `FrogspawnBlock.onPlace`: schedule the hatch tick.
     fn on_place(
         &self,
@@ -270,22 +310,24 @@ impl BlockBehavior for FrogspawnBlock {
     /// Vanilla `FrogspawnBlock.tick`: hatch, or break when the support is gone.
     fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
         if !self.can_survive(state, world.as_ref(), pos) {
-            world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+            Self::destroy(world, pos);
             return;
         }
         Self::hatch(world, pos);
     }
 
+    /// Vanilla `FrogspawnBlock.updateShape` checks `canSurvive` for every
+    /// neighbour, not just the block below.
     fn update_shape(
         &self,
         state: BlockStateId,
         world: &dyn ScheduledTickAccess,
         pos: BlockPos,
-        direction: Direction,
+        _direction: Direction,
         _neighbor_pos: BlockPos,
         _neighbor_state: BlockStateId,
     ) -> BlockStateId {
-        if direction == Direction::Down && !self.can_survive(state, world, pos) {
+        if !self.can_survive(state, world, pos) {
             return REGISTRY.blocks.get_default_state_id(&steel_registry::vanilla_blocks::AIR);
         }
         state
@@ -856,6 +898,41 @@ mod tests {
         assert!(
             !behavior.can_survive(state, &level, pos),
             "frogspawn over air must not survive, matching vanilla `mayPlaceOn`"
+        );
+    }
+
+    #[test]
+    fn frogspawn_needs_support_below_and_no_fluid_above() {
+        init_vanilla_registry();
+        let pos = BlockPos::new(0, 64, 0);
+        let above = BlockPos::new(0, 65, 0);
+        let state = vanilla_blocks::FROGSPAWN.default_state();
+        let behavior = FrogspawnBlock::new(&vanilla_blocks::FROGSPAWN);
+
+        // Vanilla `BlockTags.SUPPORTS_FROGSPAWN` is empty and the fluid tag holds
+        // only water, so a solid (non-water) floor never supports frogspawn.
+        let stone = TestLevel::default()
+            .with_block(pos.below(), vanilla_blocks::STONE.default_state());
+        assert!(
+            !behavior.can_survive(state, &stone, pos),
+            "stone is not in `SUPPORTS_FROGSPAWN`, matching the empty vanilla block tag"
+        );
+
+        // Water below is the only vanilla support.
+        let water = TestLevel::default()
+            .with_block(pos.below(), vanilla_blocks::WATER.default_state());
+        assert!(
+            behavior.can_survive(state, &water, pos),
+            "water is in `FluidTags.SUPPORTS_FROGSPAWN`"
+        );
+
+        // A fluid above the spawn blocks placement even over water.
+        let water_above = TestLevel::default()
+            .with_block(pos.below(), vanilla_blocks::WATER.default_state())
+            .with_block(above, vanilla_blocks::WATER.default_state());
+        assert!(
+            !behavior.can_survive(state, &water_above, pos),
+            "vanilla requires `fluidAbove.is(Fluids.EMPTY)`"
         );
     }
 }

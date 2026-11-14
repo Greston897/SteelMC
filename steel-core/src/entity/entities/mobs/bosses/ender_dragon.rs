@@ -3,9 +3,15 @@
 //! The end boss. Vanilla cycles through ten `Phase` values driving its flight,
 //! breath attacks and crystal healing.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
-//! * the flight phase machine, end crystals and the boss bar are not
-//!   implemented; the synced phase is stored but never advanced.
+//! What Steel implements from the vanilla dragon: the boss bar and the fight
+//! bookkeeping (`EnderDragonFight.updateDragon` / `setDragonKilled`) are wired
+//! through `World::update_dragon_fight` and `World::on_dragon_killed`, and the
+//! dragon registers itself as the fight's dragon on its first tick so end
+//! crystals relink their beam.
+//!
+//! Deviation (documented in `STATE-26.3-RU.md`): the ten-value flight `Phase`
+//! machine and the dragon's breath/pathfinders are not implemented; the synced
+//! phase is stored but never advanced.
 use std::iter::empty;
 use std::sync::Weak;
 
@@ -113,6 +119,28 @@ impl EnderDragonEntity {
         self.entity_data.lock().phase.set(phase);
     }
 
+    /// Vanilla `EnderDragon.tick`: the fight's dragon registers itself and the
+    /// boss bar follows the dragon's health each tick.
+    fn tick_dragon_fight(&self) {
+        let Some(world) = self.level() else {
+            return;
+        };
+        if self.is_removed() || !self.is_alive() {
+            return;
+        }
+        let position = self.block_position();
+        if world.dragon_fight.dragon_target() != Some(position.0) {
+            world.dragon_fight.set_dragon(Some(position.0));
+        }
+        let max_health = self.get_max_health();
+        let fraction = if max_health > 0.0 {
+            self.get_health() / max_health
+        } else {
+            0.0
+        };
+        world.update_dragon_fight(fraction);
+    }
+
     fn update_dirty_mob_effect_entity_data(&self) {
         sync_dirty_mob_effects(&self.living_base, &self.entity_data);
     }
@@ -143,6 +171,7 @@ impl Entity for EnderDragonEntity {
 
     fn base_tick(&self) {
         Mob::base_tick_mob(self);
+        self.tick_dragon_fight();
     }
 
     fn dimensions_for_pose(&self, _pose: EntityPose) -> EntityDimensions {
@@ -227,6 +256,15 @@ impl LivingEntity for EnderDragonEntity {
 
     fn should_drop_loot(&self, world: &World) -> bool {
         Monster::should_drop_loot_monster(self, world)
+    }
+
+    fn on_death(&self, _source: &DamageSource) {
+        // Vanilla `EnderDragon.die` (via `ServerLevel`'s dragon handling) hands
+        // the kill to the fight, which opens the exit portal and drops the egg.
+        // `World::on_dragon_killed` is a no-op outside the End.
+        if let Some(world) = self.level() {
+            world.on_dragon_killed();
+        }
     }
 
     fn server_ai_step(&self, entity: &SharedEntity) {

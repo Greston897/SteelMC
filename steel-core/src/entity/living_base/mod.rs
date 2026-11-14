@@ -1582,21 +1582,6 @@ impl LivingEntityBase {
         })
     }
 
-    /// Vanilla death/respawn path: a fresh `CombatTracker` starts out of combat.
-    ///
-    /// Returns `true` when the entity was in combat and therefore still owes an
-    /// `onLeaveCombat` call to whoever mirrors that state.
-    pub fn reset_combat(&self, tick_count: i32) -> bool {
-        let mut state = self.state.lock();
-        let was_in_combat = state.in_combat;
-        state.in_combat = false;
-        state.taking_damage = false;
-        state.combat_last_damage_time = 0;
-        state.combat_start_time = tick_count;
-        state.combat_end_time = tick_count;
-        was_in_combat
-    }
-
     /// Returns whether vanilla's combat tracker currently has this entity in combat.
     #[must_use]
     pub fn is_in_combat(&self) -> bool {

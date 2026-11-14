@@ -57,6 +57,16 @@ impl BossBar {
     }
 }
 
+/// Registry id Steel uses for the Ender Dragon fight's bar, matching the id
+/// vanilla's `EnderDragonFight` shows under the `boss` command namespace.
+pub const DRAGON_BAR_ID: &str = "dragon";
+
+/// Stable wire id for the dragon bar, so the client keeps one bar across fights.
+#[must_use]
+pub fn dragon_bar_uuid() -> Uuid {
+    Uuid::new_v5(&Uuid::NAMESPACE_OID, b"steel:ender_dragon")
+}
+
 /// Registry of every live boss bar, keyed by command-visible id.
 #[derive(Debug, Default)]
 pub struct BossBarRegistry {

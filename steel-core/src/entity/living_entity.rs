@@ -1008,6 +1008,14 @@ pub trait LivingEntity: Entity {
         }
     }
 
+    /// Vanilla `CombatTracker.recheckStatus`, using the entity's own tick count.
+    ///
+    /// Called from `die` (vanilla `LivingEntity.die` and, through `Player::die`,
+    /// `ServerPlayer.die`) so a death always closes open combat.
+    fn recheck_combat_status(&self) {
+        self.tick_combat_status(self.tick_count());
+    }
+
     /// Returns whether vanilla's combat tracker has this entity in combat.
     fn is_in_combat(&self) -> bool {
         self.living_base().is_in_combat()
@@ -1220,6 +1228,10 @@ pub trait LivingEntity: Entity {
         }
 
         self.handle_killing_blow();
+        // Vanilla `LivingEntity.die` calls `getCombatTracker().recheckStatus()`
+        // right after the killing blow: the tracker sees `!isAlive()` and closes
+        // out combat, which is what sends `ClientboundPlayerCombatEndPacket`.
+        self.recheck_combat_status();
 
         // Can't directly use &self for &dyn LivingEntity, as the compiler doesn't know if it's Sized.
         // Using a function meant for getting &dyn LivingEntity directly works well here.

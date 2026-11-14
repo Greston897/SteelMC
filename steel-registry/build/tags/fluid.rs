@@ -7,7 +7,12 @@ use super::common;
 pub(crate) fn build() -> TokenStream {
     let tag_dir = "../steel-utils/build_assets/builtin_datapacks/minecraft/tags/fluid";
     println!("cargo:rerun-if-changed={tag_dir}");
-    let all_tags = common::read_all_tags(tag_dir);
+    // Vanilla tags the code references but the extracted datapack snapshot is
+    // not guaranteed to carry (`build_assets/vanilla_tags` mirrors
+    // `data/minecraft/tags/fluid`). Loaded first so the extracted snapshot wins
+    // on name collisions.
+    let mut all_tags = common::read_all_tags("build_assets/vanilla_tags/fluid");
+    all_tags.extend(common::read_all_tags(tag_dir));
     let sorted_tags = common::resolve_all_tags(&all_tags);
 
     let mut stream = TokenStream::new();

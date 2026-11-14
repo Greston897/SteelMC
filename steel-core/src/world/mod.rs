@@ -30,11 +30,11 @@ use steel_utils::saved_data::{SavedDataManager, names as saved_data_names};
 use glam::DVec3;
 use sha2::{Digest, Sha256};
 use steel_protocol::packets::game::{
-    CBlockDestruction, CChangeDifficulty, CGameEvent, CInitializeBorder, CLevelEvent,
+    CBlockDestruction, CBossEvent, CChangeDifficulty, CGameEvent, CInitializeBorder, CLevelEvent,
     CLevelParticles, CPlayerChat, CProjectilePower, CSetBorderCenter, CSetBorderLerpSize,
     CSetBorderSize, CSetBorderWarningDelay, CSetBorderWarningDistance, CSetEntityData,
     CSetEntityLink, CSetEquipment, CSound, CSoundEntity, CSystemChat, CUpdateAttributes,
-    GameEventType, RandomizationType, SoundSource,
+    BossEventAction, BossBarColor, BossBarOverlay, GameEventType, RandomizationType, SoundSource,
 };
 use steel_protocol::utils::ConnectionProtocol;
 use steel_protocol::{
@@ -670,6 +670,124 @@ impl World {
             return;
         }
         self.dragon_fight.try_respawn(pos.0);
+    }
+
+    /// Vanilla `EnderDragonFight.updateDragon`: the live dragon feeds the boss bar.
+    ///
+    /// Called from the dragon's tick; returns whether this dragon owns the fight.
+    pub fn update_dragon_fight(self: &Arc<Self>, health_fraction: f32) -> bool {
+        if !self.is_end_dimension_type() {
+            return false;
+        }
+        let owns = self.dragon_fight.update_dragon(health_fraction);
+        if owns {
+            self.sync_dragon_boss_bar();
+        }
+        owns
+    }
+
+    /// Publishes the fight state to the server's boss-bar registry, which is what
+    /// actually reaches clients.
+    ///
+    /// Vanilla's `ServerPlayer.sendBossEvent` only writes the wire when a field
+    /// actually changed, so this keeps the previous definition and skips the
+    /// update when the dragon's health fraction is unchanged.
+    fn sync_dragon_boss_bar(self: &Arc<Self>) {
+        let Some(server) = self.server() else {
+            return;
+        };
+        let bar = crate::server::boss_bars::BossBar {
+            uuid: crate::server::boss_bars::dragon_bar_uuid(),
+            name: text_components::TextComponent::translated(
+                text_components::translation::TranslatedMessage {
+                    key: "entity.minecraft.ender_dragon".into(),
+                    fallback: None,
+                    args: None,
+                },
+            ),
+            progress: self.dragon_fight.progress(),
+            color: BossBarColor::Pink,
+            overlay: BossBarOverlay::Progress,
+            flags: 0,
+            visible: self.dragon_fight.bar_visible(),
+        };
+        let previous =
+            server
+                .boss_bars
+                .insert(crate::server::boss_bars::DRAGON_BAR_ID.to_owned(), bar.clone());
+        let Some(previous) = previous else {
+            // A brand new bar has to be pushed in full before updates matter.
+            self.broadcast_to_all::<CBossEvent>(bar.add_packet());
+            return;
+        };
+        if previous.progress == bar.progress && previous.visible == bar.visible {
+            return;
+        }
+        self.broadcast_to_all::<CBossEvent>(CBossEvent {
+            uuid: bar.uuid,
+            action: BossEventAction::UpdateProgress {
+                progress: bar.progress,
+            },
+        });
+    }
+
+    /// Vanilla `EnderDragonFight.setDragonKilled`: empties the bar, opens the
+    /// exit portal, drops the egg on the first kill and hides the bar.
+    pub fn on_dragon_killed(self: &Arc<Self>) {
+        if !self.is_end_dimension_type() {
+            return;
+        }
+        let outcome = self.dragon_fight.set_dragon_killed();
+        if outcome.spawn_exit_portal {
+            self.spawn_end_exit_portal();
+        }
+        if outcome.drop_dragon_egg {
+            self.spawn_dragon_egg();
+        }
+        self.hide_dragon_boss_bar();
+    }
+
+    /// Removes the dragon boss bar from the registry and the clients.
+    fn hide_dragon_boss_bar(self: &Arc<Self>) {
+        let Some(server) = self.server() else {
+            return;
+        };
+        let Some(bar) = server
+            .boss_bars
+            .remove(crate::server::boss_bars::DRAGON_BAR_ID)
+        else {
+            return;
+        };
+        self.broadcast_to_all::<CBossEvent>(bar.remove_packet());
+    }
+
+    /// Vanilla `EnderDragonFight.spawnExitPortal`: the bedrock ring and the end
+    /// portal block on the podium column.
+    fn spawn_end_exit_portal(self: &Arc<Self>) {
+        let podium = dragon_fight::DragonFight::podium_pos();
+        for dx in -2..=2 {
+            for dz in -2..=2 {
+                let pos = BlockPos::new(podium.x() + dx, podium.y(), podium.z() + dz);
+                let ring = dx.abs() == 2 || dz.abs() == 2;
+                let state = if ring {
+                    vanilla_blocks::BEDROCK.default_state()
+                } else {
+                    vanilla_blocks::END_PORTAL.default_state()
+                };
+                self.set_block(pos, state, UpdateFlags::UPDATE_ALL);
+            }
+        }
+    }
+
+    /// Vanilla `EnderDragonFight.setDragonKilled`: the first kill leaves the
+    /// dragon egg one block above the podium.
+    fn spawn_dragon_egg(self: &Arc<Self>) {
+        let podium = dragon_fight::DragonFight::podium_pos();
+        self.set_block(
+            BlockPos::new(podium.x(), podium.y() + 1, podium.z()),
+            vanilla_blocks::DRAGON_EGG.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
     }
 
     /// Returns the domain this loaded world belongs to.
