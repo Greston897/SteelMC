@@ -34,6 +34,28 @@ fn pig_breeding_offspring_inherits_parent_variant() {
     );
 }
 
+/// Vanilla `Mob.tick()` runs `checkDespawn()` every tick; the peaceful branch
+/// discards a mob whose type is not allowed in peaceful worlds.
+#[test]
+fn mob_base_tick_checks_despawn() {
+    init_vanilla_registry();
+
+    let fixture = crate::test_support::fresh_test_world_with_difficulty(
+        "pig_despawn_peaceful",
+        steel_utils::types::Difficulty::Peaceful,
+    );
+    let pig = Arc::new(PigEntity::new(
+        &vanilla_entities::PIG,
+        1,
+        DVec3::ZERO,
+        Arc::downgrade(&fixture.world),
+    ));
+
+    assert!(!crate::entity::Entity::is_removed(pig.as_ref()));
+    Mob::base_tick_mob(pig.as_ref());
+    assert!(crate::entity::Entity::is_removed(pig.as_ref()));
+}
+
 #[test]
 fn pig_mob_ai_increments_no_action_time() {
     init_vanilla_registry();
