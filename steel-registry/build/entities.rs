@@ -23,6 +23,13 @@ struct EntityTypeEntry {
     client_tracking_range: i32,
     update_interval: i32,
     fire_immune: bool,
+    /// Block tag the entity ignores when scanning the floor for danger.
+    ///
+    /// Absent from the extracted `entities.json` for 26.3, so the generator
+    /// emits `None` for every entity; the field exists on `EntityType` for the
+    /// mobs that override `ignoreExplosion`-style checks by block tag.
+    #[serde(default)]
+    immune_to: Option<String>,
     summonable: bool,
     allowed_in_peaceful: bool,
     can_spawn_far_from_player: bool,
@@ -177,6 +184,10 @@ pub(crate) fn build() -> TokenStream {
         // Classification
         let mob_category = mob_category_variant(&entity_type.mob_category);
         let fire_immune = entity_type.fire_immune;
+        let immune_to = entity_type.immune_to.as_ref().map_or_else(
+            || quote! { None },
+            |tag| quote! { Some(Identifier::vanilla_static(#tag)) },
+        );
         let summonable = entity_type.summonable;
         let allowed_in_peaceful = entity_type.allowed_in_peaceful;
         let can_spawn_far = entity_type.can_spawn_far_from_player;
@@ -259,6 +270,7 @@ pub(crate) fn build() -> TokenStream {
                 fixed: #fixed,
                 mob_category: #mob_category,
                 fire_immune: #fire_immune,
+                immune_to: #immune_to,
                 summonable: #summonable,
                 allowed_in_peaceful: #allowed_in_peaceful,
                 can_spawn_far_from_player: #can_spawn_far,
