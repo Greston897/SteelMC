@@ -340,6 +340,20 @@ impl CommandSource {
         }
     }
 
+    /// Vanilla `CommandSourceStack.getDisplayName`: the clickable player name
+    /// for a player source, and the bare name (`Server`, `Rcon`, …) otherwise.
+    ///
+    /// `disguised_chat` sends the sender as a component, so a player needs the
+    /// full `display_name()` (click/hover events included) rather than plain
+    /// text — that is what makes the name clickable in the client chat.
+    pub(crate) fn display_name_component(&self) -> TextComponent {
+        self.player
+            .as_ref()
+            .map_or_else(|| TextComponent::plain(self.source_name()), |p| {
+                p.display_name()
+            })
+    }
+
     pub(crate) const fn entity(&self) -> Option<&SharedEntity> {
         self.entity.as_ref()
     }

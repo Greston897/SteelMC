@@ -4,6 +4,12 @@ use super::{
     TabListTickStats, TextComponent, Uuid, client_permission_event, command_tree_packet,
     translations,
 };
+use std::borrow::Cow;
+
+use steel_protocol::packets::game::{CDisguisedChat, ChatTypeBound};
+use steel_registry::chat_type::{ChatStyle, ChatTypeDecoration, ChatTypeRef};
+use steel_registry::RegistryEntry as _;
+use text_components::translation::TranslatedMessage;
 use crate::scoreboard::Scoreboard;
 
 impl Server {
@@ -16,6 +22,70 @@ impl Server {
             }
             true
         });
+    }
+
+    /// Vanilla `PlayerList.broadcastChatMessage` for a decorated chat type.
+    ///
+    /// `/say`, `/me` and friends reach the client as `disguised_chat`, not as a
+    /// system message: the packet carries the chat type so the *client* applies
+    /// the decoration (translation key, parameters, style) and so the client can
+    /// honour its own chat-visibility setting. Rendering the decoration on the
+    /// server and pushing `system_chat` bypasses both, which is why `/say` used
+    /// to survive "commands only" chat visibility.
+    ///
+    /// Vanilla also logs the decorated line, so the server log keeps showing the
+    /// readable form.
+    pub fn broadcast_decorated_chat(
+        &self,
+        chat_type: ChatTypeRef,
+        content: &TextComponent,
+        sender_name: TextComponent,
+        target_name: Option<TextComponent>,
+    ) {
+        log::info!(
+            "{}",
+            decorated_chat_component(chat_type, &sender_name, target_name.as_ref(), content)
+                .to_plain(&DisplayResolutor)
+        );
+
+        let packet = CDisguisedChat {
+            message: content.clone(),
+            chat_type: ChatTypeBound {
+                registry_id: chat_type.id() as i32,
+                sender_name,
+                target_name,
+            },
+        };
+        self.online_players.iter_players(|_, player| {
+            player.send_packet(packet.clone());
+            true
+        });
+    }
+
+    /// Sends one decorated chat line to an explicit set of players.
+    ///
+    /// Vanilla `PlayerList.broadcastChatMessage(message, filter, recipients)`
+    /// counterpart: used by `/msg`, where the incoming and outgoing variants of
+    /// the same message go to disjoint audiences.
+    pub fn broadcast_decorated_chat_to(
+        &self,
+        chat_type: ChatTypeRef,
+        content: &TextComponent,
+        sender_name: TextComponent,
+        target_name: Option<TextComponent>,
+        recipients: &[Arc<Player>],
+    ) {
+        let packet = CDisguisedChat {
+            message: content.clone(),
+            chat_type: ChatTypeBound {
+                registry_id: chat_type.id() as i32,
+                sender_name,
+                target_name,
+            },
+        };
+        for player in recipients {
+            player.send_packet(packet.clone());
+        }
     }
 
     /// Logs and broadcasts a system chat message, honouring a team's
@@ -249,4 +319,99 @@ impl Server {
             ),
         }
     }
+}
+
+/// Splits a vanilla `ChatTypeDecoration` key into an `en_us` format string.
+///
+/// Vanilla builds the decorated line from the translation key and its
+/// parameters; the server copy is only used for the log line, because the
+/// *client* renders `disguised_chat` itself.
+fn decoration_args(
+    dec: &ChatTypeDecoration,
+    sender: &TextComponent,
+    target: Option<&TextComponent>,
+    content: &TextComponent,
+) -> Vec<TextComponent> {
+    dec.parameters
+        .iter()
+        .map(|name| match *name {
+            "sender" => sender.clone(),
+            "target" => target.cloned().unwrap_or_default(),
+            "content" => content.clone(),
+            other => TextComponent::plain(other.to_string()),
+        })
+        .collect()
+}
+
+/// Vanilla `ChatTypeDecoration.decorate`: resolves the decoration against the
+/// bound sender/target/content and applies the decoration's style.
+///
+/// Only the server-side log line and non-player command feedback need this;
+/// players receive the raw `disguised_chat` and let their own client decorate.
+pub fn decorated_chat_component(
+    chat_type: ChatTypeRef,
+    sender: &TextComponent,
+    target: Option<&TextComponent>,
+    content: &TextComponent,
+) -> TextComponent {
+    let dec = &chat_type.chat;
+
+    let component = TextComponent::translated(TranslatedMessage {
+        key: Cow::Borrowed(dec.translation_key),
+        fallback: None,
+        args: Some(decoration_args(dec, sender, target, content).into_boxed_slice()),
+    });
+
+    apply_chat_style(component, dec.style.as_ref())
+}
+
+/// Applies a vanilla `ChatStyle` to a component, leaving unset flags alone.
+fn apply_chat_style(mut component: TextComponent, style: Option<&ChatStyle>) -> TextComponent {
+    let Some(style) = style else {
+        return component;
+    };
+    if let Some(color) = style.color
+        && let Some(color) = parse_chat_color(color)
+    {
+        component = component.color(color);
+    }
+    if let Some(bold) = style.bold {
+        component = component.bold(bold);
+    }
+    if let Some(italic) = style.italic {
+        component = component.italic(italic);
+    }
+    if let Some(underlined) = style.underlined {
+        component = component.underlined(underlined);
+    }
+    if let Some(strikethrough) = style.strikethrough {
+        component = component.strikethrough(strikethrough);
+    }
+    if let Some(obfuscated) = style.obfuscated {
+        component = component.obfuscated(obfuscated);
+    }
+    component
+}
+
+/// Maps a data-pack colour name (`red`, `#ff0000`) to [`Color`].
+fn parse_chat_color(name: &str) -> Option<Color> {
+    Some(match name {
+        "aqua" => Color::Aqua,
+        "black" => Color::Black,
+        "blue" => Color::Blue,
+        "dark_aqua" => Color::DarkAqua,
+        "dark_blue" => Color::DarkBlue,
+        "dark_gray" => Color::DarkGray,
+        "dark_green" => Color::DarkGreen,
+        "dark_purple" => Color::DarkPurple,
+        "dark_red" => Color::DarkRed,
+        "gold" => Color::Gold,
+        "gray" => Color::Gray,
+        "green" => Color::Green,
+        "light_purple" => Color::LightPurple,
+        "red" => Color::Red,
+        "white" => Color::White,
+        "yellow" => Color::Yellow,
+        _ => Color::from_hex(name)?,
+    })
 }

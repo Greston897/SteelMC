@@ -1,10 +1,8 @@
 //! Vanilla `/say` and `/me` broadcast commands.
 
-use std::borrow::Cow;
-
+use steel_registry::vanilla_chat_types;
 use steel_utils::Identifier;
 use text_components::TextComponent;
-use text_components::translation::TranslatedMessage;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
@@ -33,37 +31,30 @@ fn me_command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         .then(argument("action", ArgumentType::greedy_string()).executes(broadcast_me))
 }
 
-fn translated(key: &str, args: Vec<TextComponent>) -> TextComponent {
-    TextComponent::translated(TranslatedMessage {
-        key: Cow::Owned(key.to_owned()),
-        fallback: None,
-        args: Some(args.into_boxed_slice()),
-    })
-}
-
-/// Vanilla `SayCommand`: `[sender] message` broadcast to every player.
+/// Vanilla `SayCommand`: broadcast through `minecraft:say_command`.
+///
+/// The chat type carries the `[sender] message` decoration, so the server sends
+/// the plain message body and lets the client format it — that is what makes
+/// `/say` respect the client's chat-visibility setting.
 fn broadcast_say(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
-    let message = context.string("message")?;
-    let sender = context.source().source_name();
-    let content = TextComponent::plain(format!("[{sender}] {message}"));
-    context
-        .source()
-        .server()
-        .broadcast_system_chat(&content, None);
+    let message = context.string("message")?.to_owned();
+    context.source().server().broadcast_decorated_chat(
+        &vanilla_chat_types::SAY_COMMAND,
+        &TextComponent::plain(message),
+        context.source().display_name_component(),
+        None,
+    );
     Ok(1)
 }
 
-/// Vanilla `MeCommand`: `chat.type.emote` with the sender and the action.
+/// Vanilla `MeCommand`: broadcast through `minecraft:emote_command`.
 fn broadcast_me(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let action = context.string("action")?.to_owned();
-    let sender = TextComponent::plain(context.source().source_name());
-    let content = translated(
-        "chat.type.emote",
-        vec![sender, TextComponent::plain(action)],
+    context.source().server().broadcast_decorated_chat(
+        &vanilla_chat_types::EMOTE_COMMAND,
+        &TextComponent::plain(action),
+        context.source().display_name_component(),
+        None,
     );
-    context
-        .source()
-        .server()
-        .broadcast_system_chat(&content, None);
     Ok(1)
 }

@@ -6,8 +6,9 @@
 //! palette entry for the containing cell.
 
 use std::borrow::Cow;
+use steel_protocol::packets::game::{CChunksBiomes, ChunkBiomeData};
 use steel_registry::vanilla_game_rules::MAX_BLOCK_MODIFICATIONS;
-use steel_utils::{BlockPos, BoundingBox, Identifier};
+use steel_utils::{BlockPos, BoundingBox, ChunkPos, Identifier};
 use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
 
@@ -20,8 +21,6 @@ use super::super::{
     registration::CommandRegistration,
 };
 use super::execute::{ensure_region_chunks_block_ticking, loaded_block_position};
-use steel_protocol::packets::game::{CChunksBiomes, ChunkBiomeData};
-use steel_utils::ChunkPos;
 
 type Builder = CommandNodeBuilder<CommandSource, SteelCommandRuntime>;
 

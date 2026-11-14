@@ -1,11 +1,9 @@
 //! Vanilla `/msg` (aliases `tell`, `w`) private-message command.
 
-use std::borrow::Cow;
-
-use steel_protocol::packets::game::CSystemChat;
+use crate::entity::Entity;
+use steel_registry::vanilla_chat_types;
 use steel_utils::Identifier;
 use text_components::TextComponent;
-use text_components::translation::TranslatedMessage;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
@@ -30,46 +28,52 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     )
 }
 
-fn translated(key: &str, args: Vec<TextComponent>) -> TextComponent {
-    TextComponent::translated(TranslatedMessage {
-        key: Cow::Owned(key.to_owned()),
-        fallback: None,
-        args: Some(args.into_boxed_slice()),
-    })
-}
-
-/// Vanilla `MsgCommand`: the sender sees `commands.message.display.outgoing`,
-/// each recipient sees `commands.message.display.incoming`.
+/// Vanilla `MsgCommand`: every recipient sees `minecraft:msg_command_incoming`,
+/// the sender sees `minecraft:msg_command_outgoing`.
+///
+/// Both go through `disguised_chat`: the chat type carries the decoration and
+/// the `target` parameter, so the *client* renders "you whisper to X" instead
+/// of the server pre-formatting a system message.
 fn send_message(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let targets = context.players("targets")?;
     let message = context.string("message")?.to_owned();
-    let sender = context.source().source_name();
-    let sender_component = TextComponent::plain(sender.clone());
-    let body = TextComponent::plain(message.clone());
+    let source = context.source();
+    let server = source.server();
+    let sender_component = source.display_name_component();
+    let body = TextComponent::plain(message);
 
     for target in &targets {
-        target.send_packet(CSystemChat {
-            content: translated(
-                "commands.message.display.incoming",
-                vec![sender_component.clone(), body.clone()],
-            ),
-            overlay: false,
-        });
+        server.broadcast_decorated_chat_to(
+            &vanilla_chat_types::MSG_COMMAND_INCOMING,
+            &body,
+            sender_component.clone(),
+            None,
+            std::slice::from_ref(target),
+        );
     }
 
-    context.source().send_success(
-        &translated(
-            "commands.message.display.outgoing",
-            vec![
-                TextComponent::plain(
-                    targets
-                        .first()
-                        .map_or_else(|| "?".to_owned(), |p| p.gameprofile.name().to_owned()),
-                ),
-                body,
-            ],
+    // Vanilla sends the outgoing line to the sender only, with the target name
+    // resolved to the first recipient. A console/Rcon sender has no chat window,
+    // so its "outgoing" line goes to the command feedback (as vanilla does for
+    // any non-player source).
+    let outgoing_target = targets.first().map(|target| target.display_name());
+    match source.player() {
+        Some(player) => server.broadcast_decorated_chat_to(
+            &vanilla_chat_types::MSG_COMMAND_OUTGOING,
+            &body,
+            sender_component,
+            outgoing_target,
+            std::slice::from_ref(player),
         ),
-        false,
-    );
+        None => source.send_success(
+            &crate::server::broadcasting::decorated_chat_component(
+                &vanilla_chat_types::MSG_COMMAND_OUTGOING,
+                &sender_component,
+                outgoing_target.as_ref(),
+                &body,
+            ),
+            false,
+        ),
+    }
     Ok(i32::try_from(targets.len()).unwrap_or(0))
 }
