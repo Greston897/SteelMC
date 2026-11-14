@@ -799,6 +799,7 @@ mod reference;
 mod registry;
 pub(crate) mod selector;
 pub(crate) mod natural_spawner;
+pub(crate) mod phantom_spawner;
 mod spawn;
 mod spawn_placements;
 mod storage;

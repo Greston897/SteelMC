@@ -968,6 +968,18 @@ impl Player {
         }
     }
 
+    /// Returns the value of a custom statistic for this player.
+    ///
+    /// Vanilla `ServerPlayer.getStats().getValue(Stats.CUSTOM.get(...))`.
+    #[must_use]
+    pub fn custom_stat(&self, stat: steel_registry::stat::custom::CustomStatRef) -> i32 {
+        self.stats
+            .lock()
+            .stats
+            .get(&vanilla_stat_types::CUSTOM.get(stat))
+            .map_or(0, |(count, _)| *count)
+    }
+
     /// Ticks to award stats that are awarded based on ticks.
     fn tick_stats(&self) {
         // These stats are expressed in ticks.

@@ -264,6 +264,8 @@ pub struct World {
     pub raids: raid::RaidManager,
     /// Vanilla `WanderingTraderSpawner` schedule and the one-trader guard.
     wandering_traders: SyncMutex<wandering_trader_spawner::WanderingTraderSpawner>,
+    /// Vanilla `PhantomSpawner` countdown for the next insomnia attempt.
+    phantoms: SyncMutex<crate::entity::phantom_spawner::PhantomSpawner>,
     /// Vanilla `EnderDragonFight` state for this world (only meaningful in the End).
     pub dragon_fight: dragon_fight::DragonFight,
     /// Spatial index for player proximity queries.
@@ -498,6 +500,7 @@ impl World {
                 waypoints: waypoint::WaypointManager::new(),
                 raids,
                 wandering_traders: SyncMutex::new(wandering_traders),
+                phantoms: SyncMutex::new(crate::entity::phantom_spawner::PhantomSpawner::new()),
                 dragon_fight: dragon_fight::DragonFight::new(),
                 player_area_map: PlayerAreaMap::new(),
                 server: std::sync::OnceLock::new(),
@@ -779,6 +782,7 @@ impl World {
             // custom spawners, once per tick; its own 1200-tick schedule makes
             // the call cheap on the other 1199.
             self.tick_wandering_trader_spawner();
+            self.tick_phantom_spawner();
         }
 
         {
@@ -881,6 +885,23 @@ impl World {
     /// Returns the number of chunks saved.
     pub async fn save_all_chunks(&self) -> io::Result<usize> {
         self.chunk_map.save_all_chunks().await
+    }
+
+    /// Runs vanilla `PhantomSpawner.tick` for this world.
+    pub fn tick_phantom_spawner(self: &Arc<Self>) {
+        let world = Arc::clone(self);
+        let mut spawner = self.phantoms.lock();
+        spawner.tick(&world);
+    }
+
+    /// Whether phantoms may spawn in this world at all.
+    ///
+    /// Vanilla registers `PhantomSpawner` for the Overworld only. Steel tests the
+    /// sky instead of the dimension identity, so a datapack dimension with a sky
+    /// behaves like the Overworld, as it does for the trader spawner.
+    #[must_use]
+    pub fn allows_phantoms(&self) -> bool {
+        self.dimension_type.has_skylight
     }
 
     /// Runs vanilla `WanderingTraderSpawner.tick` for this world.
