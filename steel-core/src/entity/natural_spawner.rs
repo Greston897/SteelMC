@@ -137,7 +137,7 @@ const SPAWN_CATEGORIES: [MobCategory; 8] = [
 /// startup, so rebuilding (and re-allocating) this list on every 400-tick spawn
 /// pass for every category was pure waste: on a map with ~185 entity types it
 /// walked the whole registry 8 times per pass for no benefit.
-fn natural_spawn_types(category: MobCategory) -> &'static [EntityTypeRef] {
+pub(crate) fn natural_spawn_types(category: MobCategory) -> &'static [EntityTypeRef] {
     static CACHE: OnceLock<[Vec<EntityTypeRef>; 8]> = OnceLock::new();
     let cache = CACHE.get_or_init(|| {
         std::array::from_fn(|index| {
