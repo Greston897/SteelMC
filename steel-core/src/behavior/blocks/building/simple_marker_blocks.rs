@@ -7,7 +7,7 @@
 //! `Block` behavior with a single overridden predicate. Modelling them explicitly
 //! keeps the generated registry complete and makes the differences greppable.
 
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
@@ -17,6 +17,8 @@ use steel_registry::item_stack::ItemStack;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _};
 
 use crate::block_entity::BlockEntity as _;
+use crate::block_entity::entities::{TestBlockEntity, TestInstanceBlockEntity};
+use crate::behavior::block::BlockEntityCreation;
 use crate::behavior::block::BlockBehavior;
 use crate::behavior::blocks::redstone::{MAX_REDSTONE_SIGNAL, MIN_REDSTONE_SIGNAL};
 use crate::behavior::context::{BlockHitResult, InteractionResult};
@@ -212,6 +214,17 @@ impl TestBlock {
 }
 
 impl BlockBehavior for TestBlock {
+    /// Vanilla `TestBlock.newBlockEntity` / `TestInstanceBlock.newBlockEntity`:
+    /// both blocks persist editor state in a block entity.
+    fn new_block_entity(
+        &self,
+        level: Weak<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> BlockEntityCreation {
+        BlockEntityCreation::Created(Arc::new(TestBlockEntity::new(level, pos, state)))
+    }
+
     /// Vanilla `TestBlock.getStateForPlacement`: the `minecraft:block_state`
     /// component of the held stack restores the saved mode.
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
@@ -362,6 +375,17 @@ impl TestInstanceBlock {
 impl BlockBehavior for TestInstanceBlock {
     fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(self.block.default_state())
+    }
+
+    /// Vanilla `TestBlock.newBlockEntity` / `TestInstanceBlock.newBlockEntity`:
+    /// both blocks persist editor state in a block entity.
+    fn new_block_entity(
+        &self,
+        level: Weak<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> BlockEntityCreation {
+        BlockEntityCreation::Created(Arc::new(TestInstanceBlockEntity::new(level, pos, state)))
     }
 
     /// Vanilla `TestInstanceBlock.useWithoutItem`: identical to the test block,

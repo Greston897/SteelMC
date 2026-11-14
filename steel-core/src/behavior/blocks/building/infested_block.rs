@@ -679,6 +679,20 @@ impl BlockBehavior for WeatheringCopperGolemStatueBlock {
         self.weathering.change_over_time(state, world, pos);
     }
 
+    /// Vanilla `WeatheringCopperGolemStatueBlock` still creates the statue block
+    /// entity through `CopperGolemStatueBlock.newBlockEntity`; without it the
+    /// pose and the statue's own data had nowhere to live.
+    fn new_block_entity(
+        &self,
+        level: std::sync::Weak<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> BlockEntityCreation {
+        BlockEntityCreation::Created(std::sync::Arc::new(
+            CopperGolemStatueBlockEntity::new(level, pos, state),
+        ))
+    }
+
     /// Vanilla `WeatheringCopperGolemStatueBlock.useItemOn`: honeycomb passes so
     /// waxing can happen, any other non-axe item cycles the pose, and an axe
     /// scrapes an unaffected statue back into a live copper golem.
