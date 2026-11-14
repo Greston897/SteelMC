@@ -18,7 +18,7 @@ use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::WanderingTraderEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
-use steel_utils::{DowncastType, DowncastTypeKey};
+use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     BreedGoal, FloatGoal, FollowParentGoal,
@@ -29,7 +29,7 @@ use crate::entity::damage::DamageSource;
 use crate::entity::villager_trades;
 use crate::inventory::menu::kinds::{SharedTrades, merchant};
 use crate::entity::{
-    AgeableMob, AgeableMobBase, DefaultEntityPush, Entity, EntityBase,
+    AgeableMob, AgeableMobBase, DefaultEntityPush, Entity, EntityBase, RemovalReason,
     EntityBaseLoad, EntityPose, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase,
     PathfinderMob, SharedEntity, sync_dirty_mob_effects,
 };
@@ -155,18 +155,18 @@ impl WanderingTraderEntity {
     /// keeps the trader in place, which vanilla implements by skipping the tick
     /// while `getTradingPlayer()` is set.
     fn maybe_despawn(&self) {
-        let mut delay = self.despawn_delay.lock();
-        if *delay <= 0 {
+        if self.is_trading() {
             return;
         }
-        if self.is_trading() {
+        let mut delay = self.despawn_delay.lock();
+        if *delay <= 0 {
             return;
         }
         *delay -= 1;
         if *delay == 1 {
             drop(delay);
             // Vanilla `WanderingTrader.maybeDespawn` discards at delay 1.
-            self.set_removed(crate::entity::RemovalReason::Discarded);
+            self.set_removed(RemovalReason::Discarded);
         }
     }
 
@@ -339,14 +339,19 @@ impl WanderingTraderEntity {
         // Vanilla `AbstractVillager.startTrading` stores the player and stops it
         // again from `stopTrading` when the merchant screen is removed, so the
         // despawn timer only runs while nobody is browsing the offers.
-        let world = self.get_world();
+        let world = self.level();
         let trader_id = self.id();
         player.open_menu(self.display_name(), move |context| {
             let on_close = move |_player: &Player| {
-                // Look the trader up on close: the menu outlives nothing, but a
-                // shared handle here would keep a discarded trader alive.
-                if let Some(trader) = World::entity_manager(&world).get_accessible_by_id(trader_id)
-                    && let Some(trader) = trader.as_wandering_trader()
+                // Look the trader up on close: a shared handle here would keep a
+                // discarded trader alive, and the entity is cheap to find by id.
+                let Some(world) = world.as_ref() else {
+                    return;
+                };
+                if let Some(trader) = World::entity_manager(world).get_accessible_by_id(trader_id)
+                    && let Some(trader) = trader
+                        .as_ref()
+                        .downcast_ref::<WanderingTraderEntity>()
                 {
                     trader.set_trading_player(None);
                 }

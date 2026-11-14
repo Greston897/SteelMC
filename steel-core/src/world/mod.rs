@@ -885,8 +885,11 @@ impl World {
 
     /// Runs vanilla `WanderingTraderSpawner.tick` for this world.
     pub fn tick_wandering_trader_spawner(self: &Arc<Self>) {
+        // Clone the handle out of the lock so the spawner can query the world
+        // (entities, heightmaps, game rules) while it holds its own state.
+        let world = Arc::clone(self);
         let mut spawner = self.wandering_traders.lock();
-        spawner.tick(self);
+        spawner.tick(&world);
     }
 
     /// Whether wandering traders may exist in this world at all.

@@ -11,6 +11,8 @@
 //! has skylight, which is the closest property it can test cheaply and keeps
 //! Nether/End from spawning traders.
 
+use std::sync::Arc;
+
 use glam::DVec3;
 use serde::{Deserialize, Serialize};
 
@@ -105,7 +107,7 @@ impl WanderingTraderSpawner {
     }
 
     /// Ticks the spawner once, matching vanilla `WanderingTraderSpawner.tick`.
-    pub fn tick(&mut self, world: &std::sync::Arc<World>) {
+    pub fn tick(&mut self, world: &Arc<World>) {
         // Vanilla gates the whole spawner on `spawn_wandering_traders` and only
         // registers it for dimensions where traders may exist at all.
         if !world.allows_wandering_traders() {
@@ -155,7 +157,7 @@ impl WanderingTraderSpawner {
 
     /// Vanilla `tryToSpawnWanderingTrader`: one in ten attempts proceeds past
     /// the player pick, then ten surface positions are tried.
-    fn try_spawn_trader(&self, world: &std::sync::Arc<World>, reference: DVec3) -> bool {
+    fn try_spawn_trader(&self, world: &Arc<World>, reference: DVec3) -> bool {
         // Vanilla `nextInt(10) == 0`.
         if rand::random_range(0..10) != 0 {
             return false;
@@ -210,7 +212,7 @@ fn trader_entity_type() -> Option<EntityTypeRef> {
 }
 
 /// Picks a random player position in `world`, matching vanilla's uniform pick.
-fn random_player_position(world: &std::sync::Arc<World>) -> Option<DVec3> {
+fn random_player_position(world: &Arc<World>) -> Option<DVec3> {
     let count = world.players.len();
     if count == 0 {
         return None;
