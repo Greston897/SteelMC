@@ -97,7 +97,7 @@ use std::{
 use steel_crypto::{key_store::KeyStore, signature::ProfileKeyValidator};
 use steel_protocol::packet_traits::{ClientPacket, EncodedPacket};
 use steel_protocol::packets::game::{
-    CCommandSuggestions, CEntityEvent, CLogin, CPlayerInfoUpdate, CRemovePlayerInfo,
+    CCommandSuggestions, CDebugSample, CEntityEvent, CLogin, CPlayerInfoUpdate, CRemovePlayerInfo,
     CSetDefaultSpawnPosition, CSystemChat, CTabList, CTickingState, CTickingStep,
     CommonPlayerSpawnInfo, PLAYER_INFO_INIT_ACTIONS, PlayerInfoEntry, RelativeMovement,
 };
@@ -1009,6 +1009,39 @@ impl Server {
     /// Saves all dirty domain command storage through domain default worlds.
     pub async fn save_command_storage(&self) -> io::Result<usize> {
         self.command_storage.save(&self.worlds).await
+    }
+
+    /// Vanilla `MinecraftServer.sampleDebug`: sends one `debug_sample` tick
+    /// sample to every operator that subscribed to it.
+    ///
+    /// The subscription ids come straight from the client (`0` tick time, `1`
+    /// chunk task time, …). Vanilla samples only the tick-time id itself, so a
+    /// client that opened the debug chart gets a moving graph instead of an
+    /// empty one; the other ids have no sampler in Steel and are skipped rather
+    /// than sent as zeroes.
+    pub fn send_debug_samples(&self, tick_duration_nanos: u64) {
+        /// Vanilla `DebugSampleType.TICK_TIME.ordinal()`.
+        const TICK_TIME_SAMPLE: i32 = 0;
+
+        let mut subscribers: Vec<Arc<Player>> = Vec::new();
+        self.online_players.iter_players(|_, player| {
+            if player.debug_subscriptions().contains(&TICK_TIME_SAMPLE) {
+                subscribers.push(Arc::clone(player));
+            }
+            true
+        });
+
+        if subscribers.is_empty() {
+            return;
+        }
+
+        let packet = CDebugSample {
+            kind: TICK_TIME_SAMPLE,
+            samples: vec![i64::try_from(tick_duration_nanos).unwrap_or(i64::MAX)],
+        };
+        for player in subscribers {
+            player.send_packet(packet.clone());
+        }
     }
 
     /// Saves every loaded world (vanilla `ServerLevel.save`).

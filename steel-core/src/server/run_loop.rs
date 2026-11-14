@@ -286,10 +286,15 @@ impl Server {
                 &mut command_data_autosaves,
             );
 
-            let tab_list_tick_stats = self.record_tick_and_capture_tab_stats(
-                tick_count,
-                tick_start.elapsed().as_nanos() as u64,
-            );
+            let tick_duration_nanos = tick_start.elapsed().as_nanos() as u64;
+            let tab_list_tick_stats =
+                self.record_tick_and_capture_tab_stats(tick_count, tick_duration_nanos);
+
+            // Vanilla `MinecraftServer.tickServer` -> `sampleDebug`: a client
+            // that opened the debug chart asked for tick samples through
+            // `SDebugSubscriptionRequest`, and without this packet the chart
+            // stayed empty forever.
+            self.send_debug_samples(tick_duration_nanos);
 
             if let Some(tick_stats) = tab_list_tick_stats {
                 self.broadcast_tab_list(tick_stats);
