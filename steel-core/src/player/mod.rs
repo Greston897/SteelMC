@@ -213,6 +213,12 @@ pub struct Player {
     pub last_chunk_pos: SyncMutex<ChunkPos>,
     /// The last chunk tracking view of the player.
     pub last_tracking_view: SyncMutex<Option<PlayerChunkView>>,
+    /// Whether the chunk map currently skips this player's chunk ticket.
+    ///
+    /// Vanilla `ChunkMap` keeps the per-player `skippedPlayer` flag; it is set
+    /// by `spectatorsGenerateChunks` together with the spectator game mode and
+    /// decides whether the player loads terrain around itself.
+    pub skip_player: std::sync::atomic::AtomicBool,
     /// Entity the player's camera is attached to, if any.
     ///
     /// Vanilla `ServerPlayer.camera`/`setCamera`; a spectator's `set_camera`
@@ -848,6 +854,7 @@ impl Player {
             }),
             last_chunk_pos: SyncMutex::new(ChunkPos::new(0, 0)),
             last_tracking_view: SyncMutex::new(None),
+            skip_player: std::sync::atomic::AtomicBool::new(false),
             camera_entity: SyncMutex::new(None),
             client_information: SyncMutex::new(client_information),
             game_modes: SyncMutex::new(PlayerGameModeState::new(GameType::Survival)),
