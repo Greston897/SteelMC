@@ -147,6 +147,24 @@ impl DonkeyEntity {
             .set(flags);
     }
 
+    /// Vanilla `AbstractChestedHorse.hasChest`.
+    #[must_use]
+    pub fn has_chest(&self) -> bool {
+        *self.entity_data.lock().abstract_chested_horse().id_chest.get()
+    }
+
+    /// Vanilla `AbstractChestedHorse.setChest`.
+    pub fn set_chest(&self, has_chest: bool) {
+        self.entity_data
+            .lock()
+            .abstract_chested_horse_mut()
+            .id_chest
+            .set(has_chest);
+        self.mount_inventory
+            .lock()
+            .resize(crate::entity::mount::chested_columns(has_chest));
+    }
+
     /// Whether this horse is tamed.
     #[must_use]
     pub fn is_tamed(&self) -> bool {
@@ -283,12 +301,24 @@ impl Entity for DonkeyEntity {
         self.save_mob(nbt);
         self.save_ageable_mob(nbt);
         self.save_animal(nbt);
+        // Vanilla `AbstractChestedHorse.addAdditionalSaveData`.
+        nbt.insert("ChestedHorse", self.has_chest());
+        if self.has_chest() {
+            self.mount_inventory.lock().save_items(nbt, "Items");
+        }
     }
 
     fn load_additional(&self, nbt: borrow::NbtCompound<'_, '_>) {
         self.load_mob(nbt);
         self.load_ageable_mob(nbt);
         self.load_animal(nbt);
+        // Vanilla `AbstractChestedHorse.readAdditionalSaveData`: the chest flag
+        // decides the inventory size, so it has to be read before the items.
+        let chest = nbt.get_byte("ChestedHorse").is_some_and(|b| b != 0);
+        self.set_chest(chest);
+        if chest {
+            self.mount_inventory.lock().load_items(nbt, "Items");
+        }
     }
 }
 
@@ -382,6 +412,31 @@ impl Mob for DonkeyEntity {
             self.open_mount_inventory(player);
             return crate::behavior::InteractionResult::Success;
         }
+
+        // Vanilla `AbstractChestedHorse.mobInteract`: a chest turns a tamed
+        // donkey or mule into a pack animal.
+        if self.is_tamed() && !self.has_chest() {
+            let held = {
+                let inventory = player.inventory.lock();
+                inventory.get_item_in_hand(hand).clone()
+            };
+            if held.is(&steel_registry::vanilla_items::CHEST) {
+                self.set_chest(true);
+                player.inventory.lock().shrink_item_in_hand(hand, 1);
+                if let Some(world) = self.level() {
+                    world.play_sound_at(
+                        &steel_registry::sound_events::ENTITY_DONKEY_CHEST,
+                        steel_protocol::packets::game::SoundSource::Neutral,
+                        self.position(),
+                        1.0,
+                        1.0,
+                        None,
+                    );
+                }
+                return crate::behavior::InteractionResult::Success;
+            }
+        }
+
         Animal::mob_interact_animal(self, player, hand)
     }
 

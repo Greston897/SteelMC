@@ -8,6 +8,9 @@
 
 use std::sync::Weak;
 
+use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
+use simdnbt::borrow::NbtCompound as NbtCompoundView;
+use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_items;
 use steel_utils::locks::{IntoShared as _, SyncMutex};
@@ -77,11 +80,48 @@ impl MountInventory {
         (!stack.is_empty()).then_some(stack)
     }
 
+    /// Vanilla `AbstractChestedHorse.addAdditionalSaveData`: every occupied slot
+    /// is written with its index so the layout survives a save.
+    pub fn save_items(&self, nbt: &mut NbtCompound, field: &str) {
+        let container = self.container.lock();
+        let mut items: Vec<NbtCompound> = Vec::new();
+        for slot in 0..container.get_container_size() {
+            let item = container.get_item(slot);
+            if item.is_empty() {
+                continue;
+            }
+            if let NbtTag::Compound(mut item_nbt) = item.clone().to_nbt_tag() {
+                item_nbt.insert("Slot", slot as i8);
+                items.push(item_nbt);
+            }
+        }
+        drop(container);
+        nbt.insert(field, NbtList::Compound(items));
+    }
+
+    /// Reads the list written by [`Self::save_items`].
+    pub fn load_items(&self, nbt: &BorrowedNbtCompound<'_>, _field: &str) {
+        let view: NbtCompoundView<'_, '_> = nbt.into();
+        let mut container = self.container.lock();
+        container.items.fill(ItemStack::empty());
+        crate::inventory::container::load_all_items(view, &mut container.items);
+    }
+
     /// Whether the mount carries a saddle.
     #[must_use]
     pub fn has_saddle(&self) -> bool {
         self.saddle().is_some()
     }
+}
+
+/// Vanilla `AbstractChestedHorse.getInventoryColumns`: a chested donkey or mule
+/// shows five storage columns, an unchested one opens no storage at all.
+///
+/// The saddle slot still exists without a chest, so the container keeps one
+/// column of room and [`open_mount_menu`] is what refuses to open the screen.
+#[must_use]
+pub const fn chested_columns(has_chest: bool) -> usize {
+    if has_chest { 5 } else { 1 }
 }
 
 /// Vanilla `LivingEntity.isEquippableInSlot(stack, EquipmentSlot.SADDLE)`.
@@ -105,6 +145,12 @@ pub fn open_mount_menu(
     inventory: &Shared<SimpleContainer>,
     columns: usize,
 ) {
+    // Vanilla `getInventoryColumns` returns 0 for a donkey or mule without a
+    // chest; the mount screen would then have no storage rows at all, so there
+    // is nothing to open.
+    if columns == 0 {
+        return;
+    }
     let Some(world) = mount.level() else {
         return;
     };
@@ -114,7 +160,6 @@ pub fn open_mount_menu(
     let owner: Weak<dyn Entity> = std::sync::Arc::downgrade(&shared);
     drop(shared);
 
-    let columns = columns.max(1);
     player.open_entity_menu(
         mount.display_name(),
         mount.id(),

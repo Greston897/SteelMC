@@ -138,6 +138,30 @@ impl TraderLlamaEntity {
         self.horse_flags() & HORSE_FLAG_TAME != 0
     }
 
+    /// Vanilla `AbstractChestedHorse.hasChest`.
+    #[must_use]
+    pub fn has_chest(&self) -> bool {
+        *self.entity_data.lock().abstract_chested_horse().id_chest.get()
+    }
+
+    /// Vanilla `Llama.getStrength`, the storage-column count a chest opens.
+    #[must_use]
+    pub fn strength(&self) -> usize {
+        (*self.entity_data.lock().llama().strength_id.get()).clamp(1, 5) as usize
+    }
+
+    /// Vanilla `AbstractChestedHorse.setChest`; a trader llama's columns follow
+    /// its strength, like a plain llama's.
+    pub fn set_chest(&self, has_chest: bool) {
+        self.entity_data
+            .lock()
+            .abstract_chested_horse_mut()
+            .id_chest
+            .set(has_chest);
+        let columns = if has_chest { self.strength() } else { 1 };
+        self.mount_inventory.lock().resize(columns);
+    }
+
     /// Marks this horse as tamed.
     pub fn set_tamed(&self, tamed: bool) {
         let flags = self.horse_flags();
@@ -237,12 +261,21 @@ impl Entity for TraderLlamaEntity {
         self.save_mob(nbt);
         self.save_ageable_mob(nbt);
         self.save_animal(nbt);
+        nbt.insert("ChestedHorse", self.has_chest());
+        if self.has_chest() {
+            self.mount_inventory.lock().save_items(nbt, "Items");
+        }
     }
 
     fn load_additional(&self, nbt: borrow::NbtCompound<'_, '_>) {
         self.load_mob(nbt);
         self.load_ageable_mob(nbt);
         self.load_animal(nbt);
+        let chest = nbt.get_byte("ChestedHorse").is_some_and(|b| b != 0);
+        self.set_chest(chest);
+        if chest {
+            self.mount_inventory.lock().load_items(nbt, "Items");
+        }
     }
 }
 
