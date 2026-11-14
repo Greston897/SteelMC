@@ -4,9 +4,12 @@
 //! (`id_flags`) mirrored into the generated entity data. Horse-specific
 //! mechanics are intentionally not wired yet.
 //!
+//! Riding works: a saddled horse is steered by the rider's look direction and
+//! moves at its own `MOVEMENT_SPEED`, and taming by mounting is in.
+//!
 //! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
-//! * jumping, galloping, chest inventory and breeding stats are not implemented;
-//!   taming by repeated mounting and saddling are.
+//! * jumping (the charge bar), galloping, chest inventory and breeding stats are
+//!   not implemented.
 
 use std::sync::Weak;
 
@@ -168,6 +171,16 @@ impl HorseEntity {
             flags & !HORSE_FLAG_SADDLE
         };
         self.set_horse_flags(flags);
+    }
+
+    /// Vanilla `AbstractHorse.travel`: face the rider's look direction, damping
+    /// the pitch so the horse does not nose-dive.
+    fn set_ridden_rotation(&self, controller_yaw: f32, controller_pitch: f32) {
+        self.set_rotation((controller_yaw, controller_pitch * 0.5));
+        self.base.set_old_yaw_to_current();
+        let yaw = self.rotation().0;
+        self.set_y_body_rot(yaw);
+        self.set_y_head_rot(yaw);
     }
 
     fn update_dirty_mob_effect_entity_data(&self) {
@@ -376,6 +389,28 @@ impl Mob for HorseEntity {
     }
 
 
+    /// Vanilla `AbstractHorse.travel` steers with the rider's look direction:
+    /// a saddled horse turns where the player looks, an unsaddled one ignores
+    /// the reins and keeps its own heading.
+    fn tick_ridden(&self, controller: &Player, _ridden_input: DVec3) {
+        if !self.is_saddled() {
+            return;
+        }
+        let (yaw, pitch) = controller.rotation();
+        self.set_ridden_rotation(yaw, pitch);
+    }
+
+    /// Vanilla `AbstractHorse.getRiddenSpeed`.
+    ///
+    /// The horse's own `MOVEMENT_SPEED` attribute is the ridden speed; Steel had
+    /// no override at all, so a ridden horse moved at the generic `getSpeed()`
+    /// and could not be steered at more than a walk.
+    fn ridden_speed(&self, _controller: &Player) -> f32 {
+        self.attributes()
+            .lock()
+            .required_value(vanilla_attributes::MOVEMENT_SPEED) as f32
+    }
+
     fn tick_goal_selectors(&self, entity: &SharedEntity) {
         PathfinderMob::tick_pathfinder_goal_selectors(self, entity);
     }
@@ -401,9 +436,12 @@ impl PathfinderMob for HorseEntity {}
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use steel_registry::{init_vanilla_registry, vanilla_entities};
 
     use super::*;
+    use crate::test_support::TestPlayerBuilder;
 
     #[test]
     fn horse_tame_and_saddle_bits_are_independent() {
@@ -421,5 +459,31 @@ mod tests {
         assert!(horse.is_tamed() && horse.is_saddled());
         horse.set_tamed(false);
         assert!(!horse.is_tamed() && horse.is_saddled());
+    }
+
+    /// Vanilla `AbstractHorse.getRiddenSpeed` is the horse's own
+    /// `MOVEMENT_SPEED` attribute, not the generic `getSpeed()`.
+    #[test]
+    fn horse_ridden_speed_uses_movement_speed_attribute() {
+        init_vanilla_registry();
+
+        let world_fixture = crate::test_support::fresh_test_world("horse_ridden_speed");
+        let world = &world_fixture.world;
+        let horse = HorseEntity::new(
+            &vanilla_entities::HORSE,
+            1,
+            DVec3::ZERO,
+            Arc::downgrade(world),
+        );
+        let controller = TestPlayerBuilder::new(Arc::clone(world), "Controller", 2).build();
+        let attribute_speed = horse
+            .attributes()
+            .lock()
+            .required_value(vanilla_attributes::MOVEMENT_SPEED) as f32;
+
+        assert_eq!(
+            LivingEntity::ridden_speed(&horse, &controller).to_bits(),
+            attribute_speed.to_bits()
+        );
     }
 }
