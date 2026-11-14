@@ -97,7 +97,8 @@ use std::{
 use steel_crypto::{key_store::KeyStore, signature::ProfileKeyValidator};
 use steel_protocol::packet_traits::{ClientPacket, EncodedPacket};
 use steel_protocol::packets::game::{
-    CCommandSuggestions, CDebugSample, CEntityEvent, CLogin, CPlayerInfoUpdate, CRemovePlayerInfo,
+    CCommandSuggestions, CDebugSample, CEntityEvent, CLogin, CLowDiskSpaceWarning, CPlayerInfoUpdate,
+    CRemovePlayerInfo,
     CSetDefaultSpawnPosition, CSystemChat, CTabList, CTickingState, CTickingStep,
     CommonPlayerSpawnInfo, PLAYER_INFO_INIT_ACTIONS, PlayerInfoEntry, RelativeMovement,
 };
@@ -1046,6 +1047,37 @@ impl Server {
         }
     }
 
+    /// Vanilla `DedicatedServer.sendLowDiskSpaceWarning`.
+    ///
+    /// A client that receives `low_disk_space_warning` shows the
+    /// `SystemToast.onLowDiskSpace` toast, so this is the only way an operator
+    /// learns that the world directory is filling up before the writes start
+    /// failing for good.
+    ///
+    /// Vanilla gates it on `LevelStorageAccess.checkForLowDiskSpace`, i.e. the
+    /// free space of the save root. Rust's `io::Error` cannot name that without
+    /// a `statvfs` binding (adding one is impossible here: the sandbox has no
+    /// crates.io), so Steel checks the error the OS actually returned —
+    /// `ErrorKind::StorageFull` is set from `ENOSPC` on every unix and from
+    /// `ERROR_DISK_FULL`/`ERROR_HANDLE_DISK_FULL` on Windows.
+    pub fn send_low_disk_space_warning(&self, error: &io::Error) {
+        if error.kind() != io::ErrorKind::StorageFull {
+            return;
+        }
+
+        let mut warned = 0usize;
+        self.online_players.iter_players(|_, player| {
+            if player.is_operator() {
+                player.send_packet(CLowDiskSpaceWarning {});
+                warned += 1;
+            }
+            true
+        });
+        log::warn!(
+            "The world directory is out of space; warned {warned} operator(s).              Free disk space to avoid losing world data."
+        );
+    }
+
     /// Saves every loaded world (vanilla `ServerLevel.save`).
     ///
     /// Returns the number of written chunks and the first error, so `/save-all`
@@ -1054,7 +1086,15 @@ impl Server {
     pub async fn save_world_chunks(&self) -> io::Result<usize> {
         let mut saved = 0usize;
         for world in self.worlds.values() {
-            saved = saved.saturating_add(world.save().await?);
+            match world.save().await {
+                Ok(count) => saved = saved.saturating_add(count),
+                Err(error) => {
+                    // Vanilla `MinecraftServer.reportChunkSaveFailure` warns the
+                    // operators before the error reaches the command output.
+                    self.send_low_disk_space_warning(&error);
+                    return Err(error);
+                }
+            }
         }
         Ok(saved)
     }
