@@ -555,20 +555,43 @@ impl Server {
 
     /// Executes one chunk sending tick across all worlds and players.
     ///
-    /// A per-world per-tick encode cache is used so overlapping view areas
-    /// don't re-encode the same chunk within a single tick.
+    /// Players are fanned out across the encoding pool: loading a fresh view can
+    /// mean hundreds of chunks per player, and encoding them all on the tick
+    /// thread left every encoding core idle while one player's queue drained.
+    /// `broadcast` only hands out work, so the per-player state (chunk sender,
+    /// connection, tracker) stays owned by whoever processes that player.
+    ///
+    /// Each player keeps a private encode cache. A shared cache would need to be
+    /// mutated from several workers at once, and a chunk only overlaps between
+    /// players whose view areas meet, so the duplicated work is negligible next
+    /// to the serialization that would otherwise be needed.
     fn tick_chunk_sending(&self) {
         let tick_start = Instant::now();
+        let encoding_pool = self.chunk_encoding_pool.as_ref();
         for world in self.worlds.values() {
-            let mut encode_cache = rustc_hash::FxHashMap::default();
+            let mut players = Vec::new();
             world.players.iter_players(|_uuid, player| {
-                Self::send_chunks_for_player(
-                    player,
-                    world,
-                    &mut encode_cache,
-                    self.chunk_encoding_pool.as_ref(),
-                );
+                players.push(Arc::clone(player));
                 true
+            });
+
+            // `install` moves the whole scope onto the encoding pool, so the
+            // spawned players are distributed across its workers instead of
+            // running on whichever thread happens to call in.
+            encoding_pool.install(|| {
+                rayon::scope(|scope| {
+                    for player in &players {
+                        scope.spawn(|_| {
+                            let mut encode_cache = rustc_hash::FxHashMap::default();
+                            Self::send_chunks_for_player(
+                                player,
+                                world,
+                                &mut encode_cache,
+                                encoding_pool,
+                            );
+                        });
+                    }
+                });
             });
         }
 

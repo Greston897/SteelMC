@@ -605,6 +605,16 @@ impl Drop for GameTickTaskGuard {
 }
 
 impl Server {
+    /// The worker pool used for chunk encoding and persistence.
+    ///
+    /// Exposed so the chunk-sending tick can fan a whole wave of per-player
+    /// batches across every encoding worker instead of encoding players one
+    /// after another on the tick thread.
+    #[must_use]
+    pub(crate) const fn chunk_encoding_pool(&self) -> &Arc<ThreadPool> {
+        &self.chunk_encoding_pool
+    }
+
     /// The online player with `uuid`, if any.
     #[must_use]
     pub fn player_by_uuid(&self, uuid: Uuid) -> Option<Arc<Player>> {
