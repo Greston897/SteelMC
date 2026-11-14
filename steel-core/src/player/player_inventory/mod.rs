@@ -129,11 +129,24 @@ type MenuFactory = Box<dyn for<'a> FnOnce(MenuOpenContext<'a>) -> Menu + Send + 
 struct PendingMenuOpen {
     title: TextComponent,
     create: MenuFactory,
+    /// Set for mounts: the client needs a mount screen packet instead of the
+    /// ordinary open-screen packet, carrying the entity and the column count.
+    mount: Option<MountScreen>,
 }
 
 struct PreparedMenu {
     title: TextComponent,
     menu: Menu,
+    mount: Option<MountScreen>,
+}
+
+/// The extra fields `ClientboundMountScreenOpenPacket` needs.
+#[derive(Clone, Copy)]
+pub(crate) struct MountScreen {
+    /// Entity id of the ridden mount.
+    pub entity_id: i32,
+    /// Storage columns shown to the client.
+    pub columns: usize,
 }
 
 enum OpenMenuUnavailable {

@@ -1,10 +1,11 @@
 use std::{f32::consts::TAU, mem, sync::Arc};
 
+use super::MountScreen;
 use crate::{
     entity::{Entity, LivingEntity as _, RemovalReason, entities::ItemEntity},
     inventory::{
         click::Click,
-        container::{Container, CraftingContainer, clear_or_count_matching_stack},
+        container::{Container, CraftingContainer, SimpleContainer, clear_or_count_matching_stack},
         lock::{ContainerId, ContainerLockGuard},
         menu::{
             Menu,
@@ -18,7 +19,7 @@ use glam::DVec3;
 use steel_math::trig;
 use steel_protocol::packets::game::SSeenAdvancement::Opened;
 use steel_protocol::packets::game::{
-    CContainerClose, COpenScreen, CSetPlayerInventory, ClickType, SContainerButtonClick,
+    CContainerClose, CMountScreenOpen, COpenScreen, CSetPlayerInventory, ClickType, SContainerButtonClick,
     SSelectTrade,
     SContainerClick, SContainerClose, SContainerSlotStateChanged, SEditBook, SRenameItem,
     SSeenAdvancement, SSetBeacon, SSetCarriedItem, SSetCreativeModeSlot, SoundSource,
@@ -137,8 +138,12 @@ impl Player {
                     self.execute_menu_open(*prepared);
                 }
                 DeferredMenuAction::Install(prepared) => {
-                    let PreparedMenu { title, menu } = *prepared;
-                    self.open_prepared_menu(title, menu);
+                    let PreparedMenu {
+                        title,
+                        menu,
+                        mount,
+                    } = *prepared;
+                    self.open_prepared_menu_with(title, menu, mount);
                 }
             }
         }
@@ -674,6 +679,40 @@ impl Player {
         self.open_menu_inner(PendingMenuOpen {
             title: title.into(),
             create: Box::new(create),
+            mount: None,
+        });
+        self.finish_menu_open_operation();
+    }
+
+    /// Opens an entity-backed menu whose packet is not `COpenScreen`.
+    ///
+    /// Vanilla mounts use `ClientboundMountScreenOpenPacket`, which replaces the
+    /// open-screen packet and carries the entity id and the storage columns.
+    /// Everything else — the container id allocation, the slot sync and the
+    /// close path — is shared with [`Self::open_menu`].
+    pub fn open_entity_menu(
+        &self,
+        title: impl Into<TextComponent>,
+        entity_id: i32,
+        columns: usize,
+        inventory: Shared<SimpleContainer>,
+        owner: std::sync::Weak<dyn Entity>,
+    ) {
+        if !self.begin_menu_open_operation() {
+            return;
+        }
+        self.open_menu_inner(PendingMenuOpen {
+            title: title.into(),
+            create: Box::new(move |context| {
+                crate::inventory::menu::kinds::mount(
+                    Arc::clone(&context.player.inventory),
+                    context.container_id,
+                    inventory,
+                    columns,
+                    owner,
+                )
+            }),
+            mount: Some(MountScreen { entity_id, columns }),
         });
         self.finish_menu_open_operation();
     }
@@ -710,7 +749,11 @@ impl Player {
             }
         }
 
-        let PendingMenuOpen { title, create } = pending;
+        let PendingMenuOpen {
+            title,
+            create,
+            mount,
+        } = pending;
         let container_id = self.next_container_counter();
         let world = self.get_world();
         let menu = create(MenuOpenContext {
@@ -725,10 +768,19 @@ impl Player {
             menu.container_id(),
             container_id,
         );
-        self.open_prepared_menu(title, menu);
+        self.open_prepared_menu_with(title, menu, mount);
     }
 
     fn open_prepared_menu(&self, title: TextComponent, mut menu: Menu) {
+        self.open_prepared_menu_with(title, menu, None);
+    }
+
+    fn open_prepared_menu_with(
+        &self,
+        title: TextComponent,
+        mut menu: Menu,
+        mount: Option<MountScreen>,
+    ) {
         loop {
             {
                 let mut open_menu = self.open_menu.lock();
@@ -753,6 +805,7 @@ impl Player {
                     .push(DeferredMenuAction::Install(Box::new(PreparedMenu {
                         title,
                         menu,
+                        mount,
                     })));
                 return;
             }
@@ -767,13 +820,24 @@ impl Player {
             break;
         }
 
-        self.send_packet(COpenScreen {
-            container_id: i32::from(menu.container_id()),
-            menu_type: menu
-                .menu_type()
-                .expect("a menu opened via open_menu must declare a menu type"),
-            title,
-        });
+        if let Some(screen) = mount {
+            // Vanilla `ServerPlayer.openHorseInventory`: mounts are opened with a
+            // mount screen packet, which carries the entity and column count and
+            // has no menu type at all.
+            self.send_packet(CMountScreenOpen {
+                container_id: i32::from(menu.container_id()),
+                inventory_columns: i32::try_from(screen.columns).unwrap_or(9),
+                entity_id: screen.entity_id,
+            });
+        } else {
+            self.send_packet(COpenScreen {
+                container_id: i32::from(menu.container_id()),
+                menu_type: menu
+                    .menu_type()
+                    .expect("a menu opened via open_menu must declare a menu type"),
+                title,
+            });
+        }
 
         // Fire on_open before the full sync so anything the menu populates here
         // is included in the first render sent below.

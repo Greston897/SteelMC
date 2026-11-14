@@ -62,6 +62,9 @@ pub struct HorseEntity {
     ageable_base: AgeableMobBase,
     animal_base: AnimalBase,
     entity_data: SyncMutex<HorseEntityData>,
+    /// Vanilla `AbstractHorse.inventory`: saddle, body armor and the storage the
+    /// mount screen shows.
+    mount_inventory: crate::entity::mount::SharedMountInventory,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `HorseEntity`.
@@ -121,6 +124,7 @@ impl HorseEntity {
             ageable_base,
             animal_base,
             entity_data: SyncMutex::new(entity_data),
+            mount_inventory: crate::entity::mount::shared_inventory(1),
         }
     }
 
@@ -196,6 +200,16 @@ impl DefaultEntityPush for HorseEntity {}
 impl Entity for HorseEntity {
     fn as_default_entity_push(&self) -> Option<&dyn DefaultEntityPush> {
         Some(self)
+    }
+
+    /// Vanilla `AbstractHorse.openCustomInventoryScreen` reached through the
+    /// spectator path.
+    fn open_menu_for(&self, player: &Player) -> InteractionResult {
+        if !self.is_tamed() {
+            return InteractionResult::Pass;
+        }
+        self.open_mount_inventory(player);
+        InteractionResult::Success
     }
 
     fn is_hard_collision_relevant(&self) -> bool {
@@ -348,15 +362,23 @@ impl Mob for HorseEntity {
         &self.mob_base
     }
 
-    /// Vanilla `AbstractHorse.mobInteract`, reduced to the parts Steel models:
-    /// an untamed horse is mounted and tamed by the player, a tamed one is
-    /// saddled or ridden, and food still feeds it like any animal.
+    /// Vanilla `AbstractHorse.mobInteract`: an untamed horse is mounted and
+    /// tamed by the player, a tamed one opens its inventory on a secondary use
+    /// and is ridden otherwise, and food still feeds it like any animal.
     fn mob_interact(&self, player: &Player, hand: InteractionHand) -> InteractionResult {
         let item_stack = {
             let inventory = player.inventory.lock();
             let item_stack = inventory.get_item_in_hand(hand);
             item_stack.copy_with_count(item_stack.count())
         };
+
+        // Vanilla `AbstractHorse.mobInteract` order: a ridden or baby mount has
+        // no special handling; a tamed one opens its inventory on a secondary
+        // (shift) use; otherwise food and equipment win over riding.
+        if !self.is_vehicle() && !AgeableMob::is_baby(self) && self.is_tamed() && player.is_secondary_use_active() {
+            self.open_mount_inventory(player);
+            return InteractionResult::Success;
+        }
 
         // Vanilla: feeding wins over every other interaction.
         if self.is_food(&item_stack) {
@@ -388,6 +410,25 @@ impl Mob for HorseEntity {
         InteractionResult::Pass
     }
 
+
+    /// Vanilla `AbstractHorse.openCustomInventoryScreen`: the mount screen with
+    /// the saddle slot, the body-armor slot and the storage rows.
+    pub fn open_mount_inventory(&self, player: &Player) {
+        if !self.is_tamed() {
+            return;
+        }
+        let inventory = self.mount_inventory.lock();
+        let container = std::sync::Arc::clone(inventory.container());
+        let columns = inventory.columns();
+        drop(inventory);
+        crate::entity::mount::open_mount_menu(self, player, &container, columns);
+    }
+
+    /// The mount's shared equipment container, for tests and persistence.
+    #[must_use]
+    pub fn mount_inventory(&self) -> &crate::entity::mount::SharedMountInventory {
+        &self.mount_inventory
+    }
 
     /// Vanilla `AbstractHorse.travel` steers with the rider's look direction:
     /// a saddled horse turns where the player looks, an unsaddled one ignores
