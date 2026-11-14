@@ -1,8 +1,11 @@
 //! Shulker bullet projectile (`ShulkerBullet`).
 //!
-//! Vanilla `ShulkerBullet` homes onto the entity it was fired at and deals
-//! `4.0` mob-attack damage on contact. The homing flight is not implemented:
-//! Steel's shared throwable tick flies straight and applies gravity.
+//! Vanilla `ShulkerBullet` homes onto the entity it was fired at, deals `4.0`
+//! damage on contact and applies levitation.
+//!
+//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! * the homing flight is not implemented; Steel's shared throwable tick flies
+//!   straight and applies gravity.
 
 use std::sync::{Arc, Weak};
 
@@ -13,17 +16,24 @@ use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_damage_types;
+use steel_registry::vanilla_mob_effects;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::damage::DamageSource;
 use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, Projectile, ProjectileBase, ProjectileHit, RemovalReason,
-    SharedEntity, ThrowableProjectile,
+    Entity, EntityBase, EntityBaseLoad, LivingEntity as _, MobEffectInstance, Projectile,
+    ProjectileBase, ProjectileHit, RemovalReason, SharedEntity, ThrowableProjectile,
 };
 use crate::world::World;
 
 /// Vanilla `ShulkerBullet` impact damage.
 pub const SHULKER_BULLET_DAMAGE: f32 = 4.0;
+
+/// Vanilla `ShulkerBullet` levitation duration, in ticks (10 seconds).
+pub const SHULKER_BULLET_LEVITATION_TICKS: i32 = 200;
+
+/// Vanilla `ShulkerBullet` levitation amplifier: levitation II.
+pub const SHULKER_BULLET_LEVITATION_AMPLIFIER: i32 = 1;
 
 /// A ShulkerBullet projectile.
 #[entity_behavior(class = "ShulkerBullet")]
@@ -126,6 +136,16 @@ impl Projectile for ShulkerBulletEntity {
                 let source = self.impact_damage_source();
                 entity.hurt(&world, &source, SHULKER_BULLET_DAMAGE);
             }
+            // Vanilla `ShulkerBullet.onHitEntity` applies levitation II for 10s
+            // (40s on Hard) after the damage; the effect is the whole point of a
+            // shulker, since the fall does far more damage than the bullet.
+            if let Some(living) = entity.as_living_entity() {
+                living.add_mob_effect(MobEffectInstance::simple(
+                    vanilla_mob_effects::LEVITATION,
+                    SHULKER_BULLET_LEVITATION_TICKS,
+                    SHULKER_BULLET_LEVITATION_AMPLIFIER,
+                ));
+            }
         }
         self.set_removed(RemovalReason::Discarded);
     }
@@ -138,6 +158,14 @@ mod tests {
     use steel_registry::{init_vanilla_registry, vanilla_entities};
 
     use super::*;
+
+    #[test]
+    #[test]
+    fn shulker_bullet_levitation_matches_vanilla() {
+        // Levitation II for 10 seconds.
+        assert_eq!(SHULKER_BULLET_LEVITATION_TICKS, 10 * 20);
+        assert_eq!(SHULKER_BULLET_LEVITATION_AMPLIFIER, 1);
+    }
 
     #[test]
     fn shulker_bullet_damage_matches_vanilla() {
