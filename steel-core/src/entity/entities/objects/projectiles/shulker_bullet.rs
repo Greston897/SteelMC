@@ -141,7 +141,9 @@ mod tests {
 
     #[test]
     fn shulker_bullet_damage_matches_vanilla() {
-        assert_eq!(SHULKER_BULLET_DAMAGE, 1.0);
+        // 4 on a direct hit (2 hearts); the test used to assert 1.0 and could
+        // never pass against the constant.
+        assert_eq!(SHULKER_BULLET_DAMAGE, 4.0);
     }
 
     #[test]
