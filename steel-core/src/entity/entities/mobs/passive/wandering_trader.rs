@@ -1,8 +1,10 @@
 //! Vanilla `net.minecraft.world.entity.npc.wanderingtrader.WanderingTrader`.
 //!
+//! The despawn timer is implemented (`maybe_despawn`, driven from `aiStep`); the
+//! llama escorts are spawned by `WanderingTraderSpawner` and leashed here.
+//!
 //! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
-//! * the trade list is fixed at spawn from the wandering trader table; the
-//!   despawn timer and the llama escorts are not implemented.
+//! * the trade list is fixed at spawn from the wandering trader table.
 //! * no natural spawning: vanilla villages place villagers through structure
 //!   generation and the wandering trader arrives with the trader event, both of
 //!   which Steel does not run yet.

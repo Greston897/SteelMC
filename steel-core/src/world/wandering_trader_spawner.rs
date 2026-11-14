@@ -17,8 +17,9 @@ use glam::DVec3;
 use serde::{Deserialize, Serialize};
 
 use crate::chunk::heightmap::HeightmapType;
+use crate::entity::leash::Leashable as _;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
-use crate::entity::spawn_entity;
+use crate::entity::{Entity, SharedEntity, spawn_entity};
 use crate::world::{LevelReader, World};
 use steel_registry::{REGISTRY, entity_type::EntityTypeRef, vanilla_game_rules};
 use steel_utils::{BlockPos, Identifier};
@@ -192,21 +193,77 @@ impl WanderingTraderSpawner {
             if let Ok(entity) = spawn_entity(world, request) {
                 // Vanilla `WanderingTraderSpawner`: the trader leaves after
                 // `DESPAWN_DELAY` ticks unless somebody is trading with it.
-                // Llamas are *not* spawned: vanilla's `tryToSpawnLlamaFor`
-                // spawns a trader llama leashed to the trader, and Steel has
-                // neither the trader llama variant of the entity data nor a
-                // lead that survives the separate spawn.
                 if let Some(trader) = entity
                     .as_ref()
                     .downcast_ref::<crate::entity::entities::WanderingTraderEntity>()
                 {
                     trader.set_despawn_delay(natural_despawn_delay());
+                    // Vanilla `WanderingTraderSpawner.spawn`: `tryToSpawnLlamaFor`
+                    // twice, each llama leashed to the trader.
+                    for _ in 0..2 {
+                        if !try_spawn_trader_llama(world, pos, &entity) {
+                            // Vanilla breaks out after the first failed attempt.
+                            break;
+                        }
+                    }
                 }
                 return true;
             }
         }
         false
     }
+}
+
+/// Vanilla `WanderingTraderSpawner.tryToSpawnLlamaFor`.
+///
+/// Places a trader llama within 4 blocks of the trader and leashes it to him, so
+/// the pair walks together and the llama disappears with the merchant.
+///
+/// Returns `false` when the llama could not be placed or leashed, which vanilla
+/// also treats as "stop trying".
+fn try_spawn_trader_llama(
+    world: &Arc<World>,
+    trader_pos: BlockPos,
+    trader: &SharedEntity,
+) -> bool {
+    let Some(entity_type) = REGISTRY
+        .entity_types
+        .by_key(&Identifier::vanilla_static("trader_llama"))
+    else {
+        return false;
+    };
+
+    // Vanilla offsets by `Mth.randomBetweenInclusive(0, 2) - 2` on both axes, so
+    // the llama lands within 2 blocks of the trader.
+    for _ in 0..4 {
+        let x = trader_pos.x() + rand::random_range(-2..=0);
+        let z = trader_pos.z() + rand::random_range(-2..=0);
+        let y = world.height_at(HeightmapType::MotionBlockingNoLeaves, x, z);
+        let pos = BlockPos::new(x, y, z);
+
+        let request = EntitySpawnRequest {
+            entity_type,
+            placement: EntitySpawnPlacement::Block {
+                pos,
+                try_move_down: false,
+                moved_up: false,
+            },
+            reason: EntitySpawnReason::Event,
+            finalize_spawn: true,
+            play_ambient_sound: false,
+            item_stack: None,
+            user_is_operator: false,
+        };
+        let Ok(llama) = spawn_entity(world, request) else {
+            continue;
+        };
+        if let Some(leashable) = llama.as_ref().as_leashable()
+            && leashable.set_leashed_to(trader)
+        {
+            return true;
+        }
+    }
+    false
 }
 
 /// The vanilla `minecraft:wandering_trader` entity type, if it is registered.

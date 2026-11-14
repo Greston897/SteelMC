@@ -5,7 +5,8 @@
 //! type it is registered for.
 //!
 //! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
-//! * the trader's despawn rules and spit AI are not implemented.
+//! * the trader's despawn rules and spit AI are not implemented; the llama is
+//!   spawned and leashed by `WanderingTraderSpawner` like vanilla.
 
 use std::sync::Weak;
 
