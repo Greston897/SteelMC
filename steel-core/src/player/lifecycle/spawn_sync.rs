@@ -1,4 +1,5 @@
-use steel_protocol::packets::game::CommonPlayerSpawnInfo;
+use steel_protocol::packets::game::{CServerData, CommonPlayerSpawnInfo};
+use text_components::TextComponent;
 
 use super::{
     Arc, BlockBreakingManager, CContainerClose, CGameEvent, CRespawn, CSetChunkCacheRadius,
@@ -285,8 +286,28 @@ impl Player {
         self.send_packet(world.initialize_border_packet());
         self.send_default_spawn_position(world);
         self.send_view_distances(world);
+        self.send_server_data();
         self.send_weather_sync(world);
         self.send_recipe_book();
+    }
+
+    /// Sends the play-phase server identity packet.
+    ///
+    /// Vanilla `PlayerList.sendPlayerPermissionLevel`/`sendLevelInfo` precedes
+    /// this, and `ClientboundServerDataPacket` is what fills the F3 screen MOTD
+    /// and the server icon. The icon field is raw PNG bytes; the status-list
+    /// `data:image/png;base64,` prefix used by pings is *not* part of it.
+    fn send_server_data(&self) {
+        let server = self.server();
+        let config = &server.config;
+
+        let motd = TextComponent::plain(config.motd.clone());
+        let icon = if config.use_favicon {
+            std::fs::read(&config.favicon).ok().filter(|png| !png.is_empty())
+        } else {
+            None
+        };
+        self.send_packet(CServerData { motd, icon });
     }
 
     /// Sends the player's recipe book.
