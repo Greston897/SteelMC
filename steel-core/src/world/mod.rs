@@ -266,6 +266,8 @@ pub struct World {
     wandering_traders: SyncMutex<wandering_trader_spawner::WanderingTraderSpawner>,
     /// Vanilla `PhantomSpawner` countdown for the next insomnia attempt.
     phantoms: SyncMutex<crate::entity::phantom_spawner::PhantomSpawner>,
+    /// Vanilla `PatrolSpawner` countdown for the next pillager patrol attempt.
+    patrols: SyncMutex<crate::entity::patrol_spawner::PatrolSpawner>,
     /// Vanilla `EnderDragonFight` state for this world (only meaningful in the End).
     pub dragon_fight: dragon_fight::DragonFight,
     /// Spatial index for player proximity queries.
@@ -501,6 +503,7 @@ impl World {
                 raids,
                 wandering_traders: SyncMutex::new(wandering_traders),
                 phantoms: SyncMutex::new(crate::entity::phantom_spawner::PhantomSpawner::new()),
+                patrols: SyncMutex::new(crate::entity::patrol_spawner::PatrolSpawner::new()),
                 dragon_fight: dragon_fight::DragonFight::new(),
                 player_area_map: PlayerAreaMap::new(),
                 server: std::sync::OnceLock::new(),
@@ -783,6 +786,9 @@ impl World {
             // the call cheap on the other 1199.
             self.tick_wandering_trader_spawner();
             self.tick_phantom_spawner();
+            // Vanilla's custom spawners run in registration order: phantoms,
+            // then patrols.
+            self.tick_patrol_spawner();
         }
 
         {
@@ -892,6 +898,33 @@ impl World {
         let world = Arc::clone(self);
         let mut spawner = self.phantoms.lock();
         spawner.tick(&world);
+    }
+
+    /// Runs vanilla `PatrolSpawner.tick` for this world.
+    pub fn tick_patrol_spawner(self: &Arc<Self>) {
+        let world = Arc::clone(self);
+        let mut spawner = self.patrols.lock();
+        spawner.tick(&world);
+    }
+
+    /// Whether pillager patrols may spawn in this world at all.
+    ///
+    /// Vanilla registers `PatrolSpawner` for the Overworld only; Steel tests the
+    /// sky, like the other custom spawners, so a datapack dimension with a day
+    /// timeline gets patrols as well.
+    #[must_use]
+    pub fn allows_patrols(&self) -> bool {
+        self.dimension_type.has_skylight
+    }
+
+    /// Whether it is daytime, using vanilla's `Level.isDay`.
+    ///
+    /// `Level.isDay` is `!dimensionType().hasFixedTime() && isBrightOutside()`,
+    /// and `isBrightOutside` is the sky darkness falling under the daylight
+    /// threshold.
+    #[must_use]
+    pub fn is_day(&self) -> bool {
+        self.dimension_type.fixed_time.is_none() && self.sky_darkening() < 4
     }
 
     /// Whether phantoms may spawn in this world at all.
