@@ -1914,6 +1914,16 @@ impl FullChunkRef<'_> {
         }
     }
 
+    /// Extracts only the biome palettes for the `chunks_biomes` packet.
+    ///
+    /// Vanilla `ChunkSerializer.writeChunkBiomes`; used after `/fillbiome` and
+    /// any other biome-only change, where re-sending the whole chunk would be
+    /// wasteful.
+    #[must_use]
+    pub fn extract_biome_data(&self) -> Vec<u8> {
+        self.chunk.sections.encode_biomes()
+    }
+
     /// Extracts the light data for sending to the client.
     #[must_use]
     pub fn extract_light_data(&self, has_skylight: bool) -> LightUpdatePacketData {

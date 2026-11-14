@@ -3211,9 +3211,14 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         }
 
         if let Some(world) = self.level() {
-            world.play_sound_at(
-                sound,
+            // Vanilla `Entity.playSound` -> `Level.playSeededSound(... this ...)`
+            // sends `sound_entity`, which carries the entity id so the client can
+            // follow the entity and restart the sound when it moves.
+            let holder = SoundEventHolder::registry(sound);
+            world.play_entity_sound(
+                &holder,
                 self.sound_source(),
+                self.id(),
                 self.position(),
                 volume,
                 pitch,
@@ -3232,14 +3237,29 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         }
 
         if let Some(world) = self.level() {
-            world.play_sound_holder_at(
-                sound,
-                self.sound_source(),
-                self.position(),
-                volume,
-                pitch,
-                None,
-            );
+            // Same entity-bound path as `play_sound`. `sound_entity` only carries
+            // a registry holder id, so an inline (direct) sound has to fall back
+            // to the positional packet to stay audible.
+            if sound.registry_ref().is_some() {
+                world.play_entity_sound(
+                    sound,
+                    self.sound_source(),
+                    self.id(),
+                    self.position(),
+                    volume,
+                    pitch,
+                    None,
+                );
+            } else {
+                world.play_sound_holder_at(
+                    sound,
+                    self.sound_source(),
+                    self.position(),
+                    volume,
+                    pitch,
+                    None,
+                );
+            }
         }
     }
 

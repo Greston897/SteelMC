@@ -2,7 +2,8 @@ use std::ptr;
 
 use super::{
     Arc, BLOCK_BEHAVIORS, BlockLootContext, BlockPos, BlockStateExt, BlockStateId, CLevelEvent,
-    CLevelParticles, CSound, ChunkPos, ConnectionProtocol, DVec3, EncodedPacket, Entity,
+    CLevelParticles, CSound, CSoundEntity, ChunkPos, ConnectionProtocol, DVec3, EncodedPacket,
+    Entity,
     GLOBAL_SOUND_EVENTS, GameEventContext, ItemStack, LevelReader, LootContext, NetworkConnection,
     ParticleData, Player, REGISTRY, RandomizationType, RegistryExt, SectionPos, SoundEventRef,
     SoundSource, UpdateFlags, World, WorldEntityManager, entity_loot_ref, fluid_state_to_block,
@@ -579,6 +580,75 @@ impl World {
                 }
             }
         }
+    }
+
+    /// Vanilla `Level.playSeededSound` for a sound emitted by an entity.
+    ///
+    /// The client needs the *entity* id, not a fixed position: `sound_entity`
+    /// makes the sound follow the entity and lets the client restart it when the
+    /// entity moves. Sending `sound` (positional) instead — which is what the
+    /// plain `play_sound_at` path does — pins every mob sound to the spot where
+    /// it was emitted, so a walking cow's moo comes from where it used to stand.
+    ///
+    /// Returns `false` when no player could hear the sound, matching vanilla's
+    /// "sound was a no-op" contract.
+    pub fn play_entity_sound(
+        &self,
+        sound: &SoundEventHolder,
+        source: SoundSource,
+        entity_id: i32,
+        pos: DVec3,
+        volume: f32,
+        pitch: f32,
+        exclude: Option<i32>,
+    ) -> bool {
+        // Vanilla skips the packet entirely for a silent sound source.
+        if volume <= 0.0 {
+            return false;
+        }
+        let chunk = ChunkPos::new(
+            SectionPos::block_to_section_coord(pos.x.floor() as i32),
+            SectionPos::block_to_section_coord(pos.z.floor() as i32),
+        );
+        // `sound_entity` carries the registry holder id only; an inline sound
+        // definition has no id, so it cannot be bound to an entity.
+        let Some(registry_sound) = sound.registry_ref() else {
+            return false;
+        };
+        let seed = rand::random::<i64>();
+        let packet = CSoundEntity {
+            sound_id: registry_sound.packet_holder_id(),
+            source: source.as_varint(),
+            entity_id,
+            volume,
+            pitch,
+            seed,
+        };
+        let Ok(encoded) =
+            EncodedPacket::from_bare(packet, self.compression, ConnectionProtocol::Play)
+        else {
+            log::warn!("Failed to encode entity sound packet");
+            return false;
+        };
+
+        let mut audible = false;
+        for player_id in self.player_area_map.get_tracking_players(chunk) {
+            if exclude == Some(player_id) {
+                continue;
+            }
+            let Some(player) = self.players.get_by_entity_id(player_id) else {
+                continue;
+            };
+            let player_pos = player.position();
+            let dx = player_pos.x - pos.x;
+            let dy = player_pos.y - pos.y;
+            let dz = player_pos.z - pos.z;
+            if sound_is_within_range(sound, volume, dx * dx + dy * dy + dz * dz) {
+                player.connection.send_encoded(encoded.clone());
+                audible = true;
+            }
+        }
+        audible
     }
 
     /// Plays a sound for explicit player targets using vanilla's range fallback.

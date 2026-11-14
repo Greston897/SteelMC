@@ -20,6 +20,7 @@ use super::super::{
     registration::CommandRegistration,
 };
 use super::execute::{ensure_region_chunks_block_ticking, loaded_block_position};
+use steel_protocol::packets::game::{CChunksBiomes, ChunkBiomeData};
 use steel_utils::ChunkPos;
 
 type Builder = CommandNodeBuilder<CommandSource, SteelCommandRuntime>;
@@ -73,6 +74,13 @@ fn execute_fillbiome(
         }
     }
 
+    // Vanilla `FillBiomeCommand` answers with the count *and* re-sends the biome
+    // palettes of every touched chunk. Without this the client keeps rendering
+    // the old biome colours until the chunk is reloaded.
+    if changed > 0 {
+        send_changed_biomes(world, region);
+    }
+
     let message = TextComponent::plain(format!(
         "Applied the biome to {changed} block(s) at ({}, {}, {}) to ({}, {}, {})",
         from.x(),
@@ -84,6 +92,44 @@ fn execute_fillbiome(
     ));
     source.send_success(&message, true);
     Ok(changed)
+}
+
+/// Vanilla `FillBiomeCommand` -> `ChunkMap.markChunkForSending` biome resend.
+///
+/// Vanilla walks the region chunk by chunk and, for every fully loaded chunk,
+/// sends `ClientboundChunksBiomesPacket.forChunk(...)` to the players tracking
+/// that chunk only. Sending to everyone in the world (as a single broadcast)
+/// would push biome palettes for chunks the client never loaded.
+fn send_changed_biomes(world: &std::sync::Arc<crate::world::World>, region: BoundingBox) {
+    let min_chunk_x = region.min_x() >> 4;
+    let max_chunk_x = region.max_x() >> 4;
+    let min_chunk_z = region.min_z() >> 4;
+    let max_chunk_z = region.max_z() >> 4;
+
+    for chunk_x in min_chunk_x..=max_chunk_x {
+        for chunk_z in min_chunk_z..=max_chunk_z {
+            let chunk_pos = ChunkPos::new(chunk_x, chunk_z);
+            let Some(biomes) = world
+                .chunk_map
+                .with_full_chunk(chunk_pos, |chunk| chunk.extract_biome_data())
+            else {
+                continue;
+            };
+
+            let packet = CChunksBiomes {
+                chunks: vec![ChunkBiomeData {
+                    x: chunk_x,
+                    z: chunk_z,
+                    biomes,
+                }],
+            };
+            for player_id in world.player_area_map.get_tracking_players(chunk_pos) {
+                if let Some(player) = world.players.get_by_entity_id(player_id) {
+                    player.connection.send_packet(packet.clone());
+                }
+            }
+        }
+    }
 }
 
 /// Volume of a block region, saturating instead of overflowing for huge areas.
