@@ -190,12 +190,16 @@ impl WanderingTraderSpawner {
                 user_is_operator: false,
             };
             if let Ok(entity) = spawn_entity(world, request) {
+                // Vanilla `WanderingTraderSpawner`: the trader leaves after
+                // `DESPAWN_DELAY` ticks unless somebody is trading with it.
+                // Llamas are *not* spawned: vanilla's `tryToSpawnLlamaFor`
+                // spawns a trader llama leashed to the trader, and Steel has
+                // neither the trader llama variant of the entity data nor a
+                // lead that survives the separate spawn.
                 if let Some(trader) = entity
                     .as_ref()
                     .downcast_ref::<crate::entity::entities::WanderingTraderEntity>()
                 {
-                    // Vanilla `WanderingTraderSpawner`: the trader leaves after
-                    // `DESPAWN_DELAY` ticks unless somebody is trading with it.
                     trader.set_despawn_delay(natural_despawn_delay());
                 }
                 return true;
@@ -240,7 +244,8 @@ pub const fn natural_despawn_delay() -> i32 {
 #[cfg(test)]
 mod tests {
     use super::{
-        INITIAL_SPAWN_CHANCE, MAX_SPAWN_CHANCE, SPAWN_DELAY_TICKS, WanderingTraderSchedule,
+        INITIAL_SPAWN_CHANCE, MAX_SPAWN_CHANCE, SPAWN_CHECK_INTERVAL, SPAWN_DELAY_TICKS,
+        WanderingTraderSchedule,
     };
 
     #[test]
@@ -267,12 +272,12 @@ mod tests {
     #[test]
     fn the_delay_only_expires_after_the_full_day() {
         let mut schedule = WanderingTraderSchedule::default();
-        let mut attempts = 0;
-        for _ in 0..(SPAWN_DELAY_TICKS / 1_200) {
-            if schedule.tick(1_200, 100) {
-                attempts += 1;
-            }
+        let mut attempts: usize = 0;
+        // The counter moves once per 1200-tick check, so a full day is 20 checks.
+        for _ in 0..(SPAWN_DELAY_TICKS / SPAWN_CHECK_INTERVAL) - 1 {
+            assert!(!schedule.tick(SPAWN_CHECK_INTERVAL, 100));
         }
-        assert_eq!(attempts, 1, "one roll per 24000 ticks");
+        attempts += usize::from(schedule.tick(SPAWN_CHECK_INTERVAL, 0));
+        assert_eq!(attempts, 1, "exactly one roll after 24000 ticks");
     }
 }
