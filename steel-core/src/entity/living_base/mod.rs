@@ -654,6 +654,9 @@ struct LivingEntityState {
     last_climbable_pos: Option<BlockPos>,
     discard_friction: bool,
     jumping: bool,
+    /// Vanilla `AbstractHorse.playerJumpPendingScale`: the charge the rider
+    /// released, applied on the mount's next grounded `tickRidden`.
+    jump_pending_scale: f32,
     travel_input: LivingTravelInput,
     rotation: LivingRotationState,
     swing: LivingSwingState,
@@ -691,6 +694,7 @@ impl LivingEntityState {
             last_climbable_pos: None,
             discard_friction: false,
             jumping: false,
+            jump_pending_scale: 0.0,
             travel_input: LivingTravelInput::ZERO,
             rotation: LivingRotationState::new(),
             swing: LivingSwingState::new(),
@@ -1515,6 +1519,18 @@ impl LivingEntityBase {
     /// Sets whether this living entity is applying jump input.
     pub fn set_jumping(&self, jumping: bool) {
         self.state.lock().jumping = jumping;
+    }
+
+    /// Returns vanilla `playerJumpPendingScale`, the jump charge a rider has
+    /// released and that the mount still has to apply.
+    #[must_use]
+    pub fn jump_pending_scale(&self) -> f32 {
+        self.state.lock().jump_pending_scale
+    }
+
+    /// Sets vanilla `playerJumpPendingScale`.
+    pub fn set_jump_pending_scale(&self, scale: f32) {
+        self.state.lock().jump_pending_scale = scale;
     }
 
     /// Returns vanilla living travel input.

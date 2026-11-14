@@ -3,19 +3,25 @@
 //! Built on the shared `Animal` skeleton with the vanilla `AbstractHorse` flag
 //! byte mirrored into the generated entity data.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
-//! * camel dashing, sitting poses and the two-passenger saddle are not
-//!   implemented; the `dash` and `last_pose_change_tick` synced fields are kept.
+//! The dash jump works: `START_RIDING_JUMP` fires `Camel.executeRidersJump`
+//! (a long forward leap plus `entity.camel.dash`), the cooldown drives
+//! `getJumpCooldown`, and the dash flag clears on landing.
+//!
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
+//! * sitting poses and the two-passenger saddle are not implemented; the
+//!   `last_pose_change_tick` synced field is kept.
 
 use std::sync::Weak;
 
 use glam::DVec3;
 use simdnbt::{borrow, owned};
 use steel_macros::entity_behavior;
+use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
+use steel_registry::vanilla_game_events;
 use steel_registry::vanilla_attributes;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_item_tags::ItemTag;
@@ -37,6 +43,7 @@ use crate::entity::{
 use crate::entity::mount::{SharedMountInventory, open_mount_menu};
 use crate::physics::MoveResult;
 use crate::world::World;
+use crate::world::game_event::GameEventContext;
 
 /// Vanilla `AbstractHorse.DATA_ID_FLAGS` bit: the horse is tamed.
 const HORSE_FLAG_TAME: i8 = 0x02;
@@ -57,6 +64,8 @@ pub struct CamelEntity {
     /// Vanilla `AbstractHorse.inventory`: saddle, body armor and storage.
     mount_inventory: SharedMountInventory,
     entity_data: SyncMutex<CamelEntityData>,
+    /// Vanilla `Camel.dashCooldown`: ticks left before the next dash.
+    dash_cooldown: SyncMutex<i32>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `CamelEntity`.
@@ -117,6 +126,7 @@ impl CamelEntity {
             animal_base,
             mount_inventory: crate::entity::mount::shared_inventory(1),
             entity_data: SyncMutex::new(entity_data),
+            dash_cooldown: SyncMutex::new(0),
         }
     }
 
@@ -242,6 +252,7 @@ impl Entity for CamelEntity {
 
     fn base_tick(&self) {
         Mob::base_tick_mob(self);
+        self.tick_dash();
     }
 
     fn dimensions_for_pose(&self, _pose: EntityPose) -> EntityDimensions {
@@ -281,6 +292,43 @@ impl Entity for CamelEntity {
     }
 }
 
+impl CamelEntity {
+    /// Vanilla `Camel.getJumpCooldown`: the dash cooldown gates rider jumps.
+    #[must_use]
+    pub fn dash_cooldown(&self) -> i32 {
+        *self.dash_cooldown.lock()
+    }
+
+    /// Sets the vanilla dash cooldown.
+    pub fn set_dash_cooldown(&self, cooldown: i32) {
+        *self.dash_cooldown.lock() = cooldown;
+    }
+
+    /// Vanilla `Camel.tick`: clear a stale dash flag and count the cooldown
+    /// down, playing `entity.camel.dash_ready` when it runs out.
+    pub fn tick_dash(&self) {
+        if self.is_dashing() && self.dash_cooldown() < 50 && self.on_ground() {
+            self.set_dashing(false);
+        }
+        let remaining = self.dash_cooldown();
+        if remaining > 0 {
+            self.set_dash_cooldown(remaining - 1);
+            if remaining - 1 == 0
+                && let Some(world) = self.level()
+            {
+                world.play_sound_at(
+                    &sound_events::ENTITY_CAMEL_DASH_READY,
+                    SoundSource::Neutral,
+                    self.position(),
+                    1.0,
+                    1.0,
+                    None,
+                );
+            }
+        }
+    }
+}
+
 impl LivingEntity for CamelEntity {
     fn living_base(&self) -> &LivingEntityBase {
         &self.living_base
@@ -317,6 +365,67 @@ impl LivingEntity for CamelEntity {
         AgeableMob::tick_ageable_mob(self);
         Animal::tick_animal_love(self);
         result
+    }
+
+    /// Vanilla `Camel.canJump`: a sitting camel and one on cooldown refuse jumps.
+    fn can_jump_with_rider(&self) -> bool {
+        self.is_saddled() && self.dash_cooldown() <= 0
+    }
+
+    /// Vanilla `Camel.onPlayerJump`: only a grounded camel takes the charge.
+    fn on_player_jump(&self, jump_amount: i32) {
+        if self.is_saddled() && self.dash_cooldown() <= 0 && self.on_ground() {
+            let amount = jump_amount.max(0);
+            self.living_base().set_jump_pending_scale(
+                Self::player_jump_pending_scale(amount),
+            );
+        }
+    }
+
+    /// Vanilla `Camel.handleStartJump`: dash sound, action game event, dash flag.
+    fn handle_start_jump(&self, _jump_scale: i32) {
+        if let Some(world) = self.level() {
+            world.play_sound_at(
+                &sound_events::ENTITY_CAMEL_DASH,
+                SoundSource::Neutral,
+                self.position(),
+                1.0,
+                1.0,
+                None,
+            );
+            world.game_event_at(
+                &vanilla_game_events::ENTITY_ACTION,
+                self.position(),
+                &GameEventContext::new(Some(self.as_entity_event_source()), None),
+            );
+        }
+        self.set_dashing(true);
+    }
+
+    /// Vanilla `Camel.executeRidersJump`: a 55-tick-cooldown dash that adds a
+    /// long horizontal leap on top of the vertical jump power.
+    fn execute_riders_jump(&self, amount: f32, _ridden_input: DVec3) {
+        let movement_speed = self
+            .attributes()
+            .lock()
+            .required_value(vanilla_attributes::MOVEMENT_SPEED) as f32;
+        let jump_momentum = self.get_jump_power();
+        let (yaw, _pitch) = self.rotation();
+        let look = DVec3::new(
+            -f64::from(steel_math::trig::sin(yaw.to_radians())),
+            0.0,
+            f64::from(steel_math::trig::cos(yaw.to_radians())),
+        )
+        .normalize_or_zero();
+        let horizontal = 22.2222_f32 * amount * movement_speed * self.block_speed_factor();
+        self.set_velocity(
+            self.velocity()
+                + look * f64::from(horizontal)
+                + DVec3::new(0.0, f64::from(1.4285_f32 * amount * jump_momentum), 0.0),
+        );
+        self.mark_velocity_sync();
+        self.set_dash_cooldown(55);
+        self.set_dashing(true);
     }
 }
 

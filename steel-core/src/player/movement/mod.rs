@@ -1029,19 +1029,23 @@ impl Player {
                 }
             }
             PlayerCommandAction::StartRidingJump => {
-                // Vanilla `ServerboundPlayerCommandPacket.Action.START_RIDING_JUMP`:
-                // the player is the controlling passenger of a mob, so the
-                // mounted mob jumps.
+                // Vanilla `ServerGamePacketListenerImpl.handlePlayerCommand`:
+                // `START_RIDING_JUMP` reaches `PlayerRideableJumping.onPlayerJump`
+                // with the charge; the mount stores it and applies it on its next
+                // grounded tick. The packet carries the charge in `data`.
                 if let Some(vehicle) = self.controlling_vehicle_mob()
-                    && let Some(mob) = vehicle.as_mob()
+                    && let Some(living) = vehicle.as_living_entity()
+                    && living.can_jump_with_rider()
+                    && packet.data > 0
                 {
-                    mob.jump_control_jump();
+                    living.handle_start_jump(packet.data);
+                    living.on_player_jump(packet.data);
                 }
             }
             PlayerCommandAction::StopRidingJump => {
-                // Vanilla has no "stop jump" behaviour beyond clearing the
-                // pending input, which `JumpControl::tick` does on the next
-                // entity tick.
+                // Vanilla `handleStopJump` is empty for every rideable in 26.3;
+                // releasing the jump key already sent the charge through
+                // `START_RIDING_JUMP`.
             }
             PlayerCommandAction::OpenVehicleInventory => {
                 // Vanilla opens the mount's inventory menu; Steel routes it

@@ -2492,6 +2492,82 @@ pub trait LivingEntity: Entity {
         self.living_base().set_jumping(jumping);
     }
 
+    /// Vanilla `PlayerRideableJumping.canJump`: whether this mount accepts a
+    /// rider's jump charge at all. Mobs that are not rideable keep the `false`
+    /// default, so a stray `START_RIDING_JUMP` cannot launch them.
+    fn can_jump_with_rider(&self) -> bool {
+        false
+    }
+
+    /// Vanilla `PlayerRideableJumping.getPlayerJumpPendingScale`: maps the
+    /// client's 0-100 charge to the impulse multiplier vanilla uses.
+    fn player_jump_pending_scale(jump_amount: i32) -> f32 {
+        if jump_amount >= 90 {
+            1.0
+        } else {
+            0.4 + 0.4 * jump_amount as f32 / 90.0
+        }
+    }
+
+    /// Vanilla `PlayerRideableJumping.onPlayerJump`: stores the released charge
+    /// so the mount applies it on its next grounded tick.
+    fn on_player_jump(&self, jump_amount: i32) {
+        if !self.can_jump_with_rider() {
+            return;
+        }
+        let amount = jump_amount.max(0);
+        self.living_base()
+            .set_jump_pending_scale(Self::player_jump_pending_scale(amount));
+    }
+
+    /// Returns the jump charge a rider released, `0.0` when none is pending.
+    fn jump_pending_scale(&self) -> f32 {
+        self.living_base().jump_pending_scale()
+    }
+
+    /// Clears a pending rider jump charge.
+    fn reset_jump_pending_scale(&self) {
+        self.living_base().set_jump_pending_scale(0.0);
+    }
+
+    /// Vanilla `AbstractHorse.executeRidersJump`: replaces the vertical velocity
+    /// with the charged impulse and, when the rider presses forward, adds the
+    /// forward nudge vanilla gives a horse taking off.
+    fn execute_riders_jump(&self, amount: f32, ridden_input: DVec3) {
+        let impulse = f64::from(self.get_jump_power_with_multiplier(amount));
+        let movement = self.velocity();
+        self.set_velocity(DVec3::new(movement.x, impulse, movement.z));
+        self.mark_velocity_sync();
+        if ridden_input.z > 0.0 {
+            let angle = self.rotation().0.to_radians();
+            self.set_velocity(
+                self.velocity()
+                    + DVec3::new(
+                        -f64::from(0.4_f32 * trig::sin(angle)) * f64::from(amount),
+                        0.0,
+                        f64::from(0.4_f32 * trig::cos(angle)) * f64::from(amount),
+                    ),
+            );
+        }
+    }
+
+    /// Vanilla `PlayerRideableJumping.handleStartJump` default body: the sound
+    /// is mount-specific, so only the bookkeeping hook is shared.
+    fn handle_start_jump(&self, _jump_scale: i32) {}
+
+    /// Vanilla `AbstractHorse.tickRidden` jump resolution: while grounded, a
+    /// pending charge launches the mount unless it is already jumping.
+    fn apply_pending_riders_jump(&self, ridden_input: DVec3) {
+        if !self.on_ground() {
+            return;
+        }
+        let pending = self.jump_pending_scale();
+        if pending > 0.0 && !self.is_jumping() {
+            self.execute_riders_jump(pending, ridden_input);
+        }
+        self.reset_jump_pending_scale();
+    }
+
     /// Returns vanilla living travel input.
     fn travel_input(&self) -> LivingTravelInput {
         self.living_base().travel_input()
@@ -2691,6 +2767,12 @@ pub trait LivingEntity: Entity {
     ) -> Option<MoveResult> {
         let ridden_input = self.ridden_input(controller, self_input);
         self.tick_ridden(controller, ridden_input);
+        // Vanilla `AbstractHorse.tickRidden` applies the released charge on the
+        // first grounded tick; Steel's `tick_ridden` overrides are per species,
+        // so the shared jump resolution lives here instead of being repeated.
+        if self.on_ground() {
+            self.apply_pending_riders_jump(ridden_input);
+        }
         if self.can_simulate_movement() {
             self.set_speed(self.ridden_speed(controller));
             return self.travel(entity, ridden_input);

@@ -7,15 +7,19 @@
 //! Riding works: a saddled horse is steered by the rider's look direction and
 //! moves at its own `MOVEMENT_SPEED`, and taming by mounting is in.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
-//! * jumping (the charge bar), galloping, chest inventory and breeding stats are
-//!   not implemented.
+//! The rider jump works too: `START_RIDING_JUMP` stores the charge, the first
+//! grounded tick applies `AbstractHorse.executeRidersJump`, and the horse emits
+//! `entity.horse.jump`.
+//!
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
+//! * galloping and breeding stats are not implemented.
 
 use std::sync::Weak;
 
 use glam::DVec3;
 use simdnbt::{borrow, owned};
 use steel_macros::entity_behavior;
+use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::sound_event::SoundEventRef;
@@ -175,6 +179,28 @@ impl HorseEntity {
             flags & !HORSE_FLAG_SADDLE
         };
         self.set_horse_flags(flags);
+    }
+
+    /// Vanilla `PlayerRideableJumping.canJump`: only a saddled horse takes a
+    /// rider's jump charge.
+    #[must_use]
+    pub fn can_rider_jump(&self) -> bool {
+        self.is_saddled()
+    }
+
+    /// Vanilla `AbstractHorse.handleStartJump`: the take-off sound.
+    pub fn play_jump_sound(&self) {
+        let Some(world) = self.level() else {
+            return;
+        };
+        world.play_sound_at(
+            &sound_events::ENTITY_HORSE_JUMP,
+            SoundSource::Neutral,
+            self.position(),
+            0.4,
+            1.0,
+            None,
+        );
     }
 
     /// Vanilla `AbstractHorse.travel`: face the rider's look direction, damping
@@ -439,6 +465,19 @@ impl Mob for HorseEntity {
         }
         let (yaw, pitch) = controller.rotation();
         self.set_ridden_rotation(yaw, pitch);
+    }
+
+    /// Vanilla `PlayerRideableJumping.canJump` on `AbstractHorse`.
+    fn can_jump_with_rider(&self) -> bool {
+        self.can_rider_jump()
+    }
+
+    /// Vanilla `AbstractHorse.handleStartJump`: take-off sound plus the stand
+    /// animation, which Steel does not render.
+    fn handle_start_jump(&self, _jump_scale: i32) {
+        if self.can_rider_jump() {
+            self.play_jump_sound();
+        }
     }
 
     /// Vanilla `AbstractHorse.getRiddenSpeed`.

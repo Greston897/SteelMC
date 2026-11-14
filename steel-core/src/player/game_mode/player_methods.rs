@@ -161,19 +161,10 @@ impl Player {
             );
             return;
         }
-        {
-            let level_data = world.level_data.read();
-            if level_data.data().difficulty_locked {
-                let current = level_data.data().difficulty;
-                drop(level_data);
-                self.send_packet(CChangeDifficulty {
-                    difficulty: current,
-                    locked: true,
-                });
-                return;
-            }
-        }
-
+        // Vanilla `MinecraftServer.setDifficulty(difficulty, false)` runs whether
+        // or not the difficulty is currently locked: forcing is the only thing
+        // the lock protects, and the broadcast below re-sends the lock flag so
+        // the client UI snaps back.
         let domain = self.get_world().domain().to_owned();
         for world in self.server().worlds.worlds_in_domain(&domain) {
             world.set_difficulty(difficulty);

@@ -13,6 +13,7 @@ use std::sync::Weak;
 use glam::DVec3;
 use simdnbt::{borrow, owned};
 use steel_macros::entity_behavior;
+use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::sound_event::SoundEventRef;
@@ -358,6 +359,28 @@ impl LivingEntity for MuleEntity {
         AgeableMob::tick_ageable_mob(self);
         Animal::tick_animal_love(self);
         result
+    }
+    /// Vanilla `AbstractHorse.canJump`: only a saddled mount accepts a charge.
+    fn can_jump_with_rider(&self) -> bool {
+        self.is_saddled()
+    }
+
+    /// Vanilla `AbstractHorse.handleStartJump`: the horse-family take-off sound.
+    fn handle_start_jump(&self, _jump_scale: i32) {
+        if !self.is_saddled() {
+            return;
+        }
+        let Some(world) = self.level() else {
+            return;
+        };
+        world.play_sound_at(
+            &sound_events::ENTITY_MULE_JUMP,
+            SoundSource::Neutral,
+            self.position(),
+            0.4,
+            1.0,
+            None,
+        );
     }
 }
 
