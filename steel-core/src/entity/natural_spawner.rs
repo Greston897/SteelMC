@@ -15,12 +15,13 @@ use steel_registry::biome::BiomeRef;
 use steel_registry::entity_type::{EntityTypeRef, MobCategory};
 use steel_registry::vanilla_game_rules;
 use steel_registry::{REGISTRY, RegistryExt as _};
-use steel_utils::{BlockPos, ChunkPos, types::Difficulty};
+use steel_utils::{BlockPos, ChunkPos, WorldAabb, types::Difficulty};
 use steel_worldgen::biomes::obfuscate_biome_seed;
 
 use crate::chunk::heightmap::HeightmapType;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
 use crate::entity::spawn_placements::SpawnPlacements;
+use crate::physics::has_block_collision;
 use crate::entity::spawn_entity;
 use crate::worldgen::generators::vanilla::fuzzed_biome_at_block;
 use crate::world::{LevelReader, World, is_redstone_conductor};
@@ -250,6 +251,9 @@ fn try_spawn_category_in_random_chunk(world: &Arc<World>, category: MobCategory)
     let Some(candidate) = pick_candidate(world, category, pos) else {
         return 0;
     };
+    if !is_valid_spawn_position(world, candidate.entity_type, pos) {
+        return 0;
+    }
     if !SpawnPlacements::check_natural_spawn_rules(candidate.entity_type, world, pos, &mut random) {
         return 0;
     }
@@ -284,6 +288,46 @@ fn is_right_distance_for_spawn(
         return false;
     };
     distance_sqr >= MIN_SPAWN_DISTANCE * MIN_SPAWN_DISTANCE
+}
+
+/// Vanilla `NaturalSpawner.isValidSpawnPostitionForType`'s non-predicate checks.
+///
+/// Beyond the type's own spawn rule, vanilla requires that the type is not
+/// `MISC`, that it is either `canSpawnFarFromPlayer` or still inside the
+/// category's despawn distance, and that the spawn box is clear
+/// (`Level.noCollision(type.getSpawnAABB(...))`). Steel checked none of these,
+/// so mobs could spawn half inside a wall or far outside the spawnable ring.
+fn is_valid_spawn_position(world: &Arc<World>, entity_type: EntityTypeRef, pos: BlockPos) -> bool {
+    if entity_type.mob_category == MobCategory::Misc {
+        return false;
+    }
+
+    if !entity_type.can_spawn_far_from_player {
+        let despawn_distance = entity_type.mob_category.despawn_distance();
+        let Some(distance_sqr) = world.nearest_player_distance_sqr(glam::DVec3::new(
+            f64::from(pos.x()) + 0.5,
+            f64::from(pos.y()),
+            f64::from(pos.z()) + 0.5,
+        )) else {
+            return false;
+        };
+        if distance_sqr > f64::from(despawn_distance * despawn_distance) {
+            return false;
+        }
+    }
+
+    // Vanilla `EntityType.getSpawnAABB(x + 0.5, y, z + 0.5)`.
+    let dimensions = entity_type.dimensions;
+    let half_width = f64::from(dimensions.width) / 2.0;
+    let spawn_box = WorldAabb::new(
+        f64::from(pos.x()) + 0.5 - half_width,
+        f64::from(pos.y()),
+        f64::from(pos.z()) + 0.5 - half_width,
+        f64::from(pos.x()) + 0.5 + half_width,
+        f64::from(pos.y()) + f64::from(dimensions.height),
+        f64::from(pos.z()) + 0.5 + half_width,
+    );
+    !has_block_collision(world.as_ref(), spawn_box)
 }
 
 /// Spawns one pack of `candidate` at `pos`, returning how many mobs appeared.
