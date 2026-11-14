@@ -424,40 +424,63 @@ impl ScheduledPlayPacket {
                 player.handle_seen_advancement(packet);
             }
             ScheduledPlayPacketKind::BlockEntityTagQuery(packet) => {
-                log::debug!("ignoring unimplemented BlockEntityTagQuery packet: {packet:?}");
+                player.handle_block_entity_tag_query(packet);
             }
             ScheduledPlayPacketKind::BundleItemSelected(packet) => {
-                log::debug!("ignoring unimplemented BundleItemSelected packet: {packet:?}");
+                player.handle_bundle_item_selected(packet);
             }
             ScheduledPlayPacketKind::ChatCommandSigned(packet) => {
-                log::debug!("ignoring unimplemented ChatCommandSigned packet: {packet:?}");
+                // Vanilla `handleChatCommand` runs signed and unsigned commands
+                // through the same dispatcher; the signature chain only feeds
+                // chat reporting, which Steel does not model. The command text is
+                // identical, so it is executed here the same way.
+                player.reset_last_action_time();
+                if server
+                    .submit_command(CommandSender::Player(Arc::clone(&player)), packet.command)
+                    .is_err()
+                {
+                    player.send_message(
+                        &TextComponent::const_plain("Command queue is full").color(Color::Red),
+                    );
+                }
+                player.detect_command_rate_spam();
             }
             ScheduledPlayPacketKind::ConfigurationAcknowledged(packet) => {
                 log::debug!("ignoring unimplemented ConfigurationAcknowledged packet: {packet:?}");
             }
             ScheduledPlayPacketKind::CookieResponse(packet) => {
-                log::debug!("ignoring unimplemented CookieResponse packet: {packet:?}");
+                // Vanilla `ServerCommonPacketListenerImpl.handleCookieResponse`
+                // answers every cookie reply in the play phase with a disconnect:
+                // the server only accepts cookies it asked for, and Steel never
+                // sends `CCookieRequest`.
+                let _ = &packet;
+                player.disconnect(
+                    translations::MULTIPLAYER_DISCONNECT_UNEXPECTED_QUERY_RESPONSE.msg(),
+                );
             }
             ScheduledPlayPacketKind::DebugSubscriptionRequest(packet) => {
-                log::debug!("ignoring unimplemented DebugSubscriptionRequest packet: {packet:?}");
+                player.handle_debug_subscription_request(packet);
             }
             ScheduledPlayPacketKind::EntityTagQuery(packet) => {
-                log::debug!("ignoring unimplemented EntityTagQuery packet: {packet:?}");
+                player.handle_entity_tag_query(packet);
             }
             ScheduledPlayPacketKind::JigsawGenerate(packet) => {
-                log::debug!("ignoring unimplemented JigsawGenerate packet: {packet:?}");
+                player.handle_jigsaw_generate(packet);
             }
             ScheduledPlayPacketKind::LockDifficulty(packet) => {
-                log::debug!("ignoring unimplemented LockDifficulty packet: {packet:?}");
+                player.handle_lock_difficulty(packet);
             }
             ScheduledPlayPacketKind::PickItemFromEntity(packet) => {
-                log::debug!("ignoring unimplemented PickItemFromEntity packet: {packet:?}");
+                player.handle_pick_item_from_entity(packet);
             }
             ScheduledPlayPacketKind::PlaceRecipe(packet) => {
-                log::debug!("ignoring unimplemented PlaceRecipe packet: {packet:?}");
+                player.handle_place_recipe(packet);
             }
             ScheduledPlayPacketKind::Pong(packet) => {
-                log::debug!("ignoring unimplemented Pong packet: {packet:?}");
+                // Vanilla `ServerCommonPacketListenerImpl.handlePong` is an empty
+                // method: the pong only satisfies the latency bookkeeping done by
+                // the client, the server ignores it.
+                log::debug!("ignoring vanilla no-op Pong packet: {packet:?}");
             }
             ScheduledPlayPacketKind::RecipeBookChangeSettings(packet) => {
                 player.handle_recipe_book_change_settings(packet);
@@ -466,7 +489,10 @@ impl ScheduledPlayPacket {
                 player.handle_recipe_book_seen_recipe(packet);
             }
             ScheduledPlayPacketKind::ResourcePack(packet) => {
-                log::debug!("ignoring unimplemented ResourcePack packet: {packet:?}");
+                // Vanilla `ServerCommonPacketListenerImpl.handleResourcePackResponse`
+                // only reacts to `DECLINED` when the server requires a pack. Steel
+                // never sends `CResourcePackPush`, so every action is a no-op.
+                log::debug!("ignoring ResourcePack packet, Steel sends no packs: {packet:?}");
             }
             ScheduledPlayPacketKind::SelectTrade(packet) => {
                 player.handle_select_trade(packet);
@@ -475,26 +501,28 @@ impl ScheduledPlayPacket {
                 player.handle_set_command_block(packet);
             }
             ScheduledPlayPacketKind::SetCommandMinecart(packet) => {
-                log::debug!("ignoring unimplemented SetCommandMinecart packet: {packet:?}");
+                player.handle_set_command_minecart(packet);
             }
             ScheduledPlayPacketKind::SetGameRule(packet) => player.handle_set_game_rule(packet),
             ScheduledPlayPacketKind::SetJigsawBlock(packet) => {
-                log::debug!("ignoring unimplemented SetJigsawBlock packet: {packet:?}");
+                player.handle_set_jigsaw_block(packet);
             }
             ScheduledPlayPacketKind::SetStructureBlock(packet) => {
-                log::debug!("ignoring unimplemented SetStructureBlock packet: {packet:?}");
+                player.handle_set_structure_block(packet);
             }
             ScheduledPlayPacketKind::SetTestBlock(packet) => {
-                log::debug!("ignoring unimplemented SetTestBlock packet: {packet:?}");
+                player.handle_set_test_block(packet);
             }
             ScheduledPlayPacketKind::TeleportToEntity(packet) => {
-                log::debug!("ignoring unimplemented TeleportToEntity packet: {packet:?}");
+                player.handle_teleport_to_entity(packet);
             }
             ScheduledPlayPacketKind::TestInstanceBlockAction(packet) => {
-                log::debug!("ignoring unimplemented TestInstanceBlockAction packet: {packet:?}");
+                player.handle_test_instance_block_action(packet);
             }
             ScheduledPlayPacketKind::CustomClickAction(packet) => {
-                log::debug!("ignoring unimplemented CustomClickAction packet: {packet:?}");
+                // Vanilla `MinecraftServer.handleCustomClickAction` only logs at
+                // debug level, so there is nothing to dispatch.
+                log::debug!("ignoring vanilla no-op CustomClickAction packet: {packet:?}");
             }
         }
     }
@@ -900,6 +928,9 @@ impl JavaConnection {
             )),
             play::S_CONTAINER_CLOSE => scheduled(ScheduledPlayPacketKind::ContainerClose(
                 SContainerClose::read_packet(data)?,
+            )),
+            play::S_COOKIE_RESPONSE => scheduled(ScheduledPlayPacketKind::CookieResponse(
+                SCookieResponse::read_packet(data)?,
             )),
             play::S_CONTAINER_SLOT_STATE_CHANGED => {
                 scheduled(ScheduledPlayPacketKind::ContainerSlotStateChanged(

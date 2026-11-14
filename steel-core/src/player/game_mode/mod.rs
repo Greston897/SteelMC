@@ -11,7 +11,9 @@ use steel_math::wrap_degrees;
 use steel_protocol::packets::game::{
     CBlockChangedAck, CBlockUpdate, CChangeDifficulty, CGameEvent, COpenSignEditor,
     CPlayerInfoUpdate, CSetCamera, CSetEntityMotion, CSetHeldSlot, GameEventType, PlayerAction,
-    SAttack, SInteract, SPickItemFromBlock, SPlayerAction, SSignUpdate, SSpectatorAction, SUseItem,
+    SAttack, SBundleItemSelected, SInteract, SPickItemFromBlock, SPickItemFromEntity, SPlayerAction,
+    SSignUpdate,
+    SSpectatorAction, SUseItem,
     SUseItemOn,
 };
 use steel_registry::blocks::block_state_ext::BlockStateExt;

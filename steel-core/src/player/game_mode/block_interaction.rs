@@ -265,6 +265,77 @@ impl Player {
             .broadcast_changes(&self.connection);
     }
 
+    /// Vanilla `ServerGamePacketListenerImpl.handleBundleItemSelectedPacket`:
+    /// remembers which item is selected inside the bundle in that slot.
+    pub fn handle_bundle_item_selected(&self, packet: SBundleItemSelected) {
+        let Ok(slot_id) = usize::try_from(packet.slot_id) else {
+            return;
+        };
+        let mut menu = self.inventory_menu.lock();
+        let Some(slot) = menu.behavior().slots().get(slot_id) else {
+            return;
+        };
+        slot.set_selected_bundle_item_index(packet.selected_item_index);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handlePickItemFromEntity`: a middle
+    /// click on an entity picks the stack its `pick_result` reports, provided the
+    /// entity is inside the player's interaction range plus three blocks.
+    pub fn handle_pick_item_from_entity(&self, packet: SPickItemFromEntity) {
+        let world = self.get_world();
+        let Some(entity) = world.get_entity_by_id(packet.entity_id) else {
+            return;
+        };
+        // Vanilla `isWithinEntityInteractionRange(entity, 3.0)`.
+        if !self.is_within_entity_interaction_range_with_buffer(entity.bounding_box(), 3.0) {
+            return;
+        }
+        let Some(item_stack) = entity.pick_result() else {
+            return;
+        };
+        if item_stack.is_empty() {
+            return;
+        }
+        self.pick_item_stack(item_stack);
+    }
+
+    /// Copy of vanilla `ServerGamePacketListenerImpl.tryPickItem`'s inventory
+    /// side: select a matching hotbar slot, move a matching item into the hotbar,
+    /// or (in creative) add a fresh stack.
+    fn pick_item_stack(&self, item_stack: ItemStack) {
+        let mut inventory = self.inventory.lock();
+
+        match inventory.find_slot_matching_item_with_same_components(&item_stack) {
+            Some(slot_with_item) => {
+                if PlayerInventory::is_hotbar_slot(slot_with_item) {
+                    inventory.set_selected_slot(slot_with_item);
+                } else {
+                    let slot = inventory.get_suitable_hotbar_slot();
+                    inventory.set_selected_slot(slot);
+                    inventory.pick_slot(slot_with_item);
+                }
+            }
+            None => {
+                if !self.has_infinite_materials() {
+                    return;
+                }
+                let slot = inventory.get_suitable_hotbar_slot();
+                inventory.set_selected_slot(slot);
+                inventory.add_and_pick_item(item_stack);
+            }
+        }
+
+        self.send_packet(CSetHeldSlot {
+            slot: i32::from(inventory.get_selected_slot()),
+        });
+
+        drop(inventory);
+        self.inventory_menu
+            .lock()
+            .behavior_mut()
+            .broadcast_changes(&self.connection);
+    }
+
     /// Handles a sign update packet from the client.
     pub fn handle_sign_update(&self, packet: SSignUpdate) {
         if !self.is_within_block_interaction_range(packet.pos) {

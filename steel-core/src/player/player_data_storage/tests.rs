@@ -73,6 +73,11 @@ fn sample_player_file(data_version: i32) -> PlayerDataFile {
         respawn_config: None,
         ender_pearls: Vec::new(),
         ender_items: Vec::new(),
+        warden_spawn_tracker: WardenSpawnTrackerFile {
+            ticks_since_last_warning: 12,
+            warning_level: 2,
+            cooldown_ticks: 40,
+        },
     }
 }
 
@@ -437,6 +442,88 @@ fn known_player_cache_persists_vanillas_mru_limit() {
     assert!(decoded.by_uuid(Uuid::from_u128(1_000)).is_none());
 }
 
+/// Builds the version 10 payload for the same player the roundtrip test uses.
+fn sample_player_file_v10(current: &PlayerDataFile) -> PlayerDataFileV10 {
+    PlayerDataFileV10 {
+        data_version: 7,
+        pos: current.pos,
+        motion: current.motion,
+        rotation: current.rotation,
+        on_ground: current.on_ground,
+        fall_flying: current.fall_flying,
+        remaining_fire_ticks: current.remaining_fire_ticks,
+        ticks_frozen: current.ticks_frozen,
+        is_in_powder_snow: current.is_in_powder_snow,
+        was_in_powder_snow: current.was_in_powder_snow,
+        has_visual_fire: current.has_visual_fire,
+        health: current.health,
+        game_mode: current.game_mode,
+        prev_game_mode: current.prev_game_mode,
+        abilities: AbilitiesFile {
+            invulnerable: current.abilities.invulnerable,
+            flying: current.abilities.flying,
+            may_fly: current.abilities.may_fly,
+            instabuild: current.abilities.instabuild,
+            may_build: current.abilities.may_build,
+            flying_speed: current.abilities.flying_speed,
+            walking_speed: current.abilities.walking_speed,
+        },
+        inventory: Vec::new(),
+        selected_slot: current.selected_slot,
+        world: current.world.clone(),
+        food_level: current.food_level,
+        food_saturation_level: current.food_saturation_level,
+        food_exhaustion_level: current.food_exhaustion_level,
+        food_tick_timer: current.food_tick_timer,
+        experience_level: current.experience_level,
+        experience_progress: current.experience_progress,
+        experience_total: current.experience_total,
+        enchantment_seed: current.enchantment_seed,
+        score: current.score,
+        seen_credits: current.seen_credits,
+        root_vehicle: None,
+        respawn_config: None,
+        ender_pearls: Vec::new(),
+        ender_items: Vec::new(),
+    }
+}
+
+#[test]
+fn a_version_10_player_file_still_loads() {
+    // The warden spawn tracker was added in version 11. A save written before
+    // it must not be rejected: the missing tracker gets vanilla defaults.
+    let current = sample_player_file(PLAYER_DATA_VERSION);
+    let old = sample_player_file_v10(&current);
+    let encoded = encode_file(PLAYER_MAGIC, 10, wincode::serialize(&old))
+        .expect("version 10 player file should encode");
+
+    let decoded = decode_player_file(&encoded).expect("version 10 player file should decode");
+    assert_eq!(decoded.world, current.world);
+    assert_eq!(decoded.experience_level, current.experience_level);
+    assert_eq!(decoded.warden_spawn_tracker.warning_level, 0);
+    assert_eq!(decoded.warden_spawn_tracker.cooldown_ticks, 0);
+    assert_eq!(decoded.warden_spawn_tracker.ticks_since_last_warning, 0);
+}
+
+#[test]
+fn an_unknown_player_storage_version_is_rejected() {
+    let current = sample_player_file(PLAYER_DATA_VERSION);
+    let encoded = encode_file(PLAYER_MAGIC, 3, wincode::serialize(&current))
+        .expect("player file should encode");
+    let error = decode_player_file(&encoded).expect_err("version 3 must not be read");
+    assert!(error.to_string().contains("unsupported player data storage version"));
+}
+
+#[test]
+fn a_newer_payload_data_version_is_rejected() {
+    // A save from a future build must not be silently downgraded.
+    let future = sample_player_file(PLAYER_DATA_VERSION + 1);
+    let error = future
+        .into_persistent()
+        .expect_err("a newer payload version must be rejected");
+    assert!(error.to_string().contains("unsupported player data payload version"));
+}
+
 #[test]
 fn player_file_roundtrip_preserves_domain_world_data() {
     let file = sample_player_file(PLAYER_DATA_VERSION);
@@ -457,6 +544,9 @@ fn player_file_roundtrip_preserves_domain_world_data() {
     assert_eq!(decoded.enchantment_seed, 1234);
     assert_eq!(decoded.score, 9);
     assert!(decoded.seen_credits);
+    assert_eq!(decoded.warden_spawn_tracker.warning_level, 2);
+    assert_eq!(decoded.warden_spawn_tracker.cooldown_ticks, 40);
+    assert_eq!(decoded.warden_spawn_tracker.ticks_since_last_warning, 12);
 }
 
 #[test]

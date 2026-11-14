@@ -307,10 +307,10 @@ pub use c_stop_sound::CStopSound;
 pub use c_store_cookie::CStoreCookie;
 pub use c_swing_animation::CSwingAnimation;
 pub use c_tab_list::CTabList;
-pub use c_tag_query::{CTagQuery, TagEntry};
+pub use c_tag_query::CTagQuery;
 pub use c_take_item_entity::CTakeItemEntity;
 pub use c_teleport_entity::CTeleportEntity;
-pub use c_test_instance_block_status::{CTestInstanceBlockStatus, TestBlockStatus};
+pub use c_test_instance_block_status::CTestInstanceBlockStatus;
 pub use c_ticking_state::CTickingState;
 pub use c_ticking_step::CTickingStep;
 pub use c_update_advancement::CUpdateAdvancements;
@@ -385,7 +385,10 @@ pub use s_set_test_block::SSetTestBlock;
 pub use s_sign_update::SSignUpdate;
 pub use s_spectator_action::SSpectatorAction;
 pub use s_teleport_to_entity::STeleportToEntity;
-pub use s_test_instance_block_action::STestInstanceBlockAction;
+pub use s_test_instance_block_action::{
+    STestInstanceBlockAction, TestInstanceBlockAction, TestInstanceBlockData,
+    TestInstanceBlockSetupStatus,
+};
 pub use s_use_item::SUseItem;
 pub use s_use_item_on::SUseItemOn;
 pub use world_border::{

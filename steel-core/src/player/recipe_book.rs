@@ -147,6 +147,18 @@ impl ServerRecipeBook {
         self.entries.is_empty()
     }
 
+    /// Resolves a client display index back to its recipe key.
+    ///
+    /// The index is exactly the position in the display list vanilla numbers
+    /// `recipe_book_add` entries with.
+    #[must_use]
+    pub fn recipe_at(&self, display_index: i32) -> Option<&Identifier> {
+        usize::try_from(display_index)
+            .ok()
+            .and_then(|index| self.displays.get(index))
+            .filter(|key| self.entries.contains_key(*key))
+    }
+
     /// Whether the player has unlocked the recipe with this key.
     #[must_use]
     pub fn contains(&self, key: &Identifier) -> bool {

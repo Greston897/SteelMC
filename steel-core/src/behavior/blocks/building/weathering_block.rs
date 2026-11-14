@@ -59,6 +59,12 @@ impl WeatheringCopper {
         Self { weather_state }
     }
 
+    /// Returns this block's oxidation stage.
+    #[must_use]
+    pub const fn weather_state(&self) -> WeatherState {
+        self.weather_state
+    }
+
     /// Advances the weathering state and replaces the block, with a 5.7% chance.
     ///
     /// Vanilla: [`ChangeOverTimeBlock.changeOverTime`]

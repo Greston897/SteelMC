@@ -11,7 +11,7 @@ use rand::{Rng, RngExt};
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
-use steel_registry::blocks::properties::{BlockStateProperties, FrontAndTop};
+use steel_registry::blocks::properties::{BlockStateProperties, FrontAndTop, StructureMode};
 use steel_registry::{
     vanilla_block_entity_types, vanilla_blocks, vanilla_damage_types, vanilla_game_rules,
 };
@@ -23,10 +23,15 @@ use crate::behavior::BLOCK_BEHAVIORS;
 use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
 use crate::behavior::blocks::vegetation::bonemealable::Bonemealable;
 use crate::entity::damage::DamageSource;
+use crate::player::Player;
 use crate::world::LevelReader;
-use crate::entity::{Entity as _, LivingEntity as _};
-use crate::behavior::context::{BlockPlaceContext, InteractionResult};
-use crate::block_entity::entities::{CommandBlockBlockEntity, CommandBlockMode};
+use crate::entity::{Entity, LivingEntity as _};
+use crate::behavior::context::{
+    BlockHitResult, BlockPlaceContext, InteractionResult, InventoryAccess, PlacementSource,
+};
+use crate::block_entity::entities::{
+    CommandBlockBlockEntity, CommandBlockMode, SculkShriekerBlockEntity, StructureBlockEntity,
+};
 use crate::block_entity::{BLOCK_ENTITIES, BlockEntityTicker};
 use crate::world::World;
 
@@ -128,13 +133,15 @@ impl CommandBlock {
 
 impl BlockBehavior for CommandBlock {
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
-        // Vanilla faces the command block toward the player and starts unpowered.
+        // Vanilla `CommandBlock.getStateForPlacement` uses the *nearest looking*
+        // direction, so a block placed under the player's crosshair faces them
+        // instead of following the clicked face.
         Some(
             self.block
                 .default_state()
                 .set_value(
                     &BlockStateProperties::FACING,
-                    context.clicked_face().opposite(),
+                    context.get_nearest_looking_direction().opposite(),
                 )
                 .set_value(&BlockStateProperties::CONDITIONAL, false),
         )
@@ -146,12 +153,21 @@ impl BlockBehavior for CommandBlock {
         pos: BlockPos,
         state: BlockStateId,
     ) -> BlockEntityCreation {
-        BlockEntityCreation::from_registered_factory(BLOCK_ENTITIES.create(
+        // Vanilla `CommandBlock.newBlockEntity` sets the automatic flag that the
+        // block's constructor carries, so a repeating block is automatic from the
+        // moment its block entity exists.
+        let creation = BlockEntityCreation::from_registered_factory(BLOCK_ENTITIES.create(
             &vanilla_block_entity_types::COMMAND_BLOCK,
             level,
             pos,
             state,
-        ))
+        ));
+        if let Some(entity) = creation.created()
+            && let Some(block) = entity.downcast_ref::<CommandBlockBlockEntity>()
+        {
+            block.set_automatic(self.is_automatic());
+        }
+        creation
     }
 
     fn get_block_entity_ticker(
@@ -174,19 +190,42 @@ impl BlockBehavior for CommandBlock {
         state: BlockStateId,
         world: &Arc<World>,
         pos: BlockPos,
-        _source: &crate::behavior::PlacementSource<'_>,
+        source: &crate::behavior::PlacementSource<'_>,
     ) {
-        // Vanilla `CommandBlock.setPlacedBy` (without block entity data): the
-        // new block starts tracking output per `send_command_feedback` and takes
-        // the automatic flag of its variant.
+        // Vanilla `CommandBlock.setPlacedBy`: a stack carrying block entity data
+        // keeps that data untouched (the block entity was restored from it), so
+        // the automatic flag and the output tracking are only applied to a
+        // freshly placed block. Both branches then run `setPoweredAndUpdate`.
         let Some(entity) = world.get_block_entity(pos) else {
             return;
         };
         let Some(block) = entity.downcast_ref::<CommandBlockBlockEntity>().cloned() else {
             return;
         };
-        block.set_track_output(world.get_game_rule(&vanilla_game_rules::SEND_COMMAND_FEEDBACK));
-        block.set_automatic(self.is_automatic());
+
+        let carries_block_entity_data = source.with_item(|item| {
+            item.get(steel_registry::data_components::vanilla_components::BLOCK_ENTITY_DATA)
+                .is_some()
+        });
+        if !carries_block_entity_data {
+            block.set_track_output(world.get_game_rule(&vanilla_game_rules::SEND_COMMAND_FEEDBACK));
+            block.set_automatic(self.is_automatic());
+        }
+
+        // Vanilla `setPoweredAndUpdate`: the placed block needs a tick when it
+        // is placed into a powered circuit, even though no neighbour changed.
+        let powered = world.has_neighbor_signal(pos);
+        if powered == block.is_powered() {
+            return;
+        }
+        block.set_powered(powered);
+        if !powered {
+            return;
+        }
+        if block.is_automatic() || block.mode() == CommandBlockMode::Sequence {
+            return;
+        }
+        block.schedule_tick(world, 1);
         let _ = state;
     }
 
@@ -318,20 +357,32 @@ impl CommandBlock {
             let Some(next) = entity.downcast_ref::<CommandBlockBlockEntity>().cloned() else {
                 break;
             };
-            if !(next.is_powered() || next.is_automatic()) {
-                facing = state.get_value(&BlockStateProperties::FACING);
-                continue;
+            if next.mode() != CommandBlockMode::Sequence {
+                break;
             }
-            if next.mark_condition_met() {
-                if !next.try_perform_command(world) {
-                    break;
+            if next.is_powered() || next.is_automatic() {
+                if next.mark_condition_met() {
+                    if !next.try_perform_command(world) {
+                        break;
+                    }
+                    world.update_neighbor_for_output_signal(pos, state.get_block());
+                } else {
+                    next.clear_success_count_if_conditional();
                 }
-                world.update_neighbor_for_output_signal(pos, state.get_block());
-            } else {
-                next.clear_success_count_if_conditional();
             }
             // Vanilla continues in the direction each chain block faces.
             facing = state.get_value(&BlockStateProperties::FACING);
+        }
+
+        if remaining <= 0 {
+            // Vanilla `CommandBlock.executeChain` warns once a chain hits the
+            // `max_command_sequence_length` limit instead of silently stopping.
+            log::warn!(
+                "Command Block chain tried to execute more than {} steps!",
+                world
+                    .get_game_rule(&vanilla_game_rules::MAX_COMMAND_SEQUENCE_LENGTH)
+                    .max(0)
+            );
         }
     }
 }
@@ -377,6 +428,25 @@ impl BlockBehavior for JigsawBlock {
             state,
         ))
     }
+
+    /// Vanilla `JigsawBlock.useWithoutItem`: only a game master opens the jigsaw
+    /// editor; everybody else gets `PASS`.
+    fn use_without_item(
+        &self,
+        _state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+        _hit_result: &BlockHitResult,
+        _inv: &mut InventoryAccess,
+    ) -> InteractionResult {
+        if world.get_block_entity(pos).is_none() || !player.has_game_master_permissions() {
+            return InteractionResult::Pass;
+        }
+        // Vanilla `player.openJigsawBlock(blockEntity)` opens a client screen;
+        // `true` is the complete server answer.
+        InteractionResult::Success
+    }
 }
 
 block_entity_block!(
@@ -384,6 +454,127 @@ block_entity_block!(
     STRUCTURE_BLOCK,
     |state: BlockStateId, _context: &BlockPlaceContext<'_>| state
 );
+
+impl BlockBehavior for StructureBlock {
+    fn get_state_for_placement(
+        &self,
+        context: &BlockPlaceContext<'_>,
+    ) -> Option<BlockStateId> {
+        Some(
+            self.block
+                .default_state()
+                .set_value(&BlockStateProperties::STRUCTUREBLOCK_MODE, StructureMode::Load)
+                .set_value(
+                    &BlockStateProperties::FACING,
+                    context.horizontal_direction(),
+                ),
+        )
+    }
+
+    fn new_block_entity(
+        &self,
+        level: Weak<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> BlockEntityCreation {
+        BlockEntityCreation::from_registered_factory(BLOCK_ENTITIES.create(
+            &vanilla_block_entity_types::STRUCTURE_BLOCK,
+            level,
+            pos,
+            state,
+        ))
+    }
+
+    /// Vanilla `StructureBlock.useWithoutItem`: only a game-master opens the
+    /// editor; anyone else gets `PASS` so the block stays inert.
+    fn use_without_item(
+        &self,
+        _state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+        _hit_result: &BlockHitResult,
+        _inv: &mut InventoryAccess,
+    ) -> InteractionResult {
+        let Some(block_entity) = world.get_block_entity(pos) else {
+            return InteractionResult::Pass;
+        };
+        let Some(structure) = block_entity.downcast_ref::<StructureBlockEntity>() else {
+            return InteractionResult::Pass;
+        };
+        if structure.used_by(player) {
+            InteractionResult::Success
+        } else {
+            InteractionResult::Pass
+        }
+    }
+
+    /// Vanilla `StructureBlock.setPlacedBy`: only the server records the author,
+    /// and only when a living entity placed the block.
+    fn set_placed_by(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        source: &PlacementSource<'_>,
+    ) {
+        let _ = state;
+        // Vanilla `StructureBlock.setPlacedBy` runs `createdBy(by)` for the
+        // living entity that placed the block; the player name is what the
+        // editor shows as the author.
+        let Some(player) = source.player() else {
+            return;
+        };
+        let author = player.plain_text_name();
+        let Some(block_entity) = world.get_block_entity(pos) else {
+            return;
+        };
+        if let Some(structure) = block_entity.downcast_ref::<StructureBlockEntity>() {
+            structure.created_by(&author);
+        }
+    }
+
+    /// Vanilla `StructureBlock.neighborChanged`: a rising redstone edge triggers
+    /// the stored action (save, load, or corner unload).
+    fn handle_neighbor_changed(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _source_block: BlockRef,
+        _moved_by_piston: bool,
+    ) {
+        let Some(block_entity) = world.get_block_entity(pos) else {
+            return;
+        };
+        let Some(structure) = block_entity.downcast_ref::<StructureBlockEntity>() else {
+            return;
+        };
+
+        let should_trigger = world.has_neighbor_signal(pos);
+        let is_powered = structure.is_powered();
+        if should_trigger && !is_powered {
+            structure.set_powered(true);
+            // Vanilla `StructureBlock.trigger` runs `saveStructure`,
+            // `placeStructure` or `unloadStructure` here. Steel has no runtime
+            // structure manager yet: templates are only readable from the
+            // bundled vanilla datapack during world generation, and nothing
+            // writes `.nbt` files back to disk. The power edge is still tracked
+            // exactly like vanilla so the editor state (and the comparator-like
+            // redstone observability) is correct; the action itself is reported
+            // as unsupported instead of silently pretending to run.
+            if structure.mode() != StructureMode::Data {
+                log::warn!(
+                    "structure block at {pos:?} triggered {:?} but Steel has no runtime structure manager; the action was skipped",
+                    structure.mode()
+                );
+            }
+        } else if !should_trigger && is_powered {
+            structure.set_powered(false);
+        }
+        let _ = state;
+    }
+}
 /// Vanilla `CreakingHeartBlockEntity.removeCreaking`: destroying the heart takes
 /// its creaking with it, which is the only way to kill a creaking.
 fn kill_linked_creaking(world: &Arc<World>, pos: BlockPos) {
@@ -486,14 +677,68 @@ block_entity_block!(
     }
 
     /// Vanilla `SculkShriekerBlock.tick`: the scheduled tick that ends the shriek
-    /// animation clears the `shrieking` state again.
+    /// animation clears the `shrieking` state and asks the block entity to
+    /// respond (summon a warden or play the "listening" reply, then darkness).
     fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        if !state.get_value(&BlockStateProperties::SHRIEKING) {
+            return;
+        }
+        world.set_block(
+            pos,
+            state.set_value(&BlockStateProperties::SHRIEKING, false),
+            UpdateFlags::UPDATE_ALL,
+        );
+        if let Some(shrieker) = world
+            .get_block_entity(pos)
+            .and_then(|entity| entity.downcast_ref::<SculkShriekerBlockEntity>().cloned())
+        {
+            shrieker.try_respond(world, pos);
+        }
+    }
+
+    /// Vanilla `SculkShriekerBlockEntity.preRemoveSideEffects`: a shrieker broken
+    /// while it is still shrieking responds before it disappears.
+    fn affect_neighbors_after_removal(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _moved_by_piston: bool,
+    ) {
+        if !state.get_value(&BlockStateProperties::SHRIEKING) {
+            return;
+        }
+        if let Some(shrieker) = world
+            .get_block_entity(pos)
+            .and_then(|block_entity| block_entity.downcast_ref::<SculkShriekerBlockEntity>().cloned())
+        {
+            shrieker.try_respond(world, pos);
+        }
+    }
+
+    /// Vanilla `SculkShriekerBlock.stepOn`: a player stepping onto the shrieker
+    /// makes it shriek for them.
+    fn step_on(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos, entity: &dyn Entity) {
         if state.get_value(&BlockStateProperties::SHRIEKING) {
-            world.set_block(
-                pos,
-                state.set_value(&BlockStateProperties::SHRIEKING, false),
-                UpdateFlags::UPDATE_ALL,
-            );
+            return;
+        }
+        // Vanilla `SculkShriekerBlockEntity.tryGetPlayer` looks for the concrete
+        // player first; skipping everything else keeps this path free of an
+        // entity type check for the common case of a mob walking over it.
+        if entity.as_player().is_none()
+            && entity.controlling_passenger().is_none()
+            && entity.projectile_owner().is_none()
+        {
+            return;
+        }
+        let Some(player) = SculkShriekerBlockEntity::try_get_player(entity) else {
+            return;
+        };
+        if let Some(shrieker) = world
+            .get_block_entity(pos)
+            .and_then(|block_entity| block_entity.downcast_ref::<SculkShriekerBlockEntity>().cloned())
+        {
+            shrieker.try_shriek(world, pos, Some(&player));
         }
     }
 );

@@ -72,7 +72,7 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 - кодеки VarInt/VarLong/String/Position/NBT, сжатие, шифрование (`steel-crypto`), `steel-login` (online-mode, verify-token);
 - `set_game_rule`, `recipe_book_change_settings`, `recipe_book_seen_recipe` теперь применяются к состоянию мира/игрока, а не только парсятся.
 
-**Осталось:** типизированная обработка 25 read-and-ignore пакетов (`set_command_block`, `set_jigsaw_block`, `set_structure_block`, `set_test_block`, `jigsaw_generate`, `test_instance_block_action`, `debug_subscription_request`, `teleport_to_entity`, `pick_item_from_entity`, `select_trade` и др. — все требуют ещё не реализованных подсистем: командных блоков, jigsaw/структур, тест-фреймворка, торговли); протокол-тесты на NBT-кодеки данных компонентов.
+**Осталось:** типизированная обработка 24 read-and-ignore пакетов (`set_jigsaw_block`, `set_structure_block`, `set_test_block`, `jigsaw_generate`, `test_instance_block_action`, `debug_subscription_request`, `teleport_to_entity`, `pick_item_from_entity`, и др. — требуют ещё не реализованных подсистем: jigsaw/структур, тест-фреймворка); протокол-тесты на NBT-кодеки данных компонентов.
 
 ### Чанки, свет, сохранения (≈82 %)
 **Готово:** палитровые секции, `ChunkStatus`, сохранение регионами (`.mca`-совместимо), свет (block+sky), heightmaps, entity/poi-хранилища, сериализация block/entity NBT.
@@ -170,7 +170,7 @@ scoreboard/карты 1, команды 3, админ/интеграции 2, п
 | Phantom | фазы `Circle → Swoop → Land → Attack → Start`, таймеры 100/20/10/20/20, высоты 8/1/1.5/6, скорость 0.1 | **исправлено** (было: обычный melee) |
 | Щит | `Item.use` → timed use для `blocks_attacks`; `isBlocking` = active item + компонент; `blockUsingItem` = дуга `horizontal_blocking_angle` + `base + factor`, `bypassed_by`, звук `item.shield.block` | **исправлено** (было: не блокировал) |
 | Износ брони | `hurtArmor` наносит `max(damage/4, 1)` всем 4 слотам | **исправлено** (работало только у игрока) |
-| Геймрулы | `set_game_rule`: bool только `true/false`, int с проверкой границ | **исправлено** (было: read-and-ignore) |
+| Геймрулы | `set_game_rule`: bool только `true/false`, int с проверкой границ; все 59 правил имеют читателя — включая `command_blocks_work`/`command_block_output` (командный блок), `spawn_patrols` (`PatrolSpawner`), `forgive_dead_players` (`HurtByTargetGoal`) | **исправлено** (было: 4 правила объявлены, но не читались) |
 | Книга рецептов | `change_settings` сохраняет вкладки + эхо; `seen_recipe` только снимает highlight (`0x02`) | **исправлено** (было: read-and-ignore) |
 | Моб-спавн | моб-кап 70 на игрока, 400-тиковый цикл, 7 spawn rules | **отсутствует** (соответствует upstream: «entity spawning not included») |
 | Големы из тыквы | тыква + 2 блока (железо/медь/снег), руки 3 в ряд, спавн на установке | **добавлено** (было: только поворот тыквы) |
@@ -1430,7 +1430,8 @@ big-endian float прогресса, ординалы цвета и оверле
 ### 21.1 Проверки и границы шага
 
 Тест проверяет атрибуты и NBT round-trip, арбалет в основной руке и начальное
-значение synced-флага. Не включены патрули/волны рейда и естественный спавн.
+значение synced-флага. Патрули пиллиджеров реализованы отдельно (`entity/patrol_spawner.rs`), волны
+рейда и естественный спавн рейдеров — нет.
 Пока не подключены случайный интервал ванильного `CrossbowAttackGoal`,
 потеря/подбор арбалета, а также полный projectile pipeline арбалета: моб
 стреляет через общий `shoot_arrow`, а не через `CrossbowItem` игрока.
@@ -1649,7 +1650,7 @@ NBT-прогон варианта.
 
 Осознанные упрощения (все задокументированы в шапках файлов): у мобов нет
 видоспецифичных целей (ramming, digging, hive, charge, ...), у дисплеев нет
-интерполяции, у командной вагонетки нет исполнения команд.
+интерполяции.
 
 ### 24.9 Обновлённые числа
 
@@ -1695,8 +1696,17 @@ NBT-прогон варианта.
   катализатор, крикун (`warning_level`).
 - **Сердце скрипуна** (`creaking` как `IntArray` UUID), **vault** (`loot_table`,
   `display_item`, `total_players`), **испытательный спавнер** (`entity`, `spawns_per_mob`, …).
-- **Технические**: джигсо, командный блок, структурный блок, статуя медного голема,
-  `test_block`, `test_instance_block` — через макрос `marker_block_entity!`.
+- **Технические**: командный блок — полноценный `CommandBlockEntity` +
+  `BaseCommandBlock` (команда, `SuccessCount`, `TrackOutput`/`LastOutput`,
+  `UpdateLastExecution`/`LastExecution`, `powered`, `conditionMet`, `auto`;
+  режимы `REDSTONE`/`AUTO`/`SEQUENCE` берутся из самого блока, как в
+  `CommandBlockEntity.getMode`; `neighborChanged` + `tick` + `executeChain` +
+  `max_command_sequence_length`; исполнение идёт через тиковую очередь команд
+  сервера с источником `CommandSender::CommandBlock` — права консоли,
+  без чата, в собственном измерении блока; `SetCommandBlock` применяется
+  вместо read-and-ignore, вагонетка командного блока исполняет команду).
+  Джигсо, структурный блок, статуя медного голема, `test_block`,
+  `test_instance_block` — по-прежнему маркеры через `marker_block_entity!`.
 
 ### Блоки: закрыты все 1 286
 

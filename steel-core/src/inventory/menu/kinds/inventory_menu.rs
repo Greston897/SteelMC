@@ -169,6 +169,74 @@ impl InventoryKind {
 }
 
 impl MenuKind for InventoryKind {
+    /// Vanilla `InventoryMenu.fillCraftSlotsStackedContents`: the player's own
+    /// 2x2 grid feeds the availability snapshot.
+    fn fill_craft_slots_stacked_contents(
+        &self,
+        _behavior: &MenuBehavior,
+        guard: &ContainerLockGuard,
+        contents: &mut crate::player::recipe_placement::StackedItemContents,
+    ) -> bool {
+        let Some(crafting) = guard.get_typed::<CraftingContainer>(self.handler.crafting_id())
+        else {
+            return false;
+        };
+        for stack in crafting.items() {
+            // Vanilla `TransientCraftingContainer.fillStackedContents` calls
+            // `accountSimpleStack`, which skips damaged/uncraftable stacks.
+            contents.account_simple_stack(stack);
+        }
+        true
+    }
+
+    /// Vanilla `InventoryMenu.handlePlacement`: the same placement as a crafting
+    /// table, but on the player's 2x2 grid.
+    fn handle_placement(
+        &mut self,
+        _behavior: &mut MenuBehavior,
+        guard: &mut ContainerLockGuard,
+        player: &Player,
+        request: crate::player::recipe_placement::PlacementRequest<'_>,
+    ) -> Option<crate::player::recipe_placement::PostPlaceAction> {
+        let Some(crafting) = guard.get_typed::<CraftingContainer>(self.handler.crafting_id())
+        else {
+            return None;
+        };
+        let grid = crafting.items().to_vec();
+        let inventory: Vec<ItemStack> = player
+            .inventory
+            .lock()
+            .get_items()
+            .iter()
+            .cloned()
+            .collect();
+        let plan = crate::player::recipe_placement::plan_placement(
+            &inventory,
+            2,
+            2,
+            &grid,
+            request.placement,
+            request.recipe_size,
+            crate::player::recipe_placement::grid_produces(crafting, request.recipe_key),
+            request.use_max_items,
+            request.allow_dropping_items_to_clear,
+            &[],
+            |contents| {
+                // Vanilla `InventoryMenu.fillCraftSlotsStackedContents`.
+                for stack in &grid {
+                    contents.account_simple_stack(stack);
+                }
+            },
+        );
+        Some(crate::player::recipe_placement::apply_plan(
+            guard,
+            player,
+            plan,
+            self.handler.crafting_id(),
+            &self.handler,
+        ))
+    }
+
     /// Handles shift-click for a slot, including armor/offhand auto-equip.
     ///
     /// Always returns `Some`: the item originally in the slot, or empty if

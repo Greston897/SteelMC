@@ -182,9 +182,15 @@ impl CommandBlockBlockEntity {
     /// Vanilla `BaseCommandBlock.setCommand`: replacing the command also clears
     /// the success count.
     pub fn set_command(&self, command: impl Into<String>) {
-        let mut state = self.state.lock();
-        state.command = command.into();
-        state.success_count = 0;
+        {
+            let mut state = self.state.lock();
+            state.command = command.into();
+            state.success_count = 0;
+        }
+        // Vanilla `CommandBlockEntity`'s `BaseCommandBlock.setCommand` override
+        // calls `setChanged()`, so the new command is written to disk even when
+        // output tracking is off.
+        self.base.set_changed();
     }
 
     /// Returns whether the command is empty or blank.
@@ -311,11 +317,20 @@ impl CommandBlockBlockEntity {
         let Some(world) = self.base.level() else {
             return false;
         };
-        let met = self
-            .source_pos(world.as_ref())
-            .and_then(|pos| world.get_block_entity(pos))
-            .and_then(|entity| entity.downcast_ref::<Self>().cloned())
-            .is_some_and(|behind| behind.success_count() > 0);
+        // Vanilla `CommandBlockEntity.markConditionMet` only reads the block
+        // behind when that block *is* a command block; otherwise the condition
+        // is simply false. Missing that check made a conditional block read a
+        // stale block entity that happened to remain at the position.
+        let met = self.source_pos(world.as_ref()).is_some_and(|pos| {
+            let behind_state = world.get_block_state(pos);
+            if !Self::is_command_block(behind_state.get_block()) {
+                return false;
+            }
+            world
+                .get_block_entity(pos)
+                .and_then(|entity| entity.downcast_ref::<Self>().cloned())
+                .is_some_and(|behind| behind.success_count() > 0)
+        });
         self.state.lock().condition_met = met;
         met
     }
@@ -347,6 +362,13 @@ impl CommandBlockBlockEntity {
 
     /// The block this one reads its condition from (vanilla
     /// `worldPosition.relative(FACING.getOpposite())`).
+    /// Vanilla `instanceof CommandBlock`: the three vanilla command blocks.
+    fn is_command_block(block: steel_registry::blocks::BlockRef) -> bool {
+        block.key == vanilla_blocks::COMMAND_BLOCK.key
+            || block.key == vanilla_blocks::REPEATING_COMMAND_BLOCK.key
+            || block.key == vanilla_blocks::CHAIN_COMMAND_BLOCK.key
+    }
+
     fn source_pos(&self, world: &World) -> Option<BlockPos> {
         let state = world.get_block_state(self.get_block_pos());
         let facing: Direction = state.get_value(&BlockStateProperties::FACING);
@@ -397,12 +419,13 @@ impl BlockEntity for CommandBlockBlockEntity {
         state.condition_met = nbt
             .byte_value("conditionMet")
             .is_some_and(|value| value != 0);
-        // Vanilla restores `auto` through `setAutomatic` and then overrides it in
-        // `CommandBlock.newBlockEntity`; Steel applies the block's own automatic
-        // flag when the entity is created, so the stored bit is ignored here.
-        if nbt.byte_value("auto").is_some_and(|value| value != 0) {
-            state.automatic = true;
-        }
+        // Vanilla `CommandBlockEntity.loadAdditional` calls
+        // `setAutomatic(input.getBooleanOr("auto", false))`, so the stored bit
+        // always wins over the class-level flag that `newBlockEntity` applied —
+        // including when it is false. Loading must not schedule a tick, which is
+        // why this assigns the field instead of going through
+        // `set_automatic_and_schedule`.
+        state.automatic = nbt.byte_value("auto").is_some_and(|value| value != 0);
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
@@ -428,9 +451,11 @@ impl BlockEntity for CommandBlockBlockEntity {
 impl CommandBlockBlockEntity {
     /// Vanilla `BaseCommandBlock.performCommand`, minus the inline execution.
     ///
-    /// Returns whether the command was accepted for execution. A block that
-    /// already ran in this tick is refused, `command_blocks_work` is honoured,
-    /// and an empty command never runs — all three match vanilla.
+    /// Mirrors the vanilla return value exactly: `false` only when the block
+    /// already ran in this tick (`gameTime == lastExecution`). An empty command,
+    /// a disabled `command_blocks_work` rule or a full queue still return `true`,
+    /// because vanilla still consumed the run and `executeChain` must continue
+    /// down the chain. The `"Searge"` easter egg is kept as well.
     pub(crate) fn try_perform_command(self: &Arc<Self>, world: &Arc<World>) -> bool {
         let game_time = world.game_time();
         {
@@ -438,29 +463,35 @@ impl CommandBlockBlockEntity {
             if state.last_execution == game_time {
                 return false;
             }
-            if state.command.trim().is_empty() {
-                state.success_count = 0;
-                return false;
+            if state.command.eq_ignore_ascii_case("Searge") {
+                state.last_output = Some(TextComponent::plain("#itzlipofutzli"));
+                state.success_count = 1;
+                return true;
             }
-            if !world.get_game_rule(&steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK) {
-                state.success_count = 0;
-                return false;
-            }
+            // Vanilla falls through to this branch for an empty command and for
+            // a disabled rule: the success count resets and the run is consumed.
             state.success_count = 0;
+            let runnable = !state.command.trim().is_empty()
+                && world.get_game_rule(&steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK);
             state.last_output = None;
             if state.update_last_execution {
                 state.last_execution = game_time;
             } else {
                 state.last_execution = -1;
             }
+            if !runnable {
+                return true;
+            }
         }
 
         let command = self.command();
         let Some(server) = world.server() else {
-            return false;
+            return true;
         };
+        // A full command queue drops this run, exactly like a command that
+        // produced no output: vanilla still reports the block as consumed.
         let Ok(receiver) = server.execute_command_for_block(Arc::clone(world), command) else {
-            return false;
+            return true;
         };
         *self.pending.lock() = Some(PendingRun {
             receiver,

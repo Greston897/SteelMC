@@ -35,6 +35,15 @@ impl BlockEntityCreation {
         entity.map_or(Self::Unimplemented, Self::Created)
     }
 
+    /// Returns the created entity without consuming the result.
+    #[must_use]
+    pub fn created(&self) -> Option<&SharedBlockEntity> {
+        match self {
+            Self::Created(entity) => Some(entity),
+            Self::NoEntity | Self::Unimplemented => None,
+        }
+    }
+
     /// Returns the created entity, if the factory produced one.
     #[must_use]
     pub fn into_created(self) -> Option<SharedBlockEntity> {

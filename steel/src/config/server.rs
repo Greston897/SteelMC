@@ -121,9 +121,18 @@ impl ServerConfig {
             chat_spam_threshold_seconds: self.chat_spam_threshold_seconds,
             command_spam_threshold_seconds: self.command_spam_threshold_seconds,
             rate_limit: self.rate_limit,
-            cores: self.threads.cores.filter(|&cores| cores > 0).unwrap_or_else(|| {
-                steel_utils::threading::available_worker_threads()
-            }),
+            // The configured value is an upper bound and a container quota wins
+            // over it: a Pterodactyl/Docker box started with `--cpus=4` never
+            // sizes its pools for more than four cores, even when
+            // `config.toml` still says sixteen. `0` means "use whatever the
+            // container allows".
+            cores: self
+                .threads
+                .cores
+                .filter(|&cores| cores > 0)
+                .map_or_else(steel_utils::threading::available_worker_threads, |cores| {
+                    cores.min(steel_utils::threading::available_worker_threads())
+                }),
             compression: self.compression,
             server_links: self.server_links,
             packet_workers: self.threads.packet_workers,

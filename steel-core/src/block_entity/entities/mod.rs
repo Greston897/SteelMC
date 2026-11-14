@@ -16,6 +16,7 @@ mod command_block;
 mod comparator;
 mod crafter;
 mod conduit;
+mod copper_golem_statue;
 mod decorated_pot;
 mod daylight_detector;
 mod dispenser;
@@ -25,6 +26,7 @@ mod end_portal;
 mod ender_chest;
 mod hopper;
 mod lectern;
+mod jigsaw_block;
 mod jukebox;
 mod piston_moving;
 mod potent_sulfur;
@@ -35,19 +37,26 @@ mod spawner;
 mod unimplemented;
 
 mod creaking_heart;
-mod marker;
 mod shelf;
+mod structure_block;
+mod test_block;
+mod test_instance_block;
 mod sculk_catalyst;
 mod sculk_sensor;
 mod trial_spawner;
 mod vault;
 pub use creaking_heart::CreakingHeartBlockEntity;
-pub use marker::{
-    CopperGolemStatueBlockEntity, JigsawBlockEntity, StructureBlockEntity, TestBlockEntity,
-    TestInstanceBlockEntity,
-};
+pub use copper_golem_statue::CopperGolemStatueBlockEntity;
+pub use jigsaw_block::JigsawBlockEntity;
+
+pub use structure_block::StructureBlockEntity;
+pub use test_block::TestBlockEntity;
+pub use test_instance_block::{STRUCTURE_OFFSET, TestInstanceBlockEntity};
 pub use shelf::ShelfBlockEntity;
 pub use sculk_catalyst::{SculkCatalystBlockEntity, SculkShriekerBlockEntity};
+/// Vanilla `WardenSpawnTracker` lives with the entity code, not with the block
+/// entity, because the tracker state belongs to the player.
+pub use crate::entity::WardenSpawnTracker;
 pub use sculk_sensor::SculkSensorBlockEntity;
 pub use trial_spawner::TrialSpawnerBlockEntity;
 pub use vault::VaultBlockEntity;

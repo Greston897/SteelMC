@@ -142,6 +142,35 @@ pub trait MenuKind: ErasedType + Send + Sync {
     ) -> Option<ItemStack> {
         None
     }
+
+    /// Vanilla `RecipeBookMenu.fillCraftSlotsStackedContents`: counts what the
+    /// menu's own input slots already hold, so a recipe the player cannot fully
+    /// source from the inventory is still placeable.
+    ///
+    /// Returns `false` for menus that are not recipe-book menus.
+    fn fill_craft_slots_stacked_contents(
+        &self,
+        _behavior: &MenuBehavior,
+        _guard: &ContainerLockGuard,
+        _contents: &mut crate::player::recipe_placement::StackedItemContents,
+    ) -> bool {
+        false
+    }
+
+    /// Vanilla `RecipeBookMenu.handlePlacement`: fills this menu's input slots
+    /// from the player's inventory for one recipe.
+    ///
+    /// Returns `None` for menus that are not recipe-book menus, which is what
+    /// vanilla's `instanceof RecipeBookMenu` check does.
+    fn handle_placement(
+        &mut self,
+        _behavior: &mut MenuBehavior,
+        _guard: &mut ContainerLockGuard,
+        _player: &Player,
+        _request: crate::player::recipe_placement::PlacementRequest<'_>,
+    ) -> Option<crate::player::recipe_placement::PostPlaceAction> {
+        None
+    }
 }
 
 /// Vanilla's static `AbstractContainerMenu.stillValid(access, player, block)`, renamed

@@ -7,6 +7,7 @@
 //! dimensions come from the extracted `entities.json`.
 //!
 use std::iter::empty;
+use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::Weak;
 
 use glam::DVec3;
@@ -17,24 +18,60 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::CopperGolemEntityData;
-use steel_registry::{sound_events, vanilla_attributes};
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::blocks::properties::BlockStateProperties;
+use steel_registry::{
+    level_events, sound_events, vanilla_attributes, vanilla_blocks, vanilla_game_rules,
+    vanilla_items,
+};
+use steel_registry::item_stack::ItemStack;
 use steel_utils::locks::SyncMutex;
-use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
+use steel_utils::types::{InteractionHand, UpdateFlags};
+use steel_utils::{BlockPos, BlockStateId, Direction, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::inventory::equipment::EquipmentSlot;
+use crate::entity::leash::Leashable;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
-    SharedEntity, sync_dirty_mob_effects,
+    RemovalReason, SharedEntity, sync_dirty_mob_effects,
 };
 use crate::physics::MoveResult;
 use crate::world::World;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
+
+/// Vanilla `WeatheringCopper.WeatherState.UNAFFECTED`.
+const WEATHERING_UNAFFECTED: i32 = 0;
+/// Vanilla `WeatheringCopper.WeatherState.OXIDIZED`.
+const WEATHERING_OXIDIZED: i32 = 3;
+
+/// Vanilla `WeatheringCopper.WeatherState.CODEC` names.
+const WEATHERING_NAMES: [&str; 4] = ["unaffected", "exposed", "weathered", "oxidized"];
+
+/// Parses a stored weathering state name, defaulting to `unaffected`.
+fn weathering_state_from_name(name: &str) -> i32 {
+    WEATHERING_NAMES
+        .iter()
+        .position(|candidate| *candidate == name)
+        .map_or(0, |index| index as i32)
+}
+
+/// Vanilla `Direction.fromYRot`: the nearest horizontal direction to a yaw.
+fn direction_from_y_rot(y_rot: f32) -> Direction {
+    let quarter_turns = (y_rot / 90.0).round() as i32;
+    match quarter_turns.rem_euclid(4) {
+        0 => Direction::South,
+        1 => Direction::West,
+        2 => Direction::North,
+        _ => Direction::East,
+    }
+}
 
 /// Vanilla `net.minecraft.world.entity.monster.Silverfish`.
 #[entity_behavior(class = "CopperGolem")]
@@ -44,6 +81,9 @@ pub struct CopperGolemEntity {
     living_base: LivingEntityBase,
     mob_base: MobBase,
     entity_data: SyncMutex<CopperGolemEntityData>,
+    /// Vanilla `nextWeatheringTick`: `-1` = never scheduled yet, `-2` = waxed,
+    /// anything else = absolute game time of the next oxidation attempt.
+    next_weathering_tick: AtomicI64,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `CopperGolemEntity`.
@@ -99,6 +139,122 @@ impl CopperGolemEntity {
             living_base,
             mob_base,
             entity_data: SyncMutex::new(entity_data),
+            // Vanilla `CopperGolem.nextWeatheringTick` starts at `-1`.
+            next_weathering_tick: AtomicI64::new(-1),
+        }
+    }
+
+    /// Vanilla `CopperGolem.getWeatherState`.
+    fn weather_state(&self) -> i32 {
+        *self.entity_data.lock().weather_state.get()
+    }
+
+    /// Vanilla `WeatheringCopper.WeatherState.getSerializedName`.
+    fn weather_state_name(&self) -> &'static str {
+        let state = self.weather_state();
+        if state < 0 || state as usize >= WEATHERING_NAMES.len() {
+            return WEATHERING_NAMES[0];
+        }
+        WEATHERING_NAMES[state as usize]
+    }
+
+    /// Vanilla `CopperGolem.setWeatherState`.
+    fn set_weather_state(&self, state: i32) {
+        self.entity_data.lock().weather_state.set(state);
+    }
+
+    /// Vanilla `CopperGolem.nextWeatheringTick` accessors.
+    fn next_weathering_tick(&self) -> i64 {
+        self.next_weathering_tick.load(Ordering::Relaxed)
+    }
+
+    fn set_next_weathering_tick(&self, tick: i64) {
+        self.next_weathering_tick.store(tick, Ordering::Relaxed);
+    }
+
+    /// Vanilla `CopperGolem.tick` -> `updateWeathering`.
+    ///
+    /// The first tick after a spawn schedules an oxidation attempt 504000..552000
+    /// game ticks out (~7..7.7 in-game days). Once the golem is fully oxidized it
+    /// tries to turn into a statue: the block under it must be air and the roll
+    /// must be under `0.0058` every tick.
+    fn update_weathering(&self, world: &World) {
+        let next = self.next_weathering_tick();
+        if next == -2 {
+            // Waxed: vanilla stops weathering entirely.
+            return;
+        }
+        let game_time = world.game_time();
+        if next == -1 {
+            self.set_next_weathering_tick(game_time + rand::random_range(504_000..=552_000));
+            return;
+        }
+        if game_time < next {
+            return;
+        }
+
+        let state = self.weather_state();
+        let fully_oxidized = state == WEATHERING_OXIDIZED;
+        if !fully_oxidized {
+            let new_state = (state + 1).min(WEATHERING_OXIDIZED);
+            self.set_weather_state(new_state);
+            self.set_next_weathering_tick(if new_state == WEATHERING_OXIDIZED {
+                0
+            } else {
+                next + rand::random_range(504_000..=552_000)
+            });
+        }
+
+        if fully_oxidized && self.can_turn_to_statue(world) {
+            self.turn_to_statue(world);
+        }
+    }
+
+    /// Vanilla `CopperGolem.canTurnToStatue`.
+    fn can_turn_to_statue(&self, world: &World) -> bool {
+        world
+            .get_block_state(Entity::block_position(self))
+            .is_air()
+            && rand::random::<f32>() <= 0.0058
+    }
+
+    /// Vanilla `CopperGolem.turnToStatue`: replace the golem's block with an
+    /// oxidized statue carrying its name, then drop its equipment.
+    fn turn_to_statue(&self, world: &World) {
+        let pos = Entity::block_position(self);
+        let pose = match rand::random_range(0..4) {
+            0 => steel_registry::blocks::properties::Pose::Standing,
+            1 => steel_registry::blocks::properties::Pose::Sitting,
+            2 => steel_registry::blocks::properties::Pose::Running,
+            _ => steel_registry::blocks::properties::Pose::Star,
+        };
+        let state = vanilla_blocks::OXIDIZED_COPPER_GOLEM_STATUE
+            .default_state()
+            .set_value(&BlockStateProperties::COPPER_GOLEM_POSE, pose)
+            .set_value(
+                &BlockStateProperties::HORIZONTAL_FACING,
+                direction_from_y_rot(Entity::rotation(self).0),
+            );
+        // `3` = UPDATE_NEIGHBORS | UPDATE_CLIENTS, matching vanilla `setBlock`.
+        world.set_block(pos, state, UpdateFlags::UPDATE_ALL);
+
+        if let Some(block_entity) = world.get_block_entity(pos) {
+            if let Some(statue) = block_entity
+                .downcast_ref::<crate::block_entity::entities::CopperGolemStatueBlockEntity>()
+            {
+                statue.create_statue(self);
+            }
+        }
+
+        Mob::drop_preserved_equipment(self);
+        self.set_removed(RemovalReason::Discarded);
+        self.play_sound(&sound_events::ENTITY_COPPER_GOLEM_BECOME_STATUE, 1.0, 1.0);
+        if Leashable::is_leashed(self) {
+            if world.get_game_rule(&vanilla_game_rules::ENTITY_DROPS) {
+                Leashable::drop_leash(self);
+            } else {
+                Leashable::remove_leash(self);
+            }
         }
     }
 
@@ -132,6 +288,12 @@ impl Entity for CopperGolemEntity {
 
     fn base_tick(&self) {
         Mob::base_tick_mob(self);
+        // Vanilla `CopperGolem.tick` calls `updateWeathering` on the server every
+        // tick. Steel has no client side, so the check collapses to "has a
+        // level", which is also what keeps a detached entity from ticking.
+        if let Some(world) = Entity::level(self) {
+            self.update_weathering(&world);
+        }
     }
 
     fn dimensions_for_pose(&self, _pose: EntityPose) -> EntityDimensions {
@@ -180,10 +342,21 @@ impl Entity for CopperGolemEntity {
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
         self.save_mob(nbt);
+        // Vanilla `CopperGolem.addAdditionalSaveData`.
+        nbt.insert("next_weather_age", self.next_weathering_tick());
+        nbt.insert("weather_state", self.weather_state_name());
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_mob(nbt);
+        // Vanilla `CopperGolem.readAdditionalSaveData`.
+        self.set_next_weathering_tick(nbt.long_value("next_weather_age").unwrap_or(-1));
+        let state = nbt
+            .string("weather_state")
+            .map_or(WEATHERING_UNAFFECTED, |value| {
+                weathering_state_from_name(value.to_str())
+            });
+        self.set_weather_state(state);
     }
 }
 
@@ -242,6 +415,111 @@ impl Mob for CopperGolemEntity {
 
     fn tick_path_navigation(&self) {
         PathfinderMob::tick_pathfinder_path_navigation(self);
+    }
+
+    /// Vanilla `itemStack.hurtAndBreak(1, player, hand.asEquipmentSlot())`.
+    fn hurt_player_held_axe(player: &crate::player::Player, hand: InteractionHand) {
+        let mut inventory = player.inventory.lock();
+        let stack = inventory.get_item_in_hand_mut(hand);
+        if stack.is_empty() {
+            return;
+        }
+        stack.hurt_and_break(1, player.has_infinite_materials());
+    }
+
+    /// Vanilla `CopperGolem.mobInteract`: shears drop the held item, honeycomb
+    /// waxes the golem permanently, and an axe scrapes one oxidation stage back
+    /// off an oxidized golem.
+    fn mob_interact(&self, player: &crate::player::Player, hand: InteractionHand) -> InteractionResult {
+        use steel_registry::vanilla_item_tags::ItemTag;
+
+        let stack = {
+            let inventory = player.inventory.lock();
+            let stack = inventory.get_item_in_hand(hand);
+            stack.copy_with_count(stack.count())
+        };
+
+        // An empty hand takes the item the golem is carrying.
+        if stack.is_empty() {
+            let held = self
+                .living_base
+                .equipment()
+                .lock()
+                .get_ref(EquipmentSlot::MainHand)
+                .clone();
+            if !held.is_empty() {
+                self.living_base
+                    .equipment()
+                    .lock()
+                    .set(EquipmentSlot::MainHand, ItemStack::empty());
+                self.spawn_at_location(held, 0.0);
+                return InteractionResult::Success;
+            }
+        }
+
+        if stack.is(&vanilla_items::HONEYCOMB) && self.next_weathering_tick() != -2 {
+            if let Some(world) = Entity::level(self) {
+                world.level_event(
+                    level_events::PARTICLES_WAX_ON,
+                    Entity::block_position(self),
+                    0,
+                    None,
+                );
+            }
+            self.set_next_weathering_tick(-2);
+            self.use_player_item(player, hand);
+            return InteractionResult::SuccessServer;
+        }
+
+        if stack.item().has_tag(&ItemTag::AXES) {
+            if self.next_weathering_tick() == -2 {
+                // Scraping the wax off restarts weathering from "never scheduled".
+                if let Some(world) = Entity::level(self) {
+                    world.play_sound(
+                        &steel_registry::sound_events::ITEM_AXE_SCRAPE,
+                        SoundSource::Neutral,
+                        Entity::block_position(self),
+                        1.0,
+                        1.0,
+                        None,
+                    );
+                    world.level_event(
+                        level_events::PARTICLES_WAX_OFF,
+                        Entity::block_position(self),
+                        0,
+                        None,
+                    );
+                }
+                self.set_next_weathering_tick(-1);
+                Self::hurt_player_held_axe(player, hand);
+                return InteractionResult::SuccessServer;
+            }
+
+            if self.weather_state() != WEATHERING_UNAFFECTED {
+                if let Some(world) = Entity::level(self) {
+                    world.play_sound(
+                        &steel_registry::sound_events::ITEM_AXE_SCRAPE,
+                        SoundSource::Neutral,
+                        Entity::block_position(self),
+                        1.0,
+                        1.0,
+                        None,
+                    );
+                    world.level_event(
+                        level_events::PARTICLES_SCRAPE,
+                        Entity::block_position(self),
+                        0,
+                        None,
+                    );
+                }
+                self.set_next_weathering_tick(-1);
+                self.set_weather_state((self.weather_state() - 1).max(WEATHERING_UNAFFECTED));
+                Self::hurt_player_held_axe(player, hand);
+                return InteractionResult::SuccessServer;
+            }
+        }
+
+        InteractionResult::Pass
     }
 
     fn mob_flags(&self) -> i8 {

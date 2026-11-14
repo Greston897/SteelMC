@@ -15,6 +15,8 @@ use crate::player::Player;
 pub struct SlotStorage {
     physical: Option<(ContainerRef, usize)>,
     dependencies: Vec<ContainerRef>,
+    /// Vanilla `Slot.selectedBundleItemIndex` (`-1` when nothing is selected).
+    selected_bundle_item_index: std::sync::atomic::AtomicI32,
 }
 
 impl SlotStorage {
@@ -24,6 +26,7 @@ impl SlotStorage {
         Self {
             physical: Some((container.into(), index)),
             dependencies: Vec::new(),
+            selected_bundle_item_index: std::sync::atomic::AtomicI32::new(-1),
         }
     }
 
@@ -33,6 +36,7 @@ impl SlotStorage {
         Self {
             physical: None,
             dependencies: dependencies.into_iter().map(Into::into).collect(),
+            selected_bundle_item_index: std::sync::atomic::AtomicI32::new(-1),
         }
     }
 
@@ -79,6 +83,20 @@ impl SlotStorage {
 pub trait Slot: ErasedType + Send + Sync {
     /// Returns this slot's physical storage and auxiliary dependencies.
     fn storage(&self) -> &SlotStorage;
+
+    /// Vanilla `Slot.getSelectedBundleItemIndex` (`-1` when unset).
+    fn selected_bundle_item_index(&self) -> i32 {
+        self.storage()
+            .selected_bundle_item_index
+            .load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Vanilla `Slot.setSelectedBundleItemIndex`.
+    fn set_selected_bundle_item_index(&self, index: i32) {
+        self.storage()
+            .selected_bundle_item_index
+            .store(index, std::sync::atomic::Ordering::Relaxed);
+    }
 
     /// Returns a reference to the item in this slot.
     fn get_item<'a>(&self, guard: &'a ContainerLockGuard) -> &'a ItemStack;

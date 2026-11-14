@@ -22,6 +22,7 @@ pub mod player_data_storage;
 pub mod player_inventory;
 mod profile;
 pub mod recipe_book;
+pub mod recipe_placement;
 mod session;
 mod sleep;
 mod sleep_state;
@@ -31,6 +32,7 @@ mod tick_state;
 mod title;
 
 use crate::player::player_inventory::Prediction;
+use crate::player::recipe_placement::{PlacementOutcome, PostPlaceAction};
 pub use abilities::{Abilities, DEFAULT_FLYING_SPEED};
 use chat::ChatState;
 pub use chat::{LastSeen, LastSeenMessagesValidator, MessageCache};
@@ -63,13 +65,17 @@ use std::sync::{Arc, LazyLock, Weak};
 use std::time::{Duration, Instant};
 use steel_math::RAD_TO_DEG_F64;
 use steel_protocol::packets::game::{
-    CEntityEvent, CHurtAnimation, CPlayerCombatKill, CPlayerLookAt, CRespawn,
-    CSetDefaultSpawnPosition, CSetHealth, CSetHeldSlot, CSetPassengers, ClientCommandAction,
+    CEntityEvent, CHurtAnimation, CPlayerCombatKill, CPlayerLookAt, CRespawn, CTagQuery,
+    CPlaceGhostRecipe, CSetDefaultSpawnPosition, CSetHealth, CSetHeldSlot, CSetPassengers,
+    ClientCommandAction,
     LookAtAnchor, RelativeMovement, SRecipeBookChangeSettings, SRecipeBookSeenRecipe,
-    SSetCommandBlock, SSetGameRule,
-    SoundSource,
+    SLockDifficulty, SBlockEntityTagQuery, SEntityTagQuery, SJigsawGenerate, SPlaceRecipe,
+    SSetCommandBlock,
+    SSetCommandMinecart, SSetGameRule, SSetJigsawBlock, SSetStructureBlock, SSetTestBlock,
+    SDebugSubscriptionRequest, STeleportToEntity, STestInstanceBlockAction, SoundSource,
 };
 use steel_protocol::packets::game::{CLevelEvent, CSetEntityData, CSetExperience};
+use crate::block_entity::BlockEntity as _;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_data::{EntityPose, HumanoidArm, ParticleList};
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
@@ -293,6 +299,10 @@ pub struct Player {
     /// Assigned groups, direct overrides, and the effective permission set.
     permissions: SyncMutex<PlayerPermissionState>,
 
+    /// Vanilla `ServerPlayer.requestedDebugSubscriptions`: the raw set the client
+    /// asked for. [`Self::debug_subscriptions`] filters it by permission.
+    requested_debug_subscriptions: SyncMutex<Vec<i32>>,
+
     /// Whether the player has completed the vanilla End credits flow.
     seen_credits: SyncMutex<bool>,
 
@@ -314,6 +324,9 @@ pub struct Player {
 
     /// The counter keeping track of this player's statistics.
     stats: SyncMutex<StatsCounter>,
+    /// Vanilla `ServerPlayer.wardenSpawnTracker`: the per-player warning state
+    /// the sculk shrieker climbs before a warden emerges.
+    warden_spawn_tracker: SyncMutex<crate::block_entity::entities::WardenSpawnTracker>,
 
     /// The last action time of this player.
     last_action_time: SyncMutex<Instant>,
@@ -384,6 +397,28 @@ impl PlayerResidenceState {
         self.token
     }
 }
+
+/// Vanilla `TestBlockMode` wire ordinal (`ByIdMap` maps unknown ids to `START`).
+const fn test_mode_from_ordinal(ordinal: i32) -> steel_registry::blocks::properties::TestBlockMode {
+    use steel_registry::blocks::properties::TestBlockMode;
+    match ordinal {
+        1 => TestBlockMode::Log,
+        2 => TestBlockMode::Fail,
+        3 => TestBlockMode::Accept,
+        _ => TestBlockMode::Start,
+    }
+}
+
+/// Vanilla `StructureBlockEntity.UpdateType.SAVE_AREA` ordinal.
+///
+/// The enum is `UPDATE_DATA(0)`, `SAVE_AREA(1)`, `LOAD_AREA(2)`,
+/// `SCAN_AREA(3)`; `UPDATE_DATA` needs no action because the fields above are
+/// the whole of it.
+const STATUS_UPDATE_SAVE_AREA: i32 = 1;
+/// Vanilla `StructureBlockEntity.UpdateType.LOAD_AREA` ordinal.
+const STATUS_UPDATE_LOAD_AREA: i32 = 2;
+/// Vanilla `StructureBlockEntity.UpdateType.SCAN_AREA` ordinal.
+const STATUS_UPDATE_SCAN_AREA: i32 = 3;
 
 impl Player {
     /// Fires the `recipe_crafted` trigger for a recipe this player just used.
@@ -882,6 +917,7 @@ impl Player {
             health_sync: SyncMutex::new(HealthSyncState::new()),
             experience: SyncMutex::new(Experience::default()),
             permissions: SyncMutex::new(PlayerPermissionState::default()),
+            requested_debug_subscriptions: SyncMutex::new(Vec::new()),
             seen_credits: SyncMutex::new(false),
             won_game: SyncMutex::new(false),
             chunk_send_epoch: SyncMutex::new(0),
@@ -889,6 +925,9 @@ impl Player {
             ender_pearls: SyncMutex::new(Vec::new()),
             fishing: SyncMutex::new(None),
             stats: SyncMutex::new(StatsCounter::new()),
+            warden_spawn_tracker: SyncMutex::new(
+                crate::block_entity::entities::WardenSpawnTracker::new(),
+            ),
             last_action_time: SyncMutex::new(Instant::now()),
             advancements: SyncMutex::new(PlayerAdvancement::default()),
             riptide: SyncMutex::new(None),
@@ -981,6 +1020,28 @@ impl Player {
             .stats
             .get(&vanilla_stat_types::CUSTOM.get(stat))
             .map_or(0, |(count, _)| *count)
+    }
+
+    /// Returns a clone of the player's warden spawn tracker.
+    ///
+    /// Vanilla keeps `WardenSpawnTracker` on the `ServerPlayer` and mutates it
+    /// through the optional; the shrieker reads, bumps and copies it.
+    #[must_use]
+    pub fn warden_spawn_tracker(&self) -> crate::block_entity::entities::WardenSpawnTracker {
+        *self.warden_spawn_tracker.lock()
+    }
+
+    /// Replaces the player's tracker, as vanilla `copyData` does.
+    pub fn set_warden_spawn_tracker(
+        &self,
+        tracker: crate::block_entity::entities::WardenSpawnTracker,
+    ) {
+        *self.warden_spawn_tracker.lock() = tracker;
+    }
+
+    /// Vanilla `WardenSpawnTracker.tick`, called from the player tick.
+    pub fn tick_warden_spawn_tracker(&self) {
+        self.warden_spawn_tracker.lock().tick();
     }
 
     /// Ticks to award stats that are awarded based on ticks.
@@ -1262,6 +1323,515 @@ impl Player {
         // Vanilla calls `BaseCommandBlock.onUpdated`, which sends the block
         // entity data to every viewer.
         world.broadcast_block_entity_if_needed(packet.pos);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetCommandMinecart`.
+    ///
+    /// Only a game master may edit a command minecart; the cart itself keeps the
+    /// command, the output tracking and (when tracking is turned off) drops the
+    /// last output. A non-empty command is acknowledged with
+    /// `advMode.setCommand.success` or `.disabled`.
+    pub fn handle_set_command_minecart(&self, packet: SSetCommandMinecart) {
+        if !self.is_operator() {
+            self.send_message(&translations::ADV_MODE_NOT_ALLOWED.msg().component());
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(entity) = world.get_entity_by_id(packet.entity_id) else {
+            return;
+        };
+        let Some(minecart) = entity
+            .downcast_ref::<crate::entity::entities::CommandBlockMinecartEntity>()
+        else {
+            return;
+        };
+
+        minecart.set_command(packet.command.clone());
+        minecart.set_track_output(packet.track_output);
+        if !packet.track_output {
+            minecart.set_last_output(TextComponent::plain(""));
+        }
+
+        let enabled = world.get_game_rule(&steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK);
+        if !packet.command.trim().is_empty() {
+            let message = if enabled {
+                translations::ADV_MODE_SET_COMMAND_SUCCESS.message([packet.command])
+            } else {
+                translations::ADV_MODE_SET_COMMAND_DISABLED.message([packet.command])
+            };
+            self.send_message(&message.component());
+        }
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetStructureBlock`: a game
+    /// master updates every field of the structure block editor.
+    ///
+    /// The block entity stores all of it and mirrors the mode into the block
+    /// state. Vanilla then runs the requested update type (`SAVE_AREA`,
+    /// `LOAD_AREA`, `SCAN_AREA`) and reports success or failure; Steel has no
+    /// runtime structure manager, so the update types that need one answer with
+    /// vanilla's `structure_block.` failure keys instead of doing nothing.
+    pub fn handle_set_structure_block(&self, packet: SSetStructureBlock) {
+        use steel_registry::blocks::properties::StructureMode;
+
+        if !self.has_game_master_permissions() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(block_entity) = world.get_block_entity(packet.pos) else {
+            return;
+        };
+        let Some(structure) = block_entity
+            .downcast_ref::<crate::block_entity::entities::StructureBlockEntity>()
+        else {
+            return;
+        };
+
+        let mode = StructureMode::from_ordinal(packet.mode);
+        structure.set_mode(mode);
+        structure.set_structure_name(&packet.name);
+        structure.set_structure_pos(packet.offset());
+        structure.set_structure_size(packet.size());
+        structure.set_mirror(packet.mirror);
+        structure.set_rotation(packet.rotation);
+        structure.set_metadata(&packet.metadata);
+        structure.set_ignore_entities(packet.ignore_entities());
+        structure.set_strict(packet.strict());
+        structure.set_show_air(packet.show_air());
+        structure.set_show_bounding_box(packet.show_bounding_box());
+        structure.set_integrity(packet.integrity_clamped());
+        structure.set_seed(packet.seed);
+        structure.set_changed();
+
+        // Vanilla answers every update type with a chat message. Steel has no
+        // runtime structure manager (`ServerLevel.getStructureManager`), so the
+        // three area operations cannot run; each one reports the vanilla key it
+        // would report on failure, which keeps the client's chat identical to a
+        // vanilla world where the structure is missing.
+        let name = structure.structure_name();
+        if !structure.has_structure_name() {
+            self.send_message(
+                &translations::STRUCTURE_BLOCK_INVALID_STRUCTURE_NAME
+                    .message([packet.name.clone()])
+                    .component(),
+            );
+            return;
+        }
+        match packet.update_type {
+            // `StructureBlockEntity.saveStructure` returns `false` without a
+            // structure manager.
+            STATUS_UPDATE_SAVE_AREA => {
+                log::warn!(
+                    "structure block at {:?} cannot save '{name}': Steel has no structure manager",
+                    packet.pos
+                );
+                self.send_message(
+                    &translations::STRUCTURE_BLOCK_SAVE_FAILURE
+                        .message([name])
+                        .component(),
+                );
+            }
+            // `StructureBlockEntity.isStructureLoadable` is `false` without a
+            // structure manager, which is vanilla's `load_not_found` branch.
+            STATUS_UPDATE_LOAD_AREA => {
+                log::warn!(
+                    "structure block at {:?} cannot load '{name}': Steel has no structure manager",
+                    packet.pos
+                );
+                self.send_message(
+                    &translations::STRUCTURE_BLOCK_LOAD_NOT_FOUND
+                        .message([name])
+                        .component(),
+                );
+            }
+            // `StructureBlockEntity.detectSize` needs to walk every corner block
+            // entity within 80 blocks; Steel does not expose a block-entity box
+            // query, so the scan reports vanilla's failure branch.
+            STATUS_UPDATE_SCAN_AREA => {
+                log::warn!(
+                    "structure block at {:?} cannot scan '{name}': Steel has no block-entity box query",
+                    packet.pos
+                );
+                self.send_message(&translations::STRUCTURE_BLOCK_SIZE_FAILURE.msg().component());
+            }
+            // `UPDATE_DATA` (0) and unknown ordinals only store the fields,
+            // which happened above.
+            _ => {}
+        }
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handlePlaceRecipe`.
+    ///
+    /// The server alone decides what moves: `resetLastActionTime`, then the
+    /// container-id gate, the menu validity check, the recipe-book membership
+    /// check, and finally the menu's own `handlePlacement`. A ghost recipe is
+    /// echoed back so the client can draw the outline.
+    pub fn handle_place_recipe(&self, packet: SPlaceRecipe) {
+        self.reset_last_action_time();
+        if self.is_spectator() {
+            return;
+        }
+
+        let mut open_menu = self.open_menu.lock();
+        let mut menu = open_menu.menu.take();
+        drop(open_menu);
+
+        let container_id;
+        let outcome = match menu.as_mut() {
+            Some(active) => {
+                container_id = i32::from(active.container_id());
+                if container_id != packet.container_id {
+                    None
+                } else if !active.still_valid(self) {
+                    log::debug!(
+                        "Player {} interacted with invalid menu",
+                        self.gameprofile.name()
+                    );
+                    None
+                } else {
+                    self.place_recipe_into(active, &packet)
+                }
+            }
+            None if packet.container_id == 0 => {
+                container_id = 0;
+                let mut inventory_menu = self.inventory_menu.lock();
+                self.place_recipe_into(&mut inventory_menu, &packet)
+            }
+            None => return,
+        };
+
+        if let Some(active) = menu {
+            self.open_menu.lock().menu = Some(active);
+        }
+
+        // Vanilla answers `PLACE_GHOST_RECIPE` with the full display of the
+        // recipe it could not place, not with the id the client sent.
+        if let Some(outcome) = outcome
+            && outcome.action == PostPlaceAction::PlaceGhostRecipe
+        {
+            self.send_packet(CPlaceGhostRecipe {
+                container_id,
+                display: outcome.display,
+            });
+        }
+    }
+
+    /// The per-menu half of [`Self::handle_place_recipe`], with the menu taken
+    /// out of the open-menu slot.
+    fn place_recipe_into(
+        &self,
+        menu: &mut crate::inventory::menu::Menu,
+        packet: &SPlaceRecipe,
+    ) -> Option<PlacementOutcome> {
+        use crate::player::recipe_placement::PlacementRequest;
+        use steel_registry::REGISTRY;
+
+        // Vanilla `getRecipeFromDisplay` + `getRecipeBook().contains`.
+        let key = self.recipe_book.lock().recipe_at(packet.recipe)?.clone();
+        let recipe = REGISTRY.recipes.by_key(&key)?;
+
+        let properties = recipe.data().properties()?;
+        let placement = properties.placement.as_ref()?;
+        if placement.is_impossible_to_place() {
+            log::debug!(
+                "Player {} tried to place impossible recipe {key}",
+                self.gameprofile.name()
+            );
+            return None;
+        }
+
+        let display = steel_registry::recipe::display_for_recipe(recipe)?;
+        let recipe_size = match &display {
+            steel_registry::slot_display::RecipeDisplay::CraftingShaped { width, height, .. } => (
+                usize::try_from(*width).unwrap_or(0),
+                usize::try_from(*height).unwrap_or(0),
+            ),
+            steel_registry::slot_display::RecipeDisplay::CraftingShapeless { ingredients, .. } => {
+                (ingredients.len(), 1)
+            }
+            steel_registry::slot_display::RecipeDisplay::Furnace { .. } => (1, 1),
+            _ => return None,
+        };
+
+        let request = PlacementRequest {
+            recipe_key: &key,
+            placement,
+            recipe_size,
+            use_max_items: packet.make_all,
+            // Vanilla `handlePlaceRecipe` passes `player.isCreative()`.
+            allow_dropping_items_to_clear: self.has_infinite_materials(),
+        };
+
+        let mut guard = menu.behavior().lock_all_containers();
+        let action = menu
+            .kind_mut()
+            .handle_placement(menu.behavior_mut(), &mut guard, self, request);
+        drop(guard);
+        Some(PlacementOutcome {
+            action: action?,
+            display,
+        })
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleTestInstanceBlockAction`.
+    ///
+    /// Only a game master reaches the block entity. Actions other than `INIT`
+    /// and `QUERY` store the client payload and then run the requested action;
+    /// the read-only pair answers with a status packet instead.
+    pub fn handle_test_instance_block_action(&self, packet: STestInstanceBlockAction) {
+        use steel_protocol::packets::game::{CTestInstanceBlockStatus, TestInstanceBlockAction};
+
+        if !self.has_game_master_permissions() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(block_entity) = world.get_block_entity(packet.pos) else {
+            return;
+        };
+        let Some(test_instance) = block_entity
+            .downcast_ref::<crate::block_entity::entities::TestInstanceBlockEntity>()
+        else {
+            return;
+        };
+
+        if !packet.action.is_read_only() {
+            test_instance.set(packet.data);
+            match packet.action {
+                TestInstanceBlockAction::Reset
+                | TestInstanceBlockAction::Save
+                | TestInstanceBlockAction::Export
+                | TestInstanceBlockAction::Run => {
+                    // The game-test framework owns these operations; Steel has no
+                    // `TestInstanceBlockEntity.resetTest/saveTest/exportTest/runTest`
+                    // equivalent yet, so the payload is stored and the action is
+                    // reported instead of being silently dropped.
+                    log::warn!(
+                        "test instance block action {:?} at {} is not implemented",
+                        packet.action,
+                        packet.pos
+                    );
+                }
+                TestInstanceBlockAction::Init
+                | TestInstanceBlockAction::Query
+                | TestInstanceBlockAction::Set => {}
+            }
+            // Vanilla `sendBlockUpdated(pos, Blocks.AIR.defaultBlockState(), state, 3)`.
+            world.send_block_updated(packet.pos);
+            return;
+        }
+
+        let status = match packet.data.test {
+            // Vanilla renders `GameTestInstance.describe()`. Steel has no
+            // `test_instance` registry, so the description cannot be resolved;
+            // the identifier is the closest honest fallback.
+            // TODO: describe the test once the registry lands.
+            Some(ref test) => TextComponent::plain(&test.to_string()),
+            None => TextComponent::translated(TranslatedMessage {
+                key: "test_instance.description.no_test".to_owned(),
+                fallback: Some("No test".to_owned()),
+                args: None,
+            }),
+        };
+        let size = if packet.action == TestInstanceBlockAction::Query {
+            test_instance.structure_size()
+        } else {
+            None
+        };
+        self.send_packet(CTestInstanceBlockStatus { status, size });
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleDebugSubscriptionRequest`
+    /// → `ServerPlayer.requestDebugSubscriptions`.
+    ///
+    /// The set is stored verbatim; [`Self::debug_subscriptions`] applies the
+    /// permission filter, exactly like vanilla's `ServerPlayer`.
+    pub fn handle_debug_subscription_request(&self, packet: SDebugSubscriptionRequest) {
+        *self.requested_debug_subscriptions.lock() = packet.subscriptions;
+    }
+
+    /// Vanilla `ServerPlayer.debugSubscriptions`: an operator sees the set it
+    /// asked for, everyone else sees nothing.
+    #[must_use]
+    pub fn debug_subscriptions(&self) -> Vec<i32> {
+        if !self.is_operator() {
+            return Vec::new();
+        }
+        self.requested_debug_subscriptions.lock().clone()
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetJigsawBlock`.
+    ///
+    /// A game master rewrites every jigsaw field; the block entity keeps them in
+    /// NBT so the editor state survives a save/load.
+    pub fn handle_set_jigsaw_block(&self, packet: SSetJigsawBlock) {
+        if !self.has_game_master_permissions() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(block_entity) = world.get_block_entity(packet.pos) else {
+            return;
+        };
+        let Some(jigsaw) = block_entity
+            .downcast_ref::<crate::block_entity::entities::JigsawBlockEntity>()
+        else {
+            return;
+        };
+        jigsaw.set_name(packet.name);
+        jigsaw.set_target(packet.target);
+        jigsaw.set_pool(packet.pool);
+        jigsaw.set_final_state(packet.final_state);
+        jigsaw.set_joint(packet.joint);
+        jigsaw.set_placement_priority(packet.placement_priority);
+        jigsaw.set_selection_priority(packet.selection_priority);
+        block_entity.set_changed();
+        // Vanilla `sendBlockUpdated(pos, state, state, 3)`.
+        world.send_block_updated(packet.pos);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleJigsawGenerate`.
+    ///
+    /// Generating a structure from a jigsaw block needs the runtime structure
+    /// manager, which Steel does not have: world generation places bundled
+    /// templates instead of generating from placed jigsaw blocks.
+    pub fn handle_jigsaw_generate(&self, packet: SJigsawGenerate) {
+        if !self.has_game_master_permissions() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(block_entity) = world.get_block_entity(packet.pos) else {
+            return;
+        };
+        if block_entity
+            .downcast_ref::<crate::block_entity::entities::JigsawBlockEntity>()
+            .is_none()
+        {
+            return;
+        }
+        log::warn!(
+            "jigsaw generation requested at {:?} (levels {}, keep jigsaws {}) but Steel has no runtime structure generator; the request was skipped",
+            packet.pos,
+            packet.levels,
+            packet.keep_jigsaws
+        );
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetTestBlock`.
+    ///
+    /// The test blocks only exist for the game-test framework; Steel keeps the
+    /// vanilla gate (game master plus a real test block entity) so a rogue
+    /// client cannot write into arbitrary block entities.
+    pub fn handle_set_test_block(&self, packet: SSetTestBlock) {
+        if !self.has_game_master_permissions() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(block_entity) = world.get_block_entity(packet.pos) else {
+            return;
+        };
+        let Some(test_block) = block_entity
+            .downcast_ref::<crate::block_entity::entities::TestBlockEntity>()
+        else {
+            return;
+        };
+        test_block.set_mode(test_mode_from_ordinal(packet.mode));
+        test_block.set_message(packet.message);
+        test_block.set_changed();
+        // Vanilla `sendBlockUpdated(pos, initialState, testBlock.getBlockState(), 3)`.
+        world.send_block_updated(packet.pos);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleTeleportToEntityPacket`.
+    ///
+    /// Only a spectator may use it, and only to reach an entity that is actually
+    /// present. Vanilla searches every level; Steel looks in this player's own
+    /// level, which is the only one whose entities can be reached without a
+    /// cross-world teleport that would need an asynchronous chunk load.
+    pub fn handle_teleport_to_entity(&self, packet: STeleportToEntity) {
+        if !self.is_spectator() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(target) = world.get_entity_by_uuid(&packet.target) else {
+            return;
+        };
+        let position = target.position();
+        let (yaw, pitch) = target.rotation();
+        self.teleport(position, yaw, pitch).ok();
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleBlockEntityTagQuery`.
+    ///
+    /// A game master asks for the block entity's tags; the answer is the NBT
+    /// produced by `saveWithoutMetadata` (or a `null` tag when the block entity
+    /// is gone), echoed with the request's transaction id.
+    pub fn handle_block_entity_tag_query(&self, packet: SBlockEntityTagQuery) {
+        if !self.is_operator() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let tag = world
+            .get_block_entity(packet.pos)
+            .map(|block_entity| block_entity.save_without_metadata());
+        self.send_packet(CTagQuery {
+            transaction_id: packet.transaction_id,
+            tag: steel_utils::serial::OptionalNbt(tag),
+        });
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleEntityTagQuery`.
+    pub fn handle_entity_tag_query(&self, packet: SEntityTagQuery) {
+        if !self.is_operator() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let tag = world
+            .get_entity_by_id(packet.entity_id)
+            .map(|entity| {
+                // Vanilla `Entity.saveWithoutMetadata`: the type-specific NBT
+                // with the entity `id` but without the world position metadata.
+                let mut nbt = entity.nbt_for_data_compare();
+                nbt.insert("id", entity.entity_type().key.to_string());
+                nbt
+            });
+        self.send_packet(CTagQuery {
+            transaction_id: packet.transaction_id,
+            tag: steel_utils::serial::OptionalNbt(tag),
+        });
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleLockDifficulty`.
+    ///
+    /// Only a game master (or the singleplayer owner, which Steel approximates
+    /// with the operator check) may lock or unlock the difficulty.
+    pub fn handle_lock_difficulty(&self, packet: SLockDifficulty) {
+        if !self.is_operator() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        // Vanilla locks the difficulty for the whole server; Steel keeps one
+        // level data per world, so the world the player stands in is the one
+        // that changes and broadcasts `CChangeDifficulty`.
+        world.set_difficulty_locked(packet.locked);
     }
 
     /// Vanilla `ServerGamePacketListenerImpl.handleRecipeBookChangeSettingsPacket`:
@@ -2420,6 +2990,9 @@ impl LivingEntity for Player {
         self.living_base.decrement_invulnerable_time();
         self.tick_mob_effects();
         self.tick_active_item_use(entity);
+        // Vanilla `ServerPlayer.tick` ticks the warden spawn tracker every tick:
+        // the warning level decays after twelve thousand quiet ticks.
+        self.tick_warden_spawn_tracker();
         // Vanilla `Player.tick` runs the stat tick before the death branch, so
         // `play_time` keeps counting while dead.
         self.tick_stats();

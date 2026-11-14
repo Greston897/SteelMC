@@ -798,6 +798,8 @@ mod ranged_attack;
 mod reference;
 mod registry;
 pub(crate) mod selector;
+pub(crate) mod warden_spawn_tracker;
+pub use warden_spawn_tracker::WardenSpawnTracker;
 pub(crate) mod natural_spawner;
 pub(crate) mod patrol_spawner;
 pub(crate) mod phantom_spawner;

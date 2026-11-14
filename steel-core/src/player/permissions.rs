@@ -1,3 +1,5 @@
+use steel_utils::types::GameType;
+
 use super::{
     Identifier, PermissionContext, PermissionExpr, PermissionMetadataSet, PermissionMetadataValue,
     PermissionSet, PermissionState, Player,
@@ -72,6 +74,15 @@ impl Player {
         self.server
             .upgrade()
             .is_some_and(|server| server.is_operator(self.gameprofile.id()))
+    }
+
+    /// Vanilla `Player.canUseGameMasterBlocks`: a creative-mode operator.
+    ///
+    /// Every game-master packet handler (structure/Jigsaw/test block editors)
+    /// gates on this, not on the operator flag alone.
+    #[must_use]
+    pub fn has_game_master_permissions(&self) -> bool {
+        self.game_mode() == GameType::Creative && self.is_operator()
     }
 
     /// Returns direct permission overrides.

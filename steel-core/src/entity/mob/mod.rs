@@ -810,6 +810,24 @@ pub trait Mob: LivingEntity + Leashable {
             .set_equipment_chance(slot, chance);
     }
 
+    /// Vanilla `Mob.dropPreservedEquipment`: drops every equipped stack whose
+    /// drop chance was set to "preserve" (mobs that convert instead of dying).
+    ///
+    /// Returns nothing here because Steel has no caller that needs the set of
+    /// slots a predicate vetoed; every preserved stack is dropped.
+    fn drop_preserved_equipment(&self) {
+        for slot in EquipmentSlot::ALL {
+            if !self.is_equipment_drop_preserved(slot) {
+                continue;
+            }
+            let item_stack = self.living_base().equipment().lock().take(slot);
+            if item_stack.is_empty() {
+                continue;
+            }
+            self.spawn_at_location(item_stack, 0.0);
+        }
+    }
+
     fn is_equipment_drop_preserved(&self, slot: EquipmentSlot) -> bool {
         self.mob_base().drop_chances().lock().is_preserved(slot)
     }

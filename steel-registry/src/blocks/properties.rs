@@ -783,6 +783,31 @@ pub enum StructureMode {
     Data,
 }
 
+impl StructureMode {
+    /// Maps a wire ordinal to a mode, defaulting to `DATA` like vanilla's
+    /// `readEnum` fallback for an unknown value.
+    #[must_use]
+    pub const fn from_ordinal(ordinal: i32) -> Self {
+        match ordinal {
+            0 => StructureMode::Save,
+            1 => StructureMode::Load,
+            2 => StructureMode::Corner,
+            _ => StructureMode::Data,
+        }
+    }
+
+    /// Returns this mode's wire ordinal.
+    #[must_use]
+    pub const fn ordinal(self) -> i32 {
+        match self {
+            StructureMode::Save => 0,
+            StructureMode::Load => 1,
+            StructureMode::Corner => 2,
+            StructureMode::Data => 3,
+        }
+    }
+}
+
 impl PropertyEnum for StructureMode {
     fn as_str(&self) -> &str {
         match self {

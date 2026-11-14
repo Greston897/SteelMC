@@ -306,13 +306,30 @@ fn validate_allows_zero_simulation_distance() {
 
 #[test]
 fn configured_core_count_flows_to_the_runtime_config() {
-    // A Pterodactyl/Docker container limit expressed in cores: the operator sets
-    // `cores` and every auto-sized pool follows it.
-    let config_toml = DEFAULT_CONFIG.replace("cores = 0", "cores = 6");
+    // A Pterodactyl/Docker limit expressed in cores: the operator sets `cores`
+    // and every auto-sized pool follows it, capped by what the container offers.
+    let detected = steel_utils::threading::available_worker_threads();
+    let configured = detected.saturating_sub(1).max(1);
+    let config_toml = DEFAULT_CONFIG.replace("cores = 0", &format!("cores = {configured}"));
     let config: SteelConfig = toml::from_str(&config_toml).expect("config parses");
 
-    assert_eq!(config.server.threads.cores, Some(6));
-    assert_eq!(config.server.into_runtime_config().cores, 6);
+    assert_eq!(config.server.threads.cores, Some(configured));
+    assert_eq!(config.server.into_runtime_config().cores, configured);
+}
+
+#[test]
+fn a_configured_core_count_never_exceeds_the_container_limit() {
+    // A panel may keep `cores = 64` while the container is started with
+    // `--cpus=4`; the pools must size for four cores, not sixty-four.
+    let detected = steel_utils::threading::available_worker_threads();
+    let config_toml = DEFAULT_CONFIG.replace("cores = 0", &format!("cores = {}", detected + 1));
+    let config: SteelConfig = toml::from_str(&config_toml).expect("config parses");
+
+    assert_eq!(
+        config.server.into_runtime_config().cores,
+        detected,
+        "the container quota must win over an oversized config value"
+    );
 }
 
 #[test]

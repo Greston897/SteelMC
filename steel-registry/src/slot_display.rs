@@ -180,7 +180,7 @@ pub enum RecipeDisplay {
     },
     /// A stonecutter recipe.
     Stonecutter {
-        /// The cut input.
+        /// The cut input (vanilla `StonecutterRecipeDisplay.input()`).
         ingredient: SlotDisplay,
         /// The cut result.
         result: SlotDisplay,

@@ -1,6 +1,4 @@
-use crate::generator_functions::{
-    generate_option, generate_sound_event_ref, read_json_asset, sort_contiguous_registry_entries,
-};
+use crate::generator_functions::{read_json_asset, sort_contiguous_registry_entries};
 use heck::ToShoutySnakeCase;
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::quote;
@@ -16,9 +14,6 @@ struct MobEffectEntry {
     particle: MobEffectParticleEntry,
     #[serde(default)]
     attribute_modifiers: Vec<MobEffectAttributeModifierEntry>,
-    /// Vanilla `MobEffect.onEffectAdded` sound; only the omen effects have one.
-    #[serde(default)]
-    sound_on_added: Option<Identifier>,
 }
 
 #[derive(Deserialize)]
@@ -176,8 +171,6 @@ pub(crate) fn build() -> TokenStream {
             ];
         });
 
-        let sound_on_added = generate_option(&effect.sound_on_added, generate_sound_event_ref);
-
         constants.extend(quote! {
             pub static #ident: &MobEffect = &MobEffect {
                 key: Identifier::vanilla_static(#key),
@@ -185,7 +178,6 @@ pub(crate) fn build() -> TokenStream {
                 color: RgbColor::new(#color),
                 particle: #particle,
                 attribute_modifiers: #modifiers_ident,
-                sound_on_added: #sound_on_added,
             };
         });
 

@@ -14,6 +14,7 @@ use super::{
     Player, PlayerRespawnConfig, abilities::Abilities, experience::Experience, food_data::FoodData,
     player_inventory::PlayerInventory,
 };
+use crate::entity::WardenSpawnTracker;
 use crate::player::stats_counter::StatState;
 use crate::{
     chunk_saver::{ChunkStorage, PersistentEntity},
@@ -26,7 +27,11 @@ use crate::{
 
 /// Current data version for player saves.
 /// Increment when making breaking changes to the format.
-pub const PLAYER_DATA_VERSION: i32 = 7;
+///
+/// Version 8 added the vanilla `warden_spawn_tracker` (warning level, cooldown
+/// and quiet ticks). Older saves simply start with a fresh tracker, which is
+/// exactly vanilla's behaviour for a player that never triggered a shrieker.
+pub const PLAYER_DATA_VERSION: i32 = 8;
 
 /// Persistent player data saved by Steel's storage backend.
 ///
@@ -135,6 +140,20 @@ pub struct PersistentPlayerData {
 
     /// Persisted advancement progress keyed by advancement identifier.
     pub advancements: Vec<(Identifier, AdvancementProgress)>,
+
+    /// Vanilla `warden_spawn_tracker` (warning level, cooldown, quiet ticks).
+    pub warden_spawn_tracker: PersistentWardenSpawnTracker,
+}
+
+/// Vanilla `WardenSpawnTracker` saved with the player.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct PersistentWardenSpawnTracker {
+    /// Vanilla `ticks_since_last_warning`.
+    pub ticks_since_last_warning: i32,
+    /// Vanilla `warning_level`.
+    pub warning_level: i32,
+    /// Vanilla `cooldown_ticks`.
+    pub cooldown_ticks: i32,
 }
 
 /// A vanilla `RootVehicle` tree persisted with player data.
@@ -296,6 +315,14 @@ impl PersistentPlayerData {
             ender_items,
             stats,
             advancements,
+            warden_spawn_tracker: {
+                let tracker = player.warden_spawn_tracker();
+                PersistentWardenSpawnTracker {
+                    ticks_since_last_warning: tracker.ticks_since_last_warning(),
+                    warning_level: tracker.warning_level(),
+                    cooldown_ticks: tracker.cooldown_ticks(),
+                }
+            },
         }
     }
 
@@ -362,6 +389,7 @@ impl Player {
         *self.ender_chest_inventory.lock() = PlayerEnderChestContainer::new();
         *self.food_data.lock() = FoodData::new();
         self.stats.lock().reset();
+        self.set_warden_spawn_tracker(WardenSpawnTracker::new());
         *self.advancements.lock() = PlayerAdvancement::default();
 
         let mut experience = Experience::default();
@@ -542,6 +570,12 @@ impl PersistentPlayerData {
                 stats.stats.insert(*stat, (*count, StatState::Dirty));
             }
         }
+
+        player.set_warden_spawn_tracker(WardenSpawnTracker::with_state(
+            self.warden_spawn_tracker.ticks_since_last_warning,
+            self.warden_spawn_tracker.warning_level,
+            self.warden_spawn_tracker.cooldown_ticks,
+        ));
 
         player
             .advancements

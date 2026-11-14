@@ -1,10 +1,9 @@
 //! Vanilla command block minecart.
 //!
 //! A `MinecartCommandBlock` stores a command string plus the last output it
-//! produced. Steel does not have a block-level command block yet, so the cart
-//! keeps the vanilla state machine (command, output, activator-rail triggering)
-//! and only executes the command through the shared `CommandSource` when the
-//! dispatcher is available.
+//! produced. Like vanilla, the cart only runs its command when an activator rail
+//! powers it (`activateMinecart`), at most once every four ticks, through the
+//! shared command queue with console permissions and no chat output.
 
 use std::sync::{Arc, Weak};
 
@@ -48,18 +47,22 @@ pub struct CommandBlockMinecartEntity {
 struct CommandBlockMinecartState {
     /// The command to run, mirrored into the synced `command_name` field.
     command: String,
-    /// Ticks until the next execution attempt.
-    cooldown: i32,
-    /// Whether the cart ran at least once since placement.
+    /// Vanilla `MinecartCommandBlock.lastActivated`: the `tickCount` of the last
+    /// activator-rail trigger.
+    last_activated: i32,
+    /// Whether the cart is currently on a powered activator rail.
     powered: bool,
+    /// Vanilla `BaseCommandBlock.trackOutput`.
+    track_output: bool,
 }
 
 impl Default for CommandBlockMinecartState {
     fn default() -> Self {
         Self {
             command: String::new(),
-            cooldown: COMMAND_BLOCK_MINECART_TICK_DELAY,
+            last_activated: -COMMAND_BLOCK_MINECART_TICK_DELAY,
             powered: false,
+            track_output: true,
         }
     }
 }
@@ -109,10 +112,22 @@ impl CommandBlockMinecartEntity {
         self.entity_data.lock().minecart_command_block_mut().id_command_name.set(command);
     }
 
-    /// The last time the command executed, in world game time.
+    /// Vanilla `MinecartCommandBlock.lastActivated`, the `tickCount` of the last
+    /// activator-rail run.
     #[must_use]
-    pub fn last_execution(&self) -> i32 {
-        self.state.lock().cooldown
+    pub fn last_activated(&self) -> i32 {
+        self.state.lock().last_activated
+    }
+
+    /// Vanilla `BaseCommandBlock.setTrackOutput`.
+    pub fn set_track_output(&self, track_output: bool) {
+        self.state.lock().track_output = track_output;
+    }
+
+    /// Vanilla `BaseCommandBlock.isTrackOutput`.
+    #[must_use]
+    pub fn tracks_output(&self) -> bool {
+        self.state.lock().track_output
     }
 
     /// Mirrors vanilla `MinecartCommandBlock`'s `lastOutput` component.
@@ -120,28 +135,31 @@ impl CommandBlockMinecartEntity {
         self.entity_data.lock().minecart_command_block_mut().id_last_output.set(Box::new(output));
     }
 
-    /// Vanilla `MinecartCommandBlock` only executes while armed by an activator
-    /// rail; `activate_minecart` arms it, and the cart then re-runs its command
-    /// every four ticks.
-    fn tick_command(&self) {
-        let (command, armed) = {
+    /// Vanilla `MinecartCommandBlock.activateMinecart`: the command runs only
+    /// while an activator rail powers the cart, and at most once every four
+    /// ticks (`tickCount - lastActivated >= 4`).
+    fn run_command(&self) {
+        let (command, tick_count) = {
             let mut state = self.state.lock();
             if !state.powered || state.command.is_empty() {
                 return;
             }
-            if state.cooldown > 0 {
-                state.cooldown -= 1;
-                return;
-            }
-            state.cooldown = COMMAND_BLOCK_MINECART_TICK_DELAY;
-            (state.command.clone(), true)
+            (state.command.clone(), self.base.tick_count())
         };
-        if !armed {
+        if tick_count - self.state.lock().last_activated < COMMAND_BLOCK_MINECART_TICK_DELAY {
             return;
         }
+        self.state.lock().last_activated = tick_count;
+
         let Some(world) = self.level() else {
             return;
         };
+        // Vanilla `BaseCommandBlock.performCommand` is shared with the block, so
+        // the "Searge" easter egg and the disabled-rule path behave identically.
+        if command.eq_ignore_ascii_case("Searge") {
+            self.set_last_output(TextComponent::plain("#itzlipofutzli"));
+            return;
+        }
         if !world.get_game_rule(&steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK) {
             return;
         }
@@ -165,7 +183,7 @@ impl CommandBlockMinecartEntity {
             Ok(result) => {
                 *pending = None;
                 drop(pending);
-                if result.output_allowed {
+                if result.output_allowed && self.tracks_output() {
                     if let Some(output) = result.output {
                         self.set_last_output(TextComponent::plain(output));
                     }
@@ -210,7 +228,6 @@ impl Entity for CommandBlockMinecartEntity {
             minecart.tick_minecart(&(Arc::clone(&self) as SharedEntity));
         }
         self.poll_command();
-        self.tick_command();
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
@@ -236,6 +253,9 @@ impl AbstractMinecart for CommandBlockMinecartEntity {
 
     fn activate_minecart(&self, _world: &World, _pos: BlockPos, powered: bool) {
         self.state.lock().powered = powered;
+        if powered {
+            self.run_command();
+        }
     }
 
     fn custom_display_block(&self) -> Option<BlockStateId> {

@@ -12,6 +12,9 @@ use crate::inventory::container::{CraftingContainer, ResultContainer};
 use crate::inventory::prelude::*;
 use crate::inventory::slots::CraftingHandler;
 use crate::player::player_inventory::PlayerInventory;
+use crate::player::recipe_placement::{
+    PlacementPlan, PostPlaceAction, StackedItemContents, plan_placement,
+};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_blocks;
 use steel_registry::vanilla_menu_types;
@@ -104,6 +107,73 @@ impl MenuKind for CraftingKind {
         _player: &Player,
     ) {
         self.handler.update_result(guard);
+    }
+
+    /// Vanilla `AbstractCraftingMenu.fillCraftSlotsStackedContents`.
+    fn fill_craft_slots_stacked_contents(
+        &self,
+        _behavior: &MenuBehavior,
+        guard: &ContainerLockGuard,
+        contents: &mut StackedItemContents,
+    ) -> bool {
+        let Some(crafting) = guard.get_typed::<CraftingContainer>(self.handler.crafting_id()) else {
+            return false;
+        };
+        for stack in crafting.items() {
+            // Vanilla `TransientCraftingContainer.fillStackedContents` calls
+            // `accountSimpleStack`, which skips damaged/uncraftable stacks.
+            contents.account_simple_stack(stack);
+        }
+        true
+    }
+
+    /// Vanilla `AbstractCraftingMenu.handlePlacement` for a 3x3 grid.
+    fn handle_placement(
+        &mut self,
+        _behavior: &mut MenuBehavior,
+        guard: &mut ContainerLockGuard,
+        player: &Player,
+        request: crate::player::recipe_placement::PlacementRequest<'_>,
+    ) -> Option<PostPlaceAction> {
+        let Some(crafting) = guard.get_typed::<CraftingContainer>(self.handler.crafting_id())
+        else {
+            return None;
+        };
+        let grid = crafting.items().to_vec();
+        let inventory: Vec<ItemStack> = player
+            .inventory
+            .lock()
+            .get_items()
+            .iter()
+            .cloned()
+            .collect();
+        let plan = plan_placement(
+            &inventory,
+            3,
+            3,
+            &grid,
+            request.placement,
+            request.recipe_size,
+            crate::player::recipe_placement::grid_produces(crafting, request.recipe_key),
+            request.use_max_items,
+            request.allow_dropping_items_to_clear,
+            &[],
+            |contents| {
+                // Vanilla `AbstractCraftingMenu.fillCraftSlotsStackedContents`:
+                // the grid's own contents count too, so a partially filled grid
+                // can be topped up by the recipe book.
+                for stack in &grid {
+                    contents.account_simple_stack(stack);
+                }
+            },
+        );
+        Some(crate::player::recipe_placement::apply_plan(
+            guard,
+            player,
+            plan,
+            self.handler.crafting_id(),
+            &self.handler,
+        ))
     }
 }
 

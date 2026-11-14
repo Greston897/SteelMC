@@ -38,6 +38,17 @@ impl World {
         self.broadcast_to_all(CChangeDifficulty { difficulty, locked });
     }
 
+    /// Vanilla `ServerLevel.setDifficultyLocked` / `MinecraftServer.setDifficultyLocked`:
+    /// locks the difficulty and tells every player about the new flag.
+    pub fn set_difficulty_locked(&self, locked: bool) {
+        let difficulty = {
+            let mut level_data = self.level_data.write();
+            level_data.data_mut().difficulty_locked = locked;
+            level_data.data().difficulty
+        };
+        self.broadcast_to_all(CChangeDifficulty { difficulty, locked });
+    }
+
     /// Returns the default game mode for first-visit players in this world.
     #[must_use]
     pub fn default_gamemode(&self) -> GameType {

@@ -58,7 +58,9 @@ password = ""
 # CPU cores this server may use. 0 detects the real limit: the smaller of the
 # OS affinity mask and any cgroup quota, so a Pterodactyl/Docker container
 # started with --cpus=6 (600% of one core) counts as six cores, not the whole
-# host. Set this to reserve cores for other processes.
+# host. A value at or below the container limit is honoured unchanged; a larger
+# one is clamped down to the container limit, because the server can never use
+# more than the container gives it.
 cores = 0
 # Worker threads for the primary Tokio runtime. 0 = automatic share of `cores`.
 main_runtime = 0
