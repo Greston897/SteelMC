@@ -1,13 +1,14 @@
-use steel_registry::vanilla_game_rules::UNIVERSAL_ANGER;
+use steel_registry::vanilla_game_rules::{FORGIVE_DEAD_PLAYERS, UNIVERSAL_ANGER};
 use steel_utils::{DowncastTypeKey, WorldAabb};
 
 use super::selector::{Goal, GoalControls};
 use super::target_goal::{TargetGoalBase, follow_distance};
 use crate::entity::ai::targeting::TargetingConditions;
-use crate::entity::{PathfinderMob, SharedEntity};
+use crate::entity::{LivingEntity as _, PathfinderMob, SharedEntity};
 
 const HURT_BY_UNSEEN_MEMORY_TICKS: i32 = 300;
 const ALERT_RANGE_Y: f64 = 10.0;
+
 
 pub(crate) struct HurtByTargetGoal {
     target_goal: TargetGoalBase,
@@ -50,6 +51,29 @@ impl HurtByTargetGoal {
         self.alert_same_type = true;
         self.ignore_alert_types = except_types.into_iter().collect();
         self
+    }
+
+    /// Vanilla `ForgiveDeadPlayersGoal.canContinueToUse`: an angry neutral mob
+    /// drops its grudge once the targeted player dies.
+    ///
+    /// With `forgive_dead_players` off (the rule is on by default) the anger
+    /// outlives the death, so the mob keeps aiming at the corpse until the body
+    /// is removed — that is vanilla's "the grudge stays" behaviour.
+    fn forgives_dead_player(&self, mob: &dyn PathfinderMob) -> bool {
+        let Some(target) = mob.target().or_else(|| self.target_goal.target_mob()) else {
+            return false;
+        };
+        if target.as_player().is_none() {
+            return false;
+        }
+        let Some(living) = target.as_living_entity() else {
+            return false;
+        };
+        if !living.is_dead_or_dying() {
+            return false;
+        }
+        mob.level()
+            .is_some_and(|world| world.get_game_rule(&FORGIVE_DEAD_PLAYERS))
     }
 
     fn alert_others(&self, mob: &dyn PathfinderMob, hurt_by_mob: &SharedEntity) {
@@ -141,6 +165,9 @@ impl Goal for HurtByTargetGoal {
     }
 
     fn can_continue_to_use(&mut self, mob: &dyn PathfinderMob) -> bool {
+        if self.forgives_dead_player(mob) {
+            return false;
+        }
         self.target_goal.can_continue_to_use(mob)
     }
 
