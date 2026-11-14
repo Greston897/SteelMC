@@ -41,6 +41,9 @@ pub mod names {
     pub const BANS: SavedDataName = SavedDataName::trusted("bans");
     /// Active village raids, persisted as `data/raids.toml`.
     pub const RAIDS: SavedDataName = SavedDataName::trusted("raids");
+    /// Vanilla `WanderingTraderSpawner` day counter and roll chance, persisted
+    /// as `data/wandering_traders.toml`.
+    pub const WANDERING_TRADERS: SavedDataName = SavedDataName::trusted("wandering_traders");
 }
 
 /// Name of a per-world saved data entry.

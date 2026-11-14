@@ -52,6 +52,17 @@ pub struct WanderingTraderEntity {
     entity_data: SyncMutex<WanderingTraderEntityData>,
     /// The wandering trader's trades, shared with the open merchant screen.
     trades: SharedTrades,
+    /// Vanilla `AbstractVillager.tradingPlayer`: the player browsing the offers.
+    ///
+    /// Kept as an id so the trader does not hold a strong reference to a player
+    /// that may have disconnected; the despawn timer only needs to know whether
+    /// anybody is trading.
+    trading_player: SyncMutex<Option<uuid::Uuid>>,
+    /// Vanilla `WanderingTrader.despawnDelay`: ticks until the trader leaves.
+    ///
+    /// A naturally spawned trader starts at 48000 (40 minutes); zero means the
+    /// trader was placed by a command or spawn egg and never despawns.
+    despawn_delay: SyncMutex<i32>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `WanderingTraderEntity`.
@@ -111,6 +122,51 @@ impl WanderingTraderEntity {
             ageable_base,
             entity_data: SyncMutex::new(entity_data),
             trades,
+            trading_player: SyncMutex::new(None),
+            despawn_delay: SyncMutex::new(0),
+        }
+    }
+
+    /// Vanilla `AbstractVillager#setTradingPlayer`.
+    pub fn set_trading_player(&self, player: Option<uuid::Uuid>) {
+        *self.trading_player.lock() = player;
+    }
+
+    /// Vanilla `AbstractVillager#isTrading`.
+    #[must_use]
+    pub fn is_trading(&self) -> bool {
+        self.trading_player.lock().is_some()
+    }
+
+    /// Vanilla `WanderingTrader#setDespawnDelay`.
+    pub fn set_despawn_delay(&self, delay: i32) {
+        *self.despawn_delay.lock() = delay;
+    }
+
+    /// Vanilla `WanderingTrader#getDespawnDelay`.
+    #[must_use]
+    pub fn get_despawn_delay(&self) -> i32 {
+        *self.despawn_delay.lock()
+    }
+
+    /// Vanilla `WanderingTrader#maybeDespawn`, called from `aiStep`.
+    ///
+    /// The delay only counts down outside a trade: a player browsing the offers
+    /// keeps the trader in place, which vanilla implements by skipping the tick
+    /// while `getTradingPlayer()` is set.
+    fn maybe_despawn(&self) {
+        let mut delay = self.despawn_delay.lock();
+        if *delay <= 0 {
+            return;
+        }
+        if self.is_trading() {
+            return;
+        }
+        *delay -= 1;
+        if *delay == 1 {
+            drop(delay);
+            // Vanilla `WanderingTrader.maybeDespawn` discards at delay 1.
+            self.set_removed(crate::entity::RemovalReason::Discarded);
         }
     }
 
@@ -182,11 +238,16 @@ impl Entity for WanderingTraderEntity {
     fn save_additional(&self, nbt: &mut NbtCompound) {
         self.save_mob(nbt);
         self.save_ageable_mob(nbt);
+        // Vanilla `WanderingTrader.addAdditionalSaveData` writes `DespawnDelay`.
+        nbt.insert("DespawnDelay", self.get_despawn_delay());
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_mob(nbt);
         self.load_ageable_mob(nbt);
+        if let Some(delay) = nbt.int("DespawnDelay") {
+            self.set_despawn_delay(delay);
+        }
     }
 
     /// Vanilla `WanderingTrader.openMenu` through `MenuProvider`.
@@ -234,6 +295,8 @@ impl LivingEntity for WanderingTraderEntity {
         let result = Mob::mob_ai_step(self, entity);
 
         AgeableMob::tick_ageable_mob(self);
+        // Vanilla `WanderingTrader.mobTick` → `maybeDespawn`.
+        self.maybe_despawn();
         result
     }
 }
@@ -273,9 +336,24 @@ impl WanderingTraderEntity {
             return InteractionResult::Pass;
         }
         let inventory = Arc::clone(&player.inventory);
+        // Vanilla `AbstractVillager.startTrading` stores the player and stops it
+        // again from `stopTrading` when the merchant screen is removed, so the
+        // despawn timer only runs while nobody is browsing the offers.
+        let world = self.get_world();
+        let trader_id = self.id();
         player.open_menu(self.display_name(), move |context| {
-            merchant(inventory, context.container_id, trades)
+            let on_close = move |_player: &Player| {
+                // Look the trader up on close: the menu outlives nothing, but a
+                // shared handle here would keep a discarded trader alive.
+                if let Some(trader) = World::entity_manager(&world).get_accessible_by_id(trader_id)
+                    && let Some(trader) = trader.as_wandering_trader()
+                {
+                    trader.set_trading_player(None);
+                }
+            };
+            merchant(inventory, context.container_id, trades).with_on_close(on_close)
         });
+        self.set_trading_player(Some(player.uuid()));
         InteractionResult::Success
     }
 }

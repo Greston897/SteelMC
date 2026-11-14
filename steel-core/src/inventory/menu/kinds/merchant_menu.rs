@@ -49,6 +49,12 @@ pub struct MerchantKind {
     trades: SharedTrades,
     /// Container backing the two payment slots and the result.
     trade_container: ContainerRef,
+    /// Called when the screen closes, carrying the player that had it open.
+    ///
+    /// Vanilla `AbstractVillager.stopTrading` runs from the menu's `removed`
+    /// hook; Steel uses this callback so the entity can clear its trading
+    /// player without the menu knowing about entities.
+    on_close: Option<Box<dyn FnOnce(&Player) + Send>>,
 }
 
 // SAFETY: This Steel-owned key uniquely identifies the concrete menu kind
@@ -65,7 +71,15 @@ impl MerchantKind {
         Self {
             trades,
             trade_container,
+            on_close: None,
         }
+    }
+
+    /// Registers a callback that runs when the trade screen closes.
+    #[must_use]
+    pub fn with_on_close(mut self, on_close: impl FnOnce(&Player) + Send + 'static) -> Self {
+        self.on_close = Some(Box::new(on_close));
+        self
     }
 
     /// The offers currently on sale.
@@ -133,6 +147,12 @@ pub fn merchant(
 }
 
 impl MenuKind for MerchantKind {
+    fn removed(&mut self, _behavior: &mut MenuBehavior, player: &Player) {
+        if let Some(on_close) = self.on_close.take() {
+            on_close(player);
+        }
+    }
+
     /// Vanilla `MerchantMenu.setSelectionHint`: the selected index only decides
     /// which offer the result slot mirrors. Steel matches the offer from the
     /// payment slots instead, so a selection is accepted but has no lasting

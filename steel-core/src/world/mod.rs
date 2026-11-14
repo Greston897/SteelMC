@@ -135,6 +135,7 @@ mod sleep_status;
 mod spawn;
 pub mod tick_scheduler;
 mod waypoint;
+pub mod wandering_trader_spawner;
 pub mod dragon_fight;
 pub mod raid;
 mod weather;
@@ -261,6 +262,8 @@ pub struct World {
     pub waypoints: waypoint::WaypointManager,
     /// Vanilla `Raid` list for bad/raid omen.
     pub raids: raid::RaidManager,
+    /// Vanilla `WanderingTraderSpawner` schedule and the one-trader guard.
+    wandering_traders: SyncMutex<wandering_trader_spawner::WanderingTraderSpawner>,
     /// Vanilla `EnderDragonFight` state for this world (only meaningful in the End).
     pub dragon_fight: dragon_fight::DragonFight,
     /// Spatial index for player proximity queries.
@@ -426,6 +429,22 @@ impl World {
                 raid::RaidManager::new()
             }
         };
+        let wandering_traders = match saved_data
+            .load_or_default::<wandering_trader_spawner::WanderingTraderSchedule>(
+                saved_data_names::WANDERING_TRADERS,
+            )
+            .await
+        {
+            Ok(schedule) => wandering_trader_spawner::WanderingTraderSpawner::from_schedule(schedule),
+            Err(error) => {
+                log::warn!(
+                    "Could not load the wandering trader schedule for world {key}; starting a fresh day: {error}"
+                );
+                wandering_trader_spawner::WanderingTraderSpawner::from_schedule(
+                    wandering_trader_spawner::WanderingTraderSchedule::default(),
+                )
+            }
+        };
         let map_states = match saved_data
             .sync_load_wincode::<map_state::PersistentMapStates>(saved_data_names::MAPS)
         {
@@ -478,6 +497,7 @@ impl World {
                 players: PlayerMap::new(),
                 waypoints: waypoint::WaypointManager::new(),
                 raids,
+                wandering_traders: SyncMutex::new(wandering_traders),
                 dragon_fight: dragon_fight::DragonFight::new(),
                 player_area_map: PlayerAreaMap::new(),
                 server: std::sync::OnceLock::new(),
@@ -565,6 +585,17 @@ impl World {
         match self.saved_data.save(saved_data_names::RAIDS, &raids).await {
             Ok(()) => log::info!("World {} saved {} raid(s)", self.key, raids.len()),
             Err(e) => log::error!("Failed to save world raids: {e}"),
+        }
+
+        // The wandering trader day counter is vanilla `level.dat` state: a
+        // restart must continue the countdown instead of restarting the day.
+        let schedule = self.wandering_traders.lock().schedule();
+        if let Err(error) = self
+            .saved_data
+            .save(saved_data_names::WANDERING_TRADERS, &schedule)
+            .await
+        {
+            log::error!("Failed to save the wandering trader schedule: {error}");
         }
 
         match self.save_all_chunks().await {
@@ -743,6 +774,13 @@ impl World {
             crate::entity::natural_spawner::tick_natural_spawning(self, tick_count as usize);
         }
 
+        if runs_normally {
+            // Vanilla runs the wandering trader spawner from `ServerLevel`'s
+            // custom spawners, once per tick; its own 1200-tick schedule makes
+            // the call cheap on the other 1199.
+            self.tick_wandering_trader_spawner();
+        }
+
         {
             let _span = tracing::trace_span!("entity_tracker_send_changes").entered();
             self.entity_tracker.send_changes(
@@ -843,6 +881,37 @@ impl World {
     /// Returns the number of chunks saved.
     pub async fn save_all_chunks(&self) -> io::Result<usize> {
         self.chunk_map.save_all_chunks().await
+    }
+
+    /// Runs vanilla `WanderingTraderSpawner.tick` for this world.
+    pub fn tick_wandering_trader_spawner(self: &Arc<Self>) {
+        let mut spawner = self.wandering_traders.lock();
+        spawner.tick(self);
+    }
+
+    /// Whether wandering traders may exist in this world at all.
+    ///
+    /// Vanilla registers the spawner for the Overworld only. Steel has no
+    /// dimension-type identity check that survives datapacks, so it uses the
+    /// property that makes Overworld trading meaningful: the dimension has a sky
+    /// and therefore surface positions to place a trader on.
+    #[must_use]
+    pub fn allows_wandering_traders(&self) -> bool {
+        self.dimension_type.has_skylight
+    }
+
+    /// Whether a natural wandering trader is already present.
+    ///
+    /// Vanilla keeps at most one per world and holds the day counter while one
+    /// exists, so the check walks the live entities instead of tracking a flag
+    /// that would go stale when the trader despawns or is killed.
+    #[must_use]
+    pub fn has_natural_wandering_trader(&self) -> bool {
+        let trader = Identifier::vanilla_static("wandering_trader");
+        World::entity_manager(self)
+            .get_accessible_entities()
+            .iter()
+            .any(|entity| entity.entity_type().key == trader)
     }
 }
 
