@@ -62,6 +62,19 @@ use crate::pre_play_state::{PacketSequenceError, PrePlayPacket, PrePlayState};
 
 const MAX_TICKS_BEFORE_LOGIN: u64 = 600;
 const DISCONNECT_FLUSH_TIMEOUT: Duration = Duration::from_secs(1);
+/// Upper bound on packets written per flush.
+///
+/// The outgoing queue is unbounded, so a full re-send of the view distance could
+/// otherwise build a batch longer than the socket buffers and delay the flush
+/// that the following packets need. Vanilla drains its channel per tick; this
+/// keeps the same "one write per burst" behavior with a bounded batch.
+const MAX_OUTBOUND_BATCH: usize = 256;
+/// Size of the write buffer in front of the socket.
+///
+/// The default 8 KiB buffer flushes mid-batch as soon as a chunk packet does not
+/// fit, which defeats batching for exactly the bursts that need it. 64 KiB holds
+/// a typical multi-chunk send without splitting it into extra syscalls.
+const OUTBOUND_BUFFER_BYTES: usize = 64 * 1024;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct LoginDeadline {
@@ -291,7 +304,7 @@ impl JavaTcpClient {
 
             outgoing_queue,
             network_writer: Arc::new(AsyncMutex::new(Some(TCPNetworkEncoder::new(
-                BufWriter::new(write),
+                BufWriter::with_capacity(OUTBOUND_BUFFER_BYTES, write),
             )))),
             compression: Arc::new(AtomicCell::new(None)),
             server,
@@ -340,6 +353,11 @@ impl JavaTcpClient {
         }
     }
 
+    /// Writes one packet and flushes it immediately.
+    ///
+    /// Used for single urgent packets such as a disconnect; the normal send path
+    /// goes through [`Self::write_network_packet_batch`] so a burst leaves as one
+    /// TCP segment.
     async fn write_network_packet(
         network_writer: &JavaNetworkWriter,
         packet: &EncodedPacket,
@@ -350,6 +368,35 @@ impl JavaTcpClient {
         };
         // Cancellation or failure drops the encoder instead of reusing a partial encrypted write.
         match writer.write_packet(packet).await {
+            Ok(()) => {
+                *network_writer = Some(writer);
+                Ok(())
+            }
+            Err(error) => Err(error),
+        }
+    }
+
+    /// Writes a batch of packets back to back and flushes once.
+    ///
+    /// Vanilla buffers every packet of a tick in the connection's channel and
+    /// flushes at the tick boundary, which keeps a chunk burst or a scoreboard
+    /// update from turning into hundreds of tiny writes with `TCP_NODELAY` set.
+    async fn write_network_packet_batch(
+        network_writer: &JavaNetworkWriter,
+        packets: &[EncodedPacket],
+    ) -> Result<(), PacketError> {
+        let mut network_writer = network_writer.lock().await;
+        let Some(mut writer) = network_writer.take() else {
+            return Err(PacketError::ConnectionClosed);
+        };
+        let written = async {
+            for packet in packets {
+                writer.write_packet_buffered(packet).await?;
+            }
+            writer.flush().await
+        }
+        .await;
+        match written {
             Ok(()) => {
                 *network_writer = Some(writer);
                 Ok(())
@@ -411,7 +458,28 @@ impl JavaTcpClient {
                                 break;
                             }
 
-                            let write_result = Self::write_network_packet(&network_writer, &packet);
+                            // Batch everything already queued into one write and
+                            // one flush, the way vanilla drains its connection
+                            // channel per tick. The queue is unbounded, so the
+                            // batch is capped: a full view re-send must not delay
+                            // the flush the following packets wait for.
+                            let mut batch = vec![packet];
+                            // A disconnect found while draining is written on its
+                            // own after the batch, then the connection closes.
+                            let mut queued_disconnect = None;
+                            while batch.len() < MAX_OUTBOUND_BATCH {
+                                match sender_recv.try_recv() {
+                                    Ok(OutboundPacket::Packet(packet)) => batch.push(packet),
+                                    Ok(OutboundPacket::Disconnect(packet)) => {
+                                        queued_disconnect = Some(packet);
+                                        break;
+                                    }
+                                    Err(_) => break,
+                                }
+                            }
+
+                            let write_result =
+                                Self::write_network_packet_batch(&network_writer, &batch);
                             select! {
                                 biased;
                                 () = cancel_token.cancelled() => {
@@ -424,6 +492,18 @@ impl JavaTcpClient {
                                         cancel_token.cancel();
                                     }
                                 }
+                            }
+
+                            if let Some(disconnect) = queued_disconnect {
+                                if let Err(err) =
+                                    Self::write_network_packet(&network_writer, &disconnect).await
+                                {
+                                    log::warn!(
+                                        "Failed to send disconnect packet to client {id}: {err}"
+                                    );
+                                }
+                                cancel_token.cancel();
+                                break;
                             }
                         } else {
                             cancel_token.cancel();

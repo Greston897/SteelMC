@@ -59,6 +59,11 @@ pub type JavaNetworkWriter =
     Arc<AsyncMutex<Option<TCPNetworkEncoder<BufWriter<JavaTransportWrite>>>>>;
 
 const DISCONNECT_FLUSH_TIMEOUT: Duration = Duration::from_secs(1);
+/// Size of the write buffer in front of the socket.
+///
+/// Matches the login-side transport: a batch of chunk packets must fit without
+/// the buffer flushing on its own mid-batch.
+const OUTBOUND_BUFFER_BYTES: usize = 64 * 1024;
 
 /// Outbound packet queue message for Java connections.
 pub enum OutboundPacket {
@@ -1716,7 +1721,7 @@ mod tests {
         let (server_end, mut client_end) = duplex(1024);
         let transport: JavaTransportWrite = Box::new(server_end);
         let network_writer: JavaNetworkWriter = Arc::new(AsyncMutex::new(Some(
-            TCPNetworkEncoder::new(BufWriter::new(transport)),
+            TCPNetworkEncoder::new(BufWriter::with_capacity(OUTBOUND_BUFFER_BYTES, transport)),
         )));
         let (outgoing_packets, outgoing_receiver) = mpsc::unbounded_channel();
         let cancel_token = CancellationToken::new();

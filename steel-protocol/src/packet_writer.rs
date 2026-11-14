@@ -116,17 +116,40 @@ impl<W: AsyncWrite + Unpin> TCPNetworkEncoder<W> {
         replace_with::replace_with_or_abort(&mut self.writer, |encoder| encoder.upgrade(cipher));
     }
 
-    /// Writes a packet to the stream.
+    /// Writes a packet to the stream and flushes it immediately.
     ///
     /// # Errors
     /// - If the packet fails to write.
     /// - If the stream fails to flush.
     pub async fn write_packet(&mut self, packet: &EncodedPacket) -> Result<(), PacketError> {
+        self.write_packet_buffered(packet).await?;
+        self.flush().await
+    }
+
+    /// Writes a packet into the buffered stream without flushing it.
+    ///
+    /// Vanilla writes every packet of a tick into a `Channel`-backed buffer and
+    /// flushes once per tick, so a burst of small packets leaves as one TCP
+    /// segment instead of one write syscall each. Callers batch with this and a
+    /// single [`Self::flush`].
+    ///
+    /// # Errors
+    /// - If the packet fails to write.
+    pub async fn write_packet_buffered(
+        &mut self,
+        packet: &EncodedPacket,
+    ) -> Result<(), PacketError> {
         self.writer
             .write_all(&packet.encoded_data)
             .await
-            .map_err(|e| PacketError::EncryptionFailed(e.to_string()))?;
+            .map_err(|e| PacketError::EncryptionFailed(e.to_string()))
+    }
 
+    /// Flushes everything written since the last flush.
+    ///
+    /// # Errors
+    /// - If the stream fails to flush.
+    pub async fn flush(&mut self) -> Result<(), PacketError> {
         self.writer
             .flush()
             .await
