@@ -1,6 +1,6 @@
 //! Beehive block behavior implementation.
 
-use std::sync::Weak;
+use std::sync::{Arc, Weak};
 
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
@@ -8,6 +8,7 @@ use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{
     BlockStateProperties, Direction, EnumProperty, IntProperty,
 };
+use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::vanilla_block_entity_types;
 use steel_registry::{sound_events, vanilla_blocks, vanilla_items};
 use steel_utils::types::UpdateFlags;
@@ -20,7 +21,7 @@ use crate::behavior::context::{BlockHitResult, BlockPlaceContext};
 use crate::behavior::InteractionResult;
 use steel_utils::types::InteractionHand;
 use crate::behavior::context::InventoryAccess;
-use crate::block_entity::BLOCK_ENTITIES;
+use crate::block_entity::{BLOCK_ENTITIES, BlockEntityTicker};
 use crate::block_entity::entities::BeehiveBlockEntity;
 use crate::entity::Entity as _;
 use crate::player::Player;
@@ -214,6 +215,21 @@ impl BlockBehavior for BeehiveBlock {
             pos,
             state,
         ))
+    }
+
+    /// Vanilla `BeehiveBlock.getTicker` returns `BeehiveBlockEntity.serverTick`.
+    ///
+    /// Without it stored bees never age and a worldgen nest never lets them out.
+    fn get_block_entity_ticker(
+        &self,
+        _world: &Arc<World>,
+        _state: BlockStateId,
+        block_entity_type: BlockEntityTypeRef,
+    ) -> Option<BlockEntityTicker> {
+        BlockEntityTicker::for_matching_entity_tick(
+            block_entity_type,
+            &vanilla_block_entity_types::BEEHIVE,
+        )
     }
 
     fn use_item_on(

@@ -11,7 +11,9 @@ use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::
 use std::sync::Arc;
 
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
-use steel_registry::blocks::properties::{BlockStateProperties, Direction};
+use steel_registry::blocks::properties::{
+    BlockStateProperties, Direction, EnumProperty, IntProperty,
+};
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::{
@@ -27,6 +29,12 @@ pub const BEEHIVE_MAX_OCCUPANTS: usize = 3;
 pub const BEEHIVE_MIN_OCCUPATION_TICKS_NECTARLESS: i32 = 600;
 /// Radius in which a hive angers bees that are already outside it.
 const BEEHIVE_ANGER_RADIUS: f64 = 8.0;
+/// Vanilla `BeehiveBlock.MAX_HONEY_LEVEL`.
+const MAX_HONEY_LEVEL: i32 = 5;
+/// Vanilla `BeehiveBlock.HORIZONTAL_FACING`.
+const FACING: &EnumProperty<Direction> = &BlockStateProperties::HORIZONTAL_FACING;
+/// Vanilla `BeehiveBlock.HONEY_LEVEL`.
+const LEVEL_HONEY: &IntProperty = &BlockStateProperties::LEVEL_HONEY;
 
 struct BeeOccupant {
     entity_data: NbtCompound,
@@ -160,13 +168,7 @@ impl BeehiveBlockEntity {
         // Vanilla `BeehiveBlockEntity.releaseOccupant` offsets each bee by the
         // hive's facing direction so they do not all spawn inside the block.
         let facing = self.state_facing();
-        let offset = match facing {
-            Direction::North => (0.0, 0.0, -0.5),
-            Direction::South => (0.0, 0.0, 0.5),
-            Direction::West => (-0.5, 0.0, 0.0),
-            Direction::East => (0.5, 0.0, 0.0),
-            _ => (0.0, 0.0, 0.0),
-        };
+        let offset = Self::release_offset(facing);
 
         for _ in released {
             let request = EntitySpawnRequest {
@@ -282,9 +284,118 @@ impl BeehiveBlockEntity {
     }
 }
 
+impl BeehiveBlockEntity {
+    /// Vanilla `BeehiveBlockEntity.serverTick`.
+    ///
+    /// Every tick the hive reports whether it still has work: bees that have
+    /// stayed long enough leave through the front face, unless it is night, it
+    /// is raining, or the exit is blocked. This is also what lets a worldgen
+    /// nest release its bees once morning arrives.
+    fn tick_occupants(&self, world: &Arc<World>, pos: BlockPos) {
+        let state = self.base.block_state();
+        let front = state.get_value(FACING);
+        let exit_blocked = {
+            let exit_pos = pos.relative(front);
+            let exit_state = world.get_block_state(exit_pos);
+            world.is_face_sturdy(exit_state, exit_pos, front.opposite())
+        };
+
+        let can_release = world.is_day() && !world.is_raining();
+
+        let honey_level = state.get_value(LEVEL_HONEY);
+        let mut released_any = false;
+        let mut honey_gain = 0;
+
+        {
+            let mut guard = self.state.lock();
+            if guard.stored.is_empty() {
+                return;
+            }
+
+            let mut remaining = Vec::with_capacity(guard.stored.len());
+            for mut occupant in std::mem::take(&mut guard.stored) {
+                occupant.ticks_in_hive += 1;
+
+                let ready = can_release
+                    && !exit_blocked
+                    && occupant.ticks_in_hive >= occupant.min_ticks_in_hive;
+                if !ready {
+                    remaining.push(occupant);
+                    continue;
+                }
+
+                // Vanilla releases the bee and, when it carries nectar, raises the
+                // hive's honey level by one (capped at five).
+                if Self::spawn_released_bee(world, pos, front) {
+                    released_any = true;
+                    honey_gain += 1;
+                } else {
+                    // A failed spawn keeps the bee inside, as vanilla does.
+                    remaining.push(occupant);
+                }
+            }
+            guard.stored = remaining;
+        }
+
+        if !released_any {
+            return;
+        }
+        BlockEntity::set_changed(self);
+
+        let new_level = u8::try_from((honey_level + honey_gain).min(MAX_HONEY_LEVEL)).unwrap_or(0);
+        if i32::from(new_level) != honey_level {
+            let updated = state.set_value(LEVEL_HONEY, new_level);
+            world.set_block(pos, updated, steel_utils::types::UpdateFlags::UPDATE_CLIENTS);
+        }
+    }
+
+    /// Vanilla `BeehiveBlockEntity.releaseOccupant`: spawns one bee nudged out
+    /// of the hive along its facing.
+    fn spawn_released_bee(world: &Arc<World>, pos: BlockPos, facing: Direction) -> bool {
+        let request = EntitySpawnRequest {
+            entity_type: &vanilla_entities::BEE,
+            placement: EntitySpawnPlacement::Block {
+                pos,
+                try_move_down: false,
+                moved_up: false,
+            },
+            reason: EntitySpawnReason::Beehive,
+            finalize_spawn: true,
+            play_ambient_sound: false,
+            item_stack: None,
+            user_is_operator: false,
+        };
+        let Ok(entity) = spawn_entity(world, request) else {
+            return false;
+        };
+
+        let offset = Self::release_offset(facing);
+        let position = entity.position() + glam::DVec3::new(offset.0, offset.1, offset.2);
+        entity.base().set_position_local(position);
+        true
+    }
+
+    /// Vanilla `BeehiveBlockEntity.releaseOccupant` exit offset, half a block
+    /// along the hive's front face.
+    const fn release_offset(facing: Direction) -> (f64, f64, f64) {
+        match facing {
+            Direction::North => (0.0, 0.0, -0.5),
+            Direction::South => (0.0, 0.0, 0.5),
+            Direction::West => (-0.5, 0.0, 0.0),
+            Direction::East => (0.5, 0.0, 0.0),
+            _ => (0.0, 0.0, 0.0),
+        }
+    }
+}
+
 impl BlockEntity for BeehiveBlockEntity {
     fn base(&self) -> &BlockEntityBase {
         &self.base
+    }
+
+    /// Vanilla `BeehiveBlockEntity.serverTick` entry point.
+    fn tick(&self, world: &Arc<World>) {
+        self.tick_occupants(world, self.get_block_pos());
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
@@ -314,5 +425,37 @@ impl BlockEntity for BeehiveBlockEntity {
             .map(BeeOccupant::save)
             .collect::<Vec<_>>();
         nbt.insert("bees", NbtList::Compound(bees));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn release_offsets_match_vanilla_faces() {
+        // Vanilla pushes the bee half a block out through the front face.
+        assert_eq!(BeehiveBlockEntity::release_offset(Direction::North), (0.0, 0.0, -0.5));
+        assert_eq!(BeehiveBlockEntity::release_offset(Direction::South), (0.0, 0.0, 0.5));
+        assert_eq!(BeehiveBlockEntity::release_offset(Direction::West), (-0.5, 0.0, 0.0));
+        assert_eq!(BeehiveBlockEntity::release_offset(Direction::East), (0.5, 0.0, 0.0));
+    }
+
+    #[test]
+    fn occupants_are_capped_at_three() {
+        let mut state = BeehiveState { stored: Vec::new() };
+        for _ in 0..BEEHIVE_MAX_OCCUPANTS {
+            assert!(state.push_occupant(BeeOccupant::worldgen(0)));
+        }
+        // Vanilla `BeehiveBlockEntity.isFull` refuses the fourth bee.
+        assert!(!state.push_occupant(BeeOccupant::worldgen(0)));
+        assert_eq!(state.stored.len(), BEEHIVE_MAX_OCCUPANTS);
+    }
+
+    #[test]
+    fn nectarless_bees_wait_six_hundred_ticks() {
+        // Vanilla keeps a nectar-less bee inside for 600 ticks (2400 with nectar).
+        assert_eq!(BEEHIVE_MIN_OCCUPATION_TICKS_NECTARLESS, 600);
+        assert_eq!(BeeOccupant::worldgen(0).min_ticks_in_hive, 600);
     }
 }
