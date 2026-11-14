@@ -1643,6 +1643,12 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         try_as_dyn::<Self, dyn Projectile>(self)
     }
 
+    /// Returns this entity as a throwable projectile, i.e. one with the shared
+    /// `ThrowableProjectile` tick.
+    fn as_throwable_projectile(&self) -> Option<&dyn ThrowableProjectile> {
+        try_as_dyn::<Self, dyn ThrowableProjectile>(self)
+    }
+
     /// Returns this entity as a living entity when it has living behavior.
     fn as_living_entity(&self) -> Option<&dyn LivingEntity> {
         try_as_dyn::<Self, dyn LivingEntity>(self)

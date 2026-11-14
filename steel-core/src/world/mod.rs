@@ -31,11 +31,10 @@ use glam::DVec3;
 use sha2::{Digest, Sha256};
 use steel_protocol::packets::game::{
     CBlockDestruction, CChangeDifficulty, CGameEvent, CInitializeBorder, CLevelEvent,
-    CLevelParticles, CPlayerChat, CSetBorderCenter, CSetBorderLerpSize, CSetBorderSize,
-    CSetBorderWarningDelay, CSetBorderWarningDistance, CSetEntityData, CSetEntityLink,
-    CSetEquipment, CSound, CSoundEntity, CSystemChat, CUpdateAttributes, GameEventType,
-    RandomizationType,
-    SoundSource,
+    CLevelParticles, CPlayerChat, CProjectilePower, CSetBorderCenter, CSetBorderLerpSize,
+    CSetBorderSize, CSetBorderWarningDelay, CSetBorderWarningDistance, CSetEntityData,
+    CSetEntityLink, CSetEquipment, CSound, CSoundEntity, CSystemChat, CUpdateAttributes,
+    GameEventType, RandomizationType, SoundSource,
 };
 use steel_protocol::utils::ConnectionProtocol;
 use steel_protocol::{

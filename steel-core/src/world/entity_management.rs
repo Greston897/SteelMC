@@ -7,7 +7,15 @@ use super::{
     WorldChangeRequest, block_entity_ticker, mem, vanilla_entities,
 };
 
-use crate::entity::{EntityCollisionCandidates, selector::EntitySelector};
+use crate::entity::{
+    EntityCollisionCandidates, ThrowableProjectile as _, selector::EntitySelector,
+};
+
+/// Vanilla `AbstractHurtingProjectile` membership, read from the entity type's
+/// generated class hierarchy.
+fn is_hurting_projectile(entity_type: steel_registry::entity_type::EntityTypeRef) -> bool {
+    entity_type.is_abstract_hurting_projectile
+}
 
 pub(super) struct NavigatingMobTracker {
     ids: SyncMutex<FxHashSet<i32>>,
@@ -77,6 +85,34 @@ impl World {
             |id| self.players.get_by_entity_id(id),
         );
         self.track_navigating_mob(entity);
+        self.send_initial_projectile_power(entity);
+    }
+
+    /// Vanilla `ServerEntity` sends `ClientboundProjectilePowerPacket` from its
+    /// constructor when the tracked entity is an `AbstractHurtingProjectile`.
+    ///
+    /// The packet carries the projectile's `xPower`, which the client uses as the
+    /// per-tick drag when *it* extrapolates the projectile's flight. Without it
+    /// the client assumed drag 0, so fast fireballs and wither skulls visibly
+    /// overshot and snapped back on every position update.
+    fn send_initial_projectile_power(&self, entity: &SharedEntity) {
+        // Vanilla only sends the packet from the `AbstractHurtingProjectile`
+        // branch of `ServerEntity`'s constructor.
+        if !is_hurting_projectile(entity.entity_type()) {
+            return;
+        }
+        let Some(projectile) = entity.as_throwable_projectile() else {
+            return;
+        };
+        let acceleration_power = f64::from(ThrowableProjectile::get_air_drag(projectile));
+        self.broadcast_to_entity_trackers(
+            entity.id(),
+            CProjectilePower {
+                entity_id: entity.id(),
+                acceleration_power,
+            },
+            None,
+        );
     }
 
     pub(crate) fn remove_entity_from_tracker(&self, entity_id: i32) {

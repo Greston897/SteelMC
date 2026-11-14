@@ -331,6 +331,9 @@ pub struct EntityType {
     pub is_projectile: bool,
     /// Whether vanilla class hierarchy makes this entity an `AbstractArrow`.
     pub is_abstract_arrow: bool,
+    /// Whether this type descends from vanilla `AbstractHurtingProjectile`
+    /// (fireballs, wither skull, dragon fireball, wind charges).
+    pub is_abstract_hurting_projectile: bool,
     /// Whether vanilla class hierarchy makes this entity an `AbstractHorse`.
     pub is_abstract_horse: bool,
     /// Whether vanilla class hierarchy makes this entity an `AbstractNautilus`.
@@ -531,5 +534,15 @@ mod tests {
         assert!(vanilla_entities::SPECTRAL_ARROW.is_abstract_arrow);
         assert!(vanilla_entities::TRIDENT.is_abstract_arrow);
         assert!(!vanilla_entities::ENDER_PEARL.is_abstract_arrow);
+
+        // `AbstractHurtingProjectile` drives the initial projectile-power packet.
+        // `LargeFireball` is `minecraft:fireball` in the registry.
+        assert!(vanilla_entities::FIREBALL.is_abstract_hurting_projectile);
+        assert!(vanilla_entities::SMALL_FIREBALL.is_abstract_hurting_projectile);
+        assert!(vanilla_entities::WITHER_SKULL.is_abstract_hurting_projectile);
+        assert!(vanilla_entities::DRAGON_FIREBALL.is_abstract_hurting_projectile);
+        assert!(vanilla_entities::WIND_CHARGE.is_abstract_hurting_projectile);
+        assert!(!vanilla_entities::ARROW.is_abstract_hurting_projectile);
+        assert!(!vanilla_entities::SNOWBALL.is_abstract_hurting_projectile);
     }
 }
