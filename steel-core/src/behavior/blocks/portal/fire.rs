@@ -85,11 +85,113 @@ impl FireBlock {
     /// or an adjacent block is flammable.
     fn can_survive_at(world: &dyn LevelReader, pos: BlockPos) -> bool {
         let below_pos = pos.below();
-        world.is_face_sturdy(world.get_block_state(below_pos), below_pos, Direction::Up)
-        // Vanilla also accepts a neighbour from the flammability table. Steel's
-        // block data does not carry `ignite_odds` yet, so only the sturdy-face
-        // half of `FireBlock.canSurvive` is evaluated.
+        if world.is_face_sturdy(world.get_block_state(below_pos), below_pos, Direction::Up) {
+            return true;
+        }
+        // Vanilla `FireBlock.canSurvive`: fire also lives next to a block whose
+        // `igniteOdds` is above zero, which is what lets fire climb a tree.
+        Direction::ALL.into_iter().any(|direction| {
+            Self::is_flammable(world.get_block_state(pos.relative(direction)))
+        })
     }
+
+    /// Vanilla `FireBlock.getIgniteOdds(BlockState)` on a live state: a
+    /// waterlogged block never catches fire.
+    fn is_flammable(state: BlockStateId) -> bool {
+        if state.get_block() == &vanilla_blocks::FIRE
+            || state.get_block() == &vanilla_blocks::SOUL_FIRE
+        {
+            return false;
+        }
+        if state.try_get_value(&BlockStateProperties::WATERLOGGED) == Some(true) {
+            return false;
+        }
+        crate::behavior::flammable::ignite_odds(state.get_block()) > 0
+    }
+
+    /// Vanilla `FireBlock.canBurn`.
+    fn can_burn(state: BlockStateId) -> bool {
+        crate::behavior::flammable::burn_odds(state.get_block()) > 0
+            || Self::is_flammable(state)
+    }
+
+    /// Vanilla `FireBlock.getBurnOdds(BlockState)`.
+    fn burn_odds(state: BlockStateId) -> i32 {
+        if state.try_get_value(&BlockStateProperties::WATERLOGGED) == Some(true) {
+            return 0;
+        }
+        i32::try_from(crate::behavior::flammable::burn_odds(state.get_block())).unwrap_or(0)
+    }
+
+    /// Vanilla `FireBlock.isNearRain`.
+    fn is_near_rain(world: &Arc<World>, pos: BlockPos) -> bool {
+        world.is_raining_at(pos)
+            || world.is_raining_at(pos.west())
+            || world.is_raining_at(pos.east())
+            || world.is_raining_at(pos.north())
+            || world.is_raining_at(pos.south())
+    }
+
+    /// Vanilla `FireBlock.getStateWithAge`: soul fire keeps its own state.
+    fn state_with_age(world: &dyn LevelReader, pos: BlockPos, age: u8) -> BlockStateId {
+        let state = Self::get_state(world, pos);
+        if state.get_block() == &vanilla_blocks::FIRE {
+            state.set_value(AGE, age)
+        } else {
+            state
+        }
+    }
+
+    /// Vanilla `FireBlock.checkBurnOut`: burn or age the neighbour that a fire is
+    /// touching.
+    fn check_burn_out(world: &Arc<World>, pos: BlockPos, chance: i32, age: u8) {
+        let state = world.get_block_state(pos);
+        if rand::random_range(0..chance) >= Self::burn_odds(state) {
+            return;
+        }
+        let i32_age = i32::from(age);
+        if rand::random_range(0..i32_age + 10) < 5 && !world.is_raining_at(pos) {
+            let new_age = u8::min(15, age.saturating_add(rand::random_range(0..5) as u8 / 4));
+            let aged = Self::state_with_age(world.as_ref(), pos, new_age);
+            world.set_block(pos, aged, UpdateFlags::UPDATE_CLIENTS);
+        } else {
+            world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+        }
+
+        if state.get_block() == &vanilla_blocks::TNT {
+            crate::behavior::blocks::TntBlock::prime(world, pos);
+        }
+    }
+
+    /// Vanilla `FireBlock.getIgniteOdds(LevelReader, BlockPos)`: an occupied
+    /// position picks up odds from its own block, an empty one looks down for
+    /// something that can burn.
+    fn ignition_odds_at(world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        let state = world.get_block_state(pos);
+        if state.get_block() != &vanilla_blocks::AIR {
+            if Self::is_flammable(state) {
+                return 0;
+            }
+            if state.try_get_value(&BlockStateProperties::WATERLOGGED) == Some(true) {
+                return 0;
+            }
+            return i32::try_from(crate::behavior::flammable::ignite_odds(state.get_block()))
+                .unwrap_or(0);
+        }
+
+        // Vanilla walks the neighbouring blocks for the highest ignite odds.
+        let mut best = 0;
+        for direction in Direction::ALL {
+            let neighbour = world.get_block_state(pos.relative(direction));
+            let odds = i32::try_from(crate::behavior::flammable::ignite_odds(
+                neighbour.get_block(),
+            ))
+            .unwrap_or(0);
+            best = best.max(odds);
+        }
+        if best > 0 { (best + 10) / 2 } else { 0 }
+    }
+
 
     /// Matches vanilla's `BaseFireBlock.isPortal`: checks if placing fire here could form a portal.
     /// Requires a portal-capable world, adjacent obsidian, and a valid empty portal shape.
@@ -169,6 +271,217 @@ impl BlockBehavior for FireBlock {
     fn can_survive(&self, _state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
         Self::can_survive_at(world, pos)
     }
+    fn entity_inside(
+        &self,
+        _state: BlockStateId,
+        _world: &Arc<World>,
+        _pos: BlockPos,
+        _entity: &dyn Entity,
+        effect_collector: &mut InsideBlockEffectCollector,
+        _is_precise: bool,
+    ) {
+        Self::queue_entity_contact_effects(effect_collector, 1.0);
+    }
+
+    fn on_place(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        old_state: BlockStateId,
+        _moved_by_piston: bool,
+    ) {
+        // Only attempt portal creation when fire is newly placed, not when replacing itself
+        if old_state.get_block() == state.get_block() {
+            return;
+        }
+
+        if Self::in_portal_world(world)
+            && let Some(shape) =
+                PortalShape::find_empty_portal_shape(world, pos, &nether_portal_config())
+        {
+            shape.place_portal_blocks(world);
+            return;
+        }
+
+        if !self.can_survive(state, world, pos) {
+            world.set_block(
+                pos,
+                vanilla_blocks::AIR.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
+            return;
+        }
+
+        // Vanilla `FireBlock.onPlace` ends with
+        // `level.scheduleTick(pos, this, getFireTickDelay(level.random))`.
+        // Without that line a freshly placed fire never enters the block-tick
+        // queue, so it would never age or burn out: fire has
+        // `isRandomlyTicking() == false` and therefore no random-tick fallback.
+        world.schedule_block_tick_default(pos, self.block, Self::tick_delay());
+    }
+    fn player_will_destroy(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _player: &Player,
+    ) -> BlockStateId {
+        world.level_event(level_events::SOUND_EXTINGUISH_FIRE, pos, 0, None);
+        state
+    }
+}
+
+/// Behavior for soul fire survival.
+///
+/// Vanilla keeps this as `SoulFireBlock`, separate from normal `FireBlock`.
+
+#[block_behavior]
+pub struct SoulFireBlock {
+    block: BlockRef,
+}
+
+impl SoulFireBlock {
+    /// Creates a new soul fire block behavior.
+    #[must_use]
+    pub const fn new(block: BlockRef) -> Self {
+        Self { block }
+    }
+
+    fn can_survive_at(world: &dyn LevelReader, pos: BlockPos) -> bool {
+        let block_below = world.get_block_state(pos.below()).get_block();
+        block_below.has_tag(&BlockTag::SOUL_FIRE_BASE_BLOCKS)
+    }
+}
+
+impl BlockBehavior for SoulFireBlock {
+    /// Removes soul fire when its supporting block no longer allows it to survive
+    fn update_shape(
+        &self,
+        state: BlockStateId,
+        world: &dyn ScheduledTickAccess,
+        pos: BlockPos,
+        direction: Direction,
+        _neighbor_pos: BlockPos,
+        _neighbor_state: BlockStateId,
+    ) -> BlockStateId {
+        if direction == Direction::Down && !self.can_survive(state, world, pos) {
+            return vanilla_blocks::AIR.default_state();
+        }
+        state
+    }
+
+    fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+        let state = self.block.default_state();
+        self.can_survive(state, context.world, context.place_pos())
+            .then_some(state)
+    }
+
+    fn can_survive(&self, _state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        Self::can_survive_at(world, pos)
+    }
+
+    /// Vanilla `FireBlock.tick`.
+    ///
+    /// Fire is **not** randomly ticking in vanilla (`isRandomlyTicking()` is
+    /// `false`), it re-schedules itself through the block-tick queue, so the
+    /// engine's random-tick dispatcher never reaches this behaviour.
+    ///
+    /// The order below is the vanilla order: re-queue first, get rained on, age,
+    /// die without support, then burn the four horizontal neighbours and
+    /// `above`, `below`, and finally try to ignite everything in the 3x3x6 box
+    /// around the fire.
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        // Vanilla re-queues before doing any work so a surviving fire keeps its
+        // 30–39 tick cadence, and a fire that this tick removes simply loses it.
+        world.schedule_block_tick_default(pos, self.block, Self::tick_delay());
+
+        let i32_age = i32::from(state.get_value(AGE));
+        let age = state.get_value(AGE);
+        let below_state = world.get_block_state(pos.below());
+        // Vanilla `infiniBurn` reads the dimension's `infiniburn` tag; a nether
+        // world keeps fire alive on netherrack. Steel has no per-dimension tag
+        // yet, so fire on a block that cannot burn behaves like normal fire.
+        let infini_burn = false;
+
+        if !infini_burn
+            && world.is_raining()
+            && Self::is_near_rain(world, pos)
+            && rand::random::<f32>() < 0.2 + (i32_age as f32) * 0.03
+        {
+            world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+            return;
+        }
+
+        let mut state = state;
+        let new_age = u8::min(15, age.saturating_add(rand::random_range(0..3) as u8 / 2));
+        if new_age != age {
+            state = state.set_value(AGE, new_age);
+            world.set_block(pos, state, UpdateFlags::UPDATE_CLIENTS);
+        }
+
+        if !infini_burn {
+            if !Self::can_survive_at(world.as_ref(), pos) {
+                let below = pos.below();
+                if !world.is_face_sturdy(below_state, below, Direction::Up) || age > 3 {
+                    world.set_block(
+                        pos,
+                        vanilla_blocks::AIR.default_state(),
+                        UpdateFlags::UPDATE_ALL,
+                    );
+                }
+                return;
+            }
+
+            if new_age == 15 && rand::random_range(0..4) == 0 && !Self::can_burn(below_state) {
+                world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+                return;
+            }
+        }
+
+        // Vanilla `checkBurnOut` on the four horizontals plus above and below.
+        Self::check_burn_out(world, pos.east(), 300, new_age);
+        Self::check_burn_out(world, pos.west(), 300, new_age);
+        Self::check_burn_out(world, pos.below(), 250, new_age);
+        Self::check_burn_out(world, pos.above(), 250, new_age);
+        Self::check_burn_out(world, pos.north(), 300, new_age);
+        Self::check_burn_out(world, pos.south(), 300, new_age);
+
+        // Vanilla ignition sweep: a 3x3 footprint and five blocks of height,
+        // where distance dampens the odds.
+        let difficulty = world.difficulty() as i32;
+        for xx in -1..=1 {
+            for zz in -1..=1 {
+                for yy in -1..=4 {
+                    if xx == 0 && yy == 0 && zz == 0 {
+                        continue;
+                    }
+                    let mut rate = 100;
+                    if yy > 1 {
+                        rate += (yy - 1) * 100;
+                    }
+                    let test_pos = pos.offset(xx, yy, zz);
+                    let ignite = Self::ignition_odds_at(world.as_ref(), test_pos);
+                    if ignite <= 0 {
+                        continue;
+                    }
+                    let odds = (ignite + 40 + difficulty * 7) / (i32_age + 30);
+                    if odds > 0
+                        && rand::random_range(0..rate) <= odds
+                        && (!world.is_raining() || !Self::is_near_rain(world, test_pos))
+                    {
+                        let spread_age = u8::min(
+                            15,
+                            new_age.saturating_add(rand::random_range(0..5) as u8 / 4),
+                        );
+                        let placed = Self::state_with_age(world.as_ref(), test_pos, spread_age);
+                        world.set_block(test_pos, placed, UpdateFlags::UPDATE_CLIENTS);
+                    }
+                }
+            }
+        }
+    }
+
     fn entity_inside(
         &self,
         _state: BlockStateId,

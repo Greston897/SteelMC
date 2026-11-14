@@ -56,6 +56,11 @@ pub mod waxables;
 
 #[expect(warnings)]
 #[rustfmt::skip]
+#[path = "generated/flammable.rs"]
+pub mod flammable;
+
+#[expect(warnings)]
+#[rustfmt::skip]
 #[path = "generated/weathering.rs"]
 pub mod weathering;
 
