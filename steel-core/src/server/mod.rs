@@ -1037,7 +1037,9 @@ impl Server {
 
         let packet = CDebugSample {
             kind: TICK_TIME_SAMPLE,
-            samples: vec![i64::try_from(tick_duration_nanos).unwrap_or(i64::MAX)],
+            // A tick cannot run longer than `i64::MAX` nanoseconds (292 years);
+            // the saturating cast keeps the encoding total.
+            samples: vec![tick_duration_nanos.min(i64::MAX as u64) as i64],
         };
         for player in subscribers {
             player.send_packet(packet.clone());
