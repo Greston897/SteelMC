@@ -156,6 +156,8 @@ impl TabListTickStats {
 
 /// Results from saving every command-owned persistent data set.
 pub struct CommandDataSaveResults {
+    /// Number of dirty chunks written, or the save error.
+    pub chunks: io::Result<usize>,
     /// Number of dirty domain scoreboards written, or the save error.
     pub scoreboards: io::Result<usize>,
     /// Number of dirty domain command-storage values written, or the save error.
@@ -1009,9 +1011,28 @@ impl Server {
         self.command_storage.save(&self.worlds).await
     }
 
+    /// Saves every loaded world (vanilla `ServerLevel.save`).
+    ///
+    /// Returns the number of written chunks and the first error, so `/save-all`
+    /// and the autosave can report a failing disk instead of silently claiming
+    /// success.
+    pub async fn save_world_chunks(&self) -> io::Result<usize> {
+        let mut saved = 0usize;
+        for world in self.worlds.values() {
+            saved = saved.saturating_add(world.save().await?);
+        }
+        Ok(saved)
+    }
+
     /// Saves all command-owned persistent data while allowing each data set to fail independently.
+    ///
+    /// Vanilla `MinecraftServer.saveEverything` writes the loaded chunks *and*
+    /// the command-owned data. Steel used to reach the chunk half only through
+    /// `World::cleanup` at shutdown, so everything built since the last restart
+    /// survived `/save-all` and the autosave only in memory.
     pub async fn save_command_data(&self) -> CommandDataSaveResults {
         CommandDataSaveResults {
+            chunks: self.save_world_chunks().await,
             scoreboards: self.scoreboards.save(&self.worlds).await,
             storage: self.save_command_storage().await,
             whitelist: self.save_whitelist().await,

@@ -42,10 +42,13 @@ fn save_all(context: &SteelCommandContext<CommandSource>) -> Result<i32, Command
     let task_server = std::sync::Arc::clone(server);
     tokio::spawn(async move {
         let results = task_server.save_command_data().await;
+        // Vanilla `SaveAllCommand` saves the chunks too; reporting "Saved the
+        // game" while a chunk write failed would be a lie, so every set counts.
         let failure = results
-            .scoreboards
+            .chunks
             .as_ref()
             .err()
+            .or(results.scoreboards.as_ref().err())
             .or(results.storage.as_ref().err())
             .map(ToString::to_string);
         match failure {
@@ -53,6 +56,9 @@ fn save_all(context: &SteelCommandContext<CommandSource>) -> Result<i32, Command
                 source.send_failure(TextComponent::plain(format!("Save failed: {error}")));
             }
             None => {
+                if let Ok(chunks) = results.chunks {
+                    tracing::debug!(chunks, "Saved chunks");
+                }
                 source.send_success(&TextComponent::plain("Saved the game"), true);
             }
         }

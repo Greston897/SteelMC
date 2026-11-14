@@ -545,12 +545,20 @@ impl World {
         }))
     }
 
-    /// Cleans up the world by saving all chunks.
+    /// Vanilla `ServerLevel.save`: writes `level.dat`, the saved-data sets, and
+    /// finally every dirty chunk.
+    ///
+    /// `/save-all` and the autosave use this same path — vanilla
+    /// `MinecraftServer.saveEverything` iterates the levels and then saves the
+    /// command-owned data, so a periodic save must not skip the chunks.
+    ///
+    /// A failing saved-data set is logged but does not stop the pass; only the
+    /// chunk write is returned, because that is what vanilla reports.
     #[expect(
         clippy::await_holding_lock,
-        reason = "holding the write lock across await is safe here because it only happens during shutdown"
+        reason = "holding the write lock across await is safe here because world saves are serialised"
     )]
-    pub async fn cleanup(&self, total_saved: &mut usize) {
+    pub async fn save(&self) -> io::Result<usize> {
         self.sync_world_border_to_level_data();
         match self.level_data.write().save().await {
             Ok(()) => log::info!("World {} level data saved successfully", self.key),
@@ -605,7 +613,12 @@ impl World {
             log::error!("Failed to save the wandering trader schedule: {error}");
         }
 
-        match self.save_all_chunks().await {
+        self.save_all_chunks().await
+    }
+
+    /// Shutdown hook: saves the world and adds the chunk count to the tally.
+    pub async fn cleanup(&self, total_saved: &mut usize) {
+        match self.save().await {
             Ok(count) => *total_saved += count,
             Err(e) => log::error!("Failed to save world chunks: {e}"),
         }

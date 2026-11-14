@@ -123,6 +123,16 @@ impl Server {
         self.damage_history.clear();
         log::info!("Saving world data...");
         let command_data = self.save_command_data().await;
+        let mut total_saved = match command_data.chunks {
+            Ok(saved) => {
+                log::info!("Saved {saved} chunks");
+                saved
+            }
+            Err(error) => {
+                log::error!("Failed to save world chunks: {error}");
+                0
+            }
+        };
         match command_data.scoreboards {
             Ok(saved) => log::info!("Saved {saved} domain scoreboards"),
             Err(error) => log::error!("Failed to save domain scoreboards: {error}"),
@@ -131,7 +141,9 @@ impl Server {
             Ok(saved) => log::info!("Saved {saved} domain command storages"),
             Err(error) => log::error!("Failed to save domain command storage: {error}"),
         }
-        let mut total_saved = 0;
+        // The chunks already ran through `save_command_data` above. `cleanup`
+        // repeats the per-world saved-data sets (idempotent) and finds no dirty
+        // chunks left, so its count is only a fallback for the error path.
         for world in self.worlds.values() {
             world.cleanup(&mut total_saved).await;
         }
@@ -326,8 +338,14 @@ impl Server {
     }
 
     async fn autosave_command_data(&self) {
-        tracing::debug!("Command data autosave started");
+        tracing::debug!("Autosave started");
         let results = self.save_command_data().await;
+        // Vanilla `MinecraftServer.tickServer` autosaves through
+        // `saveEverything`, which includes the loaded chunks.
+        match results.chunks {
+            Ok(saved) => tracing::debug!(saved, "Chunk autosave completed"),
+            Err(error) => tracing::error!(%error, "Chunk autosave failed"),
+        }
         match results.scoreboards {
             Ok(saved) => tracing::debug!(saved, "Domain scoreboard autosave completed"),
             Err(error) => tracing::error!(%error, "Domain scoreboard autosave failed"),
