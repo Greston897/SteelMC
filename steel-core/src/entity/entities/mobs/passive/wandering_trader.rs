@@ -153,19 +153,19 @@ impl WanderingTraderEntity {
     ///
     /// The delay only counts down outside a trade: a player browsing the offers
     /// keeps the trader in place, which vanilla implements by skipping the tick
-    /// while `getTradingPlayer()` is set.
+    /// while `getTradingPlayer()` is set. Trading is tracked by player id, and
+    /// closing the screen clears it, so a crashed client cannot pin a trader.
     fn maybe_despawn(&self) {
-        if self.is_trading() {
-            return;
-        }
+        let trading = self.is_trading();
         let mut delay = self.despawn_delay.lock();
-        if *delay <= 0 {
+        let Some(next) = despawn_delay_step(*delay, trading) else {
             return;
-        }
-        *delay -= 1;
-        if *delay == 1 {
+        };
+        *delay = next;
+        if next == 0 {
             drop(delay);
-            // Vanilla `WanderingTrader.maybeDespawn` discards at delay 1.
+            // Vanilla `WanderingTrader.maybeDespawn` discards once the counter
+            // reaches zero, which is why the wiki reports "leaves at 1".
             self.set_removed(RemovalReason::Discarded);
         }
     }
@@ -386,6 +386,12 @@ impl Mob for WanderingTraderEntity {
         Some(&sound_events::ENTITY_WANDERING_TRADER_AMBIENT)
     }
 
+    /// Vanilla `WanderingTrader.removeWhenFarAway` returns `false`: the trader is
+    /// removed by its own despawn timer, never by the distance check.
+    fn remove_when_far_away(&self, _dist_sqr: f64) -> bool {
+        false
+    }
+
     fn mob_flags(&self) -> i8 {
         *self.entity_data.lock().mob().mob_flags.get()
     }
@@ -397,3 +403,41 @@ impl Mob for WanderingTraderEntity {
 
 impl PathfinderMob for WanderingTraderEntity {}
 
+/// One tick of vanilla `WanderingTrader.maybeDespawn`.
+///
+/// Vanilla decrements only while the trader is not being traded with and
+/// discards when the counter reaches `0` (`--this.despawnDelay == 0`). Returns
+/// `Some(next)` when the counter moved and `None` when it is paused or already
+/// finished; `Some(0)` after a `1` means the trader leaves now.
+const fn despawn_delay_step(delay: i32, trading: bool) -> Option<i32> {
+    if trading || delay <= 0 {
+        return None;
+    }
+    Some(delay - 1)
+}
+
+#[cfg(test)]
+mod despawn_timer_tests {
+    use super::despawn_delay_step;
+
+    #[test]
+    fn the_timer_holds_while_a_player_is_trading() {
+        assert_eq!(despawn_delay_step(48_000, true), None);
+        assert_eq!(despawn_delay_step(2, true), None);
+    }
+
+    #[test]
+    fn an_untraded_trader_counts_down() {
+        assert_eq!(despawn_delay_step(48_000, false), Some(47_999));
+        assert_eq!(despawn_delay_step(2, false), Some(1));
+        // The step that reaches zero is the one that discards the trader.
+        assert_eq!(despawn_delay_step(1, false), Some(0));
+    }
+
+    #[test]
+    fn a_command_summoned_trader_never_despawns() {
+        // Vanilla `DespawnDelay` defaults to 0 for `/summon` and spawn eggs.
+        assert_eq!(despawn_delay_step(0, false), None);
+        assert_eq!(despawn_delay_step(0, true), None);
+    }
+}
