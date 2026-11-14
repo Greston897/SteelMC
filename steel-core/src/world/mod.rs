@@ -803,11 +803,6 @@ impl World {
             // Vanilla's custom spawners run in registration order: phantoms,
             // then patrols.
             self.tick_patrol_spawner();
-            // Vanilla `ServerLevel.tick` advances the raid list every tick, so
-            // an active raid has to be driven here too; `RaidManager::tick`
-            // existed but nothing called it, which left raids frozen forever
-            // (and their waves never counted as cleared).
-            self.raids.tick(self);
         }
 
         {
