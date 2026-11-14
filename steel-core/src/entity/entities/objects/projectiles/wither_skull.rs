@@ -1,9 +1,8 @@
 //! Wither skull projectile (`WitherSkull`).
 //!
 //! Vanilla `WitherSkull`: `8.0` impact damage plus wither II on an entity hit,
-//! and a blast of
-//! power `1.0` when it hits a block (or anything else), which is the same power
-//! as a ghast fireball and enough to break any block below blast resistance 4.
+//! and a blast of power `1.0` when it hits a block, which is the same power as a
+//! ghast fireball and enough to break any block below blast resistance 4.
 //!
 //! Blue (charged) wither skulls use the same power but ignore block resistance,
 //! which Steel does not model yet; every skull uses the black-skull rules.
