@@ -94,16 +94,23 @@ pub fn tick_natural_spawning(world: &Arc<World>, tick_count: usize) -> usize {
             continue;
         }
         let cap = mob_cap(category, players);
-        if count_category(world, category) >= cap {
+        // Vanilla `spawnForChunk` keeps a running per-category counter
+        // (`mobCategoryCounts`) and adds to it as mobs appear. Counting from the
+        // entity list on every iteration was O(entities) per player per
+        // category — 3200 full scans per pass on a 200-player server.
+        let mut category_count = count_category(world, category);
+        if category_count >= cap {
             continue;
         }
         // Vanilla runs `spawnCategoryForChunk` once per player in the category
         // loop, and each call walks the column of one random eligible chunk.
         for _ in 0..players {
-            if count_category(world, category) >= cap {
+            if category_count >= cap {
                 break;
             }
-            spawned += try_spawn_category_in_random_chunk(world, category);
+            let added = try_spawn_category_in_random_chunk(world, category);
+            category_count += added;
+            spawned += added;
         }
     }
     spawned
