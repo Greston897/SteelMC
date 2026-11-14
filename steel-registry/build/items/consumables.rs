@@ -128,10 +128,19 @@ pub(super) fn consume_effect_token(value: &Value) -> TokenStream {
                 diameter > 0.0,
                 "teleport_randomly diameter must be positive"
             );
+            // Vanilla 26.3 added `directional_particles`, defaulting to `true`.
+            let directional_particles = object.get("directional_particles").is_none_or(|value| {
+                value.as_bool().unwrap_or_else(|| {
+                    panic!("teleport_randomly directional_particles must be a boolean")
+                })
+            });
             quote! {
                 crate::ConsumeEffectData::new(
                     &crate::consume_effect::vanilla_consume_effect_types::TELEPORT_RANDOMLY,
-                    crate::consume_effect::TeleportRandomlyConsumeEffect::from_extracted(#diameter),
+                    crate::consume_effect::TeleportRandomlyConsumeEffect::from_extracted(
+                        #diameter,
+                        #directional_particles,
+                    ),
                 )
             }
         }
