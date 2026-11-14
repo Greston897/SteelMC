@@ -28,7 +28,13 @@ pub const AVAILABLE_PARALLELISM_FALLBACK: usize = 4;
 pub const DEBUG_STACK_SIZE: usize = 8 * 1024 * 1024;
 
 /// cgroup v2 mounts the unified hierarchy here.
-const CGROUP_V2_CPU_MAX: &str = "/sys/fs/cgroup/cpu.max";
+const CGROUP_V2_ROOT: &str = "/sys/fs/cgroup";
+
+/// cgroup v1 mounts each controller under its own directory.
+const CGROUP_V1_CPU_ROOT: &str = "/sys/fs/cgroup/cpu";
+
+/// `/proc/self/cgroup` lists the cgroup path of this process per hierarchy.
+const PROC_SELF_CGROUP: &str = "/proc/self/cgroup";
 
 /// cgroup v1 keeps the quota and period in separate files under the controller.
 const CGROUP_V1_QUOTA: &str = "/sys/fs/cgroup/cpu/cpu.cfs_quota_us";
@@ -61,27 +67,81 @@ pub fn cgroup_cpu_limit() -> Option<usize> {
 
 /// Parses cgroup v2 `cpu.max`, whose format is `"<quota> <period>"` or `"max <period>"`.
 fn cgroup_v2_cpu_limit() -> Option<usize> {
-    let contents = std::fs::read_to_string(CGROUP_V2_CPU_MAX).ok()?;
+    let root = std::fs::read_to_string(CGROUP_V2_ROOT.to_owned() + "/cpu.max");
+    if let Ok(contents) = root {
+        return parse_cgroup_v2_cpu_max(&contents);
+    }
+
+    // The container may not be mounted at the hierarchy root (a host
+    // cgroup namespace, or a panel that bind-mounts only its own subtree). In
+    // that case the limit lives at the path `/proc/self/cgroup` reports, with
+    // the hierarchy root as the mount point.
+    let path = v2_relative_path(&std::fs::read_to_string(PROC_SELF_CGROUP).ok()?)?;
+    let contents = std::fs::read_to_string(format!("{CGROUP_V2_ROOT}{path}/cpu.max")).ok()?;
     parse_cgroup_v2_cpu_max(&contents)
 }
 
 /// Parses cgroup v1 `cpu.cfs_quota_us` / `cpu.cfs_period_us`.
 fn cgroup_v1_cpu_limit() -> Option<usize> {
-    let quota: i64 = std::fs::read_to_string(CGROUP_V1_QUOTA)
-        .ok()?
-        .trim()
-        .parse()
-        .ok()?;
+    let quota_path = CGROUP_V1_QUOTA.to_owned();
+    let period_path = CGROUP_V1_PERIOD.to_owned();
+
+    // Same fallback as v2: a nested cgroup puts the controller files under the
+    // path this process reports instead of the controller root.
+    let (quota_path, period_path) = match read_v1_paths() {
+        Some((quota, period)) => (quota, period),
+        None => (quota_path, period_path),
+    };
+
+    let quota: i64 = std::fs::read_to_string(quota_path).ok()?.trim().parse().ok()?;
     if quota <= 0 {
-        // Vanilla cgroup v1 uses `-1` for "no limit".
+        // The cgroup v1 "no limit" value is `-1`.
         return None;
     }
-    let period: i64 = std::fs::read_to_string(CGROUP_V1_PERIOD)
+    let period: i64 = std::fs::read_to_string(period_path)
         .ok()?
         .trim()
         .parse()
         .ok()?;
     quota_to_cores(quota, period)
+}
+
+/// Finds the nested cgroup v1 `cpu` controller files, if this process is not at
+/// the controller root.
+fn read_v1_paths() -> Option<(String, String)> {
+    let contents = std::fs::read_to_string(PROC_SELF_CGROUP).ok()?;
+    for line in contents.lines() {
+        // v1 lines look like `<id>:<controllers>:<path>`; a pure `<id>::<path>`
+        // line is the v2 hierarchy and carries no cpu controller files.
+        let mut fields = line.splitn(3, ':');
+        let _id = fields.next()?;
+        let controllers = fields.next()?;
+        let path = fields.next()?;
+        if !controllers.split(',').any(|controller| controller == "cpu") {
+            continue;
+        }
+        let base = format!("{CGROUP_V1_CPU_ROOT}{path}");
+        return Some((format!("{base}/cpu.cfs_quota_us"), format!("{base}/cpu.cfs_period_us")));
+    }
+    None
+}
+
+/// Returns the cgroup v2 path of this process (`/` for the root itself).
+///
+/// `/proc/self/cgroup` writes the v2 hierarchy as `0::<path>`.
+#[must_use]
+pub fn v2_relative_path(proc_self_cgroup: &str) -> Option<String> {
+    proc_self_cgroup.lines().find_map(|line| {
+        let mut fields = line.splitn(3, ':');
+        let _id = fields.next()?;
+        let controllers = fields.next()?;
+        let path = fields.next()?;
+        // The v2 hierarchy is the one with no controllers listed.
+        if !controllers.is_empty() || !path.starts_with('/') {
+            return None;
+        }
+        Some(path.to_owned())
+    })
 }
 
 /// Converts a quota/period pair into whole cores, rounding down.
@@ -223,7 +283,7 @@ pub fn pool_sizes_for_available(cores: usize) -> PoolSizes {
 mod tests {
     use super::{
         PoolSizes, parse_cgroup_v2_cpu_max, pool_sizes_for_available, quota_to_cores,
-        worker_threads_for_available,
+        v2_relative_path, worker_threads_for_available,
     };
 
     #[test]
@@ -346,5 +406,36 @@ mod tests {
             assert!(sizes.chunk_encoding >= 1);
             assert!(sizes.chunk_generation >= 1);
         }
+    }
+
+    #[test]
+    fn nested_cgroup_v2_path_is_read_from_proc_self_cgroup() {
+        let proc_self = "0::/docker/abc123\n";
+        assert_eq!(
+            v2_relative_path(proc_self).as_deref(),
+            Some("/docker/abc123")
+        );
+    }
+
+    #[test]
+    fn the_root_cgroup_is_its_own_path() {
+        assert_eq!(v2_relative_path("0::/\n").as_deref(), Some("/"));
+    }
+
+    #[test]
+    fn a_v1_only_process_has_no_v2_path() {
+        // Pure cgroup v1: every line names its controllers, so the unified
+        // hierarchy is absent and the v2 fallback must not invent a path.
+        let proc_self = "4:cpu,cpuacct:/docker/abc123\n1:name=systemd:/docker/abc123\n";
+        assert_eq!(v2_relative_path(proc_self), None);
+    }
+
+    #[test]
+    fn a_mixed_hierarchy_picks_the_v2_line() {
+        let proc_self = "4:cpu:/docker/abc123\n0::/docker/abc123\n";
+        assert_eq!(
+            v2_relative_path(proc_self).as_deref(),
+            Some("/docker/abc123")
+        );
     }
 }
