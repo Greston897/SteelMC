@@ -1074,7 +1074,8 @@ impl Server {
             true
         });
         log::warn!(
-            "The world directory is out of space; warned {warned} operator(s).              Free disk space to avoid losing world data."
+            "The world directory is out of space; warned {warned} operator(s). \
+             Free disk space to avoid losing world data."
         );
     }
 

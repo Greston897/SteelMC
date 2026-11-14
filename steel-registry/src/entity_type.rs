@@ -39,6 +39,25 @@ impl MobCategory {
     pub const fn no_despawn_distance(self) -> i32 {
         32
     }
+
+    /// The category's data-pack key, i.e. how `Biome.spawners` names it.
+    ///
+    /// Vanilla `MobCategory.getName()` lowercases the enum name and matches the
+    /// keys in the biome JSON (`monster`, `creature`, `underground_water_creature`,
+    /// …); the biome registry uses exactly those keys.
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Monster => "monster",
+            Self::Creature => "creature",
+            Self::Ambient => "ambient",
+            Self::Axolotls => "axolotls",
+            Self::UndergroundWaterCreature => "underground_water_creature",
+            Self::WaterCreature => "water_creature",
+            Self::WaterAmbient => "water_ambient",
+            Self::Misc => "misc",
+        }
+    }
 }
 
 /// Vanilla attachment point kind used by `EntityDimensions`.

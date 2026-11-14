@@ -5,17 +5,21 @@
 //! spawn ring, checks the entity's `SpawnPlacements` predicate and the category
 //! mob cap, then spawns a small pack. The constants below are vanilla's.
 
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 
 use rand::{Rng as _, RngExt as _};
+use steel_registry::biome::BiomeRef;
 use steel_registry::entity_type::{EntityTypeRef, MobCategory};
 use steel_registry::vanilla_game_rules;
+use steel_registry::{REGISTRY, RegistryExt as _};
 use steel_utils::{BlockPos, types::Difficulty};
+use steel_worldgen::biomes::obfuscate_biome_seed;
 
 use crate::chunk::heightmap::HeightmapType;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
 use crate::entity::spawn_placements::SpawnPlacements;
-use crate::entity::{ENTITIES, Entity, spawn_entity};
+use crate::entity::{Entity, spawn_entity};
+use crate::worldgen::generators::vanilla::fuzzed_biome_at_block;
 use crate::world::{LevelReader, World};
 
 /// Ticks between two natural-spawn passes (vanilla `SPAWN_INTERVAL`).
@@ -93,11 +97,17 @@ pub fn tick_natural_spawning(world: &Arc<World>, tick_count: usize) -> usize {
         if count_category(world, category) >= cap {
             continue;
         }
-        for entity_type in natural_spawn_types(category) {
-            if count_category(world, category) >= cap {
+        // Vanilla `NaturalSpawner.spawnCategoryForChunk` picks the type per
+        // chunk from that chunk's biome, so a pass is a number of attempts
+        // rather than a walk over every registered type.
+        while count_category(world, category) < cap {
+            let before = spawned;
+            spawned += try_spawn_pack(world, category);
+            // No progress means the sampled position or biome rejected the
+            // spawn; vanilla also gives up on the chunk at that point.
+            if spawned == before {
                 break;
             }
-            spawned += try_spawn_pack(world, entity_type);
         }
     }
     spawned
@@ -128,42 +138,63 @@ const SPAWN_CATEGORIES: [MobCategory; 8] = [
     MobCategory::Misc,
 ];
 
-/// Every registered entity type of `category` that has a spawn rule and factory.
+/// A natural-spawn candidate: the type plus the biome entry that produced it.
+struct SpawnCandidate {
+    entity_type: EntityTypeRef,
+    min_count: i32,
+    max_count: i32,
+}
+
+/// Vanilla `NaturalSpawner.getRandomSpawnMobAt` -> `Biome.getMobs(category)`.
 ///
-/// Vanilla iterates `entityType.getSpawnGroupData(category)` over the registry;
-/// Steel filters the same way, keeping only types it can actually construct.
+/// Vanilla picks the type from the **biome of the chunk it is spawning in**, not
+/// from a global per-category list, so a mooshroom only appears in a mushroom
+/// field and a polar bear only in ice. Steel used to walk every registered type
+/// of the category, which spawned mobs in the wrong biomes and burned 185 type
+/// checks per category per pass.
 ///
-/// The result is memoized once per category. The registry never changes after
-/// startup, so rebuilding (and re-allocating) this list on every 400-tick spawn
-/// pass for every category was pure waste: on a map with ~185 entity types it
-/// walked the whole registry 8 times per pass for no benefit.
-pub(crate) fn natural_spawn_types(category: MobCategory) -> &'static [EntityTypeRef] {
-    static CACHE: OnceLock<[Vec<EntityTypeRef>; 8]> = OnceLock::new();
-    let cache = CACHE.get_or_init(|| {
-        std::array::from_fn(|index| {
-            let category = SPAWN_CATEGORIES[index];
-            steel_registry::REGISTRY
-                .entity_types
-                .iter()
-                .filter(|(_, entity_type)| entity_type.mob_category == category)
-                .map(|(_, entity_type)| entity_type)
-                .filter(|entity_type| {
-                    ENTITIES
-                        .get()
-                        .is_some_and(|registry| registry.has_factory(*entity_type))
-                })
-                .collect()
-        })
+/// The biome is resolved at the pack's anchor through the loaded chunk
+/// (`World::noise_biome_id`), matching `Level.getBiome` in vanilla.
+fn pick_candidate(world: &Arc<World>, category: MobCategory, pos: BlockPos) -> Option<SpawnCandidate> {
+    let biome = world_biome_at(world, pos)?;
+    let list = biome.spawners.get(category.name())?;
+    if list.is_empty() {
+        return None;
+    }
+
+    let total: i32 = list.iter().map(|entry| entry.weight.max(0)).sum();
+    if total <= 0 {
+        return None;
+    }
+
+    let mut pick = rand::rng().random_range(0..total);
+    let mut chosen = list.last()?;
+    for entry in list {
+        pick -= entry.weight.max(0);
+        if pick < 0 {
+            chosen = entry;
+            break;
+        }
+    }
+
+    Some(SpawnCandidate {
+        entity_type: REGISTRY.entity_types.by_key(&chosen.entity_type)?,
+        min_count: chosen.min_count,
+        max_count: chosen.max_count,
+    })
+}
+
+/// Resolves the biome of `pos` from the loaded world.
+fn world_biome_at(world: &Arc<World>, pos: BlockPos) -> Option<BiomeRef> {
+    let zoom_seed = obfuscate_biome_seed(world.seed());
+    let biome_id = fuzzed_biome_at_block(zoom_seed, pos, |quart| {
+        world.noise_biome_id(quart.x, quart.y, quart.z).unwrap_or(0)
     });
-    let index = SPAWN_CATEGORIES
-        .iter()
-        .position(|candidate| *candidate == category)
-        .unwrap_or(0);
-    &cache[index]
+    REGISTRY.biomes.by_id(usize::from(biome_id))
 }
 
 /// Attempts one vanilla pack spawn, returning how many mobs appeared.
-fn try_spawn_pack(world: &Arc<World>, entity_type: EntityTypeRef) -> usize {
+fn try_spawn_pack(world: &Arc<World>, category: MobCategory) -> usize {
     let Some(anchor) = random_player_position(world) else {
         return 0;
     };
@@ -184,11 +215,26 @@ fn try_spawn_pack(world: &Arc<World>, entity_type: EntityTypeRef) -> usize {
         // Vanilla rejects positions closer than 24 blocks to any player.
         return 0;
     }
+
+    let Some(candidate) = pick_candidate(world, category, pos) else {
+        return 0;
+    };
+    let entity_type = candidate.entity_type;
+
     if !SpawnPlacements::check_natural_spawn_rules(entity_type, world, pos, &mut random) {
         return 0;
     }
 
-    let pack = random.random_range(1..=MAX_PACK_SIZE);
+    // Vanilla `NaturalSpawner.getRandomSpawnMobAt` then `GroupData.getState`:
+    // the pack size comes from the biome entry's `minCount..=maxCount`, not from
+    // a global `1..=4` constant (that spawned wrong pack sizes for e.g. wolves).
+    let pack = if candidate.max_count > candidate.min_count {
+        candidate.min_count + random.random_range(0..=(candidate.max_count - candidate.min_count))
+    } else {
+        candidate.min_count
+    }
+    .max(0);
+
     let mut spawned = 0;
     for _ in 0..pack {
         let request = EntitySpawnRequest {
@@ -253,5 +299,18 @@ mod tests {
     #[test]
     fn peaceful_world_spawns_nothing() {
         assert_eq!(SPAWN_CATEGORIES.len(), 8);
+    }
+
+    #[test]
+    fn category_names_are_the_biome_spawner_keys() {
+        // `Biome.spawners` is keyed by these exact strings in the data pack; a
+        // wrong key silently spawns nothing for that category.
+        assert_eq!(MobCategory::Monster.name(), "monster");
+        assert_eq!(MobCategory::Creature.name(), "creature");
+        assert_eq!(
+            MobCategory::UndergroundWaterCreature.name(),
+            "underground_water_creature"
+        );
+        assert_eq!(MobCategory::WaterAmbient.name(), "water_ambient");
     }
 }
