@@ -10,8 +10,11 @@
 //! crystals relink their beam.
 //!
 //! Deviation (documented in `STATE-26.3-RU.md`): the ten-value flight `Phase`
-//! machine and the dragon's breath/pathfinders are not implemented; the synced
-//! phase is stored but never advanced.
+//! machine, the dragon's breath attack, and its battle pathfinder are not
+//! implemented. Flight comes from the generic goal selector installed below
+//! (`FloatGoal`, `MeleeAttackGoal`, `WaterAvoidingRandomStrollGoal`,
+//! `LookAtPlayerGoal`, `RandomLookAroundGoal`), and the synced phase is stored
+//! but never advanced.
 use std::iter::empty;
 use std::sync::Weak;
 
