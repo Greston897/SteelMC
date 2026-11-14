@@ -12,6 +12,7 @@ pub mod potion_brewing;
 mod campfire;
 mod chest;
 mod chiseled_bookshelf;
+mod command_block;
 mod comparator;
 mod crafter;
 mod conduit;
@@ -42,8 +43,8 @@ mod trial_spawner;
 mod vault;
 pub use creaking_heart::CreakingHeartBlockEntity;
 pub use marker::{
-    CommandBlockEntity, CopperGolemStatueBlockEntity, JigsawBlockEntity, StructureBlockEntity,
-    TestBlockEntity, TestInstanceBlockEntity,
+    CopperGolemStatueBlockEntity, JigsawBlockEntity, StructureBlockEntity, TestBlockEntity,
+    TestInstanceBlockEntity,
 };
 pub use shelf::ShelfBlockEntity;
 pub use sculk_catalyst::{SculkCatalystBlockEntity, SculkShriekerBlockEntity};
@@ -65,6 +66,7 @@ pub use brushable::BrushableBlockEntity;
 pub use brewing_stand::BrewingStandBlockEntity;
 pub use campfire::{CAMPFIRE_SLOTS, CampfireBlockEntity};
 pub use chiseled_bookshelf::{CHISELED_BOOKSHELF_SLOTS, ChiseledBookShelfBlockEntity};
+pub use command_block::{CommandBlockBlockEntity, CommandBlockMode};
 pub use comparator::ComparatorBlockEntity;
 pub use crafter::{CRAFTER_SLOTS, CrafterBlockEntity};
 pub use conduit::ConduitBlockEntity;

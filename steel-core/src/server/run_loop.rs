@@ -437,6 +437,16 @@ impl Server {
                     }
                     self.execute_command_request(pending, owner, &command);
                 }
+                CommandRequest::Background {
+                    owner,
+                    command,
+                    reply,
+                } => {
+                    if !owner.is_current(self) {
+                        continue;
+                    }
+                    self.execute_background_command(owner, &command, reply);
+                }
                 CommandRequest::Suggestions {
                     owner,
                     transaction_id,
@@ -486,6 +496,72 @@ impl Server {
         {
             tracing::error!("suspended command execution could not be retained");
         }
+    }
+
+    /// Runs one command block command off the tick-owned queue.
+    ///
+    /// The execution is an ordinary dispatcher run with the block as its source:
+    /// it holds console-level permissions, never chats, and reports the last
+    /// line the command produced. A suspended execution is cancelled instead of
+    /// being parked, because a command block must not keep a queue alive across
+    /// ticks.
+    fn execute_background_command(
+        self: &Arc<Self>,
+        owner: CommandExecutionOwner,
+        command: &str,
+        reply: tokio::sync::oneshot::Sender<crate::command::BackgroundCommandResult>,
+    ) {
+        let Some(output) = owner.sender().get_command_block_output().cloned() else {
+            // A background request always carries a command block sender; a
+            // mismatch means the request was built wrong, so drop it loudly.
+            tracing::error!("background command execution without a command block sender");
+            return;
+        };
+        let block_world = Arc::clone(output.world());
+        let source = CommandSource::new(owner.sender().clone(), Arc::clone(self))
+            .with_world(block_world)
+            .unwrap_or_else(|_| CommandSource::new(owner.sender().clone(), Arc::clone(self)));
+        let command = command.strip_prefix('/').unwrap_or(command);
+        let parsed = {
+            let dispatcher = self.command_dispatcher.read();
+            let parse = dispatcher.parse(command, source.clone());
+            dispatcher.context_chain(parse)
+        };
+        let chain = match parsed {
+            Ok(chain) => chain,
+            Err(error) => {
+                let failure = error.message_component().to_string();
+                let _ = reply.send(crate::command::BackgroundCommandResult {
+                    success: false,
+                    output: Some(failure),
+                    output_allowed: true,
+                });
+                return;
+            }
+        };
+
+        let output_allowed = source
+            .world()
+            .get_game_rule(&steel_registry::vanilla_game_rules::COMMAND_BLOCK_OUTPUT);
+        let success_flag = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let callback = CommandResultCallback::new({
+            let success_flag = Arc::clone(&success_flag);
+            move |command_success, _result| {
+                success_flag.store(command_success, std::sync::atomic::Ordering::Relaxed);
+            }
+        });
+        let source = source.with_callback(callback.clone());
+        let mut execution = CommandExecutionContext::for_source(&source);
+        execution.queue_initial_command(chain, source, callback);
+        let stopped = execution.run();
+        if stopped == ExecutionStop::Suspended {
+            execution.cancel();
+        }
+        let _ = reply.send(crate::command::BackgroundCommandResult {
+            success: success_flag.load(std::sync::atomic::Ordering::Relaxed),
+            output: output.take(),
+            output_allowed,
+        });
     }
 
     fn send_command_suggestions(

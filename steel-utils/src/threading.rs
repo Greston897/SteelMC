@@ -48,8 +48,78 @@ const CGROUP_V1_PERIOD: &str = "/sys/fs/cgroup/cpu/cpu.cfs_period_us";
 #[must_use]
 pub fn available_worker_threads() -> usize {
     let os_threads = thread::available_parallelism().map_or(AVAILABLE_PARALLELISM_FALLBACK, NonZero::get);
-    let cgroup_threads = cgroup_cpu_limit().unwrap_or(os_threads);
-    os_threads.min(cgroup_threads).max(1)
+    let quota_threads = cgroup_cpu_limit().unwrap_or(os_threads);
+    // A Pterodactyl/Docker panel may pin a *set* of cores (`--cpuset-cpus`) and
+    // leave the quota unlimited; the cpuset is then the real allowance. Taking
+    // the minimum of all three keeps both limit styles honest, and the OS value
+    // already reflects the affinity mask on most platforms.
+    let cpuset_threads = cgroup_cpuset_cpus().unwrap_or(os_threads);
+    os_threads.min(quota_threads).min(cpuset_threads).max(1)
+}
+
+/// Reads a cgroup `cpuset` allowance as a core count.
+///
+/// `cpuset.cpus` (v2) and `cpuset.effective_cpus` (v1) list the cores a
+/// container may run on, e.g. `"0-3,8"`. Returns `None` when the file is absent
+/// (no cpuset controller) or lists nothing usable.
+#[must_use]
+pub fn cgroup_cpuset_cpus() -> Option<usize> {
+    let relative = std::fs::read_to_string(PROC_SELF_CGROUP).ok();
+    let candidates = [
+        format!("{CGROUP_V2_ROOT}/cpuset.cpus.effective"),
+        format!("{CGROUP_V2_ROOT}/cpuset.cpus"),
+    ];
+    for path in candidates {
+        if let Ok(contents) = std::fs::read_to_string(&path) {
+            if let Some(count) = parse_cpu_set(&contents) {
+                return Some(count);
+            }
+        }
+    }
+
+    // Nested cgroups: use the path `/proc/self/cgroup` reports.
+    let path = v2_relative_path(relative.as_deref()?)?;
+    for name in ["cpuset.cpus.effective", "cpuset.cpus"] {
+        let contents = std::fs::read_to_string(format!("{CGROUP_V2_ROOT}{path}/{name}")).ok()?;
+        if let Some(count) = parse_cpu_set(&contents) {
+            return Some(count);
+        }
+    }
+    None
+}
+
+/// Counts the cores in a cgroup `cpuset` list such as `"0-3,8"`.
+///
+/// An empty file means "no restriction" on older kernels, so it yields `None`
+/// rather than zero cores.
+#[must_use]
+pub fn parse_cpu_set(contents: &str) -> Option<usize> {
+    let contents = contents.trim();
+    if contents.is_empty() {
+        return None;
+    }
+    let mut total = 0usize;
+    for range in contents.split(',') {
+        let range = range.trim();
+        if range.is_empty() {
+            continue;
+        }
+        match range.split_once('-') {
+            Some((start, end)) => {
+                let start: usize = start.parse().ok()?;
+                let end: usize = end.parse().ok()?;
+                if end < start {
+                    return None;
+                }
+                total += end - start + 1;
+            }
+            None => {
+                range.parse::<usize>().ok()?;
+                total += 1;
+            }
+        }
+    }
+    (total > 0).then_some(total)
 }
 
 /// Reads the cgroup CPU allowance as a whole number of cores.
@@ -282,8 +352,8 @@ pub fn pool_sizes_for_available(cores: usize) -> PoolSizes {
 #[cfg(test)]
 mod tests {
     use super::{
-        PoolSizes, parse_cgroup_v2_cpu_max, pool_sizes_for_available, quota_to_cores,
-        v2_relative_path, worker_threads_for_available,
+        PoolSizes, parse_cgroup_v2_cpu_max, parse_cpu_set, pool_sizes_for_available,
+        quota_to_cores, v2_relative_path, worker_threads_for_available,
     };
 
     #[test]
@@ -435,5 +505,20 @@ mod tests {
             v2_relative_path(proc_self).as_deref(),
             Some("/docker/abc123")
         );
+    }
+    #[test]
+    fn a_cpuset_range_counts_its_cores() {
+        assert_eq!(parse_cpu_set("0-3"), Some(4));
+        assert_eq!(parse_cpu_set("0-3,8"), Some(5));
+        assert_eq!(parse_cpu_set("2"), Some(1));
+        assert_eq!(parse_cpu_set("0-0"), Some(1));
+    }
+
+    #[test]
+    fn an_empty_or_malformed_cpuset_falls_back_to_the_os() {
+        assert_eq!(parse_cpu_set(""), None);
+        assert_eq!(parse_cpu_set("   "), None);
+        assert_eq!(parse_cpu_set("4-2"), None);
+        assert_eq!(parse_cpu_set("abc"), None);
     }
 }

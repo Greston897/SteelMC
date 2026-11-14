@@ -12,7 +12,9 @@ use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, FrontAndTop};
-use steel_registry::{vanilla_block_entity_types, vanilla_blocks, vanilla_damage_types};
+use steel_registry::{
+    vanilla_block_entity_types, vanilla_blocks, vanilla_damage_types, vanilla_game_rules,
+};
 use steel_utils::Downcast as _;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
@@ -24,6 +26,7 @@ use crate::entity::damage::DamageSource;
 use crate::world::LevelReader;
 use crate::entity::{Entity as _, LivingEntity as _};
 use crate::behavior::context::{BlockPlaceContext, InteractionResult};
+use crate::block_entity::entities::{CommandBlockBlockEntity, CommandBlockMode};
 use crate::block_entity::{BLOCK_ENTITIES, BlockEntityTicker};
 use crate::world::World;
 
@@ -149,6 +152,187 @@ impl BlockBehavior for CommandBlock {
             pos,
             state,
         ))
+    }
+
+    fn get_block_entity_ticker(
+        &self,
+        _world: &Arc<World>,
+        _state: BlockStateId,
+        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+    ) -> Option<BlockEntityTicker> {
+        // Vanilla ticks command blocks from `CommandBlock.tick` (a scheduled
+        // block tick), not from a block entity ticker; the ticker only finishes
+        // commands whose result arrives from the command queue.
+        BlockEntityTicker::for_matching_entity_tick(
+            block_entity_type,
+            &vanilla_block_entity_types::COMMAND_BLOCK,
+        )
+    }
+
+    fn set_placed_by(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _source: &crate::behavior::PlacementSource<'_>,
+    ) {
+        // Vanilla `CommandBlock.setPlacedBy` (without block entity data): the
+        // new block starts tracking output per `send_command_feedback` and takes
+        // the automatic flag of its variant.
+        let Some(entity) = world.get_block_entity(pos) else {
+            return;
+        };
+        let Some(block) = entity.downcast_ref::<CommandBlockBlockEntity>().cloned() else {
+            return;
+        };
+        block.set_track_output(world.get_game_rule(&vanilla_game_rules::SEND_COMMAND_FEEDBACK));
+        block.set_automatic(self.is_automatic());
+        let _ = state;
+    }
+
+    fn handle_neighbor_changed(
+        &self,
+        _state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _source_block: BlockRef,
+        _moved_by_piston: bool,
+    ) {
+        // Vanilla `CommandBlock.neighborChanged` → `setPoweredAndUpdate`.
+        let Some(entity) = world.get_block_entity(pos) else {
+            return;
+        };
+        let Some(block) = entity.downcast_ref::<CommandBlockBlockEntity>().cloned() else {
+            return;
+        };
+        let powered = world.has_neighbor_signal(pos);
+        if powered == block.is_powered() {
+            return;
+        }
+        block.set_powered(powered);
+        if !powered {
+            return;
+        }
+        if block.is_automatic() || block.mode() == CommandBlockMode::Sequence {
+            return;
+        }
+        block.schedule_tick(world, 1);
+    }
+
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        // Vanilla `CommandBlock.tick`.
+        let Some(entity) = world.get_block_entity(pos) else {
+            return;
+        };
+        let Some(block) = entity.downcast_ref::<CommandBlockBlockEntity>().cloned() else {
+            return;
+        };
+        let was_condition_met = block.was_condition_met();
+        let mode = block.mode();
+        match mode {
+            CommandBlockMode::Auto => {
+                block.mark_condition_met();
+                if was_condition_met {
+                    self.execute(&block, world);
+                } else {
+                    block.clear_success_count_if_conditional();
+                }
+                if block.is_powered() || block.is_automatic() {
+                    world.schedule_block_tick_default(pos, state.get_block(), 1);
+                }
+            }
+            CommandBlockMode::Redstone => {
+                if was_condition_met {
+                    self.execute(&block, world);
+                } else {
+                    block.clear_success_count_if_conditional();
+                }
+            }
+            // A sequence block runs from the chain of the block behind it.
+            CommandBlockMode::Sequence => {}
+        }
+        world.update_neighbor_for_output_signal(pos, state.get_block());
+    }
+
+    fn has_analog_output_signal(&self, _state: BlockStateId) -> bool {
+        true
+    }
+
+    fn get_analog_output_signal(
+        &self,
+        _state: BlockStateId,
+        world: &World,
+        pos: BlockPos,
+        _direction: steel_utils::Direction,
+    ) -> i32 {
+        // Vanilla `CommandBlock.getAnalogOutputSignal` returns the success count,
+        // which is also what a comparator reads.
+        world
+            .get_block_entity(pos)
+            .and_then(|entity| entity.downcast_ref::<CommandBlockBlockEntity>().cloned())
+            .map_or(0, |block| block.success_count())
+    }
+}
+
+impl CommandBlock {
+    /// The `automatic` flag of the vanilla `CommandBlock` variant.
+    ///
+    /// Vanilla keeps this as a block constructor argument; Steel derives it from
+    /// the block identity, exactly as `CommandBlockEntity.getMode` does. Only the
+    /// repeating variant is automatic.
+    fn is_automatic(&self) -> bool {
+        self.block.key == vanilla_blocks::REPEATING_COMMAND_BLOCK.key
+    }
+
+    /// Vanilla `CommandBlock.execute`.
+    ///
+    /// The command itself is queued; `execute_chain` runs right after, exactly as
+    /// vanilla does it after `performCommand`.
+    fn execute(&self, block: &Arc<CommandBlockBlockEntity>, world: &Arc<World>) {
+        let _ = block.try_perform_command(world);
+        self.execute_chain(block, world);
+    }
+
+    /// Vanilla `CommandBlock.executeChain`: walk the facing direction and run
+    /// every powered (or automatic) chain block whose condition holds, stopping
+    /// at the first failure or at `max_command_sequence_length` links.
+    fn execute_chain(&self, block: &Arc<CommandBlockBlockEntity>, world: &Arc<World>) {
+        let mut pos = block.get_block_pos();
+        let mut facing: steel_utils::Direction = world
+            .get_block_state(pos)
+            .get_value(&BlockStateProperties::FACING);
+        let mut remaining = world
+            .get_game_rule(&vanilla_game_rules::MAX_COMMAND_SEQUENCE_LENGTH)
+            .max(0);
+
+        while remaining > 0 {
+            remaining -= 1;
+            pos = pos.relative(facing);
+            let state = world.get_block_state(pos);
+            if state.get_block().key != vanilla_blocks::CHAIN_COMMAND_BLOCK.key {
+                break;
+            }
+            let Some(entity) = world.get_block_entity(pos) else {
+                break;
+            };
+            let Some(next) = entity.downcast_ref::<CommandBlockBlockEntity>().cloned() else {
+                break;
+            };
+            if !(next.is_powered() || next.is_automatic()) {
+                facing = state.get_value(&BlockStateProperties::FACING);
+                continue;
+            }
+            if next.mark_condition_met() {
+                if !next.try_perform_command(world) {
+                    break;
+                }
+                world.update_neighbor_for_output_signal(pos, state.get_block());
+            } else {
+                next.clear_success_count_if_conditional();
+            }
+            // Vanilla continues in the direction each chain block faces.
+            facing = state.get_value(&BlockStateProperties::FACING);
+        }
     }
 }
 

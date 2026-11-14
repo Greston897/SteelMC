@@ -21,6 +21,27 @@ pub(crate) enum CommandRequest {
         transaction_id: i32,
         input: String,
     },
+    /// A command block that runs a command and wants the outcome back.
+    ///
+    /// Vanilla executes command blocks on the server thread and stores the
+    /// output on the block entity; Steel runs them through the same queue as
+    /// everything else and hands the result back through the return channel.
+    Background {
+        owner: CommandExecutionOwner,
+        command: String,
+        reply: tokio::sync::oneshot::Sender<BackgroundCommandResult>,
+    },
+}
+
+/// The outcome of a background command execution.
+#[derive(Clone, Debug)]
+pub struct BackgroundCommandResult {
+    /// Whether the command succeeded.
+    pub success: bool,
+    /// The last line the command produced, if any.
+    pub output: Option<String>,
+    /// Whether `command_block_output` lets the block keep that line.
+    pub output_allowed: bool,
 }
 
 /// Returned when the relevant pending command request queue has reached its fixed capacity.
@@ -140,7 +161,9 @@ impl CommandRequestQueue {
     pub(crate) fn submit(&self, request: CommandRequest) -> Result<(), CommandQueueFull> {
         let mut queued = self.queued.lock();
         match request {
-            request @ CommandRequest::Execute { .. } => queued.submit_execution(request),
+            request @ (CommandRequest::Execute { .. } | CommandRequest::Background { .. }) => {
+                queued.submit_execution(request)
+            }
             CommandRequest::Suggestions {
                 owner,
                 transaction_id,
@@ -160,11 +183,11 @@ impl CommandRequestQueue {
         &self,
         mut execution_allowed: impl FnMut(&CommandExecutionOwner) -> bool,
     ) -> Option<CommandRequest> {
-        let request = self.queued.lock().pop_front_where(|request| {
-            let CommandRequest::Execute { owner, .. } = request else {
-                return false;
-            };
-            execution_allowed(owner)
+        let request = self.queued.lock().pop_front_where(|request| match request {
+            CommandRequest::Execute { owner, .. } | CommandRequest::Background { owner, .. } => {
+                execution_allowed(owner)
+            }
+            CommandRequest::Suggestions { .. } => false,
         })?;
         match request {
             PendingRequest::Execute(request) | PendingRequest::Suggestions(request) => {

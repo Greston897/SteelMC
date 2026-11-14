@@ -3,6 +3,8 @@ use std::{fmt, sync::Arc};
 use text_components::TextComponent;
 use uuid::Uuid;
 
+use steel_utils::locks::SyncMutex;
+
 use crate::{
     player::{DomainResidenceToken, Player},
     server::Server,
@@ -21,6 +23,61 @@ pub enum CommandSender {
     /// command reaches the RCON client, exactly like vanilla
     /// `RconConsoleSource.sendSystemMessage`.
     Rcon(RconOutput),
+    /// The command was run by a command block or a command block minecart.
+    ///
+    /// Vanilla `CommandBlockEntity`/`MinecartCommandBlock` execute through
+    /// `CommandSourceStack.withSuppressedOutput()`, so the source is fully
+    /// privileged (level four) but never chats; the output is stored on the
+    /// block entity instead.
+    CommandBlock(CommandBlockOutput),
+}
+
+/// The output sink of a command block execution.
+///
+/// The block entity and the minecart both want the last line the command
+/// produced; the sink carries it back to whichever owned the command.
+#[derive(Clone)]
+pub struct CommandBlockOutput {
+    output: Arc<SyncMutex<Option<String>>>,
+    world: Arc<crate::world::World>,
+}
+
+impl CommandBlockOutput {
+    /// Creates an empty output sink bound to the world the block lives in.
+    ///
+    /// Vanilla runs a command block in its own level; the console sender would
+    /// otherwise be rooted in the overworld and `~`/relative coordinates or
+    /// `execute in` anchors would resolve against the wrong dimension.
+    #[must_use]
+    pub fn new(world: Arc<crate::world::World>) -> Self {
+        Self {
+            output: Arc::new(SyncMutex::new(None)),
+            world,
+        }
+    }
+
+    /// Returns the world the command block lives in.
+    #[must_use]
+    pub fn world(&self) -> &Arc<crate::world::World> {
+        &self.world
+    }
+
+    /// Records the last line the command produced.
+    pub fn set(&self, line: String) {
+        *self.output.lock() = Some(line);
+    }
+
+    /// Takes the recorded line, clearing it.
+    #[must_use]
+    pub fn take(&self) -> Option<String> {
+        self.output.lock().take()
+    }
+}
+
+impl fmt::Debug for CommandBlockOutput {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.debug_struct("CommandBlockOutput").finish_non_exhaustive()
+    }
 }
 
 /// Sink for the text a command sends to an RCON client.
@@ -57,6 +114,9 @@ pub(crate) enum CommandSenderKey {
     Player(Uuid),
     Console,
     Rcon,
+    /// Every command block shares one key: vanilla runs them on the main
+    /// thread in block order, so they cannot interleave with each other.
+    CommandBlock,
 }
 
 /// Exact key used to coalesce suggestions from one live player residence.
@@ -122,6 +182,7 @@ impl CommandExecutionOwner {
             },
             CommandSender::Console => CommandSuggestionKey::Console,
             CommandSender::Rcon(_) => CommandSuggestionKey::Rcon,
+            CommandSender::CommandBlock(_) => CommandSuggestionKey::Console,
         }
     }
 
@@ -147,6 +208,7 @@ impl CommandSender {
             Self::Player(player) => CommandSenderKey::Player(player.gameprofile.id()),
             Self::Console => CommandSenderKey::Console,
             Self::Rcon(_) => CommandSenderKey::Rcon,
+            Self::CommandBlock(_) => CommandSenderKey::CommandBlock,
         }
     }
 
@@ -155,6 +217,15 @@ impl CommandSender {
     pub const fn get_player(&self) -> Option<&Arc<Player>> {
         match self {
             Self::Player(player) => Some(player),
+            _ => None,
+        }
+    }
+
+    /// Returns the command block output sink, if this sender is a command block.
+    #[must_use]
+    pub fn get_command_block_output(&self) -> Option<&CommandBlockOutput> {
+        match self {
+            Self::CommandBlock(output) => Some(output),
             _ => None,
         }
     }
@@ -170,6 +241,11 @@ impl CommandSender {
                 let plain = text.to_string();
                 output.send(plain);
             }
+            Self::CommandBlock(output) => {
+                // Vanilla `CommandBlockEntity.setLastOutput`: the block keeps
+                // only the last line the command produced.
+                output.set(text.to_string());
+            }
         }
     }
 }
@@ -183,6 +259,7 @@ impl fmt::Display for CommandSender {
                 Self::Player(p) => &p.gameprofile.name(),
                 Self::Console => "Server",
                 Self::Rcon(_) => "Rcon",
+                Self::CommandBlock(_) => "CommandBlock",
             }
         )
     }

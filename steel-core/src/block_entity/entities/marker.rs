@@ -75,17 +75,6 @@ marker_block_entity!(
     JIGSAW
 );
 marker_block_entity!(
-    /// Vanilla `CommandBlockEntity` runs commands from its block entity; this
-    /// marker persists nothing, so `/setblock` on a command block currently
-    /// yields a block that never executes.
-    ///
-    /// The `commandBlocksWork` and `commandBlockOutput` game rules depend on that
-    /// executor and are therefore declared but unread.
-    CommandBlockEntity,
-    "steel:block_entity/command_block",
-    COMMAND_BLOCK
-);
-marker_block_entity!(
     StructureBlockEntity,
     "steel:block_entity/structure_block",
     STRUCTURE_BLOCK

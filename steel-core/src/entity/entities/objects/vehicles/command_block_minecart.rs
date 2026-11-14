@@ -26,8 +26,8 @@ use crate::behavior::InteractionResult;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData, SharedEntity,
 };
-use crate::player::Player;
 use crate::world::World;
+use crate::player::Player;
 
 /// Vanilla `MinecartCommandBlock` re-runs its command every `4` ticks.
 const COMMAND_BLOCK_MINECART_TICK_DELAY: i32 = 4;
@@ -40,6 +40,8 @@ pub struct CommandBlockMinecartEntity {
     entity_data: SyncMutex<MinecartCommandBlockEntityData>,
     minecart_base: AbstractMinecartBase,
     state: SyncMutex<CommandBlockMinecartState>,
+    /// Reply channel of a command still queued on the server.
+    pending: SyncMutex<Option<tokio::sync::oneshot::Receiver<crate::command::BackgroundCommandResult>>>,
 }
 
 #[derive(Debug)]
@@ -77,6 +79,7 @@ impl CommandBlockMinecartEntity {
             entity_data: SyncMutex::new(MinecartCommandBlockEntityData::new()),
             minecart_base: AbstractMinecartBase::new(),
             state: SyncMutex::new(CommandBlockMinecartState::default()),
+            pending: SyncMutex::new(None),
         }
     }
 
@@ -89,6 +92,7 @@ impl CommandBlockMinecartEntity {
             entity_data: SyncMutex::new(MinecartCommandBlockEntityData::new()),
             minecart_base: AbstractMinecartBase::new(),
             state: SyncMutex::new(CommandBlockMinecartState::default()),
+            pending: SyncMutex::new(None),
         }
     }
 
@@ -116,20 +120,62 @@ impl CommandBlockMinecartEntity {
         self.entity_data.lock().minecart_command_block_mut().id_last_output.set(Box::new(output));
     }
 
-    /// Vanilla `MinecartCommandBlock` only executes while riding an activator
-    /// rail; `activate_minecart` arms it.
+    /// Vanilla `MinecartCommandBlock` only executes while armed by an activator
+    /// rail; `activate_minecart` arms it, and the cart then re-runs its command
+    /// every four ticks.
     fn tick_command(&self) {
-        let mut state = self.state.lock();
-        if !state.powered || state.command.is_empty() {
+        let (command, armed) = {
+            let mut state = self.state.lock();
+            if !state.powered || state.command.is_empty() {
+                return;
+            }
+            if state.cooldown > 0 {
+                state.cooldown -= 1;
+                return;
+            }
+            state.cooldown = COMMAND_BLOCK_MINECART_TICK_DELAY;
+            (state.command.clone(), true)
+        };
+        if !armed {
             return;
         }
-        if state.cooldown > 0 {
-            state.cooldown -= 1;
+        let Some(world) = self.level() else {
+            return;
+        };
+        if !world.get_game_rule(&steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK) {
             return;
         }
-        // Steel has no command dispatcher wired into entities yet, so the
-        // command is only re-armed here. Execution lands with command blocks.
-        state.cooldown = COMMAND_BLOCK_MINECART_TICK_DELAY;
+        let Some(server) = world.server() else {
+            return;
+        };
+        let Ok(receiver) = server.execute_command_for_block(Arc::clone(&world), command) else {
+            return;
+        };
+        *self.pending.lock() = Some(receiver);
+    }
+
+    /// Polls a running command and stores its last output, like vanilla
+    /// `MinecartCommandBlock`'s `lastOutput` component.
+    fn poll_command(&self) {
+        let mut pending = self.pending.lock();
+        let Some(receiver) = pending.as_mut() else {
+            return;
+        };
+        match receiver.try_recv() {
+            Ok(result) => {
+                *pending = None;
+                drop(pending);
+                if result.output_allowed {
+                    if let Some(output) = result.output {
+                        self.set_last_output(TextComponent::plain(output));
+                    }
+                }
+            }
+            Err(tokio::sync::oneshot::error::TryRecvError::Empty) => {}
+            Err(tokio::sync::oneshot::error::TryRecvError::Closed) => {
+                *pending = None;
+            }
+        }
     }
 }
 
@@ -163,6 +209,7 @@ impl Entity for CommandBlockMinecartEntity {
         if let Some(minecart) = self.as_abstract_minecart() {
             minecart.tick_minecart(&(Arc::clone(&self) as SharedEntity));
         }
+        self.poll_command();
         self.tick_command();
     }
 

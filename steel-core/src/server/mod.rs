@@ -1088,6 +1088,31 @@ impl Server {
         })
     }
 
+    /// Runs a command block command and returns its outcome to the caller.
+    ///
+    /// Vanilla executes a command block on `ServerLevel`'s tick and stores the
+    /// last output on the block entity. Steel routes the execution through the
+    /// same tick-owned queue as every other command, so a command block can
+    /// never re-enter the world from inside the block entity tick; the result
+    /// comes back on the reply channel the caller polls.
+    pub fn execute_command_for_block(
+        &self,
+        world: Arc<crate::world::World>,
+        command: String,
+    ) -> Result<
+        tokio::sync::oneshot::Receiver<crate::command::BackgroundCommandResult>,
+        CommandQueueFull,
+    > {
+        let (reply, receiver) = tokio::sync::oneshot::channel();
+        let output = crate::command::sender::CommandBlockOutput::new(world);
+        self.command_requests.submit(CommandRequest::Background {
+            owner: CommandExecutionOwner::capture(CommandSender::CommandBlock(output), self),
+            command,
+            reply,
+        })?;
+        Ok(receiver)
+    }
+
     pub(crate) fn submit_command_suggestions(
         &self,
         player: Arc<Player>,

@@ -472,7 +472,7 @@ impl ScheduledPlayPacket {
                 player.handle_select_trade(packet);
             }
             ScheduledPlayPacketKind::SetCommandBlock(packet) => {
-                log::debug!("ignoring unimplemented SetCommandBlock packet: {packet:?}");
+                player.handle_set_command_block(packet);
             }
             ScheduledPlayPacketKind::SetCommandMinecart(packet) => {
                 log::debug!("ignoring unimplemented SetCommandMinecart packet: {packet:?}");

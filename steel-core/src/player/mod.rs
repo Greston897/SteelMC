@@ -65,7 +65,8 @@ use steel_math::RAD_TO_DEG_F64;
 use steel_protocol::packets::game::{
     CEntityEvent, CHurtAnimation, CPlayerCombatKill, CPlayerLookAt, CRespawn,
     CSetDefaultSpawnPosition, CSetHealth, CSetHeldSlot, CSetPassengers, ClientCommandAction,
-    LookAtAnchor, RelativeMovement, SRecipeBookChangeSettings, SRecipeBookSeenRecipe, SSetGameRule,
+    LookAtAnchor, RelativeMovement, SRecipeBookChangeSettings, SRecipeBookSeenRecipe,
+    SSetCommandBlock, SSetGameRule,
     SoundSource,
 };
 use steel_protocol::packets::game::{CLevelEvent, CSetEntityData, CSetExperience};
@@ -84,7 +85,9 @@ use steel_registry::{
     REGISTRY, level_events, sound_events, vanilla_attributes, vanilla_blocks, vanilla_custom_stats,
     vanilla_damage_type_tags, vanilla_entities, vanilla_game_events, vanilla_mob_effects,
 };
-use steel_utils::{Identifier, entity_events::EntityStatus, locks::Shared, translations};
+use steel_utils::{
+    Downcast as _, Identifier, entity_events::EntityStatus, locks::Shared, translations,
+};
 use tick_state::PlayerTickState;
 use uuid::Uuid;
 
@@ -1175,6 +1178,90 @@ impl Player {
             return;
         };
         world.set_erased_game_rule(rule, value);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetCommandBlock`: stores the
+    /// command the operator typed into the block.
+    ///
+    /// Vanilla only accepts the packet from a creative-level-two operator and
+    /// only when the block at the position really is a command block; the packet
+    /// carries the mode and the three flags, not the power state.
+    pub fn handle_set_command_block(&self, packet: SSetCommandBlock) {
+        use steel_registry::blocks::properties::BlockStateProperties;
+        use steel_registry::vanilla_blocks;
+
+        if !self.is_operator() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(block_entity) = world.get_block_entity(packet.pos) else {
+            return;
+        };
+        let Some(command_block) = block_entity
+            .downcast_ref::<crate::block_entity::entities::CommandBlockBlockEntity>()
+            .cloned()
+        else {
+            return;
+        };
+
+        // Vanilla switches the block family to match the requested mode and
+        // keeps the facing, then rewrites the block in place.
+        let old_mode = command_block.mode();
+        let current_state = world.get_block_state(packet.pos);
+        let facing: steel_utils::Direction = current_state.get_value(&BlockStateProperties::FACING);
+        let new_mode = crate::block_entity::entities::CommandBlockMode::from_packet_ordinal(
+            packet.mode,
+        );
+        let base_block = match new_mode {
+            crate::block_entity::entities::CommandBlockMode::Sequence => {
+                &vanilla_blocks::CHAIN_COMMAND_BLOCK
+            }
+            crate::block_entity::entities::CommandBlockMode::Auto => {
+                &vanilla_blocks::REPEATING_COMMAND_BLOCK
+            }
+            crate::block_entity::entities::CommandBlockMode::Redstone => {
+                &vanilla_blocks::COMMAND_BLOCK
+            }
+        };
+        let conditional = packet.flags & 2 != 0;
+        let new_state = base_block
+            .default_state()
+            .set_value(&BlockStateProperties::FACING, facing)
+            .set_value(&BlockStateProperties::CONDITIONAL, conditional);
+        if new_state != current_state {
+            // Flag 2 = update clients only, exactly like vanilla.
+            world.set_block(
+                packet.pos,
+                new_state,
+                steel_utils::types::UpdateFlags::UPDATE_CLIENTS,
+            );
+        }
+
+        command_block.set_command(packet.command);
+        command_block.set_track_output(packet.flags & 1 != 0);
+        command_block.set_automatic_and_schedule(packet.flags & 4 != 0, &world);
+        if old_mode != new_mode {
+            command_block.on_mode_switch(old_mode, &world);
+        }
+
+        // Vanilla answers with `advMode.setCommand.success` (or `.disabled` when
+        // command blocks are switched off) once the command is not empty.
+        if !packet.command.trim().is_empty() {
+            let works = world.get_game_rule(&steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK);
+            // `advMode.setCommand.success` / `.disabled`, both take the command.
+            let message = if works {
+                translations::ADV_MODE_SET_COMMAND_SUCCESS.message([packet.command.clone()])
+            } else {
+                translations::ADV_MODE_SET_COMMAND_DISABLED.message([packet.command.clone()])
+            };
+            self.send_message(&message.component());
+        }
+
+        // Vanilla calls `BaseCommandBlock.onUpdated`, which sends the block
+        // entity data to every viewer.
+        world.broadcast_block_entity_if_needed(packet.pos);
     }
 
     /// Vanilla `ServerGamePacketListenerImpl.handleRecipeBookChangeSettingsPacket`:

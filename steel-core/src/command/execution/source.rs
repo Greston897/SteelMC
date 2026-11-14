@@ -293,7 +293,9 @@ impl CommandSource {
                 world.key.clone(),
                 server.command_permission_snapshot(player.gameprofile.id()),
             ),
-            CommandSender::Console | CommandSender::Rcon(_) => {
+            CommandSender::Console
+            | CommandSender::Rcon(_)
+            | CommandSender::CommandBlock(_) => {
                 CommandAuthorizationContext::unrestricted(world.key.clone())
             }
         };
@@ -334,6 +336,7 @@ impl CommandSource {
             CommandSender::Player(player) => player.gameprofile.name().to_owned(),
             CommandSender::Console => "Server".to_owned(),
             CommandSender::Rcon(_) => "Rcon".to_owned(),
+            CommandSender::CommandBlock(_) => "CommandBlock".to_owned(),
         }
     }
 
@@ -472,6 +475,14 @@ impl CommandSource {
             return;
         }
 
+        // Vanilla `CommandBlockEntity` runs with suppressed output, so the block
+        // records the message but never prints it to a chat, and `sendGameMessage`
+        // is false for it as well.
+        if let CommandSender::CommandBlock(output) = &self.sender {
+            output.set(message.to_string());
+            return;
+        }
+
         let accepts_success = self
             .sender
             .get_player()
@@ -485,9 +496,16 @@ impl CommandSource {
     }
 
     pub(crate) fn send_failure(&self, message: TextComponent) {
-        if !self.silent {
-            self.sender.send_message(&message.color(Color::Red));
+        if self.silent {
+            return;
         }
+        // Vanilla stores the failure line as the block's last output and stays
+        // quiet, instead of printing it anywhere.
+        if let CommandSender::CommandBlock(output) = &self.sender {
+            output.set(message.to_string());
+            return;
+        }
+        self.sender.send_message(&message.color(Color::Red));
     }
 
     fn sequence_limit(&self) -> usize {
@@ -522,8 +540,10 @@ impl CommandSource {
             }
         }
 
-        if !matches!(self.sender, CommandSender::Console)
-            && self.world.get_game_rule(&LOG_ADMIN_COMMANDS)
+        if !matches!(
+            self.sender,
+            CommandSender::Console | CommandSender::CommandBlock(_)
+        ) && self.world.get_game_rule(&LOG_ADMIN_COMMANDS)
         {
             CommandSender::Console.send_message(&broadcast);
         }
