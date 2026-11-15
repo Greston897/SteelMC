@@ -52,9 +52,17 @@ jobs:
       - name: Surface compile errors
         if: failure()
         run: |
-          grep -E "^(error|warning: unused)" /tmp/check.log | head -60 | while IFS= read -r line; do
+          # Annotations are the one channel that is always readable from the API,
+          # so every distinct compiler error becomes one.
+          grep -E "^error(\[E[0-9]+\])?:" /tmp/check.log | sort -u | head -40 | while IFS= read -r line; do
             echo "::error title=compile::$line"
           done
+          grep -E "^ *--> " /tmp/check.log | sort -u | head -40 | while IFS= read -r line; do
+            echo "::error title=at::$line"
+          done
+          echo "::group::compiler output (first 200 lines)"
+          head -200 /tmp/check.log
+          echo "::endgroup::"
           exit 1
 
       # 2. Every test, one crate at a time, so the log names the broken area.
