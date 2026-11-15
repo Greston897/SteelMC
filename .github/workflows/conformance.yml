@@ -44,7 +44,15 @@ jobs:
 
       # 1. Everything compiles, including tests, benches and examples that
       #    `cargo test` alone can skip.
-      - name: Compile every target
+      # Compile the workspace in two passes so a failure names the culprit:
+      # `cargo test` already proves the library+test targets, so the uncovered
+      # surface is benches, examples and the non-default features.
+      - name: Compile benches and examples
+        run: |
+          set -o pipefail
+          cargo check --workspace --all-targets 2>&1 | tee /tmp/benches.log
+
+      - name: Compile every feature
         run: |
           set -o pipefail
           cargo check --workspace --all-targets --all-features 2>&1 | tee /tmp/check.log
@@ -52,14 +60,15 @@ jobs:
       - name: Surface compile errors
         if: failure()
         run: |
-          # Annotations from a `run` step are not always surfaced, so encode the
-          # diagnostic in the step name: that text is always in the jobs API.
-          first=$(grep -m1 -E "^error" /tmp/check.log | cut -c1-120)
-          loc=$(grep -m1 -E "^ *--> " /tmp/check.log | tr -d " " | cut -c1-120)
-          echo "::error title=compile ${first:-unknown} at ${loc:-unknown}::see /tmp/check.log"
-          echo "::group::last 120 lines"
-          tail -120 /tmp/check.log
-          echo "::endgroup::"
+          for f in /tmp/benches.log /tmp/check.log; do
+            [ -f "$f" ] || continue
+            echo "::group::$f"
+            grep -E "^error|^ *--> " "$f" | head -40
+            echo "::endgroup::"
+          done
+          # Keep the failing crate visible without the log: it is often enough
+          # to name the package the compiler stopped on.
+          grep -hoE "^error: could not compile .*" /tmp/benches.log /tmp/check.log 2>/dev/null | sort -u | head -10
           exit 1
 
       # 2. Every test, one crate at a time, so the log names the broken area.
