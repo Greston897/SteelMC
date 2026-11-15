@@ -62,6 +62,8 @@ impl BlockBehavior for BannerBlock {
             ROTATION_16,
             convert_to_rotation_segment(context.rotation() + DEGREE_180),
         ))
+    }
+
     /// Vanilla `BannerBlock.newBlockEntity`: every banner owns a block entity to
     /// keep its pattern layers, so the block must create one or the patterns are
     /// lost as soon as the chunk is saved.
@@ -72,8 +74,6 @@ impl BlockBehavior for BannerBlock {
         state: BlockStateId,
     ) -> BlockEntityCreation {
         BlockEntityCreation::Created(Arc::new(BannerBlockEntity::new(level, pos, state)))
-    }
-
     }
 }
 
