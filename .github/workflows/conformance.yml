@@ -63,11 +63,17 @@ jobs:
           status=0
           check() {
             echo "::group::cargo check $*"
-            if cargo check "$@" 2>&1 | tee /tmp/bench.log; then
-              grep -E "^(warning|error)" /tmp/bench.log | sort -u | head -20 || true
+            if cargo check "$@" > /tmp/bench.log 2>&1; then
+              echo "OK: $*"
             else
               echo "::error title=compile failed::$*"
               status=1
+              if [ "$(echo "$*" | md5sum | cut -c1-6)" = "PLACEHOLDER" ]; then :; fi
+              tag=$(echo "$*" | tr -cd 'a-z0-9' | cut -c1-12)
+              grep -E "^error|^ *--> " /tmp/bench.log | head -6 | while IFS= read -r line; do
+                echo "::error title=$tag::%0A$line"
+              done
+              tail -25 /tmp/bench.log | sed "s/^/    /"
             fi
             echo "::endgroup::"
           }
