@@ -37,8 +37,9 @@ use crate::entity::ai::goal::{
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
-    EntityBaseLoad, EntityDimensions, EntityMovementEmission, EntitySyncedData, LivingEntity,
-    LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity, sync_dirty_mob_effects,
+    EntityBaseLoad, EntityDimensions, EntityEventSource, EntityMovementEmission, EntitySyncedData,
+    LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity,
+    sync_dirty_mob_effects,
 };
 use crate::entity::mount::{SharedMountInventory, open_mount_menu};
 use crate::physics::MoveResult;

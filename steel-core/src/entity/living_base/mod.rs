@@ -85,6 +85,13 @@ impl MobEffectInstance {
         }
     }
 
+    /// A non-ambient, visible instance with an icon and an explicit duration —
+    /// what vanilla builds when a mob applies an effect from a hit.
+    #[must_use]
+    pub const fn simple(effect: MobEffectRef, duration: i32, amplifier: i32) -> Self {
+        Self::with_duration(effect, duration, amplifier)
+    }
+
     /// Sets whether this effect is ambient.
     #[must_use]
     pub const fn with_ambient(mut self, ambient: bool) -> Self {

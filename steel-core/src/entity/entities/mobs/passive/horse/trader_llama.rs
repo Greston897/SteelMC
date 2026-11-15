@@ -147,7 +147,7 @@ impl TraderLlamaEntity {
     /// Vanilla `Llama.getStrength`, the storage-column count a chest opens.
     #[must_use]
     pub fn strength(&self) -> usize {
-        (*self.entity_data.lock().llama().strength_id.get()).clamp(1, 5) as usize
+        (*self.entity_data.lock().llama().strength.get()).clamp(1, 5) as usize
     }
 
     /// Vanilla `AbstractChestedHorse.setChest`; a trader llama's columns follow
@@ -274,7 +274,7 @@ impl Entity for TraderLlamaEntity {
         let chest = nbt.byte("ChestedHorse").is_some_and(|b| b != 0);
         self.set_chest(chest);
         if chest {
-            self.mount_inventory.lock().load_items(nbt, "Items");
+            self.mount_inventory.lock().load_items(&nbt, "Items");
         }
     }
 }

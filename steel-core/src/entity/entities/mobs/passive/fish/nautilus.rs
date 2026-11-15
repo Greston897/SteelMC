@@ -26,8 +26,9 @@ use crate::entity::ai::goal::{PanicGoal, RandomSwimmingGoal};
 use crate::entity::ai::path::PathType;
 use crate::entity::registry::SpawnRule;
 use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, EntityDimensions, EntityMovementEmission, EntitySyncedData,
-    LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity,
+    Entity, EntityBase, EntityBaseLoad, EntityDimensions, EntityEventSource,
+    EntityMovementEmission, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase,
+    PathfinderMob, SharedEntity,
 };
 use crate::physics::MoveResult;
 use crate::world::World;
@@ -59,7 +60,10 @@ const NAUTILUS_SWIM_INTERVAL: i32 = 40;
 /// Vanilla keeps `DASH` in synched entity data and `dashCooldown` as a plain
 /// field on the abstract base, with each species only choosing the dash and
 /// dash-ready sounds. The trait mirrors that split.
-pub trait AbstractNautilus: Entity {
+/// Vanilla `AbstractNautilus` extends `AbstractFish`, which is a
+/// `LivingEntity`; the methods below read attributes and raise game events, so
+/// the bound has to be `LivingEntity`, not just `Entity`.
+pub trait AbstractNautilus: LivingEntity + EntityEventSource {
     /// Vanilla `AbstractNautilus.isDashing`.
     fn is_dashing(&self) -> bool;
 
