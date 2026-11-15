@@ -202,6 +202,13 @@ impl<'a> Parser<'a> {
     }
 
     /// Track one level of nesting, refusing input past [`MAX_SNBT_DEPTH`].
+    ///
+    /// Cannot be `const`: the error path builds an [`SnbtError`], which owns a
+    /// message component.
+    #[expect(
+        clippy::missing_const_for_fn,
+        reason = "the error path constructs an SnbtError, which is not const-constructible"
+    )]
     fn enter_depth(&mut self) -> Result<(), SnbtError> {
         if self.depth >= MAX_SNBT_DEPTH {
             return Err(self.error(SnbtErrorKind::TooDeep));

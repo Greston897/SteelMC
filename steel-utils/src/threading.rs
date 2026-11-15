@@ -18,6 +18,7 @@
 //! The reported count is therefore the minimum of what the OS says and what the
 //! cgroup quota allows, rounded down and never below one.
 
+use std::fs;
 use std::num::NonZero;
 use std::thread;
 
@@ -80,7 +81,7 @@ pub fn available_worker_threads() -> usize {
 /// case the caller falls back to the OS parallelism.
 #[must_use]
 pub fn cgroup_cpuset_cpus() -> Option<usize> {
-    let relative = std::fs::read_to_string(PROC_SELF_CGROUP).ok();
+    let relative = fs::read_to_string(PROC_SELF_CGROUP).ok();
 
     // cgroup v2: the process's own cgroup first, then the hierarchy root.
     //
@@ -122,7 +123,7 @@ pub fn cgroup_cpuset_cpus() -> Option<usize> {
 /// Returns the first candidate file that holds a usable CPU set.
 fn first_cpu_set(candidates: &[String]) -> Option<usize> {
     for path in candidates {
-        let Ok(contents) = std::fs::read_to_string(path) else {
+        let Ok(contents) = fs::read_to_string(path) else {
             continue;
         };
         if let Some(count) = parse_cpu_set(&contents) {
@@ -175,19 +176,16 @@ pub fn parse_cpu_set(contents: &str) -> Option<usize> {
         if range.is_empty() {
             continue;
         }
-        match range.split_once('-') {
-            Some((start, end)) => {
-                let start: usize = start.parse().ok()?;
-                let end: usize = end.parse().ok()?;
-                if end < start {
-                    return None;
-                }
-                total += end - start + 1;
+        if let Some((start, end)) = range.split_once('-') {
+            let start: usize = start.parse().ok()?;
+            let end: usize = end.parse().ok()?;
+            if end < start {
+                return None;
             }
-            None => {
-                range.parse::<usize>().ok()?;
-                total += 1;
-            }
+            total += end - start + 1;
+        } else {
+            range.parse::<usize>().ok()?;
+            total += 1;
         }
     }
     (total > 0).then_some(total)
@@ -218,17 +216,17 @@ fn cgroup_v2_cpu_limit() -> Option<usize> {
     // The container may not be mounted at the hierarchy root (a host cgroup
     // namespace, or a panel that bind-mounts only its own subtree), so the
     // limit lives at the path `/proc/self/cgroup` reports.
-    if let Some(path) = std::fs::read_to_string(PROC_SELF_CGROUP)
+    if let Some(path) = fs::read_to_string(PROC_SELF_CGROUP)
         .ok()
         .as_deref()
         .and_then(v2_relative_path)
-        && let Ok(contents) = std::fs::read_to_string(format!("{CGROUP_V2_ROOT}{path}/cpu.max"))
+        && let Ok(contents) = fs::read_to_string(format!("{CGROUP_V2_ROOT}{path}/cpu.max"))
         && let Some(cores) = parse_cgroup_v2_cpu_max(&contents)
     {
         return Some(cores);
     }
 
-    let contents = std::fs::read_to_string(CGROUP_V2_ROOT.to_owned() + "/cpu.max").ok()?;
+    let contents = fs::read_to_string(CGROUP_V2_ROOT.to_owned() + "/cpu.max").ok()?;
     parse_cgroup_v2_cpu_max(&contents)
 }
 
@@ -248,7 +246,7 @@ fn cgroup_v1_cpu_limit() -> Option<usize> {
     ));
 
     for (quota_path, period_path) in candidates {
-        let Ok(quota) = std::fs::read_to_string(quota_path) else {
+        let Ok(quota) = fs::read_to_string(quota_path) else {
             continue;
         };
         let Ok(quota) = quota.trim().parse::<i64>() else {
@@ -258,7 +256,7 @@ fn cgroup_v1_cpu_limit() -> Option<usize> {
             // The cgroup v1 "no limit" value is `-1`; try the next candidate.
             continue;
         }
-        let Ok(period) = std::fs::read_to_string(period_path) else {
+        let Ok(period) = fs::read_to_string(period_path) else {
             continue;
         };
         let Ok(period) = period.trim().parse::<i64>() else {
@@ -274,7 +272,7 @@ fn cgroup_v1_cpu_limit() -> Option<usize> {
 /// Finds the nested cgroup v1 `cpu` controller files, if this process is not at
 /// the controller root.
 fn read_v1_paths() -> Option<(String, String)> {
-    let contents = std::fs::read_to_string(PROC_SELF_CGROUP).ok()?;
+    let contents = fs::read_to_string(PROC_SELF_CGROUP).ok()?;
     for line in contents.lines() {
         // v1 lines look like `<id>:<controllers>:<path>`; a pure `<id>::<path>`
         // line is the v2 hierarchy and carries no cpu controller files.

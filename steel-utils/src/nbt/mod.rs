@@ -123,6 +123,7 @@ fn normalize_nbt_compound_at(compound: NbtCompound, depth: usize) -> Option<NbtC
 ///
 /// Returns `None` for malformed modified UTF-8 or a tree nested deeper than
 /// [`MAX_NBT_DEPTH`], so untrusted input cannot exhaust the stack.
+#[must_use]
 pub fn normalize_nbt_tag(tag: NbtTag) -> Option<NbtTag> {
     normalize_nbt_tag_at(tag, 0)
 }
