@@ -501,7 +501,7 @@ block_entity_block!(
         if let Some(structure) = block_entity.downcast_ref::<StructureBlockEntity>() {
             structure.created_by(&author);
         }
-    }
+    },
 
     /// Vanilla `StructureBlock.neighborChanged`: a rising redstone edge triggers
     /// the stored action (save, load, or corner unload).
