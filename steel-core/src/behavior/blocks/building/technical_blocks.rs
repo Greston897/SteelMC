@@ -81,7 +81,7 @@ macro_rules! block_entity_block {
 /// Declares a block-entity block whose `on_place` runs `$hook` when the old
 /// state belonged to a different block.
 macro_rules! block_entity_block_with_on_place {
-    ($name:ident, $type_const:ident, $placement:expr, $hook:expr) => {
+    ($name:ident, $type_const:ident, $placement:expr, $hook:expr $(, $extra:item)*) => {
         block_entity_block!(
             $name,
             $type_const,
@@ -99,6 +99,7 @@ macro_rules! block_entity_block_with_on_place {
                 }
                 ($hook)(world, pos, &self);
             }
+            $(, $extra)*
         );
     };
 }
@@ -475,7 +476,7 @@ block_entity_block!(
         } else {
             InteractionResult::Pass
         }
-    }
+    },
 
     /// Vanilla `StructureBlock.setPlacedBy`: only the server records the author,
     /// and only when a living entity placed the block.
