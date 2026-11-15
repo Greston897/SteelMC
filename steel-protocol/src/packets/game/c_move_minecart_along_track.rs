@@ -3,7 +3,11 @@
 use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_MOVE_MINECART_ALONG_TRACK;
 use steel_utils::codec::VarInt;
-use steel_utils::serial::WriteTo as _;
+// `as _` would be enough for the `value.write(writer)` calls below, but the
+// manual `impl WriteTo for CMoveMinecartAlongTrack` needs the trait in scope by
+// name. The derive macro of the same name lives in the macro namespace, so
+// both resolve without ambiguity.
+use steel_utils::serial::WriteTo;
 
 /// One step of the client-side interpolation path.
 #[derive(Debug, Clone, WriteTo)]
