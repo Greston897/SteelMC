@@ -694,7 +694,7 @@ block_entity_block!(
             block_entity_type,
             &vanilla_block_entity_types::SCULK_SHRIEKER,
         )
-    }
+    },
 
     /// Vanilla `SculkShriekerBlock.tick`: the scheduled tick that ends the shriek
     /// animation clears the `shrieking` state and asks the block entity to
@@ -714,7 +714,7 @@ block_entity_block!(
         {
             shrieker.try_respond(world, pos);
         }
-    }
+    },
 
     /// Vanilla `SculkShriekerBlockEntity.preRemoveSideEffects`: a shrieker broken
     /// while it is still shrieking responds before it disappears.
@@ -734,7 +734,7 @@ block_entity_block!(
         {
             shrieker.try_respond(world, pos);
         }
-    }
+    },
 
     /// Vanilla `SculkShriekerBlock.stepOn`: a player stepping onto the shrieker
     /// makes it shriek for them.

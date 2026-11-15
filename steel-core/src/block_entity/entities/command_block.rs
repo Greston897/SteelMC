@@ -44,7 +44,11 @@ use crate::world::World;
 const TIME_FORMAT: &str = "%H:%M:%S";
 
 /// Vanilla `CommandBlockEntity.Mode`, named after the block that carries it.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+///
+/// No `Default`: vanilla has no default mode, the mode is always implied by
+/// the block (see [`CommandBlockMode::for_block_key`]), and a derived default
+/// would silently mean "redstone" for the other two blocks.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CommandBlockMode {
     /// `chain_command_block`: runs when the block behind it succeeded.
     Sequence,
