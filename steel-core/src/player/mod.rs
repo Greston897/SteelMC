@@ -1613,9 +1613,7 @@ impl Player {
         };
 
         let mut guard = menu.behavior().lock_all_containers();
-        let action = menu
-            .kind_mut()
-            .handle_placement(menu.behavior_mut(), &mut guard, self, request);
+        let action = menu.handle_placement(&mut guard, self, request);
         drop(guard);
         Some(PlacementOutcome {
             action: action?,

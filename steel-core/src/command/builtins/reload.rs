@@ -17,6 +17,8 @@
 //! The reload is `async`, so it runs on a Tokio task and the command resumes
 //! through [`ReloadSuspension`] instead of blocking the tick-owned queue.
 
+use std::sync::Arc;
+
 use steel_utils::{Identifier, translations};
 use tokio::{sync::oneshot, task::JoinHandle};
 
@@ -108,7 +110,7 @@ fn start_reload(
     context: &SteelCommandContext<CommandSource>,
 ) -> Result<ReloadSuspension, CommandSyntaxError> {
     let source = context.source();
-    let server = source.server();
+    let server = Arc::clone(source.server());
 
     // Vanilla gates `/reload` at permission level 2 (`minecraft.command.reload`).
     let allowed = PermissionKey::parse("minecraft.command.reload").is_ok_and(|key| {

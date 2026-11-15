@@ -21,7 +21,7 @@ use steel_worldgen::biomes::obfuscate_biome_seed;
 use crate::chunk::heightmap::HeightmapType;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
 use crate::entity::spawn_placements::SpawnPlacements;
-use crate::physics::has_block_collision;
+use crate::physics::{CollisionWorld as _, WorldCollisionProvider, has_block_collision};
 use crate::entity::spawn_entity;
 use crate::worldgen::generators::vanilla::fuzzed_biome_at_block;
 use crate::world::{LevelReader, World, is_redstone_conductor};
@@ -333,7 +333,7 @@ fn is_valid_spawn_position(world: &Arc<World>, entity_type: EntityTypeRef, pos: 
         f64::from(pos.y()) + f64::from(dimensions.height),
         f64::from(pos.z()) + 0.5 + half_width,
     );
-    !has_block_collision(world.as_ref(), spawn_box)
+    !WorldCollisionProvider::new(world).has_block_collision(&spawn_box)
 }
 
 /// Spawns one pack of `candidate` at `pos`, returning how many mobs appeared.

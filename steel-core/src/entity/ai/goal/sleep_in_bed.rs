@@ -10,6 +10,7 @@
 //! selector instead of reacting to a brain memory.
 
 use glam::DVec3;
+use steel_registry::RegistryExt as _;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::vanilla_poi_types;
 use steel_utils::BlockPos;

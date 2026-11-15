@@ -1161,7 +1161,7 @@ impl World {
         // spawn point with a random yaw, so two dragons never fly in lockstep.
         dragon.set_phase(crate::entity::entities::mobs::bosses::DragonPhase::HoldingPattern);
         let yaw = rand::random::<f32>() * 360.0;
-        Entity::snap_to(&dragon, position, yaw, 0.0);
+        Entity::snap_to(dragon.as_ref(), position, yaw, 0.0);
 
         let dragon = dragon as SharedEntity;
         self.dragon_fight.set_dragon_uuid(Some(Entity::uuid(dragon.as_ref())));

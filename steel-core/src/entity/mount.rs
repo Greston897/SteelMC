@@ -47,7 +47,7 @@ impl MountInventory {
     /// Container handle for the menu builder, which only accepts `ContainerRef`.
     #[must_use]
     pub fn container_ref(&self) -> ContainerRef {
-        self.container.into()
+        Shared::clone(&self.container).into()
     }
 
     /// Returns the number of storage columns.

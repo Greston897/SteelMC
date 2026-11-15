@@ -184,7 +184,16 @@ mod tests {
         let columns = 5;
         let container = SimpleContainer::new(inventory_size(columns)).into_shared();
         // Nothing else may claim these slots, so the menu owns the container.
-        let owner: Weak<dyn Entity> = Weak::new();
+        // The owner weak handle is only read on interaction; a dangling one is
+        // enough here, and `Weak::new` needs a sized type, so downgrade a
+        // throwaway entity instead.
+        let entity: crate::entity::SharedEntity = crate::test_support::TestEntity::shared(
+            1,
+            DVec3::ZERO,
+            Weak::new(),
+            &steel_registry::vanilla_entities::ARROW,
+        );
+        let owner: Weak<dyn Entity> = std::sync::Arc::downgrade(&entity);
 
         let menu = mount(inventory, 3, container, columns, owner);
 

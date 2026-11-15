@@ -366,7 +366,8 @@ impl RecipePicker {
     }
 
     fn set_satisfied(&mut self, ingredient: usize) {
-        self.data[self.satisfied_offset() + ingredient] = true;
+        let index = self.satisfied_offset() + ingredient;
+        self.data[index] = true;
     }
 
     fn clear_satisfied(&mut self) {
@@ -376,7 +377,8 @@ impl RecipePicker {
     }
 
     fn set_connection(&mut self, item: usize, ingredient: usize) {
-        self.data[self.connection_offset() + item * self.ingredient_count() + ingredient] = true;
+        let index = self.connection_offset() + item * self.ingredient_count() + ingredient;
+        self.data[index] = true;
     }
 
     fn has_connection(&self, item: usize, ingredient: usize) -> bool {
@@ -388,7 +390,8 @@ impl RecipePicker {
     }
 
     fn visit_ingredient(&mut self, ingredient: usize) {
-        self.data[self.visited_ingredient_offset() + ingredient] = true;
+        let index = self.visited_ingredient_offset() + ingredient;
+        self.data[index] = true;
     }
 
     fn has_visited_ingredient(&self, ingredient: usize) -> bool {
@@ -396,7 +399,8 @@ impl RecipePicker {
     }
 
     fn visit_item(&mut self, item: usize) {
-        self.data[self.visited_item_offset() + item] = true;
+        let index = self.visited_item_offset() + item;
+        self.data[index] = true;
     }
 
     fn has_visited_item(&self, item: usize) -> bool {

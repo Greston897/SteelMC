@@ -15,6 +15,7 @@ use crate::entity::spawn::{create_entity_instance, EntitySpawnReason};
 use crate::entity::spawn_placements::SpawnPlacements;
 use crate::entity::SharedEntity;
 use crate::world::World;
+use crate::worldgen::generator::ChunkGenerator as _;
 use crate::worldgen::generator::context::WorldGenContext;
 
 /// Vanilla `NaturalSpawner.spawnMobsForChunkGeneration`.
@@ -216,7 +217,7 @@ fn build_generated_entity(
 mod tests {
     use super::*;
 
-    fn entry(entity_type: &str, weight: i32, min_count: i32, max_count: i32) -> SpawnerData {
+    fn entry(entity_type: &'static str, weight: i32, min_count: i32, max_count: i32) -> SpawnerData {
         SpawnerData {
             entity_type: steel_utils::Identifier::vanilla_static(entity_type),
             weight,

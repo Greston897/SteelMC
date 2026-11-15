@@ -332,10 +332,10 @@ impl BlockEntity for StructureBlockEntity {
         ));
         state.rotation = structure_rotation_from_name(
             nbt_view.string("rotation")
-                .map_or("none", |value| value.to_str()),
+                .map_or("none", |value| &*value.to_str()),
         );
         state.mirror =
-            structure_mirror_from_name(nbt_view.string("mirror").map_or("none", |value| value.to_str()));
+            structure_mirror_from_name(nbt_view.string("mirror").map_or("none", |value| &*value.to_str()));
         state.mode = structure_mode_from_name(
             nbt_view.string("mode")
                 .map_or("data", |value| value.to_str()),

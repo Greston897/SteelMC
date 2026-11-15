@@ -510,7 +510,7 @@ impl Scoreboard {
             ObjectiveState {
                 read_only,
                 display_name: None,
-                criterion: Some(criterion),
+                criterion: Some(criterion.clone()),
             },
         );
         self.mark_dirty();

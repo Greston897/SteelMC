@@ -23,7 +23,7 @@ use steel_utils::locks::SyncMutex;
 use glam::DVec3;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, Direction};
-use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, WorldAabb};
+use steel_utils::{BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, WorldAabb};
 
 use crate::block_entity::randomizable_container::RandomizableContainer;
 use crate::entity::RemovalReason;
@@ -133,7 +133,7 @@ impl HopperBlockEntity {
         // hopper has no empty slot *and* no stack it could top up. Without this
         // guard a hopper whose five slots hold full stacks of a different item
         // still scans every item entity above it each tick.
-        if Self::inventory_full(&*self.container.lock()) {
+        if inventory_full(&*self.container.lock()) {
             return false;
         }
         if let Some(source) = world

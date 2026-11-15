@@ -164,7 +164,7 @@ fn generation_config_string(config: &toml::Value) -> String {
 }
 
 /// Spawn point data.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SpawnPoint {
     /// X coordinate.
     pub x: i32,

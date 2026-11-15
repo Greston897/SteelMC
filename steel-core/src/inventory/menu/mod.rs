@@ -104,6 +104,21 @@ impl Menu {
         self.kind.as_mut()
     }
 
+    /// Runs `kind.handle_placement` against this menu's own behavior.
+    ///
+    /// Both halves live in the same struct, so the split borrow has to happen
+    /// inside `Menu`; callers cannot hand out `kind_mut()` and `behavior_mut()`
+    /// at the same time.
+    pub fn handle_placement(
+        &mut self,
+        guard: &mut ContainerLockGuard,
+        player: &Player,
+        request: crate::player::recipe_placement::PlacementRequest<'_>,
+    ) -> Option<crate::player::recipe_placement::PostPlaceAction> {
+        self.kind
+            .handle_placement(&mut self.behavior, guard, player, request)
+    }
+
     /// The container ID for this menu (0 for the player inventory).
     #[must_use]
     pub const fn container_id(&self) -> u8 {

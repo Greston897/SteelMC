@@ -27,7 +27,8 @@ use steel_registry::{
 use steel_registry::item_stack::ItemStack;
 use steel_utils::locks::SyncMutex;
 use steel_utils::types::{InteractionHand, UpdateFlags};
-use steel_utils::{BlockPos, BlockStateId, Direction, DowncastType, DowncastTypeKey};
+use steel_utils::nbt::NbtValueInput as _;
+use steel_utils::{BlockPos, BlockStateId, Direction, Downcast as _, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
@@ -365,7 +366,7 @@ impl Entity for CopperGolemEntity {
         let state = nbt
             .string("weather_state")
             .map_or(WEATHERING_UNAFFECTED, |value| {
-                weathering_state_from_name(value.to_str())
+                weathering_state_from_name(&value.to_str())
             });
         self.set_weather_state(state);
     }

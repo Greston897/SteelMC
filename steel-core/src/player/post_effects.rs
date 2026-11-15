@@ -105,7 +105,7 @@ fn post_effects_packet(effects: &[Identifier]) -> CPostEffects {
 mod tests {
     use super::*;
 
-    fn id(path: &str) -> Identifier {
+    fn id(path: &'static str) -> Identifier {
         Identifier::vanilla_static(path)
     }
 

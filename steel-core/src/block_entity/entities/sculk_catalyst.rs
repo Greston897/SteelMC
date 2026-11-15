@@ -23,7 +23,8 @@ use steel_registry::{
 use steel_utils::types::UpdateFlags;
 use steel_utils::types::Difficulty;
 use steel_utils::{
-    BlockPos, BlockStateId, DowncastType, DowncastTypeKey, WorldAabb, locks::SyncMutex,
+    BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, WorldAabb,
+    locks::SyncMutex,
 };
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};

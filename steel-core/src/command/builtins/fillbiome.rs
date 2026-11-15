@@ -124,7 +124,7 @@ fn send_changed_biomes(world: &std::sync::Arc<crate::world::World>, region: Boun
             };
             for player_id in world.player_area_map.get_tracking_players(chunk_pos) {
                 if let Some(player) = world.players.get_by_entity_id(player_id) {
-                    player.connection.send_packet(packet.clone());
+                    player.send_packet(packet.clone());
                 }
             }
         }

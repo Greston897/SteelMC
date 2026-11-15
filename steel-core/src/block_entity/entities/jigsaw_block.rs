@@ -179,7 +179,7 @@ impl BlockEntity for JigsawBlockEntity {
             .map_or_else(|| DEFAULT_FINAL_STATE.to_owned(), |value| value.to_str().into_owned());
         state.joint = nbt_view
             .string("joint")
-            .map_or(JOINT_ROLLABLE, |value| joint_from_name(value.to_str()));
+            .map_or(JOINT_ROLLABLE, |value| joint_from_name(&value.to_str()));
         state.placement_priority = nbt_view.int_value("placement_priority").unwrap_or(0);
         state.selection_priority = nbt_view.int_value("selection_priority").unwrap_or(0);
     }

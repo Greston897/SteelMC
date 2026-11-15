@@ -846,7 +846,8 @@ impl BlockBehavior for WeatheringCopperGolemStatueBlock {
         let Some(golem) = statue.remove_statue(state) else {
             return InteractionResult::Pass;
         };
-        inv.with_item_mut(|item| {
+        // `InventoryAccess::with_item` already hands out a mutable stack.
+        inv.with_item(|item| {
             item.hurt_and_break(1, player.has_infinite_materials());
         });
         if world.try_add_entity(golem).is_ok() {
