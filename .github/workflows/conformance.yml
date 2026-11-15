@@ -51,6 +51,16 @@ jobs:
         run: |
           set -o pipefail
           cargo check --workspace --all-targets 2>&1 | tee /tmp/benches.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            {
+              echo "## benches/examples compile failure"
+              echo '```'
+              grep -E "^error|^ *--> |^[a-zA-Z_].*\.rs:[0-9]+" /tmp/benches.log | head -80
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$status"
 
       - name: Compile every feature
         run: |
@@ -60,15 +70,18 @@ jobs:
       - name: Surface compile errors
         if: failure()
         run: |
-          for f in /tmp/benches.log /tmp/check.log; do
-            [ -f "$f" ] || continue
-            echo "::group::$f"
-            grep -E "^error|^ *--> " "$f" | head -40
-            echo "::endgroup::"
-          done
-          # Keep the failing crate visible without the log: it is often enough
-          # to name the package the compiler stopped on.
-          grep -hoE "^error: could not compile .*" /tmp/benches.log /tmp/check.log 2>/dev/null | sort -u | head -10
+          # The job summary is served by the API, so it survives even when log
+          # and artifact downloads are blocked.
+          {
+            echo "## Compile failure"
+            echo '```'
+            for f in /tmp/benches.log /tmp/check.log; do
+              [ -f "$f" ] || continue
+              echo "--- $f"
+              grep -E "^error|^warning: unused|^ *--> |^error: could not compile" "$f" | head -60
+            done
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
       # 2. Every test, one crate at a time, so the log names the broken area.
