@@ -16,8 +16,9 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  # Identical to the other workflows: the workspace pins a nightly toolchain.
-  RUSTFLAGS: "-Dwarnings"
+  # The gated steps opt into `-Dwarnings` individually, because the bench
+  # targets are not covered by any other workflow and a lint nit there must not
+  # mask a real behavioural failure.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -55,8 +56,6 @@ jobs:
         # `-Dwarnings` stays on for everything the test workflow already gates;
         # nothing else builds the benches, so a lint nit there must not block the
         # behavioural gate. Their warnings are printed instead of denied.
-        env:
-          RUSTFLAGS: ""
         run: |
           set -o pipefail
           overall=0
@@ -74,12 +73,14 @@ jobs:
           done
 
           if [ "$overall" -ne 0 ]; then
-            msg=$(grep -h -m1 -E "^error" /tmp/b?.log 2>/dev/null | head -1 | cut -c1-200)
+            msg=$(grep -h -m1 -E "^error" /tmp/b?.log 2>/dev/null | head -1 | cut -c1-200 || true)
             echo "::error title=bench compile failed::${msg:-no error line found}"
           fi
           exit "$overall"
 
       - name: Compile every feature
+        env:
+          RUSTFLAGS: "-Dwarnings"
         run: |
           set -o pipefail
           cargo check --workspace --all-targets --all-features 2>&1 | tee /tmp/check.log
@@ -103,6 +104,8 @@ jobs:
 
       # 2. Every test, one crate at a time, so the log names the broken area.
       - name: Run all tests per crate
+        env:
+          RUSTFLAGS: "-Dwarnings"
         run: |
           set -o pipefail
           status=0
@@ -234,6 +237,8 @@ jobs:
 
       - name: Clippy
         if: always()
+        env:
+          RUSTFLAGS: "-Dwarnings"
         run: |
           set -o pipefail
           cargo clippy --workspace --all-targets --all-features 2>&1 | tee /tmp/clippy.log
