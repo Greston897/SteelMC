@@ -280,7 +280,7 @@ impl Entity for NautilusEntity {
         }
         let amount = jump_amount.max(0);
         self.living_base()
-            .set_jump_pending_scale(Self::player_jump_pending_scale(amount));
+            .set_jump_pending_scale(crate::entity::living_entity::player_jump_pending_scale(amount));
     }
 
     /// Vanilla `AbstractNautilus.tickRidden`: resolve a stored charge into
@@ -563,7 +563,7 @@ impl Entity for ZombieNautilusEntity {
         }
         let amount = jump_amount.max(0);
         self.living_base()
-            .set_jump_pending_scale(Self::player_jump_pending_scale(amount));
+            .set_jump_pending_scale(crate::entity::living_entity::player_jump_pending_scale(amount));
     }
 
     /// Vanilla `AbstractNautilus.tickRidden`, inherited by the zombie species.

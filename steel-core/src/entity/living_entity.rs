@@ -25,6 +25,21 @@ const BED_SLEEP_POSITION_OFFSET: f64 = 0.125;
 ///
 /// **Note:** All methods take `&self` (not `&mut self`) because living entities
 /// are shared via `Arc` and use interior mutability (`SyncMutex`, etc.).
+/// Vanilla `PlayerRideableJumping.getPlayerJumpPendingScale`: maps the client's
+/// 0-100 charge to the impulse multiplier vanilla uses.
+///
+/// A free function rather than a trait method: it needs no `self`, and an
+/// associated function on `LivingEntity` would make the trait (and every trait
+/// that extends it, such as `PathfinderMob`) dyn-incompatible.
+#[must_use]
+pub fn player_jump_pending_scale(jump_amount: i32) -> f32 {
+    if jump_amount >= 90 {
+        1.0
+    } else {
+        0.4 + 0.4 * jump_amount as f32 / 90.0
+    }
+}
+
 pub trait LivingEntity: Entity {
     /// Returns a reference to the shared [`LivingEntityBase`] that holds
     /// living runtime state such as attributes, cached movement speed,
@@ -2559,16 +2574,6 @@ pub trait LivingEntity: Entity {
         false
     }
 
-    /// Vanilla `PlayerRideableJumping.getPlayerJumpPendingScale`: maps the
-    /// client's 0-100 charge to the impulse multiplier vanilla uses.
-    fn player_jump_pending_scale(jump_amount: i32) -> f32 {
-        if jump_amount >= 90 {
-            1.0
-        } else {
-            0.4 + 0.4 * jump_amount as f32 / 90.0
-        }
-    }
-
     /// Vanilla `PlayerRideableJumping.onPlayerJump`: stores the released charge
     /// so the mount applies it on its next grounded tick.
     fn on_player_jump(&self, jump_amount: i32) {
@@ -2577,7 +2582,7 @@ pub trait LivingEntity: Entity {
         }
         let amount = jump_amount.max(0);
         self.living_base()
-            .set_jump_pending_scale(Self::player_jump_pending_scale(amount));
+            .set_jump_pending_scale(player_jump_pending_scale(amount));
     }
 
     /// Returns the jump charge a rider released, `0.0` when none is pending.

@@ -54,7 +54,11 @@ pub struct MerchantKind {
     /// Vanilla `AbstractVillager.stopTrading` runs from the menu's `removed`
     /// hook; Steel uses this callback so the entity can clear its trading
     /// player without the menu knowing about entities.
-    on_close: Option<Box<dyn FnOnce(&Player) + Send>>,
+    ///
+    /// Behind a mutex because [`MenuKind`] requires `Sync` and a boxed
+    /// `FnOnce` is not: the callback is moved out through the mutex, which is
+    /// the same access pattern as the plain `take` it replaces.
+    on_close: SyncMutex<Option<Box<dyn FnOnce(&Player) + Send>>>,
 }
 
 // SAFETY: This Steel-owned key uniquely identifies the concrete menu kind
@@ -71,14 +75,14 @@ impl MerchantKind {
         Self {
             trades,
             trade_container,
-            on_close: None,
+            on_close: SyncMutex::new(None),
         }
     }
 
     /// Registers a callback that runs when the trade screen closes.
     #[must_use]
     pub fn with_on_close(mut self, on_close: impl FnOnce(&Player) + Send + 'static) -> Self {
-        self.on_close = Some(Box::new(on_close));
+        *self.on_close.lock() = Some(Box::new(on_close));
         self
     }
 
@@ -148,7 +152,7 @@ pub fn merchant(
 
 impl MenuKind for MerchantKind {
     fn removed(&mut self, _behavior: &mut MenuBehavior, player: &Player) {
-        if let Some(on_close) = self.on_close.take() {
+        if let Some(on_close) = self.on_close.lock().take() {
             on_close(player);
         }
     }

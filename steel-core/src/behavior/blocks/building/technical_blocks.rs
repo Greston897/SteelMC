@@ -452,39 +452,7 @@ impl BlockBehavior for JigsawBlock {
 block_entity_block!(
     StructureBlock,
     STRUCTURE_BLOCK,
-    |state: BlockStateId, _context: &BlockPlaceContext<'_>| state
-);
-
-impl BlockBehavior for StructureBlock {
-    fn get_state_for_placement(
-        &self,
-        context: &BlockPlaceContext<'_>,
-    ) -> Option<BlockStateId> {
-        Some(
-            self.block
-                .default_state()
-                .set_value(&BlockStateProperties::STRUCTUREBLOCK_MODE, StructureMode::Load)
-                .set_value(
-                    &BlockStateProperties::FACING,
-                    context.horizontal_direction(),
-                ),
-        )
-    }
-
-    fn new_block_entity(
-        &self,
-        level: Weak<World>,
-        pos: BlockPos,
-        state: BlockStateId,
-    ) -> BlockEntityCreation {
-        BlockEntityCreation::from_registered_factory(BLOCK_ENTITIES.create(
-            &vanilla_block_entity_types::STRUCTURE_BLOCK,
-            level,
-            pos,
-            state,
-        ))
-    }
-
+    |state: BlockStateId, _context: &BlockPlaceContext<'_>| state,
     /// Vanilla `StructureBlock.useWithoutItem`: only a game-master opens the
     /// editor; anyone else gets `PASS` so the block stays inert.
     fn use_without_item(
@@ -574,7 +542,7 @@ impl BlockBehavior for StructureBlock {
         }
         let _ = state;
     }
-}
+);
 /// Vanilla `CreakingHeartBlockEntity.removeCreaking`: destroying the heart takes
 /// its creaking with it, which is the only way to kill a creaking.
 fn kill_linked_creaking(world: &Arc<World>, pos: BlockPos) {
@@ -600,10 +568,7 @@ block_entity_block_with_on_place!(
     CreakingHeartBlock,
     CREAKING_HEART,
     |state: BlockStateId, _context: &BlockPlaceContext<'_>| state,
-    |world, pos, _behavior| kill_linked_creaking(world, pos)
-);
-
-impl BlockBehavior for CreakingHeartBlock {
+    |world, pos, _behavior| kill_linked_creaking(world, pos),
     /// Vanilla `CreakingHeartBlock.getTicker` returns
     /// `CreakingHeartBlockEntity::serverTick`.
     ///
@@ -621,7 +586,7 @@ impl BlockBehavior for CreakingHeartBlock {
             &vanilla_block_entity_types::CREAKING_HEART,
         )
     }
-}
+);
 
 impl CreakingHeartBlock {
     /// Vanilla `CreakingHeartBlockEntity.removeCreaking`: kills the linked

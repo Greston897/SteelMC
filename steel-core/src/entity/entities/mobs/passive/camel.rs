@@ -377,7 +377,7 @@ impl LivingEntity for CamelEntity {
         if self.is_saddled() && self.dash_cooldown() <= 0 && self.on_ground() {
             let amount = jump_amount.max(0);
             self.living_base().set_jump_pending_scale(
-                Self::player_jump_pending_scale(amount),
+                crate::entity::living_entity::player_jump_pending_scale(amount),
             );
         }
     }
