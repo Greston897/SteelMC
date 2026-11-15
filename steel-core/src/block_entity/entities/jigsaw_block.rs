@@ -7,7 +7,7 @@
 
 use std::sync::{Arc, Weak};
 
-use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
+use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::NbtCompound;
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::locks::SyncMutex;
@@ -163,6 +163,7 @@ impl BlockEntity for JigsawBlockEntity {
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
+        let nbt_view: NbtCompoundView<'_, '_> = nbt.into();
         let mut state = self.state.lock();
         state.name = nbt
             .string("name")
@@ -179,8 +180,8 @@ impl BlockEntity for JigsawBlockEntity {
         state.joint = nbt
             .string("joint")
             .map_or(JOINT_ROLLABLE, |value| joint_from_name(value.to_str()));
-        state.placement_priority = nbt.int_value("placement_priority").unwrap_or(0);
-        state.selection_priority = nbt.int_value("selection_priority").unwrap_or(0);
+        state.placement_priority = nbt_view.int_value("placement_priority").unwrap_or(0);
+        state.selection_priority = nbt_view.int_value("selection_priority").unwrap_or(0);
     }
 
     /// Vanilla `JigsawBlockEntity.getUpdateTag`: `saveCustomOnly`.

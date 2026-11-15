@@ -27,7 +27,7 @@
 use std::sync::{Arc, Weak};
 
 use chrono::Local;
-use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
+use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::NbtCompound;
 use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
@@ -398,17 +398,18 @@ impl BlockEntity for CommandBlockBlockEntity {
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
+        let nbt_view: NbtCompoundView<'_, '_> = nbt.into();
         let mut state = self.state.lock();
         state.command = nbt
             .string("Command")
             .map_or_else(String::new, |command| command.to_str().to_owned());
-        state.success_count = nbt.int_value("SuccessCount").unwrap_or(0);
+        state.success_count = nbt_view.int_value("SuccessCount").unwrap_or(0);
         state.track_output = nbt
             .byte_value("TrackOutput")
             .is_none_or(|value| value != 0);
         // Vanilla only restores the output while tracking it.
         state.last_output = if state.track_output {
-            nbt.string("LastOutput")
+            nbt_view.string("LastOutput")
                 .map(|output| TextComponent::plain(output.to_str().to_owned()))
         } else {
             None
@@ -417,11 +418,11 @@ impl BlockEntity for CommandBlockBlockEntity {
             .byte_value("UpdateLastExecution")
             .is_none_or(|value| value != 0);
         state.last_execution = if state.update_last_execution {
-            nbt.long_value("LastExecution").unwrap_or(-1)
+            nbt_view.long_value("LastExecution").unwrap_or(-1)
         } else {
             -1
         };
-        state.powered = nbt.byte_value("powered").is_some_and(|value| value != 0);
+        state.powered = nbt_view.byte_value("powered").is_some_and(|value| value != 0);
         state.condition_met = nbt
             .byte_value("conditionMet")
             .is_some_and(|value| value != 0);
@@ -431,7 +432,7 @@ impl BlockEntity for CommandBlockBlockEntity {
         // including when it is false. Loading must not schedule a tick, which is
         // why this assigns the field instead of going through
         // `set_automatic_and_schedule`.
-        state.automatic = nbt.byte_value("auto").is_some_and(|value| value != 0);
+        state.automatic = nbt_view.byte_value("auto").is_some_and(|value| value != 0);
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {

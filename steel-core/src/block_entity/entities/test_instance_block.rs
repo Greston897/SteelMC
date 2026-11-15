@@ -88,8 +88,9 @@ impl BlockEntity for TestInstanceBlockEntity {
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
-        let nbt: NbtCompoundView<'_, '_> = nbt.into();
-        let Some(data) = nbt.compound("data") else {
+        let nbt_view: NbtCompoundView<'_, '_> = nbt.into();
+        let nbt: NbtCompoundView<'_, '_> = nbt_view.into();
+        let Some(data) = nbt_view.compound("data") else {
             return;
         };
         let mut data_out = TestInstanceBlockData::default();

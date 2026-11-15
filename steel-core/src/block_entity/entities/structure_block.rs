@@ -8,7 +8,7 @@
 
 use std::sync::{Arc, Weak};
 
-use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
+use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::NbtCompound;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, StructureMode};
@@ -29,7 +29,9 @@ pub const MAX_SIZE_PER_AXIS: i32 = 48;
 const DEFAULT_POS: BlockPos = BlockPos::new(0, 1, 0);
 
 /// Mutable editor state of a structure block.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// No `Eq`: the integrity is an `f32`, which has no total equality.
+#[derive(Debug, Clone, PartialEq)]
 struct StructureBlockState {
     /// Structure name, empty when unset.
     name: String,
@@ -271,7 +273,8 @@ impl StructureBlockEntity {
 
     /// Vanilla `StructureBlockEntity.updateBlockState`.
     fn update_block_state(&self) {
-        let Some(world) = self.level() else {
+        // Inherent impl, so `level()` has to come from the base directly.
+        let Some(world) = self.base.level() else {
             return;
         };
         let pos = self.base.pos();
@@ -305,6 +308,7 @@ impl BlockEntity for StructureBlockEntity {
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
+        let nbt_view: NbtCompoundView<'_, '_> = nbt.into();
         let mut state = self.state.lock();
         state.name = nbt
             .string("name")
@@ -317,36 +321,36 @@ impl BlockEntity for StructureBlockEntity {
             .map_or_else(String::new, |metadata| metadata.to_str().to_owned());
         // Vanilla clamps the stored offset and size into the editor limits.
         state.structure_pos = clamp_offset_pos(BlockPos::new(
-            nbt.int_value("posX").unwrap_or(DEFAULT_POS.x()),
-            nbt.int_value("posY").unwrap_or(DEFAULT_POS.y()),
-            nbt.int_value("posZ").unwrap_or(DEFAULT_POS.z()),
+            nbt_view.int_value("posX").unwrap_or(DEFAULT_POS.x()),
+            nbt_view.int_value("posY").unwrap_or(DEFAULT_POS.y()),
+            nbt_view.int_value("posZ").unwrap_or(DEFAULT_POS.z()),
         ));
         state.structure_size = clamp_size_pos(BlockPos::new(
-            nbt.int_value("sizeX").unwrap_or(0),
-            nbt.int_value("sizeY").unwrap_or(0),
-            nbt.int_value("sizeZ").unwrap_or(0),
+            nbt_view.int_value("sizeX").unwrap_or(0),
+            nbt_view.int_value("sizeY").unwrap_or(0),
+            nbt_view.int_value("sizeZ").unwrap_or(0),
         ));
         state.rotation = structure_rotation_from_name(
-            nbt.string("rotation")
+            nbt_view.string("rotation")
                 .map_or("none", |value| value.to_str()),
         );
         state.mirror =
-            structure_mirror_from_name(nbt.string("mirror").map_or("none", |value| value.to_str()));
+            structure_mirror_from_name(nbt_view.string("mirror").map_or("none", |value| value.to_str()));
         state.mode = structure_mode_from_name(
-            nbt.string("mode")
+            nbt_view.string("mode")
                 .map_or("data", |value| value.to_str()),
         );
         state.ignore_entities = nbt
             .byte_value("ignoreEntities")
             .is_none_or(|value| value != 0);
-        state.strict = nbt.byte_value("strict").is_some_and(|value| value != 0);
-        state.powered = nbt.byte_value("powered").is_some_and(|value| value != 0);
-        state.show_air = nbt.byte_value("showair").is_some_and(|value| value != 0);
+        state.strict = nbt_view.byte_value("strict").is_some_and(|value| value != 0);
+        state.powered = nbt_view.byte_value("powered").is_some_and(|value| value != 0);
+        state.show_air = nbt_view.byte_value("showair").is_some_and(|value| value != 0);
         state.show_bounding_box = nbt
             .byte_value("showboundingbox")
             .is_none_or(|value| value != 0);
-        state.integrity = nbt.float_value("integrity").unwrap_or(1.0);
-        state.seed = nbt.long_value("seed").unwrap_or(0);
+        state.integrity = nbt_view.float_value("integrity").unwrap_or(1.0);
+        state.seed = nbt_view.long_value("seed").unwrap_or(0);
     }
 
     /// Vanilla `StructureBlockEntity.getUpdateTag`: `saveCustomOnly`.

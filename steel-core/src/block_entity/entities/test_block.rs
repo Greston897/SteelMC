@@ -210,7 +210,8 @@ impl BlockEntity for TestBlockEntity {
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
-        let nbt: NbtCompoundView<'_, '_> = nbt.into();
+        let nbt_view: NbtCompoundView<'_, '_> = nbt.into();
+        let nbt: NbtCompoundView<'_, '_> = nbt_view.into();
         let mut state = self.state.lock();
         state.mode = nbt
             .string("mode")
@@ -218,7 +219,7 @@ impl BlockEntity for TestBlockEntity {
         state.message = nbt
             .string("message")
             .map_or_else(|| DEFAULT_MESSAGE.to_owned(), |value| value.to_str().to_owned());
-        state.powered = nbt.byte_value("powered").is_some_and(|value| value != 0);
+        state.powered = nbt_view.byte_value("powered").is_some_and(|value| value != 0);
     }
 
     /// Vanilla `TestBlockEntity.getUpdateTag`: `saveCustomOnly`.
