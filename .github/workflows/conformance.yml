@@ -56,6 +56,11 @@ jobs:
       # `cargo test` already proves the library+test targets, so the uncovered
       # surface is benches, examples and the non-default features.
       - name: Compile benches and examples
+        # report.py reads the token from the environment. Actions does not
+        # export it automatically, so every report call was skipped and the
+        # only readable diagnostic channel was silently dead.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         # `cargo test` covers lib+bins+tests, so this only has to prove the
         # targets it skips: benches (a separate harness) and examples.
         #
