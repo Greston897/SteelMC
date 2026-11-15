@@ -59,27 +59,25 @@ jobs:
           RUSTFLAGS: ""
         run: |
           set -o pipefail
-          status=0
-          check() {
-            echo "::group::cargo check $*"
-            if cargo check "$@" > /tmp/bench.log 2>&1; then
-              echo "OK: $*"
-            else
-              status=1
-              # GitHub caps annotations at 10 per step, so surface exactly one
-              # per target: the first real diagnostic and where it points.
-              first=$(grep -m1 -E "^error" /tmp/bench.log | cut -c1-160)
-              loc=$(grep -m1 -E "^ *--> " /tmp/bench.log | tr -d ' ' | cut -c1-80)
-              echo "::error title=FAILED $*::${first:-no error line} @ ${loc:-?}"
-              grep -E "^ *--> " /tmp/bench.log | sort -u | head -3
-            fi
-            echo "::endgroup::"
-          }
-          check -p steel-utils --benches
-          check -p steel-worldgen --benches
-          check -p steel-core --benches --features benchmark-support
-          check -p steel-flint --examples
-          exit $status
+          overall=0
+
+          cargo check -p steel-utils --benches > /tmp/b1.log 2>&1 || overall=1
+          cargo check -p steel-worldgen --benches > /tmp/b2.log 2>&1 || overall=1
+          cargo check -p steel-core --benches --features benchmark-support > /tmp/b3.log 2>&1 || overall=1
+          cargo check -p steel-flint --examples > /tmp/b4.log 2>&1 || overall=1
+
+          echo "exit codes: utils/worldgen/core/flint"
+          for n in 1 2 3 4; do
+            echo "--- /tmp/b$n.log"
+            grep -E "^error|^ *--> " "/tmp/b$n.log" | head -8 || true
+            tail -5 "/tmp/b$n.log" || true
+          done
+
+          if [ "$overall" -ne 0 ]; then
+            msg=$(grep -h -m1 -E "^error" /tmp/b?.log 2>/dev/null | head -1 | cut -c1-200)
+            echo "::error title=bench compile failed::${msg:-no error line found}"
+          fi
+          exit "$overall"
 
       - name: Compile every feature
         run: |
