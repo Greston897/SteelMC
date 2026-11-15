@@ -310,13 +310,13 @@ impl BlockEntity for StructureBlockEntity {
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
         let nbt_view: NbtCompoundView<'_, '_> = nbt.into();
         let mut state = self.state.lock();
-        state.name = nbt
+        state.name = nbt_view
             .string("name")
             .map_or_else(String::new, |name| name.to_str().to_owned());
-        state.author = nbt
+        state.author = nbt_view
             .string("author")
             .map_or_else(String::new, |author| author.to_str().to_owned());
-        state.metadata = nbt
+        state.metadata = nbt_view
             .string("metadata")
             .map_or_else(String::new, |metadata| metadata.to_str().to_owned());
         // Vanilla clamps the stored offset and size into the editor limits.
@@ -340,13 +340,13 @@ impl BlockEntity for StructureBlockEntity {
             nbt_view.string("mode")
                 .map_or("data", |value| value.to_str()),
         );
-        state.ignore_entities = nbt
+        state.ignore_entities = nbt_view
             .byte_value("ignoreEntities")
             .is_none_or(|value| value != 0);
         state.strict = nbt_view.byte_value("strict").is_some_and(|value| value != 0);
         state.powered = nbt_view.byte_value("powered").is_some_and(|value| value != 0);
         state.show_air = nbt_view.byte_value("showair").is_some_and(|value| value != 0);
-        state.show_bounding_box = nbt
+        state.show_bounding_box = nbt_view
             .byte_value("showboundingbox")
             .is_none_or(|value| value != 0);
         state.integrity = nbt_view.float_value("integrity").unwrap_or(1.0);

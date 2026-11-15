@@ -165,19 +165,19 @@ impl BlockEntity for JigsawBlockEntity {
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
         let nbt_view: NbtCompoundView<'_, '_> = nbt.into();
         let mut state = self.state.lock();
-        state.name = nbt
+        state.name = nbt_view
             .string("name")
             .map_or_else(|| "minecraft:empty".to_owned(), |value| value.to_str().to_owned());
-        state.target = nbt
+        state.target = nbt_view
             .string("target")
             .map_or_else(|| "minecraft:empty".to_owned(), |value| value.to_str().to_owned());
-        state.pool = nbt
+        state.pool = nbt_view
             .string("pool")
             .map_or_else(|| "minecraft:empty".to_owned(), |value| value.to_str().to_owned());
-        state.final_state = nbt
+        state.final_state = nbt_view
             .string("final_state")
             .map_or_else(|| DEFAULT_FINAL_STATE.to_owned(), |value| value.to_str().to_owned());
-        state.joint = nbt
+        state.joint = nbt_view
             .string("joint")
             .map_or(JOINT_ROLLABLE, |value| joint_from_name(value.to_str()));
         state.placement_priority = nbt_view.int_value("placement_priority").unwrap_or(0);

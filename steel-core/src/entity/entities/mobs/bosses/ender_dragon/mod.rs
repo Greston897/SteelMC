@@ -726,8 +726,10 @@ impl EnderDragonEntity {
             DVec3::new(f64::from(cc1) * -4.5, 2.0, f64::from(ss1) * -4.5),
         );
 
-        let ss2 = steel_math::trig::sin(f64::from(rot1) - y_rot_a * 0.01);
-        let cc2 = steel_math::trig::cos(f64::from(rot1) - y_rot_a * 0.01);
+        // `y_rot_a` is a vanilla `f32` (DragonFlightHistory.yRotA), so widen it
+        // before the f64 subtraction rather than narrowing the angle.
+        let ss2 = steel_math::trig::sin(f64::from(rot1) - f64::from(y_rot_a) * 0.01);
+        let cc2 = steel_math::trig::cos(f64::from(rot1) - f64::from(y_rot_a) * 0.01);
         guard.parts.tick_part(
             DRAGON_PART_HEAD,
             position,

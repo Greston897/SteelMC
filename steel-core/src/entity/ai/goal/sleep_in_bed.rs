@@ -48,7 +48,10 @@ impl SleepInBedGoal {
 
     /// Nearest free `HOME` POI within the vanilla `SleepInBedGoal` radius.
     fn nearest_free_bed(mob: &dyn PathfinderMob, world: &World) -> Option<BlockPos> {
-        let bed_type = vanilla_poi_types::HOME.try_id()?;
+        // The storage keys POIs by registry id, and `PointOfInterestType` does
+        // not carry one; the registry is what maps the key to the id.
+        let home_key = &vanilla_poi_types::HOME.key;
+        let bed_type = steel_registry::REGISTRY.poi_types.id_from_key(home_key)?;
 
         let center = mob.block_position();
         let storage = world.poi_storage.lock();
@@ -107,7 +110,7 @@ impl Goal for SleepInBedGoal {
             return;
         };
 
-        if mob.position().distance_to(block_center(bed)) <= SLEEP_DISTANCE {
+        if (mob.position() - block_center(bed)).length() <= SLEEP_DISTANCE {
             let _ = mob.start_sleeping(bed);
             return;
         }

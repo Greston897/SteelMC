@@ -400,11 +400,11 @@ impl BlockEntity for CommandBlockBlockEntity {
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
         let nbt_view: NbtCompoundView<'_, '_> = nbt.into();
         let mut state = self.state.lock();
-        state.command = nbt
+        state.command = nbt_view
             .string("Command")
             .map_or_else(String::new, |command| command.to_str().to_owned());
         state.success_count = nbt_view.int_value("SuccessCount").unwrap_or(0);
-        state.track_output = nbt
+        state.track_output = nbt_view
             .byte_value("TrackOutput")
             .is_none_or(|value| value != 0);
         // Vanilla only restores the output while tracking it.
@@ -414,7 +414,7 @@ impl BlockEntity for CommandBlockBlockEntity {
         } else {
             None
         };
-        state.update_last_execution = nbt
+        state.update_last_execution = nbt_view
             .byte_value("UpdateLastExecution")
             .is_none_or(|value| value != 0);
         state.last_execution = if state.update_last_execution {
@@ -423,7 +423,7 @@ impl BlockEntity for CommandBlockBlockEntity {
             -1
         };
         state.powered = nbt_view.byte_value("powered").is_some_and(|value| value != 0);
-        state.condition_met = nbt
+        state.condition_met = nbt_view
             .byte_value("conditionMet")
             .is_some_and(|value| value != 0);
         // Vanilla `CommandBlockEntity.loadAdditional` calls
