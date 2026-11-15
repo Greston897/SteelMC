@@ -473,8 +473,9 @@ pub fn pool_sizes_for_available(cores: usize) -> PoolSizes {
 #[cfg(test)]
 mod tests {
     use super::{
-        PoolSizes, first_cpu_set, parse_cgroup_v2_cpu_max, parse_cpu_set, pool_sizes_for_available,
-        quota_to_cores, v1_cpuset_base, v2_relative_path, worker_threads_for_available,
+        PoolSizes, effective_cores, first_cpu_set, parse_cgroup_v2_cpu_max, parse_cpu_set,
+        pool_sizes_for_available, quota_to_cores, v1_cpuset_base, v2_relative_path,
+        worker_threads_for_available,
     };
 
     #[test]
