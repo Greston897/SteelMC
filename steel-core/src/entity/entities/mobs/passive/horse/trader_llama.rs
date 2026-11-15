@@ -271,7 +271,7 @@ impl Entity for TraderLlamaEntity {
         self.load_mob(nbt);
         self.load_ageable_mob(nbt);
         self.load_animal(nbt);
-        let chest = nbt.get_byte("ChestedHorse").is_some_and(|b| b != 0);
+        let chest = nbt.byte("ChestedHorse").is_some_and(|b| b != 0);
         self.set_chest(chest);
         if chest {
             self.mount_inventory.lock().load_items(nbt, "Items");

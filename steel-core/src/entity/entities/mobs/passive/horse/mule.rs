@@ -315,7 +315,7 @@ impl Entity for MuleEntity {
         self.load_animal(nbt);
         // Vanilla `AbstractChestedHorse.readAdditionalSaveData`: the chest flag
         // decides the inventory size, so it has to be read before the items.
-        let chest = nbt.get_byte("ChestedHorse").is_some_and(|b| b != 0);
+        let chest = nbt.byte("ChestedHorse").is_some_and(|b| b != 0);
         self.set_chest(chest);
         if chest {
             self.mount_inventory.lock().load_items(nbt, "Items");
