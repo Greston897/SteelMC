@@ -83,6 +83,10 @@ jobs:
             for n in 1 2 3 4; do echo "===== /tmp/b$n.log"; cat "/tmp/b$n.log" || true; done
             echo "::endgroup::"
             python3 .ci/report.py "Bench compile failure" /tmp/b1.log /tmp/b2.log /tmp/b3.log /tmp/b4.log || true
+            # The build script's own panic text is the useful part, and it is
+            # the first thing in the log rather than the last.
+            for n in 1 2 3 4; do head -60 "/tmp/b$n.log" > "/tmp/h$n.log" || true; done
+            python3 .ci/report.py "Head of each bench log" /tmp/h1.log /tmp/h2.log /tmp/h3.log /tmp/h4.log || true
           fi
           exit "$overall"
 

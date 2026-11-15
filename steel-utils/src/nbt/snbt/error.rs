@@ -220,6 +220,11 @@ impl SnbtErrorKind {
             Self::ExpectedNonNegativeNumber => {
                 TextComponent::from(&translations::SNBT_PARSER_EXPECTED_NON_NEGATIVE_NUMBER)
             }
+            // Depth is a structural failure rather than a numeric one, and
+            // vanilla reports it through the same generic parse-failure text.
+            Self::TooDeep => translations::SNBT_PARSER_NUMBER_PARSE_FAILURE
+                .message([self.to_string()])
+                .component(),
             Self::InvalidFloatingPoint
             | Self::InvalidInteger
             | Self::IntegerTooLarge
