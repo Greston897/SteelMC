@@ -31,11 +31,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2026-10-14
-          components: rustfmt, clippy
+      # The repository pins its toolchain in rust-toolchain.toml; the workflows
+      # that pass do not install one, and neither does this. Only the extra
+      # components are requested.
+      - name: Setup toolchain components
+        run: |
+          rustup component add rustfmt clippy
 
       - name: Cache
         uses: Swatinem/rust-cache@v2
