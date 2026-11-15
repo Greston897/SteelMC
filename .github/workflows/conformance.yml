@@ -52,17 +52,19 @@ jobs:
       - name: Surface compile errors
         if: failure()
         run: |
-          # Annotations are the one channel that is always readable from the API,
-          # so every distinct compiler error becomes one.
+          # Cargo indents diagnostic lines under `Compiling`, so anchor on the
+          # diagnostic itself rather than on column 0. Annotations are the one
+          # channel that is always readable from the API.
           grep -E "^error(\[E[0-9]+\])?:" /tmp/check.log | sort -u | head -40 | while IFS= read -r line; do
             echo "::error title=compile::$line"
           done
           grep -E "^ *--> " /tmp/check.log | sort -u | head -40 | while IFS= read -r line; do
             echo "::error title=at::$line"
           done
-          echo "::group::compiler output (first 200 lines)"
-          head -200 /tmp/check.log
-          echo "::endgroup::"
+          # Whatever the shape of the output, the tail must reach an annotation.
+          tail -40 /tmp/check.log | tr "\n" "\t" | while IFS= read -r chunk; do
+            echo "::error title=tail::$chunk"
+          done
           exit 1
 
       # 2. Every test, one crate at a time, so the log names the broken area.
