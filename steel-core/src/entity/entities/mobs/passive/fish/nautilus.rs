@@ -11,12 +11,14 @@ use std::sync::Weak;
 use glam::DVec3;
 use simdnbt::{borrow, owned};
 use steel_macros::entity_behavior;
+use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
 use steel_registry::vanilla_attributes;
 use steel_registry::vanilla_entity_data::{NautilusEntityData, ZombieNautilusEntityData};
+use steel_registry::vanilla_game_events;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
@@ -29,6 +31,7 @@ use crate::entity::{
 };
 use crate::physics::MoveResult;
 use crate::world::World;
+use crate::world::game_event::GameEventContext;
 
 use super::{
     WATER_ANIMAL_AMBIENT_SOUND_INTERVAL, WATER_ANIMAL_EXPERIENCE_MAX, WATER_ANIMAL_EXPERIENCE_MIN,
@@ -43,10 +46,79 @@ pub const NAUTILUS_DASH_MOMENTUM_IN_WATER: f32 = 1.2;
 pub const NAUTILUS_DASH_MOMENTUM_ON_LAND: f32 = 0.5;
 /// Vanilla `AbstractNautilus` dash cooldown length in ticks.
 pub const NAUTILUS_DASH_COOLDOWN_TICKS: i32 = 40;
+/// Vanilla `AbstractNautilus.tick`: the dash flag clears once the cooldown has
+/// counted down below this value, which is what makes a dash last 5 ticks.
+pub const NAUTILUS_DASH_END_AT_COOLDOWN: i32 = 35;
 /// Vanilla panic speed modifier.
 const NAUTILUS_PANIC_SPEED: f64 = 1.25;
 /// Vanilla `SwimToRandomPlaceGoal` interval for nautilus.
 const NAUTILUS_SWIM_INTERVAL: i32 = 40;
+
+/// Vanilla `AbstractNautilus`: the dash state machine both nautilus species share.
+///
+/// Vanilla keeps `DASH` in synched entity data and `dashCooldown` as a plain
+/// field on the abstract base, with each species only choosing the dash and
+/// dash-ready sounds. The trait mirrors that split.
+pub trait AbstractNautilus: Entity {
+    /// Vanilla `AbstractNautilus.isDashing`.
+    fn is_dashing(&self) -> bool;
+
+    /// Vanilla `AbstractNautilus.setDashing`.
+    fn set_dashing(&self, dashing: bool);
+
+    /// Vanilla `AbstractNautilus.dashCooldown`, in ticks.
+    fn dash_cooldown(&self) -> &SyncMutex<i32>;
+
+    /// Vanilla `AbstractNautilus.getJumpCooldown`.
+    fn jump_cooldown(&self) -> i32 {
+        *self.dash_cooldown().lock()
+    }
+
+    /// Vanilla `AbstractNautilus.tick` dash bookkeeping.
+    ///
+    /// The dash flag clears as soon as the cooldown has counted down below
+    /// `DASH_MINIMUM_DURATION_TICKS` away from the top, the counter keeps
+    /// decrementing every tick, and reaching zero plays the dash-ready sound.
+    /// The sound is species- and water-dependent, so the caller supplies
+    /// exactly what `getDashReadySound` returns.
+    fn tick_dash(&self, dash_ready_sound: Option<SoundEventRef>) {
+        if self.is_dashing() && *self.dash_cooldown().lock() < NAUTILUS_DASH_END_AT_COOLDOWN {
+            self.set_dashing(false);
+        }
+        let mut cooldown = self.dash_cooldown().lock();
+        if *cooldown > 0 {
+            *cooldown -= 1;
+            if *cooldown == 0 {
+                drop(cooldown);
+                if let Some(sound) = dash_ready_sound {
+                    self.play_sound(sound, 1.0, 1.0);
+                }
+            }
+        }
+    }
+
+    /// Vanilla `AbstractNautilus.executeRidersJump`.
+    ///
+    /// The impulse is the *rider's* look vector scaled by
+    /// `(in water ? 1.2 : 0.5) * amount * MOVEMENT_SPEED * blockSpeedFactor`;
+    /// then the 40-tick cooldown starts and the dash flag turns on.
+    fn execute_nautilus_jump(&self, amount: f32, look: DVec3, block_speed_factor: f64) {
+        let momentum = if self.is_in_water() {
+            NAUTILUS_DASH_MOMENTUM_IN_WATER
+        } else {
+            NAUTILUS_DASH_MOMENTUM_ON_LAND
+        };
+        let movement_speed = self
+            .attributes()
+            .lock()
+            .required_value(vanilla_attributes::MOVEMENT_SPEED);
+        let scale = f64::from(momentum * amount) * movement_speed * block_speed_factor;
+        self.set_velocity(self.velocity() + look * scale);
+        self.mark_velocity_sync();
+        *self.dash_cooldown().lock() = NAUTILUS_DASH_COOLDOWN_TICKS;
+        self.set_dashing(true);
+    }
+}
 
 #[entity_behavior(class = "Nautilus", spawn_rule)]
 /// Vanilla `Nautilus`: a tameable water animal that dashes away.
@@ -56,6 +128,9 @@ pub struct NautilusEntity {
     living_base: LivingEntityBase,
     mob_base: MobBase,
     entity_data: SyncMutex<NautilusEntityData>,
+    /// Vanilla `AbstractNautilus.dashCooldown`: ticks until another dash is
+    /// allowed. Set to `40` when a dash starts and counted down every tick.
+    dash_cooldown: SyncMutex<i32>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `NautilusEntity`.
@@ -113,6 +188,7 @@ impl NautilusEntity {
             living_base,
             mob_base,
             entity_data: SyncMutex::new(entity_data),
+            dash_cooldown: SyncMutex::new(0),
         }
     }
 
@@ -127,25 +203,19 @@ impl NautilusEntity {
         self.entity_data.lock().abstract_nautilus_mut().dash.set(dash);
     }
 
-    /// Vanilla `AbstractNautilus.executeRidersJump`.
-    ///
-    /// The impulse is the *rider's* look vector scaled by
-    /// `(in water ? 1.2 : 0.5) * amount * MOVEMENT_SPEED * blockSpeedFactor`,
-    /// and it starts a 40-tick dash cooldown that the dash flag follows.
-    pub fn execute_nautilus_jump(&self, amount: f32, look: DVec3, block_speed_factor: f64) {
-        let momentum = if self.is_in_water() {
-            NAUTILUS_DASH_MOMENTUM_IN_WATER
-        } else {
-            NAUTILUS_DASH_MOMENTUM_ON_LAND
-        };
-        let movement_speed = self
-            .attributes()
-            .lock()
-            .required_value(vanilla_attributes::MOVEMENT_SPEED);
-        let scale = f64::from(momentum * amount) * movement_speed * block_speed_factor;
-        self.set_velocity(self.velocity() + look * scale);
-        self.mark_velocity_sync();
-        self.set_dash(true);
+}
+
+impl AbstractNautilus for NautilusEntity {
+    fn is_dashing(&self) -> bool {
+        self.is_dash()
+    }
+
+    fn set_dashing(&self, dashing: bool) {
+        self.set_dash(dashing);
+    }
+
+    fn dash_cooldown(&self) -> &SyncMutex<i32> {
+        &self.dash_cooldown
     }
 }
 
@@ -166,6 +236,13 @@ impl Entity for NautilusEntity {
         let air_supply = self.air_supply();
         Mob::base_tick_mob(self);
         tick_breathing(self, air_supply);
+        // Vanilla `Nautilus.getDashReadySound`.
+        let ready = if self.is_under_water() {
+            &sound_events::ENTITY_NAUTILUS_DASH_READY
+        } else {
+            &sound_events::ENTITY_NAUTILUS_DASH_READY_LAND
+        };
+        self.tick_dash(Some(ready));
     }
 
     fn dimensions_for_pose(&self, _pose: EntityPose) -> EntityDimensions {
@@ -187,6 +264,61 @@ impl Entity for NautilusEntity {
 
     fn load_additional(&self, nbt: borrow::NbtCompound<'_, '_>) {
         self.load_mob(nbt);
+    }
+
+    /// Vanilla `AbstractNautilus.canJump`: only a saddled nautilus accepts a
+    /// rider's jump charge.
+    fn can_jump_with_rider(&self) -> bool {
+        self.is_saddled()
+    }
+
+    /// Vanilla `AbstractNautilus.onPlayerJump`: a saddled nautilus that is not
+    /// already dashing stores the charge for its next ridden tick.
+    fn on_player_jump(&self, jump_amount: i32) {
+        if !self.is_saddled() || self.jump_cooldown() > 0 {
+            return;
+        }
+        let amount = jump_amount.max(0);
+        self.living_base()
+            .set_jump_pending_scale(Self::player_jump_pending_scale(amount));
+    }
+
+    /// Vanilla `AbstractNautilus.tickRidden`: resolve a stored charge into
+    /// `executeRidersJump` against the rider's look vector.
+    fn tick_ridden(&self, controller: &crate::player::Player, _ridden_input: DVec3) {
+        let pending = self.jump_pending_scale();
+        if pending > 0.0 && !self.is_jumping() {
+            let look = controller.look_angle();
+            self.execute_nautilus_jump(pending, look, f64::from(self.block_speed_factor()));
+        }
+        self.reset_jump_pending_scale();
+    }
+
+    /// Vanilla `AbstractNautilus.handleStartJump`: dash sound, action game
+    /// event, and the dash flag turns on immediately.
+    fn handle_start_jump(&self, _jump_scale: i32) {
+        if let Some(world) = self.level() {
+            let underwater = self.is_under_water();
+            let sound = if underwater {
+                &sound_events::ENTITY_NAUTILUS_DASH
+            } else {
+                &sound_events::ENTITY_NAUTILUS_DASH_LAND
+            };
+            world.play_sound_at(
+                sound,
+                SoundSource::Neutral,
+                self.position(),
+                1.0,
+                1.0,
+                None,
+            );
+            world.game_event_at(
+                &vanilla_game_events::ENTITY_ACTION,
+                self.position(),
+                &GameEventContext::new(Some(self.as_entity_event_source()), None),
+            );
+        }
+        self.set_dash(true);
     }
 }
 
@@ -286,6 +418,8 @@ pub struct ZombieNautilusEntity {
     living_base: LivingEntityBase,
     mob_base: MobBase,
     entity_data: SyncMutex<ZombieNautilusEntityData>,
+    /// Vanilla `AbstractNautilus.dashCooldown` for the zombie species.
+    dash_cooldown: SyncMutex<i32>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `ZombieNautilusEntity`.
@@ -340,6 +474,7 @@ impl ZombieNautilusEntity {
             living_base,
             mob_base,
             entity_data: SyncMutex::new(entity_data),
+            dash_cooldown: SyncMutex::new(0),
         }
     }
 
@@ -352,6 +487,20 @@ impl ZombieNautilusEntity {
     /// Sets the dash flag.
     pub fn set_dash(&self, dash: bool) {
         self.entity_data.lock().abstract_nautilus_mut().dash.set(dash);
+    }
+}
+
+impl AbstractNautilus for ZombieNautilusEntity {
+    fn is_dashing(&self) -> bool {
+        self.is_dash()
+    }
+
+    fn set_dashing(&self, dashing: bool) {
+        self.set_dash(dashing);
+    }
+
+    fn dash_cooldown(&self) -> &SyncMutex<i32> {
+        &self.dash_cooldown
     }
 }
 
@@ -372,6 +521,13 @@ impl Entity for ZombieNautilusEntity {
         let air_supply = self.air_supply();
         Mob::base_tick_mob(self);
         tick_breathing(self, air_supply);
+        // Vanilla `ZombieNautilus.getDashReadySound`.
+        let ready = if self.is_under_water() {
+            &sound_events::ENTITY_ZOMBIE_NAUTILUS_DASH_READY
+        } else {
+            &sound_events::ENTITY_ZOMBIE_NAUTILUS_DASH_READY_LAND
+        };
+        self.tick_dash(Some(ready));
     }
 
     fn dimensions_for_pose(&self, _pose: EntityPose) -> EntityDimensions {
@@ -393,6 +549,50 @@ impl Entity for ZombieNautilusEntity {
 
     fn load_additional(&self, nbt: borrow::NbtCompound<'_, '_>) {
         self.load_mob(nbt);
+    }
+
+    /// Vanilla `AbstractNautilus.canJump`, inherited by the zombie species.
+    fn can_jump_with_rider(&self) -> bool {
+        self.is_saddled()
+    }
+
+    /// Vanilla `AbstractNautilus.onPlayerJump`, inherited by the zombie species.
+    fn on_player_jump(&self, jump_amount: i32) {
+        if !self.is_saddled() || self.jump_cooldown() > 0 {
+            return;
+        }
+        let amount = jump_amount.max(0);
+        self.living_base()
+            .set_jump_pending_scale(Self::player_jump_pending_scale(amount));
+    }
+
+    /// Vanilla `AbstractNautilus.tickRidden`, inherited by the zombie species.
+    fn tick_ridden(&self, controller: &crate::player::Player, _ridden_input: DVec3) {
+        let pending = self.jump_pending_scale();
+        if pending > 0.0 && !self.is_jumping() {
+            let look = controller.look_angle();
+            self.execute_nautilus_jump(pending, look, f64::from(self.block_speed_factor()));
+        }
+        self.reset_jump_pending_scale();
+    }
+
+    /// Vanilla `ZombieNautilus.getDashSound`: the dash sound is
+    /// species-specific, so the zombie plays its own.
+    fn handle_start_jump(&self, _jump_scale: i32) {
+        if let Some(world) = self.level() {
+            let sound = if self.is_under_water() {
+                &sound_events::ENTITY_ZOMBIE_NAUTILUS_DASH
+            } else {
+                &sound_events::ENTITY_ZOMBIE_NAUTILUS_DASH_LAND
+            };
+            world.play_sound_at(sound, SoundSource::Neutral, self.position(), 1.0, 1.0, None);
+            world.game_event_at(
+                &vanilla_game_events::ENTITY_ACTION,
+                self.position(),
+                &GameEventContext::new(Some(self.as_entity_event_source()), None),
+            );
+        }
+        self.set_dash(true);
     }
 }
 
@@ -494,6 +694,68 @@ mod tests {
         assert!(!nautilus.is_dash());
         nautilus.set_dash(true);
         assert!(nautilus.is_dash());
+    }
+
+    #[test]
+    fn an_unsaddled_nautilus_refuses_a_riders_jump() {
+        init_vanilla_registry();
+        let nautilus =
+            NautilusEntity::new(&vanilla_entities::NAUTILUS, 1, DVec3::ZERO, Weak::new());
+        // Vanilla `canJump` is `isSaddled()`; without a saddle the charge must
+        // never be stored, so the mount cannot be launched by a stray packet.
+        assert!(!LivingEntity::can_jump_with_rider(&nautilus));
+        nautilus.on_player_jump(100);
+        assert_eq!(nautilus.jump_pending_scale(), 0.0);
+    }
+
+    #[test]
+    fn a_fresh_nautilus_has_no_dash_cooldown() {
+        init_vanilla_registry();
+        let nautilus =
+            NautilusEntity::new(&vanilla_entities::NAUTILUS, 1, DVec3::ZERO, Weak::new());
+        assert_eq!(nautilus.jump_cooldown(), 0);
+    }
+
+    #[test]
+    fn a_riders_jump_starts_the_vanilla_cooldown() {
+        init_vanilla_registry();
+        let nautilus =
+            NautilusEntity::new(&vanilla_entities::NAUTILUS, 1, DVec3::ZERO, Weak::new());
+        nautilus.execute_nautilus_jump(1.0, DVec3::X, 1.0);
+        assert!(nautilus.is_dash());
+        assert_eq!(nautilus.jump_cooldown(), NAUTILUS_DASH_COOLDOWN_TICKS);
+    }
+
+    #[test]
+    fn the_dash_ends_five_ticks_before_the_cooldown_does() {
+        init_vanilla_registry();
+        let nautilus =
+            NautilusEntity::new(&vanilla_entities::NAUTILUS, 1, DVec3::ZERO, Weak::new());
+        nautilus.execute_nautilus_jump(1.0, DVec3::X, 1.0);
+        // Vanilla clears the flag when `dashCooldown` drops below 35, which is
+        // 5 ticks into a 40-tick cooldown.
+        for _ in 0..NAUTILUS_DASH_COOLDOWN_TICKS - NAUTILUS_DASH_END_AT_COOLDOWN - 1 {
+            nautilus.tick_dash(None);
+        }
+        assert!(nautilus.is_dash(), "still dashing one tick before the cutoff");
+        nautilus.tick_dash(None);
+        assert!(
+            !nautilus.is_dash(),
+            "the dash ends once the cooldown reaches {NAUTILUS_DASH_END_AT_COOLDOWN}"
+        );
+        assert_eq!(nautilus.jump_cooldown(), NAUTILUS_DASH_END_AT_COOLDOWN - 1);
+    }
+
+    #[test]
+    fn the_cooldown_must_run_out_before_another_dash() {
+        init_vanilla_registry();
+        let nautilus =
+            NautilusEntity::new(&vanilla_entities::NAUTILUS, 1, DVec3::ZERO, Weak::new());
+        nautilus.execute_nautilus_jump(1.0, DVec3::X, 1.0);
+        for _ in 0..NAUTILUS_DASH_COOLDOWN_TICKS {
+            nautilus.tick_dash(None);
+        }
+        assert_eq!(nautilus.jump_cooldown(), 0);
     }
 
     #[test]

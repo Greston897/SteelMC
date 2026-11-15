@@ -54,16 +54,20 @@ jobs:
           # targets it skips: benches (a separate harness) and examples.
           set -o pipefail
           status=0
-          for spec in "-p steel-utils --benches" "-p steel-worldgen --benches" "-p steel-core --benches" "-p steel-core --benches --features benchmark-support" "-p steel-flint --examples"; do
-            echo "::group::cargo check $spec"
-            if cargo check $spec 2>&1 | tee "/tmp/bench_$(echo "$spec" | tr " /" "__").log"; then
-              echo "OK $spec"
+          check() {
+            echo "::group::cargo check $*"
+            if cargo check "$@" 2>&1 | tee /tmp/bench.log; then
+              echo "OK: $*"
             else
-              echo "::error title=compile failed::$spec"
+              echo "::error title=compile failed::$*"
               status=1
             fi
             echo "::endgroup::"
-          done
+          }
+          check -p steel-utils --benches
+          check -p steel-worldgen --benches
+          check -p steel-core --benches --features benchmark-support
+          check -p steel-flint --examples
           exit $status
 
       - name: Compile every feature
