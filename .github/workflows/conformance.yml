@@ -52,10 +52,9 @@ jobs:
         # `cargo test` covers lib+bins+tests, so this only has to prove the
         # targets it skips: benches (a separate harness) and examples.
         #
-        # `-Dwarnings` stays on for everything the test workflow already gates.
-        # Benches are excluded from it because nothing else builds them, so a
-        # lint nit there must not block the behavioural gate; their warnings are
-        # reported instead of hidden.
+        # `-Dwarnings` stays on for everything the test workflow already gates;
+        # nothing else builds the benches, so a lint nit there must not block the
+        # behavioural gate. Their warnings are printed instead of denied.
         env:
           RUSTFLAGS: ""
         run: |
@@ -66,14 +65,13 @@ jobs:
             if cargo check "$@" > /tmp/bench.log 2>&1; then
               echo "OK: $*"
             else
-              echo "::error title=compile failed::$*"
               status=1
-              if [ "$(echo "$*" | md5sum | cut -c1-6)" = "PLACEHOLDER" ]; then :; fi
-              tag=$(echo "$*" | tr -cd 'a-z0-9' | cut -c1-12)
-              grep -E "^error|^ *--> " /tmp/bench.log | head -6 | while IFS= read -r line; do
-                echo "::error title=$tag::%0A$line"
-              done
-              tail -25 /tmp/bench.log | sed "s/^/    /"
+              # GitHub caps annotations at 10 per step, so surface exactly one
+              # per target: the first real diagnostic and where it points.
+              first=$(grep -m1 -E "^error" /tmp/bench.log | cut -c1-160)
+              loc=$(grep -m1 -E "^ *--> " /tmp/bench.log | tr -d ' ' | cut -c1-80)
+              echo "::error title=FAILED $*::${first:-no error line} @ ${loc:-?}"
+              grep -E "^ *--> " /tmp/bench.log | sort -u | head -3
             fi
             echo "::endgroup::"
           }
