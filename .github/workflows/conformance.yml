@@ -78,6 +78,10 @@ jobs:
 
           if [ "$overall" -ne 0 ]; then
             msg=$(grep -h -m1 -E "^error" /tmp/b?.log 2>/dev/null | head -1 | cut -c1-200 || true)
+            # A single-line generated file gives no useful context, so also
+            # report the note lines that name the mismatched call.
+            grep -h -A6 -m1 -E "^error\[E0061\]" /tmp/b?.log 2>/dev/null | head -12 > /tmp/e0061.log || true
+            python3 .ci/report.py "E0061 context" /tmp/e0061.log || true
             echo "::error title=bench compile failed::${msg:-no error line found}"
             echo "::group::bench logs"
             for n in 1 2 3 4; do echo "===== /tmp/b$n.log"; cat "/tmp/b$n.log" || true; done
