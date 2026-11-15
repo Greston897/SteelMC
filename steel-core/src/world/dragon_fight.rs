@@ -860,7 +860,7 @@ mod tests {
         assert!((fight.progress() - 0.5).abs() < f32::EPSILON);
         assert!(fight.bar_visible());
         assert!(
-            !fight.try_respawn(EXIT_PORTAL),
+            !fight.try_respawn(vec![EXIT_PORTAL]),
             "vanilla cannot arm a respawn while the dragon is alive"
         );
     }
@@ -891,12 +891,12 @@ mod tests {
         fight.set_dragon_killed();
 
         assert!(
-            !fight.try_respawn(IVec3::new(8, 80, 8)),
-            "a crystal off the portal column cannot start a respawn"
+            !fight.try_respawn(Vec::new()),
+            "vanilla needs a crystal on each side before it arms a respawn"
         );
-        assert!(fight.try_respawn(EXIT_PORTAL));
+        assert!(fight.try_respawn(vec![EXIT_PORTAL]));
         assert!(
-            !fight.try_respawn(EXIT_PORTAL),
+            !fight.try_respawn(vec![EXIT_PORTAL]),
             "the sequence must only arm once"
         );
         assert!(fight.respawn_started());

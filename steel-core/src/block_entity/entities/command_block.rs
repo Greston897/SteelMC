@@ -402,7 +402,7 @@ impl BlockEntity for CommandBlockBlockEntity {
         let mut state = self.state.lock();
         state.command = nbt_view
             .string("Command")
-            .map_or_else(String::new, |command| command.to_str().to_owned());
+            .map_or_else(String::new, |command| command.to_str().into_owned());
         state.success_count = nbt_view.int_value("SuccessCount").unwrap_or(0);
         state.track_output = nbt_view
             .byte_value("TrackOutput")
@@ -410,7 +410,7 @@ impl BlockEntity for CommandBlockBlockEntity {
         // Vanilla only restores the output while tracking it.
         state.last_output = if state.track_output {
             nbt_view.string("LastOutput")
-                .map(|output| TextComponent::plain(output.to_str().to_owned()))
+                .map(|output| TextComponent::plain(output.to_str().into_owned()))
         } else {
             None
         };

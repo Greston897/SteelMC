@@ -142,7 +142,7 @@ pub(crate) fn fresh_test_world_in_domain(domain: &str, key: &str) -> TestWorld {
 
 /// A world at a fixed difficulty, for tests that branch on it (despawn, peaceful).
 pub(crate) fn fresh_test_world_with_difficulty(key: &str, difficulty: Difficulty) -> TestWorld {
-    create_test_world_with_key(intern_test_key(key), difficulty)
+    create_test_world_with_key(Identifier::vanilla_static(intern_test_key(key)), difficulty)
 }
 
 pub(crate) fn fresh_test_world_with_dimension_type(

@@ -312,13 +312,13 @@ impl BlockEntity for StructureBlockEntity {
         let mut state = self.state.lock();
         state.name = nbt_view
             .string("name")
-            .map_or_else(String::new, |name| name.to_str().to_owned());
+            .map_or_else(String::new, |name| name.to_str().into_owned());
         state.author = nbt_view
             .string("author")
-            .map_or_else(String::new, |author| author.to_str().to_owned());
+            .map_or_else(String::new, |author| author.to_str().into_owned());
         state.metadata = nbt_view
             .string("metadata")
-            .map_or_else(String::new, |metadata| metadata.to_str().to_owned());
+            .map_or_else(String::new, |metadata| metadata.to_str().into_owned());
         // Vanilla clamps the stored offset and size into the editor limits.
         state.structure_pos = clamp_offset_pos(BlockPos::new(
             nbt_view.int_value("posX").unwrap_or(DEFAULT_POS.x()),
