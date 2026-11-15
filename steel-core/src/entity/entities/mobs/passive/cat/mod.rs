@@ -503,9 +503,12 @@ impl Mob for CatEntity {
     /// flag was only reachable from tests.
     fn mob_interact(&self, player: &Player, hand: InteractionHand) -> InteractionResult {
         if self.is_tame() && self.is_owned_by(Some(player.base().uuid())) {
+            // `get_item_in_hand` borrows the locked inventory, so copy the stack
+            // out before the guard drops.
             let stack = {
                 let inventory = player.inventory.lock();
-                inventory.get_item_in_hand(hand)
+                let item = inventory.get_item_in_hand(hand);
+                item.copy_with_count(item.count())
             };
             if stack.is_empty() {
                 let sitting = self.is_sitting();

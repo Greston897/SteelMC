@@ -49,8 +49,8 @@ const DEFAULT_STEP_HEIGHT: f32 = 0.6;
 /// Vanilla avoids the whole `Zombie` class, which covers husks, drowned, zombie
 /// villagers and zombified piglins, so the generated class-hierarchy flag is the
 /// right test rather than a single entity-type comparison.
-fn is_zombie(entity: &dyn crate::entity::Entity, _world: &World) -> bool {
-    entity.entity_type().is_zombie
+fn is_zombie(entity: &dyn LivingEntity, _world: &World) -> bool {
+    Entity::entity_type(entity).is_zombie
 }
 
 #[entity_behavior(class = "Villager")]

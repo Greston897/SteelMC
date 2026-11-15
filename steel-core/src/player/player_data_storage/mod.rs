@@ -68,7 +68,7 @@ enum PlayerDataStorageBackend {
     Memory(MemoryPlayerDataStorage),
 }
 
-#[derive(SchemaWrite, SchemaRead)]
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct PlayerDataFile {
     data_version: i32,
     pos: [f64; 3],

@@ -527,7 +527,8 @@ impl DragonPhaseManager {
         let mut closest_index = 0;
         let mut closest_dist = 10_000.0_f32;
         for (index, node) in nodes.iter().enumerate().skip(start) {
-            let distance = node.distance_to_sqr(&target);
+            // Fully qualified: `Entity::distance_to_sqr` would otherwise win.
+            let distance = Node::distance_to_sqr(node, &target);
             if distance < closest_dist {
                 closest_dist = distance;
                 closest_index = index;

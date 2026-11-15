@@ -11,7 +11,7 @@
 //! vanilla keeps it in `RandomizableContainerBlockEntity` and only rolls the
 //! table in `unpackLootTable`, which is what this module mirrors.
 
-use rand::Rng;
+use rand::{Rng, RngExt as _};
 use steel_registry::REGISTRY;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::loot_table::LootTableRegistry;

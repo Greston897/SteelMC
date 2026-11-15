@@ -802,7 +802,8 @@ impl Server {
         // The configured core count is an upper bound: inside a cgroup-limited
         // container the pools must shrink to the quota even when the config asks
         // for more, otherwise every CPU-bound pool oversubscribes the quota.
-        let mut config = config;
+        // `config` arrives behind an `Arc`, so clamp a copy rather than the shared value.
+        let mut config = RuntimeConfig::clone(&config);
         config.clamp_cores_to_available(available_worker_threads());
 
         let pools = pool_sizes_for_available(config.cores);

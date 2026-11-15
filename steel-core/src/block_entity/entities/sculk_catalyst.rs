@@ -78,7 +78,7 @@ pub struct SculkShriekerBlockEntity {
     base: Arc<BlockEntityBase>,
     /// Vanilla `SculkShriekerBlockEntity.warningLevel`: raised by
     /// `WardenSpawnTracker.tryWarn` on every shriek and persisted across saves.
-    warning_level: SyncMutex<i32>,
+    warning_level: Arc<SyncMutex<i32>>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `SculkShriekerBlockEntity`.
@@ -97,7 +97,7 @@ impl SculkShriekerBlockEntity {
                 pos,
                 state,
             )),
-            warning_level: SyncMutex::new(0),
+            warning_level: Arc::new(SyncMutex::new(0)),
         }
     }
 
@@ -291,7 +291,7 @@ impl SculkShriekerBlockEntity {
         };
         let mut rng = rand::rng();
         let offset = |value: i32| {
-            value + rand::Rng::random_range(&mut rng, -WARNING_SOUND_RADIUS..=WARNING_SOUND_RADIUS)
+            value + rand::RngExt::random_range(&mut rng, -WARNING_SOUND_RADIUS..=WARNING_SOUND_RADIUS)
         };
         world.play_sound_at(
             sound,

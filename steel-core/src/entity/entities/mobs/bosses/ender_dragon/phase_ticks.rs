@@ -1074,7 +1074,7 @@ mod tests {
         // move the spawn point.
         for phase in super::super::phases::ALL_DRAGON_PHASES {
             for yaw in [-180.0_f32, -90.0, 0.0, 45.0, 179.0] {
-                let pitch = 12.0;
+                let pitch: f32 = 12.0;
                 let pitch_rad = match phase {
                     DragonPhase::Landing | DragonPhase::Takeoff => -22.5_f64.to_radians(),
                     _ if phase.is_sitting() => -45.0_f64.to_radians(),

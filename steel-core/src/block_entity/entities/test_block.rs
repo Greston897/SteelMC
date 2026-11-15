@@ -176,7 +176,7 @@ impl TestBlockEntity {
             return;
         }
         log::info!(
-            "Test {} (at {}): {}",
+            "Test {} (at {:?}): {}",
             test_mode_name(self.mode()),
             self.base.pos(),
             message
