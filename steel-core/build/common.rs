@@ -348,10 +348,19 @@ pub(crate) fn generate_arg(
     let json_key = field.json_name.as_deref().unwrap_or(&field.field_name);
 
     // For optional fields, check the sentinel before computing the registry token.
+    //
+    // An optional field may be omitted from the extract entirely, which is how
+    // the single-tree growers (`dark_oak`, `pale_oak`) are recorded, so a
+    // missing key is treated exactly like an explicit sentinel rather than
+    // aborting the whole build script.
     if let Some(sentinel) = &field.optional_sentinel {
-        let raw = get_json_str(extra, entry_name, json_key);
-        if raw == sentinel {
-            return quote! { None };
+        match extra.get(json_key) {
+            None => return quote! { None },
+            Some(value) => {
+                if value.as_str() == Some(sentinel.as_str()) {
+                    return quote! { None };
+                }
+            }
         }
     }
 
