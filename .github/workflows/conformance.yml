@@ -52,19 +52,14 @@ jobs:
       - name: Surface compile errors
         if: failure()
         run: |
-          # Cargo indents diagnostic lines under `Compiling`, so anchor on the
-          # diagnostic itself rather than on column 0. Annotations are the one
-          # channel that is always readable from the API.
-          grep -E "^error(\[E[0-9]+\])?:" /tmp/check.log | sort -u | head -40 | while IFS= read -r line; do
-            echo "::error title=compile::$line"
-          done
-          grep -E "^ *--> " /tmp/check.log | sort -u | head -40 | while IFS= read -r line; do
-            echo "::error title=at::$line"
-          done
-          # Whatever the shape of the output, the tail must reach an annotation.
-          tail -40 /tmp/check.log | tr "\n" "\t" | while IFS= read -r chunk; do
-            echo "::error title=tail::$chunk"
-          done
+          # Annotations from a `run` step are not always surfaced, so encode the
+          # diagnostic in the step name: that text is always in the jobs API.
+          first=$(grep -m1 -E "^error" /tmp/check.log | cut -c1-120)
+          loc=$(grep -m1 -E "^ *--> " /tmp/check.log | tr -d " " | cut -c1-120)
+          echo "::error title=compile ${first:-unknown} at ${loc:-unknown}::see /tmp/check.log"
+          echo "::group::last 120 lines"
+          tail -120 /tmp/check.log
+          echo "::endgroup::"
           exit 1
 
       # 2. Every test, one crate at a time, so the log names the broken area.
