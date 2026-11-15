@@ -18,9 +18,11 @@ on:
 # are not covered by any other workflow and a lint nit there must not mask a
 # real behavioural failure.
 permissions:
-  contents: read
-  # Commit comments carry the failing log tails, which is the only readable
-  # channel in environments where log downloads are blocked.
+  # Write, not read: creating a commit comment is gated on the Contents
+  # permission, and with `read` every report.py call is rejected with 403. The
+  # comment is the only readable channel where log downloads are blocked, so a
+  # silent refusal leaves nothing to diagnose from.
+  contents: write
   issues: write
   pull-requests: write
 
