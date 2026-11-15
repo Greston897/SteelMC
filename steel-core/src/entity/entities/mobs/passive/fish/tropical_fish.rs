@@ -7,7 +7,7 @@
 //! the base colour and bits 24..32 the pattern colour. The same packing is
 //! reused for the `Variant` entity NBT key and the `BucketVariantTag` bucket key.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * vanilla rolls a spawn variant out of a fixed list of 22 "common" packed
 //!   variants (`TropicalFish.COMMON_VARIANTS`). That list is not part of the
 //!   extracted data, so Steel rolls a uniform pattern and two uniform colours;

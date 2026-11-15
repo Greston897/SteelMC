@@ -19,6 +19,10 @@ mod state;
 mod weather;
 
 pub(crate) use features::no_nested_features;
+pub(crate) use features::{
+    end_spikes_for_level, place_end_gateway_in_world, place_end_podium_in_world,
+    rebuild_spike_crystal_in_world, rebuild_spike_in_world,
+};
 pub(crate) use runner::FeatureDecorationRunner;
 
 #[cfg(test)]

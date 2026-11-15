@@ -6,7 +6,7 @@
 //! hostile target selector. Daylight burning is driven by the
 //! `minecraft:burn_in_daylight` entity type tag, not by this file.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * vanilla spiders stop being hostile in bright light (they only retaliate);
 //!   Steel keeps the plain hostile target selector, so they always attack.
 

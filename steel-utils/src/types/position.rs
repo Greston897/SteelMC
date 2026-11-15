@@ -453,6 +453,17 @@ impl BlockPos {
         )
     }
 
+    /// Vanilla `Vec3i.distToCenterSqr(double, double, double)`: the squared
+    /// distance from the block's *center* (corner plus half a block) to `position`.
+    ///
+    /// Note this is not `BlockPos` as a point: a block at `x = 5` whose center is
+    /// targeted measures from `5.5`.
+    #[must_use]
+    pub fn dist_to_center_sqr(&self, position: DVec3) -> f64 {
+        let (x, y, z) = self.get_center();
+        DVec3::new(x, y, z).distance_squared(position)
+    }
+
     /// Returns whether this block's center is closer than `distance` to `position`.
     #[must_use]
     pub fn closer_to_center_than(&self, position: DVec3, distance: f64) -> bool {

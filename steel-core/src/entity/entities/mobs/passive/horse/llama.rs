@@ -4,7 +4,7 @@
 //! (`id_flags`) mirrored into the generated entity data. Saddling and riding are
 //! implemented; jumping, galloping and the chest inventory are not.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * jumping, galloping, the chest inventory and breeding stats are not
 //!   implemented.
 

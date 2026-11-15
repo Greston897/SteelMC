@@ -3,7 +3,7 @@
 //! The elder guardian shares the whole `Guardian` synced-data layout; it only
 //! differs in attributes, size and the mining-fatigue curse.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * the laser beam and the mining-fatigue curse are not implemented.
 
 use std::iter::empty;

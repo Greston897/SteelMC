@@ -353,16 +353,27 @@ pub struct Player {
     levitation_start: SyncMutex<Option<(glam::DVec3, i32)>>,
 }
 
-/// Vanilla `LivingEntity` spin-attack duration per riptide level.
-pub const RIPTIDE_TICKS_PER_LEVEL: i32 = 20;
+/// Vanilla `LivingEntity` spin-attack activation ticks (`startAutoSpinAttack(20, ...)`).
+pub const RIPTIDE_ACTIVATION_TICKS: i32 = 20;
+
+/// Base damage of a riptide spin attack (`TridentItem.doHurtTarget` passes `8.0f`).
+pub const RIPTIDE_SPIN_ATTACK_DAMAGE: f32 = 8.0;
+
+/// Horizontal push applied to the first entity a spin attack sweeps into.
+///
+/// Vanilla `Player.causeExtraKnockback` with the plain `0.4` base knockback of an
+/// attack that carries no knockback enchantment.
+pub const SPIN_ATTACK_KNOCKBACK: f64 = 0.4;
 
 /// State of an in-progress riptide spin attack.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct RiptideSpin {
-    /// Ticks of spin attack left; vanilla starts at 20 per riptide level.
+    /// Ticks of spin attack left; vanilla starts at 20 per activation.
     pub remaining_ticks: i32,
-    /// Riptide level, which scales both speed and damage.
+    /// Riptide level, which scales the launch speed and the sweep reach.
     pub level: i32,
+    /// Damage a swept entity takes; `autoSpinAttackDmg` in vanilla.
+    pub damage: f32,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `Player`.
@@ -656,75 +667,105 @@ impl Player {
         self.riptide.lock().is_some()
     }
 
-    /// Starts a riptide spin attack, mirroring `LivingEntity.startAutoSpinAttack`.
-    ///
-    /// Vanilla scales the duration with the riptide level (20 ticks each) and
-    /// gives the player an immediate forward burst along the look vector.
-    pub fn start_auto_spin_attack(&self, riptide_level: i32, look: DVec3) {
-        let level = riptide_level.max(1);
-        *self.riptide.lock() = Some(RiptideSpin {
-            remaining_ticks: level * RIPTIDE_TICKS_PER_LEVEL,
-            level,
-        });
+    /// Vanilla `Player.autoSpinAttackDmg`: the base damage an active spin uses
+    /// instead of the `ATTACK_DAMAGE` attribute, or `None` outside a spin.
+    #[must_use]
+    pub fn riptide_spin_damage(&self) -> Option<f32> {
+        self.riptide.lock().map(|spin| spin.damage)
+    }
 
-        // Vanilla `startAutoSpinAttack` pushes along look with a level-scaled
-        // strength, and the trident launches the player with a matching impulse.
-        let strength = f64::from(level).mul_add(-0.1, 1.0);
-        let velocity = DVec3::new(
-            look.x * 3.0 * strength,
-            look.y * 3.0 * strength,
-            look.z * 3.0 * strength,
-        );
-        self.set_velocity(velocity);
-        self.set_on_ground(false);
-        self.mark_velocity_sync();
+    /// Vanilla `EnchantmentHelper.getTridentSpinAttackStrength`.
+    ///
+    /// Riptide contributes `1.5 + 0.75 * (level - 1)` through the
+    /// `minecraft:trident_spin_attack_strength` effect (`minecraft:add` of a
+    /// `minecraft:linear` value) in `data/minecraft/enchantment/riptide.json`.
+    /// The enchantment cannot stack, so only one level ever applies.
+    #[must_use]
+    pub fn trident_spin_attack_strength(&self, riptide_level: i32) -> f32 {
+        if riptide_level <= 0 {
+            return 0.0;
+        }
+        1.5 + 0.75 * (riptide_level - 1) as f32
+    }
+
+    /// Vanilla `LivingEntity.startAutoSpinAttack(20, 8.0f, stack)`.
+    ///
+    /// The launch impulse is applied by `TridentItem` *before* this call, exactly
+    /// as vanilla orders it.
+    pub fn start_auto_spin_attack(&self, level: i32) {
+        *self.riptide.lock() = Some(RiptideSpin {
+            remaining_ticks: RIPTIDE_ACTIVATION_TICKS,
+            level: level.max(1),
+            damage: RIPTIDE_SPIN_ATTACK_DAMAGE,
+        });
         self.sync_pose_from_state();
     }
 
-    /// Vanilla `LivingEntity.livingEntityTick` riptide branch: refresh the
-    /// forward impulse, apply rain-only spin, and damage nearby entities.
-    pub(crate) fn tick_riptide(&self) {
-        let Some(spin) = *self.riptide.lock() else {
-            return;
-        };
-        if spin.remaining_ticks <= 0 {
-            self.stop_auto_spin_attack();
+    /// Vanilla `LivingEntity.livingEntityTick`: one tick of the spin attack.
+    ///
+    /// Vanilla only decrements `autoSpinAttackTicks` and runs
+    /// `checkAutoSpinAttack`; it never re-applies a launch impulse, so neither
+    /// does this.
+    pub(crate) fn tick_riptide(self: &Arc<Self>) {
+        if self.riptide.lock().is_none() {
             return;
         }
-
-        let world = self.get_world();
-        let look = self.rotation_vector();
-        // Vanilla keeps pushing the player forward while the spin is active so
-        // it carries through water and rain instead of stalling.
-        let strength = f64::from(spin.level).mul_add(-0.1, 1.0);
-        let velocity = self.velocity();
-        self.set_velocity(DVec3::new(
-            look.x * 3.0 * strength,
-            look.y * 3.0 * strength,
-            look.z * 3.0 * strength,
-        ));
-        self.mark_velocity_sync();
-        let _ = velocity;
-
-        self.damage_riptide_targets(&world, look, spin.level);
-        world.play_sound(
-            &steel_registry::sound_events::ITEM_TRIDENT_RIPTIDE_3,
-            SoundSource::Players,
-            self.block_position(),
-            1.0,
-            1.0,
-            None,
-        );
-
-        let mut guard = self.riptide.lock();
-        if let Some(spin) = guard.as_mut() {
+        // Decrement first, then test contacts: vanilla's order.
+        if let Some(spin) = self.riptide.lock().as_mut() {
             spin.remaining_ticks -= 1;
-            if spin.remaining_ticks <= 0 {
-                *guard = None;
-            }
         }
-        drop(guard);
-        self.sync_pose_from_state();
+
+        self.check_auto_spin_attack();
+
+        let finished = self
+            .riptide
+            .lock()
+            .as_ref()
+            .is_none_or(|spin| spin.remaining_ticks <= 0);
+        if finished {
+            self.riptide.lock().take();
+            self.sync_pose_from_state();
+        }
+    }
+
+    /// Vanilla `LivingEntity.checkAutoSpinAttack`.
+    ///
+    /// The sweep box is the union of the bounding box before and after movement;
+    /// the first living entity inside it ends the attack after taking the hit,
+    /// and a horizontal block collision also ends it.
+    fn check_auto_spin_attack(self: &Arc<Self>) {
+        // Vanilla unions the box captured before travel with the current one, so
+        // the sweep also catches entities the player moved past this tick.
+        let current = self.bounding_box();
+        let previous = current.translate(self.old_position() - self.position());
+        let sweep = steel_utils::geometry::WorldAabb::encapsulating(&previous, &current);
+
+        let mut swept = None;
+        for target in self.get_world().get_entities_in_aabb(&sweep) {
+            if target.id() == self.id() || !target.is_living_entity() {
+                continue;
+            }
+            swept = Some(target);
+            break;
+        }
+
+        if let Some(target) = swept {
+            // Vanilla `Player.doAutoAttackOnTouch` → `attack`, which uses
+            // `autoSpinAttackDmg` and the spin-attack item stack as the weapon.
+            self.attack(&target);
+            self.riptide
+                .lock()
+                .as_mut()
+                .map(|spin| spin.remaining_ticks = 0);
+            // Vanilla: `setDeltaMovement(getDeltaMovement().scale(-0.2))`.
+            self.set_velocity(self.velocity() * -0.2);
+            self.mark_velocity_sync();
+        } else if self.horizontal_collision() {
+            self.riptide
+                .lock()
+                .as_mut()
+                .map(|spin| spin.remaining_ticks = 0);
+        }
     }
 
     /// Stops an active spin attack and restores the normal pose.
@@ -732,49 +773,6 @@ impl Player {
         if self.riptide.lock().take().is_some() {
             self.sync_pose_from_state();
         }
-    }
-
-    /// Vanilla `SpinAttackEffect` melee sweep: every living entity within a
-    /// level-scaled box in front of the player takes trident damage and knockback.
-    fn damage_riptide_targets(&self, world: &crate::world::World, look: DVec3, level: i32) {
-        let reach = 2.0 + f64::from(level) * 0.5;
-        let pos = self.position();
-        let center = pos + look.normalize_or_zero() * reach * 0.5;
-        let radius = (reach * 0.5).max(1.0);
-        let aabb = steel_utils::geometry::WorldAabb::new(
-            center.x - radius,
-            center.y - radius,
-            center.z - radius,
-            center.x + radius,
-            center.y + radius,
-            center.z + radius,
-        );
-
-        let self_id = self.id();
-        let damage = 4.0 + f64::from(level) as f32 * 1.5;
-        let Some(source) = world.get_entity_by_id(self_id) else {
-            return;
-        };
-        for target in world.get_entities_in_aabb(&aabb) {
-            if target.id() == self_id || !target.is_living_entity() || target.is_spectator() {
-                continue;
-            }
-            let damage_source =
-                DamageSource::direct(&vanilla_damage_types::TRIDENT, source.clone());
-            if target.hurt(world, &damage_source, damage) {
-                let push = (target.position() - pos).normalize_or_zero() * f64::from(level);
-                target.set_velocity(target.velocity() + push);
-            }
-        }
-    }
-
-    /// Unit vector along the player's look direction (vanilla `Entity.getLookAngle`).
-    fn rotation_vector(&self) -> DVec3 {
-        let (yaw, pitch) = self.rotation();
-        let yaw = f64::from(yaw).to_radians();
-        let pitch = f64::from(pitch).to_radians();
-        let xz = pitch.cos();
-        DVec3::new(-yaw.sin() * xz, -pitch.sin(), yaw.cos() * xz)
     }
 
     /// Recomputes the synced pose, including the riptide spin pose.

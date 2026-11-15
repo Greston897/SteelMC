@@ -6,7 +6,7 @@
 //! hostile target selector. Daylight burning is driven by the
 //! `minecraft:burn_in_daylight` entity type tag, not by this file.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * the cave spider's poison bite is not applied yet (no per-hit effect hook
 //!   on `MeleeAttackGoal`), so a bite only deals its 2.0 attack damage.
 

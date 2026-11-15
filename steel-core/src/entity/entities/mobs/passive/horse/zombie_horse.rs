@@ -4,7 +4,7 @@
 //! (`id_flags`) mirrored into the generated entity data. Horse-specific
 //! mechanics are intentionally not wired yet.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * the `AbstractHorse` behaviour (saddling, jumping, galloping, chest
 //!   inventory, breeding stats) is not implemented; only the flag byte is kept.
 

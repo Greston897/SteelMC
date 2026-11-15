@@ -3,7 +3,7 @@
 //! Shared `Animal` skeleton: float, panic, breed, follow parent, random stroll
 //! and look goals, plus the vanilla `checkAnimalSpawnRules` placement predicate.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * the species-specific goals (climbing, ramming, sliding, digging, ...) are
 //!   not implemented yet; the shared animal goal set is used instead.
 //! * food/tempt interaction uses the vanilla `#minecraft:goat_food`-style tags

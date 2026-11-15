@@ -244,7 +244,7 @@ impl SquidEntity {
 
         if self.is_in_water() {
             let movement = self.velocity();
-            let horizontal = movement.x.hypot(movement.z);
+            let horizontal = (movement.x * movement.x + movement.z * movement.z).sqrt();
 
             let y_body_rot = self.living_rotation_state().y_body_rot();
             let y_body_rot = y_body_rot

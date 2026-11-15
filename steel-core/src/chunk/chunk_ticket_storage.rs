@@ -16,6 +16,9 @@ pub(crate) const PORTAL_TICKET_RADIUS: u8 = 3;
 pub(crate) const ENDER_PEARL_TICKET_TIMEOUT_TICKS: i64 =
     vanilla_ticket_types::ENDER_PEARL.timeout();
 const ENDER_PEARL_TICKET_RADIUS: u8 = 2;
+/// Vanilla `EnderDragonFight` keeps the arena loaded with
+/// `addTicketWithRadius(TicketType.DRAGON, new ChunkPos(0, 0), 9)`.
+pub(crate) const DRAGON_TICKET_RADIUS: u8 = 9;
 
 type StoredTickets = Vec<StoredChunkTicket>;
 
@@ -123,6 +126,11 @@ const fn portal_ticket() -> ChunkTicket {
 /// survives a restart.
 fn forced_ticket() -> ChunkTicket {
     ChunkTicket::new(&vanilla_ticket_types::FORCED, ChunkTicketLevel::STRONGEST)
+}
+
+#[must_use]
+const fn dragon_ticket() -> ChunkTicket {
+    ChunkTicket::for_full_chunk_radius(&vanilla_ticket_types::DRAGON, DRAGON_TICKET_RADIUS)
 }
 
 const fn ender_pearl_ticket() -> ChunkTicket {
@@ -345,6 +353,22 @@ impl ChunkTicketStorage {
         pos: ChunkPos,
     ) -> SourceProjectionChanges {
         self.add_ticket(pos, ender_pearl_ticket())
+    }
+
+    /// Adds or refreshes vanilla's ender dragon arena ticket.
+    ///
+    /// `EnderDragonFight.tick` adds this while the fight has players and removes it
+    /// when the player list empties, which is what keeps the `-8..=8` arena loaded.
+    pub(crate) fn add_or_refresh_dragon_ticket(
+        &mut self,
+        pos: ChunkPos,
+    ) -> SourceProjectionChanges {
+        self.add_ticket(pos, dragon_ticket())
+    }
+
+    /// Removes vanilla's ender dragon arena ticket.
+    pub(crate) fn remove_dragon_ticket(&mut self, pos: ChunkPos) -> SourceProjectionChanges {
+        self.remove_ticket(pos, dragon_ticket())
     }
 
     /// Adds Vanilla's persistent `FORCED` ticket, which is what `/forceload`

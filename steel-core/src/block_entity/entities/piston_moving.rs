@@ -145,7 +145,9 @@ impl PistonMovingBlockEntity {
     pub fn progress(&self, partial_tick: f32) -> f32 {
         let partial_tick = partial_tick.min(1.0);
         let moving = self.moving.lock();
-        (moving.progress - moving.progress_o).mul_add(partial_tick, moving.progress_o)
+        // Vanilla `Mth.lerp(alpha, p0, p1) = p0 + alpha * (p1 - p0)`, evaluated
+        // in `f32` left to right (a fused multiply-add would round differently).
+        moving.progress_o + partial_tick * (moving.progress - moving.progress_o)
     }
 
     /// Returns the movement direction, which reverses while retracting.

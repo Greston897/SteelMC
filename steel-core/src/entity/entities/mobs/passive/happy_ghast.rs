@@ -3,7 +3,7 @@
 //! Shared `Animal` skeleton with the vanilla `checkAnimalSpawnRules` placement
 //! predicate.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * species-specific goals (taming, sitting, leashing, cube fusion) are not
 //!   implemented; the shared animal goal set is used instead.
 use std::sync::Weak;

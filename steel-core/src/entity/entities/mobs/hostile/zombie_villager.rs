@@ -8,7 +8,7 @@
 //! potion starts a conversion timer, and when it runs out the zombie turns into
 //! a villager that keeps the profession and fires `cured_zombie_villager`.
 //!
-//! Documented deviations from vanilla 26.3 (see `PARITY-26.3-RU.md`):
+//! Documented deviations from vanilla 26.3 (see `STATE-26.3-RU.md`):
 //! * the profession-specific texture is client-side and not part of Steel.
 //! * gossip and the reputation discount are not modelled; the cured villager
 //!   starts with vanilla's converted-villager experience of zero.

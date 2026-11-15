@@ -37,8 +37,12 @@ use super::{
 
 /// Vanilla `AbstractNautilus` base speed (`0.5`).
 const NAUTILUS_MOVEMENT_SPEED: f64 = 0.5;
-/// Vanilla nautilus dash speed modifier.
-const NAUTILUS_DASH_SPEED: f64 = 2.0;
+/// Vanilla `AbstractNautilus.DASH_MOMENTUM_IN_WATER`.
+pub const NAUTILUS_DASH_MOMENTUM_IN_WATER: f32 = 1.2;
+/// Vanilla `AbstractNautilus.DASH_MOMENTUM_ON_LAND`.
+pub const NAUTILUS_DASH_MOMENTUM_ON_LAND: f32 = 0.5;
+/// Vanilla `AbstractNautilus` dash cooldown length in ticks.
+pub const NAUTILUS_DASH_COOLDOWN_TICKS: i32 = 40;
 /// Vanilla panic speed modifier.
 const NAUTILUS_PANIC_SPEED: f64 = 1.25;
 /// Vanilla `SwimToRandomPlaceGoal` interval for nautilus.
@@ -123,13 +127,25 @@ impl NautilusEntity {
         self.entity_data.lock().abstract_nautilus_mut().dash.set(dash);
     }
 
-    /// Vanilla dash: mark the nautilus as dashing and boost it forward.
-    pub fn start_dash(&self) {
+    /// Vanilla `AbstractNautilus.executeRidersJump`.
+    ///
+    /// The impulse is the *rider's* look vector scaled by
+    /// `(in water ? 1.2 : 0.5) * amount * MOVEMENT_SPEED * blockSpeedFactor`,
+    /// and it starts a 40-tick dash cooldown that the dash flag follows.
+    pub fn execute_nautilus_jump(&self, amount: f32, look: DVec3, block_speed_factor: f64) {
+        let momentum = if self.is_in_water() {
+            NAUTILUS_DASH_MOMENTUM_IN_WATER
+        } else {
+            NAUTILUS_DASH_MOMENTUM_ON_LAND
+        };
+        let movement_speed = self
+            .attributes()
+            .lock()
+            .required_value(vanilla_attributes::MOVEMENT_SPEED);
+        let scale = f64::from(momentum * amount) * movement_speed * block_speed_factor;
+        self.set_velocity(self.velocity() + look * scale);
+        self.mark_velocity_sync();
         self.set_dash(true);
-        let (yaw, _) = self.rotation();
-        let rotation = f64::from(yaw).to_radians();
-        let direction = DVec3::new(-rotation.sin(), 0.0, rotation.cos());
-        self.set_velocity(direction * NAUTILUS_DASH_SPEED);
     }
 }
 
@@ -495,6 +511,8 @@ mod tests {
     #[test]
     fn nautilus_movement_speed_matches_vanilla() {
         assert_eq!(NAUTILUS_MOVEMENT_SPEED, 0.5);
-        assert_eq!(NAUTILUS_DASH_SPEED, 2.0);
+        assert_eq!(NAUTILUS_DASH_MOMENTUM_IN_WATER, 1.2);
+        assert_eq!(NAUTILUS_DASH_MOMENTUM_ON_LAND, 0.5);
+        assert_eq!(NAUTILUS_DASH_COOLDOWN_TICKS, 40);
     }
 }

@@ -174,7 +174,10 @@ impl AdvancementRegistry {
                 .collect();
 
             if advancements_to_add.len() == len_before && !advancements_to_add.is_empty() {
-                eprintln!(
+                // A datapack whose advancements reference a missing parent would
+                // otherwise spin forever; report it through the logger instead of
+                // writing straight to stderr, which bypasses the server's log.
+                log::warn!(
                     "Couldn't load advancements: {:?}",
                     advancements_to_add
                         .iter()
@@ -265,13 +268,13 @@ impl AdvancementRegistry {
         for advancement_idx in self.roots.clone() {
             let node = self.adv_nodes.get(advancement_idx);
             let Some(node) = node else {
-                eprintln!("unable to get the root node with index {advancement_idx}");
+                log::warn!("unable to get the root node with index {advancement_idx}");
                 return;
             };
             if node.has_display() {
                 let res = positioner::run(self, advancement_idx);
                 if let Err(e) = res {
-                    eprintln!("{}", e.get_message());
+                    log::warn!("{}", e.get_message());
                 }
             }
         }

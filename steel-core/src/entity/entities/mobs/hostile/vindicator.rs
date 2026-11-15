@@ -6,7 +6,7 @@
 //! hostile target selector. Daylight burning is driven by the
 //! `minecraft:burn_in_daylight` entity type tag, not by this file.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * the vindicator does not spawn with its iron axe and does not break doors.
 
 use std::iter::empty;

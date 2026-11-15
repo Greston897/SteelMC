@@ -3,7 +3,7 @@
 //! Shared `Animal` skeleton with the vanilla `checkAnimalSpawnRules`
 //! placement predicate.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * the armadillo rolling state machine (`ArmadilloState`) is not implemented;
 //!   its synced enum is stored but never updated.
 //! * scute shedding is not implemented.

@@ -44,6 +44,8 @@ pub mod names {
     /// Vanilla `WanderingTraderSpawner` day counter and roll chance, persisted
     /// as `data/wandering_traders.toml`.
     pub const WANDERING_TRADERS: SavedDataName = SavedDataName::trusted("wandering_traders");
+    /// Vanilla `EnderDragonFight` state, persisted as `data/ender_dragon_fight.toml`.
+    pub const ENDER_DRAGON_FIGHT: SavedDataName = SavedDataName::trusted("ender_dragon_fight");
 }
 
 /// Name of a per-world saved data entry.

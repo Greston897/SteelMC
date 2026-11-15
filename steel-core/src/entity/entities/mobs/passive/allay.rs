@@ -4,7 +4,7 @@
 //! as vanilla's `Allay` does. Duplication and note-block dancing are documented
 //! deviations.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * duplication (juke-box dancing) is not implemented; the dancing and
 //!   `can_duplicate` synced flags are stored and synced as vanilla does.
 //! * the carried stack is not rendered in-hand; it lives in the synced data.

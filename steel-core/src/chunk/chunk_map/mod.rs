@@ -38,8 +38,8 @@ pub use crate::chunk::chunk_scheduler::ChunkMapSchedulingTimings;
 use crate::chunk::chunk_scheduler::PlayerTicketOperation;
 use crate::chunk::chunk_scheduler::{ChunkSchedulingCoordinator, ChunkTicketReceipt};
 use crate::chunk::chunk_ticket_manager::{
-    ChunkTicketLevel, LoadLevelChange, generation_status, is_block_ticking, is_entity_ticking,
-    is_full,
+    ChunkTicketLevel, FullChunkStatus, LoadLevelChange, full_status, generation_status,
+    is_block_ticking, is_entity_ticking, is_full,
 };
 use crate::chunk::chunk_ticket_storage::{
     ChunkTicketStorage, ENDER_PEARL_TICKET_TIMEOUT_TICKS, PersistentChunkTickets,
@@ -488,6 +488,16 @@ impl ChunkMap {
         Some(holder)
     }
 
+    /// Returns vanilla's `LevelChunk.getFullStatus()` for a loaded chunk.
+    ///
+    /// `None` when no chunk is loaded there at all, which callers treat like
+    /// vanilla's `!(chunk instanceof LevelChunk)`.
+    #[must_use]
+    pub fn full_chunk_status(&self, pos: ChunkPos) -> Option<FullChunkStatus> {
+        self.active_full_chunk_holder(pos)
+            .map(|holder| full_status(holder.simulation_level()))
+    }
+
     /// Inserts a non-simulated holder into an empty gameplay view for worldgen benchmarks.
     ///
     /// Runtime lifecycle code must use ticket-driven insertion. Benchmark holders
@@ -634,6 +644,20 @@ impl ChunkMap {
     pub(crate) fn place_portal_ticket(&self, ticket_position: BlockPos) {
         let center = ChunkPos::from_block_pos(ticket_position);
         self.scheduling.add_or_refresh_portal_ticket(center);
+    }
+
+    /// Vanilla `EnderDragonFight.tick`'s
+    /// `addTicketWithRadius(TicketType.DRAGON, new ChunkPos(0, 0), 9)`.
+    pub(crate) fn add_dragon_ticket(&self) {
+        self.scheduling
+            .add_or_refresh_dragon_ticket(ChunkPos::new(0, 0));
+    }
+
+    /// Vanilla `EnderDragonFight.tick`'s
+    /// `removeTicketWithRadius(TicketType.DRAGON, new ChunkPos(0, 0), 9)`, used
+    /// once the fight has no players left.
+    pub(crate) fn remove_dragon_ticket(&self) {
+        self.scheduling.remove_dragon_ticket(ChunkPos::new(0, 0));
     }
 
     /// Advances eligible timed chunk tickets by one server tick.

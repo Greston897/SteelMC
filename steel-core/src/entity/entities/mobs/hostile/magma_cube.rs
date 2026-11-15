@@ -8,7 +8,7 @@
 //! In 26.3 `MagmaCube` no longer extends `Slime`; both extend `AbstractCubeMob`.
 //! Steel keeps the shared formulas in [`super::cube_mob`].
 //!
-//! Deviations (documented in `PARITY-26.3-RU.md`):
+//! Deviations (documented in `STATE-26.3-RU.md`):
 //! * natural spawning (nether wastes, basalt deltas, fortress, bastion, soul sand
 //!   valley) is not wired: the entity type is registered without a spawn rule and
 //!   only spawners and commands create it;

@@ -9,7 +9,7 @@
 //!
 //! Not yet applied from the stack: the `minecraft:entity_data` component (Steel
 //! has no generic "apply item stack config to a spawned entity" helper yet, see
-//! `PARITY-26.3-RU.md`).
+//! `STATE-26.3-RU.md`).
 
 use std::sync::Arc;
 

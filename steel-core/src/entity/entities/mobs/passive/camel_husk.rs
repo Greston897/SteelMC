@@ -3,7 +3,7 @@
 //! The hostile camel variant. It shares the whole `Camel` synced-data layout, so
 //! this implementation mirrors the camel and only differs in the entity type.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * dashing, sitting poses and two-passenger saddling are not implemented.
 
 use std::sync::Weak;

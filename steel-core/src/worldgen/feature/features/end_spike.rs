@@ -40,18 +40,22 @@ impl FeatureDecorationRunner {
         true
     }
 
-    fn end_spikes_for_level(seed: i64) -> Vec<EndSpike> {
+    /// Vanilla `EndSpikeFeature.getSpikesForLevel`: the ten arena spikes for a
+    /// world seed.
+    ///
+    /// Public so the dragon fight can rebuild the arena during a respawn without
+    /// regenerating chunks.
+    pub(crate) fn end_spikes_for_level(seed: i64) -> Vec<EndSpike> {
         let mut seed_random = LegacyRandom::from_seed(seed as u64);
         let cache_key = seed_random.next_i64() & 65_535;
         let mut random = LegacyRandom::from_seed(cache_key as u64);
+        // Vanilla `Util.toShuffledList(IntStream.range(0, 10), random)`: the same
+        // descending swap loop as `Util.shuffle`.
         let mut sizes = [0_i32; END_SPIKE_COUNT];
         for (index, size) in sizes.iter_mut().enumerate() {
             *size = index as i32;
         }
-        for bound in (2..=END_SPIKE_COUNT).rev() {
-            let swap_to = random.next_i32_bounded(bound as i32) as usize;
-            sizes.swap(bound - 1, swap_to);
-        }
+        random.shuffle(&mut sizes);
 
         sizes
             .iter()
@@ -196,4 +200,101 @@ impl FeatureDecorationRunner {
         let _ = region.set_block_state(crystal_pos.below(), bedrock, UpdateFlags::UPDATE_ALL);
         let _ = region.set_block_state(crystal_pos, fire, UpdateFlags::UPDATE_ALL);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Live-world placement
+// ---------------------------------------------------------------------------
+//
+// `EndSpikeFeature` normally runs during chunk generation. The dragon fight also
+// has to rebuild the arena in a live world when a respawn reaches the
+// `SUMMONING_PILLARS` stage, so the geometry below works against `World` instead
+// of `WorldGenRegion`. Vanilla runs the same feature through a throwaway
+// `WorldGenRegion` for that rebuild; Steel places the blocks directly, which skips
+// the region copy without changing a single block.
+
+/// Vanilla `EndSpikeFeature.placeSpike` for a live world: the column, the cleared
+/// space around it, the cage and the crystal.
+pub(crate) fn rebuild_spike_in_world(world: &Arc<crate::world::World>, spike: &EndSpike) {
+    let radius_squared_plus_one = spike.radius * spike.radius + 1;
+    let obsidian = REGISTRY
+        .blocks
+        .get_default_state_id(&vanilla_blocks::OBSIDIAN);
+    let air = REGISTRY.blocks.get_default_state_id(&vanilla_blocks::AIR);
+    let min_y = world.min_y();
+
+    for x in (spike.center_x - spike.radius)..=(spike.center_x + spike.radius) {
+        for y in min_y..=(spike.height + 10) {
+            for z in (spike.center_z - spike.radius)..=(spike.center_z + spike.radius) {
+                let pos = BlockPos::new(x, y, z);
+                let dx = f64::from(pos.x() - spike.center_x);
+                let dz = f64::from(pos.z() - spike.center_z);
+                if dx * dx + dz * dz <= f64::from(radius_squared_plus_one) && y < spike.height {
+                    world.set_block(pos, obsidian, UpdateFlags::UPDATE_ALL);
+                } else if y > END_SPIKE_CLEAR_AIR_MIN_Y {
+                    world.set_block(pos, air, UpdateFlags::UPDATE_ALL);
+                }
+            }
+        }
+    }
+
+    if spike.guarded {
+        rebuild_spike_cage_in_world(world, spike);
+    }
+}
+
+/// Vanilla `EndSpikeFeature.placeSpike`'s iron-bar cage for a live world.
+fn rebuild_spike_cage_in_world(world: &Arc<crate::world::World>, spike: &EndSpike) {
+    for dx in -END_SPIKE_CAGE_RADIUS..=END_SPIKE_CAGE_RADIUS {
+        for dz in -END_SPIKE_CAGE_RADIUS..=END_SPIKE_CAGE_RADIUS {
+            for dy in 0..=END_SPIKE_CAGE_HEIGHT {
+                let touches_width_limit = dx.abs() == END_SPIKE_CAGE_RADIUS;
+                let touches_depth_limit = dz.abs() == END_SPIKE_CAGE_RADIUS;
+                let top = dy == END_SPIKE_CAGE_HEIGHT;
+                if !touches_width_limit && !touches_depth_limit && !top {
+                    continue;
+                }
+                let x_edge = touches_width_limit || top;
+                let z_edge = touches_depth_limit || top;
+                let state = FeatureDecorationRunner::end_spike_iron_bars_state(
+                    x_edge, z_edge, dx, dz,
+                );
+                world.set_block(
+                    BlockPos::new(spike.center_x + dx, spike.height + dy, spike.center_z + dz),
+                    state,
+                    UpdateFlags::UPDATE_ALL,
+                );
+            }
+        }
+    }
+}
+
+/// Vanilla `EndSpikeFeature.placeSpike`'s crystal for a live world.
+pub(crate) fn rebuild_spike_crystal_in_world(
+    world: &Arc<crate::world::World>,
+    spike: &EndSpike,
+) {
+    let position = DVec3::new(
+        f64::from(spike.center_x) + 0.5,
+        f64::from(spike.height + 1),
+        f64::from(spike.center_z) + 0.5,
+    );
+    let crystal = EndCrystalEntity::new(
+        &vanilla_entities::END_CRYSTAL,
+        next_entity_id(),
+        position,
+        Arc::downgrade(world),
+    );
+    crystal.set_show_bottom(true);
+    if let Err(error) = world.try_add_entity(Arc::new(crystal) as crate::entity::SharedEntity) {
+        log::debug!("world rejected an end spike crystal: {error}");
+    }
+
+    let crystal_pos = BlockPos::from(position);
+    let bedrock = REGISTRY
+        .blocks
+        .get_default_state_id(&vanilla_blocks::BEDROCK);
+    let fire = REGISTRY.blocks.get_default_state_id(&vanilla_blocks::FIRE);
+    world.set_block(crystal_pos.below(), bedrock, UpdateFlags::UPDATE_ALL);
+    world.set_block(crystal_pos, fire, UpdateFlags::UPDATE_ALL);
 }

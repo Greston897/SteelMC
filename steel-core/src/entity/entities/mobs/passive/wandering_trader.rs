@@ -3,7 +3,7 @@
 //! The despawn timer is implemented (`maybe_despawn`, driven from `aiStep`); the
 //! llama escorts are spawned by `WanderingTraderSpawner` and leashed here.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * the trade list is fixed at spawn from the wandering trader table.
 //! * no natural spawning: vanilla villages place villagers through structure
 //!   generation and the wandering trader arrives with the trader event, both of

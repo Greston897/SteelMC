@@ -6,7 +6,7 @@
 //! stand in one hit; destroying it drops every equipped item and the
 //! `minecraft:armor_stand` item itself, and never awards experience.
 //!
-//! Documented deviations from vanilla 26.3 (see `PARITY-26.3-RU.md`):
+//! Documented deviations from vanilla 26.3 (see `STATE-26.3-RU.md`):
 //! * a right click only fills an *empty* slot. Vanilla replaces the item already
 //!   in the target slot and hands it to the player; Steel's player inventory has
 //!   no "place swapped item into hand" primitive yet, so replacing would delete

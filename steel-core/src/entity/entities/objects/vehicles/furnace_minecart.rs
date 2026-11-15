@@ -26,12 +26,13 @@ use crate::entity::{
 use crate::player::Player;
 use crate::world::World;
 
-/// Vanilla `MinecartFurnace` push time while burning (`320` ticks).
-const FURNACE_PUSH_TIME: i32 = 320;
-/// Vanilla `MinecartFurnace` push acceleration.
-const FURNACE_PUSH_ACCELERATION: f64 = 0.0075;
-/// Vanilla `MinecartFurnace` push drag while the cart is burning.
-const FURNACE_PUSH_DRAG: f64 = 0.997;
+/// Vanilla `MinecartFurnace` fuel added per ignition.
+pub const FURNACE_FUEL_PER_IGNITION: i32 = 3600;
+/// Vanilla `MinecartFurnace` ceiling for accumulated fuel.
+pub const FURNACE_MAX_FUEL: i32 = 32000;
+/// Vanilla `MinecartFurnace.applyNaturalSlowdown`: burning carts damp the
+/// horizontal axes by `0.8` and re-add the stored push vector.
+pub const FURNACE_BURNING_SLOWDOWN: f64 = 0.8;
 
 #[entity_behavior(class = "MinecartFurnace")]
 /// Vanilla furnace minecart with a synced burning flag.
@@ -45,11 +46,10 @@ pub struct FurnaceMinecartEntity {
 
 #[derive(Debug, Default)]
 struct FurnaceMinecartState {
-    /// Ticks the cart keeps pushing after the last ignition.
-    push_time: i32,
-    /// Remaining burn ticks contributed by the current fuel item.
-    fuel_ticks: i32,
-    /// Direction the cart is pushed along, in the XZ plane.
+    /// Vanilla `MinecartFurnace.fuel`: remaining burn ticks. Each fuel item adds
+    /// `3600` and the counter can hold up to `32000`.
+    fuel: i32,
+    /// Vanilla `MinecartFurnace.push`, kept in the XZ plane.
     push_direction: DVec3,
 }
 
@@ -94,50 +94,73 @@ impl FurnaceMinecartEntity {
         self.entity_data.lock().minecart_furnace_mut().id_fuel.set(lit);
     }
 
-    /// Remaining push ticks after the last ignition.
+    /// Vanilla `MinecartFurnace.fuel`: burn ticks left before the cart stops.
     #[must_use]
-    pub fn push_time(&self) -> i32 {
-        self.state.lock().push_time
+    pub fn fuel_ticks(&self) -> i32 {
+        self.state.lock().fuel
     }
 
-    /// Vanilla `MinecartFurnace.activateMinecart` / `push`: start pushing
-    /// towards `direction` and remember the push time.
-    pub fn push(&self, direction: DVec3) {
-        {
-            let mut state = self.state.lock();
-            state.push_time = FURNACE_PUSH_TIME;
-            let horizontal = DVec3::new(direction.x, 0.0, direction.z);
-            if horizontal.length_squared() > 1.0e-7 {
-                state.push_direction = horizontal.normalize();
-            }
-        }
-        if self.is_lit() {
-            return;
-        }
-        self.set_lit(true);
+    /// Vanilla `MinecartFurnace.push`, the stored push vector.
+    #[must_use]
+    pub fn push_direction(&self) -> DVec3 {
+        self.state.lock().push_direction
     }
 
-    /// Vanilla `MinecartFurnace.tick`: burn fuel and push the cart along.
+    /// Vanilla `MinecartFurnace.addFuel`.
+    ///
+    /// Fuel only accumulates when the fuel-tag item is accepted and the tank has
+    /// room for another `3600`; a successful ignition then pushes the cart along
+    /// the horizontal vector *away from the interacting position*.
+    pub fn add_fuel(&self, interacting_pos: DVec3, accepted: bool) -> bool {
+        if !accepted {
+            return false;
+        }
+        let mut state = self.state.lock();
+        if state.fuel + FURNACE_FUEL_PER_IGNITION > FURNACE_MAX_FUEL {
+            return false;
+        }
+        state.fuel += FURNACE_FUEL_PER_IGNITION;
+        let away = self.position() - interacting_pos;
+        state.push_direction = DVec3::new(away.x, 0.0, away.z);
+        true
+    }
+
+    /// Vanilla `MinecartFurnace.tick`: burn the fuel down and keep the lit flag
+    /// in step with the remaining fuel.
     fn tick_furnace(&self) {
-        let (push_time, direction) = {
+        let lit = {
             let mut state = self.state.lock();
-            if state.push_time > 0 {
-                state.push_time -= 1;
+            if state.fuel > 0 {
+                state.fuel -= 1;
             }
-            (state.push_time, state.push_direction)
+            if state.fuel <= 0 {
+                state.push_direction = DVec3::ZERO;
+            }
+            state.fuel > 0
         };
-
-        if push_time <= 0 {
-            if self.is_lit() {
-                self.set_lit(false);
-            }
-            return;
+        if self.is_lit() != lit {
+            self.set_lit(lit);
         }
+    }
 
-        // Vanilla multiplies the current velocity by the push drag, then adds
-        // the acceleration along the remembered direction.
-        let velocity = self.velocity() * FURNACE_PUSH_DRAG + direction * FURNACE_PUSH_ACCELERATION;
-        self.set_velocity(velocity);
+    /// Vanilla `MinecartFurnace.calculateNewPushAlong`.
+    ///
+    /// While the cart is already moving, the stored push is re-aimed along that
+    /// movement so a climbing cart keeps climbing instead of pushing into a wall.
+    #[must_use]
+    pub fn calculate_new_push_along(push: DVec3, movement: DVec3) -> DVec3 {
+        // Vanilla `Vec3.horizontal()` drops the Y component.
+        let push_horizontal = DVec3::new(push.x, 0.0, push.z);
+        let movement_horizontal = DVec3::new(movement.x, 0.0, movement.z);
+        if push_horizontal.length_squared() > 1.0e-4
+            && movement_horizontal.length_squared() > 0.001
+        {
+            let dot = push_horizontal.dot(movement_horizontal);
+            let projected = movement_horizontal * (dot / movement_horizontal.length_squared());
+            projected.normalize_or_zero() * push_horizontal.length()
+        } else {
+            push
+        }
     }
 }
 
@@ -160,12 +183,31 @@ impl Entity for FurnaceMinecartEntity {
 
     fn interact(
         &self,
-        _player: &Player,
-        _hand: InteractionHand,
-        _location: DVec3,
+        player: &Player,
+        hand: InteractionHand,
+        location: DVec3,
     ) -> InteractionResult {
-        // Vanilla opens the furnace screen; Steel has no minecart screens yet.
-        InteractionResult::Pass
+        // Vanilla `MinecartFurnace.interact`: feeding a `furnace_minecart_fuel`
+        // item is what actually pushes the cart, and the stack shrinks by one.
+        // Vanilla also opens the furnace screen, but a minecart has no screen in
+        // Steel, and the fuel path is the gameplay-relevant half.
+        let accepted = {
+            let inventory = player.inventory.lock();
+            let item = inventory.get_item_in_hand(hand);
+            !item.is_empty()
+                && item
+                    .item()
+                    .has_tag(&steel_utils::Identifier::vanilla_static("furnace_minecart_fuel"))
+        };
+        if !accepted {
+            return InteractionResult::Pass;
+        }
+        if !self.add_fuel(location, true) {
+            return InteractionResult::Pass;
+        }
+        // Vanilla `itemStack.consume(1, player)`.
+        player.inventory.lock().shrink_item_in_hand(hand, 1);
+        InteractionResult::Success
     }
 
     fn tick(self: Arc<Self>) {
@@ -176,32 +218,21 @@ impl Entity for FurnaceMinecartEntity {
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
-        let (push_time, fuel_ticks, direction) = {
-            let state = self.state.lock();
-            (state.push_time, state.fuel_ticks, state.push_direction)
-        };
-        if push_time > 0 {
-            nbt.insert("PushX", direction.x);
-            nbt.insert("PushZ", direction.z);
-            nbt.insert("Fuel", push_time);
-        }
-        if fuel_ticks > 0 {
-            nbt.insert("FuelTicks", fuel_ticks);
-        }
+        let state = self.state.lock();
+        // Vanilla writes `PushX` / `PushZ` / `Fuel` unconditionally.
+        nbt.insert("PushX", state.push_direction.x);
+        nbt.insert("PushZ", state.push_direction.z);
+        nbt.insert("Fuel", i16::try_from(state.fuel).unwrap_or(i16::MAX));
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         let push_x = nbt.double_value("PushX").unwrap_or(0.0);
         let push_z = nbt.double_value("PushZ").unwrap_or(0.0);
+        // Vanilla stores the fuel as a short (`getShortOr("Fuel", 0)`).
         let fuel = nbt.int_value("Fuel").unwrap_or(0);
-        let fuel_ticks = nbt.int_value("FuelTicks").unwrap_or(0);
         let mut state = self.state.lock();
-        state.push_time = fuel;
-        state.fuel_ticks = fuel_ticks;
-        let horizontal = DVec3::new(push_x, 0.0, push_z);
-        if horizontal.length_squared() > 1.0e-7 {
-            state.push_direction = horizontal.normalize();
-        }
+        state.fuel = fuel;
+        state.push_direction = DVec3::new(push_x, 0.0, push_z);
     }
 }
 
@@ -210,15 +241,40 @@ impl AbstractMinecart for FurnaceMinecartEntity {
         &self.minecart_base
     }
 
-    fn activate_minecart(&self, _world: &World, _pos: BlockPos, powered: bool) {
-        if !powered {
-            return;
-        }
-        // Vanilla pushes the cart forward along its current facing.
-        let (yaw, _) = self.rotation();
-        let rotation = f64::from(yaw).to_radians();
-        let direction = DVec3::new(-rotation.sin(), 0.0, rotation.cos());
-        self.push(direction);
+    fn activate_minecart(&self, _world: &World, _pos: BlockPos, _powered: bool) {
+        // Vanilla `MinecartFurnace` does not override `activateMinecart`: a
+        // powered rail does not ignite it. Only feeding fuel pushes the cart.
+    }
+
+    /// Vanilla `MinecartFurnace.applyNaturalSlowdown`.
+    ///
+    /// While the stored push is non-trivial it is re-aimed along the current
+    /// motion, the horizontal axes are damped by `0.8`, and the push is added
+    /// back. A burning cart in water is additionally scaled by `0.1`. With no
+    /// push, the cart falls back to the plain `0.98` minecart drag.
+    fn apply_natural_slowdown(&self, movement: DVec3) -> DVec3 {
+        let push = {
+            let mut state = self.state.lock();
+            if state.push_direction.length_squared() > 1.0e-7 {
+                state.push_direction =
+                    FurnaceMinecartEntity::calculate_new_push_along(state.push_direction, movement);
+            }
+            state.push_direction
+        };
+
+        let adjusted = if push.length_squared() > 1.0e-7 {
+            let damped =
+                movement * DVec3::new(FURNACE_BURNING_SLOWDOWN, 0.0, FURNACE_BURNING_SLOWDOWN);
+            let mut pushed = damped + push;
+            if self.is_in_water() {
+                pushed *= 0.1;
+            }
+            pushed
+        } else {
+            movement * DVec3::new(0.98, 0.0, 0.98)
+        };
+        // Vanilla chains into `AbstractMinecart.applyNaturalSlowdown`.
+        <Self as AbstractMinecart>::apply_natural_slowdown(self, adjusted)
     }
     fn custom_display_block(&self) -> Option<BlockStateId> {
         *self
@@ -277,16 +333,30 @@ mod tests {
         init_vanilla_registry();
         let cart = cart();
         assert!(!cart.is_lit());
-        assert_eq!(cart.push_time(), 0);
+        assert_eq!(cart.fuel_ticks(), 0);
     }
 
     #[test]
-    fn pushing_lights_the_furnace_for_the_vanilla_duration() {
+    fn one_fuel_item_adds_the_vanilla_fuel_budget() {
         init_vanilla_registry();
         let cart = cart();
-        cart.push(DVec3::new(1.0, 0.0, 0.0));
-        assert!(cart.is_lit());
-        assert_eq!(cart.push_time(), FURNACE_PUSH_TIME);
+        assert!(cart.add_fuel(DVec3::new(-1.0, 0.0, 0.0), true));
+        assert_eq!(cart.fuel_ticks(), FURNACE_FUEL_PER_IGNITION);
+        // Vanilla pushes along `position - interactingPos`, so feeding from the
+        // negative X side pushes the cart towards positive X.
+        assert!(cart.push_direction().x > 0.0);
+    }
+
+    #[test]
+    fn fuel_stops_accumulating_at_the_vanilla_ceiling() {
+        init_vanilla_registry();
+        let cart = cart();
+        for _ in 0..9 {
+            assert!(cart.add_fuel(DVec3::ZERO, true));
+        }
+        // 9 * 3600 = 32400 > 32000, so the ninth ignition is refused.
+        assert_eq!(cart.fuel_ticks(), 8 * FURNACE_FUEL_PER_IGNITION);
+        assert!(!cart.add_fuel(DVec3::ZERO, true));
     }
 
 }

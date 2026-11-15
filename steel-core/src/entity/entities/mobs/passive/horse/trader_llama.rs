@@ -4,7 +4,7 @@
 //! this implementation mirrors the plain llama and only differs in the entity
 //! type it is registered for.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * the trader's despawn rules and spit AI are not implemented; the llama is
 //!   spawned and leashed by `WanderingTraderSpawner` like vanilla.
 

@@ -6,7 +6,7 @@
 //! hostile target selector. Daylight burning is driven by the
 //! `minecraft:burn_in_daylight` entity type tag, not by this file.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * vanilla piglins are neutral unless provoked or the player wears no gold
 //!   armor, and barter with gold ingots; Steel registers them as always hostile
 //!   and has no bartering.

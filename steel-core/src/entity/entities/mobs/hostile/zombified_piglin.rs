@@ -6,7 +6,7 @@
 //! hostile target selector. Daylight burning is driven by the
 //! `minecraft:burn_in_daylight` entity type tag, not by this file.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * zombified piglins are neutral in vanilla: they only retaliate after being
 //!   hit. Steel registers the plain hostile target selector for now, so they
 //!   attack players on sight.

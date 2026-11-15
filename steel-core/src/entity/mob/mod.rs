@@ -1899,20 +1899,23 @@ pub trait Mob: LivingEntity + Leashable {
         let mut strafe_forward = forward;
         let mut strafe_right = right;
 
-        let mut distance = strafe_forward
-            .mul_add(strafe_forward, strafe_right * strafe_right)
-            .sqrt();
+        // Vanilla `Mth.sqrt(xa * xa + za * za)`: `f32` squares summed left to
+        // right, not a fused multiply-add.
+        let mut distance = (strafe_forward * strafe_forward + strafe_right * strafe_right).sqrt();
         if distance < 1.0 {
             distance = 1.0;
         }
         distance = speed / distance;
         let xa = strafe_forward * distance;
         let za = strafe_right * distance;
-        let yaw_radians = self.rotation().0 * DEG_TO_RAD;
+        // Vanilla widens the *`f32`* yaw to `double` for `Mth.sin`/`Mth.cos`
+        // (`Mth.sin((float)deg * (PI / 180))`), so the angle must be computed in
+        // `f32` first — a `f64` angle can land in a different sine-table slot.
+        let yaw_radians = f64::from(self.rotation().0 * DEG_TO_RAD);
         let sin = trig::sin(yaw_radians);
         let cos = trig::cos(yaw_radians);
-        let dx = xa.mul_add(cos, -(za * sin));
-        let dz = za.mul_add(cos, xa * sin);
+        let dx = f64::from(xa * cos - za * sin);
+        let dz = f64::from(za * cos + xa * sin);
         if !self.is_strafe_walkable(dx, dz) {
             strafe_forward = 1.0;
             strafe_right = 0.0;
@@ -1966,7 +1969,7 @@ pub trait Mob: LivingEntity + Leashable {
             let xd = wanted_position.x - position.x;
             let yd = wanted_position.y - self.get_eye_y();
             let zd = wanted_position.z - position.z;
-            let horizontal = xd.hypot(zd);
+            let horizontal = (xd * xd + zd * zd).sqrt();
             if horizontal.abs() > 1.0e-5 || yd.abs() > 1.0e-5 {
                 let target_pitch = -(yd.atan2(horizontal)) as f32 * RAD_TO_DEG;
                 rotation.1 =
@@ -2022,7 +2025,7 @@ pub trait Mob: LivingEntity + Leashable {
     fn tick_body_rotation_control(&self) {
         let moving = {
             let delta = self.position() - self.old_position();
-            delta.x.mul_add(delta.x, delta.z * delta.z) > BODY_ROTATION_MOVING_DISTANCE_SQR
+            delta.x * delta.x + delta.z * delta.z > BODY_ROTATION_MOVING_DISTANCE_SQR
         };
         let carrying_mob_passenger = self
             .first_passenger()
@@ -2129,7 +2132,7 @@ pub fn block_pos_distance_sqr(a: BlockPos, b: BlockPos) -> f64 {
     let dx = f64::from(a.x() - b.x());
     let dy = f64::from(a.y() - b.y());
     let dz = f64::from(a.z() - b.z());
-    dx.mul_add(dx, dy.mul_add(dy, dz * dz))
+    dx * dx + dy * dy + dz * dz
 }
 
 pub fn block_center_distance_sqr(pos: BlockPos, target: DVec3) -> f64 {

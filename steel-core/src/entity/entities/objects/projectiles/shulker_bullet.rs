@@ -3,7 +3,7 @@
 //! Vanilla `ShulkerBullet` homes onto the entity it was fired at, deals `4.0`
 //! damage on contact and applies levitation.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * the homing flight is not implemented; Steel's shared throwable tick flies
 //!   straight and applies gravity.
 

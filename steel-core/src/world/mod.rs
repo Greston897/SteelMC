@@ -27,7 +27,7 @@ use crate::world::game_event::{
 use crate::{chunk::chunk_map::ChunkMapGameTickTimings, world::weather::Weather};
 use steel_utils::saved_data::{SavedDataManager, names as saved_data_names};
 
-use glam::DVec3;
+use glam::{DVec3, IVec3};
 use sha2::{Digest, Sha256};
 use steel_protocol::packets::game::{
     CBlockDestruction, CBossEvent, CChangeDifficulty, CGameEvent, CInitializeBorder, CLevelEvent,
@@ -87,8 +87,14 @@ use tokio::{runtime::Runtime, time::Instant};
 use crate::{
     ChunkMap,
     behavior::{BLOCK_BEHAVIORS, BlockCollisionContext, BlockLootContext, FLUID_BEHAVIORS},
-    block_entity::{BlockEntity, SharedBlockEntity, entities::EndGatewayBlockEntity},
-    chunk::{heightmap::HeightmapType, player_chunk_view::PlayerChunkView},
+    block_entity::{
+        BlockEntity, SharedBlockEntity,
+        entities::{EndGatewayBlockEntity, EndPortalBlockEntity},
+    },
+    chunk::{
+        chunk_ticket_manager::FullChunkStatus, heightmap::HeightmapType,
+        player_chunk_view::PlayerChunkView,
+    },
     chunk_saver::{ChunkStorage, RamOnlyStorage, RegionManager},
     entity::{
         AddEntityError, Entity, EntityChangeSenders, EntityChunkCallback, EntityLifecycleChanges,
@@ -424,6 +430,30 @@ impl World {
         if level_data.is_dirty() {
             level_data.save().await?;
         }
+        let dragon_fight_state = {
+            let mut fight = dragon_fight::DragonFight::new();
+            fight.set_level_seed(seed);
+            // Vanilla persists the fight through `SavedDataType` `ender_dragon_fight`
+            // so a restart keeps the portal, gateways and respawn progress.
+            match saved_data
+                .load_or_default::<dragon_fight::DragonFightSavedData>(
+                    saved_data_names::ENDER_DRAGON_FIGHT,
+                )
+                .await
+            {
+                Ok(state) => fight.apply_saved_data(&state),
+                Err(error) => log::warn!(
+                    "Could not load the ender dragon fight for world {key}; starting fresh: {error}"
+                ),
+            }
+            // Vanilla `EnderDragonFight.init`: a fight without a saved gateway
+            // order derives one from the level seed. Saved orders are kept as-is,
+            // which is what makes the gateway ring stable across restarts.
+            if fight.gateways().is_empty() {
+                fight.init_gateways(seed);
+            }
+            fight
+        };
         let ticket_storage = ChunkTicketStorage::load(&saved_data, &key).await;
         let raids = match saved_data.load_or_default::<Vec<raid::Raid>>(saved_data_names::RAIDS).await
         {
@@ -504,7 +534,7 @@ impl World {
                 wandering_traders: SyncMutex::new(wandering_traders),
                 phantoms: SyncMutex::new(crate::entity::phantom_spawner::PhantomSpawner::new()),
                 patrols: SyncMutex::new(crate::entity::patrol_spawner::PatrolSpawner::new()),
-                dragon_fight: dragon_fight::DragonFight::new(),
+                dragon_fight: dragon_fight_state,
                 player_area_map: PlayerAreaMap::new(),
                 server: std::sync::OnceLock::new(),
                 key,
@@ -601,6 +631,19 @@ impl World {
             Err(e) => log::error!("Failed to save world raids: {e}"),
         }
 
+        // The dragon fight is vanilla saved data: keep the portal, the opened
+        // gateways and any half-finished respawn across a restart.
+        if self.is_end_dimension_type() {
+            let state = self.dragon_fight.to_saved_data();
+            if let Err(error) = self
+                .saved_data
+                .save(saved_data_names::ENDER_DRAGON_FIGHT, &state)
+                .await
+            {
+                log::error!("Failed to save the ender dragon fight: {error}");
+            }
+        }
+
         // The wandering trader day counter is vanilla `level.dat` state: a
         // restart must continue the countdown instead of restarting the day.
         let schedule = self.wandering_traders.lock().schedule();
@@ -663,13 +706,503 @@ impl World {
         self.dragon_fight.dragon_target().map(|pos| BlockPos::new(pos.x, pos.y, pos.z))
     }
 
-    /// Vanilla `EndCrystal` removal hook: a crystal that dies on the exit portal
-    /// column starts the dragon respawn.
-    pub fn on_end_crystal_destroyed(&self, pos: BlockPos) {
+    /// Vanilla `EndCrystal` removal hook (`EnderDragonFight.onCrystalDestroyed`).
+    pub fn on_end_crystal_destroyed(self: &Arc<Self>, pos: BlockPos) {
+        self.on_end_crystal_destroyed_by(pos, None);
+    }
+
+    /// Vanilla `EnderDragonFight.onCrystalDestroyed(crystal, source)`.
+    ///
+    /// While a respawn is running any crystal loss aborts it; otherwise the alive
+    /// count is refreshed, the live dragon is told (which is what turns a
+    /// holding-pattern dragon into a strafe at whoever broke the crystal), and the
+    /// spawn ring is rebuilt on the next fight tick.
+    pub fn on_end_crystal_destroyed_by(
+        self: &Arc<Self>,
+        _pos: BlockPos,
+        source: Option<&crate::entity::damage::DamageSource>,
+    ) {
         if !self.is_end_dimension_type() {
             return;
         }
-        self.dragon_fight.try_respawn(pos.0);
+
+        // Vanilla `onCrystalDestroyed`: a crystal destroyed *during* a respawn
+        // aborts the sequence; otherwise the count is refreshed and the dragon is
+        // told, so it can start a strafe at whoever broke it.
+        if self.dragon_fight.respawn_stage().is_some() {
+            self.abort_dragon_respawn();
+            return;
+        }
+        self.dragon_fight.on_crystal_destroyed();
+
+        if let Some(uuid) = self.dragon_fight.dragon_uuid()
+            && let Some(dragon) = self
+                .get_entity_by_uuid(&uuid)
+                .and_then(|entity| {
+                    entity
+                        .as_ref()
+                        .downcast_ref::<crate::entity::entities::EnderDragonEntity>()
+                })
+        {
+            let player = source
+                .and_then(crate::entity::damage::DamageSource::causing_entity)
+                .cloned();
+            crate::entity::entities::ender_dragon::phase_ticks::on_crystal_destroyed(
+                dragon,
+                player.as_ref(),
+            );
+        }
+    }
+
+    /// Vanilla `EnderDragonFight.tryRespawn`, driven by a player placing an end
+    /// crystal on the exit portal's four sides.
+    ///
+    /// Vanilla looks for crystals in the four boxes at `centre.relative(dir, 3)`
+    /// around the block above the portal and requires every direction to find at
+    /// least one; only then does `respawnDragon` run.
+    pub fn try_respawn_dragon(self: &Arc<Self>) {
+        if !self.is_end_dimension_type()
+            || !self.dragon_fight.is_dragon_killed()
+            || self.dragon_fight.respawn_stage().is_some()
+        {
+            return;
+        }
+
+        let location = match self.dragon_fight.exit_portal_location() {
+            Some(location) => BlockPos::new(location.x, location.y, location.z),
+            None => {
+                // Vanilla makes one if the world does not have a portal yet.
+                self.spawn_end_exit_portal(true);
+                self.exit_portal_location()
+            }
+        };
+        let center = location.above();
+
+        let mut crystals = Vec::new();
+        for direction in [
+            (1, 0),
+            (-1, 0),
+            (0, 1),
+            (0, -1),
+        ] {
+            let anchor = BlockPos::new(
+                center.x() + direction.0 * 3,
+                center.y(),
+                center.z() + direction.1 * 3,
+            );
+            let box_ = steel_utils::WorldAabb::new(
+                f64::from(anchor.x()),
+                f64::from(anchor.y()),
+                f64::from(anchor.z()),
+                f64::from(anchor.x() + 1),
+                f64::from(anchor.y() + 1),
+                f64::from(anchor.z() + 1),
+            );
+            let found = self.get_entities_in_aabb_matching(&box_, |entity| {
+                entity.entity_type() == &steel_registry::vanilla_entities::END_CRYSTAL
+            });
+            if found.is_empty() {
+                return;
+            }
+            crystals.extend(found);
+        }
+
+        let positions = crystals
+            .iter()
+            .map(|crystal| {
+                let position = Entity::position(crystal.as_ref());
+                IVec3::new(
+                    position.x.floor() as i32,
+                    position.y.floor() as i32,
+                    position.z.floor() as i32,
+                )
+            })
+            .collect();
+
+        if self.dragon_fight.try_respawn(positions) {
+            // `respawnDragon` replaces the active portal with the inactive one.
+            self.spawn_end_exit_portal(false);
+        }
+    }
+
+    /// Vanilla `EnderDragonFight.abortRespawnSequence`: stop the sequence, reset
+    /// the spike crystals and put the active portal back.
+    fn abort_dragon_respawn(self: &Arc<Self>) {
+        self.dragon_fight.abort_respawn();
+        self.dragon_fight.set_respawn_crystals(Vec::new());
+        self.reset_end_spike_crystals();
+        self.spawn_end_exit_portal(true);
+    }
+
+    /// Vanilla `EnderDragonFight.tick`, once per world tick in the End.
+    ///
+    /// The order is exactly vanilla's: refresh the bar visibility, rescan the
+    /// watching players every twenty ticks, and only do any arena work when at least
+    /// one player is in range. Then the optional state scan, the respawn stage and
+    /// the live-dragon upkeep.
+    pub fn tick_dragon_fight(self: &Arc<Self>) {
+        if !self.is_end_dimension_type() {
+            return;
+        }
+
+        // `dragonEvent.setVisible(!dragonKilled)` runs on every tick, even with no
+        // players around, because the bar definition is broadcast separately.
+        self.dragon_fight
+            .set_bar_visible(!self.dragon_fight.is_dragon_killed());
+
+        if self.dragon_fight.tick_player_scan() {
+            self.update_dragon_fight_players();
+        }
+
+        if !self.dragon_fight.has_nearby_players() {
+            // Vanilla drops the arena ticket once nobody is watching, so the arena
+            // can unload again.
+            self.chunk_map.remove_dragon_ticket();
+            return;
+        }
+
+        // Vanilla keeps the `-8..=8` arena resident while the fight has players.
+        self.chunk_map.add_dragon_ticket();
+
+        // Vanilla bails out of the whole tick body until the arena is loaded.
+        if !self.is_arena_loaded() {
+            return;
+        }
+
+        // Vanilla resolves the world's dragon state once, before anything else, so
+        // a world created before the fight existed still gets its portal and the
+        // right "previously killed" flag.
+        if self.dragon_fight.needs_state_scanning() {
+            self.scan_dragon_fight_state();
+        }
+
+        if self.dragon_fight.respawn_stage().is_some() {
+            // `respawnStage.tick` is skipped when every respawn crystal is gone;
+            // that case aborts the sequence instead.
+            if self.respawn_crystals().is_empty() {
+                self.dragon_fight.abort_respawn();
+                return;
+            }
+            let effects = self.dragon_fight.tick_respawn();
+            for effect in effects {
+                match effect {
+                    dragon_fight::DragonRespawnEffect::AimCrystalsAt(target) => {
+                        self.aim_respawn_crystals(target);
+                    }
+                    dragon_fight::DragonRespawnEffect::LevelEvent { event, pos } => {
+                        self.level_event(event, pos, 0, None);
+                    }
+                    dragon_fight::DragonRespawnEffect::RebuildSpike(spike) => {
+                        self.rebuild_end_spike(&spike);
+                    }
+                    dragon_fight::DragonRespawnEffect::ResetSpikeCrystals => {
+                        self.reset_end_spike_crystals();
+                    }
+                    dragon_fight::DragonRespawnEffect::DetonateRespawnCrystals => {
+                        self.detonate_respawn_crystals();
+                    }
+                    dragon_fight::DragonRespawnEffect::RespawnDragon => {
+                        self.spawn_end_dragon();
+                    }
+                }
+            }
+        }
+
+        if !self.dragon_fight.is_dragon_killed() {
+            self.ensure_end_dragon();
+            self.update_dragon_fight_crystals();
+        }
+    }
+
+    /// Vanilla `EnderDragonFight.updatePlayers`: the bar's player set is every
+    /// living player within 192 blocks of `(origin.x, 128 + origin.y, origin.z)`.
+    fn update_dragon_fight_players(self: &Arc<Self>) {
+        let origin = dragon_fight::DragonFight::podium_pos();
+        let center = DVec3::new(
+            f64::from(origin.x()),
+            f64::from(dragon_fight::DRAGON_SPAWN_Y),
+            f64::from(origin.z()),
+        );
+        let radius_squared = dragon_fight::PLAYER_SCAN_RADIUS * dragon_fight::PLAYER_SCAN_RADIUS;
+        let mut has_players = false;
+        self.players.iter_players(|_, player| {
+            if player.is_alive()
+                && Entity::position(player.as_ref()).distance_squared(center) <= radius_squared
+            {
+                has_players = true;
+                return false;
+            }
+            true
+        });
+        self.dragon_fight.set_has_nearby_players(has_players);
+    }
+
+    /// Vanilla `EnderDragonFight.isArenaLoaded`: every chunk in the `-8..=8`
+    /// square around the fight origin is `FULL` and at least `BLOCK_TICKING`.
+    ///
+    /// The fight skips its whole tick body until the arena is loaded, so a scan or
+    /// a dragon spawn never runs against half-generated chunks.
+    #[must_use]
+    fn is_arena_loaded(&self) -> bool {
+        for chunk_x in -8..=8_i32 {
+            for chunk_z in -8..=8_i32 {
+                let Some(status) = self.chunk_map.full_chunk_status(ChunkPos::new(chunk_x, chunk_z))
+                else {
+                    return false;
+                };
+                if !status.is_or_after(FullChunkStatus::BlockTicking) {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+
+    /// Vanilla `EnderDragonFight.scanState`: resolve whether this world has
+    /// already been beaten and whether a dragon is still alive.
+    ///
+    /// Vanilla checks for a `TheEndPortalBlockEntity` anywhere in the `-8..=8`
+    /// chunk square, which for the End means the exit portal itself.
+    fn scan_dragon_fight_state(self: &Arc<Self>) {
+        // Vanilla runs `hasActiveExitPortal()`, then only when it is `false`
+        // `findExitPortal()`. Both are the same chunk-entity sweep, so Steel runs
+        // it once.
+        let has_active_portal = self.has_active_exit_portal();
+
+        // Vanilla: an active portal means the dragon was already beaten. Without
+        // one, the world is unbeaten and gets an inactive exit portal.
+        if !has_active_portal {
+            self.spawn_end_exit_portal(false);
+        }
+
+        // Vanilla `getDragons()` = `getEntities(ENDER_DRAGON, LivingEntity::isAlive)`,
+        // so a dragon that is already dying does not count as still alive.
+        let dragons = self.get_entities_in_aabb_matching(&self.arena_box(), |entity| {
+            entity.entity_type() == &steel_registry::vanilla_entities::ENDER_DRAGON
+                && Entity::is_alive(entity)
+        });
+
+        // Vanilla keeps a live dragon only when it also has a portal; otherwise
+        // that dragon is a leftover of an interrupted fight and is discarded so a
+        // fresh one can spawn.
+        let mut dragon = dragons.first().map(|entity| Entity::uuid(entity.as_ref()));
+        if let Some(first) = dragons.first()
+            && !has_active_portal
+        {
+            first.set_removed(RemovalReason::Discarded);
+            dragon = None;
+        }
+
+        self.dragon_fight.scan_state(has_active_portal, dragon);
+    }
+
+    /// Vanilla `EnderDragonFight.tick`'s dragon half:
+    /// `if (dragonUUID == null || ++ticksSinceDragonSeen >= 1200) findOrCreateDragon()`.
+    ///
+    /// The whole-level dragon query only runs on those ticks, so the common case is
+    /// two lock reads. `findOrCreateDragon` adopts a dragon already in the arena and
+    /// otherwise restores the recorded UUID, or creates a new dragon.
+    fn ensure_end_dragon(self: &Arc<Self>) {
+        let known_uuid = self.dragon_fight.dragon_uuid();
+        if let Some(uuid) = known_uuid {
+            let seen = self.dragon_fight.tick_dragon_seen();
+            if seen < dragon_fight::MAX_TICKS_BEFORE_DRAGON_RESPAWN {
+                // Vanilla only reaches `findOrCreateDragon` when the timer expires;
+                // until then the recorded UUID is authoritative, and a vanished
+                // dragon is recovered on the 1200-tick boundary.
+                let _ = uuid;
+                return;
+            }
+        }
+
+        // Vanilla `getDragons()` filters on `LivingEntity::isAlive`, so a dying
+        // dragon is not adopted.
+        let dragons = self.get_entities_in_aabb_matching(&self.arena_box(), |entity| {
+            entity.entity_type() == &steel_registry::vanilla_entities::ENDER_DRAGON
+                && Entity::is_alive(entity)
+        });
+
+        // `findOrCreateDragon`: adopt whatever dragon the level has.
+        if let Some(dragon) = dragons.first() {
+            self.dragon_fight
+                .set_dragon_uuid(Some(Entity::uuid(dragon.as_ref())));
+            let position = Entity::position(dragon.as_ref());
+            self.dragon_fight.set_dragon(Some(IVec3::new(
+                position.x.floor() as i32,
+                position.y.floor() as i32,
+                position.z.floor() as i32,
+            )));
+            self.dragon_fight.reset_ticks_since_dragon_seen();
+            return;
+        }
+
+        self.spawn_end_dragon();
+    }
+
+    /// The box `EnderDragonFight.getDragons()` covers.
+    ///
+    /// Vanilla `ServerLevel.getDragons()` is a whole-level
+    /// `getEntities(EntityTypes.ENDER_DRAGON, LivingEntity::isAlive)` — not an AABB
+    /// query — so the box spans the world's full height and a generous radius. The
+    /// fight only cares about the dragons it can adopt, and the End is a single
+    /// arena, so the radius covers everything a dragon can reach.
+    #[must_use]
+    fn arena_box(&self) -> steel_utils::WorldAabb {
+        let min_y = f64::from(self.get_min_y());
+        let max_y = f64::from(self.get_max_y() + 1);
+        steel_utils::WorldAabb::new(
+            -30_000_000.0,
+            min_y,
+            -30_000_000.0,
+            30_000_000.0,
+            max_y,
+            30_000_000.0,
+        )
+    }
+
+    /// Vanilla `EndCrystal.setBeamTarget` for every respawn crystal.
+    fn aim_respawn_crystals(self: &Arc<Self>, target: BlockPos) {
+        for crystal in self.respawn_crystals() {
+            Self::with_crystal(&crystal, |crystal| crystal.set_beam_target(Some(target)));
+        }
+    }
+
+    /// Vanilla `DragonRespawnStage`'s `respawnCrystals` list, resolved against the
+    /// live entities.
+    ///
+    /// Vanilla stores `EntityReference<EndCrystal>`s and re-resolves them every tick
+    /// (`e.getEntity(level, EndCrystal.class)`), dropping the ones that died; a
+    /// sequence with no crystals left aborts. Steel looks the recorded positions up
+    /// in the same way.
+    #[must_use]
+    fn respawn_crystals(self: &Arc<Self>) -> Vec<SharedEntity> {
+        let positions = self.dragon_fight.respawn_crystals();
+        if positions.is_empty() {
+            return Vec::new();
+        }
+
+        let mut found = Vec::with_capacity(positions.len());
+        for position in positions {
+            let search = steel_utils::WorldAabb::new(
+                f64::from(position.x) - 0.5,
+                f64::from(position.y) - 0.5,
+                f64::from(position.z) - 0.5,
+                f64::from(position.x) + 1.5,
+                f64::from(position.y) + 1.5,
+                f64::from(position.z) + 1.5,
+            );
+            found.extend(self.get_entities_in_aabb_matching(&search, |entity| {
+                entity.entity_type() == &steel_registry::vanilla_entities::END_CRYSTAL
+            }));
+        }
+        found
+    }
+
+    /// Calls `f` on the crystal behind `entity`, if it is one.
+    fn with_crystal<R>(
+        entity: &SharedEntity,
+        f: impl FnOnce(&crate::entity::entities::EndCrystalEntity) -> R,
+    ) -> Option<R> {
+        let crystal = entity
+            .as_ref()
+            .downcast_ref::<crate::entity::entities::EndCrystalEntity>()?;
+        Some(f(crystal))
+    }
+
+    /// Vanilla `EnderDragonFight.resetSpikeCrystals`: rebuild every spike's
+    /// crystal.
+    fn reset_end_spike_crystals(self: &Arc<Self>) {
+        let spikes = crate::worldgen::feature::end_spikes_for_level(self.seed());
+        for spike in spikes {
+            crate::worldgen::feature::rebuild_spike_crystal_in_world(self, &spike);
+        }
+    }
+
+    /// Vanilla `DragonRespawnStage.SUMMONING_PILLARS`'s per-spike rebuild.
+    fn rebuild_end_spike(self: &Arc<Self>, spike: &steel_registry::feature::EndSpike) {
+        crate::worldgen::feature::rebuild_spike_in_world(self, spike);
+        crate::worldgen::feature::rebuild_spike_crystal_in_world(self, spike);
+    }
+
+    /// Vanilla `DragonRespawnStage.SUMMONING_DRAGON`'s crystal detonation.
+    fn detonate_respawn_crystals(self: &Arc<Self>) {
+        for crystal in self.respawn_crystals() {
+            Self::with_crystal(&crystal, |crystal| crystal.set_beam_target(None));
+            let position = Entity::position(crystal.as_ref());
+            let mut options = crate::world::explosion::ExplosionOptions::new(
+                position,
+                6.0,
+                crate::world::explosion::ExplosionInteraction::None,
+            );
+            options.source = None;
+            self.explode(options);
+            crystal.set_removed(RemovalReason::Killed);
+        }
+    }
+
+    /// Vanilla `EnderDragonFight.createNewDragon`.
+    ///
+    /// The dragon spawns at `(origin.x, 128 + origin.y, origin.z)` with yaw `0`, and
+    /// the fight adopts it immediately so crystals relink their beams the same tick.
+    fn spawn_end_dragon(self: &Arc<Self>) {
+        // Vanilla `createNewDragon` loads the spawn chunk first, so the dragon never
+        // appears inside ungenerated terrain.
+        self.chunk_map.force_load(ChunkPos::new(0, 0));
+
+        let position = DVec3::new(0.0, f64::from(dragon_fight::DRAGON_SPAWN_Y), 0.0);
+        let dragon = Arc::new(crate::entity::entities::EnderDragonEntity::new(
+            &steel_registry::vanilla_entities::ENDER_DRAGON,
+            crate::entity::next_entity_id(),
+            position,
+            Arc::downgrade(self),
+        ));
+
+        // Vanilla `createNewDragon`: start in the holding pattern and snap to the
+        // spawn point with a random yaw, so two dragons never fly in lockstep.
+        dragon.set_phase(crate::entity::entities::mobs::bosses::DragonPhase::HoldingPattern);
+        let yaw = rand::random::<f32>() * 360.0;
+        Entity::snap_to(&dragon, position, yaw, 0.0);
+
+        let dragon = dragon as SharedEntity;
+        self.dragon_fight.set_dragon_uuid(Some(Entity::uuid(dragon.as_ref())));
+        self.dragon_fight
+            .set_dragon(Some(IVec3::new(0, dragon_fight::DRAGON_SPAWN_Y, 0)));
+        self.dragon_fight.reset_ticks_since_dragon_seen();
+        if let Err(error) = self.try_add_entity(dragon) {
+            log::debug!("world rejected the ender dragon spawn: {error}");
+        }
+    }
+
+    /// Vanilla `EnderDragonFight.updateCrystalCount`: count the crystals standing
+    /// on each spike's top box.
+    ///
+    /// Vanilla sums `getEntitiesOfClass(EndCrystal, spike.getTopBoundingBox())`
+    /// over the ten spikes, which is why a crystal placed anywhere else in the
+    /// arena does not count. Driven from the fight tick.
+    pub fn update_dragon_fight_crystals(self: &Arc<Self>) {
+        if !self.is_end_dimension_type() || !self.dragon_fight.should_rescan_crystals() {
+            return;
+        }
+
+        let spikes = crate::worldgen::feature::end_spikes_for_level(self.seed());
+        let mut alive = 0;
+        for spike in spikes {
+            let radius = f64::from(spike.radius);
+            let search = steel_utils::WorldAabb::new(
+                f64::from(spike.center_x) - radius,
+                f64::from(self.get_min_y()),
+                f64::from(spike.center_z) - radius,
+                f64::from(spike.center_x) + radius,
+                f64::from(self.get_max_y() + 1),
+                f64::from(spike.center_z) + radius,
+            );
+            alive += self
+                .get_entities_in_aabb_matching(&search, |entity| {
+                    entity.entity_type() == &steel_registry::vanilla_entities::END_CRYSTAL
+                })
+                .len() as i32;
+        }
+        self.dragon_fight.update_crystal_count(alive);
     }
 
     /// Vanilla `EnderDragonFight.updateDragon`: the live dragon feeds the boss bar.
@@ -739,12 +1272,35 @@ impl World {
         }
         let outcome = self.dragon_fight.set_dragon_killed();
         if outcome.spawn_exit_portal {
-            self.spawn_end_exit_portal();
+            self.spawn_end_exit_portal(true);
         }
         if outcome.drop_dragon_egg {
             self.spawn_dragon_egg();
         }
+        if outcome.spawn_gateway
+            && let Some(gateway) = self.dragon_fight.next_gateway()
+        {
+            self.spawn_end_gateway(IVec3::new(gateway.x, gateway.y, gateway.z));
+        }
         self.hide_dragon_boss_bar();
+    }
+
+    /// Vanilla `EnderDragonFight.spawnNewGateway(pos)`: the `3000` level event and
+    /// then the `end_gateway_delayed` feature at `pos`.
+    ///
+    /// The feature is the same code worldgen runs, so the bedrock capsule and the
+    /// gateway block entity (which owns the teleport exit) come out identical.
+    fn spawn_end_gateway(self: &Arc<Self>, position: IVec3) {
+        let pos = BlockPos::new(position.x, position.y, position.z);
+        self.global_level_event(dragon_fight::EVENT_GATEWAY_SPAWN, pos, 0);
+        crate::worldgen::feature::place_end_gateway_in_world(
+            self,
+            pos,
+            &steel_registry::feature::EndGatewayConfiguration {
+                exit: None,
+                exact: false,
+            },
+        );
     }
 
     /// Removes the dragon boss bar from the registry and the clients.
@@ -761,31 +1317,89 @@ impl World {
         self.broadcast_to_all::<CBossEvent>(bar.remove_packet());
     }
 
-    /// Vanilla `EnderDragonFight.spawnExitPortal`: the bedrock ring and the end
-    /// portal block on the podium column.
-    fn spawn_end_exit_portal(self: &Arc<Self>) {
-        let podium = dragon_fight::DragonFight::podium_pos();
-        for dx in -2..=2 {
-            for dz in -2..=2 {
-                let pos = BlockPos::new(podium.x() + dx, podium.y(), podium.z() + dz);
-                let ring = dx.abs() == 2 || dz.abs() == 2;
-                let state = if ring {
-                    vanilla_blocks::BEDROCK.default_state()
-                } else {
-                    vanilla_blocks::END_PORTAL.default_state()
-                };
-                self.set_block(pos, state, UpdateFlags::UPDATE_ALL);
-            }
+    /// Vanilla `EnderDragonFight.spawnExitPortal(activated)`: drop the
+    /// `end_podium_active`/`end_podium_inactive` feature on the resolved portal
+    /// location.
+    ///
+    /// The location is resolved the way vanilla does it: heightmap of the podium,
+    /// one below, then walk down past bedrock until the world's minimum height.
+    fn spawn_end_exit_portal(self: &Arc<Self>, activated: bool) {
+        // Vanilla only resolves (and records) the location when it has none; an
+        // already-known location is reused as-is, so a re-spawn never moves the
+        // portal.
+        let location = self.exit_portal_location();
+        if self.dragon_fight.exit_portal_location().is_none() {
+            self.dragon_fight
+                .set_exit_portal_location(IVec3::new(location.x(), location.y(), location.z()));
         }
+        crate::worldgen::feature::place_end_podium_in_world(self, location, activated);
     }
 
-    /// Vanilla `EnderDragonFight.setDragonKilled`: the first kill leaves the
-    /// dragon egg one block above the podium.
+    /// Vanilla `EnderDragonFight.hasActiveExitPortal` / `findExitPortal`, reduced
+    /// to the existence answer `scanState` needs.
+    ///
+    /// Vanilla scans the `-8..=8` chunk square for any `TheEndPortalBlockEntity`
+    /// and then matches the full 9x9x4 exit-portal pattern around that block.
+    /// Steel only needs the existence answer — `scanState` uses it solely to decide
+    /// whether to open an inactive podium — so the block-entity sweep is the whole
+    /// search. An inactive podium writes no `END_PORTAL` at all, so a pattern
+    /// match could not succeed after a miss here either.
+    #[must_use]
+    fn has_active_exit_portal(&self) -> bool {
+        // The fight origin is always chunk `(0, 0)` in the End.
+        for chunk_x in -8..=8_i32 {
+            for chunk_z in -8..=8_i32 {
+                let found = self
+                    .chunk_map
+                    .with_full_chunk(ChunkPos::new(chunk_x, chunk_z), |chunk| {
+                        chunk
+                            .get_block_entities()
+                            .into_iter()
+                            .any(|block_entity| block_entity.is::<EndPortalBlockEntity>())
+                    })
+                    .unwrap_or(false);
+                if found {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    /// Vanilla `EnderDragonFight.exitPortalLocation`, resolved from the world the
+    /// first time it is needed.
+    #[must_use]
+    fn exit_portal_location(self: &Arc<Self>) -> BlockPos {
+        if let Some(pos) = self.dragon_fight.exit_portal_location() {
+            return BlockPos::new(pos.x, pos.y, pos.z);
+        }
+        let podium = dragon_fight::DragonFight::podium_pos();
+        let surface = self
+            .height_at(HeightmapType::MotionBlockingNoLeaves, podium.x(), podium.z())
+            .unwrap_or(podium.y());
+        let mut y = surface - 1;
+        while self
+            .get_block_state(BlockPos::new(podium.x(), y, podium.z()))
+            .get_block()
+            == &vanilla_blocks::BEDROCK
+            && y > 63
+        {
+            y -= 1;
+        }
+        BlockPos::new(podium.x(), y.max(self.get_min_y() + 1), podium.z())
+    }
+
+    /// Vanilla `EnderDragonFight.setDragonKilled`: the first kill places the dragon
+    /// egg at `getHeightmapPos(MOTION_BLOCKING, getPodiumLocation(origin))` — the
+    /// first air block above the podium's surface, not a fixed offset from the
+    /// podium point.
     fn spawn_dragon_egg(self: &Arc<Self>) {
         let podium = dragon_fight::DragonFight::podium_pos();
         self.set_block(
-            BlockPos::new(podium.x(), podium.y() + 1, podium.z()),
-            vanilla_blocks::DRAGON_EGG.default_state(),
+            self.heightmap_pos(HeightmapType::MotionBlocking, podium),
+            steel_registry::REGISTRY
+                .blocks
+                .get_default_state_id(&vanilla_blocks::DRAGON_EGG),
             UpdateFlags::UPDATE_ALL,
         );
     }
@@ -920,6 +1534,9 @@ impl World {
             // Vanilla's custom spawners run in registration order: phantoms,
             // then patrols.
             self.tick_patrol_spawner();
+            // Vanilla ticks every level's `EnderDragonFight` from
+            // `ServerLevel.tick`; only the End owns one.
+            self.tick_dragon_fight();
         }
 
         {

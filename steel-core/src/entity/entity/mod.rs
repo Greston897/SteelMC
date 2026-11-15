@@ -4317,7 +4317,7 @@ fn forced_rotation(
 
 fn look_at_rotation(from: DVec3, target: DVec3) -> (f32, f32) {
     let delta = target - from;
-    let horizontal = delta.x.hypot(delta.z);
+    let horizontal = (delta.x * delta.x + delta.z * delta.z).sqrt();
     let pitch = wrap_degrees(-delta.y.atan2(horizontal).to_degrees() as f32);
     let yaw = wrap_degrees(delta.z.atan2(delta.x).to_degrees() as f32 - DEGREE_90);
     (yaw, pitch)

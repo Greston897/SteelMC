@@ -127,7 +127,8 @@ impl TntMinecartEntity {
     #[must_use]
     pub fn explosion_power(&self) -> f32 {
         let horizontal_speed =
-            f64::hypot(self.velocity().x, self.velocity().z) / 0.05;
+            (self.velocity().x * self.velocity().x + self.velocity().z * self.velocity().z).sqrt()
+                / 0.05;
         let power = (TNT_MINECART_BASE_POWER
             + (horizontal_speed / TNT_MINECART_SPEED_STEP) as f32 * TNT_MINECART_POWER_STEP)
             .floor();

@@ -436,7 +436,7 @@ impl CommandSource {
 
     pub(crate) fn facing_position(&self, target: DVec3) -> Self {
         let delta = target - self.anchor_position();
-        let horizontal = delta.x.hypot(delta.z);
+        let horizontal = (delta.x * delta.x + delta.z * delta.z).sqrt();
         let pitch = -delta.y.atan2(horizontal).to_degrees() as f32;
         let yaw = delta.z.atan2(delta.x).to_degrees() as f32 - DEGREE_90;
         self.with_rotation((yaw, pitch))

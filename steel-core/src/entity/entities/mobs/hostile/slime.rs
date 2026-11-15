@@ -8,7 +8,7 @@
 //! In 26.3 `Slime` is no longer above `MagmaCube` in a class chain; both extend
 //! `AbstractCubeMob`. Steel keeps the shared formulas in [`super::cube_mob`].
 //!
-//! Deviations (documented in `PARITY-26.3-RU.md`):
+//! Deviations (documented in `STATE-26.3-RU.md`):
 //! * the hopping goals are collapsed into `custom_server_ai_step` instead of a
 //!   `SlimeKeepOnJumpingGoal` / `SlimeRandomDirectionGoal` pair, so a slime
 //!   always hops along its current facing instead of picking a random direction;

@@ -387,6 +387,18 @@ impl ChunkSchedulingCoordinator {
         ingress.record_changes(changes);
     }
 
+    pub(crate) fn add_or_refresh_dragon_ticket(&self, pos: ChunkPos) {
+        let mut ingress = self.ticket_ingress.lock();
+        let changes = ingress.storage.add_or_refresh_dragon_ticket(pos);
+        ingress.record_changes(changes);
+    }
+
+    pub(crate) fn remove_dragon_ticket(&self, pos: ChunkPos) {
+        let mut ingress = self.ticket_ingress.lock();
+        let changes = ingress.storage.remove_dragon_ticket(pos);
+        ingress.record_changes(changes);
+    }
+
     #[must_use]
     pub(crate) fn is_forced(&self, pos: ChunkPos) -> bool {
         self.ticket_ingress.lock().storage.is_forced(pos)

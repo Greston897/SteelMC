@@ -112,7 +112,10 @@ pub trait LevelReader {
     fn light_level_dependent_magic_value(&self, pos: BlockPos) -> f32 {
         let value = f32::from(self.max_local_raw_brightness(pos, self.sky_darkening()))
             / f32::from(MAX_LIGHT_LEVEL);
-        let curved_value = value / value.mul_add(-3.0, 4.0);
+        // Vanilla `v / (4.0f - 3.0f * v)` then
+        // `Mth.lerp(ambient, curved, 1.0f) = curved + ambient * (1.0 - curved)`.
+        // Both products are separately rounded, so no fused multiply-add.
+        let curved_value = value / (4.0 - 3.0 * value);
         curved_value + self.ambient_light() * (1.0 - curved_value)
     }
 

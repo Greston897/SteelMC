@@ -4,7 +4,7 @@
 //! view, `waterlogged` from the placement fluid, and the vanilla double-chest
 //! connection rule that pairs two chests facing the same direction.
 //!
-//! Remaining work (tracked in `PARITY-26.3-RU.md`): the chest block entity with
+//! Remaining work (tracked in `STATE-26.3-RU.md`): the chest block entity with
 //! its loot table and lock, the combined double-chest menu, viewer tracking and
 //! open/close block events, comparator fullness, pathfinding rejection, and the
 //! copper-block conversion/normalization rules.

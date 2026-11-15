@@ -95,13 +95,19 @@ impl EndCrystalEntity {
 
     /// Vanilla `EndCrystal.onRemove`/`hurt`: crystals explode with power 6 and
     /// fire, and their death can respawn the dragon on the End's exit portal.
-    fn detonate(&self, world: &Arc<World>) {
+    fn detonate(&self, world: &Arc<World>, source: Option<&DamageSource>) {
         let center = self.position();
-        let mut options = ExplosionOptions::new(center, END_CRYSTAL_EXPLOSION_POWER, ExplosionInteraction::Block);
+        let mut options = ExplosionOptions::new(
+            center,
+            END_CRYSTAL_EXPLOSION_POWER,
+            ExplosionInteraction::Block,
+        );
         options.fire = true;
         options.source = None;
         world.explode(options);
-        world.on_end_crystal_destroyed(self.block_position());
+        // Vanilla reports the crystal's death to the fight *before* removing it, so
+        // the dragon can react to the player who broke it.
+        world.on_end_crystal_destroyed_by(self.block_position(), source);
         self.set_removed(RemovalReason::Killed);
     }
 
@@ -134,12 +140,12 @@ impl Entity for EndCrystalEntity {
     }
 
     /// Vanilla `EndCrystal.hurt`: any damage detonates the crystal.
-    fn hurt(&self, world: &World, _source: &DamageSource, _amount: f32) -> bool {
-        // `hurt` only sees `&World`; the crystal is only damaged through paths
-        // that already hold an `Arc`, so the tick path reuses `level()`.
+    fn hurt(&self, world: &World, source: &DamageSource, _amount: f32) -> bool {
+        // `hurt` only sees `&World`; the crystal is only damaged through paths that
+        // already hold an `Arc`, so the tick path reuses `level()`.
         let _ = world;
         if let Some(world) = self.level() {
-            self.detonate(&world);
+            self.detonate(&world, Some(source));
         }
         true
     }

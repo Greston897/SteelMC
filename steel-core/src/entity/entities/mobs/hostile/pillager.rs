@@ -4,7 +4,7 @@
 //! Attributes and dimensions come from `entities.json`; daylight burning is
 //! driven by the `minecraft:burn_in_daylight` entity type tag.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * raid patrols, raid waves, and natural spawning are separate systems; shots
 //!   use the shared mob-arrow helper rather than the player crossbow pipeline.
 

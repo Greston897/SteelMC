@@ -5,7 +5,7 @@
 //! Dimensions and attributes come from the extracted `entities.json`; daytime
 //! behavior is vanilla (Endermen are not daylight-burning mobs).
 //!
-//! Deviations (documented in `PARITY-26.3-RU.md`): natural spawning and the
+//! Deviations (documented in `STATE-26.3-RU.md`): natural spawning and the
 //! block pickup/place goals are separate follow-up systems.
 
 use std::iter::empty;

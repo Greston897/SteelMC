@@ -1,0 +1,215 @@
+name: Full Conformance
+
+# One large job that proves the server both *compiles* and *behaves*.
+#
+# `Test` only runs `cargo test`; this adds what was never checked: a compile of
+# every target, a per-crate test breakdown so a failure names the area, and
+# static conformance checks that assert the invariants the code claims to hold.
+#
+# It is a single job on purpose: the workspace is one unit, and splitting it
+# would let a later step pass while an earlier one silently failed.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  # Identical to the other workflows: the workspace pins a nightly toolchain.
+  RUSTFLAGS: "-Dwarnings"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conformance:
+    name: build + test + conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-14
+          components: rustfmt, clippy
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: conformance
+
+      # 1. Everything compiles, including tests, benches and examples that
+      #    `cargo test` alone can skip.
+      - name: Compile every target
+        run: |
+          set -o pipefail
+          cargo check --workspace --all-targets --all-features 2>&1 | tee /tmp/check.log
+
+      - name: Surface compile errors
+        if: failure()
+        run: |
+          grep -E "^(error|warning: unused)" /tmp/check.log | head -60 | while IFS= read -r line; do
+            echo "::error title=compile::$line"
+          done
+          exit 1
+
+      # 2. Every test, one crate at a time, so the log names the broken area.
+      - name: Run all tests per crate
+        run: |
+          set -o pipefail
+          status=0
+          pkgs=$(cargo metadata --no-deps --format-version 1 \
+                 | python3 -c 'import json,sys; print(" ".join(p["name"] for p in json.load(sys.stdin)["packages"]))')
+          for pkg in $pkgs; do
+            echo "::group::test $pkg"
+            if ! cargo test -p "$pkg" --all-features 2>&1 | tee "/tmp/test-$pkg.log"; then
+              status=1
+              echo "::error title=test::$pkg failed"
+            fi
+            echo "::endgroup::"
+          done
+          exit $status
+
+      - name: Surface failing tests
+        if: failure()
+        run: |
+          for f in /tmp/test-*.log; do
+            [ -f "$f" ] || continue
+            grep -E "^(failures:|test .* FAILED|---- )" "$f" | head -20 | while IFS= read -r line; do
+              echo "::error title=$(basename "$f")::$line"
+            done
+          done
+          exit 1
+
+      # 3. Conformance: the invariants the code claims to hold. Cheap greps and
+      #    JSON comparisons; each of these caught a real bug during this cycle.
+      - name: Conformance — no fused multiply-add or hypot in gameplay code
+        run: |
+          # `mul_add` rounds once where Java rounds twice, and `hypot` is not
+          # `sqrt(x*x + z*z)`; both change simulation results. `steel-math`'s sine
+          # table is exempt, as are the two `hypot`s in a `#[cfg(test)]` radius
+          # assertion (lines 9xx of `ender_dragon/phases.rs`).
+          hits=$(grep -rn 'mul_add\|\.hypot(' --include='*.rs' steel-*/src \
+                   | grep -v 'steel-math/src/trig.rs' \
+                   | grep -v 'ender_dragon/phases.rs:9[0-9][0-9]:' || true)
+          if [ -n "$hits" ]; then
+            echo "::error title=conformance::fused multiply-add or hypot in gameplay code"
+            echo "$hits"
+            exit 1
+          fi
+          echo "float semantics: clean"
+
+      - name: Conformance — every vanilla block entity type is registered
+        run: |
+          python3 - <<'PY'
+          import json, re, sys
+          registered = set(re.findall(
+              r'vanilla_block_entity_types::([A-Z0-9_]+)',
+              open('steel-core/src/block_entity/registry.rs').read()))
+          expected = {e['name'].upper() for e in
+              json.load(open('steel-registry/build_assets/block_entities.json'))['block_entity_types']}
+          missing = expected - registered
+          if missing:
+              print(f"::error title=conformance::unregistered block entities: {sorted(missing)}")
+              sys.exit(1)
+          print(f"block entities: {len(expected)} vanilla types, all registered")
+          PY
+
+      - name: Conformance — every vanilla menu type is covered
+        run: |
+          python3 - <<'PY'
+          import glob, json, sys
+          src = "".join(open(p, encoding="utf-8", errors="replace").read()
+                        for p in glob.glob('steel-core/src/inventory/menu/**/*.rs', recursive=True))
+          menus = [m if isinstance(m, str) else m.get('name')
+                   for m in json.load(open('steel-registry/build_assets/menutypes.json'))]
+          # `generic_9x1..6` are one menu at six sizes and `blast_furnace` shares the
+          # furnace menu, so both are covered by a match arm over the type id
+          # rather than by the literal name. Assert the arm covers them.
+          arm_covered = set()
+          if 'GENERIC_9X1' in src and 'GENERIC_9X6' in src:
+              arm_covered |= {f'generic_9x{i}' for i in range(1, 7)}
+          if 'BLAST_FURNACE' in src:
+              arm_covered.add('blast_furnace')
+          missing = [m for m in menus if m not in src and m not in arm_covered]
+          if missing:
+              print(f"::error title=conformance::uncovered menu types: {missing}")
+              sys.exit(1)
+          print(f"menus: {len(menus)} vanilla types, all covered")
+          PY
+
+      - name: Conformance — game rules present
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          rules = json.load(open('steel-registry/build_assets/game_rules.json'))['game_rules']
+          if not rules:
+              print("::error title=conformance::no game rules in build assets")
+              sys.exit(1)
+          print(f"game rules: {len(rules)} vanilla rules")
+          PY
+
+      - name: Conformance — no unimplemented stubs in shipped code
+        run: |
+          # `todo!`/`unimplemented!` are runtime panics; on a server that is a
+          # crash on a gameplay path. Tracked `TODO:` comments are allowed but
+          # printed so they cannot pile up unnoticed.
+          stubs=$(grep -rn 'todo!\|unimplemented!' --include='*.rs' steel-*/src || true)
+          if [ -n "$stubs" ]; then
+            echo "::error title=conformance::runtime panic stub in the tree"
+            echo "$stubs"
+            exit 1
+          fi
+          echo "tracked TODO comments:"
+          grep -rn 'TODO\|FIXME' --include='*.rs' steel-*/src || echo "  (none)"
+
+      - name: Conformance — no debug output in shipped code
+        run: |
+          # `println!`/`eprintln!` write to a running server's stdout/stderr, which
+          # is both log noise and a latency hazard on hot paths. Diagnostics in the
+          # `#[ignore]`d worldgen generation tools are deliberate and excluded.
+          hits=$(grep -rn 'dbg!\|println!\|eprintln!' --include='*.rs' \
+                   steel-core/src steel-worldgen/src steel-protocol/src steel-registry/src \
+                 | grep -v 'worldgen/chunk_stage_hashes.rs' \
+                 | grep -v 'worldgen/feature/instrumentation.rs' || true)
+          if [ -n "$hits" ]; then
+            echo "::error title=conformance::debug output in shipped code"
+            echo "$hits"
+            exit 1
+          fi
+          echo "no debug output in shipped code"
+
+      # 4. Style gates, run last so a nit cannot mask a real failure.
+      - name: Format
+        if: always()
+        run: cargo fmt --all --check > /tmp/fmt.log 2>&1 || true
+
+      - name: Clippy
+        if: always()
+        run: |
+          set -o pipefail
+          cargo clippy --workspace --all-targets --all-features 2>&1 | tee /tmp/clippy.log
+
+      - name: Report formatting drift without failing the run
+        if: always()
+        run: |
+          if [ -s /tmp/fmt.log ]; then
+            echo "::warning title=format::cargo fmt reports drift (non-blocking)"
+            head -40 /tmp/fmt.log
+          fi
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-logs
+          path: |
+            /tmp/check.log
+            /tmp/test-*.log
+            /tmp/fmt.log
+            /tmp/clippy.log
+          if-no-files-found: ignore

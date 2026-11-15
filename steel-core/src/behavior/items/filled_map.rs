@@ -5,7 +5,7 @@
 //! the holder, and `updateColors` walks one sixteenth of the map columns per
 //! tick exactly like vanilla so a map costs a bounded amount of work.
 //!
-//! Not ported yet (see `PARITY-26.3-RU.md`): crafting copies/zoom
+//! Not ported yet (see `STATE-26.3-RU.md`): crafting copies/zoom
 //! (`MapPostProcessingComponent`), banner markers and item-frame markers.
 
 use steel_macros::item_behavior;

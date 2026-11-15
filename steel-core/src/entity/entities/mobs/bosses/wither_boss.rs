@@ -3,7 +3,7 @@
 //! A three-headed boss that hovers, fires wither skulls and regenerates while
 //! its invulnerability timer runs.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * the boss bar and the three skull volleys are not implemented; the spawn
 //!   phase (220 protected ticks, escalating regeneration, closing blast) and the
 //!   synced target/invulnerability fields are.

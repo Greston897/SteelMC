@@ -201,8 +201,12 @@ pub(crate) const fn select_swimming_state(
     }
 }
 
+/// Vanilla `Vec3.horizontalDistance()`: `sqrt(x*x + z*z)`.
+///
+/// `f64::hypot` is more accurate than the naive form and rounds differently, so
+/// it cannot be used where the result must match Java bit-for-bit.
 fn horizontal_distance(vector: DVec3) -> f64 {
-    vector.x.hypot(vector.z)
+    (vector.x * vector.x + vector.z * vector.z).sqrt()
 }
 
 const fn world_aabb_center(aabb: WorldAabb) -> DVec3 {

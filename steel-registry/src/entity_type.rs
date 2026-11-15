@@ -192,9 +192,9 @@ fn rotate_attachment_point(point: DVec3, yaw_degrees: f32) -> DVec3 {
     let cos = f64::from(trig::cos(radians));
     let sin = f64::from(trig::sin(radians));
     DVec3::new(
-        point.x.mul_add(cos, point.z * sin),
+        point.x * cos + point.z * sin,
         point.y,
-        point.z.mul_add(cos, -(point.x * sin)),
+        point.z * cos - point.x * sin,
     )
 }
 

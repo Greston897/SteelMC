@@ -6,7 +6,7 @@
 //! after `MAX_SWELL` ticks with a `3.0`-block `MOB` explosion (doubled when
 //! powered). Losing the target or the line of sight deflates it again.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * the vanilla `SwellGoal` is folded into the entity: the swell counter is
 //!   advanced from `ai_step` and navigation is cancelled from
 //!   `custom_server_ai_step`, which runs after the goal selectors — the visible

@@ -427,6 +427,11 @@ impl Player {
                 attributes.required_value(vanilla_attributes::ATTACK_KNOCKBACK),
             )
         };
+        // Vanilla `Player.attack`: while a riptide spin is active the base damage
+        // is `autoSpinAttackDmg` (8.0) rather than the ATTACK_DAMAGE attribute.
+        let attack_damage = self
+            .riptide_spin_damage()
+            .unwrap_or(attack_damage);
         let attack_strength_delay = Self::attack_strength_delay_from_speed(attack_speed);
         let attack_strength_scale =
             self.attack_strength_scale_for_delay(0.5, attack_strength_delay);

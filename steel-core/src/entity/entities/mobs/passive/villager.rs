@@ -1,6 +1,6 @@
 //! Vanilla `net.minecraft.world.entity.npc.villager.Villager`.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * trading covers the novice tier of every profession; levelling, restocking
 //!   and gossip-driven prices are not modelled, so the offer list is fixed for
 //!   the villager's lifetime.

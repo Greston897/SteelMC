@@ -2,7 +2,7 @@
 //!
 //! A neutral village golem that retaliates when attacked.
 //!
-//! Deviations (deliberate, documented in `PARITY-26.3-RU.md`):
+//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * poppy offering and the crack overlay are not implemented; village defence is
 //!   modelled as vanilla's `#minecraft:raiders` target selector.
 

@@ -5,7 +5,7 @@
 //! and adds its own layer with the player profile, the `immovable` flag and an
 //! optional description component rendered in the UI.
 //!
-//! Documented deviations from vanilla 26.3 (see `PARITY-26.3-RU.md`):
+//! Documented deviations from vanilla 26.3 (see `STATE-26.3-RU.md`):
 //! * mannequins do not render and cannot be equipped through interaction yet;
 //!   the equipment slots live in `LivingEntityBase` and are saved with the
 //!   entity, but the interaction path is not implemented.

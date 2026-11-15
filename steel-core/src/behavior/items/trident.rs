@@ -54,6 +54,66 @@ impl TridentItem {
         MAX_USE_TICKS - time_left
     }
 
+    /// Vanilla `TridentItem.releaseUsing` riptide branch.
+    ///
+    /// Computes the look direction from the *`f32`* rotation with the sine table
+    /// (exactly like `Mth.sin`/`Mth.cos`), normalises it, pushes the player with
+    /// `strength / length` and starts the spin attack. The upward hop only
+    /// happens on the ground.
+    fn launch_riptide(
+        player: &crate::player::Player,
+        user: &dyn LivingEntity,
+        level: i32,
+        strength: f32,
+        world: &Arc<World>,
+    ) {
+        let (yaw, pitch) = Entity::rotation(user);
+        let yaw_rad = yaw * steel_math::DEG_TO_RAD;
+        let pitch_rad = pitch * steel_math::DEG_TO_RAD;
+        let sin_yaw = steel_math::trig::sin(f64::from(yaw_rad));
+        let cos_yaw = steel_math::trig::cos(f64::from(yaw_rad));
+        let sin_pitch = steel_math::trig::sin(f64::from(pitch_rad));
+        let cos_pitch = steel_math::trig::cos(f64::from(pitch_rad));
+
+        let xd = -sin_yaw * cos_pitch;
+        let yd = -sin_pitch;
+        let zd = cos_yaw * cos_pitch;
+        let length = (xd * xd + yd * yd + zd * zd).sqrt();
+        if length > 0.0 {
+            let scale = strength / length;
+            let push = DVec3::new(
+                f64::from(xd * scale),
+                f64::from(yd * scale),
+                f64::from(zd * scale),
+            );
+            player.set_velocity(player.velocity() + push);
+            player.mark_velocity_sync();
+        }
+
+        player.start_auto_spin_attack(level);
+        if player.on_ground() {
+            // Vanilla hops the player 1.1999999284744263 blocks up on release.
+            player.set_velocity(player.velocity() + DVec3::new(0.0, 1.199_999_928_474_426_3, 0.0));
+            player.mark_velocity_sync();
+        }
+        // Vanilla picks the highest `trident_sound` enchantment effect, which for
+        // riptide is `item.trident.riptide_{1,2,3}` by level, and falls back to
+        // the throw sound.
+        let sound = match level {
+            1 => &sound_events::ITEM_TRIDENT_RIPTIDE_1,
+            2 => &sound_events::ITEM_TRIDENT_RIPTIDE_2,
+            _ => &sound_events::ITEM_TRIDENT_RIPTIDE_3,
+        };
+        world.play_sound(
+            sound,
+            SoundSource::Players,
+            player.block_position(),
+            1.0,
+            1.0,
+            None,
+        );
+    }
+
     /// Vanilla `AbstractArrow.Pickup` for a freshly thrown trident.
     #[must_use]
     pub const fn pickup_for(creative: bool) -> ArrowPickup {
@@ -71,7 +131,8 @@ impl ItemBehavior for TridentItem {
     }
 
     fn get_use_animation(&self, _stack: &ItemStack) -> ItemUseAnimation {
-        ItemUseAnimation::Spear
+        // Vanilla `TridentItem.getUseAnimation` is `ItemUseAnimation.TRIDENT`.
+        ItemUseAnimation::Trident
     }
 
     fn use_on_release(&self, _stack: &ItemStack) -> bool {
@@ -88,21 +149,14 @@ impl ItemBehavior for TridentItem {
             return InteractionResult::Fail;
         }
 
-        // Vanilla starts the spin attack immediately when the player is wet or
-        // in rain, without waiting for the charge to build.
-        let level = context
-            .inv
-            .with_item(|stack| stack.get_enchantment_level(&vanilla_enchantments::RIPTIDE.key));
-        if level > 0 && Entity::is_in_water_or_rain(&**context.player) {
-            let look = {
-                let (yaw, pitch) = Entity::rotation(&**context.player);
-                let yaw = f64::from(yaw).to_radians();
-                let pitch = f64::from(pitch).to_radians();
-                let xz = pitch.cos();
-                DVec3::new(-yaw.sin() * xz, -pitch.sin(), yaw.cos() * xz)
-            };
-            context.player.start_auto_spin_attack(level, look);
-            return InteractionResult::Success;
+        // Vanilla `use` does *not* spin here: riptide only refuses to start
+        // charging while the player is dry. The spin itself happens on release.
+        let strength = context.inv.with_item(|stack| {
+            let level = stack.get_enchantment_level(&vanilla_enchantments::RIPTIDE.key);
+            context.player.trident_spin_attack_strength(level)
+        });
+        if strength > 0.0 && !Entity::is_in_water_or_rain(&**context.player) {
+            return InteractionResult::Fail;
         }
 
         context.player.start_using_item(context.hand);
@@ -122,8 +176,23 @@ impl ItemBehavior for TridentItem {
         if Self::charge_ticks(time_left) < THROW_THRESHOLD_TICKS {
             return false;
         }
+        let level = stack.get_enchantment_level(&vanilla_enchantments::RIPTIDE.key);
+        let strength = player.trident_spin_attack_strength(level);
+        // Vanilla: a riptide trident cannot be released while dry or while riding.
+        if strength > 0.0 && (!Entity::is_in_water_or_rain(user) || user.is_passenger()) {
+            return false;
+        }
         if stack.next_damage_will_break() {
             return false;
+        }
+
+        // Vanilla `TridentItem.releaseUsing`: the stack loses one durability
+        // point first, then riptide launches the player instead of throwing.
+        player.award_stat(&vanilla_stat_types::ITEM_USED, stack.item());
+        stack.hurt_and_break(1, player.game_mode() == GameType::Creative);
+        if strength > 0.0 {
+            Self::launch_riptide(player, user, level, strength, world);
+            return true;
         }
 
         let creative = player.game_mode() == GameType::Creative;
@@ -164,12 +233,11 @@ impl ItemBehavior for TridentItem {
             );
         }
 
-        // Vanilla costs a durability point, then shrinks the stack in survival.
-        stack.hurt_and_break(1, creative);
+        // Vanilla `consumeAndReturn(1, player)`: survival throws the whole stack,
+        // creative keeps it.
         if !creative {
             stack.consume_one(false);
         }
-        player.award_stat(&vanilla_stat_types::ITEM_USED, stack.item());
         true
     }
 }

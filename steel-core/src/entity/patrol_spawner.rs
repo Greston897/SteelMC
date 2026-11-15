@@ -7,7 +7,7 @@
 //! `MOTION_BLOCKING_NO_LEAVES` heightmap; the first one is the captain and wears
 //! the ominous banner.
 //!
-//! Deviations from vanilla, both documented in `PARITY-26.3-RU.md`:
+//! Deviations from vanilla, both documented in `STATE-26.3-RU.md`:
 //!
 //! * the "have monsters been peaceful long enough" check is the player's play
 //!   time, because Steel has no per-world `inhabitedTime` yet and vanilla's
