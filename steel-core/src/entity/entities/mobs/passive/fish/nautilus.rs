@@ -266,60 +266,6 @@ impl Entity for NautilusEntity {
         self.load_mob(nbt);
     }
 
-    /// Vanilla `AbstractNautilus.canJump`: only a saddled nautilus accepts a
-    /// rider's jump charge.
-    fn can_jump_with_rider(&self) -> bool {
-        self.is_saddled()
-    }
-
-    /// Vanilla `AbstractNautilus.onPlayerJump`: a saddled nautilus that is not
-    /// already dashing stores the charge for its next ridden tick.
-    fn on_player_jump(&self, jump_amount: i32) {
-        if !self.is_saddled() || self.jump_cooldown() > 0 {
-            return;
-        }
-        let amount = jump_amount.max(0);
-        self.living_base()
-            .set_jump_pending_scale(crate::entity::living_entity::player_jump_pending_scale(amount));
-    }
-
-    /// Vanilla `AbstractNautilus.tickRidden`: resolve a stored charge into
-    /// `executeRidersJump` against the rider's look vector.
-    fn tick_ridden(&self, controller: &crate::player::Player, _ridden_input: DVec3) {
-        let pending = self.jump_pending_scale();
-        if pending > 0.0 && !self.is_jumping() {
-            let look = controller.look_angle();
-            self.execute_nautilus_jump(pending, look, f64::from(self.block_speed_factor()));
-        }
-        self.reset_jump_pending_scale();
-    }
-
-    /// Vanilla `AbstractNautilus.handleStartJump`: dash sound, action game
-    /// event, and the dash flag turns on immediately.
-    fn handle_start_jump(&self, _jump_scale: i32) {
-        if let Some(world) = self.level() {
-            let underwater = self.is_under_water();
-            let sound = if underwater {
-                &sound_events::ENTITY_NAUTILUS_DASH
-            } else {
-                &sound_events::ENTITY_NAUTILUS_DASH_LAND
-            };
-            world.play_sound_at(
-                sound,
-                SoundSource::Neutral,
-                self.position(),
-                1.0,
-                1.0,
-                None,
-            );
-            world.game_event_at(
-                &vanilla_game_events::ENTITY_ACTION,
-                self.position(),
-                &GameEventContext::new(Some(self.as_entity_event_source()), None),
-            );
-        }
-        self.set_dash(true);
-    }
 }
 
 impl LivingEntity for NautilusEntity {
@@ -376,6 +322,62 @@ impl LivingEntity for NautilusEntity {
     fn base_experience_reward(&self) -> i32 {
         rand::random_range(WATER_ANIMAL_EXPERIENCE_MIN..WATER_ANIMAL_EXPERIENCE_MAX)
     }
+
+    /// Vanilla `AbstractNautilus.canJump`: only a saddled nautilus accepts a
+    /// rider's jump charge.
+    fn can_jump_with_rider(&self) -> bool {
+        self.is_saddled()
+    }
+
+    /// Vanilla `AbstractNautilus.onPlayerJump`: a saddled nautilus that is not
+    /// already dashing stores the charge for its next ridden tick.
+    fn on_player_jump(&self, jump_amount: i32) {
+        if !self.is_saddled() || self.jump_cooldown() > 0 {
+            return;
+        }
+        let amount = jump_amount.max(0);
+        self.living_base()
+            .set_jump_pending_scale(crate::entity::living_entity::player_jump_pending_scale(amount));
+    }
+
+    /// Vanilla `AbstractNautilus.tickRidden`: resolve a stored charge into
+    /// `executeRidersJump` against the rider's look vector.
+    fn tick_ridden(&self, controller: &crate::player::Player, _ridden_input: DVec3) {
+        let pending = self.jump_pending_scale();
+        if pending > 0.0 && !self.is_jumping() {
+            let look = controller.look_angle();
+            self.execute_nautilus_jump(pending, look, f64::from(self.block_speed_factor()));
+        }
+        self.reset_jump_pending_scale();
+    }
+
+    /// Vanilla `AbstractNautilus.handleStartJump`: dash sound, action game
+    /// event, and the dash flag turns on immediately.
+    fn handle_start_jump(&self, _jump_scale: i32) {
+        if let Some(world) = self.level() {
+            let underwater = self.is_under_water();
+            let sound = if underwater {
+                &sound_events::ENTITY_NAUTILUS_DASH
+            } else {
+                &sound_events::ENTITY_NAUTILUS_DASH_LAND
+            };
+            world.play_sound_at(
+                sound,
+                SoundSource::Neutral,
+                self.position(),
+                1.0,
+                1.0,
+                None,
+            );
+            world.game_event_at(
+                &vanilla_game_events::ENTITY_ACTION,
+                self.position(),
+                &GameEventContext::new(Some(self.as_entity_event_source()), None),
+            );
+        }
+        self.set_dash(true);
+    }
+
 }
 
 impl Mob for NautilusEntity {
@@ -551,49 +553,6 @@ impl Entity for ZombieNautilusEntity {
         self.load_mob(nbt);
     }
 
-    /// Vanilla `AbstractNautilus.canJump`, inherited by the zombie species.
-    fn can_jump_with_rider(&self) -> bool {
-        self.is_saddled()
-    }
-
-    /// Vanilla `AbstractNautilus.onPlayerJump`, inherited by the zombie species.
-    fn on_player_jump(&self, jump_amount: i32) {
-        if !self.is_saddled() || self.jump_cooldown() > 0 {
-            return;
-        }
-        let amount = jump_amount.max(0);
-        self.living_base()
-            .set_jump_pending_scale(crate::entity::living_entity::player_jump_pending_scale(amount));
-    }
-
-    /// Vanilla `AbstractNautilus.tickRidden`, inherited by the zombie species.
-    fn tick_ridden(&self, controller: &crate::player::Player, _ridden_input: DVec3) {
-        let pending = self.jump_pending_scale();
-        if pending > 0.0 && !self.is_jumping() {
-            let look = controller.look_angle();
-            self.execute_nautilus_jump(pending, look, f64::from(self.block_speed_factor()));
-        }
-        self.reset_jump_pending_scale();
-    }
-
-    /// Vanilla `ZombieNautilus.getDashSound`: the dash sound is
-    /// species-specific, so the zombie plays its own.
-    fn handle_start_jump(&self, _jump_scale: i32) {
-        if let Some(world) = self.level() {
-            let sound = if self.is_under_water() {
-                &sound_events::ENTITY_ZOMBIE_NAUTILUS_DASH
-            } else {
-                &sound_events::ENTITY_ZOMBIE_NAUTILUS_DASH_LAND
-            };
-            world.play_sound_at(sound, SoundSource::Neutral, self.position(), 1.0, 1.0, None);
-            world.game_event_at(
-                &vanilla_game_events::ENTITY_ACTION,
-                self.position(),
-                &GameEventContext::new(Some(self.as_entity_event_source()), None),
-            );
-        }
-        self.set_dash(true);
-    }
 }
 
 impl LivingEntity for ZombieNautilusEntity {
@@ -646,6 +605,51 @@ impl LivingEntity for ZombieNautilusEntity {
     fn base_experience_reward(&self) -> i32 {
         rand::random_range(WATER_ANIMAL_EXPERIENCE_MIN..WATER_ANIMAL_EXPERIENCE_MAX)
     }
+
+    /// Vanilla `AbstractNautilus.canJump`, inherited by the zombie species.
+    fn can_jump_with_rider(&self) -> bool {
+        self.is_saddled()
+    }
+
+    /// Vanilla `AbstractNautilus.onPlayerJump`, inherited by the zombie species.
+    fn on_player_jump(&self, jump_amount: i32) {
+        if !self.is_saddled() || self.jump_cooldown() > 0 {
+            return;
+        }
+        let amount = jump_amount.max(0);
+        self.living_base()
+            .set_jump_pending_scale(crate::entity::living_entity::player_jump_pending_scale(amount));
+    }
+
+    /// Vanilla `AbstractNautilus.tickRidden`, inherited by the zombie species.
+    fn tick_ridden(&self, controller: &crate::player::Player, _ridden_input: DVec3) {
+        let pending = self.jump_pending_scale();
+        if pending > 0.0 && !self.is_jumping() {
+            let look = controller.look_angle();
+            self.execute_nautilus_jump(pending, look, f64::from(self.block_speed_factor()));
+        }
+        self.reset_jump_pending_scale();
+    }
+
+    /// Vanilla `ZombieNautilus.getDashSound`: the dash sound is
+    /// species-specific, so the zombie plays its own.
+    fn handle_start_jump(&self, _jump_scale: i32) {
+        if let Some(world) = self.level() {
+            let sound = if self.is_under_water() {
+                &sound_events::ENTITY_ZOMBIE_NAUTILUS_DASH
+            } else {
+                &sound_events::ENTITY_ZOMBIE_NAUTILUS_DASH_LAND
+            };
+            world.play_sound_at(sound, SoundSource::Neutral, self.position(), 1.0, 1.0, None);
+            world.game_event_at(
+                &vanilla_game_events::ENTITY_ACTION,
+                self.position(),
+                &GameEventContext::new(Some(self.as_entity_event_source()), None),
+            );
+        }
+        self.set_dash(true);
+    }
+
 }
 
 impl Mob for ZombieNautilusEntity {

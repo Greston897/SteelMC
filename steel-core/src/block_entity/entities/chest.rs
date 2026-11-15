@@ -19,7 +19,7 @@ use steel_registry::data_components::{
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::{
-    BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex,
+    BlockPos, BlockStateId, DowncastType, DowncastTypeKey, Identifier, locks::SyncMutex,
 };
 
 use crate::block_entity::randomizable_container::RandomizableContainer;

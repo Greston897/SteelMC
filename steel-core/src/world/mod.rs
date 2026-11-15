@@ -115,7 +115,7 @@ use crate::{
 mod block_entity_ticker;
 mod block_event;
 mod block_region;
-mod block_updates;
+pub(crate) mod block_updates;
 mod border;
 mod broadcasts;
 pub(crate) mod clock;
@@ -138,7 +138,7 @@ mod redstone;
 mod signal_getter;
 mod sleep;
 mod sleep_status;
-mod spawn;
+pub(crate) mod spawn;
 pub mod tick_scheduler;
 mod waypoint;
 pub mod wandering_trader_spawner;
@@ -747,7 +747,7 @@ impl World {
             let player = source
                 .and_then(crate::entity::damage::DamageSource::causing_entity)
                 .cloned();
-            crate::entity::entities::ender_dragon::phase_ticks::on_crystal_destroyed(
+            crate::entity::entities::mobs::bosses::ender_dragon::phase_ticks::on_crystal_destroyed(
                 dragon,
                 player.as_ref(),
             );
@@ -1112,7 +1112,7 @@ impl World {
     /// Vanilla `EnderDragonFight.resetSpikeCrystals`: rebuild every spike's
     /// crystal.
     fn reset_end_spike_crystals(self: &Arc<Self>) {
-        let spikes = crate::worldgen::feature::end_spikes_for_level(self.seed());
+        let spikes = crate::worldgen::feature::FeatureDecorationRunner::end_spikes_for_level(self.seed());
         for spike in spikes {
             crate::worldgen::feature::rebuild_spike_crystal_in_world(self, &spike);
         }
@@ -1184,7 +1184,7 @@ impl World {
             return;
         }
 
-        let spikes = crate::worldgen::feature::end_spikes_for_level(self.seed());
+        let spikes = crate::worldgen::feature::FeatureDecorationRunner::end_spikes_for_level(self.seed());
         let mut alive = 0;
         for spike in spikes {
             let radius = f64::from(spike.radius);

@@ -1,4 +1,4 @@
-pub(super) use std::sync::LazyLock;
+pub(super) use std::sync::{Arc, LazyLock};
 
 pub(super) use rustc_hash::FxHashSet;
 pub(super) use steel_math::{fast_floor, lerp};

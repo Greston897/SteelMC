@@ -15,8 +15,8 @@ use rand::Rng;
 use steel_registry::REGISTRY;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::loot_table::LootTableRegistry;
-use steel_registry::loot_table::context::LootContext;
-use steel_registry::loot_table::entries::LootRngSeed;
+use steel_registry::loot_table::LootContext;
+use steel_registry::loot_table::LootRngSeed;
 use steel_utils::Identifier;
 use steel_utils::locks::SyncMutex;
 

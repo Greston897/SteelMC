@@ -219,6 +219,26 @@ impl HorseEntity {
                 .set_base_glowing_flag(self.has_glowing_tag() || display.glowing);
         }
     }
+
+    /// Vanilla `AbstractHorse.openCustomInventoryScreen`: the mount screen with
+    /// the saddle slot, the body-armor slot and the storage rows.
+    pub fn open_mount_inventory(&self, player: &Player) {
+        if !self.is_tamed() {
+            return;
+        }
+        let inventory = self.mount_inventory.lock();
+        let container = std::sync::Arc::clone(inventory.container());
+        let columns = inventory.columns();
+        drop(inventory);
+        crate::entity::mount::open_mount_menu(self, player, &container, columns);
+    }
+
+    /// The mount's shared equipment container, for tests and persistence.
+    #[must_use]
+    pub fn mount_inventory(&self) -> &crate::entity::mount::SharedMountInventory {
+        &self.mount_inventory
+    }
+
 }
 
 impl DefaultEntityPush for HorseEntity {}
@@ -344,6 +364,43 @@ impl LivingEntity for HorseEntity {
     fn can_use_slot(&self, slot: EquipmentSlot) -> bool {
         slot != EquipmentSlot::Saddle || (Entity::is_alive(self) && !AgeableMob::is_baby(self))
     }
+
+    /// Vanilla `AbstractHorse.travel` steers with the rider's look direction:
+    /// a saddled horse turns where the player looks, an unsaddled one ignores
+    /// the reins and keeps its own heading.
+    fn tick_ridden(&self, controller: &Player, _ridden_input: DVec3) {
+        if !self.is_saddled() {
+            return;
+        }
+        let (yaw, pitch) = controller.rotation();
+        self.set_ridden_rotation(yaw, pitch);
+    }
+
+    /// Vanilla `PlayerRideableJumping.canJump` on `AbstractHorse`.
+    fn can_jump_with_rider(&self) -> bool {
+        self.can_rider_jump()
+    }
+
+    /// Vanilla `AbstractHorse.handleStartJump`: take-off sound plus the stand
+    /// animation, which Steel does not render.
+    fn handle_start_jump(&self, _jump_scale: i32) {
+        if self.can_rider_jump() {
+            self.play_jump_sound();
+        }
+    }
+
+    /// Vanilla `AbstractHorse.getRiddenSpeed`.
+    ///
+    /// The horse's own `MOVEMENT_SPEED` attribute is the ridden speed; Steel had
+    /// no override at all, so a ridden horse moved at the generic `getSpeed()`
+    /// and could not be steered at more than a walk.
+    fn ridden_speed(&self, _controller: &Player) -> f32 {
+        self.living_base
+            .attributes()
+            .lock()
+            .required_value(vanilla_attributes::MOVEMENT_SPEED) as f32
+    }
+
 }
 
 impl AgeableMob for HorseEntity {
@@ -434,62 +491,6 @@ impl Mob for HorseEntity {
         }
 
         InteractionResult::Pass
-    }
-
-
-    /// Vanilla `AbstractHorse.openCustomInventoryScreen`: the mount screen with
-    /// the saddle slot, the body-armor slot and the storage rows.
-    pub fn open_mount_inventory(&self, player: &Player) {
-        if !self.is_tamed() {
-            return;
-        }
-        let inventory = self.mount_inventory.lock();
-        let container = std::sync::Arc::clone(inventory.container());
-        let columns = inventory.columns();
-        drop(inventory);
-        crate::entity::mount::open_mount_menu(self, player, &container, columns);
-    }
-
-    /// The mount's shared equipment container, for tests and persistence.
-    #[must_use]
-    pub fn mount_inventory(&self) -> &crate::entity::mount::SharedMountInventory {
-        &self.mount_inventory
-    }
-
-    /// Vanilla `AbstractHorse.travel` steers with the rider's look direction:
-    /// a saddled horse turns where the player looks, an unsaddled one ignores
-    /// the reins and keeps its own heading.
-    fn tick_ridden(&self, controller: &Player, _ridden_input: DVec3) {
-        if !self.is_saddled() {
-            return;
-        }
-        let (yaw, pitch) = controller.rotation();
-        self.set_ridden_rotation(yaw, pitch);
-    }
-
-    /// Vanilla `PlayerRideableJumping.canJump` on `AbstractHorse`.
-    fn can_jump_with_rider(&self) -> bool {
-        self.can_rider_jump()
-    }
-
-    /// Vanilla `AbstractHorse.handleStartJump`: take-off sound plus the stand
-    /// animation, which Steel does not render.
-    fn handle_start_jump(&self, _jump_scale: i32) {
-        if self.can_rider_jump() {
-            self.play_jump_sound();
-        }
-    }
-
-    /// Vanilla `AbstractHorse.getRiddenSpeed`.
-    ///
-    /// The horse's own `MOVEMENT_SPEED` attribute is the ridden speed; Steel had
-    /// no override at all, so a ridden horse moved at the generic `getSpeed()`
-    /// and could not be steered at more than a walk.
-    fn ridden_speed(&self, _controller: &Player) -> f32 {
-        self.living_base
-            .attributes()
-            .lock()
-            .required_value(vanilla_attributes::MOVEMENT_SPEED) as f32
     }
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {

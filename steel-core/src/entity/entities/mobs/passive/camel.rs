@@ -42,6 +42,7 @@ use crate::entity::{
 };
 use crate::entity::mount::{SharedMountInventory, open_mount_menu};
 use crate::physics::MoveResult;
+use crate::player::Player;
 use crate::world::World;
 use crate::world::game_event::GameEventContext;
 

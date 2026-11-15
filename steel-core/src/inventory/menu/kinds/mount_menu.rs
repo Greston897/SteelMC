@@ -16,14 +16,16 @@
 
 use std::sync::Weak;
 
+use glam::DVec3;
+use steel_registry::equipment::EquipmentSlot;
 use steel_registry::menu_type::MenuTypeRef;
 use steel_registry::vanilla_items;
-use steel_utils::{DVec3, DowncastType, DowncastTypeKey};
+use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::Entity;
 use crate::inventory::container::Container as _;
 use crate::inventory::prelude::*;
-use crate::inventory::slots::SlotStorage;
+use crate::inventory::slots::{ArmorSlot, SlotStorage};
 use crate::player::player_inventory::PlayerInventory;
 use crate::player::Player;
 
@@ -71,19 +73,22 @@ pub fn mount(
 
     let mut builder = MenuBuilder::new(None, container_id);
 
-    // Saddle and body armor share the container range but carry different rules.
+    // Vanilla `HorseInventoryMenu` adds an `ArmorSlot` for each: the slot's own
+    // `mayPlace` is `LivingEntity.isEquippableInSlot(stack, slot)`, which for
+    // `EquipmentSlot.SADDLE` accepts saddles and for `EquipmentSlot.BODY`
+    // accepts the mount's body armor. No extra predicate is needed.
     let saddle = builder.section_with(
         container.clone(),
         1,
         SectionKind::custom(|container, index| {
-            Box::new(MountSlot::new(container, index, is_saddle))
+            Box::new(ArmorSlot::new(container, index, EquipmentSlot::Saddle))
         }),
     );
     let armor = builder.section_with(
         container.clone(),
         1,
         SectionKind::custom(|container, index| {
-            Box::new(MountSlot::new(container, index, is_body_armor))
+            Box::new(ArmorSlot::new(container, index, EquipmentSlot::Body))
         }),
     );
     let storage = builder.section(container.clone(), columns * INVENTORY_ROWS);

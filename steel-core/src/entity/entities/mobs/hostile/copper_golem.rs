@@ -33,6 +33,7 @@ use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
+use crate::behavior::InteractionResult;
 use crate::entity::damage::DamageSource;
 use crate::inventory::equipment::EquipmentSlot;
 use crate::entity::leash::Leashable;
@@ -261,6 +262,16 @@ impl CopperGolemEntity {
     fn update_dirty_mob_effect_entity_data(&self) {
         sync_dirty_mob_effects(&self.living_base, &self.entity_data);
     }
+    /// Vanilla `itemStack.hurtAndBreak(1, player, hand.asEquipmentSlot())`.
+    fn hurt_player_held_axe(player: &crate::player::Player, hand: InteractionHand) {
+        let mut inventory = player.inventory.lock();
+        let stack = inventory.get_item_in_hand_mut(hand);
+        if stack.is_empty() {
+            return;
+        }
+        stack.hurt_and_break(1, player.has_infinite_materials());
+    }
+
 }
 
 impl DefaultEntityPush for CopperGolemEntity {}
@@ -415,16 +426,6 @@ impl Mob for CopperGolemEntity {
 
     fn tick_path_navigation(&self) {
         PathfinderMob::tick_pathfinder_path_navigation(self);
-    }
-
-    /// Vanilla `itemStack.hurtAndBreak(1, player, hand.asEquipmentSlot())`.
-    fn hurt_player_held_axe(player: &crate::player::Player, hand: InteractionHand) {
-        let mut inventory = player.inventory.lock();
-        let stack = inventory.get_item_in_hand_mut(hand);
-        if stack.is_empty() {
-            return;
-        }
-        stack.hurt_and_break(1, player.has_infinite_materials());
     }
 
     /// Vanilla `CopperGolem.mobInteract`: shears drop the held item, honeycomb

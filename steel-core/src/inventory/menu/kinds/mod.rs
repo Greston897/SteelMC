@@ -14,7 +14,7 @@ mod furnace_menu;
 mod grindstone_menu;
 mod inventory_menu;
 mod merchant_menu;
-mod mount_menu;
+pub(crate) mod mount_menu;
 mod shulker_box_menu;
 mod station_menu;
 

@@ -17,7 +17,7 @@
 
 use std::sync::Arc;
 
-use steel_registry::stat::vanilla_custom_stats;
+use steel_registry::vanilla_custom_stats;
 use steel_registry::vanilla_entities;
 use steel_registry::vanilla_game_rules;
 use steel_utils::types::Difficulty;

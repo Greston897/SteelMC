@@ -28,8 +28,7 @@ use steel_utils::{
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::{
-    Entity as _, EntitySpawnReason, LivingEntity as _, MobEffectInstance, WardenSpawnTracker,
-    spawn_util,
+    Entity, EntitySpawnReason, LivingEntity as _, MobEffectInstance, WardenSpawnTracker, spawn_util,
 };
 use crate::entity::warden_spawn_tracker::MAX_WARNING_LEVEL;
 use crate::player::Player;

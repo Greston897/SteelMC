@@ -82,6 +82,21 @@ impl WitherSkullEntity {
         }
         source
     }
+    /// Vanilla `WitherSkull.onHit` / `onHitBlock` explosion.
+    ///
+    /// `ExplosionInteraction::Mob` is what vanilla passes for a mob-owned blast,
+    /// so `mobGriefing` and the mob drop decay apply.
+    fn explode(self: &Arc<Self>, world: &Arc<World>) {
+        let mut options = ExplosionOptions::new(
+            self.position(),
+            WITHER_SKULL_EXPLOSION_POWER,
+            ExplosionInteraction::Mob,
+        );
+        options.source = Some(Arc::clone(self) as SharedEntity);
+        options.damage_source = Some(self.impact_damage_source());
+        world.explode(options);
+    }
+
 }
 
 impl Entity for WitherSkullEntity {
@@ -125,20 +140,6 @@ impl Entity for WitherSkullEntity {
         self.load_projectile(nbt);
     }
 
-    /// Vanilla `WitherSkull.onHit` / `onHitBlock` explosion.
-    ///
-    /// `ExplosionInteraction::Mob` is what vanilla passes for a mob-owned blast,
-    /// so `mobGriefing` and the mob drop decay apply.
-    fn explode(self: &Arc<Self>, world: &Arc<World>) {
-        let mut options = ExplosionOptions::new(
-            self.position(),
-            WITHER_SKULL_EXPLOSION_POWER,
-            ExplosionInteraction::Mob,
-        );
-        options.source = Some(Arc::clone(self) as SharedEntity);
-        options.damage_source = Some(self.impact_damage_source());
-        world.explode(options);
-    }
 }
 
 impl Projectile for WitherSkullEntity {

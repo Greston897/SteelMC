@@ -2996,6 +2996,16 @@ const fn protocol_look_at_anchor(anchor: EntityAnchor) -> LookAtAnchor {
         EntityAnchor::Feet => LookAtAnchor::Feet,
         EntityAnchor::Eyes => LookAtAnchor::Eyes,
     }
+
+    /// Vanilla `ServerPlayer.tickCount` is the player's own counter, not the
+    /// shared `EntityBase` one; the combat tracker compares damage times against
+    /// it, so the trait default must be overridden here.
+    ///
+    /// Fully qualified on purpose: a bare `self.tick_count()` would resolve back
+    /// to this very method and recurse forever.
+    fn tick_count(&self) -> i32 {
+        Player::tick_count(self)
+    }
 }
 
 impl LivingEntity for Player {
@@ -3024,13 +3034,6 @@ impl LivingEntity for Player {
             entity_id: self.id(),
             yaw: hurt_dir as f32,
         });
-    }
-
-    /// Vanilla `ServerPlayer.tickCount` is the player's own counter, not the
-    /// shared `EntityBase` one; the combat tracker compares damage times against
-    /// it, so the trait default must be overridden here.
-    fn tick_count(&self) -> i32 {
-        self.tick_count()
     }
 
     fn tick_living_entity(&self, entity: &SharedEntity) {

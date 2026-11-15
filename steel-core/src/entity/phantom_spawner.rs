@@ -25,7 +25,7 @@ use crate::entity::spawn_entity;
 use crate::player::Player;
 use crate::world::{LevelReader, World};
 use steel_registry::{REGISTRY, entity_type::EntityTypeRef, vanilla_game_rules};
-use steel_registry::stat::vanilla_custom_stats;
+use steel_registry::vanilla_custom_stats;
 use steel_utils::{BlockPos, Identifier, types::Difficulty};
 
 /// Vanilla `PhantomSpawner.nextTick`: the delay is `60 + nextInt(60)` seconds.

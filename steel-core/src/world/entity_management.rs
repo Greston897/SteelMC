@@ -8,8 +8,10 @@ use super::{
 };
 
 use crate::entity::{
-    EntityCollisionCandidates, ThrowableProjectile as _, selector::EntitySelector,
+    EntityCollisionCandidates, ThrowableProjectile, selector::EntitySelector,
 };
+
+use steel_protocol::packets::game::CProjectilePower;
 
 /// Vanilla `AbstractHurtingProjectile` membership, read from the entity type's
 /// generated class hierarchy.
