@@ -49,18 +49,21 @@ jobs:
       # surface is benches, examples and the non-default features.
       - name: Compile benches and examples
         run: |
+          # `cargo test` covers lib+bins+tests, so this only has to prove the
+          # targets it skips: benches (a separate harness) and examples.
           set -o pipefail
-          cargo check --workspace --all-targets 2>&1 | tee /tmp/benches.log
-          status=${PIPESTATUS[0]}
-          if [ "$status" -ne 0 ]; then
-            {
-              echo "## benches/examples compile failure"
-              echo '```'
-              grep -E "^error|^ *--> |^[a-zA-Z_].*\.rs:[0-9]+" /tmp/benches.log | head -80
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-          exit "$status"
+          status=0
+          for spec in "-p steel-utils --benches" "-p steel-worldgen --benches" "-p steel-core --benches" "-p steel-core --benches --features benchmark-support" "-p steel-flint --examples"; do
+            echo "::group::cargo check $spec"
+            if cargo check $spec 2>&1 | tee "/tmp/bench_$(echo "$spec" | tr " /" "__").log"; then
+              echo "OK $spec"
+            else
+              echo "::error title=compile failed::$spec"
+              status=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $status
 
       - name: Compile every feature
         run: |
