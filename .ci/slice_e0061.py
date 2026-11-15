@@ -1,8 +1,9 @@
 """Print the source around an E0061 (wrong argument count) diagnostic.
 
 The generated registries are single lines hundreds of kilobytes long, so
-rustc's own excerpt of the offending call is useless: it can only show the
-one line. This slices the real source at the reported line:column instead.
+rustc's own excerpt is unreadable: it can only show that one line. This finds
+the  file:line:column  rustc reports and prints the real source around it, and
+then the "defined here" note that names the callee whose arity disagrees.
 """
 
 from __future__ import annotations
@@ -10,47 +11,49 @@ from __future__ import annotations
 import glob
 import re
 
-DIAGNOSTIC = re.compile(r"^(\S+\.rs):(\d+):(\d+): error\[E0061\]", re.M)
-# rustc follows the diagnostic with the callee's definition site; that note is
-# what actually names the constructor whose arity disagrees.
-DEFINITION = re.compile(r"^\s*--> (\S+\.rs):(\d+):(\d+)$", re.M)
+# rustc prints the location on its own line as `--> path:line:col`, so the
+# diagnostic line and the location line have to be matched separately.
+DIAGNOSTIC = re.compile(r"^error\[E0061\][^\n]*\n\s*--> (\S+):(\d+):(\d+)", re.M)
+DEFINITION = re.compile(r"defined here\n\s*--> (\S+):(\d+):(\d+)")
+
+SPAN_BEFORE = 400
+SPAN_AFTER = 260
 
 
-def render(path: str, line: int, col: int) -> str | None:
-    """Return an excerpt centred on `line:col`, or None if the file is gone."""
+def excerpt(path: str, line: int, col: int) -> str | None:
+    """One-line window of `path` centred on `line:col`."""
     try:
-        source = open(path, encoding="utf-8", errors="replace").read()
+        with open(path, encoding="utf-8", errors="replace") as handle:
+            source = handle.read()
     except OSError:
         return None
-    offset = sum(len(part) for part in source.splitlines(keepends=True)[: line - 1])
-    offset += col - 1
-    return source[max(0, offset - 300) : offset + 200].replace("\n", " ")
+    offset = sum(len(part) for part in source.splitlines(keepends=True)[: line - 1]) + col - 1
+    window = source[max(0, offset - SPAN_BEFORE) : offset + SPAN_AFTER]
+    return " ".join(window.split())
 
 
 def main() -> None:
-    found = False
+    printed = False
     for log in sorted(glob.glob("/tmp/b?.log")):
         with open(log, encoding="utf-8", errors="replace") as handle:
             text = handle.read()
         for match in DIAGNOSTIC.finditer(text):
             path, line, col = match.group(1), int(match.group(2)), int(match.group(3))
-            excerpt = render(path, line, col)
-            if excerpt is None:
+            rendered = excerpt(path, line, col)
+            if rendered is None:
                 continue
-            found = True
-            print(f"--- {path}:{line}:{col}")
-            print(f"    ...{excerpt}...")
-            for note in DEFINITION.finditer(text, match.end(), match.end() + 2000):
-                note_path, note_line = note.group(1), int(note.group(2))
-                try:
-                    source = open(note_path, encoding="utf-8", errors="replace").read()
-                except OSError:
-                    continue
-                body = source.splitlines(keepends=True)
-                snippet = " ".join("".join(body[max(0, note_line - 1) : note_line + 2]).split())
-                print(f"    defined at {note_path}:{note_line}: {snippet[:200]}")
-                break
-    if not found:
+            printed = True
+            print(f"--- call site {path}:{line}:{col}")
+            print(f"    ...{rendered}...")
+        for match in DEFINITION.finditer(text):
+            path, line = match.group(1), int(match.group(2))
+            rendered = excerpt(path, line, 1)
+            if rendered is None:
+                continue
+            printed = True
+            print(f"--- defined at {path}:{line}")
+            print(f"    ...{rendered}...")
+    if not printed:
         print("no E0061 diagnostic found")
 
 
