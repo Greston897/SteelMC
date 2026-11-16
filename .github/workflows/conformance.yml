@@ -188,7 +188,14 @@ jobs:
             [ -f "$f" ] || continue
             grep -q "FAILED" "$f" || continue
             echo "### $(basename "$f" .log)" >> /tmp/panic-messages.log
-            awk '/^failures:$/{found=1} found' "$f" | head -400 >> /tmp/panic-messages.log
+            # Prefer the diagnostic block; fall back to the tail so a truncated
+            # or aborted run still shows what the tests printed.
+            if grep -q '^failures:$' "$f"; then
+              awk '/^failures:$/{found=1} found' "$f" | head -400 >> /tmp/panic-messages.log
+            else
+              echo "(no failures: block; tail follows)" >> /tmp/panic-messages.log
+              tail -120 "$f" >> /tmp/panic-messages.log
+            fi
             echo >> /tmp/panic-messages.log
           done
           if [ ! -s /tmp/panic-messages.log ]; then
