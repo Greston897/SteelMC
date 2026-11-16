@@ -27,6 +27,7 @@ use crate::chunk::heightmap::HeightmapType;
 use crate::chunk::light::LightLayer;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
 use crate::entity::{Entity as _, LivingEntity as _, spawn_entity};
+use steel_registry::RegistryExt as _;
 use crate::inventory::equipment::EquipmentSlot;
 use crate::player::Player;
 use crate::poi::OccupationStatus;

@@ -147,13 +147,13 @@ struct AbilitiesFile {
     walking_speed: f32,
 }
 
-#[derive(SchemaWrite, SchemaRead)]
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct SlotFile {
     slot: i8,
     item_nbt: Vec<u8>,
 }
 
-#[derive(SchemaWrite, SchemaRead)]
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct GlobalPlayerDataFile {
     data_version: i32,
     last_active_domain: String,

@@ -21,7 +21,7 @@ use crate::entity::{
     SharedEntity, spawn_entity,
 };
 use crate::player::Player;
-use crate::world::World;
+use crate::world::{LevelReader as _, World};
 
 /// Maximum number of occupants in a vanilla beehive.
 pub const BEEHIVE_MAX_OCCUPANTS: usize = 3;

@@ -74,11 +74,11 @@ impl StackedItemContents {
     }
 
     fn add(&mut self, item: ItemRef, count: i32) {
-        *self.amounts.entry(item.key().clone()).or_insert(0) += count;
+        *self.amounts.entry(item.key.clone()).or_insert(0) += count;
     }
 
     fn has_at_least(&self, item: ItemRef, count: i32) -> bool {
-        self.amounts.get(item.key()).copied().unwrap_or(0) >= count
+        self.amounts.get(&item.key).copied().unwrap_or(0) >= count
     }
 
     /// Vanilla `StackedContents.tryPick(ingredients, amount, output)`.
@@ -98,7 +98,7 @@ impl StackedItemContents {
             match picker.try_assigning_new_item(self, amount) {
                 Some(path) => {
                     let assigned_item = picker.items[path[0]];
-                    if let Some(count) = self.amounts.get_mut(assigned_item.key()) {
+                    if let Some(count) = self.amounts.get_mut(&assigned_item.key) {
                         *count -= amount;
                     }
                     let satisfied_ingredient = path[path.len() - 1];

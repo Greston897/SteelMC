@@ -752,7 +752,14 @@ impl Player {
         if let Some(target) = swept {
             // Vanilla `Player.doAutoAttackOnTouch` → `attack`, which uses
             // `autoSpinAttackDmg` and the spin-attack item stack as the weapon.
-            self.attack(&target);
+            // `attack` needs the world's own `Arc<Player>`, so resolve it by UUID
+            // instead of fabricating a second allocation.
+            if let Some(arc) = self
+                .level()
+                .and_then(|world| world.players.get_by_uuid(&self.base().uuid()))
+            {
+                arc.attack(&target);
+            }
             self.riptide
                 .lock()
                 .as_mut()
@@ -1675,7 +1682,7 @@ impl Player {
             // `test_instance` registry, so the description cannot be resolved;
             // the identifier is the closest honest fallback.
             // TODO: describe the test once the registry lands.
-            Some(ref test) => TextComponent::plain(&test.to_string()),
+            Some(ref test) => TextComponent::plain(test.to_string()),
             None => TextComponent::translated(TranslatedMessage {
                 key: "test_instance.description.no_test".into(),
                 fallback: Some("No test".into()),

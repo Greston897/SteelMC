@@ -520,7 +520,7 @@ impl World {
             self,
             origin,
             &steel_registry::feature::EndGatewayConfiguration {
-                exit: Some([exit.x(), exit.y(), exit.z()]),
+                exit: Some(glam::IVec3::new(exit.x(), exit.y(), exit.z())),
                 exact,
             },
         );

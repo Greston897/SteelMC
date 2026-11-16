@@ -134,7 +134,7 @@ impl PacketBudget {
     /// A budget using the hard per-connection ceiling.
     #[must_use]
     pub fn new() -> Self {
-        Self::with_packet_limit(MAX_PACKETS_PER_SECOND)
+        Self::with_packet_limit(i32::try_from(MAX_PACKETS_PER_SECOND).unwrap_or(i32::MAX))
     }
 
     /// A budget honouring the operator's `rate-limit` setting.
