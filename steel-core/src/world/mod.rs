@@ -751,14 +751,16 @@ impl World {
         }
         self.dragon_fight.on_crystal_destroyed();
 
-        if let Some(uuid) = self.dragon_fight.dragon_uuid()
-            && let Some(dragon) = self
-                .get_entity_by_uuid(&uuid)
-                .and_then(|entity| {
-                    entity
-                        .as_ref()
-                        .downcast_ref::<crate::entity::entities::EnderDragonEntity>()
-                })
+        // The dragon handle is bound before the downcast so the borrow lives on the
+        // `Arc` instead of the closure parameter.
+        let dragon_entity = self
+            .dragon_fight
+            .dragon_uuid()
+            .and_then(|uuid| self.get_entity_by_uuid(&uuid));
+        if let Some(entity) = dragon_entity
+            && let Some(dragon) = entity
+                .as_ref()
+                .downcast_ref::<crate::entity::entities::EnderDragonEntity>()
         {
             let player = source
                 .and_then(crate::entity::damage::DamageSource::causing_entity)

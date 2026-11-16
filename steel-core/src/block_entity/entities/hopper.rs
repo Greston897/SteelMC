@@ -26,7 +26,7 @@ use steel_registry::blocks::properties::{BlockStateProperties, Direction};
 use steel_utils::{BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, WorldAabb};
 
 use crate::block_entity::randomizable_container::RandomizableContainer;
-use crate::entity::RemovalReason;
+use crate::entity::{Entity as _, RemovalReason};
 use crate::entity::entities::objects::items::ItemEntity;
 use crate::block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter};
 use crate::inventory::container::{Container, load_all_items};

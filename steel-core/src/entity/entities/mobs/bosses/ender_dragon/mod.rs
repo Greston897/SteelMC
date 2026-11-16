@@ -974,12 +974,12 @@ impl EnderDragonEntity {
 
     /// Sends the vanilla `EXPLOSION` particle the dying dragon trails each tick.
     fn spawn_death_particle(&self, world: &Arc<World>) {
-        self.send_dragon_particle(world, vanilla_particle_types::EXPLOSION);
+        self.send_dragon_particle(world, &vanilla_particle_types::EXPLOSION);
     }
 
     /// Sends the vanilla `EXPLOSION_EMITTER` particle the death animation fires.
     fn spawn_death_explosion(&self, world: &Arc<World>) {
-        self.send_dragon_particle(world, vanilla_particle_types::EXPLOSION_EMITTER);
+        self.send_dragon_particle(world, &vanilla_particle_types::EXPLOSION_EMITTER);
     }
 
     fn send_dragon_particle(
