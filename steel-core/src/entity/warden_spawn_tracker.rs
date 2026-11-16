@@ -242,10 +242,10 @@ mod tests {
         for _ in 0..DECREASE_WARNING_LEVEL_EVERY_INTERVAL {
             tracker.tick();
         }
-        // The interval is reached on the tick after the counter passes it.
+        // Vanilla resets `ticksSinceLastWarning` to 0 on the decay tick itself.
         tracker.tick();
         assert_eq!(tracker.warning_level(), 2);
-        assert_eq!(tracker.ticks_since_last_warning(), 1);
+        assert_eq!(tracker.ticks_since_last_warning(), 0);
     }
 
     #[test]

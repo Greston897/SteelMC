@@ -14,7 +14,7 @@
 //! than `ClientboundOpenScreenPacket`, so it is never opened through
 //! `Player::open_menu`.
 
-use std::sync::{Arc, Weak};
+use std::sync::Weak;
 
 use glam::DVec3;
 use steel_registry::equipment::EquipmentSlot;
@@ -77,21 +77,33 @@ pub fn mount(
     // `mayPlace` is `LivingEntity.isEquippableInSlot(stack, slot)`, which for
     // `EquipmentSlot.SADDLE` accepts saddles and for `EquipmentSlot.BODY`
     // accepts the mount's body armor. No extra predicate is needed.
-    let saddle = builder.section_with(
-        Arc::clone(&container),
-        1,
+    let saddle = builder.section_at(
+        &container,
+        [SLOT_SADDLE],
         SectionKind::custom(|container, index| {
-            Box::new(ArmorSlot::new(container, index, EquipmentSlot::Saddle))
+            Box::new(ArmorSlot::new(
+                container.clone(),
+                index,
+                EquipmentSlot::Saddle,
+            ))
         }),
     );
-    let armor = builder.section_with(
-        Arc::clone(&container),
-        1,
+    let armor = builder.section_at(
+        &container,
+        [SLOT_BODY_ARMOR],
         SectionKind::custom(|container, index| {
-            Box::new(ArmorSlot::new(container, index, EquipmentSlot::Body))
+            Box::new(ArmorSlot::new(
+                container.clone(),
+                index,
+                EquipmentSlot::Body,
+            ))
         }),
     );
-    let storage = builder.section(Arc::clone(&container), columns * INVENTORY_ROWS);
+    let storage = builder.section_at(
+        &container,
+        SLOT_INVENTORY_START..inventory_size(columns),
+        SectionKind::Normal,
+    );
     let player = builder.player_inventory(&inventory);
 
     builder.route(storage, player.all(), FillDirection::Backward);

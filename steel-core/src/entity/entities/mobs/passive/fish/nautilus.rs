@@ -86,18 +86,20 @@ pub trait AbstractNautilus: LivingEntity + EntityEventSource {
     /// The sound is species- and water-dependent, so the caller supplies
     /// exactly what `getDashReadySound` returns.
     fn tick_dash(&self, dash_ready_sound: Option<SoundEventRef>) {
-        if self.is_dashing() && *self.dash_cooldown().lock() < NAUTILUS_DASH_END_AT_COOLDOWN {
-            self.set_dashing(false);
-        }
-        let mut cooldown = self.dash_cooldown().lock();
-        if *cooldown > 0 {
-            *cooldown -= 1;
-            if *cooldown == 0 {
-                drop(cooldown);
-                if let Some(sound) = dash_ready_sound {
-                    self.play_sound(sound, 1.0, 1.0);
-                }
+        let (remaining, just_finished) = {
+            let mut cooldown = self.dash_cooldown().lock();
+            if *cooldown > 0 {
+                *cooldown -= 1;
+                (*cooldown, *cooldown == 0)
+            } else {
+                (0, false)
             }
+        };
+        if just_finished && let Some(sound) = dash_ready_sound {
+            self.play_sound(sound, 1.0, 1.0);
+        }
+        if self.is_dashing() && remaining < NAUTILUS_DASH_END_AT_COOLDOWN {
+            self.set_dashing(false);
         }
     }
 
@@ -738,9 +740,10 @@ mod tests {
         let nautilus =
             NautilusEntity::new(&vanilla_entities::NAUTILUS, 1, DVec3::ZERO, Weak::new());
         nautilus.execute_nautilus_jump(1.0, DVec3::X, 1.0);
-        // Vanilla clears the flag when `dashCooldown` drops below 35, which is
-        // 5 ticks into a 40-tick cooldown.
-        for _ in 0..NAUTILUS_DASH_COOLDOWN_TICKS - NAUTILUS_DASH_END_AT_COOLDOWN - 1 {
+        // Vanilla decrements `dashCooldown` first and clears the flag when it
+        // drops below 35: ticks 1..=5 keep dashing (40 -> 35), tick 6 drops to
+        // 34 and ends the dash.
+        for _ in 0..NAUTILUS_DASH_COOLDOWN_TICKS - NAUTILUS_DASH_END_AT_COOLDOWN {
             nautilus.tick_dash(None);
         }
         assert!(

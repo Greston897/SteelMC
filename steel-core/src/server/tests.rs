@@ -3837,6 +3837,7 @@ fn end_credits_respawn_replaces_the_detached_player_incarnation() {
         };
         let leave_game_before_credits = leave_game_count(&old_player);
 
+        let _ = old_player.add_post_effect(Identifier::vanilla_static("invert"));
         let requested_chunks_per_tick = 2;
         assert_ne!(
             send_test_chunk_batch(&server, &old_player, source_world),

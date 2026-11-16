@@ -554,9 +554,9 @@ mod tests {
             );
         }
         assert!(crafter.has_matching_recipe());
-        // Disabling the flint leaves a single iron ingot (no 1-ingot recipe),
+        // Disabling the iron ingot leaves a single flint (no 1-flint recipe),
         // so the match disappears even though the items remain in the grid.
-        crafter.set_disabled_slots(1 << 1);
+        crafter.set_disabled_slots(1 << 0);
         assert!(!crafter.has_matching_recipe());
     }
 

@@ -666,21 +666,31 @@ mod tests {
     }
 
     #[test]
-    fn rejects_unimplemented_flat_decoration_options() {
+    fn accepts_flat_decoration_options() {
+        init_vanilla_registry();
+
         let features_config = toml::Value::Table(Map::from_iter([(
             "features".to_owned(),
             toml::Value::Boolean(true),
         )]));
-        let features_error = validate_flat_config(&features_config)
-            .expect_err("features=true should not use non-vanilla decoration");
-        assert!(features_error.contains("features=true"));
+        let WorldGeneratorConfigData::Flat(features_parsed) =
+            validate_flat_config(&features_config).expect("features=true should validate")
+        else {
+            panic!("expected flat config");
+        };
+        assert!(features_parsed.features);
+        assert!(!features_parsed.lakes);
 
         let lakes_config = toml::Value::Table(Map::from_iter([(
             "lakes".to_owned(),
             toml::Value::Boolean(true),
         )]));
-        let lakes_error = validate_flat_config(&lakes_config)
-            .expect_err("lakes=true should not use non-vanilla decoration");
-        assert!(lakes_error.contains("lakes=true"));
+        let WorldGeneratorConfigData::Flat(lakes_parsed) =
+            validate_flat_config(&lakes_config).expect("lakes=true should validate")
+        else {
+            panic!("expected flat config");
+        };
+        assert!(lakes_parsed.lakes);
+        assert!(!lakes_parsed.features);
     }
 }

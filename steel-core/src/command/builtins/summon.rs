@@ -198,6 +198,15 @@ mod tests {
             dispatcher.node(position),
             Some(node) if node.is_executable()
         ));
-        assert!(dispatcher.children(position).is_some_and(<[_]>::is_empty));
+        let nbt = child(&dispatcher, position, "nbt");
+        assert_eq!(
+            dispatcher.node(nbt).and_then(|node| node.argument_type()),
+            Some(&SteelArgumentType::compound())
+        );
+        assert!(matches!(
+            dispatcher.node(nbt),
+            Some(node) if node.is_executable()
+        ));
+        assert!(dispatcher.children(nbt).is_some_and(<[_]>::is_empty));
     }
 }

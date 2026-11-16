@@ -801,11 +801,11 @@ fn player_file_roundtrip_preserves_respawn_config() {
 
 #[test]
 fn stale_player_payload_version_is_rejected() {
-    let file = sample_player_file(PLAYER_DATA_VERSION - 1);
+    let file = sample_player_file(PLAYER_DATA_VERSION + 1);
 
     let error = file
         .into_persistent()
-        .expect_err("stale payload should fail");
+        .expect_err("newer unsupported payload version should fail");
 
     assert_eq!(error.kind(), io::ErrorKind::InvalidData);
 }

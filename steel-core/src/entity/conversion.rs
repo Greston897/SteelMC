@@ -216,6 +216,7 @@ fn convert_common(from: &dyn Mob, to: &dyn Mob, params: ConversionParams) {
         (from.as_ageable_mob(), to.as_ageable_mob())
     {
         converted_ageable.set_age(old_ageable.get_age());
+        converted_ageable.set_age_locked(old_ageable.is_age_locked());
         converted_ageable.set_forced_age(old_ageable.forced_age());
         converted_ageable.set_forced_age_timer(old_ageable.forced_age_timer());
     }

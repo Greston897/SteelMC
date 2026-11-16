@@ -355,7 +355,7 @@ mod tests {
     fn fuel_stops_accumulating_at_the_vanilla_ceiling() {
         init_vanilla_registry();
         let cart = cart();
-        for _ in 0..9 {
+        for _ in 0..8 {
             assert!(cart.add_fuel(DVec3::ZERO, true));
         }
         // 9 * 3600 = 32400 > 32000, so the ninth ignition is refused.

@@ -16,7 +16,7 @@ use uuid::Uuid;
 
 use crate::behavior::init_behaviors;
 use crate::entity::living_base::MobEffectInstance;
-use crate::entity::{Entity, LivingEntity, Mob, next_entity_id};
+use crate::entity::{Entity, LivingEntity, Mob, init_entities, next_entity_id};
 use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
 use steel_utils::WorldAabb;
 
@@ -174,6 +174,7 @@ fn mooshroom_thunder_hit_swaps_variant() {
 fn mooshroom_shearing_converts_to_cow_and_drops_mushrooms() {
     init_vanilla_registry();
     init_behaviors();
+    init_entities();
 
     let world_fixture = fresh_test_world("mooshroom_shearing");
     let world = &world_fixture.world;

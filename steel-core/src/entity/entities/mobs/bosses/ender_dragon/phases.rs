@@ -1103,7 +1103,7 @@ mod tests {
     fn the_final_node_becomes_the_path_tail() {
         let nodes = line_nodes(1.0);
         let final_node = DVec3::new(1.5, 81.5, 0.0);
-        let path = search(&nodes, 0, 0, 1, Some(final_node)).expect("adjacent nodes connect");
+        let path = search(&nodes, 1, 0, 1, Some(final_node)).expect("adjacent nodes connect");
         let end = path.end_node().expect("path has a last node");
         // Vanilla floors the final node's coordinates.
         assert_eq!((end.x, end.y, end.z), (1, 81, 0));
@@ -1136,14 +1136,15 @@ mod tests {
 
     #[test]
     fn the_open_set_keeps_insertion_order_on_equal_costs() {
-        // Vanilla's heap never moves an equal cost upward, so ties pop in insert
-        // order.
+        // Vanilla's `BinaryHeap` never sifts equal costs past their parent or
+        // child: `3` stays at root on insert, then `pop()` moves the tail `5`
+        // to root and leaves it above `4` because `!(4.f < 5.f)`.
         let mut open_set = ArenaOpenSet::default();
         open_set.insert(3, 1.0);
         open_set.insert(4, 1.0);
         open_set.insert(5, 1.0);
         assert_eq!(open_set.pop(), 3);
-        assert_eq!(open_set.pop(), 4);
         assert_eq!(open_set.pop(), 5);
+        assert_eq!(open_set.pop(), 4);
     }
 }

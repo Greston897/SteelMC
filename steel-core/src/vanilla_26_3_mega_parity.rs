@@ -669,10 +669,12 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     Identifier::vanilla_static("confirm")
         .write(&mut click_buf)
         .expect("id");
-    false.write(&mut click_buf).expect("no payload");
+    VarInt(1).write(&mut click_buf).expect("framed len");
+    0_u8.write(&mut click_buf).expect("no payload");
     let click_pkt =
         SCustomClickAction::read_packet(&mut Cursor::new(click_buf.as_slice())).expect("click");
     assert_eq!(click_pkt.id, Identifier::vanilla_static("confirm"));
+    assert!(click_pkt.payload.is_none());
 
     // ------------------------------------------------------------------------
     // PHASE 3: Every Single Registered Block (1,168+) — Behavior, Placement,

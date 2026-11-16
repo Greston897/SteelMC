@@ -44,16 +44,16 @@ fn entity_check_despawn_discards_in_peaceful() {
         "pig_despawn_peaceful",
         steel_utils::types::Difficulty::Peaceful,
     );
-    let pig = Arc::new(PigEntity::new(
-        &vanilla_entities::PIG,
+    let hostile = Arc::new(PigEntity::new(
+        &vanilla_entities::ZOMBIE,
         1,
         DVec3::ZERO,
         Arc::downgrade(&fixture.world),
     ));
 
-    assert!(!crate::entity::Entity::is_removed(pig.as_ref()));
-    crate::entity::Entity::check_despawn(pig.as_ref());
-    assert!(crate::entity::Entity::is_removed(pig.as_ref()));
+    assert!(!crate::entity::Entity::is_removed(hostile.as_ref()));
+    crate::entity::Entity::check_despawn(hostile.as_ref());
+    assert!(crate::entity::Entity::is_removed(hostile.as_ref()));
 }
 
 #[test]

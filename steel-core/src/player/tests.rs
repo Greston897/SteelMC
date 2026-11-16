@@ -1946,7 +1946,7 @@ fn spawn_sends_view_and_simulation_distances_in_vanilla_order() {
         sent_packets: Arc::clone(&sent_packets),
         closed: AtomicBool::new(false),
     })));
-    let player = TestPlayerBuilder::new(Arc::clone(world), "ViewDistanceTester", 1)
+    let player = TestPlayerBuilder::new(Arc::clone(world), "ViewDistTester", 1)
         .connection(connection)
         .build();
     sent_packets.lock().clear();

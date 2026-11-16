@@ -289,9 +289,9 @@ mod tests {
         };
         let encoded = packet.encode();
         assert_eq!(encoded.len(), 14);
-        assert_eq!(&encoded[10..], &[0, 0]);
+        assert_eq!(&encoded[12..], &[0, 0]);
         let decoded =
-            RconPacket::decode(-1, SERVERDATA_AUTH_RESPONSE, &encoded[8..]).expect("decodes");
+            RconPacket::decode(-1, SERVERDATA_AUTH_RESPONSE, &encoded[12..]).expect("decodes");
         assert_eq!(decoded.body, "");
     }
 }
