@@ -160,8 +160,8 @@ jobs:
               grep -qE "^failures:|FAILED" "$f" || continue
               echo "### $(basename "$f" .log)"
               echo '```'
-              grep -E "^(failures:|test .* FAILED|---- |thread .* panicked|assertion|  left:|  right:)" "$f" \
-                | head -60
+              grep -E "^((failures:|test .* FAILED|---- )|thread .* panicked|assertion|  left:|  right:|note: run with)" "$f" \
+                | tail -120
               echo '```'
             done
           } > /tmp/failing-tests.md
