@@ -800,7 +800,7 @@ impl SculkSensorBlock {
 impl BlockBehavior for SculkSensorBlock {
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         let waterlogged = context
-            .world()
+            .world
             .get_block_state(context.place_pos())
             .get_block()
             == &vanilla_blocks::WATER;
@@ -890,7 +890,7 @@ impl CalibratedSculkSensorBlock {
 impl BlockBehavior for CalibratedSculkSensorBlock {
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         let waterlogged = context
-            .world()
+            .world
             .get_block_state(context.place_pos())
             .get_block()
             == &vanilla_blocks::WATER;
@@ -1036,7 +1036,7 @@ impl SculkShriekerBlock {
 impl BlockBehavior for SculkShriekerBlock {
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         let waterlogged = context
-            .world()
+            .world
             .get_block_state(context.place_pos())
             .get_block()
             == &vanilla_blocks::WATER;

@@ -141,7 +141,7 @@ impl TrialSpawnerBlockEntity {
         world.players.iter_players(|_uuid, player| {
             if player.is_spectator()
                 || player.has_infinite_materials()
-                || !LivingEntity::is_alive(player.as_ref())
+                || !crate::entity::LivingEntity::is_alive(player.as_ref())
                 || player.position().distance_squared(center) > max_sq
             {
                 return true;

@@ -244,7 +244,7 @@ fn get_bar(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandS
 fn set_name(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let name = context.text_component("name")?.clone();
     let id = context.string("id")?.to_owned();
-    let _bar = update_bar(context, |bar| {
+    let bar = update_bar(context, |bar| {
         bar.name = name.clone();
         let packet = CBossEvent {
             uuid: bar.uuid,
@@ -265,7 +265,7 @@ fn set_color(
     context: &SteelCommandContext<CommandSource>,
     color: BossBarColor,
 ) -> Result<i32, CommandSyntaxError> {
-    let _bar = update_bar(context, |bar| {
+    let bar = update_bar(context, |bar| {
         bar.color = color;
         broadcast_style(context, bar);
     })?;
@@ -295,7 +295,7 @@ fn set_style(
 
 fn set_value(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let value = context.integer("value")?;
-    let bar = update_bar(context, |bar| {
+    let _bar = update_bar(context, |bar| {
         // The command's value is absolute in `0..=max`; Steel stores progress.
         bar.progress = f64::from(value).clamp(0.0, 1.0) as f32;
     })?;
@@ -309,7 +309,7 @@ fn set_value(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
 
 fn set_max(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let max = context.integer("value")?;
-    let bar = update_bar(context, |bar| {
+    let _bar = update_bar(context, |bar| {
         // Vanilla rescales the current value against the new maximum. Steel keeps
         // progress directly, so the percentage is preserved as-is.
         bar.progress = bar.progress.clamp(0.0, 1.0);

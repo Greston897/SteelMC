@@ -14,7 +14,6 @@ mod tests {
     use crate::packets::shared_implementation::KnownPack;
     use std::io::Cursor;
     use steel_utils::codec::VarInt;
-use steel_utils::serial::ReadFrom as _;
 use steel_utils::serial::{ReadFrom, WriteTo};
 
     fn encode_packs(count: i32) -> Vec<u8> {

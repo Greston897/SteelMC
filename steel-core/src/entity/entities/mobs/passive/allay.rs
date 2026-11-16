@@ -477,16 +477,12 @@ impl PathfinderMob for AllayEntity {}
 
 #[cfg(test)]
 mod tests {
-    use std::io::Cursor;
     use std::sync::Weak;
 
     use glam::DVec3;
-    use simdnbt::borrow::read_compound;
-    use simdnbt::owned::NbtCompound;
     use steel_registry::{init_vanilla_registry, vanilla_entities};
 
     use super::AllayEntity;
-    use crate::entity::{Entity, LivingEntity};
 
     #[test]
     fn allay_flags_are_independent() {

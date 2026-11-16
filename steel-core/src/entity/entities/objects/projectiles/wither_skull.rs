@@ -195,7 +195,6 @@ mod tests {
     }
 
     #[test]
-    #[test]
     fn wither_skull_wither_effect_matches_vanilla() {
         // Wither II for 10 seconds on Normal.
         assert_eq!(WITHER_SKULL_WITHER_TICKS, 10 * 20);

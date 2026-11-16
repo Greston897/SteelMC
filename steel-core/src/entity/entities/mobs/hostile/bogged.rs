@@ -399,16 +399,12 @@ impl PathfinderMob for BoggedEntity {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Cursor;
     use std::sync::Weak;
 
     use glam::DVec3;
-    use simdnbt::borrow::read_compound;
-    use simdnbt::owned::NbtCompound;
     use steel_registry::{init_vanilla_registry, vanilla_entities};
 
     use super::BoggedEntity;
-    use crate::entity::{Entity, LivingEntity};
 
     #[test]
     fn fresh_bogged_is_not_sheared_and_shearing_is_one_shot() {

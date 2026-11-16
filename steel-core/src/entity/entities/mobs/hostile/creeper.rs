@@ -445,19 +445,15 @@ impl PathfinderMob for CreeperEntity {}
 
 #[cfg(test)]
 mod tests {
-    use std::io::Cursor;
     use std::sync::Weak;
 
     use glam::DVec3;
-    use simdnbt::borrow::read_compound;
-    use simdnbt::owned::NbtCompound;
     use steel_registry::{init_vanilla_registry, vanilla_entities};
 
     use super::{
         CreeperEntity, EXPLOSION_RADIUS, MAX_SWELL, POWERED_RADIUS_MULTIPLIER, SWELL_DISTANCE_SQR,
         SWELL_START_DISTANCE_SQR,
     };
-    use crate::entity::{Entity, LivingEntity};
 
     #[test]
     fn fuse_accumulates_and_deflates_without_going_negative() {

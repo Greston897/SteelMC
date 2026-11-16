@@ -630,9 +630,6 @@ mod tests {
     use crate::behavior::{ITEM_BEHAVIORS, InteractionResult, UseItemContext, init_behaviors};
     use crate::entity::LivingEntity as _;
     use crate::entity::entities::ItemEntity;
-use steel_registry::item_stack_template::ItemStackTemplate;
-use steel_registry::particle_type::{ItemParticleOption, ParticleData};
-use steel_registry::vanilla_particle_types;
     use crate::inventory::container::Container as _;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
 

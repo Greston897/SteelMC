@@ -160,7 +160,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[test]
     fn shulker_bullet_levitation_matches_vanilla() {
         // Levitation II for 10 seconds.
         assert_eq!(SHULKER_BULLET_LEVITATION_TICKS, 10 * 20);
