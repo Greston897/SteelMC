@@ -26,7 +26,7 @@ use crate::entity::Entity as _;
 use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerRef, SharedContainer};
 use crate::world::World;
-use crate::world::block_updates::UpdateFlags;
+use steel_utils::types::UpdateFlags;
 use steel_registry::vanilla_criteria_triggers;
 
 /// Number of slots in a brewing stand: three bottles, the ingredient and fuel.

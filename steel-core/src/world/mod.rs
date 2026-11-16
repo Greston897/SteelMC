@@ -1391,8 +1391,7 @@ impl World {
         }
         let podium = dragon_fight::DragonFight::podium_pos();
         let surface = self
-            .height_at(HeightmapType::MotionBlockingNoLeaves, podium.x(), podium.z())
-            .unwrap_or_else(|| podium.y());
+            .height_at(HeightmapType::MotionBlockingNoLeaves, podium.x(), podium.z());
         let mut y = surface - 1;
         while self
             .get_block_state(BlockPos::new(podium.x(), y, podium.z()))

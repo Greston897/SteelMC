@@ -24,7 +24,7 @@ use steel_registry::{vanilla_blocks, vanilla_entities, vanilla_items};
 
 use crate::behavior::{BlockBehavior, InteractionResult};
 use crate::behavior::block::BlockEntityCreation;
-use crate::block_entity::SharedBlockEntity;
+use crate::block_entity::{BlockEntity as _, SharedBlockEntity};
 use crate::block_entity::entities::CopperGolemStatueBlockEntity;
 use crate::entity::{ENTITIES, Entity, InsideBlockEffectCollector, next_entity_id};
 use crate::behavior::BlockPlaceContext;

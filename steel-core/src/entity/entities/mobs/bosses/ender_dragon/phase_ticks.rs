@@ -1029,6 +1029,37 @@ fn random_below(ctx: &PhaseContext<'_>, bound: i32) -> i32 {
     (i64::from(value) * i64::from(bound) >> 32) as i32
 }
 
+/// Vanilla `EnderDragon.onCrystalDestroyed`.
+///
+/// Runs when an end crystal in the arena is destroyed outside of a respawn: the
+/// dragon turns to strafe whoever broke it. Vanilla only reacts while the dragon
+/// is alive and holds off during the death animation, so the dying phase is left
+/// untouched.
+pub fn on_crystal_destroyed(
+    dragon: &EnderDragonEntity,
+    player: Option<&crate::entity::SharedEntity>,
+) {
+    // Vanilla `if (this.isDeadOrDying()) return;` -- a dying dragon ignores the
+    // crystal, its phase is already `Dying` and must not be replaced.
+    if dragon.phase() == DragonPhase::Dying {
+        return;
+    }
+    let Some(player) = player else {
+        // Vanilla falls back to `HoldingPattern` when nobody can be blamed.
+        dragon.set_phase(DragonPhase::HoldingPattern);
+        return;
+    };
+    // Vanilla `setPhase(StrafePlayer)` then `setTarget(player)`. The manager is
+    // already under its own lock inside the phase tick, so the switch is made
+    // here exactly like `EnderDragonEntity::set_phase` does.
+    let mut manager = dragon.phases.lock();
+    manager.set_phase(DragonPhase::StrafePlayer);
+    manager.state_for(DragonPhase::StrafePlayer).attack_target = Some(Arc::downgrade(player));
+    drop(manager);
+    dragon.sync_phase_data();
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;

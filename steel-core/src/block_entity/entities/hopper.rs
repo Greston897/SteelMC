@@ -27,7 +27,7 @@ use steel_utils::{BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastT
 
 use crate::block_entity::randomizable_container::RandomizableContainer;
 use crate::entity::RemovalReason;
-use crate::entity::entities::objects::items::item_entity::ItemEntity;
+use crate::entity::entities::objects::items::ItemEntity;
 use crate::block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter};
 use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef, SharedContainer};

@@ -33,7 +33,7 @@ pub use grindstone_menu::{GrindstoneKind, grindstone};
 pub use inventory_menu::{INVENTORY_MENU_CONTAINER_ID, InventoryKind, inventory_menu};
 pub use merchant_menu::{MerchantKind, SharedTrades, merchant};
 pub use mount_menu::{
-    INVENTORY_ROWS, MountKind, MountSlot, SLOT_BODY_ARMOR, SLOT_INVENTORY_START, SLOT_SADDLE,
+    INVENTORY_ROWS, MountKind, SLOT_BODY_ARMOR, SLOT_INVENTORY_START, SLOT_SADDLE,
     inventory_size, mount, send_mount_screen,
 };
 pub use shulker_box_menu::{ShulkerBoxKind, shulker_box};
