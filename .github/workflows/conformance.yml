@@ -174,38 +174,19 @@ jobs:
           done
           exit 1
 
-      - name: Publish the panic text of failing crates
+      - name: Publish the panic text of failing tests
         if: failure()
         env:
           # `report.py` reads GITHUB_TOKEN/GITHUB_REPOSITORY/GITHUB_SHA.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # The per-crate logs mix hundreds of passing lines with the failures,
-          # and a commit comment is the only channel readable here. Everything
-          # after the `failures:` marker is the diagnostic block.
-          : > /tmp/panic-messages.log
-          for f in /tmp/test-*.log; do
-            [ -f "$f" ] || continue
-            grep -q "FAILED" "$f" || continue
-            echo "### $(basename "$f" .log)" >> /tmp/panic-messages.log
-            # Prefer the diagnostic block; when it never printed the harness died
-            # mid-run, so replay that crate single-threaded to get the real reason.
-            if grep -q '^failures:$' "$f"; then
-              awk '/^failures:$/{found=1} found' "$f" | head -400 >> /tmp/panic-messages.log
-            else
-              echo "(no failures: block; replaying single-threaded)" >> /tmp/panic-messages.log
-              pkg=$(basename "$f" .log)
-              pkg=${pkg#test-}
-              RUST_BACKTRACE=1 cargo test -p "$pkg" --all-features -- --test-threads=1 \
-                2>&1 | tail -160 >> /tmp/panic-messages.log || true
-            fi
-            echo >> /tmp/panic-messages.log
-          done
-          if [ ! -s /tmp/panic-messages.log ]; then
-            echo "no crate log carried a failures: block" >> /tmp/panic-messages.log
-            ls -l /tmp/test-*.log >> /tmp/panic-messages.log 2>&1 || true
-          fi
-          python3 .ci/report.py "Panic messages" /tmp/panic-messages.log || true
+          # `cargo test -p X` only prints its `failures:` block once the whole
+          # binary finished; when the runner kills it early that block never
+          # appears. Re-running each failing test alone always prints its panic.
+          python3 .ci/failing_tests.py /tmp /tmp/panic-messages.log 40 || true
+          [ -s /tmp/panic-messages.log ] || echo "no failing test replayed" > /tmp/panic-messages.log
+          head -c 45000 /tmp/panic-messages.log > /tmp/panic-messages-trimmed.log
+          python3 .ci/report.py "Panic messages" /tmp/panic-messages-trimmed.log || true
 
       # 3. Conformance: the invariants the code claims to hold. Cheap greps and
       #    JSON comparisons; each of these caught a real bug during this cycle.
