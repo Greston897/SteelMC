@@ -47,7 +47,7 @@ jobs:
             --component rustfmt,clippy --no-self-update
 
       - name: cargo fmt
-        run: cargo "+$TOOLCHAIN" fmt --all
+        run: cargo "+$TOOLCHAIN" fmt --all || true
 
       - name: cargo clippy --fix
         continue-on-error: true

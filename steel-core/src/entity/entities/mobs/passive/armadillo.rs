@@ -266,7 +266,7 @@ impl LivingEntity for ArmadilloEntity {
         };
         let was_rolled = self.is_rolled_up();
         let hit = self.default_hurt_server(world, source, adjusted);
-        if hit && !was_rolled && self.is_alive() && !source.bypasses_invulnerability() {
+        if hit && !was_rolled && Entity::is_alive(self) && !source.bypasses_invulnerability() {
             self.roll_up(80);
         }
         hit

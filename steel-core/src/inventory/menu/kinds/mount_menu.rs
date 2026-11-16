@@ -18,6 +18,7 @@ use std::sync::Weak;
 
 use glam::DVec3;
 use steel_registry::equipment::EquipmentSlot;
+#[cfg(test)]
 use steel_registry::menu_type::MenuTypeRef;
 use steel_utils::{DowncastType, DowncastTypeKey};
 

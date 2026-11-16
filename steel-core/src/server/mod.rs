@@ -546,7 +546,7 @@ pub struct Server {
     /// Command NBT storage isolated by Steel domain.
     pub(crate) command_storage: DomainCommandStorage,
     /// Saves and dispatches commands to appropriate handlers.
-    command_dispatcher: SyncRwLock<CommandDispatcher>,
+    pub(crate) command_dispatcher: SyncRwLock<CommandDispatcher>,
     /// Steel-owned permission keys exposed for command autocomplete.
     command_permission_keys: Vec<String>,
     /// Command work submitted from connection and console tasks.

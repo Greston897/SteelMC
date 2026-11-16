@@ -15,7 +15,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 
 use glam::{DVec3, IVec3};
-use simdnbt::owned::{NbtCompound, NbtTag};
+use simdnbt::owned::NbtCompound;
 use steel_protocol::packet_traits::{CompressionInfo, EncodedPacket, ServerPacket as _};
 use steel_protocol::packets::common::CTransfer;
 use steel_protocol::packets::config::{CServerLinks, Link, SAcceptCodeOfConduct, ServerLinksType};
@@ -34,15 +34,14 @@ use steel_protocol::packets::login::{CCustomQuery, CLoginCookieRequest};
 use steel_protocol::utils::ConnectionProtocol;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, Direction, SculkSensorPhase};
-use steel_registry::data_components::vanilla_components::{CUSTOM_NAME, DAMAGE, MAX_DAMAGE};
+use steel_registry::data_components::vanilla_components::{CUSTOM_NAME, DAMAGE};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::packets::CURRENT_MC_PROTOCOL;
-use steel_registry::recipe::CraftingInput;
+use steel_registry::recipe::{CraftingInput, vanilla_recipe_types};
 use steel_registry::{
     REGISTRY, RegistryExt as _, init_vanilla_registry, vanilla_attributes, vanilla_blocks,
     vanilla_damage_types, vanilla_dimension_types, vanilla_enchantments, vanilla_entities,
     vanilla_game_events, vanilla_game_rules, vanilla_items, vanilla_mob_effects,
-    vanilla_recipe_types,
 };
 use steel_utils::codec::{Or, VarInt};
 use steel_utils::locks::{IntoShared as _, SyncMutex};
@@ -58,10 +57,12 @@ use crate::behavior::{
     BLOCK_BEHAVIORS, CONSUME_EFFECT_BEHAVIORS, FLUID_BEHAVIORS, ITEM_BEHAVIORS,
     MOB_EFFECT_BEHAVIORS, init_behaviors,
 };
+use crate::block_entity::entities::sculk_sensor::{
+    redstone_strength_for_distance, vibration_frequency,
+};
 use crate::block_entity::entities::{
     CrafterBlockEntity, CreakingHeartBlockEntity, HopperBlockEntity, SculkSensorBlockEntity,
     SculkShriekerBlockEntity, TrialSpawnerBlockEntity, VaultBlockEntity,
-    redstone_strength_for_distance, vibration_frequency,
 };
 use crate::block_entity::{BLOCK_ENTITIES, BlockEntity as _, init_block_entities};
 use crate::command::execution::{
@@ -85,7 +86,9 @@ use crate::inventory::menu::kinds::{
     lectern, loom, smithing, stonecutter,
 };
 use crate::inventory::recipe_manager;
-use crate::permission::{OP_GROUP, PermissionSubjectIndex, PermissionSubjectState};
+use crate::permission::{
+    OP_GROUP, PermissionMetadataSet, PermissionSet, PermissionSubjectIndex, PermissionSubjectState,
+};
 use crate::player::PlayerConnection;
 use crate::player::connection::NetworkConnection;
 use crate::scoreboard::{ScoreHolder, Scoreboard, criterion_is_read_only};
@@ -435,7 +438,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         assert!(
             EncodedPacket::from_bare(
                 CDeleteChat {
-                    message_signature: PackedMessageSignature::Id(42),
+                    message_signature: PackedMessageSignature::CachedId(42),
                 },
                 comp,
                 ConnectionProtocol::Play,
@@ -580,7 +583,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
             EncodedPacket::from_bare(
                 CTransfer {
                     host: "play.example.com",
-                    port: VarInt(25565),
+                    port: 25565,
                 },
                 comp,
                 ConnectionProtocol::Play,
@@ -599,20 +602,28 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
             .is_ok()
         );
         for wp_data in [
-            TrackedWaypointData::Vec3i(IVec3::new(12, 64, -8)),
-            TrackedWaypointData::Chunk(3, -4),
-            TrackedWaypointData::Azimuth(1.25),
+            TrackedWaypointData::Vec3i {
+                x: 12,
+                y: 64,
+                z: -8,
+            },
+            TrackedWaypointData::Chunk {
+                chunk_x: 3,
+                chunk_z: -4,
+            },
+            TrackedWaypointData::Azimuth { angle: 1.25 },
         ] {
             assert!(
                 EncodedPacket::from_bare(
                     CWaypoint {
-                        operation: WaypointOperation::Track,
-                        id: WaypointId::Uuid(Uuid::from_u128(0xABCD)),
-                        icon: WaypointIcon {
-                            style: Identifier::vanilla_static("default"),
-                            color: Some([0x33, 0xCC, 0xFF]),
+                        operation: WaypointOperation::Track {
+                            id: WaypointId::Uuid(Uuid::from_u128(0xABCD)),
+                            icon: WaypointIcon {
+                                style: Identifier::vanilla_static("default"),
+                                color: Some([0x33, 0xCC, 0xFF]),
+                            },
+                            data: wp_data,
                         },
-                        data: wp_data,
                     },
                     comp,
                     ConnectionProtocol::Play,
@@ -741,7 +752,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         if item != &*vanilla_items::AIR {
             assert!(!stack.is_empty());
             assert!(stack.max_stack_size() >= 1 && stack.max_stack_size() <= 99);
-            if stack.components.has(MAX_DAMAGE) {
+            if stack.is_damageable_item() {
                 damageable_items += 1;
                 let broke = stack.hurt_and_break(1, false);
                 if !broke {
@@ -754,9 +765,9 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     assert!(damageable_items >= 50);
 
     // Custom component patching equality & independence
-    let mut named_sword = ItemStack::new(&*vanilla_items::NETHERITE_SWORD);
+    let mut named_sword = ItemStack::new(&vanilla_items::NETHERITE_SWORD);
     named_sword.set(CUSTOM_NAME, TextComponent::plain("Excalibur"));
-    let plain_sword = ItemStack::new(&*vanilla_items::NETHERITE_SWORD);
+    let plain_sword = ItemStack::new(&vanilla_items::NETHERITE_SWORD);
     assert!(!ItemStack::is_same_item_same_components(
         &named_sword,
         &plain_sword
@@ -785,10 +796,10 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
             .unwrap_or_else(|| panic!("missing factory for entity type {}", etype.key));
         assert_eq!(ent.entity_type().key, etype.key);
         let bb = ent.bounding_box();
-        assert!(bb.max_x >= bb.min_x && bb.max_y >= bb.min_y && bb.max_z >= bb.min_z);
+        assert!(bb.max_x() >= bb.min_x() && bb.max_y() >= bb.min_y() && bb.max_z() >= bb.min_z());
         assert!(world.try_add_entity(Arc::clone(&ent)).is_ok());
         ent.base_tick();
-        ent.remove(RemovalReason::Discarded);
+        ent.set_removed(RemovalReason::Discarded);
         spawned_entities += 1;
     }
     assert_eq!(
@@ -808,15 +819,15 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         vanilla_blocks::CRAFTER.default_state(),
         UpdateFlags::UPDATE_ALL,
     );
-    let crafter_be = world
-        .get_block_entity(crafter_pos)
-        .and_then(|be| be.downcast_ref::<CrafterBlockEntity>().cloned())
+    let crafter_holder = world.get_block_entity(crafter_pos).expect("crafter be");
+    let crafter_be = crafter_holder
+        .downcast_ref::<CrafterBlockEntity>()
         .expect("crafter block entity");
     {
         let c_ref = crafter_be.container_ref().expect("crafter container");
         let mut guard = c_ref.lock();
-        guard.set_item(0, ItemStack::with_count(&*vanilla_items::OAK_PLANKS, 2));
-        guard.set_item(3, ItemStack::with_count(&*vanilla_items::OAK_PLANKS, 2));
+        guard.set_item(0, ItemStack::with_count(&vanilla_items::OAK_PLANKS, 2));
+        guard.set_item(3, ItemStack::with_count(&vanilla_items::OAK_PLANKS, 2));
     }
     crafter_be.set_disabled_slots(1 << 8);
     assert!(
@@ -838,15 +849,15 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         vanilla_blocks::HOPPER.default_state(),
         UpdateFlags::UPDATE_ALL,
     );
-    let hopper_be = world
-        .get_block_entity(hopper_pos)
-        .and_then(|be| be.downcast_ref::<HopperBlockEntity>().cloned())
+    let hopper_holder = world.get_block_entity(hopper_pos).expect("hopper holder");
+    let hopper_be = hopper_holder
+        .downcast_ref::<HopperBlockEntity>()
         .expect("hopper be");
     hopper_be
         .container_ref()
         .expect("hopper inv")
         .lock()
-        .set_item(0, ItemStack::with_count(&*vanilla_items::DIAMOND, 3));
+        .set_item(0, ItemStack::with_count(&vanilla_items::DIAMOND, 3));
     assert!(hopper_be.try_move_items(&world, hopper_pos));
     let chest_count = world
         .get_block_entity(chest_pos)
@@ -876,23 +887,23 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     // Water bucket dispense
     disp_inv
         .lock()
-        .set_item(4, ItemStack::new(&*vanilla_items::WATER_BUCKET));
+        .set_item(4, ItemStack::new(&vanilla_items::WATER_BUCKET));
     disp_behavior.tick(disp_state, &world, disp_pos);
     assert_eq!(
         world.get_block_state(disp_front).get_block(),
         &vanilla_blocks::WATER
     );
-    assert!(disp_inv.lock().get_item(4).is(&*vanilla_items::BUCKET));
+    assert!(disp_inv.lock().get_item(4).is(&vanilla_items::BUCKET));
 
     // Empty bucket scoop back into WATER_BUCKET
     disp_behavior.tick(disp_state, &world, disp_pos);
     assert!(world.get_block_state(disp_front).is_air());
-    assert!(disp_inv.lock().get_item(4).is(&*vanilla_items::WATER_BUCKET));
+    assert!(disp_inv.lock().get_item(4).is(&vanilla_items::WATER_BUCKET));
 
     // Flint and steel lights fire and takes 1 durability without being consumed
     disp_inv
         .lock()
-        .set_item(4, ItemStack::new(&*vanilla_items::FLINT_AND_STEEL));
+        .set_item(4, ItemStack::new(&vanilla_items::FLINT_AND_STEEL));
     disp_behavior.tick(disp_state, &world, disp_pos);
     assert_eq!(
         world.get_block_state(disp_front).get_block(),
@@ -904,7 +915,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     // TNT dispense primes PrimedTntEntity
     disp_inv
         .lock()
-        .set_item(4, ItemStack::new(&*vanilla_items::TNT));
+        .set_item(4, ItemStack::new(&vanilla_items::TNT));
     disp_behavior.tick(disp_state, &world, disp_pos);
     assert!(disp_inv.lock().get_item(4).is_empty());
     let primed = world.get_entities_in_aabb_matching(
@@ -922,13 +933,13 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     );
     assert_eq!(primed.len(), 1, "dispenser must prime TNT entity");
     for e in primed {
-        e.remove(RemovalReason::Discarded);
+        e.set_removed(RemovalReason::Discarded);
     }
 
     // Wind charge projectile dispense
     disp_inv
         .lock()
-        .set_item(2, ItemStack::new(&*vanilla_items::WIND_CHARGE));
+        .set_item(2, ItemStack::new(&vanilla_items::WIND_CHARGE));
     disp_behavior.tick(disp_state, &world, disp_pos);
     assert!(disp_inv.lock().get_item(2).is_empty());
     world.set_block(disp_pos, air, UpdateFlags::UPDATE_ALL);
@@ -950,7 +961,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         .and_then(|be| be.container_ref())
         .expect("dropper inv")
         .lock()
-        .set_item(7, ItemStack::with_count(&*vanilla_items::EMERALD, 4));
+        .set_item(7, ItemStack::with_count(&vanilla_items::EMERALD, 4));
     BLOCK_BEHAVIORS
         .get_behavior(&vanilla_blocks::DROPPER)
         .tick(drop_state, &world, drop_pos);
@@ -1023,7 +1034,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         tadpoles.len()
     );
     for t in tadpoles {
-        t.remove(RemovalReason::Discarded);
+        t.set_removed(RemovalReason::Discarded);
     }
     world.set_block(water_pos, air, UpdateFlags::UPDATE_ALL);
 
@@ -1070,7 +1081,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     world.game_event(
         &vanilla_game_events::BLOCK_PLACE,
         sensor_pos.east(),
-        &GameEventContext::none(),
+        &GameEventContext::new(None, None),
     );
     let sensor_state = world.get_block_state(sensor_pos);
     assert_eq!(
@@ -1078,9 +1089,9 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         SculkSensorPhase::Active,
         "sculk sensor must enter Active phase on nearby vibration"
     );
-    let sensor_be = world
-        .get_block_entity(sensor_pos)
-        .and_then(|be| be.downcast_ref::<SculkSensorBlockEntity>().cloned())
+    let sensor_holder = world.get_block_entity(sensor_pos).expect("sensor holder");
+    let sensor_be = sensor_holder
+        .downcast_ref::<SculkSensorBlockEntity>()
         .expect("sculk sensor be");
     assert!(sensor_be.last_vibration_frequency() > 0);
     world.set_block(sensor_pos, air, UpdateFlags::UPDATE_ALL);
@@ -1091,9 +1102,11 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         .default_state()
         .set_value(&BlockStateProperties::CAN_SUMMON, true);
     world.set_block(shrieker_pos, shrieker_state, UpdateFlags::UPDATE_ALL);
-    let shrieker_be = world
+    let shrieker_holder = world
         .get_block_entity(shrieker_pos)
-        .and_then(|be| be.downcast_ref::<SculkShriekerBlockEntity>().cloned())
+        .expect("shrieker holder");
+    let shrieker_be = shrieker_holder
+        .downcast_ref::<SculkShriekerBlockEntity>()
         .expect("shrieker be");
     shrieker_be.set_warning_level(2);
     assert_eq!(shrieker_be.warning_level(), 2);
@@ -1112,10 +1125,11 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         DVec3::new(8.5, 64.0, 0.5),
         Arc::downgrade(&world),
     ));
-    assert!(world.try_add_entity(Arc::clone(&warden) as _).is_ok());
-    assert!(world.try_add_entity(Arc::clone(&zombie) as _).is_ok());
+    let warden_shared: crate::entity::SharedEntity = Arc::clone(&warden) as _;
+    let target_shared: crate::entity::SharedEntity = Arc::clone(&zombie) as _;
+    assert!(world.try_add_entity(Arc::clone(&warden_shared)).is_ok());
+    assert!(world.try_add_entity(Arc::clone(&target_shared)).is_ok());
     let initial_hp = zombie.get_health();
-    let target_shared: crate::entity::SharedEntity = Arc::clone(&zombie);
     let _ = warden.set_target(Some(&target_shared));
     for _ in 0..45 {
         warden.custom_server_ai_step();
@@ -1126,8 +1140,8 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         initial_hp,
         zombie.get_health()
     );
-    warden.remove(RemovalReason::Discarded);
-    zombie.remove(RemovalReason::Discarded);
+    warden.set_removed(RemovalReason::Discarded);
+    zombie.set_removed(RemovalReason::Discarded);
 
     // ------------------------------------------------------------------------
     // PHASE 10: Trial Chambers (Vault + Trial Spawner) & Pale Garden (Creaking
@@ -1136,18 +1150,19 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     let vault_pos = BlockPos::new(14, 64, 14);
     let vault_state = vanilla_blocks::VAULT.default_state();
     world.set_block(vault_pos, vault_state, UpdateFlags::UPDATE_ALL);
-    let vault_be = world
-        .get_block_entity(vault_pos)
-        .and_then(|be| be.downcast_ref::<VaultBlockEntity>().cloned())
+    let vault_holder = world.get_block_entity(vault_pos).expect("vault holder");
+    let vault_be = vault_holder
+        .downcast_ref::<VaultBlockEntity>()
         .expect("vault be");
     assert!(VaultBlockEntity::is_valid_key(
         vault_state,
-        &ItemStack::new(&*vanilla_items::TRIAL_KEY)
+        &ItemStack::new(&vanilla_items::TRIAL_KEY)
     ));
     assert!(!VaultBlockEntity::is_valid_key(
         vault_state,
-        &ItemStack::new(&*vanilla_items::OMINOUS_TRIAL_KEY)
+        &ItemStack::new(&vanilla_items::OMINOUS_TRIAL_KEY)
     ));
+    let _ = vault_be.total_players();
     world.set_block(vault_pos, air, UpdateFlags::UPDATE_ALL);
 
     let ts_pos = BlockPos::new(15, 64, 14);
@@ -1156,12 +1171,11 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         vanilla_blocks::TRIAL_SPAWNER.default_state(),
         UpdateFlags::UPDATE_ALL,
     );
-    let ts_be = world
-        .get_block_entity(ts_pos)
-        .and_then(|be| be.downcast_ref::<TrialSpawnerBlockEntity>().cloned())
+    let ts_holder = world.get_block_entity(ts_pos).expect("trial spawner holder");
+    let ts_be = ts_holder
+        .downcast_ref::<TrialSpawnerBlockEntity>()
         .expect("trial spawner be");
     assert!(ts_be.total_mobs() >= 0);
-    let _ = vault_be.total_players();
     world.set_block(ts_pos, air, UpdateFlags::UPDATE_ALL);
 
     // Creaking linked to Creaking Heart: invulnerable while heart lives, dies when heart breaks
@@ -1171,9 +1185,9 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         vanilla_blocks::CREAKING_HEART.default_state(),
         UpdateFlags::UPDATE_ALL,
     );
-    let heart_be = world
-        .get_block_entity(heart_pos)
-        .and_then(|be| be.downcast_ref::<CreakingHeartBlockEntity>().cloned())
+    let heart_holder = world.get_block_entity(heart_pos).expect("heart holder");
+    let heart_be = heart_holder
+        .downcast_ref::<CreakingHeartBlockEntity>()
         .expect("creaking heart be");
     let creaking = Arc::new(CreakingEntity::new(
         &vanilla_entities::CREAKING,
@@ -1195,10 +1209,10 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     world.set_block(heart_pos, air, UpdateFlags::UPDATE_ALL);
     creaking.custom_server_ai_step();
     assert!(
-        !creaking.is_alive(),
+        !Entity::is_alive(creaking.as_ref()),
         "creaking must die when its linked heart is destroyed"
     );
-    creaking.remove(RemovalReason::Discarded);
+    creaking.set_removed(RemovalReason::Discarded);
 
     // Armadillo roll-up damage formula: (amount - 1.0) / 2.0 + automatic curl on hit
     let armadillo = Arc::new(ArmadilloEntity::new(
@@ -1225,7 +1239,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     );
     armadillo.unroll();
     assert!(!armadillo.is_rolled_up());
-    armadillo.remove(RemovalReason::Discarded);
+    armadillo.set_removed(RemovalReason::Discarded);
 
     // ------------------------------------------------------------------------
     // PHASE 11: Vehicles (All Minecart Variants + Track Lerp Packet),
@@ -1268,11 +1282,11 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         3,
         3,
         vec![
-            ItemStack::new(&*vanilla_items::OAK_PLANKS),
-            ItemStack::new(&*vanilla_items::OAK_PLANKS),
+            ItemStack::new(&vanilla_items::OAK_PLANKS),
+            ItemStack::new(&vanilla_items::OAK_PLANKS),
             ItemStack::empty(),
-            ItemStack::new(&*vanilla_items::OAK_PLANKS),
-            ItemStack::new(&*vanilla_items::OAK_PLANKS),
+            ItemStack::new(&vanilla_items::OAK_PLANKS),
+            ItemStack::new(&vanilla_items::OAK_PLANKS),
             ItemStack::empty(),
             ItemStack::empty(),
             ItemStack::empty(),
@@ -1285,7 +1299,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         .find_match(&vanilla_recipe_types::CRAFTING, &table_input)
         .expect("2x2 oak planks must match crafting_table");
     let crafted = recipe_manager::assemble_recipe(matched, &table_input);
-    assert!(crafted.is(&*vanilla_items::CRAFTING_TABLE));
+    assert!(crafted.is(&vanilla_items::CRAFTING_TABLE));
 
     // Enchantments & attributes sanity
     assert!(
@@ -1307,7 +1321,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     // ------------------------------------------------------------------------
     let raids = RaidManager::new();
     let r = raids.raise_omen(IVec3::new(0, 64, 0), 3);
-    assert!(r.bad_omen_level >= 1);
+    assert!(r.omen_level >= 1);
     assert_eq!(raids.raids().len(), 1);
     assert!(raids.stop(IVec3::new(0, 64, 0)));
     raids.tick(&world);
@@ -1334,9 +1348,8 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     assert_eq!(sb.score(&alice, &kills), Some(15));
     sb.enable_trigger(&alice, &trig).expect("enable trigger");
     let red = sb.add_team("red").expect("red team");
-    sb.add_holder_to_team(&alice, red.name())
-        .expect("join team");
-    sb.add_holder_to_team(&bob, red.name()).expect("join team");
+    sb.add_holder_to_team(&alice, &red).expect("join team");
+    sb.add_holder_to_team(&bob, &red).expect("join team");
     assert!(sb.can_see_team_message(&bob, "red"));
     assert!(sb.create_stopwatch("speedrun"));
     sb.tick_stopwatches();
@@ -1345,10 +1358,10 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     assert!(sb.remove_stopwatch("speedrun"));
 
     // Waypoint distance bucketing (Vec3i near, Azimuth far > 332m)
-    let near_wp = compute_waypoint_data(DVec3::ZERO, DVec3::new(20.0, 64.0, 20.0));
-    assert!(matches!(near_wp, TrackedWaypointData::Vec3i(_)));
-    let far_wp = compute_waypoint_data(DVec3::ZERO, DVec3::new(500.0, 64.0, 0.0));
-    assert!(matches!(far_wp, TrackedWaypointData::Azimuth(_)));
+    let near_wp = compute_waypoint_data(DVec3::new(20.0, 64.0, 20.0), DVec3::ZERO, 8);
+    assert!(matches!(near_wp, TrackedWaypointData::Vec3i { .. }));
+    let far_wp = compute_waypoint_data(DVec3::new(500.0, 64.0, 0.0), DVec3::ZERO, 8);
+    assert!(matches!(far_wp, TrackedWaypointData::Azimuth { .. }));
 
     // Bans & IP-bans lifecycle + persistence roundtrip
     let bans = BanList::new();
@@ -1356,18 +1369,14 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     let banned_ip = IpAddr::V4(Ipv4Addr::new(203, 0, 113, 42));
     bans.ban_player(BanEntry::player(
         banned_uuid,
-        "Griefer".to_owned(),
+        "Griefer",
+        "Rule 1",
+        "Console",
         1_000,
-        "Console".to_owned(),
         None,
-        Some("Rule 1".to_owned()),
     ));
     bans.ban_address(BanEntry::address(
-        banned_ip,
-        1_000,
-        "Console".to_owned(),
-        None,
-        Some("Spam".to_owned()),
+        banned_ip, "203.0.113.42", "Spam", "Console", 1_000, None,
     ));
     assert!(bans.is_banned(banned_uuid, 2_000));
     assert!(bans.is_address_banned(banned_ip, 2_000));
@@ -1402,10 +1411,9 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         .expect("tokio runtime");
 
     let op_uuid = Uuid::new_v4();
-    let mut op_state = PermissionSubjectState::default();
-    assert!(op_state.groups.add(OP_GROUP));
+    let op_state = PermissionSubjectState::new(vec![OP_GROUP.to_owned()], PermissionSet::new());
     let mut subjects = PermissionSubjectIndex::default();
-    subjects.insert_player(op_uuid, op_state);
+    subjects.set(op_uuid, op_state);
 
     let domain_cfg = ResolvedDomainConfig {
         name: world.domain().to_owned(),
@@ -1438,10 +1446,16 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         )))))
         .build();
 
-    let _ = world.players.insert_sync(op_uuid, Arc::clone(&op_player));
-    let _ = world
-        .players
-        .insert_sync(guest_player.base().uuid(), Arc::clone(&guest_player));
+    op_player.set_permission_state(
+        vec![OP_GROUP.to_owned()],
+        PermissionSet::new(),
+        PermissionMetadataSet::new(),
+        PermissionSet::new(),
+    );
+    world.players.insert(Arc::clone(&op_player));
+    world.players.insert(Arc::clone(&guest_player));
+    let _ = server.online_players.insert(Arc::clone(&op_player));
+    let _ = server.online_players.insert(Arc::clone(&guest_player));
     assert!(op_player.is_operator());
     assert!(!guest_player.is_operator());
 
@@ -1516,7 +1530,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
             .len(),
         1
     );
-    server.delete_signed_chat(PackedMessageSignature::Id(0));
+    server.delete_signed_chat(PackedMessageSignature::CachedId(0));
     server.broadcast_custom_chat_completions(
         CustomChatCompletionAction::Add,
         vec!["steelmc".to_owned()],
@@ -1554,7 +1568,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     );
     op_player.handle_custom_click_action(SCustomClickAction {
         id: Identifier::vanilla_static("accept_rules"),
-        payload: Some(NbtTag::String("yes".into())),
+        payload: Some(vec![0x01, 0x02]),
     });
     assert_eq!(
         op_player.last_custom_click_action(),
@@ -1622,13 +1636,13 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     guest_player
         .inventory
         .lock()
-        .set_item(39, ItemStack::new(&*vanilla_items::CARVED_PUMPKIN));
+        .set_item(39, ItemStack::new(&vanilla_items::CARVED_PUMPKIN));
     assert!(
         !watched_creaking.is_observed_by_player(&world),
         "carved pumpkin helmet must mask player gaze from Creaking"
     );
     guest_player.inventory.lock().set_item(39, ItemStack::empty());
-    watched_creaking.remove(RemovalReason::Discarded);
+    watched_creaking.set_removed(RemovalReason::Discarded);
 
     // End-to-End Command Execution across Console & Operator Player!
     let console_commands = [
@@ -1750,7 +1764,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
             DVec3::new(x, 64.25, z),
             Arc::downgrade(&world),
         ));
-        item.set_item(ItemStack::new(&*vanilla_items::COBBLESTONE));
+        item.set_item(ItemStack::new(&vanilla_items::COBBLESTONE));
         assert!(world.try_add_entity(Arc::clone(&item) as _).is_ok());
         stress_entities.push(item);
     }
@@ -1787,10 +1801,12 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     );
 
     for item in stress_entities {
-        item.remove(RemovalReason::Discarded);
+        item.set_removed(RemovalReason::Discarded);
     }
     world.waypoints.forget_observer(op_uuid);
     world.waypoints.forget_observer(guest_player.base().uuid());
+    let _ = server.online_players.remove_player_sync(&op_player);
+    let _ = server.online_players.remove_player_sync(&guest_player);
     let _ = world.players.remove_sync(&op_uuid);
     let _ = world.players.remove_sync(&guest_player.base().uuid());
 }

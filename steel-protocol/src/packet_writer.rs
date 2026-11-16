@@ -280,14 +280,15 @@ mod tests {
 #[cfg(test)]
 mod batching_tests {
     use super::{EncodedPacket, TCPNetworkEncoder};
-    use std::sync::{Arc, Mutex};
+    use std::sync::Arc;
     use steel_utils::FrontVec;
+    use steel_utils::locks::SyncMutex;
 
     /// A writer that counts how many times the buffer was flushed.
     #[derive(Clone, Default)]
     struct CountingWriter {
-        bytes: Arc<Mutex<Vec<u8>>>,
-        flushes: Arc<Mutex<usize>>,
+        bytes: Arc<SyncMutex<Vec<u8>>>,
+        flushes: Arc<SyncMutex<usize>>,
     }
 
     impl tokio::io::AsyncWrite for CountingWriter {
@@ -296,7 +297,7 @@ mod batching_tests {
             _cx: &mut std::task::Context<'_>,
             buf: &[u8],
         ) -> std::task::Poll<std::io::Result<usize>> {
-            self.bytes.lock().unwrap().extend_from_slice(buf);
+            self.bytes.lock().extend_from_slice(buf);
             std::task::Poll::Ready(Ok(buf.len()))
         }
 
@@ -304,7 +305,7 @@ mod batching_tests {
             self: std::pin::Pin<&mut Self>,
             _cx: &mut std::task::Context<'_>,
         ) -> std::task::Poll<std::io::Result<()>> {
-            *self.flushes.lock().unwrap() += 1;
+            *self.flushes.lock() += 1;
             std::task::Poll::Ready(Ok(()))
         }
 
@@ -340,9 +341,9 @@ mod batching_tests {
                 encoder.flush().await.unwrap();
             });
 
-        assert_eq!(*sink.flushes.lock().unwrap(), 1, "one flush per batch");
+        assert_eq!(*sink.flushes.lock(), 1, "one flush per batch");
         assert_eq!(
-            sink.bytes.lock().unwrap().as_slice(),
+            sink.bytes.lock().as_slice(),
             b"firstsecondthird",
             "every packet still reaches the socket"
         );
@@ -360,7 +361,7 @@ mod batching_tests {
                 encoder.write_packet(&packet(b"disconnect")).await.unwrap();
             });
 
-        assert_eq!(*sink.flushes.lock().unwrap(), 1);
-        assert_eq!(sink.bytes.lock().unwrap().as_slice(), b"disconnect");
+        assert_eq!(*sink.flushes.lock(), 1);
+        assert_eq!(sink.bytes.lock().as_slice(), b"disconnect");
     }
 }

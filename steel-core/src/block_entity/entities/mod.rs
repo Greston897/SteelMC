@@ -42,7 +42,7 @@ mod structure_block;
 mod test_block;
 mod test_instance_block;
 mod sculk_catalyst;
-mod sculk_sensor;
+pub(crate) mod sculk_sensor;
 mod trial_spawner;
 mod vault;
 pub use creaking_heart::CreakingHeartBlockEntity;

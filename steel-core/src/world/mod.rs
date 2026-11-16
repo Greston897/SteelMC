@@ -140,7 +140,7 @@ mod sleep;
 mod sleep_status;
 pub(crate) mod spawn;
 pub mod tick_scheduler;
-mod waypoint;
+pub(crate) mod waypoint;
 pub mod wandering_trader_spawner;
 pub mod dragon_fight;
 pub mod raid;

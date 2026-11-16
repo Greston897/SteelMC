@@ -539,12 +539,14 @@ where
             .iter()
             .map(|packet| packet.sequence)
             .collect::<FxHashSet<_>>();
-        state
-            .serialized
-            .retain(|entry| !queued_sequences.contains(&entry.0));
-        state
-            .exclusive
-            .retain(|entry| !queued_sequences.contains(&entry.0));
+        if !queued_sequences.is_empty() {
+            state
+                .serialized
+                .retain(|entry| !queued_sequences.contains(&entry.0));
+            state
+                .exclusive
+                .retain(|entry| !queued_sequences.contains(&entry.0));
+        }
         let Some(lane) = state.lanes.get_mut(&key) else {
             panic!("paused packet lane disappeared while deferring its packets");
         };
@@ -668,12 +670,14 @@ where
         state.player_local_ready.retain(|entry| entry.0.1 != key);
         state.serialized_ready.retain(|entry| entry.0.1 != key);
         state.exclusive_ready.retain(|entry| entry.0.1 != key);
-        state
-            .serialized
-            .retain(|entry| !discarded_sequences.contains(&entry.0));
-        state
-            .exclusive
-            .retain(|entry| !discarded_sequences.contains(&entry.0));
+        if !discarded_sequences.is_empty() {
+            state
+                .serialized
+                .retain(|entry| !discarded_sequences.contains(&entry.0));
+            state
+                .exclusive
+                .retain(|entry| !discarded_sequences.contains(&entry.0));
+        }
         if remove_lane {
             state.lanes.remove(&key);
         }
