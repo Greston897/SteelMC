@@ -3,11 +3,9 @@ use steel_registry::data_components::vanilla_components::{
     BLOCKS_ATTACKS, DEATH_PROTECTION, USE_EFFECTS,
 };
 use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_criteria_triggers;
 use steel_registry::stat::vanilla_stat_types;
-use steel_registry::{
-    DyeColor, REGISTRY, vanilla_blocks, vanilla_custom_stats,
-};
+use steel_registry::vanilla_criteria_triggers;
+use steel_registry::{DyeColor, REGISTRY, vanilla_blocks, vanilla_custom_stats};
 
 use super::*;
 use crate::behavior::{BLOCK_BEHAVIORS, InventoryTickContext, MOB_EFFECT_BEHAVIORS};
@@ -505,15 +503,15 @@ pub trait LivingEntity: Entity {
         self.with_equipment_slot(EquipmentSlot::Head, &mut |item_stack| {
             let target_type = targeting_entity.entity_type();
             matches_target = target_type == &vanilla_entities::SKELETON
-                && item_stack.is(&*vanilla_items::SKELETON_SKULL)
+                && item_stack.is(&vanilla_items::SKELETON_SKULL)
                 || target_type == &vanilla_entities::ZOMBIE
-                    && item_stack.is(&*vanilla_items::ZOMBIE_HEAD)
+                    && item_stack.is(&vanilla_items::ZOMBIE_HEAD)
                 || target_type == &vanilla_entities::PIGLIN
-                    && item_stack.is(&*vanilla_items::PIGLIN_HEAD)
+                    && item_stack.is(&vanilla_items::PIGLIN_HEAD)
                 || target_type == &vanilla_entities::PIGLIN_BRUTE
-                    && item_stack.is(&*vanilla_items::PIGLIN_HEAD)
+                    && item_stack.is(&vanilla_items::PIGLIN_HEAD)
                 || target_type == &vanilla_entities::CREEPER
-                    && item_stack.is(&*vanilla_items::CREEPER_HEAD);
+                    && item_stack.is(&vanilla_items::CREEPER_HEAD);
         });
         matches_target
     }
@@ -1157,9 +1155,7 @@ pub trait LivingEntity: Entity {
             return damage;
         }
         // Vanilla falls back to the target position when the source has none.
-        let source_position = source
-            .source_position()
-            .unwrap_or_else(|| self.position());
+        let source_position = source.source_position().unwrap_or_else(|| self.position());
         let delta = source_position - self.position();
         let horizontal = DVec3::new(delta.x, 0.0, delta.z);
         if horizontal.length_squared() < f64::EPSILON {
@@ -1612,10 +1608,9 @@ pub trait LivingEntity: Entity {
         // requires an active impulse (the explosion that launched the entity).
         if let Some(player) = self.as_player() {
             let had_impulse = self.living_base().current_impulse_impact_pos().is_some();
-            let mut context =
-                crate::player::advancement::predicate::TriggerContext::nether_travel(
-                    effective_fall_distance,
-                );
+            let mut context = crate::player::advancement::predicate::TriggerContext::nether_travel(
+                effective_fall_distance,
+            );
             context.position = Some({
                 let position = self.position();
                 (position.x, position.y, position.z)
@@ -1749,7 +1744,9 @@ pub trait LivingEntity: Entity {
         let result = self.living_base().add_mob_effect(effect);
         // Vanilla `LivingEntity.addEffect` fires `effects_changed` for the affected
         // player whenever an effect was actually added or upgraded.
-        if result.changed() && let Some(player) = self.as_player() {
+        if result.changed()
+            && let Some(player) = self.as_player()
+        {
             player.trigger_advancement(&vanilla_criteria_triggers::EFFECTS_CHANGED);
         }
         let _ = source;
@@ -1989,9 +1986,9 @@ pub trait LivingEntity: Entity {
         if !self.is_using_item() {
             return false;
         }
-        self.living_base().active_item_use().is_some_and(|use_state| {
-            ItemStack::new(use_state.item()).has(BLOCKS_ATTACKS)
-        })
+        self.living_base()
+            .active_item_use()
+            .is_some_and(|use_state| ItemStack::new(use_state.item()).has(BLOCKS_ATTACKS))
     }
 
     /// Checks if the entity is fall flying (using elytra).
@@ -3707,7 +3704,10 @@ pub trait LivingEntity: Entity {
 /// Walks down from `y` until standing on a block that blocks motion,
 /// mirroring the descent loop in vanilla `Entity.randomTeleport`. Returns
 /// `None` if the world's floor is reached without finding solid ground.
-#[expect(dead_code, reason = "vanilla LivingEntity.randomTeleport ground probe helper")]
+#[expect(
+    dead_code,
+    reason = "vanilla LivingEntity.randomTeleport ground probe helper"
+)]
 fn random_teleport_ground_y(world: &Arc<World>, x: f64, y: f64, z: f64) -> Option<f64> {
     random_teleport_ground_y_avoiding(world, x, y, z, None)
 }

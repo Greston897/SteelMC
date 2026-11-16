@@ -47,7 +47,11 @@ fn distance_tiers_select_vec3i_chunk_and_azimuth_with_floor_chunk_division() {
 
     // Outside 8-chunk view distance, <= 332 blocks, negative coords -> Euclidean chunk (-13, -1)
     assert_eq!(
-        compute_waypoint_data(DVec3::new(-200.1, 64.0, -0.5), DVec3::new(0.0, 64.0, 0.0), 8),
+        compute_waypoint_data(
+            DVec3::new(-200.1, 64.0, -0.5),
+            DVec3::new(0.0, 64.0, 0.0),
+            8
+        ),
         TrackedWaypointData::Chunk {
             chunk_x: -13,
             chunk_z: -1

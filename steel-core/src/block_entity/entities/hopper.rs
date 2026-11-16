@@ -10,25 +10,27 @@ use std::{
     sync::{Arc, Weak},
 };
 
+use glam::DVec3;
 use simdnbt::ToNbtTag;
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
-use steel_registry::item_stack::ItemStack;
+use smallvec::SmallVec;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::blocks::properties::{BlockStateProperties, Direction};
 use steel_registry::data_components::{
     DataComponentMap, SeededContainerLoot, vanilla_components::CONTAINER_LOOT,
 };
+use steel_registry::item_stack::ItemStack;
 use steel_registry::{vanilla_block_entity_types, vanilla_entities};
-use smallvec::SmallVec;
 use steel_utils::locks::SyncMutex;
-use glam::DVec3;
-use steel_registry::blocks::block_state_ext::BlockStateExt as _;
-use steel_registry::blocks::properties::{BlockStateProperties, Direction};
-use steel_utils::{BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, WorldAabb};
+use steel_utils::{
+    BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, WorldAabb,
+};
 
 use crate::block_entity::randomizable_container::RandomizableContainer;
-use crate::entity::{Entity as _, RemovalReason};
-use crate::entity::entities::objects::items::ItemEntity;
 use crate::block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter};
+use crate::entity::entities::objects::items::ItemEntity;
+use crate::entity::{Entity as _, RemovalReason};
 use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef, SharedContainer};
 use crate::world::World;
@@ -164,8 +166,7 @@ impl HopperBlockEntity {
             // for every hopper, so a `Vec` allocation per tick is real load.
             match container.slots_for_face(Direction::Down) {
                 Some(slots) => SmallVec::from_slice(slots),
-                None => (0..container.get_container_size())
-                    .collect::<SmallVec<[usize; 32]>>(),
+                None => (0..container.get_container_size()).collect::<SmallVec<[usize; 32]>>(),
             }
         };
 
@@ -179,16 +180,17 @@ impl HopperBlockEntity {
                     return false;
                 };
                 let stack = container.get_item(slot);
-                if stack.is_empty() || !container.can_take_item_through_face(slot, stack, Direction::Down)
+                if stack.is_empty()
+                    || !container.can_take_item_through_face(slot, stack, Direction::Down)
                 {
                     continue;
                 }
                 // Vanilla `canTakeItemFromContainer` also asks the destination's
                 // own `canTakeItem` contract, passing the hopper as `destination`.
                 // Specialized sources use it to refuse transfers that cannot fit.
-                let allowed = guard.get(self.container_ref.container_id()).is_some_and(|hopper| {
-                    container.can_take_item(hopper, slot, stack)
-                });
+                let allowed = guard
+                    .get(self.container_ref.container_id())
+                    .is_some_and(|hopper| container.can_take_item(hopper, slot, stack));
                 if !allowed {
                     continue;
                 }
@@ -234,14 +236,14 @@ impl HopperBlockEntity {
         let half = HOPPER_SUCK_COLUMN_WIDTH / 2.0;
         let suck_box: WorldAabb = WorldAabb::from_min_max(
             DVec3::new(
-                pos.0.x as f64 + 0.5 - half,
-                pos.0.y as f64 + HOPPER_SUCK_MIN_Y,
-                pos.0.z as f64 + 0.5 - half,
+                f64::from(pos.0.x) + 0.5 - half,
+                f64::from(pos.0.y) + HOPPER_SUCK_MIN_Y,
+                f64::from(pos.0.z) + 0.5 - half,
             ),
             DVec3::new(
-                pos.0.x as f64 + 0.5 + half,
-                pos.0.y as f64 + HOPPER_SUCK_MAX_Y,
-                pos.0.z as f64 + 0.5 + half,
+                f64::from(pos.0.x) + 0.5 + half,
+                f64::from(pos.0.y) + HOPPER_SUCK_MAX_Y,
+                f64::from(pos.0.z) + 0.5 + half,
             ),
         );
         let candidates = world.get_entities_in_aabb_matching(&suck_box, |entity| {
@@ -363,7 +365,8 @@ impl HopperBlockEntity {
 
     /// Vanilla `HopperBlockEntity.facing`: the block state's `FACING` property.
     fn facing(&self) -> Direction {
-        self.get_block_state().get_value(&BlockStateProperties::FACING_HOPPER)
+        self.get_block_state()
+            .get_value(&BlockStateProperties::FACING_HOPPER)
     }
 
     /// Remaining cooldown ticks before the next transfer.
@@ -448,7 +451,8 @@ fn add_into_slots(
         if stack.is_empty() {
             break;
         }
-        if container.get_item(slot).is_empty() && container.can_place_item_through_face(slot, stack, direction)
+        if container.get_item(slot).is_empty()
+            && container.can_place_item_through_face(slot, stack, direction)
         {
             let max_size = container.get_max_stack_size_for_item(stack);
             let to_place = stack.count().min(max_size);

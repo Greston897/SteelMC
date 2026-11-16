@@ -20,8 +20,8 @@ use super::{
 };
 
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
-use steel_registry::vanilla_game_rules::MAX_SNOW_ACCUMULATION_HEIGHT;
 use steel_registry::blocks::properties::BlockStateProperties;
+use steel_registry::vanilla_game_rules::MAX_SNOW_ACCUMULATION_HEIGHT;
 
 use crate::chunk::light::MAX_LIGHT_LEVEL;
 
@@ -356,8 +356,11 @@ impl World {
             return;
         }
 
-        let limit = u8::try_from(self.get_game_rule(&MAX_SNOW_ACCUMULATION_HEIGHT).clamp(0, 8))
-            .unwrap_or(8);
+        let limit = u8::try_from(
+            self.get_game_rule(&MAX_SNOW_ACCUMULATION_HEIGHT)
+                .clamp(0, 8),
+        )
+        .unwrap_or(8);
         let state = self.get_block_state(pos);
         let below_pos = pos.below();
         let below = self.get_block_state(below_pos);

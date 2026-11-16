@@ -111,9 +111,9 @@ impl NumberProvider {
                 let Some(holder) = holder else {
                     return 0.0;
                 };
-                resolver.score(holder, score).map_or(0.0, |value| {
-                    value as f32 * scale
-                })
+                resolver
+                    .score(holder, score)
+                    .map_or(0.0, |value| value as f32 * scale)
             }
             Self::Storage { storage, path } => {
                 let Some(ctx) = ctx else {
@@ -137,8 +137,14 @@ impl NumberProvider {
         let ctx_ref = LootContextRef {
             tool: ctx.tool,
             score_resolver: ctx.score_resolver,
-            this_holder: ctx.this_entity.as_ref().and_then(|entity| entity.holder_name),
-            killer_holder: ctx.killer_entity.as_ref().and_then(|entity| entity.holder_name),
+            this_holder: ctx
+                .this_entity
+                .as_ref()
+                .and_then(|entity| entity.holder_name),
+            killer_holder: ctx
+                .killer_entity
+                .as_ref()
+                .and_then(|entity| entity.holder_name),
             storage_resolver: ctx.storage_resolver,
         };
         self.get(ctx.rng, Some(&ctx_ref))

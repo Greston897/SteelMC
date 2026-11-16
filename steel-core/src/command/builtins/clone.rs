@@ -47,19 +47,15 @@ fn command() -> Builder {
             literal("replace")
                 .executes(|context| execute_clone(context, CloneMode::Replace))
                 .then(
-                    literal("force")
-                        .executes(|context| execute_clone(context, CloneMode::Replace)),
+                    literal("force").executes(|context| execute_clone(context, CloneMode::Replace)),
                 ),
         )
+        .then(literal("masked").executes(|context| execute_clone(context, CloneMode::Keep)))
         .then(
-            literal("masked").executes(|context| execute_clone(context, CloneMode::Keep)),
-        )
-        .then(
-            literal("filtered")
-                .then(
-                    argument("filter", SteelArgumentType::block_predicate())
-                        .executes(|context| execute_clone(context, CloneMode::Filtered("filter"))),
-                ),
+            literal("filtered").then(
+                argument("filter", SteelArgumentType::block_predicate())
+                    .executes(|context| execute_clone(context, CloneMode::Filtered("filter"))),
+            ),
         );
 
     literal("clone").then(

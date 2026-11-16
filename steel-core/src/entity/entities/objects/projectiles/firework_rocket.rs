@@ -186,7 +186,7 @@ impl FireworkRocketEntity {
                 let look_angle = living.look_angle();
                 let movement = living.velocity();
                 living.set_velocity(elytra_boosted_velocity(movement, look_angle));
-                living.hand_holding_item_angle(&*vanilla_items::FIREWORK_ROCKET)
+                living.hand_holding_item_angle(&vanilla_items::FIREWORK_ROCKET)
             } else {
                 DVec3::ZERO
             };
@@ -425,7 +425,7 @@ impl Entity for FireworkRocketEntity {
         let item = nbt
             .compound("FireworksItem")
             .and_then(|item| ItemStack::from_borrowed_compound(&item))
-            .unwrap_or_else(|| ItemStack::new(&*vanilla_items::FIREWORK_ROCKET));
+            .unwrap_or_else(|| ItemStack::new(&vanilla_items::FIREWORK_ROCKET));
         self.set_item(item);
         self.set_shot_at_angle(
             nbt.byte_value("ShotAtAngle")

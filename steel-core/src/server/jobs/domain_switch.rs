@@ -195,10 +195,7 @@ impl DomainSwitchJob {
         let (world, spawn_suggestion, rotation) = if explicit_target {
             let (spawn, spawn_pos) = {
                 let level_data = world.level_data.read();
-                (
-                    level_data.data().spawn.clone(),
-                    level_data.data().spawn_pos(),
-                )
+                (level_data.data().spawn, level_data.data().spawn_pos())
             };
             (world, spawn_pos, (spawn.angle, 0.0))
         } else {

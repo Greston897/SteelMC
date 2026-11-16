@@ -58,7 +58,7 @@ impl CommandBlockOutput {
 
     /// Returns the world the command block lives in.
     #[must_use]
-    pub fn world(&self) -> &Arc<crate::world::World> {
+    pub const fn world(&self) -> &Arc<crate::world::World> {
         &self.world
     }
 
@@ -76,7 +76,9 @@ impl CommandBlockOutput {
 
 impl fmt::Debug for CommandBlockOutput {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.debug_struct("CommandBlockOutput").finish_non_exhaustive()
+        formatter
+            .debug_struct("CommandBlockOutput")
+            .finish_non_exhaustive()
     }
 }
 
@@ -89,7 +91,7 @@ pub struct RconOutput {
 impl RconOutput {
     /// Creates an output sink backed by `sender`.
     #[must_use]
-    pub fn new(sender: tokio::sync::mpsc::UnboundedSender<String>) -> Self {
+    pub const fn new(sender: tokio::sync::mpsc::UnboundedSender<String>) -> Self {
         Self { sender }
     }
 
@@ -223,7 +225,7 @@ impl CommandSender {
 
     /// Returns the command block output sink, if this sender is a command block.
     #[must_use]
-    pub fn get_command_block_output(&self) -> Option<&CommandBlockOutput> {
+    pub const fn get_command_block_output(&self) -> Option<&CommandBlockOutput> {
         match self {
             Self::CommandBlock(output) => Some(output),
             _ => None,

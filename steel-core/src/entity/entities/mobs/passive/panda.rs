@@ -18,17 +18,17 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
+use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::PandaEntityData;
-use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    BreedGoal, FloatGoal, FollowParentGoal,
-    LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
+    WaterAvoidingRandomStrollGoal,
 };
 
 use crate::entity::damage::DamageSource;
@@ -188,7 +188,6 @@ impl Entity for PandaEntity {
         self.load_mob(nbt);
         self.load_ageable_mob(nbt);
         self.load_animal(nbt);
-
     }
 }
 
@@ -260,7 +259,6 @@ impl AgeableMob for PandaEntity {
     fn age_boundary_changed(&self, _baby: bool) {
         self.refresh_dimensions();
     }
-
 }
 
 impl Animal for PandaEntity {
@@ -305,4 +303,3 @@ impl Mob for PandaEntity {
 }
 
 impl PathfinderMob for PandaEntity {}
-

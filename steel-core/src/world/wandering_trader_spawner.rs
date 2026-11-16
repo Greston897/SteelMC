@@ -222,11 +222,7 @@ impl WanderingTraderSpawner {
 ///
 /// Returns `false` when the llama could not be placed or leashed, which vanilla
 /// also treats as "stop trying".
-fn try_spawn_trader_llama(
-    world: &Arc<World>,
-    trader_pos: BlockPos,
-    trader: &SharedEntity,
-) -> bool {
+fn try_spawn_trader_llama(world: &Arc<World>, trader_pos: BlockPos, trader: &SharedEntity) -> bool {
     let Some(entity_type) = REGISTRY
         .entity_types
         .by_key(&Identifier::vanilla_static("trader_llama"))

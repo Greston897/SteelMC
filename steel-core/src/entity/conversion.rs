@@ -168,10 +168,10 @@ fn convert_single(from: &dyn Mob, to: &dyn Mob, to_arc: &SharedEntity, params: C
     // Vanilla copies only the timer, not the remembered player.
     to.set_last_hurt_by_player_memory_time(from.last_hurt_by_player_memory_time());
     // Vanilla `Mob.convertTo` copies the hurt-flash counter as well.
-    if let (Some(from_living), Some(to_living)) =
-        (from.as_living_entity(), to.as_living_entity())
-    {
-        to_living.living_base().set_hurt_time(from_living.living_base().hurt_time());
+    if let (Some(from_living), Some(to_living)) = (from.as_living_entity(), to.as_living_entity()) {
+        to_living
+            .living_base()
+            .set_hurt_time(from_living.living_base().hurt_time());
     }
 
     to.set_y_body_rot(from.y_body_rot());

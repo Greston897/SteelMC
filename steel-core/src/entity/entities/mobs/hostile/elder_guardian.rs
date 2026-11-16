@@ -289,7 +289,7 @@ impl Mob for ElderGuardianEntity {
         let r2 = CURSE_RADIUS * CURSE_RADIUS;
         world.players.iter_players(|_, player| {
             let mode = player.game_mode();
-        if !matches!(
+            if !matches!(
                 mode,
                 steel_utils::types::GameType::Survival | steel_utils::types::GameType::Adventure
             ) || !LivingEntity::is_alive(player.as_ref())
@@ -302,8 +302,7 @@ impl Mob for ElderGuardianEntity {
             let needs_curse = player
                 .mob_effect(steel_registry::vanilla_mob_effects::MINING_FATIGUE)
                 .is_none_or(|active| {
-                    active.amplifier() < CURSE_AMPLIFIER
-                        || active.duration() < CURSE_INTERVAL_TICKS
+                    active.amplifier() < CURSE_AMPLIFIER || active.duration() < CURSE_INTERVAL_TICKS
                 });
             if needs_curse {
                 player.send_packet(steel_protocol::packets::game::CGameEvent {

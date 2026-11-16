@@ -17,9 +17,7 @@ use text_components::translation::TranslatedMessage;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
-    execution::{
-        CommandSource, SteelCommandContext, SteelCommandRuntime, argument, literal,
-    },
+    execution::{CommandSource, SteelCommandContext, SteelCommandRuntime, argument, literal},
     registration::CommandRegistration,
 };
 
@@ -36,10 +34,12 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("help")
         .executes(|context| list_page(context, 1))
-        .then(argument(PAGE_ARGUMENT, ArgumentType::integer(1, 100)).executes(|context| {
-            let page = context.integer(PAGE_ARGUMENT)?;
-            list_page(context, page)
-        }))
+        .then(
+            argument(PAGE_ARGUMENT, ArgumentType::integer(1, 100)).executes(|context| {
+                let page = context.integer(PAGE_ARGUMENT)?;
+                list_page(context, page)
+            }),
+        )
         .then(argument(COMMAND_ARGUMENT, ArgumentType::greedy_string()).executes(describe_command))
 }
 
@@ -60,13 +60,11 @@ fn list_page(
     let server = context.source().server();
     let commands = server.command_names();
     if commands.is_empty() {
-        context
-            .source()
-            .send_failure(translated(
-                "commands.help.failed",
-                "No commands are available".to_owned(),
-                Vec::new(),
-            ));
+        context.source().send_failure(translated(
+            "commands.help.failed",
+            "No commands are available".to_owned(),
+            Vec::new(),
+        ));
         return Ok(0);
     }
 

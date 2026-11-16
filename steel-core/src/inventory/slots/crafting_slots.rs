@@ -5,16 +5,14 @@ use steel_utils::Identifier;
 use steel_utils::locks::{Shared, SyncMutex};
 
 use crate::inventory::container::{CraftingContainer, ResultContainer};
+use crate::inventory::{
+    container::Container,
+    lock::{ContainerId, ContainerLockGuard, ContainerRef},
+    recipe_manager,
+    slots::result_handler::ResultHandler,
+};
 use crate::player::Player;
 use crate::player::player_inventory::Prediction;
-use crate::{
-    inventory::{
-        container::Container,
-        lock::{ContainerId, ContainerLockGuard, ContainerRef},
-        recipe_manager,
-        slots::result_handler::ResultHandler,
-    },
-};
 
 /// A Recipe Handler for Crafting Recipes
 ///
@@ -95,7 +93,6 @@ impl ResultHandler for CraftingHandler {
     fn dependencies(&self) -> Vec<ContainerRef> {
         vec![ContainerRef::from(Arc::clone(&self.crafting_container))]
     }
-
 
     fn update_result(&self, guard: &mut ContainerLockGuard) {
         let crafting = guard

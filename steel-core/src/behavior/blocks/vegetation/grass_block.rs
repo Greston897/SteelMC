@@ -59,7 +59,6 @@ impl BlockBehavior for GrassBlock {
     }
 }
 
-
 /// Vanilla `GrassBlock` is a `BonemealableBlock` using `NeighborSpreader`: bonemeal
 /// copies this block onto dirt neighbours that pass vanilla's spreadability test.
 impl Bonemealable for GrassBlock {

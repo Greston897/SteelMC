@@ -511,7 +511,11 @@ impl ConsumeEffectCodec for TeleportRandomlyConsumeEffect {
             push_hash_entry(entries, "diameter", &self.diameter);
         }
         if self.directional_particles != Self::DEFAULT_DIRECTIONAL_PARTICLES {
-            push_hash_entry(entries, "directional_particles", &self.directional_particles);
+            push_hash_entry(
+                entries,
+                "directional_particles",
+                &self.directional_particles,
+            );
         }
     }
 }

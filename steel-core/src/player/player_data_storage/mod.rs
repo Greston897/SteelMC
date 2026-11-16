@@ -565,11 +565,7 @@ impl PlayerDataFile {
                 warning_level: data.warden_spawn_tracker.warning_level,
                 cooldown_ticks: data.warden_spawn_tracker.cooldown_ticks,
             },
-            post_effects: data
-                .post_effects
-                .iter()
-                .map(ToString::to_string)
-                .collect(),
+            post_effects: data.post_effects.iter().map(ToString::to_string).collect(),
         })
     }
 

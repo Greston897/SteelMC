@@ -185,10 +185,7 @@ impl Server {
     async fn prepare_default_spawn(world: &Arc<World>) -> Result<PreparedSpawn, String> {
         let (spawn, spawn_pos) = {
             let level_data = world.level_data.read();
-            (
-                level_data.data().spawn.clone(),
-                level_data.data().spawn_pos(),
-            )
+            (level_data.data().spawn, level_data.data().spawn_pos())
         };
         let position = world
             .find_adjusted_shared_spawn_pos(spawn_pos, world.default_gamemode())

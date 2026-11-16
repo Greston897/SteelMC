@@ -539,7 +539,12 @@ mod tests {
         let world_fixture = fresh_test_world("fox_trust_from_feeding");
         let world = Arc::clone(&world_fixture.world);
         let player = TestPlayerBuilder::new(Arc::clone(&world), "FoxFeeder", 1).build();
-        let fox = FoxEntity::new(&vanilla_entities::FOX, 1, DVec3::ZERO, Arc::downgrade(&world));
+        let fox = FoxEntity::new(
+            &vanilla_entities::FOX,
+            1,
+            DVec3::ZERO,
+            Arc::downgrade(&world),
+        );
 
         assert_eq!(fox.trusted_count(), 0);
         fox.on_fed(&player, &ItemStack::new(&*vanilla_items::SWEET_BERRIES));

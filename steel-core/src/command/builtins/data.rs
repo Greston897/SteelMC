@@ -23,7 +23,6 @@ use steel_utils::{
 use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
 
-
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
     execution::{
@@ -61,31 +60,40 @@ fn command() -> Builder {
 /// below reads whichever one the chosen source uses.
 fn target_sources(name: &'static str, target: DataTarget) -> Builder {
     literal(name).then(match target {
-        DataTarget::Block => argument("targetPos", SteelArgumentType::block_pos()).then(operations(target)),
-        DataTarget::Entity => argument("target", SteelArgumentType::entity())
-            .then(operations(target)),
-        DataTarget::Storage => argument("target", SteelArgumentType::storage_key())
-            .then(operations(target)),
+        DataTarget::Block => {
+            argument("targetPos", SteelArgumentType::block_pos()).then(operations(target))
+        }
+        DataTarget::Entity => {
+            argument("target", SteelArgumentType::entity()).then(operations(target))
+        }
+        DataTarget::Storage => {
+            argument("target", SteelArgumentType::storage_key()).then(operations(target))
+        }
     })
 }
 
 fn operations(target: DataTarget) -> Builder {
     literal("get")
-        .then(argument("path", SteelArgumentType::nbt_path()).executes(move |context| {
-            get(context, target, GetKind::Tag)
-        }))
+        .then(
+            argument("path", SteelArgumentType::nbt_path())
+                .executes(move |context| get(context, target, GetKind::Tag)),
+        )
         .then(
             literal("get").then(
                 argument("path", SteelArgumentType::nbt_path())
-                    .then(literal("value").executes(move |context| get(context, target, GetKind::Value)))
                     .then(
-                        literal("string").executes(move |context| get(context, target, GetKind::String)),
+                        literal("value")
+                            .executes(move |context| get(context, target, GetKind::Value)),
                     )
                     .then(
-                        argument("scale", super::super::brigadier::ArgumentType::double(
-                            -f64::MAX,
-                            f64::MAX,
-                        ))
+                        literal("string")
+                            .executes(move |context| get(context, target, GetKind::String)),
+                    )
+                    .then(
+                        argument(
+                            "scale",
+                            super::super::brigadier::ArgumentType::double(-f64::MAX, f64::MAX),
+                        )
                         .executes(move |context| get(context, target, GetKind::Scaled)),
                     ),
             ),
@@ -174,7 +182,7 @@ fn get(
         &translated(
             "commands.data.get.success",
             format!("Value: {printed}"),
-            vec![TextComponent::from(printed.clone())],
+            vec![TextComponent::from(printed)],
         ),
         false,
     );
@@ -201,9 +209,14 @@ fn merge(
         existing.insert(name.as_str(), value.clone());
     }
     storage.set(key, existing);
-    context
-        .source()
-        .send_success(&translated("commands.data.merge.success", "Merged".to_owned(), Vec::new()), false);
+    context.source().send_success(
+        &translated(
+            "commands.data.merge.success",
+            "Merged".to_owned(),
+            Vec::new(),
+        ),
+        false,
+    );
     Ok(1)
 }
 
@@ -239,7 +252,9 @@ fn remove(
             return Ok(0);
         }
         Err(error) => {
-            context.source().send_failure(TextComponent::from(error.to_string()));
+            context
+                .source()
+                .send_failure(TextComponent::from(error.to_string()));
             return Ok(0);
         }
     }
@@ -247,7 +262,11 @@ fn remove(
         storage.set(key, updated);
     }
     context.source().send_success(
-        &translated("commands.data.remove.success", "Removed".to_owned(), Vec::new()),
+        &translated(
+            "commands.data.remove.success",
+            "Removed".to_owned(),
+            Vec::new(),
+        ),
         false,
     );
     Ok(1)
@@ -278,7 +297,9 @@ fn read_root(
 ) -> Result<NbtCompound, CommandSyntaxError> {
     match target {
         DataTarget::Block => {
-            let position: BlockPos = context.coordinates("targetPos")?.block_pos(context.source());
+            let position: BlockPos = context
+                .coordinates("targetPos")?
+                .block_pos(context.source());
             let world = context.source().world();
             if !world.is_full_chunk_loaded_at(position) {
                 return Err(CommandSyntaxError::dynamic(TextComponent::from(
@@ -308,9 +329,9 @@ fn read_root(
     }
 }
 
-fn command_storage<'a>(
-    context: &'a SteelCommandContext<CommandSource>,
-) -> Option<&'a crate::command::storage::CommandStorage> {
+fn command_storage(
+    context: &SteelCommandContext<CommandSource>,
+) -> Option<&crate::command::storage::CommandStorage> {
     let source = context.source();
     source.server().command_storage.get(source.world().domain())
 }

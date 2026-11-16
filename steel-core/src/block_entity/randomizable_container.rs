@@ -14,9 +14,9 @@
 use rand::{Rng, RngExt as _};
 use steel_registry::REGISTRY;
 use steel_registry::item_stack::ItemStack;
-use steel_registry::loot_table::LootTableRegistry;
 use steel_registry::loot_table::LootContext;
 use steel_registry::loot_table::LootRngSeed;
+use steel_registry::loot_table::LootTableRegistry;
 use steel_utils::Identifier;
 use steel_utils::locks::SyncMutex;
 
@@ -50,8 +50,8 @@ impl RandomizableContainer {
     /// Every container block entity reads the same two fields, so the parse
     /// lives here instead of being repeated per container.
     pub fn load_from_nbt(nbt: simdnbt::borrow::NbtCompound<'_, '_>, loot: &SyncMutex<Self>) {
-        use steel_utils::nbt::NbtValueInput as _;
         use std::str::FromStr as _;
+        use steel_utils::nbt::NbtValueInput as _;
 
         let table = nbt
             .string("LootTable")
@@ -197,9 +197,9 @@ pub fn fill_from_loot<S: Rng>(slots: &mut [ItemStack], loot: Vec<ItemStack>, rng
 #[cfg(test)]
 mod tests {
     use super::{RandomizableContainer, fill_from_loot};
-    use steel_registry::init_vanilla_registry;
     use rand::SeedableRng as _;
     use rand::rngs::StdRng;
+    use steel_registry::init_vanilla_registry;
     use steel_registry::item_stack::ItemStack;
     use steel_utils::Identifier;
 
@@ -218,7 +218,10 @@ mod tests {
     fn a_container_keeps_the_seed_from_the_template() {
         // Vanilla `loadAdditional`: `LootTableSeed` defaults to 0.
         let mut state = RandomizableContainer::none();
-        state.set_loot_table(Some(Identifier::vanilla_static("chests/simple_dungeon")), 42);
+        state.set_loot_table(
+            Some(Identifier::vanilla_static("chests/simple_dungeon")),
+            42,
+        );
         assert_eq!(
             state.loot_table().map(Identifier::to_string),
             Some("minecraft:chests/simple_dungeon".to_owned())
@@ -277,7 +280,10 @@ mod tests {
         // on the same state must do nothing (the table is consumed).
         let mut first_slots = vec![ItemStack::empty(); 27];
         let mut first = RandomizableContainer::none();
-        first.set_loot_table(Some(Identifier::vanilla_static("chests/simple_dungeon")), 1234);
+        first.set_loot_table(
+            Some(Identifier::vanilla_static("chests/simple_dungeon")),
+            1234,
+        );
         assert!(first.unpack_loot_table(&mut first_slots, 99));
         let filled = first_slots.iter().filter(|slot| !slot.is_empty()).count();
         assert!(filled > 0, "simple_dungeon must roll at least one item");
@@ -286,14 +292,14 @@ mod tests {
 
         let mut second_slots = vec![ItemStack::empty(); 27];
         let mut second = RandomizableContainer::none();
-        second.set_loot_table(Some(Identifier::vanilla_static("chests/simple_dungeon")), 1234);
+        second.set_loot_table(
+            Some(Identifier::vanilla_static("chests/simple_dungeon")),
+            1234,
+        );
         assert!(second.unpack_loot_table(&mut second_slots, 99));
         assert_eq!(
             filled,
-            second_slots
-                .iter()
-                .filter(|slot| !slot.is_empty())
-                .count(),
+            second_slots.iter().filter(|slot| !slot.is_empty()).count(),
             "the same seed rolls the same layout"
         );
         for (first_slot, second_slot) in first_slots.iter().zip(&second_slots) {

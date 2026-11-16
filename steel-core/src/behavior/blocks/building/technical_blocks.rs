@@ -22,19 +22,19 @@ use steel_utils::{BlockPos, BlockStateId};
 use crate::behavior::BLOCK_BEHAVIORS;
 use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
 use crate::behavior::blocks::vegetation::bonemealable::Bonemealable;
-use crate::entity::damage::DamageSource;
-use crate::player::Player;
-use crate::world::LevelReader;
-use crate::entity::Entity;
 use crate::behavior::context::{
     BlockHitResult, BlockPlaceContext, InteractionResult, InventoryAccess, PlacementSource,
 };
 use crate::block_entity::entities::{
-    CommandBlockBlockEntity, CommandBlockMode, CreakingHeartBlockEntity, SCULK_SENSOR_COOLDOWN_TICKS,
-    SculkSensorBlockEntity, SculkShriekerBlockEntity, StructureBlockEntity, VaultBlockEntity,
-    VaultUnlockOutcome,
+    CommandBlockBlockEntity, CommandBlockMode, CreakingHeartBlockEntity,
+    SCULK_SENSOR_COOLDOWN_TICKS, SculkSensorBlockEntity, SculkShriekerBlockEntity,
+    StructureBlockEntity, VaultBlockEntity, VaultUnlockOutcome,
 };
 use crate::block_entity::{BLOCK_ENTITIES, BlockEntity as _, BlockEntityTicker};
+use crate::entity::Entity;
+use crate::entity::damage::DamageSource;
+use crate::player::Player;
+use crate::world::LevelReader;
 use crate::world::{SignalGetter as _, SignalQueryContext, World};
 
 /// Maps a clicked facing onto vanilla's `front_and_top_to_orientation` for a
@@ -339,14 +339,10 @@ impl BlockBehavior for JigsawBlock {
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         // Vanilla `JigsawBlock.getStateForPlacement` derives `orientation` from
         // the clicked face (front) with `north_up` as the top.
-        Some(
-            self.block
-                .default_state()
-                .set_value(
-                    &BlockStateProperties::ORIENTATION,
-                    orientation_for(context.clicked_face().opposite()),
-                ),
-        )
+        Some(self.block.default_state().set_value(
+            &BlockStateProperties::ORIENTATION,
+            orientation_for(context.clicked_face().opposite()),
+        ))
     }
 
     fn new_block_entity(
@@ -584,7 +580,10 @@ impl BlockBehavior for CreakingHeartBlock {
     ) -> i32 {
         world
             .get_block_entity(pos)
-            .and_then(|be| be.downcast_ref::<CreakingHeartBlockEntity>().map(|h| h.analog_output_signal(world)))
+            .and_then(|be| {
+                be.downcast_ref::<CreakingHeartBlockEntity>()
+                    .map(|h| h.analog_output_signal(world))
+            })
             .unwrap_or(0)
     }
 }
@@ -717,7 +716,12 @@ impl BlockBehavior for VaultBlock {
     }
 }
 
-fn step_sculk_sensor_phase(state: BlockStateId, world: &Arc<World>, pos: BlockPos, calibrated: bool) {
+fn step_sculk_sensor_phase(
+    state: BlockStateId,
+    world: &Arc<World>,
+    pos: BlockPos,
+    calibrated: bool,
+) {
     use steel_protocol::packets::game::SoundSource;
     use steel_registry::blocks::properties::SculkSensorPhase;
     use steel_registry::sound_events;

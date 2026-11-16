@@ -22,9 +22,7 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("rotate").then(
         argument("target", SteelArgumentType::entity())
-            .then(
-                argument("rotation", SteelArgumentType::rotation()).executes(rotate_to_rotation),
-            )
+            .then(argument("rotation", SteelArgumentType::rotation()).executes(rotate_to_rotation))
             .then(
                 literal("facing")
                     .then(
@@ -106,7 +104,9 @@ fn rotate_facing_position(
     context: &SteelCommandContext<CommandSource>,
 ) -> Result<i32, CommandSyntaxError> {
     let target = context.entity("target")?;
-    let position = context.coordinates("facingLocation")?.position(context.source());
+    let position = context
+        .coordinates("facingLocation")?
+        .position(context.source());
     Entity::look_at(target.as_ref(), context.source().anchor(), position);
     send_success(context.source(), &target);
     Ok(1)

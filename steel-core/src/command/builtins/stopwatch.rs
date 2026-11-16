@@ -9,9 +9,7 @@ use text_components::TextComponent;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
-    execution::{
-        CommandSource, SteelCommandContext, SteelCommandRuntime, argument, literal,
-    },
+    execution::{CommandSource, SteelCommandContext, SteelCommandRuntime, argument, literal},
     registration::CommandRegistration,
 };
 use crate::scoreboard::Scoreboard;
@@ -23,14 +21,12 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("stopwatch")
         .then(
-            literal("create").then(
-                argument("name", ArgumentType::word()).executes(create_stopwatch),
-            ),
+            literal("create")
+                .then(argument("name", ArgumentType::word()).executes(create_stopwatch)),
         )
         .then(
-            literal("remove").then(
-                argument("name", ArgumentType::word()).executes(remove_stopwatch),
-            ),
+            literal("remove")
+                .then(argument("name", ArgumentType::word()).executes(remove_stopwatch)),
         )
         .then(literal("list").executes(list_stopwatches))
 }
@@ -39,9 +35,7 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
 ///
 /// The board lives on the server for the whole session, so the borrow can be
 /// tied to `source`'s server reference rather than to `source` itself.
-fn scoreboard_of<'a>(
-    source: &'a CommandSource,
-) -> Result<&'a Scoreboard, CommandSyntaxError> {
+fn scoreboard_of(source: &CommandSource) -> Result<&Scoreboard, CommandSyntaxError> {
     let domain = source.world().domain().to_owned();
     source
         .server()

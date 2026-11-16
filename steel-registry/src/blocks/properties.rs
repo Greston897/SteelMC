@@ -343,9 +343,13 @@ impl FrontAndTop {
     #[must_use]
     pub const fn front(self) -> Direction {
         match self {
-            FrontAndTop::DownEast | FrontAndTop::DownNorth | FrontAndTop::DownSouth
+            FrontAndTop::DownEast
+            | FrontAndTop::DownNorth
+            | FrontAndTop::DownSouth
             | FrontAndTop::DownWest => Direction::Down,
-            FrontAndTop::UpEast | FrontAndTop::UpNorth | FrontAndTop::UpSouth
+            FrontAndTop::UpEast
+            | FrontAndTop::UpNorth
+            | FrontAndTop::UpSouth
             | FrontAndTop::UpWest => Direction::Up,
             FrontAndTop::WestUp => Direction::West,
             FrontAndTop::EastUp => Direction::East,

@@ -125,10 +125,7 @@ impl Menu {
     /// Only the merchant screen owns close semantics today, so the registration
     /// is forwarded to its kind; any other menu ignores it.
     #[must_use]
-    pub fn with_on_close(
-        mut self,
-        on_close: impl FnOnce(&Player) + Send + 'static,
-    ) -> Self {
+    pub fn with_on_close(mut self, on_close: impl FnOnce(&Player) + Send + 'static) -> Self {
         // The callback lives behind a mutex inside the kind, so registering it
         // through a shared borrow is enough; the `Box<dyn MenuKind>` stays put.
         if let Some(kind) = self.kind.downcast_mut::<MerchantKind>() {

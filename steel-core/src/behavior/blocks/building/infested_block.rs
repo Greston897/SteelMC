@@ -11,8 +11,8 @@ use steel_macros::block_behavior;
 use steel_registry::REGISTRY;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
-use steel_utils::Downcast as _;
 use steel_registry::blocks::properties::{BlockStateProperties, Direction};
+use steel_utils::Downcast as _;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
 
@@ -22,13 +22,13 @@ use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_fluid_tags::FluidTag;
 use steel_registry::{vanilla_blocks, vanilla_entities, vanilla_items};
 
-use crate::behavior::{BlockBehavior, InteractionResult};
-use crate::behavior::block::BlockEntityCreation;
-use crate::block_entity::{BlockEntity as _, SharedBlockEntity};
-use crate::block_entity::entities::CopperGolemStatueBlockEntity;
-use crate::entity::{ENTITIES, Entity, InsideBlockEffectCollector, next_entity_id};
 use crate::behavior::BlockPlaceContext;
+use crate::behavior::block::BlockEntityCreation;
 use crate::behavior::blocks::building::weathering_block::WeatherState;
+use crate::behavior::{BlockBehavior, InteractionResult};
+use crate::block_entity::entities::CopperGolemStatueBlockEntity;
+use crate::block_entity::{BlockEntity as _, SharedBlockEntity};
+use crate::entity::{ENTITIES, Entity, InsideBlockEffectCollector, next_entity_id};
 use crate::world::{LevelReader, ScheduledTickAccess, World};
 
 /// Vanilla `InfestedBlock`: breaking it spawns a silverfish instead of dropping
@@ -117,11 +117,10 @@ impl BlockBehavior for InfestedRotatedPillarBlock {
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         // Vanilla `RotatedPillarBlock.getStateForPlacement` picks the axis from
         // the clicked face.
-        Some(
-            self.block
-                .default_state()
-                .set_value(&BlockStateProperties::AXIS, context.clicked_face().get_axis()),
-        )
+        Some(self.block.default_state().set_value(
+            &BlockStateProperties::AXIS,
+            context.clicked_face().get_axis(),
+        ))
     }
 }
 
@@ -208,7 +207,11 @@ const FROGSPAWN_MAX_HATCH_DELAY: i32 = 12000;
 impl FrogspawnBlock {
     /// Vanilla `FrogspawnBlock.destroyBlock`: no drops, no xp, just air.
     fn destroy(world: &Arc<World>, pos: BlockPos) {
-        world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(
+            pos,
+            vanilla_blocks::AIR.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
     }
 
     /// Vanilla `FrogspawnBlock.mayPlaceOn`: the block below must be in
@@ -233,7 +236,11 @@ impl FrogspawnBlock {
     /// Vanilla `FrogspawnBlock.hatchFrogspawn`: the block pops, plays the hatch
     /// sound and leaves 2-5 tadpoles behind.
     fn hatch(world: &Arc<World>, pos: BlockPos) {
-        world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(
+            pos,
+            vanilla_blocks::AIR.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
         world.play_sound_at(
             &steel_registry::sound_events::BLOCK_FROGSPAWN_HATCH,
             steel_protocol::packets::game::SoundSource::Blocks,
@@ -328,7 +335,9 @@ impl BlockBehavior for FrogspawnBlock {
         _neighbor_state: BlockStateId,
     ) -> BlockStateId {
         if !self.can_survive(state, world, pos) {
-            return REGISTRY.blocks.get_default_state_id(&steel_registry::vanilla_blocks::AIR);
+            return REGISTRY
+                .blocks
+                .get_default_state_id(&steel_registry::vanilla_blocks::AIR);
         }
         state
     }
@@ -368,7 +377,9 @@ impl BlockBehavior for SnifferEggBlock {
         _neighbor_state: BlockStateId,
     ) -> BlockStateId {
         if direction == Direction::Down && !self.can_survive(state, world, pos) {
-            return REGISTRY.blocks.get_default_state_id(&steel_registry::vanilla_blocks::AIR);
+            return REGISTRY
+                .blocks
+                .get_default_state_id(&steel_registry::vanilla_blocks::AIR);
         }
         state
     }
@@ -427,7 +438,11 @@ impl DriedGhastBlock {
     /// Vanilla `DriedGhastBlock.spawnGhastling`: the block disappears and a baby
     /// happy ghast takes its place, facing the direction the block faced.
     fn spawn_ghastling(world: &Arc<World>, pos: BlockPos, state: BlockStateId) {
-        world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(
+            pos,
+            vanilla_blocks::AIR.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
         let Some(ghastling) = ENTITIES.create(
             &vanilla_entities::HAPPY_GHAST,
             next_entity_id(),
@@ -500,11 +515,7 @@ impl BlockBehavior for DriedGhastBlock {
         let waterlogged: bool = state.get_value(&BlockStateProperties::WATERLOGGED);
         let hydration: u8 = state.get_value(&BlockStateProperties::DRIED_GHAST_HYDRATION_LEVELS);
         if (waterlogged || hydration > 0) && !world.has_scheduled_block_tick(pos, self.block) {
-            world.schedule_block_tick_default(
-                pos,
-                self.block,
-                DRIED_GHAST_HYDRATION_TICK_DELAY,
-            );
+            world.schedule_block_tick_default(pos, self.block, DRIED_GHAST_HYDRATION_TICK_DELAY);
         }
     }
 
@@ -550,7 +561,12 @@ impl CopperGolemStatueBlock {
 
     /// Vanilla `CopperGolemStatueBlock.updatePose`: plays the statue sound, cycles
     /// the pose and fires the `BLOCK_CHANGE` game event.
-    pub fn update_pose(world: &Arc<World>, state: BlockStateId, pos: BlockPos, player: &crate::player::Player) {
+    pub fn update_pose(
+        world: &Arc<World>,
+        state: BlockStateId,
+        pos: BlockPos,
+        player: &crate::player::Player,
+    ) {
         world.play_sound_at(
             &steel_registry::sound_events::ENTITY_COPPER_GOLEM_BECOME_STATUE,
             steel_protocol::packets::game::SoundSource::Blocks,
@@ -597,7 +613,10 @@ impl BlockBehavior for CopperGolemStatueBlock {
                     &BlockStateProperties::HORIZONTAL_FACING,
                     context.horizontal_direction().opposite(),
                 )
-                .set_value(&BlockStateProperties::WATERLOGGED, context.is_water_source()),
+                .set_value(
+                    &BlockStateProperties::WATERLOGGED,
+                    context.is_water_source(),
+                ),
         )
     }
 
@@ -656,9 +675,9 @@ impl BlockBehavior for CopperGolemStatueBlock {
         pos: BlockPos,
         state: BlockStateId,
     ) -> BlockEntityCreation {
-        BlockEntityCreation::Created(std::sync::Arc::new(
-            CopperGolemStatueBlockEntity::new(level, pos, state),
-        ))
+        BlockEntityCreation::Created(std::sync::Arc::new(CopperGolemStatueBlockEntity::new(
+            level, pos, state,
+        )))
     }
 
     /// Vanilla `CopperGolemStatueBlock.isPathfindable`: only water inside a
@@ -784,7 +803,10 @@ impl BlockBehavior for WeatheringCopperGolemStatueBlock {
                     &BlockStateProperties::HORIZONTAL_FACING,
                     context.horizontal_direction().opposite(),
                 )
-                .set_value(&BlockStateProperties::WATERLOGGED, context.is_water_source()),
+                .set_value(
+                    &BlockStateProperties::WATERLOGGED,
+                    context.is_water_source(),
+                ),
         )
     }
 
@@ -801,9 +823,9 @@ impl BlockBehavior for WeatheringCopperGolemStatueBlock {
         pos: BlockPos,
         state: BlockStateId,
     ) -> BlockEntityCreation {
-        BlockEntityCreation::Created(std::sync::Arc::new(
-            CopperGolemStatueBlockEntity::new(level, pos, state),
-        ))
+        BlockEntityCreation::Created(std::sync::Arc::new(CopperGolemStatueBlockEntity::new(
+            level, pos, state,
+        )))
     }
 
     /// Vanilla `WeatheringCopperGolemStatueBlock.useItemOn`: honeycomb passes so
@@ -911,16 +933,16 @@ mod tests {
 
         // Vanilla `BlockTags.SUPPORTS_FROGSPAWN` is empty and the fluid tag holds
         // only water, so a solid (non-water) floor never supports frogspawn.
-        let stone = TestLevel::default()
-            .with_block(pos.below(), vanilla_blocks::STONE.default_state());
+        let stone =
+            TestLevel::default().with_block(pos.below(), vanilla_blocks::STONE.default_state());
         assert!(
             !behavior.can_survive(state, &stone, pos),
             "stone is not in `SUPPORTS_FROGSPAWN`, matching the empty vanilla block tag"
         );
 
         // Water below is the only vanilla support.
-        let water = TestLevel::default()
-            .with_block(pos.below(), vanilla_blocks::WATER.default_state());
+        let water =
+            TestLevel::default().with_block(pos.below(), vanilla_blocks::WATER.default_state());
         assert!(
             behavior.can_survive(state, &water, pos),
             "water is in `FluidTags.SUPPORTS_FROGSPAWN`"

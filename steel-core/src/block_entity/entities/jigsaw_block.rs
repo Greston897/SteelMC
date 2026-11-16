@@ -170,18 +170,22 @@ impl BlockEntity for JigsawBlockEntity {
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
         let nbt_view: NbtCompoundView<'_, '_> = nbt.into();
         let mut state = self.state.lock();
-        state.name = nbt_view
-            .string("name")
-            .map_or_else(|| "minecraft:empty".to_owned(), |value| value.to_str().into_owned());
-        state.target = nbt_view
-            .string("target")
-            .map_or_else(|| "minecraft:empty".to_owned(), |value| value.to_str().into_owned());
-        state.pool = nbt_view
-            .string("pool")
-            .map_or_else(|| "minecraft:empty".to_owned(), |value| value.to_str().into_owned());
-        state.final_state = nbt_view
-            .string("final_state")
-            .map_or_else(|| DEFAULT_FINAL_STATE.to_owned(), |value| value.to_str().into_owned());
+        state.name = nbt_view.string("name").map_or_else(
+            || "minecraft:empty".to_owned(),
+            |value| value.to_str().into_owned(),
+        );
+        state.target = nbt_view.string("target").map_or_else(
+            || "minecraft:empty".to_owned(),
+            |value| value.to_str().into_owned(),
+        );
+        state.pool = nbt_view.string("pool").map_or_else(
+            || "minecraft:empty".to_owned(),
+            |value| value.to_str().into_owned(),
+        );
+        state.final_state = nbt_view.string("final_state").map_or_else(
+            || DEFAULT_FINAL_STATE.to_owned(),
+            |value| value.to_str().into_owned(),
+        );
         state.joint = nbt_view
             .string("joint")
             .map_or(JOINT_ROLLABLE, |value| joint_from_name(&value.to_str()));

@@ -24,16 +24,15 @@ use crate::{
         DataComponentPatch, DataComponentType,
         components::ItemContainerContents,
         vanilla_components::{
-            ATTACK_RANGE, ATTRIBUTE_MODIFIERS, AttackRange, BUNDLE_CONTENTS, CHARGED_PROJECTILES,
-            CONTAINER, CUSTOM_DATA, CUSTOM_NAME, DAMAGE, DAMAGE_RESISTANT, DAMAGE_TYPE,
-            BLOCK_STATE, ENCHANTABLE, ENCHANTMENTS, EQUIPPABLE, Equippable, ITEM_NAME,
-            ItemAttributeModifiers,
-            ItemEnchantments, MAX_DAMAGE, MAX_STACK_SIZE, MINIMUM_ATTACK_CHARGE,
-            BANNER_PATTERNS, CONTAINER_LOOT, FIREWORK_EXPLOSION, FIREWORKS, ItemLore, LORE,
-            SUSPICIOUS_STEW_EFFECTS, WRITABLE_BOOK_CONTENT,
-            OMINOUS_BOTTLE_AMPLIFIER, OminousBottleAmplifier, PIERCING_WEAPON, POTION_CONTENTS,
-            PiercingWeapon, PotionContents, REPAIRABLE, STORED_ENCHANTMENTS, TOOL, Tool,
-            UNBREAKABLE, WEAPON, WRITTEN_BOOK_CONTENT, Weapon,
+            ATTACK_RANGE, ATTRIBUTE_MODIFIERS, AttackRange, BANNER_PATTERNS, BLOCK_STATE,
+            BUNDLE_CONTENTS, CHARGED_PROJECTILES, CONTAINER, CONTAINER_LOOT, CUSTOM_DATA,
+            CUSTOM_NAME, DAMAGE, DAMAGE_RESISTANT, DAMAGE_TYPE, ENCHANTABLE, ENCHANTMENTS,
+            EQUIPPABLE, Equippable, FIREWORK_EXPLOSION, FIREWORKS, ITEM_NAME,
+            ItemAttributeModifiers, ItemEnchantments, ItemLore, LORE, MAX_DAMAGE, MAX_STACK_SIZE,
+            MINIMUM_ATTACK_CHARGE, OMINOUS_BOTTLE_AMPLIFIER, OminousBottleAmplifier,
+            PIERCING_WEAPON, POTION_CONTENTS, PiercingWeapon, PotionContents, REPAIRABLE,
+            STORED_ENCHANTMENTS, SUSPICIOUS_STEW_EFFECTS, TOOL, Tool, UNBREAKABLE, WEAPON,
+            WRITABLE_BOOK_CONTENT, WRITTEN_BOOK_CONTENT, Weapon,
         },
     },
     enchantment_effect::EnchantmentEffectComponent,
@@ -1073,7 +1072,10 @@ impl ItemStack {
             let duration = effect.duration.get_simple(rng) as i32;
             resolved.push(SuspiciousStewEffect::new(effect_type, duration));
         }
-        self.set(SUSPICIOUS_STEW_EFFECTS, SuspiciousStewEffects::new(resolved));
+        self.set(
+            SUSPICIOUS_STEW_EFFECTS,
+            SuspiciousStewEffects::new(resolved),
+        );
     }
 
     pub fn set_enchantments(&mut self, enchantments: &[(Identifier, u32)], add: bool) {
@@ -1204,15 +1206,21 @@ impl ItemStack {
                 .items()
                 .iter()
                 .map(|slot| {
-                    slot.as_ref()
-                        .map_or_else(ItemStack::empty, crate::item_stack_template::ItemStackTemplate::create)
+                    slot.as_ref().map_or_else(
+                        ItemStack::empty,
+                        crate::item_stack_template::ItemStackTemplate::create,
+                    )
                 })
                 .collect::<Vec<_>>()
         });
 
         for item in &mut items {
             for cond_func in modifier {
-                if cond_func.conditions.iter().all(|condition| condition.test(ctx)) {
+                if cond_func
+                    .conditions
+                    .iter()
+                    .all(|condition| condition.test(ctx))
+                {
                     cond_func.function.apply(item, ctx);
                 }
             }
@@ -1416,12 +1424,7 @@ impl ItemStack {
                     .as_ref()
                     .map_or_else(Vec::new, |fireworks| fireworks.explosions().to_vec())
             },
-            |explosions| {
-                explosions
-                    .iter()
-                    .map(convert_firework_explosion)
-                    .collect()
-            },
+            |explosions| explosions.iter().map(convert_firework_explosion).collect(),
         );
         if let Ok(fireworks) = Fireworks::new(flight, explosion_values) {
             self.set(FIREWORKS, fireworks);
@@ -1453,8 +1456,7 @@ impl ItemStack {
         let current_author =
             existing.map_or_else(String::new, |content| content.author().to_owned());
         let current_generation = existing.map_or(0, WrittenBookContent::generation);
-        let current_pages =
-            existing.map_or_else(Vec::new, |content| content.pages().to_vec());
+        let current_pages = existing.map_or_else(Vec::new, |content| content.pages().to_vec());
 
         let title = title.map_or(current_title, |value| {
             Filterable::pass_through(value.to_owned())

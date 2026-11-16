@@ -15,7 +15,7 @@ use std::sync::Arc;
 use crate::entity::Entity as _;
 
 use crate::player::Player;
-use crate::scoreboard::{Scoreboard, ScoreHolder, TeamState, TeamVisibility};
+use crate::scoreboard::{ScoreHolder, Scoreboard, TeamState, TeamVisibility};
 use crate::server::Server;
 use steel_protocol::packet_traits::ClientPacket;
 use steel_protocol::packets::game::{
@@ -102,7 +102,7 @@ fn team_parameters(name: &str, state: &TeamState) -> TeamParameters {
 pub fn sync_full(player: &Player, scoreboard: &Scoreboard, display_slots: &[(i32, String)]) {
     for (name, display, read_only) in scoreboard.objective_display_names() {
         player.send_packet(CSetObjective {
-            name: name.clone(),
+            name,
             action: ObjectiveAction::Add {
                 display_name: TextComponent::plain(display),
                 // Steel objectives are all plain counters; vanilla's `dummy`
@@ -146,14 +146,12 @@ pub fn sync_full(player: &Player, scoreboard: &Scoreboard, display_slots: &[(i32
 
 /// Broadcasts one objective creation to every online player on a domain.
 pub fn sync_objective_added(server: &Arc<Server>, domain: &str, name: &str) {
-    broadcast(server, domain, |_| {
-        CSetObjective {
-            name: name.to_owned(),
-            action: ObjectiveAction::Add {
-                display_name: TextComponent::plain(name.to_owned()),
-                render_type: RenderType::Integer,
-            },
-        }
+    broadcast(server, domain, |_| CSetObjective {
+        name: name.to_owned(),
+        action: ObjectiveAction::Add {
+            display_name: TextComponent::plain(name.to_owned()),
+            render_type: RenderType::Integer,
+        },
     });
 }
 

@@ -23,7 +23,10 @@ pub struct Payload(pub Vec<u8>);
 
 impl ReadFrom for Payload {
     fn read(data: &mut Cursor<&[u8]>) -> Result<Self, std::io::Error> {
-        let remaining = data.get_ref().len().saturating_sub(data.position() as usize);
+        let remaining = data
+            .get_ref()
+            .len()
+            .saturating_sub(data.position() as usize);
         if remaining > MAX_CUSTOM_PAYLOAD_SIZE {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,

@@ -59,7 +59,7 @@ pub(crate) fn generate(
         .generation_height_at(HeightmapType::WorldSurface, 8, 8)
         .saturating_sub(1)
         .clamp(min_y, max_y.saturating_sub(1));
-    let Some(biome_id) = proto_biome_id(&chunk, min_y, 2, sample_y >> 2, 2) else {
+    let Some(biome_id) = proto_biome_id(chunk, min_y, 2, sample_y >> 2, 2) else {
         return;
     };
     let Some(biome) = REGISTRY.biomes.by_id(usize::from(biome_id)) else {
@@ -111,10 +111,7 @@ pub(crate) fn generate(
                 let lz = (z - zo) as usize;
                 let y = chunk.generation_height_at(HeightmapType::MotionBlockingNoLeaves, lx, lz);
                 let pos = BlockPos::new(x, y, z);
-                if y > min_y
-                    && y < max_y
-                    && is_valid_proto_creature_spawn(&chunk, pos)
-                {
+                if y > min_y && y < max_y && is_valid_proto_creature_spawn(chunk, pos) {
                     let half_w = f64::from(entity_type.dimensions.width).clamp(0.0, 7.5);
                     let fx = (f64::from(x) + 0.5)
                         .clamp(f64::from(xo) + half_w, f64::from(xo) + 16.0 - half_w);
@@ -175,10 +172,7 @@ fn proto_biome_id(
 /// evaluated against the proto chunk's block states.
 fn is_valid_proto_creature_spawn(chunk: &Chunk, pos: BlockPos) -> bool {
     let below = chunk.get_block_state(pos.below());
-    if !below
-        .get_block()
-        .has_tag(&BlockTag::ANIMALS_SPAWNABLE_ON)
-    {
+    if !below.get_block().has_tag(&BlockTag::ANIMALS_SPAWNABLE_ON) {
         return false;
     }
     let at = chunk.get_block_state(pos);
@@ -261,7 +255,12 @@ fn build_generated_entity(
 mod tests {
     use super::*;
 
-    fn entry(entity_type: &'static str, weight: i32, min_count: i32, max_count: i32) -> SpawnerData {
+    fn entry(
+        entity_type: &'static str,
+        weight: i32,
+        min_count: i32,
+        max_count: i32,
+    ) -> SpawnerData {
         SpawnerData {
             entity_type: steel_utils::Identifier::vanilla_static(entity_type),
             weight,

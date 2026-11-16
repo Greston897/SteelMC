@@ -222,13 +222,19 @@ impl MenuKind for MerchantKind {
         let result = if paid_a.is_empty() {
             ItemStack::empty()
         } else {
-            self.matching_offer(&paid_a, &paid_b)
-                .and_then(|index| self.trades.lock().get(index).map(|offer| offer.result.clone()))
+            self.matching_offer(paid_a, paid_b)
+                .and_then(|index| {
+                    self.trades
+                        .lock()
+                        .get(index)
+                        .map(|offer| offer.result.clone())
+                })
                 .unwrap_or_else(ItemStack::empty)
         };
 
         let current = container.get_item(RESULT_SLOT);
-        if !ItemStack::is_same_item_same_components(current, &result) || current.count() != result.count()
+        if !ItemStack::is_same_item_same_components(current, &result)
+            || current.count() != result.count()
         {
             let _ = guard.set_item(container_id, RESULT_SLOT, result);
         }
@@ -265,7 +271,7 @@ impl MenuKind for MerchantKind {
             return ClickOutcome::Consume;
         }
 
-        let Some(index) = self.matching_offer(&paid_a, &paid_b) else {
+        let Some(index) = self.matching_offer(paid_a, paid_b) else {
             return ClickOutcome::Consume;
         };
 

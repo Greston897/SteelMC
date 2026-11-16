@@ -3,29 +3,29 @@
 use std::sync::{Arc, Weak};
 
 use steel_macros::block_behavior;
+use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{
     BlockStateProperties, Direction, EnumProperty, IntProperty,
 };
-use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::vanilla_block_entity_types;
 use steel_registry::{sound_events, vanilla_blocks, vanilla_items};
 use steel_utils::types::UpdateFlags;
-use steel_utils::{Downcast as _, BlockPos, BlockStateId};
+use steel_utils::{BlockPos, BlockStateId, Downcast as _};
 
-use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
-use crate::block_entity::SharedBlockEntity;
-use crate::player::player_inventory::Prediction;
-use crate::behavior::context::{BlockHitResult, BlockPlaceContext};
 use crate::behavior::InteractionResult;
-use steel_utils::types::InteractionHand;
+use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
 use crate::behavior::context::InventoryAccess;
-use crate::block_entity::{BLOCK_ENTITIES, BlockEntityTicker};
+use crate::behavior::context::{BlockHitResult, BlockPlaceContext};
+use crate::block_entity::SharedBlockEntity;
 use crate::block_entity::entities::BeehiveBlockEntity;
+use crate::block_entity::{BLOCK_ENTITIES, BlockEntityTicker};
 use crate::entity::Entity as _;
 use crate::player::Player;
+use crate::player::player_inventory::Prediction;
 use crate::world::World;
+use steel_utils::types::InteractionHand;
 
 /// Behavior for beehive and bee nest blocks.
 ///
@@ -113,7 +113,7 @@ impl BeehiveBlock {
         // Vanilla spawns one honeycomb item entity at the hive.
         world.drop_item_stack(
             pos,
-            steel_registry::item_stack::ItemStack::new(&*vanilla_items::HONEYCOMB),
+            steel_registry::item_stack::ItemStack::new(&vanilla_items::HONEYCOMB),
         );
         hive.on_honey_harvested(state, world, pos, MAX_HONEY_LEVEL, false);
     }
@@ -136,9 +136,7 @@ impl BeehiveBlock {
             if item == &*vanilla_items::SHEARS && i32::from(honey_level) == MAX_HONEY_LEVEL {
                 return Some(HoneyAction::Shear);
             }
-            if item == &*vanilla_items::CAMPFIRE
-                || item == &*vanilla_items::SOUL_CAMPFIRE
-            {
+            if item == &*vanilla_items::CAMPFIRE || item == &*vanilla_items::SOUL_CAMPFIRE {
                 return Some(HoneyAction::PlaceCampfire);
             }
             None
@@ -164,7 +162,7 @@ impl BeehiveBlock {
                 });
                 // Vanilla gives the honey bottle to the player or drops it.
                 player.add_item_or_drop(
-                    steel_registry::item_stack::ItemStack::new(&*vanilla_items::HONEY_BOTTLE),
+                    steel_registry::item_stack::ItemStack::new(&vanilla_items::HONEY_BOTTLE),
                     Prediction::ServerOnly,
                 );
                 hive.on_honey_harvested(state, world, pos, 0, true);

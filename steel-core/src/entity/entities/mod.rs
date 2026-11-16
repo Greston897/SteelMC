@@ -10,24 +10,21 @@ pub use mobs::hostile::{
     CreeperEntity, DrownedEntity, ElderGuardianEntity, EndermanEntity, EndermiteEntity,
     EvokerEntity, GhastEntity, GiantEntity, GuardianEntity, HoglinEntity, HuskEntity,
     IllusionerEntity, IronGolemEntity, MagmaCubeEntity, ParchedEntity, PhantomEntity,
-    PiglinBruteEntity,
-    PiglinEntity, PillagerEntity, RavagerEntity, ShulkerEntity, SilverfishEntity, SkeletonEntity,
-    SlimeEntity, SnowGolemEntity, SpiderEntity, StrayEntity, VexEntity, VindicatorEntity,
-    WardenEntity, WitchEntity, WitherSkeletonEntity, ZoglinEntity, ZombieEntity,
-    ZombieVillagerEntity, ZombifiedPiglinEntity,
+    PiglinBruteEntity, PiglinEntity, PillagerEntity, RavagerEntity, ShulkerEntity,
+    SilverfishEntity, SkeletonEntity, SlimeEntity, SnowGolemEntity, SpiderEntity, StrayEntity,
+    VexEntity, VindicatorEntity, WardenEntity, WitchEntity, WitherSkeletonEntity, ZoglinEntity,
+    ZombieEntity, ZombieVillagerEntity, ZombifiedPiglinEntity,
 };
 pub use mobs::neutral::*;
 pub use mobs::passive::*;
 pub use objects::decoration::{
-    ArmorStandEntity, BillboardConstraints, CushionEntity, DisplayTransformation, ItemDisplayEntity,
-    MannequinEntity, PaintingEntity, TextDisplayEntity,
+    ArmorStandEntity, BillboardConstraints, CushionEntity, DisplayTransformation,
+    ItemDisplayEntity, MannequinEntity, PaintingEntity, TextDisplayEntity,
 };
 pub use objects::display_ui::{
     BlockDisplayEntity, GlowItemFrameEntity, ItemFrameEntity, LeashFenceKnotEntity,
 };
-pub use objects::effects::{
-    AreaEffectCloudEntity, EvokerFangsEntity, LightningBoltEntity,
-};
+pub use objects::effects::{AreaEffectCloudEntity, EvokerFangsEntity, LightningBoltEntity};
 pub use objects::explosives::{EndCrystalEntity, PrimedTntEntity};
 pub use objects::items::{ExperienceOrbEntity, FallingBlockEntity, ItemEntity};
 pub use objects::projectiles::{

@@ -98,7 +98,7 @@ fn get_available_enchantment_results(
     stack: &ItemStack,
     source: impl Iterator<Item = EnchantmentRef>,
 ) -> Vec<EnchantmentInstance> {
-    let is_book = stack.is(&*vanilla_items::BOOK);
+    let is_book = stack.is(&vanilla_items::BOOK);
     let mut results = Vec::new();
     for enchantment in source {
         if !is_book && !enchantment.is_primary_item(stack.item()) {

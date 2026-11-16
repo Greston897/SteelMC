@@ -461,7 +461,10 @@ mod tests {
     #[test]
     fn item_predicate_rejects_a_missing_item() {
         let context = TriggerContext::default();
-        assert!(!matches(r#"{"item":{"items":"minecraft:stone"}}"#, &context));
+        assert!(!matches(
+            r#"{"item":{"items":"minecraft:stone"}}"#,
+            &context
+        ));
         // …but an unconstrained predicate still matches.
         assert!(matches(r#"{"item":{}}"#, &context));
     }
@@ -480,10 +483,7 @@ mod tests {
             r#"{"location":{"position":{"x":{"min":0,"max":5}}}}"#,
             &context
         ));
-        assert!(matches(
-            r#"{"location":{"position":{"y":64}}}"#,
-            &context
-        ));
+        assert!(matches(r#"{"location":{"position":{"y":64}}}"#, &context));
     }
 
     #[test]

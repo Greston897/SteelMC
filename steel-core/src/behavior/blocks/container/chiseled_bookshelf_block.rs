@@ -89,14 +89,14 @@ impl ChiseledBookShelfBlock {
     }
 
     fn insert_sound(item: &ItemStack) -> SoundEventRef {
-        if item.is(&*vanilla_items::ENCHANTED_BOOK) {
+        if item.is(&vanilla_items::ENCHANTED_BOOK) {
             return &sound_events::BLOCK_CHISELED_BOOKSHELF_INSERT_ENCHANTED;
         }
         &sound_events::BLOCK_CHISELED_BOOKSHELF_INSERT
     }
 
     fn pickup_sound(item: &ItemStack) -> SoundEventRef {
-        if item.is(&*vanilla_items::ENCHANTED_BOOK) {
+        if item.is(&vanilla_items::ENCHANTED_BOOK) {
             return &sound_events::BLOCK_CHISELED_BOOKSHELF_PICKUP_ENCHANTED;
         }
         &sound_events::BLOCK_CHISELED_BOOKSHELF_PICKUP

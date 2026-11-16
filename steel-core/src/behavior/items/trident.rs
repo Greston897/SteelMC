@@ -27,9 +27,9 @@ use crate::behavior::ItemUseAnimation;
 use crate::behavior::context::{InteractionResult, UseItemContext};
 use crate::behavior::item::ItemBehavior;
 use crate::entity::entities::{AbstractArrow as _, ArrowPickup, ThrownTridentEntity};
-use glam::DVec3;
 use crate::entity::{Entity, LivingEntity, next_entity_id, spawn_projectile_from_rotation};
 use crate::world::World;
+use glam::DVec3;
 
 /// Vanilla `TridentItem.MAX_USE_DURATION`.
 pub const MAX_USE_TICKS: i32 = 72000;

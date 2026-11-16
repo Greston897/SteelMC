@@ -58,7 +58,10 @@ mod tests {
         pkt.write(&mut actual).unwrap();
 
         let mut expected = vec![9];
-        "minecraft:velocity".to_owned().write(&mut expected).unwrap();
+        "minecraft:velocity"
+            .to_owned()
+            .write(&mut expected)
+            .unwrap();
         expected.extend_from_slice(&[1, 2, 3]);
         assert_eq!(actual, expected);
     }

@@ -144,7 +144,7 @@ impl ServerConfig {
     }
 }
 
-/// RCOn settings as they appear in `config.toml`.
+/// `RCOn` settings as they appear in `config.toml`.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct RconSettings {

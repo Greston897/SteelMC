@@ -30,9 +30,9 @@ use steel_registry::loot_table::LootTableRef;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::{
-    REGISTRY, TaggedRegistryExt, vanilla_attributes, vanilla_damage_types,
-    vanilla_entities, vanilla_entity_type_tags::EntityTypeTag, vanilla_game_events,
-    vanilla_game_rules, vanilla_items,
+    REGISTRY, TaggedRegistryExt, vanilla_attributes, vanilla_damage_types, vanilla_entities,
+    vanilla_entity_type_tags::EntityTypeTag, vanilla_game_events, vanilla_game_rules,
+    vanilla_items,
 };
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtNumeric as _;
@@ -730,9 +730,9 @@ pub trait Mob: LivingEntity + Leashable {
         let mut produced = None;
         {
             let mut inventory = player.inventory.lock();
-            let original = inventory.get_item_in_hand(hand).copy_with_count(
-                inventory.get_item_in_hand(hand).count(),
-            );
+            let original = inventory
+                .get_item_in_hand(hand)
+                .copy_with_count(inventory.get_item_in_hand(hand).count());
             inventory.shrink_item_in_hand(hand, 1);
             let mut used = inventory
                 .get_item_in_hand(hand)
@@ -880,9 +880,8 @@ pub trait Mob: LivingEntity + Leashable {
         // the `thrown_item_picked_up_by_entity` criterion on the picking entity,
         // which for a player is the advancement owner.
         if let Some(player) = self.as_player() {
-            let context = crate::player::advancement::predicate::TriggerContext::item(
-                &equipped.item().key,
-            );
+            let context =
+                crate::player::advancement::predicate::TriggerContext::item(&equipped.item().key);
             player.trigger_advancement_with_context(
                 &steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_ENTITY,
                 &context,

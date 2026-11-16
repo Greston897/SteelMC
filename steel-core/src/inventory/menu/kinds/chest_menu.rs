@@ -7,8 +7,8 @@
 
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::menu_type::MenuTypeRef;
-use steel_utils::Downcast as _;
 use steel_registry::vanilla_menu_types;
+use steel_utils::Downcast as _;
 
 use crate::block_entity::BlockEntity as _;
 use crate::block_entity::entities::ChestBlockEntity;

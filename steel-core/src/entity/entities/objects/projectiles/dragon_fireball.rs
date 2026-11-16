@@ -13,9 +13,9 @@ use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::data_components::components::PotionContents;
 use steel_registry::entity_type::EntityTypeRef;
-use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::mob_effect::instance::MobEffectInstance;
 use steel_registry::particle_type::{ParticleData, PowerParticleOption};
 use steel_registry::{vanilla_entities, vanilla_mob_effects, vanilla_particle_types};
@@ -110,7 +110,7 @@ impl DragonFireballEntity {
             None,
             None,
             vec![MobEffectInstance::new(
-                &vanilla_mob_effects::INSTANT_DAMAGE,
+                vanilla_mob_effects::INSTANT_DAMAGE,
                 DRAGON_BREATH_EFFECT_DURATION,
                 DRAGON_BREATH_EFFECT_AMPLIFIER,
                 false,

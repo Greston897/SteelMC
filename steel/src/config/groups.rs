@@ -63,8 +63,7 @@ impl PermissionGroupStore for FilePermissionGroupStore {
     /// rejected before the manager swaps anything in.
     fn load_groups(
         &self,
-    ) -> BoxFuture<'static, Result<Option<PermissionGroupsConfig>, PermissionGroupStoreError>>
-    {
+    ) -> BoxFuture<'static, Result<Option<PermissionGroupsConfig>, PermissionGroupStoreError>> {
         let path = self.path.clone();
         Box::pin(async move {
             load_or_create_groups(&path)

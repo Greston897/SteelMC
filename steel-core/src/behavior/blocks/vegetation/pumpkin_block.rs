@@ -56,7 +56,7 @@ impl BlockBehavior for PumpkinBlock {
 
         let Some(shears) = inv.with_item(|item_stack| {
             item_stack
-                .is(&*vanilla_items::SHEARS)
+                .is(&vanilla_items::SHEARS)
                 .then(|| item_stack.clone())
         }) else {
             return InteractionResult::TryEmptyHandInteraction;

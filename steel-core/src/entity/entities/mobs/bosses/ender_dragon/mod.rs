@@ -42,15 +42,17 @@ use steel_registry::{
     vanilla_attributes, vanilla_blocks, vanilla_damage_type_tags, vanilla_damage_types,
     vanilla_entities, vanilla_game_events, vanilla_game_rules, vanilla_particle_types,
 };
+use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::types::GameType;
-use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, DowncastType, DowncastTypeKey, WorldAabb};
 
 use self::part::{
     DRAGON_PART_BODY, DRAGON_PART_COUNT, DRAGON_PART_HEAD, DRAGON_PART_NECK, part_damage_scaling,
 };
-use self::phase_ticks::{FLAME_DURATION, PhaseAction, SITTING_FLAME_RADIUS, phase_fly_target, tick_phase};
+use self::phase_ticks::{
+    FLAME_DURATION, PhaseAction, SITTING_FLAME_RADIUS, phase_fly_target, tick_phase,
+};
 use self::phases::{DragonPhase, DragonPhaseManager, turn_speed};
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::ExperienceOrbEntity;
@@ -213,7 +215,11 @@ impl EnderDragonEntity {
     /// Writes the current phase into the synced `DATA_PHASE`.
     fn sync_phase_data(&self) {
         let phase = self.phases.lock().current();
-        self.entity_data.lock().ender_dragon_mut().phase.set(phase.id());
+        self.entity_data
+            .lock()
+            .ender_dragon_mut()
+            .phase
+            .set(phase.id());
     }
 
     /// Returns the number of end crystals still alive around the arena.
@@ -436,8 +442,10 @@ impl EnderDragonEntity {
                 PhaseAction::SpawnBreathCloud { x, head_y, z } => {
                     // Vanilla keeps the cloud on the phase so `end()` can discard it.
                     if let Some(cloud) = self.spawn_breath_cloud(world, shared, *x, *head_y, *z) {
-                        self.phases.lock().state_for(DragonPhase::SittingFlaming).flame_cloud =
-                            Some(cloud);
+                        self.phases
+                            .lock()
+                            .state_for(DragonPhase::SittingFlaming)
+                            .flame_cloud = Some(cloud);
                     }
                 }
                 PhaseAction::StrafeShotLevelEvent => {
@@ -507,20 +515,24 @@ impl EnderDragonEntity {
         cloud.set_potion_duration_scale(0.25);
         // Vanilla `flame.addEffect(new MobEffectInstance(MobEffects.INSTANT_DAMAGE))`,
         // i.e. the 3-argument constructor: duration 0, amplifier 0.
-        cloud.set_potion_contents(steel_registry::data_components::components::PotionContents::new(
-            None,
-            None,
-            vec![steel_registry::mob_effect::instance::MobEffectInstance::new(
-                &steel_registry::vanilla_mob_effects::INSTANT_DAMAGE,
-                0,
-                0,
-                false,
-                true,
-                true,
+        cloud.set_potion_contents(
+            steel_registry::data_components::components::PotionContents::new(
                 None,
-            )],
-            None,
-        ));
+                None,
+                vec![
+                    steel_registry::mob_effect::instance::MobEffectInstance::new(
+                        steel_registry::vanilla_mob_effects::INSTANT_DAMAGE,
+                        0,
+                        0,
+                        false,
+                        true,
+                        true,
+                        None,
+                    ),
+                ],
+                None,
+            ),
+        );
         let shared = cloud as SharedEntity;
         if let Err(error) = world.try_add_entity(Arc::clone(&shared)) {
             log::debug!("world rejected a dragon breath cloud: {error}");
@@ -543,9 +555,7 @@ impl EnderDragonEntity {
                     guard.nearest_crystal = None;
                     false
                 }
-                Some(_) => {
-                    self.tick_count() % 10 == 0 && self.get_health() < self.get_max_health()
-                }
+                Some(_) => self.tick_count() % 10 == 0 && self.get_health() < self.get_max_health(),
             }
         };
         if healed {
@@ -635,7 +645,7 @@ impl EnderDragonEntity {
         // Vanilla turns toward the target with `yRotA` damping; the turn rate is
         // the phase's own `getTurnSpeed`.
         if xdd.abs() > 1.0E-5 || zdd.abs() > 1.0E-5 {
-            let target_yaw = 180.0 - f64::from(steel_math::trig::atan2(xdd, zdd)) * 57.295_776;
+            let target_yaw = 180.0 - steel_math::trig::atan2(xdd, zdd) * 57.295_776;
             let y_rot_d =
                 steel_math::wrap_degrees((target_yaw - f64::from(yaw)) as f32).clamp(-50.0, 50.0);
             let turn = turn_speed(phase, self);
@@ -693,9 +703,9 @@ impl EnderDragonEntity {
         let mut guard = self.phases.lock();
         let (tilt, y_offset) = {
             let history = &guard.flight_history;
-            let tilt = ((history.get(5).y - history.get(10).y) * 10.0
-                * f64::from(std::f32::consts::PI)
-                / 180.0) as f32;
+            let tilt =
+                ((history.get(5).y - history.get(10).y) * 10.0 * f64::from(std::f32::consts::PI)
+                    / 180.0) as f32;
             let y_offset = if guard.current().is_sitting() {
                 -1.0
             } else {
@@ -756,7 +766,7 @@ impl EnderDragonEntity {
         ] {
             let p0 = guard.flight_history.get(12 + index * 2);
             let rot = f32::to_radians(yaw)
-                + f32::to_radians(steel_math::wrap_degrees((p0.y_rot - p1.y_rot) as f32));
+                + f32::to_radians(steel_math::wrap_degrees(p0.y_rot - p1.y_rot));
             let ss = steel_math::trig::sin(f64::from(rot));
             let cc = steel_math::trig::cos(f64::from(rot));
             let dd = (index as f32 + 1.0) * 2.0;
@@ -790,9 +800,8 @@ impl EnderDragonEntity {
             )
         };
 
-        let selector = |entity: &dyn Entity| {
-            !entity.is_spectator() && entity.as_living_entity().is_some()
-        };
+        let selector =
+            |entity: &dyn Entity| !entity.is_spectator() && entity.as_living_entity().is_some();
 
         for wing in wing_boxes.into_iter().flatten() {
             let entities = world.get_entities_in_aabb_matching(&wing, selector);
@@ -813,7 +822,12 @@ impl EnderDragonEntity {
     /// the dragon's shared handle, which this `&self` path does not have, so the
     /// gate is evaluated and the hit is delivered through the entity's own
     /// damage entry point.
-    fn wing_knock_back(&self, world: &Arc<World>, shared: &SharedEntity, entities: &[SharedEntity]) {
+    fn wing_knock_back(
+        &self,
+        world: &Arc<World>,
+        shared: &SharedEntity,
+        entities: &[SharedEntity],
+    ) {
         let (xm, zm) = {
             let guard = self.phases.lock();
             guard
@@ -821,8 +835,8 @@ impl EnderDragonEntity {
                 .bounding_box(DRAGON_PART_BODY)
                 .map_or((0.0, 0.0), |box_| {
                     (
-                        (box_.min_x() + box_.max_x()) / 2.0,
-                        (box_.min_z() + box_.max_z()) / 2.0,
+                        f64::midpoint(box_.min_x(), box_.max_x()),
+                        f64::midpoint(box_.min_z(), box_.max_z()),
                     )
                 })
         };
@@ -851,8 +865,9 @@ impl EnderDragonEntity {
 
             // Vanilla `damageSources().mobAttack(this)`: the dragon is both the
             // causing and the direct entity, so kills credit it.
-            let source = DamageSource::direct(&vanilla_damage_types::MOB_ATTACK, Arc::clone(shared))
-                .with_source_position(entity_position);
+            let source =
+                DamageSource::direct(&vanilla_damage_types::MOB_ATTACK, Arc::clone(shared))
+                    .with_source_position(entity_position);
             Entity::hurt(entity.as_ref(), world, &source, 5.0);
         }
     }
@@ -871,8 +886,9 @@ impl EnderDragonEntity {
             if !Entity::team_allows_friendly_fire(entity.as_ref()) {
                 continue;
             }
-            let source = DamageSource::direct(&vanilla_damage_types::MOB_ATTACK, Arc::clone(shared))
-                .with_source_position(Entity::position(entity.as_ref()));
+            let source =
+                DamageSource::direct(&vanilla_damage_types::MOB_ATTACK, Arc::clone(shared))
+                    .with_source_position(Entity::position(entity.as_ref()));
             Entity::hurt(entity.as_ref(), world, &source, 10.0);
         }
     }
@@ -944,13 +960,10 @@ impl EnderDragonEntity {
                     let pos = BlockPos::new(x, y, z);
                     let state = world.get_block_state(pos);
                     let block = state.get_block();
-                    if state.is_air()
-                        || DRAGON_TRANSPARENT_BLOCKS.iter().any(|skip| *skip == block)
-                    {
+                    if state.is_air() || DRAGON_TRANSPARENT_BLOCKS.contains(&block) {
                         continue;
                     }
-                    if !mob_griefing || DRAGON_IMMUNE_BLOCKS.iter().any(|immune| *immune == block)
-                    {
+                    if !mob_griefing || DRAGON_IMMUNE_BLOCKS.contains(&block) {
                         hit_wall = true;
                         continue;
                     }

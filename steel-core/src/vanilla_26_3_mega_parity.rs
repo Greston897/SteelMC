@@ -65,9 +65,7 @@ use crate::block_entity::entities::{
     SculkShriekerBlockEntity, TrialSpawnerBlockEntity, VaultBlockEntity,
 };
 use crate::block_entity::{BLOCK_ENTITIES, BlockEntity as _, init_block_entities};
-use crate::command::execution::{
-    CommandExecutionContext, CommandResultCallback, CommandSource,
-};
+use crate::command::execution::{CommandExecutionContext, CommandResultCallback, CommandSource};
 use crate::command::sender::CommandSender;
 use crate::config::ResolvedDomainConfig;
 use crate::entity::damage::DamageSource;
@@ -349,9 +347,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
             )
             .is_ok()
         );
-        assert!(
-            EncodedPacket::from_bare(CResetChat {}, comp, ConnectionProtocol::Config).is_ok()
-        );
+        assert!(EncodedPacket::from_bare(CResetChat {}, comp, ConnectionProtocol::Config).is_ok());
         assert!(
             EncodedPacket::from_bare(
                 CServerLinks {
@@ -456,12 +452,8 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
             .is_ok()
         );
         assert!(
-            EncodedPacket::from_bare(
-                CStartConfiguration {},
-                comp,
-                ConnectionProtocol::Play
-            )
-            .is_ok()
+            EncodedPacket::from_bare(CStartConfiguration {}, comp, ConnectionProtocol::Play)
+                .is_ok()
         );
         assert!(
             EncodedPacket::from_bare(CPing { id: -99 }, comp, ConnectionProtocol::Play).is_ok()
@@ -476,9 +468,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
             )
             .is_ok()
         );
-        assert!(
-            EncodedPacket::from_bare(CClearDialog {}, comp, ConnectionProtocol::Play).is_ok()
-        );
+        assert!(EncodedPacket::from_bare(CClearDialog {}, comp, ConnectionProtocol::Play).is_ok());
         assert!(
             EncodedPacket::from_bare(
                 CGameTestHighlightPos {
@@ -728,7 +718,12 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         };
         let state = valid_block.default_state();
         let be = BLOCK_ENTITIES
-            .create(be_type, Arc::downgrade(&world), BlockPos::new(2, 72, 2), state)
+            .create(
+                be_type,
+                Arc::downgrade(&world),
+                BlockPos::new(2, 72, 2),
+                state,
+            )
             .unwrap_or_else(|| panic!("missing factory for block entity {}", be_type.key));
         assert_eq!(be.get_type().key, be_type.key);
         let full_nbt = be.save_with_full_metadata();
@@ -737,7 +732,10 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         assert_eq!(full_nbt.int("z"), Some(2));
         created_be_types += 1;
     }
-    assert_eq!(created_be_types, 49, "all 49 block entity types instantiated");
+    assert_eq!(
+        created_be_types, 49,
+        "all 49 block entity types instantiated"
+    );
 
     // ------------------------------------------------------------------------
     // PHASE 5: Every Single Registered Item (1,500+) — Behavior, Stack Ops,
@@ -1009,11 +1007,9 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         "FrogspawnBlock::on_place must schedule its vanilla tadpole hatch tick"
     );
     // Triggering the scheduled hatch tick pops the frogspawn and spawns 2..=5 tadpoles!
-    BLOCK_BEHAVIORS.get_behavior(&vanilla_blocks::FROGSPAWN).tick(
-        vanilla_blocks::FROGSPAWN.default_state(),
-        &world,
-        spawn_pos,
-    );
+    BLOCK_BEHAVIORS
+        .get_behavior(&vanilla_blocks::FROGSPAWN)
+        .tick(vanilla_blocks::FROGSPAWN.default_state(), &world, spawn_pos);
     assert!(world.get_block_state(spawn_pos).is_air());
     let tadpoles = world.get_entities_in_aabb_matching(
         &WorldAabb::of_size(
@@ -1171,7 +1167,9 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         vanilla_blocks::TRIAL_SPAWNER.default_state(),
         UpdateFlags::UPDATE_ALL,
     );
-    let ts_holder = world.get_block_entity(ts_pos).expect("trial spawner holder");
+    let ts_holder = world
+        .get_block_entity(ts_pos)
+        .expect("trial spawner holder");
     let ts_be = ts_holder
         .downcast_ref::<TrialSpawnerBlockEntity>()
         .expect("trial spawner be");
@@ -1376,7 +1374,12 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         None,
     ));
     bans.ban_address(BanEntry::address(
-        banned_ip, "203.0.113.42", "Spam", "Console", 1_000, None,
+        banned_ip,
+        "203.0.113.42",
+        "Spam",
+        "Console",
+        1_000,
+        None,
     ));
     assert!(bans.is_banned(banned_uuid, 2_000));
     assert!(bans.is_address_banned(banned_ip, 2_000));
@@ -1496,7 +1499,9 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
 
     // Waypoint locator bar streaming between Admin & Guest
     op_packets.lock().clear();
-    world.waypoints.set_icon_color(guest_player.base().uuid(), Some([0xFF, 0x55, 0x00]));
+    world
+        .waypoints
+        .set_icon_color(guest_player.base().uuid(), Some([0xFF, 0x55, 0x00]));
     world.waypoints.tick(&world);
     assert!(
         op_packets
@@ -1563,10 +1568,8 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     op_player.handle_pong(777);
     assert_eq!(op_player.last_pong_id(), Some(777));
 
-    op_player.send_custom_chat_completions(
-        CustomChatCompletionAction::Set,
-        vec!["@team".to_owned()],
-    );
+    op_player
+        .send_custom_chat_completions(CustomChatCompletionAction::Set, vec!["@team".to_owned()]);
     op_player.handle_custom_click_action(SCustomClickAction {
         id: Identifier::vanilla_static("accept_rules"),
         payload: Some(vec![0x01, 0x02]),
@@ -1628,7 +1631,11 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         DVec3::new(0.5, 64.0, 5.5),
         Arc::downgrade(&world),
     ));
-    assert!(world.try_add_entity(Arc::clone(&watched_creaking) as _).is_ok());
+    assert!(
+        world
+            .try_add_entity(Arc::clone(&watched_creaking) as _)
+            .is_ok()
+    );
     assert!(
         watched_creaking.is_observed_by_player(&world),
         "creaking in front of survival player must detect gaze and freeze"
@@ -1642,7 +1649,10 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         !watched_creaking.is_observed_by_player(&world),
         "carved pumpkin helmet must mask player gaze from Creaking"
     );
-    guest_player.inventory.lock().set_item(39, ItemStack::empty());
+    guest_player
+        .inventory
+        .lock()
+        .set_item(39, ItemStack::empty());
     watched_creaking.set_removed(RemovalReason::Discarded);
 
     // End-to-End Command Execution across Console & Operator Player!

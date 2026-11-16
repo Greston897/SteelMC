@@ -285,13 +285,17 @@ impl ZombieVillagerEntity {
             return;
         }
         let villager_data = self.villager_data();
-        let starter = state
-            .starter
-            .and_then(|uuid| self.level().and_then(|world| world.players.get_by_uuid(&uuid)));
+        let starter = state.starter.and_then(|uuid| {
+            self.level()
+                .and_then(|world| world.players.get_by_uuid(&uuid))
+        });
         // Vanilla `ZombieVillager.finishConversion` copies the villager data and
         // the gossip onto the new villager; Steel carries the profession/type/level.
         let copy_villager_data = |mob: &dyn Mob| {
-            if let Some(villager) = mob.as_entity_event_source().downcast_ref::<VillagerEntity>() {
+            if let Some(villager) = mob
+                .as_entity_event_source()
+                .downcast_ref::<VillagerEntity>()
+            {
                 villager.set_villager_data(villager_data);
             }
         };
@@ -398,7 +402,7 @@ impl Mob for ZombieVillagerEntity {
             let stack = inventory.get_item_in_hand(hand);
             stack.copy_with_count(stack.count())
         };
-        if !stack.is(&*vanilla_items::GOLDEN_APPLE) {
+        if !stack.is(&vanilla_items::GOLDEN_APPLE) {
             return InteractionResult::Pass;
         }
         if !self.has_mob_effect(vanilla_mob_effects::WEAKNESS) {

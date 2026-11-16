@@ -208,7 +208,8 @@ mod tests {
                 5,    // z
                 12,   // rotation
                 0,    // no display name
-                2, 1, 3, 4, // MapPatch: width (>0 acts as discriminator), height, startX, startY
+                2, 1, 3,
+                4, // MapPatch: width (>0 acts as discriminator), height, startX, startY
                 2, // VarInt color count
                 0x2A, 0x0B,
             ]

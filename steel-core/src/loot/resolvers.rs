@@ -55,7 +55,7 @@ impl StorageResolver for WorldStorageResolver<'_> {
         // Vanilla evaluates the provider path as a full NBT path, so list
         // indices and filters behave like `/data get`.
         let parsed = steel_utils::nbt::parse_nbt_path(path).ok()?;
-        let tag = NbtTag::Compound(contents.clone());
+        let tag = NbtTag::Compound(contents);
         // Vanilla only accepts a single numeric result; a path matching several
         // tags or none yields zero.
         match parsed.get(&tag).as_slice() {

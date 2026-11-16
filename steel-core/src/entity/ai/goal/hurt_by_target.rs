@@ -9,7 +9,6 @@ use crate::entity::{PathfinderMob, SharedEntity};
 const HURT_BY_UNSEEN_MEMORY_TICKS: i32 = 300;
 const ALERT_RANGE_Y: f64 = 10.0;
 
-
 pub(crate) struct HurtByTargetGoal {
     target_goal: TargetGoalBase,
     targeting: TargetingConditions,

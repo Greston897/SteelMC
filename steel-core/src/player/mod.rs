@@ -32,10 +32,10 @@ pub mod stats_counter;
 mod tick_state;
 mod title;
 
+use crate::block_entity::BlockEntity as _;
 use crate::player::player_inventory::Prediction;
 use crate::player::recipe_placement::{PlacementOutcome, PostPlaceAction};
 pub use abilities::{Abilities, DEFAULT_FLYING_SPEED};
-pub use post_effects::PlayerPostEffects;
 use chat::ChatState;
 pub use chat::{LastSeen, LastSeenMessagesValidator, MessageCache};
 use connection::NetworkConnection as _;
@@ -48,11 +48,12 @@ use health_sync::HealthSyncState;
 use item_cooldowns::ItemCooldowns;
 use lifecycle::PlayerLifecycleState;
 pub use lifecycle::PlayerRespawnConfig;
-pub(crate) use lifecycle::resolve_personal_respawn_for_world_change;
 pub(crate) use lifecycle::ResetReason;
+pub(crate) use lifecycle::resolve_personal_respawn_for_world_change;
 pub use movement::PlayerInput;
 use movement::{MovementState, TeleportState};
 use permissions::PlayerPermissionState;
+pub use post_effects::PlayerPostEffects;
 pub(crate) use profile::{GAME_PROFILE_CACHE_LIMIT, KnownPlayerNameLookup, lookup_online_profile};
 pub use profile::{
     GameProfile, KnownPlayer, KnownPlayers, ProfileLookupError, is_valid_player_name, offline_uuid,
@@ -67,19 +68,16 @@ use std::sync::{Arc, LazyLock, Weak};
 use std::time::{Duration, Instant};
 use steel_math::RAD_TO_DEG_F64;
 use steel_protocol::packets::game::{
-    CEntityEvent, CHurtAnimation, CPlayerCombatEnd, CPlayerCombatEnter, CPlayerCombatKill,
-    CPlayerLookAt, CPlayerRotation, CRespawn, CTagQuery,
-    CPlaceGhostRecipe, CSetChunkCacheRadius, CSetDefaultSpawnPosition, CSetHealth, CSetHeldSlot,
-    CSetPassengers, CSetSimulationDistance,
-    ClientCommandAction,
-    LookAtAnchor, RelativeMovement, SRecipeBookChangeSettings, SRecipeBookSeenRecipe,
-    SLockDifficulty, SBlockEntityTagQuery, SEntityTagQuery, SJigsawGenerate, SPlaceRecipe,
-    SSetCommandBlock,
-    SSetCommandMinecart, SSetGameRule, SSetJigsawBlock, SSetStructureBlock, SSetTestBlock,
-    SDebugSubscriptionRequest, STeleportToEntity, STestInstanceBlockAction, SoundSource,
+    CEntityEvent, CHurtAnimation, CPlaceGhostRecipe, CPlayerCombatEnd, CPlayerCombatEnter,
+    CPlayerCombatKill, CPlayerLookAt, CPlayerRotation, CRespawn, CSetChunkCacheRadius,
+    CSetDefaultSpawnPosition, CSetHealth, CSetHeldSlot, CSetPassengers, CSetSimulationDistance,
+    CTagQuery, ClientCommandAction, LookAtAnchor, RelativeMovement, SBlockEntityTagQuery,
+    SDebugSubscriptionRequest, SEntityTagQuery, SJigsawGenerate, SLockDifficulty, SPlaceRecipe,
+    SRecipeBookChangeSettings, SRecipeBookSeenRecipe, SSetCommandBlock, SSetCommandMinecart,
+    SSetGameRule, SSetJigsawBlock, SSetStructureBlock, SSetTestBlock, STeleportToEntity,
+    STestInstanceBlockAction, SoundSource,
 };
 use steel_protocol::packets::game::{CLevelEvent, CSetEntityData, CSetExperience};
-use crate::block_entity::BlockEntity as _;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_data::{EntityPose, HumanoidArm, ParticleList};
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
@@ -162,9 +160,7 @@ use steel_registry::damage_type::DeathMessageType;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::stat::vanilla_stat_types;
-use steel_utils::{
-    BlockPos, BlockStateId, ChunkPos, DowncastType, DowncastTypeKey, UuidExt as _,
-};
+use steel_utils::{BlockPos, BlockStateId, ChunkPos, DowncastType, DowncastTypeKey, UuidExt as _};
 
 use crate::inventory::container::Container;
 
@@ -309,7 +305,10 @@ pub struct Player {
 
     /// Cookie keys requested by the server (`CCookieRequest`) awaiting a single
     /// client `SCookieResponse`, plus the latest verified cookie values received.
-    cookie_state: SyncMutex<(rustc_hash::FxHashSet<Identifier>, rustc_hash::FxHashMap<Identifier, Option<Vec<u8>>>)>,
+    cookie_state: SyncMutex<(
+        rustc_hash::FxHashSet<Identifier>,
+        rustc_hash::FxHashMap<Identifier, Option<Vec<u8>>>,
+    )>,
 
     /// Whether the server has sent `CStartConfiguration` and is awaiting the
     /// client's `SConfigurationAcknowledged` packet.
@@ -1370,9 +1369,8 @@ impl Player {
         let old_mode = command_block.mode();
         let current_state = world.get_block_state(packet.pos);
         let facing: steel_utils::Direction = current_state.get_value(&BlockStateProperties::FACING);
-        let new_mode = crate::block_entity::entities::CommandBlockMode::from_packet_ordinal(
-            packet.mode,
-        );
+        let new_mode =
+            crate::block_entity::entities::CommandBlockMode::from_packet_ordinal(packet.mode);
         let base_block = match new_mode {
             crate::block_entity::entities::CommandBlockMode::Sequence => {
                 &vanilla_blocks::CHAIN_COMMAND_BLOCK
@@ -1408,7 +1406,8 @@ impl Player {
         // Vanilla answers with `advMode.setCommand.success` (or `.disabled` when
         // command blocks are switched off) once the command is not empty.
         if !packet.command.trim().is_empty() {
-            let works = world.get_game_rule(&steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK);
+            let works =
+                world.get_game_rule(&steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK);
             // `advMode.setCommand.success` / `.disabled`, both take the command.
             let message = if works {
                 translations::ADV_MODE_SET_COMMAND_SUCCESS.message([packet.command.clone()])
@@ -1440,8 +1439,8 @@ impl Player {
         let Some(entity) = world.get_entity_by_id(packet.entity_id) else {
             return;
         };
-        let Some(minecart) = entity
-            .downcast_ref::<crate::entity::entities::CommandBlockMinecartEntity>()
+        let Some(minecart) =
+            entity.downcast_ref::<crate::entity::entities::CommandBlockMinecartEntity>()
         else {
             return;
         };
@@ -1483,8 +1482,8 @@ impl Player {
         let Some(block_entity) = world.get_block_entity(packet.pos) else {
             return;
         };
-        let Some(structure) = block_entity
-            .downcast_ref::<crate::block_entity::entities::StructureBlockEntity>()
+        let Some(structure) =
+            block_entity.downcast_ref::<crate::block_entity::entities::StructureBlockEntity>()
         else {
             return;
         };
@@ -1514,7 +1513,7 @@ impl Player {
         if !structure.has_structure_name() {
             self.send_message(
                 &translations::STRUCTURE_BLOCK_INVALID_STRUCTURE_NAME
-                    .message([packet.name.clone()])
+                    .message([packet.name])
                     .component(),
             );
             return;
@@ -1644,13 +1643,15 @@ impl Player {
 
         let display = steel_registry::recipe::display_for_recipe(recipe)?;
         let recipe_size = match &display {
-            steel_registry::slot_display::RecipeDisplay::CraftingShaped { width, height, .. } => (
+            steel_registry::slot_display::RecipeDisplay::CraftingShaped {
+                width, height, ..
+            } => (
                 usize::try_from(*width).unwrap_or(0),
                 usize::try_from(*height).unwrap_or(0),
             ),
-            steel_registry::slot_display::RecipeDisplay::CraftingShapeless { ingredients, .. } => {
-                (ingredients.len(), 1)
-            }
+            steel_registry::slot_display::RecipeDisplay::CraftingShapeless {
+                ingredients, ..
+            } => (ingredients.len(), 1),
             steel_registry::slot_display::RecipeDisplay::Furnace { .. } => (1, 1),
             _ => return None,
         };
@@ -1690,8 +1691,8 @@ impl Player {
         let Some(block_entity) = world.get_block_entity(packet.pos) else {
             return;
         };
-        let Some(test_instance) = block_entity
-            .downcast_ref::<crate::block_entity::entities::TestInstanceBlockEntity>()
+        let Some(test_instance) =
+            block_entity.downcast_ref::<crate::block_entity::entities::TestInstanceBlockEntity>()
         else {
             return;
         };
@@ -1799,10 +1800,7 @@ impl Player {
     /// Vanilla `ServerCommonPacketListenerImpl.handleCookieResponse`: accepts a cookie
     /// reply if and only if the server previously requested that key; disconnects on
     /// unsolicited responses.
-    pub fn handle_cookie_response(
-        &self,
-        packet: steel_protocol::packets::game::SCookieResponse,
-    ) {
+    pub fn handle_cookie_response(&self, packet: steel_protocol::packets::game::SCookieResponse) {
         let accepted = {
             let mut state = self.cookie_state.lock();
             if state.0.remove(&packet.key) {
@@ -1813,9 +1811,7 @@ impl Player {
             }
         };
         if !accepted {
-            self.disconnect(
-                translations::MULTIPLAYER_DISCONNECT_UNEXPECTED_QUERY_RESPONSE.msg(),
-            );
+            self.disconnect(translations::MULTIPLAYER_DISCONNECT_UNEXPECTED_QUERY_RESPONSE.msg());
         }
     }
 
@@ -1827,7 +1823,8 @@ impl Player {
 
     /// Initiates a Play → Configuration phase switch (`ClientboundStartConfigurationPacket`).
     pub fn start_configuration(&self) {
-        self.awaiting_configuration_ack.store(true, Ordering::Release);
+        self.awaiting_configuration_ack
+            .store(true, Ordering::Release);
         self.send_packet(steel_protocol::packets::game::CStartConfiguration {});
     }
 
@@ -1839,7 +1836,10 @@ impl Player {
 
     /// Handles `ServerboundConfigurationAcknowledgedPacket`.
     pub fn handle_configuration_acknowledged(&self) {
-        if !self.awaiting_configuration_ack.swap(false, Ordering::AcqRel) {
+        if !self
+            .awaiting_configuration_ack
+            .swap(false, Ordering::AcqRel)
+        {
             log::debug!(
                 "Player {} sent unexpected SConfigurationAcknowledged",
                 self.gameprofile.name()
@@ -1870,10 +1870,7 @@ impl Player {
         action: steel_protocol::packets::game::CustomChatCompletionAction,
         entries: Vec<String>,
     ) {
-        self.send_packet(steel_protocol::packets::game::CCustomChatCompletions {
-            action,
-            entries,
-        });
+        self.send_packet(steel_protocol::packets::game::CCustomChatCompletions { action, entries });
     }
 
     /// Handles `ServerboundCustomClickActionPacket` (vanilla `MinecraftServer.handleCustomClickAction`).
@@ -1909,8 +1906,8 @@ impl Player {
         let Some(block_entity) = world.get_block_entity(packet.pos) else {
             return;
         };
-        let Some(jigsaw) = block_entity
-            .downcast_ref::<crate::block_entity::entities::JigsawBlockEntity>()
+        let Some(jigsaw) =
+            block_entity.downcast_ref::<crate::block_entity::entities::JigsawBlockEntity>()
         else {
             return;
         };
@@ -1970,8 +1967,8 @@ impl Player {
         let Some(block_entity) = world.get_block_entity(packet.pos) else {
             return;
         };
-        let Some(test_block) = block_entity
-            .downcast_ref::<crate::block_entity::entities::TestBlockEntity>()
+        let Some(test_block) =
+            block_entity.downcast_ref::<crate::block_entity::entities::TestBlockEntity>()
         else {
             return;
         };
@@ -2032,15 +2029,13 @@ impl Player {
         let Some(world) = Entity::level(self) else {
             return;
         };
-        let tag = world
-            .get_entity_by_id(packet.entity_id)
-            .map(|entity| {
-                // Vanilla `Entity.saveWithoutMetadata`: the type-specific NBT
-                // with the entity `id` but without the world position metadata.
-                let mut nbt = entity.nbt_for_data_compare();
-                nbt.insert("id", entity.entity_type().key.to_string());
-                nbt
-            });
+        let tag = world.get_entity_by_id(packet.entity_id).map(|entity| {
+            // Vanilla `Entity.saveWithoutMetadata`: the type-specific NBT
+            // with the entity `id` but without the world position metadata.
+            let mut nbt = entity.nbt_for_data_compare();
+            nbt.insert("id", entity.entity_type().key.to_string());
+            nbt
+        });
         self.send_packet(CTagQuery {
             transaction_id: packet.transaction_id,
             tag: steel_utils::serial::OptionalNbt(tag),
@@ -2378,7 +2373,6 @@ impl Player {
     pub(crate) fn try_server(&self) -> Option<Arc<Server>> {
         self.server.upgrade()
     }
-
 
     /// Returns the identity of the player's current continuous domain stay.
     pub(crate) fn domain_residence_token(&self) -> DomainResidenceToken {
@@ -3294,10 +3288,8 @@ impl LivingEntity for Player {
             // registered `location` predicates against the player's new position.
             let location_context = {
                 let position = self.position();
-                let mut context = crate::player::advancement::predicate::TriggerContext::at(
-                    &world,
-                    glam::DVec3::from(position),
-                );
+                let mut context =
+                    crate::player::advancement::predicate::TriggerContext::at(&world, position);
                 context.player_sneaking = Some(self.is_discrete());
                 context
             };

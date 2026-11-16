@@ -79,10 +79,7 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
                 .then(argument("id", ArgumentType::greedy_string()).executes(remove_bar)),
         )
         .then(literal("list").executes(list_bars))
-        .then(
-            literal("get")
-                .then(argument("id", ArgumentType::greedy_string()).executes(get_bar)),
-        );
+        .then(literal("get").then(argument("id", ArgumentType::greedy_string()).executes(get_bar)));
 
     body = body.then(set_commands());
 
@@ -90,22 +87,19 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
 }
 
 fn set_commands() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    let name = literal("name").then(
-        argument("name", SteelArgumentType::component()).executes(set_name),
-    );
+    let name =
+        literal("name").then(argument("name", SteelArgumentType::component()).executes(set_name));
 
     let mut color = literal("color");
     for value in COLORS {
-        color = color.then(
-            literal(color_name(value)).executes(move |context| set_color(context, value)),
-        );
+        color = color
+            .then(literal(color_name(value)).executes(move |context| set_color(context, value)));
     }
 
     let mut style = literal("style");
     for value in OVERLAYS {
-        style = style.then(
-            literal(overlay_name(value)).executes(move |context| set_style(context, value)),
-        );
+        style = style
+            .then(literal(overlay_name(value)).executes(move |context| set_style(context, value)));
     }
 
     let value = literal("value")

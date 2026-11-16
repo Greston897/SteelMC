@@ -19,15 +19,15 @@ use std::sync::Arc;
 
 use glam::DVec3;
 
+use crate::entity::Entity as _;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
 use crate::entity::spawn_entity;
-use crate::entity::Entity as _;
 use crate::player::Player;
 use crate::world::{LevelReader, World};
-use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::RegistryExt as _;
-use steel_registry::{REGISTRY, entity_type::EntityTypeRef, vanilla_game_rules};
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::vanilla_custom_stats;
+use steel_registry::{REGISTRY, entity_type::EntityTypeRef, vanilla_game_rules};
 use steel_utils::{BlockPos, Identifier, types::Difficulty};
 
 /// Vanilla `PhantomSpawner.nextTick`: the delay is `60 + nextInt(60)` seconds.
@@ -128,8 +128,7 @@ fn phantom_candidate(player: &Player, world: &Arc<World>) -> bool {
             return false;
         }
     }
-    let time_since_rest =
-        player.custom_stat(&vanilla_custom_stats::TIME_SINCE_REST);
+    let time_since_rest = player.custom_stat(&vanilla_custom_stats::TIME_SINCE_REST);
     time_since_rest > 0 && rand::random_range(0..time_since_rest) >= INSOMNIA_THRESHOLD_TICKS
 }
 

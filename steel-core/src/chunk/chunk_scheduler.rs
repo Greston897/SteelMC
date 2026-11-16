@@ -290,10 +290,7 @@ impl ChunkSchedulingCoordinator {
     /// the query that makes the flag observable.
     #[must_use]
     pub(crate) fn dimension_kept_active(&self) -> bool {
-        self.ticket_ingress
-            .lock()
-            .storage
-            .keeps_dimension_active()
+        self.ticket_ingress.lock().storage.keeps_dimension_active()
     }
 
     pub fn new(

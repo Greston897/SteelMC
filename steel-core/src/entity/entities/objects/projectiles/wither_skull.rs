@@ -21,8 +21,8 @@ use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::damage::DamageSource;
 use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, MobEffectInstance, Projectile,
-    ProjectileBase, ProjectileHit, RemovalReason, SharedEntity, ThrowableProjectile,
+    Entity, EntityBase, EntityBaseLoad, MobEffectInstance, Projectile, ProjectileBase,
+    ProjectileHit, RemovalReason, SharedEntity, ThrowableProjectile,
 };
 use crate::world::World;
 use crate::world::explosion::{ExplosionInteraction, ExplosionOptions};
@@ -39,7 +39,7 @@ pub const WITHER_SKULL_WITHER_TICKS: i32 = 200;
 /// Vanilla `WitherSkull` wither amplifier: wither II.
 pub const WITHER_SKULL_WITHER_AMPLIFIER: i32 = 1;
 
-/// A WitherSkull projectile.
+/// A `WitherSkull` projectile.
 #[entity_behavior(class = "WitherSkull")]
 pub struct WitherSkullEntity {
     base: EntityBase,
@@ -53,7 +53,7 @@ unsafe impl DowncastType for WitherSkullEntity {
 }
 
 impl WitherSkullEntity {
-    /// Creates a new wither_skull with no owner.
+    /// Creates a new `wither_skull` with no owner.
     #[must_use]
     pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {
         Self {
@@ -63,7 +63,7 @@ impl WitherSkullEntity {
         }
     }
 
-    /// Creates a wither_skull from saved base data.
+    /// Creates a `wither_skull` from saved base data.
     #[must_use]
     pub fn from_saved(entity_type: EntityTypeRef, load: EntityBaseLoad) -> Self {
         Self {
@@ -96,7 +96,6 @@ impl WitherSkullEntity {
         options.damage_source = Some(self.impact_damage_source());
         world.explode(options);
     }
-
 }
 
 impl Entity for WitherSkullEntity {
@@ -139,7 +138,6 @@ impl Entity for WitherSkullEntity {
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_projectile(nbt);
     }
-
 }
 
 impl Projectile for WitherSkullEntity {

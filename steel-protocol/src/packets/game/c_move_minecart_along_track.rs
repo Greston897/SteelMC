@@ -62,10 +62,7 @@ impl WriteTo for CMoveMinecartAlongTrack {
     }
 }
 
-fn write_position(
-    writer: &mut impl std::io::Write,
-    value: glam::DVec3,
-) -> std::io::Result<()> {
+fn write_position(writer: &mut impl std::io::Write, value: glam::DVec3) -> std::io::Result<()> {
     value.x.write(writer)?;
     value.y.write(writer)?;
     value.z.write(writer)?;

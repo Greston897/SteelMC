@@ -3,11 +3,11 @@ use std::sync::Arc;
 use super::{
     ATTACK_RANGE_BUFFER, CSetEntityMotion, ClipBlockShape, ClipFluid, DVec3, DamageSource,
     DamageType, ENTITY_INTERACTION_RANGE_BUFFER, EnchantmentDamageContext,
-    EnchantmentPostAttackContext, Entity, EntityTypeRef, GameType, ITEM_BEHAVIORS, InteractionHand,
-    InteractionResult, InventoryAccess, ItemStack, LivingEntity, PiercingWeapon, Player, SAttack,
-    Identifier, SInteract, SharedEntity, SoundEventHolder, TextComponent,
-    TranslatedMessage, World, WorldAabb, enchantment_helper, piercing_ray_hit_t,
-    vanilla_attributes, vanilla_damage_types, vanilla_entities,
+    EnchantmentPostAttackContext, Entity, EntityTypeRef, GameType, ITEM_BEHAVIORS, Identifier,
+    InteractionHand, InteractionResult, InventoryAccess, ItemStack, LivingEntity, PiercingWeapon,
+    Player, SAttack, SInteract, SharedEntity, SoundEventHolder, TextComponent, TranslatedMessage,
+    World, WorldAabb, enchantment_helper, piercing_ray_hit_t, vanilla_attributes,
+    vanilla_damage_types, vanilla_entities,
 };
 
 use crate::player::food_data::food_constants;
@@ -397,7 +397,8 @@ impl Player {
     fn cannot_attack(self: &Arc<Self>, entity: &dyn Entity) -> bool {
         // Vanilla `Player.attack` refuses to hurt another player when the `pvp`
         // game rule is off; mobs stay attackable either way.
-        if entity.as_player().is_some() && !self.get_world().get_game_rule(&vanilla_game_rules::PVP) {
+        if entity.as_player().is_some() && !self.get_world().get_game_rule(&vanilla_game_rules::PVP)
+        {
             return true;
         }
         !entity.attackable()
@@ -429,9 +430,7 @@ impl Player {
         };
         // Vanilla `Player.attack`: while a riptide spin is active the base damage
         // is `autoSpinAttackDmg` (8.0) rather than the ATTACK_DAMAGE attribute.
-        let attack_damage = self
-            .riptide_spin_damage()
-            .unwrap_or(attack_damage);
+        let attack_damage = self.riptide_spin_damage().unwrap_or(attack_damage);
         let attack_strength_delay = Self::attack_strength_delay_from_speed(attack_speed);
         let attack_strength_scale =
             self.attack_strength_scale_for_delay(0.5, attack_strength_delay);
@@ -471,7 +470,11 @@ impl Player {
             && !self.is_in_lava()
             && !self.is_passenger()
             && !self.is_sprinting();
-        let damage = if critical { total_damage * 1.5 } else { total_damage };
+        let damage = if critical {
+            total_damage * 1.5
+        } else {
+            total_damage
+        };
 
         let sound = if critical {
             Some(&sound_events::ENTITY_PLAYER_ATTACK_CRIT)
@@ -562,8 +565,11 @@ impl Player {
         const SWEEP_RANGE_RATIO_PER_LEVEL: f64 = 1.0;
         const SWEEP_KNOCKBACK: f64 = 0.4;
 
-        let sweeping_level =
-            f64::from(attacking_item.get_enchantment_level(&Self::SWEEPING_EDGE_ID).max(0));
+        let sweeping_level = f64::from(
+            attacking_item
+                .get_enchantment_level(&Self::SWEEPING_EDGE_ID)
+                .max(0),
+        );
         let sweeping_damage_ratio = sweeping_level * SWEEP_DAMAGE_RATIO_PER_LEVEL;
         let sweep_radius = SWEEP_RANGE + sweeping_level * SWEEP_RANGE_RATIO_PER_LEVEL;
 
@@ -870,10 +876,9 @@ impl Player {
         // Vanilla `ServerPlayerGameMode.interact` fires `player_interacted_with_entity`
         // for a successful interaction, carrying both the entity and the held item.
         if result.consumes_action() {
-            let context = crate::player::advancement::predicate::TriggerContext::entity(
-                &target_type,
-            )
-            .with_item(&hand_item);
+            let context =
+                crate::player::advancement::predicate::TriggerContext::entity(&target_type)
+                    .with_item(&hand_item);
             self.trigger_advancement_with_context(
                 &steel_registry::vanilla_criteria_triggers::PLAYER_INTERACTED_WITH_ENTITY,
                 &context,

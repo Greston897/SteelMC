@@ -55,8 +55,7 @@ impl ShelfBlockEntity {
         let container = Arc::new(SyncMutex::new(ShelfContainer {
             items: vec![ItemStack::empty(); SHELF_SLOTS],
         }));
-        let shared_container: SharedContainer =
-            Arc::<SyncMutex<ShelfContainer>>::clone(&container);
+        let shared_container: SharedContainer = Arc::<SyncMutex<ShelfContainer>>::clone(&container);
         Self {
             container_ref: ContainerRef::owned_by_block_entity(shared_container, Arc::clone(&base)),
             base,

@@ -43,8 +43,7 @@ impl PermissionGroupStore for ReloadingStore {
 
     fn load_groups(
         &self,
-    ) -> BoxFuture<'static, Result<Option<PermissionGroupsConfig>, PermissionGroupStoreError>>
-    {
+    ) -> BoxFuture<'static, Result<Option<PermissionGroupsConfig>, PermissionGroupStoreError>> {
         let next = Arc::clone(&self.next);
         Box::pin(async move { Ok(next.lock().clone()) })
     }

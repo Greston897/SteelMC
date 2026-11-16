@@ -105,7 +105,7 @@ impl CrossbowItem {
     /// Vanilla `CrossbowItem#getShotVelocity`.
     #[must_use]
     pub fn shot_velocity(projectile: &ItemStack) -> f32 {
-        if projectile.is(&*vanilla_items::FIREWORK_ROCKET) {
+        if projectile.is(&vanilla_items::FIREWORK_ROCKET) {
             FIREWORK_SHOT_VELOCITY
         } else {
             ARROW_SHOT_VELOCITY
@@ -131,7 +131,7 @@ impl CrossbowItem {
                     inventory
                         .get_items()
                         .iter()
-                        .position(|candidate| candidate.is(&*vanilla_items::FIREWORK_ROCKET))
+                        .position(|candidate| candidate.is(&vanilla_items::FIREWORK_ROCKET))
                 })
             else {
                 return false;
@@ -199,7 +199,7 @@ impl CrossbowItem {
             let (yaw, pitch) = shooter.rotation();
             let velocity = Self::shot_velocity(projectile);
 
-            if projectile.is(&*vanilla_items::FIREWORK_ROCKET) {
+            if projectile.is(&vanilla_items::FIREWORK_ROCKET) {
                 let rocket = FireworkRocketEntity::launched(
                     &vanilla_entities::FIREWORK_ROCKET,
                     next_entity_id(),
@@ -220,7 +220,7 @@ impl CrossbowItem {
                 continue;
             }
 
-            if projectile.is(&*vanilla_items::SPECTRAL_ARROW) {
+            if projectile.is(&vanilla_items::SPECTRAL_ARROW) {
                 let arrow = SpectralArrowItem::create_arrow(
                     projectile,
                     position,

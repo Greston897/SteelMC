@@ -14,13 +14,9 @@ use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
-use steel_registry::blocks::properties::{
-    BlockStateProperties, VaultState as VaultBlockState,
-};
+use steel_registry::blocks::properties::{BlockStateProperties, VaultState as VaultBlockState};
 use steel_registry::item_stack::ItemStack;
-use steel_registry::{
-    REGISTRY, sound_events, vanilla_block_entity_types, vanilla_items,
-};
+use steel_registry::{REGISTRY, sound_events, vanilla_block_entity_types, vanilla_items};
 use steel_utils::types::UpdateFlags;
 use steel_utils::{
     BlockPos, BlockStateId, DowncastType, DowncastTypeKey, Identifier, locks::SyncMutex,
@@ -286,7 +282,9 @@ impl VaultBlockEntity {
 
 fn uuid_to_int_array(uuid: u128) -> Vec<i32> {
     uuid.to_be_bytes()
-        .chunks_exact(4)
+        .as_chunks::<4>()
+        .0
+        .iter()
         .map(|chunk| i32::from_be_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
         .collect()
 }
@@ -352,8 +350,7 @@ impl BlockEntity for VaultBlockEntity {
         state.loot_table = view
             .string("loot_table")
             .or_else(|| view.compound("config").and_then(|c| c.string("loot_table")))
-            .map(|value| value.to_str().to_string())
-            .unwrap_or_default();
+            .map_or_default(|value| value.to_str().to_string());
         state.display_item = view
             .string("display_item")
             .map(|value| value.to_str().to_string())

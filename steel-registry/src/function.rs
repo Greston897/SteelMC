@@ -64,7 +64,11 @@ impl FunctionRegistry {
     /// `namespace:path` form and a bare `path` in the default namespace.
     #[must_use]
     pub fn by_name(&self, name: &str) -> Option<FunctionRef> {
-        if let Some(key) = self.functions_by_key.keys().find(|key| key.to_string() == name) {
+        if let Some(key) = self
+            .functions_by_key
+            .keys()
+            .find(|key| key.to_string() == name)
+        {
             return self.functions_by_key.get(key).copied();
         }
         let (namespace, path) = name.split_once(':').unwrap_or(("minecraft", name));

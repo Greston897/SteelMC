@@ -40,7 +40,7 @@ impl MountInventory {
 
     /// Returns the connection-facing container, which the menu reads.
     #[must_use]
-    pub fn container(&self) -> &Shared<SimpleContainer> {
+    pub const fn container(&self) -> &Shared<SimpleContainer> {
         &self.container
     }
 
@@ -76,7 +76,11 @@ impl MountInventory {
     /// The saddle currently in the saddle slot, if any.
     #[must_use]
     pub fn saddle(&self) -> Option<ItemStack> {
-        let stack = self.container.lock().get_item(mount_menu::SLOT_SADDLE).clone();
+        let stack = self
+            .container
+            .lock()
+            .get_item(mount_menu::SLOT_SADDLE)
+            .clone();
         (!stack.is_empty()).then_some(stack)
     }
 
@@ -131,7 +135,7 @@ pub const fn chested_columns(has_chest: bool) -> usize {
 /// Vanilla `LivingEntity.isEquippableInSlot(stack, EquipmentSlot.SADDLE)`.
 #[must_use]
 pub fn is_saddle(stack: &ItemStack) -> bool {
-    stack.is(&*vanilla_items::SADDLE)
+    stack.is(&vanilla_items::SADDLE)
 }
 
 /// Vanilla `AbstractHorse.openCustomInventoryScreen`.
@@ -201,13 +205,10 @@ mod tests {
     #[test]
     fn resizing_keeps_the_saddle() {
         let mut inventory = MountInventory::new(1);
-        inventory
-            .container
-            .lock()
-            .set_item(
-                mount_menu::SLOT_SADDLE,
-                ItemStack::new(&vanilla_items::SADDLE),
-            );
+        inventory.container.lock().set_item(
+            mount_menu::SLOT_SADDLE,
+            ItemStack::new(&vanilla_items::SADDLE),
+        );
 
         inventory.resize(5);
 

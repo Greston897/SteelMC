@@ -78,7 +78,7 @@ impl RaidManager {
 
     /// Creates a manager over raids loaded from disk.
     #[must_use]
-    pub fn from_raids(raids: Vec<Raid>) -> Self {
+    pub const fn from_raids(raids: Vec<Raid>) -> Self {
         Self {
             raids: SyncMutex::new(raids),
         }

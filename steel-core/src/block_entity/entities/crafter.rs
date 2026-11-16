@@ -4,34 +4,32 @@
 //! mask, a trigger count used by the `triggered` block state, and a crafting
 //! ticker that runs every game tick.
 
-use std::{
-    sync::{Arc, Weak},
-};
+use std::sync::{Arc, Weak};
 
+use glam::DVec3;
 use simdnbt::ToNbtTag;
-use uuid::Uuid;
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
-use glam::DVec3;
 use steel_registry::REGISTRY;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{
     BlockStateProperties, BoolProperty, Direction, FrontAndTop,
 };
-use steel_registry::item_stack::ItemStack;
-use steel_registry::recipe::{CraftingInput, vanilla_recipe_types};
 use steel_registry::data_components::{
     DataComponentMap, SeededContainerLoot, vanilla_components::CONTAINER_LOOT,
 };
+use steel_registry::item_stack::ItemStack;
+use steel_registry::recipe::{CraftingInput, vanilla_recipe_types};
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
+use uuid::Uuid;
 
 use crate::block_entity::randomizable_container::RandomizableContainer;
 use crate::block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter};
-use crate::inventory::recipe_manager;
 use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerRef, SharedContainer};
+use crate::inventory::recipe_manager;
 use crate::world::World;
 
 /// Number of slots in the crafter grid.
@@ -343,11 +341,7 @@ impl CrafterBlockEntity {
     /// Vanilla `CraftingRecipe.eject` as used by the crafter: pushes the
     /// assembled stack out of the block's facing side and returns the position
     /// the item was dropped at.
-    pub(crate) fn eject(
-        &self,
-        world: &Arc<World>,
-        stack: ItemStack,
-    ) -> Option<BlockPos> {
+    pub(crate) fn eject(&self, world: &Arc<World>, stack: ItemStack) -> Option<BlockPos> {
         let pos = self.get_block_pos();
         let (dx, dy, dz) = self.state_facing().offset();
         // Just outside the front face, matching vanilla's
@@ -359,7 +353,11 @@ impl CrafterBlockEntity {
         );
         // The crafter pushes the item in the facing direction instead of
         // dropping it straight down.
-        let velocity = DVec3::new(f64::from(dx) * 0.25, f64::from(dy) * 0.25, f64::from(dz) * 0.25);
+        let velocity = DVec3::new(
+            f64::from(dx) * 0.25,
+            f64::from(dy) * 0.25,
+            f64::from(dz) * 0.25,
+        );
         world.spawn_item_with_velocity(drop_pos, stack, velocity)?;
         Some(pos)
     }
@@ -595,12 +593,10 @@ mod tests {
     #[test]
     fn the_front_face_follows_the_orientation_property() {
         init_vanilla_registry();
-        let state = vanilla_blocks::CRAFTER
-            .default_state()
-            .set_value(
-                &BlockStateProperties::ORIENTATION,
-                FrontAndTop::from_front_and_top(Direction::West),
-            );
+        let state = vanilla_blocks::CRAFTER.default_state().set_value(
+            &BlockStateProperties::ORIENTATION,
+            FrontAndTop::from_front_and_top(Direction::West),
+        );
         assert_eq!(
             state.get_value(&BlockStateProperties::ORIENTATION).front(),
             Direction::West,

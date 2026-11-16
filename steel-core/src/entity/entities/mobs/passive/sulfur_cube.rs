@@ -21,8 +21,8 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    BreedGoal, FloatGoal, FollowParentGoal,
-    LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
+    WaterAvoidingRandomStrollGoal,
 };
 
 use crate::entity::damage::DamageSource;
@@ -37,7 +37,7 @@ use crate::world::World;
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
 
 #[entity_behavior(class = "SulfurCube", spawn_rule)]
-/// Vanilla sulfur_cube entity.
+/// Vanilla `sulfur_cube` entity.
 pub struct SulfurCubeEntity {
     base: EntityBase,
     entity_type: EntityTypeRef,
@@ -59,7 +59,7 @@ impl SulfurCubeEntity {
         <Self as Animal>::check_animal_spawn_rules(entity_type, level, spawn_reason, pos, random)
     };
 
-    /// Creates a new sulfur_cube at runtime.
+    /// Creates a new `sulfur_cube` at runtime.
     #[must_use]
     pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {
         Self::new_with_base(
@@ -68,7 +68,7 @@ impl SulfurCubeEntity {
         )
     }
 
-    /// Reconstructs a sulfur_cube from persisted base entity state.
+    /// Reconstructs a `sulfur_cube` from persisted base entity state.
     #[must_use]
     pub fn from_saved(entity_type: EntityTypeRef, load: EntityBaseLoad) -> Self {
         Self::new_with_base(
@@ -205,7 +205,6 @@ impl Entity for SulfurCubeEntity {
         self.load_mob(nbt);
         self.load_ageable_mob(nbt);
         self.load_animal(nbt);
-
     }
 }
 
@@ -277,7 +276,6 @@ impl AgeableMob for SulfurCubeEntity {
     fn age_boundary_changed(&self, _baby: bool) {
         self.refresh_dimensions();
     }
-
 }
 
 impl Animal for SulfurCubeEntity {
@@ -319,4 +317,3 @@ impl Mob for SulfurCubeEntity {
 }
 
 impl PathfinderMob for SulfurCubeEntity {}
-

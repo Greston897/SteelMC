@@ -1,8 +1,6 @@
-use std::{
-    sync::{
-        Arc, Weak,
-        atomic::{AtomicI32, Ordering},
-    },
+use std::sync::{
+    Arc, Weak,
+    atomic::{AtomicI32, Ordering},
 };
 
 use glam::DVec3;

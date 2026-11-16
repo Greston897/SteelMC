@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use steel_registry::{sound_events, vanilla_damage_types, vanilla_particle_types};
 use steel_registry::particle_type::ParticleData;
 use steel_registry::sound_event::SoundEventHolder;
+use steel_registry::{sound_events, vanilla_damage_types, vanilla_particle_types};
 
 use super::MobEffectBehavior;
 use crate::entity::LivingEntity;

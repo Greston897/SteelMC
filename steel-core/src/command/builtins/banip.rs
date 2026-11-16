@@ -23,32 +23,31 @@ const ADDRESS_ARGUMENT: &str = "address";
 const REASON_ARGUMENT: &str = "reason";
 
 pub(super) fn banip_registration() -> CommandRegistration<CommandSource> {
-    CommandRegistration::new(Identifier::vanilla_static("ban-ip"), |_| ban_command())
-        .alias("banip")
+    CommandRegistration::new(Identifier::vanilla_static("ban-ip"), |_| ban_command()).alias("banip")
 }
 
 pub(super) fn pardonip_registration() -> CommandRegistration<CommandSource> {
-    CommandRegistration::new(Identifier::vanilla_static("pardon-ip"), |_| pardon_command())
-        .alias("pardonip")
+    CommandRegistration::new(Identifier::vanilla_static("pardon-ip"), |_| {
+        pardon_command()
+    })
+    .alias("pardonip")
 }
 
 fn ban_command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    literal("ban-ip")
-        .then(
-            argument(ADDRESS_ARGUMENT, ArgumentType::word())
-                .executes(|context| ban(context, None))
-                .then(
-                    argument(REASON_ARGUMENT, ArgumentType::greedy_string()).executes(|context| {
-                        ban(context, Some(context.string(REASON_ARGUMENT)?.to_owned()))
-                    }),
-                ),
-        )
+    literal("ban-ip").then(
+        argument(ADDRESS_ARGUMENT, ArgumentType::word())
+            .executes(|context| ban(context, None))
+            .then(
+                argument(REASON_ARGUMENT, ArgumentType::greedy_string()).executes(|context| {
+                    ban(context, Some(context.string(REASON_ARGUMENT)?.to_owned()))
+                }),
+            ),
+    )
 }
 
 fn pardon_command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    literal("pardon-ip").then(
-        argument(ADDRESS_ARGUMENT, ArgumentType::greedy_string()).executes(pardon),
-    )
+    literal("pardon-ip")
+        .then(argument(ADDRESS_ARGUMENT, ArgumentType::greedy_string()).executes(pardon))
 }
 
 /// Builds a translated component with a literal fallback.
@@ -60,7 +59,9 @@ fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> 
     })
 }
 
-fn parse_address(context: &SteelCommandContext<CommandSource>) -> Result<IpAddr, CommandSyntaxError> {
+fn parse_address(
+    context: &SteelCommandContext<CommandSource>,
+) -> Result<IpAddr, CommandSyntaxError> {
     let text = context.string(ADDRESS_ARGUMENT)?;
     text.parse().map_err(|_| {
         CommandSyntaxError::dynamic(translated(
@@ -80,7 +81,9 @@ fn ban(
     let by = context.source().source_name();
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |elapsed| i64::try_from(elapsed.as_secs()).unwrap_or(i64::MAX));
+        .map_or(0, |elapsed| {
+            i64::try_from(elapsed.as_secs()).unwrap_or(i64::MAX)
+        });
 
     let server = context.source().server().clone();
     server.bans.ban_address(BanEntry::address(

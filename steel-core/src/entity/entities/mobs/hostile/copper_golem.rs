@@ -15,34 +15,36 @@ use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
-use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
-use steel_registry::sound_event::SoundEventRef;
-use steel_registry::vanilla_entity_data::CopperGolemEntityData;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::BlockStateProperties;
+use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
+use steel_registry::item_stack::ItemStack;
+use steel_registry::sound_event::SoundEventRef;
+use steel_registry::vanilla_entity_data::CopperGolemEntityData;
 use steel_registry::{
     level_events, sound_events, vanilla_attributes, vanilla_blocks, vanilla_game_rules,
     vanilla_items,
 };
-use steel_registry::item_stack::ItemStack;
 use steel_utils::locks::SyncMutex;
-use steel_utils::types::{InteractionHand, UpdateFlags};
 use steel_utils::nbt::NbtValueInput as _;
-use steel_utils::{BlockPos, BlockStateId, Direction, Downcast as _, DowncastType, DowncastTypeKey};
+use steel_utils::types::{InteractionHand, UpdateFlags};
+use steel_utils::{
+    BlockPos, BlockStateId, Direction, Downcast as _, DowncastType, DowncastTypeKey,
+};
 
+use crate::behavior::InteractionResult;
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
-use crate::behavior::InteractionResult;
 use crate::entity::damage::DamageSource;
-use crate::inventory::equipment::EquipmentSlot;
 use crate::entity::leash::Leashable;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
     RemovalReason, SharedEntity, sync_dirty_mob_effects,
 };
+use crate::inventory::equipment::EquipmentSlot;
 use crate::physics::MoveResult;
 use crate::world::World;
 
@@ -214,9 +216,7 @@ impl CopperGolemEntity {
 
     /// Vanilla `CopperGolem.canTurnToStatue`.
     fn can_turn_to_statue(&self, world: &Arc<World>) -> bool {
-        world
-            .get_block_state(Entity::block_position(self))
-            .is_air()
+        world.get_block_state(Entity::block_position(self)).is_air()
             && rand::random::<f32>() <= 0.0058
     }
 
@@ -240,12 +240,12 @@ impl CopperGolemEntity {
         // `3` = UPDATE_NEIGHBORS | UPDATE_CLIENTS, matching vanilla `setBlock`.
         world.set_block(pos, state, UpdateFlags::UPDATE_ALL);
 
-        if let Some(block_entity) = world.get_block_entity(pos) {
-            if let Some(statue) = block_entity
-                .downcast_ref::<crate::block_entity::entities::CopperGolemStatueBlockEntity>()
-            {
-                statue.create_statue(self);
-            }
+        if let Some(block_entity) = world.get_block_entity(pos)
+            && let Some(statue) = block_entity
+                .downcast_ref::<crate::block_entity::entities::CopperGolemStatueBlockEntity>(
+            )
+        {
+            statue.create_statue(self);
         }
 
         Mob::drop_preserved_equipment(self);
@@ -272,7 +272,6 @@ impl CopperGolemEntity {
         }
         stack.hurt_and_break(1, player.has_infinite_materials());
     }
-
 }
 
 impl DefaultEntityPush for CopperGolemEntity {}
@@ -432,7 +431,11 @@ impl Mob for CopperGolemEntity {
     /// Vanilla `CopperGolem.mobInteract`: shears drop the held item, honeycomb
     /// waxes the golem permanently, and an axe scrapes one oxidation stage back
     /// off an oxidized golem.
-    fn mob_interact(&self, player: &crate::player::Player, hand: InteractionHand) -> InteractionResult {
+    fn mob_interact(
+        &self,
+        player: &crate::player::Player,
+        hand: InteractionHand,
+    ) -> InteractionResult {
         use steel_registry::vanilla_item_tags::ItemTag;
 
         let stack = {

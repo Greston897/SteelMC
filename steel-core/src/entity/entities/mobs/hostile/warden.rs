@@ -10,6 +10,7 @@
 use std::iter::empty;
 use std::sync::Weak;
 
+use crate::entity::MobEffectInstance;
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
@@ -18,7 +19,6 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::WardenEntityData;
-use crate::entity::MobEffectInstance;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_mob_effects};
 use steel_utils::WorldAabb;
 use steel_utils::locks::SyncMutex;
@@ -300,14 +300,12 @@ impl Mob for WardenEntity {
                         &steel_registry::vanilla_damage_types::SONIC_BOOM,
                     );
                     if target.hurt(&world, &source, SONIC_BOOM_DAMAGE) {
-                        let kb_resist = target
-                            .as_living_entity()
-                            .map_or(0.0, |l| {
-                                l.attributes()
-                                    .lock()
-                                    .get_value(vanilla_attributes::KNOCKBACK_RESISTANCE)
-                                    .unwrap_or(0.0)
-                            });
+                        let kb_resist = target.as_living_entity().map_or(0.0, |l| {
+                            l.attributes()
+                                .lock()
+                                .get_value(vanilla_attributes::KNOCKBACK_RESISTANCE)
+                                .unwrap_or(0.0)
+                        });
                         let v_scale = 0.5 * (1.0 - kb_resist);
                         let h_scale = 2.5 * (1.0 - kb_resist);
                         let dir = DVec3::new(dx, dy, dz).normalize_or_zero();

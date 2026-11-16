@@ -1071,9 +1071,7 @@ impl Player {
         {
             return None;
         }
-        if vehicle.as_mob().is_none() {
-            return None;
-        }
+        vehicle.as_mob()?;
         Some(vehicle)
     }
 

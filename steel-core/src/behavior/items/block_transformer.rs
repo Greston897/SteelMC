@@ -8,9 +8,7 @@ use steel_registry::data_components::vanilla_components::{BLOCK_TRANSFORMER, BLO
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::vanilla_block_tags::BlockTag;
-use steel_registry::{
-    REGISTRY, level_events, vanilla_criteria_triggers, vanilla_game_events,
-};
+use steel_registry::{REGISTRY, level_events, vanilla_criteria_triggers, vanilla_game_events};
 use steel_utils::BlockStateId;
 use steel_utils::random::legacy_random::LegacyRandom;
 use steel_utils::types::{InteractionHand, UpdateFlags};

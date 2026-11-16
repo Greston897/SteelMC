@@ -220,13 +220,14 @@ impl Player {
         // (`hasInfiniteMaterials` + the request flag) the block entity's saved
         // NBT becomes the item's `block_entity_data` component.
         let mut item_stack = item_stack;
-        if include_data && let Some((block_entity_type, nbt)) = picked_data {
-            if let Some(data) = CustomData::try_from_compound(nbt) {
-                item_stack.set(
-                    vanilla_components::BLOCK_ENTITY_DATA,
-                    BlockEntityData::new(block_entity_type, data),
-                );
-            }
+        if include_data
+            && let Some((block_entity_type, nbt)) = picked_data
+            && let Some(data) = CustomData::try_from_compound(nbt)
+        {
+            item_stack.set(
+                vanilla_components::BLOCK_ENTITY_DATA,
+                BlockEntityData::new(block_entity_type, data),
+            );
         }
 
         let mut inventory = self.inventory.lock();
@@ -305,24 +306,23 @@ impl Player {
     fn pick_item_stack(&self, item_stack: ItemStack) {
         let mut inventory = self.inventory.lock();
 
-        match inventory.find_slot_matching_item_with_same_components(&item_stack) {
-            Some(slot_with_item) => {
-                if PlayerInventory::is_hotbar_slot(slot_with_item) {
-                    inventory.set_selected_slot(slot_with_item);
-                } else {
-                    let slot = inventory.get_suitable_hotbar_slot();
-                    inventory.set_selected_slot(slot);
-                    inventory.pick_slot(slot_with_item);
-                }
-            }
-            None => {
-                if !self.has_infinite_materials() {
-                    return;
-                }
+        if let Some(slot_with_item) =
+            inventory.find_slot_matching_item_with_same_components(&item_stack)
+        {
+            if PlayerInventory::is_hotbar_slot(slot_with_item) {
+                inventory.set_selected_slot(slot_with_item);
+            } else {
                 let slot = inventory.get_suitable_hotbar_slot();
                 inventory.set_selected_slot(slot);
-                inventory.add_and_pick_item(item_stack);
+                inventory.pick_slot(slot_with_item);
             }
+        } else {
+            if !self.has_infinite_materials() {
+                return;
+            }
+            let slot = inventory.get_suitable_hotbar_slot();
+            inventory.set_selected_slot(slot);
+            inventory.add_and_pick_item(item_stack);
         }
 
         self.send_packet(CSetHeldSlot {

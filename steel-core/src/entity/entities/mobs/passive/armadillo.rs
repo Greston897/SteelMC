@@ -16,17 +16,17 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
+use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::ArmadilloEntityData;
-use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    BreedGoal, FloatGoal, FollowParentGoal,
-    LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
+    WaterAvoidingRandomStrollGoal,
 };
 
 use crate::entity::damage::DamageSource;
@@ -309,7 +309,6 @@ impl AgeableMob for ArmadilloEntity {
     fn age_boundary_changed(&self, _baby: bool) {
         self.refresh_dimensions();
     }
-
 }
 
 impl Animal for ArmadilloEntity {
@@ -357,7 +356,7 @@ impl Mob for ArmadilloEntity {
             };
             if should_shed {
                 let _ = self.spawn_at_location(
-                    ItemStack::new(&*steel_registry::vanilla_items::ARMADILLO_SCUTE),
+                    ItemStack::new(&steel_registry::vanilla_items::ARMADILLO_SCUTE),
                     0.0,
                 );
                 self.play_sound(&sound_events::ENTITY_ARMADILLO_SCUTE_DROP, 1.0, 1.0);
@@ -378,9 +377,9 @@ impl Mob for ArmadilloEntity {
             let stack = inv.get_item_in_hand(hand);
             stack.copy_with_count(stack.count())
         };
-        if held.is(&*steel_registry::vanilla_items::BRUSH) && !AgeableMob::is_baby(self) {
+        if held.is(&steel_registry::vanilla_items::BRUSH) && !AgeableMob::is_baby(self) {
             let _ = self.spawn_at_location(
-                ItemStack::new(&*steel_registry::vanilla_items::ARMADILLO_SCUTE),
+                ItemStack::new(&steel_registry::vanilla_items::ARMADILLO_SCUTE),
                 0.0,
             );
             self.play_sound(&sound_events::ENTITY_ARMADILLO_BRUSH, 1.0, 1.0);
@@ -412,4 +411,3 @@ impl Mob for ArmadilloEntity {
 }
 
 impl PathfinderMob for ArmadilloEntity {}
-

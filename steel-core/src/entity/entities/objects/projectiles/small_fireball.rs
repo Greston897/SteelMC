@@ -131,7 +131,8 @@ impl Projectile for SmallFireballEntity {
         {
             let source = self.fireball_damage_source();
             hit.entity.hurt(&world, &source, SMALL_FIREBALL_DAMAGE);
-            hit.entity.ignite_for_ticks(SMALL_FIREBALL_FIRE_SECONDS * 20);
+            hit.entity
+                .ignite_for_ticks(SMALL_FIREBALL_FIRE_SECONDS * 20);
         }
         self.set_removed(RemovalReason::Discarded);
     }

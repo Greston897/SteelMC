@@ -96,7 +96,11 @@ impl CopperGolemStatueBlockEntity {
             living.set_y_head_rot(y_rot);
             living.set_y_body_rot(y_rot);
         }
-        golem.play_sound(&steel_registry::sound_events::ENTITY_COPPER_GOLEM_SPAWN, 1.0, 1.0);
+        golem.play_sound(
+            &steel_registry::sound_events::ENTITY_COPPER_GOLEM_SPAWN,
+            1.0,
+            1.0,
+        );
         golem
     }
 }
@@ -112,7 +116,7 @@ impl BlockEntity for CopperGolemStatueBlockEntity {
 }
 
 /// Vanilla `Direction.toYRot`.
-fn direction_to_y_rot(direction: Direction) -> f32 {
+const fn direction_to_y_rot(direction: Direction) -> f32 {
     match direction {
         Direction::South => 0.0,
         Direction::West => 90.0,

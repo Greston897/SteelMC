@@ -17,21 +17,20 @@ use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::game_events::GameEventRef;
 use steel_registry::{level_events, vanilla_game_rules};
 use steel_registry::{
-    sound_events, vanilla_block_entity_types, vanilla_blocks, vanilla_entities,
-    vanilla_mob_effects,
+    sound_events, vanilla_block_entity_types, vanilla_blocks, vanilla_entities, vanilla_mob_effects,
 };
-use steel_utils::types::UpdateFlags;
 use steel_utils::types::Difficulty;
+use steel_utils::types::UpdateFlags;
 use steel_utils::{
     BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, WorldAabb,
     locks::SyncMutex,
 };
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
+use crate::entity::warden_spawn_tracker::MAX_WARNING_LEVEL;
 use crate::entity::{
     Entity, EntitySpawnReason, LivingEntity as _, MobEffectInstance, WardenSpawnTracker, spawn_util,
 };
-use crate::entity::warden_spawn_tracker::MAX_WARNING_LEVEL;
 use crate::player::Player;
 use crate::world::World;
 use crate::world::game_event::{GameEventContext, GameEventListener, SharedGameEventListener};
@@ -98,7 +97,10 @@ impl GameEventListener for SculkCatalystListener {
         }
 
         let catalyst_state = world.get_block_state(self.position);
-        if !ptr::eq(catalyst_state.get_block(), &vanilla_blocks::SCULK_CATALYST) {
+        if !ptr::eq(
+            catalyst_state.get_block(),
+            &raw const vanilla_blocks::SCULK_CATALYST,
+        ) {
             return false;
         }
 
@@ -271,16 +273,19 @@ impl SculkShriekerBlockEntity {
         // Vanilla checks the concrete player first, then the passenger, then the
         // projectile owner / item thrower, and stops at the first one that is a
         // player.
-        let candidate = entity.as_player().map(|player| player.base().uuid()).or_else(|| {
-            [entity.controlling_passenger(), entity.projectile_owner()]
-                .into_iter()
-                .flatten()
-                .find_map(|owner| {
-                    (owner.entity_type() == &steel_registry::vanilla_entities::PLAYER)
-                        .then(|| owner.as_player().map(|player| player.base().uuid()))
-                        .flatten()
-                })
-        })?;
+        let candidate = entity
+            .as_player()
+            .map(|player| player.base().uuid())
+            .or_else(|| {
+                [entity.controlling_passenger(), entity.projectile_owner()]
+                    .into_iter()
+                    .flatten()
+                    .find_map(|owner| {
+                        (owner.entity_type() == &steel_registry::vanilla_entities::PLAYER)
+                            .then(|| owner.as_player().map(|player| player.base().uuid()))
+                            .flatten()
+                    })
+            })?;
         entity.level()?.players.get_by_uuid(&candidate)
     }
 
@@ -314,7 +319,7 @@ impl SculkShriekerBlockEntity {
         // O(properties) lookup, and the vibration listener fires for every
         // vibration in range.
         let state = world.get_block_state(pos);
-        if !ptr::eq(state.get_block(), &vanilla_blocks::SCULK_SHRIEKER) {
+        if !ptr::eq(state.get_block(), &raw const vanilla_blocks::SCULK_SHRIEKER) {
             return false;
         }
         if state.get_value(&BlockStateProperties::SHRIEKING) {
@@ -337,17 +342,14 @@ impl SculkShriekerBlockEntity {
     /// game event, without touching the warning level.
     fn shriek(&self, world: &Arc<World>, pos: BlockPos) {
         let state = world.get_block_state(pos);
-        if ptr::eq(state.get_block(), &vanilla_blocks::SCULK_SHRIEKER) {
+        if ptr::eq(state.get_block(), &raw const vanilla_blocks::SCULK_SHRIEKER) {
             world.set_block(
                 pos,
                 state.set_value(&BlockStateProperties::SHRIEKING, true),
                 UpdateFlags::UPDATE_CLIENTS,
             );
-            let _ = world.schedule_block_tick_default(
-                pos,
-                state.get_block(),
-                SHRIEK_ANIMATION_TICKS,
-            );
+            let () =
+                world.schedule_block_tick_default(pos, state.get_block(), SHRIEK_ANIMATION_TICKS);
         }
 
         // Vanilla `shriek` uses `levelEvent(3007)`, which is the shriek tone
@@ -379,7 +381,7 @@ impl SculkShriekerBlockEntity {
 
         for player in players_near(world, block_center(pos), SHRIEK_DARKNESS_RADIUS) {
             player.add_mob_effect(MobEffectInstance::with_duration(
-                &vanilla_mob_effects::DARKNESS,
+                vanilla_mob_effects::DARKNESS,
                 SHRIEK_DARKNESS_DURATION,
                 0,
             ));
@@ -399,7 +401,8 @@ impl SculkShriekerBlockEntity {
         };
         let mut rng = rand::rng();
         let mut offset = |value: i32| {
-            value + rand::RngExt::random_range(&mut rng, -WARNING_SOUND_RADIUS..=WARNING_SOUND_RADIUS)
+            value
+                + rand::RngExt::random_range(&mut rng, -WARNING_SOUND_RADIUS..=WARNING_SOUND_RADIUS)
         };
         world.play_sound_at(
             sound,
@@ -482,9 +485,7 @@ impl GameEventListener for SculkShriekerListener {
     ) -> bool {
         // Vanilla `GameEventTags.SHRIEKER_CAN_LISTEN`: a shrieker only listens to
         // `sculk_sensor_tendrils_clicking` emitted by an activated sculk sensor.
-        if event.key
-            != steel_registry::vanilla_game_events::SCULK_SENSOR_TENDRILS_CLICKING.key
-        {
+        if event.key != steel_registry::vanilla_game_events::SCULK_SENSOR_TENDRILS_CLICKING.key {
             return false;
         }
         if crate::block_entity::entities::sculk_sensor::is_vibration_occluded(

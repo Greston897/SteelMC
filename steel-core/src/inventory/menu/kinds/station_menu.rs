@@ -26,8 +26,8 @@ use steel_registry::recipe::{
 use steel_registry::vanilla_banner_pattern_tags::BannerPatternTag;
 use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{
-    REGISTRY, RegistryHolder, RegistryHolderSet, TaggedRegistryExt as _,
-    level_events, sound_events, vanilla_blocks, vanilla_items, vanilla_menu_types,
+    REGISTRY, RegistryHolder, RegistryHolderSet, TaggedRegistryExt as _, level_events,
+    sound_events, vanilla_blocks, vanilla_items, vanilla_menu_types,
 };
 use steel_utils::locks::{IntoShared, Shared, SyncMutex};
 use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
@@ -77,7 +77,9 @@ struct StonecutterResultHandler {
 }
 
 impl StonecutterResultHandler {
-    fn matching_recipes(input: &ItemStack) -> Vec<(&'static StonecuttingRecipe, steel_utils::Identifier)> {
+    fn matching_recipes(
+        input: &ItemStack,
+    ) -> Vec<(&'static StonecuttingRecipe, steel_utils::Identifier)> {
         if input.is_empty() {
             return Vec::new();
         }
@@ -97,7 +99,10 @@ impl StonecutterResultHandler {
         out
     }
 
-    fn result_for(input: &ItemStack, selected: i32) -> Option<(ItemStack, steel_utils::Identifier)> {
+    fn result_for(
+        input: &ItemStack,
+        selected: i32,
+    ) -> Option<(ItemStack, steel_utils::Identifier)> {
         let index = usize::try_from(selected).ok()?;
         let matches = Self::matching_recipes(input);
         let (recipe, key) = matches.get(index)?;
@@ -214,20 +219,20 @@ impl MenuKind for StonecutterKind {
         };
         let input = input_c.get_item(0);
         let current_item = (!input.is_empty()).then(|| input.item());
-        if current_item != self.last_item {
-            // Vanilla `StonecutterMenu.slotsChanged`: only reset selection when
-            // the item type changes, keeping selection while cutting a stack.
-            self.last_item = current_item;
-            self.selected.store(-1, Ordering::Relaxed);
-            self.selected_slot.set(behavior, -1);
-            result_c.set_item(0, ItemStack::empty());
-        } else {
+        if current_item == self.last_item {
             let selected = self.selected.load(Ordering::Relaxed);
             self.selected_slot
                 .set(behavior, i16::try_from(selected).unwrap_or(-1));
             let next = StonecutterResultHandler::result_for(input, selected)
                 .map_or_else(ItemStack::empty, |(stack, _)| stack);
             result_c.set_item(0, next);
+        } else {
+            // Vanilla `StonecutterMenu.slotsChanged`: only reset selection when
+            // the item type changes, keeping selection while cutting a stack.
+            self.last_item = current_item;
+            self.selected.store(-1, Ordering::Relaxed);
+            self.selected_slot.set(behavior, -1);
+            result_c.set_item(0, ItemStack::empty());
         }
     }
 
@@ -364,15 +369,12 @@ impl SmithingResultHandler {
             input_c.get_item(1),
             input_c.get_item(2),
         );
-        match assembled {
-            Some((stack, key)) => {
-                *self.last_recipe.lock() = Some(key);
-                result_c.set_item(0, stack);
-            }
-            None => {
-                *self.last_recipe.lock() = None;
-                result_c.set_item(0, ItemStack::empty());
-            }
+        if let Some((stack, key)) = assembled {
+            *self.last_recipe.lock() = Some(key);
+            result_c.set_item(0, stack);
+        } else {
+            *self.last_recipe.lock() = None;
+            result_c.set_item(0, ItemStack::empty());
         }
     }
 }
@@ -505,11 +507,7 @@ pub fn smithing(
 // Cartography Table (`Vanilla CartographyTableMenu`)
 // ---------------------------------------------------------------------------
 
-fn assemble_cartography(
-    map_stack: &ItemStack,
-    additional: &ItemStack,
-    world: &World,
-) -> ItemStack {
+fn assemble_cartography(map_stack: &ItemStack, additional: &ItemStack, world: &World) -> ItemStack {
     if map_stack.is_empty() || additional.is_empty() {
         return ItemStack::empty();
     }
@@ -1047,7 +1045,9 @@ mod tests {
         for expected in 1..=MAX_LOOM_BANNER_LAYERS {
             banner = assemble_loom(&banner, &dye, patterns[0]);
             assert_eq!(
-                banner.get(BANNER_PATTERNS).map(|layers| layers.layers().len()),
+                banner
+                    .get(BANNER_PATTERNS)
+                    .map(|layers| layers.layers().len()),
                 Some(expected)
             );
         }
@@ -1058,8 +1058,8 @@ mod tests {
     fn stonecutter_produces_stone_recipes() {
         init_vanilla_registry();
         let stone = ItemStack::new(&vanilla_items::STONE);
-        let (first, _) =
-            StonecutterResultHandler::result_for(&stone, 0).expect("stone has stonecutting recipes");
+        let (first, _) = StonecutterResultHandler::result_for(&stone, 0)
+            .expect("stone has stonecutting recipes");
         assert!(!first.is_empty());
         assert!(StonecutterResultHandler::result_for(&stone, -1).is_none());
     }

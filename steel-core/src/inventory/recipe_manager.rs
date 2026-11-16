@@ -10,8 +10,8 @@ use steel_registry::data_components::vanilla_components::{
 };
 use steel_registry::recipe::{
     BookCloningRecipe, CraftingInput, CraftingRecipe, DyeRecipe, FireworkRocketRecipe,
-    FireworkStarFadeRecipe, FireworkStarRecipe, PositionedCraftingInput, ShieldDecorationRecipe,
-    RecipeInput as _, TypedRecipeRef, vanilla_recipe_types,
+    FireworkStarFadeRecipe, FireworkStarRecipe, PositionedCraftingInput, RecipeInput as _,
+    ShieldDecorationRecipe, TypedRecipeRef, vanilla_recipe_types,
 };
 use steel_registry::{
     DyeColor, ItemStackTemplate, REGISTRY, RegistryExt as _, TaggedRegistryExt as _,

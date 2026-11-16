@@ -246,7 +246,7 @@ impl ThrowableProjectile for ThrownEggEntity {}
 
 impl ThrowableItemProjectile for ThrownEggEntity {
     fn get_default_item(&self) -> ItemRef {
-        &*vanilla_items::EGG
+        &vanilla_items::EGG
     }
 
     fn set_item(&self, item: ItemStack) {

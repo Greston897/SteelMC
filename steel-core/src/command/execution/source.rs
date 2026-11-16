@@ -293,9 +293,7 @@ impl CommandSource {
                 world.key.clone(),
                 server.command_permission_snapshot(player.gameprofile.id()),
             ),
-            CommandSender::Console
-            | CommandSender::Rcon(_)
-            | CommandSender::CommandBlock(_) => {
+            CommandSender::Console | CommandSender::Rcon(_) | CommandSender::CommandBlock(_) => {
                 CommandAuthorizationContext::unrestricted(world.key.clone())
             }
         };
@@ -347,11 +345,10 @@ impl CommandSource {
     /// full `display_name()` (click/hover events included) rather than plain
     /// text — that is what makes the name clickable in the client chat.
     pub(crate) fn display_name_component(&self) -> TextComponent {
-        self.player
-            .as_ref()
-            .map_or_else(|| TextComponent::plain(self.source_name()), |p| {
-                p.display_name()
-            })
+        self.player.as_ref().map_or_else(
+            || TextComponent::plain(self.source_name()),
+            |p| p.display_name(),
+        )
     }
 
     pub(crate) const fn entity(&self) -> Option<&SharedEntity> {

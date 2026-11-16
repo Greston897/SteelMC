@@ -30,11 +30,11 @@ use steel_utils::saved_data::{SavedDataManager, names as saved_data_names};
 use glam::{DVec3, IVec3};
 use sha2::{Digest, Sha256};
 use steel_protocol::packets::game::{
-    CBlockDestruction, CBossEvent, CChangeDifficulty, CGameEvent, CInitializeBorder, CLevelEvent,
-    CLevelParticles, CPlayerChat, CSetBorderCenter, CSetBorderLerpSize,
-    CSetBorderSize, CSetBorderWarningDelay, CSetBorderWarningDistance, CSetEntityData,
-    CSetEntityLink, CSetEquipment, CSound, CSoundEntity, CSystemChat, CUpdateAttributes,
-    BossEventAction, BossBarColor, BossBarOverlay, GameEventType, RandomizationType, SoundSource,
+    BossBarColor, BossBarOverlay, BossEventAction, CBlockDestruction, CBossEvent,
+    CChangeDifficulty, CGameEvent, CInitializeBorder, CLevelEvent, CLevelParticles, CPlayerChat,
+    CSetBorderCenter, CSetBorderLerpSize, CSetBorderSize, CSetBorderWarningDelay,
+    CSetBorderWarningDistance, CSetEntityData, CSetEntityLink, CSetEquipment, CSound, CSoundEntity,
+    CSystemChat, CUpdateAttributes, GameEventType, RandomizationType, SoundSource,
 };
 use steel_protocol::utils::ConnectionProtocol;
 use steel_protocol::{
@@ -120,6 +120,7 @@ mod border;
 mod broadcasts;
 pub(crate) mod clock;
 mod domain_entity_directory;
+pub mod dragon_fight;
 mod entity_management;
 mod environment;
 mod events;
@@ -133,6 +134,7 @@ mod player_index;
 pub(crate) mod player_spawn_finder;
 mod portals;
 mod properties;
+pub mod raid;
 pub(crate) mod raycast;
 mod redstone;
 mod signal_getter;
@@ -140,10 +142,8 @@ mod sleep;
 mod sleep_status;
 pub(crate) mod spawn;
 pub mod tick_scheduler;
-pub(crate) mod waypoint;
 pub mod wandering_trader_spawner;
-pub mod dragon_fight;
-pub mod raid;
+pub(crate) mod waypoint;
 mod weather;
 mod world_entities;
 
@@ -455,7 +455,9 @@ impl World {
             fight
         };
         let ticket_storage = ChunkTicketStorage::load(&saved_data, &key).await;
-        let raids = match saved_data.load_or_default::<Vec<raid::Raid>>(saved_data_names::RAIDS).await
+        let raids = match saved_data
+            .load_or_default::<Vec<raid::Raid>>(saved_data_names::RAIDS)
+            .await
         {
             Ok(raids) => raid::RaidManager::from_raids(raids),
             Err(error) => {
@@ -469,7 +471,9 @@ impl World {
             )
             .await
         {
-            Ok(schedule) => wandering_trader_spawner::WanderingTraderSpawner::from_schedule(schedule),
+            Ok(schedule) => {
+                wandering_trader_spawner::WanderingTraderSpawner::from_schedule(schedule)
+            }
             Err(error) => {
                 log::warn!(
                     "Could not load the wandering trader schedule for world {key}; starting a fresh day: {error}"
@@ -719,7 +723,9 @@ impl World {
         if !self.is_end_dimension_type() {
             return None;
         }
-        self.dragon_fight.dragon_target().map(|pos| BlockPos::new(pos.x, pos.y, pos.z))
+        self.dragon_fight
+            .dragon_target()
+            .map(|pos| BlockPos::new(pos.x, pos.y, pos.z))
     }
 
     /// Vanilla `EndCrystal` removal hook (`EnderDragonFight.onCrystalDestroyed`).
@@ -786,23 +792,17 @@ impl World {
             return;
         }
 
-        let location = match self.dragon_fight.exit_portal_location() {
-            Some(location) => BlockPos::new(location.x, location.y, location.z),
-            None => {
-                // Vanilla makes one if the world does not have a portal yet.
-                self.spawn_end_exit_portal(true);
-                self.exit_portal_location()
-            }
+        let location = if let Some(location) = self.dragon_fight.exit_portal_location() {
+            BlockPos::new(location.x, location.y, location.z)
+        } else {
+            // Vanilla makes one if the world does not have a portal yet.
+            self.spawn_end_exit_portal(true);
+            self.exit_portal_location()
         };
         let center = location.above();
 
         let mut crystals = Vec::new();
-        for direction in [
-            (1, 0),
-            (-1, 0),
-            (0, 1),
-            (0, -1),
-        ] {
+        for direction in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
             let anchor = BlockPos::new(
                 center.x() + direction.0 * 3,
                 center.y(),
@@ -964,7 +964,9 @@ impl World {
     fn is_arena_loaded(&self) -> bool {
         for chunk_x in -8..=8_i32 {
             for chunk_z in -8..=8_i32 {
-                let Some(status) = self.chunk_map.full_chunk_status(ChunkPos::new(chunk_x, chunk_z))
+                let Some(status) = self
+                    .chunk_map
+                    .full_chunk_status(ChunkPos::new(chunk_x, chunk_z))
                 else {
                     return false;
                 };
@@ -1130,7 +1132,8 @@ impl World {
     /// Vanilla `EnderDragonFight.resetSpikeCrystals`: rebuild every spike's
     /// crystal.
     fn reset_end_spike_crystals(self: &Arc<Self>) {
-        let spikes = crate::worldgen::feature::FeatureDecorationRunner::end_spikes_for_level(self.seed());
+        let spikes =
+            crate::worldgen::feature::FeatureDecorationRunner::end_spikes_for_level(self.seed());
         for spike in spikes {
             crate::worldgen::feature::rebuild_spike_crystal_in_world(self, &spike);
         }
@@ -1182,7 +1185,8 @@ impl World {
         Entity::snap_to(dragon.as_ref(), position, yaw, 0.0);
 
         let dragon = dragon as SharedEntity;
-        self.dragon_fight.set_dragon_uuid(Some(Entity::uuid(dragon.as_ref())));
+        self.dragon_fight
+            .set_dragon_uuid(Some(Entity::uuid(dragon.as_ref())));
         self.dragon_fight
             .set_dragon(Some(IVec3::new(0, dragon_fight::DRAGON_SPAWN_Y, 0)));
         self.dragon_fight.reset_ticks_since_dragon_seen();
@@ -1202,7 +1206,8 @@ impl World {
             return;
         }
 
-        let spikes = crate::worldgen::feature::FeatureDecorationRunner::end_spikes_for_level(self.seed());
+        let spikes =
+            crate::worldgen::feature::FeatureDecorationRunner::end_spikes_for_level(self.seed());
         let mut alive = 0;
         for spike in spikes {
             let radius = f64::from(spike.radius);
@@ -1262,10 +1267,10 @@ impl World {
             flags: 0,
             visible: self.dragon_fight.bar_visible(),
         };
-        let previous =
-            server
-                .boss_bars
-                .insert(crate::server::boss_bars::DRAGON_BAR_ID.to_owned(), bar.clone());
+        let previous = server.boss_bars.insert(
+            crate::server::boss_bars::DRAGON_BAR_ID.to_owned(),
+            bar.clone(),
+        );
         let Some(previous) = previous else {
             // A brand new bar has to be pushed in full before updates matter.
             self.broadcast_to_all::<CBossEvent>(bar.add_packet());
@@ -1347,8 +1352,11 @@ impl World {
         // portal.
         let location = self.exit_portal_location();
         if self.dragon_fight.exit_portal_location().is_none() {
-            self.dragon_fight
-                .set_exit_portal_location(Some(IVec3::new(location.x(), location.y(), location.z())));
+            self.dragon_fight.set_exit_portal_location(Some(IVec3::new(
+                location.x(),
+                location.y(),
+                location.z(),
+            )));
         }
         crate::worldgen::feature::place_end_podium_in_world(self, location, activated);
     }
@@ -1392,8 +1400,11 @@ impl World {
             return BlockPos::new(pos.x, pos.y, pos.z);
         }
         let podium = dragon_fight::DragonFight::podium_pos();
-        let surface = self
-            .height_at(HeightmapType::MotionBlockingNoLeaves, podium.x(), podium.z());
+        let surface = self.height_at(
+            HeightmapType::MotionBlockingNoLeaves,
+            podium.x(),
+            podium.z(),
+        );
         let mut y = surface - 1;
         while self
             .get_block_state(BlockPos::new(podium.x(), y, podium.z()))
@@ -1679,7 +1690,7 @@ impl World {
     /// sky, like the other custom spawners, so a datapack dimension with a day
     /// timeline gets patrols as well.
     #[must_use]
-    pub fn allows_patrols(&self) -> bool {
+    pub const fn allows_patrols(&self) -> bool {
         self.dimension_type.has_skylight
     }
 
@@ -1699,7 +1710,7 @@ impl World {
     /// sky instead of the dimension identity, so a datapack dimension with a sky
     /// behaves like the Overworld, as it does for the trader spawner.
     #[must_use]
-    pub fn allows_phantoms(&self) -> bool {
+    pub const fn allows_phantoms(&self) -> bool {
         self.dimension_type.has_skylight
     }
 
@@ -1719,7 +1730,7 @@ impl World {
     /// property that makes Overworld trading meaningful: the dimension has a sky
     /// and therefore surface positions to place a trader on.
     #[must_use]
-    pub fn allows_wandering_traders(&self) -> bool {
+    pub const fn allows_wandering_traders(&self) -> bool {
         self.dimension_type.has_skylight
     }
 

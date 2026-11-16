@@ -74,9 +74,15 @@ impl EyeblossomBlock {
         }
 
         let (target, sound) = if should_be_open {
-            (&vanilla_blocks::OPEN_EYEBLOSSOM, &sound_events::BLOCK_EYEBLOSSOM_OPEN)
+            (
+                &vanilla_blocks::OPEN_EYEBLOSSOM,
+                &sound_events::BLOCK_EYEBLOSSOM_OPEN,
+            )
         } else {
-            (&vanilla_blocks::CLOSED_EYEBLOSSOM, &sound_events::BLOCK_EYEBLOSSOM_CLOSE)
+            (
+                &vanilla_blocks::CLOSED_EYEBLOSSOM,
+                &sound_events::BLOCK_EYEBLOSSOM_CLOSE,
+            )
         };
         world.set_block(pos, target.default_state(), UpdateFlags::UPDATE_ALL);
         world.play_sound(sound, SoundSource::Blocks, pos, 1.0, 1.0, None);
@@ -85,7 +91,6 @@ impl EyeblossomBlock {
 
 /// Vanilla `EnvironmentAttributes.EYEBLOSSOM_OPEN` key.
 const EYEBLOSSOM_OPEN_ATTRIBUTE: &str = "minecraft:gameplay/eyeblossom_open";
-
 
 #[cfg(test)]
 mod tests {

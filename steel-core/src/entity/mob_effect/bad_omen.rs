@@ -36,10 +36,10 @@ impl MobEffectBehavior for BadOmenBehavior {
         };
 
         // Vanilla refuses to extend a raid that already reached the omen cap.
-        if let Some(existing) = world.raids.raid_at(center) {
-            if existing.omen_level >= raid::MAX_OMEN_LEVEL {
-                return true;
-            }
+        if let Some(existing) = world.raids.raid_at(center)
+            && existing.omen_level >= raid::MAX_OMEN_LEVEL
+        {
+            return true;
         }
 
         world.raids.raise_omen(center, amplifier);

@@ -1,6 +1,6 @@
 use glam::IVec3;
-use std::sync::OnceLock;
 use rustc_hash::FxHashMap;
+use std::sync::OnceLock;
 use steel_registry::biome::BiomeRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::template_pool::{TemplateData, TemplatePoolData};
@@ -9,11 +9,11 @@ use steel_utils::random::RandomSource;
 use steel_utils::{BlockStateId, ChunkPos, Identifier};
 
 use crate::chunk::Chunk;
+use crate::worldgen::feature::FeatureDecorationRunner;
 use crate::worldgen::generator::{
     ChunkGenerator, GenerationChunk, TerrainPhase, xoroshiro_worldgen_region_random,
 };
 use crate::worldgen::region::WorldGenRegion;
-use crate::worldgen::feature::FeatureDecorationRunner;
 use crate::worldgen::structure::{StructureGenerator, create_structures};
 use steel_worldgen::biomes::obfuscate_biome_seed;
 use steel_worldgen::noise::Beardifier;
@@ -105,9 +105,8 @@ impl FlatChunkGenerator {
     }
 
     fn feature_runner(&self) -> &FeatureDecorationRunner {
-        self.feature_runner.get_or_init(|| {
-            FeatureDecorationRunner::new(&[&vanilla_biomes::PLAINS], &REGISTRY)
-        })
+        self.feature_runner
+            .get_or_init(|| FeatureDecorationRunner::new(&[&vanilla_biomes::PLAINS], &REGISTRY))
     }
 
     /// Runs the decoration the flat flags allow.

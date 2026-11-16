@@ -27,12 +27,9 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("posteffect")
         .then(
-            literal("add").then(
-                argument("targets", SteelArgumentType::players()).then(
-                    argument("posteffect", SteelArgumentType::identifier())
-                        .executes(add_post_effect),
-                ),
-            ),
+            literal("add").then(argument("targets", SteelArgumentType::players()).then(
+                argument("posteffect", SteelArgumentType::identifier()).executes(add_post_effect),
+            )),
         )
         .then(
             literal("clear").then(
@@ -40,9 +37,8 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
             ),
         )
         .then(
-            literal("list").then(
-                argument("target", SteelArgumentType::player()).executes(list_post_effects),
-            ),
+            literal("list")
+                .then(argument("target", SteelArgumentType::player()).executes(list_post_effects)),
         )
         .then(
             literal("remove").then(
@@ -242,7 +238,11 @@ fn list_post_effects(
     Ok(i32::try_from(effects.len()).unwrap_or(i32::MAX))
 }
 
-fn translated(key: &'static str, fallback: &'static str, args: Vec<TextComponent>) -> TextComponent {
+fn translated(
+    key: &'static str,
+    fallback: &'static str,
+    args: Vec<TextComponent>,
+) -> TextComponent {
     TextComponent::translated(TranslatedMessage {
         key: key.into(),
         fallback: Some(fallback.into()),

@@ -12,20 +12,18 @@ use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::BaseEntityData;
 use steel_registry::{sound_events, vanilla_damage_types};
-use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_utils::BlockPos;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey, WorldAabb};
 
-use crate::entity::entities::mobs::passive::MushroomCowEntity;
 use crate::entity::damage::DamageSource;
-use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, EntitySyncedData, RemovalReason,
-};
+use crate::entity::entities::mobs::passive::MushroomCowEntity;
+use crate::entity::{Entity, EntityBase, EntityBaseLoad, EntitySyncedData, RemovalReason};
 use crate::world::World;
 
 /// Vanilla `LightningBolt.LIFE`.

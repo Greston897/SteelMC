@@ -7,11 +7,7 @@ use steel_registry::advancement::registry::AdvancementRef;
 use steel_registry::loot_table::LootContext;
 
 /// Grants experience and loot rewards but recipes and functions are not handled yet
-pub fn grant_reward(
-    player: &Player,
-    reward: &AdvancementRewards,
-    advancement: AdvancementRef,
-) {
+pub fn grant_reward(player: &Player, reward: &AdvancementRewards, advancement: AdvancementRef) {
     player.give_experience_points(reward.experience);
 
     let position = player.position();

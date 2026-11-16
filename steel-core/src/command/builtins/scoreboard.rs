@@ -4,7 +4,6 @@
 //! `/trigger` read-write pair lives in `builtins::trigger`. Team management
 //! exists on `Scoreboard` but has no command tree yet.
 
-
 use steel_utils::Identifier;
 use text_components::TextComponent;
 
@@ -34,10 +33,7 @@ fn objectives_node() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         .then(
             literal("add").then(
                 argument("objective", ArgumentType::word())
-                    .then(
-                        argument("criteria", ArgumentType::word())
-                            .executes(create_objective),
-                    )
+                    .then(argument("criteria", ArgumentType::word()).executes(create_objective))
                     .executes(create_objective),
             ),
         )
@@ -51,7 +47,10 @@ fn objectives_node() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
             literal("modify").then(
                 argument("objective", SteelArgumentType::objective()).then(
                     literal("displayname")
-                        .then(argument("displayName", ArgumentType::word()).executes(set_display_name))
+                        .then(
+                            argument("displayName", ArgumentType::word())
+                                .executes(set_display_name),
+                        )
                         .then(literal("reset").executes(reset_display_name)),
                 ),
             ),
@@ -72,22 +71,12 @@ fn players_node() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     };
 
     literal("players")
-        .then(
-            literal("set").then(
-                targets().then(
-                    argument("score", ArgumentType::integer(i32::MIN, i32::MAX))
-                        .executes(set_score),
-                ),
-            ),
-        )
-        .then(
-            literal("add").then(
-                targets().then(
-                    argument("score", ArgumentType::integer(i32::MIN, i32::MAX))
-                        .executes(add_score),
-                ),
-            ),
-        )
+        .then(literal("set").then(targets().then(
+            argument("score", ArgumentType::integer(i32::MIN, i32::MAX)).executes(set_score),
+        )))
+        .then(literal("add").then(targets().then(
+            argument("score", ArgumentType::integer(i32::MIN, i32::MAX)).executes(add_score),
+        )))
         .then(
             literal("remove").then(
                 targets().then(
@@ -106,15 +95,16 @@ fn domain_of(context: &SteelCommandContext<CommandSource>) -> String {
     context.source().world().domain().to_owned()
 }
 
-fn scoreboard_of<'a>(
-    context: &'a SteelCommandContext<CommandSource>,
-) -> Result<&'a Scoreboard, CommandSyntaxError> {
+fn scoreboard_of(
+    context: &SteelCommandContext<CommandSource>,
+) -> Result<&Scoreboard, CommandSyntaxError> {
     let source = context.source();
     let domain = source.world().domain().to_owned();
     let server = source.server();
-    server.scoreboards.get(&domain).ok_or_else(|| {
-        CommandSyntaxError::dynamic(format!("Domain '{domain}' has no scoreboard"))
-    })
+    server
+        .scoreboards
+        .get(&domain)
+        .ok_or_else(|| CommandSyntaxError::dynamic(format!("Domain '{domain}' has no scoreboard")))
 }
 
 fn objective_of(
@@ -209,7 +199,9 @@ fn set_display_name(
         scoreboard.is_read_only(name),
     );
     context.source().send_success(
-        &TextComponent::plain(format!("Set display name of objective '{name}' to '{display}'")),
+        &TextComponent::plain(format!(
+            "Set display name of objective '{name}' to '{display}'"
+        )),
         false,
     );
     Ok(1)
@@ -260,7 +252,9 @@ fn set_display(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comm
         &objective,
     );
     context.source().send_success(
-        &TextComponent::plain(format!("Set display slot '{slot_name}' to objective '{objective}'")),
+        &TextComponent::plain(format!(
+            "Set display slot '{slot_name}' to objective '{objective}'"
+        )),
         false,
     );
     Ok(1)
@@ -274,11 +268,7 @@ fn list_objectives(
     let message = if names.is_empty() {
         "There are no objectives".to_owned()
     } else {
-        format!(
-            "There are {} objectives: {}",
-            names.len(),
-            names.join(", ")
-        )
+        format!("There are {} objectives: {}", names.len(), names.join(", "))
     };
     context
         .source()
@@ -298,7 +288,7 @@ fn write_scores(
     op: ScoreOp,
 ) -> Result<i32, CommandSyntaxError> {
     let scoreboard = scoreboard_of(context)?;
-    let objective = objective_of(context, &scoreboard)?;
+    let objective = objective_of(context, scoreboard)?;
     let value = context.integer("score")?;
     let holders = holders_of(context)?;
     for holder in &holders {
@@ -338,7 +328,7 @@ fn remove_score_value(
 
 fn reset_score(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let scoreboard = scoreboard_of(context)?;
-    let objective = objective_of(context, &scoreboard)?;
+    let objective = objective_of(context, scoreboard)?;
     let holders = holders_of(context)?;
     for holder in &holders {
         scoreboard
@@ -356,7 +346,7 @@ fn reset_score(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comm
 
 fn get_score(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let scoreboard = scoreboard_of(context)?;
-    let objective = objective_of(context, &scoreboard)?;
+    let objective = objective_of(context, scoreboard)?;
     let holders = holders_of(context)?;
     let Some(holder) = holders.first() else {
         return Err(CommandSyntaxError::dynamic("No score holder matched"));
@@ -379,11 +369,9 @@ fn get_score(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
     Ok(value)
 }
 
-fn enable_trigger(
-    context: &SteelCommandContext<CommandSource>,
-) -> Result<i32, CommandSyntaxError> {
+fn enable_trigger(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let scoreboard = scoreboard_of(context)?;
-    let objective = objective_of(context, &scoreboard)?;
+    let objective = objective_of(context, scoreboard)?;
     let holders = holders_of(context)?;
     for holder in &holders {
         scoreboard

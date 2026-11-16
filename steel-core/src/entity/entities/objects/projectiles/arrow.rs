@@ -395,9 +395,8 @@ pub trait AbstractArrow: Projectile + Sized {
             } else {
                 &vanilla_items::BOW.key
             };
-            let context =
-                crate::player::advancement::predicate::TriggerContext::item(weapon)
-                    .with_entity_type(&entity.entity_type().key);
+            let context = crate::player::advancement::predicate::TriggerContext::item(weapon)
+                .with_entity_type(&entity.entity_type().key);
             player.trigger_advancement_with_context(
                 &steel_registry::vanilla_criteria_triggers::KILLED_BY_ARROW,
                 &context,
@@ -687,7 +686,7 @@ impl ArrowEntity {
             entity_type,
             projectile_base: ProjectileBase::new(),
             arrow: ArrowHandle::new(
-                ItemStack::new(&*vanilla_items::ARROW),
+                ItemStack::new(&vanilla_items::ARROW),
                 DEFAULT_ARROW_DAMAGE,
                 false,
             ),
@@ -702,7 +701,7 @@ impl ArrowEntity {
             entity_type,
             projectile_base: ProjectileBase::new(),
             arrow: ArrowHandle::new(
-                ItemStack::new(&*vanilla_items::ARROW),
+                ItemStack::new(&vanilla_items::ARROW),
                 DEFAULT_ARROW_DAMAGE,
                 false,
             ),
@@ -735,7 +734,7 @@ impl SpectralArrowEntity {
             entity_type,
             projectile_base: ProjectileBase::new(),
             arrow: ArrowHandle::new(
-                ItemStack::new(&*vanilla_items::SPECTRAL_ARROW),
+                ItemStack::new(&vanilla_items::SPECTRAL_ARROW),
                 SPECTRAL_ARROW_DAMAGE,
                 true,
             ),
@@ -750,7 +749,7 @@ impl SpectralArrowEntity {
             entity_type,
             projectile_base: ProjectileBase::new(),
             arrow: ArrowHandle::new(
-                ItemStack::new(&*vanilla_items::SPECTRAL_ARROW),
+                ItemStack::new(&vanilla_items::SPECTRAL_ARROW),
                 SPECTRAL_ARROW_DAMAGE,
                 true,
             ),
@@ -807,7 +806,7 @@ impl ThrownTridentEntity {
             entity_type,
             projectile_base: ProjectileBase::new(),
             arrow: ArrowHandle::new(
-                ItemStack::new(&*vanilla_items::TRIDENT),
+                ItemStack::new(&vanilla_items::TRIDENT),
                 TRIDENT_DAMAGE,
                 false,
             ),
@@ -840,7 +839,7 @@ impl ThrownTridentEntity {
             entity_type,
             projectile_base: ProjectileBase::new(),
             arrow: ArrowHandle::new(
-                ItemStack::new(&*vanilla_items::TRIDENT),
+                ItemStack::new(&vanilla_items::TRIDENT),
                 TRIDENT_DAMAGE,
                 false,
             ),

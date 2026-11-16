@@ -15,7 +15,10 @@ fn can_glide_using_matches_vanilla_component_gate() {
 
     assert!(elytra.next_damage_will_break());
     assert!(!entity.can_glide_using(&elytra, EquipmentSlot::Chest));
-    assert!(!entity.can_glide_using(&ItemStack::new(&*vanilla_items::STONE), EquipmentSlot::Chest));
+    assert!(!entity.can_glide_using(
+        &ItemStack::new(&*vanilla_items::STONE),
+        EquipmentSlot::Chest
+    ));
 }
 
 #[test]
@@ -275,7 +278,10 @@ fn default_can_glide_uses_living_equipment() {
 
     assert!(!entity.can_glide());
 
-    entity.equip(EquipmentSlot::Chest, ItemStack::new(&*vanilla_items::ELYTRA));
+    entity.equip(
+        EquipmentSlot::Chest,
+        ItemStack::new(&*vanilla_items::ELYTRA),
+    );
 
     assert!(entity.can_glide());
 }
@@ -284,7 +290,10 @@ fn default_can_glide_uses_living_equipment() {
 fn try_to_start_fall_flying_uses_vanilla_glider_gate() {
     init_vanilla_registry();
     let entity = LivingFluidTestEntity::new(0.0, 0.0, true);
-    entity.equip(EquipmentSlot::Chest, ItemStack::new(&*vanilla_items::ELYTRA));
+    entity.equip(
+        EquipmentSlot::Chest,
+        ItemStack::new(&*vanilla_items::ELYTRA),
+    );
     entity.set_on_ground(false);
 
     assert!(entity.try_to_start_fall_flying());
@@ -299,7 +308,10 @@ fn gliding_non_player_living_entity_forces_velocity_sync() {
 
     assert!(!entity_ref.forces_fall_flying_velocity_sync());
 
-    entity.equip(EquipmentSlot::Chest, ItemStack::new(&*vanilla_items::ELYTRA));
+    entity.equip(
+        EquipmentSlot::Chest,
+        ItemStack::new(&*vanilla_items::ELYTRA),
+    );
     entity.set_on_ground(false);
     assert!(entity.try_to_start_fall_flying());
 
@@ -314,7 +326,10 @@ fn try_to_start_fall_flying_rejects_levitation() {
     init_vanilla_registry();
     init_behaviors();
     let entity = LivingFluidTestEntity::new(0.0, 0.0, true);
-    entity.equip(EquipmentSlot::Chest, ItemStack::new(&*vanilla_items::ELYTRA));
+    entity.equip(
+        EquipmentSlot::Chest,
+        ItemStack::new(&*vanilla_items::ELYTRA),
+    );
     entity.set_on_ground(false);
     entity.set_mob_effect_active(vanilla_mob_effects::LEVITATION, true);
 
@@ -326,7 +341,10 @@ fn try_to_start_fall_flying_rejects_levitation() {
 fn update_fall_flying_damages_glider_every_second_event_interval() {
     init_vanilla_registry();
     let entity = LivingFluidTestEntity::new(0.0, 0.0, true);
-    entity.equip(EquipmentSlot::Chest, ItemStack::new(&*vanilla_items::ELYTRA));
+    entity.equip(
+        EquipmentSlot::Chest,
+        ItemStack::new(&*vanilla_items::ELYTRA),
+    );
     entity.set_on_ground(false);
     for _ in 0..19 {
         entity.living_base.tick_fall_flying_state(true);

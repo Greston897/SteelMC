@@ -251,7 +251,6 @@ impl Mob for BreezeEntity {
     fn set_mob_flags(&self, flags: i8) {
         self.entity_data.lock().mob_mut().mob_flags.set(flags);
     }
-
 }
 
 impl Monster for BreezeEntity {}
@@ -268,7 +267,7 @@ impl PathfinderMob for BreezeEntity {
         let Some(world) = self.level() else {
             return;
         };
-        let start = self.position() + DVec3::new(0.0, f64::from(self.get_eye_height()), 0.0);
+        let start = self.position() + DVec3::new(0.0, self.get_eye_height(), 0.0);
         let charge = BreezeWindChargeEntity::new(
             &vanilla_entities::BREEZE_WIND_CHARGE,
             next_entity_id(),
@@ -278,15 +277,14 @@ impl PathfinderMob for BreezeEntity {
         let charge = Arc::new(charge);
         charge.set_owner_entity(Some(self_entity));
         let aim = (target.position()
-            + DVec3::new(
-                0.0,
-                f64::from(target.base().dimensions().height) * 0.5,
-                0.0,
-            )
+            + DVec3::new(0.0, f64::from(target.base().dimensions().height) * 0.5, 0.0)
             - start)
             .normalize_or_zero();
         charge.set_velocity(aim * f64::from(BREEZE_WIND_CHARGE_POWER));
-        if world.try_add_entity(Arc::clone(&charge) as SharedEntity).is_ok() {
+        if world
+            .try_add_entity(Arc::clone(&charge) as SharedEntity)
+            .is_ok()
+        {
             self.play_sound(&sound_events::ENTITY_BREEZE_SHOOT, 1.0, 1.0);
         }
     }

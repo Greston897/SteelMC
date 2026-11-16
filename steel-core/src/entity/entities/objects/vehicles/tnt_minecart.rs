@@ -13,8 +13,8 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::MinecartEntityData;
-use steel_utils::locks::SyncMutex;
 use steel_utils::BlockStateId;
+use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
@@ -144,7 +144,9 @@ impl TntMinecartEntity {
         // Vanilla detonates at the cart's centre with a small upward offset.
         let center = self.position() + DVec3::new(0.0, 0.0625, 0.0);
         let mut options = ExplosionOptions::new(center, power, ExplosionInteraction::Tnt);
-        if let Some(world_entity) = self.level().and_then(|level| level.get_entity_by_id(self.id()))
+        if let Some(world_entity) = self
+            .level()
+            .and_then(|level| level.get_entity_by_id(self.id()))
         {
             options.source = Some(world_entity);
         }
@@ -180,19 +182,18 @@ impl Entity for TntMinecartEntity {
             state.fuse
         };
 
-        if fuse == 0 {
-            if let Some(world) = self.level() {
-                self.explode(&world);
-            }
+        if fuse == 0
+            && let Some(world) = self.level()
+        {
+            self.explode(&world);
         }
     }
 
     fn hurt(&self, world: &World, source: &DamageSource, amount: f32) -> bool {
         // Vanilla primes the fuse when the cart takes damage from a source
         // that is not fire, and only if the cart was not already primed.
-        let ignites =
-            source.damage_type.key != steel_registry::vanilla_damage_types::IN_FIRE.key
-                && source.damage_type.key != steel_registry::vanilla_damage_types::ON_FIRE.key;
+        let ignites = source.damage_type.key != steel_registry::vanilla_damage_types::IN_FIRE.key
+            && source.damage_type.key != steel_registry::vanilla_damage_types::ON_FIRE.key;
         if ignites && !self.is_primed() {
             self.prime_fuse(true);
         }
@@ -259,7 +260,6 @@ impl AbstractMinecart for TntMinecartEntity {
             .id_display_offset
             .set(value);
     }
-
 }
 
 #[cfg(test)]

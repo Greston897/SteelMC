@@ -14,9 +14,7 @@ use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::ItemFrameEntityData;
-use steel_registry::{
-    sound_events, vanilla_blocks, vanilla_game_events, vanilla_items,
-};
+use steel_registry::{sound_events, vanilla_blocks, vanilla_game_events, vanilla_items};
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtNumeric as _;
 use steel_utils::nbt::NbtValueInput as _;
@@ -198,7 +196,7 @@ impl GlowItemFrameEntity {
     /// Returns the item that places this frame (vanilla `getAsItemStack`).
     #[must_use]
     pub fn placeable_item(&self) -> ItemRef {
-        &*vanilla_items::GLOW_ITEM_FRAME
+        &vanilla_items::GLOW_ITEM_FRAME
     }
 
     /// Rotation of the framed item in 45° steps (vanilla `getRotation`).

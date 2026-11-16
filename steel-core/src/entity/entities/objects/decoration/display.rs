@@ -14,9 +14,7 @@ use steel_macros::entity_behavior;
 use steel_registry::entity_data::{Quaternionf, Vector3f};
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_entity_data::{
-    ItemDisplayEntityData, TextDisplayEntityData,
-};
+use steel_registry::vanilla_entity_data::{ItemDisplayEntityData, TextDisplayEntityData};
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::types::InteractionHand;
@@ -24,9 +22,7 @@ use steel_utils::{DowncastType, DowncastTypeKey};
 use text_components::TextComponent;
 
 use crate::behavior::InteractionResult;
-use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData,
-};
+use crate::entity::{Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData};
 use crate::player::Player;
 use crate::world::World;
 
@@ -118,7 +114,9 @@ macro_rules! display_boilerplate {
                 data.display.translation.set(transformation.translation);
                 data.display.scale.set(transformation.scale);
                 data.display.left_rotation.set(transformation.left_rotation);
-                data.display.right_rotation.set(transformation.right_rotation);
+                data.display
+                    .right_rotation
+                    .set(transformation.right_rotation);
             }
 
             /// The billboard mode, decoded from the synced byte.
@@ -154,7 +152,11 @@ macro_rules! display_boilerplate {
 
             /// Sets the display view range multiplier.
             pub fn set_view_range(&self, range: f32) {
-                self.entity_data.lock().display.view_range.set(range.clamp(0.0, 64.0));
+                self.entity_data
+                    .lock()
+                    .display
+                    .view_range
+                    .set(range.clamp(0.0, 64.0));
             }
 
             /// The display width, `0.0` when unset.
@@ -210,11 +212,20 @@ macro_rules! display_boilerplate {
                     data.display.billboard_render_constraints.get().to_string(),
                 );
                 nbt.insert("view_range", f64::from(*data.display.view_range.get()));
-                nbt.insert("shadow_radius", f64::from(*data.display.shadow_radius.get()));
-                nbt.insert("shadow_strength", f64::from(*data.display.shadow_strength.get()));
+                nbt.insert(
+                    "shadow_radius",
+                    f64::from(*data.display.shadow_radius.get()),
+                );
+                nbt.insert(
+                    "shadow_strength",
+                    f64::from(*data.display.shadow_strength.get()),
+                );
                 nbt.insert("width", f64::from(*data.display.width.get()));
                 nbt.insert("height", f64::from(*data.display.height.get()));
-                nbt.insert("glow_color_override", *data.display.glow_color_override.get());
+                nbt.insert(
+                    "glow_color_override",
+                    *data.display.glow_color_override.get(),
+                );
             }
 
             fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
@@ -232,9 +243,7 @@ macro_rules! display_boilerplate {
                     data.display.glow_color_override.set(color);
                 }
                 if let Some(billboard) = nbt.byte_value("billboard") {
-                    data.display
-                        .billboard_render_constraints
-                        .set(billboard);
+                    data.display.billboard_render_constraints.set(billboard);
                 }
             }
         }
@@ -263,12 +272,7 @@ display_boilerplate!(
 impl ItemDisplayEntity {
     /// Creates a new item display entity.
     #[must_use]
-    pub fn new(
-        entity_type: EntityTypeRef,
-        id: i32,
-        position: DVec3,
-        world: Weak<World>,
-    ) -> Self {
+    pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {
         Self {
             base: EntityBase::new(id, position, entity_type.dimensions, world),
             entity_type,
@@ -304,12 +308,7 @@ display_boilerplate!(
 impl TextDisplayEntity {
     /// Creates a new text display entity.
     #[must_use]
-    pub fn new(
-        entity_type: EntityTypeRef,
-        id: i32,
-        position: DVec3,
-        world: Weak<World>,
-    ) -> Self {
+    pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {
         Self {
             base: EntityBase::new(id, position, entity_type.dimensions, world),
             entity_type,
@@ -451,27 +450,22 @@ mod tests {
     #[test]
     fn item_displays_store_their_stack() {
         init_vanilla_registry();
-        let display = ItemDisplayEntity::new(
-            &vanilla_entities::ITEM_DISPLAY,
-            1,
-            DVec3::ZERO,
-            Weak::new(),
-        );
+        let display =
+            ItemDisplayEntity::new(&vanilla_entities::ITEM_DISPLAY, 1, DVec3::ZERO, Weak::new());
         assert!(display.item_stack().is_empty());
         display.set_item_stack(ItemStack::new(&steel_registry::vanilla_items::STICK));
-        assert_eq!(display.item_stack().item().key.to_string(), "minecraft:stick");
+        assert_eq!(
+            display.item_stack().item().key.to_string(),
+            "minecraft:stick"
+        );
         assert_eq!(display.display_context(), 0);
     }
 
     #[test]
     fn text_display_flags_toggle_independently() {
         init_vanilla_registry();
-        let display = TextDisplayEntity::new(
-            &vanilla_entities::TEXT_DISPLAY,
-            1,
-            DVec3::ZERO,
-            Weak::new(),
-        );
+        let display =
+            TextDisplayEntity::new(&vanilla_entities::TEXT_DISPLAY, 1, DVec3::ZERO, Weak::new());
         assert!(!display.is_see_through());
         display.set_see_through(true);
         assert!(display.is_see_through());
@@ -483,12 +477,8 @@ mod tests {
     #[test]
     fn text_display_defaults_match_vanilla() {
         init_vanilla_registry();
-        let display = TextDisplayEntity::new(
-            &vanilla_entities::TEXT_DISPLAY,
-            1,
-            DVec3::ZERO,
-            Weak::new(),
-        );
+        let display =
+            TextDisplayEntity::new(&vanilla_entities::TEXT_DISPLAY, 1, DVec3::ZERO, Weak::new());
         assert_eq!(display.line_width(), 200);
         assert_eq!(display.background_color(), 0x4000_0000);
         assert_eq!(display.text_opacity(), -1);

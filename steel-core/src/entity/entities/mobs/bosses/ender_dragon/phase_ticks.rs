@@ -25,16 +25,15 @@ use glam::DVec3;
 use steel_utils::BlockPos;
 
 use super::EnderDragonEntity;
-use crate::entity::LivingEntity;
-use crate::entity::ai::targeting::TargetingConditions;
 use super::part::{DRAGON_PART_HEAD, DRAGON_PART_HEAD_HEIGHT};
 use super::phases::{
-    DragonPhase, DragonPhaseManager, find_closest_node_with_crystals,
-    find_path, wrap_degrees,
+    DragonPhase, DragonPhaseManager, find_closest_node_with_crystals, find_path, wrap_degrees,
 };
-use crate::entity::damage::DamageSource;
 use crate::entity::Entity;
+use crate::entity::LivingEntity;
 use crate::entity::ai::path::Path;
+use crate::entity::ai::targeting::TargetingConditions;
+use crate::entity::damage::DamageSource;
 use crate::world::World;
 
 /// Vanilla `DragonStrafePlayerPhase.FIREBALL_CHARGE_AMOUNT`.
@@ -116,7 +115,7 @@ pub struct PhaseContext<'a> {
 /// Vanilla `DragonHoldingPatternPhase.NEW_TARGET_TARGETING`: combat targeting
 /// with line of sight ignored, so the dragon notices players through terrain.
 #[must_use]
-fn new_target_targeting() -> TargetingConditions {
+const fn new_target_targeting() -> TargetingConditions {
     TargetingConditions::for_combat().ignore_line_of_sight()
 }
 
@@ -220,8 +219,8 @@ pub fn sitting_on_hurt(dragon: &EnderDragonEntity, source: &DamageSource, damage
     // `is_abstract_arrow` is the generated flag for the `AbstractArrow` family,
     // so arrows, spectral arrows and thrown tridents all count.
     let entity_type = direct.entity_type();
-    let is_arrow_or_charge =
-        entity_type.is_abstract_arrow || entity_type == &steel_registry::vanilla_entities::WIND_CHARGE;
+    let is_arrow_or_charge = entity_type.is_abstract_arrow
+        || entity_type == &steel_registry::vanilla_entities::WIND_CHARGE;
 
     if !is_arrow_or_charge {
         return damage;
@@ -353,7 +352,7 @@ pub fn phase_fly_target(phase: DragonPhase, manager: &DragonPhaseManager) -> Opt
 
 /// Vanilla `DragonPhaseInstance.getFlySpeed` for the current manager state.
 #[must_use]
-pub fn fly_speed(phase: DragonPhase) -> f32 {
+pub const fn fly_speed(phase: DragonPhase) -> f32 {
     phase.fly_speed()
 }
 
@@ -437,12 +436,8 @@ fn set_strafe_target(
     // path, which always searches from node 0 — only the end node is filtered by
     // the crystal count.
     let current_node = manager.find_closest_node(ctx.world, ctx.position);
-    let target_node = find_closest_node_with_crystals(
-        manager,
-        ctx.world,
-        target_position,
-        ctx.alive_crystals,
-    );
+    let target_node =
+        find_closest_node_with_crystals(manager, ctx.world, target_position, ctx.alive_crystals);
 
     // Vanilla aims a little above the target, scaled by the horizontal distance,
     // and caps the lift at ten blocks. The constants are Java's: `(double)0.4f`
@@ -603,11 +598,7 @@ enum RingWalk {
 /// Vanilla also starts both paths at the *no-arg* `findClosestNode()`, which
 /// always searches from node `0` regardless of the crystal count, so
 /// `current_node` is not filtered here.
-fn pick_ring_path(
-    manager: &mut DragonPhaseManager,
-    ctx: &PhaseContext<'_>,
-    walk: RingWalk,
-) {
+fn pick_ring_path(manager: &mut DragonPhaseManager, ctx: &PhaseContext<'_>, walk: RingWalk) {
     let current_node = manager.find_closest_node(ctx.world, ctx.position);
 
     let mut target_node = current_node;
@@ -668,7 +659,9 @@ fn set_current_path(manager: &mut DragonPhaseManager, path: Option<Path>) {
 /// Vanilla `navigateToNextPathNode`.
 fn navigate_to_next_path_node(manager: &mut DragonPhaseManager, ctx: &PhaseContext<'_>) {
     let offset = ctx.random;
-    manager.current_state_mut().navigate_to_next_path_node(offset);
+    manager
+        .current_state_mut()
+        .navigate_to_next_path_node(offset);
 }
 
 // ---------------------------------------------------------------------------
@@ -708,18 +701,13 @@ fn find_new_landing_target(manager: &mut DragonPhaseManager, ctx: &PhaseContext<
             Some(player) => {
                 // Vanilla aims at the ring node opposite the player's bearing.
                 let player_position = Entity::position(player.as_ref());
-                let aim =
-                    DVec3::new(player_position.x, 0.0, player_position.z).normalize_or_zero();
+                let aim = DVec3::new(player_position.x, 0.0, player_position.z).normalize_or_zero();
                 DVec3::new(-aim.x * 40.0, 105.0, -aim.z * 40.0)
             }
             None => DVec3::new(40.0, f64::from(egg.y()), 0.0),
         };
-        let target_node = find_closest_node_with_crystals(
-            manager,
-            ctx.world,
-            aim_position,
-            ctx.alive_crystals,
-        );
+        let target_node =
+            find_closest_node_with_crystals(manager, ctx.world, aim_position, ctx.alive_crystals);
 
         let final_node = DVec3::new(f64::from(egg.x()), f64::from(egg.y()), f64::from(egg.z()));
         let path = find_path(
@@ -785,12 +773,8 @@ fn find_new_takeoff_target(manager: &mut DragonPhaseManager, ctx: &PhaseContext<
     // Vanilla looks backward from the head to pick the takeoff ring node.
     let look = ctx.head_look(DragonPhase::Takeoff);
     let aim_position = DVec3::new(-look.x * 40.0, 105.0, -look.z * 40.0);
-    let mut target_node = find_closest_node_with_crystals(
-        manager,
-        ctx.world,
-        aim_position,
-        ctx.alive_crystals,
-    );
+    let mut target_node =
+        find_closest_node_with_crystals(manager, ctx.world, aim_position, ctx.alive_crystals);
 
     if ctx.alive_crystals <= 0 {
         target_node = (target_node.wrapping_sub(12) & 7) + 12;
@@ -844,8 +828,8 @@ fn tick_sitting_flaming(
             .parts
             .position(DRAGON_PART_HEAD)
             .unwrap_or(ctx.position);
-        let look = DVec3::new(head.x - ctx.position.x, 0.0, head.z - ctx.position.z)
-            .normalize_or_zero();
+        let look =
+            DVec3::new(head.x - ctx.position.x, 0.0, head.z - ctx.position.z).normalize_or_zero();
         actions.push(PhaseAction::SpawnBreathCloud {
             x: head.x + look.x * f64::from(SITTING_FLAME_RADIUS) / 2.0,
             // Vanilla uses `head.getY(0.5)`: half the part's height above its feet.
@@ -882,7 +866,11 @@ fn tick_sitting_scanning(
             target_position.z - ctx.position.z,
         )
         .normalize_or_zero();
-        let angle = (ctx.facing().dot(aim) as f32).clamp(-1.0, 1.0).acos().to_degrees() + 0.5;
+        let angle = (ctx.facing().dot(aim) as f32)
+            .clamp(-1.0, 1.0)
+            .acos()
+            .to_degrees()
+            + 0.5;
 
         if !(0.0..=10.0).contains(&angle) {
             let head = manager
@@ -891,8 +879,7 @@ fn tick_sitting_scanning(
                 .unwrap_or(ctx.position);
             let x_dist = target_position.x - head.x;
             let z_dist = target_position.z - head.z;
-            let target_yaw =
-                180.0 - f64::from(steel_math::trig::atan2(x_dist, z_dist)) * 57.295_776;
+            let target_yaw = 180.0 - steel_math::trig::atan2(x_dist, z_dist) * 57.295_776;
             let y_rot_delta =
                 wrap_degrees((target_yaw - f64::from(ctx.yaw)) as f32).clamp(-100.0, 100.0);
 
@@ -920,7 +907,9 @@ fn tick_sitting_scanning(
     if let Some(target) = ctx.charge_player.clone() {
         let target_position = Entity::position(target.as_ref());
         manager.set_phase(DragonPhase::ChargingPlayer);
-        manager.state_for(DragonPhase::ChargingPlayer).target_location = Some(target_position);
+        manager
+            .state_for(DragonPhase::ChargingPlayer)
+            .target_location = Some(target_position);
     }
 }
 
@@ -1073,7 +1062,6 @@ pub fn on_crystal_destroyed(
     drop(manager);
     dragon.sync_phase_data();
 }
-
 
 #[cfg(test)]
 mod tests {

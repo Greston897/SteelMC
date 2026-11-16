@@ -92,7 +92,8 @@ pub(crate) fn place_end_gateway_in_world(
                     && let Some(exit) = config.exit
                     && let Some(block_entity) = world.get_block_entity(pos)
                     && let Some(gateway) = block_entity
-                        .downcast_ref::<crate::block_entity::entities::EndGatewayBlockEntity>()
+                        .downcast_ref::<crate::block_entity::entities::EndGatewayBlockEntity>(
+                    )
                 {
                     let exit = BlockPos::new(exit[0], exit[1], exit[2]);
                     gateway.set_exit_position(exit, config.exact);

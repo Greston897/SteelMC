@@ -14,8 +14,8 @@ use super::super::{
     },
     registration::CommandRegistration,
 };
-use crate::server::scoreboard_sync;
 use crate::scoreboard::{ScoreHolder, TeamState, TeamVisibility};
+use crate::server::scoreboard_sync;
 
 pub(super) fn registration() -> CommandRegistration<CommandSource> {
     CommandRegistration::new(Identifier::vanilla_static("team"), |_| command())
@@ -31,33 +31,19 @@ const VISIBILITIES: [TeamVisibility; 4] = [
 
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("team")
-        .then(
-            literal("add").then(
-                argument("team", ArgumentType::word()).executes(add_team),
-            ),
-        )
-        .then(
-            literal("remove").then(
-                argument("team", ArgumentType::word()).executes(remove_team),
-            ),
-        )
-        .then(
-            literal("empty").then(
-                argument("team", ArgumentType::word()).executes(empty_team),
-            ),
-        )
+        .then(literal("add").then(argument("team", ArgumentType::word()).executes(add_team)))
+        .then(literal("remove").then(argument("team", ArgumentType::word()).executes(remove_team)))
+        .then(literal("empty").then(argument("team", ArgumentType::word()).executes(empty_team)))
         .then(
             literal("join").then(
-                argument("team", ArgumentType::word())
-                    .then(argument("members", SteelArgumentType::score_holders())
-                        .executes(join_team)),
+                argument("team", ArgumentType::word()).then(
+                    argument("members", SteelArgumentType::score_holders()).executes(join_team),
+                ),
             ),
         )
         .then(
-            literal("leave").then(
-                argument("members", SteelArgumentType::score_holders())
-                    .executes(leave_team),
-            ),
+            literal("leave")
+                .then(argument("members", SteelArgumentType::score_holders()).executes(leave_team)),
         )
         .then(literal("list").then(argument("team", ArgumentType::word()).executes(list_members)))
         .then(literal("list").executes(list_teams))
@@ -65,9 +51,7 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
 }
 
 fn modify_commands() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    let mut modify = literal("modify").then(
-        argument("team", ArgumentType::word()),
-    );
+    let mut modify = literal("modify").then(argument("team", ArgumentType::word()));
 
     // Friendly fire
     let mut friendly_fire = literal("friendlyFire");
@@ -84,9 +68,8 @@ fn modify_commands() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
             modify_team(context, move |team| team.color = Some((*name).to_string()))
         }));
     }
-    color = color.then(literal("reset").executes(|context| {
-        modify_team(context, |team| team.color = None)
-    }));
+    color = color
+        .then(literal("reset").executes(|context| modify_team(context, |team| team.color = None)));
 
     // Visibility triples
     let mut visibility = literal("visibility");
@@ -94,21 +77,16 @@ fn modify_commands() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     let mut death_message = literal("deathMessageVisibility");
     for value in VISIBILITIES {
         let name = value.name();
-        visibility = visibility.then(
-            literal(name).executes(move |context| {
+        visibility = visibility
+            .then(literal(name).executes(move |context| {
                 modify_team(context, move |team| team.visibility = value)
-            }),
-        );
-        nametag = nametag.then(
-            literal(name).executes(move |context| {
-                modify_team(context, move |team| team.name_tag_visibility = value)
-            }),
-        );
-        death_message = death_message.then(
-            literal(name).executes(move |context| {
-                modify_team(context, move |team| team.death_message_visibility = value)
-            }),
-        );
+            }));
+        nametag = nametag.then(literal(name).executes(move |context| {
+            modify_team(context, move |team| team.name_tag_visibility = value)
+        }));
+        death_message = death_message.then(literal(name).executes(move |context| {
+            modify_team(context, move |team| team.death_message_visibility = value)
+        }));
     }
 
     // Prefix / suffix
@@ -134,8 +112,22 @@ fn modify_commands() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
 }
 
 const COLOR_NAMES: &[&str] = &[
-    "black", "dark_blue", "dark_green", "dark_aqua", "dark_red", "dark_purple", "gold", "gray",
-    "dark_gray", "blue", "green", "aqua", "red", "light_purple", "yellow", "white",
+    "black",
+    "dark_blue",
+    "dark_green",
+    "dark_aqua",
+    "dark_red",
+    "dark_purple",
+    "gold",
+    "gray",
+    "dark_gray",
+    "blue",
+    "green",
+    "aqua",
+    "red",
+    "light_purple",
+    "yellow",
+    "white",
 ];
 
 enum ComponentPart {
@@ -150,7 +142,12 @@ fn add_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Command
         .add_team(name.clone())
         .map_err(|error| CommandSyntaxError::dynamic(error.to_string()))?;
     if let Some(state) = scoreboard.team_state(&name) {
-        scoreboard_sync::sync_team_added(context.source().server(), &domain_of(context), &name, &state);
+        scoreboard_sync::sync_team_added(
+            context.source().server(),
+            &domain_of(context),
+            &name,
+            &state,
+        );
     }
 
     context.source().send_success(
@@ -170,10 +167,9 @@ fn remove_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comm
     }
     scoreboard_sync::sync_team_removed(context.source().server(), &domain_of(context), &name);
 
-    context.source().send_success(
-        &TextComponent::plain(format!("Removed team {name}")),
-        true,
-    );
+    context
+        .source()
+        .send_success(&TextComponent::plain(format!("Removed team {name}")), true);
     Ok(1)
 }
 
@@ -181,10 +177,7 @@ fn empty_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comma
     let name = context.string("team")?.to_owned();
     let scoreboard = scoreboard(context)?;
 
-    let members: Vec<String> = scoreboard
-        .team_members(&name)
-        .into_iter()
-        .collect();
+    let members: Vec<String> = scoreboard.team_members(&name).into_iter().collect();
     if members.is_empty() {
         return Err(CommandSyntaxError::dynamic(format!(
             "Team {name} has no members"
@@ -201,17 +194,19 @@ fn empty_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comma
         false,
     );
 
-    context.source().send_success(
-        &TextComponent::plain(format!("Emptied team {name}")),
-        true,
-    );
+    context
+        .source()
+        .send_success(&TextComponent::plain(format!("Emptied team {name}")), true);
     i32::try_from(members.len())
         .map_err(|_| CommandSyntaxError::dynamic("Too many team members".to_string()))
 }
 
 fn join_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let name = context.string("team")?.to_owned();
-    let holders = context.score_holders("members", crate::command::execution::ScoreHolderWildcard::Tracked)?;
+    let holders = context.score_holders(
+        "members",
+        crate::command::execution::ScoreHolderWildcard::Tracked,
+    )?;
     let scoreboard = scoreboard(context)?;
 
     let Some(team) = scoreboard.team(&name) else {
@@ -225,7 +220,10 @@ fn join_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
             .add_holder_to_team(holder, &team)
             .map_err(|error| CommandSyntaxError::dynamic(error.to_string()))?;
     }
-    let names: Vec<String> = holders.iter().map(|holder| holder.name().to_owned()).collect();
+    let names: Vec<String> = holders
+        .iter()
+        .map(|holder| holder.name().to_owned())
+        .collect();
     scoreboard_sync::sync_team_membership(
         context.source().server(),
         &domain_of(context),
@@ -235,10 +233,7 @@ fn join_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
     );
 
     context.source().send_success(
-        &TextComponent::plain(format!(
-            "Added {} member(s) to team {name}",
-            holders.len()
-        )),
+        &TextComponent::plain(format!("Added {} member(s) to team {name}", holders.len())),
         true,
     );
     i32::try_from(holders.len())
@@ -246,7 +241,10 @@ fn join_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
 }
 
 fn leave_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
-    let holders = context.score_holders("members", crate::command::execution::ScoreHolderWildcard::Tracked)?;
+    let holders = context.score_holders(
+        "members",
+        crate::command::execution::ScoreHolderWildcard::Tracked,
+    )?;
     let scoreboard = scoreboard(context)?;
 
     let mut removed = 0;
@@ -271,7 +269,11 @@ fn list_members(context: &SteelCommandContext<CommandSource>) -> Result<i32, Com
     let message = if members.is_empty() {
         format!("Team {name} has no members")
     } else {
-        format!("Team {name} has {} member(s): {}", members.len(), members.join(", "))
+        format!(
+            "Team {name} has {} member(s): {}",
+            members.len(),
+            members.join(", ")
+        )
     };
     context
         .source()
@@ -310,12 +312,16 @@ where
             "Team {name} does not exist"
         )));
     };
-    scoreboard_sync::sync_team_updated(context.source().server(), &domain_of(context), &name, &state);
-
-    context.source().send_success(
-        &TextComponent::plain(format!("Modified team {name}")),
-        true,
+    scoreboard_sync::sync_team_updated(
+        context.source().server(),
+        &domain_of(context),
+        &name,
+        &state,
     );
+
+    context
+        .source()
+        .send_success(&TextComponent::plain(format!("Modified team {name}")), true);
     Ok(1)
 }
 
@@ -329,8 +335,8 @@ fn modify_component(
     };
     let text = context.string(field)?.to_owned();
     modify_team(context, move |team| match part {
-        ComponentPart::Prefix => team.prefix = text.clone(),
-        ComponentPart::Suffix => team.suffix = text.clone(),
+        ComponentPart::Prefix => team.prefix = text,
+        ComponentPart::Suffix => team.suffix = text,
     })
 }
 
@@ -339,9 +345,9 @@ fn domain_of(context: &SteelCommandContext<CommandSource>) -> String {
     context.source().world().domain().to_owned()
 }
 
-fn scoreboard<'a>(
-    context: &'a SteelCommandContext<CommandSource>,
-) -> Result<&'a crate::scoreboard::Scoreboard, CommandSyntaxError> {
+fn scoreboard(
+    context: &SteelCommandContext<CommandSource>,
+) -> Result<&crate::scoreboard::Scoreboard, CommandSyntaxError> {
     let domain = context.source().world().domain();
     context
         .source()

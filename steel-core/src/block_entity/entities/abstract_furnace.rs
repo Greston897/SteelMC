@@ -175,10 +175,10 @@ impl FurnaceContainer {
             self.items[SLOT_RESULT].grow(result.count());
         }
 
-        if self.items[SLOT_INPUT].is(&*vanilla_items::WET_SPONGE)
-            && self.items[SLOT_FUEL].is(&*vanilla_items::BUCKET)
+        if self.items[SLOT_INPUT].is(&vanilla_items::WET_SPONGE)
+            && self.items[SLOT_FUEL].is(&vanilla_items::BUCKET)
         {
-            self.items[SLOT_FUEL] = ItemStack::new(&*vanilla_items::WATER_BUCKET);
+            self.items[SLOT_FUEL] = ItemStack::new(&vanilla_items::WATER_BUCKET);
         }
         self.items[SLOT_INPUT].shrink(1);
         *self.recipes_used.entry(recipe.key().clone()).or_default() += 1;
@@ -287,8 +287,8 @@ impl Container for FurnaceContainer {
             SLOT_RESULT => false,
             SLOT_FUEL => {
                 VANILLA_FUEL_VALUES.is_fuel(stack.item())
-                    || (stack.is(&*vanilla_items::BUCKET)
-                        && !self.items[SLOT_FUEL].is(&*vanilla_items::BUCKET))
+                    || (stack.is(&vanilla_items::BUCKET)
+                        && !self.items[SLOT_FUEL].is(&vanilla_items::BUCKET))
             }
             _ => true,
         }
@@ -310,8 +310,8 @@ impl Container for FurnaceContainer {
     ) -> bool {
         direction != Direction::Down
             || slot != SLOT_FUEL
-            || stack.is(&*vanilla_items::WATER_BUCKET)
-            || stack.is(&*vanilla_items::BUCKET)
+            || stack.is(&vanilla_items::WATER_BUCKET)
+            || stack.is(&vanilla_items::BUCKET)
     }
 }
 

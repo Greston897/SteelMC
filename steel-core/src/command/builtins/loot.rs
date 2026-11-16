@@ -67,9 +67,10 @@ fn loot_table_of(
     context: &SteelCommandContext<CommandSource>,
 ) -> Result<LootTableRef, CommandSyntaxError> {
     let key = context.identifier("loot_table")?;
-    REGISTRY.loot_tables.by_key(key).ok_or_else(|| {
-        CommandSyntaxError::dynamic(format!("Unknown loot table '{}'", key))
-    })
+    REGISTRY
+        .loot_tables
+        .by_key(key)
+        .ok_or_else(|| CommandSyntaxError::dynamic(format!("Unknown loot table '{key}'")))
 }
 
 fn roll(
@@ -118,7 +119,7 @@ fn insert_or_give(
 
     let mut total = 0;
     for _ in 0..count {
-        let items = roll(table, &world, pos);
+        let items = roll(table, world, pos);
         for item in items {
             for target in &targets {
                 give_to_player(target, item.clone());

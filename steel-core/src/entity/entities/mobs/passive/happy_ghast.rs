@@ -14,17 +14,17 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
+use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::HappyGhastEntityData;
-use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    BreedGoal, FloatGoal, FollowParentGoal,
-    LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
+    WaterAvoidingRandomStrollGoal,
 };
 
 use crate::entity::damage::DamageSource;
@@ -39,7 +39,7 @@ use crate::world::World;
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
 
 #[entity_behavior(class = "HappyGhast", spawn_rule)]
-/// Vanilla happy_ghast entity.
+/// Vanilla `happy_ghast` entity.
 pub struct HappyGhastEntity {
     base: EntityBase,
     entity_type: EntityTypeRef,
@@ -61,7 +61,7 @@ impl HappyGhastEntity {
         <Self as Animal>::check_animal_spawn_rules(entity_type, level, spawn_reason, pos, random)
     };
 
-    /// Creates a new happy_ghast at runtime.
+    /// Creates a new `happy_ghast` at runtime.
     #[must_use]
     pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {
         Self::new_with_base(
@@ -70,7 +70,7 @@ impl HappyGhastEntity {
         )
     }
 
-    /// Reconstructs a happy_ghast from persisted base entity state.
+    /// Reconstructs a `happy_ghast` from persisted base entity state.
     #[must_use]
     pub fn from_saved(entity_type: EntityTypeRef, load: EntityBaseLoad) -> Self {
         Self::new_with_base(
@@ -201,7 +201,6 @@ impl Entity for HappyGhastEntity {
         self.load_mob(nbt);
         self.load_ageable_mob(nbt);
         self.load_animal(nbt);
-
     }
 }
 
@@ -273,7 +272,6 @@ impl AgeableMob for HappyGhastEntity {
     fn age_boundary_changed(&self, _baby: bool) {
         self.refresh_dimensions();
     }
-
 }
 
 impl Animal for HappyGhastEntity {
@@ -324,4 +322,3 @@ impl Mob for HappyGhastEntity {
 }
 
 impl PathfinderMob for HappyGhastEntity {}
-

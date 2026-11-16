@@ -40,7 +40,7 @@ impl ItemBehavior for FishingRodItem {
         let pitch = 0.4 / rng().random_range(0.8..1.2);
 
         if let Some(fishing) = player.fishing_hook() {
-            if item.is(&*vanilla_items::FISHING_ROD) {
+            if item.is(&vanilla_items::FISHING_ROD) {
                 let damage = fishing.retrieve(&item);
 
                 context.inv.with_item(|item| {

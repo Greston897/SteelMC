@@ -607,8 +607,8 @@ impl LevelDataManager {
         }
 
         let content = std::fs::read_to_string(world_path)?;
-        let table: toml::Table = toml::from_str(&content)
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        let table: toml::Table =
+            toml::from_str(&content).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
         let loaded: LevelData = table
             .try_into()
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;

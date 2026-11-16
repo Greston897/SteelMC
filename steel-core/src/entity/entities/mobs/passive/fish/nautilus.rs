@@ -204,9 +204,12 @@ impl NautilusEntity {
 
     /// Vanilla `AbstractNautilus.setDash`.
     pub fn set_dash(&self, dash: bool) {
-        self.entity_data.lock().abstract_nautilus_mut().dash.set(dash);
+        self.entity_data
+            .lock()
+            .abstract_nautilus_mut()
+            .dash
+            .set(dash);
     }
-
 }
 
 impl AbstractNautilus for NautilusEntity {
@@ -269,7 +272,6 @@ impl Entity for NautilusEntity {
     fn load_additional(&self, nbt: borrow::NbtCompound<'_, '_>) {
         self.load_mob(nbt);
     }
-
 }
 
 impl LivingEntity for NautilusEntity {
@@ -340,8 +342,9 @@ impl LivingEntity for NautilusEntity {
             return;
         }
         let amount = jump_amount.max(0);
-        self.living_base()
-            .set_jump_pending_scale(crate::entity::living_entity::player_jump_pending_scale(amount));
+        self.living_base().set_jump_pending_scale(
+            crate::entity::living_entity::player_jump_pending_scale(amount),
+        );
     }
 
     /// Vanilla `AbstractNautilus.tickRidden`: resolve a stored charge into
@@ -365,14 +368,7 @@ impl LivingEntity for NautilusEntity {
             } else {
                 &sound_events::ENTITY_NAUTILUS_DASH_LAND
             };
-            world.play_sound_at(
-                sound,
-                SoundSource::Neutral,
-                self.position(),
-                1.0,
-                1.0,
-                None,
-            );
+            world.play_sound_at(sound, SoundSource::Neutral, self.position(), 1.0, 1.0, None);
             world.game_event_at(
                 &vanilla_game_events::ENTITY_ACTION,
                 self.position(),
@@ -381,7 +377,6 @@ impl LivingEntity for NautilusEntity {
         }
         self.set_dash(true);
     }
-
 }
 
 impl Mob for NautilusEntity {
@@ -492,7 +487,11 @@ impl ZombieNautilusEntity {
 
     /// Sets the dash flag.
     pub fn set_dash(&self, dash: bool) {
-        self.entity_data.lock().abstract_nautilus_mut().dash.set(dash);
+        self.entity_data
+            .lock()
+            .abstract_nautilus_mut()
+            .dash
+            .set(dash);
     }
 }
 
@@ -556,7 +555,6 @@ impl Entity for ZombieNautilusEntity {
     fn load_additional(&self, nbt: borrow::NbtCompound<'_, '_>) {
         self.load_mob(nbt);
     }
-
 }
 
 impl LivingEntity for ZombieNautilusEntity {
@@ -621,8 +619,9 @@ impl LivingEntity for ZombieNautilusEntity {
             return;
         }
         let amount = jump_amount.max(0);
-        self.living_base()
-            .set_jump_pending_scale(crate::entity::living_entity::player_jump_pending_scale(amount));
+        self.living_base().set_jump_pending_scale(
+            crate::entity::living_entity::player_jump_pending_scale(amount),
+        );
     }
 
     /// Vanilla `AbstractNautilus.tickRidden`, inherited by the zombie species.
@@ -653,7 +652,6 @@ impl LivingEntity for ZombieNautilusEntity {
         }
         self.set_dash(true);
     }
-
 }
 
 impl Mob for ZombieNautilusEntity {
@@ -745,7 +743,10 @@ mod tests {
         for _ in 0..NAUTILUS_DASH_COOLDOWN_TICKS - NAUTILUS_DASH_END_AT_COOLDOWN - 1 {
             nautilus.tick_dash(None);
         }
-        assert!(nautilus.is_dash(), "still dashing one tick before the cutoff");
+        assert!(
+            nautilus.is_dash(),
+            "still dashing one tick before the cutoff"
+        );
         nautilus.tick_dash(None);
         assert!(
             !nautilus.is_dash(),

@@ -99,8 +99,22 @@ const NON_STATISTIC_CRITERIA: [&str; 9] = [
 
 /// Vanilla team colours usable in `teamkill.<colour>` / `killedByTeam.<colour>`.
 const TEAM_COLORS: [&str; 16] = [
-    "black", "dark_blue", "dark_green", "dark_aqua", "dark_red", "dark_purple", "gold", "gray",
-    "dark_gray", "blue", "green", "aqua", "red", "light_purple", "yellow", "white",
+    "black",
+    "dark_blue",
+    "dark_green",
+    "dark_aqua",
+    "dark_red",
+    "dark_purple",
+    "gold",
+    "gray",
+    "dark_gray",
+    "blue",
+    "green",
+    "aqua",
+    "red",
+    "light_purple",
+    "yellow",
+    "white",
 ];
 
 /// Classifies a criterion the way vanilla's `ObjectiveCriteria` does.
@@ -637,11 +651,7 @@ impl Scoreboard {
     /// Returns the team the holder belongs to, if any.
     #[must_use]
     pub fn team_of(&self, holder: &ScoreHolder) -> Option<String> {
-        self.state
-            .read()
-            .holder_teams
-            .get(holder.name())
-            .cloned()
+        self.state.read().holder_teams.get(holder.name()).cloned()
     }
 
     /// Returns every holder currently on `team_name`, in stable order.
@@ -1362,9 +1372,7 @@ mod tests {
         scoreboard
             .set_score(&holder, &deaths, 1)
             .expect("score should be writable");
-        scoreboard
-            .add_team("red")
-            .expect("team should be added");
+        scoreboard.add_team("red").expect("team should be added");
         scoreboard
             .add_holder_to_team(&holder, &scoreboard.team("red").expect("team exists"))
             .expect("holder should join the team");
@@ -1572,9 +1580,7 @@ mod tests {
             .expect("first trigger write should succeed");
         assert_eq!(scoreboard.score(&holder, &objective), Some(5));
         assert!(
-            scoreboard
-                .trigger_score(&holder, &objective, 9)
-                .is_err(),
+            scoreboard.trigger_score(&holder, &objective, 9).is_err(),
             "a second write without another enable must fail"
         );
         assert_eq!(scoreboard.score(&holder, &objective), Some(5));
@@ -1600,9 +1606,19 @@ mod tests {
         assert_eq!(criterion_is_read_only("trigger"), Some(false));
         // Read-only vanilla criteria.
         for criterion in [
-            "health", "food", "air", "armor", "xp", "level", "deathCount",
-            "playerKillCount", "totalKillCount", "teamkill.red", "killedByTeam.blue",
-            "minecraft.mined:minecraft.stone", "minecraft.custom:minecraft.walk_one_cm",
+            "health",
+            "food",
+            "air",
+            "armor",
+            "xp",
+            "level",
+            "deathCount",
+            "playerKillCount",
+            "totalKillCount",
+            "teamkill.red",
+            "killedByTeam.blue",
+            "minecraft.mined:minecraft.stone",
+            "minecraft.custom:minecraft.walk_one_cm",
         ] {
             assert_eq!(
                 criterion_is_read_only(criterion),

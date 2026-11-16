@@ -110,9 +110,9 @@ impl MinecartBehavior {
     /// rule, while the track code works in per-tick movement, so the rule is
     /// converted once here (`rule / 20`) to stay in the same units.
     pub(crate) fn max_speed(minecart: &dyn AbstractMinecart, world: &World) -> f64 {
-        let vanilla_cap = f64::from(
-            world.get_game_rule(&steel_registry::vanilla_game_rules::MAX_MINECART_SPEED),
-        ) / 20.0;
+        let vanilla_cap =
+            f64::from(world.get_game_rule(&steel_registry::vanilla_game_rules::MAX_MINECART_SPEED))
+                / 20.0;
         let base = if minecart.is_in_water() {
             MAX_SPEED_IN_WATER
         } else {

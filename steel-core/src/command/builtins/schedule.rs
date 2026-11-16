@@ -12,8 +12,8 @@
 use std::borrow::Cow;
 
 use steel_utils::Identifier;
-use text_components::translation::TranslatedMessage;
 use text_components::TextComponent;
+use text_components::translation::TranslatedMessage;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
@@ -33,7 +33,6 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
     CommandRegistration::new(Identifier::vanilla_static("schedule"), |_| command())
 }
 
-
 /// Builds a translatable component with an English fallback.
 ///
 /// The extracted `en_us.json` does not carry the `commands.schedule.*` keys yet,
@@ -49,17 +48,13 @@ fn schedule_message(key: &'static str, fallback: &str, args: Vec<TextComponent>)
 
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     // `schedule function <id> <time> [replace|append]`
-    let function = literal("function")
-        .then(
-            argument(FUNCTION_ARGUMENT, SteelArgumentType::identifier()).then(
-                argument(TIME_ARGUMENT, SteelArgumentType::time(0))
-                    .executes(|context| schedule_function(context, ScheduleMode::Replace))
-                    .then(
-                        argument(MODE_ARGUMENT, ArgumentType::greedy_string())
-                            .executes(parse_mode),
-                    ),
-            ),
-        );
+    let function = literal("function").then(
+        argument(FUNCTION_ARGUMENT, SteelArgumentType::identifier()).then(
+            argument(TIME_ARGUMENT, SteelArgumentType::time(0))
+                .executes(|context| schedule_function(context, ScheduleMode::Replace))
+                .then(argument(MODE_ARGUMENT, ArgumentType::greedy_string()).executes(parse_mode)),
+        ),
+    );
 
     // `schedule clear <id>`
     let clear = literal("clear")
@@ -119,7 +114,11 @@ fn schedule_function(
 
 fn clear_id(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let function = context.identifier(FUNCTION_ARGUMENT)?;
-    let removed = context.source().server().schedules.clear(&function.to_string());
+    let removed = context
+        .source()
+        .server()
+        .schedules
+        .clear(&function.to_string());
 
     let message = if removed == 0 {
         TextComponent::from("No scheduled function was found")

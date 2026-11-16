@@ -26,8 +26,8 @@ use super::super::{
     },
     registration::CommandRegistration,
 };
-use steel_registry::attribute::AttributeRef;
 use steel_registry::RegistryExt as _;
+use steel_registry::attribute::AttributeRef;
 
 use crate::entity::attribute::{AttributeModifier, AttributeModifierOperation};
 
@@ -49,33 +49,31 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         .then(literal("get").executes(get_base))
         .then(
             literal("get").then(
-                argument(SCALE_ARGUMENT, ArgumentType::double(-f64::MAX, f64::MAX)).executes(get_base_scaled),
+                argument(SCALE_ARGUMENT, ArgumentType::double(-f64::MAX, f64::MAX))
+                    .executes(get_base_scaled),
             ),
         )
-        .then(
-            literal("set").then(
-                argument(VALUE_ARGUMENT, ArgumentType::double(-f64::MAX, f64::MAX)).executes(set_base),
-            ),
-        );
+        .then(literal("set").then(
+            argument(VALUE_ARGUMENT, ArgumentType::double(-f64::MAX, f64::MAX)).executes(set_base),
+        ));
 
     let get = literal("get").executes(get_total).then(
-        argument(SCALE_ARGUMENT, ArgumentType::double(-f64::MAX, f64::MAX)).executes(get_total_scaled),
+        argument(SCALE_ARGUMENT, ArgumentType::double(-f64::MAX, f64::MAX))
+            .executes(get_total_scaled),
     );
 
     let modifier = literal("modifier")
         .then(
             literal("add").then(
                 literal("value").then(
-                    argument(VALUE_ARGUMENT, ArgumentType::double(-f64::MAX, f64::MAX)).executes(add_modifier),
+                    argument(VALUE_ARGUMENT, ArgumentType::double(-f64::MAX, f64::MAX))
+                        .executes(add_modifier),
                 ),
             ),
         )
-        .then(
-            literal("remove").then(
-                argument(UUID_ARGUMENT, SteelArgumentType::identifier())
-                    .executes(remove_modifier),
-            ),
-        );
+        .then(literal("remove").then(
+            argument(UUID_ARGUMENT, SteelArgumentType::identifier()).executes(remove_modifier),
+        ));
 
     literal("attribute").then(
         argument(TARGET_ARGUMENT, SteelArgumentType::entity())
@@ -118,10 +116,7 @@ fn format_value(value: f64, scale: Option<f64>) -> String {
 }
 
 /// The attribute's current total, including modifiers.
-fn total_value(
-    entity: &crate::entity::SharedEntity,
-    attribute: AttributeRef,
-) -> Option<f64> {
+fn total_value(entity: &crate::entity::SharedEntity, attribute: AttributeRef) -> Option<f64> {
     let living = entity.as_living_entity()?;
     living.attributes().lock().get_value(attribute)
 }
@@ -130,7 +125,9 @@ fn get_total(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
     get_total_with_scale(context, None)
 }
 
-fn get_total_scaled(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
+fn get_total_scaled(
+    context: &SteelCommandContext<CommandSource>,
+) -> Result<i32, CommandSyntaxError> {
     let scale = context.double(SCALE_ARGUMENT)?;
     get_total_with_scale(context, Some(scale))
 }
@@ -147,7 +144,12 @@ fn get_total_with_scale(
 
     let message = translated(
         "commands.attribute.value.get.success",
-        format!("{} has {} of {}", entity_display(&entity), attribute.key, format_value(value, scale)),
+        format!(
+            "{} has {} of {}",
+            entity_display(&entity),
+            attribute.key,
+            format_value(value, scale)
+        ),
         vec![
             TextComponent::from(format_value(value, scale)),
             TextComponent::from(attribute.key.to_string()),
@@ -161,7 +163,9 @@ fn get_base(context: &SteelCommandContext<CommandSource>) -> Result<i32, Command
     get_base_with_scale(context, None)
 }
 
-fn get_base_scaled(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
+fn get_base_scaled(
+    context: &SteelCommandContext<CommandSource>,
+) -> Result<i32, CommandSyntaxError> {
     let scale = context.double(SCALE_ARGUMENT)?;
     get_base_with_scale(context, Some(scale))
 }
@@ -178,7 +182,11 @@ fn get_base_with_scale(
 
     let message = translated(
         "commands.attribute.base_value.get.success",
-        format!("The base value of {} is {}", attribute.key, format_value(value, scale)),
+        format!(
+            "The base value of {} is {}",
+            attribute.key,
+            format_value(value, scale)
+        ),
         vec![
             TextComponent::from(format_value(value, scale)),
             TextComponent::from(attribute.key.to_string()),
@@ -248,7 +256,9 @@ fn add_modifier(context: &SteelCommandContext<CommandSource>) -> Result<i32, Com
     Ok(1)
 }
 
-fn remove_modifier(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
+fn remove_modifier(
+    context: &SteelCommandContext<CommandSource>,
+) -> Result<i32, CommandSyntaxError> {
     let attribute = resolve_attribute(context)?;
     let uuid = context.identifier(UUID_ARGUMENT)?.clone();
     let entity = context.entity(TARGET_ARGUMENT)?;

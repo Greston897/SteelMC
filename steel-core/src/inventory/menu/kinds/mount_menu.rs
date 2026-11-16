@@ -26,8 +26,8 @@ use crate::entity::Entity;
 use crate::inventory::container::Container as _;
 use crate::inventory::prelude::*;
 use crate::inventory::slots::ArmorSlot;
-use crate::player::player_inventory::PlayerInventory;
 use crate::player::Player;
+use crate::player::player_inventory::PlayerInventory;
 
 /// Vanilla `AbstractMountInventoryMenu.SLOT_SADDLE`.
 pub const SLOT_SADDLE: usize = 0;
@@ -95,7 +95,11 @@ pub fn mount(
     let player = builder.player_inventory(&inventory);
 
     builder.route(storage, player.all(), FillDirection::Backward);
-    builder.route(player.all(), [saddle, armor, storage], FillDirection::Forward);
+    builder.route(
+        player.all(),
+        [saddle, armor, storage],
+        FillDirection::Forward,
+    );
 
     builder.build(MountKind {
         container,
@@ -205,10 +209,7 @@ mod tests {
         let menu = mount(inventory, 3, container, columns, owner);
 
         // Mount slots plus the player's 36 slots.
-        assert_eq!(
-            menu.behavior().slot_count(),
-            inventory_size(columns) + 36
-        );
+        assert_eq!(menu.behavior().slot_count(), inventory_size(columns) + 36);
         assert_eq!(menu.container_id(), 3);
     }
 

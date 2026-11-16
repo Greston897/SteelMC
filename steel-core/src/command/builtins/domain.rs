@@ -34,14 +34,13 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("domain")
         .executes(|ctx: &SteelCommandContext<CommandSource>| open_domain_menu(ctx, 0))
-        .then(
-            argument("page", ArgumentType::integer(1, 1024))
-                .executes(|ctx: &SteelCommandContext<CommandSource>| {
-                    // Command pages are one-based; the menu works zero-based.
-                    let page = ctx.integer("page")?.saturating_sub(1) as usize;
-                    open_domain_menu(ctx, page)
-                }),
-        )
+        .then(argument("page", ArgumentType::integer(1, 1024)).executes(
+            |ctx: &SteelCommandContext<CommandSource>| {
+                // Command pages are one-based; the menu works zero-based.
+                let page = ctx.integer("page")?.saturating_sub(1) as usize;
+                open_domain_menu(ctx, page)
+            },
+        ))
         .then(
             argument("world", SteelArgumentType::world())
                 .executes(switch_world)
@@ -155,7 +154,13 @@ fn open_domain_menu(
     let menu_player = Arc::clone(&player);
 
     player.open_menu("Domains", move |context| {
-        domain_menu(context.container_id, menu_player, context.world, &server, page)
+        domain_menu(
+            context.container_id,
+            menu_player,
+            context.world,
+            &server,
+            page,
+        )
     });
 
     Ok(1)
@@ -205,7 +210,7 @@ fn domain_menu(
         );
 
         // Page indicator: the bottom bar shows which slice is visible.
-        let mut indicator = ItemStack::new(&*vanilla_items::PAPER);
+        let mut indicator = ItemStack::new(&vanilla_items::PAPER);
         indicator.set(
             CUSTOM_NAME,
             format!("Page {} / {page_count}", page + 1).into(),
@@ -221,7 +226,7 @@ fn domain_menu(
                 g.subgrid(Rect::cols(..8).rows(i + 1), |g| {
                     g.paint_all(ItemStack::empty());
 
-                    let mut sign = ItemStack::new(&*vanilla_items::OAK_SIGN);
+                    let mut sign = ItemStack::new(&vanilla_items::OAK_SIGN);
                     sign.set(CUSTOM_NAME, domain_name.clone().into());
 
                     g.paint(Rect::cell(0, 0), sign);

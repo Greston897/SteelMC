@@ -52,7 +52,7 @@ impl BossBar {
 
     /// Builds the `remove` packet for a player that stops seeing this bar.
     #[must_use]
-    pub fn remove_packet(&self) -> CBossEvent {
+    pub const fn remove_packet(&self) -> CBossEvent {
         CBossEvent::remove(self.uuid)
     }
 }
@@ -175,7 +175,10 @@ mod tests {
         assert_eq!(stored.progress, 0.5);
 
         let replaced = registry.insert("demo".to_string(), bar("Second"));
-        assert!(replaced.is_some(), "replacing must report the old definition");
+        assert!(
+            replaced.is_some(),
+            "replacing must report the old definition"
+        );
 
         assert!(registry.remove("demo").is_some());
         assert!(registry.get("demo").is_none());
@@ -184,7 +187,11 @@ mod tests {
     #[test]
     fn update_reports_unknown_ids() {
         let registry = BossBarRegistry::new();
-        assert!(registry.update("missing", |bar| bar.progress = 1.0).is_none());
+        assert!(
+            registry
+                .update("missing", |bar| bar.progress = 1.0)
+                .is_none()
+        );
 
         registry.insert("demo".to_string(), bar("Demo"));
         let updated = registry

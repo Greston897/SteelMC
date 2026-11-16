@@ -348,7 +348,9 @@ impl DragonFight {
             // `START`: every respawn crystal aims at `(0, 128, 0)`, then the wait.
             DragonRespawnStage::Start => {
                 effects.push(DragonRespawnEffect::AimCrystalsAt(BlockPos::new(
-                    0, DRAGON_SPAWN_Y, 0,
+                    0,
+                    DRAGON_SPAWN_Y,
+                    0,
                 )));
                 *stage = Some(DragonRespawnStage::PreparingToSummonPillars);
                 *time = 0;
@@ -406,7 +408,9 @@ impl DragonFight {
                     });
                 } else if now == 0 {
                     effects.push(DragonRespawnEffect::AimCrystalsAt(BlockPos::new(
-                        0, DRAGON_SPAWN_Y, 0,
+                        0,
+                        DRAGON_SPAWN_Y,
+                        0,
                     )));
                 } else if now < 5 {
                     effects.push(DragonRespawnEffect::LevelEvent {
@@ -491,13 +495,13 @@ impl DragonFight {
     /// Vanilla `EnderDragonFight.getPodiumLocation(offset)`: the origin plus an
     /// offset, where the origin is `END_PODIUM_LOCATION` (`BlockPos.ZERO`).
     #[must_use]
-    pub fn podium_location(offset: BlockPos) -> BlockPos {
+    pub const fn podium_location(offset: BlockPos) -> BlockPos {
         PodiumOrigin::origin().offset(offset.x(), offset.y(), offset.z())
     }
 
     /// Returns the podium position the dragon egg and exit portal sit on.
     #[must_use]
-    pub fn podium_pos() -> BlockPos {
+    pub const fn podium_pos() -> BlockPos {
         BlockPos::new(EXIT_PORTAL.x, ORIGIN_Y, EXIT_PORTAL.z)
     }
 
@@ -646,9 +650,7 @@ impl DragonFight {
                 .map(|stage| stage.saved_name().to_owned()),
             respawn_time: *self.respawn_time.lock(),
             dragon_uuid: self.dragon_uuid(),
-            exit_portal_location: self
-                .exit_portal_location()
-                .map(|pos| [pos.x, pos.y, pos.z]),
+            exit_portal_location: self.exit_portal_location().map(|pos| [pos.x, pos.y, pos.z]),
             gateways: self.gateways(),
             respawn_crystals: self
                 .respawn_crystals()
@@ -663,8 +665,10 @@ impl DragonFight {
         *self.needs_state_scanning.lock() = data.needs_state_scanning;
         *self.dragon_killed.lock() = data.dragon_killed;
         *self.previously_killed.lock() = data.previously_killed;
-        *self.respawn_stage.lock() =
-            data.respawn_stage.as_deref().and_then(DragonRespawnStage::from_saved_name);
+        *self.respawn_stage.lock() = data
+            .respawn_stage
+            .as_deref()
+            .and_then(DragonRespawnStage::from_saved_name);
         *self.respawn_time.lock() = data.respawn_time;
         *self.dragon_uuid.lock() = data.dragon_uuid;
         *self.exit_portal_location.lock() = data
@@ -818,8 +822,14 @@ mod tests {
         let restored = DragonFight::new();
         restored.apply_saved_data(&saved);
         assert_eq!(restored.dragon_uuid(), fight.dragon_uuid());
-        assert_eq!(restored.exit_portal_location(), fight.exit_portal_location());
-        assert_eq!(restored.respawn_stage(), Some(DragonRespawnStage::SummoningPillars));
+        assert_eq!(
+            restored.exit_portal_location(),
+            fight.exit_portal_location()
+        );
+        assert_eq!(
+            restored.respawn_stage(),
+            Some(DragonRespawnStage::SummoningPillars)
+        );
         assert_eq!(*restored.respawn_time.lock(), 41);
         assert_eq!(restored.gateways(), saved.gateways);
         assert_eq!(restored.respawn_crystals(), fight.respawn_crystals());

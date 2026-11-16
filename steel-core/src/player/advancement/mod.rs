@@ -135,12 +135,14 @@ impl PlayerAdvancement {
                 .criteria_ids()
                 .into_iter()
                 .filter(|criterion_id| {
-                    advancement.get_criterion(criterion_id).is_some_and(|criterion| {
-                        &criterion.id() == trigger
-                            && criterion
-                                .instance()
-                                .is_none_or(|instance| predicate::matches(instance, context))
-                    })
+                    advancement
+                        .get_criterion(criterion_id)
+                        .is_some_and(|criterion| {
+                            &criterion.id() == trigger
+                                && criterion
+                                    .instance()
+                                    .is_none_or(|instance| predicate::matches(instance, context))
+                        })
                 })
                 .map(str::to_owned)
                 .collect();

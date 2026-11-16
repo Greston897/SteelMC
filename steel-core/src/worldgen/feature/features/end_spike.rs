@@ -256,9 +256,8 @@ fn rebuild_spike_cage_in_world(world: &Arc<crate::world::World>, spike: &EndSpik
                 }
                 let x_edge = touches_width_limit || top;
                 let z_edge = touches_depth_limit || top;
-                let state = FeatureDecorationRunner::end_spike_iron_bars_state(
-                    x_edge, z_edge, dx, dz,
-                );
+                let state =
+                    FeatureDecorationRunner::end_spike_iron_bars_state(x_edge, z_edge, dx, dz);
                 world.set_block(
                     BlockPos::new(spike.center_x + dx, spike.height + dy, spike.center_z + dz),
                     state,
@@ -270,10 +269,7 @@ fn rebuild_spike_cage_in_world(world: &Arc<crate::world::World>, spike: &EndSpik
 }
 
 /// Vanilla `EndSpikeFeature.placeSpike`'s crystal for a live world.
-pub(crate) fn rebuild_spike_crystal_in_world(
-    world: &Arc<crate::world::World>,
-    spike: &EndSpike,
-) {
+pub(crate) fn rebuild_spike_crystal_in_world(world: &Arc<crate::world::World>, spike: &EndSpike) {
     let position = DVec3::new(
         f64::from(spike.center_x) + 0.5,
         f64::from(spike.height + 1),

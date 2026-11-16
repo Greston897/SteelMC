@@ -13,15 +13,13 @@ use simdnbt::ToNbtTag;
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_registry::block_entity_type::BlockEntityTypeRef;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::data_components::{
     DataComponentMap, SeededContainerLoot, vanilla_components::CONTAINER_LOOT,
 };
-use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_block_entity_types;
-use steel_utils::{
-    BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex,
-};
+use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
 
 use crate::block_entity::randomizable_container::RandomizableContainer;
 use crate::block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter};
@@ -142,12 +140,17 @@ impl ChestBlockEntity {
     /// Creates a trapped chest block entity.
     #[must_use]
     pub fn new_trapped(level: Weak<World>, pos: BlockPos, state: BlockStateId) -> Self {
-        Self::new(&vanilla_block_entity_types::TRAPPED_CHEST, level, pos, state)
+        Self::new(
+            &vanilla_block_entity_types::TRAPPED_CHEST,
+            level,
+            pos,
+            state,
+        )
     }
 
     /// Viewer counter used for the double-chest lid animation and comparator.
     #[must_use]
-    pub fn openers_counter(&self) -> &ContainerOpenersCounter {
+    pub const fn openers_counter(&self) -> &ContainerOpenersCounter {
         &self.openers_counter
     }
 
@@ -187,12 +190,7 @@ impl BlockEntity for ChestBlockEntity {
         // changes, which for a closed chest is exactly once per open.
         if lid.open != was_open {
             let pos = self.get_block_pos();
-            world.block_event(
-                pos,
-                self.base.block_state().get_block(),
-                LID_EVENT_ID,
-                0,
-            );
+            world.block_event(pos, self.base.block_state().get_block(), LID_EVENT_ID, 0);
         }
     }
 
@@ -224,7 +222,6 @@ impl BlockEntity for ChestBlockEntity {
         // chest stores a `LootTable` (and a `LootTableSeed`) instead of items,
         // and is filled the first time a player opens it.
         RandomizableContainer::load_from_nbt(nbt_view, &self.loot);
-
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
@@ -318,8 +315,8 @@ impl Container for ChestContainer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use steel_registry::{init_vanilla_registry, vanilla_blocks, vanilla_items};
     use steel_registry::data_components::DataComponentPatch;
+    use steel_registry::{init_vanilla_registry, vanilla_blocks, vanilla_items};
 
     #[test]
     fn chest_holds_twenty_seven_slots() {
@@ -356,7 +353,9 @@ mod tests {
         );
         // No world is attached, so the stored seed has to survive on its own.
         let nbt = template_chest_nbt("minecraft:chests/simple_dungeon", 424_242);
-        chest.load_with_owned_components(&nbt).expect("template nbt loads");
+        chest
+            .load_with_owned_components(&nbt)
+            .expect("template nbt loads");
 
         // Vanilla stores the table back while nobody opened the container, so a
         // restart fills the chest instead of leaving it empty.
@@ -372,7 +371,12 @@ mod tests {
         // Opening rolls the table into the slots and clears it.
         assert!(chest.unpack_loot(), "the table must roll into the chest");
         assert!(
-            chest.container.lock().items.iter().any(|item| !item.is_empty()),
+            chest
+                .container
+                .lock()
+                .items
+                .iter()
+                .any(|item| !item.is_empty()),
             "the chest must hold the rolled loot"
         );
         let saved = chest.save_custom_only();
@@ -422,7 +426,8 @@ mod tests {
             BlockPos::new(1, 2, 3),
             vanilla_blocks::CHEST.default_state(),
         );
-        chest.load_with_owned_components(&template_chest_nbt("minecraft:chests/simple_dungeon", 7))
+        chest
+            .load_with_owned_components(&template_chest_nbt("minecraft:chests/simple_dungeon", 7))
             .expect("template nbt loads");
         assert!(chest.unpack_loot());
         let first: Vec<ItemStack> = chest.container.lock().items.clone();

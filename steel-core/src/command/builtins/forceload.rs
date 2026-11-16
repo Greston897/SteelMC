@@ -43,24 +43,30 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
 
     // `forceload query` reports the source dimension's forced chunks.
     let query = literal("query").executes(query_all);
-    let query_pos = literal("query")
-        .then(from.clone().executes(query_one));
+    let query_pos = literal("query").then(from.clone().executes(query_one));
 
     let add = literal("add")
-        .then(from.clone().executes(|context| change(context, Change::Add)))
+        .then(
+            from.clone()
+                .executes(|context| change(context, Change::Add)),
+        )
         .then(
             from.clone()
                 .then(to.clone().executes(|context| change(context, Change::Add))),
         );
 
     let remove = literal("remove")
-        .then(from.clone().executes(|context| change(context, Change::Remove)))
         .then(
             from.clone()
-                .then(to.clone().executes(|context| change(context, Change::Remove))),
-        );
+                .executes(|context| change(context, Change::Remove)),
+        )
+        .then(from.then(to.executes(|context| change(context, Change::Remove))));
 
-    literal("forceload").then(query).then(query_pos).then(add).then(remove)
+    literal("forceload")
+        .then(query)
+        .then(query_pos)
+        .then(add)
+        .then(remove)
 }
 
 #[derive(Clone, Copy)]
@@ -86,8 +92,14 @@ fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> 
 fn chunks_between(from: BlockPos, to: BlockPos) -> Vec<ChunkPos> {
     let from_chunk = ChunkPos::from_block_pos(from);
     let to_chunk = ChunkPos::from_block_pos(to);
-    let (min_x, max_x) = (from_chunk.x().min(to_chunk.x()), from_chunk.x().max(to_chunk.x()));
-    let (min_z, max_z) = (from_chunk.z().min(to_chunk.z()), from_chunk.z().max(to_chunk.z()));
+    let (min_x, max_x) = (
+        from_chunk.x().min(to_chunk.x()),
+        from_chunk.x().max(to_chunk.x()),
+    );
+    let (min_z, max_z) = (
+        from_chunk.z().min(to_chunk.z()),
+        from_chunk.z().max(to_chunk.z()),
+    );
 
     let mut chunks = Vec::new();
     for x in min_x..=max_x {
@@ -102,7 +114,9 @@ fn change(
     context: &SteelCommandContext<CommandSource>,
     change: Change,
 ) -> Result<i32, CommandSyntaxError> {
-    let from = context.coordinates(FROM_ARGUMENT)?.block_pos(context.source());
+    let from = context
+        .coordinates(FROM_ARGUMENT)?
+        .block_pos(context.source());
     // A single position is a one-block rectangle, which is how vanilla handles
     // `forceload add <pos>`.
     let to = if let Ok(coordinates) = context.coordinates(TO_ARGUMENT) {
@@ -166,7 +180,9 @@ fn query_all(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
 }
 
 fn query_one(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
-    let from = context.coordinates(FROM_ARGUMENT)?.block_pos(context.source());
+    let from = context
+        .coordinates(FROM_ARGUMENT)?
+        .block_pos(context.source());
     let chunk = ChunkPos::from_block_pos(from);
     let world = context.source().world();
     let forced = world.chunk_map.is_force_loaded(chunk);
@@ -181,7 +197,11 @@ fn query_one(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
     } else {
         format!("Chunk at {chunk:?} is not force loaded")
     };
-    let message = translated(key, fallback, vec![TextComponent::from(format!("{chunk:?}"))]);
+    let message = translated(
+        key,
+        fallback,
+        vec![TextComponent::from(format!("{chunk:?}"))],
+    );
     if forced {
         context.source().send_success(&message, false);
         Ok(1)

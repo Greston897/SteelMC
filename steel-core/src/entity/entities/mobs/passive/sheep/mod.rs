@@ -271,7 +271,9 @@ impl SheepEntity {
         let recipe = REGISTRY
             .recipes
             .find_match(&vanilla_recipe_types::CRAFTING, &input)?;
-        recipe_manager::assemble_recipe(recipe, &input).get(DYE).copied()
+        recipe_manager::assemble_recipe(recipe, &input)
+            .get(DYE)
+            .copied()
     }
 }
 
@@ -495,7 +497,7 @@ impl Mob for SheepEntity {
             item_stack.copy_with_count(item_stack.count())
         };
 
-        if item_stack.is(&*vanilla_items::SHEARS) {
+        if item_stack.is(&vanilla_items::SHEARS) {
             if !self.ready_for_shearing() {
                 return InteractionResult::Consume;
             }

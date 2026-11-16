@@ -178,8 +178,16 @@ mod tests {
     fn every_recipe_targets_a_registered_potion() {
         init_vanilla_registry();
         for recipe in POTION_MIXES {
-            assert!(is_registered_potion(&recipe.to), "unknown target {:?}", recipe.to);
-            assert!(is_registered_potion(&recipe.from), "unknown base {:?}", recipe.from);
+            assert!(
+                is_registered_potion(&recipe.to),
+                "unknown target {:?}",
+                recipe.to
+            );
+            assert!(
+                is_registered_potion(&recipe.from),
+                "unknown base {:?}",
+                recipe.from
+            );
         }
     }
 
@@ -204,7 +212,9 @@ mod tests {
     fn potions_are_brewable() {
         init_vanilla_registry();
         assert!(is_brewable_potion(&potion("water")));
-        assert!(is_brewable_potion(&ItemStack::new(&*vanilla_items::GLASS_BOTTLE)));
+        assert!(is_brewable_potion(&ItemStack::new(
+            &*vanilla_items::GLASS_BOTTLE
+        )));
         assert!(!is_brewable_potion(&ItemStack::new(
             &*vanilla_items::NETHER_WART
         )));

@@ -16,12 +16,12 @@ use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::item_stack::ItemStack;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _};
 
-use crate::block_entity::entities::{TestBlockEntity, TestInstanceBlockEntity};
-use crate::behavior::block::BlockEntityCreation;
 use crate::behavior::block::BlockBehavior;
+use crate::behavior::block::BlockEntityCreation;
 use crate::behavior::blocks::redstone::{MAX_REDSTONE_SIGNAL, MIN_REDSTONE_SIGNAL};
 use crate::behavior::context::{BlockHitResult, InteractionResult};
 use crate::behavior::{BlockPlaceContext, InventoryAccess};
+use crate::block_entity::entities::{TestBlockEntity, TestInstanceBlockEntity};
 use crate::player::Player;
 use crate::world::{LevelReader, SignalGetter as _, SignalQueryContext, World};
 
@@ -43,7 +43,6 @@ impl BlockBehavior for AirBlock {
     fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(self.block.default_state())
     }
-
 }
 
 /// Vanilla `TransparentBlock` marker (glass, glowstone, and friends): the only
@@ -286,7 +285,11 @@ impl BlockBehavior for TestBlock {
         let powered = block_entity
             .downcast_ref::<TestBlockEntity>()
             .is_some_and(TestBlockEntity::is_powered);
-        if powered { MAX_REDSTONE_SIGNAL } else { MIN_REDSTONE_SIGNAL }
+        if powered {
+            MAX_REDSTONE_SIGNAL
+        } else {
+            MIN_REDSTONE_SIGNAL
+        }
     }
 
     /// Vanilla `TestBlock.neighborChanged`: a non-`START` block tracks its

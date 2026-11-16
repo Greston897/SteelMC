@@ -29,8 +29,7 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 }
 
 fn command() -> Builder {
-    let biome = argument("biome", SteelArgumentType::biome_or_tag())
-        .executes(|context| execute_fillbiome(context));
+    let biome = argument("biome", SteelArgumentType::biome_or_tag()).executes(execute_fillbiome);
 
     literal("fillbiome").then(
         argument("from", SteelArgumentType::block_pos())

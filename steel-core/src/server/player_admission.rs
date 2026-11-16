@@ -178,7 +178,9 @@ impl Server {
             if let Some(existing) = existing
                 && !existing.connection.closed()
             {
-                existing.disconnect(text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg()));
+                existing.disconnect(text_components::TextComponent::translated(
+                    translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg(),
+                ));
             }
 
             tokio::select! {
@@ -206,7 +208,9 @@ impl Server {
             return;
         }
         let Some(reservation) = self.try_reserve_player_join(player.gameprofile.id()) else {
-            player.disconnect(text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg()));
+            player.disconnect(text_components::TextComponent::translated(
+                translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg(),
+            ));
             return;
         };
 
@@ -267,18 +271,16 @@ impl Server {
 
         if let Err(error) = self.admit_reserved_player(Arc::clone(&player)) {
             let reason = match error {
-                PlayerJoinError::DuplicateLogin => {
-                    text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg())
-                }
-                PlayerJoinError::ServerFull => {
-                    text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_SERVER_FULL.msg())
-                }
-                PlayerJoinError::NotWhitelisted => {
-                    text_components::TextComponent::translated(translations::MULTIPLAYER_DISCONNECT_NOT_WHITELISTED.msg())
-                }
-                PlayerJoinError::Banned(reason) => {
-                    text_components::TextComponent::plain(reason)
-                }
+                PlayerJoinError::DuplicateLogin => text_components::TextComponent::translated(
+                    translations::MULTIPLAYER_DISCONNECT_DUPLICATE_LOGIN.msg(),
+                ),
+                PlayerJoinError::ServerFull => text_components::TextComponent::translated(
+                    translations::MULTIPLAYER_DISCONNECT_SERVER_FULL.msg(),
+                ),
+                PlayerJoinError::NotWhitelisted => text_components::TextComponent::translated(
+                    translations::MULTIPLAYER_DISCONNECT_NOT_WHITELISTED.msg(),
+                ),
+                PlayerJoinError::Banned(reason) => text_components::TextComponent::plain(reason),
             };
             player.disconnect(reason);
             return;
@@ -380,12 +382,15 @@ impl Server {
         // Keep the final capacity check and insertion atomic with respect to other joins.
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .map_or(0, |elapsed| i64::try_from(elapsed.as_secs()).unwrap_or(i64::MAX));
+            .map_or(0, |elapsed| {
+                i64::try_from(elapsed.as_secs()).unwrap_or(i64::MAX)
+            });
         // A ban takes precedence over the capacity and whitelist checks: a banned
         // player should see why they are blocked, not "server full".
-        let ban_reason = self.bans.active_player_ban(uuid, now).map(|ban| {
-            format!("You are banned: {}", ban.display_reason())
-        });
+        let ban_reason = self
+            .bans
+            .active_player_ban(uuid, now)
+            .map(|ban| format!("You are banned: {}", ban.display_reason()));
 
         let result = if let Some(reason) = ban_reason {
             Err(PlayerJoinError::Banned(reason))

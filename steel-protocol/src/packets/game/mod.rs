@@ -250,8 +250,8 @@ pub use c_player_combat_end::CPlayerCombatEnd;
 pub use c_player_combat_enter::CPlayerCombatEnter;
 pub use c_player_combat_kill::CPlayerCombatKill;
 pub use c_player_info_update::{
-    CPlayerInfoUpdate, PLAYER_INFO_INIT_ACTIONS, PlayerInfoAction, PlayerInfoEntry,
-    PlayerInfoTarget, PlayerDisplayName,
+    CPlayerInfoUpdate, PLAYER_INFO_INIT_ACTIONS, PlayerDisplayName, PlayerInfoAction,
+    PlayerInfoEntry, PlayerInfoTarget,
 };
 pub use c_player_look_at::{CPlayerLookAt, LookAtAnchor};
 pub use c_player_position::{CPlayerPosition, RelativeMovement};
@@ -317,9 +317,7 @@ pub use c_update_attributes::{
 };
 pub use c_update_enabled_features::CUpdateEnabledFeatures;
 pub use c_update_mob_effect::{CUpdateMobEffect, MobEffectPacketFlags};
-pub use c_waypoint::{
-    CWaypoint, TrackedWaypointData, WaypointIcon, WaypointId, WaypointOperation,
-};
+pub use c_waypoint::{CWaypoint, TrackedWaypointData, WaypointIcon, WaypointId, WaypointOperation};
 pub use chat::{
     ArgumentSignature, CDisguisedChat, CPlayerChat, CSystemChat, ChatTypeBound, FilterType,
     LastSeenMessagesUpdate, PreviousMessage, ProtocolRemoteChatSessionData, SChat, SChatAck,
@@ -327,8 +325,8 @@ pub use chat::{
 };
 pub use chunk::{
     BlockEntityInfo, CChunkBatchFinished, CChunkBatchStart, CForgetLevelChunk,
-    CLevelChunkWithLight, CLightUpdate, CSetChunkCacheRadius, CSetChunkCenter,
-    ChunkPacketData, HeightmapType, Heightmaps, LightUpdatePacketData, SChunkBatchReceived,
+    CLevelChunkWithLight, CLightUpdate, CSetChunkCacheRadius, CSetChunkCenter, ChunkPacketData,
+    HeightmapType, Heightmaps, LightUpdatePacketData, SChunkBatchReceived,
 };
 pub use s_accept_teleportation::SAcceptTeleportation;
 pub use s_attack::SAttack;

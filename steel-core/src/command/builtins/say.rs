@@ -6,10 +6,7 @@ use text_components::TextComponent;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
-    execution::{
-        CommandSource, SteelCommandContext, SteelCommandRuntime, argument,
-        literal,
-    },
+    execution::{CommandSource, SteelCommandContext, SteelCommandRuntime, argument, literal},
     registration::CommandRegistration,
 };
 
@@ -22,13 +19,11 @@ pub(super) fn me_registration() -> CommandRegistration<CommandSource> {
 }
 
 fn say_command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    literal("say")
-        .then(argument("message", ArgumentType::greedy_string()).executes(broadcast_say))
+    literal("say").then(argument("message", ArgumentType::greedy_string()).executes(broadcast_say))
 }
 
 fn me_command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    literal("me")
-        .then(argument("action", ArgumentType::greedy_string()).executes(broadcast_me))
+    literal("me").then(argument("action", ArgumentType::greedy_string()).executes(broadcast_me))
 }
 
 /// Vanilla `SayCommand`: broadcast through `minecraft:say_command`.

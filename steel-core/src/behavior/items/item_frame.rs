@@ -27,7 +27,7 @@ pub struct ItemFrameItem;
 impl ItemFrameItem {
     /// Vanilla picks the entity type from the item that places the frame.
     fn entity_type(stack: &ItemStack) -> EntityTypeRef {
-        if stack.is(&*vanilla_items::GLOW_ITEM_FRAME) {
+        if stack.is(&vanilla_items::GLOW_ITEM_FRAME) {
             &vanilla_entities::GLOW_ITEM_FRAME
         } else {
             &vanilla_entities::ITEM_FRAME

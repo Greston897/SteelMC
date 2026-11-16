@@ -115,7 +115,8 @@ impl IronGolemEntity {
     /// Whether this iron golem was built by a player (`PlayerCreated` NBT tag).
     #[must_use]
     pub fn is_player_created(&self) -> bool {
-        self.player_created.load(std::sync::atomic::Ordering::Relaxed)
+        self.player_created
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     /// Marks this iron golem as player-created (`PlayerCreated` NBT tag).
@@ -273,7 +274,7 @@ impl Mob for IronGolemEntity {
             let held = inventory.get_item_in_hand(hand);
             held.copy_with_count(held.count())
         };
-        if !item_stack.is(&*steel_registry::vanilla_items::IRON_INGOT) {
+        if !item_stack.is(&steel_registry::vanilla_items::IRON_INGOT) {
             return crate::behavior::InteractionResult::Pass;
         }
         let before = self.get_health();

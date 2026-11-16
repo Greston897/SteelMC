@@ -101,14 +101,14 @@ pub(crate) fn drop_from_block_interact_loot_table(
             .and_then(|tag| tag.string())
             .map(|value| value.to_str().into_owned())
     });
-    let block_entity_ref = interacted_block_entity.as_ref().map(|block_entity| {
-        BlockEntityRef {
+    let block_entity_ref = interacted_block_entity
+        .as_ref()
+        .map(|block_entity| BlockEntityRef {
             block_entity_type: Some(&block_entity.get_type().key),
             custom_name: block_entity_custom_name.as_deref(),
             inventory: block_entity_inventory.as_deref(),
             data: block_entity_data.as_ref(),
-        }
-    });
+        });
 
     let mut ctx = LootContext::new(rng).with_block_state(interacted_block_state);
     if let Some(block_entity_ref) = block_entity_ref {

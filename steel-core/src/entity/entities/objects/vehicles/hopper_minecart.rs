@@ -7,18 +7,18 @@
 use std::sync::{Arc, Weak};
 
 use glam::DVec3;
+use simdnbt::ToNbtTag as _;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
-use simdnbt::ToNbtTag as _;
 use steel_macros::entity_behavior;
+use steel_registry::blocks::properties::Direction;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_entities;
 use steel_registry::vanilla_entity_data::MinecartEntityData;
 use steel_utils::locks::SyncMutex;
-use steel_registry::blocks::properties::Direction;
-use steel_utils::{BlockPos, BlockStateId};
 use steel_utils::types::InteractionHand;
+use steel_utils::{BlockPos, BlockStateId};
 use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey, nbt::NbtValueInput as _};
 
 use super::abstract_minecart::{AbstractMinecart, AbstractMinecartBase};
@@ -166,12 +166,12 @@ impl HopperMinecartEntity {
                     let mut cart = self.container.lock();
                     // Vanilla passes the cart as `destination` so a source can
                     // refuse a transfer that cannot fit (`Container::canTakeItem`).
-                    if !container.can_take_item(&*cart, slot, stack) {
-                        false
-                    } else {
+                    if container.can_take_item(&*cart, slot, stack) {
                         let mut moving = stack.copy_with_count(1);
                         Container::add(&mut *cart, &mut moving);
                         moving.is_empty()
+                    } else {
+                        false
                     }
                 }
             };
@@ -220,9 +220,11 @@ impl HopperMinecartEntity {
         {
             return true;
         }
-        let pickup_box = self
-            .bounding_box()
-            .inflate_xyz(HOPPER_PICKUP_RADIUS, HOPPER_PICKUP_HEIGHT, HOPPER_PICKUP_RADIUS);
+        let pickup_box = self.bounding_box().inflate_xyz(
+            HOPPER_PICKUP_RADIUS,
+            HOPPER_PICKUP_HEIGHT,
+            HOPPER_PICKUP_RADIUS,
+        );
         let candidates = world.get_entities_in_aabb_matching(&pickup_box, |entity| {
             entity.entity_type() == &vanilla_entities::ITEM
         });
@@ -305,11 +307,11 @@ impl Entity for HopperMinecartEntity {
         let container = self.container.lock();
         let mut items: Vec<NbtCompound> = Vec::new();
         for (slot, item) in container.items().iter().enumerate() {
-            if !item.is_empty() {
-                if let NbtTag::Compound(mut item_nbt) = item.clone().to_nbt_tag() {
-                    item_nbt.insert("Slot", i8::try_from(slot).unwrap_or(0));
-                    items.push(item_nbt);
-                }
+            if !item.is_empty()
+                && let NbtTag::Compound(mut item_nbt) = item.clone().to_nbt_tag()
+            {
+                item_nbt.insert("Slot", i8::try_from(slot).unwrap_or(0));
+                items.push(item_nbt);
             }
         }
         nbt.insert("Items", NbtList::Compound(items));
@@ -378,7 +380,6 @@ impl AbstractMinecart for HopperMinecartEntity {
             .id_display_offset
             .set(value);
     }
-
 }
 
 #[cfg(test)]

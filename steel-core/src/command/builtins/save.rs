@@ -61,16 +61,13 @@ fn save_all(context: &SteelCommandContext<CommandSource>) -> Result<i32, Command
             .or(results.scoreboards.as_ref().err())
             .or(results.storage.as_ref().err())
             .map(ToString::to_string);
-        match failure {
-            Some(error) => {
-                source.send_failure(TextComponent::plain(format!("Save failed: {error}")));
+        if let Some(error) = failure {
+            source.send_failure(TextComponent::plain(format!("Save failed: {error}")));
+        } else {
+            if let Ok(chunks) = results.chunks {
+                tracing::debug!(chunks, "Saved chunks");
             }
-            None => {
-                if let Ok(chunks) = results.chunks {
-                    tracing::debug!(chunks, "Saved chunks");
-                }
-                source.send_success(&TextComponent::plain("Saved the game"), true);
-            }
+            source.send_success(&TextComponent::plain("Saved the game"), true);
         }
     });
     Ok(1)
@@ -78,16 +75,18 @@ fn save_all(context: &SteelCommandContext<CommandSource>) -> Result<i32, Command
 
 fn save_off(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     context.source().server().set_auto_save_enabled(false);
-    context
-        .source()
-        .send_success(&TextComponent::plain("Automatic saving is now disabled"), true);
+    context.source().send_success(
+        &TextComponent::plain("Automatic saving is now disabled"),
+        true,
+    );
     Ok(1)
 }
 
 fn save_on(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     context.source().server().set_auto_save_enabled(true);
-    context
-        .source()
-        .send_success(&TextComponent::plain("Automatic saving is now enabled"), true);
+    context.source().send_success(
+        &TextComponent::plain("Automatic saving is now enabled"),
+        true,
+    );
     Ok(1)
 }

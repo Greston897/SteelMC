@@ -83,7 +83,10 @@ mod tests {
             1, // Either.left (built-in)
             6, // ServerLinksType::Website
         ];
-        "https://example.com".to_owned().write(&mut expected).unwrap();
+        "https://example.com"
+            .to_owned()
+            .write(&mut expected)
+            .unwrap();
         assert_eq!(actual, expected);
     }
 }

@@ -89,7 +89,6 @@ fn teleport_randomly(
     }
 }
 
-
 /// Vanilla 26.3 `#consumable_does_not_teleport_to`: blocks a randomly-teleporting
 /// consumer refuses to land on. Empty by default, but data packs can fill it.
 const CONSUMABLE_DOES_NOT_TELEPORT_TO: Identifier =

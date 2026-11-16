@@ -3,11 +3,10 @@ use std::ptr;
 use super::{
     Arc, BLOCK_BEHAVIORS, BlockLootContext, BlockPos, BlockStateExt, BlockStateId, CLevelEvent,
     CLevelParticles, CSound, CSoundEntity, ChunkPos, ConnectionProtocol, DVec3, EncodedPacket,
-    Entity,
-    GLOBAL_SOUND_EVENTS, GameEventContext, ItemStack, LevelReader, LootContext, NetworkConnection,
-    ParticleData, Player, REGISTRY, RandomizationType, SectionPos, SoundEventRef,
-    SoundSource, UpdateFlags, World, WorldEntityManager, entity_loot_ref, fluid_state_to_block,
-    level_events, vanilla_blocks, vanilla_game_events,
+    Entity, GLOBAL_SOUND_EVENTS, GameEventContext, ItemStack, LevelReader, LootContext,
+    NetworkConnection, ParticleData, Player, REGISTRY, RandomizationType, SectionPos,
+    SoundEventRef, SoundSource, UpdateFlags, World, WorldEntityManager, entity_loot_ref,
+    fluid_state_to_block, level_events, vanilla_blocks, vanilla_game_events,
 };
 use crate::block_entity::BlockEntity;
 use crate::entity::loot_equipment;

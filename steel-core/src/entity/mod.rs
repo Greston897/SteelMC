@@ -17,6 +17,7 @@ use steel_protocol::packets::game::{
     AttributeSnapshot, CDamageEvent, CEntityEvent, CSwingAnimation, CTeleportEntity,
     EquipmentSlotItem, RelativeMovement, SoundSource,
 };
+use steel_registry::RegistryEntry;
 use steel_registry::blocks::{
     behavior::PushReaction, block_state_ext::BlockStateExt as _, properties::BlockStateProperties,
     shapes::is_shape_full_block,
@@ -49,7 +50,6 @@ use steel_registry::{
     REGISTRY, TaggedRegistryExt, sound_events, vanilla_damage_type_tags, vanilla_damage_types,
     vanilla_game_events, vanilla_particle_types,
 };
-use steel_registry::RegistryEntry;
 use steel_registry::{vanilla_attributes, vanilla_fluid_tags, vanilla_items, vanilla_mob_effects};
 use steel_utils::entity_events::EntityStatus;
 use steel_utils::locks::SyncMutex;
@@ -791,10 +791,10 @@ mod living_base;
 mod living_entity;
 mod living_reference;
 mod manager;
-pub mod mount;
 mod mob;
 pub mod mob_effect;
 mod monster;
+pub mod mount;
 mod movement_sync;
 mod potion_contents;
 pub mod projectile;

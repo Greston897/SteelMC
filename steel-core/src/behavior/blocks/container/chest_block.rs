@@ -8,14 +8,14 @@
 use std::sync::{Arc, Weak};
 
 use steel_macros::block_behavior;
+use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, ChestType};
 use steel_registry::sound_event::SoundEventRef;
-use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::types::UpdateFlags;
-use steel_utils::{Downcast as _, BlockPos, BlockStateId, Direction};
+use steel_utils::{BlockPos, BlockStateId, Direction, Downcast as _};
 use text_components::TextComponent;
 
 use crate::behavior::block::{
@@ -23,9 +23,7 @@ use crate::behavior::block::{
 };
 use crate::behavior::context::{BlockHitResult, BlockPlaceContext, InteractionResult};
 use crate::behavior::{InventoryAccess, PlacementSource};
-use crate::block_entity::{
-    BLOCK_ENTITIES, BlockEntityTicker, entities::ChestBlockEntity,
-};
+use crate::block_entity::{BLOCK_ENTITIES, BlockEntityTicker, entities::ChestBlockEntity};
 use crate::inventory::container::calculate_redstone_signal_from_container;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::inventory::menu::kinds::{chest, double_chest};
@@ -103,19 +101,15 @@ impl ChestBlock {
             // Vanilla `ChestBlock.useWithoutItem` → `unpackLootTable` before the
             // viewer count moves, so the opener sees the rolled contents.
             chest.unpack_loot();
-            chest.openers_counter().increment_openers(
-                world,
-                pos,
-                state,
-                state.get_block(),
-            );
+            chest
+                .openers_counter()
+                .increment_openers(world, pos, state, state.get_block());
         } else {
-            let pitch =
-                if state.get_value(&BlockStateProperties::CHEST_TYPE) == ChestType::Single {
-                    rand::random_range(0.9..1.0)
-                } else {
-                    0.5
-                };
+            let pitch = if state.get_value(&BlockStateProperties::CHEST_TYPE) == ChestType::Single {
+                rand::random_range(0.9..1.0)
+            } else {
+                0.5
+            };
             world.play_block_sound(self.open_sound, pos, 0.5, pitch, None);
         }
 
@@ -338,10 +332,9 @@ impl BlockBehavior for TrappedChestBlock {
         world.play_block_sound(self.open_sound, pos, 0.5, pitch, None);
 
         let inventory = Arc::clone(&player.inventory);
-        player.open_menu(
-            TextComponent::plain("Chest"),
-            move |context| chest(inventory, context.container_id, container_ref, 3),
-        );
+        player.open_menu(TextComponent::plain("Chest"), move |context| {
+            chest(inventory, context.container_id, container_ref, 3)
+        });
 
         InteractionResult::Success
     }

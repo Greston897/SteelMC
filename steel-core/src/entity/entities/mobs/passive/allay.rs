@@ -28,13 +28,13 @@ use crate::entity::ai::goal::{
     FloatGoal, LookAtPlayerGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
-use crate::inventory::container::Container as _;
 use crate::entity::entities::objects::items::ItemEntity;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, RemovalReason,
     SharedEntity, next_entity_id, sync_dirty_mob_effects,
 };
+use crate::inventory::container::Container as _;
 use steel_registry::item_stack::ItemStack;
 use steel_utils::WorldAabb;
 
@@ -331,20 +331,23 @@ impl AllayEntity {
             position.y + ALLAY_PICKUP_RADIUS,
             position.z + ALLAY_PICKUP_RADIUS,
         );
-        let picked_up = world.get_entities_in_aabb(&reach).into_iter().find_map(|entity| {
-            let stack = {
-                let item_entity = entity.as_ref().downcast_ref::<ItemEntity>()?;
-                if item_entity.has_pickup_delay() {
-                    return None;
-                }
-                let stack = item_entity.get_item();
-                if stack.is_empty() {
-                    return None;
-                }
-                stack
-            };
-            Some((entity, stack))
-        });
+        let picked_up = world
+            .get_entities_in_aabb(&reach)
+            .into_iter()
+            .find_map(|entity| {
+                let stack = {
+                    let item_entity = entity.as_ref().downcast_ref::<ItemEntity>()?;
+                    if item_entity.has_pickup_delay() {
+                        return None;
+                    }
+                    let stack = item_entity.get_item();
+                    if stack.is_empty() {
+                        return None;
+                    }
+                    stack
+                };
+                Some((entity, stack))
+            });
         let Some((item_entity, stack)) = picked_up else {
             return;
         };
@@ -365,11 +368,11 @@ impl AllayEntity {
             return;
         };
 
-        if let Some(note_block) = self.nearby_note_block(&world) {
-            if self.drop_item_on_block(&world, note_block, &stack) {
-                *self.carried_item.lock() = None;
-                return;
-            }
+        if let Some(note_block) = self.nearby_note_block(&world)
+            && self.drop_item_on_block(&world, note_block, &stack)
+        {
+            *self.carried_item.lock() = None;
+            return;
         }
         let position = self.position();
         let reach = WorldAabb::new(
@@ -407,8 +410,16 @@ impl AllayEntity {
     fn nearby_note_block(&self, world: &World) -> Option<BlockPos> {
         let position = self.block_position();
         let scanner = BlockPos::between_closed(
-            position.offset(-ALLAY_NOTE_BLOCK_RANGE, -ALLAY_NOTE_BLOCK_RANGE, -ALLAY_NOTE_BLOCK_RANGE),
-            position.offset(ALLAY_NOTE_BLOCK_RANGE, ALLAY_NOTE_BLOCK_RANGE, ALLAY_NOTE_BLOCK_RANGE),
+            position.offset(
+                -ALLAY_NOTE_BLOCK_RANGE,
+                -ALLAY_NOTE_BLOCK_RANGE,
+                -ALLAY_NOTE_BLOCK_RANGE,
+            ),
+            position.offset(
+                ALLAY_NOTE_BLOCK_RANGE,
+                ALLAY_NOTE_BLOCK_RANGE,
+                ALLAY_NOTE_BLOCK_RANGE,
+            ),
         );
         scanner
             .filter(|pos| world.get_block_state(*pos).get_block() == &vanilla_blocks::NOTE_BLOCK)

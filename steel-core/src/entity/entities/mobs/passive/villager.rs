@@ -28,19 +28,19 @@ use crate::entity::ai::goal::{
     RestrictOpenDoorGoal, SleepInBedGoal, WaterAvoidingRandomStrollGoal,
 };
 
+use crate::behavior::InteractionResult;
 use crate::entity::damage::DamageSource;
 use crate::entity::villager_trades;
-use crate::inventory::menu::kinds::{SharedTrades, merchant};
-use crate::behavior::InteractionResult;
-use crate::player::Player;
-use steel_utils::types::InteractionHand;
 use crate::entity::{
     AgeableMob, AgeableMobBase, DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity,
     sync_dirty_mob_effects,
 };
+use crate::inventory::menu::kinds::{SharedTrades, merchant};
 use crate::physics::MoveResult;
+use crate::player::Player;
 use crate::world::World;
+use steel_utils::types::InteractionHand;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
 
@@ -108,10 +108,7 @@ impl VillagerEntity {
             goal_selector.add_goal(1, PanicGoal::new(2.0));
             // Vanilla `Villager.registerGoals`: `AvoidEntityGoal<Zombie>` at
             // priority 1 with an 8 block radius and 0.6 speed modifiers.
-            goal_selector.add_goal(
-                1,
-                AvoidEntityGoal::with_selector(8.0, 0.6, 0.6, is_zombie),
-            );
+            goal_selector.add_goal(1, AvoidEntityGoal::with_selector(8.0, 0.6, 0.6, is_zombie));
             goal_selector.add_goal(2, BreedGoal::new(1.0));
             // Vanilla `Villager.registerGoals` walks back toward its home POI and
             // opens doors on the way, so a villager that strayed still returns.
@@ -156,13 +153,22 @@ impl VillagerEntity {
 
     /// Sets the vanilla villager data (profession, type, level).
     pub fn set_villager_data(&self, data: steel_registry::entity_data::VillagerData) {
-        self.entity_data.lock().villager_mut().villager_data.set(data);
+        self.entity_data
+            .lock()
+            .villager_mut()
+            .villager_data
+            .set(data);
     }
 
     /// Vanilla `AbstractVillager.getUnhappyCounter`.
     #[must_use]
     pub fn unhappy_counter(&self) -> i32 {
-        *self.entity_data.lock().abstract_villager().unhappy_counter.get()
+        *self
+            .entity_data
+            .lock()
+            .abstract_villager()
+            .unhappy_counter
+            .get()
     }
 
     fn update_dirty_mob_effect_entity_data(&self) {
@@ -256,7 +262,6 @@ impl Entity for VillagerEntity {
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_mob(nbt);
         self.load_ageable_mob(nbt);
-
     }
 }
 
@@ -327,7 +332,6 @@ impl AgeableMob for VillagerEntity {
     fn age_boundary_changed(&self, _baby: bool) {
         self.refresh_dimensions();
     }
-
 }
 
 impl Mob for VillagerEntity {
@@ -366,4 +370,3 @@ impl Mob for VillagerEntity {
 }
 
 impl PathfinderMob for VillagerEntity {}
-

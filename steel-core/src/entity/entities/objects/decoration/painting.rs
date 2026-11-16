@@ -325,7 +325,7 @@ impl PaintingEntity {
     /// associated function rather than a method.
     #[must_use]
     pub fn as_item_stack() -> ItemStack {
-        ItemStack::new(&*vanilla_items::PAINTING)
+        ItemStack::new(&vanilla_items::PAINTING)
     }
 }
 

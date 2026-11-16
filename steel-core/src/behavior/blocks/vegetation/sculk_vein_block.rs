@@ -126,13 +126,7 @@ impl SculkVeinBlock {
             let spread_direction = Self::DIRECTIONS[rng.random_range(0..6)];
             if self
                 .spreader
-                .spread_from_face_toward_direction(
-                    state,
-                    world,
-                    pos,
-                    direction,
-                    spread_direction,
-                )
+                .spread_from_face_toward_direction(state, world, pos, direction, spread_direction)
                 .is_some()
             {
                 regrown = true;

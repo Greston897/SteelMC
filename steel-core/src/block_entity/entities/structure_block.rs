@@ -331,11 +331,13 @@ impl BlockEntity for StructureBlockEntity {
             nbt_view.int_value("sizeZ").unwrap_or(0),
         ));
         state.rotation = structure_rotation_from_name(
-            nbt_view.string("rotation")
-                .map(|value| value.to_str().into_owned()).as_deref().unwrap_or("none"),
+            nbt_view
+                .string("rotation")
+                .map(|value| value.to_str().into_owned())
+                .as_deref()
+                .unwrap_or("none"),
         );
-        state.mirror =
-            structure_mirror_from_name(
+        state.mirror = structure_mirror_from_name(
             nbt_view
                 .string("mirror")
                 .map(|value| value.to_str().into_owned())
@@ -343,15 +345,24 @@ impl BlockEntity for StructureBlockEntity {
                 .unwrap_or("none"),
         );
         state.mode = structure_mode_from_name(
-            nbt_view.string("mode")
-                .map(|value| value.to_str().into_owned()).as_deref().unwrap_or("data"),
+            nbt_view
+                .string("mode")
+                .map(|value| value.to_str().into_owned())
+                .as_deref()
+                .unwrap_or("data"),
         );
         state.ignore_entities = nbt_view
             .byte_value("ignoreEntities")
             .is_none_or(|value| value != 0);
-        state.strict = nbt_view.byte_value("strict").is_some_and(|value| value != 0);
-        state.powered = nbt_view.byte_value("powered").is_some_and(|value| value != 0);
-        state.show_air = nbt_view.byte_value("showair").is_some_and(|value| value != 0);
+        state.strict = nbt_view
+            .byte_value("strict")
+            .is_some_and(|value| value != 0);
+        state.powered = nbt_view
+            .byte_value("powered")
+            .is_some_and(|value| value != 0);
+        state.show_air = nbt_view
+            .byte_value("showair")
+            .is_some_and(|value| value != 0);
         state.show_bounding_box = nbt_view
             .byte_value("showboundingbox")
             .is_none_or(|value| value != 0);

@@ -23,23 +23,23 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    BreedGoal, FloatGoal, FollowParentGoal,
-    LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
+    WaterAvoidingRandomStrollGoal,
 };
 
+use crate::behavior::InteractionResult;
 use crate::entity::damage::DamageSource;
 use crate::entity::villager_trades;
-use crate::inventory::menu::kinds::{SharedTrades, merchant};
 use crate::entity::{
     AgeableMob, AgeableMobBase, DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, RemovalReason,
     SharedEntity, sync_dirty_mob_effects,
 };
-use crate::behavior::InteractionResult;
+use crate::inventory::menu::kinds::{SharedTrades, merchant};
 use crate::physics::MoveResult;
 use crate::player::Player;
-use steel_utils::types::InteractionHand;
 use crate::world::World;
+use steel_utils::types::InteractionHand;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
 
@@ -175,7 +175,12 @@ impl WanderingTraderEntity {
     /// Vanilla `AbstractVillager.getUnhappyCounter`.
     #[must_use]
     pub fn unhappy_counter(&self) -> i32 {
-        *self.entity_data.lock().abstract_villager().unhappy_counter.get()
+        *self
+            .entity_data
+            .lock()
+            .abstract_villager()
+            .unhappy_counter
+            .get()
     }
 
     fn update_dirty_mob_effect_entity_data(&self) {
@@ -327,7 +332,6 @@ impl AgeableMob for WanderingTraderEntity {
     fn age_boundary_changed(&self, _baby: bool) {
         self.refresh_dimensions();
     }
-
 }
 
 impl WanderingTraderEntity {
@@ -351,9 +355,7 @@ impl WanderingTraderEntity {
                     return;
                 };
                 if let Some(trader) = World::entity_manager(world).get_accessible_by_id(trader_id)
-                    && let Some(trader) = trader
-                        .as_ref()
-                        .downcast_ref::<WanderingTraderEntity>()
+                    && let Some(trader) = trader.as_ref().downcast_ref::<WanderingTraderEntity>()
                 {
                     trader.set_trading_player(None);
                 }

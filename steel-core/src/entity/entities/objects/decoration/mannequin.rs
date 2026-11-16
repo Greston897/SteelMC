@@ -85,13 +85,22 @@ impl MannequinEntity {
 
     /// Sets the synced main hand.
     pub fn set_main_hand(&self, arm: HumanoidArm) {
-        self.entity_data.lock().avatar_mut().player_main_hand.set(arm);
+        self.entity_data
+            .lock()
+            .avatar_mut()
+            .player_main_hand
+            .set(arm);
     }
 
     /// Vanilla `Avatar.getPlayerModeCustomisation` skin mask byte.
     #[must_use]
     pub fn skin_customisation(&self) -> i8 {
-        *self.entity_data.lock().avatar().player_mode_customization.get()
+        *self
+            .entity_data
+            .lock()
+            .avatar()
+            .player_mode_customization
+            .get()
     }
 
     /// Sets the raw skin customisation mask.

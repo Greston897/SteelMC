@@ -36,18 +36,18 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("spectate")
         .executes(|context| spectate(context, None))
-        .then(argument(TARGET_ARGUMENT, SteelArgumentType::entity()).executes(|context| {
-            let target = context.entity(TARGET_ARGUMENT)?;
-            spectate(context, Some(target))
-        }))
         .then(
-            argument(TARGET_ARGUMENT, SteelArgumentType::entity()).then(
-                argument(PLAYER_ARGUMENT, SteelArgumentType::player()).executes(|context| {
-                    let target = context.entity(TARGET_ARGUMENT)?;
-                    spectate(context, Some(target))
-                }),
-            ),
+            argument(TARGET_ARGUMENT, SteelArgumentType::entity()).executes(|context| {
+                let target = context.entity(TARGET_ARGUMENT)?;
+                spectate(context, Some(target))
+            }),
         )
+        .then(argument(TARGET_ARGUMENT, SteelArgumentType::entity()).then(
+            argument(PLAYER_ARGUMENT, SteelArgumentType::player()).executes(|context| {
+                let target = context.entity(TARGET_ARGUMENT)?;
+                spectate(context, Some(target))
+            }),
+        ))
 }
 
 /// Builds a translated component with a literal fallback.
@@ -76,39 +76,36 @@ fn spectate(
         )));
     }
 
-    match target {
-        Some(target) => {
-            let entity_id = target.id();
-            viewer.set_camera_entity(Some(target));
+    if let Some(target) = target {
+        let entity_id = target.id();
+        viewer.set_camera_entity(Some(target));
+        viewer.send_packet(steel_protocol::packets::game::CSetCamera {
+            camera_id: entity_id,
+        });
+        let message = translated(
+            "commands.spectate.success",
+            format!("Now spectating entity {entity_id}"),
+            vec![TextComponent::from(entity_id.to_string())],
+        );
+        context.source().send_success(&message, true);
+        Ok(1)
+    } else {
+        // Vanilla clears the camera when the target is omitted.
+        viewer.set_camera_entity(None);
+        if let Some(player) = context.source().player() {
             viewer.send_packet(steel_protocol::packets::game::CSetCamera {
-                camera_id: entity_id,
+                camera_id: player.base().id(),
             });
-            let message = translated(
-                "commands.spectate.success",
-                format!("Now spectating entity {entity_id}"),
-                vec![TextComponent::from(entity_id.to_string())],
-            );
-            context.source().send_success(&message, true);
-            Ok(1)
         }
-        None => {
-            // Vanilla clears the camera when the target is omitted.
-            viewer.set_camera_entity(None);
-            if let Some(player) = context.source().player() {
-                viewer.send_packet(steel_protocol::packets::game::CSetCamera {
-                    camera_id: player.base().id(),
-                });
-            }
-            context.source().send_success(
-                &translated(
-                    "commands.spectate.self",
-                    "Stopped spectating".to_owned(),
-                    Vec::new(),
-                ),
-                true,
-            );
-            Ok(1)
-        }
+        context.source().send_success(
+            &translated(
+                "commands.spectate.self",
+                "Stopped spectating".to_owned(),
+                Vec::new(),
+            ),
+            true,
+        );
+        Ok(1)
     }
 }
 

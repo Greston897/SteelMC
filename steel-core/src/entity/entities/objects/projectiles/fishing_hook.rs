@@ -18,12 +18,12 @@ use std::sync::{Arc, Weak};
 use steel_macros::entity_behavior;
 use steel_math::{DEG_TO_RAD, DEGREE_360, trig};
 use steel_registry::blocks::block_state_ext::BlockStateExt;
-use steel_registry::vanilla_criteria_triggers;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::fluid::FluidStateExt;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::loot_table::LootContext;
 use steel_registry::particle_type::ParticleData;
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::vanilla_entity_data::FishingBobberEntityData;
 use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::vanilla_particle_types::{BUBBLE, FISHING, SPLASH};
@@ -214,8 +214,8 @@ impl FishingHookEntity {
             return true;
         }
 
-        let mainhand_fishing = mainhand_item.is(&*vanilla_items::FISHING_ROD);
-        let offhand_fishing = offhand_item.is(&*vanilla_items::FISHING_ROD);
+        let mainhand_fishing = mainhand_item.is(&vanilla_items::FISHING_ROD);
+        let offhand_fishing = offhand_item.is(&vanilla_items::FISHING_ROD);
 
         if (mainhand_fishing || offhand_fishing)
             && self.distance_to_sqr(owner.position()) <= MAX_DISTANCE_SQR
@@ -524,8 +524,7 @@ impl FishingHookEntity {
                     if let Some(owner) = self.get_owner()
                         && let Some(player) = owner.as_player()
                     {
-                        player
-                            .trigger_advancement(&vanilla_criteria_triggers::FISHING_ROD_HOOKED);
+                        player.trigger_advancement(&vanilla_criteria_triggers::FISHING_ROD_HOOKED);
                     }
                     self.broadcast_entity_event(EntityStatus::FishingRodReelIn);
                     damage = if hooked_in.as_ref().is::<ItemEntity>() {

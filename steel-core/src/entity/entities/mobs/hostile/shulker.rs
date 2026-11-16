@@ -257,7 +257,6 @@ impl Mob for ShulkerEntity {
     fn set_mob_flags(&self, flags: i8) {
         self.entity_data.lock().mob_mut().mob_flags.set(flags);
     }
-
 }
 
 impl Monster for ShulkerEntity {}
@@ -283,9 +282,15 @@ impl PathfinderMob for ShulkerEntity {
         );
         let bullet = Arc::new(bullet);
         bullet.set_owner_entity(Some(self_entity));
-        let direction = (target.position() + DVec3::new(0.0, f64::from(target.base().dimensions().height) * 0.5, 0.0) - start).normalize_or_zero();
+        let direction = (target.position()
+            + DVec3::new(0.0, f64::from(target.base().dimensions().height) * 0.5, 0.0)
+            - start)
+            .normalize_or_zero();
         bullet.set_velocity(direction * SHULKER_BULLET_SPEED);
-        if world.try_add_entity(Arc::clone(&bullet) as SharedEntity).is_ok() {
+        if world
+            .try_add_entity(Arc::clone(&bullet) as SharedEntity)
+            .is_ok()
+        {
             self.play_sound(&sound_events::ENTITY_SHULKER_SHOOT, 2.0, 1.0);
         }
     }

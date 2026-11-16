@@ -14,9 +14,9 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
+use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::WolfEntityData;
-use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_items};
 use steel_utils::locks::SyncMutex;
@@ -24,8 +24,8 @@ use steel_utils::{DowncastType, DowncastTypeKey};
 use uuid::Uuid;
 
 use crate::entity::ai::goal::{
-    BreedGoal, FloatGoal, FollowParentGoal,
-    LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
+    WaterAvoidingRandomStrollGoal,
 };
 
 use crate::behavior::InteractionResult;
@@ -243,7 +243,6 @@ impl Entity for WolfEntity {
         self.load_mob(nbt);
         self.load_ageable_mob(nbt);
         self.load_animal(nbt);
-
     }
 }
 
@@ -315,7 +314,6 @@ impl AgeableMob for WolfEntity {
     fn age_boundary_changed(&self, _baby: bool) {
         self.refresh_dimensions();
     }
-
 }
 
 impl Animal for WolfEntity {
@@ -337,11 +335,7 @@ impl Mob for WolfEntity {
     /// Vanilla `Wolf.mobInteract`: feeding a bone tames an untamed wolf, and a
     /// tamed wolf eats meat to heal. Taming fires `CriteriaTriggers.TAME_ANIMAL`
     /// and consumes one bone either way.
-    fn mob_interact(
-        &self,
-        player: &Player,
-        hand: InteractionHand,
-    ) -> InteractionResult {
+    fn mob_interact(&self, player: &Player, hand: InteractionHand) -> InteractionResult {
         let stack = {
             let inventory = player.inventory.lock();
             let stack = inventory.get_item_in_hand(hand);
@@ -349,7 +343,7 @@ impl Mob for WolfEntity {
         };
 
         if !self.is_tame() {
-            if !stack.is(&*vanilla_items::BONE) {
+            if !stack.is(&vanilla_items::BONE) {
                 return InteractionResult::Pass;
             }
             // Vanilla rolls `random.nextFloat() < 0.33F`; a success tames and
@@ -408,4 +402,3 @@ impl Mob for WolfEntity {
 }
 
 impl PathfinderMob for WolfEntity {}
-

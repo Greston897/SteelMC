@@ -20,8 +20,8 @@ use steel_registry::{vanilla_items, vanilla_menu_types};
 use crate::block_entity::entities::BrewingStandBlockEntity;
 use crate::inventory::menu::kinds::BasicKind;
 use crate::inventory::prelude::*;
-use steel_utils::Downcast as _;
 use crate::player::player_inventory::PlayerInventory;
+use steel_utils::Downcast as _;
 
 /// Builds the dispenser/dropper grid menu.
 ///
@@ -170,19 +170,16 @@ impl MenuKind for BrewingStandMenuKind {
 /// screen. The slot refuses anything that is not a written, writable or
 /// knowledge book, matching `LecternMenu.canPlaceItem`.
 #[must_use]
-pub fn lectern(
-    container_id: u8,
-    container: impl Into<ContainerRef>,
-) -> Menu {
+pub fn lectern(container_id: u8, container: impl Into<ContainerRef>) -> Menu {
     let container = container.into();
     let mut builder = MenuBuilder::new(&vanilla_menu_types::LECTERN, container_id);
     builder.section_with(
         &container,
         1,
         SectionKind::restricted(|_slot, stack| {
-            stack.is(&*vanilla_items::WRITABLE_BOOK)
-                || stack.is(&*vanilla_items::WRITTEN_BOOK)
-                || stack.is(&*vanilla_items::KNOWLEDGE_BOOK)
+            stack.is(&vanilla_items::WRITABLE_BOOK)
+                || stack.is(&vanilla_items::WRITTEN_BOOK)
+                || stack.is(&vanilla_items::KNOWLEDGE_BOOK)
         }),
     );
     builder.build(BasicKind)

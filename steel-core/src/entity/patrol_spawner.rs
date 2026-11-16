@@ -27,11 +27,11 @@ use crate::chunk::heightmap::HeightmapType;
 use crate::chunk::light::LightLayer;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
 use crate::entity::{Entity as _, LivingEntity as _, spawn_entity};
-use steel_registry::RegistryExt as _;
 use crate::inventory::equipment::EquipmentSlot;
 use crate::player::Player;
 use crate::poi::OccupationStatus;
 use crate::world::World;
+use steel_registry::RegistryExt as _;
 
 /// Vanilla `PatrolSpawner` first delay window in ticks.
 const FIRST_DELAY: i32 = 12_000;
@@ -245,7 +245,7 @@ fn mark_captain(entity: &crate::entity::SharedEntity) {
     living.with_equipment_slot_mut(EquipmentSlot::Head, &mut |head| {
         if head.is_empty() {
             *head = steel_registry::item_stack::ItemStack::with_count(
-                &*steel_registry::vanilla_items::WHITE_BANNER,
+                &steel_registry::vanilla_items::WHITE_BANNER,
                 1,
             );
         }
@@ -259,7 +259,7 @@ fn effective_difficulty(world: &Arc<World>) -> f64 {
 }
 
 /// The difficulty half of vanilla's effective difficulty.
-fn vanilla_effective_difficulty(difficulty: Difficulty) -> f64 {
+const fn vanilla_effective_difficulty(difficulty: Difficulty) -> f64 {
     match difficulty {
         Difficulty::Peaceful => 0.0,
         Difficulty::Easy => 1.0,

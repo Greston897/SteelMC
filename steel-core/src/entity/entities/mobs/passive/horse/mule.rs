@@ -28,15 +28,15 @@ use crate::entity::ai::goal::{
     WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::entity::mount::{SharedMountInventory, open_mount_menu};
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityDimensions, EntityMovementEmission, EntitySyncedData, LivingEntity,
     LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity, sync_dirty_mob_effects,
 };
-use crate::entity::mount::{SharedMountInventory, open_mount_menu};
 use crate::physics::MoveResult;
-use crate::world::World;
 use crate::player::Player;
+use crate::world::World;
 
 /// Vanilla `AbstractHorse.DATA_ID_FLAGS` bit: the horse is tamed.
 const HORSE_FLAG_TAME: i8 = 0x02;
@@ -151,7 +151,12 @@ impl MuleEntity {
     /// Vanilla `AbstractChestedHorse.hasChest`.
     #[must_use]
     pub fn has_chest(&self) -> bool {
-        *self.entity_data.lock().abstract_chested_horse().id_chest.get()
+        *self
+            .entity_data
+            .lock()
+            .abstract_chested_horse()
+            .id_chest
+            .get()
     }
 
     /// Vanilla `AbstractChestedHorse.setChest`.
@@ -431,7 +436,9 @@ impl Mob for MuleEntity {
         player: &Player,
         hand: steel_utils::types::InteractionHand,
     ) -> crate::behavior::InteractionResult {
-        if !Entity::is_vehicle(self) && !LivingEntity::is_baby(self) && self.is_tamed()
+        if !Entity::is_vehicle(self)
+            && !LivingEntity::is_baby(self)
+            && self.is_tamed()
             && player.is_secondary_use_active()
         {
             self.open_mount_inventory(player);
@@ -497,12 +504,7 @@ mod tests {
     #[test]
     fn mule_tame_and_saddle_bits_are_independent() {
         init_vanilla_registry();
-        let horse = MuleEntity::new(
-            &vanilla_entities::MULE,
-            1,
-            DVec3::ZERO,
-            Weak::new(),
-        );
+        let horse = MuleEntity::new(&vanilla_entities::MULE, 1, DVec3::ZERO, Weak::new());
         horse.set_tamed(true);
         assert!(horse.is_tamed());
         assert!(!horse.is_saddled());

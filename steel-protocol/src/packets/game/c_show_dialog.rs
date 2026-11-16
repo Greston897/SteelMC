@@ -26,7 +26,10 @@ pub enum DialogHolder {
 
 impl DialogHolder {
     /// Writes an unnamed network NBT compound (`TAG_Compound = 0x0A`, fields, `TAG_End = 0x00`).
-    pub fn write_nbt_compound(compound: &NbtCompound, writer: &mut impl Write) -> std::io::Result<()> {
+    pub fn write_nbt_compound(
+        compound: &NbtCompound,
+        writer: &mut impl Write,
+    ) -> std::io::Result<()> {
         let mut bytes = Vec::new();
         bytes.push(0x0A);
         compound.write(&mut bytes);

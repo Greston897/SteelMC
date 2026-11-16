@@ -220,9 +220,9 @@ impl ItemFrameEntity {
     #[must_use]
     pub fn placeable_item(&self) -> ItemRef {
         if self.is_glow() {
-            &*vanilla_items::GLOW_ITEM_FRAME
+            &vanilla_items::GLOW_ITEM_FRAME
         } else {
-            &*vanilla_items::ITEM_FRAME
+            &vanilla_items::ITEM_FRAME
         }
     }
 

@@ -13,12 +13,12 @@ use simdnbt::{borrow, owned};
 use steel_macros::entity_behavior;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::EntityTypeRef;
+use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
 use steel_registry::vanilla_attributes;
-use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::vanilla_entity_data::CamelEntityData;
+use steel_registry::vanilla_item_tags::ItemTag;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
@@ -371,12 +371,8 @@ mod tests {
     #[test]
     fn camel_husk_tame_and_saddle_bits_are_independent() {
         init_vanilla_registry();
-        let camel = CamelHuskEntity::new(
-            &vanilla_entities::CAMEL_HUSK,
-            1,
-            DVec3::ZERO,
-            Weak::new(),
-        );
+        let camel =
+            CamelHuskEntity::new(&vanilla_entities::CAMEL_HUSK, 1, DVec3::ZERO, Weak::new());
         camel.set_tamed(true);
         assert!(camel.is_tamed());
         assert!(!camel.is_saddled());

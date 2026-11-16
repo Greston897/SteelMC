@@ -18,9 +18,10 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("ride").then(
         argument("target", SteelArgumentType::entity())
-            .then(literal("mount").then(
-                argument("vehicle", SteelArgumentType::entity()).executes(mount),
-            ))
+            .then(
+                literal("mount")
+                    .then(argument("vehicle", SteelArgumentType::entity()).executes(mount)),
+            )
             .then(literal("dismount").executes(dismount)),
     )
 }

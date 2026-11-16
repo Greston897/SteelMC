@@ -12,10 +12,7 @@ use text_components::TextComponent;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
-    execution::{
-        CommandSource, SteelCommandContext, SteelCommandRuntime, argument,
-        literal,
-    },
+    execution::{CommandSource, SteelCommandContext, SteelCommandRuntime, argument, literal},
     registration::CommandRegistration,
 };
 use crate::scoreboard::{ScoreHolder, Scoreboard, ScoreboardObjective};
@@ -25,30 +22,26 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
     // Vanilla grants `/trigger` to everyone (`Commands.LEVEL_ALL`), which is the
     // reason it exists at all: a map maker ships a datapack and a player who is
     // not an operator can still poke the map's state.
-    CommandRegistration::new(Identifier::vanilla_static("trigger"), |_| command())
-        .default_access()
+    CommandRegistration::new(Identifier::vanilla_static("trigger"), |_| command()).default_access()
 }
 
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    literal("trigger")
-        .then(
-            argument("objective", ArgumentType::word())
-                .executes(add_one)
-                .then(literal("add").then(
-                    argument("value", ArgumentType::integer(i32::MIN, i32::MAX))
-                        .executes(add_value),
-                ))
-                .then(literal("set").then(
-                    argument("value", ArgumentType::integer(i32::MIN, i32::MAX))
-                        .executes(set_value),
-                )),
-        )
+    literal("trigger").then(
+        argument("objective", ArgumentType::word())
+            .executes(add_one)
+            .then(literal("add").then(
+                argument("value", ArgumentType::integer(i32::MIN, i32::MAX)).executes(add_value),
+            ))
+            .then(literal("set").then(
+                argument("value", ArgumentType::integer(i32::MIN, i32::MAX)).executes(set_value),
+            )),
+    )
 }
 
 /// The scoreboard owned by the domain the command runs in.
-fn scoreboard_of<'a>(
-    context: &'a SteelCommandContext<CommandSource>,
-) -> Result<&'a Scoreboard, CommandSyntaxError> {
+fn scoreboard_of(
+    context: &SteelCommandContext<CommandSource>,
+) -> Result<&Scoreboard, CommandSyntaxError> {
     // The domain is read from the command source's world, like `/scoreboard`
     // does, so `/execute in <domain>` projects `/trigger` onto that scoreboard.
     let domain = context.source().world().domain().to_owned();
@@ -124,15 +117,11 @@ fn report(
 ///
 /// It still relocks the score, so a map that only needs a "button press" can
 /// watch the score and re-`enable` afterwards.
-fn add_one(
-    context: &SteelCommandContext<CommandSource>,
-) -> Result<i32, CommandSyntaxError> {
+fn add_one(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     add_amount(context, 1)
 }
 
-fn add_value(
-    context: &SteelCommandContext<CommandSource>,
-) -> Result<i32, CommandSyntaxError> {
+fn add_value(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     add_amount(context, context.integer("value")?)
 }
 
@@ -156,9 +145,7 @@ fn add_amount(
 }
 
 /// `/trigger <objective> set <value>`: replaces the score outright.
-fn set_value(
-    context: &SteelCommandContext<CommandSource>,
-) -> Result<i32, CommandSyntaxError> {
+fn set_value(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let value = context.integer("value")?;
     let scoreboard = scoreboard_of(context)?;
     let objective = trigger_objective(context, scoreboard)?;

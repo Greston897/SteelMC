@@ -13,9 +13,9 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::MinecartCommandBlockEntityData;
+use steel_utils::BlockStateId;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
-use steel_utils::BlockStateId;
 use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
 use text_components::TextComponent;
@@ -25,8 +25,8 @@ use crate::behavior::InteractionResult;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData, SharedEntity,
 };
-use crate::world::World;
 use crate::player::Player;
+use crate::world::World;
 
 /// Vanilla `MinecartCommandBlock` re-runs its command every `4` ticks.
 const COMMAND_BLOCK_MINECART_TICK_DELAY: i32 = 4;
@@ -40,7 +40,8 @@ pub struct CommandBlockMinecartEntity {
     minecart_base: AbstractMinecartBase,
     state: SyncMutex<CommandBlockMinecartState>,
     /// Reply channel of a command still queued on the server.
-    pending: SyncMutex<Option<tokio::sync::oneshot::Receiver<crate::command::BackgroundCommandResult>>>,
+    pending:
+        SyncMutex<Option<tokio::sync::oneshot::Receiver<crate::command::BackgroundCommandResult>>>,
 }
 
 #[derive(Debug)]
@@ -109,7 +110,11 @@ impl CommandBlockMinecartEntity {
     pub fn set_command(&self, command: impl Into<String>) {
         let command = command.into();
         self.state.lock().command = command.clone();
-        self.entity_data.lock().minecart_command_block_mut().id_command_name.set(command);
+        self.entity_data
+            .lock()
+            .minecart_command_block_mut()
+            .id_command_name
+            .set(command);
     }
 
     /// Vanilla `MinecartCommandBlock.lastActivated`, the `tickCount` of the last
@@ -132,7 +137,11 @@ impl CommandBlockMinecartEntity {
 
     /// Mirrors vanilla `MinecartCommandBlock`'s `lastOutput` component.
     pub fn set_last_output(&self, output: TextComponent) {
-        self.entity_data.lock().minecart_command_block_mut().id_last_output.set(Box::new(output));
+        self.entity_data
+            .lock()
+            .minecart_command_block_mut()
+            .id_last_output
+            .set(Box::new(output));
     }
 
     /// Vanilla `MinecartCommandBlock.activateMinecart`: the command runs only
@@ -183,10 +192,11 @@ impl CommandBlockMinecartEntity {
             Ok(result) => {
                 *pending = None;
                 drop(pending);
-                if result.output_allowed && self.tracks_output() {
-                    if let Some(output) = result.output {
-                        self.set_last_output(TextComponent::plain(output));
-                    }
+                if result.output_allowed
+                    && self.tracks_output()
+                    && let Some(output) = result.output
+                {
+                    self.set_last_output(TextComponent::plain(output));
                 }
             }
             Err(tokio::sync::oneshot::error::TryRecvError::Empty) => {}
@@ -291,7 +301,6 @@ impl AbstractMinecart for CommandBlockMinecartEntity {
             .id_display_offset
             .set(value);
     }
-
 }
 
 #[cfg(test)]
@@ -324,7 +333,12 @@ mod tests {
         cart.set_command("say hi");
         assert_eq!(cart.command(), "say hi");
         assert_eq!(
-            *cart.entity_data.lock().minecart_command_block_mut().id_command_name.get(),
+            *cart
+                .entity_data
+                .lock()
+                .minecart_command_block_mut()
+                .id_command_name
+                .get(),
             "say hi"
         );
     }

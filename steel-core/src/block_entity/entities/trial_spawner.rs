@@ -14,9 +14,7 @@ use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
 use simdnbt::owned::NbtCompound;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
-use steel_registry::blocks::properties::{
-    BlockStateProperties, TrialSpawnerState as SpawnerPhase,
-};
+use steel_registry::blocks::properties::{BlockStateProperties, TrialSpawnerState as SpawnerPhase};
 use steel_registry::{
     REGISTRY, RegistryExt as _, sound_events, vanilla_block_entity_types, vanilla_game_rules,
     vanilla_items, vanilla_mob_effects,
@@ -100,15 +98,15 @@ impl TrialSpawnerBlockEntity {
         if key.is_empty() {
             return 0;
         }
-        Self::drop_loot_key(world, self.get_block_pos().above(), self.get_block_state(), &key)
+        Self::drop_loot_key(
+            world,
+            self.get_block_pos().above(),
+            self.get_block_state(),
+            &key,
+        )
     }
 
-    fn drop_loot_key(
-        world: &Arc<World>,
-        pos: BlockPos,
-        state: BlockStateId,
-        key: &str,
-    ) -> usize {
+    fn drop_loot_key(world: &Arc<World>, pos: BlockPos, state: BlockStateId, key: &str) -> usize {
         let identifier = parse_id(key);
         let Some(table) = REGISTRY.loot_tables.by_key(&identifier) else {
             return 0;
@@ -395,9 +393,7 @@ impl BlockEntity for TrialSpawnerBlockEntity {
                 self.set_changed();
 
                 for _ in 0..players {
-                    if !loot_table.is_empty() {
-                        let _ = Self::drop_loot_key(world, pos.above(), state, &loot_table);
-                    } else {
+                    if loot_table.is_empty() {
                         // Vanilla trial spawners eject trial keys on completion (30% ominous key
                         // when ominous, 50% trial key when normal; guarantee a trial key fallback).
                         let key_item = if ominous {
@@ -409,6 +405,8 @@ impl BlockEntity for TrialSpawnerBlockEntity {
                             pos.above(),
                             steel_registry::item_stack::ItemStack::new(key_item),
                         );
+                    } else {
+                        let _ = Self::drop_loot_key(world, pos.above(), state, &loot_table);
                     }
                 }
                 world.play_sound(
@@ -439,14 +437,12 @@ impl BlockEntity for TrialSpawnerBlockEntity {
         state.entity = view
             .string("entity")
             .or(nested_entity)
-            .map(|value| value.to_str().to_string())
-            .unwrap_or_default();
+            .map_or_default(|value| value.to_str().to_string());
         state.spawns_per_player = view.int("spawns_per_player").unwrap_or(0);
         state.total_mobs = view.int("total_mobs").unwrap_or(0);
         state.loot_table = view
             .string("loot_table")
-            .map(|value| value.to_str().to_string())
-            .unwrap_or_default();
+            .map_or_default(|value| value.to_str().to_string());
         state.total_mobs_spawned = view.int("total_mobs_spawned").unwrap_or(0);
         state.next_mob_spawns_at = view.long("next_mob_spawns_at").unwrap_or(0);
         state.cooldown_ends_at = view.long("cooldown_ends_at").unwrap_or(0);

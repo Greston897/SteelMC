@@ -12,21 +12,20 @@ use steel_protocol::packets::common::{
 };
 use steel_protocol::packets::game::{
     CBundleDelimiter, CCommandSuggestions, ClientCommandAction, PlayerAction, PlayerCommandAction,
-    ResourcePackAction,
-    SAcceptTeleportation, SAttack, SBlockEntityTagQuery, SBundleItemSelected, SChangeDifficulty,
-    SChangeGameMode, SChat, SChatAck, SChatCommand, SChatCommandSigned, SChatSessionUpdate,
-    SChunkBatchReceived, SClientCommand, SClientTickEnd, SCommandSuggestion,
+    ResourcePackAction, SAcceptTeleportation, SAttack, SBlockEntityTagQuery, SBundleItemSelected,
+    SChangeDifficulty, SChangeGameMode, SChat, SChatAck, SChatCommand, SChatCommandSigned,
+    SChatSessionUpdate, SChunkBatchReceived, SClientCommand, SClientTickEnd, SCommandSuggestion,
     SConfigurationAcknowledged, SContainerButtonClick, SContainerClick, SContainerClose,
-    SCookieResponse,
-    SContainerSlotStateChanged, SCustomClickAction, SDebugSubscriptionRequest, SEditBook,
-    SEntityTagQuery, SInteract, SJigsawGenerate, SLockDifficulty, SMovePlayer, SMovePlayerPos,
-    SMovePlayerPosRot, SMovePlayerRot, SMovePlayerStatusOnly, SMoveVehicle, SPaddleBoat,
-    SPickItemFromBlock, SPickItemFromEntity, SPlaceRecipe, SPlayerAbilities, SPlayerAction,
-    SPlayerCommand, SPlayerInput, SPlayerLoad, SPong, SPunch, SRecipeBookChangeSettings,
-    SRecipeBookSeenRecipe, SRenameItem, SResourcePack, SSeenAdvancement, SSelectTrade,
-    SSetBeacon, SSetCarriedItem, SSetCommandBlock, SSetCommandMinecart, SSetCreativeModeSlot,
-    SSetGameRule, SSetJigsawBlock, SSetStructureBlock, SSetTestBlock, SSignUpdate, SSpectatorAction,
-    STeleportToEntity, STestInstanceBlockAction, SUseItem, SUseItemOn,
+    SContainerSlotStateChanged, SCookieResponse, SCustomClickAction, SDebugSubscriptionRequest,
+    SEditBook, SEntityTagQuery, SInteract, SJigsawGenerate, SLockDifficulty, SMovePlayer,
+    SMovePlayerPos, SMovePlayerPosRot, SMovePlayerRot, SMovePlayerStatusOnly, SMoveVehicle,
+    SPaddleBoat, SPickItemFromBlock, SPickItemFromEntity, SPlaceRecipe, SPlayerAbilities,
+    SPlayerAction, SPlayerCommand, SPlayerInput, SPlayerLoad, SPong, SPunch,
+    SRecipeBookChangeSettings, SRecipeBookSeenRecipe, SRenameItem, SResourcePack, SSeenAdvancement,
+    SSelectTrade, SSetBeacon, SSetCarriedItem, SSetCommandBlock, SSetCommandMinecart,
+    SSetCreativeModeSlot, SSetGameRule, SSetJigsawBlock, SSetStructureBlock, SSetTestBlock,
+    SSignUpdate, SSpectatorAction, STeleportToEntity, STestInstanceBlockAction, SUseItem,
+    SUseItemOn,
 };
 
 use crate::command::{handle_client_request, sender::CommandSender};
@@ -487,7 +486,13 @@ impl ScheduledPlayPacket {
                 let declined = packet.decoded_action() == Some(ResourcePackAction::Declined);
                 let required = player
                     .try_server()
-                    .and_then(|server| server.config.resource_pack.as_ref().map(|pack| pack.required))
+                    .and_then(|server| {
+                        server
+                            .config
+                            .resource_pack
+                            .as_ref()
+                            .map(|pack| pack.required)
+                    })
                     .unwrap_or(false);
                 if declined && required {
                     log::info!(
@@ -1011,16 +1016,12 @@ impl JavaConnection {
                     SBlockEntityTagQuery::read_packet(data)?,
                 ))
             }
-            play::S_BUNDLE_ITEM_SELECTED => {
-                scheduled(ScheduledPlayPacketKind::BundleItemSelected(
-                    SBundleItemSelected::read_packet(data)?,
-                ))
-            }
-            play::S_CHAT_COMMAND_SIGNED => {
-                scheduled(ScheduledPlayPacketKind::ChatCommandSigned(
-                    SChatCommandSigned::read_packet(data)?,
-                ))
-            }
+            play::S_BUNDLE_ITEM_SELECTED => scheduled(ScheduledPlayPacketKind::BundleItemSelected(
+                SBundleItemSelected::read_packet(data)?,
+            )),
+            play::S_CHAT_COMMAND_SIGNED => scheduled(ScheduledPlayPacketKind::ChatCommandSigned(
+                SChatCommandSigned::read_packet(data)?,
+            )),
             play::S_CONFIGURATION_ACKNOWLEDGED => {
                 scheduled(ScheduledPlayPacketKind::ConfigurationAcknowledged(
                     SConfigurationAcknowledged::read_packet(data)?,
@@ -1031,36 +1032,24 @@ impl JavaConnection {
                     SDebugSubscriptionRequest::read_packet(data)?,
                 ))
             }
-            play::S_ENTITY_TAG_QUERY => {
-                scheduled(ScheduledPlayPacketKind::EntityTagQuery(
-                    SEntityTagQuery::read_packet(data)?,
-                ))
-            }
-            play::S_JIGSAW_GENERATE => {
-                scheduled(ScheduledPlayPacketKind::JigsawGenerate(
-                    SJigsawGenerate::read_packet(data)?,
-                ))
-            }
-            play::S_LOCK_DIFFICULTY => {
-                scheduled(ScheduledPlayPacketKind::LockDifficulty(
-                    SLockDifficulty::read_packet(data)?,
-                ))
-            }
+            play::S_ENTITY_TAG_QUERY => scheduled(ScheduledPlayPacketKind::EntityTagQuery(
+                SEntityTagQuery::read_packet(data)?,
+            )),
+            play::S_JIGSAW_GENERATE => scheduled(ScheduledPlayPacketKind::JigsawGenerate(
+                SJigsawGenerate::read_packet(data)?,
+            )),
+            play::S_LOCK_DIFFICULTY => scheduled(ScheduledPlayPacketKind::LockDifficulty(
+                SLockDifficulty::read_packet(data)?,
+            )),
             play::S_PICK_ITEM_FROM_ENTITY => {
                 scheduled(ScheduledPlayPacketKind::PickItemFromEntity(
                     SPickItemFromEntity::read_packet(data)?,
                 ))
             }
-            play::S_PLACE_RECIPE => {
-                scheduled(ScheduledPlayPacketKind::PlaceRecipe(
-                    SPlaceRecipe::read_packet(data)?,
-                ))
-            }
-            play::S_PONG => {
-                scheduled(ScheduledPlayPacketKind::Pong(
-                    SPong::read_packet(data)?,
-                ))
-            }
+            play::S_PLACE_RECIPE => scheduled(ScheduledPlayPacketKind::PlaceRecipe(
+                SPlaceRecipe::read_packet(data)?,
+            )),
+            play::S_PONG => scheduled(ScheduledPlayPacketKind::Pong(SPong::read_packet(data)?)),
             play::S_RECIPE_BOOK_CHANGE_SETTINGS => {
                 scheduled(ScheduledPlayPacketKind::RecipeBookChangeSettings(
                     SRecipeBookChangeSettings::read_packet(data)?,
@@ -1071,61 +1060,41 @@ impl JavaConnection {
                     SRecipeBookSeenRecipe::read_packet(data)?,
                 ))
             }
-            play::S_RESOURCE_PACK => {
-                scheduled(ScheduledPlayPacketKind::ResourcePack(
-                    SResourcePack::read_packet(data)?,
-                ))
-            }
-            play::S_SELECT_TRADE => {
-                scheduled(ScheduledPlayPacketKind::SelectTrade(
-                    SSelectTrade::read_packet(data)?,
-                ))
-            }
-            play::S_SET_COMMAND_BLOCK => {
-                scheduled(ScheduledPlayPacketKind::SetCommandBlock(
-                    SSetCommandBlock::read_packet(data)?,
-                ))
-            }
-            play::S_SET_COMMAND_MINECART => {
-                scheduled(ScheduledPlayPacketKind::SetCommandMinecart(
-                    SSetCommandMinecart::read_packet(data)?,
-                ))
-            }
-            play::S_SET_GAME_RULE => {
-                scheduled(ScheduledPlayPacketKind::SetGameRule(
-                    SSetGameRule::read_packet(data)?,
-                ))
-            }
-            play::S_SET_JIGSAW_BLOCK => {
-                scheduled(ScheduledPlayPacketKind::SetJigsawBlock(
-                    SSetJigsawBlock::read_packet(data)?,
-                ))
-            }
-            play::S_SET_STRUCTURE_BLOCK => {
-                scheduled(ScheduledPlayPacketKind::SetStructureBlock(
-                    SSetStructureBlock::read_packet(data)?,
-                ))
-            }
-            play::S_SET_TEST_BLOCK => {
-                scheduled(ScheduledPlayPacketKind::SetTestBlock(
-                    SSetTestBlock::read_packet(data)?,
-                ))
-            }
-            play::S_TELEPORT_TO_ENTITY => {
-                scheduled(ScheduledPlayPacketKind::TeleportToEntity(
-                    STeleportToEntity::read_packet(data)?,
-                ))
-            }
+            play::S_RESOURCE_PACK => scheduled(ScheduledPlayPacketKind::ResourcePack(
+                SResourcePack::read_packet(data)?,
+            )),
+            play::S_SELECT_TRADE => scheduled(ScheduledPlayPacketKind::SelectTrade(
+                SSelectTrade::read_packet(data)?,
+            )),
+            play::S_SET_COMMAND_BLOCK => scheduled(ScheduledPlayPacketKind::SetCommandBlock(
+                SSetCommandBlock::read_packet(data)?,
+            )),
+            play::S_SET_COMMAND_MINECART => scheduled(ScheduledPlayPacketKind::SetCommandMinecart(
+                SSetCommandMinecart::read_packet(data)?,
+            )),
+            play::S_SET_GAME_RULE => scheduled(ScheduledPlayPacketKind::SetGameRule(
+                SSetGameRule::read_packet(data)?,
+            )),
+            play::S_SET_JIGSAW_BLOCK => scheduled(ScheduledPlayPacketKind::SetJigsawBlock(
+                SSetJigsawBlock::read_packet(data)?,
+            )),
+            play::S_SET_STRUCTURE_BLOCK => scheduled(ScheduledPlayPacketKind::SetStructureBlock(
+                SSetStructureBlock::read_packet(data)?,
+            )),
+            play::S_SET_TEST_BLOCK => scheduled(ScheduledPlayPacketKind::SetTestBlock(
+                SSetTestBlock::read_packet(data)?,
+            )),
+            play::S_TELEPORT_TO_ENTITY => scheduled(ScheduledPlayPacketKind::TeleportToEntity(
+                STeleportToEntity::read_packet(data)?,
+            )),
             play::S_TEST_INSTANCE_BLOCK_ACTION => {
                 scheduled(ScheduledPlayPacketKind::TestInstanceBlockAction(
                     STestInstanceBlockAction::read_packet(data)?,
                 ))
             }
-            play::S_CUSTOM_CLICK_ACTION => {
-                scheduled(ScheduledPlayPacketKind::CustomClickAction(
-                    SCustomClickAction::read_packet(data)?,
-                ))
-            }
+            play::S_CUSTOM_CLICK_ACTION => scheduled(ScheduledPlayPacketKind::CustomClickAction(
+                SCustomClickAction::read_packet(data)?,
+            )),
             id => DecodedPlayPacket::Immediate(ImmediatePlayPacket::Unknown(id)),
         })
     }

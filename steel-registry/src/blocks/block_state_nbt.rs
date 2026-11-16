@@ -53,11 +53,11 @@ pub fn load(encoded: BorrowedNbtCompound<'_, '_>) -> Option<BlockStateId> {
 mod tests {
     use std::io::Cursor;
 
-    use simdnbt::borrow::read_compound as read_borrowed_compound;
-    use simdnbt::owned::NbtTag;
     use crate::blocks::properties::{BlockStateProperties, Direction, PistonType};
     use crate::init_vanilla_registry;
     use crate::vanilla_blocks;
+    use simdnbt::borrow::read_compound as read_borrowed_compound;
+    use simdnbt::owned::NbtTag;
 
     use super::*;
 

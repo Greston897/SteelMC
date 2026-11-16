@@ -44,11 +44,7 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     let mut color = literal("color")
         .then(literal("reset").executes(|ctx| set_color(ctx, None, "")))
-        .then(
-            literal("hex").then(
-                argument("color", ArgumentType::word()).executes(set_hex_color),
-            ),
-        );
+        .then(literal("hex").then(argument("color", ArgumentType::word()).executes(set_hex_color)));
     for &(name, rgb) in NAMED_COLORS {
         color = color.then(literal(name).executes(move |ctx| set_color(ctx, Some(rgb), name)));
     }
@@ -56,9 +52,8 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     let style = literal("style")
         .then(literal("reset").executes(reset_style))
         .then(
-            literal("set").then(
-                argument("style", SteelArgumentType::identifier()).executes(set_style),
-            ),
+            literal("set")
+                .then(argument("style", SteelArgumentType::identifier()).executes(set_style)),
         );
 
     literal("waypoint")
@@ -72,9 +67,7 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         )
 }
 
-fn list_waypoints(
-    context: &SteelCommandContext<CommandSource>,
-) -> Result<i32, CommandSyntaxError> {
+fn list_waypoints(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let source = context.source();
     let world = source.world();
     let dimension = world.key.to_string();
@@ -135,9 +128,7 @@ fn set_color(
     Ok(1)
 }
 
-fn set_hex_color(
-    context: &SteelCommandContext<CommandSource>,
-) -> Result<i32, CommandSyntaxError> {
+fn set_hex_color(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let raw = context.string("color")?;
     let trimmed = raw.strip_prefix('#').unwrap_or(raw);
     if trimmed.len() != 6 {
@@ -156,14 +147,12 @@ fn set_hex_color(
     set_color(context, Some(rgb), &hex_upper)
 }
 
-fn reset_style(
-    context: &SteelCommandContext<CommandSource>,
-) -> Result<i32, CommandSyntaxError> {
+fn reset_style(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let target = context.player("waypoint")?;
-    target
-        .get_world()
-        .waypoints
-        .set_icon_style(target.gameprofile.id(), Identifier::vanilla_static("default"));
+    target.get_world().waypoints.set_icon_style(
+        target.gameprofile.id(),
+        Identifier::vanilla_static("default"),
+    );
     context.source().send_success(
         &TextComponent::translated(translations::COMMANDS_WAYPOINT_MODIFY_STYLE.msg()),
         false,
@@ -171,9 +160,7 @@ fn reset_style(
     Ok(1)
 }
 
-fn set_style(
-    context: &SteelCommandContext<CommandSource>,
-) -> Result<i32, CommandSyntaxError> {
+fn set_style(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let target = context.player("waypoint")?;
     let style = context.identifier("style")?.clone();
     target

@@ -21,8 +21,8 @@
     reason = "the water-mob pack lands incrementally; helpers are consumed per fish entity"
 )]
 pub mod cod;
-pub mod pufferfish;
 pub mod nautilus;
+pub mod pufferfish;
 pub mod salmon;
 pub mod tadpole;
 #[cfg(test)]

@@ -23,8 +23,7 @@ pub trait PermissionGroupStore: Send + Sync {
     /// on-disk form return `Ok(None)` and keep the current config.
     fn load_groups(
         &self,
-    ) -> BoxFuture<'static, Result<Option<PermissionGroupsConfig>, PermissionGroupStoreError>>
-    {
+    ) -> BoxFuture<'static, Result<Option<PermissionGroupsConfig>, PermissionGroupStoreError>> {
         Box::pin(async { Ok(None) })
     }
 }

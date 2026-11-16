@@ -51,9 +51,7 @@ fn serverpack_command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime
                     ),
             ),
         )
-        .then(
-            literal("pop").then(argument("uuid", ArgumentType::string()).executes(pop_pack)),
-        )
+        .then(literal("pop").then(argument("uuid", ArgumentType::string()).executes(pop_pack)))
 }
 
 fn push_pack(

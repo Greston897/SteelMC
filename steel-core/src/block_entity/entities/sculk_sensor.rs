@@ -306,9 +306,9 @@ impl SculkSensorBlockEntity {
 }
 
 fn event_is_adjacent_amethyst_absent(world: &World, pos: BlockPos) -> bool {
-    !Direction::ALL
-        .iter()
-        .any(|&dir| world.get_block_state(pos.relative(dir)).get_block() == &vanilla_blocks::AMETHYST_BLOCK)
+    !Direction::ALL.iter().any(|&dir| {
+        world.get_block_state(pos.relative(dir)).get_block() == &vanilla_blocks::AMETHYST_BLOCK
+    })
 }
 
 /// Vanilla `CalibratedSculkSensorBlockEntity.getBackSignal`: reads the redstone
@@ -440,12 +440,17 @@ impl BlockEntity for SculkSensorBlockEntity {
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
         let view: simdnbt::borrow::NbtCompound<'_, '_> = nbt.into();
-        *self.last_vibration_frequency.lock() =
-            view.int("last_vibration_frequency").unwrap_or(0).clamp(0, 15);
+        *self.last_vibration_frequency.lock() = view
+            .int("last_vibration_frequency")
+            .unwrap_or(0)
+            .clamp(0, 15);
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
-        nbt.insert("last_vibration_frequency", *self.last_vibration_frequency.lock());
+        nbt.insert(
+            "last_vibration_frequency",
+            *self.last_vibration_frequency.lock(),
+        );
     }
 }
 
@@ -472,15 +477,30 @@ mod tests {
     fn vibration_frequencies_match_vanilla_26_3_table() {
         init_vanilla_registry();
         assert_eq!(vibration_frequency(&vanilla_game_events::STEP), 1);
-        assert_eq!(vibration_frequency(&vanilla_game_events::PROJECTILE_LAND), 2);
-        assert_eq!(vibration_frequency(&vanilla_game_events::PROJECTILE_SHOOT), 3);
+        assert_eq!(
+            vibration_frequency(&vanilla_game_events::PROJECTILE_LAND),
+            2
+        );
+        assert_eq!(
+            vibration_frequency(&vanilla_game_events::PROJECTILE_SHOOT),
+            3
+        );
         assert_eq!(vibration_frequency(&vanilla_game_events::ELYTRA_GLIDE), 4);
         assert_eq!(vibration_frequency(&vanilla_game_events::EQUIP), 5);
-        assert_eq!(vibration_frequency(&vanilla_game_events::ENTITY_INTERACT), 6);
+        assert_eq!(
+            vibration_frequency(&vanilla_game_events::ENTITY_INTERACT),
+            6
+        );
         assert_eq!(vibration_frequency(&vanilla_game_events::ENTITY_DAMAGE), 7);
         assert_eq!(vibration_frequency(&vanilla_game_events::EAT), 8);
-        assert_eq!(vibration_frequency(&vanilla_game_events::CONTAINER_CLOSE), 9);
-        assert_eq!(vibration_frequency(&vanilla_game_events::CONTAINER_OPEN), 10);
+        assert_eq!(
+            vibration_frequency(&vanilla_game_events::CONTAINER_CLOSE),
+            9
+        );
+        assert_eq!(
+            vibration_frequency(&vanilla_game_events::CONTAINER_OPEN),
+            10
+        );
         assert_eq!(vibration_frequency(&vanilla_game_events::BLOCK_CHANGE), 11);
         assert_eq!(vibration_frequency(&vanilla_game_events::BLOCK_DESTROY), 12);
         assert_eq!(vibration_frequency(&vanilla_game_events::BLOCK_PLACE), 13);

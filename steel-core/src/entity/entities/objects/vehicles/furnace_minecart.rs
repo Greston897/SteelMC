@@ -12,8 +12,8 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::MinecartFurnaceEntityData;
-use steel_utils::locks::SyncMutex;
 use steel_utils::BlockStateId;
+use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
@@ -91,7 +91,11 @@ impl FurnaceMinecartEntity {
 
     /// Sets the synced burning flag.
     pub fn set_lit(&self, lit: bool) {
-        self.entity_data.lock().minecart_furnace_mut().id_fuel.set(lit);
+        self.entity_data
+            .lock()
+            .minecart_furnace_mut()
+            .id_fuel
+            .set(lit);
     }
 
     /// Vanilla `MinecartFurnace.fuel`: burn ticks left before the cart stops.
@@ -152,8 +156,7 @@ impl FurnaceMinecartEntity {
         // Vanilla `Vec3.horizontal()` drops the Y component.
         let push_horizontal = DVec3::new(push.x, 0.0, push.z);
         let movement_horizontal = DVec3::new(movement.x, 0.0, movement.z);
-        if push_horizontal.length_squared() > 1.0e-4
-            && movement_horizontal.length_squared() > 0.001
+        if push_horizontal.length_squared() > 1.0e-4 && movement_horizontal.length_squared() > 0.001
         {
             let dot = push_horizontal.dot(movement_horizontal);
             let projected = movement_horizontal * (dot / movement_horizontal.length_squared());
@@ -197,7 +200,9 @@ impl Entity for FurnaceMinecartEntity {
             !item.is_empty()
                 && item
                     .item()
-                    .has_tag(&steel_utils::Identifier::vanilla_static("furnace_minecart_fuel"))
+                    .has_tag(&steel_utils::Identifier::vanilla_static(
+                        "furnace_minecart_fuel",
+                    ))
         };
         if !accepted {
             return InteractionResult::Pass;
@@ -309,14 +314,13 @@ impl AbstractMinecart for FurnaceMinecartEntity {
             .id_display_offset
             .set(value);
     }
-
 }
 
 #[cfg(test)]
 mod tests {
     use steel_registry::init_vanilla_registry;
     use steel_registry::vanilla_entities;
-    
+
     use super::*;
 
     fn cart() -> FurnaceMinecartEntity {
@@ -358,5 +362,4 @@ mod tests {
         assert_eq!(cart.fuel_ticks(), 8 * FURNACE_FUEL_PER_IGNITION);
         assert!(!cart.add_fuel(DVec3::ZERO, true));
     }
-
 }

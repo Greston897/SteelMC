@@ -49,7 +49,10 @@ impl CarvedPumpkinBlock {
         // Iron and copper golems: two metal blocks below plus a 3-wide arm row.
         for (block, entity_type) in [
             (&vanilla_blocks::IRON_BLOCK, &vanilla_entities::IRON_GOLEM),
-            (&vanilla_blocks::COPPER_BLOCK, &vanilla_entities::COPPER_GOLEM),
+            (
+                &vanilla_blocks::COPPER_BLOCK,
+                &vanilla_entities::COPPER_GOLEM,
+            ),
         ] {
             if world.get_block_state(below1).get_block() == block
                 && world.get_block_state(below2).get_block() == block

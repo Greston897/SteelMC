@@ -22,7 +22,7 @@ impl PlayerPostEffects {
     /// (possibly empty) list once, which is how the client clears a stale
     /// pipeline after a reconnect.
     #[must_use]
-    pub fn new_pending() -> Self {
+    pub const fn new_pending() -> Self {
         Self {
             effects: Vec::new(),
             dirty: true,

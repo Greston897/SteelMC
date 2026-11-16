@@ -301,7 +301,6 @@ impl ParticleOptions for SimpleParticleOptions {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BlockParticleOption {
     state: BlockStateId,
@@ -354,11 +353,13 @@ impl ParticleOptions for BlockParticleOption {
 
     fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
         let mut compound = simdnbt::owned::NbtCompound::new();
-        compound.insert("block_state", crate::blocks::block_state_nbt::save(self.state));
+        compound.insert(
+            "block_state",
+            crate::blocks::block_state_nbt::save(self.state),
+        );
         compound
     }
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ColorParticleOption {
@@ -392,7 +393,9 @@ impl ParticleOptions for ColorParticleOption {
     }
 
     fn from_nbt(compound: simdnbt::borrow::NbtCompound<'_, '_>) -> Option<Self> {
-        Some(Self::new(ArgbColor::new(compound.get("color")?.codec_i32()?)))
+        Some(Self::new(ArgbColor::new(
+            compound.get("color")?.codec_i32()?,
+        )))
     }
 
     fn to_nbt(&self) -> simdnbt::owned::NbtCompound {
@@ -401,7 +404,6 @@ impl ParticleOptions for ColorParticleOption {
         compound
     }
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DustParticleOptions {
@@ -458,7 +460,6 @@ impl ParticleOptions for DustParticleOptions {
         compound
     }
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DustColorTransitionOptions {
@@ -533,7 +534,6 @@ impl ParticleOptions for DustColorTransitionOptions {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GeyserParticleOptions {
     water_blocks: i32,
@@ -575,7 +575,6 @@ impl ParticleOptions for GeyserParticleOptions {
         compound
     }
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct GeyserBaseParticleOptions {
@@ -633,7 +632,6 @@ impl ParticleOptions for GeyserBaseParticleOptions {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PowerParticleOption {
     power: f32,
@@ -675,7 +673,6 @@ impl ParticleOptions for PowerParticleOption {
         compound
     }
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SpellParticleOption {
@@ -730,7 +727,6 @@ impl ParticleOptions for SpellParticleOption {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct ItemParticleOption {
     item: ItemStackTemplate,
@@ -776,7 +772,6 @@ impl ParticleOptions for ItemParticleOption {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SculkChargeParticleOptions {
     roll: f32,
@@ -819,7 +814,6 @@ impl ParticleOptions for SculkChargeParticleOptions {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ShriekParticleOption {
     delay: i32,
@@ -861,7 +855,6 @@ impl ParticleOptions for ShriekParticleOption {
         compound
     }
 }
-
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TrailParticleOption {
@@ -942,7 +935,6 @@ impl ParticleOptions for TrailParticleOption {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct VibrationParticleOption {
     destination: PositionSource,
@@ -1001,7 +993,6 @@ impl ParticleOptions for VibrationParticleOption {
         compound
     }
 }
-
 
 /// Encodes an `RGB` color as the `{r,g,b}` compound vanilla writes.
 fn encode_rgb(color: RgbColor) -> simdnbt::owned::NbtCompound {
@@ -1231,7 +1222,10 @@ mod tests {
         init_vanilla_registry();
         let state = crate::vanilla_blocks::STONE.default_state();
 
-        round_trip_nbt(&vanilla_particle_types::BLOCK, BlockParticleOption::new(state));
+        round_trip_nbt(
+            &vanilla_particle_types::BLOCK,
+            BlockParticleOption::new(state),
+        );
         round_trip_nbt(
             &vanilla_particle_types::DUST,
             DustParticleOptions::new(RgbColor::new(0x11_22_33), 1.5),

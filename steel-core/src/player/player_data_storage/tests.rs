@@ -560,7 +560,11 @@ fn an_unknown_player_storage_version_is_rejected() {
     let encoded = encode_file(PLAYER_MAGIC, 3, wincode::serialize(&current))
         .expect("player file should encode");
     let error = decode_player_file(&encoded).expect_err("version 3 must not be read");
-    assert!(error.to_string().contains("unsupported player data storage version"));
+    assert!(
+        error
+            .to_string()
+            .contains("unsupported player data storage version")
+    );
 }
 
 #[test]
@@ -570,7 +574,11 @@ fn a_newer_payload_data_version_is_rejected() {
     let error = future
         .into_persistent()
         .expect_err("a newer payload version must be rejected");
-    assert!(error.to_string().contains("unsupported player data payload version"));
+    assert!(
+        error
+            .to_string()
+            .contains("unsupported player data payload version")
+    );
 }
 
 #[test]

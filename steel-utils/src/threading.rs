@@ -51,7 +51,8 @@ const CGROUP_V1_CPUSET_ROOT: &str = "/sys/fs/cgroup/cpuset";
 /// reports nothing usable at all.
 #[must_use]
 pub fn available_worker_threads() -> usize {
-    let os_threads = thread::available_parallelism().map_or(AVAILABLE_PARALLELISM_FALLBACK, NonZero::get);
+    let os_threads =
+        thread::available_parallelism().map_or(AVAILABLE_PARALLELISM_FALLBACK, NonZero::get);
     let quota_threads = cgroup_cpu_limit().unwrap_or(os_threads);
     // A Pterodactyl/Docker panel may pin a *set* of cores (`--cpuset-cpus`) and
     // leave the quota unlimited; the cpuset is then the real allowance. Taking
@@ -240,10 +241,7 @@ fn cgroup_v1_cpu_limit() -> Option<usize> {
     if let Some(pair) = read_v1_paths() {
         candidates.push(pair);
     }
-    candidates.push((
-        CGROUP_V1_QUOTA.to_owned(),
-        CGROUP_V1_PERIOD.to_owned(),
-    ));
+    candidates.push((CGROUP_V1_QUOTA.to_owned(), CGROUP_V1_PERIOD.to_owned()));
 
     for (quota_path, period_path) in candidates {
         let Ok(quota) = fs::read_to_string(quota_path) else {
@@ -290,7 +288,10 @@ fn read_v1_paths() -> Option<(String, String)> {
             continue;
         }
         let base = format!("{CGROUP_V1_CPU_ROOT}{path}");
-        return Some((format!("{base}/cpu.cfs_quota_us"), format!("{base}/cpu.cfs_period_us")));
+        return Some((
+            format!("{base}/cpu.cfs_quota_us"),
+            format!("{base}/cpu.cfs_period_us"),
+        ));
     }
     None
 }
@@ -453,9 +454,7 @@ pub const fn pool_sizes_for_available(cores: usize) -> PoolSizes {
     let chunk_encoding = (cores / 10).max(1);
     // Everything the CPU-bound pools have not claimed goes to generation, which
     // keeps the sum equal to `cores` instead of leaving cores idle.
-    let chunk_generation = cores
-        .saturating_sub(main_runtime + chunk_encoding)
-        .max(1);
+    let chunk_generation = cores.saturating_sub(main_runtime + chunk_encoding).max(1);
     let chunk_runtime = (cores / 8).max(1);
     let packet_workers = (cores / 8).max(1);
 
@@ -637,8 +636,7 @@ mod tests {
     #[test]
     fn a_v1_cpuset_hierarchy_is_found_by_its_controller() {
         // v1 lists one hierarchy per controller; cpuset is one of them.
-        let proc_self =
-            "1:name=systemd:/docker/abc123\n2:cpu,cpuacct:/docker/abc123\n5:cpuset:/docker/abc123\n";
+        let proc_self = "1:name=systemd:/docker/abc123\n2:cpu,cpuacct:/docker/abc123\n5:cpuset:/docker/abc123\n";
         assert_eq!(
             v1_cpuset_base(Some(proc_self)).as_deref(),
             Some("/sys/fs/cgroup/cpuset/docker/abc123")

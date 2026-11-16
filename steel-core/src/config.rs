@@ -13,13 +13,13 @@ use std::{
 pub use steel_protocol::packet_traits::CompressionInfo;
 use steel_protocol::packets::config::{CServerLinks, Link, ServerLinksType};
 use steel_protocol::packets::game::CResourcePackPush;
-use uuid::Uuid;
 use steel_registry::vanilla_dimension_types;
 use steel_utils::Identifier;
 use steel_utils::codec::Or;
 use steel_utils::types::{Difficulty, GameType};
 use text_components::TextComponent;
 use toml::map::Map;
+use uuid::Uuid;
 
 use crate::chunk_saver::registry::WorldStorageRegistry;
 use crate::worldgen::registry::{ValidatedWorldGeneratorConfig, WorldGeneratorRegistry};
@@ -195,8 +195,7 @@ impl RuntimeConfig {
     /// keeps one place responsible for it instead of relying on each
     /// constructor to remember.
     pub fn clamp_cores_to_available(&mut self, available: usize) {
-        self.cores =
-            steel_utils::threading::effective_cores(Some(self.cores), available);
+        self.cores = steel_utils::threading::effective_cores(Some(self.cores), available);
     }
 
     /// Minimum view distance the server accepts from a client.
@@ -1570,7 +1569,11 @@ mod resource_pack_tests {
 
     #[test]
     fn no_pack_means_no_packet() {
-        assert!(RuntimeConfig::default().resource_pack_push_packet().is_none());
+        assert!(
+            RuntimeConfig::default()
+                .resource_pack_push_packet()
+                .is_none()
+        );
     }
 
     #[test]

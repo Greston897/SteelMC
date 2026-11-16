@@ -236,7 +236,9 @@ mod tests {
         let removed = Slot::remove(&slot, &mut guard, 3);
         assert_eq!(removed.count(), 8, "vanilla empties the slot");
         assert_eq!(
-            slot.remove_count.as_ref().map(|count| count.load(Ordering::Relaxed)),
+            slot.remove_count
+                .as_ref()
+                .map(|count| count.load(Ordering::Relaxed)),
             Some(3),
             "only the requested amount counts"
         );

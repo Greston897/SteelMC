@@ -546,11 +546,7 @@ fn sequence_seed(world_seed: u64, sequence: &Identifier) -> u64 {
         hash ^= u64::from(*byte);
         hash = hash.wrapping_mul(0x100_0000_01b3);
     }
-    let salt = steel_utils::random::get_seed(
-        hash as i32,
-        (hash >> 32) as i32,
-        (hash >> 16) as i32,
-    );
+    let salt = steel_utils::random::get_seed(hash as i32, (hash >> 32) as i32, (hash >> 16) as i32);
     world_seed ^ (salt as u64)
 }
 

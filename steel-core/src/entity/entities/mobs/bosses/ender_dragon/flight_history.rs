@@ -29,10 +29,7 @@ impl FlightSample {
     /// The zeroed sample vanilla's constructor fills the buffer with.
     #[must_use]
     pub const fn zeroed() -> Self {
-        Self {
-            y: 0.0,
-            y_rot: 0.0,
-        }
+        Self { y: 0.0, y_rot: 0.0 }
     }
 }
 
@@ -61,14 +58,14 @@ impl DragonFlightHistory {
     }
 
     /// Vanilla `DragonFlightHistory.copyFrom`.
-    pub fn copy_from(&mut self, other: &Self) {
+    pub const fn copy_from(&mut self, other: &Self) {
         self.samples = other.samples;
         self.head = other.head;
     }
 
     /// Vanilla `DragonFlightHistory.record`. The first sample fills the whole
     /// buffer so early reads never observe the initial zeros.
-    pub fn record(&mut self, y: f64, y_rot: f32) {
+    pub const fn record(&mut self, y: f64, y_rot: f32) {
         let sample = FlightSample { y, y_rot };
         if self.head < 0 {
             self.samples = [sample; LENGTH];
@@ -82,7 +79,7 @@ impl DragonFlightHistory {
     /// A read before the first [`Self::record`] returns the zeroed sample, which is
     /// what vanilla's constructor leaves in the buffer.
     #[must_use]
-    pub fn get(&self, delay: usize) -> FlightSample {
+    pub const fn get(&self, delay: usize) -> FlightSample {
         if self.head < 0 {
             return FlightSample::zeroed();
         }

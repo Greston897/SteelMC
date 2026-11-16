@@ -135,17 +135,8 @@ impl MenuKind for FurnaceMenuKind {
         let grid = vec![container.get_item(0).clone()];
         // Vanilla `AbstractFurnaceMenu.handlePlacement` clears the input *and*
         // the fuel slot, so a placed recipe never sits on a running burn.
-        let slots_to_clear = vec![
-            container.get_item(0).clone(),
-            container.get_item(2).clone(),
-        ];
-        let inventory: Vec<ItemStack> = player
-            .inventory
-            .lock()
-            .get_items()
-            .iter()
-            .cloned()
-            .collect();
+        let slots_to_clear = [container.get_item(0).clone(), container.get_item(2).clone()];
+        let inventory: Vec<ItemStack> = player.inventory.lock().get_items().to_vec();
         let matches = crate::player::recipe_placement::single_item_matches(
             container.get_item(0),
             request.placement,
@@ -181,11 +172,7 @@ impl MenuKind for FurnaceMenuKind {
                 crate::player::player_inventory::Prediction::Predicted,
             );
         }
-        crate::player::recipe_placement::apply_inventory_take(
-            guard,
-            player,
-            &plan.inventory_take,
-        );
+        crate::player::recipe_placement::apply_inventory_take(guard, player, &plan.inventory_take);
         if let Some(container) = guard.get_mut(self.container.container_id()) {
             container.set_item(0, plan.grid[0].clone());
             if plan.clear_applied {

@@ -214,11 +214,16 @@ impl BlockEntity for TestBlockEntity {
         let mut state = self.state.lock();
         state.mode = nbt_view
             .string("mode")
-            .map_or(TestBlockMode::Fail, |value| test_mode_from_name(&value.to_str()));
-        state.message = nbt_view
-            .string("message")
-            .map_or_else(|| DEFAULT_MESSAGE.to_owned(), |value| value.to_str().into_owned());
-        state.powered = nbt_view.byte_value("powered").is_some_and(|value| value != 0);
+            .map_or(TestBlockMode::Fail, |value| {
+                test_mode_from_name(&value.to_str())
+            });
+        state.message = nbt_view.string("message").map_or_else(
+            || DEFAULT_MESSAGE.to_owned(),
+            |value| value.to_str().into_owned(),
+        );
+        state.powered = nbt_view
+            .byte_value("powered")
+            .is_some_and(|value| value != 0);
     }
 
     /// Vanilla `TestBlockEntity.getUpdateTag`: `saveCustomOnly`.

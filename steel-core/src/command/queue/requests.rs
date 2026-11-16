@@ -183,12 +183,14 @@ impl CommandRequestQueue {
         &self,
         mut execution_allowed: impl FnMut(&CommandExecutionOwner) -> bool,
     ) -> Option<CommandRequest> {
-        let request = self.queued.lock().pop_front_where(|request| match request {
-            CommandRequest::Execute { owner, .. } | CommandRequest::Background { owner, .. } => {
-                execution_allowed(owner)
-            }
-            CommandRequest::Suggestions { .. } => false,
-        })?;
+        let request = self
+            .queued
+            .lock()
+            .pop_front_where(|request| match request {
+                CommandRequest::Execute { owner, .. }
+                | CommandRequest::Background { owner, .. } => execution_allowed(owner),
+                CommandRequest::Suggestions { .. } => false,
+            })?;
         match request {
             PendingRequest::Execute(request) | PendingRequest::Suggestions(request) => {
                 Some(request)

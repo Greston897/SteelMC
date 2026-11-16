@@ -185,7 +185,7 @@ impl DragonParts {
 
     /// The head position, which the breath attack measures from.
     #[must_use]
-    pub fn head_position(&self) -> DVec3 {
+    pub const fn head_position(&self) -> DVec3 {
         self.positions[DRAGON_PART_HEAD]
     }
 
@@ -193,7 +193,11 @@ impl DragonParts {
     #[must_use]
     pub fn head_center(&self) -> DVec3 {
         let head = self.positions[DRAGON_PART_HEAD];
-        head + DVec3::new(0.0, f64::from(DRAGON_PARTS[DRAGON_PART_HEAD].height) / 2.0, 0.0)
+        head + DVec3::new(
+            0.0,
+            f64::from(DRAGON_PARTS[DRAGON_PART_HEAD].height) / 2.0,
+            0.0,
+        )
     }
 
     /// The two enlarged wing boxes vanilla sweeps for push and damage.
@@ -203,8 +207,7 @@ impl DragonParts {
     pub fn wing_sweep_boxes(&self) -> [Option<WorldAabb>; 2] {
         [DRAGON_PART_WING1, DRAGON_PART_WING2].map(|index| {
             self.bounding_box(index).map(|box_| {
-                box_
-                    .inflate_xyz(4.0, 2.0, 4.0)
+                box_.inflate_xyz(4.0, 2.0, 4.0)
                     .translate(DVec3::new(0.0, -2.0, 0.0))
             })
         })
@@ -312,7 +315,9 @@ mod tests {
         let names: Vec<_> = DRAGON_PARTS.iter().map(|part| part.name).collect();
         assert_eq!(
             names,
-            ["head", "neck", "body", "tail", "tail", "tail", "wing", "wing"]
+            [
+                "head", "neck", "body", "tail", "tail", "tail", "wing", "wing"
+            ]
         );
 
         let sizes: Vec<_> = DRAGON_PARTS

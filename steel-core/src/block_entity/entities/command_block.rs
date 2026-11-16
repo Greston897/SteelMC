@@ -36,7 +36,9 @@ use steel_registry::{vanilla_block_entity_types, vanilla_blocks};
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 
-use steel_utils::{BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, Direction};
+use steel_utils::{
+    BlockPos, BlockStateId, Direction, Downcast as _, DowncastType, DowncastTypeKey,
+};
 use text_components::TextComponent;
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
@@ -159,7 +161,12 @@ impl CommandBlockBlockEntity {
     /// Creates an empty command block.
     #[must_use]
     pub fn new(level: Weak<World>, pos: BlockPos, state: BlockStateId) -> Self {
-        Self::new_with_type(&vanilla_block_entity_types::COMMAND_BLOCK, level, pos, state)
+        Self::new_with_type(
+            &vanilla_block_entity_types::COMMAND_BLOCK,
+            level,
+            pos,
+            state,
+        )
     }
 
     /// Creates a command block for the given registered block entity type.
@@ -172,8 +179,8 @@ impl CommandBlockBlockEntity {
     ) -> Self {
         // Vanilla `CommandBlock.newBlockEntity` stamps the variant's automatic
         // flag onto the fresh entity.
-        let automatic = CommandBlockMode::for_block_key(&state.get_block().key)
-            == CommandBlockMode::Auto;
+        let automatic =
+            CommandBlockMode::for_block_key(&state.get_block().key) == CommandBlockMode::Auto;
         Self {
             base: Arc::new(BlockEntityBase::new(block_entity_type, level, pos, state)),
             state: Arc::new(SyncMutex::new(CommandBlockState {
@@ -319,6 +326,7 @@ impl CommandBlockBlockEntity {
     /// An unconditional block always satisfies its condition. A conditional one
     /// looks at the block behind it and requires that block to be a command block
     /// whose last run had a success count above zero.
+    #[must_use]
     pub fn mark_condition_met(&self) -> bool {
         let conditional = self.is_conditional();
         if !conditional {
@@ -414,7 +422,8 @@ impl BlockEntity for CommandBlockBlockEntity {
             .is_none_or(|value| value != 0);
         // Vanilla only restores the output while tracking it.
         state.last_output = if state.track_output {
-            nbt_view.string("LastOutput")
+            nbt_view
+                .string("LastOutput")
                 .map(|output| TextComponent::plain(output.to_str().into_owned()))
         } else {
             None
@@ -427,7 +436,9 @@ impl BlockEntity for CommandBlockBlockEntity {
         } else {
             -1
         };
-        state.powered = nbt_view.byte_value("powered").is_some_and(|value| value != 0);
+        state.powered = nbt_view
+            .byte_value("powered")
+            .is_some_and(|value| value != 0);
         state.condition_met = nbt_view
             .byte_value("conditionMet")
             .is_some_and(|value| value != 0);
@@ -445,10 +456,10 @@ impl BlockEntity for CommandBlockBlockEntity {
         nbt.insert("Command", state.command.clone());
         nbt.insert("SuccessCount", state.success_count);
         nbt.insert("TrackOutput", u8::from(state.track_output));
-        if state.track_output {
-            if let Some(output) = &state.last_output {
-                nbt.insert("LastOutput", output.to_string());
-            }
+        if state.track_output
+            && let Some(output) = &state.last_output
+        {
+            nbt.insert("LastOutput", output.to_string());
         }
         nbt.insert("UpdateLastExecution", u8::from(state.update_last_execution));
         if state.update_last_execution && state.last_execution != -1 {
@@ -545,12 +556,12 @@ impl CommandBlockBlockEntity {
         // Vanilla's callback increments the success count once per successful
         // command; Steel runs exactly one command per block run.
         state.success_count = i32::from(result.success);
-        if let Some(output) = result.output {
-            if state.track_output {
-                // Vanilla prefixes the store line with the wall-clock time.
-                let stamp = Local::now().format(TIME_FORMAT);
-                state.last_output = Some(TextComponent::plain(format!("[{stamp}] {output}")));
-            }
+        if let Some(output) = result.output
+            && state.track_output
+        {
+            // Vanilla prefixes the store line with the wall-clock time.
+            let stamp = Local::now().format(TIME_FORMAT);
+            state.last_output = Some(TextComponent::plain(format!("[{stamp}] {output}")));
         }
         drop(state);
 

@@ -1274,8 +1274,10 @@ fn equip_replaces_worse_armor_and_drops_the_old_piece() {
     );
     mob.set_guaranteed_drop(EquipmentSlot::Head);
 
-    let equipped =
-        Mob::equip_item_if_possible(mob.as_ref(), ItemStack::new(&*vanilla_items::DIAMOND_HELMET));
+    let equipped = Mob::equip_item_if_possible(
+        mob.as_ref(),
+        ItemStack::new(&*vanilla_items::DIAMOND_HELMET),
+    );
 
     assert!(
         equipped.is(&*vanilla_items::DIAMOND_HELMET),
@@ -1464,12 +1466,13 @@ fn equip_keeps_a_preferred_weapon_over_a_stronger_one() {
     init_vanilla_registry();
     let mob = DespawnTestMob::new(None, false);
     mob.set_preferred_weapon_type(ItemTag::SKELETON_PREFERRED_WEAPONS);
-    mob.living_base()
-        .equipment()
-        .lock()
-        .set(EquipmentSlot::MainHand, ItemStack::new(&*vanilla_items::BOW));
+    mob.living_base().equipment().lock().set(
+        EquipmentSlot::MainHand,
+        ItemStack::new(&*vanilla_items::BOW),
+    );
 
-    let equipped = Mob::equip_item_if_possible(&mob, ItemStack::new(&*vanilla_items::DIAMOND_SWORD));
+    let equipped =
+        Mob::equip_item_if_possible(&mob, ItemStack::new(&*vanilla_items::DIAMOND_SWORD));
 
     assert!(
         equipped.is_empty(),

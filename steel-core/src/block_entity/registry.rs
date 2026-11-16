@@ -217,9 +217,10 @@ pub fn init_block_entities() {
             Arc::new(HopperBlockEntity::new(level, pos, state))
         });
 
-        registry.register(&vanilla_block_entity_types::DISPENSER, |level, pos, state| {
-            Arc::new(DispenserBlockEntity::new(level, pos, state))
-        });
+        registry.register(
+            &vanilla_block_entity_types::DISPENSER,
+            |level, pos, state| Arc::new(DispenserBlockEntity::new(level, pos, state)),
+        );
 
         registry.register(&vanilla_block_entity_types::DROPPER, |level, pos, state| {
             Arc::new(DispenserBlockEntity::new_dropper(level, pos, state))

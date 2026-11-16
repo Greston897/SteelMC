@@ -95,30 +95,27 @@ impl StackedItemContents {
         let mut satisfied = 0usize;
 
         loop {
-            match picker.try_assigning_new_item(self, amount) {
-                Some(path) => {
-                    let assigned_item = picker.items[path[0]];
-                    if let Some(count) = self.amounts.get_mut(&assigned_item.key) {
-                        *count -= amount;
-                    }
-                    let satisfied_ingredient = path[path.len() - 1];
-                    picker.set_satisfied(satisfied_ingredient);
-                    satisfied += 1;
+            if let Some(path) = picker.try_assigning_new_item(self, amount) {
+                let assigned_item = picker.items[path[0]];
+                if let Some(count) = self.amounts.get_mut(&assigned_item.key) {
+                    *count -= amount;
                 }
-                None => {
-                    let valid = satisfied == picker.ingredient_count();
-                    let mut output = Vec::with_capacity(picker.ingredient_count());
-                    picker.clear_all_visited();
-                    picker.clear_satisfied();
-                    if !valid {
-                        return None;
-                    }
-                    for (item, _ingredient) in picker.assignments() {
-                        self.add(item, amount);
-                        output.push(item);
-                    }
-                    return Some(output);
+                let satisfied_ingredient = path[path.len() - 1];
+                picker.set_satisfied(satisfied_ingredient);
+                satisfied += 1;
+            } else {
+                let valid = satisfied == picker.ingredient_count();
+                let mut output = Vec::with_capacity(picker.ingredient_count());
+                picker.clear_all_visited();
+                picker.clear_satisfied();
+                if !valid {
+                    return None;
                 }
+                for (item, _ingredient) in picker.assignments() {
+                    self.add(item, amount);
+                    output.push(item);
+                }
+                return Some(output);
             }
         }
     }
@@ -133,7 +130,7 @@ impl StackedItemContents {
         let mut min = 0;
         let mut max = max_size.min(self.result_upper_bound(ingredients)) + 1;
         loop {
-            let mid = (min + max) / 2;
+            let mid = i32::midpoint(min, max);
             if self.can_craft(ingredients, mid) {
                 if max - min <= 1 {
                     let output = if mid > 0 {
@@ -241,11 +238,11 @@ impl RecipePicker {
         picker
     }
 
-    fn ingredient_count(&self) -> usize {
+    const fn ingredient_count(&self) -> usize {
         self.ingredients.len()
     }
 
-    fn item_count(&self) -> usize {
+    const fn item_count(&self) -> usize {
         self.items.len()
     }
 
@@ -267,10 +264,10 @@ impl RecipePicker {
     ) -> Option<Vec<usize>> {
         self.clear_all_visited();
         for item in 0..self.item_count() {
-            if contents.has_at_least(self.items[item], capacity) {
-                if let Some(path) = self.find_new_item_assignment_path(item) {
-                    return Some(path);
-                }
+            if contents.has_at_least(self.items[item], capacity)
+                && let Some(path) = self.find_new_item_assignment_path(item)
+            {
+                return Some(path);
             }
         }
         None
@@ -334,35 +331,35 @@ impl RecipePicker {
         result
     }
 
-    fn visited_ingredient_offset(&self) -> usize {
+    const fn visited_ingredient_offset(&self) -> usize {
         0
     }
 
-    fn visited_ingredient_count(&self) -> usize {
+    const fn visited_ingredient_count(&self) -> usize {
         self.ingredient_count()
     }
 
-    fn visited_item_offset(&self) -> usize {
+    const fn visited_item_offset(&self) -> usize {
         self.visited_ingredient_offset() + self.visited_ingredient_count()
     }
 
-    fn visited_item_count(&self) -> usize {
+    const fn visited_item_count(&self) -> usize {
         self.item_count()
     }
 
-    fn satisfied_offset(&self) -> usize {
+    const fn satisfied_offset(&self) -> usize {
         self.visited_item_offset() + self.visited_item_count()
     }
 
-    fn satisfied_count(&self) -> usize {
+    const fn satisfied_count(&self) -> usize {
         self.ingredient_count()
     }
 
-    fn connection_offset(&self) -> usize {
+    const fn connection_offset(&self) -> usize {
         self.satisfied_offset() + self.satisfied_count()
     }
 
-    fn connection_count(&self) -> usize {
+    const fn connection_count(&self) -> usize {
         self.ingredient_count() * self.item_count()
     }
 
@@ -370,7 +367,7 @@ impl RecipePicker {
         self.connection_offset() + self.connection_count()
     }
 
-    fn residual_count(&self) -> usize {
+    const fn residual_count(&self) -> usize {
         self.ingredient_count() * self.item_count()
     }
 
@@ -591,7 +588,11 @@ pub fn plan_placement(
                 smallest = stack.count();
             }
         }
-        if smallest != i32::MAX { smallest + 1 } else { smallest }
+        if smallest == i32::MAX {
+            smallest
+        } else {
+            smallest + 1
+        }
     } else {
         1
     };
@@ -607,7 +608,7 @@ pub fn plan_placement(
     // ingredient's stack limit.
     let mut adjusted = amount_to_craft;
     for item in &items_used {
-        adjusted = adjusted.min(item_max_stack_size(*item));
+        adjusted = adjusted.min(item_max_stack_size(item));
     }
     if adjusted != amount_to_craft {
         let mut scratch = StackedItemContents {
@@ -814,8 +815,8 @@ pub fn apply_inventory_take(
     let size = inventory.get_container_size();
     for (slot, stack) in take {
         let mut remaining = stack.count();
-        let preferred = (*slot < size && inventory.get_item(*slot).item() == stack.item())
-            .then_some(*slot);
+        let preferred =
+            (*slot < size && inventory.get_item(*slot).item() == stack.item()).then_some(*slot);
         let target = preferred.or_else(|| {
             (0..size).find(|index| {
                 let current = inventory.get_item(*index);
@@ -903,11 +904,7 @@ mod tests {
     #[test]
     fn clear_grid_merges_equal_stacks_into_one_free_slot() {
         let stone = &*steel_registry::vanilla_items::STONE;
-        let inventory = vec![
-            stack(stone, 64),
-            ItemStack::empty(),
-            ItemStack::empty(),
-        ];
+        let inventory = vec![stack(stone, 64), ItemStack::empty(), ItemStack::empty()];
         let grid = vec![stack(stone, 10), stack(stone, 10)];
 
         assert!(

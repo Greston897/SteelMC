@@ -100,7 +100,7 @@ impl ScheduleRegistry {
     ) -> usize {
         self.schedule(
             function.to_string(),
-            format!("function {}", function),
+            format!("function {function}"),
             due_tick,
             mode,
         )
@@ -247,7 +247,9 @@ mod tests {
 
         let due = registry.due(100);
         assert_eq!(
-            due.iter().map(|entry| entry.command.as_str()).collect::<Vec<_>>(),
+            due.iter()
+                .map(|entry| entry.command.as_str())
+                .collect::<Vec<_>>(),
             vec!["say first", "say second"]
         );
     }
@@ -255,7 +257,12 @@ mod tests {
     #[test]
     fn due_entries_are_ordered_by_their_tick() {
         let registry = registry();
-        registry.schedule("late".to_owned(), "say late".to_owned(), 30, ScheduleMode::Replace);
+        registry.schedule(
+            "late".to_owned(),
+            "say late".to_owned(),
+            30,
+            ScheduleMode::Replace,
+        );
         registry.schedule(
             "early".to_owned(),
             "say early".to_owned(),
@@ -265,7 +272,9 @@ mod tests {
 
         let due = registry.due(30);
         assert_eq!(
-            due.iter().map(|entry| entry.key.as_str()).collect::<Vec<_>>(),
+            due.iter()
+                .map(|entry| entry.key.as_str())
+                .collect::<Vec<_>>(),
             vec!["early", "late"]
         );
     }
@@ -273,8 +282,18 @@ mod tests {
     #[test]
     fn clear_removes_only_the_named_schedule() {
         let registry = registry();
-        registry.schedule("a".to_owned(), "say a".to_owned(), 10, ScheduleMode::Replace);
-        registry.schedule("b".to_owned(), "say b".to_owned(), 10, ScheduleMode::Replace);
+        registry.schedule(
+            "a".to_owned(),
+            "say a".to_owned(),
+            10,
+            ScheduleMode::Replace,
+        );
+        registry.schedule(
+            "b".to_owned(),
+            "say b".to_owned(),
+            10,
+            ScheduleMode::Replace,
+        );
 
         assert_eq!(registry.clear("a"), 1);
         assert_eq!(registry.keys(), vec!["b".to_owned()]);
@@ -318,7 +337,12 @@ mod tests {
     #[test]
     fn a_schedule_at_the_current_tick_runs_immediately() {
         let registry = registry();
-        registry.schedule("now".to_owned(), "say now".to_owned(), 0, ScheduleMode::Replace);
+        registry.schedule(
+            "now".to_owned(),
+            "say now".to_owned(),
+            0,
+            ScheduleMode::Replace,
+        );
         assert_eq!(registry.due(0).len(), 1);
     }
 }

@@ -27,9 +27,7 @@ use steel_utils::types::InteractionHand;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::behavior::InteractionResult;
-use crate::entity::ai::goal::{
-    BreathAirGoal, MeleeAttackGoal, PanicGoal, RandomSwimmingGoal,
-};
+use crate::entity::ai::goal::{BreathAirGoal, MeleeAttackGoal, PanicGoal, RandomSwimmingGoal};
 use crate::entity::ai::path::PathType;
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::mobs::passive::fish::{

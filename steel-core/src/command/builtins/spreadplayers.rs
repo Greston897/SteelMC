@@ -5,15 +5,15 @@
 //! times per entity and silently skips an entity it cannot place; this
 //! implementation mirrors that limit and reports how many entities moved.
 
-use std::borrow::Cow;
 use glam::DVec3;
+use std::borrow::Cow;
 use steel_utils::Identifier;
 use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
 
 use super::super::{
-    brigadier::{CommandNodeBuilder, CommandSyntaxError},
     brigadier::ArgumentType,
+    brigadier::{CommandNodeBuilder, CommandSyntaxError},
     execution::{
         CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
         literal,
@@ -39,14 +39,10 @@ fn command() -> Builder {
                 argument("maxRange", ArgumentType::float(1.0, f32::MAX))
                     .then(
                         argument("respectTeams", ArgumentType::bool()).then(
-                            argument("targets", SteelArgumentType::entities())
-                                .executes(|context| spread(context)),
+                            argument("targets", SteelArgumentType::entities()).executes(spread),
                         ),
                     )
-                    .then(
-                        argument("targets", SteelArgumentType::entities())
-                            .executes(|context| spread(context)),
-                    ),
+                    .then(argument("targets", SteelArgumentType::entities()).executes(spread)),
             ),
         ),
     )
@@ -119,7 +115,6 @@ fn find_position(
     }
     None
 }
-
 
 #[cfg(test)]
 mod tests {

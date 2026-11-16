@@ -1,7 +1,7 @@
 //! This module contains the `Server` struct, which is the main entry point for the server.
+pub mod bans;
 pub mod boss_bars;
 pub(crate) mod broadcasting;
-pub mod scoreboard_sync;
 /// Tick-polled server jobs.
 pub mod jobs;
 mod packet_processor;
@@ -11,13 +11,13 @@ pub mod rcon;
 pub mod registry_cache;
 mod run_loop;
 pub mod schedule;
-pub mod bans;
-pub mod whitelist;
+pub mod scoreboard_sync;
 mod service_keys;
 mod tick_overload;
 /// The tick rate manager for the server.
 pub mod tick_rate_manager;
 mod tps_bar;
+pub mod whitelist;
 mod world_tick_workers;
 /// Domain-aware loaded world map.
 pub mod worlds;
@@ -97,10 +97,10 @@ use std::{
 use steel_crypto::{key_store::KeyStore, signature::ProfileKeyValidator};
 use steel_protocol::packet_traits::{ClientPacket, EncodedPacket};
 use steel_protocol::packets::game::{
-    CCommandSuggestions, CDebugSample, CEntityEvent, CLogin, CLowDiskSpaceWarning, CPlayerInfoUpdate,
-    CRemovePlayerInfo,
-    CSetDefaultSpawnPosition, CSystemChat, CTabList, CTickingState, CTickingStep,
-    CommonPlayerSpawnInfo, PLAYER_INFO_INIT_ACTIONS, PlayerInfoEntry, RelativeMovement,
+    CCommandSuggestions, CDebugSample, CEntityEvent, CLogin, CLowDiskSpaceWarning,
+    CPlayerInfoUpdate, CRemovePlayerInfo, CSetDefaultSpawnPosition, CSystemChat, CTabList,
+    CTickingState, CTickingStep, CommonPlayerSpawnInfo, PLAYER_INFO_INIT_ACTIONS, PlayerInfoEntry,
+    RelativeMovement,
 };
 use steel_protocol::utils::ConnectionProtocol;
 use steel_registry::vanilla_game_rules::{
@@ -680,8 +680,11 @@ impl Server {
 
         // Vanilla re-reads the level's data too; game rules are the part of
         // `level.toml` that is safe to swap under live chunks.
-        let worlds: Vec<Arc<crate::world::World>> =
-            self.worlds.iter().map(|(_, world)| Arc::clone(world)).collect();
+        let worlds: Vec<Arc<crate::world::World>> = self
+            .worlds
+            .iter()
+            .map(|(_, world)| Arc::clone(world))
+            .collect();
         let mut changed_rules = 0_usize;
         for world in &worlds {
             // `LevelDataManager` lives behind a synchronous lock; the reload does
@@ -835,11 +838,9 @@ impl Server {
         let pools = pool_sizes_for_available(config.cores);
         let generation_pool: Arc<ThreadPool> = Arc::new({
             let mut builder = ThreadPoolBuilder::new().thread_name(|i| format!("rayon-gen-{i}"));
-            let generation_threads = configured_chunk_generation_threads(
-                config.chunk_generation_threads,
-                config.cores,
-            )
-            .unwrap_or(pools.chunk_generation);
+            let generation_threads =
+                configured_chunk_generation_threads(config.chunk_generation_threads, config.cores)
+                    .unwrap_or(pools.chunk_generation);
             builder = builder.num_threads(generation_threads);
             // Debug builds have deep call chains in density functions that overflow the default 2 MB stack
             if cfg!(debug_assertions) {
@@ -1171,7 +1172,8 @@ impl Server {
     /// Whether automatic saves are currently enabled.
     #[must_use]
     pub fn is_auto_save_enabled(&self) -> bool {
-        self.auto_save_enabled.load(std::sync::atomic::Ordering::Relaxed)
+        self.auto_save_enabled
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     /// Enables or disables automatic saves, as `/save-on` and `/save-off` do.

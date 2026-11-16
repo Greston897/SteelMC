@@ -20,11 +20,11 @@ use steel_worldgen::biomes::obfuscate_biome_seed;
 
 use crate::chunk::heightmap::HeightmapType;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
+use crate::entity::spawn_entity;
 use crate::entity::spawn_placements::SpawnPlacements;
 use crate::physics::{CollisionWorld as _, WorldCollisionProvider};
-use crate::entity::spawn_entity;
-use crate::worldgen::generators::vanilla::fuzzed_biome_at_block;
 use crate::world::{LevelReader, World, is_redstone_conductor};
+use crate::worldgen::generators::vanilla::fuzzed_biome_at_block;
 
 /// Ticks between two natural-spawn passes (vanilla `SPAWN_INTERVAL`).
 pub const SPAWN_INTERVAL: usize = 400;
@@ -69,7 +69,7 @@ pub fn count_category(world: &World, category: MobCategory) -> usize {
 ///
 /// Returns the number of mobs spawned.
 pub fn tick_natural_spawning(world: &Arc<World>, tick_count: usize) -> usize {
-    if tick_count % SPAWN_INTERVAL != 0 {
+    if !tick_count.is_multiple_of(SPAWN_INTERVAL) {
         return 0;
     }
     if world.difficulty() == Difficulty::Peaceful {
@@ -220,10 +220,9 @@ fn try_spawn_category_in_random_chunk(world: &Arc<World>, category: MobCategory)
     let mut random = rand::rng();
     // Selecting straight from the snapshot avoids the `Vec` that
     // `tickable_full_chunk_positions` built on every call.
-    let Some(chunk_pos) =
-        world
-            .chunk_map
-            .random_entity_ticking_chunk(random.random_range(0..chunk_count))
+    let Some(chunk_pos) = world
+        .chunk_map
+        .random_entity_ticking_chunk(random.random_range(0..chunk_count))
     else {
         return 0;
     };

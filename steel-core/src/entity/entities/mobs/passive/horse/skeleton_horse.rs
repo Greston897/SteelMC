@@ -60,7 +60,7 @@ unsafe impl DowncastType for SkeletonHorseEntity {
 }
 
 impl SkeletonHorseEntity {
-    /// Creates a new skeleton_horse at runtime.
+    /// Creates a new `skeleton_horse` at runtime.
     #[must_use]
     pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {
         Self::new_with_base(
@@ -69,7 +69,7 @@ impl SkeletonHorseEntity {
         )
     }
 
-    /// Reconstructs a skeleton_horse from persisted base entity state.
+    /// Reconstructs a `skeleton_horse` from persisted base entity state.
     #[must_use]
     pub fn from_saved(entity_type: EntityTypeRef, load: EntityBaseLoad) -> Self {
         Self::new_with_base(

@@ -168,7 +168,7 @@ impl OpenMenuState {
     ///
     /// Callers that run a handler without holding the lock take it, run the
     /// handler and put it back, so a re-entrant menu operation cannot deadlock.
-    pub(super) fn take_menu(&mut self) -> Option<Menu> {
+    pub(super) const fn take_menu(&mut self) -> Option<Menu> {
         self.menu.take()
     }
 

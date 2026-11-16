@@ -22,8 +22,8 @@ pub(crate) use builtins::{
     create_registered_dispatcher, gamemode::handle_client_request, player_can_change_difficulty,
 };
 pub(crate) use protocol::{command_suggestions_packet, command_tree_packet};
-pub use queue::CommandQueueFull;
 pub use queue::BackgroundCommandResult;
+pub use queue::CommandQueueFull;
 pub(crate) use queue::{
     COMMAND_REQUESTS_PER_TICK, COMMAND_RESUMPTIONS_PER_TICK, CommandRequest, CommandRequestQueue,
     PendingCommandExecutionQueue,

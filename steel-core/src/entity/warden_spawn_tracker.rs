@@ -76,7 +76,7 @@ impl WardenSpawnTracker {
     }
 
     /// Vanilla `WardenSpawnTracker.reset`.
-    pub fn reset(&mut self) {
+    pub const fn reset(&mut self) {
         *self = Self::new();
     }
 

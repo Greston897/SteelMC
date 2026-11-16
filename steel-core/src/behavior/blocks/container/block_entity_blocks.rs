@@ -7,40 +7,39 @@
 
 use std::sync::{Arc, Weak};
 
+use glam::DVec3;
 use steel_macros::block_behavior;
+use steel_protocol::packets::game::SoundSource;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{
     BlockStateProperties, Direction, EnumProperty, FrontAndTop,
 };
-use steel_registry::vanilla_block_entity_types;
-use glam::DVec3;
-use steel_registry::{sound_events, vanilla_entities};
 use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_block_entity_types;
 use steel_registry::vanilla_items;
-use steel_protocol::packets::game::SoundSource;
+use steel_registry::{sound_events, vanilla_entities};
 use steel_utils::{BlockPos, BlockStateId, Downcast as _};
 use text_components::TextComponent;
 
 use crate::behavior::InventoryAccess;
 use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
-use crate::block_entity::BlockEntityTicker;
-use crate::block_entity::entities::CrafterBlockEntity;
 use crate::behavior::context::{BlockHitResult, BlockPlaceContext, InteractionResult};
 use crate::block_entity::BLOCK_ENTITIES;
-use crate::inventory::container::calculate_redstone_signal_from_container;
-use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
-use crate::inventory::menu::kinds::{brewing_stand, chest, crafter, dispenser, hopper, lectern};
+use crate::block_entity::BlockEntityTicker;
+use crate::block_entity::entities::CrafterBlockEntity;
 use crate::entity::entities::objects::projectiles::AbstractArrow as _;
-use crate::entity::{Entity as _, SharedEntity, next_entity_id};
 use crate::entity::entities::{
     ArrowEntity, EnderPearlEntity, ExperienceBottleEntity, FireworkRocketEntity, ItemEntity,
     LingeringPotionEntity, SmallFireballEntity, SnowballEntity, SpectralArrowEntity,
     SplashPotionEntity, ThrownEggEntity, WindChargeEntity,
 };
+use crate::entity::{Entity as _, SharedEntity, next_entity_id};
+use crate::inventory::container::calculate_redstone_signal_from_container;
+use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
+use crate::inventory::menu::kinds::{brewing_stand, chest, crafter, dispenser, hopper, lectern};
 use crate::player::Player;
 use crate::world::{SignalGetter, World};
-
 
 const HOPPER_FACING: &EnumProperty<Direction> = &BlockStateProperties::FACING_HOPPER;
 
@@ -62,76 +61,76 @@ fn dispense_projectile(stack: &ItemStack, world: &Arc<World>, pos: DVec3) -> Opt
             arrow.set_arrow_item(stack.copy_with_count(1));
             arrow
         } else if kind == &*vanilla_items::SPECTRAL_ARROW {
-        Arc::new(SpectralArrowEntity::new(
-            &vanilla_entities::SPECTRAL_ARROW,
-            id,
-            pos,
-            weak,
-        ))
-    } else if kind == &*vanilla_items::SPLASH_POTION {
-        Arc::new(SplashPotionEntity::new(
-            &vanilla_entities::SPLASH_POTION,
-            id,
-            pos,
-            weak,
-        ))
-    } else if kind == &*vanilla_items::LINGERING_POTION {
-        Arc::new(LingeringPotionEntity::new(
-            &vanilla_entities::LINGERING_POTION,
-            id,
-            pos,
-            weak,
-        ))
-    } else if kind == &*vanilla_items::EXPERIENCE_BOTTLE {
-        Arc::new(ExperienceBottleEntity::new(
-            &vanilla_entities::EXPERIENCE_BOTTLE,
-            id,
-            pos,
-            weak,
-        ))
-    } else if kind == &*vanilla_items::SNOWBALL {
-        Arc::new(SnowballEntity::new(
-            &vanilla_entities::SNOWBALL,
-            id,
-            pos,
-            weak,
-        ))
-    } else if kind == &*vanilla_items::EGG
-        || kind == &*vanilla_items::BROWN_EGG
-        || kind == &*vanilla_items::BLUE_EGG
-    {
-        Arc::new(ThrownEggEntity::new(&vanilla_entities::EGG, id, pos, weak))
-    } else if kind == &*vanilla_items::ENDER_PEARL {
-        Arc::new(EnderPearlEntity::new(
-            &vanilla_entities::ENDER_PEARL,
-            id,
-            pos,
-            weak,
-        ))
-    } else if kind == &*vanilla_items::FIREWORK_ROCKET {
-        Arc::new(FireworkRocketEntity::new(
-            &vanilla_entities::FIREWORK_ROCKET,
-            id,
-            pos,
-            weak,
-        ))
-    } else if kind == &*vanilla_items::WIND_CHARGE {
-        Arc::new(WindChargeEntity::new(
-            &vanilla_entities::WIND_CHARGE,
-            id,
-            pos,
-            weak,
-        ))
-    } else if kind == &*vanilla_items::FIRE_CHARGE {
-        Arc::new(SmallFireballEntity::new(
-            &vanilla_entities::SMALL_FIREBALL,
-            id,
-            pos,
-            weak,
-        ))
-    } else {
-        return None;
-    };
+            Arc::new(SpectralArrowEntity::new(
+                &vanilla_entities::SPECTRAL_ARROW,
+                id,
+                pos,
+                weak,
+            ))
+        } else if kind == &*vanilla_items::SPLASH_POTION {
+            Arc::new(SplashPotionEntity::new(
+                &vanilla_entities::SPLASH_POTION,
+                id,
+                pos,
+                weak,
+            ))
+        } else if kind == &*vanilla_items::LINGERING_POTION {
+            Arc::new(LingeringPotionEntity::new(
+                &vanilla_entities::LINGERING_POTION,
+                id,
+                pos,
+                weak,
+            ))
+        } else if kind == &*vanilla_items::EXPERIENCE_BOTTLE {
+            Arc::new(ExperienceBottleEntity::new(
+                &vanilla_entities::EXPERIENCE_BOTTLE,
+                id,
+                pos,
+                weak,
+            ))
+        } else if kind == &*vanilla_items::SNOWBALL {
+            Arc::new(SnowballEntity::new(
+                &vanilla_entities::SNOWBALL,
+                id,
+                pos,
+                weak,
+            ))
+        } else if kind == &*vanilla_items::EGG
+            || kind == &*vanilla_items::BROWN_EGG
+            || kind == &*vanilla_items::BLUE_EGG
+        {
+            Arc::new(ThrownEggEntity::new(&vanilla_entities::EGG, id, pos, weak))
+        } else if kind == &*vanilla_items::ENDER_PEARL {
+            Arc::new(EnderPearlEntity::new(
+                &vanilla_entities::ENDER_PEARL,
+                id,
+                pos,
+                weak,
+            ))
+        } else if kind == &*vanilla_items::FIREWORK_ROCKET {
+            Arc::new(FireworkRocketEntity::new(
+                &vanilla_entities::FIREWORK_ROCKET,
+                id,
+                pos,
+                weak,
+            ))
+        } else if kind == &*vanilla_items::WIND_CHARGE {
+            Arc::new(WindChargeEntity::new(
+                &vanilla_entities::WIND_CHARGE,
+                id,
+                pos,
+                weak,
+            ))
+        } else if kind == &*vanilla_items::FIRE_CHARGE {
+            Arc::new(SmallFireballEntity::new(
+                &vanilla_entities::SMALL_FIREBALL,
+                id,
+                pos,
+                weak,
+            ))
+        } else {
+            return None;
+        };
     Some(entity)
 }
 
@@ -161,7 +160,11 @@ impl BlockBehavior for HopperBlock {
         } else {
             Direction::Down
         };
-        Some(self.block.default_state().set_value(HOPPER_FACING, direction))
+        Some(
+            self.block
+                .default_state()
+                .set_value(HOPPER_FACING, direction),
+        )
     }
 
     /// Vanilla `HopperBlock.useWithoutItem`: opens the five-slot hopper screen.
@@ -174,7 +177,6 @@ impl BlockBehavior for HopperBlock {
         _hit_result: &BlockHitResult,
         _inv: &mut InventoryAccess,
     ) -> InteractionResult {
-
         let Some(container) = world
             .get_block_entity(pos)
             .and_then(ContainerRef::from_block_entity)
@@ -182,10 +184,9 @@ impl BlockBehavior for HopperBlock {
             return InteractionResult::Pass;
         };
         let inventory = Arc::clone(&player.inventory);
-        player.open_menu(
-            TextComponent::plain("Item Hopper"),
-            move |context| hopper(inventory, context.container_id, container),
-        );
+        player.open_menu(TextComponent::plain("Item Hopper"), move |context| {
+            hopper(inventory, context.container_id, container)
+        });
         InteractionResult::Success
     }
 
@@ -304,14 +305,10 @@ macro_rules! funnel_like {
             ) -> Option<BlockStateId> {
                 // Vanilla `DispenserBlock.getStateForPlacement`: the funnel faces
                 // the player, i.e. away from the clicked face.
-                Some(
-                    self.block
-                        .default_state()
-                        .set_value(
-                            &BlockStateProperties::FACING,
-                            context.clicked_face().opposite(),
-                        ),
-                )
+                Some(self.block.default_state().set_value(
+                    &BlockStateProperties::FACING,
+                    context.clicked_face().opposite(),
+                ))
             }
 
             /// Vanilla `DispenserBlock.useWithoutItem` (inherited from
@@ -325,7 +322,6 @@ macro_rules! funnel_like {
                 _hit_result: &BlockHitResult,
                 _inv: &mut InventoryAccess,
             ) -> InteractionResult {
-
                 let Some(container) = world
                     .get_block_entity(pos)
                     .and_then(ContainerRef::from_block_entity)
@@ -333,10 +329,9 @@ macro_rules! funnel_like {
                     return InteractionResult::Pass;
                 };
                 let inventory = Arc::clone(&player.inventory);
-                player.open_menu(
-                    TextComponent::plain("Dispenser"),
-                    move |context| dispenser(inventory, context.container_id, container),
-                );
+                player.open_menu(TextComponent::plain("Dispenser"), move |context| {
+                    dispenser(inventory, context.container_id, container)
+                });
                 InteractionResult::Success
             }
 
@@ -371,16 +366,23 @@ macro_rules! funnel_like {
     };
 }
 
-funnel_like!(DispenserBlock, DISPENSER, |world: &Arc<World>, pos, state| {
-    dispense_from(world, pos, state);
-});
+funnel_like!(
+    DispenserBlock,
+    DISPENSER,
+    |world: &Arc<World>, pos, state| {
+        dispense_from(world, pos, state);
+    }
+);
 funnel_like!(DropperBlock, DROPPER, |world: &Arc<World>, pos, state| {
     drop_from(world, pos, state);
 });
 
 /// Vanilla `DispenserBlockEntity.getRandomSlot`: selects one of the non-empty
 /// slots uniformly at random using reservoir sampling.
-fn pick_random_non_empty_slot(world: &Arc<World>, pos: BlockPos) -> Option<(ContainerRef, usize, ItemStack)> {
+fn pick_random_non_empty_slot(
+    world: &Arc<World>,
+    pos: BlockPos,
+) -> Option<(ContainerRef, usize, ItemStack)> {
     let block_entity = world.get_block_entity(pos)?;
     let container = block_entity.container_ref()?;
     let guard = container.lock();
@@ -436,7 +438,11 @@ fn replace_or_store_dispensed_result(
 }
 
 /// Tries to insert a single item stack into `destination` on `side`.
-fn try_insert_into_container(destination: &ContainerRef, side: Direction, stack: &ItemStack) -> bool {
+fn try_insert_into_container(
+    destination: &ContainerRef,
+    side: Direction,
+    stack: &ItemStack,
+) -> bool {
     let dest_id = destination.container_id();
     let mut guard = ContainerLockGuard::lock_all(&[destination]);
     let slots: Vec<usize> = {
@@ -457,7 +463,9 @@ fn try_insert_into_container(destination: &ContainerRef, side: Direction, stack:
             continue;
         }
         let existing = container.get_item(idx);
-        let limit = existing.max_stack_size().min(container.get_max_stack_size());
+        let limit = existing
+            .max_stack_size()
+            .min(container.get_max_stack_size());
         if !existing.is_empty()
             && ItemStack::is_same_item_same_components(existing, stack)
             && existing.count() < limit
@@ -504,8 +512,8 @@ fn launch_point(pos: BlockPos, facing: Direction) -> (DVec3, DVec3) {
     reason = "single table dispatching every vanilla DispenseItemBehavior branch"
 )]
 fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool {
-    use steel_utils::types::UpdateFlags;
     use steel_registry::vanilla_blocks;
+    use steel_utils::types::UpdateFlags;
 
     let facing = state.get_value(&BlockStateProperties::FACING);
     let Some((container, slot, snapshot)) = pick_random_non_empty_slot(world, pos) else {
@@ -556,7 +564,7 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
             facing,
             &container,
             slot,
-            ItemStack::new(&*vanilla_items::BUCKET),
+            ItemStack::new(&vanilla_items::BUCKET),
         );
         world.play_sound(
             &sound_events::BLOCK_DISPENSER_DISPENSE,
@@ -575,9 +583,9 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
             .try_get_value(&BlockStateProperties::LEVEL)
             .is_some_and(|lvl| lvl == 0);
         let filled = if target_block == &vanilla_blocks::WATER && is_source {
-            Some(ItemStack::new(&*vanilla_items::WATER_BUCKET))
+            Some(ItemStack::new(&vanilla_items::WATER_BUCKET))
         } else if target_block == &vanilla_blocks::LAVA && is_source {
-            Some(ItemStack::new(&*vanilla_items::LAVA_BUCKET))
+            Some(ItemStack::new(&vanilla_items::LAVA_BUCKET))
         } else {
             None
         };
@@ -771,7 +779,6 @@ impl BlockBehavior for BrewingStandBlock {
         _hit_result: &BlockHitResult,
         _inv: &mut InventoryAccess,
     ) -> InteractionResult {
-
         let Some(container) = world
             .get_block_entity(pos)
             .and_then(ContainerRef::from_block_entity)
@@ -779,10 +786,9 @@ impl BlockBehavior for BrewingStandBlock {
             return InteractionResult::Pass;
         };
         let inventory = Arc::clone(&player.inventory);
-        player.open_menu(
-            TextComponent::plain("Brewing Stand"),
-            move |context| brewing_stand(inventory, context.container_id, container),
-        );
+        player.open_menu(TextComponent::plain("Brewing Stand"), move |context| {
+            brewing_stand(inventory, context.container_id, container)
+        });
         InteractionResult::Success
     }
 
@@ -829,14 +835,10 @@ impl LecternBlock {
 
 impl BlockBehavior for LecternBlock {
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
-        Some(
-            self.block
-                .default_state()
-                .set_value(
-                    &BlockStateProperties::HORIZONTAL_FACING,
-                    context.horizontal_direction().opposite(),
-                ),
-        )
+        Some(self.block.default_state().set_value(
+            &BlockStateProperties::HORIZONTAL_FACING,
+            context.horizontal_direction().opposite(),
+        ))
     }
 
     fn new_block_entity(
@@ -866,7 +868,6 @@ impl BlockBehavior for LecternBlock {
         _hit_result: &BlockHitResult,
         _inv: &mut InventoryAccess,
     ) -> InteractionResult {
-
         if !state.get_value(&BlockStateProperties::HAS_BOOK) {
             return InteractionResult::Pass;
         }
@@ -909,15 +910,13 @@ impl BlockBehavior for CrafterBlock {
         _hit_result: &BlockHitResult,
         _inv: &mut InventoryAccess,
     ) -> InteractionResult {
-
         let Some(block_entity) = world.get_block_entity(pos) else {
             return InteractionResult::Pass;
         };
         if block_entity.downcast_ref::<CrafterBlockEntity>().is_none() {
             return InteractionResult::Pass;
         }
-        let Some(container_ref) = ContainerRef::from_block_entity(Arc::clone(&block_entity))
-        else {
+        let Some(container_ref) = ContainerRef::from_block_entity(Arc::clone(&block_entity)) else {
             return InteractionResult::Pass;
         };
         let menu_entity = Arc::clone(&block_entity);
@@ -941,16 +940,10 @@ impl BlockBehavior for CrafterBlock {
     /// Vanilla `CrafterBlock.getStateForPlacement`: the front face points back
     /// at the player, expressed through the `orientation` property.
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
-        Some(
-            self.block
-                .default_state()
-                .set_value(
-                    &BlockStateProperties::ORIENTATION,
-                    FrontAndTop::from_front_and_top(
-                        context.get_nearest_looking_direction().opposite(),
-                    ),
-                ),
-        )
+        Some(self.block.default_state().set_value(
+            &BlockStateProperties::ORIENTATION,
+            FrontAndTop::from_front_and_top(context.get_nearest_looking_direction().opposite()),
+        ))
     }
 
     /// Vanilla `CrafterBlock.neighborChanged`: a rising redstone edge starts the
@@ -1066,14 +1059,10 @@ impl DecoratedPotBlock {
 
 impl BlockBehavior for DecoratedPotBlock {
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
-        Some(
-            self.block
-                .default_state()
-                .set_value(
-                    &BlockStateProperties::HORIZONTAL_FACING,
-                    context.horizontal_direction().opposite(),
-                ),
-        )
+        Some(self.block.default_state().set_value(
+            &BlockStateProperties::HORIZONTAL_FACING,
+            context.horizontal_direction().opposite(),
+        ))
     }
 
     fn new_block_entity(
@@ -1107,14 +1096,10 @@ impl ShelfBlock {
 
 impl BlockBehavior for ShelfBlock {
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
-        Some(
-            self.block
-                .default_state()
-                .set_value(
-                    &BlockStateProperties::HORIZONTAL_FACING,
-                    context.horizontal_direction().opposite(),
-                ),
-        )
+        Some(self.block.default_state().set_value(
+            &BlockStateProperties::HORIZONTAL_FACING,
+            context.horizontal_direction().opposite(),
+        ))
     }
 
     fn use_without_item(
@@ -1135,10 +1120,9 @@ impl BlockBehavior for ShelfBlock {
             return InteractionResult::Pass;
         };
         let inventory = Arc::clone(&player.inventory);
-        player.open_menu(
-            TextComponent::plain("Shelf"),
-            move |context| chest(inventory, context.container_id, container_ref, 1),
-        );
+        player.open_menu(TextComponent::plain("Shelf"), move |context| {
+            chest(inventory, context.container_id, container_ref, 1)
+        });
         InteractionResult::Success
     }
 

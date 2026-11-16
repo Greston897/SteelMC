@@ -35,11 +35,13 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     let targets = argument(TARGETS_ARGUMENT, SteelArgumentType::operator_profile());
 
     literal("whitelist")
-        .then(literal("add").then(
-            targets
-                .clone()
-                .executes_suspended(|context| start_operation(context, WhitelistAction::Add)),
-        ))
+        .then(
+            literal("add").then(
+                targets
+                    .clone()
+                    .executes_suspended(|context| start_operation(context, WhitelistAction::Add)),
+            ),
+        )
         .then(literal("remove").then(
             targets.executes_suspended(|context| start_operation(context, WhitelistAction::Remove)),
         ))
@@ -168,13 +170,11 @@ impl CommandResultSuspension for WhitelistCommandSuspension {
             Err(oneshot::error::TryRecvError::Empty) => CommandResultSuspensionPoll::Pending,
             Err(oneshot::error::TryRecvError::Closed) => {
                 self.task = None;
-                CommandResultSuspensionPoll::Ready(Err(CommandSyntaxError::dynamic(
-                    translated(
-                        "commands.whitelist.none",
-                        "Profile lookup was cancelled".to_owned(),
-                        Vec::new(),
-                    ),
-                )))
+                CommandResultSuspensionPoll::Ready(Err(CommandSyntaxError::dynamic(translated(
+                    "commands.whitelist.none",
+                    "Profile lookup was cancelled".to_owned(),
+                    Vec::new(),
+                ))))
             }
         }
     }
@@ -186,10 +186,7 @@ fn list(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSynt
 
     let header = translated(
         "commands.whitelist.list",
-        format!(
-            "There are {} whitelisted player(s):",
-            entries.len()
-        ),
+        format!("There are {} whitelisted player(s):", entries.len()),
         vec![TextComponent::from(entries.len().to_string())],
     );
     context.source().send_success(&header, false);

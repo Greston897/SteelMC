@@ -156,7 +156,7 @@ impl ReadFrom for SContainerClick {
 
 #[cfg(test)]
 mod tests {
-use steel_utils::serial::WriteTo;
+    use steel_utils::serial::WriteTo;
 
     use super::*;
 

@@ -88,10 +88,7 @@ pub(super) fn needs_update(
         return true;
     }
     match (prev_data, next_data) {
-        (
-            TrackedWaypointData::Azimuth { angle: a },
-            TrackedWaypointData::Azimuth { angle: b },
-        ) => {
+        (TrackedWaypointData::Azimuth { angle: a }, TrackedWaypointData::Azimuth { angle: b }) => {
             let mut diff = (b - a).rem_euclid(std::f32::consts::TAU);
             if diff > std::f32::consts::PI {
                 diff = std::f32::consts::TAU - diff;
@@ -147,11 +144,7 @@ impl WaypointManager {
     /// Returns the effective [`WaypointIcon`] for `target`.
     #[must_use]
     pub fn icon_for(&self, target: Uuid) -> WaypointIcon {
-        self.icons
-            .lock()
-            .get(&target)
-            .cloned()
-            .unwrap_or_default()
+        self.icons.lock().get(&target).cloned().unwrap_or_default()
     }
 
     /// Sets or clears the RGB color override on `target`'s locator-bar icon.
@@ -282,7 +275,9 @@ impl WaypointManager {
                     // Vanilla `WaypointTransmitter.doesSourceIgnoreReceiver` +
                     // `LivingEntity.isTransmittingWaypoint` (sneaking hides non-spectator targets).
                     if !observer.is_spectator {
-                        if source.is_spectator || source.is_crouching || source.transmit_range <= 0.0
+                        if source.is_spectator
+                            || source.is_crouching
+                            || source.transmit_range <= 0.0
                         {
                             continue;
                         }
@@ -296,11 +291,8 @@ impl WaypointManager {
                         }
                     }
 
-                    let data = compute_waypoint_data(
-                        source.pos,
-                        observer.pos,
-                        observer.view_distance,
-                    );
+                    let data =
+                        compute_waypoint_data(source.pos, observer.pos, observer.view_distance);
 
                     match tracked.get(&source.uuid) {
                         None => {
@@ -316,9 +308,7 @@ impl WaypointManager {
                                 },
                             );
                         }
-                        Some(prev)
-                            if needs_update(prev.data, &prev.icon, data, &source.icon) =>
-                        {
+                        Some(prev) if needs_update(prev.data, &prev.icon, data, &source.icon) => {
                             // Switching representation type (Vec3i <-> Chunk <-> Azimuth)
                             // mirrors vanilla's connection transition cleanly via `Track`.
                             let same_kind =

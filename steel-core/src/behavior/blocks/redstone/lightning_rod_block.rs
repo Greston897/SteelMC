@@ -51,12 +51,7 @@ impl LightningRodBlock {
     /// Named apart from the `BlockBehavior::on_lightning_strike` hook so the
     /// call from `WeatheringLightningRodBlock` cannot resolve to the trait
     /// method, which takes `&self`.
-    pub(crate) fn strike(
-        block: BlockRef,
-        state: BlockStateId,
-        world: &Arc<World>,
-        pos: BlockPos,
-    ) {
+    pub(crate) fn strike(block: BlockRef, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
         world.set_block(pos, state.set_value(POWERED, true), UpdateFlags::UPDATE_ALL);
         Self::update_neighbors(block, state, world, pos);
         world.schedule_block_tick_default(pos, block, ACTIVATION_TICKS);

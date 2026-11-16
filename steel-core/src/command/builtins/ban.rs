@@ -48,12 +48,11 @@ fn ban_command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
                 .clone()
                 .executes_suspended(|context| start_ban(context, None)),
         )
-        .then(
-            targets.then(
-                argument(REASON_ARGUMENT, ArgumentType::greedy_string())
-                    .executes_suspended(|context| start_ban(context, Some(context.string(REASON_ARGUMENT)?.to_owned()))),
+        .then(targets.then(
+            argument(REASON_ARGUMENT, ArgumentType::greedy_string()).executes_suspended(
+                |context| start_ban(context, Some(context.string(REASON_ARGUMENT)?.to_owned())),
             ),
-        )
+        ))
 }
 
 fn pardon_command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
@@ -82,7 +81,9 @@ fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> 
 fn now() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |elapsed| i64::try_from(elapsed.as_secs()).unwrap_or(i64::MAX))
+        .map_or(0, |elapsed| {
+            i64::try_from(elapsed.as_secs()).unwrap_or(i64::MAX)
+        })
 }
 
 fn start_ban(
@@ -94,7 +95,7 @@ fn start_ban(
     let source_name = context.source().source_name();
     let reason = reason.unwrap_or_else(|| "Banned by an operator.".to_owned());
 
-    let task_source = source.clone();
+    let task_source = source;
     let (sender, receiver) = oneshot::channel();
     let task = tokio::spawn(async move {
         let result = run_ban(&task_source, argument, reason, source_name).await;
@@ -159,7 +160,7 @@ fn start_pardon(
     let argument = context.game_profile_argument(TARGETS_ARGUMENT).cloned()?;
     let source = context.source().clone();
     let (sender, receiver) = oneshot::channel();
-    let task_source = source.clone();
+    let task_source = source;
     let task = tokio::spawn(async move {
         let result = run_pardon(&task_source, argument).await;
         let _ = sender.send(result);
@@ -277,13 +278,11 @@ impl CommandResultSuspension for BanSuspension {
             Err(oneshot::error::TryRecvError::Empty) => CommandResultSuspensionPoll::Pending,
             Err(oneshot::error::TryRecvError::Closed) => {
                 self.task = None;
-                CommandResultSuspensionPoll::Ready(Err(CommandSyntaxError::dynamic(
-                    translated(
-                        "commands.ban.failed",
-                        "Profile lookup was cancelled".to_owned(),
-                        Vec::new(),
-                    ),
-                )))
+                CommandResultSuspensionPoll::Ready(Err(CommandSyntaxError::dynamic(translated(
+                    "commands.ban.failed",
+                    "Profile lookup was cancelled".to_owned(),
+                    Vec::new(),
+                ))))
             }
         }
     }

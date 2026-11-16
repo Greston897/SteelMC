@@ -91,7 +91,6 @@ impl BlockBehavior for WeatheringLightningRodBlock {
         );
     }
 
-
     fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
         self.lightning_rod.tick(state, world, pos);
     }

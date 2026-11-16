@@ -25,31 +25,24 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("effect")
         .then(
             literal("give").then(
-                argument("targets", SteelArgumentType::entities())
-                    .then(
-                        argument("effect", ArgumentType::word())
-                            .then(
-                                argument("seconds", ArgumentType::integer(1, 1_000_000))
-                                    .then(
-                                        argument(
-                                            "amplifier",
-                                            ArgumentType::integer(0, 255),
-                                        )
+                argument("targets", SteelArgumentType::entities()).then(
+                    argument("effect", ArgumentType::word())
+                        .then(
+                            argument("seconds", ArgumentType::integer(1, 1_000_000))
+                                .then(
+                                    argument("amplifier", ArgumentType::integer(0, 255))
                                         .executes(|context| give(context, false)),
-                                    )
-                                    .executes(|context| give(context, false)),
-                            )
-                            .executes(give_infinite),
-                    ),
+                                )
+                                .executes(|context| give(context, false)),
+                        )
+                        .executes(give_infinite),
+                ),
             ),
         )
         .then(
             literal("clear").then(
                 argument("targets", SteelArgumentType::entities())
-                    .then(
-                        argument("effect", ArgumentType::word())
-                            .executes(clear_one),
-                    )
+                    .then(argument("effect", ArgumentType::word()).executes(clear_one))
                     .executes(clear_all),
             ),
         )
@@ -117,7 +110,9 @@ fn apply(
         // `/effect give` counts any change (a fresh effect or an upgrade).
         if living
             .living_base()
-            .add_mob_effect(MobEffectInstance::with_duration(effect, duration, amplifier))
+            .add_mob_effect(MobEffectInstance::with_duration(
+                effect, duration, amplifier,
+            ))
             .changed()
         {
             applied += 1;
@@ -127,10 +122,7 @@ fn apply(
         return Err(CommandSyntaxError::dynamic("No entity accepted the effect"));
     }
     context.source().send_success(
-        &TextComponent::plain(format!(
-            "Applied {} to {applied} entities",
-            effect.key.path
-        )),
+        &TextComponent::plain(format!("Applied {} to {applied} entities", effect.key.path)),
         false,
     );
     Ok(applied)

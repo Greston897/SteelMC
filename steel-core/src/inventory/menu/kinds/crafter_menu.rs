@@ -62,10 +62,7 @@ pub fn crafter(
     let player = builder.player_inventory(&inventory);
     // Slot 45 exists client-side but is never usable; vanilla `CrafterMenu`
     // adds it as a result slot that stays empty forever.
-    builder.section_all_with(
-        SimpleContainer::new(1).into_shared(),
-        SectionKind::Display,
-    );
+    builder.section_all_with(SimpleContainer::new(1).into_shared(), SectionKind::Display);
     let disabled_slots = builder.data_slot(initial_mask as i16);
 
     builder.route(grid, player.all(), FillDirection::Forward);
@@ -216,7 +213,8 @@ impl MenuKind for CrafterKind {
         if slot >= CRAFTER_SLOTS {
             return ClickOutcome::Fallthrough;
         }
-        let disabled = self.entity().map_or(0, CrafterBlockEntity::disabled_slots) & (1 << slot) == 0;
+        let disabled =
+            self.entity().map_or(0, CrafterBlockEntity::disabled_slots) & (1 << slot) == 0;
         let occupied = !behavior.slots()[slot].get_item(guard).is_empty();
         // A failed toggle still consumes the click, so the cursor item is not
         // placed into an occupied slot.

@@ -22,22 +22,22 @@ use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::EntityTypeRef;
+use steel_registry::equipment::EquipmentSlot;
+use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
-use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_attributes;
-use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::vanilla_entity_data::HorseEntityData;
+use steel_registry::vanilla_item_tags::ItemTag;
 use steel_utils::locks::SyncMutex;
-use steel_registry::equipment::EquipmentSlot;
 use steel_utils::types::InteractionHand;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
+use crate::behavior::InteractionResult;
 use crate::entity::ai::goal::{
     FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
     WaterAvoidingRandomStrollGoal,
 };
-use crate::behavior::InteractionResult;
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
@@ -234,10 +234,9 @@ impl HorseEntity {
 
     /// The mount's shared equipment container, for tests and persistence.
     #[must_use]
-    pub fn mount_inventory(&self) -> &crate::entity::mount::SharedMountInventory {
+    pub const fn mount_inventory(&self) -> &crate::entity::mount::SharedMountInventory {
         &self.mount_inventory
     }
-
 }
 
 impl DefaultEntityPush for HorseEntity {}
@@ -399,7 +398,6 @@ impl LivingEntity for HorseEntity {
             .lock()
             .required_value(vanilla_attributes::MOVEMENT_SPEED) as f32
     }
-
 }
 
 impl AgeableMob for HorseEntity {
@@ -457,7 +455,11 @@ impl Mob for HorseEntity {
         // Vanilla `AbstractHorse.mobInteract` order: a ridden or baby mount has
         // no special handling; a tamed one opens its inventory on a secondary
         // (shift) use; otherwise food and equipment win over riding.
-        if !self.is_vehicle() && !AgeableMob::is_baby(self) && self.is_tamed() && player.is_secondary_use_active() {
+        if !self.is_vehicle()
+            && !AgeableMob::is_baby(self)
+            && self.is_tamed()
+            && player.is_secondary_use_active()
+        {
             self.open_mount_inventory(player);
             return InteractionResult::Success;
         }
@@ -527,12 +529,7 @@ mod tests {
     #[test]
     fn horse_tame_and_saddle_bits_are_independent() {
         init_vanilla_registry();
-        let horse = HorseEntity::new(
-            &vanilla_entities::HORSE,
-            1,
-            DVec3::ZERO,
-            Weak::new(),
-        );
+        let horse = HorseEntity::new(&vanilla_entities::HORSE, 1, DVec3::ZERO, Weak::new());
         horse.set_tamed(true);
         assert!(horse.is_tamed());
         assert!(!horse.is_saddled());
@@ -560,7 +557,8 @@ mod tests {
         let attribute_speed = horse
             .attributes()
             .lock()
-            .required_value(vanilla_attributes::MOVEMENT_SPEED) as f32;
+            .required_value(vanilla_attributes::MOVEMENT_SPEED)
+            as f32;
 
         assert_eq!(
             LivingEntity::ridden_speed(&horse, &controller).to_bits(),

@@ -37,9 +37,7 @@ fn command() -> Builder {
 /// `give|take <targets> <recipe>`, where `<recipe>` is `*` or a recipe key.
 fn targets_then(give: bool) -> Builder {
     argument("targets", SteelArgumentType::players())
-        .then(
-            literal("*").executes(move |context| apply(context, give, None)),
-        )
+        .then(literal("*").executes(move |context| apply(context, give, None)))
         .then(
             argument("recipe", SteelArgumentType::identifier())
                 .executes(move |context| apply(context, give, Some(context.identifier("recipe")?))),
@@ -71,23 +69,19 @@ fn apply(
 fn give_recipes(target: &Arc<Player>, key: Option<&Identifier>) -> i32 {
     let newly_unlocked: Vec<Identifier> = {
         let mut book = target.recipe_book.lock();
-        match key {
-            Some(key) => {
-                if book.add(key).is_some() {
-                    vec![key.clone()]
-                } else {
-                    Vec::new()
-                }
+        if let Some(key) = key {
+            if book.add(key).is_some() {
+                vec![key.clone()]
+            } else {
+                Vec::new()
             }
-            None => {
-                let before: rustc_hash::FxHashSet<Identifier> =
-                    book.keys().cloned().collect();
-                book.add_all_registered();
-                book.keys()
-                    .filter(|key| !before.contains(key))
-                    .cloned()
-                    .collect()
-            }
+        } else {
+            let before: rustc_hash::FxHashSet<Identifier> = book.keys().cloned().collect();
+            book.add_all_registered();
+            book.keys()
+                .filter(|key| !before.contains(key))
+                .cloned()
+                .collect()
         }
     };
     // Vanilla `ServerPlayer.awardRecipes` fires `recipe_unlocked` per new recipe.
@@ -99,13 +93,12 @@ fn give_recipes(target: &Arc<Player>, key: Option<&Identifier>) -> i32 {
 
 fn take_recipes(target: &Arc<Player>, key: Option<&Identifier>) -> i32 {
     let mut book = target.recipe_book.lock();
-    match key {
-        Some(key) => i32::from(book.remove(key).is_some()),
-        None => {
-            let count = i32::try_from(book.len()).unwrap_or(i32::MAX);
-            book.clear();
-            count
-        }
+    if let Some(key) = key {
+        i32::from(book.remove(key).is_some())
+    } else {
+        let count = i32::try_from(book.len()).unwrap_or(i32::MAX);
+        book.clear();
+        count
     }
 }
 

@@ -12,9 +12,7 @@ use crate::inventory::container::{CraftingContainer, ResultContainer};
 use crate::inventory::prelude::*;
 use crate::inventory::slots::CraftingHandler;
 use crate::player::player_inventory::PlayerInventory;
-use crate::player::recipe_placement::{
-    PostPlaceAction, StackedItemContents, plan_placement,
-};
+use crate::player::recipe_placement::{PostPlaceAction, StackedItemContents, plan_placement};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_blocks;
 use steel_registry::vanilla_menu_types;
@@ -116,7 +114,8 @@ impl MenuKind for CraftingKind {
         guard: &ContainerLockGuard,
         contents: &mut StackedItemContents,
     ) -> bool {
-        let Some(crafting) = guard.get_typed::<CraftingContainer>(self.handler.crafting_id()) else {
+        let Some(crafting) = guard.get_typed::<CraftingContainer>(self.handler.crafting_id())
+        else {
             return false;
         };
         for stack in crafting.items() {
@@ -140,13 +139,7 @@ impl MenuKind for CraftingKind {
             return None;
         };
         let grid = crafting.items().to_vec();
-        let inventory: Vec<ItemStack> = player
-            .inventory
-            .lock()
-            .get_items()
-            .iter()
-            .cloned()
-            .collect();
+        let inventory: Vec<ItemStack> = player.inventory.lock().get_items().to_vec();
         let plan = plan_placement(
             &inventory,
             3,

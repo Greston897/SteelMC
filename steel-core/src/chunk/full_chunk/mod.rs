@@ -1566,11 +1566,11 @@ impl FullChunkRef<'_> {
     /// Vanilla `LevelChunk.setBiome(BlockPos, Holder<Biome>)` writes the quart
     /// cell, so a `/fillbiome` over a partial cell still covers the whole cell.
     /// Returns whether the stored value actually changed.
+    #[must_use]
     pub fn set_biome_cell(&self, pos: BlockPos, biome_id: u16) -> bool {
-        let section_index =
-            usize::try_from((pos.y() - self.min_y()) >> 4).ok().filter(|index| {
-                *index < self.chunk.sections.sections.len()
-            });
+        let section_index = usize::try_from((pos.y() - self.min_y()) >> 4)
+            .ok()
+            .filter(|index| *index < self.chunk.sections.sections.len());
         let Some(section_index) = section_index else {
             return false;
         };

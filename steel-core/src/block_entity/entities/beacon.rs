@@ -28,10 +28,10 @@ use steel_registry::{
 };
 use steel_utils::color::ArgbColor;
 use steel_utils::locks::SyncMutex;
-use text_components::TextComponent;
 use steel_utils::{
     BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, Identifier, WorldAabb,
 };
+use text_components::TextComponent;
 
 use crate::behavior::BLOCK_BEHAVIORS;
 use crate::block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter};
@@ -490,18 +490,13 @@ impl BlockEntity for BeaconBlockEntity {
         // Vanilla `BeaconBlockEntity.tick` fires `construct_beacon` for the players
         // around the beacon the moment its pyramid becomes valid again, which is
         // what `story/construct_beacon` waits for.
-        if scan_complete
-            && previous_levels <= 0
-            && levels > 0
-        {
+        if scan_complete && previous_levels <= 0 && levels > 0 {
             let (center_x, center_y, center_z) = pos.get_center();
             let center = DVec3::new(center_x, center_y, center_z);
             world.players.iter_players(|_uuid, player| {
                 if player.position().distance_squared(center) <= BEACON_TRIGGER_RADIUS_SQUARED {
                     let mut context =
-                        crate::player::advancement::predicate::TriggerContext::at(
-                            world, center,
-                        );
+                        crate::player::advancement::predicate::TriggerContext::at(world, center);
                     context.dimension_level = Some(levels);
                     player.trigger_advancement_with_context(
                         &steel_registry::vanilla_criteria_triggers::CONSTRUCT_BEACON,

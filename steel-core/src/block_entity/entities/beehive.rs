@@ -17,8 +17,7 @@ use steel_registry::blocks::properties::{
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::{
-    EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest,
-    SharedEntity, spawn_entity,
+    EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest, SharedEntity, spawn_entity,
 };
 use crate::world::{LevelReader as _, World};
 
@@ -349,7 +348,11 @@ impl BeehiveBlockEntity {
         let new_level = honey_level.saturating_add(honey_gain).min(MAX_HONEY_LEVEL);
         if new_level != honey_level {
             let updated = state.set_value(LEVEL_HONEY, new_level);
-            world.set_block(pos, updated, steel_utils::types::UpdateFlags::UPDATE_CLIENTS);
+            world.set_block(
+                pos,
+                updated,
+                steel_utils::types::UpdateFlags::UPDATE_CLIENTS,
+            );
         }
     }
 
@@ -439,10 +442,22 @@ mod tests {
     #[test]
     fn release_offsets_match_vanilla_faces() {
         // Vanilla pushes the bee half a block out through the front face.
-        assert_eq!(BeehiveBlockEntity::release_offset(Direction::North), (0.0, 0.0, -0.5));
-        assert_eq!(BeehiveBlockEntity::release_offset(Direction::South), (0.0, 0.0, 0.5));
-        assert_eq!(BeehiveBlockEntity::release_offset(Direction::West), (-0.5, 0.0, 0.0));
-        assert_eq!(BeehiveBlockEntity::release_offset(Direction::East), (0.5, 0.0, 0.0));
+        assert_eq!(
+            BeehiveBlockEntity::release_offset(Direction::North),
+            (0.0, 0.0, -0.5)
+        );
+        assert_eq!(
+            BeehiveBlockEntity::release_offset(Direction::South),
+            (0.0, 0.0, 0.5)
+        );
+        assert_eq!(
+            BeehiveBlockEntity::release_offset(Direction::West),
+            (-0.5, 0.0, 0.0)
+        );
+        assert_eq!(
+            BeehiveBlockEntity::release_offset(Direction::East),
+            (0.5, 0.0, 0.0)
+        );
     }
 
     #[test]

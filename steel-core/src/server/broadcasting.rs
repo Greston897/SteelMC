@@ -6,11 +6,11 @@ use super::{
 };
 use std::borrow::Cow;
 
-use steel_protocol::packets::game::{CDisguisedChat, ChatTypeBound};
-use steel_registry::chat_type::{ChatStyle, ChatTypeDecoration, ChatTypeRef};
-use steel_registry::RegistryEntry as _;
-use text_components::translation::TranslatedMessage;
 use crate::scoreboard::Scoreboard;
+use steel_protocol::packets::game::{CDisguisedChat, ChatTypeBound};
+use steel_registry::RegistryEntry as _;
+use steel_registry::chat_type::{ChatStyle, ChatTypeDecoration, ChatTypeRef};
+use text_components::translation::TranslatedMessage;
 
 impl Server {
     /// Logs and broadcasts a system chat message to online players.
@@ -136,8 +136,7 @@ impl Server {
     pub fn scoreboard_display_slots(&self, domain: &str) -> Vec<(i32, String)> {
         self.scoreboards
             .get(domain)
-            .map(Scoreboard::display_slots)
-            .unwrap_or_default()
+            .map_or_default(Scoreboard::display_slots)
     }
 
     /// Builds the tab list header/footer with recent and five-second tick statistics.
@@ -331,10 +330,9 @@ impl Server {
     /// Builds a `CCodeOfConduct` packet if a non-empty code of conduct is active.
     #[must_use]
     pub fn code_of_conduct_packet(&self) -> Option<steel_protocol::packets::game::CCodeOfConduct> {
-        self.code_of_conduct
-            .lock()
-            .clone()
-            .map(|code_of_conduct| steel_protocol::packets::game::CCodeOfConduct { code_of_conduct })
+        self.code_of_conduct.lock().clone().map(|code_of_conduct| {
+            steel_protocol::packets::game::CCodeOfConduct { code_of_conduct }
+        })
     }
 
     /// Replaces the custom report details attached to client crash/abuse reports

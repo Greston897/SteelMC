@@ -203,13 +203,7 @@ impl MenuKind for InventoryKind {
             return None;
         };
         let grid = crafting.items().to_vec();
-        let inventory: Vec<ItemStack> = player
-            .inventory
-            .lock()
-            .get_items()
-            .iter()
-            .cloned()
-            .collect();
+        let inventory: Vec<ItemStack> = player.inventory.lock().get_items().to_vec();
         let plan = crate::player::recipe_placement::plan_placement(
             &inventory,
             2,

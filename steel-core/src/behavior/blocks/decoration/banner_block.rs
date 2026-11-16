@@ -1,3 +1,4 @@
+use std::sync::{Arc, Weak};
 use steel_macros::block_behavior;
 use steel_math::{DEGREE_180, convert_to_rotation_segment};
 use steel_registry::REGISTRY;
@@ -6,7 +7,6 @@ use steel_registry::blocks::properties::{
 };
 use steel_registry::blocks::{BlockRef, block_state_ext::BlockStateExt};
 use steel_registry::vanilla_blocks;
-use std::sync::{Arc, Weak};
 use steel_utils::{BlockPos, BlockStateId};
 
 use crate::behavior::block::BlockEntityCreation;

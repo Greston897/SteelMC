@@ -12,10 +12,10 @@ use std::{
 use simdnbt::ToNbtTag;
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
-use steel_registry::item_stack::ItemStack;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, Direction};
 use steel_registry::data_components::vanilla_components;
+use steel_registry::item_stack::ItemStack;
 use steel_registry::{level_events, vanilla_block_entity_types};
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
@@ -26,8 +26,8 @@ use crate::entity::Entity as _;
 use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerRef, SharedContainer};
 use crate::world::World;
-use steel_utils::types::UpdateFlags;
 use steel_registry::vanilla_criteria_triggers;
+use steel_utils::types::UpdateFlags;
 
 /// Number of slots in a brewing stand: three bottles, the ingredient and fuel.
 ///
@@ -563,11 +563,14 @@ mod tests {
     #[test]
     fn the_fuel_slot_accepts_a_stack_and_the_sides_reach_it() {
         let brewing_stand = test_brewing_stand();
-        brewing_stand
-            .container
-            .lock()
-            .set_item(FUEL_SLOT, ItemStack::with_count(&*vanilla_items::BLAZE_POWDER, 5));
-        assert_eq!(brewing_stand.container.lock().get_item(FUEL_SLOT).count(), 5);
+        brewing_stand.container.lock().set_item(
+            FUEL_SLOT,
+            ItemStack::with_count(&*vanilla_items::BLAZE_POWDER, 5),
+        );
+        assert_eq!(
+            brewing_stand.container.lock().get_item(FUEL_SLOT).count(),
+            5
+        );
         // Vanilla exposes the fuel slot to side hoppers only.
         let container = brewing_stand.container.lock();
         let powder = ItemStack::new(&*vanilla_items::BLAZE_POWDER);
@@ -585,7 +588,10 @@ mod tests {
             container.slots_for_face(Direction::Up),
             Some(&[INGREDIENT_SLOT][..])
         );
-        assert_eq!(container.slots_for_face(Direction::Down), Some(&[0, 1, 2][..]));
+        assert_eq!(
+            container.slots_for_face(Direction::Down),
+            Some(&[0, 1, 2][..])
+        );
         assert_eq!(
             container.slots_for_face(Direction::North),
             Some(&[0, 1, 2, FUEL_SLOT][..])
@@ -614,7 +620,13 @@ mod tests {
     #[test]
     fn the_ingredient_slot_starts_empty() {
         let brewing_stand = test_brewing_stand();
-        assert!(brewing_stand.container.lock().get_item(INGREDIENT_SLOT).is_empty());
+        assert!(
+            brewing_stand
+                .container
+                .lock()
+                .get_item(INGREDIENT_SLOT)
+                .is_empty()
+        );
     }
 
     /// A single brew takes 400 ticks in vanilla; the old constant of 20 ran
@@ -631,7 +643,9 @@ mod tests {
         let mut water = ItemStack::new(&vanilla_items::POTION);
         water.set_potion(&steel_utils::Identifier::new("minecraft", "water"));
         assert!(!potion_brewing::is_ingredient(&water));
-        assert!(!potion_brewing::is_ingredient(&ItemStack::new(&vanilla_items::GLASS_BOTTLE)));
+        assert!(!potion_brewing::is_ingredient(&ItemStack::new(
+            &vanilla_items::GLASS_BOTTLE
+        )));
         assert!(potion_brewing::is_ingredient(&ItemStack::new(
             &vanilla_items::NETHER_WART
         )));

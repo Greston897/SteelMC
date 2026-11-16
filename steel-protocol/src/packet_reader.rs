@@ -273,8 +273,6 @@ mod payload_tests {
     }
 }
 
-
-
 #[cfg(test)]
 mod compression_security_tests {
     use std::io::Write;

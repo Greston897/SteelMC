@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
-use steel_utils::{Downcast as _, BlockPos, WorldAabb};
+use steel_utils::{BlockPos, Downcast as _, WorldAabb};
 
-use crate::entity::{Entity as _, EntityEventSource, Mob as _};
 use crate::entity::entities::PiglinEntity;
+use crate::entity::{Entity as _, EntityEventSource, Mob as _};
 use crate::player::Player;
 use crate::world::World;
 
 mod anvil_block;
-mod block_entity_blocks;
 mod barrel_block;
 mod beacon_block;
 mod beehive_block;
+mod block_entity_blocks;
 mod chest_block;
 mod chiseled_bookshelf_block;
 mod copper_chest_block;
@@ -24,10 +24,10 @@ mod shulker_box_block;
 mod station_blocks;
 
 pub use anvil_block::*;
-pub use block_entity_blocks::*;
 pub use barrel_block::*;
 pub use beacon_block::*;
 pub use beehive_block::*;
+pub use block_entity_blocks::*;
 pub use chest_block::*;
 pub use chiseled_bookshelf_block::*;
 pub use copper_chest_block::*;
@@ -65,7 +65,10 @@ pub(crate) fn anger_nearby_piglins(world: &Arc<World>, pos: BlockPos, player: &P
         return;
     };
     for entity in world.get_entities_in_aabb(&box_) {
-        let Some(piglin) = entity.as_entity_event_source().downcast_ref::<PiglinEntity>() else {
+        let Some(piglin) = entity
+            .as_entity_event_source()
+            .downcast_ref::<PiglinEntity>()
+        else {
             continue;
         };
         let _ = piglin.set_target(Some(&player_entity));

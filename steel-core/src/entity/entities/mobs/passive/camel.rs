@@ -19,13 +19,13 @@ use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::EntityTypeRef;
+use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
-use steel_registry::vanilla_game_events;
 use steel_registry::vanilla_attributes;
-use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::vanilla_entity_data::CamelEntityData;
+use steel_registry::vanilla_game_events;
+use steel_registry::vanilla_item_tags::ItemTag;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
@@ -34,13 +34,13 @@ use crate::entity::ai::goal::{
     WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::entity::mount::{SharedMountInventory, open_mount_menu};
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityDimensions, EntityEventSource, EntityMovementEmission, EntitySyncedData,
     LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity,
     sync_dirty_mob_effects,
 };
-use crate::entity::mount::{SharedMountInventory, open_mount_menu};
 use crate::physics::MoveResult;
 use crate::player::Player;
 use crate::world::World;
@@ -480,7 +480,9 @@ impl Mob for CamelEntity {
         player: &Player,
         hand: steel_utils::types::InteractionHand,
     ) -> crate::behavior::InteractionResult {
-        if !Entity::is_vehicle(self) && !LivingEntity::is_baby(self) && self.is_tamed()
+        if !Entity::is_vehicle(self)
+            && !LivingEntity::is_baby(self)
+            && self.is_tamed()
             && player.is_secondary_use_active()
         {
             self.open_mount_inventory(player);
@@ -521,12 +523,7 @@ mod tests {
     #[test]
     fn camel_tame_and_saddle_bits_are_independent() {
         init_vanilla_registry();
-        let camel = CamelEntity::new(
-            &vanilla_entities::CAMEL,
-            1,
-            DVec3::ZERO,
-            Weak::new(),
-        );
+        let camel = CamelEntity::new(&vanilla_entities::CAMEL, 1, DVec3::ZERO, Weak::new());
         camel.set_tamed(true);
         assert!(camel.is_tamed());
         assert!(!camel.is_saddled());

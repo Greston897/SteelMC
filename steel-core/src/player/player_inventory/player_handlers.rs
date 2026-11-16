@@ -19,10 +19,10 @@ use glam::DVec3;
 use steel_math::trig;
 use steel_protocol::packets::game::SSeenAdvancement::Opened;
 use steel_protocol::packets::game::{
-    CContainerClose, CMountScreenOpen, COpenScreen, CSetPlayerInventory, ClickType, SContainerButtonClick,
-    SSelectTrade,
-    SContainerClick, SContainerClose, SContainerSlotStateChanged, SEditBook, SRenameItem,
-    SSeenAdvancement, SSetBeacon, SSetCarriedItem, SSetCreativeModeSlot, SoundSource,
+    CContainerClose, CMountScreenOpen, COpenScreen, CSetPlayerInventory, ClickType,
+    SContainerButtonClick, SContainerClick, SContainerClose, SContainerSlotStateChanged, SEditBook,
+    SRenameItem, SSeenAdvancement, SSelectTrade, SSetBeacon, SSetCarriedItem, SSetCreativeModeSlot,
+    SoundSource,
 };
 use steel_registry::data_components::components::{
     Filterable, WritableBookContent, WrittenBookContent,
@@ -138,11 +138,7 @@ impl Player {
                     self.execute_menu_open(*prepared);
                 }
                 DeferredMenuAction::Install(prepared) => {
-                    let PreparedMenu {
-                        title,
-                        menu,
-                        mount,
-                    } = *prepared;
+                    let PreparedMenu { title, menu, mount } = *prepared;
                     self.open_prepared_menu_with(title, menu, mount);
                 }
             }

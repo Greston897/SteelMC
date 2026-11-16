@@ -345,8 +345,7 @@ fn crafter_menu_refuses_to_disable_an_occupied_slot() {
     let _crafter_entity = block_entity
         .downcast_ref::<CrafterBlockEntity>()
         .expect("crafter block entity type");
-    let container =
-        ContainerRef::from_block_entity(Arc::clone(&block_entity)).expect("container");
+    let container = ContainerRef::from_block_entity(Arc::clone(&block_entity)).expect("container");
     {
         let mut guard = ContainerLockGuard::lock_all(&[&container]);
         assert!(guard.set_item(

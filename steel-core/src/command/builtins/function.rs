@@ -50,7 +50,7 @@ fn run_function(context: &SteelCommandContext<CommandSource>) -> Result<i32, Com
     let Some(function) = steel_registry::REGISTRY.functions.by_key(&function_id) else {
         return Err(CommandSyntaxError::dynamic(translated(
             "commands.function.error.argument_mismatch",
-            format!("Can't find function {}", function_id),
+            format!("Can't find function {function_id}"),
             vec![TextComponent::from(function_id.to_string())],
         )));
     };
@@ -71,7 +71,7 @@ fn run_function(context: &SteelCommandContext<CommandSource>) -> Result<i32, Com
 
     let message = translated(
         "commands.function.success.single",
-        format!("Executed function {} with {} commands", function_id, queued),
+        format!("Executed function {function_id} with {queued} commands"),
         vec![
             TextComponent::from(function_id.to_string()),
             TextComponent::from(queued.to_string()),

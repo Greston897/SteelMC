@@ -10,9 +10,7 @@ use std::sync::{Arc, Weak};
 
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList};
-use steel_protocol::packets::game::{
-    TestInstanceBlockData, TestInstanceBlockSetupStatus,
-};
+use steel_protocol::packets::game::{TestInstanceBlockData, TestInstanceBlockSetupStatus};
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
@@ -97,18 +95,28 @@ impl BlockEntity for TestInstanceBlockEntity {
         // i.e. a list of three ints — not a compound with `x`/`y`/`z` keys.
         if let Some(size) = data.list("size") {
             let tags = size.to_owned().as_nbt_tags();
-            let mut axes = tags.iter().filter_map(|tag| tag.codec_i32());
+            let mut axes = tags
+                .iter()
+                .filter_map(steel_utils::nbt::NbtNumeric::codec_i32);
             if let (Some(x), Some(y), Some(z)) = (axes.next(), axes.next(), axes.next()) {
                 data_out.size = glam::IVec3 { x, y, z };
             }
         }
         data_out.ignore_entities = data.byte_value("ignore_entities").is_some_and(|v| v != 0);
-        data_out.status = match data.string("status").map(|v| v.to_str().into_owned()).as_deref() {
+        data_out.status = match data
+            .string("status")
+            .map(|v| v.to_str().into_owned())
+            .as_deref()
+        {
             Some("running") => TestInstanceBlockSetupStatus::Running,
             Some("finished") => TestInstanceBlockSetupStatus::Finished,
             _ => TestInstanceBlockSetupStatus::Cleared,
         };
-        data_out.rotation = match data.string("rotation").map(|v| v.to_str().into_owned()).as_deref() {
+        data_out.rotation = match data
+            .string("rotation")
+            .map(|v| v.to_str().into_owned())
+            .as_deref()
+        {
             Some("clockwise_90") => steel_utils::Rotation::Clockwise90,
             Some("180") => steel_utils::Rotation::Clockwise180,
             Some("counterclockwise_90") => steel_utils::Rotation::CounterClockwise90,

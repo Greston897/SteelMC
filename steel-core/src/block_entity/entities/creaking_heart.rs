@@ -81,8 +81,9 @@ impl CreakingHeartBlockEntity {
         }
 
         let desired_state = Self::compute_heart_state(world, pos, state);
-        if state.try_get_value(&steel_registry::blocks::properties::BlockStateProperties::CREAKING_HEART_STATE)
-            != Some(desired_state)
+        if state.try_get_value(
+            &steel_registry::blocks::properties::BlockStateProperties::CREAKING_HEART_STATE,
+        ) != Some(desired_state)
         {
             world.set_block(
                 pos,
@@ -140,8 +141,8 @@ impl CreakingHeartBlockEntity {
         ) else {
             return;
         };
-        if let Some(creaking_entity) = creaking
-            .downcast_ref::<crate::entity::entities::mobs::hostile::CreakingEntity>()
+        if let Some(creaking_entity) =
+            creaking.downcast_ref::<crate::entity::entities::mobs::hostile::CreakingEntity>()
         {
             creaking_entity.set_creaking_heart_pos(Some(pos));
         }
@@ -259,7 +260,9 @@ impl BlockEntity for CreakingHeartBlockEntity {
         if let Some(uuid) = self.creaking() {
             let bytes = uuid.to_be_bytes();
             let ints: Vec<i32> = bytes
-                .chunks_exact(4)
+                .as_chunks::<4>()
+                .0
+                .iter()
                 .map(|chunk| i32::from_be_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
                 .collect();
             nbt.insert("creaking", NbtTag::IntArray(ints));

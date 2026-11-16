@@ -35,9 +35,7 @@ impl BiomeOrTag {
                 TranslatedMessage {
                     key: Cow::Borrowed("commands.fillbiome.tag"),
                     fallback: Some(Cow::Borrowed("Biome tags cannot be used here")),
-                    args: Some(
-                        vec![TextComponent::plain(format!("#{tag}"))].into_boxed_slice(),
-                    ),
+                    args: Some(vec![TextComponent::plain(format!("#{tag}"))].into_boxed_slice()),
                 },
             ))),
         }

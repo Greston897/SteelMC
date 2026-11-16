@@ -33,17 +33,23 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 }
 
 fn command() -> Builder {
-    literal("item").then(literal("replace").then(literal("entity").then(
-        argument("targets", SteelArgumentType::players())
-            .then(literal("slot").then(argument("slot", ArgumentType::word()).then(
-                argument("item", SteelArgumentType::item_stack())
-                    .executes(|context| replace(context, None))
-                    .then(
-                        argument("count", ArgumentType::integer(1, 99))
-                            .executes(|context| replace(context, Some(context.integer("count")?))),
+    literal("item").then(
+        literal("replace").then(
+            literal("entity").then(
+                argument("targets", SteelArgumentType::players()).then(
+                    literal("slot").then(
+                        argument("slot", ArgumentType::word()).then(
+                            argument("item", SteelArgumentType::item_stack())
+                                .executes(|context| replace(context, None))
+                                .then(argument("count", ArgumentType::integer(1, 99)).executes(
+                                    |context| replace(context, Some(context.integer("count")?)),
+                                )),
+                        ),
                     ),
-            ))),
-    )))
+                ),
+            ),
+        ),
+    )
 }
 
 /// Vanilla slot names mapped onto the player inventory container index.
@@ -101,9 +107,7 @@ fn replace(
         }
     }
 
-    let message = TextComponent::plain(format!(
-        "Replaced slot {slot_name} on {changed} player(s)"
-    ));
+    let message = TextComponent::plain(format!("Replaced slot {slot_name} on {changed} player(s)"));
     context.source().send_success(&message, true);
     Ok(changed)
 }

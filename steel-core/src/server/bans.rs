@@ -297,8 +297,22 @@ mod tests {
     #[test]
     fn a_second_ban_replaces_the_first() {
         let bans = BanList::new();
-        bans.ban_player(BanEntry::player(uuid(1), "Alice", "one", "console", 0, None));
-        bans.ban_player(BanEntry::player(uuid(1), "Alice", "two", "console", 0, None));
+        bans.ban_player(BanEntry::player(
+            uuid(1),
+            "Alice",
+            "one",
+            "console",
+            0,
+            None,
+        ));
+        bans.ban_player(BanEntry::player(
+            uuid(1),
+            "Alice",
+            "two",
+            "console",
+            0,
+            None,
+        ));
         assert_eq!(bans.player_ban_count(), 1);
         assert_eq!(bans.player_bans()[0].reason, "two");
     }

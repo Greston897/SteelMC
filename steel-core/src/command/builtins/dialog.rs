@@ -25,9 +25,8 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("dialog")
         .then(
             literal("show").then(
-                argument("targets", SteelArgumentType::players()).then(
-                    argument("dialog", SteelArgumentType::compound()).executes(show_dialog),
-                ),
+                argument("targets", SteelArgumentType::players())
+                    .then(argument("dialog", SteelArgumentType::compound()).executes(show_dialog)),
             ),
         )
         .then(

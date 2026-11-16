@@ -175,7 +175,7 @@ impl PacketBudget {
         Admission::Allowed
     }
 
-    fn reject(&mut self, cause: RejectionCause) -> Admission {
+    const fn reject(&mut self, cause: RejectionCause) -> Admission {
         self.dropped = self.dropped.saturating_add(1);
         Admission::Dropped {
             cause,
@@ -249,7 +249,7 @@ pub const MAX_TOLERATED_VIOLATIONS: u32 = 8;
 
 impl ViolationBudget {
     /// Records one malformed packet; returns whether the connection must close.
-    pub fn record(&mut self) -> bool {
+    pub const fn record(&mut self) -> bool {
         self.tolerated = self.tolerated.saturating_add(1);
         self.exceeds_limit()
     }
@@ -380,9 +380,15 @@ mod tests {
         for configured in [0, -1, i32::MIN] {
             let mut budget = PacketBudget::with_packet_limit(configured);
             for _ in 0..MAX_PACKETS_PER_SECOND {
-                assert!(budget.admit(1).is_allowed(), "{configured} keeps the ceiling");
+                assert!(
+                    budget.admit(1).is_allowed(),
+                    "{configured} keeps the ceiling"
+                );
             }
-            assert!(!budget.admit(1).is_allowed(), "{configured} does not disable");
+            assert!(
+                !budget.admit(1).is_allowed(),
+                "{configured} does not disable"
+            );
         }
     }
 
@@ -401,7 +407,10 @@ mod tests {
         for _ in 0..MAX_TOLERATED_VIOLATIONS {
             assert!(!violations.record(), "tolerated violations must not close");
         }
-        assert!(violations.record(), "one violation past the limit must close");
+        assert!(
+            violations.record(),
+            "one violation past the limit must close"
+        );
         assert_eq!(violations.count(), MAX_TOLERATED_VIOLATIONS + 1);
     }
 }

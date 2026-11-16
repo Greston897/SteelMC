@@ -21,9 +21,8 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 }
 
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    literal("teammsg").then(
-        argument("message", ArgumentType::greedy_string()).executes(send_team_message),
-    )
+    literal("teammsg")
+        .then(argument("message", ArgumentType::greedy_string()).executes(send_team_message))
 }
 
 fn send_team_message(

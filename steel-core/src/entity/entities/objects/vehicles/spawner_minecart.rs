@@ -13,8 +13,8 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::MinecartEntityData;
-use steel_utils::locks::SyncMutex;
 use steel_utils::BlockStateId;
+use steel_utils::locks::SyncMutex;
 use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
 
@@ -85,10 +85,7 @@ impl SpawnerMinecartEntity {
         let Some(world) = self.level() else {
             return;
         };
-        let _ = self
-            .spawner
-            .lock()
-            .server_tick(&world, self.block_pos());
+        let _ = self.spawner.lock().server_tick(&world, self.block_pos());
     }
 }
 
@@ -169,7 +166,6 @@ impl AbstractMinecart for SpawnerMinecartEntity {
             .id_display_offset
             .set(value);
     }
-
 }
 
 #[cfg(test)]

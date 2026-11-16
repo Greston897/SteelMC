@@ -60,7 +60,7 @@ unsafe impl DowncastType for ZombieHorseEntity {
 }
 
 impl ZombieHorseEntity {
-    /// Creates a new zombie_horse at runtime.
+    /// Creates a new `zombie_horse` at runtime.
     #[must_use]
     pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {
         Self::new_with_base(
@@ -69,7 +69,7 @@ impl ZombieHorseEntity {
         )
     }
 
-    /// Reconstructs a zombie_horse from persisted base entity state.
+    /// Reconstructs a `zombie_horse` from persisted base entity state.
     #[must_use]
     pub fn from_saved(entity_type: EntityTypeRef, load: EntityBaseLoad) -> Self {
         Self::new_with_base(
@@ -349,12 +349,8 @@ mod tests {
     #[test]
     fn zombie_horse_tame_and_saddle_bits_are_independent() {
         init_vanilla_registry();
-        let horse = ZombieHorseEntity::new(
-            &vanilla_entities::ZOMBIE_HORSE,
-            1,
-            DVec3::ZERO,
-            Weak::new(),
-        );
+        let horse =
+            ZombieHorseEntity::new(&vanilla_entities::ZOMBIE_HORSE, 1, DVec3::ZERO, Weak::new());
         horse.set_tamed(true);
         assert!(horse.is_tamed());
         assert!(!horse.is_saddled());

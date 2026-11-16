@@ -91,7 +91,7 @@ impl CreakingEntity {
                     .inventory
                     .lock()
                     .get_item(39)
-                    .is(&*steel_registry::vanilla_items::CARVED_PUMPKIN)
+                    .is(&steel_registry::vanilla_items::CARVED_PUMPKIN)
                 {
                     return false;
                 }

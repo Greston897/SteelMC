@@ -7,12 +7,12 @@
 use std::sync::Arc;
 
 use steel_macros::block_behavior;
-use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, IntProperty};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_block_tags::BlockTag;
+use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
 use steel_registry::{
     level_events, sound_events, vanilla_entities, vanilla_game_events, vanilla_game_rules,
     vanilla_items, vanilla_world_clocks,
@@ -57,7 +57,6 @@ const FALL_TRAMPLE_ODDS: i32 = 3;
 
 /// Particle count for the "egg placed on sand" effect.
 const TURTLE_EGG_PLACEMENT_PARTICLE_COUNT: i32 = 15;
-
 
 const HATCH: &IntProperty = &BlockStateProperties::HATCH;
 const EGGS: &IntProperty = &BlockStateProperties::EGGS;
@@ -196,7 +195,7 @@ impl BlockBehavior for TurtleEggBlock {
 
     fn can_be_replaced(&self, state: BlockStateId, context: &BlockPlaceContext<'_>) -> bool {
         if !context.is_secondary_use_active()
-            && context.with_item(|item| item.is(&*vanilla_items::TURTLE_EGG))
+            && context.with_item(|item| item.is(&vanilla_items::TURTLE_EGG))
             && state.get_value(EGGS) < MAX_EGGS
         {
             true

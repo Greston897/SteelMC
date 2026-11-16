@@ -141,7 +141,12 @@ impl TraderLlamaEntity {
     /// Vanilla `AbstractChestedHorse.hasChest`.
     #[must_use]
     pub fn has_chest(&self) -> bool {
-        *self.entity_data.lock().abstract_chested_horse().id_chest.get()
+        *self
+            .entity_data
+            .lock()
+            .abstract_chested_horse()
+            .id_chest
+            .get()
     }
 
     /// Vanilla `Llama.getStrength`, the storage-column count a chest opens.
@@ -387,12 +392,8 @@ mod tests {
     #[test]
     fn trader_llama_tame_and_saddle_bits_are_independent() {
         init_vanilla_registry();
-        let horse = TraderLlamaEntity::new(
-            &vanilla_entities::TRADER_LLAMA,
-            1,
-            DVec3::ZERO,
-            Weak::new(),
-        );
+        let horse =
+            TraderLlamaEntity::new(&vanilla_entities::TRADER_LLAMA, 1, DVec3::ZERO, Weak::new());
         horse.set_tamed(true);
         assert!(horse.is_tamed());
         assert!(!horse.is_saddled());

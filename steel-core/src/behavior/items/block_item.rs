@@ -177,9 +177,7 @@ impl BlockItem {
 
     pub(super) fn place_block(context: &BlockPlaceContext<'_>, state: BlockStateId) -> bool {
         let pos = context.place_pos();
-        let placed = context
-            .world
-            .set_block(pos, state, Self::PLACE_BLOCK_FLAGS);
+        let placed = context.world.set_block(pos, state, Self::PLACE_BLOCK_FLAGS);
         if placed {
             // Vanilla `BlockItem#place` → `CriteriaTriggers.PLACED_BLOCK`: the
             // predicate carries the placed block and its item form.

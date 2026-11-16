@@ -90,9 +90,9 @@ impl FireBlock {
         }
         // Vanilla `FireBlock.canSurvive`: fire also lives next to a block whose
         // `igniteOdds` is above zero, which is what lets fire climb a tree.
-        Direction::ALL.into_iter().any(|direction| {
-            Self::is_flammable(world.get_block_state(pos.relative(direction)))
-        })
+        Direction::ALL
+            .into_iter()
+            .any(|direction| Self::is_flammable(world.get_block_state(pos.relative(direction))))
     }
 
     /// Vanilla `FireBlock.getIgniteOdds(BlockState)` on a live state: a
@@ -111,8 +111,7 @@ impl FireBlock {
 
     /// Vanilla `FireBlock.canBurn`.
     fn can_burn(state: BlockStateId) -> bool {
-        crate::behavior::flammable::burn_odds(state.get_block()) > 0
-            || Self::is_flammable(state)
+        crate::behavior::flammable::burn_odds(state.get_block()) > 0 || Self::is_flammable(state)
     }
 
     /// Vanilla `FireBlock.getBurnOdds(BlockState)`.
@@ -155,7 +154,11 @@ impl FireBlock {
             let aged = Self::state_with_age(world.as_ref(), pos, new_age);
             world.set_block(pos, aged, UpdateFlags::UPDATE_CLIENTS);
         } else {
-            world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+            world.set_block(
+                pos,
+                vanilla_blocks::AIR.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
         }
 
         if state.get_block() == &vanilla_blocks::TNT {
@@ -189,9 +192,8 @@ impl FireBlock {
             .unwrap_or(0);
             best = best.max(odds);
         }
-        if best > 0 { (best + 10) / 2 } else { 0 }
+        if best > 0 { i32::midpoint(best, 10) } else { 0 }
     }
-
 
     /// Matches vanilla's `BaseFireBlock.isPortal`: checks if placing fire here could form a portal.
     /// Requires a portal-capable world, adjacent obsidian, and a valid empty portal shape.
@@ -544,7 +546,7 @@ mod tests {
 
     use crate::behavior::block::BlockBehavior;
 
-/// Vanilla `FireBlock.AGE`.
+    /// Vanilla `FireBlock.AGE`.
     use crate::test_support::TestLevel;
 
     use super::{FireBlock, SoulFireBlock};

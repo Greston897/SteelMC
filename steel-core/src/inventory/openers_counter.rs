@@ -49,10 +49,7 @@ impl ContainerOpenersCounter {
 
     /// Creates a counter that does not drive an `open` block state (chests).
     #[must_use]
-    pub const fn without_open_state(
-        open_sound: SoundEventRef,
-        close_sound: SoundEventRef,
-    ) -> Self {
+    pub const fn without_open_state(open_sound: SoundEventRef, close_sound: SoundEventRef) -> Self {
         Self::new(OpenerHooks {
             open_sound,
             close_sound,

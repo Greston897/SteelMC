@@ -64,7 +64,7 @@ impl ItemBehavior for BottleItem {
         });
         create_filled_result(
             context,
-            PotionContents::create_item_stack(&*vanilla_items::POTION, &vanilla_potions::WATER),
+            PotionContents::create_item_stack(&vanilla_items::POTION, &vanilla_potions::WATER),
             true,
         );
 

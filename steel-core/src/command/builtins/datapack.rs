@@ -34,14 +34,12 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("datapack")
         .then(literal("list").executes(|context| list(context, Listing::Enabled)))
         .then(
-            literal("list").then(
-                literal("enabled").executes(|context| list(context, Listing::Enabled)),
-            ),
+            literal("list")
+                .then(literal("enabled").executes(|context| list(context, Listing::Enabled))),
         )
         .then(
-            literal("list").then(
-                literal("available").executes(|context| list(context, Listing::Available)),
-            ),
+            literal("list")
+                .then(literal("available").executes(|context| list(context, Listing::Available))),
         )
         .then(literal("enable").executes(unsupported))
         .then(literal("disable").executes(unsupported))
@@ -74,9 +72,7 @@ fn list(
 
     let header = translated(
         "commands.datapack.list.enabled.success",
-        format!(
-            "There is 1 data pack: {BUILTIN_PACK} ({functions} functions, {recipes} recipes)"
-        ),
+        format!("There is 1 data pack: {BUILTIN_PACK} ({functions} functions, {recipes} recipes)"),
         vec![
             TextComponent::from(BUILTIN_PACK),
             TextComponent::from("1".to_owned()),

@@ -690,7 +690,9 @@ fn unimplemented_block_entities_preserve_nbt_through_proto_save_load() {
     .expect("saved proto block entity should contain valid NBT");
     let saved_be = simdnbt::borrow::NbtCompound::from(&saved_be);
     assert_eq!(
-        saved_be.string("LootTable").map(|s| s.to_str().into_owned()),
+        saved_be
+            .string("LootTable")
+            .map(|s| s.to_str().into_owned()),
         Some("minecraft:chests/simple_dungeon".to_owned())
     );
     assert_eq!(saved_be.long("LootTableSeed"), Some(42));

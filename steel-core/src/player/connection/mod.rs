@@ -6,14 +6,14 @@
 mod java;
 mod packet_budget;
 
-pub use packet_budget::{
-    Admission, MAX_PACKETS_PER_SECOND, PacketBudget, RejectionCause, ViolationBudget,
-};
 pub use java::{
     BundleBuilder, JavaConnection, JavaNetworkReader, JavaNetworkWriter, JavaTransportRead,
     JavaTransportWrite, OutboundPacket,
 };
 pub(crate) use java::{ScheduledPacketExecution, ScheduledPlayPacket};
+pub use packet_budget::{
+    Admission, MAX_PACKETS_PER_SECOND, PacketBudget, RejectionCause, ViolationBudget,
+};
 
 use enum_dispatch::enum_dispatch;
 use steel_protocol::packet_traits::{ClientPacket, CompressionInfo, EncodedPacket};
@@ -219,7 +219,9 @@ impl Player {
 
         let info = ClientInformation {
             language: packet.language,
-            view_distance: self.config.clamp_view_distance(packet.view_distance.cast_unsigned()),
+            view_distance: self
+                .config
+                .clamp_view_distance(packet.view_distance.cast_unsigned()),
             chat_visibility: packet.chat_visibility,
             chat_colors: packet.chat_colors,
             model_customization: packet.model_customization,

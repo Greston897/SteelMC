@@ -106,8 +106,7 @@ impl BlockEntity for DecoratedPotBlockEntity {
         *self.items.lock() = items;
         *self.loot_table.lock() = nbt_view
             .string("LootTable")
-            .map(|value| value.to_str().to_string())
-            .into();
+            .map(|value| value.to_str().to_string());
     }
 
     fn save_additional(&self, nbt: &mut NbtCompound) {

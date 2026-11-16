@@ -21,8 +21,8 @@ use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::damage::DamageSource;
 use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, MobEffectInstance, Projectile,
-    ProjectileBase, ProjectileHit, RemovalReason, SharedEntity, ThrowableProjectile,
+    Entity, EntityBase, EntityBaseLoad, MobEffectInstance, Projectile, ProjectileBase,
+    ProjectileHit, RemovalReason, SharedEntity, ThrowableProjectile,
 };
 use crate::world::World;
 
@@ -35,7 +35,7 @@ pub const SHULKER_BULLET_LEVITATION_TICKS: i32 = 200;
 /// Vanilla `ShulkerBullet` levitation amplifier: levitation II.
 pub const SHULKER_BULLET_LEVITATION_AMPLIFIER: i32 = 1;
 
-/// A ShulkerBullet projectile.
+/// A `ShulkerBullet` projectile.
 #[entity_behavior(class = "ShulkerBullet")]
 pub struct ShulkerBulletEntity {
     base: EntityBase,
@@ -49,7 +49,7 @@ unsafe impl DowncastType for ShulkerBulletEntity {
 }
 
 impl ShulkerBulletEntity {
-    /// Creates a new shulker_bullet with no owner.
+    /// Creates a new `shulker_bullet` with no owner.
     #[must_use]
     pub fn new(entity_type: EntityTypeRef, id: i32, position: DVec3, world: Weak<World>) -> Self {
         Self {
@@ -59,7 +59,7 @@ impl ShulkerBulletEntity {
         }
     }
 
-    /// Creates a shulker_bullet from saved base data.
+    /// Creates a `shulker_bullet` from saved base data.
     #[must_use]
     pub fn from_saved(entity_type: EntityTypeRef, load: EntityBaseLoad) -> Self {
         Self {

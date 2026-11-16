@@ -15,8 +15,7 @@ use steel_registry::entity_type::EntityTypeRef;
 use steel_utils::{BlockPos, WorldAabb};
 
 use crate::entity::{
-    EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest, SharedEntity,
-    spawn_entity,
+    EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest, SharedEntity, spawn_entity,
 };
 use crate::physics::{WorldCollisionProvider, has_collision};
 use crate::world::World;

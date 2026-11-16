@@ -172,7 +172,9 @@ fn reset(
     include_world_seed: bool,
     include_sequence_id: bool,
 ) -> Result<i32, CommandSyntaxError> {
-    let effective_seed = seed.unwrap_or(0).wrapping_add(i32::from(include_world_seed));
+    let effective_seed = seed
+        .unwrap_or(0)
+        .wrapping_add(i32::from(include_world_seed));
     let mut map = RANDOM_SEQUENCES.lock();
     if all {
         let count = map.len() as i32;

@@ -149,7 +149,7 @@ impl ItemBehavior for BowItem {
         // Vanilla spawns the projectile slightly off the shooter's eye height.
         let position = player.position() + DVec3::new(0.0, 1.5, 0.0);
         let weapon = stack.copy_with_count(1);
-        if arrow_stack.is(&*vanilla_items::SPECTRAL_ARROW) {
+        if arrow_stack.is(&vanilla_items::SPECTRAL_ARROW) {
             let arrow = SpectralArrowItem::create_arrow(
                 &arrow_stack,
                 position,
@@ -222,6 +222,8 @@ mod tests {
         assert!(ArrowItem::is_arrow(&ItemStack::new(
             &*vanilla_items::SPECTRAL_ARROW
         )));
-        assert!(!ArrowItem::is_arrow(&ItemStack::new(&*vanilla_items::STICK)));
+        assert!(!ArrowItem::is_arrow(&ItemStack::new(
+            &*vanilla_items::STICK
+        )));
     }
 }

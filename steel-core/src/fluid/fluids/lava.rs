@@ -76,7 +76,7 @@ impl FluidBehavior for LavaFluid {
     }
 
     fn bucket(&self) -> ItemRef {
-        &*vanilla_items::LAVA_BUCKET
+        &vanilla_items::LAVA_BUCKET
     }
 
     fn fluid_type(&self) -> FluidRef {
@@ -96,7 +96,8 @@ impl FluidBehavior for LavaFluid {
         // `fire_spread_radius_around_player` is negative, otherwise a random
         // nearby air block over a flammable neighbour catches fire on a 1-in-3
         // roll.
-        if world.get_game_rule(&steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER)
+        if world
+            .get_game_rule(&steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER)
             < 0
         {
             return;

@@ -464,7 +464,7 @@ impl DragonPhaseManager {
     }
 
     /// Vanilla `flightHistory.record(y, yRot)`.
-    pub fn record_flight(&mut self, y: f64, yaw: f32) {
+    pub const fn record_flight(&mut self, y: f64, yaw: f32) {
         self.flight_history.record(y, yaw);
     }
 
@@ -525,9 +525,9 @@ impl DragonPhaseManager {
         // The waypoints are stored as `DVec3`, so the squared distance is computed
         // from the floored target directly rather than through `Node`.
         let target = node_from_position(position);
-        let target_x = target.x as f64;
-        let target_y = target.y as f64;
-        let target_z = target.z as f64;
+        let target_x = f64::from(target.x);
+        let target_y = f64::from(target.y);
+        let target_z = f64::from(target.z);
         let mut closest_index = 0;
         let mut closest_dist = 10_000.0_f32;
         for (index, node) in nodes.iter().enumerate().skip(start) {
@@ -689,11 +689,11 @@ impl Default for ArenaOpenSet {
 }
 
 impl ArenaOpenSet {
-    fn size(&self) -> usize {
+    const fn size(&self) -> usize {
         self.heap.len()
     }
 
-    fn in_open_set(&self, slot: usize) -> bool {
+    const fn in_open_set(&self, slot: usize) -> bool {
         self.heap_idx[slot] >= 0
     }
 
@@ -880,7 +880,11 @@ mod tests {
     #[test]
     fn phase_ids_are_vanilla_registry_order() {
         for (expected, phase) in ALL_DRAGON_PHASES.iter().enumerate() {
-            assert_eq!(phase.id(), expected as i32, "{phase:?} must keep id {expected}");
+            assert_eq!(
+                phase.id(),
+                expected as i32,
+                "{phase:?} must keep id {expected}"
+            );
             assert_eq!(DragonPhase::from_id(expected as i32), *phase);
         }
     }

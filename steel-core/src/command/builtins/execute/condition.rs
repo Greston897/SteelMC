@@ -52,12 +52,11 @@ pub(super) fn conditionals(name: &'static str, expected: bool) -> Builder {
 /// also the only state `/stopwatch` can produce.
 fn stopwatch_condition(expected: bool) -> Builder {
     literal("stopwatch").then(
-        argument("name", ArgumentType::word())
-            .executes(move |context| {
-                let name = context.string("name")?;
-                let running = scoreboard_stopwatch_running(context.source(), name)?;
-                execute_boolean_condition(context, expected, running)
-            }),
+        argument("name", ArgumentType::word()).executes(move |context| {
+            let name = context.string("name")?;
+            let running = scoreboard_stopwatch_running(context.source(), name)?;
+            execute_boolean_condition(context, expected, running)
+        }),
     )
 }
 
@@ -509,16 +508,15 @@ fn parse_container_slot_range(slots: &str) -> Result<(i32, i32), CommandSyntaxEr
         )));
     };
     let parse = |value: &str| {
-        value.parse::<i32>().map_err(|_| {
-            CommandSyntaxError::dynamic(format!("Invalid container slot '{value}'"))
-        })
+        value
+            .parse::<i32>()
+            .map_err(|_| CommandSyntaxError::dynamic(format!("Invalid container slot '{value}'")))
     };
-    match rest.split_once("..") {
-        Some((min, max)) => Ok((parse(min)?, parse(max)?)),
-        None => {
-            let slot = parse(rest)?;
-            Ok((slot, slot))
-        }
+    if let Some((min, max)) = rest.split_once("..") {
+        Ok((parse(min)?, parse(max)?))
+    } else {
+        let slot = parse(rest)?;
+        Ok((slot, slot))
     }
 }
 

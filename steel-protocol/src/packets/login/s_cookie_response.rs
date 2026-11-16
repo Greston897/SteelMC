@@ -61,7 +61,10 @@ mod tests {
         assert_eq!(ok.payload, Some(vec![0xCA, 0xFE]));
 
         let mut oversized = Vec::new();
-        "minecraft:session".to_owned().write(&mut oversized).unwrap();
+        "minecraft:session"
+            .to_owned()
+            .write(&mut oversized)
+            .unwrap();
         oversized.push(1);
         VarInt((MAX_COOKIE_PAYLOAD_SIZE + 1) as i32)
             .write(&mut oversized)

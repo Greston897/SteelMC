@@ -40,7 +40,7 @@ impl TradeOffer {
     /// Builds an offer from its payment and result with vanilla's defaults for
     /// a first-level trade: twelve uses, two experience and no price markup.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         base_cost_a: ItemStack,
         base_cost_b: ItemStack,
         result: ItemStack,
@@ -92,7 +92,7 @@ impl TradeOffer {
     }
 
     /// Resets the trade to full stock, as a villager does when it restocks.
-    pub fn restock(&mut self) {
+    pub const fn restock(&mut self) {
         self.uses = 0;
         self.demand = 0;
     }
@@ -157,7 +157,13 @@ fn trades_for(profession: &str) -> Vec<Trade> {
         "minecraft:librarian" => vec![
             Trade::new((&*i::PAPER, 24), None, (&*i::EMERALD, 1), 16, 2),
             Trade::new((&*i::EMERALD, 9), None, (&*i::BOOKSHELF, 1), 16, 2),
-            Trade::new((&*i::EMERALD, 5), Some((&*i::BOOK, 1)), (&*i::ENCHANTED_BOOK, 1), 16, 2),
+            Trade::new(
+                (&*i::EMERALD, 5),
+                Some((&*i::BOOK, 1)),
+                (&*i::ENCHANTED_BOOK, 1),
+                16,
+                2,
+            ),
             Trade::new((&*i::EMERALD, 1), None, (&*i::LANTERN, 1), 16, 2),
         ],
         "minecraft:armorer" => vec![
@@ -192,7 +198,13 @@ fn trades_for(profession: &str) -> Vec<Trade> {
         "minecraft:fletcher" => vec![
             Trade::new((&*i::STICK, 32), None, (&*i::EMERALD, 1), 16, 2),
             Trade::new((&*i::EMERALD, 1), None, (&*i::ARROW, 16), 16, 2),
-            Trade::new((&*i::EMERALD, 1), Some((&*i::FLINT, 10)), (&*i::ARROW, 16), 16, 2),
+            Trade::new(
+                (&*i::EMERALD, 1),
+                Some((&*i::FLINT, 10)),
+                (&*i::ARROW, 16),
+                16,
+                2,
+            ),
         ],
         "minecraft:cartographer" => vec![
             Trade::new((&*i::PAPER, 24), None, (&*i::EMERALD, 1), 16, 2),
@@ -201,7 +213,13 @@ fn trades_for(profession: &str) -> Vec<Trade> {
         "minecraft:mason" => vec![
             Trade::new((&*i::CLAY_BALL, 10), None, (&*i::EMERALD, 1), 16, 2),
             Trade::new((&*i::EMERALD, 1), None, (&*i::BRICK, 10), 16, 2),
-            Trade::new((&*i::EMERALD, 1), None, (&*i::CHISELED_STONE_BRICKS, 4), 16, 2),
+            Trade::new(
+                (&*i::EMERALD, 1),
+                None,
+                (&*i::CHISELED_STONE_BRICKS, 4),
+                16,
+                2,
+            ),
         ],
         "minecraft:leatherworker" => vec![
             Trade::new((&*i::LEATHER, 6), None, (&*i::EMERALD, 1), 16, 2),
@@ -212,7 +230,13 @@ fn trades_for(profession: &str) -> Vec<Trade> {
             Trade::new((&*i::EMERALD, 2), None, (&*i::SHEARS, 1), 16, 2),
         ],
         "minecraft:fisherman" => vec![
-            Trade::new((&*i::COD, 6), Some((&*i::EMERALD, 1)), (&*i::COOKED_COD, 6), 16, 2),
+            Trade::new(
+                (&*i::COD, 6),
+                Some((&*i::EMERALD, 1)),
+                (&*i::COOKED_COD, 6),
+                16,
+                2,
+            ),
             Trade::new((&*i::EMERALD, 1), None, (&*i::COOKED_SALMON, 6), 16, 2),
         ],
         "minecraft:wandering_trader" => vec![

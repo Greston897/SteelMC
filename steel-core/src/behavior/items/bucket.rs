@@ -54,7 +54,7 @@ fn filled_bucket_success_stack(context: &UseItemContext) -> ItemStack {
             .inv
             .with_item(|item| item.copy_with_count(item.count()))
     } else {
-        ItemStack::new(&*vanilla_items::BUCKET)
+        ItemStack::new(&vanilla_items::BUCKET)
     }
 }
 

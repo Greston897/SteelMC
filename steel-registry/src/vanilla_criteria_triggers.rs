@@ -118,8 +118,7 @@ pub const TARGET_HIT: Identifier = trigger("target_hit");
 /// `minecraft:thrown_item_picked_up_by_entity`
 pub const THROWN_ITEM_PICKED_UP_BY_ENTITY: Identifier = trigger("thrown_item_picked_up_by_entity");
 /// `minecraft:thrown_item_picked_up_by_player`
-pub const THROWN_ITEM_PICKED_UP_BY_PLAYER: Identifier =
-    trigger("thrown_item_picked_up_by_player");
+pub const THROWN_ITEM_PICKED_UP_BY_PLAYER: Identifier = trigger("thrown_item_picked_up_by_player");
 /// `minecraft:tick`
 pub const TICK: Identifier = trigger("tick");
 /// `minecraft:used_ender_eye`

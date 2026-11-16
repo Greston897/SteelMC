@@ -46,10 +46,7 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
             // Vanilla `particle <name> <pos> ...` for types without options, and
             // `particle <name> <payload> <pos> ...` for the configurable ones.
             .then(position_tree())
-            .then(
-                argument("payload", SteelArgumentType::compound())
-                    .then(position_tree()),
-            ),
+            .then(argument("payload", SteelArgumentType::compound()).then(position_tree())),
     )
 }
 

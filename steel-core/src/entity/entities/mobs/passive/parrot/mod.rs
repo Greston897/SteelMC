@@ -23,8 +23,8 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, FollowMobGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal,
-    RandomLookAroundGoal, TemptGoal, WaterAvoidingRandomStrollGoal,
+    FloatGoal, FollowMobGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
+    TemptGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
@@ -488,7 +488,9 @@ mod tests {
     #[test]
     fn seeds_tempt_parrots() {
         init_vanilla_registry();
-        assert!(is_parrot_food(&ItemStack::new(&*vanilla_items::WHEAT_SEEDS)));
+        assert!(is_parrot_food(&ItemStack::new(
+            &*vanilla_items::WHEAT_SEEDS
+        )));
         assert!(!is_parrot_food(&ItemStack::new(&*vanilla_items::STONE)));
     }
 

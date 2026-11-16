@@ -85,7 +85,10 @@ mod tests {
     fn decodes_absent_and_present_length_prefixed_optional_tag() {
         // Absent payload: length = 1, [0x00]
         let mut empty_wire = Vec::new();
-        "minecraft:accept".to_owned().write(&mut empty_wire).unwrap();
+        "minecraft:accept"
+            .to_owned()
+            .write(&mut empty_wire)
+            .unwrap();
         empty_wire.extend_from_slice(&[1, 0]);
         let empty = SCustomClickAction::read(&mut Cursor::new(&empty_wire)).unwrap();
         assert_eq!(empty.id, Identifier::vanilla_static("accept"));

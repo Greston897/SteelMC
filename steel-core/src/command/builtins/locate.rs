@@ -3,8 +3,8 @@
 use std::{borrow::Cow, sync::Arc, time::Instant};
 
 use glam::IVec3;
-use steel_registry::biome::BiomeRef;
 use steel_registry::RegistryExt as _;
+use steel_registry::biome::BiomeRef;
 use steel_utils::{BlockPos, Identifier, translations};
 use text_components::{
     Modifier, TextComponent,
@@ -22,6 +22,8 @@ use super::super::{
     },
     registration::CommandRegistration,
 };
+use crate::poi::poi_storage::OccupationStatus;
+use crate::worldgen::generator::context::ChunkGeneratorType;
 use crate::{
     chunk::{
         chunk_request::{ChunkRequest, ChunkRequestHandle, ChunkRequestState, ChunkTicketKind},
@@ -33,8 +35,6 @@ use crate::{
         structure::{StructureLocateCandidate, StructureLocatePlan, squared_distance},
     },
 };
-use crate::poi::poi_storage::OccupationStatus;
-use crate::worldgen::generator::context::ChunkGeneratorType;
 
 const MAX_STRUCTURE_SEARCH_RADIUS: i32 = 100;
 
@@ -51,21 +51,20 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("locate").then(
-        literal("structure").then(
-            argument("structure", SteelArgumentType::structure_or_tag_key())
-                .executes_suspended(start_structure_search),
-        )
-        .then(
-            literal("biome").then(
-                argument("biome", SteelArgumentType::biome_or_tag())
-                    .executes(locate_biome),
+        literal("structure")
+            .then(
+                argument("structure", SteelArgumentType::structure_or_tag_key())
+                    .executes_suspended(start_structure_search),
+            )
+            .then(
+                literal("biome").then(
+                    argument("biome", SteelArgumentType::biome_or_tag()).executes(locate_biome),
+                ),
+            )
+            .then(
+                literal("poi")
+                    .then(argument("poi", SteelArgumentType::identifier()).executes(locate_poi)),
             ),
-        )
-        .then(
-            literal("poi").then(
-                argument("poi", SteelArgumentType::identifier()).executes(locate_poi),
-            ),
-        ),
     )
 }
 
@@ -381,8 +380,8 @@ fn locate_biome(context: &SteelCommandContext<CommandSource>) -> Result<i32, Com
     let generator = &world.chunk_map.world_gen_context.generator;
     let origin_quart = IVec3::new(origin.0.x >> 2, 0, origin.0.z >> 2);
 
-    let (found_quart, found_biome) = search_biome_rings(generator, origin_quart, query)
-        .ok_or_else(|| biome_not_found(query))?;
+    let (found_quart, found_biome) =
+        search_biome_rings(generator, origin_quart, query).ok_or_else(|| biome_not_found(query))?;
 
     let pos = BlockPos::new(found_quart.x << 2, 0, found_quart.z << 2);
     let distance = horizontal_distance(origin, pos);
@@ -479,17 +478,13 @@ fn locate_poi(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comma
 
 /// The vanilla "point of interest not found" failure.
 fn poi_not_found(key: &Identifier) -> CommandSyntaxError {
-    CommandSyntaxError::dynamic(TextComponent::translated(
-        TranslatedMessage {
-            key: Cow::Borrowed("commands.locate.poi.not_found"),
-            fallback: Some(Cow::Owned(format!(
-                "There is no point of interest of type {key}"
-            ))),
-            args: Some(
-                vec![TextComponent::plain(key.to_string())].into_boxed_slice(),
-            ),
-        },
-    ))
+    CommandSyntaxError::dynamic(TextComponent::translated(TranslatedMessage {
+        key: Cow::Borrowed("commands.locate.poi.not_found"),
+        fallback: Some(Cow::Owned(format!(
+            "There is no point of interest of type {key}"
+        ))),
+        args: Some(vec![TextComponent::plain(key.to_string())].into_boxed_slice()),
+    }))
 }
 
 fn horizontal_distance(a: BlockPos, b: BlockPos) -> i32 {

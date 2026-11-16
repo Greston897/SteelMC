@@ -188,10 +188,8 @@ fn steel_main() {
         "Selected thread pool sizes"
     );
 
-    let main_worker_threads = worker_threads_for_available(
-        steel_config.server.threads.main_runtime,
-        pools.main_runtime,
-    );
+    let main_worker_threads =
+        worker_threads_for_available(steel_config.server.threads.main_runtime, pools.main_runtime);
     let chunk_worker_threads = worker_threads_for_available(
         steel_config.server.threads.chunk_runtime,
         pools.chunk_runtime,
