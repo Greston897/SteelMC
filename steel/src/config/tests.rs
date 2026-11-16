@@ -131,9 +131,11 @@ fn packaged_config_matches_the_runtime_config_defaults() {
     assert!(server_links.is_some());
     // No resource pack ships by default: the packaged config only documents one.
     assert!(resource_pack.is_none());
-    assert_eq!(packet_workers, Some(0));
-    assert_eq!(chunk_generation_threads, Some(0));
-    assert_eq!(chunk_encoding_threads, Some(0));
+    // The packaged file writes `0` for every pool, which deserialization folds
+    // into `None` so the runtime falls back to its automatic sizing.
+    assert_eq!(packet_workers, None);
+    assert_eq!(chunk_generation_threads, None);
+    assert_eq!(chunk_encoding_threads, None);
     assert_eq!(rcon, defaults.rcon);
 }
 
