@@ -174,17 +174,30 @@ jobs:
           done
           exit 1
 
-      - name: Publish failing tests as a commit comment
+      - name: Replay failing crates for their panic messages
         if: failure()
         env:
           # `report.py` reads GITHUB_TOKEN/GITHUB_REPOSITORY/GITHUB_SHA.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          [ -s /tmp/failing-tests.md ] || exit 0
-          # `report.py` wraps each file in its own fenced block, so strip the
-          # markdown wrapper and publish the raw excerpts.
-          sed '1d' /tmp/failing-tests.md > /tmp/failing-tests.log
-          python3 .ci/report.py "Failing tests" /tmp/failing-tests.log || true
+          # The per-crate logs mix hundreds of passing lines with the failures,
+          # and a commit comment is the only channel readable here, so replay
+          # each failing crate with `--nocapture` and keep just the diagnostics.
+          : > /tmp/panic-messages.log
+          for f in /tmp/test-*.log; do
+            [ -f "$f" ] || continue
+            grep -qE "^failures:" "$f" || continue
+            pkg=$(basename "$f" .log)
+            pkg=${pkg#test-}
+            echo "### $pkg" >> /tmp/panic-messages.log
+            cargo test -p "$pkg" --all-features -- --nocapture 2>&1 \
+              | grep -E "(panicked at|^assertion|  left:| right:|^---- .* stdout ----|^error: test failed)" \
+              | tail -60 >> /tmp/panic-messages.log || true
+            echo >> /tmp/panic-messages.log
+          done
+          if [ -s /tmp/panic-messages.log ]; then
+            python3 .ci/report.py "Panic messages" /tmp/panic-messages.log || true
+          fi
 
       # 3. Conformance: the invariants the code claims to hold. Cheap greps and
       #    JSON comparisons; each of these caught a real bug during this cycle.
