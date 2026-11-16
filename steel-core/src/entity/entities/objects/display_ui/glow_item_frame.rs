@@ -15,7 +15,7 @@ use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::ItemFrameEntityData;
 use steel_registry::{
-    sound_events, vanilla_blocks, vanilla_entities, vanilla_game_events, vanilla_items,
+    sound_events, vanilla_blocks, vanilla_game_events, vanilla_items,
 };
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtNumeric as _;

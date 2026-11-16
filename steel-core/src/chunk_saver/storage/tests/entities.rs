@@ -199,7 +199,8 @@ fn owned_block_entity_load_preserves_stored_components() {
         BlockPos::new(3, 4, 5),
         vanilla_blocks::LECTERN.default_state(),
         fallback_nbt,
-    );
+    )
+    .expect("fallback block entity should load NBT");
     assert_eq!(
         crate::block_entity::BlockEntity::collect_components(&fallback).get(REPAIR_COST),
         Some(3)
@@ -671,7 +672,8 @@ fn unimplemented_block_entities_preserve_nbt_through_proto_save_load() {
             block_pos,
             banner,
             nbt,
-        ),
+        )
+        .expect("fallback banner block entity should load NBT"),
     );
     assert!(proto.set_block_entity(entity));
 
@@ -682,16 +684,16 @@ fn unimplemented_block_entities_preserve_nbt_through_proto_save_load() {
         panic!("dirty proto chunk should prepare for saving");
     };
     assert_eq!(prepared.persistent.block_entities.len(), 1);
+    let saved_be = simdnbt::borrow::read_compound(&mut std::io::Cursor::new(
+        &prepared.persistent.block_entities[0].nbt_data,
+    ))
+    .expect("saved proto block entity should contain valid NBT");
+    let saved_be = simdnbt::borrow::NbtCompound::from(&saved_be);
     assert_eq!(
-        prepared.persistent.block_entities[0]
-            .string("LootTable")
-            .map(ToString::to_string),
+        saved_be.string("LootTable").map(|s| s.to_str().into_owned()),
         Some("minecraft:chests/simple_dungeon".to_owned())
     );
-    assert_eq!(
-        prepared.persistent.block_entities[0].long("LootTableSeed"),
-        Some(42)
-    );
+    assert_eq!(saved_be.long("LootTableSeed"), Some(42));
 
     let loaded = ChunkStorage::persistent_to_chunk(
         &prepared.persistent,

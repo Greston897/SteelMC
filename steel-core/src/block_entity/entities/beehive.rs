@@ -17,7 +17,7 @@ use steel_registry::blocks::properties::{
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::{
-    Entity as _, EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest, Mob as _,
+    EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest,
     SharedEntity, spawn_entity,
 };
 use crate::world::{LevelReader as _, World};

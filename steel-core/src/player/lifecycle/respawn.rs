@@ -19,7 +19,6 @@ use steel_protocol::packets::game::{CGameRuleValues, CSound, SoundSource};
 use steel_registry::blocks::{
     block_state_ext::BlockStateExt as _, properties::BlockStateProperties,
 };
-use steel_registry::game_rules::ErasedGameRule as _;
 use steel_registry::{sound_events, vanilla_blocks};
 
 // Bed candidates reach two blocks out and collision checks read one block farther.

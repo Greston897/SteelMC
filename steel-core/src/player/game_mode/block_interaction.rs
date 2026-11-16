@@ -271,7 +271,7 @@ impl Player {
         let Ok(slot_id) = usize::try_from(packet.slot_id) else {
             return;
         };
-        let mut menu = self.inventory_menu.lock();
+        let menu = self.inventory_menu.lock();
         let Some(slot) = menu.behavior().slots().get(slot_id) else {
             return;
         };

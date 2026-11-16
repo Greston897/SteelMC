@@ -268,7 +268,7 @@ impl CrafterBlockEntity {
     /// `craft` hands the assembled stack to `CraftingRecipe.eject`.
     /// Returns the ejected position when a craft happened.
     fn craft(&self, world: &Arc<World>) -> Option<BlockPos> {
-        let mut recipe_key = None;
+        let recipe_key;
         let result = {
             let mut container = self.container.lock();
             let disabled = self.disabled_slots();

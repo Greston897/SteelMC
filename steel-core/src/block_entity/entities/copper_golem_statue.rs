@@ -19,7 +19,7 @@ use steel_utils::Direction;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
-use crate::entity::{ENTITIES, Entity, LivingEntity, SharedEntity, next_entity_id};
+use crate::entity::{ENTITIES, Entity, SharedEntity, next_entity_id};
 use crate::world::World;
 
 /// Vanilla `CopperGolemStatueBlockEntity`.

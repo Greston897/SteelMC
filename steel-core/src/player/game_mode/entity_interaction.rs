@@ -15,7 +15,7 @@ use std::ops::Add;
 use steel_math::trig;
 use steel_registry::particle_type::ParticleData;
 use steel_registry::{
-    REGISTRY, sound_events, vanilla_custom_stats, vanilla_game_rules, vanilla_item_tags,
+    sound_events, vanilla_custom_stats, vanilla_game_rules, vanilla_item_tags,
     vanilla_particle_types,
 };
 

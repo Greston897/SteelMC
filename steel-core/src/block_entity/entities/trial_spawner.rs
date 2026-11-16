@@ -141,14 +141,14 @@ impl TrialSpawnerBlockEntity {
         world.players.iter_players(|_uuid, player| {
             if player.is_spectator()
                 || player.has_infinite_materials()
-                || !player.is_alive()
+                || !LivingEntity::is_alive(player.as_ref())
                 || player.position().distance_squared(center) > max_sq
             {
                 return true;
             }
             count += 1;
             if let Some(bad_omen) = player.mob_effect(vanilla_mob_effects::BAD_OMEN) {
-                let level = (bad_omen.amplifier + 1).max(1);
+                let level = (bad_omen.amplifier() + 1).max(1);
                 let _ = player.remove_mob_effect(vanilla_mob_effects::BAD_OMEN);
                 player.add_mob_effect(MobEffectInstance::with_duration(
                     vanilla_mob_effects::TRIAL_OMEN,
@@ -305,7 +305,6 @@ impl BlockEntity for TrialSpawnerBlockEntity {
                         data.tracked_players = players;
                     }
                     if make_ominous && !ominous {
-                        ominous = true;
                         data.total_mobs_spawned = 0;
                         drop(data);
                         set_spawner_state(world, pos, state, SpawnerPhase::Active, true);

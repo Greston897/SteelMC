@@ -19,7 +19,7 @@ use steel_registry::blocks::properties::{
 };
 use steel_registry::item_stack::ItemStack;
 use steel_registry::{
-    REGISTRY, RegistryExt as _, sound_events, vanilla_block_entity_types, vanilla_items,
+    REGISTRY, sound_events, vanilla_block_entity_types, vanilla_items,
 };
 use steel_utils::types::UpdateFlags;
 use steel_utils::{

@@ -21,7 +21,7 @@ use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::damage::DamageSource;
 use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, LivingEntity as _, MobEffectInstance, Projectile,
+    Entity, EntityBase, EntityBaseLoad, MobEffectInstance, Projectile,
     ProjectileBase, ProjectileHit, RemovalReason, SharedEntity, ThrowableProjectile,
 };
 use crate::world::World;

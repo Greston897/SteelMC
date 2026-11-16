@@ -4,7 +4,7 @@ use glam::IVec3;
 
 use super::MobEffectBehavior;
 use crate::entity::{Entity as _, LivingEntity};
-use crate::world::{World, raid};
+use crate::world::World;
 
 /// Raid omen mob effect behavior.
 ///

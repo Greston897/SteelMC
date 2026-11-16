@@ -79,7 +79,7 @@ fn reset_seed_tail(
                                 ctx,
                                 all,
                                 Some(ctx.integer("seed")?),
-                                ctx.bool("includeWorldSeed")?,
+                                ctx.boolean("includeWorldSeed")?,
                                 true,
                             )
                         })
@@ -90,8 +90,8 @@ fn reset_seed_tail(
                                         ctx,
                                         all,
                                         Some(ctx.integer("seed")?),
-                                        ctx.bool("includeWorldSeed")?,
-                                        ctx.bool("includeSequenceId")?,
+                                        ctx.boolean("includeWorldSeed")?,
+                                        ctx.boolean("includeSequenceId")?,
                                     )
                                 },
                             ),

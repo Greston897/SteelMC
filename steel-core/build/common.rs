@@ -466,23 +466,11 @@ pub(crate) fn scan_object_behaviors_with_pattern(
             .unwrap_or_else(|e| panic!("Failed to parse {}: {e}", path.display()));
 
         for item in &file.items {
-            match item {
-                syn::Item::Struct(s) => {
-                    if let Some(info) = parse_object_behavior(s, attribute_name) {
-                        let class_name = info.class_name.clone();
-                        discovered.insert(class_name, info);
-                    }
-                }
-                syn::Item::Macro(mac) if mac.mac.path.is_ident("macro_rules") => {
-                    let tokens = mac.mac.tokens.to_string();
-                    assert!(
-                        !tokens.contains(&format!("#[{attribute_name}"))
-                            && !tokens.contains(&format!("# [{attribute_name}")),
-                        "{}: macro_rules! hides #[{attribute_name}] from build-script AST discovery; declare top-level structs instead",
-                        path.display()
-                    );
-                }
-                _ => {}
+            if let syn::Item::Struct(s) = item
+                && let Some(info) = parse_object_behavior(s, attribute_name)
+            {
+                let class_name = info.class_name.clone();
+                discovered.insert(class_name, info);
             }
         }
     }

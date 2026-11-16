@@ -212,7 +212,7 @@ impl HopperBlockEntity {
             // notified by `ContainerLockGuard::set_changed`.
             let mut guard = ContainerLockGuard::lock_all(&[source]);
             let source_id = source.container_id();
-            let Some(mut container) = guard.get_mut(source_id) else {
+            let Some(container) = guard.get_mut(source_id) else {
                 return false;
             };
             container.get_item_mut(slot).shrink(1);

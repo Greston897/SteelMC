@@ -396,7 +396,10 @@ mod tests {
         let mut patch = DataComponentPatch::new();
         patch.set(
             CONTAINER_LOOT,
-            SeededContainerLoot::new(Identifier::vanilla_static("chests/simple_dungeon"), 2024),
+            SeededContainerLoot::new(
+                steel_utils::Identifier::vanilla_static("chests/simple_dungeon"),
+                2024,
+            ),
         );
         let stack = ItemStack::with_count_and_patch(&*vanilla_items::CHEST, 1, patch);
         chest.apply_components_from_item_stack(&stack);

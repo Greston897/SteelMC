@@ -9,7 +9,6 @@
 use std::sync::Weak;
 
 use simdnbt::ToNbtTag as _;
-use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
 use simdnbt::borrow::NbtCompound as NbtCompoundView;
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_registry::item_stack::ItemStack;

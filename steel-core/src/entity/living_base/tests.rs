@@ -636,6 +636,7 @@ fn poison_and_regeneration_tick_schedules_match_vanilla_interval_formulas() {
     // An effect with no vanilla tick schedule (e.g. Speed) never ticks.
     let speed = MobEffectInstance::with_duration(vanilla_mob_effects::SPEED, 100, 0);
     assert!(!speed.should_apply_effect_tick_this_tick(0));
+}
 
 #[test]
 fn refreshing_an_active_effect_is_not_reported_as_added() {
@@ -670,5 +671,4 @@ fn refreshing_an_active_effect_is_not_reported_as_added() {
         MobEffectAddResult::Unchanged
     );
     assert!(!MobEffectAddResult::Unchanged.changed());
-}
 }

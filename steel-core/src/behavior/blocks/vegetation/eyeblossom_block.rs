@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use steel_macros::block_behavior;
 use steel_protocol::packets::game::SoundSource;
-use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::{sound_events, vanilla_block_tags::BlockTag, vanilla_blocks};
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};

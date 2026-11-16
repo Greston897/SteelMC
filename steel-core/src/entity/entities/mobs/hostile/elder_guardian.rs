@@ -22,7 +22,7 @@ use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::GuardianEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
-use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
+use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
@@ -289,10 +289,10 @@ impl Mob for ElderGuardianEntity {
         let r2 = CURSE_RADIUS * CURSE_RADIUS;
         world.players.iter_players(|_, player| {
             let mode = player.game_mode();
-            if !matches!(
+        if !matches!(
                 mode,
                 steel_utils::types::GameType::Survival | steel_utils::types::GameType::Adventure
-            ) || !player.is_alive()
+            ) || !LivingEntity::is_alive(player.as_ref())
             {
                 return true;
             }

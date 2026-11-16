@@ -4,7 +4,6 @@ use steel_utils::{Downcast as _, BlockPos, WorldAabb};
 
 use crate::entity::{Entity as _, EntityEventSource, Mob as _};
 use crate::entity::entities::PiglinEntity;
-use crate::entity::Mob as _;
 use crate::player::Player;
 use crate::world::World;
 

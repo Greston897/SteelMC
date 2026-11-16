@@ -76,7 +76,7 @@ impl WhitelistAction {
         }
     }
 
-    const fn fallback(self, count: usize) -> &'static str {
+    const fn fallback(self, _count: usize) -> &'static str {
         match self {
             Self::Add => "Added players to the whitelist",
             Self::Remove => "Removed players from the whitelist",

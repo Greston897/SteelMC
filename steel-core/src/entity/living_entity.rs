@@ -5,9 +5,8 @@ use steel_registry::data_components::vanilla_components::{
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_criteria_triggers;
 use steel_registry::stat::vanilla_stat_types;
-use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::{
-    DyeColor, REGISTRY, TaggedRegistryExt as _, vanilla_blocks, vanilla_custom_stats,
+    DyeColor, REGISTRY, vanilla_blocks, vanilla_custom_stats,
 };
 
 use super::*;

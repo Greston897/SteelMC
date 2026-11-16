@@ -18,7 +18,6 @@ use steel_registry::sound_events;
 use steel_registry::vanilla_attributes;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_item_tags::ItemTag;
-use steel_registry::REGISTRY;
 use steel_registry::vanilla_entity_data::CamelEntityData;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};

@@ -90,10 +90,10 @@ impl GameEventListener for SculkCatalystListener {
             return false;
         }
         // Only living entities (not inanimate drops/projectiles) feed a catalyst.
-        if context
+        let active = context
             .source_entity()
-            .is_some_and(|entity| entity.as_living().is_none())
-        {
+            .is_some_and(|entity| entity.as_living_entity().is_none());
+        if active {
             return false;
         }
 

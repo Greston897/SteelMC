@@ -13,7 +13,7 @@ use steel_registry::vanilla_criteria_triggers;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::loot_table::{LootContext, LootTableRef};
 use steel_registry::{
-    REGISTRY, RegistryExt as _, vanilla_block_entity_types, vanilla_blocks, vanilla_entities,
+    REGISTRY, vanilla_block_entity_types, vanilla_blocks, vanilla_entities,
 };
 use steel_utils::nbt::NbtNumeric as _;
 use steel_utils::nbt::NbtValueInput as _;

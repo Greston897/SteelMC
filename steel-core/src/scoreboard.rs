@@ -1534,7 +1534,6 @@ mod tests {
     }
 
     #[test]
-    #[test]
     fn a_trigger_objective_starts_locked_until_enabled() {
         let scoreboard = Scoreboard::new();
         let objective = scoreboard
@@ -1593,7 +1592,6 @@ mod tests {
         );
     }
 
-    #[test]
     #[test]
     fn criteria_are_classified_like_vanilla() {
         // Writable criteria: `dummy` and `trigger` only.

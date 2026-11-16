@@ -17,7 +17,6 @@ use glam::DVec3;
 use serde::{Deserialize, Serialize};
 
 use crate::chunk::heightmap::HeightmapType;
-use crate::entity::leash::Leashable as _;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
 use crate::entity::{Entity, SharedEntity, spawn_entity};
 use crate::world::{LevelReader, World};

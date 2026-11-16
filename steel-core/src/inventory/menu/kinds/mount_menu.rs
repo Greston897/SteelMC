@@ -19,13 +19,12 @@ use std::sync::Weak;
 use glam::DVec3;
 use steel_registry::equipment::EquipmentSlot;
 use steel_registry::menu_type::MenuTypeRef;
-use steel_registry::vanilla_items;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::Entity;
 use crate::inventory::container::Container as _;
 use crate::inventory::prelude::*;
-use crate::inventory::slots::{ArmorSlot, SlotStorage};
+use crate::inventory::slots::ArmorSlot;
 use crate::player::player_inventory::PlayerInventory;
 use crate::player::Player;
 

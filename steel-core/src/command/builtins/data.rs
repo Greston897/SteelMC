@@ -23,8 +23,6 @@ use steel_utils::{
 use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
 
-use crate::block_entity::BlockEntity as _;
-use crate::entity::Entity as _;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},

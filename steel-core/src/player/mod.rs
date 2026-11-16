@@ -1136,7 +1136,7 @@ impl Player {
     /// effect remembers where it started and fires the `levitation` trigger with
     /// the distance traveled and the effect duration so far.
     fn tick_levitation_trigger(&self) {
-        let Some(effect) = self.mob_effect(vanilla_mob_effects::LEVITATION) else {
+        let Some(_effect) = self.mob_effect(vanilla_mob_effects::LEVITATION) else {
             *self.levitation_start.lock() = None;
             return;
         };
@@ -1265,7 +1265,7 @@ impl Player {
     #[expect(clippy::unused_self, reason = "player API method")]
     pub fn handle_custom_payload(&self, packet: SCustomPayload) {
         if packet.identifier == Identifier::vanilla_static("brand") {
-            let mut cursor = std::io::Cursor::new(packet.payload.as_slice());
+            let mut cursor = std::io::Cursor::new(packet.payload.0.as_slice());
             if let Ok(brand) = <String as steel_utils::serial::ReadFrom>::read(&mut cursor)
                 && brand.len() <= 128
             {
@@ -1283,7 +1283,7 @@ impl Player {
         if !self.is_operator() {
             log::warn!(
                 "Player {} tried to set game rule without permission",
-                self.gameprofile.name
+                self.gameprofile.name()
             );
             return;
         }

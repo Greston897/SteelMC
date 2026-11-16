@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::behavior::{BlockBehavior, BlockPlaceContext, BlockRef};
 use crate::entity::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest, spawn_entity};
-use crate::world::{LevelReader, World};
+use crate::world::World;
 use steel_macros::block_behavior;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, Direction, EnumProperty};

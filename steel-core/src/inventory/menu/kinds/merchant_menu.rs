@@ -28,7 +28,7 @@ use crate::inventory::menu::MenuKind;
 use crate::inventory::menu::behavior::MenuBehavior;
 use crate::inventory::prelude::*;
 use crate::player::Player;
-use crate::player::player_inventory::{PlayerInventory, Prediction};
+use crate::player::player_inventory::PlayerInventory;
 
 /// Index of the first payment slot.
 const COST_SLOT_A: usize = 0;
@@ -81,7 +81,7 @@ impl MerchantKind {
 
     /// Registers a callback that runs when the trade screen closes.
     #[must_use]
-    pub fn with_on_close(mut self, on_close: impl FnOnce(&Player) + Send + 'static) -> Self {
+    pub fn with_on_close(self, on_close: impl FnOnce(&Player) + Send + 'static) -> Self {
         self.set_on_close(on_close);
         self
     }

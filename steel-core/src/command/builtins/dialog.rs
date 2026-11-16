@@ -3,7 +3,7 @@
 //! Supports `/dialog show <targets> <dialog>` (inline SNBT compound dialog
 //! definition) and `/dialog clear <targets>`.
 
-use steel_protocol::packets::game::{CClearDialog, CShowDialog};
+use steel_protocol::packets::game::{CClearDialog, CShowDialog, DialogHolder};
 use steel_utils::{Identifier, translations};
 use text_components::TextComponent;
 
@@ -40,7 +40,9 @@ fn show_dialog(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comm
     let targets = context.players("targets")?;
     let dialog = context.compound("dialog")?.clone();
     for player in &targets {
-        player.send_packet(CShowDialog::direct(dialog.clone()));
+        player.send_packet(CShowDialog {
+            dialog: DialogHolder::Direct(dialog.clone()),
+        });
     }
     let source = context.source();
     if targets.len() == 1 {

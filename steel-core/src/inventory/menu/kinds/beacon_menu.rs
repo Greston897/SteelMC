@@ -9,7 +9,7 @@ use std::slice;
 use std::sync::Arc;
 
 use steel_registry::{
-    REGISTRY, RegistryEntry, TaggedRegistryExt, item_stack::ItemStack, mob_effect::MobEffectRef,
+    RegistryEntry, item_stack::ItemStack, mob_effect::MobEffectRef,
     sound_events, vanilla_blocks, vanilla_item_tags, vanilla_menu_types,
 };
 use steel_utils::{BlockPos, locks::SyncMutex};

@@ -342,7 +342,7 @@ fn crafter_menu_refuses_to_disable_an_occupied_slot() {
     let block_entity = world
         .get_block_entity(pos)
         .expect("crafter should create its block entity");
-    let crafter_entity = block_entity
+    let _crafter_entity = block_entity
         .downcast_ref::<CrafterBlockEntity>()
         .expect("crafter block entity type");
     let container =

@@ -20,7 +20,7 @@ use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::ArmadilloEntityData;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_item_tags::ItemTag;
-use steel_registry::{REGISTRY, sound_events, vanilla_attributes};
+use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
@@ -302,7 +302,7 @@ impl Mob for ArmadilloEntity {
 
     fn custom_server_ai_step(&self) {
         Animal::custom_server_ai_step_animal(self);
-        if self.is_alive() && !AgeableMob::is_baby(self) {
+        if LivingEntity::is_alive(self) && !AgeableMob::is_baby(self) {
             let should_shed = {
                 let mut t = self.scute_time.lock();
                 *t -= 1;

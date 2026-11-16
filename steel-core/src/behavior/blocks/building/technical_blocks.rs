@@ -528,8 +528,8 @@ impl BlockBehavior for CreakingHeartBlock {
             .default_state()
             .set_value(&BlockStateProperties::AXIS, context.clicked_face().axis());
         let heart_state = CreakingHeartBlockEntity::compute_heart_state(
-            context.world(),
-            context.clicked_pos(),
+            context.world,
+            context.place_pos(),
             state,
         );
         Some(state.set_value(&BlockStateProperties::CREAKING_HEART_STATE, heart_state))
@@ -689,7 +689,7 @@ impl BlockBehavior for VaultBlock {
         world: &Arc<World>,
         pos: BlockPos,
         player: &Player,
-        _hand: crate::behavior::InteractionHand,
+        _hand: steel_utils::types::InteractionHand,
         _hit_result: &BlockHitResult,
         inv: &mut InventoryAccess,
     ) -> InteractionResult {
@@ -801,7 +801,7 @@ impl BlockBehavior for SculkSensorBlock {
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         let waterlogged = context
             .world()
-            .get_block_state(context.clicked_pos())
+            .get_block_state(context.place_pos())
             .get_block()
             == &vanilla_blocks::WATER;
         Some(
@@ -891,7 +891,7 @@ impl BlockBehavior for CalibratedSculkSensorBlock {
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         let waterlogged = context
             .world()
-            .get_block_state(context.clicked_pos())
+            .get_block_state(context.place_pos())
             .get_block()
             == &vanilla_blocks::WATER;
         // Vanilla `CalibratedSculkSensorBlock`: the amethyst input side faces the player.
@@ -1037,7 +1037,7 @@ impl BlockBehavior for SculkShriekerBlock {
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         let waterlogged = context
             .world()
-            .get_block_state(context.clicked_pos())
+            .get_block_state(context.place_pos())
             .get_block()
             == &vanilla_blocks::WATER;
         Some(

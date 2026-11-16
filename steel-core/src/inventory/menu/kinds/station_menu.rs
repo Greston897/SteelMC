@@ -26,7 +26,7 @@ use steel_registry::recipe::{
 use steel_registry::vanilla_banner_pattern_tags::BannerPatternTag;
 use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{
-    REGISTRY, RegistryExt as _, RegistryHolder, RegistryHolderSet, TaggedRegistryExt as _,
+    REGISTRY, RegistryHolder, RegistryHolderSet, TaggedRegistryExt as _,
     level_events, sound_events, vanilla_blocks, vanilla_items, vanilla_menu_types,
 };
 use steel_utils::locks::{IntoShared, Shared, SyncMutex};
@@ -160,6 +160,7 @@ impl ResultHandler for StonecutterResultHandler {
             self.pos,
             1.0,
             1.0,
+            None,
         );
         None
     }
@@ -587,6 +588,7 @@ impl ResultHandler for CartographyResultHandler {
             self.pos,
             1.0,
             1.0,
+            None,
         );
         None
     }
@@ -802,6 +804,7 @@ impl ResultHandler for LoomResultHandler {
             self.pos,
             1.0,
             1.0,
+            None,
         );
         None
     }

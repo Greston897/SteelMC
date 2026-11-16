@@ -3,7 +3,7 @@ use crate::behavior::blocks::decoration::skull::abstract_skull_block::AbstractSk
 use crate::behavior::{BlockBehavior, BlockEntityCreation, BlockLootContext, BlockPlaceContext};
 use crate::block_entity::SharedBlockEntity;
 use crate::entity::ai::path::PathComputationType;
-use crate::entity::{EntitySpawnReason, Mob as _};
+use crate::entity::EntitySpawnReason;
 use crate::world::World;
 use std::sync::{Arc, Weak};
 use steel_macros::block_behavior;

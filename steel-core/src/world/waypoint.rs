@@ -194,7 +194,7 @@ impl WaypointManager {
                     .unwrap_or(DEFAULT_WAYPOINT_RANGE);
                 if transmit > 0.0 {
                     let icon = icons.get(uuid).cloned().unwrap_or_default();
-                    list.push((*uuid, player.gameprofile.name.clone(), icon));
+                    list.push((*uuid, player.gameprofile.name().to_owned(), icon));
                 }
             }
             true

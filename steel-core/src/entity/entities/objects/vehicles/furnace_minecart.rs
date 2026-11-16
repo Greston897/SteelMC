@@ -273,8 +273,8 @@ impl AbstractMinecart for FurnaceMinecartEntity {
         } else {
             movement * DVec3::new(0.98, 0.0, 0.98)
         };
-        // Vanilla chains into `AbstractMinecart.applyNaturalSlowdown`.
-        <Self as AbstractMinecart>::apply_natural_slowdown(self, adjusted)
+        // Vanilla chains into `super.applyNaturalSlowdown(result)`.
+        self.apply_base_natural_slowdown(adjusted)
     }
     fn custom_display_block(&self) -> Option<BlockStateId> {
         *self

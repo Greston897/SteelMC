@@ -771,7 +771,7 @@ impl Player {
         self.open_prepared_menu_with(title, menu, mount);
     }
 
-    fn open_prepared_menu(&self, title: TextComponent, mut menu: Menu) {
+    fn open_prepared_menu(&self, title: TextComponent, menu: Menu) {
         self.open_prepared_menu_with(title, menu, None);
     }
 

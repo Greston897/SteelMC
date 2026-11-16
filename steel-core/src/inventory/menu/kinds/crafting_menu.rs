@@ -13,7 +13,7 @@ use crate::inventory::prelude::*;
 use crate::inventory::slots::CraftingHandler;
 use crate::player::player_inventory::PlayerInventory;
 use crate::player::recipe_placement::{
-    PlacementPlan, PostPlaceAction, StackedItemContents, plan_placement,
+    PostPlaceAction, StackedItemContents, plan_placement,
 };
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_blocks;

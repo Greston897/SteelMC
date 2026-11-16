@@ -30,7 +30,7 @@ use steel_registry::loot_table::LootTableRef;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::{
-    REGISTRY, RegistryExt, TaggedRegistryExt, vanilla_attributes, vanilla_damage_types,
+    REGISTRY, TaggedRegistryExt, vanilla_attributes, vanilla_damage_types,
     vanilla_entities, vanilla_entity_type_tags::EntityTypeTag, vanilla_game_events,
     vanilla_game_rules, vanilla_items,
 };

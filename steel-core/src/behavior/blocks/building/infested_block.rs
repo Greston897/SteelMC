@@ -817,7 +817,7 @@ impl BlockBehavior for WeatheringCopperGolemStatueBlock {
         world: &Arc<World>,
         pos: BlockPos,
         player: &crate::player::Player,
-        hand: steel_utils::types::InteractionHand,
+        _hand: steel_utils::types::InteractionHand,
         _hit_result: &crate::behavior::context::BlockHitResult,
         inv: &mut crate::behavior::context::InventoryAccess,
     ) -> InteractionResult {

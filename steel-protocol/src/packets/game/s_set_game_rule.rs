@@ -5,7 +5,6 @@
 
 use steel_macros::{ReadFrom, ServerPacket};
 use steel_utils::Identifier;
-use steel_utils::codec::VarInt;
 
 /// One game rule update requested by an operator (`ServerboundSetGameRulePacket.Entry`).
 #[derive(ReadFrom, Clone, Debug, PartialEq, Eq)]

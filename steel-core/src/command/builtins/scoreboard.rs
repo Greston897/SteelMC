@@ -156,7 +156,7 @@ fn create_objective(
             "Unknown criterion '{criterion}'"
         )));
     }
-    let objective = scoreboard
+    let _objective = scoreboard
         .add_objective_with_criterion(name, criterion)
         .map_err(|error| CommandSyntaxError::dynamic(error.to_string()))?;
     // Vanilla `ServerScoreboard#onObjectiveAdded` pushes the new objective to

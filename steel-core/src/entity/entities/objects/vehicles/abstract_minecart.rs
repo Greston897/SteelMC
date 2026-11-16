@@ -357,13 +357,19 @@ pub trait AbstractMinecart: VehicleEntity + AbstractMinecartEventSource {
     }
 
     /// Applies natural slowdown to the minecart movement.
-    fn apply_natural_slowdown(&self, movement: DVec3) -> DVec3 {
+    /// Default `AbstractMinecart.applyNaturalSlowdown` helper callable from
+    /// subclass overrides (`super.applyNaturalSlowdown` in Java).
+    fn apply_base_natural_slowdown(&self, movement: DVec3) -> DVec3 {
         let slowdown = MinecartBehavior::slowdown_factor(self.as_abstract_minecart_event_source());
         let mut result = movement * DVec3::new(slowdown, 0.0, slowdown);
         if self.is_in_water() {
             result *= f64::from(WATER_SLOWDOWN_FACTOR);
         }
         result
+    }
+
+    fn apply_natural_slowdown(&self, movement: DVec3) -> DVec3 {
+        self.apply_base_natural_slowdown(movement)
     }
 
     /// Slows down the minecart when it comes off the track.

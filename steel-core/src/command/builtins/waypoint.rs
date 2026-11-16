@@ -78,13 +78,12 @@ fn list_waypoints(
     let source = context.source();
     let world = source.world();
     let dimension = world.key.to_string();
-    let mut names = Vec::new();
-    world.players.iter_players(|uuid, player| {
-        if world.waypoints.transmitters().contains(uuid) {
-            names.push(player.gameprofile.name().to_owned());
-        }
-        true
-    });
+    let mut names: Vec<String> = world
+        .waypoints
+        .active_transmitters(world)
+        .into_iter()
+        .map(|(_, name, _)| name)
+        .collect();
     names.sort_unstable();
 
     if names.is_empty() {
@@ -118,7 +117,7 @@ fn set_color(
     let world = target.get_world();
     world
         .waypoints
-        .set_player_icon_color(target.gameprofile.id(), color);
+        .set_icon_color(target.gameprofile.id(), color);
     if color.is_some() {
         context.source().send_success(
             &TextComponent::translated(
@@ -164,7 +163,7 @@ fn reset_style(
     target
         .get_world()
         .waypoints
-        .reset_player_icon_style(target.gameprofile.id());
+        .set_icon_style(target.gameprofile.id(), Identifier::vanilla_static("default"));
     context.source().send_success(
         &TextComponent::translated(translations::COMMANDS_WAYPOINT_MODIFY_STYLE.msg()),
         false,
@@ -180,7 +179,7 @@ fn set_style(
     target
         .get_world()
         .waypoints
-        .set_player_icon_style(target.gameprofile.id(), style);
+        .set_icon_style(target.gameprofile.id(), style);
     context.source().send_success(
         &TextComponent::translated(translations::COMMANDS_WAYPOINT_MODIFY_STYLE.msg()),
         false,

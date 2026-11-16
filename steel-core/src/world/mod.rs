@@ -31,7 +31,7 @@ use glam::{DVec3, IVec3};
 use sha2::{Digest, Sha256};
 use steel_protocol::packets::game::{
     CBlockDestruction, CBossEvent, CChangeDifficulty, CGameEvent, CInitializeBorder, CLevelEvent,
-    CLevelParticles, CPlayerChat, CProjectilePower, CSetBorderCenter, CSetBorderLerpSize,
+    CLevelParticles, CPlayerChat, CSetBorderCenter, CSetBorderLerpSize,
     CSetBorderSize, CSetBorderWarningDelay, CSetBorderWarningDistance, CSetEntityData,
     CSetEntityLink, CSetEquipment, CSound, CSoundEntity, CSystemChat, CUpdateAttributes,
     BossEventAction, BossBarColor, BossBarOverlay, GameEventType, RandomizationType, SoundSource,
@@ -431,7 +431,7 @@ impl World {
             level_data.save().await?;
         }
         let dragon_fight_state = {
-            let mut fight = dragon_fight::DragonFight::new();
+            let fight = dragon_fight::DragonFight::new();
             fight.set_level_seed(seed);
             // Vanilla persists the fight through `SavedDataType` `ender_dragon_fight`
             // so a restart keeps the portal, gateways and respawn progress.

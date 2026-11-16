@@ -49,9 +49,7 @@ fn send_team_message(
             translations::COMMANDS_TEAMMSG_FAILED_NOTEAM.msg(),
         ));
     };
-    let team_display = scoreboard
-        .team(&team_name)
-        .map_or_else(|| TextComponent::plain(team_name.clone()), |t| t.display_name);
+    let team_display = TextComponent::plain(team_name.clone());
 
     let message = TextComponent::plain(context.string("message")?.to_owned());
     let sender_name = source.display_name_component();

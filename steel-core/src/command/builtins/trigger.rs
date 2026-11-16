@@ -64,7 +64,7 @@ fn scoreboard_of<'a>(
 /// command when it is missing or not a `trigger` objective.
 fn trigger_objective(
     context: &SteelCommandContext<CommandSource>,
-    scoreboard: &Scoreboard,
+    _scoreboard: &Scoreboard,
 ) -> Result<ScoreboardObjective, CommandSyntaxError> {
     let name = context.string("objective")?.to_owned();
     let objective = scoreboard

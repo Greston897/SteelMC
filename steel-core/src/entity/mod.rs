@@ -49,7 +49,7 @@ use steel_registry::{
     REGISTRY, TaggedRegistryExt, sound_events, vanilla_damage_type_tags, vanilla_damage_types,
     vanilla_game_events, vanilla_particle_types,
 };
-use steel_registry::{RegistryEntry, RegistryExt};
+use steel_registry::RegistryEntry;
 use steel_registry::{vanilla_attributes, vanilla_fluid_tags, vanilla_items, vanilla_mob_effects};
 use steel_utils::entity_events::EntityStatus;
 use steel_utils::locks::SyncMutex;

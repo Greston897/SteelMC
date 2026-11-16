@@ -19,7 +19,6 @@ use std::sync::Arc;
 
 use glam::DVec3;
 
-use crate::chunk::heightmap::HeightmapType;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
 use crate::entity::spawn_entity;
 use crate::entity::Entity as _;

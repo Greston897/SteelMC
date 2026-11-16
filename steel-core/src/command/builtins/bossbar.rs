@@ -244,7 +244,7 @@ fn get_bar(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandS
 fn set_name(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let name = context.text_component("name")?.clone();
     let id = context.string("id")?.to_owned();
-    let bar = update_bar(context, |bar| {
+    let _bar = update_bar(context, |bar| {
         bar.name = name.clone();
         let packet = CBossEvent {
             uuid: bar.uuid,
@@ -265,7 +265,7 @@ fn set_color(
     context: &SteelCommandContext<CommandSource>,
     color: BossBarColor,
 ) -> Result<i32, CommandSyntaxError> {
-    let bar = update_bar(context, |bar| {
+    let _bar = update_bar(context, |bar| {
         bar.color = color;
         broadcast_style(context, bar);
     })?;

@@ -5,7 +5,7 @@ use steel_utils::types::Difficulty;
 
 use crate::entity::registry::ENTITIES;
 use crate::entity::{
-    Entity, LivingEntity, Mob, RemovalReason, SharedEntity, next_entity_id, start_riding_entities,
+    Entity, Mob, RemovalReason, SharedEntity, next_entity_id, start_riding_entities,
 };
 use crate::inventory::equipment::EquipmentSlot;
 

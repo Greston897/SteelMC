@@ -140,7 +140,7 @@ impl CommandBlockMinecartEntity {
     /// ticks (`tickCount - lastActivated >= 4`).
     fn run_command(&self) {
         let (command, tick_count) = {
-            let mut state = self.state.lock();
+            let state = self.state.lock();
             if !state.powered || state.command.is_empty() {
                 return;
             }

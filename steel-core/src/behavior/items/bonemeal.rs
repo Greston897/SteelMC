@@ -8,14 +8,13 @@ use steel_registry::{
     blocks::{block_state_ext::BlockStateExt, shapes::is_offset_shape_full_block},
     data_components::vanilla_components::USE_EFFECTS,
     item_stack::ItemStack,
-    REGISTRY, RegistryExt as _, TaggedRegistryExt as _, level_events, vanilla_blocks,
+    REGISTRY, TaggedRegistryExt as _, level_events, vanilla_blocks,
     vanilla_game_events,
     vanilla_particle_types,
 };
 use steel_utils::{BlockPos, Direction, types::UpdateFlags};
 
 use crate::{
-    behavior::blocks::vegetation::bonemealable::Bonemealable as _,
     behavior::{BLOCK_BEHAVIORS, InteractionResult, ItemBehavior, UseOnContext},
     entity::Entity,
     world::{LevelReader as _, World},

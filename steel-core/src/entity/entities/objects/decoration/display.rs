@@ -5,7 +5,7 @@
 //! in the payload they draw: an item stack or a text component. `BlockDisplay`
 //! lives in `display_ui` next to the item frame.
 
-use std::sync::{Arc, Weak};
+use std::sync::Weak;
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
@@ -20,12 +20,12 @@ use steel_registry::vanilla_entity_data::{
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::types::InteractionHand;
-use steel_utils::{DowncastType, DowncastTypeKey, WorldAabb};
+use steel_utils::{DowncastType, DowncastTypeKey};
 use text_components::TextComponent;
 
 use crate::behavior::InteractionResult;
 use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData, SharedEntity,
+    Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData,
 };
 use crate::player::Player;
 use crate::world::World;

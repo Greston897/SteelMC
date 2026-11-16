@@ -34,7 +34,6 @@ use steel_utils::{Downcast as _, types::GameType};
 use crate::inventory::container::CraftingContainer;
 use crate::inventory::menu::kinds::InventoryKind;
 use crate::inventory::menu::kinds::MerchantKind;
-use steel_utils::Downcast as _;
 use crate::{
     entity::LivingEntity,
     inventory::lock::{ContainerId, ContainerLockGuard, ContainerRef},

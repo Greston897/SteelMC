@@ -10,7 +10,6 @@ use super::super::{
     },
     registration::CommandRegistration,
 };
-use crate::entity::Entity as _;
 
 pub(super) fn registration() -> CommandRegistration<CommandSource> {
     CommandRegistration::new(Identifier::vanilla_static("ride"), |_| command())

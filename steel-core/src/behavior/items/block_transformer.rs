@@ -9,7 +9,7 @@ use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::{
-    REGISTRY, RegistryExt as _, level_events, vanilla_criteria_triggers, vanilla_game_events,
+    REGISTRY, level_events, vanilla_criteria_triggers, vanilla_game_events,
 };
 use steel_utils::BlockStateId;
 use steel_utils::random::legacy_random::LegacyRandom;

@@ -10,7 +10,7 @@
 
 use std::sync::Arc;
 
-use rand::{Rng as _, RngExt as _};
+use rand::RngExt as _;
 use steel_registry::biome::BiomeRef;
 use steel_registry::entity_type::{EntityTypeRef, MobCategory};
 use steel_registry::vanilla_game_rules;
@@ -21,7 +21,7 @@ use steel_worldgen::biomes::obfuscate_biome_seed;
 use crate::chunk::heightmap::HeightmapType;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
 use crate::entity::spawn_placements::SpawnPlacements;
-use crate::physics::{CollisionWorld as _, WorldCollisionProvider, has_block_collision};
+use crate::physics::{CollisionWorld as _, WorldCollisionProvider};
 use crate::entity::spawn_entity;
 use crate::worldgen::generators::vanilla::fuzzed_biome_at_block;
 use crate::world::{LevelReader, World, is_redstone_conductor};

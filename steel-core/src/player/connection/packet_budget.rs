@@ -22,7 +22,7 @@
 //! only ever queue [`MAX_PACKETS_PER_SECOND`] packets per second, and repeated
 //! protocol violations close it outright (see [`ViolationBudget`]).
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 /// Hard ceiling on inbound packets per second for one connection.
 ///

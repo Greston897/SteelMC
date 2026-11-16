@@ -4,7 +4,6 @@ use steel_registry::RegistryExt as _;
 use steel_registry::biome::SpawnerData;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_type::EntityTypeRef;
-use steel_registry::fluid::FluidStateExt as _;
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_game_rules;
 use steel_registry::{REGISTRY, vanilla_fluids};
@@ -12,8 +11,8 @@ use steel_utils::BlockPos;
 use steel_utils::random::Random as _;
 
 use crate::chunk::{
-    chunk_generation_task::StaticCache2D, chunk_holder::ChunkHolder, chunk_pyramid::ChunkStep,
-    data::Chunk, heightmap::HeightmapType, status::ChunkStatus,
+    Chunk, chunk_generation_task::StaticCache2D, chunk_holder::ChunkHolder,
+    chunk_pyramid::ChunkStep, heightmap::HeightmapType, status::ChunkStatus,
 };
 use crate::entity::SharedEntity;
 use crate::entity::spawn::{EntitySpawnReason, create_entity_instance};
@@ -176,9 +175,9 @@ fn proto_biome_id(
 /// evaluated against the proto chunk's block states.
 fn is_valid_proto_creature_spawn(chunk: &Chunk, pos: BlockPos) -> bool {
     let below = chunk.get_block_state(pos.below());
-    if !REGISTRY
-        .blocks
-        .is_in_tag(below.get_block(), BlockTag::AnimalsSpawnableOn)
+    if !below
+        .get_block()
+        .has_tag(&BlockTag::ANIMALS_SPAWNABLE_ON)
     {
         return false;
     }

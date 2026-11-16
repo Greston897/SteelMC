@@ -326,7 +326,7 @@ mod tests {
 
     #[test]
     fn a_trade_locks_once_it_has_been_used_up() {
-        let mut offer = &mut offers_for("minecraft:fisherman")[0];
+        let offer = &mut offers_for("minecraft:fisherman")[0];
         for _ in 0..offer.max_uses {
             assert!(!offer.is_out_of_stock());
             offer.record_use();
