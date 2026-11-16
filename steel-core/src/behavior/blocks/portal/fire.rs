@@ -298,7 +298,7 @@ impl BlockBehavior for FireBlock {
                 .any(|&dir| Self::can_burn(world.get_block_state(pos.relative(dir))));
             if !has_valid_neighbor {
                 let below_pos = pos.below();
-                if !below.is_face_sturdy(world.as_ref(), below_pos, Direction::Up) || age > 3 {
+                if !world.is_face_sturdy(below, below_pos, Direction::Up) || age > 3 {
                     world.set_block(
                         pos,
                         vanilla_blocks::AIR.default_state(),

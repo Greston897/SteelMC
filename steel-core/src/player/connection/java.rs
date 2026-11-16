@@ -66,6 +66,9 @@ const DISCONNECT_FLUSH_TIMEOUT: Duration = Duration::from_secs(1);
 /// Matches the login-side transport: a batch of chunk packets must fit without
 /// the buffer flushing on its own mid-batch.
 
+#[cfg(test)]
+const OUTBOUND_BUFFER_BYTES: usize = 64 * 1024;
+
 /// Outbound packet queue message for Java connections.
 pub enum OutboundPacket {
     /// Normal packet write that may be interrupted by connection shutdown.

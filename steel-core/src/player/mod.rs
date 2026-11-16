@@ -313,7 +313,7 @@ pub struct Player {
 
     /// Whether the server has sent `CStartConfiguration` and is awaiting the
     /// client's `SConfigurationAcknowledged` packet.
-    awaiting_configuration_ack: AtomicBool,
+    awaiting_configuration_ack: std::sync::atomic::AtomicBool,
 
     /// Most recent ping transaction id echoed by the client via `SPong`.
     last_pong_id: SyncMutex<Option<i32>>,
@@ -951,7 +951,7 @@ impl Player {
                 rustc_hash::FxHashSet::default(),
                 rustc_hash::FxHashMap::default(),
             )),
-            awaiting_configuration_ack: AtomicBool::new(false),
+            awaiting_configuration_ack: std::sync::atomic::AtomicBool::new(false),
             last_pong_id: SyncMutex::new(None),
             last_custom_click_action: SyncMutex::new(None),
             seen_credits: SyncMutex::new(false),

@@ -77,7 +77,7 @@ impl CreakingEntity {
     /// inside a 0.5-cosine cone toward this creaking's eyes.
     #[must_use]
     pub fn is_observed_by_player(&self, world: &World) -> bool {
-        use steel_registry::item_stack::EquipmentSlot;
+        use crate::inventory::container::Container as _;
         use steel_utils::types::GameType;
 
         let pos = self.position();
@@ -90,7 +90,7 @@ impl CreakingEntity {
                 if player
                     .inventory
                     .lock()
-                    .get_ref(EquipmentSlot::Head)
+                    .get_item(39)
                     .is(&*steel_registry::vanilla_items::CARVED_PUMPKIN)
                 {
                     return false;

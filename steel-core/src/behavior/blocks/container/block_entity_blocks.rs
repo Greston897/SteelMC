@@ -503,7 +503,7 @@ fn launch_point(pos: BlockPos, facing: Direction) -> (DVec3, DVec3) {
 /// TNT / campfire ignition with durability, or default item ejection). Plays
 /// `BLOCK_DISPENSER_FAIL` when empty.
 fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool {
-    use crate::world::UpdateFlags;
+    use steel_utils::types::UpdateFlags;
     use steel_registry::vanilla_blocks;
 
     let facing = state.get_value(&BlockStateProperties::FACING);

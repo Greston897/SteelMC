@@ -549,11 +549,11 @@ pub trait AbstractMinecart: VehicleEntity + AbstractMinecartEventSource {
     #[must_use]
     fn build_track_lerp_packet(
         &self,
-        lerp_steps: Vec<steel_protocol::packets::game::MinecartStep>,
+        steps: Vec<steel_protocol::packets::game::MinecartStep>,
     ) -> steel_protocol::packets::game::CMoveMinecartAlongTrack {
         steel_protocol::packets::game::CMoveMinecartAlongTrack {
             entity_id: self.id(),
-            lerp_steps,
+            steps,
         }
     }
 }
