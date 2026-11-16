@@ -521,14 +521,19 @@ impl DragonPhaseManager {
             .expect("ensure_nodes always fills the node array");
         // Vanilla compares `Node.distanceToSqr` from the floored dragon position and
         // keeps the *first* strictly-closer waypoint, so ties keep the lower index.
-        // The waypoints are already integral, so they are compared as they stand
-        // rather than being floored again on every iteration.
+        // The waypoints are stored as `DVec3`, so the squared distance is computed
+        // from the floored target directly rather than through `Node`.
         let target = node_from_position(position);
+        let target_x = target.x as f64;
+        let target_y = target.y as f64;
+        let target_z = target.z as f64;
         let mut closest_index = 0;
         let mut closest_dist = 10_000.0_f32;
         for (index, node) in nodes.iter().enumerate().skip(start) {
-            // Fully qualified: `Entity::distance_to_sqr` would otherwise win.
-            let distance = Node::distance_to_sqr(node, &target);
+            let dx = (node.x - target_x) as f32;
+            let dy = (node.y - target_y) as f32;
+            let dz = (node.z - target_z) as f32;
+            let distance = dx * dx + dy * dy + dz * dz;
             if distance < closest_dist {
                 closest_dist = distance;
                 closest_index = index;
