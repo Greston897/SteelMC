@@ -72,6 +72,8 @@ pub struct CEntityPositionSync {
 
 #[cfg(test)]
 mod tests {
+    use steel_utils::serial::WriteTo as _;
+
     use super::*;
 
     fn encode(packet: &CEntityPositionSync) -> Vec<u8> {

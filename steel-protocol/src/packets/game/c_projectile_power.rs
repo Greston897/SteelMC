@@ -2,7 +2,6 @@
 
 use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_PROJECTILE_POWER;
-use steel_utils::codec::VarInt;
 
 /// Clientbound packet that changes the air drag of a projectile.
 #[derive(ClientPacket, WriteTo, Clone, Debug)]

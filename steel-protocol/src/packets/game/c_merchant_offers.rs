@@ -21,7 +21,7 @@
 use std::io::Write;
 
 use steel_macros::ClientPacket;
-use steel_registry::RegistryExt;
+use steel_registry::RegistryEntry;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::packets::play::C_MERCHANT_OFFERS;
 use steel_utils::codec::VarInt;

@@ -2,7 +2,6 @@
 
 use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_SET_DISPLAY_OBJECTIVE;
-use steel_utils::codec::VarInt;
 
 /// Clientbound packet that binds an objective to a display slot.
 #[derive(ClientPacket, WriteTo, Clone, Debug)]

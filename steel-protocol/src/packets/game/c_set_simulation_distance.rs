@@ -2,7 +2,6 @@
 
 use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_SET_SIMULATION_DISTANCE;
-use steel_utils::codec::VarInt;
 
 /// Clientbound packet that changes the client's simulation distance.
 #[derive(ClientPacket, WriteTo, Clone, Debug)]

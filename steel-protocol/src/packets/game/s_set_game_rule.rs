@@ -5,6 +5,7 @@
 
 use steel_macros::{ReadFrom, ServerPacket};
 use steel_utils::Identifier;
+use steel_utils::codec::VarInt;
 
 /// One game rule update requested by an operator (`ServerboundSetGameRulePacket.Entry`).
 #[derive(ReadFrom, Clone, Debug, PartialEq, Eq)]
@@ -19,6 +20,7 @@ pub struct SetGameRuleEntry {
 #[derive(ReadFrom, ServerPacket, Clone, Debug, PartialEq, Eq)]
 pub struct SSetGameRule {
     /// Updated game rules.
+    #[read(as = Prefixed(VarInt))]
     pub entries: Vec<SetGameRuleEntry>,
 }
 

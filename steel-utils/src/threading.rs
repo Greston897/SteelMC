@@ -664,19 +664,21 @@ mod tests {
 
     #[test]
     fn the_first_usable_cpu_set_wins_and_missing_files_are_skipped() {
+        use std::{env, fs, process};
+
         // A candidate that cannot be read must not abort the search: otherwise a
         // single missing control file would size the pools for the whole host.
-        let dir = std::env::temp_dir().join(format!("steel-cpuset-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).expect("create temp dir");
+        let dir = env::temp_dir().join(format!("steel-cpuset-{}", process::id()));
+        fs::create_dir_all(&dir).expect("create temp dir");
         let present = dir.join("cpuset.cpus.effective");
-        std::fs::write(&present, "0-3\n").expect("write cpu set");
+        fs::write(&present, "0-3\n").expect("write cpu set");
         let missing = dir.join("does_not_exist");
         let candidates = vec![
             missing.to_string_lossy().into_owned(),
             present.to_string_lossy().into_owned(),
         ];
         assert_eq!(first_cpu_set(&candidates), Some(4));
-        std::fs::remove_dir_all(&dir).ok();
+        fs::remove_dir_all(&dir).ok();
     }
 
     #[test]
