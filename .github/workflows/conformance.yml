@@ -197,6 +197,19 @@ jobs:
           done
           if [ -s /tmp/panic-messages.log ]; then
             python3 .ci/report.py "Panic messages" /tmp/panic-messages.log || true
+          else
+            # The replay matched nothing, which usually means the failures were
+            # filtered differently; fall back to the raw tail of every log that
+            # mentions a failure so the channel is never silent.
+            : > /tmp/panic-fallback.log
+            for f in /tmp/test-*.log; do
+              [ -f "$f" ] || continue
+              grep -qE "^failures:" "$f" || continue
+              echo "### $(basename "$f" .log)" >> /tmp/panic-fallback.log
+              grep -nE "FAILED|panicked|assertion|^failures:|stdout ----" "$f" | tail -40 \
+                >> /tmp/panic-fallback.log || true
+            done
+            python3 .ci/report.py "Panic messages (fallback)" /tmp/panic-fallback.log || true
           fi
 
       # 3. Conformance: the invariants the code claims to hold. Cheap greps and
