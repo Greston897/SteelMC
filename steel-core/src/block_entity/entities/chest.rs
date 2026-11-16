@@ -16,6 +16,7 @@ use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::data_components::{
     DataComponentMap, SeededContainerLoot, vanilla_components::CONTAINER_LOOT,
 };
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::{
@@ -190,7 +191,12 @@ impl BlockEntity for ChestBlockEntity {
         // changes, which for a closed chest is exactly once per open.
         if lid.open != was_open {
             let pos = self.get_block_pos();
-            world.block_event(pos, self.base.block_state().get_block(), LID_EVENT_ID, 0);
+            world.block_event(
+                pos,
+                self.base.block_state().get_block(),
+                LID_EVENT_ID,
+                0,
+            );
         }
     }
 

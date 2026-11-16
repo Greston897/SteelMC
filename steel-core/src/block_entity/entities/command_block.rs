@@ -139,10 +139,15 @@ struct PendingRun {
 }
 
 /// Vanilla `CommandBlockEntity`.
+///
+/// The mutexes are shared handles rather than plain fields so a clone of the
+/// entity talks to the same command state, which is what the block behavior
+/// relies on when it takes the entity out of the world to run a command.
+#[derive(Clone)]
 pub struct CommandBlockBlockEntity {
     base: Arc<BlockEntityBase>,
-    state: SyncMutex<CommandBlockState>,
-    pending: SyncMutex<Option<PendingRun>>,
+    state: Arc<SyncMutex<CommandBlockState>>,
+    pending: Arc<SyncMutex<Option<PendingRun>>>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies the type.
@@ -171,11 +176,11 @@ impl CommandBlockBlockEntity {
             == CommandBlockMode::Auto;
         Self {
             base: Arc::new(BlockEntityBase::new(block_entity_type, level, pos, state)),
-            state: SyncMutex::new(CommandBlockState {
+            state: Arc::new(SyncMutex::new(CommandBlockState {
                 automatic,
                 ..CommandBlockState::default()
-            }),
-            pending: SyncMutex::new(None),
+            })),
+            pending: Arc::new(SyncMutex::new(None)),
         }
     }
 

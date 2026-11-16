@@ -33,6 +33,8 @@ use steel_utils::{Downcast as _, types::GameType};
 
 use crate::inventory::container::CraftingContainer;
 use crate::inventory::menu::kinds::InventoryKind;
+use crate::inventory::menu::kinds::MerchantKind;
+use steel_utils::Downcast as _;
 use crate::{
     entity::LivingEntity,
     inventory::lock::{ContainerId, ContainerLockGuard, ContainerRef},
@@ -117,6 +119,23 @@ impl Menu {
     ) -> Option<crate::player::recipe_placement::PostPlaceAction> {
         self.kind
             .handle_placement(&mut self.behavior, guard, player, request)
+    }
+
+    /// Registers a callback that runs when this menu is closed.
+    ///
+    /// Only the merchant screen owns close semantics today, so the registration
+    /// is forwarded to its kind; any other menu ignores it.
+    #[must_use]
+    pub fn with_on_close(
+        mut self,
+        on_close: impl FnOnce(&Player) + Send + 'static,
+    ) -> Self {
+        // The callback lives behind a mutex inside the kind, so registering it
+        // through a shared borrow is enough; the `Box<dyn MenuKind>` stays put.
+        if let Some(kind) = self.kind.downcast_mut::<MerchantKind>() {
+            kind.set_on_close(on_close);
+        }
+        self
     }
 
     /// The container ID for this menu (0 for the player inventory).

@@ -82,8 +82,16 @@ impl MerchantKind {
     /// Registers a callback that runs when the trade screen closes.
     #[must_use]
     pub fn with_on_close(mut self, on_close: impl FnOnce(&Player) + Send + 'static) -> Self {
-        *self.on_close.lock() = Some(Box::new(on_close));
+        self.set_on_close(on_close);
         self
+    }
+
+    /// Stores the close callback without consuming the kind.
+    ///
+    /// [`Menu`] boxes its kind, so the callback has to be installable through a
+    /// mutable borrow after the menu was built.
+    pub fn set_on_close(&self, on_close: impl FnOnce(&Player) + Send + 'static) {
+        *self.on_close.lock() = Some(Box::new(on_close));
     }
 
     /// The offers currently on sale.

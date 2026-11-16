@@ -19,7 +19,7 @@ use steel_utils::locks::SyncMutex;
 use steel_registry::blocks::properties::Direction;
 use steel_utils::{BlockPos, BlockStateId};
 use steel_utils::types::InteractionHand;
-use steel_utils::{DowncastType, DowncastTypeKey, nbt::NbtValueInput as _};
+use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey, nbt::NbtValueInput as _};
 
 use super::abstract_minecart::{AbstractMinecart, AbstractMinecartBase};
 use crate::behavior::InteractionResult;

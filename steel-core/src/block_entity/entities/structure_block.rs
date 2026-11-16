@@ -338,7 +338,7 @@ impl BlockEntity for StructureBlockEntity {
             structure_mirror_from_name(nbt_view.string("mirror").map_or("none", |value| &*value.to_str()));
         state.mode = structure_mode_from_name(
             nbt_view.string("mode")
-                .map_or("data", |value| value.to_str()),
+                .map_or("data", |value| &*value.to_str()),
         );
         state.ignore_entities = nbt_view
             .byte_value("ignoreEntities")

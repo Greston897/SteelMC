@@ -334,7 +334,7 @@ impl BrewingStandBlockEntity {
         }
         match potion_brewing::mix(stack, ingredient) {
             // A glass bottle becomes an `awkward` potion, which is a change.
-            Some(result) => stack.potion_key() != Some(&result),
+            Some(result) => stack.potion_key().as_ref() != Some(&result),
             None => false,
         }
     }

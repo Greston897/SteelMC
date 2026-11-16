@@ -108,20 +108,20 @@ struct PlayerDataFile {
 }
 
 /// Vanilla `warden_spawn_tracker` in the player save.
-#[derive(SchemaWrite, SchemaRead)]
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct WardenSpawnTrackerFile {
     ticks_since_last_warning: i32,
     warning_level: i32,
     cooldown_ticks: i32,
 }
 
-#[derive(SchemaWrite, SchemaRead)]
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct RootVehicleFile {
     attach: [u8; 16],
     entity: PersistentEntity,
 }
 
-#[derive(SchemaWrite, SchemaRead)]
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct RespawnConfigFile {
     dimension: String,
     pos: [i32; 3],
@@ -130,13 +130,13 @@ struct RespawnConfigFile {
     forced: bool,
 }
 
-#[derive(SchemaWrite, SchemaRead)]
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct EnderPearlFile {
     world: String,
     entity: PersistentEntity,
 }
 
-#[derive(SchemaWrite, SchemaRead)]
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct AbilitiesFile {
     invulnerable: bool,
     flying: bool,

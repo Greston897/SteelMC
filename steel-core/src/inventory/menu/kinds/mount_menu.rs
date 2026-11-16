@@ -66,7 +66,7 @@ pub fn mount(
 ) -> Menu {
     assert!(columns > 0, "a mount menu needs at least one column");
     assert_eq!(
-        container.get_container_size(),
+        container.lock().get_container_size(),
         inventory_size(columns),
         "mount container must hold the saddle slot, the armor slot and {INVENTORY_ROWS} rows",
     );
