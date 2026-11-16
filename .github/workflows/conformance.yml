@@ -174,43 +174,28 @@ jobs:
           done
           exit 1
 
-      - name: Replay failing crates for their panic messages
+      - name: Publish the panic text of failing crates
         if: failure()
         env:
           # `report.py` reads GITHUB_TOKEN/GITHUB_REPOSITORY/GITHUB_SHA.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # The per-crate logs mix hundreds of passing lines with the failures,
-          # and a commit comment is the only channel readable here, so replay
-          # each failing crate with `--nocapture` and keep just the diagnostics.
+          # and a commit comment is the only channel readable here. Everything
+          # after the `failures:` marker is the diagnostic block.
           : > /tmp/panic-messages.log
           for f in /tmp/test-*.log; do
             [ -f "$f" ] || continue
-            grep -qE "^failures:" "$f" || continue
-            pkg=$(basename "$f" .log)
-            pkg=${pkg#test-}
-            echo "### $pkg" >> /tmp/panic-messages.log
-            cargo test -p "$pkg" --all-features -- --nocapture 2>&1 \
-              | grep -E "(panicked at|^assertion|  left:| right:|^---- .* stdout ----|^error: test failed)" \
-              | tail -60 >> /tmp/panic-messages.log || true
+            grep -q "FAILED" "$f" || continue
+            echo "### $(basename "$f" .log)" >> /tmp/panic-messages.log
+            awk '/^failures:$/{found=1} found' "$f" | head -400 >> /tmp/panic-messages.log
             echo >> /tmp/panic-messages.log
           done
-          if [ -s /tmp/panic-messages.log ]; then
-            python3 .ci/report.py "Panic messages" /tmp/panic-messages.log || true
-          else
-            # The replay matched nothing, which usually means the failures were
-            # filtered differently; fall back to the raw tail of every log that
-            # mentions a failure so the channel is never silent.
-            : > /tmp/panic-fallback.log
-            for f in /tmp/test-*.log; do
-              [ -f "$f" ] || continue
-              grep -qE "^failures:" "$f" || continue
-              echo "### $(basename "$f" .log)" >> /tmp/panic-fallback.log
-              grep -nE "FAILED|panicked|assertion|^failures:|stdout ----" "$f" | tail -40 \
-                >> /tmp/panic-fallback.log || true
-            done
-            python3 .ci/report.py "Panic messages (fallback)" /tmp/panic-fallback.log || true
+          if [ ! -s /tmp/panic-messages.log ]; then
+            echo "no crate log carried a failures: block" >> /tmp/panic-messages.log
+            ls -l /tmp/test-*.log >> /tmp/panic-messages.log 2>&1 || true
           fi
+          python3 .ci/report.py "Panic messages" /tmp/panic-messages.log || true
 
       # 3. Conformance: the invariants the code claims to hold. Cheap greps and
       #    JSON comparisons; each of these caught a real bug during this cycle.
