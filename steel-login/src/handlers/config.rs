@@ -164,9 +164,11 @@ impl JavaTcpClient {
     }
 
     /// Sends a Configuration-state custom dialog (`ClientboundShowDialogPacket`).
-    pub async fn send_config_dialog(&self, dialog: simdnbt::owned::NbtCompound) {
-        self.send_bare_packet_now(steel_protocol::packets::game::CConfigShowDialog { dialog })
-            .await;
+    pub async fn send_config_dialog(
+        &self,
+        packet: steel_protocol::packets::game::CConfigShowDialog,
+    ) {
+        self.send_bare_packet_now(packet).await;
     }
 
     /// Sends a Configuration-state ping (`ClientboundPingPacket`).

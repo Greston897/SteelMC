@@ -1103,6 +1103,8 @@ impl Player {
         }
     }
 
+    /// Returns a copy of this player's current Warden warning tracker (`getWardenSpawnTracker`).
+    #[must_use]
     pub fn warden_spawn_tracker(&self) -> crate::block_entity::entities::WardenSpawnTracker {
         *self.warden_spawn_tracker.lock()
     }

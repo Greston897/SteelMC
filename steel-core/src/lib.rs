@@ -33,6 +33,8 @@ pub mod server;
 #[cfg(test)]
 #[path = "../tests/support/mod.rs"]
 pub(crate) mod test_support;
+#[cfg(test)]
+mod vanilla_26_3_mega_parity;
 pub mod world;
 pub mod worldgen;
 

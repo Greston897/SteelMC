@@ -113,7 +113,7 @@ impl SSetStructureBlock {
 
     /// Vanilla `getIntegrity`, clamped the same way the reader does.
     #[must_use]
-    pub fn integrity_clamped(&self) -> f32 {
+    pub const fn integrity_clamped(&self) -> f32 {
         self.integrity.clamp(0.0, 1.0)
     }
 }

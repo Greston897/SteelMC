@@ -56,6 +56,8 @@ pub struct ArmadilloEntity {
     animal_base: AnimalBase,
     entity_data: SyncMutex<ArmadilloEntityData>,
     scute_time: SyncMutex<i32>,
+    /// Remaining ticks spent rolled up into a protective shell (`ArmadilloState.SCARED`).
+    rolled_up_ticks: SyncMutex<i32>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `ArmadilloEntity`.
@@ -117,7 +119,24 @@ impl ArmadilloEntity {
             animal_base,
             entity_data: SyncMutex::new(entity_data),
             scute_time: SyncMutex::new(Self::next_scute_time()),
+            rolled_up_ticks: SyncMutex::new(0),
         }
+    }
+
+    /// Rolls the armadillo into its shell for `ticks` server ticks (vanilla `Armadillo.rollUp`).
+    pub fn roll_up(&self, ticks: i32) {
+        *self.rolled_up_ticks.lock() = ticks.max(0);
+    }
+
+    /// Unrolls the armadillo immediately (vanilla `Armadillo.rollOut`).
+    pub fn unroll(&self) {
+        *self.rolled_up_ticks.lock() = 0;
+    }
+
+    /// Whether the armadillo is currently curled inside its shell (`!isScared` complement).
+    #[must_use]
+    pub fn is_rolled_up(&self) -> bool {
+        *self.rolled_up_ticks.lock() > 0
     }
 
     fn next_scute_time() -> i32 {
@@ -236,6 +255,23 @@ impl LivingEntity for ArmadilloEntity {
         Some(&sound_events::ENTITY_ARMADILLO_DEATH)
     }
 
+    /// Vanilla `Armadillo.hurtServer`: while curled in its shell, incoming
+    /// non-bypassing damage is reduced to `(amount - 1.0) / 2.0`; an unrolled
+    /// armadillo curls up for 80 ticks when struck.
+    fn hurt_server(&self, world: &World, source: &DamageSource, amount: f32) -> bool {
+        let adjusted = if self.is_rolled_up() && !source.bypasses_invulnerability() {
+            ((amount - 1.0) * 0.5).max(0.0)
+        } else {
+            amount
+        };
+        let was_rolled = self.is_rolled_up();
+        let hit = self.default_hurt_server(world, source, adjusted);
+        if hit && !was_rolled && self.is_alive() && !source.bypasses_invulnerability() {
+            self.roll_up(80);
+        }
+        hit
+    }
+
     fn server_ai_step(&self, entity: &SharedEntity) {
         Mob::mob_server_ai_step(self, entity);
     }
@@ -301,6 +337,12 @@ impl Mob for ArmadilloEntity {
     }
 
     fn custom_server_ai_step(&self) {
+        {
+            let mut rolled = self.rolled_up_ticks.lock();
+            if *rolled > 0 {
+                *rolled -= 1;
+            }
+        }
         Animal::custom_server_ai_step_animal(self);
         if LivingEntity::is_alive(self) && !AgeableMob::is_baby(self) {
             let should_shed = {

@@ -167,6 +167,7 @@ pub fn send_mount_screen(player: &Player, container_id: u8, entity_id: i32, colu
 /// Vanilla passes `null` to `AbstractContainerMenu` for mount menus, so there is
 /// no registry menu type: the client builds the screen from the packet alone.
 #[must_use]
+#[cfg(test)]
 pub const fn menu_type() -> Option<MenuTypeRef> {
     None
 }

@@ -30,6 +30,7 @@ use crate::world::{LevelReader, World, is_redstone_conductor};
 pub const SPAWN_INTERVAL: usize = 400;
 
 /// Vanilla `NaturalSpawner.SPAWN_DISTANCE_CHUNK`: the spawn ring around a player.
+#[cfg(test)]
 pub const SPAWN_DISTANCE_CHUNK: i32 = 8;
 
 /// Vanilla `MobCategory.getMaxInstancesPerChunk()` for the spawnable-block cap.
