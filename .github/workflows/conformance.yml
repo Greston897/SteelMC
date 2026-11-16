@@ -188,13 +188,16 @@ jobs:
             [ -f "$f" ] || continue
             grep -q "FAILED" "$f" || continue
             echo "### $(basename "$f" .log)" >> /tmp/panic-messages.log
-            # Prefer the diagnostic block; fall back to the tail so a truncated
-            # or aborted run still shows what the tests printed.
+            # Prefer the diagnostic block; when it never printed the harness died
+            # mid-run, so replay that crate single-threaded to get the real reason.
             if grep -q '^failures:$' "$f"; then
               awk '/^failures:$/{found=1} found' "$f" | head -400 >> /tmp/panic-messages.log
             else
-              echo "(no failures: block; tail follows)" >> /tmp/panic-messages.log
-              tail -120 "$f" >> /tmp/panic-messages.log
+              echo "(no failures: block; replaying single-threaded)" >> /tmp/panic-messages.log
+              pkg=$(basename "$f" .log)
+              pkg=${pkg#test-}
+              RUST_BACKTRACE=1 cargo test -p "$pkg" --all-features -- --test-threads=1 \
+                2>&1 | tail -160 >> /tmp/panic-messages.log || true
             fi
             echo >> /tmp/panic-messages.log
           done
