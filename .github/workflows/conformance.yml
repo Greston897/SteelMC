@@ -169,8 +169,8 @@ jobs:
             done
             echo "### Grand Unified MC 26.3 Parity & Zero-Lag Suite"
             tail -45 /tmp/mega-parity.log || true
-          } > /tmp/test-summary.log
-          python3 .ci/report.py "Full Conformance Test Summary" /tmp/test-summary.log || true
+          } > /tmp/conformance-summary.log
+          python3 .ci/report.py "Full Conformance Test Summary" /tmp/conformance-summary.log || true
 
       - name: Surface failing tests
         if: failure()
