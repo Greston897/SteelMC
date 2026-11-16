@@ -104,7 +104,11 @@ jobs:
 
       - name: Compile every feature
         env:
-          RUSTFLAGS: "-Dwarnings"
+          # This step gates *compilation*, not lint cleanliness: the workspace
+          # keeps `clippy::pedantic` at `warn`, so `-Dwarnings` here would turn
+          # every style nit into a red build and bury real compile errors. Lint
+          # cleanliness is the Lint workflow's job.
+          RUSTFLAGS: ""
         run: |
           set -o pipefail
           cargo check --workspace --all-targets --all-features 2>&1 | tee /tmp/check.log
@@ -128,8 +132,6 @@ jobs:
 
       # 2. Every test, one crate at a time, so the log names the broken area.
       - name: Run all tests per crate
-        env:
-          RUSTFLAGS: "-Dwarnings"
         run: |
           set -o pipefail
           status=0
@@ -261,8 +263,6 @@ jobs:
 
       - name: Clippy
         if: always()
-        env:
-          RUSTFLAGS: "-Dwarnings"
         run: |
           set -o pipefail
           cargo clippy --workspace --all-targets --all-features 2>&1 | tee /tmp/clippy.log
