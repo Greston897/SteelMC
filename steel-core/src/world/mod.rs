@@ -585,14 +585,14 @@ impl World {
     /// chunk write is returned, because that is what vanilla reports.
     pub async fn save(&self) -> io::Result<usize> {
         self.sync_world_border_to_level_data();
-        // Finish the serialisation while the guard is held, then release it
+        // Finish the serialization while the guard is held, then release it
         // before awaiting the write: a `parking_lot` guard is not `Send`, so
         // holding it across `.await` would make this future non-`Send` and break
         // every `tokio::spawn` that saves a world.
         let prepared = match self.level_data.write().prepare_save() {
             Ok(prepared) => prepared,
             Err(e) => {
-                log::error!("Failed to serialise world level data: {e}");
+                log::error!("Failed to serialize world level data: {e}");
                 None
             }
         };

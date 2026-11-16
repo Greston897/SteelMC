@@ -544,12 +544,12 @@ impl LevelDataManager {
         self.dirty = true;
     }
 
-    /// Serialises the level data and returns the file to write, if any.
+    /// Serializes the level data and returns the file to write, if any.
     ///
     /// The split from [`Self::save`] matters for two reasons: the write must not
     /// hold the world's `parking_lot` guard across an `await` (that guard is not
     /// `Send`, so the whole save future would stop being `Send`), and the
-    /// serialised bytes are the only thing the I/O actually needs.
+    /// serialized bytes are the only thing the I/O actually needs.
     pub fn prepare_save(&mut self) -> io::Result<Option<(PathBuf, String)>> {
         if !self.dirty {
             return Ok(None);

@@ -125,6 +125,18 @@ pub struct BooleanOverwrite {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct StateByteOverwriteData {
+    pub offset: u16,
+    pub value: u8,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct StateByteData {
+    pub default: u8,
+    pub overwrites: Vec<StateByteOverwriteData>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct StateBooleanData {
     pub default: bool,
     pub overwrites: Vec<BooleanOverwrite>,

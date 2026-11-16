@@ -46,7 +46,7 @@ pub const EVENT_GATEWAY_SPAWN: i32 = 3000;
 /// (`3001`).
 pub const EVENT_DRAGON_RESPAWN: i32 = 3001;
 
-/// Vanilla `EnderDragonFight.origin`: the exit portal column the fight centres on.
+/// Vanilla `EnderDragonFight.origin`: the exit portal column the fight centers on.
 pub const ORIGIN_Y: i32 = 0;
 /// Vanilla `EnderDragonFight.init`'s `validPlayer` radius, measured from
 /// `(origin.x, 128 + origin.y, origin.z)`.
@@ -463,7 +463,7 @@ impl DragonFight {
     /// Returns the gateway ring indices still unopened, filling them in on the
     /// first call.
     ///
-    /// Vanilla keeps `List<Integer> gateways` initialised to `0..GATEWAY_COUNT`
+    /// Vanilla keeps `List<Integer> gateways` initialized to `0..GATEWAY_COUNT`
     /// and pops the last entry per kill.
     #[must_use]
     pub fn gateways(&self) -> Vec<i32> {
@@ -634,7 +634,7 @@ impl DragonFight {
         self.finish_state_scan();
     }
 
-    /// Serialises the fight exactly as vanilla's codec does.
+    /// Serializes the fight exactly as vanilla's codec does.
     #[must_use]
     pub fn to_saved_data(&self) -> DragonFightSavedData {
         DragonFightSavedData {

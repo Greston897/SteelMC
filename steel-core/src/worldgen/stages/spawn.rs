@@ -196,7 +196,7 @@ fn registry_entity_type(entry: &SpawnerData) -> Option<EntityTypeRef> {
         .by_key(&entry.entity_type)
 }
 
-/// Builds and finalises one generated mob.
+/// Builds and finalizes one generated mob.
 ///
 /// Vanilla creates the entity, places it at the block centre with a random yaw,
 /// then calls `finalizeSpawn` with `ChunkGeneration`. Steel uses

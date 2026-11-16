@@ -75,7 +75,7 @@ pub fn tick_natural_spawning(world: &Arc<World>, tick_count: usize) -> usize {
         // Vanilla suppresses natural spawning on Peaceful.
         return 0;
     }
-    // Vanilla `NaturalSpawner.isValidSpawnPostitionForType` is gated by the
+    // Vanilla `NaturalSpawner.isValidSpawnPositionForType` is gated by the
     // `doMobSpawning` game rule before any per-type work is done.
     if !world.get_game_rule(&vanilla_game_rules::SPAWN_MOBS) {
         return 0;
@@ -296,7 +296,7 @@ fn is_right_distance_for_spawn(
     distance_sqr >= MIN_SPAWN_DISTANCE * MIN_SPAWN_DISTANCE
 }
 
-/// Vanilla `NaturalSpawner.isValidSpawnPostitionForType`'s non-predicate checks.
+/// Vanilla `NaturalSpawner.isValidSpawnPositionForType`'s non-predicate checks.
 ///
 /// Beyond the type's own spawn rule, vanilla requires that the type is not
 /// `MISC`, that it is either `canSpawnFarFromPlayer` or still inside the

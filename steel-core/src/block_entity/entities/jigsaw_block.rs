@@ -41,7 +41,7 @@ struct JigsawState {
 impl JigsawState {
     fn new() -> Self {
         Self {
-            // Vanilla `EMPTY_ID` / `Pools.EMPTY` serialise as `minecraft:empty`.
+            // Vanilla `EMPTY_ID` / `Pools.EMPTY` serialize as `minecraft:empty`.
             name: "minecraft:empty".to_owned(),
             target: "minecraft:empty".to_owned(),
             pool: "minecraft:empty".to_owned(),

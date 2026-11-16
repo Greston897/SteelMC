@@ -1164,7 +1164,7 @@ impl JavaConnection {
     /// Every inbound packet passes through a [`PacketBudget`] first, so a client
     /// that floods the server — millions of book edits, container clicks, or
     /// oversized custom payloads — is throttled and then disconnected instead of
-    /// queueing unbounded work on the game loop. Malformed packets go through a
+    /// queuing unbounded work on the game loop. Malformed packets go through a
     /// [`ViolationBudget`]: a couple of transient failures are tolerated, but a
     /// peer that keeps sending garbage is closed, exactly like vanilla's
     /// `DecoderException` path.

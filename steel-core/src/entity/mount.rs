@@ -185,7 +185,7 @@ pub fn body_armor(inventory: &Shared<SimpleContainer>) -> Option<ItemStack> {
     (!stack.is_empty()).then_some(stack)
 }
 
-/// Synchronised mount storage, since `AbstractHorse` is ticked and interacted
+/// Synchronized mount storage, since `AbstractHorse` is ticked and interacted
 /// with from several threads.
 pub type SharedMountInventory = std::sync::Arc<SyncMutex<MountInventory>>;
 

@@ -1203,7 +1203,7 @@ impl ChunkMap {
             .collect()
     }
 
-    /// Picks a random entity-ticking full chunk without materialising the list.
+    /// Picks a random entity-ticking full chunk without materializing the list.
     ///
     /// The natural spawner asks once per category per player, so the previous
     /// `tickable_full_chunk_positions().get(random)` shape allocated a fresh

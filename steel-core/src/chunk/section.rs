@@ -436,7 +436,7 @@ fn is_stable_vanilla_air(state: BlockStateId) -> bool {
 }
 
 impl Sections {
-    /// Serialises only the biome containers of every section.
+    /// Serializes only the biome containers of every section.
     ///
     /// This is the payload of the `chunks_biomes` packet: vanilla's
     /// `ChunkSerializer.writeChunkBiomes` writes one `PackedArray` per section

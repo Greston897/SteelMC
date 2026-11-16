@@ -57,7 +57,7 @@ impl TridentItem {
     /// Vanilla `TridentItem.releaseUsing` riptide branch.
     ///
     /// Computes the look direction from the *`f32`* rotation with the sine table
-    /// (exactly like `Mth.sin`/`Mth.cos`), normalises it, pushes the player with
+    /// (exactly like `Mth.sin`/`Mth.cos`), normalizes it, pushes the player with
     /// `strength / length` and starts the spin attack. The upward hop only
     /// happens on the ground.
     fn launch_riptide(

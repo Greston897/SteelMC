@@ -90,7 +90,7 @@ fn try_spawn_at(
         user_is_operator: false,
     };
     let entity = spawn_entity(world, request).ok()?;
-    // `EntitySpawnPlacement::Block` centres the entity in the block; vanilla
+    // `EntitySpawnPlacement::Block` centers the entity in the block; vanilla
     // `SpawnUtil` puts it at the bottom centre of the surface block, so an
     // emerging warden rises out of the floor rather than the middle of the air.
     entity.base().set_position_local(DVec3::new(
