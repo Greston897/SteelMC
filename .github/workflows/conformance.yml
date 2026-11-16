@@ -150,13 +150,40 @@ jobs:
       - name: Surface failing tests
         if: failure()
         run: |
+          # Commit comments are the only channel that survives when log and
+          # artifact downloads are blocked, so publish the failing test names and
+          # the panic lines instead of relying on job annotations alone.
+          {
+            echo "## Failing tests"
+            for f in /tmp/test-*.log; do
+              [ -f "$f" ] || continue
+              grep -qE "^failures:|FAILED" "$f" || continue
+              echo "### $(basename "$f" .log)"
+              echo '```'
+              grep -E "^(failures:|test .* FAILED|---- |thread .* panicked|assertion|  left:|  right:)" "$f" \
+                | head -60
+              echo '```'
+            done
+          } > /tmp/failing-tests.md
+          cat /tmp/failing-tests.md
           for f in /tmp/test-*.log; do
             [ -f "$f" ] || continue
-            grep -E "^(failures:|test .* FAILED|---- )" "$f" | head -20 | while IFS= read -r line; do
+            grep -E "^(failures:|test .* FAILED|---- |thread .* panicked)" "$f" | head -20 | while IFS= read -r line; do
               echo "::error title=$(basename "$f")::$line"
             done
           done
           exit 1
+
+      - name: Publish failing tests as a commit comment
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          [ -s /tmp/failing-tests.md ] || exit 0
+          # `report.py` wraps each file in its own fenced block, so strip the
+          # markdown wrapper and publish the raw excerpts.
+          sed '1d' /tmp/failing-tests.md > /tmp/failing-tests.log
+          python3 .ci/report.py "Failing tests" /tmp/failing-tests.log || true
 
       # 3. Conformance: the invariants the code claims to hold. Cheap greps and
       #    JSON comparisons; each of these caught a real bug during this cycle.
