@@ -138,12 +138,13 @@ fn fetch_profile_by_name(
     if let Some(player) = server
         .get_players()
         .into_iter()
-        .find(|player| player.gameprofile.name.eq_ignore_ascii_case(name))
+        .find(|player| player.gameprofile.name().eq_ignore_ascii_case(name))
     {
         context.source().send_success(
             &TextComponent::plain(format!(
                 "Successfully resolved profile {} ({})",
-                player.gameprofile.name, player.gameprofile.id
+                player.gameprofile.name(),
+                player.gameprofile.id()
             )),
             false,
         );

@@ -14,8 +14,6 @@ use steel_protocol::packets::game::{TestInstanceBlockData, TestInstanceBlockSetu
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
-
-use steel_utils::nbt::NbtNumeric as _;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};

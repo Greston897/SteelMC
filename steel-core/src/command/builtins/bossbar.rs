@@ -248,6 +248,7 @@ fn get_bar(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandS
 
 fn set_name(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let name = context.text_component("name")?.clone();
+    let id = context.identifier("id")?.to_string();
     let bar = update_bar(context, |bar| {
         bar.name = name.clone();
         let packet = CBossEvent {
