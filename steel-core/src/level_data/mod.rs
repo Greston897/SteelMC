@@ -544,19 +544,21 @@ impl LevelDataManager {
         self.dirty = true;
     }
 
-    /// Saves the level data to disk if it has been modified.
-    pub async fn save(&mut self) -> io::Result<()> {
+    /// Serialises the level data and returns the file to write, if any.
+    ///
+    /// The split from [`Self::save`] matters for two reasons: the write must not
+    /// hold the world's `parking_lot` guard across an `await` (that guard is not
+    /// `Send`, so the whole save future would stop being `Send`), and the
+    /// serialised bytes are the only thing the I/O actually needs.
+    pub fn prepare_save(&mut self) -> io::Result<Option<(PathBuf, String)>> {
         if !self.dirty {
-            return Ok(());
+            return Ok(None);
         }
 
-        let Some(world_path) = &self.path else {
+        let Some(world_path) = self.path.clone() else {
             self.dirty = false;
-            return Ok(());
+            return Ok(None);
         };
-        if let Some(parent) = world_path.parent() {
-            fs::create_dir_all(parent).await?;
-        }
 
         self.data.game_time = self.primary_game_time.as_ref().map(|clock| clock.ticks());
 
@@ -565,8 +567,19 @@ impl LevelDataManager {
 
         let content = toml::to_string_pretty(&self.data)
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-        fs::write(world_path, content).await?;
         self.dirty = false;
+        Ok(Some((world_path, content)))
+    }
+
+    /// Saves the level data to disk if it has been modified.
+    pub async fn save(&mut self) -> io::Result<()> {
+        let Some((world_path, content)) = self.prepare_save()? else {
+            return Ok(());
+        };
+        if let Some(parent) = world_path.parent() {
+            fs::create_dir_all(parent).await?;
+        }
+        fs::write(&world_path, content).await?;
 
         log::debug!("Saved level data to {}", world_path.display());
         Ok(())

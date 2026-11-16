@@ -583,15 +583,31 @@ impl World {
     ///
     /// A failing saved-data set is logged but does not stop the pass; only the
     /// chunk write is returned, because that is what vanilla reports.
-    #[expect(
-        clippy::await_holding_lock,
-        reason = "holding the write lock across await is safe here because world saves are serialised"
-    )]
     pub async fn save(&self) -> io::Result<usize> {
         self.sync_world_border_to_level_data();
-        match self.level_data.write().save().await {
-            Ok(()) => log::info!("World {} level data saved successfully", self.key),
-            Err(e) => log::error!("Failed to save world level data: {e}"),
+        // Finish the serialisation while the guard is held, then release it
+        // before awaiting the write: a `parking_lot` guard is not `Send`, so
+        // holding it across `.await` would make this future non-`Send` and break
+        // every `tokio::spawn` that saves a world.
+        let prepared = match self.level_data.write().prepare_save() {
+            Ok(prepared) => prepared,
+            Err(e) => {
+                log::error!("Failed to serialise world level data: {e}");
+                None
+            }
+        };
+        if let Some((path, content)) = prepared {
+            let written = async {
+                if let Some(parent) = path.parent() {
+                    tokio::fs::create_dir_all(parent).await?;
+                }
+                tokio::fs::write(&path, content).await
+            }
+            .await;
+            match written {
+                Ok(()) => log::info!("World {} level data saved successfully", self.key),
+                Err(e) => log::error!("Failed to save world level data: {e}"),
+            }
         }
 
         let chunk_tickets = self.chunk_map.persistent_chunk_tickets();

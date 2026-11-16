@@ -305,7 +305,7 @@ impl Entity for MuleEntity {
         // Vanilla `AbstractChestedHorse.addAdditionalSaveData`.
         nbt.insert("ChestedHorse", self.has_chest());
         if self.has_chest() {
-            self.mount_inventory.lock().save_items(nbt, "Items");
+            self.mount_inventory.lock().save_items(nbt);
         }
     }
 
@@ -318,7 +318,7 @@ impl Entity for MuleEntity {
         let chest = nbt.byte("ChestedHorse").is_some_and(|b| b != 0);
         self.set_chest(chest);
         if chest {
-            self.mount_inventory.lock().load_items(&nbt, "Items");
+            self.mount_inventory.lock().load_items((&nbt).into());
         }
     }
 }

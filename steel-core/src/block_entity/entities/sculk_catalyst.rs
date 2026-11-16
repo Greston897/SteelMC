@@ -158,22 +158,27 @@ impl SculkShriekerBlockEntity {
     /// Vanilla `SculkShriekerBlockEntity.tryGetPlayer`: the shriek is credited to
     /// a player, the player riding the source, the shooter of the projectile, or
     /// the thrower of the item.
+    ///
+    /// The returned handle has to be the world's own `Arc<Player>`:
+    /// [`WardenSpawnTracker::try_warn`] identifies the triggering player with
+    /// `Arc::ptr_eq`, so a fresh allocation would drop the credit. Vanilla has no
+    /// such problem because it compares object identity.
     #[must_use]
     pub fn try_get_player(entity: &dyn Entity) -> Option<Arc<Player>> {
-        if let Some(player) = entity.downcast_ref::<Player>() {
-            return Some(Arc::clone(player));
-        }
-        let as_player = |entity: &crate::entity::SharedEntity| {
-            if entity.entity_type() == &steel_registry::vanilla_entities::PLAYER {
-                entity.downcast_ref::<Player>().map(Arc::clone)
-            } else {
-                None
-            }
-        };
-        if let Some(passenger) = entity.controlling_passenger().as_deref().and_then(as_player) {
-            return Some(passenger);
-        }
-        entity.projectile_owner().as_deref().and_then(as_player)
+        // Vanilla checks the concrete player first, then the passenger, then the
+        // projectile owner / item thrower, and stops at the first one that is a
+        // player.
+        let candidate = entity.as_player().map(|player| player.base().uuid()).or_else(|| {
+            [entity.controlling_passenger(), entity.projectile_owner()]
+                .into_iter()
+                .flatten()
+                .find_map(|owner| {
+                    (owner.entity_type() == &steel_registry::vanilla_entities::PLAYER)
+                        .then(|| owner.as_player().map(|player| player.base().uuid()))
+                        .flatten()
+                })
+        })?;
+        entity.level()?.players.get_by_uuid(&candidate)
     }
 
     /// Vanilla `SculkShriekerBlockEntity.canRespond`.
@@ -290,7 +295,7 @@ impl SculkShriekerBlockEntity {
             _ => return,
         };
         let mut rng = rand::rng();
-        let offset = |value: i32| {
+        let mut offset = |value: i32| {
             value + rand::RngExt::random_range(&mut rng, -WARNING_SOUND_RADIUS..=WARNING_SOUND_RADIUS)
         };
         world.play_sound_at(

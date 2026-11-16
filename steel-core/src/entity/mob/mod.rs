@@ -1916,7 +1916,7 @@ pub trait Mob: LivingEntity + Leashable {
         let cos = trig::cos(yaw_radians);
         let dx = f64::from(xa * cos - za * sin);
         let dz = f64::from(za * cos + xa * sin);
-        if !self.is_strafe_walkable(dx, dz) {
+        if !self.is_strafe_walkable(dx as f32, dz as f32) {
             strafe_forward = 1.0;
             strafe_right = 0.0;
         }

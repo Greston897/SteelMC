@@ -8,6 +8,7 @@
 
 use std::sync::Weak;
 
+use simdnbt::ToNbtTag as _;
 use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
 use simdnbt::borrow::NbtCompound as NbtCompoundView;
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
@@ -82,7 +83,7 @@ impl MountInventory {
 
     /// Vanilla `AbstractChestedHorse.addAdditionalSaveData`: every occupied slot
     /// is written with its index so the layout survives a save.
-    pub fn save_items(&self, nbt: &mut NbtCompound, field: &str) {
+    pub fn save_items(&self, nbt: &mut NbtCompound) {
         let container = self.container.lock();
         let mut items: Vec<NbtCompound> = Vec::new();
         for slot in 0..container.get_container_size() {
@@ -96,15 +97,19 @@ impl MountInventory {
             }
         }
         drop(container);
-        nbt.insert(field, NbtList::Compound(items));
+        nbt.insert("Items", NbtList::Compound(items));
     }
 
     /// Reads the list written by [`Self::save_items`].
-    pub fn load_items(&self, nbt: &BorrowedNbtCompound<'_>, _field: &str) {
-        let view: NbtCompoundView<'_, '_> = nbt.into();
+    ///
+    /// Vanilla `AbstractHorse.readAdditionalSaveData` always uses the `Items`
+    /// key, so the field name is not a parameter. The borrowed NBT view is taken
+    /// by value because that is what the callers already hold.
+    pub fn load_items(&self, nbt: NbtCompoundView<'_, '_>) {
         let mut container = self.container.lock();
-        container.items.fill(ItemStack::empty());
-        crate::inventory::container::load_all_items(view, &mut container.items);
+        let slots = container.items_mut();
+        slots.fill(ItemStack::empty());
+        crate::inventory::container::load_all_items(nbt, slots);
     }
 
     /// Whether the mount carries a saddle.

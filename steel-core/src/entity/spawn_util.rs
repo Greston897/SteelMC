@@ -9,7 +9,7 @@
 use std::sync::Arc;
 
 use glam::DVec3;
-use rand::Rng;
+use rand::RngExt as _;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_utils::{BlockPos, WorldAabb};

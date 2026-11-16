@@ -30,7 +30,7 @@ pub const BEEHIVE_MIN_OCCUPATION_TICKS_NECTARLESS: i32 = 600;
 /// Radius in which a hive angers bees that are already outside it.
 const BEEHIVE_ANGER_RADIUS: f64 = 8.0;
 /// Vanilla `BeehiveBlock.MAX_HONEY_LEVEL`.
-const MAX_HONEY_LEVEL: i32 = 5;
+const MAX_HONEY_LEVEL: u8 = 5;
 /// Vanilla `BeehiveBlock.HORIZONTAL_FACING`.
 const FACING: &EnumProperty<Direction> = &BlockStateProperties::HORIZONTAL_FACING;
 /// Vanilla `BeehiveBlock.HONEY_LEVEL`.
@@ -297,14 +297,19 @@ impl BeehiveBlockEntity {
         let exit_blocked = {
             let exit_pos = pos.relative(front);
             let exit_state = world.get_block_state(exit_pos);
-            world.is_face_sturdy(exit_state, exit_pos, front.opposite())
+            world.is_face_sturdy_for(
+                exit_state,
+                exit_pos,
+                front.opposite(),
+                steel_registry::blocks::shapes::SupportType::Full,
+            )
         };
 
         let can_release = world.is_day() && !world.is_raining();
 
         let honey_level = state.get_value(LEVEL_HONEY);
         let mut released_any = false;
-        let mut honey_gain = 0;
+        let mut honey_gain: u8 = 0;
 
         {
             let mut guard = self.state.lock();
@@ -342,8 +347,8 @@ impl BeehiveBlockEntity {
         }
         BlockEntity::set_changed(self);
 
-        let new_level = u8::try_from((honey_level + honey_gain).min(MAX_HONEY_LEVEL)).unwrap_or(0);
-        if i32::from(new_level) != honey_level {
+        let new_level = honey_level.saturating_add(honey_gain).min(MAX_HONEY_LEVEL);
+        if new_level != honey_level {
             let updated = state.set_value(LEVEL_HONEY, new_level);
             world.set_block(pos, updated, steel_utils::types::UpdateFlags::UPDATE_CLIENTS);
         }

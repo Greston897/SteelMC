@@ -8,7 +8,7 @@
 //!
 use std::iter::empty;
 use std::sync::atomic::{AtomicI64, Ordering};
-use std::sync::Weak;
+use std::sync::{Arc, Weak};
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
@@ -180,7 +180,7 @@ impl CopperGolemEntity {
     /// game ticks out (~7..7.7 in-game days). Once the golem is fully oxidized it
     /// tries to turn into a statue: the block under it must be air and the roll
     /// must be under `0.0058` every tick.
-    fn update_weathering(&self, world: &World) {
+    fn update_weathering(&self, world: &Arc<World>) {
         let next = self.next_weathering_tick();
         if next == -2 {
             // Waxed: vanilla stops weathering entirely.
@@ -213,7 +213,7 @@ impl CopperGolemEntity {
     }
 
     /// Vanilla `CopperGolem.canTurnToStatue`.
-    fn can_turn_to_statue(&self, world: &World) -> bool {
+    fn can_turn_to_statue(&self, world: &Arc<World>) -> bool {
         world
             .get_block_state(Entity::block_position(self))
             .is_air()
@@ -222,7 +222,7 @@ impl CopperGolemEntity {
 
     /// Vanilla `CopperGolem.turnToStatue`: replace the golem's block with an
     /// oxidized statue carrying its name, then drop its equipment.
-    fn turn_to_statue(&self, world: &World) {
+    fn turn_to_statue(&self, world: &Arc<World>) {
         let pos = Entity::block_position(self);
         let pose = match rand::random_range(0..4) {
             0 => steel_registry::blocks::properties::Pose::Standing,

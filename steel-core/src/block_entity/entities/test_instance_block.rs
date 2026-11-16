@@ -103,12 +103,12 @@ impl BlockEntity for TestInstanceBlockEntity {
             }
         }
         data_out.ignore_entities = data.byte_value("ignore_entities").is_some_and(|v| v != 0);
-        data_out.status = match data.string("status").as_deref() {
+        data_out.status = match data.string("status").map(|v| v.to_str().into_owned()).as_deref() {
             Some("running") => TestInstanceBlockSetupStatus::Running,
             Some("finished") => TestInstanceBlockSetupStatus::Finished,
             _ => TestInstanceBlockSetupStatus::Cleared,
         };
-        data_out.rotation = match data.string("rotation").as_deref() {
+        data_out.rotation = match data.string("rotation").map(|v| v.to_str().into_owned()).as_deref() {
             Some("clockwise_90") => steel_utils::Rotation::Clockwise90,
             Some("180") => steel_utils::Rotation::Clockwise180,
             Some("counterclockwise_90") => steel_utils::Rotation::CounterClockwise90,

@@ -51,12 +51,10 @@ impl CopperGolemStatueBlockEntity {
     /// custom name so a later `removeStatue` can restore it.
     pub fn create_statue(&self, copper_golem: &dyn Entity) {
         let mut components = self.base.stored_components();
-        match copper_golem.base().custom_name() {
-            Some(name) => components.set(CUSTOM_NAME, name),
-            None => {
-                components.remove(&CUSTOM_NAME.key);
-            }
-        }
+        // `ComponentMap::set` removes the entry when handed `None`, which is
+        // exactly what vanilla's `remove` branch does.
+        let name = copper_golem.base().custom_name().cloned();
+        components.set(CUSTOM_NAME, name);
         self.base.set_components(components);
         self.base.set_changed();
     }
@@ -65,7 +63,7 @@ impl CopperGolemStatueBlockEntity {
     /// into a copper golem at the statue's position and facing. Returns `None`
     /// when vanilla would get a `null` entity from `EntityType.create`.
     pub fn remove_statue(&self, state: BlockStateId) -> Option<SharedEntity> {
-        let world = self.level()?;
+        let world = self.base.level()?;
         let golem = ENTITIES.create(
             &vanilla_entities::COPPER_GOLEM,
             next_entity_id(),

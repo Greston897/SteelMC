@@ -803,8 +803,9 @@ impl Server {
         // container the pools must shrink to the quota even when the config asks
         // for more, otherwise every CPU-bound pool oversubscribes the quota.
         // `config` arrives behind an `Arc`, so clamp a copy rather than the shared value.
-        let mut config = RuntimeConfig::clone(&config);
-        config.clamp_cores_to_available(available_worker_threads());
+        let mut clamped = RuntimeConfig::clone(&config);
+        clamped.clamp_cores_to_available(available_worker_threads());
+        let config = Arc::new(clamped);
 
         let pools = pool_sizes_for_available(config.cores);
         let generation_pool: Arc<ThreadPool> = Arc::new({
