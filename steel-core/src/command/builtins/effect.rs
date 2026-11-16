@@ -27,7 +27,7 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
             literal("give").then(
                 argument("targets", SteelArgumentType::entities()).then(
                     argument("effect", SteelArgumentType::identifier())
-                        .executes(|context| give_default(context))
+                        .executes(give_default)
                         .then(
                             argument("seconds", ArgumentType::integer(1, 1_000_000))
                                 .executes(|context| give(context, false))
@@ -41,30 +41,24 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
                                 ),
                         )
                         .then(
-                            literal("infinite")
-                                .executes(give_infinite)
-                                .then(
-                                    argument("amplifier", ArgumentType::integer(0, 255))
-                                        .executes(give_infinite)
-                                        .then(
-                                            argument("hideParticles", ArgumentType::bool())
-                                                .executes(give_infinite),
-                                        ),
-                                ),
+                            literal("infinite").executes(give_infinite).then(
+                                argument("amplifier", ArgumentType::integer(0, 255))
+                                    .executes(give_infinite)
+                                    .then(
+                                        argument("hideParticles", ArgumentType::bool())
+                                            .executes(give_infinite),
+                                    ),
+                            ),
                         ),
                 ),
             ),
         )
         .then(
-            literal("clear")
-                .executes(clear_self)
-                .then(
-                    argument("targets", SteelArgumentType::entities())
-                        .executes(clear_all)
-                        .then(
-                            argument("effect", SteelArgumentType::identifier()).executes(clear_one),
-                        ),
-                ),
+            literal("clear").executes(clear_self).then(
+                argument("targets", SteelArgumentType::entities())
+                    .executes(clear_all)
+                    .then(argument("effect", SteelArgumentType::identifier()).executes(clear_one)),
+            ),
         )
 }
 

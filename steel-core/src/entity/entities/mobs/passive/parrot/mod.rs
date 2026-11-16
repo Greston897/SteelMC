@@ -488,9 +488,7 @@ mod tests {
     #[test]
     fn seeds_tempt_parrots() {
         init_vanilla_registry();
-        assert!(is_parrot_food(&ItemStack::new(
-            &vanilla_items::WHEAT_SEEDS
-        )));
+        assert!(is_parrot_food(&ItemStack::new(&vanilla_items::WHEAT_SEEDS)));
         assert!(!is_parrot_food(&ItemStack::new(&vanilla_items::STONE)));
     }
 

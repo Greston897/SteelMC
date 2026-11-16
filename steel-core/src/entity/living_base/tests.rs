@@ -359,10 +359,9 @@ fn equipment_is_living_entity_state() {
 
     assert_eq!(base.equipment().lock().non_empty_items().len(), 0);
 
-    base.equipment().lock().set(
-        EquipmentSlot::Chest,
-        ItemStack::new(&vanilla_items::ELYTRA),
-    );
+    base.equipment()
+        .lock()
+        .set(EquipmentSlot::Chest, ItemStack::new(&vanilla_items::ELYTRA));
 
     assert!(
         base.equipment()

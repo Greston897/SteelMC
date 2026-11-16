@@ -222,8 +222,6 @@ mod tests {
         assert!(ArrowItem::is_arrow(&ItemStack::new(
             &vanilla_items::SPECTRAL_ARROW
         )));
-        assert!(!ArrowItem::is_arrow(&ItemStack::new(
-            &vanilla_items::STICK
-        )));
+        assert!(!ArrowItem::is_arrow(&ItemStack::new(&vanilla_items::STICK)));
     }
 }

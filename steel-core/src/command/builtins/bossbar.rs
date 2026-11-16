@@ -113,8 +113,8 @@ fn set_commands() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     let value = literal("value")
         .then(argument("value", ArgumentType::integer(0, i32::MAX)).executes(set_value));
 
-    let max = literal("max")
-        .then(argument("max", ArgumentType::integer(1, i32::MAX)).executes(set_max));
+    let max =
+        literal("max").then(argument("max", ArgumentType::integer(1, i32::MAX)).executes(set_max));
 
     let visible =
         literal("visible").then(argument("visible", ArgumentType::bool()).executes(set_visible));

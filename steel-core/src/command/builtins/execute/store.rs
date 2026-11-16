@@ -55,9 +55,11 @@ pub(super) fn target(name: &'static str, store_result: bool) -> Builder {
         .then(
             literal("bossbar").then(
                 argument("id", SteelArgumentType::identifier())
-                    .then(literal("value").redirects_with(EXECUTE_ROOT, move |context| {
-                        store_bossbar(context, BossBarField::Value, store_result)
-                    }))
+                    .then(
+                        literal("value").redirects_with(EXECUTE_ROOT, move |context| {
+                            store_bossbar(context, BossBarField::Value, store_result)
+                        }),
+                    )
                     .then(literal("max").redirects_with(EXECUTE_ROOT, move |context| {
                         store_bossbar(context, BossBarField::Max, store_result)
                     })),

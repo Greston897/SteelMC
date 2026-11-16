@@ -32,9 +32,7 @@ fn sheep_initializes_vanilla_living_attributes_and_health() {
 fn sheep_uses_vanilla_sheep_food_tag() {
     init_vanilla_registry();
 
-    assert!(SheepEntity::is_food(&ItemStack::new(
-        &vanilla_items::WHEAT
-    )));
+    assert!(SheepEntity::is_food(&ItemStack::new(&vanilla_items::WHEAT)));
     assert!(!SheepEntity::is_food(&ItemStack::new(
         &vanilla_items::STONE
     )));
