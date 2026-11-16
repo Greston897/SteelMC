@@ -107,7 +107,10 @@ pub struct PhaseContext<'a> {
     /// Vanilla draws as many values as a phase needs from one stream, so a phase
     /// that rolls twice must not get the same number twice. The seed is taken from
     /// the entity's random once per AI step and advanced by [`Self::random_below`].
-    random_state: std::cell::Cell<u64>,
+    ///
+    /// Visible to the parent module because the AI step builds the context there;
+    /// nothing outside the dragon touches it.
+    pub(crate) random_state: std::cell::Cell<u64>,
 }
 
 /// Vanilla `DragonHoldingPatternPhase.NEW_TARGET_TARGETING`: combat targeting
