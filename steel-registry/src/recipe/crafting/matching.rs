@@ -452,7 +452,7 @@ mod tests {
             pattern.len(),
             1,
             pattern.into_boxed_slice(),
-            ItemStackTemplate::new(&*vanilla_items::PURPLE_DYE),
+            ItemStackTemplate::new(&vanilla_items::PURPLE_DYE),
         )
     }
 
@@ -460,15 +460,15 @@ mod tests {
     fn asymmetric_shaped_recipe_matches_both_orientations() {
         init_vanilla_registry();
         let recipe = asymmetric_shaped_recipe(vec![
-            Ingredient::Item(&*vanilla_items::RED_DYE),
-            Ingredient::Item(&*vanilla_items::BLUE_DYE),
+            Ingredient::Item(&vanilla_items::RED_DYE),
+            Ingredient::Item(&vanilla_items::BLUE_DYE),
         ]);
         let forward = CraftingInput::new(
             2,
             1,
             vec![
-                ItemStack::new(&*vanilla_items::RED_DYE),
-                ItemStack::new(&*vanilla_items::BLUE_DYE),
+                ItemStack::new(&vanilla_items::RED_DYE),
+                ItemStack::new(&vanilla_items::BLUE_DYE),
             ],
         );
         let mirrored = CraftingInput::new(

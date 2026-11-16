@@ -32,17 +32,35 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 }
 
 fn command() -> Builder {
-    // Vanilla grammar: loot <targets> <source> <loot_table_or_slot> [<count>]
-    argument("targets", SteelArgumentType::players()).then(
-        literal("give")
-            .then(argument("loot_table", SteelArgumentType::identifier()).executes(give))
-            .then(
-                argument("loot_table", SteelArgumentType::identifier())
-                    .then(argument("count", SteelArgumentType::int_range()).executes(
-                        give_with_count,
-                    )),
+    // Vanilla grammar: loot give <targets> loot <loot_table>
+    // Also keeps loot <targets> give <loot_table> [<count>] subbranch.
+    literal("loot")
+        .then(
+            literal("give").then(
+                argument("targets", SteelArgumentType::players()).then(
+                    literal("loot").then(
+                        argument("loot_table", SteelArgumentType::identifier())
+                            .executes(give)
+                            .then(
+                                argument("count", SteelArgumentType::int_range())
+                                    .executes(give_with_count),
+                            ),
+                    ),
+                ),
             ),
-    )
+        )
+        .then(
+            argument("targets", SteelArgumentType::players()).then(
+                literal("give").then(
+                    argument("loot_table", SteelArgumentType::identifier())
+                        .executes(give)
+                        .then(
+                            argument("count", SteelArgumentType::int_range())
+                                .executes(give_with_count),
+                        ),
+                ),
+            ),
+        )
 }
 
 fn loot_table_of(

@@ -295,10 +295,22 @@ pub enum PhaseAction {
     /// Vanilla `dragon.playSound(ENTITY_ENDER_DRAGON_SHOOT, ...)`.
     PlayShootSound,
     /// Vanilla `level.addFreshEntity(new DragonFireball(...))`.
-    SpawnFireball { origin: DVec3, direction: DVec3 },
+    SpawnFireball {
+        /// Fireball spawn position.
+        origin: DVec3,
+        /// Fireball launch direction.
+        direction: DVec3,
+    },
     /// Vanilla `level.addFreshEntity(new AreaEffectCloud(...))` for the sitting
     /// flame. `origin` is the head position; the cloud resolves its own ground.
-    SpawnBreathCloud { x: f64, head_y: f64, z: f64 },
+    SpawnBreathCloud {
+        /// Cloud center X.
+        x: f64,
+        /// Dragon head Y anchor.
+        head_y: f64,
+        /// Cloud center Z.
+        z: f64,
+    },
     /// Vanilla `level.levelEvent(null, 1017, blockPosition(), 0)`.
     StrafeShotLevelEvent,
     /// Vanilla `dragon.setHealth(...)` from the death dive.

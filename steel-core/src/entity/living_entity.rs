@@ -39,6 +39,7 @@ pub fn player_jump_pending_scale(jump_amount: i32) -> f32 {
     }
 }
 
+/// Shared behavior contract for every living entity (players, mobs, armor stands).
 pub trait LivingEntity: Entity {
     /// Returns a reference to the shared [`LivingEntityBase`] that holds
     /// living runtime state such as attributes, cached movement speed,
@@ -3706,6 +3707,7 @@ pub trait LivingEntity: Entity {
 /// Walks down from `y` until standing on a block that blocks motion,
 /// mirroring the descent loop in vanilla `Entity.randomTeleport`. Returns
 /// `None` if the world's floor is reached without finding solid ground.
+#[expect(dead_code, reason = "vanilla LivingEntity.randomTeleport ground probe helper")]
 fn random_teleport_ground_y(world: &Arc<World>, x: f64, y: f64, z: f64) -> Option<f64> {
     random_teleport_ground_y_avoiding(world, x, y, z, None)
 }

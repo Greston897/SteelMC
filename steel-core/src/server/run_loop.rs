@@ -766,7 +766,7 @@ impl Server {
             self.worlds.advance_domain_game_times();
             // Vanilla advances `ServerScoreboard` stopwatches once per tick,
             // alongside the game time.
-            self.scoreboards.tick_stopwatches();
+            let _ = self.scoreboards.tick_stopwatches();
         }
         // Vanilla ticks locator-bar transmission after the world tick, from the
         // per-world `WaypointManager`; it only needs the post-move positions.

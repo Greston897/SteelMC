@@ -368,6 +368,7 @@ pub trait AbstractMinecart: VehicleEntity + AbstractMinecartEventSource {
         result
     }
 
+    /// Applies per-tick natural drag (and water drag) to minecart velocity.
     fn apply_natural_slowdown(&self, movement: DVec3) -> DVec3 {
         self.apply_base_natural_slowdown(movement)
     }
@@ -541,6 +542,19 @@ pub trait AbstractMinecart: VehicleEntity + AbstractMinecartEventSource {
                 .and_then(|tag| tag.byte_value())
                 .is_some_and(|value| value != 0),
         );
+    }
+
+    /// Builds a `ClientboundMoveMinecartAlongTrackPacket` for the experimental
+    /// `NewMinecartBehavior` client interpolation steps.
+    #[must_use]
+    fn build_track_lerp_packet(
+        &self,
+        lerp_steps: Vec<steel_protocol::packets::game::MinecartStep>,
+    ) -> steel_protocol::packets::game::CMoveMinecartAlongTrack {
+        steel_protocol::packets::game::CMoveMinecartAlongTrack {
+            entity_id: self.id(),
+            lerp_steps,
+        }
     }
 }
 

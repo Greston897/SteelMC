@@ -215,15 +215,18 @@ impl BeaconBlockEntity {
     }
 
     #[must_use]
+    /// Returns the custom display name of this beacon, if set.
     pub fn custom_name(&self) -> Option<TextComponent> {
         self.name.lock().clone()
     }
 
+    /// Sets or clears the custom display name of this beacon.
     pub fn set_custom_name(&self, name: Option<TextComponent>) {
         *self.name.lock() = name;
     }
 
     #[must_use]
+    /// Returns the container lock predicate guarding this beacon.
     pub fn lock_key(&self) -> LockCode {
         self.lock_key.lock().clone()
     }

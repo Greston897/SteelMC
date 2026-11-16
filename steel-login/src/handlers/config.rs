@@ -66,6 +66,11 @@ impl JavaTcpClient {
             self.send_bare_packet_now(server_links).await;
         }
 
+        // Send custom report details if configured (vanilla ServerCommonPacketListenerImpl).
+        if let Some(report_details) = self.server.custom_report_details_packet() {
+            self.send_bare_packet_now(report_details).await;
+        }
+
         // Vanilla `ServerConfigurationPacketListenerImpl.startConfiguration` sends
         // the enabled feature flags unconditionally, after the brand/server links and
         // before `select_known_packs`. The vanilla client gates feature-flagged
@@ -138,8 +143,63 @@ impl JavaTcpClient {
         self.send_packet_now(&self.server.registry_cache.tags_packet)
             .await;
 
+        // Vanilla 26.3 `ServerCodeOfConductConfigurationTask`: when a code of
+        // conduct is configured, send it before `CFinishConfiguration` and wait
+        // for `SAcceptCodeOfConduct` to complete the configuration handshake.
+        if let Some(code_of_conduct) = self.server.code_of_conduct_packet() {
+            self.send_bare_packet_now(code_of_conduct).await;
+            return;
+        }
+
         // Finish configuration with CFinishConfigurationPacket
         self.send_bare_packet_now(CFinishConfiguration {}).await;
+    }
+
+    /// Completes the MC 26.3 code-of-conduct step (`ServerboundAcceptCodeOfConductPacket`)
+    /// and sends `CFinishConfiguration`.
+    pub async fn handle_accept_code_of_conduct(&self) {
+        if self.server.code_of_conduct_packet().is_some() {
+            self.send_bare_packet_now(CFinishConfiguration {}).await;
+        }
+    }
+
+    /// Sends a Configuration-state custom dialog (`ClientboundShowDialogPacket`).
+    pub async fn send_config_dialog(&self, dialog: simdnbt::owned::NbtCompound) {
+        self.send_bare_packet_now(steel_protocol::packets::game::CConfigShowDialog { dialog })
+            .await;
+    }
+
+    /// Sends a Configuration-state ping (`ClientboundPingPacket`).
+    pub async fn send_config_ping(&self, id: i32) {
+        self.send_bare_packet_now(steel_protocol::packets::game::CConfigPing { id })
+            .await;
+    }
+
+    /// Resets the client's chat state during Configuration (`ClientboundResetChatPacket`).
+    pub async fn send_reset_chat(&self) {
+        self.send_bare_packet_now(steel_protocol::packets::game::CResetChat {})
+            .await;
+    }
+
+    /// Sends a Login-state custom plugin query (`ClientboundCustomQueryPacket`).
+    pub async fn send_login_custom_query(
+        &self,
+        transaction_id: i32,
+        channel: Identifier,
+        data: Vec<u8>,
+    ) {
+        self.send_bare_packet_now(steel_protocol::packets::login::CCustomQuery {
+            transaction_id,
+            channel,
+            data,
+        })
+        .await;
+    }
+
+    /// Requests a stored cookie during Login (`ClientboundCookieRequestPacket`).
+    pub async fn request_login_cookie(&self, key: Identifier) {
+        self.send_bare_packet_now(steel_protocol::packets::login::CLoginCookieRequest { key })
+            .await;
     }
 
     /// Finishes the configuration process and transitions to the play state.

@@ -16,6 +16,7 @@ use super::super::{
     brigadier::ArgumentType,
     execution::{
         CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
+        literal,
     },
     registration::CommandRegistration,
 };
@@ -31,12 +32,21 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 
 fn command() -> Builder {
     // Vanilla grammar: spreadplayers <center> <spreadDistance> <maxRange>
-    //   [under <maxHeight>] <targets>
-    argument("center", SteelArgumentType::vec2(false)).then(
-        argument("spreadDistance", ArgumentType::float(0.0, f32::MAX)).then(
-            argument("maxRange", ArgumentType::float(1.0, f32::MAX)).then(
-                argument("targets", SteelArgumentType::entities())
-                    .executes(|context| spread(context)),
+    //   <respectTeams> <targets> (and shorthand without respectTeams).
+    literal("spreadplayers").then(
+        argument("center", SteelArgumentType::vec2(false)).then(
+            argument("spreadDistance", ArgumentType::float(0.0, f32::MAX)).then(
+                argument("maxRange", ArgumentType::float(1.0, f32::MAX))
+                    .then(
+                        argument("respectTeams", ArgumentType::bool()).then(
+                            argument("targets", SteelArgumentType::entities())
+                                .executes(|context| spread(context)),
+                        ),
+                    )
+                    .then(
+                        argument("targets", SteelArgumentType::entities())
+                            .executes(|context| spread(context)),
+                    ),
             ),
         ),
     )

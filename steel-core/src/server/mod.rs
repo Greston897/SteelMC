@@ -300,6 +300,8 @@ pub async fn test_server_with_worlds_and_config(
         pending_world_changes: SyncMutex::new(Vec::new()),
         pending_domain_switches: SyncMutex::new(Vec::new()),
         favicon_cache: std::sync::OnceLock::new(),
+        code_of_conduct: SyncMutex::new(None),
+        custom_report_details: SyncMutex::new(Vec::new()),
         player_idle_timeout: AtomicI32::new(0),
     });
     attach_server_to_worlds(&server);
@@ -587,6 +589,10 @@ pub struct Server {
     pending_domain_switches: SyncMutex<Vec<DomainSwitchRequest>>,
     /// Cached raw PNG favicon bytes loaded once on first request.
     favicon_cache: std::sync::OnceLock<Option<Arc<[u8]>>>,
+    /// Optional MC 26.3 server code of conduct presented during Configuration.
+    code_of_conduct: SyncMutex<Option<String>>,
+    /// Custom key/value pairs attached to client crash & chat reports.
+    custom_report_details: SyncMutex<Vec<steel_protocol::packets::game::ReportDetail>>,
 }
 
 struct GameTickTaskGuard {
@@ -617,7 +623,7 @@ impl Server {
     /// batches across every encoding worker instead of encoding players one
     /// after another on the tick thread.
     #[must_use]
-    pub(crate) const fn chunk_encoding_pool(&self) -> &Arc<ThreadPool> {
+    pub const fn chunk_encoding_pool(&self) -> &Arc<ThreadPool> {
         &self.chunk_encoding_pool
     }
 
@@ -1025,6 +1031,8 @@ impl Server {
             pending_world_changes: SyncMutex::new(vec![]),
             pending_domain_switches: SyncMutex::new(vec![]),
             favicon_cache: std::sync::OnceLock::new(),
+            code_of_conduct: SyncMutex::new(None),
+            custom_report_details: SyncMutex::new(vec![]),
         });
         // Whitelist and bans live in world saved data, so they are read once the
         // server handle exists and its worlds are reachable.

@@ -43,6 +43,12 @@ pub struct ChestBlock {
 }
 
 impl ChestBlock {
+    /// Returns the close sound configured for this chest block.
+    #[must_use]
+    pub const fn close_sound(&self) -> SoundEventRef {
+        self.close_sound
+    }
+
     /// Creates a new chest block behavior.
     #[must_use]
     pub const fn new(
@@ -244,6 +250,12 @@ pub struct TrappedChestBlock {
 }
 
 impl TrappedChestBlock {
+    /// Returns the close sound configured for this trapped chest block.
+    #[must_use]
+    pub const fn close_sound(&self) -> SoundEventRef {
+        self.close_sound
+    }
+
     /// Creates a new trapped chest block behavior.
     #[must_use]
     pub const fn new(

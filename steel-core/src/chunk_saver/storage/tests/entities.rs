@@ -434,7 +434,7 @@ fn unsupported_persistent_entity_is_dropped_after_load_and_resave() {
         panic!("forced proto chunk save should prepare");
     };
     let mut unsupported = test_persistent_end_crystal(DVec3::new(5.5, 6.0, 7.5));
-    unsupported.entity_type = vanilla_entities::VILLAGER.key.clone();
+    unsupported.entity_type = steel_utils::Identifier::vanilla_static("nonexistent_test_entity");
     prepared.persistent.entities.push(unsupported);
 
     let loaded = ChunkStorage::persistent_to_chunk(

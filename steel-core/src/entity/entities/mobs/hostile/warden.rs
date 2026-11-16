@@ -50,6 +50,8 @@ pub struct WardenEntity {
     /// Ticks since the last darkness pulse, matching vanilla
     /// `Warden.tendrilAnimation` bookkeeping.
     darkness_pulse_ticks: SyncMutex<i32>,
+    /// Remaining cooldown ticks before vanilla `SonicBoom` (100t cooldown) can fire again.
+    sonic_boom_cooldown: SyncMutex<i32>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `WardenEntity`.
@@ -106,6 +108,7 @@ impl WardenEntity {
             mob_base,
             entity_data: SyncMutex::new(entity_data),
             darkness_pulse_ticks: SyncMutex::new(0),
+            sonic_boom_cooldown: SyncMutex::new(40),
         }
     }
 
@@ -247,6 +250,13 @@ const WARDEN_DARKNESS_RADIUS: f64 = 20.0;
 /// Vanilla darkness effect length per pulse, in ticks.
 const WARDEN_DARKNESS_DURATION: i32 = 260;
 
+/// Vanilla `SonicBoom` ranged attack geometry, damage, and cooldown (100 ticks).
+const SONIC_BOOM_COOLDOWN_TICKS: i32 = 100;
+const SONIC_BOOM_HORIZONTAL_RANGE: f64 = 15.0;
+const SONIC_BOOM_VERTICAL_RANGE: f64 = 20.0;
+const SONIC_BOOM_MIN_RANGE_SQ: f64 = 16.0;
+const SONIC_BOOM_DAMAGE: f32 = 10.0;
+
 impl Mob for WardenEntity {
     fn mob_base(&self) -> &MobBase {
         &self.mob_base
@@ -257,12 +267,61 @@ impl Mob for WardenEntity {
     }
 
     /// Vanilla `Warden` pulses `MobEffects.DARKNESS` onto every player within
-    /// twenty blocks while it is hunting, which is what makes the deep dark read
-    /// as dangerous rather than just dark.
+    /// twenty blocks while hunting and fires its armor-bypassing `SonicBoom`
+    /// beam at out-of-melee-reach targets within 15 horizontal / 20 vertical blocks.
     fn custom_server_ai_step(&self) {
         let Some(world) = self.level() else {
             return;
         };
+
+        // Tick & fire vanilla `SonicBoom` against the current target.
+        {
+            let mut cd = self.sonic_boom_cooldown.lock();
+            if *cd > 0 {
+                *cd -= 1;
+            } else if let Some(target) = self.target()
+                && target.is_alive()
+            {
+                let origin = self.position();
+                let target_pos = target.position();
+                let dx = target_pos.x - origin.x;
+                let dy = target_pos.y - origin.y;
+                let dz = target_pos.z - origin.z;
+                let horiz_sq = dx * dx + dz * dz;
+                let dist_sq = horiz_sq + dy * dy;
+                if dist_sq >= SONIC_BOOM_MIN_RANGE_SQ
+                    && horiz_sq <= SONIC_BOOM_HORIZONTAL_RANGE * SONIC_BOOM_HORIZONTAL_RANGE
+                    && dy.abs() <= SONIC_BOOM_VERTICAL_RANGE
+                {
+                    *cd = SONIC_BOOM_COOLDOWN_TICKS;
+                    drop(cd);
+                    self.play_sound(&sound_events::ENTITY_WARDEN_SONIC_BOOM, 3.0, 1.0);
+                    let source = DamageSource::environment(
+                        &steel_registry::vanilla_damage_types::SONIC_BOOM,
+                    );
+                    if target.hurt(&world, &source, SONIC_BOOM_DAMAGE) {
+                        let kb_resist = target
+                            .as_living_entity()
+                            .map_or(0.0, |l| {
+                                l.attributes()
+                                    .lock()
+                                    .get_value(vanilla_attributes::KNOCKBACK_RESISTANCE)
+                                    .unwrap_or(0.0)
+                            });
+                        let v_scale = 0.5 * (1.0 - kb_resist);
+                        let h_scale = 2.5 * (1.0 - kb_resist);
+                        let dir = DVec3::new(dx, dy, dz).normalize_or_zero();
+                        let vel = target.velocity();
+                        target.set_velocity(DVec3::new(
+                            vel.x + dir.x * h_scale,
+                            vel.y + dir.y * v_scale,
+                            vel.z + dir.z * h_scale,
+                        ));
+                    }
+                }
+            }
+        }
+
         let mut ticks = self.darkness_pulse_ticks.lock();
         *ticks += 1;
         if *ticks < WARDEN_DARKNESS_INTERVAL {

@@ -294,9 +294,7 @@ impl BlockBehavior for FrogspawnBlock {
             Self::destroy(world, pos);
         }
     }
-}
 
-impl FrogspawnBlock {
     /// Vanilla `FrogspawnBlock.onPlace`: schedule the hatch tick.
     fn on_place(
         &self,

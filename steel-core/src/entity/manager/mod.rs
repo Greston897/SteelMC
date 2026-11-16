@@ -1705,6 +1705,7 @@ impl WorldEntityManager {
             .count()
     }
 
+    /// Collects all currently loaded, command-accessible entities in this world.
     pub fn get_accessible_entities(&self) -> Vec<SharedEntity> {
         let state = self.state.read();
         state

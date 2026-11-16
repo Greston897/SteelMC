@@ -218,6 +218,7 @@ pub static ITEM_BEHAVIORS: ItemBehaviorLock = ItemBehaviorLock(OnceLock::new());
 ///
 /// This should be called after the main registry is frozen. Repeated calls are a no-op.
 pub fn init_behaviors() {
+    crate::block_entity::init_block_entities();
     BLOCK_BEHAVIORS.0.get_or_init(|| {
         let mut block_behaviors = BlockBehaviorRegistry::new();
         register_block_behaviors(&mut block_behaviors);

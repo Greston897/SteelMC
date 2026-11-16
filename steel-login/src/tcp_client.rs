@@ -913,7 +913,7 @@ impl JavaTcpClient {
             }
             config::S_ACCEPT_CODE_OF_CONDUCT => {
                 let _accepted = SAcceptCodeOfConduct::read_packet(data)?;
-                log::debug!("Client accepted server code of conduct");
+                self.handle_accept_code_of_conduct().await;
                 Ok(ConnectionAction::none())
             }
             config::S_SELECT_KNOWN_PACKS => {

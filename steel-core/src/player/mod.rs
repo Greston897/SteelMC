@@ -307,6 +307,20 @@ pub struct Player {
     /// asked for. [`Self::debug_subscriptions`] filters it by permission.
     requested_debug_subscriptions: SyncMutex<Vec<i32>>,
 
+    /// Cookie keys requested by the server (`CCookieRequest`) awaiting a single
+    /// client `SCookieResponse`, plus the latest verified cookie values received.
+    cookie_state: SyncMutex<(rustc_hash::FxHashSet<Identifier>, rustc_hash::FxHashMap<Identifier, Option<Vec<u8>>>)>,
+
+    /// Whether the server has sent `CStartConfiguration` and is awaiting the
+    /// client's `SConfigurationAcknowledged` packet.
+    awaiting_configuration_ack: AtomicBool,
+
+    /// Most recent ping transaction id echoed by the client via `SPong`.
+    last_pong_id: SyncMutex<Option<i32>>,
+
+    /// Most recent `SCustomClickAction` identifier sent by a custom dialog button.
+    last_custom_click_action: SyncMutex<Option<Identifier>>,
+
     /// Whether the player has completed the vanilla End credits flow.
     seen_credits: SyncMutex<bool>,
 
@@ -453,6 +467,7 @@ impl Player {
         )
     }
 
+    /// Fires the `recipe_crafted` advancement criterion for `recipe`.
     pub fn trigger_recipe_crafted(&self, recipe: &Identifier) -> usize {
         let _ = recipe;
         self.trigger_advancement(&steel_registry::vanilla_criteria_triggers::RECIPE_CRAFTED)
@@ -758,7 +773,7 @@ impl Player {
                 .level()
                 .and_then(|world| world.players.get_by_uuid(&self.base().uuid()))
             {
-                arc.attack(&target);
+                let _ = arc.attack(&target);
             }
             self.riptide
                 .lock()
@@ -932,6 +947,13 @@ impl Player {
             experience: SyncMutex::new(Experience::default()),
             permissions: SyncMutex::new(PlayerPermissionState::default()),
             requested_debug_subscriptions: SyncMutex::new(Vec::new()),
+            cookie_state: SyncMutex::new((
+                rustc_hash::FxHashSet::default(),
+                rustc_hash::FxHashMap::default(),
+            )),
+            awaiting_configuration_ack: AtomicBool::new(false),
+            last_pong_id: SyncMutex::new(None),
+            last_custom_click_action: SyncMutex::new(None),
             seen_credits: SyncMutex::new(false),
             post_effects: SyncMutex::new(PlayerPostEffects::new_pending()),
             won_game: SyncMutex::new(false),
@@ -1059,6 +1081,7 @@ impl Player {
 
     /// Vanilla `ServerPlayer.getPostEffects`.
     #[must_use]
+    /// Returns the ordered list of screen post-effect identifiers active on this player.
     pub fn post_effects(&self) -> Vec<Identifier> {
         self.post_effects.lock().effects().to_vec()
     }
@@ -1715,6 +1738,15 @@ impl Player {
             None
         };
         self.send_packet(CTestInstanceBlockStatus { status, size });
+        if matches!(
+            packet.action,
+            TestInstanceBlockAction::Query | TestInstanceBlockAction::Run
+        ) {
+            self.send_packet(steel_protocol::packets::game::CGameTestHighlightPos {
+                absolute_pos: packet.pos,
+                relative_pos: BlockPos::new(0, 0, 0),
+            });
+        }
     }
 
     /// Vanilla `ServerGamePacketListenerImpl.handleDebugSubscriptionRequest`
@@ -1734,6 +1766,131 @@ impl Player {
             return Vec::new();
         }
         self.requested_debug_subscriptions.lock().clone()
+    }
+
+    /// Fast allocation-free check for whether this operator subscribed to `subscription_id`.
+    #[must_use]
+    pub fn has_debug_subscription(&self, subscription_id: i32) -> bool {
+        self.is_operator()
+            && self
+                .requested_debug_subscriptions
+                .lock()
+                .contains(&subscription_id)
+    }
+
+    /// Instructs the client to persist a cookie up to vanilla's 5 KiB cap
+    /// (`ClientboundStoreCookiePacket`). Returns `false` if `payload` exceeds 5,120 bytes.
+    pub fn store_cookie(&self, key: Identifier, payload: Vec<u8>) -> bool {
+        if payload.len() > 5_120 {
+            return false;
+        }
+        self.send_packet(steel_protocol::packets::game::CStoreCookie { key, payload });
+        true
+    }
+
+    /// Requests a previously stored cookie from the client (`ClientboundCookieRequestPacket`).
+    pub fn request_cookie(&self, key: Identifier) {
+        self.cookie_state.lock().0.insert(key.clone());
+        self.send_packet(steel_protocol::packets::game::CCookieRequest { key });
+    }
+
+    /// Vanilla `ServerCommonPacketListenerImpl.handleCookieResponse`: accepts a cookie
+    /// reply if and only if the server previously requested that key; disconnects on
+    /// unsolicited responses.
+    pub fn handle_cookie_response(
+        &self,
+        packet: steel_protocol::packets::game::SCookieResponse,
+    ) {
+        let accepted = {
+            let mut state = self.cookie_state.lock();
+            if state.0.remove(&packet.key) {
+                state.1.insert(packet.key, packet.payload);
+                true
+            } else {
+                false
+            }
+        };
+        if !accepted {
+            self.disconnect(
+                translations::MULTIPLAYER_DISCONNECT_UNEXPECTED_QUERY_RESPONSE.msg(),
+            );
+        }
+    }
+
+    /// Returns the most recent validated cookie value returned by the client for `key`.
+    #[must_use]
+    pub fn received_cookie(&self, key: &Identifier) -> Option<Option<Vec<u8>>> {
+        self.cookie_state.lock().1.get(key).cloned()
+    }
+
+    /// Initiates a Play → Configuration phase switch (`ClientboundStartConfigurationPacket`).
+    pub fn start_configuration(&self) {
+        self.awaiting_configuration_ack.store(true, Ordering::Release);
+        self.send_packet(steel_protocol::packets::game::CStartConfiguration {});
+    }
+
+    /// Returns `true` if `CStartConfiguration` was sent and not yet acknowledged.
+    #[must_use]
+    pub fn is_awaiting_configuration(&self) -> bool {
+        self.awaiting_configuration_ack.load(Ordering::Acquire)
+    }
+
+    /// Handles `ServerboundConfigurationAcknowledgedPacket`.
+    pub fn handle_configuration_acknowledged(&self) {
+        if !self.awaiting_configuration_ack.swap(false, Ordering::AcqRel) {
+            log::debug!(
+                "Player {} sent unexpected SConfigurationAcknowledged",
+                self.gameprofile.name()
+            );
+        }
+    }
+
+    /// Sends a Play-state ping transaction (`ClientboundPingPacket`).
+    pub fn send_ping(&self, id: i32) {
+        self.send_packet(steel_protocol::packets::game::CPing { id });
+    }
+
+    /// Records the client's `ServerboundPongPacket` transaction id.
+    pub fn handle_pong(&self, id: i32) {
+        *self.last_pong_id.lock() = Some(id);
+    }
+
+    /// Returns the most recent ping transaction id echoed by `SPong`.
+    #[must_use]
+    pub fn last_pong_id(&self) -> Option<i32> {
+        *self.last_pong_id.lock()
+    }
+
+    /// Sends custom chat tab-completion entries to this player
+    /// (`ClientboundCustomChatCompletionsPacket`).
+    pub fn send_custom_chat_completions(
+        &self,
+        action: steel_protocol::packets::game::CustomChatCompletionAction,
+        entries: Vec<String>,
+    ) {
+        self.send_packet(steel_protocol::packets::game::CCustomChatCompletions {
+            action,
+            entries,
+        });
+    }
+
+    /// Handles `ServerboundCustomClickActionPacket` (vanilla `MinecraftServer.handleCustomClickAction`).
+    pub fn handle_custom_click_action(
+        &self,
+        packet: steel_protocol::packets::game::SCustomClickAction,
+    ) {
+        log::debug!(
+            "Player {} triggered custom click action {}",
+            self.gameprofile.name(),
+            packet.id
+        );
+        *self.last_custom_click_action.lock() = Some(packet.id);
+    }
+
+    /// Returns the identifier of the latest custom click action sent by this player.
+    #[must_use]
+    pub fn last_custom_click_action(&self) -> Option<Identifier> {
+        self.last_custom_click_action.lock().clone()
     }
 
     /// Vanilla `ServerGamePacketListenerImpl.handleSetJigsawBlock`.
@@ -2220,10 +2377,6 @@ impl Player {
         self.server.upgrade()
     }
 
-    /// Returns the server this player belongs to.
-    pub(crate) fn server(&self) -> Arc<Server> {
-        self.try_server().expect("player must not outlive server")
-    }
 
     /// Returns the identity of the player's current continuous domain stay.
     pub(crate) fn domain_residence_token(&self) -> DomainResidenceToken {

@@ -219,7 +219,6 @@ impl HopperBlockEntity {
             if container.get_item(slot).count() <= 0 {
                 *container.get_item_mut(slot) = ItemStack::empty();
             }
-            drop(container);
             guard.set_changed(source_id);
             return true;
         }

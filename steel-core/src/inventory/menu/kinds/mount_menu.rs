@@ -111,6 +111,12 @@ pub struct MountKind {
 }
 
 impl MountKind {
+    /// Returns the backing container for this mount menu.
+    #[must_use]
+    pub const fn container(&self) -> &Shared<SimpleContainer> {
+        &self.container
+    }
+
     /// Returns the number of storage columns shown to the client.
     #[must_use]
     pub const fn columns(&self) -> usize {

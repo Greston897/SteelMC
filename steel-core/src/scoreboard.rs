@@ -1250,6 +1250,7 @@ impl DomainScoreboards {
         self.scoreboards.keys().map(String::as_str)
     }
 
+    /// Returns the scoreboard for `domain`, if registered.
     pub fn get(&self, domain: &str) -> Option<&Scoreboard> {
         self.scoreboards.get(domain)
     }
@@ -1615,6 +1616,7 @@ mod tests {
         assert_eq!(criterion_is_read_only("nonsense"), None);
     }
 
+    #[test]
     fn a_dummy_objective_is_not_a_trigger() {
         let scoreboard = Scoreboard::new();
         let objective = scoreboard
@@ -1645,6 +1647,7 @@ mod tests {
         assert_eq!(scoreboard.score(&holder, &objective), Some(7));
     }
 
+    #[test]
     fn domains_keep_independent_scoreboards() {
         let scoreboards = DomainScoreboards {
             scoreboards: [

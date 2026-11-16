@@ -91,8 +91,11 @@ struct SpawnerState {
 }
 
 #[derive(Debug, Default)]
+/// State dirty flags produced by a single spawner server tick.
 pub struct SpawnerTickResult {
+    /// Whether persistent spawner fields changed.
     pub state_changed: bool,
+    /// Whether the client-visible next spawn entry changed.
     pub next_spawn_data_changed: bool,
 }
 

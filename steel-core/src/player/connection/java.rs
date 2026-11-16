@@ -65,7 +65,6 @@ const DISCONNECT_FLUSH_TIMEOUT: Duration = Duration::from_secs(1);
 ///
 /// Matches the login-side transport: a batch of chunk packets must fit without
 /// the buffer flushing on its own mid-batch.
-const OUTBOUND_BUFFER_BYTES: usize = 64 * 1024;
 
 /// Outbound packet queue message for Java connections.
 pub enum OutboundPacket {
@@ -447,18 +446,11 @@ impl ScheduledPlayPacket {
                 }
                 player.detect_command_rate_spam();
             }
-            ScheduledPlayPacketKind::ConfigurationAcknowledged(packet) => {
-                log::debug!("ignoring unimplemented ConfigurationAcknowledged packet: {packet:?}");
+            ScheduledPlayPacketKind::ConfigurationAcknowledged(_packet) => {
+                player.handle_configuration_acknowledged();
             }
             ScheduledPlayPacketKind::CookieResponse(packet) => {
-                // Vanilla `ServerCommonPacketListenerImpl.handleCookieResponse`
-                // answers every cookie reply in the play phase with a disconnect:
-                // the server only accepts cookies it asked for, and Steel never
-                // sends `CCookieRequest`.
-                let _ = &packet;
-                player.disconnect(
-                    translations::MULTIPLAYER_DISCONNECT_UNEXPECTED_QUERY_RESPONSE.msg(),
-                );
+                player.handle_cookie_response(packet);
             }
             ScheduledPlayPacketKind::DebugSubscriptionRequest(packet) => {
                 player.handle_debug_subscription_request(packet);
@@ -479,10 +471,7 @@ impl ScheduledPlayPacket {
                 player.handle_place_recipe(packet);
             }
             ScheduledPlayPacketKind::Pong(packet) => {
-                // Vanilla `ServerCommonPacketListenerImpl.handlePong` is an empty
-                // method: the pong only satisfies the latency bookkeeping done by
-                // the client, the server ignores it.
-                log::debug!("ignoring vanilla no-op Pong packet: {packet:?}");
+                player.handle_pong(packet.id);
             }
             ScheduledPlayPacketKind::RecipeBookChangeSettings(packet) => {
                 player.handle_recipe_book_change_settings(packet);
@@ -537,9 +526,7 @@ impl ScheduledPlayPacket {
                 player.handle_test_instance_block_action(packet);
             }
             ScheduledPlayPacketKind::CustomClickAction(packet) => {
-                // Vanilla `MinecraftServer.handleCustomClickAction` only logs at
-                // debug level, so there is nothing to dispatch.
-                log::debug!("ignoring vanilla no-op CustomClickAction packet: {packet:?}");
+                player.handle_custom_click_action(packet);
             }
         }
     }

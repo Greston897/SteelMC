@@ -251,8 +251,8 @@ fn domain_menu(
         map,
         server: Arc::clone(server),
         player,
-        page,
-        page_count,
+        _page: page,
+        _page_count: page_count,
     })
 }
 
@@ -280,9 +280,9 @@ struct DomainMenuKind {
     server: Arc<Server>,
     player: Arc<Player>,
     /// Page currently displayed, zero-based.
-    page: usize,
+    _page: usize,
     /// Total number of pages for the current domain list.
-    page_count: usize,
+    _page_count: usize,
 }
 
 // SAFETY: This Steel-owned key uniquely identifies the concrete menu kind

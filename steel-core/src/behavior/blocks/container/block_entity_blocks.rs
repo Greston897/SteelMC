@@ -35,8 +35,8 @@ use crate::entity::entities::objects::projectiles::AbstractArrow as _;
 use crate::entity::{Entity as _, SharedEntity, next_entity_id};
 use crate::entity::entities::{
     ArrowEntity, EnderPearlEntity, ExperienceBottleEntity, FireworkRocketEntity, ItemEntity,
-    LingeringPotionEntity, SnowballEntity, SpectralArrowEntity, SplashPotionEntity,
-    ThrownEggEntity,
+    LingeringPotionEntity, SmallFireballEntity, SnowballEntity, SpectralArrowEntity,
+    SplashPotionEntity, ThrownEggEntity, WindChargeEntity,
 };
 use crate::player::Player;
 use crate::world::{SignalGetter, World};
@@ -99,7 +99,10 @@ fn dispense_projectile(stack: &ItemStack, world: &Arc<World>, pos: DVec3) -> Opt
             pos,
             weak,
         ))
-    } else if kind == &*vanilla_items::EGG {
+    } else if kind == &*vanilla_items::EGG
+        || kind == &*vanilla_items::BROWN_EGG
+        || kind == &*vanilla_items::BLUE_EGG
+    {
         Arc::new(ThrownEggEntity::new(&vanilla_entities::EGG, id, pos, weak))
     } else if kind == &*vanilla_items::ENDER_PEARL {
         Arc::new(EnderPearlEntity::new(
@@ -111,6 +114,20 @@ fn dispense_projectile(stack: &ItemStack, world: &Arc<World>, pos: DVec3) -> Opt
     } else if kind == &*vanilla_items::FIREWORK_ROCKET {
         Arc::new(FireworkRocketEntity::new(
             &vanilla_entities::FIREWORK_ROCKET,
+            id,
+            pos,
+            weak,
+        ))
+    } else if kind == &*vanilla_items::WIND_CHARGE {
+        Arc::new(WindChargeEntity::new(
+            &vanilla_entities::WIND_CHARGE,
+            id,
+            pos,
+            weak,
+        ))
+    } else if kind == &*vanilla_items::FIRE_CHARGE {
+        Arc::new(SmallFireballEntity::new(
+            &vanilla_entities::SMALL_FIREBALL,
             id,
             pos,
             weak,
@@ -364,13 +381,107 @@ funnel_like!(DropperBlock, DROPPER, |world: &Arc<World>, pos, state| {
     drop_from(world, pos, state);
 });
 
-/// Removes the first non-empty stack from the funnel at `pos`.
-fn take_front_stack(world: &Arc<World>, pos: BlockPos) -> Option<ItemStack> {
+/// Vanilla `DispenserBlockEntity.getRandomSlot`: selects one of the non-empty
+/// slots uniformly at random using reservoir sampling.
+fn pick_random_non_empty_slot(world: &Arc<World>, pos: BlockPos) -> Option<(ContainerRef, usize, ItemStack)> {
     let block_entity = world.get_block_entity(pos)?;
     let container = block_entity.container_ref()?;
+    let guard = container.lock();
+    let mut chosen: Option<usize> = None;
+    let mut seen: u32 = 0;
+    for slot in 0..guard.get_container_size() {
+        if !guard.get_item(slot).is_empty() {
+            seen += 1;
+            if rand::random_range(0..seen) == 0 {
+                chosen = Some(slot);
+            }
+        }
+    }
+    let slot = chosen?;
+    let snapshot = guard.get_item(slot).clone();
+    drop(guard);
+    Some((container, slot, snapshot))
+}
+
+/// Puts a replacement item back into `slot` (or into any open slot / drops it
+/// if `slot` still carries remaining items from a stack > 1).
+fn replace_or_store_dispensed_result(
+    world: &Arc<World>,
+    pos: BlockPos,
+    facing: Direction,
+    container: &ContainerRef,
+    slot: usize,
+    replacement: ItemStack,
+) {
     let mut guard = container.lock();
-    let slot = (0..guard.get_container_size()).find(|slot| !guard.get_item(*slot).is_empty())?;
-    Some(guard.remove_item(slot, 1))
+    let current = guard.get_item(slot);
+    if current.count() <= 1 {
+        guard.set_item(slot, replacement);
+        return;
+    }
+    let _ = guard.remove_item(slot, 1);
+    for idx in 0..guard.get_container_size() {
+        let existing = guard.get_item(idx);
+        if existing.is_empty() {
+            guard.set_item(idx, replacement);
+            return;
+        }
+        if ItemStack::is_same_item_same_components(existing, &replacement)
+            && existing.count() < existing.max_stack_size()
+        {
+            guard.get_item_mut(idx).grow(1);
+            return;
+        }
+    }
+    drop(guard);
+    let (spawn_pos, velocity) = launch_point(pos, facing);
+    spawn_dropped_item(world, spawn_pos, velocity, replacement);
+}
+
+/// Tries to insert a single item stack into `destination` on `side`.
+fn try_insert_into_container(destination: &ContainerRef, side: Direction, stack: &ItemStack) -> bool {
+    let dest_id = destination.container_id();
+    let mut guard = ContainerLockGuard::lock_all(&[destination]);
+    let slots: Vec<usize> = {
+        let Some(container) = guard.get(dest_id) else {
+            return false;
+        };
+        match container.slots_for_face(side) {
+            Some(s) => s.to_vec(),
+            None => (0..container.get_container_size()).collect(),
+        }
+    };
+    let Some(container) = guard.get_mut(dest_id) else {
+        return false;
+    };
+    // First pass: merge into compatible non-full stacks.
+    for &idx in &slots {
+        if !container.can_place_item_through_face(idx, stack, side) {
+            continue;
+        }
+        let existing = container.get_item(idx);
+        let limit = existing.max_stack_size().min(container.get_max_stack_size());
+        if !existing.is_empty()
+            && ItemStack::is_same_item_same_components(existing, stack)
+            && existing.count() < limit
+        {
+            container.get_item_mut(idx).grow(1);
+            guard.set_changed(dest_id);
+            return true;
+        }
+    }
+    // Second pass: place into first empty allowed slot.
+    for &idx in &slots {
+        if !container.can_place_item_through_face(idx, stack, side) {
+            continue;
+        }
+        if container.get_item(idx).is_empty() {
+            container.set_item(idx, stack.copy_with_count(1));
+            guard.set_changed(dest_id);
+            return true;
+        }
+    }
+    false
 }
 
 /// Vanilla dispenser launch geometry: the entity appears just past the funnel
@@ -386,43 +497,210 @@ fn launch_point(pos: BlockPos, facing: Direction) -> (DVec3, DVec3) {
     (spawn_pos, DVec3::new(dx, dy, dz) * DISPENSE_POWER)
 }
 
-/// Vanilla `DispenserBlock.dispenseFrom`: fires whatever the front slot holds.
-///
-/// Projectiles keep their vanilla spawn point (slightly ahead of the funnel) and
-/// velocity; anything without a `ProjectileItem` implementation is dropped as an
-/// item entity, matching `DefaultDispenseItemBehavior`.
+/// Vanilla `DispenserBlock.dispenseFrom`: selects a random non-empty slot and
+/// executes the registered `DispenseItemBehavior` (projectiles, TNT priming,
+/// water/lava bucket placement, empty bucket fluid pickup, flint & steel fire /
+/// TNT / campfire ignition with durability, or default item ejection). Plays
+/// `BLOCK_DISPENSER_FAIL` when empty.
 fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool {
+    use crate::world::UpdateFlags;
+    use steel_registry::vanilla_blocks;
+
     let facing = state.get_value(&BlockStateProperties::FACING);
-    let Some(stack) = take_front_stack(world, pos) else {
+    let Some((container, slot, snapshot)) = pick_random_non_empty_slot(world, pos) else {
+        world.play_sound(
+            &sound_events::BLOCK_DISPENSER_FAIL,
+            SoundSource::Blocks,
+            pos,
+            1.0,
+            1.2,
+            None,
+        );
         return false;
     };
 
-    let (spawn_pos, velocity) = launch_point(pos, facing);
-    if let Some(projectile) = dispense_projectile(&stack, world, spawn_pos) {
-        projectile.set_velocity(velocity);
-        let _ = world.try_add_entity(projectile);
-    } else {
-        spawn_dropped_item(world, spawn_pos, velocity, stack);
+    let target_pos = pos.relative(facing);
+    let target_state = world.get_block_state(target_pos);
+    let target_block = target_state.get_block();
+    let item = snapshot.item();
+
+    // 1. TNT: prime TNT in front if space allows.
+    if item == &*vanilla_items::TNT && target_state.is_air() {
+        let _ = container.lock().remove_item(slot, 1);
+        crate::behavior::blocks::TntBlock::prime(world, target_pos);
+        world.play_sound(
+            &sound_events::BLOCK_DISPENSER_DISPENSE,
+            SoundSource::Blocks,
+            pos,
+            1.0,
+            1.0,
+            None,
+        );
+        return true;
     }
 
-    world.play_sound(
-        &sound_events::BLOCK_DISPENSER_DISPENSE,
-        SoundSource::Blocks,
-        pos,
-        1.0,
-        1.0,
-        None,
-    );
+    // 2. Water / Lava buckets: place source block and leave an empty bucket.
+    if (item == &*vanilla_items::WATER_BUCKET || item == &*vanilla_items::LAVA_BUCKET)
+        && target_state.is_air()
+    {
+        let liquid = if item == &*vanilla_items::WATER_BUCKET {
+            vanilla_blocks::WATER.default_state()
+        } else {
+            vanilla_blocks::LAVA.default_state()
+        };
+        world.set_block(target_pos, liquid, UpdateFlags::UPDATE_ALL);
+        replace_or_store_dispensed_result(
+            world,
+            pos,
+            facing,
+            &container,
+            slot,
+            ItemStack::new(&*vanilla_items::BUCKET),
+        );
+        world.play_sound(
+            &sound_events::BLOCK_DISPENSER_DISPENSE,
+            SoundSource::Blocks,
+            pos,
+            1.0,
+            1.0,
+            None,
+        );
+        return true;
+    }
+
+    // 3. Empty bucket: scoop water/lava source block in front.
+    if item == &*vanilla_items::BUCKET {
+        let is_source = target_state
+            .try_get_value(&BlockStateProperties::LEVEL)
+            .is_some_and(|lvl| lvl == 0);
+        let filled = if target_block == &vanilla_blocks::WATER && is_source {
+            Some(ItemStack::new(&*vanilla_items::WATER_BUCKET))
+        } else if target_block == &vanilla_blocks::LAVA && is_source {
+            Some(ItemStack::new(&*vanilla_items::LAVA_BUCKET))
+        } else {
+            None
+        };
+        if let Some(filled_bucket) = filled {
+            world.set_block(
+                target_pos,
+                vanilla_blocks::AIR.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
+            replace_or_store_dispensed_result(world, pos, facing, &container, slot, filled_bucket);
+            world.play_sound(
+                &sound_events::BLOCK_DISPENSER_DISPENSE,
+                SoundSource::Blocks,
+                pos,
+                1.0,
+                1.0,
+                None,
+            );
+            return true;
+        }
+    }
+
+    // 4. Flint and steel: light air fire, unlit campfire, or TNT, damaging by 1.
+    if item == &*vanilla_items::FLINT_AND_STEEL {
+        let mut ignited = false;
+        if target_state.is_air() {
+            world.set_block(
+                target_pos,
+                vanilla_blocks::FIRE.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
+            ignited = true;
+        } else if target_block == &vanilla_blocks::TNT {
+            world.set_block(
+                target_pos,
+                vanilla_blocks::AIR.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
+            crate::behavior::blocks::TntBlock::prime(world, target_pos);
+            ignited = true;
+        } else if (target_block == &vanilla_blocks::CAMPFIRE
+            || target_block == &vanilla_blocks::SOUL_CAMPFIRE)
+            && target_state.try_get_value(&BlockStateProperties::LIT) == Some(false)
+        {
+            world.set_block(
+                target_pos,
+                target_state.set_value(&BlockStateProperties::LIT, true),
+                UpdateFlags::UPDATE_ALL,
+            );
+            ignited = true;
+        }
+        if ignited {
+            let mut guard = container.lock();
+            if guard.get_item_mut(slot).hurt_and_break(1, false) {
+                guard.set_item(slot, ItemStack::empty());
+            }
+            drop(guard);
+            world.play_sound(
+                &sound_events::BLOCK_DISPENSER_DISPENSE,
+                SoundSource::Blocks,
+                pos,
+                1.0,
+                1.0,
+                None,
+            );
+        } else {
+            world.play_sound(
+                &sound_events::BLOCK_DISPENSER_FAIL,
+                SoundSource::Blocks,
+                pos,
+                1.0,
+                1.0,
+                None,
+            );
+        }
+        return ignited;
+    }
+
+    // 5. Projectiles & DefaultDispenseItemBehavior.
+    let stack = container.lock().remove_item(slot, 1);
+    let (spawn_pos, velocity) = launch_point(pos, facing);
+    let sound = if let Some(projectile) = dispense_projectile(&stack, world, spawn_pos) {
+        projectile.set_velocity(velocity);
+        let _ = world.try_add_entity(projectile);
+        &sound_events::BLOCK_DISPENSER_LAUNCH
+    } else {
+        spawn_dropped_item(world, spawn_pos, velocity, stack);
+        &sound_events::BLOCK_DISPENSER_DISPENSE
+    };
+
+    world.play_sound(sound, SoundSource::Blocks, pos, 1.0, 1.0, None);
     true
 }
 
-/// Vanilla `DropperBlock.dispenseFrom`: always drops the front stack as an item.
+/// Vanilla `DropperBlock.dispenseFrom`: picks a random non-empty slot and
+/// transfers one item into a facing `Container` if present, otherwise drops it
+/// into the world. Plays `BLOCK_DISPENSER_FAIL` when empty.
 fn drop_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool {
     let facing = state.get_value(&BlockStateProperties::FACING);
-    let Some(stack) = take_front_stack(world, pos) else {
+    let Some((container, slot, snapshot)) = pick_random_non_empty_slot(world, pos) else {
+        world.play_sound(
+            &sound_events::BLOCK_DISPENSER_FAIL,
+            SoundSource::Blocks,
+            pos,
+            1.0,
+            1.2,
+            None,
+        );
         return false;
     };
 
+    let single = snapshot.copy_with_count(1);
+    let target_pos = pos.relative(facing);
+    if let Some(destination) = world
+        .get_block_entity(target_pos)
+        .and_then(ContainerRef::from_block_entity)
+    {
+        if try_insert_into_container(&destination, facing.opposite(), &single) {
+            let _ = container.lock().remove_item(slot, 1);
+        }
+        return true;
+    }
+
+    let stack = container.lock().remove_item(slot, 1);
     let (spawn_pos, velocity) = launch_point(pos, facing);
     spawn_dropped_item(world, spawn_pos, velocity, stack);
     world.play_sound(

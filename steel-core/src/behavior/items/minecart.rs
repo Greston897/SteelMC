@@ -293,13 +293,9 @@ mod tests {
     fn unimplemented_minecart_variants_pass_without_consumption_or_spawning() {
         init_globals();
 
-        for item in [
-            &*vanilla_items::CHEST_MINECART,
-            &*vanilla_items::FURNACE_MINECART,
-            &*vanilla_items::TNT_MINECART,
-            &*vanilla_items::HOPPER_MINECART,
-            &*vanilla_items::COMMAND_BLOCK_MINECART,
-        ] {
+        // `chest_minecart` is currently structure-only and yields `Pass`.
+        {
+            let item = &*vanilla_items::CHEST_MINECART;
             let fixture = create_fixture(
                 "minecart_item_unimplemented_variant",
                 BlockPos::new(8, 64, 8),
@@ -324,6 +320,39 @@ mod tests {
             assert!(
                 entities_near(&fixture, |entity| entity.id() != player_id).is_empty(),
                 "{} should not spawn an entity",
+                item.key
+            );
+        }
+
+        // All implemented `AbstractMinecart` variants consume 1 item and spawn on the rail.
+        for item in [
+            &*vanilla_items::FURNACE_MINECART,
+            &*vanilla_items::TNT_MINECART,
+            &*vanilla_items::HOPPER_MINECART,
+            &*vanilla_items::COMMAND_BLOCK_MINECART,
+        ] {
+            let fixture = create_fixture(
+                "minecart_item_implemented_variant",
+                BlockPos::new(8, 64, 8),
+                &vanilla_blocks::RAIL,
+                Some(RailShape::NorthSouth),
+                GameType::Survival,
+            );
+            let stack = ItemStack::new(item);
+            prepare_hand(&fixture.player, InteractionHand::MainHand, stack);
+
+            assert_eq!(
+                use_cart(&fixture, InteractionHand::MainHand),
+                InteractionResult::Success,
+                "{}",
+                item.key
+            );
+            assert!(held_stack(&fixture.player, InteractionHand::MainHand).is_empty());
+            let player_id = fixture.player.id();
+            assert_eq!(
+                entities_near(&fixture, |entity| entity.id() != player_id).len(),
+                1,
+                "{} should spawn its minecart entity",
                 item.key
             );
         }

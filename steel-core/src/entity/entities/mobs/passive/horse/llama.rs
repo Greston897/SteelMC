@@ -206,25 +206,6 @@ impl LlamaEntity {
         self.set_horse_flags(flags);
     }
 
-    /// Vanilla `AbstractHorse.travel` steers with the rider's look direction:
-    /// only a saddled mount follows the reins.
-    fn tick_ridden(&self, controller: &Player, _ridden_input: DVec3) {
-        if !self.is_saddled() {
-            return;
-        }
-        let (yaw, pitch) = controller.rotation();
-        self.set_ridden_rotation(yaw, pitch);
-    }
-
-    /// Vanilla `AbstractHorse.getRiddenSpeed`, i.e. the entity's own
-    /// `MOVEMENT_SPEED` attribute rather than the generic `getSpeed()`.
-    fn ridden_speed(&self, _controller: &Player) -> f32 {
-        self.living_base
-            .attributes()
-            .lock()
-            .required_value(vanilla_attributes::MOVEMENT_SPEED) as f32
-    }
-
     /// Vanilla `AbstractHorse.travel`: face the rider's look direction, damping
     /// the pitch so the mount does not nose-dive.
     fn set_ridden_rotation(&self, controller_yaw: f32, controller_pitch: f32) {
@@ -338,6 +319,21 @@ impl Entity for LlamaEntity {
 impl LivingEntity for LlamaEntity {
     fn living_base(&self) -> &LivingEntityBase {
         &self.living_base
+    }
+
+    fn tick_ridden(&self, controller: &Player, _ridden_input: DVec3) {
+        if !self.is_saddled() {
+            return;
+        }
+        let (yaw, pitch) = controller.rotation();
+        self.set_ridden_rotation(yaw, pitch);
+    }
+
+    fn ridden_speed(&self, _controller: &Player) -> f32 {
+        self.living_base
+            .attributes()
+            .lock()
+            .required_value(vanilla_attributes::MOVEMENT_SPEED) as f32
     }
 
     fn get_health(&self) -> f32 {

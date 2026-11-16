@@ -3714,7 +3714,7 @@ fn death_respawn_replaces_the_live_player_incarnation() {
 
         // Vanilla `ServerPlayer.restoreFrom` keeps the post-effect list across a
         // respawn, so the replacement must inherit it.
-        old_player.add_post_effect(Identifier::vanilla_static("invert"));
+        let _ = old_player.add_post_effect(Identifier::vanilla_static("invert"));
         let requested_chunks_per_tick = 2;
         assert_ne!(
             send_test_chunk_batch(&server, &old_player, world),

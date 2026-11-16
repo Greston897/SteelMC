@@ -272,7 +272,7 @@ impl CrafterBlockEntity {
         let result = {
             let mut container = self.container.lock();
             let disabled = self.disabled_slots();
-            let input = CraftingInput::new(
+            let input = CraftingInput::positioned(
                 3,
                 3,
                 container
@@ -287,7 +287,8 @@ impl CrafterBlockEntity {
                         }
                     })
                     .collect(),
-            );
+            )
+            .input;
             let recipe = REGISTRY
                 .recipes
                 .find_match(&vanilla_recipe_types::CRAFTING, &input);
@@ -424,7 +425,7 @@ impl CrafterBlockEntity {
     fn has_matching_recipe(&self) -> bool {
         let container = self.container.lock();
         let disabled = self.disabled_slots();
-        let input = CraftingInput::new(
+        let input = CraftingInput::positioned(
             3,
             3,
             container
@@ -439,7 +440,8 @@ impl CrafterBlockEntity {
                     }
                 })
                 .collect(),
-        );
+        )
+        .input;
         REGISTRY
             .recipes
             .find_match(&vanilla_recipe_types::CRAFTING, &input)

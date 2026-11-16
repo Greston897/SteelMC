@@ -1480,6 +1480,7 @@ impl World {
         });
     }
 
+    /// Executes one full world game tick (time, weather, chunks, entities, block entities).
     pub fn tick_game(
         self: &Arc<Self>,
         tick_count: u64,

@@ -72,6 +72,37 @@ impl CreakingEntity {
         self.creaking_heart_pos().is_some()
     }
 
+    /// Vanilla `Creaking.checkCanMove`: returns `true` when any survival or
+    /// adventure player within 12 blocks (not wearing a carved pumpkin) looks
+    /// inside a 0.5-cosine cone toward this creaking's eyes.
+    #[must_use]
+    pub fn is_observed_by_player(&self, world: &World) -> bool {
+        use steel_registry::item_stack::EquipmentSlot;
+        use steel_utils::types::GameType;
+
+        let pos = self.position();
+        let eye = DVec3::new(pos.x, self.get_eye_y(), pos.z);
+        world
+            .nearest_player(eye, 12.0, |player| {
+                if !matches!(player.game_mode(), GameType::Survival | GameType::Adventure) {
+                    return false;
+                }
+                if player
+                    .inventory
+                    .lock()
+                    .get_ref(EquipmentSlot::Head)
+                    .is(&*steel_registry::vanilla_items::CARVED_PUMPKIN)
+                {
+                    return false;
+                }
+                let p_pos = player.position();
+                let p_eye = DVec3::new(p_pos.x, player.get_eye_y(), p_pos.z);
+                let to_creaking = (eye - p_eye).normalize_or_zero();
+                player.look_angle().normalize_or_zero().dot(to_creaking) > 0.5
+            })
+            .is_some()
+    }
+
     /// Vanilla `Creaking.getCreakingHeart`: the linked heart is resolved through
     /// the block entity at the stored position, so a removed heart returns `None`.
     fn linked_heart(&self, world: &World) -> Option<BlockPos> {
@@ -278,7 +309,9 @@ impl Mob for CreakingEntity {
         &self.mob_base
     }
 
-    /// Vanilla `Creaking.tick`: a creaking whose heart no longer exists dies.
+    /// Vanilla `Creaking.tick` + `Creaking.checkCanMove`: a creaking whose heart
+    /// no longer exists dies; while watched by any non-spectator/non-creative
+    /// player within 12 blocks (not wearing a carved pumpkin), it freezes in place.
     fn custom_server_ai_step(&self) {
         let Some(world) = self.level() else {
             return;
@@ -286,14 +319,34 @@ impl Mob for CreakingEntity {
         if self.linked_heart(&world).is_none() && self.has_linked_heart() {
             let damage = DamageSource::environment(&vanilla_damage_types::GENERIC_KILL);
             self.hurt(&world, &damage, f32::MAX);
+            return;
+        }
+        if self.is_observed_by_player(&world) {
+            self.mob_base.navigation().lock().stop();
+            let v = self.velocity();
+            if v.x != 0.0 || v.z != 0.0 {
+                self.set_velocity(DVec3::new(0.0, v.y, 0.0));
+            }
         }
     }
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {
+        if self
+            .level()
+            .is_some_and(|world| self.is_observed_by_player(&world))
+        {
+            return;
+        }
         PathfinderMob::tick_pathfinder_goal_selectors(self, entity);
     }
 
     fn tick_path_navigation(&self) {
+        if self
+            .level()
+            .is_some_and(|world| self.is_observed_by_player(&world))
+        {
+            return;
+        }
         PathfinderMob::tick_pathfinder_path_navigation(self);
     }
 

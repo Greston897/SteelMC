@@ -764,7 +764,12 @@ pub enum DragonRespawnEffect {
     /// Point every respawn crystal's beam at `target`.
     AimCrystalsAt(BlockPos),
     /// Broadcast level event `event` at `pos`.
-    LevelEvent { event: i32, pos: BlockPos },
+    LevelEvent {
+        /// Vanilla level event id.
+        event: i32,
+        /// Event origin block coordinate.
+        pos: BlockPos,
+    },
     /// Clear and rebuild one arena spike with its crystal.
     RebuildSpike(steel_registry::feature::EndSpike),
     /// Vanilla `resetSpikeCrystals`: rebuild every spike's crystal.

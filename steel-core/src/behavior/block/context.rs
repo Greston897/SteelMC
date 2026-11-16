@@ -9,8 +9,11 @@ use super::{
 
 use crate::entity::entities::FallingBlockEntity;
 
+/// Outcome of picking up a fluid or block into a bucket.
 pub struct PickupResult {
+    /// Resulting filled bucket item.
     pub filled_bucket: ItemStack,
+    /// Optional pickup sound event.
     pub sound: Option<SoundEventRef>,
 }
 

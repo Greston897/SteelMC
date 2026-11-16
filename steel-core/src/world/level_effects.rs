@@ -727,6 +727,92 @@ impl World {
     pub(crate) const fn entity_manager(&self) -> &WorldEntityManager {
         &self.entity_manager
     }
+
+    /// Broadcasts a block debug-subscription update (`ClientboundDebugBlockValuePacket`)
+    /// to every operator player in this world subscribed to `subscription_id`.
+    pub fn broadcast_debug_block_value(
+        &self,
+        block_pos: BlockPos,
+        subscription_id: i32,
+        encoded_value: Option<Vec<u8>>,
+    ) {
+        let packet = steel_protocol::packets::game::CDebugBlockValue {
+            block_pos,
+            update: steel_protocol::packets::game::DebugSubscriptionUpdate {
+                subscription_id,
+                encoded_value,
+            },
+        };
+        self.players.iter_players(|_, player| {
+            if player.has_debug_subscription(subscription_id) {
+                player.send_packet(packet.clone());
+            }
+            true
+        });
+    }
+
+    /// Broadcasts a chunk debug-subscription update (`ClientboundDebugChunkValuePacket`)
+    /// to every operator player in this world subscribed to `subscription_id`.
+    pub fn broadcast_debug_chunk_value(
+        &self,
+        chunk_x: i32,
+        chunk_z: i32,
+        subscription_id: i32,
+        encoded_value: Option<Vec<u8>>,
+    ) {
+        let packet = steel_protocol::packets::game::CDebugChunkValue {
+            chunk_x,
+            chunk_z,
+            update: steel_protocol::packets::game::DebugSubscriptionUpdate {
+                subscription_id,
+                encoded_value,
+            },
+        };
+        self.players.iter_players(|_, player| {
+            if player.has_debug_subscription(subscription_id) {
+                player.send_packet(packet.clone());
+            }
+            true
+        });
+    }
+
+    /// Broadcasts an entity debug-subscription update (`ClientboundDebugEntityValuePacket`)
+    /// to every operator player in this world subscribed to `subscription_id`.
+    pub fn broadcast_debug_entity_value(
+        &self,
+        entity_id: i32,
+        subscription_id: i32,
+        encoded_value: Option<Vec<u8>>,
+    ) {
+        let packet = steel_protocol::packets::game::CDebugEntityValue {
+            entity_id,
+            update: steel_protocol::packets::game::DebugSubscriptionUpdate {
+                subscription_id,
+                encoded_value,
+            },
+        };
+        self.players.iter_players(|_, player| {
+            if player.has_debug_subscription(subscription_id) {
+                player.send_packet(packet.clone());
+            }
+            true
+        });
+    }
+
+    /// Broadcasts a one-shot debug-subscription event (`ClientboundDebugEventPacket`)
+    /// to every operator player in this world subscribed to `subscription_id`.
+    pub fn broadcast_debug_event(&self, subscription_id: i32, encoded_value: Vec<u8>) {
+        let packet = steel_protocol::packets::game::CDebugEvent {
+            subscription_id,
+            encoded_value,
+        };
+        self.players.iter_players(|_, player| {
+            if player.has_debug_subscription(subscription_id) {
+                player.send_packet(packet.clone());
+            }
+            true
+        });
+    }
 }
 
 #[cfg(test)]

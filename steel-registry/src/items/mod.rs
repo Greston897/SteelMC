@@ -263,7 +263,7 @@ mod tests {
         assert!(
             !REGISTRY
                 .items
-                .is_block_item(&*vanilla_items::DIAMOND_PICKAXE)
+                .is_block_item(&vanilla_items::DIAMOND_PICKAXE)
         );
     }
 }

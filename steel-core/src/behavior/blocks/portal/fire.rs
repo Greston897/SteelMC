@@ -244,7 +244,133 @@ impl FireBlock {
 }
 
 impl BlockBehavior for FireBlock {
-    // Vanilla `FireBlock.tick`: fuel check, rain extinguishing, then spread/age.
+    /// Vanilla `FireBlock.tick`: survival check, `infiniburn` check, rain
+    /// extinguishing, age advancement, adjacent block burn-out (including TNT
+    /// ignition), and 3D neighbor fire spread respecting
+    /// `fire_spread_radius_around_player`.
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        world.schedule_block_tick_default(pos, self.block, Self::tick_delay());
+
+        if !self.can_survive(state, world.as_ref(), pos) {
+            world.set_block(
+                pos,
+                vanilla_blocks::AIR.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
+            return;
+        }
+
+        let below = world.get_block_state(pos.below());
+        let infiniburn = world.is_infiniburn(below);
+        let age: u8 = state.try_get_value(AGE).unwrap_or(0);
+
+        if !infiniburn
+            && world.is_raining()
+            && Self::is_near_rain(world, pos)
+            && rand::random::<f32>() < 0.2 + f32::from(age) * 0.03
+        {
+            world.set_block(
+                pos,
+                vanilla_blocks::AIR.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
+            return;
+        }
+
+        let next_age = u8::min(15, age.saturating_add(rand::random_range(0..3) as u8 / 2));
+        if next_age != age {
+            world.set_block(
+                pos,
+                state.set_value(AGE, next_age),
+                UpdateFlags::UPDATE_NONE,
+            );
+        }
+
+        let spread_radius = world
+            .get_game_rule(&steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER);
+        if spread_radius == 0 {
+            return;
+        }
+
+        if !infiniburn {
+            let has_valid_neighbor = Direction::ALL
+                .iter()
+                .any(|&dir| Self::can_burn(world.get_block_state(pos.relative(dir))));
+            if !has_valid_neighbor {
+                let below_pos = pos.below();
+                if !below.is_face_sturdy(world.as_ref(), below_pos, Direction::Up) || age > 3 {
+                    world.set_block(
+                        pos,
+                        vanilla_blocks::AIR.default_state(),
+                        UpdateFlags::UPDATE_ALL,
+                    );
+                }
+                return;
+            }
+            if age == 15 && rand::random_range(0..4) == 0 && !Self::can_burn(below) {
+                world.set_block(
+                    pos,
+                    vanilla_blocks::AIR.default_state(),
+                    UpdateFlags::UPDATE_ALL,
+                );
+                return;
+            }
+        }
+
+        if spread_radius < 0 {
+            return;
+        }
+
+        // Burn adjacent flammable blocks (horizontal 300, vertical 250).
+        Self::check_burn_out(world, pos.east(), 300, next_age);
+        Self::check_burn_out(world, pos.west(), 300, next_age);
+        Self::check_burn_out(world, pos.below(), 250, next_age);
+        Self::check_burn_out(world, pos.above(), 250, next_age);
+        Self::check_burn_out(world, pos.north(), 300, next_age);
+        Self::check_burn_out(world, pos.south(), 300, next_age);
+
+        // Spread fire into the vanilla 3x6x3 neighborhood.
+        let difficulty_bonus = match world.difficulty() {
+            steel_utils::types::Difficulty::Peaceful => 0,
+            steel_utils::types::Difficulty::Easy => 7,
+            steel_utils::types::Difficulty::Normal => 14,
+            steel_utils::types::Difficulty::Hard => 21,
+        };
+        for dx in -1..=1 {
+            for dz in -1..=1 {
+                for dy in -1..=4 {
+                    if dx == 0 && dy == 0 && dz == 0 {
+                        continue;
+                    }
+                    let target = pos.offset(dx, dy, dz);
+                    if world.get_block_state(target).get_block() != &vanilla_blocks::AIR {
+                        continue;
+                    }
+                    let odds = Self::ignition_odds_at(world.as_ref(), target);
+                    if odds <= 0 {
+                        continue;
+                    }
+                    let rate = if dy > 1 { 100 + (dy - 1) * 100 } else { 100 };
+                    let mut max_odds = (odds + 40 + difficulty_bonus) / (i32::from(next_age) + 30);
+                    if world.is_raining() && Self::is_near_rain(world, target) {
+                        max_odds /= 2;
+                    }
+                    if max_odds > 0 && rand::random_range(0..rate) <= max_odds {
+                        let spread_age = u8::min(
+                            15,
+                            next_age.saturating_add(rand::random_range(0..5) as u8 / 4),
+                        );
+                        world.set_block(
+                            target,
+                            Self::state_with_age(world.as_ref(), target, spread_age),
+                            UpdateFlags::UPDATE_ALL,
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     /// Removes fire when its supporting block no longer allows it to survive
     fn update_shape(
         &self,

@@ -568,8 +568,13 @@ mod tests {
     use super::*;
 
     fn entity() -> CommandBlockBlockEntity {
+        use steel_registry::blocks::block_state_ext::BlockStateExt as _;
         steel_registry::init_vanilla_registry();
-        CommandBlockBlockEntity::new(Weak::new(), BlockPos::new(0, 64, 0), BlockStateId(0))
+        CommandBlockBlockEntity::new(
+            Weak::new(),
+            BlockPos::new(0, 64, 0),
+            vanilla_blocks::COMMAND_BLOCK.default_state(),
+        )
     }
 
     #[test]

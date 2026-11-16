@@ -218,6 +218,7 @@ pub trait BlockAttachedEntity: Entity {
     /// Vanilla's `HangingEntity` overrides this to drop its item and remove
     /// itself; the default here does the same, which is what every block-attached
     /// entity in Steel (item frames, paintings, leash knots) expects.
+    #[expect(dead_code, reason = "vanilla BlockAttachedEntity default override hook")]
     fn thunder_hit_block_attached_entity(self: Arc<Self>, _lightning_uuid: uuid::Uuid) {
         // Vanilla `HangingEntity.thunderHit` drops the item and removes itself.
         self.drop_item(None);
@@ -229,6 +230,7 @@ pub trait BlockAttachedEntity: Entity {
     ///
     /// Vanilla's `HangingEntity` returns `true` for explosions that would not
     /// destroy the supporting block, so frames are not blasted off walls at range.
+    #[expect(dead_code, reason = "vanilla BlockAttachedEntity default override hook")]
     fn ignore_explosion_block_attached_entity(
         &self,
         _explosion: &dyn crate::entity::Explosion,

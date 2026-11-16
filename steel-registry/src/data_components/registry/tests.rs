@@ -215,7 +215,7 @@ fn common_defaults_and_extracted_item_overrides_match_vanilla() {
         Some(&SwingAnimation::DEFAULT)
     );
 
-    let wooden_spear = ItemStack::new(&*vanilla_items::WOODEN_SPEAR);
+    let wooden_spear = ItemStack::new(&vanilla_items::WOODEN_SPEAR);
     assert_eq!(
         wooden_spear.get(USE_EFFECTS),
         Some(&UseEffects::new(true, false, 1.0))
@@ -229,10 +229,10 @@ fn common_defaults_and_extracted_item_overrides_match_vanilla() {
         Some(&SwingAnimation::DEFAULT)
     );
 
-    let heavy_core = ItemStack::new(&*vanilla_items::HEAVY_CORE);
+    let heavy_core = ItemStack::new(&vanilla_items::HEAVY_CORE);
     assert_eq!(heavy_core.get(RARITY), Some(&Rarity::Epic));
 
-    let stone = ItemStack::new(&*vanilla_items::STONE);
+    let stone = ItemStack::new(&vanilla_items::STONE);
     assert_eq!(
         stone.get(ITEM_MODEL),
         Some(&Identifier::vanilla_static("stone"))
@@ -243,7 +243,7 @@ fn common_defaults_and_extracted_item_overrides_match_vanilla() {
     };
     assert_eq!(stone_name.key, "block.minecraft.stone");
 
-    let redstone = ItemStack::new(&*vanilla_items::REDSTONE);
+    let redstone = ItemStack::new(&vanilla_items::REDSTONE);
     assert_eq!(
         redstone.get(ITEM_MODEL),
         Some(&Identifier::vanilla_static("redstone"))
@@ -254,7 +254,7 @@ fn common_defaults_and_extracted_item_overrides_match_vanilla() {
     };
     assert_eq!(redstone_name.key, "item.minecraft.redstone");
 
-    let shield = ItemStack::new(&*vanilla_items::SHIELD);
+    let shield = ItemStack::new(&vanilla_items::SHIELD);
     assert_eq!(
         shield
             .get(BREAK_SOUND)
@@ -262,20 +262,20 @@ fn common_defaults_and_extracted_item_overrides_match_vanilla() {
         Some(&sound_events::ITEM_SHIELD_BREAK)
     );
 
-    let pufferfish_bucket = ItemStack::new(&*vanilla_items::PUFFERFISH_BUCKET);
+    let pufferfish_bucket = ItemStack::new(&vanilla_items::PUFFERFISH_BUCKET);
     assert!(
         pufferfish_bucket
             .get(BUCKET_ENTITY_DATA)
             .is_some_and(CustomData::is_empty)
     );
 
-    let golden_sword = ItemStack::new(&*vanilla_items::GOLDEN_SWORD);
+    let golden_sword = ItemStack::new(&vanilla_items::GOLDEN_SWORD);
     assert_eq!(
         golden_sword.get(ENCHANTABLE).map(|value| value.value()),
         Some(22)
     );
     assert!(golden_sword.is_enchantable());
-    assert!(!ItemStack::new(&*vanilla_items::STONE).is_enchantable());
+    assert!(!ItemStack::new(&vanilla_items::STONE).is_enchantable());
 
     for (item, variant) in [
         (&*vanilla_items::EGG, &vanilla_chicken_variants::TEMPERATE),
@@ -292,20 +292,20 @@ fn common_defaults_and_extracted_item_overrides_match_vanilla() {
     }
 
     assert_eq!(
-        ItemStack::new(&*vanilla_items::TIPPED_ARROW).get(POTION_DURATION_SCALE),
+        ItemStack::new(&vanilla_items::TIPPED_ARROW).get(POTION_DURATION_SCALE),
         Some(&0.125)
     );
     assert_eq!(
-        ItemStack::new(&*vanilla_items::LINGERING_POTION).get(POTION_DURATION_SCALE),
+        ItemStack::new(&vanilla_items::LINGERING_POTION).get(POTION_DURATION_SCALE),
         Some(&0.25)
     );
     assert!(
-        ItemStack::new(&*vanilla_items::ENCHANTED_BOOK)
+        ItemStack::new(&vanilla_items::ENCHANTED_BOOK)
             .get(STORED_ENCHANTMENTS)
             .is_some_and(ItemEnchantments::is_empty)
     );
 
-    let music_disc_cat = ItemStack::new(&*vanilla_items::MUSIC_DISC_CAT);
+    let music_disc_cat = ItemStack::new(&vanilla_items::MUSIC_DISC_CAT);
     assert_eq!(
         music_disc_cat
             .get(crate::data_components::vanilla_components::JUKEBOX_PLAYABLE)
@@ -335,7 +335,7 @@ fn common_defaults_and_extracted_item_overrides_match_vanilla() {
     }
 
     assert_eq!(
-        ItemStack::new(&*vanilla_items::OMINOUS_BOTTLE)
+        ItemStack::new(&vanilla_items::OMINOUS_BOTTLE)
             .get(OMINOUS_BOTTLE_AMPLIFIER)
             .map(|amplifier| amplifier.value()),
         Some(0)

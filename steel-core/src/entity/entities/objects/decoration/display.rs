@@ -71,9 +71,13 @@ impl BillboardConstraints {
 /// Shared state for every display entity.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DisplayTransformation {
+    /// Translation component.
     pub translation: Vector3f,
+    /// Scale component.
     pub scale: Vector3f,
+    /// Left rotation quaternion.
     pub left_rotation: Quaternionf,
+    /// Right rotation quaternion.
     pub right_rotation: Quaternionf,
 }
 

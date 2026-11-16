@@ -187,6 +187,7 @@ pub fn wrap_degrees(degrees: f32) -> f32 {
 }
 
 #[derive(Debug, Clone, Default)]
+/// Runtime state for the Ender Dragon phase machine.
 pub struct DragonPhaseState {
     /// Vanilla `currentPath` on the path-driven phases.
     pub path: Option<Path>,
@@ -326,6 +327,7 @@ pub struct DragonPhaseManager {
     pub parts: DragonParts,
     /// Vanilla `flapTime` / `oFlapTime`.
     pub flap_time: f32,
+    /// Wing-flap phase angle from the previous tick.
     pub old_flap_time: f32,
     /// Vanilla `yRotA`: the smoothed yaw velocity the flight code applies.
     pub y_rot_a: f32,

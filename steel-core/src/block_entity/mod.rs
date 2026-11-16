@@ -217,11 +217,13 @@ impl BlockEntityBase {
     }
 
     #[must_use]
+    /// Returns the world position of this block entity.
     pub const fn pos(&self) -> BlockPos {
         self.pos
     }
 
     #[must_use]
+    /// Returns the current block state stored on this block entity.
     pub fn block_state(&self) -> BlockStateId {
         self.lifecycle.lock().block_state
     }
@@ -285,6 +287,7 @@ impl BlockEntityBase {
     }
 
     #[must_use]
+    /// Upgrades and returns the world containing this block entity, if alive.
     pub fn level(&self) -> Option<Arc<World>> {
         self.level.upgrade()
     }
