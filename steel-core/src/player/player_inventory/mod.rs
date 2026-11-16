@@ -163,6 +163,19 @@ impl OpenMenuState {
             active_open_operations: 0,
         }
     }
+
+    /// Takes the open menu out of the slot.
+    ///
+    /// Callers that run a handler without holding the lock take it, run the
+    /// handler and put it back, so a re-entrant menu operation cannot deadlock.
+    pub(super) fn take_menu(&mut self) -> Option<Menu> {
+        self.menu.take()
+    }
+
+    /// Puts a menu back after [`Self::take_menu`].
+    pub(super) fn put_menu(&mut self, menu: Menu) {
+        self.menu = Some(menu);
+    }
 }
 
 #[cfg(test)]

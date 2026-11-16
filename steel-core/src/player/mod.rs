@@ -706,7 +706,7 @@ impl Player {
     /// Vanilla only decrements `autoSpinAttackTicks` and runs
     /// `checkAutoSpinAttack`; it never re-applies a launch impulse, so neither
     /// does this.
-    pub(crate) fn tick_riptide(self: &Arc<Self>) {
+    pub(crate) fn tick_riptide(&self) {
         if self.riptide.lock().is_none() {
             return;
         }
@@ -733,7 +733,7 @@ impl Player {
     /// The sweep box is the union of the bounding box before and after movement;
     /// the first living entity inside it ends the attack after taking the hit,
     /// and a horizontal block collision also ends it.
-    fn check_auto_spin_attack(self: &Arc<Self>) {
+    fn check_auto_spin_attack(&self) {
         // Vanilla unions the box captured before travel with the current one, so
         // the sweep also catches entities the player moved past this tick.
         let current = self.bounding_box();
@@ -1346,7 +1346,7 @@ impl Player {
             );
         }
 
-        command_block.set_command(packet.command);
+        command_block.set_command(packet.command.clone());
         command_block.set_track_output(packet.flags & 1 != 0);
         command_block.set_automatic_and_schedule(packet.flags & 4 != 0, &world);
         if old_mode != new_mode {
@@ -1523,7 +1523,7 @@ impl Player {
         }
 
         let mut open_menu = self.open_menu.lock();
-        let mut menu = open_menu.menu.take();
+        let mut menu = open_menu.take_menu();
         drop(open_menu);
 
         let container_id;
@@ -1551,7 +1551,7 @@ impl Player {
         };
 
         if let Some(active) = menu {
-            self.open_menu.lock().menu = Some(active);
+            self.open_menu.lock().put_menu(active);
         }
 
         // Vanilla answers `PLACE_GHOST_RECIPE` with the full display of the
@@ -1656,7 +1656,7 @@ impl Player {
                     // equivalent yet, so the payload is stored and the action is
                     // reported instead of being silently dropped.
                     log::warn!(
-                        "test instance block action {:?} at {} is not implemented",
+                        "test instance block action {:?} at {:?} is not implemented",
                         packet.action,
                         packet.pos
                     );
@@ -1677,8 +1677,8 @@ impl Player {
             // TODO: describe the test once the registry lands.
             Some(ref test) => TextComponent::plain(&test.to_string()),
             None => TextComponent::translated(TranslatedMessage {
-                key: "test_instance.description.no_test".to_owned(),
-                fallback: Some("No test".to_owned()),
+                key: "test_instance.description.no_test".into(),
+                fallback: Some("No test".into()),
                 args: None,
             }),
         };
@@ -2994,6 +2994,7 @@ const fn protocol_look_at_anchor(anchor: EntityAnchor) -> LookAtAnchor {
         EntityAnchor::Feet => LookAtAnchor::Feet,
         EntityAnchor::Eyes => LookAtAnchor::Eyes,
     }
+}
 
     /// Vanilla `ServerPlayer.tickCount` is the player's own counter, not the
     /// shared `EntityBase` one; the combat tracker compares damage times against

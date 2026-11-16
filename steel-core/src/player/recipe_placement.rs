@@ -11,6 +11,7 @@
 //! [`PlacementPlan`].
 
 use rustc_hash::FxHashMap;
+use steel_registry::RegistryExt as _;
 use steel_registry::data_components::vanilla_components::MAX_STACK_SIZE;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
@@ -37,7 +38,7 @@ pub enum PostPlaceAction {
 /// damaged or enchanted stack still counts by its item.
 #[derive(Debug, Default)]
 pub struct StackedItemContents {
-    amounts: FxHashMap<ItemRef, i32>,
+    amounts: FxHashMap<steel_utils::Identifier, i32>,
 }
 
 impl StackedItemContents {
@@ -73,11 +74,11 @@ impl StackedItemContents {
     }
 
     fn add(&mut self, item: ItemRef, count: i32) {
-        *self.amounts.entry(item).or_insert(0) += count;
+        *self.amounts.entry(item.key().clone()).or_insert(0) += count;
     }
 
     fn has_at_least(&self, item: ItemRef, count: i32) -> bool {
-        self.amounts.get(&item).copied().unwrap_or(0) >= count
+        self.amounts.get(item.key()).copied().unwrap_or(0) >= count
     }
 
     /// Vanilla `StackedContents.tryPick(ingredients, amount, output)`.
@@ -97,7 +98,7 @@ impl StackedItemContents {
             match picker.try_assigning_new_item(self, amount) {
                 Some(path) => {
                     let assigned_item = picker.items[path[0]];
-                    if let Some(count) = self.amounts.get_mut(&assigned_item) {
+                    if let Some(count) = self.amounts.get_mut(assigned_item.key()) {
                         *count -= amount;
                     }
                     let satisfied_ingredient = path[path.len() - 1];
@@ -161,8 +162,11 @@ impl StackedItemContents {
         let mut min = i32::MAX;
         for ingredient in ingredients {
             let mut max = 0;
-            for (item, count) in &self.amounts {
-                if *count > max && ingredient.test_item(*item) {
+            for (key, count) in &self.amounts {
+                let Some(item) = steel_registry::REGISTRY.items.by_key(key) else {
+                    continue;
+                };
+                if *count > max && ingredient.test_item(item) {
                     max = *count;
                 }
                 if max >= min {
@@ -180,9 +184,18 @@ impl StackedItemContents {
     /// Vanilla `StackedContents.getUniqueAvailableIngredientItems`.
     fn unique_available_ingredient_items(&self, ingredients: &[Ingredient]) -> Vec<ItemRef> {
         let mut result = Vec::new();
-        for (item, count) in &self.amounts {
-            if *count > 0 && ingredients.iter().any(|ingredient| ingredient.test_item(*item)) {
-                result.push(*item);
+        for (key, count) in &self.amounts {
+            if *count <= 0 {
+                continue;
+            }
+            let Some(item) = steel_registry::REGISTRY.items.by_key(key) else {
+                continue;
+            };
+            if ingredients
+                .iter()
+                .any(|ingredient| ingredient.test_item(item))
+            {
+                result.push(item);
             }
         }
         result
@@ -861,7 +874,7 @@ pub fn apply_plan(
         container.set_changed();
     }
 
-    handler.update_result(guard);
+    crate::inventory::slots::ResultHandler::update_result(handler, guard);
     plan.action
 }
 

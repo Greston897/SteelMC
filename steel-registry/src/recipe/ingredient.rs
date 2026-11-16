@@ -57,6 +57,24 @@ impl Ingredient {
         }
     }
 
+    /// Returns true when `item` satisfies this ingredient.
+    ///
+    /// This is vanilla `Ingredient.test(Tag)`: an item entry matches by
+    /// identity, a tag entry matches through the tag's member list, and a choice
+    /// matches when any alternative matches.
+    #[must_use]
+    pub fn test_item(&self, item: ItemRef) -> bool {
+        match self {
+            Self::Empty => false,
+            Self::Item(entry) => *entry == item,
+            Self::Tag(tag) => REGISTRY
+                .items
+                .get_tag(tag)
+                .is_some_and(|items| items.contains(&item)),
+            Self::Choice(items) => items.iter().any(|entry| *entry == item),
+        }
+    }
+
     /// Compares two ingredients for equality (used for symmetry detection).
     #[must_use]
     pub fn eq_ingredient(&self, other: &Self) -> bool {

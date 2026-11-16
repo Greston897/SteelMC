@@ -30,16 +30,6 @@ impl FurnaceFuelSlot {
     pub fn new(container: impl Into<ContainerRef>, index: usize) -> Self {
         Self {
             base: NormalSlot::new(container, index),
-            remove_count: AtomicI32::new(0),
-        }
-    }
-
-    /// Vanilla `ResultSlot.checkTakeAchievements`: awards `ITEM_CRAFTED` for
-    /// everything taken since the previous award.
-    fn check_take_achievements(&self, stack: &ItemStack, player: &Player) {
-        let count = self.remove_count.swap(0, Ordering::Relaxed);
-        if count > 0 {
-            player.award_stat_with_count(&vanilla_stat_types::ITEM_CRAFTED, stack.item(), count);
         }
     }
 }
@@ -109,6 +99,16 @@ impl FurnaceResultSlot {
     pub fn new(container: impl Into<ContainerRef>, index: usize) -> Self {
         Self {
             base: NormalSlot::new(container, index),
+            remove_count: AtomicI32::new(0),
+        }
+    }
+
+    /// Vanilla `ResultSlot.checkTakeAchievements`: awards `ITEM_CRAFTED` for
+    /// everything taken since the previous award.
+    fn check_take_achievements(&self, stack: &ItemStack, player: &Player) {
+        let count = self.remove_count.swap(0, Ordering::Relaxed);
+        if count > 0 {
+            player.award_stat_with_count(&vanilla_stat_types::ITEM_CRAFTED, stack.item(), count);
         }
     }
 }
