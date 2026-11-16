@@ -194,7 +194,7 @@ mod tests {
     fn prepare_hand(player: &Player, hand: InteractionHand, stack: ItemStack) {
         let mut inventory = player.inventory.lock();
         inventory.set_item_in_hand(hand, stack);
-        inventory.set_item_in_hand(other_hand(hand), ItemStack::new(&*vanilla_items::STONE));
+        inventory.set_item_in_hand(other_hand(hand), ItemStack::new(&vanilla_items::STONE));
     }
 
     fn held_stack(player: &Player, hand: InteractionHand) -> ItemStack {
@@ -273,7 +273,7 @@ mod tests {
                 GameType::Survival,
             );
 
-            let mut stack = ItemStack::new(&*vanilla_items::MINECART);
+            let mut stack = ItemStack::new(&vanilla_items::MINECART);
             stack.set(CUSTOM_NAME, TextComponent::plain("Unused Cart"));
             let original = stack.clone();
             prepare_hand(&fixture.player, hand, stack);
@@ -282,7 +282,7 @@ mod tests {
             assert_eq!(held_stack(&fixture.player, hand), original);
             assert_eq!(
                 held_stack(&fixture.player, other_hand(hand)),
-                ItemStack::new(&*vanilla_items::STONE),
+                ItemStack::new(&vanilla_items::STONE),
             );
             assert!(carts_at(&fixture).is_empty());
             assert_eq!(minecart_use_count(&fixture.player), 0);
@@ -402,7 +402,7 @@ mod tests {
                     prepare_hand(
                         &fixture.player,
                         hand,
-                        ItemStack::new(&*vanilla_items::MINECART),
+                        ItemStack::new(&vanilla_items::MINECART),
                     );
 
                     assert_eq!(use_cart(&fixture, hand), InteractionResult::Success);
@@ -419,7 +419,7 @@ mod tests {
                     assert!(held_stack(&fixture.player, hand).is_empty());
                     assert_eq!(
                         held_stack(&fixture.player, other_hand(hand)),
-                        ItemStack::new(&*vanilla_items::STONE),
+                        ItemStack::new(&vanilla_items::STONE),
                     );
                     assert_eq!(minecart_use_count(&fixture.player), 1);
                 }
@@ -439,7 +439,7 @@ mod tests {
             GameType::Survival,
         );
         let name = TextComponent::plain("Rail Runner");
-        let mut stack = ItemStack::new(&*vanilla_items::MINECART);
+        let mut stack = ItemStack::new(&vanilla_items::MINECART);
         stack.set(CUSTOM_NAME, name.clone());
         prepare_hand(&fixture.player, InteractionHand::MainHand, stack);
 

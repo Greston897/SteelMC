@@ -363,7 +363,7 @@ impl RecipePicker {
         self.ingredient_count() * self.item_count()
     }
 
-    fn residual_offset(&self) -> usize {
+    const fn residual_offset(&self) -> usize {
         self.connection_offset() + self.connection_count()
     }
 

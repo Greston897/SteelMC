@@ -138,7 +138,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::with_count(&*vanilla_items::END_CRYSTAL, 2));
+            .set_selected_item(ItemStack::with_count(&vanilla_items::END_CRYSTAL, 2));
 
         (world_fixture, player, pos)
     }

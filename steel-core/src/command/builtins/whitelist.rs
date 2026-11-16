@@ -112,7 +112,7 @@ async fn run_operation(
     action: WhitelistAction,
 ) -> Result<i32, CommandSyntaxError> {
     let targets = argument.resolve(source).await?;
-    let server = source.server().clone();
+    let server = Arc::clone(source.server());
     let whitelist = Arc::clone(&server.whitelist);
 
     let mut changed: i32 = 0;

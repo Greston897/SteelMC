@@ -109,7 +109,7 @@ impl CommandBlockMinecartEntity {
     /// Replaces the command, like vanilla `MinecartCommandBlock.setCommand`.
     pub fn set_command(&self, command: impl Into<String>) {
         let command = command.into();
-        self.state.lock().command = command.clone();
+        self.state.lock().command.clone_from(&command);
         self.entity_data
             .lock()
             .minecart_command_block_mut()
@@ -248,7 +248,7 @@ impl Entity for CommandBlockMinecartEntity {
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         if let Some(command) = nbt.string("Command") {
-            self.set_command(command.to_str().to_owned());
+            self.set_command(command.to_str().into_owned());
         }
         if let Some(powered) = nbt.byte_value("Powered") {
             self.state.lock().powered = powered != 0;
@@ -354,7 +354,7 @@ mod tests {
         nbt.write(&mut encoded);
         assert!(!encoded.is_empty());
         assert_eq!(
-            nbt.string("Command").map(|value| value.to_string()),
+            nbt.string("Command").map(ToString::to_string),
             Some("time set day".to_owned())
         );
     }

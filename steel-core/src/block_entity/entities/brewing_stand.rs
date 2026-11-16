@@ -565,7 +565,7 @@ mod tests {
         let brewing_stand = test_brewing_stand();
         brewing_stand.container.lock().set_item(
             FUEL_SLOT,
-            ItemStack::with_count(&*vanilla_items::BLAZE_POWDER, 5),
+            ItemStack::with_count(&vanilla_items::BLAZE_POWDER, 5),
         );
         assert_eq!(
             brewing_stand.container.lock().get_item(FUEL_SLOT).count(),
@@ -573,7 +573,7 @@ mod tests {
         );
         // Vanilla exposes the fuel slot to side hoppers only.
         let container = brewing_stand.container.lock();
-        let powder = ItemStack::new(&*vanilla_items::BLAZE_POWDER);
+        let powder = ItemStack::new(&vanilla_items::BLAZE_POWDER);
         assert!(container.can_place_item_through_face(FUEL_SLOT, &powder, Direction::East));
         assert!(!container.can_place_item_through_face(FUEL_SLOT, &powder, Direction::Up));
         assert!(!container.can_take_item_through_face(FUEL_SLOT, &powder, Direction::Down));

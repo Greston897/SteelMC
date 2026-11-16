@@ -448,7 +448,7 @@ fn items_condition(expected: bool) -> Builder {
     literal("items").then(
         literal("entity").then(
             argument("targets", SteelArgumentType::entities()).then(
-                argument("slots", ArgumentType::greedy_string()).then(
+                argument("slots", ArgumentType::word()).then(
                     argument("item_predicate", SteelArgumentType::item_predicate())
                         .then(items_count_range(expected)),
                 ),

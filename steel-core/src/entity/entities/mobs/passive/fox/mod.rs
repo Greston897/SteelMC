@@ -547,7 +547,7 @@ mod tests {
         );
 
         assert_eq!(fox.trusted_count(), 0);
-        fox.on_fed(&player, &ItemStack::new(&*vanilla_items::SWEET_BERRIES));
+        fox.on_fed(&player, &ItemStack::new(&vanilla_items::SWEET_BERRIES));
         assert!(
             fox.is_trusted(player.gameprofile.id()),
             "a fox trusts the player who fed it"
@@ -583,7 +583,7 @@ mod tests {
     #[test]
     fn sweet_berries_are_fox_food() {
         init_vanilla_registry();
-        assert!(is_fox_food(&ItemStack::new(&*vanilla_items::SWEET_BERRIES)));
-        assert!(!is_fox_food(&ItemStack::new(&*vanilla_items::STONE)));
+        assert!(is_fox_food(&ItemStack::new(&vanilla_items::SWEET_BERRIES)));
+        assert!(!is_fox_food(&ItemStack::new(&vanilla_items::STONE)));
     }
 }

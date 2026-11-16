@@ -120,24 +120,38 @@ fn fetch_profile_by_name(
     let name = context.string("name")?;
     let server = context.source().server();
     let known = server.known_players();
-    let Some(entry) = known
+    if let Some(entry) = known
         .entries()
         .iter()
         .find(|entry| entry.last_known_name().eq_ignore_ascii_case(name))
-    else {
-        return Err(CommandSyntaxError::dynamic(format!(
-            "Failed to find a cached profile with name {name}"
-        )));
-    };
-    context.source().send_success(
-        &TextComponent::plain(format!(
-            "Successfully resolved profile {} ({})",
-            entry.last_known_name(),
-            entry.uuid()
-        )),
-        false,
-    );
-    Ok(1)
+    {
+        context.source().send_success(
+            &TextComponent::plain(format!(
+                "Successfully resolved profile {} ({})",
+                entry.last_known_name(),
+                entry.uuid()
+            )),
+            false,
+        );
+        return Ok(1);
+    }
+    if let Some(player) = server
+        .get_players()
+        .into_iter()
+        .find(|player| player.gameprofile.name.eq_ignore_ascii_case(name))
+    {
+        context.source().send_success(
+            &TextComponent::plain(format!(
+                "Successfully resolved profile {} ({})",
+                player.gameprofile.name, player.gameprofile.id
+            )),
+            false,
+        );
+        return Ok(1);
+    }
+    Err(CommandSyntaxError::dynamic(format!(
+        "Failed to find a cached profile with name {name}"
+    )))
 }
 
 fn fetch_profile_by_id(

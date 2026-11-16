@@ -1271,7 +1271,7 @@ mod tests {
         init_vanilla_registry();
 
         let stack = enchanted_item(
-            &*vanilla_items::DIAMOND_SWORD,
+            &vanilla_items::DIAMOND_SWORD,
             Identifier::vanilla_static("smite"),
             5,
         );
@@ -1298,7 +1298,7 @@ mod tests {
         init_vanilla_registry();
 
         let stack = enchanted_item(
-            &*vanilla_items::MACE,
+            &vanilla_items::MACE,
             Identifier::vanilla_static("breach"),
             2,
         );
@@ -1320,7 +1320,7 @@ mod tests {
     fn projectile_knockback_checks_direct_attacker_entity_tag() {
         init_vanilla_registry();
 
-        let stack = enchanted_item(&*vanilla_items::BOW, Identifier::vanilla_static("punch"), 2);
+        let stack = enchanted_item(&vanilla_items::BOW, Identifier::vanilla_static("punch"), 2);
         let damage_source = DamageSource::environment(&vanilla_damage_types::ARROW);
         let melee_context = EnchantmentDamageContext::new(
             &vanilla_entities::ZOMBIE,
@@ -1344,7 +1344,7 @@ mod tests {
         init_vanilla_registry();
 
         let stack = enchanted_item(
-            &*vanilla_items::DIAMOND_SWORD,
+            &vanilla_items::DIAMOND_SWORD,
             Identifier::vanilla_static("fire_protection"),
             4,
         );
@@ -1383,7 +1383,7 @@ mod tests {
         victim.equip(
             EquipmentSlot::Feet,
             enchanted_item(
-                &*vanilla_items::DIAMOND_BOOTS,
+                &vanilla_items::DIAMOND_BOOTS,
                 Identifier::vanilla_static("protection"),
                 2,
             ),
@@ -1391,7 +1391,7 @@ mod tests {
         victim.equip(
             EquipmentSlot::Chest,
             enchanted_item(
-                &*vanilla_items::DIAMOND_CHESTPLATE,
+                &vanilla_items::DIAMOND_CHESTPLATE,
                 Identifier::vanilla_static("blast_protection"),
                 3,
             ),
@@ -1409,7 +1409,7 @@ mod tests {
         victim.equip(
             EquipmentSlot::MainHand,
             enchanted_item(
-                &*vanilla_items::DIAMOND_BOOTS,
+                &vanilla_items::DIAMOND_BOOTS,
                 Identifier::vanilla_static("protection"),
                 4,
             ),
@@ -1424,7 +1424,7 @@ mod tests {
         init_vanilla_registry();
 
         let mut broken_chestplate = enchanted_item(
-            &*vanilla_items::DIAMOND_CHESTPLATE,
+            &vanilla_items::DIAMOND_CHESTPLATE,
             Identifier::vanilla_static("protection"),
             4,
         );
@@ -1441,7 +1441,7 @@ mod tests {
         init_vanilla_registry();
 
         let boots = enchanted_item(
-            &*vanilla_items::LEATHER_BOOTS,
+            &vanilla_items::LEATHER_BOOTS,
             Identifier::vanilla_static("frost_walker"),
             1,
         );
@@ -1458,7 +1458,7 @@ mod tests {
         ));
 
         let helmet = enchanted_item(
-            &*vanilla_items::LEATHER_HELMET,
+            &vanilla_items::LEATHER_HELMET,
             Identifier::vanilla_static("frost_walker"),
             1,
         );
@@ -1478,7 +1478,7 @@ mod tests {
         let attacker = Arc::new(TestLivingEntity::new(1, &vanilla_entities::PLAYER));
         let victim = Arc::new(TestLivingEntity::new(2, &vanilla_entities::ZOMBIE));
         let stack = enchanted_item(
-            &*vanilla_items::DIAMOND_SWORD,
+            &vanilla_items::DIAMOND_SWORD,
             Identifier::vanilla_static("fire_aspect"),
             2,
         );
@@ -1505,7 +1505,7 @@ mod tests {
             Weak::new(),
         );
         let mut rocket = enchanted_item(
-            &*vanilla_items::FIREWORK_ROCKET,
+            &vanilla_items::FIREWORK_ROCKET,
             Identifier::vanilla_static("flame"),
             1,
         );
@@ -1522,7 +1522,7 @@ mod tests {
         let attacker = Arc::new(TestLivingEntity::new(1, &vanilla_entities::PLAYER));
         let victim = Arc::new(TestLivingEntity::new(2, &vanilla_entities::ZOMBIE));
         let mut stack = enchanted_item(
-            &*vanilla_items::DIAMOND_SWORD,
+            &vanilla_items::DIAMOND_SWORD,
             Identifier::vanilla_static("fire_aspect"),
             1,
         );
@@ -1559,7 +1559,7 @@ mod tests {
         let attacker = Arc::new(TestLivingEntity::new(1, &vanilla_entities::ZOMBIE));
         let victim = Arc::new(TestLivingEntity::new(2, &vanilla_entities::PLAYER));
         let mut chestplate = enchanted_item(
-            &*vanilla_items::DIAMOND_CHESTPLATE,
+            &vanilla_items::DIAMOND_CHESTPLATE,
             Identifier::vanilla_static("thorns"),
             10,
         );
@@ -1603,7 +1603,7 @@ mod tests {
         let direct_entity = Arc::new(TestLivingEntity::new(2, &vanilla_entities::PLAYER));
         let victim = Arc::new(TestLivingEntity::new(3, &vanilla_entities::ZOMBIE));
         let stack = enchanted_item(
-            &*vanilla_items::DIAMOND_SWORD,
+            &vanilla_items::DIAMOND_SWORD,
             Identifier::vanilla_static("fire_aspect"),
             2,
         );
@@ -1627,7 +1627,7 @@ mod tests {
         let spider = Arc::new(TestLivingEntity::new(2, &vanilla_entities::SPIDER));
         let zombie = Arc::new(TestLivingEntity::new(3, &vanilla_entities::ZOMBIE));
         let stack = enchanted_item(
-            &*vanilla_items::DIAMOND_SWORD,
+            &vanilla_items::DIAMOND_SWORD,
             Identifier::vanilla_static("bane_of_arthropods"),
             1,
         );

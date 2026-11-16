@@ -217,7 +217,8 @@ impl Entity for AllayEntity {
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
         self.save_mob(nbt);
-        if let Some(stack) = self.carried_item.lock().clone() {
+        let carried = self.carried_item.lock().clone();
+        if let Some(stack) = carried {
             nbt.insert("CarriedItem", stack.to_nbt_tag_ref());
         }
     }

@@ -65,29 +65,50 @@ fn objectives_node() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
 }
 
 fn players_node() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    let targets = || {
-        argument("targets", SteelArgumentType::score_holders())
-            .then(argument("objective", SteelArgumentType::objective()))
+    let with_objective = |tail: CommandNodeBuilder<CommandSource, SteelCommandRuntime>| {
+        argument("targets", SteelArgumentType::score_holders()).then(tail)
     };
 
     literal("players")
-        .then(literal("set").then(targets().then(
-            argument("score", ArgumentType::integer(i32::MIN, i32::MAX)).executes(set_score),
-        )))
-        .then(literal("add").then(targets().then(
-            argument("score", ArgumentType::integer(i32::MIN, i32::MAX)).executes(add_score),
-        )))
         .then(
-            literal("remove").then(
-                targets().then(
+            literal("set").then(with_objective(
+                argument("objective", SteelArgumentType::objective()).then(
+                    argument("score", ArgumentType::integer(i32::MIN, i32::MAX))
+                        .executes(set_score),
+                ),
+            )),
+        )
+        .then(
+            literal("add").then(with_objective(
+                argument("objective", SteelArgumentType::objective()).then(
+                    argument("score", ArgumentType::integer(i32::MIN, i32::MAX))
+                        .executes(add_score),
+                ),
+            )),
+        )
+        .then(
+            literal("remove").then(with_objective(
+                argument("objective", SteelArgumentType::objective()).then(
                     argument("score", ArgumentType::integer(i32::MIN, i32::MAX))
                         .executes(remove_score_value),
                 ),
-            ),
+            )),
         )
-        .then(literal("reset").then(targets().executes(reset_score)))
-        .then(literal("get").then(targets().executes(get_score)))
-        .then(literal("enable").then(targets().executes(enable_trigger)))
+        .then(
+            literal("reset").then(with_objective(
+                argument("objective", SteelArgumentType::objective()).executes(reset_score),
+            )),
+        )
+        .then(
+            literal("get").then(with_objective(
+                argument("objective", SteelArgumentType::objective()).executes(get_score),
+            )),
+        )
+        .then(
+            literal("enable").then(with_objective(
+                argument("objective", SteelArgumentType::objective()).executes(enable_trigger),
+            )),
+        )
 }
 
 /// Domain name owning the scoreboard the command runs against.

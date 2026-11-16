@@ -258,6 +258,6 @@ mod tests {
             )
             .expect("cave vines have a vanilla clone item");
 
-        assert!(item.is(&*vanilla_items::GLOW_BERRIES));
+        assert!(item.is(&vanilla_items::GLOW_BERRIES));
     }
 }

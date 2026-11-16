@@ -10,6 +10,7 @@
 
 use std::io::Cursor;
 use std::net::{IpAddr, Ipv4Addr};
+use std::slice;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
@@ -37,6 +38,7 @@ use steel_registry::blocks::properties::{BlockStateProperties, Direction, SculkS
 use steel_registry::data_components::vanilla_components::{CUSTOM_NAME, DAMAGE};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::packets::CURRENT_MC_PROTOCOL;
+use steel_registry::packets::play::{C_MAP_ITEM_DATA, C_WAYPOINT};
 use steel_registry::recipe::{CraftingInput, vanilla_recipe_types};
 use steel_registry::{
     REGISTRY, RegistryExt as _, init_vanilla_registry, vanilla_attributes, vanilla_blocks,
@@ -75,8 +77,8 @@ use crate::entity::entities::{
     MinecartEntity, PrimedTntEntity, TntMinecartEntity, WardenEntity, ZombieEntity,
 };
 use crate::entity::{
-    ENTITIES, Entity, LivingEntity as _, Mob as _, MobEffectInstance, RemovalReason, init_entities,
-    next_entity_id,
+    ENTITIES, Entity, LivingEntity as _, Mob as _, MobEffectInstance, RemovalReason, SharedEntity,
+    init_entities, next_entity_id,
 };
 use crate::inventory::container::{Container as _, SimpleContainer};
 use crate::inventory::menu::kinds::{
@@ -93,7 +95,7 @@ use crate::scoreboard::{ScoreHolder, Scoreboard, criterion_is_read_only};
 use crate::server::bans::{BanEntry, BanList};
 use crate::server::{Server, test_server_with_worlds_and_config};
 use crate::test_support::{
-    TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk, test_runtime_config,
+    TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk, test_runtime_config,
     tick_test_world,
 };
 use crate::world::World;
@@ -164,7 +166,7 @@ impl NetworkConnection for SharedNetConn {
 }
 
 /// Prepare a fresh world with a ready 3x3 chunk region around `(0, 0)` and a stone floor at y=63.
-fn create_arena_world(name: &str) -> (crate::test_support::TestWorld, Arc<World>) {
+fn create_arena_world(name: &str) -> (TestWorld, Arc<World>) {
     let fixture = fresh_test_world(name);
     let world = Arc::clone(&fixture.world);
     for cx in -1..=1 {
@@ -211,7 +213,7 @@ fn exec_command(
     Ok(result)
 }
 
-/// Helper: reads the VarInt packet id at the start of an uncompressed `EncodedPacket`.
+/// Helper: reads the `VarInt` packet id at the start of an uncompressed `EncodedPacket`.
 fn decode_packet_id(pkt: &EncodedPacket) -> i32 {
     let mut cursor = Cursor::new(pkt.encoded_data.as_slice());
     let _len = VarInt::read(&mut cursor).expect("frame length VarInt");
@@ -1121,8 +1123,8 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         DVec3::new(8.5, 64.0, 0.5),
         Arc::downgrade(&world),
     ));
-    let warden_shared: crate::entity::SharedEntity = Arc::clone(&warden) as _;
-    let target_shared: crate::entity::SharedEntity = Arc::clone(&zombie) as _;
+    let warden_shared: SharedEntity = Arc::clone(&warden) as _;
+    let target_shared: SharedEntity = Arc::clone(&zombie) as _;
     assert!(world.try_add_entity(Arc::clone(&warden_shared)).is_ok());
     assert!(world.try_add_entity(Arc::clone(&target_shared)).is_ok());
     let initial_hp = zombie.get_health();
@@ -1426,12 +1428,12 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     let server = rt
         .block_on(test_server_with_worlds_and_config(
             world.domain().to_owned(),
-            std::slice::from_ref(&domain_cfg),
-            std::slice::from_ref(&world),
+            slice::from_ref(&domain_cfg),
+            slice::from_ref(&world),
             subjects,
             test_runtime_config(8),
         ))
-        .expect("full production test server with all 95 command roots must build");
+        .expect("full production test server with all command roots must build");
 
     let (op_cap, op_packets) = CapturingConnection::new();
     let op_player = TestPlayerBuilder::new(Arc::clone(&world), "Admin", next_entity_id())
@@ -1493,7 +1495,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         op_packets
             .lock()
             .iter()
-            .any(|p| decode_packet_id(p) == steel_registry::packets::play::C_MAP_ITEM_DATA),
+            .any(|p| decode_packet_id(p) == C_MAP_ITEM_DATA),
         "holding a filled map must stream CMapItemData"
     );
 
@@ -1507,7 +1509,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         op_packets
             .lock()
             .iter()
-            .any(|p| decode_packet_id(p) == steel_registry::packets::play::C_WAYPOINT),
+            .any(|p| decode_packet_id(p) == C_WAYPOINT),
         "WaypointManager must emit CWaypoint Track packets for visible players"
     );
 
@@ -1687,15 +1689,31 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         "scoreboard objectives add pts dummy",
         "scoreboard players set Admin pts 100",
         "scoreboard players add Admin pts 25",
+        "scoreboard players get Admin pts",
         "team add alpha",
         "team join alpha Admin",
         "team join alpha Guest",
+        "team modify alpha color aqua",
+        "team modify alpha friendlyFire false",
+        "team list",
+        "team list alpha",
         "bossbar add minecraft:test \"Boss\"",
         "bossbar set minecraft:test max 200",
         "bossbar set minecraft:test value 150",
+        "bossbar set minecraft:test color blue",
+        "bossbar set minecraft:test visible true",
+        "bossbar set minecraft:test players Admin",
+        "bossbar get minecraft:test value",
+        "bossbar list",
+        "execute store result bossbar minecraft:test value run scoreboard players get Admin pts",
         "bossbar remove minecraft:test",
+        "data merge storage minecraft:bench {answer:42}",
+        "data get storage minecraft:bench answer",
+        "data remove storage minecraft:bench answer",
         "stopwatch create minecraft:bench",
         "stopwatch query minecraft:bench",
+        "stopwatch restart minecraft:bench",
+        "stopwatch list",
         "stopwatch remove minecraft:bench",
         "random value 1..100",
         "random roll 1..20",
@@ -1708,8 +1726,17 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         "dialog clear Admin",
         "serverpack push \"https://example.com/rp.zip\"",
         "fetchprofile name Admin",
-        "loot give Admin loot minecraft:chests/simple_dungeon",
+        "loot give Admin loot minecraft:blocks/diamond_ore",
         "spreadplayers 4 4 1 6 false Admin",
+        "item replace entity Admin hotbar.2 with minecraft:diamond_sword 1",
+        "attribute Admin minecraft:max_health modifier add minecraft:bonus_hp 4.0 add_value",
+        "attribute Admin minecraft:max_health get",
+        "attribute Admin minecraft:max_health modifier remove minecraft:bonus_hp",
+        "particle minecraft:flame 4 65 4",
+        "datapack list",
+        "forceload add 0 64 0",
+        "forceload query",
+        "forceload remove 0 64 0",
         "worldborder set 1000",
         "setworldspawn 0 64 0",
         "spawnpoint Admin 0 64 0",
@@ -1724,12 +1751,15 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         "save-on",
         "save-all",
         "recipe give Admin minecraft:stick",
+        "recipe take Admin minecraft:stick",
         "stopsound Admin",
         "posteffect clear Admin",
     ];
+    let _rt_guard = rt.enter();
     for cmd in console_commands {
         let res = exec_command(&server, CommandSender::Console, cmd);
-        assert!(res.is_ok(), "command `{cmd}` failed to parse/run: {res:?}");
+        let (ok, val) = res.unwrap_or_else(|err| panic!("command `{cmd}` failed to parse: {err}"));
+        assert!(ok, "command `{cmd}` executed with failure (val={val})");
     }
     // Verify `/teammsg` & `/tm` from a player inside team `alpha`!
     assert!(
@@ -1800,7 +1830,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         tick_test_world(&world, tick_idx, true);
         world.waypoints.tick(&world);
         world.raids.tick(&world);
-        let _ = server.scoreboards.tick_stopwatches();
+        server.scoreboards.tick_stopwatches();
     }
     let elapsed = start.elapsed();
     // Even in unoptimized debug CI builds, 40 ticks of a 9-chunk arena + 32 entities

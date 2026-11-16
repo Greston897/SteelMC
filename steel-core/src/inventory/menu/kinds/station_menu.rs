@@ -397,7 +397,8 @@ impl ResultHandler for SmithingResultHandler {
         guard: &mut ContainerLockGuard,
         player: &Player,
     ) -> Option<ItemStack> {
-        if let Some(key) = self.last_recipe.lock().take() {
+        let last_recipe = self.last_recipe.lock().take();
+        if let Some(key) = last_recipe {
             let _ = player.recipe_book.lock().add(&key);
         }
         if let Some(input_c) = guard.get_mut(ContainerId::from_arc(&self.input)) {

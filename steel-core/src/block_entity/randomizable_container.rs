@@ -247,9 +247,9 @@ mod tests {
     fn filling_stops_when_the_container_is_full() {
         let mut slots = vec![ItemStack::empty(); 2];
         // `vanilla_items` entries are `LazyLock`s, hence the deref.
-        let stone = ItemStack::new(&*steel_registry::vanilla_items::STONE);
-        let dirt = ItemStack::new(&*steel_registry::vanilla_items::DIRT);
-        let sand = ItemStack::new(&*steel_registry::vanilla_items::SAND);
+        let stone = ItemStack::new(&steel_registry::vanilla_items::STONE);
+        let dirt = ItemStack::new(&steel_registry::vanilla_items::DIRT);
+        let sand = ItemStack::new(&steel_registry::vanilla_items::SAND);
         fill_from_loot(&mut slots, vec![stone, dirt, sand], &mut rng());
         // The third item has no free slot and is dropped, like vanilla's fill.
         assert!(!slots[0].is_empty());
@@ -261,11 +261,11 @@ mod tests {
         // Vanilla `getAvailableSlots` only offers empty slots, so a structure
         // chest that also carries items keeps them.
         let mut slots = vec![ItemStack::empty(); 3];
-        let dirt = ItemStack::new(&*steel_registry::vanilla_items::DIRT);
+        let dirt = ItemStack::new(&steel_registry::vanilla_items::DIRT);
         slots[1] = dirt.clone();
         fill_from_loot(
             &mut slots,
-            vec![ItemStack::new(&*steel_registry::vanilla_items::STONE)],
+            vec![ItemStack::new(&steel_registry::vanilla_items::STONE)],
             &mut rng(),
         );
         assert_eq!(slots[1], dirt, "the pre-placed item survives the fill");

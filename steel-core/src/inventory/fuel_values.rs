@@ -164,15 +164,15 @@ mod tests {
         init_vanilla_registry();
 
         assert_eq!(
-            VANILLA_FUEL_VALUES.burn_duration(&*vanilla_items::COAL),
+            VANILLA_FUEL_VALUES.burn_duration(&vanilla_items::COAL),
             1600
         );
         assert_eq!(
-            VANILLA_FUEL_VALUES.burn_duration(&*vanilla_items::STICK),
+            VANILLA_FUEL_VALUES.burn_duration(&vanilla_items::STICK),
             100
         );
         assert_eq!(
-            VANILLA_FUEL_VALUES.burn_duration(&*vanilla_items::CRIMSON_PLANKS),
+            VANILLA_FUEL_VALUES.burn_duration(&vanilla_items::CRIMSON_PLANKS),
             0
         );
     }

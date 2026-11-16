@@ -171,7 +171,7 @@ impl Entity for TntMinecartEntity {
 
     fn tick(self: Arc<Self>) {
         if let Some(minecart) = self.as_abstract_minecart() {
-            minecart.tick_minecart(&(self.clone() as SharedEntity));
+            minecart.tick_minecart(&(Arc::clone(self) as SharedEntity));
         }
 
         let fuse = {

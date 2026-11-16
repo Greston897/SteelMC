@@ -54,7 +54,13 @@ pub(super) fn target(name: &'static str, store_result: bool) -> Builder {
         )
         .then(
             literal("bossbar").then(
-                argument("id", ArgumentType::greedy_string()).then(bossbar_values(store_result)),
+                argument("id", SteelArgumentType::identifier())
+                    .then(literal("value").redirects_with(EXECUTE_ROOT, move |context| {
+                        store_bossbar(context, BossBarField::Value, store_result)
+                    }))
+                    .then(literal("max").redirects_with(EXECUTE_ROOT, move |context| {
+                        store_bossbar(context, BossBarField::Max, store_result)
+                    })),
             ),
         )
         .then(
@@ -63,20 +69,6 @@ pub(super) fn target(name: &'static str, store_result: bool) -> Builder {
                     .then(data_path(StoreDataTarget::Storage, store_result)),
             ),
         )
-}
-
-/// `value` and `max` consumers for `store bossbar`.
-///
-/// Node ordering matches vanilla: the bare `id` leaves the store mode open, and
-/// each value slot redirects back to the command root.
-fn bossbar_values(store_result: bool) -> Builder {
-    literal("value")
-        .redirects_with(EXECUTE_ROOT, move |context| {
-            store_bossbar(context, BossBarField::Value, store_result)
-        })
-        .then(literal("max").redirects_with(EXECUTE_ROOT, move |context| {
-            store_bossbar(context, BossBarField::Max, store_result)
-        }))
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -90,7 +82,7 @@ fn store_bossbar(
     field: BossBarField,
     store_result: bool,
 ) -> Result<CommandSource, CommandSyntaxError> {
-    let id = context.string("id")?.to_owned();
+    let id = context.identifier("id")?.to_string();
     let source = context.source();
     let server = Arc::clone(source.server());
 

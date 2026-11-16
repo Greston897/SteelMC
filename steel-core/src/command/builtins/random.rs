@@ -5,12 +5,12 @@
 //! Named deterministic `Xoroshiro128++`-style sequences are stored per sequence
 //! identifier so `/random reset` reproduces exact roll streams.
 
-use std::collections::HashMap;
 use std::hash::{Hash as _, Hasher as _};
 use std::sync::LazyLock;
 
 use rand::rngs::StdRng;
 use rand::{RngExt as _, SeedableRng as _};
+use rustc_hash::FxHashMap;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{Identifier, translations};
 use text_components::TextComponent;
@@ -24,8 +24,8 @@ use super::super::{
     registration::CommandRegistration,
 };
 
-static RANDOM_SEQUENCES: LazyLock<SyncMutex<HashMap<Identifier, StdRng>>> =
-    LazyLock::new(|| SyncMutex::new(HashMap::new()));
+static RANDOM_SEQUENCES: LazyLock<SyncMutex<FxHashMap<Identifier, StdRng>>> =
+    LazyLock::new(|| SyncMutex::new(FxHashMap::default()));
 
 pub(super) fn registration() -> CommandRegistration<CommandSource> {
     CommandRegistration::new(Identifier::vanilla_static("random"), |_| command())

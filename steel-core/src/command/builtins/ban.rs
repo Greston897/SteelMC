@@ -8,6 +8,7 @@
 //! `/banip` and `/pardonip` live in `super::banip`.
 
 use std::borrow::Cow;
+use std::sync::Arc;
 
 use steel_utils::Identifier;
 use text_components::TextComponent;
@@ -176,7 +177,7 @@ async fn run_pardon(
     argument: GameProfileArgument,
 ) -> Result<i32, CommandSyntaxError> {
     let targets = argument.resolve(source).await?;
-    let server = source.server().clone();
+    let server = Arc::clone(source.server());
     let mut pardoned = 0;
     for target in &targets {
         if server.bans.pardon(target.uuid) {

@@ -215,15 +215,15 @@ mod tests {
     #[test]
     fn all_three_arrow_items_are_accepted() {
         init_vanilla_registry();
-        assert!(ArrowItem::is_arrow(&ItemStack::new(&*vanilla_items::ARROW)));
+        assert!(ArrowItem::is_arrow(&ItemStack::new(&vanilla_items::ARROW)));
         assert!(ArrowItem::is_arrow(&ItemStack::new(
-            &*vanilla_items::TIPPED_ARROW
+            &vanilla_items::TIPPED_ARROW
         )));
         assert!(ArrowItem::is_arrow(&ItemStack::new(
-            &*vanilla_items::SPECTRAL_ARROW
+            &vanilla_items::SPECTRAL_ARROW
         )));
         assert!(!ArrowItem::is_arrow(&ItemStack::new(
-            &*vanilla_items::STICK
+            &vanilla_items::STICK
         )));
     }
 }

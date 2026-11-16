@@ -32,13 +32,10 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("datapack")
-        .then(literal("list").executes(|context| list(context, Listing::Enabled)))
         .then(
             literal("list")
-                .then(literal("enabled").executes(|context| list(context, Listing::Enabled))),
-        )
-        .then(
-            literal("list")
+                .executes(|context| list(context, Listing::Enabled))
+                .then(literal("enabled").executes(|context| list(context, Listing::Enabled)))
                 .then(literal("available").executes(|context| list(context, Listing::Available))),
         )
         .then(literal("enable").executes(unsupported))

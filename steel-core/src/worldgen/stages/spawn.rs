@@ -67,7 +67,7 @@ pub(crate) fn generate(
     };
 
     let probability = biome.creature_spawn_probability;
-    if !(probability > 0.0) {
+    if probability <= 0.0 || probability.is_nan() {
         return;
     }
     let probability = probability.min(0.999_999);

@@ -147,6 +147,30 @@ jobs:
           done
           exit $status
 
+      - name: Vanilla 26.3 Grand Unified Full-Server Parity & Zero-Lag Suite
+        run: |
+          set -o pipefail
+          cargo test -p steel-core --all-features --lib \
+            vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite \
+            -- --exact --nocapture 2>&1 | tee /tmp/mega-parity.log
+
+      - name: Publish test & mega-suite summary
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "### Per-crate test results"
+            for f in /tmp/test-*.log; do
+              [ -f "$f" ] || continue
+              echo "--- $(basename "$f" .log)"
+              grep -E "^test result:" "$f" || true
+            done
+            echo "### Grand Unified MC 26.3 Parity & Zero-Lag Suite"
+            tail -40 /tmp/mega-parity.log || true
+          } > /tmp/test-summary.log
+          python3 .ci/report.py "Full Conformance Test Summary" /tmp/test-summary.log || true
+
       - name: Surface failing tests
         if: failure()
         run: |

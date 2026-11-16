@@ -6,7 +6,7 @@ use std::sync::Arc;
 fn can_glide_using_matches_vanilla_component_gate() {
     init_vanilla_registry();
     let entity = LivingFluidTestEntity::new(0.0, 0.0, true);
-    let mut elytra = ItemStack::new(&*vanilla_items::ELYTRA);
+    let mut elytra = ItemStack::new(&vanilla_items::ELYTRA);
 
     assert!(entity.can_glide_using(&elytra, EquipmentSlot::Chest));
     assert!(!entity.can_glide_using(&elytra, EquipmentSlot::Head));
@@ -16,7 +16,7 @@ fn can_glide_using_matches_vanilla_component_gate() {
     assert!(elytra.next_damage_will_break());
     assert!(!entity.can_glide_using(&elytra, EquipmentSlot::Chest));
     assert!(!entity.can_glide_using(
-        &ItemStack::new(&*vanilla_items::STONE),
+        &ItemStack::new(&vanilla_items::STONE),
         EquipmentSlot::Chest
     ));
 }
@@ -28,8 +28,8 @@ fn living_armor_cover_counts_non_empty_humanoid_armor_slots() {
 
     assert_f32_close(entity.get_armor_cover_percentage(), 0.0);
 
-    entity.equip(EquipmentSlot::Head, ItemStack::new(&*vanilla_items::STONE));
-    entity.equip(EquipmentSlot::Feet, ItemStack::new(&*vanilla_items::STONE));
+    entity.equip(EquipmentSlot::Head, ItemStack::new(&vanilla_items::STONE));
+    entity.equip(EquipmentSlot::Feet, ItemStack::new(&vanilla_items::STONE));
 
     assert_f32_close(entity.get_armor_cover_percentage(), 0.5);
 }
@@ -63,7 +63,7 @@ fn living_visibility_percent_uses_matching_mob_head_disguise() {
 
     entity.equip(
         EquipmentSlot::Head,
-        ItemStack::new(&*vanilla_items::SKELETON_SKULL),
+        ItemStack::new(&vanilla_items::SKELETON_SKULL),
     );
 
     assert_f64_close(entity.get_visibility_percent(Some(&skeleton)), 0.5);
@@ -78,7 +78,7 @@ fn living_freeze_immunity_uses_armor_equipment() {
 
     entity.equip(
         EquipmentSlot::Feet,
-        ItemStack::new(&*vanilla_items::LEATHER_BOOTS),
+        ItemStack::new(&vanilla_items::LEATHER_BOOTS),
     );
 
     assert!(!entity.default_living_can_freeze());
@@ -91,7 +91,7 @@ fn living_freeze_immunity_uses_body_armor_equipment() {
 
     entity.equip(
         EquipmentSlot::Body,
-        ItemStack::new(&*vanilla_items::LEATHER_HORSE_ARMOR),
+        ItemStack::new(&vanilla_items::LEATHER_HORSE_ARMOR),
     );
 
     assert!(!entity.default_living_can_freeze());
@@ -103,7 +103,7 @@ fn living_freeze_immunity_ignores_non_armor_equipment() {
     let entity = LivingFluidTestEntity::new(0.0, 0.0, true);
     entity.equip(
         EquipmentSlot::MainHand,
-        ItemStack::new(&*vanilla_items::LEATHER_BOOTS),
+        ItemStack::new(&vanilla_items::LEATHER_BOOTS),
     );
 
     assert!(entity.default_living_can_freeze());
@@ -252,7 +252,7 @@ fn living_powder_snow_walkability_uses_feet_equipment() {
 
     entity.equip(
         EquipmentSlot::Feet,
-        ItemStack::new(&*vanilla_items::LEATHER_BOOTS),
+        ItemStack::new(&vanilla_items::LEATHER_BOOTS),
     );
 
     assert!(PowderSnowBlock::can_entity_walk_on_powder_snow(&entity));
@@ -264,7 +264,7 @@ fn living_powder_snow_walkability_ignores_non_feet_equipment() {
     let entity = LivingFluidTestEntity::new(0.0, 0.0, true);
     entity.equip(
         EquipmentSlot::MainHand,
-        ItemStack::new(&*vanilla_items::LEATHER_BOOTS),
+        ItemStack::new(&vanilla_items::LEATHER_BOOTS),
     );
 
     assert!(!PowderSnowBlock::can_entity_walk_on_powder_snow(&entity));
@@ -280,7 +280,7 @@ fn default_can_glide_uses_living_equipment() {
 
     entity.equip(
         EquipmentSlot::Chest,
-        ItemStack::new(&*vanilla_items::ELYTRA),
+        ItemStack::new(&vanilla_items::ELYTRA),
     );
 
     assert!(entity.can_glide());
@@ -292,7 +292,7 @@ fn try_to_start_fall_flying_uses_vanilla_glider_gate() {
     let entity = LivingFluidTestEntity::new(0.0, 0.0, true);
     entity.equip(
         EquipmentSlot::Chest,
-        ItemStack::new(&*vanilla_items::ELYTRA),
+        ItemStack::new(&vanilla_items::ELYTRA),
     );
     entity.set_on_ground(false);
 
@@ -310,7 +310,7 @@ fn gliding_non_player_living_entity_forces_velocity_sync() {
 
     entity.equip(
         EquipmentSlot::Chest,
-        ItemStack::new(&*vanilla_items::ELYTRA),
+        ItemStack::new(&vanilla_items::ELYTRA),
     );
     entity.set_on_ground(false);
     assert!(entity.try_to_start_fall_flying());
@@ -328,7 +328,7 @@ fn try_to_start_fall_flying_rejects_levitation() {
     let entity = LivingFluidTestEntity::new(0.0, 0.0, true);
     entity.equip(
         EquipmentSlot::Chest,
-        ItemStack::new(&*vanilla_items::ELYTRA),
+        ItemStack::new(&vanilla_items::ELYTRA),
     );
     entity.set_on_ground(false);
     entity.set_mob_effect_active(vanilla_mob_effects::LEVITATION, true);
@@ -343,7 +343,7 @@ fn update_fall_flying_damages_glider_every_second_event_interval() {
     let entity = LivingFluidTestEntity::new(0.0, 0.0, true);
     entity.equip(
         EquipmentSlot::Chest,
-        ItemStack::new(&*vanilla_items::ELYTRA),
+        ItemStack::new(&vanilla_items::ELYTRA),
     );
     entity.set_on_ground(false);
     for _ in 0..19 {

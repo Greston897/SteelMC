@@ -47,69 +47,79 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 }
 
 fn command() -> Builder {
-    literal("data")
-        .then(target_sources("block", DataTarget::Block))
-        .then(target_sources("entity", DataTarget::Entity))
-        .then(target_sources("storage", DataTarget::Storage))
-}
-
-/// The `get`, `merge` and `remove` subtrees for one source.
-///
-/// The argument that names the source is `targetPos` for blocks, `target` for
-/// entities and storage: those are vanilla's own names, and the source resolver
-/// below reads whichever one the chosen source uses.
-fn target_sources(name: &'static str, target: DataTarget) -> Builder {
-    literal(name).then(match target {
-        DataTarget::Block => {
-            argument("targetPos", SteelArgumentType::block_pos()).then(operations(target))
-        }
-        DataTarget::Entity => {
-            argument("target", SteelArgumentType::entity()).then(operations(target))
-        }
-        DataTarget::Storage => {
-            argument("target", SteelArgumentType::storage_key()).then(operations(target))
-        }
-    })
-}
-
-fn operations(target: DataTarget) -> Builder {
-    literal("get")
-        .then(
-            argument("path", SteelArgumentType::nbt_path())
-                .executes(move |context| get(context, target, GetKind::Tag)),
-        )
-        .then(
-            literal("get").then(
-                argument("path", SteelArgumentType::nbt_path())
-                    .then(
-                        literal("value")
-                            .executes(move |context| get(context, target, GetKind::Value)),
-                    )
-                    .then(
-                        literal("string")
-                            .executes(move |context| get(context, target, GetKind::String)),
-                    )
-                    .then(
-                        argument(
-                            "scale",
-                            super::super::brigadier::ArgumentType::double(-f64::MAX, f64::MAX),
-                        )
-                        .executes(move |context| get(context, target, GetKind::Scaled)),
+    let with_targets = |build_op: fn(DataTarget) -> Builder| {
+        move |op_name: &'static str| {
+            literal(op_name)
+                .then(
+                    literal("block").then(
+                        argument("targetPos", SteelArgumentType::block_pos())
+                            .then(build_op(DataTarget::Block)),
                     ),
+                )
+                .then(
+                    literal("entity").then(
+                        argument("target", SteelArgumentType::entity())
+                            .then(build_op(DataTarget::Entity)),
+                    ),
+                )
+                .then(
+                    literal("storage").then(
+                        argument("target", SteelArgumentType::storage_key())
+                            .then(build_op(DataTarget::Storage)),
+                    ),
+                )
+        }
+    };
+
+    let get_root = literal("get")
+        .then(
+            literal("block").then(
+                argument("targetPos", SteelArgumentType::block_pos())
+                    .executes(|context| get(context, DataTarget::Block, GetKind::Tag))
+                    .then(get_path_tail(DataTarget::Block)),
             ),
         )
         .then(
-            literal("merge").then(
-                argument("nbt", SteelArgumentType::compound())
-                    .executes(move |context| merge(context, target)),
+            literal("entity").then(
+                argument("target", SteelArgumentType::entity())
+                    .executes(|context| get(context, DataTarget::Entity, GetKind::Tag))
+                    .then(get_path_tail(DataTarget::Entity)),
             ),
         )
         .then(
-            literal("remove").then(
-                argument("path", SteelArgumentType::nbt_path())
-                    .executes(move |context| remove(context, target)),
+            literal("storage").then(
+                argument("target", SteelArgumentType::storage_key())
+                    .executes(|context| get(context, DataTarget::Storage, GetKind::Tag))
+                    .then(get_path_tail(DataTarget::Storage)),
             ),
+        );
+
+    literal("data")
+        .then(get_root)
+        .then(with_targets(merge_tail)("merge"))
+        .then(with_targets(remove_tail)("remove"))
+}
+
+fn get_path_tail(target: DataTarget) -> Builder {
+    argument("path", SteelArgumentType::nbt_path())
+        .executes(move |context| get(context, target, GetKind::Tag))
+        .then(literal("value").executes(move |context| get(context, target, GetKind::Value)))
+        .then(literal("string").executes(move |context| get(context, target, GetKind::String)))
+        .then(
+            argument(
+                "scale",
+                super::super::brigadier::ArgumentType::double(-f64::MAX, f64::MAX),
+            )
+            .executes(move |context| get(context, target, GetKind::Scaled)),
         )
+}
+
+fn merge_tail(target: DataTarget) -> Builder {
+    argument("nbt", SteelArgumentType::compound()).executes(move |context| merge(context, target))
+}
+
+fn remove_tail(target: DataTarget) -> Builder {
+    argument("path", SteelArgumentType::nbt_path()).executes(move |context| remove(context, target))
 }
 
 #[derive(Clone, Copy)]

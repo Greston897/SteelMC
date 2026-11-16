@@ -68,22 +68,30 @@ const fn overlay_name(overlay: BossBarOverlay) -> &'static str {
 }
 
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    let mut body = literal("add")
+    literal("bossbar")
         .then(
-            argument("id", ArgumentType::greedy_string())
-                .then(argument("name", SteelArgumentType::component()).executes(add_with_name))
-                .executes(add_with_id),
+            literal("add").then(
+                argument("id", SteelArgumentType::identifier())
+                    .then(argument("name", SteelArgumentType::component()).executes(add_with_name))
+                    .executes(add_with_id),
+            ),
         )
         .then(
             literal("remove")
-                .then(argument("id", ArgumentType::greedy_string()).executes(remove_bar)),
+                .then(argument("id", SteelArgumentType::identifier()).executes(remove_bar)),
         )
         .then(literal("list").executes(list_bars))
-        .then(literal("get").then(argument("id", ArgumentType::greedy_string()).executes(get_bar)));
-
-    body = body.then(set_commands());
-
-    literal("bossbar").then(body)
+        .then(
+            literal("get").then(
+                argument("id", SteelArgumentType::identifier())
+                    .executes(get_bar)
+                    .then(literal("max").executes(get_bar))
+                    .then(literal("players").executes(get_bar))
+                    .then(literal("value").executes(get_bar))
+                    .then(literal("visible").executes(get_bar)),
+            ),
+        )
+        .then(set_commands())
 }
 
 fn set_commands() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
@@ -106,32 +114,35 @@ fn set_commands() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         .then(argument("value", ArgumentType::integer(0, i32::MAX)).executes(set_value));
 
     let max = literal("max")
-        .then(argument("value", ArgumentType::integer(1, i32::MAX)).executes(set_max));
+        .then(argument("max", ArgumentType::integer(1, i32::MAX)).executes(set_max));
 
     let visible =
         literal("visible").then(argument("visible", ArgumentType::bool()).executes(set_visible));
 
     let players = literal("players")
-        .then(argument("players", SteelArgumentType::players()).executes(set_players));
+        .executes(set_players)
+        .then(argument("targets", SteelArgumentType::players()).executes(set_players));
 
-    literal("set")
-        .then(name)
-        .then(color)
-        .then(style)
-        .then(value)
-        .then(max)
-        .then(visible)
-        .then(players)
+    literal("set").then(
+        argument("id", SteelArgumentType::identifier())
+            .then(name)
+            .then(color)
+            .then(style)
+            .then(value)
+            .then(max)
+            .then(visible)
+            .then(players),
+    )
 }
 
 fn add_with_id(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
-    let id = context.string("id")?.to_owned();
+    let id = context.identifier("id")?.to_string();
     let name = TextComponent::plain(id.clone());
     add_bar(context, id, name)
 }
 
 fn add_with_name(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
-    let id = context.string("id")?.to_owned();
+    let id = context.identifier("id")?.to_string();
     let name = context.text_component("name")?.clone();
     add_bar(context, id, name)
 }
@@ -175,16 +186,16 @@ fn add_bar(
 }
 
 fn remove_bar(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
-    let id = context.string("id")?;
+    let id = context.identifier("id")?.to_string();
     let registry = &context.source().server().boss_bars;
-    let Some(bar) = registry.get(id) else {
-        return Err(no_such_bar(id));
+    let Some(bar) = registry.get(&id) else {
+        return Err(no_such_bar(&id));
     };
 
     for player in context.source().server().get_players() {
         player.send_packet(bar.remove_packet());
     }
-    registry.remove(id);
+    registry.remove(&id);
 
     context.source().send_success(
         &TextComponent::plain(format!("Removed custom boss bar [{id}]")),
@@ -216,9 +227,9 @@ fn list_bars(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
 }
 
 fn get_bar(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
-    let id = context.string("id")?;
-    let Some(bar) = context.source().server().boss_bars.get(id) else {
-        return Err(no_such_bar(id));
+    let id = context.identifier("id")?.to_string();
+    let Some(bar) = context.source().server().boss_bars.get(&id) else {
+        return Err(no_such_bar(&id));
     };
 
     let text = format!(
@@ -237,7 +248,6 @@ fn get_bar(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandS
 
 fn set_name(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let name = context.text_component("name")?.clone();
-    let id = context.string("id")?.to_owned();
     let bar = update_bar(context, |bar| {
         bar.name = name.clone();
         let packet = CBossEvent {
@@ -302,7 +312,7 @@ fn set_value(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
 }
 
 fn set_max(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
-    let max = context.integer("value")?;
+    let max = context.integer("max")?;
     let _bar = update_bar(context, |bar| {
         // Vanilla rescales the current value against the new maximum. Steel keeps
         // progress directly, so the percentage is preserved as-is.
@@ -336,7 +346,7 @@ fn set_visible(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comm
 }
 
 fn set_players(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
-    let targets = context.players("players")?;
+    let targets = context.players("targets").unwrap_or_default();
     let bar = update_bar(context, |_| {})?;
 
     // Vanilla replaces the viewer set: everyone else stops seeing the bar.
@@ -368,13 +378,13 @@ fn update_bar<F>(
 where
     F: FnOnce(&mut BossBar),
 {
-    let id = context.string("id")?;
+    let id = context.identifier("id")?.to_string();
     context
         .source()
         .server()
         .boss_bars
-        .update(id, f)
-        .ok_or_else(|| no_such_bar(id))
+        .update(&id, f)
+        .ok_or_else(|| no_such_bar(&id))
 }
 
 /// Sends one packet to every online player.

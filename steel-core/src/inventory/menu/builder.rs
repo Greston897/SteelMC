@@ -1251,7 +1251,7 @@ mod tests {
         let _ = b.section_at(container, [0], SectionKind::Display);
         let menu = b.build(BasicKind);
 
-        let stack = ItemStack::new(&*vanilla_items::STONE);
+        let stack = ItemStack::new(&vanilla_items::STONE);
         assert!(!menu.behavior().slots()[0].may_place(&stack));
     }
 

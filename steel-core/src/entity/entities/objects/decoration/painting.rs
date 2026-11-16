@@ -609,7 +609,7 @@ mod tests {
         assert!(painting.is_removed());
         let drops = dropped_items(&fixture.world);
         assert_eq!(drops.len(), 1);
-        assert!(drops[0].is(&*vanilla_items::PAINTING));
+        assert!(drops[0].is(&vanilla_items::PAINTING));
     }
 
     #[test]

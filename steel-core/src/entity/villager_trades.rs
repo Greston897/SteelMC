@@ -327,7 +327,7 @@ mod tests {
             .villager_professions
             .id_from_key(&farmer.key)
             .expect("the farmer profession is registered");
-        let offers = offers_for_profession_id(i32::try_from(id).unwrap());
+        let offers = offers_for_profession_id(i32::try_from(id).expect("profession id fits i32"));
         assert_eq!(offers.len(), offers_for("minecraft:farmer").len());
         assert!(!offers.is_empty());
     }

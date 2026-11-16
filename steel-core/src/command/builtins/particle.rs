@@ -42,7 +42,7 @@ fn position_tree() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
 
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("particle").then(
-        argument("name", ArgumentType::word())
+        argument("name", SteelArgumentType::identifier())
             // Vanilla `particle <name> <pos> ...` for types without options, and
             // `particle <name> <payload> <pos> ...` for the configurable ones.
             .then(position_tree())
@@ -54,18 +54,8 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
 ///
 /// Vanilla requires the payload for option-carrying types (`dust`, `block`,
 /// `item`, `entity_effect`, ...) and rejects it for the plain ones.
-fn particle_for(name: &str, payload: Option<&NbtCompound>) -> Option<ParticleData> {
-    let key = if name == "dust" {
-        Identifier::vanilla("dust".to_owned())
-    } else if name.contains(':') {
-        let (namespace, path) = name
-            .split_once(':')
-            .expect("the branch guarantees a namespace separator");
-        Identifier::new(namespace.to_owned(), path.to_owned())
-    } else {
-        Identifier::vanilla(name.to_owned())
-    };
-    let particle_type = REGISTRY.particle_types.by_key(&key)?;
+fn particle_for(key: &Identifier, payload: Option<&NbtCompound>) -> Option<ParticleData> {
+    let particle_type = REGISTRY.particle_types.by_key(key)?;
     let Some(payload) = payload else {
         return Some(ParticleData::simple(particle_type));
     };
@@ -76,7 +66,7 @@ fn emit(
     context: &SteelCommandContext<CommandSource>,
     _viewer: Option<&Arc<crate::world::World>>,
 ) -> Result<i32, CommandSyntaxError> {
-    let name = context.string("name")?;
+    let name = context.identifier("name")?;
     let payload = context.compound("payload").ok();
     let Some(particle) = particle_for(name, payload) else {
         return Err(CommandSyntaxError::dynamic(format!(
@@ -84,7 +74,7 @@ fn emit(
         )));
     };
 
-    let world = context.source().world().clone();
+    let world = Arc::clone(context.source().world());
     let pos = vec3_argument(context, "pos")?;
     let delta = vec3_argument(context, "delta").unwrap_or(DVec3::ZERO);
     let speed = f64::from(context.float("speed").unwrap_or(0.0));

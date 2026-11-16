@@ -536,8 +536,8 @@ mod tests {
     fn cook_iron(kind: FurnaceKind, expected_ticks: usize, expected_fuel_time: i32) {
         init_vanilla_registry();
         let mut furnace = FurnaceContainer::new(kind);
-        furnace.set_item(SLOT_INPUT, ItemStack::new(&*vanilla_items::IRON_ORE));
-        furnace.set_item(SLOT_FUEL, ItemStack::new(&*vanilla_items::COAL));
+        furnace.set_item(SLOT_INPUT, ItemStack::new(&vanilla_items::IRON_ORE));
+        furnace.set_item(SLOT_FUEL, ItemStack::new(&vanilla_items::COAL));
 
         for _ in 0..expected_ticks {
             furnace.tick();
@@ -545,7 +545,7 @@ mod tests {
 
         assert!(furnace.items[SLOT_INPUT].is_empty());
         assert!(furnace.items[SLOT_FUEL].is_empty());
-        assert!(furnace.items[SLOT_RESULT].is(&*vanilla_items::IRON_INGOT));
+        assert!(furnace.items[SLOT_RESULT].is(&vanilla_items::IRON_INGOT));
         assert_eq!(furnace.items[SLOT_RESULT].count(), 1);
         assert_eq!(furnace.lit_total_time, expected_fuel_time);
         assert_eq!(furnace.recipes_used.values().sum::<i32>(), 1);
@@ -580,12 +580,12 @@ mod tests {
         );
         assert!(!furnace.can_take_item_through_face(
             SLOT_FUEL,
-            &ItemStack::new(&*vanilla_items::COAL),
+            &ItemStack::new(&vanilla_items::COAL),
             Direction::Down,
         ));
         assert!(furnace.can_take_item_through_face(
             SLOT_FUEL,
-            &ItemStack::new(&*vanilla_items::WATER_BUCKET),
+            &ItemStack::new(&vanilla_items::WATER_BUCKET),
             Direction::Down,
         ));
     }

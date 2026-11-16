@@ -404,7 +404,7 @@ mod tests {
         let cart = cart();
         assert!(cart.is_enabled());
         assert_eq!(cart.items().len(), HOPPER_SLOTS);
-        assert!(cart.items().iter().all(|slot| slot.is_empty()));
+        assert!(cart.items().iter().all(ItemStack::is_empty));
     }
 
     #[test]

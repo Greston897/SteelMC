@@ -9,7 +9,10 @@ use text_components::TextComponent;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
-    execution::{CommandSource, SteelCommandContext, SteelCommandRuntime, argument, literal},
+    execution::{
+        CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
+        literal,
+    },
     registration::CommandRegistration,
 };
 use crate::scoreboard::Scoreboard;
@@ -22,11 +25,25 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("stopwatch")
         .then(
             literal("create")
-                .then(argument("name", ArgumentType::word()).executes(create_stopwatch)),
+                .then(argument("id", SteelArgumentType::identifier()).executes(create_stopwatch)),
+        )
+        .then(
+            literal("query").then(
+                argument("id", SteelArgumentType::identifier())
+                    .executes(|context| query_stopwatch(context, 1.0))
+                    .then(
+                        argument("scale", ArgumentType::double(f64::MIN, f64::MAX))
+                            .executes(query_stopwatch_scaled),
+                    ),
+            ),
+        )
+        .then(
+            literal("restart")
+                .then(argument("id", SteelArgumentType::identifier()).executes(restart_stopwatch)),
         )
         .then(
             literal("remove")
-                .then(argument("name", ArgumentType::word()).executes(remove_stopwatch)),
+                .then(argument("id", SteelArgumentType::identifier()).executes(remove_stopwatch)),
         )
         .then(literal("list").executes(list_stopwatches))
 }
@@ -47,7 +64,7 @@ fn scoreboard_of(source: &CommandSource) -> Result<&Scoreboard, CommandSyntaxErr
 fn create_stopwatch(
     context: &SteelCommandContext<CommandSource>,
 ) -> Result<i32, CommandSyntaxError> {
-    let name = context.string("name")?.to_owned();
+    let name = context.identifier("id")?.to_string();
     let scoreboard = scoreboard_of(context.source())?;
     if !scoreboard.create_stopwatch(&name) {
         return Err(CommandSyntaxError::dynamic(format!(
@@ -61,10 +78,61 @@ fn create_stopwatch(
     Ok(1)
 }
 
+fn query_stopwatch_scaled(
+    context: &SteelCommandContext<CommandSource>,
+) -> Result<i32, CommandSyntaxError> {
+    let scale = context.double("scale")?;
+    query_stopwatch(context, scale)
+}
+
+fn query_stopwatch(
+    context: &SteelCommandContext<CommandSource>,
+    scale: f64,
+) -> Result<i32, CommandSyntaxError> {
+    let name = context.identifier("id")?.to_string();
+    let scoreboard = scoreboard_of(context.source())?;
+    let Some(ticks) = scoreboard.stopwatch_ticks(&name) else {
+        return Err(CommandSyntaxError::dynamic(format!(
+            "No stopwatch named '{name}' exists"
+        )));
+    };
+    let seconds = ticks as f64 / 20.0;
+    let scaled = (seconds * scale).floor();
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "clamped into i32 range before truncating per vanilla StopwatchCommand.queryStopwatch"
+    )]
+    let result = scaled.clamp(f64::from(i32::MIN), f64::from(i32::MAX)) as i32;
+    context.source().send_success(
+        &TextComponent::plain(format!(
+            "Elapsed time for stopwatch '{name}' is {seconds:.3}s"
+        )),
+        false,
+    );
+    Ok(result)
+}
+
+fn restart_stopwatch(
+    context: &SteelCommandContext<CommandSource>,
+) -> Result<i32, CommandSyntaxError> {
+    let name = context.identifier("id")?.to_string();
+    let scoreboard = scoreboard_of(context.source())?;
+    if !scoreboard.restart_stopwatch(&name) {
+        return Err(CommandSyntaxError::dynamic(format!(
+            "No stopwatch named '{name}' exists"
+        )));
+    }
+    context.source().send_success(
+        &TextComponent::plain(format!("Restarted stopwatch '{name}'")),
+        false,
+    );
+    Ok(1)
+}
+
 fn remove_stopwatch(
     context: &SteelCommandContext<CommandSource>,
 ) -> Result<i32, CommandSyntaxError> {
-    let name = context.string("name")?.to_owned();
+    let name = context.identifier("id")?.to_string();
     let scoreboard = scoreboard_of(context.source())?;
     if !scoreboard.remove_stopwatch(&name) {
         return Err(CommandSyntaxError::dynamic(format!(

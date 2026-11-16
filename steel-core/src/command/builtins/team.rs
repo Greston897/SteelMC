@@ -45,14 +45,15 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
             literal("leave")
                 .then(argument("members", SteelArgumentType::score_holders()).executes(leave_team)),
         )
-        .then(literal("list").then(argument("team", ArgumentType::word()).executes(list_members)))
-        .then(literal("list").executes(list_teams))
+        .then(
+            literal("list")
+                .executes(list_teams)
+                .then(argument("team", ArgumentType::word()).executes(list_members)),
+        )
         .then(modify_commands())
 }
 
 fn modify_commands() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    let mut modify = literal("modify").then(argument("team", ArgumentType::word()));
-
     // Friendly fire
     let mut friendly_fire = literal("friendlyFire");
     for (name, allowed) in [("true", true), ("false", false)] {
@@ -99,16 +100,16 @@ fn modify_commands() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
             .executes(|context| modify_component(context, ComponentPart::Suffix)),
     );
 
-    modify = modify
-        .then(friendly_fire)
-        .then(color)
-        .then(visibility)
-        .then(nametag)
-        .then(death_message)
-        .then(prefix)
-        .then(suffix);
-
-    modify
+    literal("modify").then(
+        argument("team", ArgumentType::word())
+            .then(friendly_fire)
+            .then(color)
+            .then(visibility)
+            .then(nametag)
+            .then(death_message)
+            .then(prefix)
+            .then(suffix),
+    )
 }
 
 const COLOR_NAMES: &[&str] = &[

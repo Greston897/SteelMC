@@ -170,7 +170,7 @@ mod tests {
         old_player
             .ender_chest_inventory
             .lock()
-            .set_item(0, ItemStack::with_count(&*vanilla_items::DIAMOND, 4));
+            .set_item(0, ItemStack::with_count(&vanilla_items::DIAMOND, 4));
 
         for restore_all in [false, true] {
             let replacement =
@@ -309,7 +309,7 @@ mod tests {
         old_player
             .inventory
             .lock()
-            .set_item(0, ItemStack::with_count(&*vanilla_items::OAK_LOG, 4));
+            .set_item(0, ItemStack::with_count(&vanilla_items::OAK_LOG, 4));
         *old_player.experience.lock() = Experience::from_parts(8, 0.25, 91);
         old_player.experience.lock().dirty = false;
         old_player.set_score(42);
@@ -430,7 +430,7 @@ mod tests {
         old_player
             .inventory
             .lock()
-            .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 3));
+            .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 3));
         *old_player.experience.lock() = Experience::from_parts(4, 0.5, 36);
         old_player.experience.lock().dirty = false;
         old_player.set_score(11);

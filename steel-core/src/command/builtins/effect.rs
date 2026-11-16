@@ -26,51 +26,61 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         .then(
             literal("give").then(
                 argument("targets", SteelArgumentType::entities()).then(
-                    argument("effect", ArgumentType::word())
+                    argument("effect", SteelArgumentType::identifier())
+                        .executes(|context| give_default(context))
                         .then(
                             argument("seconds", ArgumentType::integer(1, 1_000_000))
+                                .executes(|context| give(context, false))
                                 .then(
                                     argument("amplifier", ArgumentType::integer(0, 255))
-                                        .executes(|context| give(context, false)),
-                                )
-                                .executes(|context| give(context, false)),
+                                        .executes(|context| give(context, false))
+                                        .then(
+                                            argument("hideParticles", ArgumentType::bool())
+                                                .executes(|context| give(context, false)),
+                                        ),
+                                ),
                         )
-                        .executes(give_infinite),
+                        .then(
+                            literal("infinite")
+                                .executes(give_infinite)
+                                .then(
+                                    argument("amplifier", ArgumentType::integer(0, 255))
+                                        .executes(give_infinite)
+                                        .then(
+                                            argument("hideParticles", ArgumentType::bool())
+                                                .executes(give_infinite),
+                                        ),
+                                ),
+                        ),
                 ),
             ),
         )
         .then(
-            literal("clear").then(
-                argument("targets", SteelArgumentType::entities())
-                    .then(argument("effect", ArgumentType::word()).executes(clear_one))
-                    .executes(clear_all),
-            ),
+            literal("clear")
+                .executes(clear_self)
+                .then(
+                    argument("targets", SteelArgumentType::entities())
+                        .executes(clear_all)
+                        .then(
+                            argument("effect", SteelArgumentType::identifier()).executes(clear_one),
+                        ),
+                ),
         )
 }
 
 fn effect_of(
     context: &SteelCommandContext<CommandSource>,
 ) -> Result<steel_registry::mob_effect::MobEffectRef, CommandSyntaxError> {
-    let name = context.string("effect")?;
-    let key = parse_effect_key(name)?;
+    let key = context.identifier("effect")?;
     REGISTRY
         .mob_effects
-        .by_key(&key)
-        .ok_or_else(|| CommandSyntaxError::dynamic(format!("Unknown effect '{name}'")))
+        .by_key(key)
+        .ok_or_else(|| CommandSyntaxError::dynamic(format!("Unknown effect '{key}'")))
 }
 
-/// Accepts both `speed` and `minecraft:speed`, like vanilla's resource argument.
-fn parse_effect_key(name: &str) -> Result<Identifier, CommandSyntaxError> {
-    let (namespace, path) = match name.split_once(':') {
-        Some((namespace, path)) => (namespace, path),
-        None => (Identifier::VANILLA_NAMESPACE, name),
-    };
-    if !Identifier::validate(namespace, path) {
-        return Err(CommandSyntaxError::dynamic(format!(
-            "Invalid effect '{name}'"
-        )));
-    }
-    Ok(Identifier::new(namespace.to_owned(), path.to_owned()))
+fn give_default(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
+    let effect = effect_of(context)?;
+    apply(context, effect, 30 * 20, 0)
 }
 
 fn targets(
@@ -137,6 +147,23 @@ fn clear_one(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
             continue;
         };
         if living.living_base().remove_mob_effect(effect) {
+            cleared += 1;
+        }
+    }
+    Ok(cleared)
+}
+
+fn clear_self(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
+    let Some(entity) = context.source().entity() else {
+        return Ok(0);
+    };
+    let Some(living) = entity.as_living_entity() else {
+        return Ok(0);
+    };
+    let effects = living.living_base().active_mob_effects();
+    let mut cleared = 0;
+    for effect in effects {
+        if living.living_base().remove_mob_effect(effect.effect()) {
             cleared += 1;
         }
     }

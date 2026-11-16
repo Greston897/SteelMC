@@ -135,7 +135,7 @@ impl StructureBlockEntity {
 
     /// Vanilla `StructureBlockEntity.createdBy`.
     pub fn created_by(&self, author: &str) {
-        self.state.lock().author = author.to_owned();
+        author.clone_into(&mut self.state.lock().author);
     }
 
     /// Vanilla `StructureBlockEntity.getStructurePos`.
@@ -190,7 +190,7 @@ impl StructureBlockEntity {
 
     /// Vanilla `StructureBlockEntity.setMetaData`.
     pub fn set_metadata(&self, metadata: &str) {
-        self.state.lock().metadata = metadata.to_owned();
+        metadata.clone_into(&mut self.state.lock().metadata);
     }
 
     /// Vanilla `StructureBlockEntity.getMode`.

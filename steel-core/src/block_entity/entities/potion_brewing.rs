@@ -135,7 +135,7 @@ mod tests {
     use super::*;
 
     fn potion(key: &str) -> ItemStack {
-        let mut stack = ItemStack::new(&*vanilla_items::POTION);
+        let mut stack = ItemStack::new(&vanilla_items::POTION);
         stack.set_potion(&Identifier::new("minecraft", key.to_owned()));
         stack
     }
@@ -145,7 +145,7 @@ mod tests {
         init_vanilla_registry();
         let result = mix(
             &potion("water"),
-            &ItemStack::with_count(&*vanilla_items::NETHER_WART, 1),
+            &ItemStack::with_count(&vanilla_items::NETHER_WART, 1),
         )
         .expect("recipe");
         assert_eq!(result, Identifier::vanilla_static("awkward"));
@@ -156,7 +156,7 @@ mod tests {
         init_vanilla_registry();
         let result = mix(
             &potion("swiftness"),
-            &ItemStack::with_count(&*vanilla_items::REDSTONE, 1),
+            &ItemStack::with_count(&vanilla_items::REDSTONE, 1),
         )
         .expect("recipe");
         assert_eq!(result, Identifier::vanilla_static("long_swiftness"));
@@ -168,7 +168,7 @@ mod tests {
         assert!(
             mix(
                 &potion("water"),
-                &ItemStack::with_count(&*vanilla_items::SUGAR, 1),
+                &ItemStack::with_count(&vanilla_items::SUGAR, 1),
             )
             .is_none()
         );
@@ -194,7 +194,7 @@ mod tests {
     #[test]
     fn blaze_powder_acts_as_both_fuel_and_strength_ingredient() {
         init_vanilla_registry();
-        let powder = ItemStack::with_count(&*vanilla_items::BLAZE_POWDER, 1);
+        let powder = ItemStack::with_count(&vanilla_items::BLAZE_POWDER, 1);
         assert!(is_fuel(&powder));
         // Vanilla: awkward + blaze_powder -> strength potion.
         assert!(is_ingredient(&powder));
@@ -203,7 +203,7 @@ mod tests {
             Some(Identifier::vanilla_static("strength"))
         );
         // Non-brewing items are neither fuel nor ingredient.
-        let cobblestone = ItemStack::with_count(&*vanilla_items::COBBLESTONE, 1);
+        let cobblestone = ItemStack::with_count(&vanilla_items::COBBLESTONE, 1);
         assert!(!is_fuel(&cobblestone));
         assert!(!is_ingredient(&cobblestone));
     }
@@ -213,10 +213,10 @@ mod tests {
         init_vanilla_registry();
         assert!(is_brewable_potion(&potion("water")));
         assert!(is_brewable_potion(&ItemStack::new(
-            &*vanilla_items::GLASS_BOTTLE
+            &vanilla_items::GLASS_BOTTLE
         )));
         assert!(!is_brewable_potion(&ItemStack::new(
-            &*vanilla_items::NETHER_WART
+            &vanilla_items::NETHER_WART
         )));
     }
 }

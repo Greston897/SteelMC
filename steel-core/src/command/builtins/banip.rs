@@ -7,6 +7,7 @@
 
 use std::borrow::Cow;
 use std::net::IpAddr;
+use std::sync::Arc;
 
 use steel_utils::Identifier;
 use text_components::TextComponent;
@@ -85,7 +86,7 @@ fn ban(
             i64::try_from(elapsed.as_secs()).unwrap_or(i64::MAX)
         });
 
-    let server = context.source().server().clone();
+    let server = Arc::clone(context.source().server());
     server.bans.ban_address(BanEntry::address(
         address,
         address.to_string(),
@@ -112,7 +113,7 @@ fn ban(
 
 fn pardon(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let address = parse_address(context)?;
-    let server = context.source().server().clone();
+    let server = Arc::clone(context.source().server());
     if !server.bans.pardon_address(address) {
         return Err(CommandSyntaxError::dynamic(translated(
             "commands.unbanip.failed",

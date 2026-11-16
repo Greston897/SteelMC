@@ -434,6 +434,17 @@ impl Scoreboard {
         removed
     }
 
+    /// Resets an existing stopwatch's accumulated ticks to zero (vanilla `/stopwatch restart`).
+    pub fn restart_stopwatch(&self, name: &str) -> bool {
+        let mut state = self.state.write();
+        let Some(stopwatch) = state.stopwatches.get_mut(name) else {
+            return false;
+        };
+        stopwatch.ticks = 0;
+        self.mark_dirty();
+        true
+    }
+
     /// Reads a stopwatch's accumulated ticks.
     #[must_use]
     pub fn stopwatch_ticks(&self, name: &str) -> Option<i64> {

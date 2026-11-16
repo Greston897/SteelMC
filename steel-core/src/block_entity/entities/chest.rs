@@ -330,7 +330,7 @@ mod tests {
         chest
             .container
             .lock()
-            .set_item(26, ItemStack::with_count(&*vanilla_items::STONE, 100));
+            .set_item(26, ItemStack::with_count(&vanilla_items::STONE, 100));
         assert_eq!(chest.container.lock().get_item(26).count(), 64);
     }
 
@@ -405,7 +405,7 @@ mod tests {
                 2024,
             ),
         );
-        let stack = ItemStack::with_count_and_patch(&*vanilla_items::CHEST, 1, patch);
+        let stack = ItemStack::with_count_and_patch(&vanilla_items::CHEST, 1, patch);
         chest.apply_components_from_item_stack(&stack);
 
         assert!(chest.loot.lock().has_loot_table());

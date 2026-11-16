@@ -3829,13 +3829,13 @@ mod shield_tests {
 
     #[test]
     fn shield_component_is_present_on_shield_items() {
-        let shield = ItemStack::new(&*vanilla_items::SHIELD);
+        let shield = ItemStack::new(&vanilla_items::SHIELD);
         assert!(shield.has(BLOCKS_ATTACKS));
     }
 
     #[test]
     fn non_shield_items_do_not_block() {
-        let dirt = ItemStack::new(&*vanilla_items::DIRT);
+        let dirt = ItemStack::new(&vanilla_items::DIRT);
         assert!(!dirt.has(BLOCKS_ATTACKS));
     }
 }

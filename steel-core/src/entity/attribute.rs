@@ -1,6 +1,7 @@
 //! Runtime entity attribute system.
 //!
 use core::iter;
+use std::sync::OnceLock;
 
 use simdnbt::owned::{NbtCompound, NbtList};
 use steel_protocol::packets::game::{AttributeModifierData, AttributeSnapshot};
@@ -9,7 +10,6 @@ use steel_registry::attribute::AttributeRef;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::{REGISTRY, RegistryEntry, RegistryExt};
 use steel_utils::Identifier;
-use steel_utils::locks::SyncMutex;
 
 /// Growable bitmask for tracking dirty attribute IDs.
 pub struct DirtySet {
@@ -303,30 +303,33 @@ impl AttributeSupplier {
     /// Returns the cached supplier for an entity type, building it on first use.
     ///
     /// The cache is keyed by the entity type's registered id, so it stays a
-    /// dense `Vec` and never hashes on the spawn path.
+    /// dense lock-free `OnceLock` slice and never locks or hashes on spawn.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `entity_type` has not been registered in `REGISTRY.entity_types`.
     #[must_use]
     pub fn for_entity(entity_type: EntityTypeRef) -> &'static Self {
-        static SUPPLIERS: std::sync::OnceLock<
-            SyncMutex<std::collections::HashMap<usize, &'static AttributeSupplier>>,
-        > = std::sync::OnceLock::new();
-        let suppliers = SUPPLIERS.get_or_init(|| SyncMutex::new(std::collections::HashMap::new()));
+        static SUPPLIERS: OnceLock<Box<[OnceLock<AttributeSupplier>]>> = OnceLock::new();
+        let suppliers = SUPPLIERS.get_or_init(|| {
+            let count = REGISTRY.entity_types.len();
+            iter::repeat_with(OnceLock::new)
+                .take(count)
+                .collect::<Vec<_>>()
+                .into_boxed_slice()
+        });
 
         let id = entity_type
             .try_id()
             .expect("entity type must be registered before its attributes are built");
-        {
-            let guard = suppliers.lock();
-            if let Some(supplier) = guard.get(&id) {
-                return supplier;
-            }
-        }
-
-        let supplier: &'static AttributeSupplier = Box::leak(Box::new(Self::build(entity_type)));
-        suppliers.lock().insert(id, supplier);
-        supplier
+        suppliers[id].get_or_init(|| Self::build(entity_type))
     }
 
     /// Creates a fresh `AttributeMap` holding this supplier's defaults.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any attribute in `self.defaults` is not registered in `REGISTRY.attributes`.
     #[must_use]
     pub fn instantiate(&self) -> AttributeMap {
         let attr_count = REGISTRY.attributes.len();

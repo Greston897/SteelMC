@@ -593,7 +593,8 @@ impl World {
         // before awaiting the write: a `parking_lot` guard is not `Send`, so
         // holding it across `.await` would make this future non-`Send` and break
         // every `tokio::spawn` that saves a world.
-        let prepared = match self.level_data.write().prepare_save() {
+        let save_result = self.level_data.write().prepare_save();
+        let prepared = match save_result {
             Ok(prepared) => prepared,
             Err(e) => {
                 log::error!("Failed to serialize world level data: {e}");

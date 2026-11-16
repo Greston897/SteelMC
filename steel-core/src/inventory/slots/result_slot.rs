@@ -230,7 +230,7 @@ mod tests {
         Slot::set_item(
             &slot,
             &mut guard,
-            ItemStack::with_count(&*steel_registry::vanilla_items::STONE, 8),
+            ItemStack::with_count(&steel_registry::vanilla_items::STONE, 8),
         );
 
         let removed = Slot::remove(&slot, &mut guard, 3);

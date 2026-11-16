@@ -341,7 +341,7 @@ impl Server {
         &self,
         details: Vec<steel_protocol::packets::game::ReportDetail>,
     ) {
-        *self.custom_report_details.lock() = details.clone();
+        self.custom_report_details.lock().clone_from(&details);
         self.broadcast_to_online(steel_protocol::packets::game::CCustomReportDetails { details });
     }
 

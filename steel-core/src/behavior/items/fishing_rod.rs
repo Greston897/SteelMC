@@ -157,7 +157,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&*vanilla_items::FISHING_ROD));
+            .set_selected_item(ItemStack::new(&vanilla_items::FISHING_ROD));
 
         let player_owner = Arc::clone(&player);
         let owner: SharedEntity = player_owner;
@@ -201,7 +201,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&*vanilla_items::FISHING_ROD));
+            .set_selected_item(ItemStack::new(&vanilla_items::FISHING_ROD));
 
         let events = Arc::new(SyncMutex::new(Vec::new()));
         world.register_game_event_listener(
@@ -253,7 +253,7 @@ mod tests {
         player
             .inventory
             .lock()
-            .set_selected_item(ItemStack::new(&*vanilla_items::FISHING_ROD));
+            .set_selected_item(ItemStack::new(&vanilla_items::FISHING_ROD));
 
         let mut context = UseItemContext::new(
             &player,

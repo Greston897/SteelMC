@@ -549,17 +549,17 @@ mod tests {
             let mut container = crafter.container.lock();
             container.set_item(
                 0,
-                ItemStack::with_count(&steel_registry::vanilla_items::OAK_PLANKS, 1),
+                ItemStack::with_count(&steel_registry::vanilla_items::IRON_INGOT, 1),
             );
             container.set_item(
-                3,
-                ItemStack::with_count(&steel_registry::vanilla_items::OAK_PLANKS, 1),
+                1,
+                ItemStack::with_count(&steel_registry::vanilla_items::FLINT, 1),
             );
         }
         assert!(crafter.has_matching_recipe());
-        // Disabling the lower plank leaves a single plank (no 1-plank recipe),
+        // Disabling the flint leaves a single iron ingot (no 1-ingot recipe),
         // so the match disappears even though the items remain in the grid.
-        crafter.set_disabled_slots(1 << 3);
+        crafter.set_disabled_slots(1 << 1);
         assert!(!crafter.has_matching_recipe());
     }
 

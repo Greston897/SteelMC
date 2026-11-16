@@ -235,7 +235,8 @@ impl EnderDragonEntity {
     /// the `MOTION_BLOCKING_NO_LEAVES` heightmap and cached like vanilla does.
     #[must_use]
     pub fn podium_location(&self, world: &World) -> BlockPos {
-        if let Some(podium) = self.phases.lock().podium_location {
+        let cached = self.phases.lock().podium_location;
+        if let Some(podium) = cached {
             return podium;
         }
         let podium = world.heightmap_pos(
@@ -349,7 +350,8 @@ impl EnderDragonEntity {
             self.sync_phase_data();
         }
         self.apply_phase_actions(&world, shared, &actions);
-        for cloud in self.phases.lock().drain_phase_discards() {
+        let discards = self.phases.lock().drain_phase_discards();
+        for cloud in discards {
             if let Some(cloud) = cloud.upgrade() {
                 cloud.set_removed(RemovalReason::Discarded);
             }

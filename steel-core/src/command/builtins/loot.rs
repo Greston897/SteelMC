@@ -42,8 +42,11 @@ fn command() -> Builder {
                         argument("loot_table", SteelArgumentType::identifier())
                             .executes(give)
                             .then(
-                                argument("count", SteelArgumentType::int_range())
-                                    .executes(give_with_count),
+                                argument(
+                                    "count",
+                                    super::super::brigadier::ArgumentType::integer(1, 99),
+                                )
+                                .executes(give_with_count),
                             ),
                     ),
                 ),
@@ -55,8 +58,11 @@ fn command() -> Builder {
                     argument("loot_table", SteelArgumentType::identifier())
                         .executes(give)
                         .then(
-                            argument("count", SteelArgumentType::int_range())
-                                .executes(give_with_count),
+                            argument(
+                                "count",
+                                super::super::brigadier::ArgumentType::integer(1, 99),
+                            )
+                            .executes(give_with_count),
                         ),
                 ),
             ),

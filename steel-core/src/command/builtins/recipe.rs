@@ -27,11 +27,9 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 }
 
 fn command() -> Builder {
-    literal("recipe").then(
-        literal("give")
-            .then(targets_then(true))
-            .then(literal("take").then(targets_then(false))),
-    )
+    literal("recipe")
+        .then(literal("give").then(targets_then(true)))
+        .then(literal("take").then(targets_then(false)))
 }
 
 /// `give|take <targets> <recipe>`, where `<recipe>` is `*` or a recipe key.

@@ -652,7 +652,7 @@ mod tests {
             assert!(contents.is(&vanilla_potions::WATER));
         }
 
-        let arrow = ITEM_BEHAVIORS.default_instance(&*vanilla_items::TIPPED_ARROW);
+        let arrow = ITEM_BEHAVIORS.default_instance(&vanilla_items::TIPPED_ARROW);
         let contents = arrow
             .get(vanilla_components::POTION_CONTENTS)
             .expect("tipped arrow default instance carries potion contents");
@@ -664,8 +664,8 @@ mod tests {
         init_vanilla_registry();
         init_behaviors();
 
-        let stack = ITEM_BEHAVIORS.default_instance(&*vanilla_items::STONE);
-        assert_eq!(stack, ItemStack::new(&*vanilla_items::STONE));
+        let stack = ITEM_BEHAVIORS.default_instance(&vanilla_items::STONE);
+        assert_eq!(stack, ItemStack::new(&vanilla_items::STONE));
     }
 
     /// Drinking one honey bottle out of a stack must only consume one item:
@@ -688,14 +688,14 @@ mod tests {
         {
             let mut inventory = player.inventory.lock();
             for slot in 0..36 {
-                inventory.set_item(slot, ItemStack::with_count(&*vanilla_items::STONE, 64));
+                inventory.set_item(slot, ItemStack::with_count(&vanilla_items::STONE, 64));
             }
         }
 
-        let stack = ItemStack::with_count(&*vanilla_items::HONEY_BOTTLE, 5);
+        let stack = ItemStack::with_count(&vanilla_items::HONEY_BOTTLE, 5);
         let result = finish_consuming_stack(&stack, world, player.as_ref());
 
-        assert!(result.is(&*vanilla_items::HONEY_BOTTLE));
+        assert!(result.is(&vanilla_items::HONEY_BOTTLE));
         assert_eq!(result.count(), 4);
 
         let dropped = world.get_entities_in_aabb_matching(
@@ -706,7 +706,7 @@ mod tests {
         let Some(item) = dropped[0].as_ref().downcast_ref::<ItemEntity>() else {
             panic!("dropped entity should retain its concrete item type");
         };
-        assert!(item.get_item().is(&*vanilla_items::GLASS_BOTTLE));
+        assert!(item.get_item().is(&vanilla_items::GLASS_BOTTLE));
     }
 
     /// Regression test for a deadlock: `use_item` on a `consume_seconds:
@@ -726,7 +726,7 @@ mod tests {
         let player = TestPlayerBuilder::new(Arc::clone(world), "Test", 1).build();
         player.set_client_loaded(true);
 
-        let mut stack = ItemStack::with_count(&*vanilla_items::HONEY_BOTTLE, 2);
+        let mut stack = ItemStack::with_count(&vanilla_items::HONEY_BOTTLE, 2);
         let existing = stack
             .get(vanilla_components::CONSUMABLE)
             .expect("honey bottle is consumable")
@@ -746,7 +746,7 @@ mod tests {
             inventory.set_item_in_hand(InteractionHand::MainHand, stack);
         }
 
-        let behavior = ITEM_BEHAVIORS.get_behavior(&*vanilla_items::HONEY_BOTTLE);
+        let behavior = ITEM_BEHAVIORS.get_behavior(&vanilla_items::HONEY_BOTTLE);
         let mut context = UseItemContext::new(
             &player,
             InteractionHand::MainHand,
@@ -763,7 +763,7 @@ mod tests {
                 .get_item_in_hand(InteractionHand::MainHand)
                 .clone()
         };
-        assert!(remaining.is(&*vanilla_items::HONEY_BOTTLE));
+        assert!(remaining.is(&vanilla_items::HONEY_BOTTLE));
         assert_eq!(remaining.count(), 1);
 
         let glass_bottle_count: i32 = {
@@ -771,7 +771,7 @@ mod tests {
             inventory
                 .items()
                 .iter()
-                .filter(|item| item.is(&*vanilla_items::GLASS_BOTTLE))
+                .filter(|item| item.is(&vanilla_items::GLASS_BOTTLE))
                 .map(ItemStack::count)
                 .sum()
         };
@@ -798,7 +798,7 @@ mod tests {
             food.saturation_level = 0.0;
         }
 
-        let stack = ItemStack::new(&*vanilla_items::APPLE);
+        let stack = ItemStack::new(&vanilla_items::APPLE);
         let _ = finish_consuming_stack(&stack, world, player.as_ref());
 
         let food = player.food_data.lock();
@@ -818,7 +818,7 @@ mod tests {
         let player = TestPlayerBuilder::new(Arc::clone(world), "Test", 1).build();
         player.set_client_loaded(true);
 
-        let stack = ItemStack::new(&*vanilla_items::APPLE);
+        let stack = ItemStack::new(&vanilla_items::APPLE);
         let _ = finish_consuming_stack(&stack, world, player.as_ref());
 
         let apple_used = vanilla_stat_types::ITEM_USED.get(&*vanilla_items::APPLE);
@@ -848,13 +848,13 @@ mod tests {
 
         let stew_effect = SuspiciousStewEffect::new(vanilla_mob_effects::REGENERATION, 160);
         let stew = SuspiciousStewEffects::new(vec![stew_effect]);
-        let mut stack = ItemStack::new(&*vanilla_items::SUSPICIOUS_STEW);
+        let mut stack = ItemStack::new(&vanilla_items::SUSPICIOUS_STEW);
         stack.set(vanilla_components::SUSPICIOUS_STEW_EFFECTS, stew);
 
         let remaining = finish_consuming_stack(&stack, world, player.as_ref());
 
         // Vanilla turns the eaten stew into its bowl (`USE_REMAINDER`) in place.
-        assert!(remaining.is(&*vanilla_items::BOWL));
+        assert!(remaining.is(&vanilla_items::BOWL));
         assert_eq!(remaining.count(), 1);
         let regeneration = player
             .mob_effect(vanilla_mob_effects::REGENERATION)
@@ -878,7 +878,7 @@ mod tests {
         player.set_client_loaded(true);
 
         let amplifier = OminousBottleAmplifier::new(3);
-        let mut stack = ItemStack::new(&*vanilla_items::OMINOUS_BOTTLE);
+        let mut stack = ItemStack::new(&vanilla_items::OMINOUS_BOTTLE);
         stack.set(vanilla_components::OMINOUS_BOTTLE_AMPLIFIER, amplifier);
 
         let remaining = finish_consuming_stack(&stack, world, player.as_ref());

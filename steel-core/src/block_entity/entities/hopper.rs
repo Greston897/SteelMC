@@ -66,7 +66,7 @@ pub const MOVE_COOLDOWN_TICKS: u8 = 8;
 /// `Block.column(16.0, 11.0, 32.0)` — which is what this constant describes.
 /// The old "block box grown by 0.25" was wrong in both directions: it missed
 /// items settled low in the bowl and it over-reached sideways.
-const HOPPER_SUCK_COLUMN_WIDTH: f64 = 16.0 / 16.0;
+const HOPPER_SUCK_COLUMN_WIDTH: f64 = 1.0;
 
 /// Bottom of the vanilla suck column, in block units (11/16).
 const HOPPER_SUCK_MIN_Y: f64 = 11.0 / 16.0;
@@ -622,7 +622,7 @@ mod tests {
         hopper
             .container
             .lock()
-            .set_item(0, ItemStack::with_count(&*vanilla_items::STONE, 100));
+            .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 100));
         assert_eq!(hopper.container.lock().get_item(0).count(), 64);
     }
 
@@ -654,7 +654,7 @@ mod tests {
     fn add_into_slots_only_touches_slots_exposed_to_the_face() {
         init_vanilla_registry();
         let mut container = SimpleContainer::new(3);
-        let mut stack = ItemStack::with_count(&*vanilla_items::COAL, 2);
+        let mut stack = ItemStack::with_count(&vanilla_items::COAL, 2);
 
         // Only slot 2 is reachable; slots 0 and 1 must stay empty.
         assert!(add_into_slots(
@@ -674,9 +674,9 @@ mod tests {
     fn add_into_slots_respects_the_destination_max_stack_size() {
         init_vanilla_registry();
         let mut container = SimpleContainer::new(1);
-        container.set_item(0, ItemStack::with_count(&*vanilla_items::COAL, 60));
+        container.set_item(0, ItemStack::with_count(&vanilla_items::COAL, 60));
 
-        let mut stack = ItemStack::with_count(&*vanilla_items::COAL, 10);
+        let mut stack = ItemStack::with_count(&vanilla_items::COAL, 10);
         assert!(add_into_slots(
             &mut container,
             &[0],
@@ -709,7 +709,7 @@ mod tests {
             hopper
                 .container
                 .lock()
-                .set_item(slot, ItemStack::with_count(&*vanilla_items::COAL, 64));
+                .set_item(slot, ItemStack::with_count(&vanilla_items::COAL, 64));
         }
         // The hopper "accepted" nothing, so vanilla keeps the entity alive and
         // the pickup must not report success.

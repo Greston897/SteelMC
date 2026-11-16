@@ -161,7 +161,8 @@ pub fn merchant(
 
 impl MenuKind for MerchantKind {
     fn removed(&mut self, _behavior: &mut MenuBehavior, player: &Player) {
-        if let Some(on_close) = self.on_close.lock().take() {
+        let on_close = self.on_close.lock().take();
+        if let Some(on_close) = on_close {
             on_close(player);
         }
     }
@@ -332,10 +333,10 @@ mod tests {
     #[test]
     fn a_payment_must_cover_the_whole_cost() {
         use steel_registry::vanilla_items;
-        let cost = ItemStack::with_count(&*vanilla_items::EMERALD, 5);
-        let exact = ItemStack::with_count(&*vanilla_items::EMERALD, 5);
-        let short = ItemStack::with_count(&*vanilla_items::EMERALD, 4);
-        let other = ItemStack::with_count(&*vanilla_items::WHEAT, 5);
+        let cost = ItemStack::with_count(&vanilla_items::EMERALD, 5);
+        let exact = ItemStack::with_count(&vanilla_items::EMERALD, 5);
+        let short = ItemStack::with_count(&vanilla_items::EMERALD, 4);
+        let other = ItemStack::with_count(&vanilla_items::WHEAT, 5);
 
         assert!(matches_payment(&cost, &exact));
         assert!(!matches_payment(&cost, &short));

@@ -241,7 +241,8 @@ impl Entity for CreakingEntity {
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
         self.save_mob(nbt);
-        if let Some(pos) = *self.creaking_heart_pos.lock() {
+        let heart_pos = *self.creaking_heart_pos.lock();
+        if let Some(pos) = heart_pos {
             nbt.insert(
                 "creaking_heart",
                 NbtTag::IntArray(vec![pos.x(), pos.y(), pos.z()]),

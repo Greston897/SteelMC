@@ -42,31 +42,22 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     let to = argument(TO_ARGUMENT, SteelArgumentType::block_pos());
 
     // `forceload query` reports the source dimension's forced chunks.
-    let query = literal("query").executes(query_all);
-    let query_pos = literal("query").then(from.clone().executes(query_one));
+    let query = literal("query")
+        .executes(query_all)
+        .then(from.clone().executes(query_one));
 
-    let add = literal("add")
-        .then(
-            from.clone()
-                .executes(|context| change(context, Change::Add)),
-        )
-        .then(
-            from.clone()
-                .then(to.clone().executes(|context| change(context, Change::Add))),
-        );
+    let add = literal("add").then(
+        from.clone()
+            .executes(|context| change(context, Change::Add))
+            .then(to.clone().executes(|context| change(context, Change::Add))),
+    );
 
-    let remove = literal("remove")
-        .then(
-            from.clone()
-                .executes(|context| change(context, Change::Remove)),
-        )
-        .then(from.then(to.executes(|context| change(context, Change::Remove))));
+    let remove = literal("remove").then(
+        from.executes(|context| change(context, Change::Remove))
+            .then(to.executes(|context| change(context, Change::Remove))),
+    );
 
-    literal("forceload")
-        .then(query)
-        .then(query_pos)
-        .then(add)
-        .then(remove)
+    literal("forceload").then(query).then(add).then(remove)
 }
 
 #[derive(Clone, Copy)]

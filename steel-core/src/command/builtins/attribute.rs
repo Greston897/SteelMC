@@ -46,9 +46,8 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
 
     // `get [scale]` and `base get [scale]`
     let base_get = literal("base")
-        .then(literal("get").executes(get_base))
         .then(
-            literal("get").then(
+            literal("get").executes(get_base).then(
                 argument(SCALE_ARGUMENT, ArgumentType::double(-f64::MAX, f64::MAX))
                     .executes(get_base_scaled),
             ),
@@ -62,12 +61,24 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
             .executes(get_total_scaled),
     );
 
+    let add_op = |name: &'static str, op: AttributeModifierOperation| {
+        literal(name).executes(move |context| add_modifier(context, op))
+    };
+
     let modifier = literal("modifier")
         .then(
             literal("add").then(
-                literal("value").then(
+                argument(UUID_ARGUMENT, SteelArgumentType::identifier()).then(
                     argument(VALUE_ARGUMENT, ArgumentType::double(-f64::MAX, f64::MAX))
-                        .executes(add_modifier),
+                        .then(add_op("add_value", AttributeModifierOperation::AddValue))
+                        .then(add_op(
+                            "add_multiplied_base",
+                            AttributeModifierOperation::AddMultipliedBase,
+                        ))
+                        .then(add_op(
+                            "add_multiplied_total",
+                            AttributeModifierOperation::AddMultipliedTotal,
+                        )),
                 ),
             ),
         )
@@ -218,7 +229,10 @@ fn set_base(context: &SteelCommandContext<CommandSource>) -> Result<i32, Command
     Ok(1)
 }
 
-fn add_modifier(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
+fn add_modifier(
+    context: &SteelCommandContext<CommandSource>,
+    operation: AttributeModifierOperation,
+) -> Result<i32, CommandSyntaxError> {
     let attribute = resolve_attribute(context)?;
     let value = context.double(VALUE_ARGUMENT)?;
     let uuid = context.identifier(UUID_ARGUMENT)?.clone();
@@ -232,7 +246,7 @@ fn add_modifier(context: &SteelCommandContext<CommandSource>) -> Result<i32, Com
         AttributeModifier {
             id: uuid.clone(),
             amount: value,
-            operation: AttributeModifierOperation::AddValue,
+            operation,
         },
         false,
     );
