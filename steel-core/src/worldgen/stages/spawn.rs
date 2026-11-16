@@ -116,12 +116,27 @@ pub(crate) fn generate(
             x += random.next_i32_bounded(5) - random.next_i32_bounded(5);
             z += random.next_i32_bounded(5) - random.next_i32_bounded(5);
 
-            let y = world.height_at(HeightmapType::MotionBlocking, x, z);
-            if y <= min_y || y >= max_y {
+            // `height_at` reports `None` when the column has no motion-blocking
+            // height yet, which vanilla treats like an out-of-range column.
+            let Some(y) = world.height_at(HeightmapType::MotionBlocking, x, z) else {
+                continue;
+            };
+            if y < min_y || y >= max_y {
                 continue;
             }
             let pos = BlockPos::new(x, y, z);
-            if !SpawnPlacements::check_natural_spawn_rules(entity_type, &world, pos, &mut random) {
+            // The spawn predicate is a `SpawnRule`, which is typed over `rand::Rng`
+            // while the worldgen stream is a `RandomSource`. Vanilla evaluates the
+            // predicate against the level's own random source, and Steel's natural
+            // spawner uses `rand::rng()` the same way, so a thread-local draw keeps
+            // the two paths consistent without perturbing the worldgen seed.
+            let mut spawn_random = rand::rng();
+            if !SpawnPlacements::check_natural_spawn_rules(
+                entity_type,
+                &world,
+                pos,
+                &mut spawn_random,
+            ) {
                 continue;
             }
             let Some(entity) = build_generated_entity(&world, entity_type, pos) else {

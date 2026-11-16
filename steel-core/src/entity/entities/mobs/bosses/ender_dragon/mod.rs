@@ -102,7 +102,7 @@ const PARTICLES_DRAGON_BLOCK_DESTROY: i32 = 2008;
 /// Steel's generated tag data has no `dragon_immune` tag yet, so the members are
 /// inlined. Keep in sync with `data/minecraft/tags/block/dragon_immune.json`.
 const DRAGON_IMMUNE_BLOCKS: &[steel_registry::blocks::BlockRef] = &[
-    vanilla_blocks::BARRIER,
+    &vanilla_blocks::BARRIER,
     vanilla_blocks::BEDROCK,
     vanilla_blocks::END_PORTAL,
     vanilla_blocks::END_PORTAL_FRAME,
@@ -123,8 +123,8 @@ const DRAGON_IMMUNE_BLOCKS: &[steel_registry::blocks::BlockRef] = &[
 
 /// Vanilla `BlockTags.DRAGON_TRANSPARENT`: light plus the fire tag.
 const DRAGON_TRANSPARENT_BLOCKS: &[steel_registry::blocks::BlockRef] = &[
-    &vanilla_blocks::LIGHT,
-    vanilla_blocks::FIRE,
+    vanilla_blocks::LIGHT,
+    &vanilla_blocks::FIRE,
     vanilla_blocks::SOUL_FIRE,
 ];
 
@@ -974,18 +974,18 @@ impl EnderDragonEntity {
 
     /// Sends the vanilla `EXPLOSION` particle the dying dragon trails each tick.
     fn spawn_death_particle(&self, world: &Arc<World>) {
-        self.send_dragon_particle(world, vanilla_particle_types::EXPLOSION);
+        self.send_dragon_particle(world, &vanilla_particle_types::EXPLOSION);
     }
 
     /// Sends the vanilla `EXPLOSION_EMITTER` particle the death animation fires.
     fn spawn_death_explosion(&self, world: &Arc<World>) {
-        self.send_dragon_particle(world, vanilla_particle_types::EXPLOSION_EMITTER);
+        self.send_dragon_particle(world, &vanilla_particle_types::EXPLOSION_EMITTER);
     }
 
     fn send_dragon_particle(
         &self,
         world: &Arc<World>,
-        particle: steel_registry::particle_type::ParticleTypeRef,
+        particle: &steel_registry::particle_type::ParticleTypeRef,
     ) {
         let offset = DVec3::new(
             f64::from((self.random_f32() - 0.5) * 8.0),

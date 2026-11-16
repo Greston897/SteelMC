@@ -11,6 +11,7 @@ use steel_macros::block_behavior;
 use steel_registry::REGISTRY;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
+use steel_utils::Downcast as _;
 use steel_registry::blocks::properties::{BlockStateProperties, Direction};
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
@@ -381,7 +382,7 @@ const DRIED_GHAST_HYDRATION_TICK_DELAY: i32 = 5000;
 
 /// Vanilla `DriedGhastBlock.MAX_HYDRATION_LEVEL`, the stage that spawns a
 /// ghastling.
-const DRIED_GHAST_MAX_HYDRATION_LEVEL: i32 = 3;
+const DRIED_GHAST_MAX_HYDRATION_LEVEL: u8 = 3;
 
 /// Vanilla `DriedGhastBlock`: a waterloggable block that rehydrates into a
 /// ghastling when kept in water.
@@ -400,7 +401,7 @@ impl DriedGhastBlock {
     /// Vanilla `DriedGhastBlock.tickWaterlogged`: one step up the hydration
     /// ladder, or the ghastling once the block is fully hydrated.
     fn tick_waterlogged(world: &Arc<World>, pos: BlockPos, state: BlockStateId) {
-        let hydration: i32 = state.get_value(&BlockStateProperties::DRIED_GHAST_HYDRATION_LEVELS);
+        let hydration: u8 = state.get_value(&BlockStateProperties::DRIED_GHAST_HYDRATION_LEVELS);
         if hydration < DRIED_GHAST_MAX_HYDRATION_LEVEL {
             world.play_sound_at(
                 &steel_registry::sound_events::BLOCK_DRIED_GHAST_TRANSITION,
@@ -499,7 +500,7 @@ impl BlockBehavior for DriedGhastBlock {
     /// still partly hydrated, schedules the slow hydration tick.
     fn random_tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
         let waterlogged: bool = state.get_value(&BlockStateProperties::WATERLOGGED);
-        let hydration: i32 = state.get_value(&BlockStateProperties::DRIED_GHAST_HYDRATION_LEVELS);
+        let hydration: u8 = state.get_value(&BlockStateProperties::DRIED_GHAST_HYDRATION_LEVELS);
         if (waterlogged || hydration > 0) && !world.has_scheduled_block_tick(pos, self.block) {
             world.schedule_block_tick_default(
                 pos,
@@ -516,7 +517,7 @@ impl BlockBehavior for DriedGhastBlock {
             Self::tick_waterlogged(world, pos, state);
             return;
         }
-        let hydration: i32 = state.get_value(&BlockStateProperties::DRIED_GHAST_HYDRATION_LEVELS);
+        let hydration: u8 = state.get_value(&BlockStateProperties::DRIED_GHAST_HYDRATION_LEVELS);
         if hydration > 0 {
             world.set_block(
                 pos,
@@ -647,7 +648,7 @@ impl BlockBehavior for CopperGolemStatueBlock {
         pos: BlockPos,
         _moved_by_piston: bool,
     ) {
-        world.update_neighbour_for_output_signal(pos, state.get_block());
+        world.update_neighbor_for_output_signal(pos, state.get_block());
     }
 
     /// Vanilla `CopperGolemStatueBlock.newBlockEntity`.
