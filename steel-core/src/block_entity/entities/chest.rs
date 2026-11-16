@@ -355,7 +355,7 @@ mod tests {
             vanilla_blocks::CHEST.default_state(),
         );
         // No world is attached, so the stored seed has to survive on its own.
-        let nbt = template_chest_nbt("minecraft:chests/simple_dungeon", 424242);
+        let nbt = template_chest_nbt("minecraft:chests/simple_dungeon", 424_242);
         chest.load_with_owned_components(&nbt).expect("template nbt loads");
 
         // Vanilla stores the table back while nobody opened the container, so a
@@ -367,7 +367,7 @@ mod tests {
                 .map(|value| value.to_str().into_owned()),
             Some("minecraft:chests/simple_dungeon".to_owned())
         );
-        assert_eq!(saved.long("LootTableSeed"), Some(424242));
+        assert_eq!(saved.long("LootTableSeed"), Some(424_242));
 
         // Opening rolls the table into the slots and clears it.
         assert!(chest.unpack_loot(), "the table must roll into the chest");

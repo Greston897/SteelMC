@@ -284,8 +284,8 @@ impl BlockBehavior for TestBlock {
             return 0;
         };
         let powered = block_entity
-            .downcast_ref::<crate::block_entity::entities::TestBlockEntity>()
-            .is_some_and(|test_block| test_block.is_powered());
+            .downcast_ref::<TestBlockEntity>()
+            .is_some_and(TestBlockEntity::is_powered);
         if powered { MAX_REDSTONE_SIGNAL } else { MIN_REDSTONE_SIGNAL }
     }
 

@@ -73,8 +73,8 @@ unsafe impl DowncastType for VillagerEntity {
 }
 
 impl VillagerEntity {
-    /// Vanilla `SpawnPlacements` predicate for villagers: they only spawn
-    /// inside a village, which Steel's world generation does not build yet.
+    // Vanilla `SpawnPlacements` predicate for villagers: they only spawn
+    // inside a village, which Steel's world generation does not build yet.
 
     /// Creates a new entity at runtime.
     #[must_use]

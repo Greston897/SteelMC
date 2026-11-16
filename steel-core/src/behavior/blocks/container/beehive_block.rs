@@ -120,7 +120,6 @@ impl BeehiveBlock {
 
     /// Vanilla `BeehiveBlock.useItemOn` for bottles, shears, and campfires.
     fn handle_use(
-        &self,
         state: BlockStateId,
         world: &std::sync::Arc<World>,
         pos: BlockPos,
@@ -242,7 +241,7 @@ impl BlockBehavior for BeehiveBlock {
         _hit_result: &BlockHitResult,
         inv: &mut InventoryAccess,
     ) -> InteractionResult {
-        self.handle_use(state, world, pos, player, inv)
+        Self::handle_use(state, world, pos, player, inv)
     }
 
     fn has_analog_output_signal(&self, _state: BlockStateId) -> bool {

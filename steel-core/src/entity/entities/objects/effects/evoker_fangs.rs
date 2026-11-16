@@ -108,7 +108,7 @@ impl Entity for EvokerFangsEntity {
 
     fn tick(self: Arc<Self>) {
         let age = self.tick_count();
-        if age >= LIFE_TIME + 1 {
+        if age > LIFE_TIME {
             self.set_removed(RemovalReason::Discarded);
             return;
         }

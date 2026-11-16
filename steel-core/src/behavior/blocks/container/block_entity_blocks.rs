@@ -56,15 +56,12 @@ fn dispense_projectile(stack: &ItemStack, world: &Arc<World>, pos: DVec3) -> Opt
     let weak = Arc::downgrade(world);
     let id = next_entity_id();
 
-    let entity: SharedEntity = if kind == &*vanilla_items::ARROW {
-        let arrow = Arc::new(ArrowEntity::new(&vanilla_entities::ARROW, id, pos, weak));
-        arrow.set_arrow_item(stack.copy_with_count(1));
-        arrow
-    } else if kind == &*vanilla_items::TIPPED_ARROW {
-        let arrow = Arc::new(ArrowEntity::new(&vanilla_entities::ARROW, id, pos, weak));
-        arrow.set_arrow_item(stack.copy_with_count(1));
-        arrow
-    } else if kind == &*vanilla_items::SPECTRAL_ARROW {
+    let entity: SharedEntity =
+        if kind == &*vanilla_items::ARROW || kind == &*vanilla_items::TIPPED_ARROW {
+            let arrow = Arc::new(ArrowEntity::new(&vanilla_entities::ARROW, id, pos, weak));
+            arrow.set_arrow_item(stack.copy_with_count(1));
+            arrow
+        } else if kind == &*vanilla_items::SPECTRAL_ARROW {
         Arc::new(SpectralArrowEntity::new(
             &vanilla_entities::SPECTRAL_ARROW,
             id,
@@ -502,6 +499,10 @@ fn launch_point(pos: BlockPos, facing: Direction) -> (DVec3, DVec3) {
 /// water/lava bucket placement, empty bucket fluid pickup, flint & steel fire /
 /// TNT / campfire ignition with durability, or default item ejection). Plays
 /// `BLOCK_DISPENSER_FAIL` when empty.
+#[expect(
+    clippy::too_many_lines,
+    reason = "single table dispatching every vanilla DispenseItemBehavior branch"
+)]
 fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool {
     use steel_utils::types::UpdateFlags;
     use steel_registry::vanilla_blocks;

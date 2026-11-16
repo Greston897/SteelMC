@@ -525,7 +525,7 @@ pub struct Server {
     /// A list of all the worlds on the server.
     pub worlds: WorldMap,
     /// Players currently connected to the server, independent of world membership.
-    online_players: PlayerMap,
+    pub(crate) online_players: PlayerMap,
     /// UUIDs reserved by a join or disconnect/save lifecycle transition.
     player_admissions: SyncMutex<FxHashMap<Uuid, PlayerAdmissionState>>,
     /// Wakes verified logins waiting for an older session with the same UUID to leave.

@@ -77,8 +77,8 @@ use crate::entity::entities::{
     MinecartEntity, PrimedTntEntity, TntMinecartEntity, WardenEntity, ZombieEntity,
 };
 use crate::entity::{
-    ENTITIES, Entity as _, LivingEntity as _, Mob as _, MobEffectInstance, RemovalReason,
-    init_entities, next_entity_id,
+    ENTITIES, Entity, LivingEntity as _, Mob as _, MobEffectInstance, RemovalReason, init_entities,
+    next_entity_id,
 };
 use crate::inventory::container::{Container as _, SimpleContainer};
 use crate::inventory::menu::kinds::{
@@ -1451,6 +1451,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         PermissionSet::new(),
         PermissionMetadataSet::new(),
         PermissionSet::new(),
+        PermissionMetadataSet::new(),
     );
     world.players.insert(Arc::clone(&op_player));
     world.players.insert(Arc::clone(&guest_player));

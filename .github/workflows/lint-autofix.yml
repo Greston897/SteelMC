@@ -53,13 +53,13 @@ jobs:
         continue-on-error: true
         timeout-minutes: 45
         run: |
-          for pass in 1 2 3; do
+          for pass in 1 2; do
             cargo "+$TOOLCHAIN" clippy --fix --workspace --all-targets --all-features \
               --allow-dirty --allow-staged --allow-no-vcs \
               > "/tmp/fix-$pass.log" 2>&1 || true
           done
-          cargo "+$TOOLCHAIN" fmt --all
-          tail -c 2000 /tmp/fix-3.log
+          cargo "+$TOOLCHAIN" fmt --all || true
+          tail -c 2000 /tmp/fix-2.log
 
       - name: Verify the workspace still compiles
         id: verify

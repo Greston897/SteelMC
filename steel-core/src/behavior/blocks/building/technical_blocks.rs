@@ -263,13 +263,13 @@ impl CommandBlock {
     /// vanilla does it after `performCommand`.
     fn execute(&self, block: &CommandBlockBlockEntity, world: &Arc<World>) {
         let _ = block.try_perform_command(world);
-        self.execute_chain(block, world);
+        Self::execute_chain(block, world);
     }
 
     /// Vanilla `CommandBlock.executeChain`: walk the facing direction and run
     /// every powered (or automatic) chain block whose condition holds, stopping
     /// at the first failure or at `max_command_sequence_length` links.
-    fn execute_chain(&self, block: &CommandBlockBlockEntity, world: &Arc<World>) {
+    fn execute_chain(block: &CommandBlockBlockEntity, world: &Arc<World>) {
         let mut pos = block.get_block_pos();
         let mut facing: steel_utils::Direction = world
             .get_block_state(pos)
@@ -938,10 +938,10 @@ impl BlockBehavior for CalibratedSculkSensorBlock {
     ) -> i32 {
         // Vanilla `CalibratedSculkSensorBlock.getSignal`: emits on every face
         // EXCEPT the calibrated input face (`facing`).
-        if direction != state.get_value(&BlockStateProperties::HORIZONTAL_FACING) {
-            i32::from(state.get_value(&BlockStateProperties::POWER))
-        } else {
+        if direction == state.get_value(&BlockStateProperties::HORIZONTAL_FACING) {
             0
+        } else {
+            i32::from(state.get_value(&BlockStateProperties::POWER))
         }
     }
 

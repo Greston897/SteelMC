@@ -685,7 +685,7 @@ impl BlockBehavior for CopperGolemStatueBlock {
         use steel_registry::data_components::vanilla_components::BLOCK_STATE;
 
         let mut stack = ItemStack::new(REGISTRY.items.by_block(block));
-        let Some(statue) = block_entity
+        let Some(golem_statue) = block_entity
             .as_ref()
             .and_then(|entity| entity.downcast_ref::<CopperGolemStatueBlockEntity>())
         else {
@@ -695,7 +695,7 @@ impl BlockBehavior for CopperGolemStatueBlock {
         if include_data {
             // Vanilla `itemStack.applyComponents(collectComponents())`.
             let mut patch = stack.patch().clone();
-            for (key, data) in statue.collect_components().iter() {
+            for (key, data) in golem_statue.collect_components().iter() {
                 patch.set_raw(key.clone(), data.clone());
             }
             stack = ItemStack::with_count_and_patch(stack.item(), stack.count(), patch);
@@ -738,7 +738,7 @@ impl BlockBehavior for CopperGolemStatueBlock {
 
 /// Vanilla `CopperGolemStatueBlock.Pose.getNextPose`: `ByIdMap.continuous`
 /// wraps past the last pose instead of clamping.
-fn next_statue_pose(
+const fn next_statue_pose(
     pose: steel_registry::blocks::properties::Pose,
 ) -> steel_registry::blocks::properties::Pose {
     use steel_registry::blocks::properties::Pose;
@@ -824,7 +824,7 @@ impl BlockBehavior for WeatheringCopperGolemStatueBlock {
         let Some(block_entity) = world.get_block_entity(pos) else {
             return InteractionResult::Pass;
         };
-        let Some(statue) = block_entity.downcast_ref::<CopperGolemStatueBlockEntity>() else {
+        let Some(golem_statue) = block_entity.downcast_ref::<CopperGolemStatueBlockEntity>() else {
             return InteractionResult::Pass;
         };
 
@@ -842,7 +842,7 @@ impl BlockBehavior for WeatheringCopperGolemStatueBlock {
             return InteractionResult::Pass;
         }
 
-        let Some(golem) = statue.remove_statue(state) else {
+        let Some(golem) = golem_statue.remove_statue(state) else {
             return InteractionResult::Pass;
         };
         // `InventoryAccess::with_item` already hands out a mutable stack.

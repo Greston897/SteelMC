@@ -1041,7 +1041,7 @@ fn random_below(ctx: &PhaseContext<'_>, bound: i32) -> i32 {
     state ^= state >> 31;
 
     let value = (state >> 32) as u32;
-    (i64::from(value) * i64::from(bound) >> 32) as i32
+    ((i64::from(value) * i64::from(bound)) >> 32) as i32
 }
 
 /// Vanilla `EnderDragon.onCrystalDestroyed`.
