@@ -139,7 +139,7 @@ pub(crate) fn place_end_podium_in_world(
     let center = origin.above_n(2);
     for facing in FeatureDecorationRunner::VANILLA_HORIZONTAL_DIRECTIONS {
         let torch = REGISTRY.blocks.get_default_state_id(
-            &vanilla_blocks::WALL_TORCH
+            vanilla_blocks::WALL_TORCH
                 .default_state()
                 .set_value(&BlockStateProperties::HORIZONTAL_FACING, facing),
         );

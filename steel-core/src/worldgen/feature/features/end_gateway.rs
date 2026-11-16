@@ -1,3 +1,5 @@
+use steel_utils::Downcast as _;
+
 use super::super::prelude::*;
 use super::super::runner::FeatureDecorationRunner;
 

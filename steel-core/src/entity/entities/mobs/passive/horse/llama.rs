@@ -330,7 +330,7 @@ impl Entity for LlamaEntity {
         let chest = nbt.byte("ChestedHorse").is_some_and(|b| b != 0);
         self.set_chest(chest);
         if chest {
-            self.mount_inventory.lock().load_items((&nbt).into());
+            self.mount_inventory.lock().load_items(nbt);
         }
     }
 }

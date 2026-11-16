@@ -53,7 +53,7 @@ impl CopperGolemStatueBlockEntity {
         let mut components = self.base.stored_components();
         // `ComponentMap::set` removes the entry when handed `None`, which is
         // exactly what vanilla's `remove` branch does.
-        let name = copper_golem.base().custom_name().cloned();
+        let name = copper_golem.base().custom_name();
         components.set(CUSTOM_NAME, name);
         self.base.set_components(components);
         self.base.set_changed();

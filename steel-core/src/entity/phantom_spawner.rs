@@ -106,7 +106,8 @@ fn next_delay() -> i32 {
 /// Vanilla group size: `1 + nextInt(difficultyId + 1)`.
 fn group_size(difficulty: Difficulty) -> usize {
     let difficulty_id = difficulty as i32;
-    1 + rand::random_range(0..=difficulty_id)
+    let rolled: i32 = rand::random_range(0..=difficulty_id);
+    1 + usize::try_from(rolled).unwrap_or(0)
 }
 
 /// Whether `player` is a valid phantom target right now.
