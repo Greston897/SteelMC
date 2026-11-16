@@ -2987,14 +2987,6 @@ impl Entity for Player {
             }
         }
     }
-}
-
-const fn protocol_look_at_anchor(anchor: EntityAnchor) -> LookAtAnchor {
-    match anchor {
-        EntityAnchor::Feet => LookAtAnchor::Feet,
-        EntityAnchor::Eyes => LookAtAnchor::Eyes,
-    }
-}
 
     /// Vanilla `ServerPlayer.tickCount` is the player's own counter, not the
     /// shared `EntityBase` one; the combat tracker compares damage times against
@@ -3004,6 +2996,13 @@ const fn protocol_look_at_anchor(anchor: EntityAnchor) -> LookAtAnchor {
     /// to this very method and recurse forever.
     fn tick_count(&self) -> i32 {
         Player::tick_count(self)
+    }
+}
+
+const fn protocol_look_at_anchor(anchor: EntityAnchor) -> LookAtAnchor {
+    match anchor {
+        EntityAnchor::Feet => LookAtAnchor::Feet,
+        EntityAnchor::Eyes => LookAtAnchor::Eyes,
     }
 }
 
