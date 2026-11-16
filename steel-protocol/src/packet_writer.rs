@@ -222,8 +222,12 @@ mod tests {
         }
 
         assert_eq!(buf, expected_frame(&packet_data));
-        // A 300 byte frame needs a two byte VarInt length.
-        assert_eq!(buf[1] & VARINT_CONTINUE_BIT, VARINT_CONTINUE_BIT);
+        // A 300 byte frame needs a two byte VarInt length: the first byte carries
+        // the continuation bit and the second one terminates the prefix, so the
+        // payload starts at index 2.
+        assert_eq!(buf[0] & VARINT_CONTINUE_BIT, VARINT_CONTINUE_BIT);
+        assert_eq!(buf[1] & VARINT_CONTINUE_BIT, 0);
+        assert_eq!(&buf[2..], packet_data.as_slice());
     }
 
     #[tokio::test]

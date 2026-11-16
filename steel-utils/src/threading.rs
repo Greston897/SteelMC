@@ -431,7 +431,7 @@ impl PoolSizes {
 /// On a one- or two-core container every pool degrades to a single worker
 /// instead of spawning threads that would never be scheduled.
 #[must_use]
-pub fn pool_sizes_for_available(cores: usize) -> PoolSizes {
+pub const fn pool_sizes_for_available(cores: usize) -> PoolSizes {
     let cores = cores.max(1);
     if cores <= 2 {
         // Too few cores to give every CPU-bound pool its own worker. The tick

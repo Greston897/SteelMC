@@ -173,6 +173,19 @@ impl RconSettings {
     }
 }
 
+/// Deserializes an optional worker count, folding `0` into `None`.
+///
+/// Every field documents `0` as "use the automatic default", so the zero has to
+/// disappear at parse time instead of leaking a meaningless `Some(0)` into the
+/// runtime config.
+fn deserialize_worker_count<'de, D>(deserializer: D) -> Result<Option<usize>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let configured = Option::<usize>::deserialize(deserializer)?;
+    Ok(configured.filter(|&count| count > 0))
+}
+
 /// Optional worker counts for server thread pools.
 ///
 /// A value of `0` or an omitted field uses the pool's automatic default.
@@ -186,16 +199,22 @@ pub struct ThreadConfig {
     /// container started with `--cpus=6` (600% of one core) counts as six cores
     /// even when the host exposes many more. Set this explicitly to reserve
     /// cores for other processes on the same machine.
+    #[serde(deserialize_with = "deserialize_worker_count")]
     pub cores: Option<usize>,
     /// Worker threads for the primary Tokio runtime.
+    #[serde(deserialize_with = "deserialize_worker_count")]
     pub main_runtime: Option<usize>,
     /// Worker threads for the chunk Tokio runtime.
+    #[serde(deserialize_with = "deserialize_worker_count")]
     pub chunk_runtime: Option<usize>,
     /// Persistent workers for inter-tick gameplay packet processing.
+    #[serde(deserialize_with = "deserialize_worker_count")]
     pub packet_workers: Option<usize>,
     /// Worker threads for the Rayon chunk generation pool.
+    #[serde(deserialize_with = "deserialize_worker_count")]
     pub chunk_generation: Option<usize>,
     /// Worker threads for the Rayon chunk encoding pool.
+    #[serde(deserialize_with = "deserialize_worker_count")]
     pub chunk_encoding: Option<usize>,
 }
 

@@ -71,14 +71,14 @@ mod tests {
             prompt: None,
         });
 
-        // uuid, url length 1 + 6 bytes, hash length 1 + 2 bytes, required, no prompt.
-        assert_eq!(bytes.len(), 16 + 7 + 3 + 1 + 1);
+        // uuid, url length 1 + 8 bytes, hash length 1 + 2 bytes, required, no prompt.
+        assert_eq!(bytes.len(), 16 + 9 + 3 + 1 + 1);
         assert_eq!(&bytes[..16], id.as_bytes());
-        assert_eq!(bytes[16], 6);
-        assert_eq!(&bytes[17..23], b"http://a");
-        assert_eq!(bytes[23], 2);
-        assert_eq!(&bytes[24..26], b"ab");
-        assert_eq!(bytes[26], 1, "required is a plain bool");
-        assert_eq!(bytes[27], 0, "an absent prompt is a false option");
+        assert_eq!(bytes[16], 8);
+        assert_eq!(&bytes[17..25], b"http://a");
+        assert_eq!(bytes[25], 2);
+        assert_eq!(&bytes[26..28], b"ab");
+        assert_eq!(bytes[28], 1, "required is a plain bool");
+        assert_eq!(bytes[29], 0, "an absent prompt is a false option");
     }
 }
