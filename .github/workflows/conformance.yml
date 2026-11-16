@@ -177,7 +177,8 @@ jobs:
       - name: Publish failing tests as a commit comment
         if: failure()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # `report.py` reads GITHUB_TOKEN/GITHUB_REPOSITORY/GITHUB_SHA.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           [ -s /tmp/failing-tests.md ] || exit 0
           # `report.py` wraps each file in its own fenced block, so strip the
