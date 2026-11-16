@@ -468,7 +468,7 @@ impl CommandBlockBlockEntity {
     /// a disabled `command_blocks_work` rule or a full queue still return `true`,
     /// because vanilla still consumed the run and `executeChain` must continue
     /// down the chain. The `"Searge"` easter egg is kept as well.
-    pub(crate) fn try_perform_command(self: &Arc<Self>, world: &Arc<World>) -> bool {
+    pub(crate) fn try_perform_command(&self, world: &Arc<World>) -> bool {
         let game_time = world.game_time();
         {
             let mut state = self.state.lock();

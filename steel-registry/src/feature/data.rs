@@ -571,7 +571,7 @@ pub struct EndSpikeConfiguration {
     pub crystal_beam_target: Option<Offset>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EndSpike {
     pub center_x: i32,
     pub center_z: i32,

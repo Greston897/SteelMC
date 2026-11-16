@@ -32,7 +32,8 @@ use crate::behavior::context::{
 use crate::block_entity::entities::{
     CommandBlockBlockEntity, CommandBlockMode, SculkShriekerBlockEntity, StructureBlockEntity,
 };
-use crate::block_entity::{BLOCK_ENTITIES, BlockEntityTicker};
+use crate::block_entity::{BLOCK_ENTITIES, BlockEntity as _, BlockEntityTicker};
+use crate::world::SignalGetter as _;
 use crate::world::World;
 
 macro_rules! block_entity_block {
@@ -328,7 +329,7 @@ impl CommandBlock {
     ///
     /// The command itself is queued; `execute_chain` runs right after, exactly as
     /// vanilla does it after `performCommand`.
-    fn execute(&self, block: &Arc<CommandBlockBlockEntity>, world: &Arc<World>) {
+    fn execute(&self, block: &CommandBlockBlockEntity, world: &Arc<World>) {
         let _ = block.try_perform_command(world);
         self.execute_chain(block, world);
     }
@@ -336,7 +337,7 @@ impl CommandBlock {
     /// Vanilla `CommandBlock.executeChain`: walk the facing direction and run
     /// every powered (or automatic) chain block whose condition holds, stopping
     /// at the first failure or at `max_command_sequence_length` links.
-    fn execute_chain(&self, block: &Arc<CommandBlockBlockEntity>, world: &Arc<World>) {
+    fn execute_chain(&self, block: &CommandBlockBlockEntity, world: &Arc<World>) {
         let mut pos = block.get_block_pos();
         let mut facing: steel_utils::Direction = world
             .get_block_state(pos)
@@ -355,7 +356,7 @@ impl CommandBlock {
             let Some(entity) = world.get_block_entity(pos) else {
                 break;
             };
-            let Some(next) = entity.downcast_ref::<CommandBlockBlockEntity>().cloned() else {
+            let Some(next) = entity.downcast_ref::<CommandBlockBlockEntity>() else {
                 break;
             };
             if next.mode() != CommandBlockMode::Sequence {

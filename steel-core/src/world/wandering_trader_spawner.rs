@@ -21,7 +21,9 @@ use crate::entity::leash::Leashable as _;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
 use crate::entity::{Entity, SharedEntity, spawn_entity};
 use crate::world::{LevelReader, World};
+use steel_registry::RegistryExt as _;
 use steel_registry::{REGISTRY, entity_type::EntityTypeRef, vanilla_game_rules};
+use steel_utils::Downcast as _;
 use steel_utils::{BlockPos, Identifier};
 
 /// Vanilla `WanderingTraderSpawner.SPAWN_DELAY`: the counter is reset to this.

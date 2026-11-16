@@ -123,7 +123,7 @@ const DRAGON_IMMUNE_BLOCKS: &[steel_registry::blocks::BlockRef] = &[
 
 /// Vanilla `BlockTags.DRAGON_TRANSPARENT`: light plus the fire tag.
 const DRAGON_TRANSPARENT_BLOCKS: &[steel_registry::blocks::BlockRef] = &[
-    vanilla_blocks::LIGHT,
+    &vanilla_blocks::LIGHT,
     vanilla_blocks::FIRE,
     vanilla_blocks::SOUL_FIRE,
 ];

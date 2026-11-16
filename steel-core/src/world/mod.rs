@@ -1346,7 +1346,7 @@ impl World {
         let location = self.exit_portal_location();
         if self.dragon_fight.exit_portal_location().is_none() {
             self.dragon_fight
-                .set_exit_portal_location(IVec3::new(location.x(), location.y(), location.z()));
+                .set_exit_portal_location(Some(IVec3::new(location.x(), location.y(), location.z())));
         }
         crate::worldgen::feature::place_end_podium_in_world(self, location, activated);
     }

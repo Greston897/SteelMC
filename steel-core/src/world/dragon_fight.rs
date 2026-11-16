@@ -508,7 +508,7 @@ impl DragonFight {
     /// level seed to rebuild the same ring, so it is threaded in here.
     #[must_use]
     pub fn spike(&self, index: i32) -> Option<steel_registry::feature::EndSpike> {
-        let seed = *self.level_seed.lock()?;
+        let seed = (*self.level_seed.lock())?;
         crate::worldgen::feature::FeatureDecorationRunner::end_spikes_for_level(seed)
             .get(usize::try_from(index).ok()?)
             .copied()

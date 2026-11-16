@@ -236,7 +236,12 @@ fn spawn_pillager(world: &Arc<World>, pos: BlockPos) -> Option<crate::entity::Sh
 /// metadata, not behaviour the server reads), so the banner is what distinguishes
 /// the captain today; the flag is the remaining gap.
 fn mark_captain(entity: &crate::entity::SharedEntity) {
-    entity.with_equipment_slot_mut(EquipmentSlot::Head, &mut |head| {
+    // `with_equipment_slot_mut` is a `LivingEntity` method, so reach it through
+    // the living view rather than the bare entity handle.
+    let Some(living) = entity.as_living_entity() else {
+        return;
+    };
+    living.with_equipment_slot_mut(EquipmentSlot::Head, &mut |head| {
         if head.is_empty() {
             *head = steel_registry::item_stack::ItemStack::with_count(
                 &*steel_registry::vanilla_items::WHITE_BANNER,
