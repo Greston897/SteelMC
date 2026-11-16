@@ -1039,7 +1039,7 @@ impl ItemStack {
     #[must_use]
     pub fn potion_key(&self) -> Option<Identifier> {
         self.get(POTION_CONTENTS)
-            .and_then(crate::data_components::components::potion_contents::PotionContents::potion)
+            .and_then(crate::data_components::components::PotionContents::potion)
             .map(|potion| potion.value().key().clone())
     }
 

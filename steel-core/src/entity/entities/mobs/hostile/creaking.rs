@@ -266,10 +266,10 @@ impl LivingEntity for CreakingEntity {
         Monster::monster_ai_step(self, entity)
     }
 
-    /// Vanilla `Creaking.isInvulnerableTo`: the creaking can only be hurt once its
-    /// creaking heart is gone, which is what forces the player to find the heart.
-    fn is_invulnerable_to(&self, world: &World, _source: &DamageSource) -> bool {
-        self.linked_heart(world).is_some()
+    /// Vanilla `Creaking.isInvulnerableTo`: the creaking can only be hurt by
+    /// invulnerability-bypassing damage (`/kill`, void) while its heart lives.
+    fn is_invulnerable_to(&self, world: &World, source: &DamageSource) -> bool {
+        !source.bypasses_invulnerability() && self.linked_heart(world).is_some()
     }
 }
 

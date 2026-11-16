@@ -40,6 +40,11 @@ use crate::world::World;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
 
+/// Vanilla `Armadillo.pickNextScuteDropTime`: 5 to 10 minutes (`6000..12000` ticks).
+const SCUTE_DROP_MIN_TICKS: i32 = 6_000;
+const SCUTE_DROP_MAX_TICKS: i32 = 12_000;
+const BRUSH_DAMAGE_PER_SCUTE: i32 = 16;
+
 #[entity_behavior(class = "Armadillo", spawn_rule)]
 /// Vanilla armadillo entity.
 pub struct ArmadilloEntity {
@@ -50,6 +55,7 @@ pub struct ArmadilloEntity {
     ageable_base: AgeableMobBase,
     animal_base: AnimalBase,
     entity_data: SyncMutex<ArmadilloEntityData>,
+    scute_time: SyncMutex<i32>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `ArmadilloEntity`.
@@ -110,7 +116,13 @@ impl ArmadilloEntity {
             ageable_base,
             animal_base,
             entity_data: SyncMutex::new(entity_data),
+            scute_time: SyncMutex::new(Self::next_scute_time()),
         }
+    }
+
+    fn next_scute_time() -> i32 {
+        use rand::RngExt as _;
+        rand::rng().random_range(SCUTE_DROP_MIN_TICKS..SCUTE_DROP_MAX_TICKS)
     }
 
     fn update_dirty_mob_effect_entity_data(&self) {
@@ -180,13 +192,16 @@ impl Entity for ArmadilloEntity {
         self.save_mob(nbt);
         self.save_ageable_mob(nbt);
         self.save_animal(nbt);
+        nbt.insert("scute_time", *self.scute_time.lock());
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_mob(nbt);
         self.load_ageable_mob(nbt);
         self.load_animal(nbt);
-
+        if let Some(ticks) = nbt.int("scute_time") {
+            *self.scute_time.lock() = ticks.max(0);
+        }
     }
 }
 
@@ -287,6 +302,58 @@ impl Mob for ArmadilloEntity {
 
     fn custom_server_ai_step(&self) {
         Animal::custom_server_ai_step_animal(self);
+        if self.is_alive() && !AgeableMob::is_baby(self) {
+            let should_shed = {
+                let mut t = self.scute_time.lock();
+                *t -= 1;
+                if *t <= 0 {
+                    *t = Self::next_scute_time();
+                    true
+                } else {
+                    false
+                }
+            };
+            if should_shed {
+                let _ = self.spawn_at_location(
+                    ItemStack::new(&*steel_registry::vanilla_items::ARMADILLO_SCUTE),
+                    0.0,
+                );
+                self.play_sound(&sound_events::ENTITY_ARMADILLO_SCUTE_DROP, 1.0, 1.0);
+                self.game_event(&steel_registry::vanilla_game_events::ENTITY_PLACE);
+            }
+        }
+    }
+
+    /// Vanilla `Armadillo.mobInteract`: brushing an adult sheds an armadillo
+    /// scute and damages the brush by 16 durability; food falls through to `Animal`.
+    fn mob_interact(
+        &self,
+        player: &crate::player::Player,
+        hand: steel_utils::types::InteractionHand,
+    ) -> crate::behavior::InteractionResult {
+        let held = {
+            let inv = player.inventory.lock();
+            let stack = inv.get_item_in_hand(hand);
+            stack.copy_with_count(stack.count())
+        };
+        if held.is(&*steel_registry::vanilla_items::BRUSH) && !AgeableMob::is_baby(self) {
+            let _ = self.spawn_at_location(
+                ItemStack::new(&*steel_registry::vanilla_items::ARMADILLO_SCUTE),
+                0.0,
+            );
+            self.play_sound(&sound_events::ENTITY_ARMADILLO_BRUSH, 1.0, 1.0);
+            self.game_event_with_source_entity(
+                &steel_registry::vanilla_game_events::ENTITY_INTERACT,
+                Some(player),
+            );
+            player.inventory.lock().hurt_item_in_hand(
+                hand,
+                BRUSH_DAMAGE_PER_SCUTE,
+                player.has_infinite_materials(),
+            );
+            return crate::behavior::InteractionResult::SuccessServer;
+        }
+        Animal::mob_interact_animal(self, player, hand)
     }
 
     fn ambient_sound(&self) -> Option<SoundEventRef> {

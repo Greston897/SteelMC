@@ -40,7 +40,13 @@ use crate::world::World;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
 
-/// Vanilla `net.minecraft.world.entity.monster.Silverfish`.
+/// Vanilla `ElderGuardian`: mining fatigue curse constants.
+const CURSE_INTERVAL_TICKS: i32 = 1_200;
+const CURSE_RADIUS: f64 = 50.0;
+const CURSE_DURATION_TICKS: i32 = 6_000;
+const CURSE_AMPLIFIER: i32 = 2;
+
+/// Vanilla `net.minecraft.world.entity.monster.ElderGuardian`.
 #[entity_behavior(class = "ElderGuardian", spawn_rule)]
 pub struct ElderGuardianEntity {
     base: EntityBase,
@@ -48,6 +54,7 @@ pub struct ElderGuardianEntity {
     living_base: LivingEntityBase,
     mob_base: MobBase,
     entity_data: SyncMutex<GuardianEntityData>,
+    curse_ticks: SyncMutex<i32>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `ElderGuardianEntity`.
@@ -124,6 +131,7 @@ impl ElderGuardianEntity {
             living_base,
             mob_base,
             entity_data: SyncMutex::new(entity_data),
+            curse_ticks: SyncMutex::new(0),
         }
     }
 
@@ -259,6 +267,57 @@ impl Mob for ElderGuardianEntity {
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {
         PathfinderMob::tick_pathfinder_goal_selectors(self, entity);
+    }
+
+    /// Vanilla `ElderGuardian.customServerAiStep`: every 1,200 ticks, applies
+    /// `Mining Fatigue III` (`duration = 6000`, `amplifier = 2`) and sends the
+    /// ghostly `GuardianElderEffect` client event to every survival/adventure
+    /// player within 50 blocks who lacks Mining Fatigue III or has `< 1200` ticks left.
+    fn custom_server_ai_step(&self) {
+        let Some(world) = self.level() else {
+            return;
+        };
+        {
+            let mut ticks = self.curse_ticks.lock();
+            *ticks += 1;
+            if *ticks < CURSE_INTERVAL_TICKS {
+                return;
+            }
+            *ticks = 0;
+        }
+        let pos = self.position();
+        let r2 = CURSE_RADIUS * CURSE_RADIUS;
+        world.players.iter_players(|_, player| {
+            let mode = player.game_mode();
+            if !matches!(
+                mode,
+                steel_utils::types::GameType::Survival | steel_utils::types::GameType::Adventure
+            ) || !player.is_alive()
+            {
+                return true;
+            }
+            if player.position().distance_squared(pos) >= r2 {
+                return true;
+            }
+            let needs_curse = player
+                .mob_effect(steel_registry::vanilla_mob_effects::MINING_FATIGUE)
+                .is_none_or(|active| {
+                    active.amplifier() < CURSE_AMPLIFIER
+                        || active.duration() < CURSE_INTERVAL_TICKS
+                });
+            if needs_curse {
+                player.send_packet(steel_protocol::packets::game::CGameEvent {
+                    event: steel_protocol::packets::game::GameEventType::GuardianElderEffect,
+                    data: 1.0,
+                });
+                player.add_mob_effect(crate::entity::MobEffectInstance::with_duration(
+                    steel_registry::vanilla_mob_effects::MINING_FATIGUE,
+                    CURSE_DURATION_TICKS,
+                    CURSE_AMPLIFIER,
+                ));
+            }
+            true
+        });
     }
 
     fn tick_path_navigation(&self) {

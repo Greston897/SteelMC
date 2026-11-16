@@ -46,6 +46,7 @@ pub struct IronGolemEntity {
     living_base: LivingEntityBase,
     mob_base: MobBase,
     entity_data: SyncMutex<IronGolemEntityData>,
+    player_created: std::sync::atomic::AtomicBool,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `IronGolemEntity`.
@@ -107,7 +108,20 @@ impl IronGolemEntity {
             living_base,
             mob_base,
             entity_data: SyncMutex::new(entity_data),
+            player_created: std::sync::atomic::AtomicBool::new(false),
         }
+    }
+
+    /// Whether this iron golem was built by a player (`PlayerCreated` NBT tag).
+    #[must_use]
+    pub fn is_player_created(&self) -> bool {
+        self.player_created.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Marks this iron golem as player-created (`PlayerCreated` NBT tag).
+    pub fn set_player_created(&self, player_created: bool) {
+        self.player_created
+            .store(player_created, std::sync::atomic::Ordering::Relaxed);
     }
 
     fn update_dirty_mob_effect_entity_data(&self) {
@@ -191,10 +205,14 @@ impl Entity for IronGolemEntity {
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
         self.save_mob(nbt);
+        nbt.insert("PlayerCreated", self.is_player_created());
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_mob(nbt);
+        if let Some(flag) = nbt.byte("PlayerCreated") {
+            self.set_player_created(flag != 0);
+        }
     }
 }
 
@@ -232,11 +250,42 @@ impl LivingEntity for IronGolemEntity {
     fn ai_step(&self, entity: &SharedEntity) -> Option<MoveResult> {
         Mob::mob_ai_step(self, entity)
     }
+
+    /// Vanilla `IronGolem.causeFallDamage`: iron golems are immune to fall damage.
+    fn is_invulnerable_to(&self, _world: &World, source: &DamageSource) -> bool {
+        source.is(&steel_registry::vanilla_damage_type_tags::DamageTypeTag::IS_FALL)
+    }
 }
 
 impl Mob for IronGolemEntity {
     fn mob_base(&self) -> &MobBase {
         &self.mob_base
+    }
+
+    /// Vanilla `IronGolem.mobInteract`: using an iron ingot repairs 25 health.
+    fn mob_interact(
+        &self,
+        player: &crate::player::Player,
+        hand: steel_utils::types::InteractionHand,
+    ) -> crate::behavior::InteractionResult {
+        let item_stack = {
+            let inventory = player.inventory.lock();
+            let held = inventory.get_item_in_hand(hand);
+            held.copy_with_count(held.count())
+        };
+        if !item_stack.is(&*steel_registry::vanilla_items::IRON_INGOT) {
+            return crate::behavior::InteractionResult::Pass;
+        }
+        let before = self.get_health();
+        self.heal(25.0);
+        if (self.get_health() - before).abs() < f32::EPSILON {
+            return crate::behavior::InteractionResult::Pass;
+        }
+        self.play_sound(&sound_events::ENTITY_IRON_GOLEM_REPAIR, 1.0, 1.0);
+        if !player.has_infinite_materials() {
+            player.inventory.lock().shrink_item_in_hand(hand, 1);
+        }
+        crate::behavior::InteractionResult::SuccessServer
     }
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {
@@ -272,14 +321,16 @@ mod tests {
     use crate::entity::{Entity, LivingEntity};
 
     #[test]
-    fn silverfish_uses_registry_attributes_and_round_trips_nbt() {
+    fn iron_golem_uses_registry_attributes_and_round_trips_nbt() {
         init_vanilla_registry();
-        let silverfish =
+        let golem =
             IronGolemEntity::new(&vanilla_entities::IRON_GOLEM, 1, DVec3::ZERO, Weak::new());
-        assert!((silverfish.get_max_health() - 8.0).abs() < 1e-4);
+        assert!((golem.get_max_health() - 100.0).abs() < 1e-4);
+        assert!(!golem.is_player_created());
+        golem.set_player_created(true);
 
         let mut nbt = NbtCompound::new();
-        silverfish.save_additional(&mut nbt);
+        golem.save_additional(&mut nbt);
 
         let loaded =
             IronGolemEntity::new(&vanilla_entities::IRON_GOLEM, 2, DVec3::ZERO, Weak::new());
@@ -289,5 +340,6 @@ mod tests {
             .unwrap_or_else(|error| panic!("reborrow failed: {error}"));
         loaded.load_additional((&borrowed).into());
         assert!(loaded.get_health() > 0.0);
+        assert!(loaded.is_player_created());
     }
 }
