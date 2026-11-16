@@ -1257,8 +1257,6 @@ impl DomainScoreboards {
         })
     }
 
-    /// Returns the scoreboard for a domain.
-    #[must_use]
     /// Advances the stopwatches of every domain scoreboard by one tick.
     pub fn tick_stopwatches(&self) {
         for scoreboard in self.scoreboards.values() {

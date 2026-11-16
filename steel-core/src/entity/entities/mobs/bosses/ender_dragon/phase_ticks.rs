@@ -1013,10 +1013,6 @@ fn tick_hovering(manager: &mut DragonPhaseManager, ctx: &PhaseContext<'_>) {
 ///
 /// The rollout advances `ctx`'s per-step random state, so two rolls in one tick are
 /// independent — deriving both from the single `nextFloat` would make them equal.
-#[expect(
-    clippy::cast_possible_wrap,
-    reason = "the high 32 bits are reinterpreted as the signed result, as in Java"
-)]
 fn random_below(ctx: &PhaseContext<'_>, bound: i32) -> i32 {
     if bound <= 1 {
         return 0;

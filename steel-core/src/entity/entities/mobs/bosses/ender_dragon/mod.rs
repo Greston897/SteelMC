@@ -1093,7 +1093,7 @@ impl EnderDragonEntity {
 
         let mut damage = phase_ticks::sitting_on_hurt(self, source, amount);
         let (multiplier, flat) = part_damage_scaling(part_index);
-        if multiplier != 1.0 {
+        if (multiplier - 1.0).abs() > f32::EPSILON {
             // Vanilla `damage / 4.0f + Math.min(damage, 1.0f)`: two separately
             // rounded operations, not a fused multiply-add.
             damage = damage * multiplier + damage.min(flat);

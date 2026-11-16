@@ -290,42 +290,12 @@ mod tests {
     }
 
     #[test]
-    fn unimplemented_minecart_variants_pass_without_consumption_or_spawning() {
+    fn all_minecart_variants_place_consume_and_spawn_on_rails() {
         init_globals();
 
-        // `chest_minecart` is currently structure-only and yields `Pass`.
-        {
-            let item = &*vanilla_items::CHEST_MINECART;
-            let fixture = create_fixture(
-                "minecart_item_unimplemented_variant",
-                BlockPos::new(8, 64, 8),
-                &vanilla_blocks::RAIL,
-                Some(RailShape::NorthSouth),
-                GameType::Survival,
-            );
-            let stack = ItemStack::new(item);
-            prepare_hand(&fixture.player, InteractionHand::MainHand, stack.clone());
-
-            assert_eq!(
-                use_cart(&fixture, InteractionHand::MainHand),
-                InteractionResult::Pass,
-                "{}",
-                item.key
-            );
-            assert_eq!(
-                held_stack(&fixture.player, InteractionHand::MainHand),
-                stack
-            );
-            let player_id = fixture.player.id();
-            assert!(
-                entities_near(&fixture, |entity| entity.id() != player_id).is_empty(),
-                "{} should not spawn an entity",
-                item.key
-            );
-        }
-
-        // All implemented `AbstractMinecart` variants consume 1 item and spawn on the rail.
+        // Every vanilla `AbstractMinecart` item variant consumes 1 item and spawns on the rail.
         for item in [
+            &*vanilla_items::CHEST_MINECART,
             &*vanilla_items::FURNACE_MINECART,
             &*vanilla_items::TNT_MINECART,
             &*vanilla_items::HOPPER_MINECART,

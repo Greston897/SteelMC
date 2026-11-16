@@ -1277,7 +1277,9 @@ impl World {
             self.broadcast_to_all::<CBossEvent>(bar.add_packet());
             return;
         };
-        if previous.progress == bar.progress && previous.visible == bar.visible {
+        if previous.progress.to_bits() == bar.progress.to_bits()
+            && previous.visible == bar.visible
+        {
             return;
         }
         self.broadcast_to_all::<CBossEvent>(CBossEvent {
@@ -1460,11 +1462,6 @@ impl World {
     /// * `tick_count` - The current tick number
     /// * `runs_normally` - Whether game elements (random ticks, entities) should run.
     ///   When false (frozen), only essential operations like chunk loading run.
-    #[tracing::instrument(level = "trace", skip(self), name = "world_game_tick")]
-    #[expect(
-        clippy::too_many_lines,
-        reason = "world tick orchestration keeps vanilla subsystem order explicit"
-    )]
     /// Returns whether this dimension is kept active without players.
     ///
     /// Mirrors vanilla `ServerLevel`'s `FLAG_KEEP_DIMENSION_ACTIVE` check: a
@@ -1493,6 +1490,11 @@ impl World {
     }
 
     /// Executes one full world game tick (time, weather, chunks, entities, block entities).
+    #[tracing::instrument(level = "trace", skip(self), name = "world_game_tick")]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "world tick orchestration keeps vanilla subsystem order explicit"
+    )]
     pub fn tick_game(
         self: &Arc<Self>,
         tick_count: u64,

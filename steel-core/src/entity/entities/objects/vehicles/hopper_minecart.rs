@@ -16,7 +16,8 @@ use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_entities;
 use steel_registry::vanilla_entity_data::MinecartEntityData;
-use steel_utils::locks::SyncMutex;
+use steel_registry::vanilla_game_events;
+use steel_utils::locks::{IntoShared as _, Shared, SyncMutex};
 use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, BlockStateId};
 use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey, nbt::NbtValueInput as _};
@@ -30,6 +31,7 @@ use crate::entity::{
 use crate::inventory::container::SimpleContainer;
 use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
+use crate::inventory::menu::kinds::hopper;
 use crate::player::Player;
 use crate::world::World;
 
@@ -55,7 +57,7 @@ pub struct HopperMinecartEntity {
     entity_type: EntityTypeRef,
     entity_data: SyncMutex<MinecartEntityData>,
     minecart_base: AbstractMinecartBase,
-    container: SyncMutex<SimpleContainer>,
+    container: Shared<SimpleContainer>,
     enabled: SyncMutex<bool>,
     /// Vanilla `MinecartHopper.transferCooldown` (NBT `TransferCooldown`).
     transfer_cooldown: SyncMutex<i32>,
@@ -75,7 +77,7 @@ impl HopperMinecartEntity {
             entity_type,
             entity_data: SyncMutex::new(MinecartEntityData::new()),
             minecart_base: AbstractMinecartBase::new(),
-            container: SyncMutex::new(SimpleContainer::new(HOPPER_SLOTS)),
+            container: SimpleContainer::new(HOPPER_SLOTS).into_shared(),
             enabled: SyncMutex::new(true),
             transfer_cooldown: SyncMutex::new(0),
         }
@@ -89,7 +91,7 @@ impl HopperMinecartEntity {
             entity_type,
             entity_data: SyncMutex::new(MinecartEntityData::new()),
             minecart_base: AbstractMinecartBase::new(),
-            container: SyncMutex::new(SimpleContainer::new(HOPPER_SLOTS)),
+            container: SimpleContainer::new(HOPPER_SLOTS).into_shared(),
             enabled: SyncMutex::new(true),
             transfer_cooldown: SyncMutex::new(0),
         }
@@ -273,12 +275,23 @@ impl Entity for HopperMinecartEntity {
 
     fn interact(
         &self,
-        _player: &Player,
+        player: &Player,
         _hand: InteractionHand,
         _location: DVec3,
     ) -> InteractionResult {
-        // Vanilla opens the hopper screen; Steel has no minecart screens yet.
-        InteractionResult::Pass
+        if self.level().is_none() {
+            return InteractionResult::Pass;
+        }
+        let player_inventory = Arc::clone(&player.inventory);
+        let container = Arc::clone(&self.container);
+        player.open_menu(self.display_name(), move |context| {
+            hopper(player_inventory, context.container_id, container)
+        });
+        self.game_event_with_source_entity(
+            &vanilla_game_events::CONTAINER_OPEN,
+            Some(player as &dyn Entity),
+        );
+        InteractionResult::Success
     }
 
     fn tick(self: Arc<Self>) {

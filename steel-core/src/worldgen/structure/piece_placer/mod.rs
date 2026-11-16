@@ -450,7 +450,7 @@ mod tests {
 
         assert!(
             StructurePiecePlacer::create_mob(
-                &vanilla_entities::WITCH,
+                &vanilla_entities::PLAYER,
                 DVec3::ZERO,
                 Weak::new(),
                 true,

@@ -82,7 +82,7 @@ jobs:
 
           extra = []
           for label, path, pattern in (
-              ("tests", "/tmp/test.log", ("test result: FAILED", "panicked at", "FAILED ", "error[E", "error: could not compile")),
+              ("tests", "/tmp/test.log", ("test result: FAILED", "panicked at", " ... FAILED", "FAILED ", "has been running for over", "error[E", "error: could not compile")),
               ("clippy", "/tmp/clippy.log", (": error",)),
               ("rustfmt", "/tmp/fmt.log", ("Diff in ",)),
               ("typos", "/tmp/typos.log", ("error:",)),

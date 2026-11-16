@@ -27,7 +27,8 @@
 //! deliberately separate and lock-free, because the manager is behind a mutex and
 //! a tick that re-entered it would deadlock.
 
-use std::f32::consts::PI;
+use std::cmp::Ordering;
+use std::f32::consts::{FRAC_PI_4, FRAC_PI_8, PI};
 
 use glam::DVec3;
 use steel_utils::BlockPos;
@@ -738,7 +739,7 @@ impl ArenaOpenSet {
             let parent = (position - 1) >> 1;
             // Vanilla's `upHeap` stops on `!(cost < parent.f)`, i.e. equal costs
             // never move — the same comparison as below.
-            if !(entry.1 < self.heap[parent].1) {
+            if entry.1.partial_cmp(&self.heap[parent].1) != Some(Ordering::Less) {
                 break;
             }
             self.heap[position] = self.heap[parent];
@@ -763,7 +764,7 @@ impl ArenaOpenSet {
             } else {
                 left
             };
-            if !(self.heap[child].1 < entry.1) {
+            if self.heap[child].1.partial_cmp(&entry.1) != Some(Ordering::Less) {
                 break;
             }
             self.heap[position] = self.heap[child];
@@ -825,10 +826,10 @@ pub fn node_polar_position(index: usize) -> (i32, i32, i32) {
         let (x, z) = ring(60.0, 0.261_799_4, 0.0);
         (x, z, 5)
     } else if index < 20 {
-        let (x, z) = ring(40.0, 0.392_699_1, 12.0);
+        let (x, z) = ring(40.0, FRAC_PI_8, 12.0);
         (x, z, 15)
     } else {
-        let (x, z) = ring(20.0, 0.785_398_2, 20.0);
+        let (x, z) = ring(20.0, FRAC_PI_4, 20.0);
         (x, z, 5)
     }
 }

@@ -66,11 +66,13 @@ impl CraftingHandler {
     ///
     /// Every recipe that matches the current grid and that the player does not
     /// know yet is added to the recipe book. Returns how many were unlocked.
-    fn unlock_new_recipes(&self, player: &Player) -> usize {
-        let grid = self.crafting_container.lock();
+    fn unlock_new_recipes(&self, guard: &ContainerLockGuard, player: &Player) -> usize {
+        let Some(grid) = guard.get_typed::<CraftingContainer>(self.crafting_id()) else {
+            return 0;
+        };
         let mut unlocked = 0;
         let mut book = player.recipe_book.lock();
-        for recipe in recipe_manager::matching_recipes_for(&grid) {
+        for recipe in recipe_manager::matching_recipes_for(grid) {
             if book.add(recipe.key()).is_some() {
                 unlocked += 1;
             }
@@ -123,7 +125,7 @@ impl ResultHandler for CraftingHandler {
     ) -> Option<ItemStack> {
         // Vanilla `ResultSlot.checkTakeAchievements`: unlock every recipe the player
         // can now craft, then fire `recipe_crafted` for the crafted result.
-        let unlocked = self.unlock_new_recipes(player);
+        let unlocked = self.unlock_new_recipes(guard, player);
         let crafted_recipe = self.crafted_recipe(guard);
         let mut remainder_overflow: Vec<ItemStack> = Vec::new();
 
@@ -192,7 +194,7 @@ impl ResultHandler for CraftingHandler {
         // never unlocks anything.
         let _ = unlocked;
         if let Some(recipe) = crafted_recipe {
-            player.trigger_recipe_crafted(&recipe);
+            guard.run_unlocked(|| player.trigger_recipe_crafted(&recipe));
         }
 
         for remainder in remainder_overflow {

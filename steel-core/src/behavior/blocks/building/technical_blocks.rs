@@ -204,7 +204,7 @@ impl BlockBehavior for CommandBlock {
         let mode = block.mode();
         match mode {
             CommandBlockMode::Auto => {
-                block.mark_condition_met();
+                let _ = block.mark_condition_met();
                 if was_condition_met {
                     self.execute(&block, world);
                 } else {

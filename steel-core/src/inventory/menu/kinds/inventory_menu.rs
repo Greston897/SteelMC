@@ -198,12 +198,14 @@ impl MenuKind for InventoryKind {
         player: &Player,
         request: crate::player::recipe_placement::PlacementRequest<'_>,
     ) -> Option<crate::player::recipe_placement::PostPlaceAction> {
-        let Some(crafting) = guard.get_typed::<CraftingContainer>(self.handler.crafting_id())
-        else {
-            return None;
-        };
+        let crafting = guard.get_typed::<CraftingContainer>(self.handler.crafting_id())?;
         let grid = crafting.items().to_vec();
-        let inventory: Vec<ItemStack> = player.inventory.lock().get_items().to_vec();
+        let matches = crate::player::recipe_placement::grid_produces(crafting, request.recipe_key);
+        let inv_id = ContainerId::from_arc(&player.inventory);
+        let inventory: Vec<ItemStack> = guard
+            .get_typed::<PlayerInventory>(inv_id)?
+            .get_items()
+            .to_vec();
         let plan = crate::player::recipe_placement::plan_placement(
             &inventory,
             2,
@@ -211,7 +213,7 @@ impl MenuKind for InventoryKind {
             &grid,
             request.placement,
             request.recipe_size,
-            crate::player::recipe_placement::grid_produces(crafting, request.recipe_key),
+            matches,
             request.use_max_items,
             request.allow_dropping_items_to_clear,
             &[],

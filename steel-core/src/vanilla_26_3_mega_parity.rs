@@ -73,17 +73,20 @@ use crate::config::ResolvedDomainConfig;
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::objects::vehicles::AbstractMinecart as _;
 use crate::entity::entities::{
-    ArmadilloEntity, CreakingEntity, FurnaceMinecartEntity, HopperMinecartEntity, ItemEntity,
-    MinecartEntity, PrimedTntEntity, TntMinecartEntity, WardenEntity, ZombieEntity,
+    ArmadilloEntity, ChestMinecartEntity, CreakingEntity, FurnaceMinecartEntity,
+    HopperMinecartEntity, ItemEntity, MinecartEntity, PrimedTntEntity, TntMinecartEntity,
+    WardenEntity, ZombieEntity,
 };
+use crate::entity::villager_trades::offers_for;
 use crate::entity::{
     ENTITIES, Entity, LivingEntity as _, Mob as _, MobEffectInstance, RemovalReason, SharedEntity,
     init_entities, next_entity_id,
 };
+use crate::inventory::click::{Click, MouseButton};
 use crate::inventory::container::{Container as _, SimpleContainer};
 use crate::inventory::menu::kinds::{
     anvil, brewing_stand, cartography_table, chest, crafting, dispenser, grindstone, hopper,
-    lectern, loom, smithing, stonecutter,
+    lectern, loom, merchant, smithing, stonecutter,
 };
 use crate::inventory::recipe_manager;
 use crate::permission::{
@@ -1465,10 +1468,79 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     assert!(op_player.is_operator());
     assert!(!guest_player.is_operator());
 
-    // Open & construct every menu family cleanly against Admin's inventory
+    // Open, construct & actively execute crafting + villager trading against Admin's inventory
     let inv = Arc::clone(&op_player.inventory);
     let menu_pos = BlockPos::new(0, 64, 0);
-    let _m_craft = crafting(Arc::clone(&inv), 1, menu_pos);
+    let mut m_craft = crafting(Arc::clone(&inv), 1, menu_pos);
+    *m_craft.behavior_mut().carried_mut() = ItemStack::new(&vanilla_items::OAK_LOG);
+    m_craft.clicked(
+        Click::Pickup {
+            slot: 1,
+            button: MouseButton::Left,
+        },
+        &op_player,
+    );
+    m_craft.clicked(Click::QuickMove { slot: 0 }, &op_player);
+    assert_eq!(
+        op_player
+            .inventory
+            .lock()
+            .get_items()
+            .iter()
+            .filter(|s| s.is(&vanilla_items::OAK_PLANKS))
+            .map(ItemStack::count)
+            .sum::<i32>(),
+        4,
+        "live 3x3 CraftingMenu QuickMove must craft 4 oak planks without deadlock"
+    );
+
+    let farmer_trades = Arc::new(SyncMutex::new(offers_for("minecraft:farmer")));
+    let mut m_merchant = merchant(Arc::clone(&inv), 13, Arc::clone(&farmer_trades));
+    *m_merchant.behavior_mut().carried_mut() = ItemStack::with_count(&vanilla_items::WHEAT, 20);
+    m_merchant.clicked(
+        Click::Pickup {
+            slot: 0,
+            button: MouseButton::Left,
+        },
+        &op_player,
+    );
+    m_merchant.clicked(Click::QuickMove { slot: 2 }, &op_player);
+    assert!(
+        op_player
+            .inventory
+            .lock()
+            .get_items()
+            .iter()
+            .any(|s| s.is(&vanilla_items::EMERALD) && s.count() >= 1),
+        "live MerchantMenu trade must pay 20 wheat for emerald without deadlock"
+    );
+    assert_eq!(farmer_trades.lock()[0].uses, 1);
+
+    let chest_cart = ChestMinecartEntity::new(
+        &vanilla_entities::CHEST_MINECART,
+        next_entity_id(),
+        DVec3::new(2.5, 64.0625, 2.5),
+        Arc::downgrade(&world),
+    );
+    chest_cart.set_loot_table(
+        Identifier::vanilla_static("chests/abandoned_mineshaft"),
+        12_345,
+    );
+    assert!(
+        chest_cart.unpack_loot(),
+        "ChestMinecartEntity must unpack abandoned_mineshaft loot into its 27-slot container"
+    );
+    assert!(
+        chest_cart
+            .container()
+            .lock()
+            .items()
+            .iter()
+            .any(|s| !s.is_empty()),
+        "unpacked mineshaft ChestMinecartEntity must contain loot items"
+    );
+    op_player.inventory.lock().clear_content();
+
     let _m_stone = stonecutter(Arc::clone(&inv), 2, menu_pos, &world);
     let _m_smith = smithing(Arc::clone(&inv), 3, menu_pos, &world);
     let _m_carto = cartography_table(Arc::clone(&inv), 4, menu_pos, &world);

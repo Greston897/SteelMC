@@ -774,18 +774,16 @@ impl Player {
             {
                 let _ = arc.attack(&target);
             }
-            self.riptide
-                .lock()
-                .as_mut()
-                .map(|spin| spin.remaining_ticks = 0);
+            if let Some(spin) = self.riptide.lock().as_mut() {
+                spin.remaining_ticks = 0;
+            }
             // Vanilla: `setDeltaMovement(getDeltaMovement().scale(-0.2))`.
             self.set_velocity(self.velocity() * -0.2);
             self.mark_velocity_sync();
-        } else if self.horizontal_collision() {
-            self.riptide
-                .lock()
-                .as_mut()
-                .map(|spin| spin.remaining_ticks = 0);
+        } else if self.horizontal_collision()
+            && let Some(spin) = self.riptide.lock().as_mut()
+        {
+            spin.remaining_ticks = 0;
         }
     }
 

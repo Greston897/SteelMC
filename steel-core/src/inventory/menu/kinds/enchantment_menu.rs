@@ -335,13 +335,13 @@ impl MenuKind for EnchantmentKind {
         container.set_item(LAPIS_SLOT, currency);
         container.set_changed();
 
+        self.update_offers(behavior, &mut guard);
+        drop(guard);
+
         player.award_custom_stat(&vanilla_custom_stats::ENCHANT_ITEM);
         // Vanilla `EnchantmentMenu.clickMenuButton` fires `enchanted_item` for the
         // player who paid for the enchantment.
         player.trigger_advancement(&vanilla_criteria_triggers::ENCHANTED_ITEM);
-
-        self.update_offers(behavior, &mut guard);
-        drop(guard);
 
         self.world.play_sound(
             &sound_events::BLOCK_ENCHANTMENT_TABLE_USE,

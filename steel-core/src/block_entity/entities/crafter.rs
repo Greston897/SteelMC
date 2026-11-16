@@ -289,10 +289,7 @@ impl CrafterBlockEntity {
             .input;
             let recipe = REGISTRY
                 .recipes
-                .find_match(&vanilla_recipe_types::CRAFTING, &input);
-            let Some(recipe) = recipe else {
-                return None;
-            };
+                .find_match(&vanilla_recipe_types::CRAFTING, &input)?;
             recipe_key = Some(recipe.key().clone());
             let assembled = recipe_manager::assemble_recipe(recipe, &input);
             if assembled.is_empty() {

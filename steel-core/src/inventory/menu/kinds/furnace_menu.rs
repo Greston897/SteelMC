@@ -129,18 +129,20 @@ impl MenuKind for FurnaceMenuKind {
         player: &Player,
         request: crate::player::recipe_placement::PlacementRequest<'_>,
     ) -> Option<crate::player::recipe_placement::PostPlaceAction> {
-        let Some(container) = guard.get(self.container.container_id()) else {
-            return None;
-        };
+        let container = guard.get(self.container.container_id())?;
         let grid = vec![container.get_item(0).clone()];
         // Vanilla `AbstractFurnaceMenu.handlePlacement` clears the input *and*
         // the fuel slot, so a placed recipe never sits on a running burn.
         let slots_to_clear = [container.get_item(0).clone(), container.get_item(2).clone()];
-        let inventory: Vec<ItemStack> = player.inventory.lock().get_items().to_vec();
         let matches = crate::player::recipe_placement::single_item_matches(
             container.get_item(0),
             request.placement,
         );
+        let inv_id = ContainerId::from_arc(&player.inventory);
+        let inventory: Vec<ItemStack> = guard
+            .get_typed::<PlayerInventory>(inv_id)?
+            .get_items()
+            .to_vec();
         let plan = crate::player::recipe_placement::plan_placement(
             &inventory,
             1,

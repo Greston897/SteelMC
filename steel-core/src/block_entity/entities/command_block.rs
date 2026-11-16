@@ -291,7 +291,7 @@ impl CommandBlockBlockEntity {
     /// Vanilla `CommandBlockEntity.scheduleTick`: mark the condition and ask the
     /// block for a one-tick delay.
     pub fn schedule_tick(&self, world: &Arc<World>, delay: i32) {
-        self.mark_condition_met();
+        let _ = self.mark_condition_met();
         world.schedule_block_tick_default(
             self.get_block_pos(),
             self.base.block_state().get_block(),

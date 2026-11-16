@@ -18,7 +18,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
       - name: cargo test
-        run: cargo test --workspace --verbose 2>&1 | tee /tmp/test.log
+        run: |
+          set -o pipefail
+          cargo test --workspace --verbose 2>&1 | tee /tmp/test.log
       - name: Surface failing tests
         if: failure()
         run: |

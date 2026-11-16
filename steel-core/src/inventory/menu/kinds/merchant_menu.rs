@@ -18,7 +18,7 @@ use std::sync::Arc;
 
 use steel_protocol::packets::game::{CMerchantOffers, MerchantOffer};
 use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_menu_types;
+use steel_registry::{vanilla_criteria_triggers, vanilla_custom_stats, vanilla_menu_types};
 use steel_utils::locks::SyncMutex;
 
 use crate::entity::villager_trades::TradeOffer;
@@ -28,6 +28,7 @@ use crate::inventory::menu::MenuKind;
 use crate::inventory::menu::behavior::MenuBehavior;
 use crate::inventory::prelude::*;
 use crate::player::Player;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::player::player_inventory::PlayerInventory;
 
 /// Index of the first payment slot.
@@ -285,12 +286,14 @@ impl MenuKind for MerchantKind {
         let cost_a = offer.adjusted_cost_a();
         let cost_b = offer.base_cost_b.clone();
 
-        let mut inventory = player.inventory.lock();
+        let inv_id = ContainerId::from_arc(&player.inventory);
+        let Some(inventory) = guard.get_typed_mut::<PlayerInventory>(inv_id) else {
+            return ClickOutcome::Consume;
+        };
         let leftover = inventory.add_or_return(result.clone());
         if !leftover.is_empty() {
             return ClickOutcome::Consume;
         }
-        drop(inventory);
 
         offer.record_use();
         drop(trades);
@@ -303,11 +306,13 @@ impl MenuKind for MerchantKind {
         // Vanilla `MerchantResultSlot.onTake` awards `Stats.TRADED_WITH_VILLAGER`
         // and fires `CriteriaTriggers.TRADE_WITH_VILLAGER` (`villager_trade`),
         // which `minecraft:adventure/trade` listens for.
-        player.award_custom_stat(&steel_registry::vanilla_custom_stats::TRADED_WITH_VILLAGER);
-        player.trigger_advancement_with_context(
-            &steel_registry::vanilla_criteria_triggers::VILLAGER_TRADE,
-            &crate::player::advancement::predicate::TriggerContext::item(&result.item().key),
-        );
+        guard.run_unlocked(|| {
+            player.award_custom_stat(&vanilla_custom_stats::TRADED_WITH_VILLAGER);
+            player.trigger_advancement_with_context(
+                &vanilla_criteria_triggers::VILLAGER_TRADE,
+                &TriggerContext::item(&result.item().key),
+            );
+        });
         ClickOutcome::Consume
     }
 }

@@ -720,10 +720,10 @@ mod tests {
 
         let map = first.instantiate();
         let expected = first
-            .base_value(&vanilla_attributes::MAX_HEALTH)
+            .base_value(*vanilla_attributes::MAX_HEALTH)
             .expect("players have max health");
         assert_eq!(
-            map.get_value(&vanilla_attributes::MAX_HEALTH),
+            map.get_value(*vanilla_attributes::MAX_HEALTH),
             Some(expected)
         );
     }
