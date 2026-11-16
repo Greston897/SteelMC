@@ -19,8 +19,8 @@ use crate::scoreboard::{Scoreboard, ScoreHolder, TeamState, TeamVisibility};
 use crate::server::Server;
 use steel_protocol::packet_traits::ClientPacket;
 use steel_protocol::packets::game::{
-    CResetScore, CSetDisplayObjective, CSetObjective, CSetPlayerTeam, CSetScore, NO_COLOR,
-    ObjectiveAction, RenderType, ScoreEntry, TeamAction, TeamParameters,
+    CResetScore, CSetDisplayObjective, CSetObjective, CSetPlayerTeam, CSetScore, ObjectiveAction,
+    RenderType, TeamAction, TeamParameters,
 };
 use text_components::TextComponent;
 
@@ -32,65 +32,65 @@ pub mod display_slot {
     pub const SIDEBAR: i32 = 1;
 }
 
-/// Vanilla `ChatFormatting` ordinals for team colours.
-///
-/// The ordinal is the wire value, so the table has to stay in vanilla order.
-fn team_color_id(color: Option<&str>) -> i32 {
-    let Some(color) = color else {
-        return NO_COLOR;
-    };
-    match color {
-        "black" => 0,
-        "dark_blue" => 1,
-        "dark_green" => 2,
-        "dark_aqua" => 3,
-        "dark_red" => 4,
-        "dark_purple" => 5,
-        "gold" => 6,
-        "gray" => 7,
-        "dark_gray" => 8,
-        "blue" => 9,
-        "green" => 10,
-        "aqua" => 11,
-        "red" => 12,
-        "light_purple" => 13,
-        "yellow" => 14,
-        "white" => 15,
-        _ => NO_COLOR,
+/// Vanilla `TeamColor` ordinals (`0..=15`), or `None` when uncolored.
+fn team_color_id(color: Option<&str>) -> Option<i32> {
+    match color? {
+        "black" => Some(0),
+        "dark_blue" => Some(1),
+        "dark_green" => Some(2),
+        "dark_aqua" => Some(3),
+        "dark_red" => Some(4),
+        "dark_purple" => Some(5),
+        "gold" => Some(6),
+        "gray" => Some(7),
+        "dark_gray" => Some(8),
+        "blue" => Some(9),
+        "green" => Some(10),
+        "aqua" => Some(11),
+        "red" => Some(12),
+        "light_purple" => Some(13),
+        "yellow" => Some(14),
+        "white" => Some(15),
+        _ => None,
     }
 }
 
-/// Vanilla `PlayerTeam` visibility name, falling back to `always`.
-const fn visibility_name(visibility: TeamVisibility) -> &'static str {
-    visibility.name()
-}
-
-/// Vanilla `Team.collisionRule` — Steel tracks friendly fire only, so the rule
-/// follows from it the way vanilla's default does.
-const fn collision_rule(allow_friendly_fire: bool) -> &'static str {
-    if allow_friendly_fire {
-        "always"
-    } else {
-        "pushOtherTeams"
+/// Vanilla `Team.Visibility` wire id (`0=always, 1=never, 2=hideForOtherTeams, 3=hideForOwnTeam`).
+const fn visibility_id(visibility: TeamVisibility) -> i32 {
+    match visibility.name().as_bytes() {
+        b"never" => 1,
+        b"hideForOtherTeams" => 2,
+        b"hideForOwnTeam" => 3,
+        _ => 0,
     }
 }
 
-/// Builds the wire parameters for one team.
-fn team_parameters(state: &TeamState) -> TeamParameters {
-    // Vanilla flags: bit 1 = friendly fire, bit 2 = see friendly invisibles.
-    let mut flags = 0_u8;
+/// Vanilla `Team.CollisionRule` wire id (`0 = always`, `2 = pushOtherTeams`).
+const fn collision_rule_id(allow_friendly_fire: bool) -> i32 {
+    if allow_friendly_fire { 0 } else { 2 }
+}
+
+/// Builds the MC 26.3 wire parameters for one team.
+fn team_parameters(name: &str, state: &TeamState) -> TeamParameters {
+    // Vanilla `PlayerTeam.packOptions`: bit 0 = friendly fire, bit 1 = see friendly invisibles.
+    let mut options = 0_u8;
     if state.allow_friendly_fire {
-        flags |= 1;
+        options |= 1;
     }
-    flags |= 2;
+    options |= 2;
+    let display = if state.prefix.is_empty() {
+        name.to_owned()
+    } else {
+        state.prefix.clone()
+    };
     TeamParameters {
-        display_name: TextComponent::plain(state.prefix.clone()),
-        flags,
-        name_tag_visibility: visibility_name(state.name_tag_visibility).to_owned(),
-        collision_rule: collision_rule(state.allow_friendly_fire).to_owned(),
-        color: team_color_id(state.color.as_deref()),
+        display_name: TextComponent::plain(display),
         prefix: TextComponent::plain(state.prefix.clone()),
         suffix: TextComponent::plain(state.suffix.clone()),
+        name_tag_visibility: visibility_id(state.name_tag_visibility),
+        collision_rule: collision_rule_id(state.allow_friendly_fire),
+        color: team_color_id(state.color.as_deref()),
+        options,
     }
 }
 
@@ -116,39 +116,24 @@ pub fn sync_full(player: &Player, scoreboard: &Scoreboard, display_slots: &[(i32
         });
     }
 
-    let scores = scoreboard.score_snapshot();
-    if !scores.is_empty() {
-        player.send_packet(CSetScore {
-            entries: scores
-                .into_iter()
-                .map(|(owner, objective_name, value)| ScoreEntry {
-                    owner,
-                    objective_name,
-                    value,
-                })
-                .collect(),
-        });
+    for (owner, objective_name, value) in scoreboard.score_snapshot() {
+        player.send_packet(CSetScore::new(owner, objective_name, value));
     }
 
+    let all_members = scoreboard.team_member_snapshot();
     for (name, state) in scoreboard.team_states() {
-        player.send_packet(CSetPlayerTeam {
-            name: name.clone(),
-            action: TeamAction::Add {
-                parameters: team_parameters(&state),
-            },
-        });
-        let members: Vec<String> = scoreboard
-            .team_member_snapshot()
-            .into_iter()
+        let players: Vec<String> = all_members
+            .iter()
             .filter(|(team, _)| *team == name)
-            .map(|(_, holder)| holder)
+            .map(|(_, holder)| holder.clone())
             .collect();
-        if !members.is_empty() {
-            player.send_packet(CSetPlayerTeam {
-                name,
-                action: TeamAction::AddPlayers { players: members },
-            });
-        }
+        player.send_packet(CSetPlayerTeam {
+            action: TeamAction::Add {
+                parameters: team_parameters(&name, &state),
+                players,
+            },
+            name,
+        });
     }
 
     for (slot, objective) in display_slots {
@@ -203,13 +188,15 @@ pub fn sync_objective_removed(server: &Arc<Server>, domain: &str, name: &str) {
 }
 
 /// Broadcasts one score write to every online player on a domain.
-pub fn sync_score_changed(server: &Arc<Server>, domain: &str, holder: &str, objective: &str, value: i32) {
-    broadcast(server, domain, |_| CSetScore {
-        entries: vec![ScoreEntry {
-            owner: holder.to_owned(),
-            objective_name: objective.to_owned(),
-            value,
-        }],
+pub fn sync_score_changed(
+    server: &Arc<Server>,
+    domain: &str,
+    holder: &str,
+    objective: &str,
+    value: i32,
+) {
+    broadcast(server, domain, |_| {
+        CSetScore::new(holder.to_owned(), objective.to_owned(), value)
     });
 }
 
@@ -217,17 +204,18 @@ pub fn sync_score_changed(server: &Arc<Server>, domain: &str, holder: &str, obje
 pub fn sync_score_removed(server: &Arc<Server>, domain: &str, holder: &str, objective: &str) {
     broadcast(server, domain, |_| CResetScore {
         owner: holder.to_owned(),
-        objective_name: objective.to_owned(),
+        objective_name: Some(objective.to_owned()),
     });
 }
 
 /// Broadcasts one team creation to every online player on a domain.
 pub fn sync_team_added(server: &Arc<Server>, domain: &str, name: &str, state: &TeamState) {
-    let parameters = team_parameters(state);
+    let parameters = team_parameters(name, state);
     broadcast(server, domain, |_| CSetPlayerTeam {
         name: name.to_owned(),
         action: TeamAction::Add {
             parameters: parameters.clone(),
+            players: Vec::new(),
         },
     });
 }
@@ -242,7 +230,7 @@ pub fn sync_team_removed(server: &Arc<Server>, domain: &str, name: &str) {
 
 /// Broadcasts a team parameter update to every online player on a domain.
 pub fn sync_team_updated(server: &Arc<Server>, domain: &str, name: &str, state: &TeamState) {
-    let parameters = team_parameters(state);
+    let parameters = team_parameters(name, state);
     broadcast(server, domain, |_| CSetPlayerTeam {
         name: name.to_owned(),
         action: TeamAction::Update {
@@ -326,32 +314,28 @@ mod tests {
     use crate::scoreboard::TeamVisibility;
 
     #[test]
-    fn team_colour_ordinals_match_vanilla_chat_formatting() {
-        // `ChatFormatting` ordinals are the wire values, so a shift here would
-        // silently recolour every team.
-        assert_eq!(team_color_id(Some("black")), 0);
-        assert_eq!(team_color_id(Some("dark_blue")), 1);
-        assert_eq!(team_color_id(Some("gold")), 6);
-        assert_eq!(team_color_id(Some("white")), 15);
-        assert_eq!(team_color_id(None), NO_COLOR);
-        // Unknown names fall back to "no colour" instead of an arbitrary index.
-        assert_eq!(team_color_id(Some("chartreuse")), NO_COLOR);
+    fn team_colour_ordinals_match_vanilla_team_color() {
+        assert_eq!(team_color_id(Some("black")), Some(0));
+        assert_eq!(team_color_id(Some("dark_blue")), Some(1));
+        assert_eq!(team_color_id(Some("gold")), Some(6));
+        assert_eq!(team_color_id(Some("white")), Some(15));
+        assert_eq!(team_color_id(None), None);
+        assert_eq!(team_color_id(Some("chartreuse")), None);
     }
 
     #[test]
-    fn team_parameters_encode_friendly_fire_as_a_flag() {
+    fn team_parameters_encode_friendly_fire_as_option_bit() {
         let mut state = TeamState::default();
-        assert_eq!(team_parameters(&state).flags & 1, 0);
+        assert_eq!(team_parameters("red", &state).options & 1, 0);
         state.allow_friendly_fire = true;
-        assert_eq!(team_parameters(&state).flags & 1, 1);
-        // Bit 2 is vanilla's "see friendly invisibles"; Steel always sets it.
-        assert_eq!(team_parameters(&state).flags & 2, 2);
+        assert_eq!(team_parameters("red", &state).options & 1, 1);
+        assert_eq!(team_parameters("red", &state).options & 2, 2);
     }
 
     #[test]
-    fn collision_rule_follows_friendly_fire() {
-        assert_eq!(collision_rule(true), "always");
-        assert_eq!(collision_rule(false), "pushOtherTeams");
+    fn collision_rule_ordinals_follow_friendly_fire() {
+        assert_eq!(collision_rule_id(true), 0);
+        assert_eq!(collision_rule_id(false), 2);
     }
 
     #[test]
@@ -361,18 +345,10 @@ mod tests {
     }
 
     #[test]
-    fn team_visibility_names_round_trip_to_the_wire() {
-        // The client parses these names literally, so they must match
-        // `PlayerTeam`'s serialized enum names.
-        assert_eq!(visibility_name(TeamVisibility::Always), "always");
-        assert_eq!(
-            visibility_name(TeamVisibility::HideForOtherTeams),
-            "hideForOtherTeams"
-        );
-        assert_eq!(
-            visibility_name(TeamVisibility::HideForOwnTeam),
-            "hideForOwnTeam"
-        );
-        assert_eq!(visibility_name(TeamVisibility::Never), "never");
+    fn team_visibility_ordinals_match_vanilla_stream_codec() {
+        assert_eq!(visibility_id(TeamVisibility::Always), 0);
+        assert_eq!(visibility_id(TeamVisibility::Never), 1);
+        assert_eq!(visibility_id(TeamVisibility::HideForOtherTeams), 2);
+        assert_eq!(visibility_id(TeamVisibility::HideForOwnTeam), 3);
     }
 }

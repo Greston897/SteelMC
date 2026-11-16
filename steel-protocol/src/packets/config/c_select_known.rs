@@ -1,6 +1,4 @@
 use steel_macros::{ClientPacket, WriteTo};
-use steel_utils::serial::PrefixedWrite as _;
-use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::config::C_SELECT_KNOWN_PACKS;
 
 use crate::packets::shared_implementation::KnownPack;

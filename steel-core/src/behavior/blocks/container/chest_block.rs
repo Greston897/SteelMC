@@ -348,6 +348,21 @@ impl BlockBehavior for TrappedChestBlock {
         ))
     }
 
+    fn get_block_entity_ticker(
+        &self,
+        _world: &Arc<World>,
+        _state: BlockStateId,
+        block_entity_type: BlockEntityTypeRef,
+    ) -> Option<BlockEntityTicker> {
+        if block_entity_type == &vanilla_block_entity_types::TRAPPED_CHEST
+            || block_entity_type == &vanilla_block_entity_types::CHEST
+        {
+            Some(BlockEntityTicker::for_entity_tick(block_entity_type))
+        } else {
+            None
+        }
+    }
+
     fn has_analog_output_signal(&self, _state: BlockStateId) -> bool {
         true
     }

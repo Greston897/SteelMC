@@ -88,12 +88,12 @@ impl FunctionRegistry {
     #[must_use]
     pub fn ids(&self) -> Vec<Identifier> {
         let mut ids: Vec<Identifier> = self.functions_by_key.keys().cloned().collect();
-        ids.sort_by(|left, right| left.to_string().cmp(&right.to_string()));
+        ids.sort_by_key(ToString::to_string);
         ids
     }
 
     /// Freezes the registry: no function may be added afterwards.
-    pub fn freeze(&mut self) {
+    pub const fn freeze(&mut self) {
         self.allows_registering = false;
     }
 }

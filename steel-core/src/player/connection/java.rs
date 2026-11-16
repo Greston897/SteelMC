@@ -495,11 +495,9 @@ impl ScheduledPlayPacket {
                 // only reacts to `DECLINED` when the server requires a pack.
                 let declined = packet.decoded_action() == Some(ResourcePackAction::Declined);
                 let required = player
-                    .server()
-                    .config
-                    .resource_pack
-                    .as_ref()
-                    .is_some_and(|pack| pack.required);
+                    .try_server()
+                    .and_then(|server| server.config.resource_pack.as_ref().map(|pack| pack.required))
+                    .unwrap_or(false);
                 if declined && required {
                     log::info!(
                         "Disconnecting {} due to resource pack {} rejection",

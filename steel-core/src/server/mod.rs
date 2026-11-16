@@ -299,6 +299,7 @@ pub async fn test_server_with_worlds_and_config(
         pending_player_disconnects: PlayerDisconnectQueue::new(),
         pending_world_changes: SyncMutex::new(Vec::new()),
         pending_domain_switches: SyncMutex::new(Vec::new()),
+        favicon_cache: std::sync::OnceLock::new(),
         player_idle_timeout: AtomicI32::new(0),
     });
     attach_server_to_worlds(&server);
@@ -584,6 +585,8 @@ pub struct Server {
     pub pending_world_changes: SyncMutex<Vec<(SharedEntity, WorldChangeRequest)>>,
     /// Queued domain switches to process after world ticks.
     pending_domain_switches: SyncMutex<Vec<DomainSwitchRequest>>,
+    /// Cached raw PNG favicon bytes loaded once on first request.
+    favicon_cache: std::sync::OnceLock<Option<Arc<[u8]>>>,
 }
 
 struct GameTickTaskGuard {
@@ -616,6 +619,22 @@ impl Server {
     #[must_use]
     pub(crate) const fn chunk_encoding_pool(&self) -> &Arc<ThreadPool> {
         &self.chunk_encoding_pool
+    }
+
+    /// Returns the server's raw PNG favicon bytes, reading from disk at most once.
+    #[must_use]
+    pub fn cached_favicon_png(&self) -> Option<&Arc<[u8]>> {
+        self.favicon_cache
+            .get_or_init(|| {
+                if !self.config.use_favicon {
+                    return None;
+                }
+                std::fs::read(&self.config.favicon)
+                    .ok()
+                    .filter(|png| !png.is_empty())
+                    .map(Arc::from)
+            })
+            .as_ref()
     }
 
     /// The online player with `uuid`, if any.
@@ -1005,6 +1024,7 @@ impl Server {
             pending_player_disconnects: PlayerDisconnectQueue::new(),
             pending_world_changes: SyncMutex::new(vec![]),
             pending_domain_switches: SyncMutex::new(vec![]),
+            favicon_cache: std::sync::OnceLock::new(),
         });
         // Whitelist and bans live in world saved data, so they are read once the
         // server handle exists and its worlds are reachable.
@@ -1061,10 +1081,10 @@ impl Server {
         }
 
         let packet = CDebugSample {
-            kind: TICK_TIME_SAMPLE,
             // A tick cannot run longer than `i64::MAX` nanoseconds (292 years);
             // the saturating cast keeps the encoding total.
-            samples: vec![tick_duration_nanos.min(i64::MAX as u64) as i64],
+            sample: vec![tick_duration_nanos.min(i64::MAX as u64) as i64],
+            debug_sample_type: TICK_TIME_SAMPLE,
         };
         for player in subscribers {
             player.send_packet(packet.clone());

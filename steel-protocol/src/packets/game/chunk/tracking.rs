@@ -1,5 +1,4 @@
 use steel_macros::{ClientPacket, WriteTo};
-use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::{
     C_FORGET_LEVEL_CHUNK, C_SET_CHUNK_CACHE_CENTER, C_SET_CHUNK_CACHE_RADIUS,
 };

@@ -1,4 +1,3 @@
-use steel_utils::serial::PrefixedWrite as _;
 use steel_macros::{ReadFrom, ServerPacket};
 
 #[derive(Clone, Copy, PartialEq, Eq, ReadFrom, Debug)]

@@ -66,28 +66,78 @@ impl CreakingHeartBlockEntity {
 }
 
 impl CreakingHeartBlockEntity {
-    /// Vanilla `CreakingHeartBlockEntity.tick`: while the heart sits between two
-    /// pale oak logs and a player is nearby, it keeps exactly one creaking alive.
-    fn spawn_creaking(&self, world: &Arc<World>) {
-        if self.creaking().is_some() {
+    /// Vanilla `CreakingHeartBlockEntity.serverTick`: checks the aligned pale oak
+    /// log sandwich + time of day, syncs `CREAKING_HEART_STATE`
+    /// (`Uprooted` / `Dormant` / `Awake`), spawns a linked creaking at night
+    /// while a survival player is within 32 blocks, and despawns it at dawn.
+    fn server_tick(&self, world: &Arc<World>) {
+        if world.game_time() % 20 != 0 {
             return;
         }
         let pos = self.get_block_pos();
-        if !Self::is_valid_heart(world, pos) || !Self::has_nearby_player(world, pos) {
+        let state = world.get_block_state(pos);
+        if state.get_block() != &vanilla_blocks::CREAKING_HEART {
             return;
         }
+
+        let desired_state = Self::compute_heart_state(world, pos, state);
+        if state.try_get_value(&steel_registry::blocks::properties::BlockStateProperties::CREAKING_HEART_STATE)
+            != Some(desired_state)
+        {
+            world.set_block(
+                pos,
+                state.set_value(
+                    &steel_registry::blocks::properties::BlockStateProperties::CREAKING_HEART_STATE,
+                    desired_state,
+                ),
+                steel_utils::types::UpdateFlags::UPDATE_ALL,
+            );
+        }
+
+        // Clear stale link if the creaking died or unloaded; despawn it if the
+        // heart is no longer Awake (e.g. sunrise or log removed).
+        if let Some(linked_uuid) = self.creaking() {
+            let uuid = uuid::Uuid::from_u128(linked_uuid);
+            match world.get_entity_by_uuid(&uuid) {
+                None => self.set_creaking(None),
+                Some(entity) if !entity.is_alive() => self.set_creaking(None),
+                Some(entity)
+                    if desired_state
+                        != steel_registry::blocks::properties::CreakingHeartState::Awake =>
+                {
+                    self.set_creaking(None);
+                    let kill = crate::entity::damage::DamageSource::environment(
+                        &steel_registry::vanilla_damage_types::GENERIC_KILL,
+                    );
+                    entity.hurt(world, &kill, f32::MAX);
+                    return;
+                }
+                Some(_) => {
+                    world.update_neighbor_for_output_signal(pos, &vanilla_blocks::CREAKING_HEART);
+                    return;
+                }
+            }
+        }
+
+        if desired_state != steel_registry::blocks::properties::CreakingHeartState::Awake
+            || world.difficulty() == steel_utils::types::Difficulty::Peaceful
+            || !world.get_game_rule(&steel_registry::vanilla_game_rules::SPAWN_MOBS)
+            || !Self::has_nearby_player(world, pos)
+        {
+            return;
+        }
+
         let position = DVec3::new(
             f64::from(pos.x()) + 0.5,
             f64::from(pos.y()) + 0.5,
             f64::from(pos.z()) + 0.5,
         );
-        let creaking = ENTITIES.create(
+        let Some(creaking) = ENTITIES.create(
             &vanilla_entities::CREAKING,
             next_entity_id(),
             position,
             Arc::downgrade(world),
-        );
-        let Some(creaking) = creaking else {
+        ) else {
             return;
         };
         if let Some(creaking_entity) = creaking
@@ -98,7 +148,66 @@ impl CreakingHeartBlockEntity {
         let creaking_uuid = Entity::uuid(creaking.as_ref()).as_u128();
         if world.try_add_entity(creaking).is_ok() {
             self.set_creaking(Some(creaking_uuid));
+            self.set_changed();
+            world.update_neighbor_for_output_signal(pos, &vanilla_blocks::CREAKING_HEART);
         }
+    }
+
+    /// Vanilla `CreakingHeartBlock.updateState`: aligned pale-oak logs along the
+    /// heart's own `AXIS` give `Awake` at night or `Dormant` during the day;
+    /// missing or misaligned logs leave it `Uprooted`.
+    #[must_use]
+    pub fn compute_heart_state(
+        world: &World,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> steel_registry::blocks::properties::CreakingHeartState {
+        use steel_registry::blocks::properties::{Axis, BlockStateProperties, CreakingHeartState};
+        let axis = state
+            .try_get_value(&BlockStateProperties::AXIS)
+            .unwrap_or(Axis::Y);
+        let (neg, pos_dir) = match axis {
+            Axis::X => (Direction::West, Direction::East),
+            Axis::Y => (Direction::Down, Direction::Up),
+            Axis::Z => (Direction::North, Direction::South),
+        };
+        let is_aligned_pale_log = |dir: Direction| {
+            let neighbor = world.get_block_state(pos.relative(dir));
+            let block = neighbor.get_block();
+            let is_pale_log = block == &vanilla_blocks::PALE_OAK_LOG
+                || block == &vanilla_blocks::STRIPPED_PALE_OAK_LOG
+                || block == &vanilla_blocks::PALE_OAK_WOOD
+                || block == &vanilla_blocks::STRIPPED_PALE_OAK_WOOD;
+            is_pale_log && neighbor.try_get_value(&BlockStateProperties::AXIS) == Some(axis)
+        };
+        if !is_aligned_pale_log(neg) || !is_aligned_pale_log(pos_dir) {
+            CreakingHeartState::Uprooted
+        } else if world.is_dark_outside() {
+            CreakingHeartState::Awake
+        } else {
+            CreakingHeartState::Dormant
+        }
+    }
+
+    /// Vanilla `CreakingHeartBlockEntity.getAnalogOutputSignal`: `15 - floor(dist / 32 * 15)`
+    /// for the linked creaking, or `0` when none is active.
+    #[must_use]
+    pub fn analog_output_signal(&self, world: &World) -> i32 {
+        let Some(linked) = self.creaking() else {
+            return 0;
+        };
+        let Some(entity) = world.get_entity_by_uuid(&uuid::Uuid::from_u128(linked)) else {
+            return 0;
+        };
+        let pos = self.get_block_pos();
+        let center = DVec3::new(
+            f64::from(pos.x()) + 0.5,
+            f64::from(pos.y()) + 0.5,
+            f64::from(pos.z()) + 0.5,
+        );
+        let dist = entity.position().distance(center);
+        let scaled = (dist / CREAKING_SPAWN_PLAYER_RANGE).clamp(0.0, 1.0);
+        15 - (scaled * 15.0).floor() as i32
     }
 
     /// Vanilla only lets the heart act while a player is close enough to see the
@@ -122,19 +231,6 @@ impl CreakingHeartBlockEntity {
         });
         found
     }
-
-    /// Vanilla `CreakingHeartBlock.isValid`: the heart needs pale oak logs on both
-    /// the X and Z axes.
-    fn is_valid_heart(world: &World, pos: BlockPos) -> bool {
-        let axis = |direction: Direction| {
-            world
-                .get_block_state(pos.relative(direction))
-                .get_block()
-                == &vanilla_blocks::PALE_OAK_LOG
-        };
-        (axis(Direction::North) && axis(Direction::South))
-            || (axis(Direction::East) && axis(Direction::West))
-    }
 }
 
 impl BlockEntity for CreakingHeartBlockEntity {
@@ -143,7 +239,7 @@ impl BlockEntity for CreakingHeartBlockEntity {
     }
 
     fn tick(&self, world: &Arc<World>) {
-        self.spawn_creaking(world);
+        self.server_tick(world);
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {

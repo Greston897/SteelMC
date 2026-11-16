@@ -107,7 +107,7 @@ impl ItemStack {
     #[must_use]
     pub fn item(&self) -> ItemRef {
         if self.is_empty() {
-            &*vanilla_items::AIR
+            &vanilla_items::AIR
         } else {
             self.item
         }
@@ -616,7 +616,7 @@ impl ItemStack {
 
     #[must_use]
     fn enchantment_component(&self) -> DataComponentType<ItemEnchantments> {
-        if self.is(&*vanilla_items::ENCHANTED_BOOK) {
+        if self.is(&vanilla_items::ENCHANTED_BOOK) {
             STORED_ENCHANTMENTS
         } else {
             ENCHANTMENTS
@@ -809,7 +809,7 @@ impl ItemStack {
 
         // Vanilla `EnchantmentHelper`: the level is jittered once, then the
         // table repeatedly picks eligible enchantments and halves the level.
-        let jitter = rng.random_range(0..(level / 4 + 1)) as i32;
+        let jitter = rng.random_range(0..(level / 4 + 1));
         let mut modified_level = level + jitter;
 
         let mut chosen: Vec<(Identifier, u32)> = Vec::new();
@@ -1039,7 +1039,7 @@ impl ItemStack {
     #[must_use]
     pub fn potion_key(&self) -> Option<Identifier> {
         self.get(POTION_CONTENTS)
-            .and_then(|contents| contents.potion())
+            .and_then(crate::data_components::components::potion_contents::PotionContents::potion)
             .map(|potion| potion.value().key().clone())
     }
 
@@ -1154,8 +1154,7 @@ impl ItemStack {
     pub fn set_lore(&mut self, lore: &[&str], mode: crate::loot_table::ListOperation) {
         let mut lines: Vec<TextComponent> = self
             .get(LORE)
-            .map(|existing| existing.lines().to_vec())
-            .unwrap_or_default();
+            .map_or_else(Vec::new, |existing| existing.lines().to_vec());
         apply_list_operation(&mut lines, lore, mode, |line| {
             TextComponent::plain((*line).to_owned())
         });
@@ -1200,16 +1199,16 @@ impl ItemStack {
         // modifiers on that container's `CONTAINER` component. Without a
         // container-item intermediate to mirror, Steel applies the modifiers to
         // the stored stacks directly, which matches every stock modifier.
-        let mut items = self
-            .get(CONTAINER)
-            .map(|contents| {
-                contents
-                    .items()
-                    .iter()
-                    .map(|slot| slot.as_ref().map_or_else(ItemStack::empty, |t| t.create()))
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default();
+        let mut items = self.get(CONTAINER).map_or_else(Vec::new, |contents| {
+            contents
+                .items()
+                .iter()
+                .map(|slot| {
+                    slot.as_ref()
+                        .map_or_else(ItemStack::empty, crate::item_stack_template::ItemStackTemplate::create)
+                })
+                .collect::<Vec<_>>()
+        });
 
         for item in &mut items {
             for cond_func in modifier {
@@ -1380,8 +1379,7 @@ impl ItemStack {
 
         let mut layers = if append {
             self.get(BANNER_PATTERNS)
-                .map(|existing| existing.layers().to_vec())
-                .unwrap_or_default()
+                .map_or_else(Vec::new, |existing| existing.layers().to_vec())
         } else {
             Vec::new()
         };
@@ -1416,8 +1414,7 @@ impl ItemStack {
             || {
                 existing
                     .as_ref()
-                    .map(|fireworks| fireworks.explosions().to_vec())
-                    .unwrap_or_default()
+                    .map_or_else(Vec::new, |fireworks| fireworks.explosions().to_vec())
             },
             |explosions| {
                 explosions
@@ -1449,16 +1446,15 @@ impl ItemStack {
         use crate::data_components::components::{Filterable, WrittenBookContent};
 
         let existing = self.get(WRITTEN_BOOK_CONTENT);
-        let current_title = existing
-            .map(|content| content.title().clone())
-            .unwrap_or_else(|| Filterable::pass_through(String::new()));
-        let current_author = existing
-            .map(|content| content.author().to_owned())
-            .unwrap_or_default();
+        let current_title = existing.map_or_else(
+            || Filterable::pass_through(String::new()),
+            |content| content.title().clone(),
+        );
+        let current_author =
+            existing.map_or_else(String::new, |content| content.author().to_owned());
         let current_generation = existing.map_or(0, WrittenBookContent::generation);
-        let current_pages = existing
-            .map(|content| content.pages().to_vec())
-            .unwrap_or_default();
+        let current_pages =
+            existing.map_or_else(Vec::new, |content| content.pages().to_vec());
 
         let title = title.map_or(current_title, |value| {
             Filterable::pass_through(value.to_owned())
@@ -1485,19 +1481,17 @@ impl ItemStack {
         use crate::data_components::components::{Filterable, WrittenBookContent};
 
         let existing = self.get(WRITTEN_BOOK_CONTENT);
-        let mut current: Vec<Filterable<TextComponent>> = existing
-            .map(|content| content.pages().to_vec())
-            .unwrap_or_default();
+        let mut current: Vec<Filterable<TextComponent>> =
+            existing.map_or_else(Vec::new, |content| content.pages().to_vec());
         apply_list_operation(&mut current, pages, mode, |page| {
             Filterable::pass_through(TextComponent::plain((*page).to_owned()))
         });
 
-        let title = existing
-            .map(|content| content.title().clone())
-            .unwrap_or_else(|| Filterable::pass_through(String::new()));
-        let author = existing
-            .map(|content| content.author().to_owned())
-            .unwrap_or_default();
+        let title = existing.map_or_else(
+            || Filterable::pass_through(String::new()),
+            |content| content.title().clone(),
+        );
+        let author = existing.map_or_else(String::new, |content| content.author().to_owned());
         let generation = existing.map_or(0, WrittenBookContent::generation);
         if let Ok(content) = WrittenBookContent::new(title, author, generation, current, false) {
             self.set(WRITTEN_BOOK_CONTENT, content);
@@ -1517,8 +1511,7 @@ impl ItemStack {
 
         let mut existing: Vec<Filterable<String>> = self
             .get(WRITABLE_BOOK_CONTENT)
-            .map(|content| content.pages().to_vec())
-            .unwrap_or_default();
+            .map_or_else(Vec::new, |content| content.pages().to_vec());
         apply_list_operation(&mut existing, pages, mode, |page| {
             Filterable::pass_through((*page).to_owned())
         });
@@ -1868,10 +1861,8 @@ fn json_to_nbt(value: &serde_json::Value) -> Option<simdnbt::owned::NbtTag> {
                 } else {
                     NbtTag::Long(value)
                 }
-            } else if let Some(value) = number.as_f64() {
-                NbtTag::Double(value)
             } else {
-                return None;
+                NbtTag::Double(number.as_f64()?)
             }
         }
         serde_json::Value::String(value) => NbtTag::String(value.clone().into()),
@@ -1948,7 +1939,7 @@ fn apply_list_operation<T>(
 }
 
 /// Vanilla list offsets are signed: negative values count from the end.
-fn list_index(offset: i32, len: usize) -> usize {
+const fn list_index(offset: i32, len: usize) -> usize {
     if offset >= 0 {
         (offset as usize).min(len)
     } else {

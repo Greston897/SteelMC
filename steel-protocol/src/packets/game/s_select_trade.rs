@@ -1,7 +1,6 @@
 //! Select trade packet.
 
 use steel_macros::{ReadFrom, ServerPacket};
-use steel_utils::codec::VarInt;
 
 /// Serverbound packet sent when the player selects a merchant offer.
 #[derive(ReadFrom, ServerPacket, Clone, Debug)]

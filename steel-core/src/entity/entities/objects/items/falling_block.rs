@@ -7,7 +7,7 @@ use glam::DVec3;
 use simdnbt::borrow::{NbtCompound as BorrowedNbtCompoundView, read_compound};
 use simdnbt::owned::{NbtCompound, NbtTag};
 use steel_macros::entity_behavior;
-use steel_protocol::packets::game::CBlockUpdate;
+use steel_protocol::packets::game::CAddTransientBlock;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, Direction};
@@ -332,9 +332,11 @@ impl FallingBlockEntity {
             return;
         }
 
+        // Vanilla 26.3 `FallingBlockEntity.tick`: broadcasts `ClientboundAddTransientBlockPacket`
+        // so clients bridge the falling entity removal and solid block placement seamlessly.
         world.broadcast_to_entity_trackers(
             self.id(),
-            CBlockUpdate {
+            CAddTransientBlock {
                 pos,
                 block_state: world.get_block_state(pos),
             },

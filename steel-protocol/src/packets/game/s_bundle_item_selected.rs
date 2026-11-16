@@ -1,7 +1,6 @@
 //! Bundle item selection packet.
 
 use steel_macros::{ReadFrom, ServerPacket};
-use steel_utils::codec::VarInt;
 
 /// Serverbound packet sent when the player scrolls inside a bundle.
 #[derive(ReadFrom, ServerPacket, Clone, Debug)]

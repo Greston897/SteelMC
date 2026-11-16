@@ -1,5 +1,4 @@
 use steel_macros::{ClientPacket, WriteTo};
-use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::login::C_LOGIN_COMPRESSION;
 
 #[derive(ClientPacket, WriteTo, Clone, Debug)]

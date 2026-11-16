@@ -122,7 +122,8 @@ fn generate_write_code(
                 let inner_write = generate_write_code(inner, quote! { *item }, None);
                 quote! {
                     {
-                        use steel_utils::serial::PrefixedWrite;
+                        #[allow(unused_imports)]
+                        use steel_utils::serial::PrefixedWrite as _;
                         #prefix::from((#value).len() as i32).write(writer)?;
                         for item in &#value {
                             #inner_write
@@ -243,6 +244,8 @@ fn write_to_struct(
                 #[automatically_derived]
                 impl #impl_generics steel_utils::serial::WriteTo for #name #ty_generics {
                     fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+                        #[allow(unused_imports)]
+                        use steel_utils::serial::WriteTo as _;
                         #(#writers)*
 
                         Ok(())
@@ -268,6 +271,8 @@ fn write_to_struct(
                 #[automatically_derived]
                 impl #impl_generics steel_utils::serial::WriteTo for #name #ty_generics {
                     fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+                        #[allow(unused_imports)]
+                        use steel_utils::serial::WriteTo as _;
                         #writer
 
                         Ok(())
@@ -392,6 +397,8 @@ fn write_to_enum(
         #[automatically_derived]
         impl #impl_generics steel_utils::serial::WriteTo for #name #ty_generics {
             fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+                #[allow(unused_imports)]
+                use steel_utils::serial::WriteTo as _;
                 #writer
 
                 Ok(())

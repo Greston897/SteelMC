@@ -1,7 +1,6 @@
 //! Configuration-state ping packet.
 
 use steel_macros::{ClientPacket, WriteTo};
-use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::config::C_PING;
 
 /// Clientbound packet that ping-pongs with the client during configuration.

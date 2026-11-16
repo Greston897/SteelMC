@@ -1,7 +1,6 @@
 //! Entity tag query packet.
 
 use steel_macros::{ReadFrom, ServerPacket};
-use steel_utils::codec::VarInt;
 
 /// Serverbound request for the tags of an entity.
 #[derive(ReadFrom, ServerPacket, Clone, Debug)]

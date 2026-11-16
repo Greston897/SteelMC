@@ -1,7 +1,6 @@
 //! Recipe book settings packet.
 
 use steel_macros::{ReadFrom, ServerPacket};
-use steel_utils::codec::VarInt;
 
 /// Serverbound packet that stores the recipe book open/filter state.
 #[derive(ReadFrom, ServerPacket, Clone, Debug)]

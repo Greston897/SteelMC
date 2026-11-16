@@ -4,7 +4,6 @@
 //! `/trigger` read-write pair lives in `builtins::trigger`. Team management
 //! exists on `Scoreboard` but has no command tree yet.
 
-use std::sync::Arc;
 
 use steel_utils::Identifier;
 use text_components::TextComponent;

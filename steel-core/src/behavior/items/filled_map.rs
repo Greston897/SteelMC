@@ -10,8 +10,8 @@
 
 use steel_macros::item_behavior;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
-use steel_registry::data_components::components::MapId;
-use steel_registry::data_components::vanilla_components::MAP_ID;
+use steel_registry::data_components::components::{MapId, MapPostProcessing};
+use steel_registry::data_components::vanilla_components::{MAP_ID, MAP_POST_PROCESSING};
 use steel_registry::equipment::EquipmentSlotType;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::map_color::{Brightness, WATER_BLUE, by_id};
@@ -85,12 +85,37 @@ impl FilledMapItem {
     pub fn map_id(stack: &ItemStack) -> Option<i32> {
         stack.get(MAP_ID).map(|id| id.id())
     }
+
+    /// Applies and clears a pending `MAP_POST_PROCESSING` component (vanilla
+    /// `MapItem.onCraftedPostProcess`), allocating the zoomed or locked copy in
+    /// `world.map_states`.
+    pub fn apply_post_processing(stack: &mut ItemStack, world: &World) {
+        let Some(action) = stack.get(MAP_POST_PROCESSING).copied() else {
+            return;
+        };
+        stack.remove(MAP_POST_PROCESSING);
+        let Some(map_id) = Self::map_id(stack) else {
+            return;
+        };
+        let mut maps = world.map_states.lock();
+        let next_state = match (maps.get(map_id), action) {
+            (Some(existing), MapPostProcessing::Scale) => existing.zoom_out(),
+            (Some(existing), MapPostProcessing::Lock) => existing.copy(),
+            (None, _) => return,
+        };
+        let new_id = maps.insert(next_state);
+        stack.set(MAP_ID, MapId::new(new_id));
+    }
 }
 
 impl ItemBehavior for FilledMapItem {
     fn inventory_tick(&self, context: &mut InventoryTickContext<'_>) {
+        let world = context.world;
         let Some(map_id) = context
-            .with_item(|stack| FilledMapItem::map_id(stack))
+            .with_item(|stack| {
+                FilledMapItem::apply_post_processing(stack, world);
+                FilledMapItem::map_id(stack)
+            })
             .flatten()
         else {
             return;

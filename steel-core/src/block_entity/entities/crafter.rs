@@ -518,25 +518,24 @@ mod tests {
     }
 
     #[test]
-    fn a_two_log_column_matches_the_planks_recipe() {
+    fn a_two_plank_column_matches_the_stick_recipe() {
         init_vanilla_registry();
         let crafter = test_crafter();
         {
             let mut container = crafter.container.lock();
-            // Two logs stacked in the left column: the vanilla
-            // `oak_planks` shaped recipe.
+            // Two planks stacked in the left column match the vanilla shaped `stick` recipe.
             container.set_item(
                 0,
-                ItemStack::with_count(&steel_registry::vanilla_items::OAK_LOG, 3),
+                ItemStack::with_count(&steel_registry::vanilla_items::OAK_PLANKS, 3),
             );
             container.set_item(
                 3,
-                ItemStack::with_count(&steel_registry::vanilla_items::OAK_LOG, 3),
+                ItemStack::with_count(&steel_registry::vanilla_items::OAK_PLANKS, 3),
             );
         }
         assert!(
             crafter.has_matching_recipe(),
-            "two logs in a column craft planks"
+            "two planks in a column craft sticks"
         );
         // Nothing is consumed until `craft` runs.
         assert_eq!(crafter.container.lock().get_item(0).count(), 3);
@@ -550,16 +549,16 @@ mod tests {
             let mut container = crafter.container.lock();
             container.set_item(
                 0,
-                ItemStack::with_count(&steel_registry::vanilla_items::OAK_LOG, 1),
+                ItemStack::with_count(&steel_registry::vanilla_items::OAK_PLANKS, 1),
             );
             container.set_item(
                 3,
-                ItemStack::with_count(&steel_registry::vanilla_items::OAK_LOG, 1),
+                ItemStack::with_count(&steel_registry::vanilla_items::OAK_PLANKS, 1),
             );
         }
         assert!(crafter.has_matching_recipe());
-        // Disabling the lower log removes one input of the two-log recipe, so
-        // the match disappears even though the items are still in the grid.
+        // Disabling the lower plank leaves a single plank (no 1-plank recipe),
+        // so the match disappears even though the items remain in the grid.
         crafter.set_disabled_slots(1 << 3);
         assert!(!crafter.has_matching_recipe());
     }
@@ -576,11 +575,11 @@ mod tests {
             let mut container = crafter.container.lock();
             container.set_item(
                 0,
-                ItemStack::with_count(&steel_registry::vanilla_items::OAK_LOG, 1),
+                ItemStack::with_count(&steel_registry::vanilla_items::OAK_PLANKS, 1),
             );
             container.set_item(
                 3,
-                ItemStack::with_count(&steel_registry::vanilla_items::OAK_LOG, 1),
+                ItemStack::with_count(&steel_registry::vanilla_items::OAK_PLANKS, 1),
             );
         }
         assert!(crafter.begin_crafting());

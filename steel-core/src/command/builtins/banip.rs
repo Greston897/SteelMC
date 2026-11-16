@@ -23,29 +23,30 @@ const ADDRESS_ARGUMENT: &str = "address";
 const REASON_ARGUMENT: &str = "reason";
 
 pub(super) fn banip_registration() -> CommandRegistration<CommandSource> {
-    CommandRegistration::new(Identifier::vanilla_static("banip"), |_| ban_command())
+    CommandRegistration::new(Identifier::vanilla_static("ban-ip"), |_| ban_command())
+        .alias("banip")
 }
 
 pub(super) fn pardonip_registration() -> CommandRegistration<CommandSource> {
-    CommandRegistration::new(Identifier::vanilla_static("pardonip"), |_| pardon_command())
+    CommandRegistration::new(Identifier::vanilla_static("pardon-ip"), |_| pardon_command())
+        .alias("pardonip")
 }
 
 fn ban_command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    literal("banip")
+    literal("ban-ip")
         .then(
-            argument(ADDRESS_ARGUMENT, ArgumentType::greedy_string())
-                .executes(|context| ban(context, None)),
-        )
-        .then(
-            argument(ADDRESS_ARGUMENT, ArgumentType::greedy_string()).then(
-                argument(REASON_ARGUMENT, ArgumentType::greedy_string())
-                    .executes(|context| ban(context, Some(context.string(REASON_ARGUMENT)?.to_owned()))),
-            ),
+            argument(ADDRESS_ARGUMENT, ArgumentType::word())
+                .executes(|context| ban(context, None))
+                .then(
+                    argument(REASON_ARGUMENT, ArgumentType::greedy_string()).executes(|context| {
+                        ban(context, Some(context.string(REASON_ARGUMENT)?.to_owned()))
+                    }),
+                ),
         )
 }
 
 fn pardon_command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    literal("pardonip").then(
+    literal("pardon-ip").then(
         argument(ADDRESS_ARGUMENT, ArgumentType::greedy_string()).executes(pardon),
     )
 }

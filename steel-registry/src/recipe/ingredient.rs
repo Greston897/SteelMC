@@ -71,7 +71,7 @@ impl Ingredient {
                 .items
                 .get_tag(tag)
                 .is_some_and(|items| items.contains(&item)),
-            Self::Choice(items) => items.iter().any(|entry| *entry == item),
+            Self::Choice(items) => items.contains(&item),
         }
     }
 

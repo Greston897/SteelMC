@@ -20,7 +20,6 @@ use crate::entity::{
     Entity as _, EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest, Mob as _,
     SharedEntity, spawn_entity,
 };
-use crate::player::Player;
 use crate::world::{LevelReader as _, World};
 
 /// Maximum number of occupants in a vanilla beehive.

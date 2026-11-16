@@ -1,7 +1,6 @@
 //! Projectile power packet.
 
 use steel_macros::{ClientPacket, WriteTo};
-use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_PROJECTILE_POWER;
 use steel_utils::codec::VarInt;
 

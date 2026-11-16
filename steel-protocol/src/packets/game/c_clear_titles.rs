@@ -1,5 +1,4 @@
 use steel_macros::{ClientPacket, WriteTo};
-use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_CLEAR_TITLES;
 
 /// Clears the title display state on the client.

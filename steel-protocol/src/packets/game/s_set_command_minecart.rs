@@ -1,7 +1,6 @@
 //! Set command minecart packet.
 
 use steel_macros::{ReadFrom, ServerPacket};
-use steel_utils::codec::VarInt;
 
 /// Serverbound packet that edits a command block minecart.
 #[derive(ReadFrom, ServerPacket, Clone, Debug)]

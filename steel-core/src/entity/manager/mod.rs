@@ -1716,6 +1716,18 @@ impl WorldEntityManager {
             .collect()
     }
 
+    /// Returns whether any accessible live entity matches `predicate` without allocating.
+    #[must_use]
+    pub fn any_accessible_entity(&self, mut predicate: impl FnMut(&dyn Entity) -> bool) -> bool {
+        let state = self.state.read();
+        state
+            .accessible_order
+            .iter()
+            .filter_map(|entity_id| state.live_by_id.get(*entity_id))
+            .filter(|entry| entry.accessible)
+            .any(|entry| predicate(entry.entity.as_ref()))
+    }
+
     fn entity_query_entries<'a>(
         state: &'a ManagerState,
         aabb: &WorldAabb,

@@ -16,7 +16,6 @@ use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::item_stack::ItemStack;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _};
 
-use crate::block_entity::BlockEntity as _;
 use crate::block_entity::entities::{TestBlockEntity, TestInstanceBlockEntity};
 use crate::behavior::block::BlockEntityCreation;
 use crate::behavior::block::BlockBehavior;
@@ -229,7 +228,6 @@ impl BlockBehavior for TestBlock {
     /// component of the held stack restores the saved mode.
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         use steel_registry::blocks::properties::TestBlockMode;
-        use steel_registry::data_components::components::BlockItemStateProperties;
         use steel_registry::data_components::vanilla_components::BLOCK_STATE;
 
         let mut to_place = self.block.default_state();

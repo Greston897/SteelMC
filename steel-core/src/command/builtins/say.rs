@@ -7,7 +7,7 @@ use text_components::TextComponent;
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
     execution::{
-        CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
+        CommandSource, SteelCommandContext, SteelCommandRuntime, argument,
         literal,
     },
     registration::CommandRegistration,

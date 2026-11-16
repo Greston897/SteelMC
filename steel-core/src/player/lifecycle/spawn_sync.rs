@@ -270,8 +270,8 @@ impl Player {
         self.reset_flying_ticks();
         self.send_spawn_state_packets(&world);
         self.reset_sent_info();
-        if resend_player_context {
-            self.server().resend_player_context(self);
+        if resend_player_context && let Some(server) = self.try_server() {
+            server.resend_player_context(self);
         }
         self.send_active_effects_for_self();
         // Vanilla `PlayerList.respawn`/`placeNewPlayer` push the post-effect
@@ -302,15 +302,11 @@ impl Player {
     /// and the server icon. The icon field is raw PNG bytes; the status-list
     /// `data:image/png;base64,` prefix used by pings is *not* part of it.
     fn send_server_data(&self) {
-        let server = self.server();
-        let config = &server.config;
-
-        let motd = TextComponent::plain(config.motd.clone());
-        let icon = if config.use_favicon {
-            std::fs::read(&config.favicon).ok().filter(|png| !png.is_empty())
-        } else {
-            None
+        let Some(server) = self.try_server() else {
+            return;
         };
+        let motd = TextComponent::plain(server.config.motd.clone());
+        let icon = server.cached_favicon_png().map(|bytes| bytes.to_vec());
         self.send_packet(CServerData { motd, icon });
     }
 

@@ -1,4 +1,3 @@
-use steel_utils::serial::PrefixedWrite as _;
 use steel_macros::{ReadFrom, ServerPacket};
 #[expect(unused_imports)]
 use steel_registry::packets::play::S_COMMAND_SUGGESTION;

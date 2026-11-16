@@ -1,5 +1,4 @@
 use steel_macros::{ClientPacket, WriteTo};
-use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_TICKING_STEP;
 
 /// Packet sent to clients to inform them of the number of frozen ticks to run.

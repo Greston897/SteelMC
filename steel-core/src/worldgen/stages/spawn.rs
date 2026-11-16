@@ -1,65 +1,48 @@
 use std::sync::Arc;
 
-use steel_utils::random::Random as _;
-use steel_registry::biome::SpawnerData;
 use steel_registry::RegistryExt as _;
+use steel_registry::biome::SpawnerData;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_type::EntityTypeRef;
+use steel_registry::fluid::FluidStateExt as _;
+use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_game_rules;
+use steel_registry::{REGISTRY, vanilla_fluids};
 use steel_utils::BlockPos;
+use steel_utils::random::Random as _;
 
 use crate::chunk::{
     chunk_generation_task::StaticCache2D, chunk_holder::ChunkHolder, chunk_pyramid::ChunkStep,
-    heightmap::HeightmapType, status::ChunkStatus,
+    data::Chunk, heightmap::HeightmapType, status::ChunkStatus,
 };
-use crate::entity::spawn::{create_entity_instance, EntitySpawnReason};
-use crate::entity::spawn_placements::SpawnPlacements;
 use crate::entity::SharedEntity;
+use crate::entity::spawn::{EntitySpawnReason, create_entity_instance};
 use crate::world::World;
 use crate::worldgen::generator::ChunkGenerator as _;
 use crate::worldgen::generator::context::WorldGenContext;
 
 /// Vanilla `NaturalSpawner.spawnMobsForChunkGeneration`.
 ///
-/// This is the "original mobs" pass: the passive animals a freshly generated
-/// chunk gets. Vanilla runs it from `ChunkStatusTasks.generateSpawn` during the
-/// `Spawn` step, via `NoiseBasedChunkGenerator.spawnOriginalMobs`.
-///
-/// It is easy to confuse with the periodic `NaturalSpawner.tick` pass, and the
-/// two differ in almost every respect. This one:
-///
-/// * spawns **only** the biome's `creature` list — never monsters, never water
-///   mobs, never ambient mobs;
-/// * reads the biome's `creature_spawn_probability`, and loops
-///   `while random.nextFloat() < probability`;
-/// * ignores the mob cap and spawn costs entirely;
-/// * picks one horizontal position per iteration and a pack size from the spawn
-///   entry's `minCount..=maxCount`;
-/// * moves each successive member of the pack away from the previous one by up
-///   to 5 blocks on each horizontal axis (a triangular step, not a fresh
-///   uniform pick);
-/// * stages the entities in the chunk's proto storage instead of adding them to
-///   the level, so they appear when the chunk reaches `Full`.
-///
-/// The `doMobSpawning` game rule is *not* consulted here: vanilla's
-/// chunk-generation pass ignores it (only the tick pass honours it).
+/// Runs during the `Spawn` step directly on the chunk's `Light`-status proto data
+/// (never querying the not-yet-published `Full` chunk map):
+/// - reads the biome's `creature` spawner table and `creature_spawn_probability`;
+/// - loops `while random.nextFloat() < probability`;
+/// - picks a pack anchor inside the chunk and runs up to 4 clamped placement
+///   attempts per pack member against the proto heightmap and block states;
+/// - stages spawned mobs into the proto chunk's entity storage so they enter the
+///   world when the chunk reaches `Full`.
 pub(crate) fn generate(
     context: Arc<WorldGenContext>,
     _step: &ChunkStep,
     _cache: &Arc<StaticCache2D<Arc<ChunkHolder>>>,
     holder: Arc<ChunkHolder>,
 ) {
-    let Some(chunk) = holder.try_chunk(ChunkStatus::Spawn) else {
-        panic!("Chunk not found at status Spawn");
+    // At entry to `Spawn`, the holder's published status is the preceding `Light` step.
+    let Some(chunk) = holder.try_chunk(ChunkStatus::Light) else {
+        panic!("Chunk not found at status Light for Spawn stage");
     };
     let world = context.world();
 
-    // This pass spawns only passive creatures, so Peaceful changes nothing and
-    // `doMobSpawning` does not gate it in vanilla: the wiki is explicit that the
-    // chunk-generation pass runs "provided that /gamerule spawn_mobs is true",
-    // i.e. the rule is read by the pass that owns original mobs, not by
-    // `spawnMobsForChunkGeneration` itself. Steel honours the rule here because
-    // the chunk tasks run before any player exists to observe a difference, and
-    // skipping the random rolls keeps seeds stable when the rule is off.
     if !world.get_game_rule(&vanilla_game_rules::SPAWN_MOBS) {
         return;
     }
@@ -69,16 +52,22 @@ pub(crate) fn generate(
         .generator
         .create_worldgen_region_random(world.seed(), center);
 
-    // Vanilla reads the biome at the chunk's origin corner. The spawn list and
-    // the probability come from that single biome.
-    let biome_pos = BlockPos::new(center.0.x * 16, 0, center.0.y * 16);
-    let Some(biome) = world.biome_at(biome_pos) else {
+    // Sample the top surface biome in the center of the proto chunk, matching
+    // vanilla `NoiseBasedChunkGenerator.spawnOriginalMobs`.
+    let min_y = context.min_y();
+    let max_y = min_y + context.height();
+    let sample_y = chunk
+        .generation_height_at(HeightmapType::WorldSurface, 8, 8)
+        .saturating_sub(1)
+        .clamp(min_y, max_y.saturating_sub(1));
+    let Some(biome_id) = proto_biome_id(&chunk, min_y, 2, sample_y >> 2, 2) else {
         return;
     };
+    let Some(biome) = REGISTRY.biomes.by_id(usize::from(biome_id)) else {
+        return;
+    };
+
     let probability = biome.creature_spawn_probability;
-    // `nextFloat() < probability` can never fire for a non-positive value, and a
-    // value >= 1 would loop forever. Vanilla has the same two failure modes; the
-    // clamp keeps a bad data pack from hanging chunk generation.
     if !(probability > 0.0) {
         return;
     }
@@ -92,8 +81,8 @@ pub(crate) fn generate(
         return;
     }
 
-    let min_y = context.min_y();
-    let max_y = context.min_y() + context.height();
+    let xo = center.0.x * 16;
+    let zo = center.0.y * 16;
 
     while random.next_f32() < probability {
         let Some(entry) = weighted.pick(&mut random) else {
@@ -102,54 +91,105 @@ pub(crate) fn generate(
         let Some(entity_type) = registry_entity_type(entry) else {
             continue;
         };
+        if !entity_type.summonable {
+            continue;
+        }
 
-        // One anchor per pack, then triangular steps away from it.
-        let mut x = center.0.x * 16 + random.next_i32_bounded(16);
-        let mut z = center.0.y * 16 + random.next_i32_bounded(16);
         let pack_size = if entry.max_count > entry.min_count {
             entry.min_count + random.next_i32_bounded(entry.max_count - entry.min_count + 1)
         } else {
             entry.min_count
         };
+        let start_x = xo + random.next_i32_bounded(16);
+        let start_z = zo + random.next_i32_bounded(16);
+        let mut x = start_x;
+        let mut z = start_z;
 
         for _ in 0..pack_size {
-            x += random.next_i32_bounded(5) - random.next_i32_bounded(5);
-            z += random.next_i32_bounded(5) - random.next_i32_bounded(5);
+            let mut spawned = false;
+            for _ in 0..4 {
+                let lx = (x - xo) as usize;
+                let lz = (z - zo) as usize;
+                let y = chunk.generation_height_at(HeightmapType::MotionBlockingNoLeaves, lx, lz);
+                let pos = BlockPos::new(x, y, z);
+                if y > min_y
+                    && y < max_y
+                    && is_valid_proto_creature_spawn(&chunk, pos)
+                {
+                    let half_w = f64::from(entity_type.dimensions.width).clamp(0.0, 7.5);
+                    let fx = (f64::from(x) + 0.5)
+                        .clamp(f64::from(xo) + half_w, f64::from(xo) + 16.0 - half_w);
+                    let fz = (f64::from(z) + 0.5)
+                        .clamp(f64::from(zo) + half_w, f64::from(zo) + 16.0 - half_w);
+                    let yaw = random.next_f32() * steel_math::DEGREE_360;
+                    if let Some(entity) =
+                        build_generated_entity(&world, entity_type, fx, f64::from(y), fz, yaw)
+                    {
+                        let _ = chunk.add_entity(entity);
+                        spawned = true;
+                    }
+                }
 
-            // `height_at` reports `None` when the column has no motion-blocking
-            // height yet, which vanilla treats like an out-of-range column.
-            let Some(y) = world.height_at(HeightmapType::MotionBlocking, x, z) else {
-                continue;
-            };
-            if y < min_y || y >= max_y {
-                continue;
+                x += random.next_i32_bounded(5) - random.next_i32_bounded(5);
+                z += random.next_i32_bounded(5) - random.next_i32_bounded(5);
+                // Vanilla `NaturalSpawner.java:353-356`: re-roll around `(startX, startZ)`
+                // until the candidate lands back inside this chunk.
+                while x < xo || x >= xo + 16 || z < zo || z >= zo + 16 {
+                    x = start_x + random.next_i32_bounded(5) - random.next_i32_bounded(5);
+                    z = start_z + random.next_i32_bounded(5) - random.next_i32_bounded(5);
+                }
+                if spawned {
+                    break;
+                }
             }
-            let pos = BlockPos::new(x, y, z);
-            // The spawn predicate is a `SpawnRule`, which is typed over `rand::Rng`
-            // while the worldgen stream is a `RandomSource`. Vanilla evaluates the
-            // predicate against the level's own random source, and Steel's natural
-            // spawner uses `rand::rng()` the same way, so a thread-local draw keeps
-            // the two paths consistent without perturbing the worldgen seed.
-            let mut spawn_random = rand::rng();
-            if !SpawnPlacements::check_natural_spawn_rules(
-                entity_type,
-                &world,
-                pos,
-                &mut spawn_random,
-            ) {
-                continue;
-            }
-            let Some(entity) = build_generated_entity(&world, entity_type, pos) else {
-                continue;
-            };
-            // `Chunk::add_entity` stages into proto storage; after `Full`
-            // promotion it drops the entity, like vanilla's imposter chunk.
-            let _ = chunk.add_entity(entity);
         }
     }
 }
 
-/// Weighted pick over a biome's spawn list (vanilla `WeightedRandom`).
+/// Reads the biome palette id at local quart coordinates directly from `chunk`.
+fn proto_biome_id(
+    chunk: &Chunk,
+    min_y: i32,
+    local_quart_x: usize,
+    quart_y: i32,
+    local_quart_z: usize,
+) -> Option<u16> {
+    let sections = chunk.sections();
+    let count = sections.sections.len();
+    if count == 0 {
+        return None;
+    }
+    let min_quart_y = min_y >> 2;
+    let max_quart_y = min_quart_y + (count as i32) * 4 - 1;
+    let clamped_y = quart_y.clamp(min_quart_y, max_quart_y);
+    let offset = (clamped_y - min_quart_y) as usize;
+    let section = &sections.sections[offset >> 2];
+    Some(
+        section
+            .read()
+            .biomes
+            .get(local_quart_x & 3, offset & 3, local_quart_z & 3),
+    )
+}
+
+/// Vanilla `Animal.checkAnimalSpawnRules` + `SpawnPlacementTypes.ON_GROUND`
+/// evaluated against the proto chunk's block states.
+fn is_valid_proto_creature_spawn(chunk: &Chunk, pos: BlockPos) -> bool {
+    let below = chunk.get_block_state(pos.below());
+    if !REGISTRY
+        .blocks
+        .is_in_tag(below.get_block(), BlockTag::AnimalsSpawnableOn)
+    {
+        return false;
+    }
+    let at = chunk.get_block_state(pos);
+    let above = chunk.get_block_state(pos.above());
+    at.is_air()
+        && at.get_fluid_state().fluid_id == &vanilla_fluids::EMPTY
+        && above.get_fluid_state().fluid_id == &vanilla_fluids::EMPTY
+}
+
+/// Weighted pick over a biome's spawn list (vanilla `WeightedList`).
 struct WeightedSpawns<'a> {
     entries: &'a [SpawnerData],
     total_weight: i32,
@@ -157,15 +197,13 @@ struct WeightedSpawns<'a> {
 
 impl<'a> WeightedSpawns<'a> {
     const fn new(entries: &'a [SpawnerData]) -> Self {
-        // `total_weight` is computed on construction to keep the hot pick loop
-        // allocation-free; `SpawnerData` lists have a handful of entries.
         Self {
             entries,
             total_weight: 0,
         }
     }
 
-    fn is_empty(&self) -> bool {
+    const fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
 
@@ -191,31 +229,23 @@ impl<'a> WeightedSpawns<'a> {
 
 /// Resolves a spawn entry's entity identifier against the registry.
 fn registry_entity_type(entry: &SpawnerData) -> Option<EntityTypeRef> {
-    steel_registry::REGISTRY
-        .entity_types
-        .by_key(&entry.entity_type)
+    REGISTRY.entity_types.by_key(&entry.entity_type)
 }
 
-/// Builds and finalizes one generated mob.
-///
-/// Vanilla creates the entity, places it at the block centre with a random yaw,
-/// then calls `finalizeSpawn` with `ChunkGeneration`. Steel uses
-/// [`EntitySpawnReason::Natural`] because the behaviour is the same and it is
-/// the reason already wired through `SpawnPlacements`.
+/// Builds and finalizes one chunk-generated creature.
 fn build_generated_entity(
     world: &Arc<World>,
     entity_type: EntityTypeRef,
-    pos: BlockPos,
+    x: f64,
+    y: f64,
+    z: f64,
+    raw_yaw: f32,
 ) -> Option<SharedEntity> {
-    let position = glam::DVec3::new(
-        f64::from(pos.x()) + 0.5,
-        f64::from(pos.y()),
-        f64::from(pos.z()) + 0.5,
-    );
+    let position = glam::DVec3::new(x, y, z);
     let entity = create_entity_instance(world, entity_type, position).ok()?;
 
     entity.base().set_position_local(position);
-    let yaw = steel_math::wrap_degrees(rand::random::<f32>() * steel_math::DEGREE_360);
+    let yaw = steel_math::wrap_degrees(raw_yaw);
     entity.set_rotation((yaw, 0.0));
     entity.set_old_position_to_current();
     entity.base().set_old_rotation_to_current();
@@ -223,7 +253,7 @@ fn build_generated_entity(
     if let Some(mob) = entity.as_mob() {
         mob.set_y_head_rot(yaw);
         mob.set_y_body_rot(yaw);
-        let _ = mob.finalize_spawn(world, EntitySpawnReason::Natural, None);
+        let _ = mob.finalize_spawn(world, EntitySpawnReason::ChunkGeneration, None);
     }
     Some(entity)
 }
@@ -262,7 +292,6 @@ mod tests {
                 cows += 1;
             }
         }
-        // Expect ~75%; a wide band keeps the test deterministic in practice.
         assert!((2800..3200).contains(&cows), "cow picks: {cows}");
     }
 }

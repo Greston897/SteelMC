@@ -2,7 +2,6 @@
 
 use steel_macros::{ReadFrom, ServerPacket};
 use steel_utils::BlockPos;
-use steel_utils::codec::VarInt;
 
 /// Serverbound packet that regenerates a jigsaw block's structure.
 #[derive(ReadFrom, ServerPacket, Clone, Debug)]

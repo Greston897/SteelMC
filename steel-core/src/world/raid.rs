@@ -148,21 +148,23 @@ impl RaidManager {
         let mut victories: Vec<Raid> = Vec::new();
         {
             let mut raids = self.raids.lock();
-            for raid in raids.iter_mut() {
+            raids.retain_mut(|raid| {
                 raid.ticks_active = raid.ticks_active.saturating_add(1);
+                // Vanilla `Raid.tick`: a raid that runs past its wave timeout expires
+                // and stops instead of remaining stuck in memory forever.
                 if raid.ticks_active > RAID_TIMEOUT_TICKS.saturating_mul(raid.wave_count()) {
-                    continue;
+                    return false;
                 }
-                let expected_waves =
-                    (raid.ticks_active / TICKS_PER_WAVE).min(raid.wave_count());
+                let expected_waves = (raid.ticks_active / TICKS_PER_WAVE).min(raid.wave_count());
                 if expected_waves > raid.waves_cleared {
                     raid.waves_cleared = expected_waves;
                     if raid.is_victory() {
                         victories.push(raid.clone());
+                        return false;
                     }
                 }
-            }
-            raids.retain(|raid| !raid.is_victory());
+                true
+            });
         }
         for raid in victories {
             Self::award_hero_of_the_village(world, &raid);
@@ -232,13 +234,16 @@ pub fn is_village(world: &Arc<World>, pos: IVec3) -> bool {
         .is_empty()
 }
 
-/// Returns the `meeting` POI type id, or `None` when the registry lacks it.
+/// Returns the `meeting` POI type id, cached on first lookup.
 fn meeting_point_poi_id() -> Option<usize> {
-    steel_registry::REGISTRY
-        .poi_types
-        .iter()
-        .find(|(_, poi_type)| poi_type.key.path.as_ref() == "meeting")
-        .map(|(id, _)| id)
+    static MEETING_ID: std::sync::OnceLock<Option<usize>> = std::sync::OnceLock::new();
+    *MEETING_ID.get_or_init(|| {
+        steel_registry::REGISTRY
+            .poi_types
+            .iter()
+            .find(|(_, poi_type)| poi_type.key.path.as_ref() == "meeting")
+            .map(|(id, _)| id)
+    })
 }
 
 /// [`village_center`] for callers holding a `&World` (mob-effect behaviours).
@@ -246,18 +251,20 @@ fn meeting_point_poi_id() -> Option<usize> {
 pub fn village_center_world(world: &World, pos: steel_utils::BlockPos) -> Option<IVec3> {
     let meeting_point_id = meeting_point_poi_id()?;
     let storage = world.poi_storage.lock();
-    let mut matches = storage.get_in_horizontal_square(
-        &|poi_type| poi_type == meeting_point_id,
-        pos,
-        VILLAGE_SCAN_RADIUS,
-        OccupationStatus::Any,
-    );
-    matches.sort_by_key(|(bell, _)| {
-        let dx = bell.0.x - pos.0.x;
-        let dz = bell.0.z - pos.0.z;
-        dx * dx + dz * dz
-    });
-    matches.first().map(|(bell, _)| bell.0)
+    storage
+        .get_in_horizontal_square(
+            &|poi_type| poi_type == meeting_point_id,
+            pos,
+            VILLAGE_SCAN_RADIUS,
+            OccupationStatus::Any,
+        )
+        .into_iter()
+        .min_by_key(|(bell, _)| {
+            let dx = i64::from(bell.0.x - pos.0.x);
+            let dz = i64::from(bell.0.z - pos.0.z);
+            dx * dx + dz * dz
+        })
+        .map(|(bell, _)| bell.0)
 }
 
 /// Returns the bell position of the nearest village, used as the raid center.

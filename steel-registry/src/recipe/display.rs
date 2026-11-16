@@ -33,7 +33,7 @@ pub fn display_for_recipe(recipe: crate::recipe::UntypedRecipeRef) -> Option<Rec
             return Some(RecipeDisplay::Stonecutter {
                 ingredient: SlotDisplay::from_ingredient(&data.ingredient),
                 result: result_display(&data.result),
-                crafting_station: SlotDisplay::Item(&*vanilla_items::STONECUTTER),
+                crafting_station: SlotDisplay::Item(&vanilla_items::STONECUTTER),
             });
         }
         _ => return None,
@@ -112,14 +112,14 @@ fn smithing_display(recipe: &SmithingRecipe) -> RecipeDisplay {
                 .as_ref()
                 .map_or(SlotDisplay::Empty, SlotDisplay::from_ingredient),
             result: result_display(&transform.result),
-            crafting_station: SlotDisplay::Item(&*vanilla_items::SMITHING_TABLE),
+            crafting_station: SlotDisplay::Item(&vanilla_items::SMITHING_TABLE),
         },
         SmithingRecipe::Trim(trim) => RecipeDisplay::Smithing {
             template: SlotDisplay::from_ingredient(&trim.template),
             base: SlotDisplay::from_ingredient(&trim.base),
             addition: SlotDisplay::from_ingredient(&trim.addition),
             result: SlotDisplay::Empty,
-            crafting_station: SlotDisplay::Item(&*vanilla_items::SMITHING_TABLE),
+            crafting_station: SlotDisplay::Item(&vanilla_items::SMITHING_TABLE),
         },
     }
 }

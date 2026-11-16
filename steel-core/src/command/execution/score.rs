@@ -78,6 +78,14 @@ impl IntRange {
         Self { minimum, maximum }
     }
 
+    pub(crate) const fn minimum(self) -> Option<i32> {
+        self.minimum
+    }
+
+    pub(crate) const fn maximum(self) -> Option<i32> {
+        self.maximum
+    }
+
     pub(crate) const fn matches(self, value: i32) -> bool {
         if let Some(minimum) = self.minimum
             && value < minimum

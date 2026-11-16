@@ -908,7 +908,6 @@ mod tests {
     fn frogspawn_needs_support_below_and_no_fluid_above() {
         init_vanilla_registry();
         let pos = BlockPos::new(0, 64, 0);
-        let above = BlockPos::new(0, 65, 0);
         let state = vanilla_blocks::FROGSPAWN.default_state();
         let behavior = FrogspawnBlock::new(&vanilla_blocks::FROGSPAWN);
 
@@ -929,13 +928,15 @@ mod tests {
             "water is in `FluidTags.SUPPORTS_FROGSPAWN`"
         );
 
-        // A fluid above the spawn blocks placement even over water.
-        let water_above = TestLevel::default()
+        // Vanilla `FrogspawnBlock.mayPlaceOn(level, pos.below())`: requires water at
+        // `pos.below()` and `Fluids.EMPTY` at `pos.below().above()` == `pos` (submerged
+        // frogspawn cannot survive).
+        let submerged = TestLevel::default()
             .with_block(pos.below(), vanilla_blocks::WATER.default_state())
-            .with_block(above, vanilla_blocks::WATER.default_state());
+            .with_block(pos, vanilla_blocks::WATER.default_state());
         assert!(
-            !behavior.can_survive(state, &water_above, pos),
-            "vanilla requires `fluidAbove.is(Fluids.EMPTY)`"
+            !behavior.can_survive(state, &submerged, pos),
+            "vanilla requires `fluidAbove (at pos) == Fluids.EMPTY`"
         );
     }
 }

@@ -68,7 +68,9 @@ impl Player {
 
         let update_packet =
             CPlayerInfoUpdate::update_game_mode(self.gameprofile.id(), gamemode as i32);
-        self.server().broadcast_to_online(update_packet);
+        if let Some(server) = self.try_server() {
+            server.broadcast_to_online(update_packet);
+        }
 
         self.get_world().update_sleeping_player_list();
 
@@ -166,8 +168,10 @@ impl Player {
         // the lock protects, and the broadcast below re-sends the lock flag so
         // the client UI snaps back.
         let domain = self.get_world().domain().to_owned();
-        for world in self.server().worlds.worlds_in_domain(&domain) {
-            world.set_difficulty(difficulty);
+        if let Some(server) = self.try_server() {
+            for world in server.worlds.worlds_in_domain(&domain) {
+                world.set_difficulty(difficulty);
+            }
         }
     }
 

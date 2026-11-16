@@ -118,14 +118,15 @@ impl MerchantKind {
 /// Converts a trade into the wire form the client renders.
 fn offer_to_packet(offer: &TradeOffer) -> MerchantOffer {
     MerchantOffer {
-        base_cost_a: offer.adjusted_cost_a(),
-        base_cost_b: offer.base_cost_b.clone(),
+        base_cost_a: offer.base_cost_a.clone(),
         result: offer.result.clone(),
+        cost_b: offer.base_cost_b.clone(),
         out_of_stock: offer.is_out_of_stock(),
         uses: offer.uses,
         max_uses: offer.max_uses,
         xp: offer.xp,
         special_price_diff: offer.special_price_diff,
+        price_multiplier: 0.05,
         demand: offer.demand,
     }
 }
@@ -188,10 +189,15 @@ impl MenuKind for MerchantKind {
         // work out which recipe the payment slots match.
         let offers = self.offers();
         let villager_level = 1;
+        let villager_xp: i32 = offers
+            .iter()
+            .map(|o| o.uses.saturating_mul(o.xp.max(0)))
+            .fold(0_i32, i32::saturating_add);
         player.send_packet(CMerchantOffers {
             container_id: i32::from(behavior.container_id()),
             offers: offers.iter().map(offer_to_packet).collect(),
             villager_level,
+            villager_xp,
             show_progress: villager_level > 0,
             can_restock: true,
         });

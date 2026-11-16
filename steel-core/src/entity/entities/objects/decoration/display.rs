@@ -237,61 +237,92 @@ macro_rules! display_boilerplate {
     };
 }
 
-macro_rules! display_entity {
-    ($entity:ident, $data:ty, $class:literal, $key:literal) => {
-        #[entity_behavior(class = $class)]
-        /// A vanilla display entity.
-        pub struct $entity {
-            base: EntityBase,
-            entity_type: EntityTypeRef,
-            entity_data: SyncMutex<$data>,
-        }
-
-        display_boilerplate!($entity, $data, $key);
-
-        impl $entity {
-            /// Creates a new display entity.
-            #[must_use]
-            pub fn new(
-                entity_type: EntityTypeRef,
-                id: i32,
-                position: DVec3,
-                world: Weak<World>,
-            ) -> Self {
-                Self {
-                    base: EntityBase::new(id, position, entity_type.dimensions, world),
-                    entity_type,
-                    entity_data: SyncMutex::new(<$data>::new()),
-                }
-            }
-
-            /// Creates a display entity from saved data.
-            #[must_use]
-            pub fn from_saved(entity_type: EntityTypeRef, load: EntityBaseLoad) -> Self {
-                Self {
-                    base: EntityBase::from_load(load, entity_type.dimensions),
-                    entity_type,
-                    entity_data: SyncMutex::new(<$data>::new()),
-                }
-            }
-        }
-    };
-}
-
 // The plain `Display` entity has no payload of its own; vanilla never spawns it
 // directly (it is abstract), so only the three concrete subclasses are exposed.
-display_entity!(
+// Both structs carry a top-level `#[entity_behavior]` attribute so the build
+// script's AST scanner discovers and registers them in `ENTITY_TYPES`.
+
+/// A vanilla item display entity (`minecraft:item_display`).
+#[entity_behavior(class = "ItemDisplay")]
+pub struct ItemDisplayEntity {
+    base: EntityBase,
+    entity_type: EntityTypeRef,
+    entity_data: SyncMutex<ItemDisplayEntityData>,
+}
+
+display_boilerplate!(
     ItemDisplayEntity,
     ItemDisplayEntityData,
-    "ItemDisplay",
     "steel:entity/item_display"
 );
-display_entity!(
+
+impl ItemDisplayEntity {
+    /// Creates a new item display entity.
+    #[must_use]
+    pub fn new(
+        entity_type: EntityTypeRef,
+        id: i32,
+        position: DVec3,
+        world: Weak<World>,
+    ) -> Self {
+        Self {
+            base: EntityBase::new(id, position, entity_type.dimensions, world),
+            entity_type,
+            entity_data: SyncMutex::new(ItemDisplayEntityData::new()),
+        }
+    }
+
+    /// Creates an item display entity from saved data.
+    #[must_use]
+    pub fn from_saved(entity_type: EntityTypeRef, load: EntityBaseLoad) -> Self {
+        Self {
+            base: EntityBase::from_load(load, entity_type.dimensions),
+            entity_type,
+            entity_data: SyncMutex::new(ItemDisplayEntityData::new()),
+        }
+    }
+}
+
+/// A vanilla text display entity (`minecraft:text_display`).
+#[entity_behavior(class = "TextDisplay")]
+pub struct TextDisplayEntity {
+    base: EntityBase,
+    entity_type: EntityTypeRef,
+    entity_data: SyncMutex<TextDisplayEntityData>,
+}
+
+display_boilerplate!(
     TextDisplayEntity,
     TextDisplayEntityData,
-    "TextDisplay",
     "steel:entity/text_display"
 );
+
+impl TextDisplayEntity {
+    /// Creates a new text display entity.
+    #[must_use]
+    pub fn new(
+        entity_type: EntityTypeRef,
+        id: i32,
+        position: DVec3,
+        world: Weak<World>,
+    ) -> Self {
+        Self {
+            base: EntityBase::new(id, position, entity_type.dimensions, world),
+            entity_type,
+            entity_data: SyncMutex::new(TextDisplayEntityData::new()),
+        }
+    }
+
+    /// Creates a text display entity from saved data.
+    #[must_use]
+    pub fn from_saved(entity_type: EntityTypeRef, load: EntityBaseLoad) -> Self {
+        Self {
+            base: EntityBase::from_load(load, entity_type.dimensions),
+            entity_type,
+            entity_data: SyncMutex::new(TextDisplayEntityData::new()),
+        }
+    }
+}
 
 impl ItemDisplayEntity {
     /// The displayed item stack.

@@ -1,6 +1,5 @@
 use serde::Serialize;
 use steel_macros::{ClientPacket, WriteTo};
-use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::status::C_STATUS_RESPONSE;
 
 #[derive(Serialize, Clone, Debug, WriteTo)]

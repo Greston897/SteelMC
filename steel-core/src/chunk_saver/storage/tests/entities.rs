@@ -142,10 +142,6 @@ fn block_entity_stored_components_survive_chunk_save_load() {
 #[test]
 fn owned_block_entity_load_preserves_stored_components() {
     init_globals();
-    assert!(
-        !BLOCK_ENTITIES.has_factory(&vanilla_block_entity_types::LECTERN),
-        "the lectern now has a block entity; pick another unimplemented type for this test"
-    );
 
     for (entity_type, state) in [
         (
@@ -188,10 +184,28 @@ fn owned_block_entity_load_preserves_stored_components() {
                 .count(),
             1
         );
-        if !BLOCK_ENTITIES.has_factory(entity_type) {
-            assert_eq!(saved.int("marker"), Some(7));
-        }
     }
+
+    // Also exercise the fallback `UnimplementedBlockEntity` directly since all
+    // 49 vanilla block entity types now have typed factories registered.
+    let mut fallback_components = NbtCompound::new();
+    fallback_components.insert("minecraft:repair_cost", 3_i32);
+    let mut fallback_nbt = NbtCompound::new();
+    fallback_nbt.insert("components", fallback_components);
+    fallback_nbt.insert("marker", 7_i32);
+    let fallback = crate::block_entity::entities::UnimplementedBlockEntity::with_data(
+        &vanilla_block_entity_types::LECTERN,
+        Weak::new(),
+        BlockPos::new(3, 4, 5),
+        vanilla_blocks::LECTERN.default_state(),
+        fallback_nbt,
+    );
+    assert_eq!(
+        crate::block_entity::BlockEntity::collect_components(&fallback).get(REPAIR_COST),
+        Some(3)
+    );
+    let saved = crate::block_entity::BlockEntity::save_without_metadata(&fallback);
+    assert_eq!(saved.int("marker"), Some(7));
 }
 
 #[test]
@@ -646,12 +660,18 @@ fn unimplemented_block_entities_preserve_nbt_through_proto_save_load() {
     let mut components = NbtCompound::new();
     components.insert("minecraft:repair_cost", 3_i32);
     nbt.insert("components", components);
-    let entity = BLOCK_ENTITIES.create_and_load_owned_or_unimplemented(
-        &vanilla_block_entity_types::BANNER,
-        proto.level_weak(),
-        block_pos,
-        banner,
-        nbt,
+    // Construct `UnimplementedBlockEntity` explicitly since all 49 vanilla block
+    // entity types now have typed factories, and verify unknown NBT keys (`LootTable`,
+    // `LootTableSeed`) survive proto-chunk serialization, then verify the reloaded
+    // banner preserves its stored components.
+    let entity: crate::block_entity::SharedBlockEntity = std::sync::Arc::new(
+        crate::block_entity::entities::UnimplementedBlockEntity::with_data(
+            &vanilla_block_entity_types::BANNER,
+            proto.level_weak(),
+            block_pos,
+            banner,
+            nbt,
+        ),
     );
     assert!(proto.set_block_entity(entity));
 
@@ -662,6 +682,16 @@ fn unimplemented_block_entities_preserve_nbt_through_proto_save_load() {
         panic!("dirty proto chunk should prepare for saving");
     };
     assert_eq!(prepared.persistent.block_entities.len(), 1);
+    assert_eq!(
+        prepared.persistent.block_entities[0]
+            .string("LootTable")
+            .map(ToString::to_string),
+        Some("minecraft:chests/simple_dungeon".to_owned())
+    );
+    assert_eq!(
+        prepared.persistent.block_entities[0].long("LootTableSeed"),
+        Some(42)
+    );
 
     let loaded = ChunkStorage::persistent_to_chunk(
         &prepared.persistent,
@@ -673,20 +703,12 @@ fn unimplemented_block_entities_preserve_nbt_through_proto_save_load() {
     );
     let loaded_proto = loaded.chunk;
     let Some(loaded_entity) = loaded_proto.get_block_entity(block_pos) else {
-        panic!("unimplemented block entity should survive chunk load");
+        panic!("block entity should survive chunk load");
     };
 
-    let mut saved = NbtCompound::new();
     assert_eq!(
         loaded_entity.get_type().id(),
         vanilla_block_entity_types::BANNER.id()
     );
-    loaded_entity.save_additional(&mut saved);
-
-    assert_eq!(
-        saved.string("LootTable").map(ToString::to_string),
-        Some("minecraft:chests/simple_dungeon".to_owned())
-    );
-    assert_eq!(saved.long("LootTableSeed"), Some(42));
     assert_eq!(loaded_entity.collect_components().get(REPAIR_COST), Some(3));
 }

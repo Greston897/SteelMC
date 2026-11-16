@@ -61,15 +61,118 @@ impl SculkCatalystBlockEntity {
     }
 }
 
+/// Vanilla `SculkCatalystBlockEntity.CatalystListener` radius in blocks.
+const CATALYST_LISTENER_RADIUS: i32 = 8;
+/// Vanilla `SculkCatalystBlock.PULSE_TICKS` before clearing `bloom`.
+pub const CATALYST_BLOOM_TICKS: i32 = 8;
+
+struct SculkCatalystListener {
+    position: BlockPos,
+}
+
+impl GameEventListener for SculkCatalystListener {
+    fn listener_pos(&self) -> Option<glam::DVec3> {
+        Some(block_center(self.position))
+    }
+
+    fn listener_radius(&self) -> i32 {
+        CATALYST_LISTENER_RADIUS
+    }
+
+    fn handle_game_event(
+        &self,
+        world: &Arc<World>,
+        event: GameEventRef,
+        context: &GameEventContext<'_>,
+        source_pos: glam::DVec3,
+    ) -> bool {
+        if event.key != steel_registry::vanilla_game_events::ENTITY_DIE.key {
+            return false;
+        }
+        // Only living entities (not inanimate drops/projectiles) feed a catalyst.
+        if context
+            .source_entity()
+            .is_some_and(|entity| entity.as_living().is_none())
+        {
+            return false;
+        }
+
+        let catalyst_state = world.get_block_state(self.position);
+        if !ptr::eq(catalyst_state.get_block(), &vanilla_blocks::SCULK_CATALYST) {
+            return false;
+        }
+
+        // Bloom the catalyst and schedule its 8-tick pulse reset.
+        if !catalyst_state.get_value(&BlockStateProperties::BLOOM) {
+            world.set_block(
+                self.position,
+                catalyst_state.set_value(&BlockStateProperties::BLOOM, true),
+                UpdateFlags::UPDATE_ALL,
+            );
+            world.schedule_block_tick_default(
+                self.position,
+                &vanilla_blocks::SCULK_CATALYST,
+                CATALYST_BLOOM_TICKS,
+            );
+            world.play_sound(
+                &sound_events::BLOCK_SCULK_CATALYST_BLOOM,
+                SoundSource::Blocks,
+                self.position,
+                2.0,
+                1.0,
+                None,
+            );
+        }
+
+        // Spread sculk across nearby `minecraft:sculk_replaceable` blocks around
+        // the slain entity's feet, mirroring vanilla's `SculkSpreader` cursor.
+        let origin = BlockPos::new(
+            source_pos.x.floor() as i32,
+            source_pos.y.floor() as i32 - 1,
+            source_pos.z.floor() as i32,
+        );
+        let sculk_state = vanilla_blocks::SCULK.default_state();
+        let mut budget = 5;
+        for dy in [-1, 0, 1] {
+            for dx in -2_i32..=2 {
+                for dz in -2_i32..=2 {
+                    if budget <= 0 {
+                        break;
+                    }
+                    if dx.abs() + dz.abs() > 3 {
+                        continue;
+                    }
+                    let target = origin.offset(dx, dy, dz);
+                    let current = world.get_block_state(target);
+                    if current
+                        .get_block()
+                        .has_tag(&steel_registry::vanilla_block_tags::BlockTag::SCULK_REPLACEABLE)
+                        && world.get_block_state(target.above()).is_air()
+                    {
+                        world.set_block(target, sculk_state, UpdateFlags::UPDATE_ALL);
+                        budget -= 1;
+                    }
+                }
+            }
+        }
+        true
+    }
+}
+
 impl BlockEntity for SculkCatalystBlockEntity {
     fn base(&self) -> &BlockEntityBase {
         &self.base
     }
 
+    fn game_event_listener(&self) -> Option<SharedGameEventListener> {
+        Some(Arc::new(SculkCatalystListener {
+            position: self.base.pos(),
+        }))
+    }
+
     fn load_additional(&self, _nbt: &BorrowedNbtCompound<'_>) {}
 
     fn save_additional(&self, _nbt: &mut NbtCompound) {}
-
 }
 
 /// Sculk shrieker block entity.
@@ -373,21 +476,34 @@ impl GameEventListener for SculkShriekerListener {
     fn handle_game_event(
         &self,
         world: &Arc<World>,
-        _event: GameEventRef,
+        event: GameEventRef,
         context: &GameEventContext<'_>,
-        _source_pos: glam::DVec3,
+        source_pos: glam::DVec3,
     ) -> bool {
+        // Vanilla `GameEventTags.SHRIEKER_CAN_LISTEN`: a shrieker only listens to
+        // `sculk_sensor_tendrils_clicking` emitted by an activated sculk sensor.
+        if event.key
+            != steel_registry::vanilla_game_events::SCULK_SENSOR_TENDRILS_CLICKING.key
+        {
+            return false;
+        }
+        if crate::block_entity::entities::sculk_sensor::is_vibration_occluded(
+            world,
+            source_pos,
+            block_center(self.position),
+        ) {
+            return false;
+        }
         let Some(block_entity) = world.get_block_entity(self.position) else {
-            return true;
+            return false;
         };
         let Some(shrieker) = block_entity.downcast_ref::<SculkShriekerBlockEntity>() else {
-            return true;
+            return false;
         };
         let player = context
             .source_entity()
             .and_then(SculkShriekerBlockEntity::try_get_player);
-        shrieker.try_shriek(world, self.position, player.as_ref());
-        true
+        shrieker.try_shriek(world, self.position, player.as_ref())
     }
 }
 

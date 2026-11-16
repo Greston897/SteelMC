@@ -285,6 +285,16 @@ impl ServerRecipeBook {
         self.highlighted.remove(key);
     }
 
+    /// Resolves a client-sent `RecipeDisplayId` and clears its highlight badge.
+    pub fn remove_highlight_by_display(&mut self, display_id: i32) {
+        let Ok(index) = usize::try_from(display_id) else {
+            return;
+        };
+        if let Some(key) = self.displays.get(index) {
+            self.highlighted.remove(key);
+        }
+    }
+
     /// Builds the settings packet for all four tabs.
     #[must_use]
     pub fn settings_packet(&self) -> CRecipeBookSettings {

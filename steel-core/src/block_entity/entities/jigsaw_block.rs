@@ -134,6 +134,11 @@ impl JigsawBlockEntity {
         self.state.lock().joint = joint;
     }
 
+    /// Sets the joint mode from its serialized vanilla name (`"aligned"` or `"rollable"`).
+    pub fn set_joint_name(&self, name: &str) {
+        self.set_joint(joint_from_name(name));
+    }
+
     /// Vanilla `JigsawBlockEntity.getPlacementPriority`.
     #[must_use]
     pub fn placement_priority(&self) -> i32 {

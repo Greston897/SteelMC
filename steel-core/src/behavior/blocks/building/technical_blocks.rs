@@ -25,85 +25,17 @@ use crate::behavior::blocks::vegetation::bonemealable::Bonemealable;
 use crate::entity::damage::DamageSource;
 use crate::player::Player;
 use crate::world::LevelReader;
-use crate::entity::{Entity, LivingEntity as _};
+use crate::entity::Entity;
 use crate::behavior::context::{
     BlockHitResult, BlockPlaceContext, InteractionResult, InventoryAccess, PlacementSource,
 };
 use crate::block_entity::entities::{
-    CommandBlockBlockEntity, CommandBlockMode, SculkShriekerBlockEntity, StructureBlockEntity,
+    CommandBlockBlockEntity, CommandBlockMode, CreakingHeartBlockEntity, SCULK_SENSOR_COOLDOWN_TICKS,
+    SculkSensorBlockEntity, SculkShriekerBlockEntity, StructureBlockEntity, VaultBlockEntity,
+    VaultUnlockOutcome,
 };
 use crate::block_entity::{BLOCK_ENTITIES, BlockEntity as _, BlockEntityTicker};
-use crate::world::SignalGetter as _;
-use crate::world::World;
-
-macro_rules! block_entity_block {
-    ($name:ident, $type_const:ident, $placement:expr $(, $hook:item)*) => {
-        #[block_behavior]
-        pub struct $name {
-            block: BlockRef,
-        }
-
-        impl $name {
-            /// Creates a new block behavior.
-            #[must_use]
-            pub const fn new(block: BlockRef) -> Self {
-                Self { block }
-            }
-        }
-
-        impl BlockBehavior for $name {
-            fn get_state_for_placement(
-                &self,
-                context: &BlockPlaceContext<'_>,
-            ) -> Option<BlockStateId> {
-                let state = self.block.default_state();
-                Some($placement(state, context))
-            }
-
-            fn new_block_entity(
-                &self,
-                level: Weak<World>,
-                pos: BlockPos,
-                state: BlockStateId,
-            ) -> BlockEntityCreation {
-                BlockEntityCreation::from_registered_factory(BLOCK_ENTITIES.create(
-                    &vanilla_block_entity_types::$type_const,
-                    level,
-                    pos,
-                    state,
-                ))
-            }
-
-            $( $hook )*
-        }
-    };
-}
-
-/// Declares a block-entity block whose `on_place` runs `$hook` when the old
-/// state belonged to a different block.
-macro_rules! block_entity_block_with_on_place {
-    ($name:ident, $type_const:ident, $placement:expr, $hook:expr $(, $extra:item)*) => {
-        block_entity_block!(
-            $name,
-            $type_const,
-            $placement,
-            fn on_place(
-                &self,
-                state: BlockStateId,
-                world: &Arc<World>,
-                pos: BlockPos,
-                old_state: BlockStateId,
-                _moved_by_piston: bool,
-            ) {
-                if old_state.get_block() == state.get_block() {
-                    return;
-                }
-                ($hook)(world, pos, &self);
-            }
-            $(, $extra)*
-        );
-    };
-}
+use crate::world::{SignalGetter as _, SignalQueryContext, World};
 
 /// Maps a clicked facing onto vanilla's `front_and_top_to_orientation` for a
 /// jigsaw placed against that face.
@@ -451,12 +383,39 @@ impl BlockBehavior for JigsawBlock {
     }
 }
 
-block_entity_block!(
-    StructureBlock,
-    STRUCTURE_BLOCK,
-    |state: BlockStateId, _context: &BlockPlaceContext<'_>| state,
-    /// Vanilla `StructureBlock.useWithoutItem`: only a game-master opens the
-    /// editor; anyone else gets `PASS` so the block stays inert.
+/// Vanilla `StructureBlock`.
+#[block_behavior]
+pub struct StructureBlock {
+    block: BlockRef,
+}
+
+impl StructureBlock {
+    /// Creates a new structure block behavior.
+    #[must_use]
+    pub const fn new(block: BlockRef) -> Self {
+        Self { block }
+    }
+}
+
+impl BlockBehavior for StructureBlock {
+    fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+        Some(self.block.default_state())
+    }
+
+    fn new_block_entity(
+        &self,
+        level: Weak<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> BlockEntityCreation {
+        BlockEntityCreation::from_registered_factory(BLOCK_ENTITIES.create(
+            &vanilla_block_entity_types::STRUCTURE_BLOCK,
+            level,
+            pos,
+            state,
+        ))
+    }
+
     fn use_without_item(
         &self,
         _state: BlockStateId,
@@ -477,21 +436,15 @@ block_entity_block!(
         } else {
             InteractionResult::Pass
         }
-    },
+    }
 
-    /// Vanilla `StructureBlock.setPlacedBy`: only the server records the author,
-    /// and only when a living entity placed the block.
     fn set_placed_by(
         &self,
-        state: BlockStateId,
+        _state: BlockStateId,
         world: &Arc<World>,
         pos: BlockPos,
         source: &PlacementSource<'_>,
     ) {
-        let _ = state;
-        // Vanilla `StructureBlock.setPlacedBy` runs `createdBy(by)` for the
-        // living entity that placed the block; the player name is what the
-        // editor shows as the author.
         let Some(player) = source.player() else {
             return;
         };
@@ -502,13 +455,11 @@ block_entity_block!(
         if let Some(structure) = block_entity.downcast_ref::<StructureBlockEntity>() {
             structure.created_by(&author);
         }
-    },
+    }
 
-    /// Vanilla `StructureBlock.neighborChanged`: a rising redstone edge triggers
-    /// the stored action (save, load, or corner unload).
     fn handle_neighbor_changed(
         &self,
-        state: BlockStateId,
+        _state: BlockStateId,
         world: &Arc<World>,
         pos: BlockPos,
         _source_block: BlockRef,
@@ -525,14 +476,6 @@ block_entity_block!(
         let is_powered = structure.is_powered();
         if should_trigger && !is_powered {
             structure.set_powered(true);
-            // Vanilla `StructureBlock.trigger` runs `saveStructure`,
-            // `placeStructure` or `unloadStructure` here. Steel has no runtime
-            // structure manager yet: templates are only readable from the
-            // bundled vanilla datapack during world generation, and nothing
-            // writes `.nbt` files back to disk. The power edge is still tracked
-            // exactly like vanilla so the editor state (and the comparator-like
-            // redstone observability) is correct; the action itself is reported
-            // as unsupported instead of silently pretending to run.
             if structure.mode() != StructureMode::Data {
                 log::warn!(
                     "structure block at {pos:?} triggered {:?} but Steel has no runtime structure manager; the action was skipped",
@@ -542,18 +485,16 @@ block_entity_block!(
         } else if !should_trigger && is_powered {
             structure.set_powered(false);
         }
-        let _ = state;
     }
-);
+}
+
 /// Vanilla `CreakingHeartBlockEntity.removeCreaking`: destroying the heart takes
 /// its creaking with it, which is the only way to kill a creaking.
 fn kill_linked_creaking(world: &Arc<World>, pos: BlockPos) {
     let Some(block_entity) = world.get_block_entity(pos) else {
         return;
     };
-    let Some(heart) = block_entity
-        .downcast_ref::<crate::block_entity::entities::CreakingHeartBlockEntity>()
-    else {
+    let Some(heart) = block_entity.downcast_ref::<CreakingHeartBlockEntity>() else {
         return;
     };
     let Some(creaking_uuid) = heart.creaking() else {
@@ -566,17 +507,48 @@ fn kill_linked_creaking(world: &Arc<World>, pos: BlockPos) {
     }
 }
 
-block_entity_block_with_on_place!(
-    CreakingHeartBlock,
-    CREAKING_HEART,
-    |state: BlockStateId, _context: &BlockPlaceContext<'_>| state,
-    |world, pos, _behavior| kill_linked_creaking(world, pos),
-    /// Vanilla `CreakingHeartBlock.getTicker` returns
-    /// `CreakingHeartBlockEntity::serverTick`.
-    ///
-    /// The heart block entity already knows how to keep exactly one creaking
-    /// alive, but without this ticker it was never ticked, so a heart never
-    /// spawned anything.
+/// Vanilla `CreakingHeartBlock`.
+#[block_behavior]
+pub struct CreakingHeartBlock {
+    block: BlockRef,
+}
+
+impl CreakingHeartBlock {
+    /// Creates a new creaking heart block behavior.
+    #[must_use]
+    pub const fn new(block: BlockRef) -> Self {
+        Self { block }
+    }
+}
+
+impl BlockBehavior for CreakingHeartBlock {
+    fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+        let state = self
+            .block
+            .default_state()
+            .set_value(&BlockStateProperties::AXIS, context.clicked_face().axis());
+        let heart_state = CreakingHeartBlockEntity::compute_heart_state(
+            context.world(),
+            context.clicked_pos(),
+            state,
+        );
+        Some(state.set_value(&BlockStateProperties::CREAKING_HEART_STATE, heart_state))
+    }
+
+    fn new_block_entity(
+        &self,
+        level: Weak<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> BlockEntityCreation {
+        BlockEntityCreation::from_registered_factory(BLOCK_ENTITIES.create(
+            &vanilla_block_entity_types::CREAKING_HEART,
+            level,
+            pos,
+            state,
+        ))
+    }
+
     fn get_block_entity_ticker(
         &self,
         _world: &Arc<World>,
@@ -588,69 +560,507 @@ block_entity_block_with_on_place!(
             &vanilla_block_entity_types::CREAKING_HEART,
         )
     }
-);
 
-impl CreakingHeartBlock {
-    /// Vanilla `CreakingHeartBlockEntity.removeCreaking`: kills the linked
-    /// creaking when the heart is destroyed.
-    fn kill_creaking(world: &Arc<World>, pos: BlockPos) {
-        let Some(block_entity) = world.get_block_entity(pos) else {
-            return;
+    fn affect_neighbors_after_removal(
+        &self,
+        _state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _moved_by_piston: bool,
+    ) {
+        kill_linked_creaking(world, pos);
+    }
+
+    fn has_analog_output_signal(&self, _state: BlockStateId) -> bool {
+        true
+    }
+
+    fn get_analog_output_signal(
+        &self,
+        _state: BlockStateId,
+        world: &World,
+        pos: BlockPos,
+        _direction: steel_utils::Direction,
+    ) -> i32 {
+        world
+            .get_block_entity(pos)
+            .and_then(|be| be.downcast_ref::<CreakingHeartBlockEntity>().map(|h| h.analog_output_signal(world)))
+            .unwrap_or(0)
+    }
+}
+
+/// Vanilla `TrialSpawnerBlock`.
+#[block_behavior]
+pub struct TrialSpawnerBlock {
+    block: BlockRef,
+}
+
+impl TrialSpawnerBlock {
+    /// Creates a new trial spawner block behavior.
+    #[must_use]
+    pub const fn new(block: BlockRef) -> Self {
+        Self { block }
+    }
+}
+
+impl BlockBehavior for TrialSpawnerBlock {
+    fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+        Some(self.block.default_state())
+    }
+
+    fn new_block_entity(
+        &self,
+        level: Weak<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> BlockEntityCreation {
+        BlockEntityCreation::from_registered_factory(BLOCK_ENTITIES.create(
+            &vanilla_block_entity_types::TRIAL_SPAWNER,
+            level,
+            pos,
+            state,
+        ))
+    }
+
+    fn get_block_entity_ticker(
+        &self,
+        _world: &Arc<World>,
+        _state: BlockStateId,
+        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+    ) -> Option<BlockEntityTicker> {
+        BlockEntityTicker::for_matching_entity_tick(
+            block_entity_type,
+            &vanilla_block_entity_types::TRIAL_SPAWNER,
+        )
+    }
+}
+
+/// Vanilla `VaultBlock`.
+#[block_behavior]
+pub struct VaultBlock {
+    block: BlockRef,
+}
+
+impl VaultBlock {
+    /// Creates a new vault block behavior.
+    #[must_use]
+    pub const fn new(block: BlockRef) -> Self {
+        Self { block }
+    }
+}
+
+impl BlockBehavior for VaultBlock {
+    fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+        Some(self.block.default_state().set_value(
+            &BlockStateProperties::HORIZONTAL_FACING,
+            context.horizontal_direction().opposite(),
+        ))
+    }
+
+    fn new_block_entity(
+        &self,
+        level: Weak<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> BlockEntityCreation {
+        BlockEntityCreation::from_registered_factory(BLOCK_ENTITIES.create(
+            &vanilla_block_entity_types::VAULT,
+            level,
+            pos,
+            state,
+        ))
+    }
+
+    fn get_block_entity_ticker(
+        &self,
+        _world: &Arc<World>,
+        _state: BlockStateId,
+        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+    ) -> Option<BlockEntityTicker> {
+        BlockEntityTicker::for_matching_entity_tick(
+            block_entity_type,
+            &vanilla_block_entity_types::VAULT,
+        )
+    }
+
+    fn use_item_on(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+        _hand: crate::behavior::InteractionHand,
+        _hit_result: &BlockHitResult,
+        inv: &mut InventoryAccess,
+    ) -> InteractionResult {
+        let held = inv.with_item(|stack| stack.clone());
+        if held.is_empty() {
+            return InteractionResult::TryEmptyHandInteraction;
+        }
+        let Some(be) = world.get_block_entity(pos) else {
+            return InteractionResult::TryEmptyHandInteraction;
         };
-        let Some(heart) = block_entity
-            .downcast_ref::<crate::block_entity::entities::CreakingHeartBlockEntity>()
-        else {
-            return;
+        let Some(vault) = be.downcast_ref::<VaultBlockEntity>() else {
+            return InteractionResult::TryEmptyHandInteraction;
         };
-        let Some(creaking_uuid) = heart.creaking() else {
-            return;
-        };
-        heart.set_creaking(None);
-        if let Some(entity) = world.get_entity_by_uuid(&uuid::Uuid::from_u128(creaking_uuid)) {
-            let damage = DamageSource::environment(&vanilla_damage_types::GENERIC_KILL);
-            entity.hurt(world, &damage, f32::MAX);
+        match vault.try_insert_key(world, pos, state, player, &held) {
+            VaultUnlockOutcome::Unlocked => {
+                if !player.has_infinite_materials() {
+                    inv.with_item(|stack| stack.shrink(1));
+                }
+                InteractionResult::Success
+            }
+            VaultUnlockOutcome::AlreadyRewarded | VaultUnlockOutcome::WrongKey => {
+                InteractionResult::TryEmptyHandInteraction
+            }
         }
     }
 }
 
-block_entity_block!(
-    TrialSpawnerBlock,
-    TRIAL_SPAWNER,
-    |state: BlockStateId, _context: &BlockPlaceContext<'_>| state
-);
-block_entity_block!(
-    VaultBlock,
-    VAULT,
-    |state: BlockStateId, context: &BlockPlaceContext<'_>| state.set_value(
-        &BlockStateProperties::HORIZONTAL_FACING,
-        context.horizontal_direction().opposite()
-    )
-);
-block_entity_block!(
-    SculkSensorBlock,
-    SCULK_SENSOR,
-    |state: BlockStateId, _context: &BlockPlaceContext<'_>| state
-);
-block_entity_block!(
-    CalibratedSculkSensorBlock,
-    CALIBRATED_SCULK_SENSOR,
-    |state: BlockStateId, context: &BlockPlaceContext<'_>| state.set_value(
-        &BlockStateProperties::HORIZONTAL_FACING,
-        context.horizontal_direction().opposite()
-    )
-);
-block_entity_block!(
-    SculkCatalystBlock,
-    SCULK_CATALYST,
-    |state: BlockStateId, _context: &BlockPlaceContext<'_>| state
-);
-block_entity_block!(
-    SculkShriekerBlock,
-    SCULK_SHRIEKER,
-    |state: BlockStateId, _context: &BlockPlaceContext<'_>| state,
-    /// Vanilla `SculkShriekerBlock` is an `EntityBlock` with a ticker: the block
-    /// entity counts its shriek cooldown down, so the block needs one even
-    /// though the logic lives on the entity.
+fn step_sculk_sensor_phase(state: BlockStateId, world: &Arc<World>, pos: BlockPos, calibrated: bool) {
+    use steel_protocol::packets::game::SoundSource;
+    use steel_registry::blocks::properties::SculkSensorPhase;
+    use steel_registry::sound_events;
+
+    let Some(phase) = state.try_get_value(&BlockStateProperties::SCULK_SENSOR_PHASE) else {
+        return;
+    };
+    let block = state.get_block();
+    match phase {
+        SculkSensorPhase::Active => {
+            let next = state
+                .set_value(
+                    &BlockStateProperties::SCULK_SENSOR_PHASE,
+                    SculkSensorPhase::Cooldown,
+                )
+                .set_value(&BlockStateProperties::POWER, 0);
+            world.set_block(pos, next, UpdateFlags::UPDATE_ALL);
+            world.schedule_block_tick_default(pos, block, SCULK_SENSOR_COOLDOWN_TICKS);
+            world.update_neighbors_at(pos, block);
+            world.update_neighbors_at(pos.below(), block);
+            world.update_neighbor_for_output_signal(pos, block);
+            if !state
+                .try_get_value(&BlockStateProperties::WATERLOGGED)
+                .unwrap_or(false)
+            {
+                world.play_sound(
+                    &sound_events::BLOCK_SCULK_SENSOR_CLICKING_STOP,
+                    SoundSource::Blocks,
+                    pos,
+                    1.0,
+                    if calibrated { 1.5 } else { 1.0 },
+                    None,
+                );
+            }
+        }
+        SculkSensorPhase::Cooldown => {
+            world.set_block(
+                pos,
+                state.set_value(
+                    &BlockStateProperties::SCULK_SENSOR_PHASE,
+                    SculkSensorPhase::Inactive,
+                ),
+                UpdateFlags::UPDATE_ALL,
+            );
+        }
+        SculkSensorPhase::Inactive => {}
+    }
+}
+
+fn sculk_sensor_comparator_signal(world: &World, pos: BlockPos, state: BlockStateId) -> i32 {
+    use steel_registry::blocks::properties::SculkSensorPhase;
+    if state.try_get_value(&BlockStateProperties::SCULK_SENSOR_PHASE)
+        != Some(SculkSensorPhase::Active)
+    {
+        return 0;
+    }
+    world
+        .get_block_entity(pos)
+        .and_then(|be| {
+            be.downcast_ref::<SculkSensorBlockEntity>()
+                .map(SculkSensorBlockEntity::last_vibration_frequency)
+        })
+        .unwrap_or(0)
+}
+
+/// Vanilla `SculkSensorBlock`.
+#[block_behavior]
+pub struct SculkSensorBlock {
+    block: BlockRef,
+}
+
+impl SculkSensorBlock {
+    /// Creates a new sculk sensor block behavior.
+    #[must_use]
+    pub const fn new(block: BlockRef) -> Self {
+        Self { block }
+    }
+}
+
+impl BlockBehavior for SculkSensorBlock {
+    fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+        let waterlogged = context
+            .world()
+            .get_block_state(context.clicked_pos())
+            .get_block()
+            == &vanilla_blocks::WATER;
+        Some(
+            self.block
+                .default_state()
+                .set_value(&BlockStateProperties::WATERLOGGED, waterlogged),
+        )
+    }
+
+    fn new_block_entity(
+        &self,
+        level: Weak<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> BlockEntityCreation {
+        BlockEntityCreation::from_registered_factory(BLOCK_ENTITIES.create(
+            &vanilla_block_entity_types::SCULK_SENSOR,
+            level,
+            pos,
+            state,
+        ))
+    }
+
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        step_sculk_sensor_phase(state, world, pos, false);
+    }
+
+    fn is_signal_source(&self, _state: BlockStateId, _context: SignalQueryContext) -> bool {
+        true
+    }
+
+    fn get_own_signal(
+        &self,
+        state: BlockStateId,
+        _world: &dyn LevelReader,
+        _pos: BlockPos,
+        _context: SignalQueryContext,
+    ) -> i32 {
+        i32::from(state.get_value(&BlockStateProperties::POWER))
+    }
+
+    fn get_direct_signal(
+        &self,
+        state: BlockStateId,
+        _world: &dyn LevelReader,
+        _pos: BlockPos,
+        direction: steel_utils::Direction,
+        _context: SignalQueryContext,
+    ) -> i32 {
+        if direction == steel_utils::Direction::Up {
+            i32::from(state.get_value(&BlockStateProperties::POWER))
+        } else {
+            0
+        }
+    }
+
+    fn has_analog_output_signal(&self, _state: BlockStateId) -> bool {
+        true
+    }
+
+    fn get_analog_output_signal(
+        &self,
+        state: BlockStateId,
+        world: &World,
+        pos: BlockPos,
+        _direction: steel_utils::Direction,
+    ) -> i32 {
+        sculk_sensor_comparator_signal(world, pos, state)
+    }
+}
+
+/// Vanilla `CalibratedSculkSensorBlock`.
+#[block_behavior]
+pub struct CalibratedSculkSensorBlock {
+    block: BlockRef,
+}
+
+impl CalibratedSculkSensorBlock {
+    /// Creates a new calibrated sculk sensor block behavior.
+    #[must_use]
+    pub const fn new(block: BlockRef) -> Self {
+        Self { block }
+    }
+}
+
+impl BlockBehavior for CalibratedSculkSensorBlock {
+    fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+        let waterlogged = context
+            .world()
+            .get_block_state(context.clicked_pos())
+            .get_block()
+            == &vanilla_blocks::WATER;
+        // Vanilla `CalibratedSculkSensorBlock`: the amethyst input side faces the player.
+        Some(
+            self.block
+                .default_state()
+                .set_value(&BlockStateProperties::WATERLOGGED, waterlogged)
+                .set_value(
+                    &BlockStateProperties::HORIZONTAL_FACING,
+                    context.horizontal_direction(),
+                ),
+        )
+    }
+
+    fn new_block_entity(
+        &self,
+        level: Weak<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> BlockEntityCreation {
+        BlockEntityCreation::from_registered_factory(BLOCK_ENTITIES.create(
+            &vanilla_block_entity_types::CALIBRATED_SCULK_SENSOR,
+            level,
+            pos,
+            state,
+        ))
+    }
+
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        step_sculk_sensor_phase(state, world, pos, true);
+    }
+
+    fn is_signal_source(&self, _state: BlockStateId, _context: SignalQueryContext) -> bool {
+        true
+    }
+
+    fn get_signal(
+        &self,
+        state: BlockStateId,
+        _world: &dyn LevelReader,
+        _pos: BlockPos,
+        direction: steel_utils::Direction,
+        _context: SignalQueryContext,
+    ) -> i32 {
+        // Vanilla `CalibratedSculkSensorBlock.getSignal`: emits on every face
+        // EXCEPT the calibrated input face (`facing`).
+        if direction != state.get_value(&BlockStateProperties::HORIZONTAL_FACING) {
+            i32::from(state.get_value(&BlockStateProperties::POWER))
+        } else {
+            0
+        }
+    }
+
+    fn get_direct_signal(
+        &self,
+        state: BlockStateId,
+        _world: &dyn LevelReader,
+        _pos: BlockPos,
+        direction: steel_utils::Direction,
+        _context: SignalQueryContext,
+    ) -> i32 {
+        if direction == steel_utils::Direction::Up {
+            i32::from(state.get_value(&BlockStateProperties::POWER))
+        } else {
+            0
+        }
+    }
+
+    fn has_analog_output_signal(&self, _state: BlockStateId) -> bool {
+        true
+    }
+
+    fn get_analog_output_signal(
+        &self,
+        state: BlockStateId,
+        world: &World,
+        pos: BlockPos,
+        _direction: steel_utils::Direction,
+    ) -> i32 {
+        sculk_sensor_comparator_signal(world, pos, state)
+    }
+}
+
+/// Vanilla `SculkCatalystBlock`.
+#[block_behavior]
+pub struct SculkCatalystBlock {
+    block: BlockRef,
+}
+
+impl SculkCatalystBlock {
+    /// Creates a new sculk catalyst block behavior.
+    #[must_use]
+    pub const fn new(block: BlockRef) -> Self {
+        Self { block }
+    }
+}
+
+impl BlockBehavior for SculkCatalystBlock {
+    fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+        Some(self.block.default_state())
+    }
+
+    fn new_block_entity(
+        &self,
+        level: Weak<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> BlockEntityCreation {
+        BlockEntityCreation::from_registered_factory(BLOCK_ENTITIES.create(
+            &vanilla_block_entity_types::SCULK_CATALYST,
+            level,
+            pos,
+            state,
+        ))
+    }
+
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        if state.get_value(&BlockStateProperties::BLOOM) {
+            world.set_block(
+                pos,
+                state.set_value(&BlockStateProperties::BLOOM, false),
+                UpdateFlags::UPDATE_ALL,
+            );
+        }
+    }
+}
+
+/// Vanilla `SculkShriekerBlock`.
+#[block_behavior]
+pub struct SculkShriekerBlock {
+    block: BlockRef,
+}
+
+impl SculkShriekerBlock {
+    /// Creates a new sculk shrieker block behavior.
+    #[must_use]
+    pub const fn new(block: BlockRef) -> Self {
+        Self { block }
+    }
+}
+
+impl BlockBehavior for SculkShriekerBlock {
+    fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
+        let waterlogged = context
+            .world()
+            .get_block_state(context.clicked_pos())
+            .get_block()
+            == &vanilla_blocks::WATER;
+        Some(
+            self.block
+                .default_state()
+                .set_value(&BlockStateProperties::WATERLOGGED, waterlogged),
+        )
+    }
+
+    fn new_block_entity(
+        &self,
+        level: Weak<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> BlockEntityCreation {
+        BlockEntityCreation::from_registered_factory(BLOCK_ENTITIES.create(
+            &vanilla_block_entity_types::SCULK_SHRIEKER,
+            level,
+            pos,
+            state,
+        ))
+    }
+
     fn get_block_entity_ticker(
         &self,
         _world: &Arc<World>,
@@ -661,11 +1071,8 @@ block_entity_block!(
             block_entity_type,
             &vanilla_block_entity_types::SCULK_SHRIEKER,
         )
-    },
+    }
 
-    /// Vanilla `SculkShriekerBlock.tick`: the scheduled tick that ends the shriek
-    /// animation clears the `shrieking` state and asks the block entity to
-    /// respond (summon a warden or play the "listening" reply, then darkness).
     fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
         if !state.get_value(&BlockStateProperties::SHRIEKING) {
             return;
@@ -681,10 +1088,8 @@ block_entity_block!(
         {
             shrieker.try_respond(world, pos);
         }
-    },
+    }
 
-    /// Vanilla `SculkShriekerBlockEntity.preRemoveSideEffects`: a shrieker broken
-    /// while it is still shrieking responds before it disappears.
     fn affect_neighbors_after_removal(
         &self,
         state: BlockStateId,
@@ -697,21 +1102,16 @@ block_entity_block!(
         }
         if let Some(shrieker) = world
             .get_block_entity(pos)
-            .and_then(|block_entity| block_entity.downcast_ref::<SculkShriekerBlockEntity>().cloned())
+            .and_then(|be| be.downcast_ref::<SculkShriekerBlockEntity>().cloned())
         {
             shrieker.try_respond(world, pos);
         }
-    },
+    }
 
-    /// Vanilla `SculkShriekerBlock.stepOn`: a player stepping onto the shrieker
-    /// makes it shriek for them.
     fn step_on(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos, entity: &dyn Entity) {
         if state.get_value(&BlockStateProperties::SHRIEKING) {
             return;
         }
-        // Vanilla `SculkShriekerBlockEntity.tryGetPlayer` looks for the concrete
-        // player first; skipping everything else keeps this path free of an
-        // entity type check for the common case of a mob walking over it.
         if entity.as_player().is_none()
             && entity.controlling_passenger().is_none()
             && entity.projectile_owner().is_none()
@@ -723,12 +1123,12 @@ block_entity_block!(
         };
         if let Some(shrieker) = world
             .get_block_entity(pos)
-            .and_then(|block_entity| block_entity.downcast_ref::<SculkShriekerBlockEntity>().cloned())
+            .and_then(|be| be.downcast_ref::<SculkShriekerBlockEntity>().cloned())
         {
             shrieker.try_shriek(world, pos, Some(&player));
         }
     }
-);
+}
 
 /// Attempts vanilla's moss feature makes to find a valid position.
 const MOSS_PLACEMENT_ATTEMPTS: usize = 8;

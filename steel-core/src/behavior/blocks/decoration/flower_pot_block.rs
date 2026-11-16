@@ -10,7 +10,6 @@ use std::sync::{Arc, LazyLock};
 use rustc_hash::FxHashMap;
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
-use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::item::BlockHitResult;
 use steel_registry::vanilla_custom_stats;

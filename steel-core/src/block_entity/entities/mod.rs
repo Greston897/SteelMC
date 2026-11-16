@@ -57,9 +57,9 @@ pub use sculk_catalyst::{SculkCatalystBlockEntity, SculkShriekerBlockEntity};
 /// Vanilla `WardenSpawnTracker` lives with the entity code, not with the block
 /// entity, because the tracker state belongs to the player.
 pub use crate::entity::WardenSpawnTracker;
-pub use sculk_sensor::SculkSensorBlockEntity;
+pub use sculk_sensor::{SCULK_SENSOR_COOLDOWN_TICKS, SculkSensorBlockEntity};
 pub use trial_spawner::TrialSpawnerBlockEntity;
-pub use vault::VaultBlockEntity;
+pub use vault::{VaultBlockEntity, VaultUnlockOutcome};
 pub use abstract_furnace::{
     BlastFurnaceBlockEntity, FurnaceBlockEntity, FurnaceKind, SmokerBlockEntity,
 };

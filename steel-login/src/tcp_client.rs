@@ -26,11 +26,11 @@ use steel_protocol::{
     packet_traits::{ClientPacket, CompressionInfo, EncodedPacket, ServerPacket},
     packet_writer::TCPNetworkEncoder,
     packets::{
-        common::{CDisconnect, SClientInformation, SCustomPayload, SPingRequest},
-        config::SSelectKnownPacks,
+        common::{CDisconnect, SClientInformation, SCustomPayload, SKeepAlive, SPingRequest},
+        config::{SAcceptCodeOfConduct, SSelectKnownPacks},
+        game::{SCustomClickAction, SPong, SResourcePack},
         handshake::{ClientIntent, SClientIntention},
-        game::SResourcePack,
-        login::{CLoginDisconnect, SHello, SKey},
+        login::{CLoginDisconnect, SCookieResponse, SCustomQueryAnswer, SHello, SKey},
     },
     utils::{ConnectionProtocol, PacketError, RawPacket},
 };
@@ -851,6 +851,21 @@ impl JavaTcpClient {
                 }
                 Ok(self.handle_key(SKey::read_packet(data)?).await)
             }
+            login_packets::S_CUSTOM_QUERY_ANSWER => {
+                // Validate frame structure; unrecognized plugin login replies disconnect
+                // in vanilla `ServerLoginPacketListenerImpl.handleCustomQueryPacket` unless ignored.
+                let answer = SCustomQueryAnswer::read_packet(data)?;
+                log::debug!(
+                    "Ignoring login custom query answer (transaction {})",
+                    answer.transaction_id
+                );
+                Ok(ConnectionAction::none())
+            }
+            login_packets::S_COOKIE_RESPONSE => {
+                let cookie = SCookieResponse::read_packet(data)?;
+                log::debug!("Ignoring login cookie response for {}", cookie.key);
+                Ok(ConnectionAction::none())
+            }
             login_packets::S_LOGIN_ACKNOWLEDGED => {
                 if let Err(error) = self.expect_pre_play_packet(PrePlayPacket::LoginAcknowledged) {
                     return Ok(self.reject_unexpected_packet(error).await);
@@ -876,6 +891,29 @@ impl JavaTcpClient {
             config::S_CLIENT_INFORMATION => {
                 self.handle_client_information(SClientInformation::read_packet(data)?)
                     .await;
+                Ok(ConnectionAction::none())
+            }
+            config::S_KEEP_ALIVE => {
+                let _keep_alive = SKeepAlive::read_packet(data)?;
+                Ok(ConnectionAction::none())
+            }
+            config::S_PONG => {
+                let _pong = SPong::read_packet(data)?;
+                Ok(ConnectionAction::none())
+            }
+            config::S_COOKIE_RESPONSE => {
+                let cookie = SCookieResponse::read_packet(data)?;
+                log::debug!("Ignoring config cookie response for {}", cookie.key);
+                Ok(ConnectionAction::none())
+            }
+            config::S_CUSTOM_CLICK_ACTION => {
+                let action = SCustomClickAction::read_packet(data)?;
+                log::debug!("Received config custom click action: {}", action.id);
+                Ok(ConnectionAction::none())
+            }
+            config::S_ACCEPT_CODE_OF_CONDUCT => {
+                let _accepted = SAcceptCodeOfConduct::read_packet(data)?;
+                log::debug!("Client accepted server code of conduct");
                 Ok(ConnectionAction::none())
             }
             config::S_SELECT_KNOWN_PACKS => {

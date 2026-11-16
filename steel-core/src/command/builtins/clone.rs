@@ -6,7 +6,7 @@
 //! the block entity registry owns the NBT shape, copies block entities through
 //! their save/load path when both sides have a container.
 
-use std::{borrow::Cow, sync::Arc};
+use std::borrow::Cow;
 
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::vanilla_game_rules::MAX_BLOCK_MODIFICATIONS;
@@ -22,7 +22,6 @@ use super::super::{
     registration::CommandRegistration,
 };
 use super::execute::{ensure_region_chunks_block_ticking, loaded_block_position};
-use crate::world::World;
 
 type Builder = CommandNodeBuilder<CommandSource, SteelCommandRuntime>;
 

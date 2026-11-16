@@ -33,7 +33,7 @@ use super::phases::{
     find_path, wrap_degrees,
 };
 use crate::entity::damage::DamageSource;
-use crate::entity::{Entity, SharedEntity};
+use crate::entity::Entity;
 use crate::entity::ai::path::Path;
 use crate::world::World;
 

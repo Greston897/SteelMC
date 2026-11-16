@@ -28,7 +28,6 @@
 //! a tick that re-entered it would deadlock.
 
 use std::f32::consts::PI;
-use std::sync::Arc;
 
 use glam::DVec3;
 use steel_utils::BlockPos;

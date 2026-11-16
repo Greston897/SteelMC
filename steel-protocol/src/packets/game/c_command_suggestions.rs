@@ -1,6 +1,4 @@
 use steel_macros::{ClientPacket, WriteTo};
-use steel_utils::serial::PrefixedWrite as _;
-use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_COMMAND_SUGGESTIONS;
 use text_components::TextComponent;
 

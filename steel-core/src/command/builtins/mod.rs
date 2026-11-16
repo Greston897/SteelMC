@@ -11,6 +11,7 @@ mod damage;
 mod data;
 mod datapack;
 mod defaultgamemode;
+mod dialog;
 mod difficulty;
 mod reload;
 mod domain;
@@ -40,6 +41,7 @@ mod particle;
 mod perms;
 mod playsound;
 mod posteffect;
+mod random;
 mod recipe;
 mod position;
 mod return_command;
@@ -50,6 +52,7 @@ mod say;
 mod schedule;
 mod scoreboard;
 mod seed;
+mod serverpack;
 mod setblock;
 mod setidletimeout;
 mod setworldspawn;
@@ -63,6 +66,7 @@ mod summon;
 mod swing;
 mod tag;
 mod team;
+mod teammsg;
 mod teleport;
 mod tellraw;
 mod trigger;
@@ -72,6 +76,7 @@ mod title;
 mod tpsbar;
 mod transfer;
 mod version;
+mod waypoint;
 mod weather;
 mod whitelist;
 mod worldborder;
@@ -120,6 +125,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(data::registration())?;
     builder.register(datapack::registration())?;
     builder.register(defaultgamemode::registration())?;
+    builder.register(dialog::registration())?;
     builder.register(reload::registration())?;
     builder.register(difficulty::registration())?;
     builder.register(effect::registration())?;
@@ -144,11 +150,14 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(perms::registration())?;
     builder.register(playsound::registration())?;
     builder.register(posteffect::registration())?;
+    builder.register(random::registration())?;
     builder.register(recipe::registration())?;
     builder.register(return_command::registration())?;
     builder.register(ride::registration())?;
     builder.register(rotate::registration())?;
     builder.register(save::registration())?;
+    builder.register(save::save_off_registration())?;
+    builder.register(save::save_on_registration())?;
     builder.register(say::say_registration())?;
     builder.register(say::me_registration())?;
     builder.register(scoreboard::registration())?;
@@ -158,6 +167,8 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(schedule::registration())?;
     builder.register(spectate::registration())?;
     builder.register(seed::registration())?;
+    builder.register(serverpack::serverpack_registration())?;
+    builder.register(serverpack::fetchprofile_registration())?;
     builder.register(setblock::registration())?;
     builder.register(spawnpoint::registration())?;
     builder.register(spreadplayers::registration())?;
@@ -170,6 +181,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(swing::registration())?;
     builder.register(tag::registration())?;
     builder.register(team::registration())?;
+    builder.register(teammsg::registration())?;
     builder.register(teleport::registration())?;
     builder.register(tellraw::registration())?;
     builder.register(trigger::registration())?;
@@ -178,6 +190,7 @@ pub(crate) fn create_registered_dispatcher(
     builder.register(title::registration())?;
     builder.register(tpsbar::registration())?;
     builder.register(version::registration())?;
+    builder.register(waypoint::registration())?;
     builder.register(weather::registration())?;
     builder.register(whitelist::registration())?;
     builder.register(worldborder::registration())?;
@@ -233,6 +246,7 @@ mod tests {
                 "advancement",
                 "attribute",
                 "ban",
+                "ban-ip",
                 "banip",
                 "banlist",
                 "bossbar",
@@ -243,12 +257,14 @@ mod tests {
                 "datapack",
                 "defaultgamemode",
                 "deop",
+                "dialog",
                 "difficulty",
                 "domain",
                 "effect",
                 "enchant",
                 "execute",
                 "experience",
+                "fetchprofile",
                 "fill",
                 "fillbiome",
                 "fly",
@@ -269,21 +285,26 @@ mod tests {
                 "msg",
                 "op",
                 "pardon",
+                "pardon-ip",
                 "pardonip",
                 "particle",
                 "perms",
                 "playsound",
                 "posteffect",
+                "random",
                 "recipe",
                 "reload",
                 "return",
                 "ride",
                 "rotate",
                 "save-all",
+                "save-off",
+                "save-on",
                 "say",
                 "schedule",
                 "scoreboard",
                 "seed",
+                "serverpack",
                 "setblock",
                 "setidletimeout",
                 "setworldspawn",
@@ -297,18 +318,21 @@ mod tests {
                 "swing",
                 "tag",
                 "team",
+                "teammsg",
                 "teleport",
                 "tell",
                 "tellraw",
                 "tick",
                 "time",
                 "title",
+                "tm",
                 "tp",
                 "tpsbar",
                 "transfer",
                 "trigger",
                 "version",
                 "w",
+                "waypoint",
                 "weather",
                 "whitelist",
                 "worldborder",

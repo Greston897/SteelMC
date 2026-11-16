@@ -283,7 +283,9 @@ impl Server {
             event: client_permission_event(player, &world),
         });
 
-        let server = player.server();
+        let Some(server) = player.try_server() else {
+            return;
+        };
         if !Arc::ptr_eq(&server, self) {
             tracing::error!(
                 player = %player.gameprofile.name(),

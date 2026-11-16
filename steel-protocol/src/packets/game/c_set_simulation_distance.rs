@@ -1,7 +1,6 @@
 //! Simulation distance packet.
 
 use steel_macros::{ClientPacket, WriteTo};
-use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_SET_SIMULATION_DISTANCE;
 use steel_utils::codec::VarInt;
 

@@ -19,12 +19,22 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
     CommandRegistration::new(Identifier::vanilla_static("save-all"), |_| command())
 }
 
+pub(super) fn save_off_registration() -> CommandRegistration<CommandSource> {
+    CommandRegistration::new(Identifier::vanilla_static("save-off"), |_| {
+        literal("save-off").executes(save_off)
+    })
+}
+
+pub(super) fn save_on_registration() -> CommandRegistration<CommandSource> {
+    CommandRegistration::new(Identifier::vanilla_static("save-on"), |_| {
+        literal("save-on").executes(save_on)
+    })
+}
+
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("save-all")
-        .executes(|context| save_all(context))
-        .then(literal("flush").executes(|context| save_all(context)))
-        .then(literal("save-off").executes(save_off))
-        .then(literal("save-on").executes(save_on))
+        .executes(save_all)
+        .then(literal("flush").executes(save_all))
 }
 
 /// Runs one save pass, matching vanilla `SaveAllCommand`.

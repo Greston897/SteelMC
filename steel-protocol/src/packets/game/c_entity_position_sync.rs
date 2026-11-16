@@ -6,7 +6,7 @@ use glam::DVec3;
 use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_ENTITY_POSITION_SYNC;
 use steel_utils::codec::VarInt;
-use steel_utils::serial::{PrefixedWrite, WriteTo};
+use steel_utils::serial::PrefixedWrite;
 
 /// One position along a stepped movement path.
 #[derive(Clone, Copy, Debug, PartialEq, WriteTo)]

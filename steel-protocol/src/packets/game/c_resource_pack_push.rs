@@ -4,7 +4,6 @@ use std::io;
 
 use steel_macros::ClientPacket;
 use steel_registry::packets::{config, play};
-use steel_utils::serial::WriteTo as _;
 use text_components::TextComponent;
 use uuid::Uuid;
 

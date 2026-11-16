@@ -8,7 +8,6 @@
 
 use steel_macros::{ReadFrom, ServerPacket};
 use steel_utils::BlockPos;
-use steel_utils::codec::{VarInt, VarLong};
 
 /// Vanilla `ServerboundSetStructureBlockPacket.FLAG_IGNORE_ENTITIES`.
 const FLAG_IGNORE_ENTITIES: u8 = 1;

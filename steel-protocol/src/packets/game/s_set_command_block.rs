@@ -2,7 +2,6 @@
 
 use steel_macros::{ReadFrom, ServerPacket};
 use steel_utils::BlockPos;
-use steel_utils::codec::VarInt;
 
 /// Serverbound packet that edits a command block.
 #[derive(ReadFrom, ServerPacket, Clone, Debug)]

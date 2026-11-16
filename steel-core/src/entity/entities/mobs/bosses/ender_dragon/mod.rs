@@ -50,7 +50,6 @@ use steel_utils::{BlockPos, DowncastType, DowncastTypeKey, WorldAabb};
 use self::part::{
     DRAGON_PART_BODY, DRAGON_PART_COUNT, DRAGON_PART_HEAD, DRAGON_PART_NECK, part_damage_scaling,
 };
-use self::flight_history::DragonFlightHistory;
 use self::phase_ticks::{FLAME_DURATION, PhaseAction, SITTING_FLAME_RADIUS, phase_fly_target, tick_phase};
 use self::phases::{DragonPhase, DragonPhaseManager, turn_speed};
 use crate::entity::damage::DamageSource;

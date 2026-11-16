@@ -259,7 +259,11 @@ impl Player {
             None
         };
 
-        if self.server().enforces_secure_chat() {
+        let Some(server) = self.try_server() else {
+            return;
+        };
+
+        if server.enforces_secure_chat() {
             match &verification_result {
                 Some(Ok(_)) => {}
                 Some(Err(err)) => {
@@ -331,11 +335,11 @@ impl Player {
                 LastSeen::default()
             };
 
-            for world in self.server().worlds.values() {
+            for world in server.worlds.values() {
                 world.broadcast_chat(chat_packet.clone(), self, &last_seen, Some(&sig_array));
             }
         } else {
-            for world in self.server().worlds.values() {
+            for world in server.worlds.values() {
                 world.broadcast_unsigned_chat(chat_packet.clone());
             }
         }
@@ -397,7 +401,9 @@ impl Player {
 
         let update_packet =
             CPlayerInfoUpdate::update_chat_session(self.gameprofile.id(), protocol_data);
-        self.server().broadcast_to_online(update_packet);
+        if let Some(server) = self.try_server() {
+            server.broadcast_to_online(update_packet);
+        }
     }
 
     /// Gets a reference to the player's chat session if present
@@ -446,7 +452,10 @@ impl Player {
         let old_profile_key = self
             .chat_session()
             .map(|session| session.profile_public_key.data().clone());
-        let validator = self.server().profile_key_signature_validator();
+        let Some(server) = self.try_server() else {
+            return;
+        };
+        let validator = server.profile_key_signature_validator();
         match validate_chat_session_update(
             old_profile_key.as_ref(),
             session_data,

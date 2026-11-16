@@ -20,7 +20,7 @@ use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::{
-    BlockPos, BlockStateId, DowncastType, DowncastTypeKey, Identifier, locks::SyncMutex,
+    BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex,
 };
 
 use crate::block_entity::randomizable_container::RandomizableContainer;
@@ -50,32 +50,28 @@ const LID_EVENT_ID: i32 = 1;
 /// same way the server does here so other code can query it.
 #[derive(Debug, Default)]
 struct ChestLidController {
-    should_be_open: bool,
     open: bool,
     open_ticks: f32,
     ticks_since_last_open: i32,
 }
 
 impl ChestLidController {
-    /// Vanilla `ChestLidController.tickLid`.
+    /// Vanilla `ChestLidController.tickLid` with the `LID_KEEP_OPEN_TICKS` latch.
     fn tick_lid(&mut self, openers: i32) {
-        self.should_be_open |= openers > 0;
-        self.ticks_since_last_open += 1;
-        if !self.should_be_open && self.ticks_since_last_open > LID_KEEP_OPEN_TICKS {
-            self.open = false;
-        } else {
+        if openers > 0 {
             self.open = true;
             self.ticks_since_last_open = 0;
+        } else if self.open {
+            self.ticks_since_last_open += 1;
+            if self.ticks_since_last_open > LID_KEEP_OPEN_TICKS {
+                self.open = false;
+            }
         }
 
         // Vanilla lerps the angle by 0.1 per tick and clamps it to [0, 1].
         let target = if self.open { 1.0 } else { 0.0 };
         let delta = (target - self.open_ticks).clamp(-0.1, 0.1);
         self.open_ticks = (self.open_ticks + delta).clamp(0.0, 1.0);
-
-        if self.open_ticks < 0.5 && self.should_be_open {
-            self.should_be_open = false;
-        }
     }
 }
 

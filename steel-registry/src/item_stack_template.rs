@@ -62,7 +62,7 @@ pub struct ItemStackTemplate {
 
 impl Default for ItemStackTemplate {
     fn default() -> Self {
-        Self::new(&*vanilla_items::STONE)
+        Self::new(&vanilla_items::STONE)
     }
 }
 

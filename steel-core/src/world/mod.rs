@@ -1729,11 +1729,9 @@ impl World {
     /// that would go stale when the trader despawns or is killed.
     #[must_use]
     pub fn has_natural_wandering_trader(&self) -> bool {
-        let trader = Identifier::vanilla_static("wandering_trader");
-        World::entity_manager(self)
-            .get_accessible_entities()
-            .iter()
-            .any(|entity| entity.entity_type().key == trader)
+        World::entity_manager(self).any_accessible_entity(|entity| {
+            entity.entity_type() == &steel_registry::vanilla_entities::WANDERING_TRADER
+        })
     }
 }
 

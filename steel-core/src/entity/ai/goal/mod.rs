@@ -52,9 +52,7 @@ pub(crate) use leap_at_target::LeapAtTargetGoal;
 pub(crate) use look_at_player::LookAtPlayerGoal;
 pub(crate) use melee_attack::MeleeAttackGoal;
 pub(crate) use merge_with_stone::SilverfishMergeWithStoneGoal;
-pub(crate) use move_to_block::MoveToBlockGoal;
 pub(crate) use move_towards_restriction::MoveTowardsRestrictionGoal;
-pub(crate) use move_towards_target::MoveTowardsTargetGoal;
 pub(crate) use nearest_attackable_target::NearestAttackableTargetGoal;
 pub(crate) use open_door::OpenDoorGoal;
 pub(crate) use panic_goal::PanicGoal;
@@ -70,7 +68,6 @@ pub(crate) use selector::{Goal, GoalControl, GoalSelector};
 pub(crate) use squid_flee_goal::SquidFleeGoal;
 pub(crate) use squid_random_movement_goal::SquidRandomMovementGoal;
 pub(crate) use tempt_goal::TemptGoal;
-pub(crate) use try_find_water::TryFindWaterGoal;
 pub(crate) use water_avoiding_random_stroll::WaterAvoidingRandomStrollGoal;
 
 pub(super) const fn reduced_tick_delay(ticks: i32) -> i32 {

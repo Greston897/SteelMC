@@ -22,8 +22,9 @@ mod selection;
 
 pub(crate) use selection::{EnchantmentInstance, get_enchantment_cost, select_enchantment};
 
+/// Damage context passed into enchantment value-effect evaluators.
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct EnchantmentDamageContext<'a> {
+pub struct EnchantmentDamageContext<'a> {
     this_entity_type: EntityTypeRef,
     attacker_entity_type: Option<EntityTypeRef>,
     direct_attacker_entity_type: Option<EntityTypeRef>,

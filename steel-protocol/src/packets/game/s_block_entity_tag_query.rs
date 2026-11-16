@@ -2,7 +2,6 @@
 
 use steel_macros::{ReadFrom, ServerPacket};
 use steel_utils::BlockPos;
-use steel_utils::codec::VarInt;
 
 /// Serverbound request for the block entity tags at a position.
 #[derive(ReadFrom, ServerPacket, Clone, Debug)]

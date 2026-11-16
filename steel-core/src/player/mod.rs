@@ -1218,7 +1218,9 @@ impl Player {
     /// Vanilla asks the scoreboard for both holder teams; unteamed holders are
     /// never teammates, matching `PlayerTeam == null` checks.
     fn is_on_same_team_as(&self, world: &Arc<World>, other: &dyn Entity) -> bool {
-        let server = self.server();
+        let Some(server) = self.try_server() else {
+            return false;
+        };
         let Some(scoreboard) = server.scoreboards.get(world.domain()) else {
             return false;
         };
@@ -1242,7 +1244,9 @@ impl Player {
     /// domain. Missing scoreboards are ignored, like vanilla when the objective
     /// is not registered.
     fn increment_dummy_objective(&self, world: &Arc<World>, objective_name: &str) {
-        let server = self.server();
+        let Some(server) = self.try_server() else {
+            return;
+        };
         let Some(scoreboard) = server.scoreboards.get(world.domain()) else {
             return;
         };
@@ -1257,41 +1261,57 @@ impl Player {
         let _ = scoreboard.set_score(&holder, &objective, current.saturating_add(1));
     }
 
-    /// Handles a custom payload packet.
-    #[expect(clippy::unused_self, reason = "this is an api function")]
-    pub fn handle_custom_payload(&self, _packet: SCustomPayload) {}
+    /// Handles a custom payload packet (`minecraft:brand` length-prefixed UTF-8).
+    #[expect(clippy::unused_self, reason = "player API method")]
+    pub fn handle_custom_payload(&self, packet: SCustomPayload) {
+        if packet.identifier == Identifier::vanilla_static("brand") {
+            let mut cursor = std::io::Cursor::new(packet.payload.as_slice());
+            if let Ok(brand) = <String as steel_utils::serial::ReadFrom>::read(&mut cursor)
+                && brand.len() <= 128
+            {
+                log::debug!("Player reported client brand: {brand}");
+            }
+        }
+    }
 
-    /// Vanilla `ServerGamePacketListenerImpl.handleSetGameRule`: applies one
-    /// game rule value sent by the client, silently dropping unknown rules and
-    /// malformed values.
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetGameRule`: applies each
+    /// operator-submitted game rule update, ignoring unauthorized callers,
+    /// unknown rule keys, and malformed values.
     pub fn handle_set_game_rule(&self, packet: SSetGameRule) {
         use steel_registry::game_rules::{GameRuleType, GameRuleValue};
 
-        // Vanilla resolves `gamerule` ids with the `minecraft:` default namespace.
-        let key = match packet.rule.parse::<Identifier>() {
-            Ok(key) => key,
-            Err(_) => return,
-        };
-        let Some(rule) = REGISTRY.game_rules.by_key(&key) else {
+        if !self.is_operator() {
+            log::warn!(
+                "Player {} tried to set game rule without permission",
+                self.gameprofile.name
+            );
             return;
-        };
-        let value = match rule.value_type() {
-            GameRuleType::Bool => match packet.value.as_str() {
-                "true" => GameRuleValue::new(true),
-                "false" => GameRuleValue::new(false),
-                _ => return,
-            },
-            GameRuleType::Int => match packet.value.parse::<i32>() {
-                Ok(value) if value >= rule.min_value().unwrap_or(i32::MIN) => {
-                    GameRuleValue::new(value)
-                }
-                _ => return,
-            },
-        };
+        }
         let Some(world) = Entity::level(self) else {
             return;
         };
-        world.set_erased_game_rule(rule, value);
+        for entry in packet.entries {
+            let Some(rule) = REGISTRY.game_rules.by_key(&entry.key) else {
+                continue;
+            };
+            let value = match rule.value_type() {
+                GameRuleType::Bool => match entry.value.as_str() {
+                    "true" => GameRuleValue::new(true),
+                    "false" => GameRuleValue::new(false),
+                    _ => continue,
+                },
+                GameRuleType::Int => match entry.value.parse::<i32>() {
+                    Ok(value)
+                        if value >= rule.min_value().unwrap_or(i32::MIN)
+                            && value <= rule.max_value().unwrap_or(i32::MAX) =>
+                    {
+                        GameRuleValue::new(value)
+                    }
+                    _ => continue,
+                },
+            };
+            world.set_erased_game_rule(rule, value);
+        }
     }
 
     /// Vanilla `ServerGamePacketListenerImpl.handleSetCommandBlock`: stores the
@@ -1739,7 +1759,7 @@ impl Player {
         jigsaw.set_target(packet.target);
         jigsaw.set_pool(packet.pool);
         jigsaw.set_final_state(packet.final_state);
-        jigsaw.set_joint(packet.joint);
+        jigsaw.set_joint_name(&packet.joint);
         jigsaw.set_placement_priority(packet.placement_priority);
         jigsaw.set_selection_priority(packet.selection_priority);
         block_entity.set_changed();
@@ -1907,15 +1927,11 @@ impl Player {
     }
 
     /// Vanilla `ServerGamePacketListenerImpl.handleRecipeBookSeenRecipePacket`:
-    /// marks one recipe as seen for this player.
+    /// clears the "new" highlight badge for the viewed `RecipeDisplayId`.
     pub fn handle_recipe_book_seen_recipe(&self, packet: SRecipeBookSeenRecipe) {
-        // Vanilla `ServerGamePacketListenerImpl.handleRecipeBookSeenRecipePacket`
-        // only drops the "new" highlight; it never unlocks the recipe.
-        let mut book = self.recipe_book.lock();
-        if !book.is_highlighted(&packet.recipe) {
-            return;
-        }
-        book.remove_highlight(&packet.recipe);
+        self.recipe_book
+            .lock()
+            .remove_highlight_by_display(packet.recipe);
     }
 
     /// Handles the end of a client tick.
@@ -2011,12 +2027,10 @@ impl Player {
         // Vanilla `CombatTracker.recordDamage` keeps the last damage source so
         // the death message and `getLastDamageSource` see it. Steel records into
         // the shared `DamageHistory` instead of a per-player tracker.
-        {
+        if let Some(server) = self.try_server() {
             let world = self.get_world();
             let clock = world.level_data.read().game_time_handle();
-            self.server()
-                .damage_history
-                .record(self.base(), source, &clock);
+            server.damage_history.record(self.base(), source, &clock);
         }
 
         // Vanilla `CombatTracker.recordDamage` keeps the combat state that the
@@ -2136,11 +2150,10 @@ impl Player {
             },
         });
 
-        if show_death_messages {
+        if show_death_messages && let Some(server) = self.try_server() {
             // Vanilla routes death messages through `PlayerTeam.sendMessage`, so a
             // team's `death_message_visibility` decides who receives them.
             let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
-            let server = self.server();
             let team = server
                 .scoreboards
                 .get(world.domain())
@@ -2201,11 +2214,15 @@ impl Player {
         self.world.load_full()
     }
 
+    /// Returns the server this player belongs to, if still attached.
+    #[must_use]
+    pub(crate) fn try_server(&self) -> Option<Arc<Server>> {
+        self.server.upgrade()
+    }
+
     /// Returns the server this player belongs to.
     pub(crate) fn server(&self) -> Arc<Server> {
-        self.server
-            .upgrade()
-            .expect("player must not outlive server")
+        self.try_server().expect("player must not outlive server")
     }
 
     /// Returns the identity of the player's current continuous domain stay.
@@ -3500,14 +3517,11 @@ impl TextResolutor for Player {
             Resolvable::Scoreboard { objective, .. } => {
                 let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
                 let world = self.get_world();
-                let score = self
-                    .server()
-                    .scoreboards
-                    .get(world.domain())
-                    .and_then(|scoreboard| {
-                        let objective = scoreboard.objective(objective)?;
-                        scoreboard.score(&holder, &objective)
-                    });
+                let score = self.try_server().and_then(|server| {
+                    let scoreboard = server.scoreboards.get(world.domain())?;
+                    let objective = scoreboard.objective(objective)?;
+                    scoreboard.score(&holder, &objective)
+                });
                 TextComponent::plain(score.unwrap_or(0).to_string())
             }
             // NBT content needs a live entity NBT snapshot, which the player

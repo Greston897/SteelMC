@@ -193,7 +193,7 @@ pub use c_block_update::CBlockUpdate;
 pub use c_boss_event::{BossBarColor, BossBarOverlay, BossEventAction, CBossEvent};
 pub use c_bundle_delimiter::CBundleDelimiter;
 pub use c_change_difficulty::CChangeDifficulty;
-pub use c_chunks_biomes::{CChunksBiomes, ChunkBiomeData};
+pub use c_chunks_biomes::{CChunksBiomes, ChunkBiomeData, pack_chunk_pos};
 pub use c_clear_dialog::CClearDialog;
 pub use c_clear_titles::CClearTitles;
 pub use c_code_of_conduct::CCodeOfConduct;
@@ -209,15 +209,15 @@ pub use c_container_set_data::CContainerSetData;
 pub use c_container_set_slot::CContainerSetSlot;
 pub use c_cookie_request::CCookieRequest;
 pub use c_cooldown::CCooldown;
-pub use c_custom_chat_completions::{CCustomChatCompletions, ChatCompletionAction};
+pub use c_custom_chat_completions::{CCustomChatCompletions, CustomChatCompletionAction};
 pub use c_custom_report_details::{CCustomReportDetails, ReportDetail};
 pub use c_damage_event::CDamageEvent;
-pub use c_debug_block_value::CDebugBlockValue;
+pub use c_debug_block_value::{CDebugBlockValue, DebugSubscriptionUpdate};
 pub use c_debug_chunk_value::CDebugChunkValue;
 pub use c_debug_entity_value::CDebugEntityValue;
 pub use c_debug_event::CDebugEvent;
 pub use c_debug_sample::CDebugSample;
-pub use c_delete_chat::{CDeleteChat, MessageSignature};
+pub use c_delete_chat::{CDeleteChat, PackedMessageSignature};
 pub use c_entity_event::CEntityEvent;
 pub use c_entity_position_sync::{CEntityPositionSync, PositionPath, PositionStep};
 pub use c_explode::{
@@ -274,7 +274,7 @@ pub use c_rotate_head::CRotateHead;
 pub use c_section_blocks_update::{BlockChange, CSectionBlocksUpdate};
 pub use c_select_advancements_tab::CSelectAdvancementsTab;
 pub use c_server_data::CServerData;
-pub use c_server_links::{CServerLinks, ServerLink};
+pub use c_server_links::{CServerLinks, ServerLink, ServerLinkLabel};
 pub use c_set_action_bar_text::CSetActionBarText;
 pub use c_set_camera::CSetCamera;
 pub use c_set_cursor_item::CSetCursorItem;
@@ -291,13 +291,13 @@ pub use c_set_objective::{CSetObjective, ObjectiveAction, RenderType};
 pub use c_set_passengers::CSetPassengers;
 pub use c_set_player_inventory::CSetPlayerInventory;
 pub use c_set_player_team::{CSetPlayerTeam, NO_COLOR, TeamAction, TeamParameters};
-pub use c_set_score::{CSetScore, ScoreEntry};
+pub use c_set_score::CSetScore;
 pub use c_set_simulation_distance::CSetSimulationDistance;
 pub use c_set_subtitle_text::CSetSubtitleText;
 pub use c_set_time::CSetTime;
 pub use c_set_title_text::CSetTitleText;
 pub use c_set_titles_animation::CSetTitlesAnimation;
-pub use c_show_dialog::{CShowDialog, DialogAnchor};
+pub use c_show_dialog::{CConfigShowDialog, CShowDialog, DialogHolder};
 pub use c_sound::{CSound, SoundSource};
 pub use c_sound_entity::CSoundEntity;
 pub use c_start_configuration::CStartConfiguration;
@@ -317,7 +317,9 @@ pub use c_update_attributes::{
 };
 pub use c_update_enabled_features::CUpdateEnabledFeatures;
 pub use c_update_mob_effect::{CUpdateMobEffect, MobEffectPacketFlags};
-pub use c_waypoint::{CWaypoint, WaypointData, WaypointOperation};
+pub use c_waypoint::{
+    CWaypoint, TrackedWaypointData, WaypointIcon, WaypointId, WaypointOperation,
+};
 pub use chat::{
     ArgumentSignature, CDisguisedChat, CPlayerChat, CSystemChat, ChatTypeBound, FilterType,
     LastSeenMessagesUpdate, PreviousMessage, ProtocolRemoteChatSessionData, SChat, SChatAck,
@@ -376,7 +378,7 @@ pub use s_set_carried_item::SSetCarriedItem;
 pub use s_set_command_block::SSetCommandBlock;
 pub use s_set_command_minecart::SSetCommandMinecart;
 pub use s_set_creative_mode_slot::SSetCreativeModeSlot;
-pub use s_set_game_rule::SSetGameRule;
+pub use s_set_game_rule::{SSetGameRule, SetGameRuleEntry};
 pub use s_set_jigsaw_block::SSetJigsawBlock;
 pub use s_set_structure_block::SSetStructureBlock;
 pub use s_set_test_block::SSetTestBlock;

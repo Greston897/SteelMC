@@ -16,7 +16,7 @@ use steel_worldgen::biomes::obfuscate_biome_seed;
 use crate::behavior::block::BlockBehavior;
 use crate::behavior::blocks::vegetation::bonemealable::Bonemealable;
 use crate::behavior::context::BlockPlaceContext;
-use crate::world::{LevelAccessor, LevelReader, World};
+use crate::world::{LevelReader, World};
 use crate::worldgen::feature::FeatureDecorationRunner;
 use crate::worldgen::feature::no_nested_features;
 

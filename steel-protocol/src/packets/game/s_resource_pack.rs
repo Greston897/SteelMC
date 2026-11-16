@@ -1,7 +1,6 @@
 //! Resource pack response packet.
 
 use steel_macros::{ReadFrom, ServerPacket};
-use steel_utils::codec::VarInt;
 use uuid::Uuid;
 
 /// Vanilla `ServerboundResourcePackPacket.Action` ordinals.

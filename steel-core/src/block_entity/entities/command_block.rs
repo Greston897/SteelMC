@@ -568,6 +568,7 @@ mod tests {
     use super::*;
 
     fn entity() -> CommandBlockBlockEntity {
+        steel_registry::init_vanilla_registry();
         CommandBlockBlockEntity::new(Weak::new(), BlockPos::new(0, 64, 0), BlockStateId(0))
     }
 

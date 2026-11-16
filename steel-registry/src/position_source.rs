@@ -102,6 +102,7 @@ impl PositionSource {
     ///
     /// Vanilla shape: `{type:"minecraft:block", pos:[x,y,z]}` or
     /// `{type:"minecraft:entity", source_entity:{...}, y_offset:0.0}`.
+    #[must_use]
     pub fn from_nbt_tag(tag: simdnbt::borrow::NbtTag<'_, '_>) -> Option<Self> {
         use steel_utils::nbt::NbtNumeric as _;
 
@@ -110,7 +111,7 @@ impl PositionSource {
         let kind = kind.to_str();
         if kind == "minecraft:block" {
             let pos = compound.int_array("pos")?;
-            let (x, y, z) = (*pos.get(0)?, *pos.get(1)?, *pos.get(2)?);
+            let (x, y, z) = (*pos.first()?, *pos.get(1)?, *pos.get(2)?);
             let source_type = REGISTRY
                 .position_source_types
                 .by_key(&crate::vanilla_position_source_types::BLOCK.key)?;

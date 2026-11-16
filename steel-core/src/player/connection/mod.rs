@@ -231,12 +231,13 @@ impl Player {
         self.set_client_information(info);
 
         let show_hat = self.shows_hat();
-        if show_hat != was_hat_shown {
-            self.server()
-                .broadcast_to_online(CPlayerInfoUpdate::update_hat(
-                    self.gameprofile.id(),
-                    show_hat,
-                ));
+        if show_hat != was_hat_shown
+            && let Some(server) = self.try_server()
+        {
+            server.broadcast_to_online(CPlayerInfoUpdate::update_hat(
+                self.gameprofile.id(),
+                show_hat,
+            ));
         }
 
         // Vanilla does not echo CSetChunkCacheRadius here; it is only broadcast

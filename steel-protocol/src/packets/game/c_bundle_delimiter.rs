@@ -5,7 +5,6 @@
 //! packets (spawn, metadata, equipment, etc.) are applied together.
 
 use steel_macros::{ClientPacket, WriteTo};
-use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::play::C_BUNDLE_DELIMITER;
 
 /// Marks the start or end of a packet bundle.

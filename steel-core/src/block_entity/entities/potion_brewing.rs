@@ -184,11 +184,20 @@ mod tests {
     }
 
     #[test]
-    fn blaze_powder_is_fuel_and_never_an_ingredient() {
+    fn blaze_powder_acts_as_both_fuel_and_strength_ingredient() {
         init_vanilla_registry();
         let powder = ItemStack::with_count(&*vanilla_items::BLAZE_POWDER, 1);
         assert!(is_fuel(&powder));
-        assert!(!is_ingredient(&powder));
+        // Vanilla: awkward + blaze_powder -> strength potion.
+        assert!(is_ingredient(&powder));
+        assert_eq!(
+            mix(&potion("awkward"), &powder),
+            Some(Identifier::vanilla_static("strength"))
+        );
+        // Non-brewing items are neither fuel nor ingredient.
+        let cobblestone = ItemStack::with_count(&*vanilla_items::COBBLESTONE, 1);
+        assert!(!is_fuel(&cobblestone));
+        assert!(!is_ingredient(&cobblestone));
     }
 
     #[test]

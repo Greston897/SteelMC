@@ -1,5 +1,4 @@
 use steel_macros::{ClientPacket, WriteTo};
-use steel_utils::serial::WriteTo as _;
 use steel_registry::packets::config::C_DISCONNECT;
 use steel_registry::packets::play::C_DISCONNECT as PLAY_C_DISCONNECT;
 use text_components::TextComponent;

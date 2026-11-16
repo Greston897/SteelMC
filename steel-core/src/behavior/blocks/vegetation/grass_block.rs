@@ -1,4 +1,4 @@
-use rand::{Rng, RngExt as _};
+use rand::RngExt as _;
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;

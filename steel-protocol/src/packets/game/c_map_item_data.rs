@@ -1,23 +1,18 @@
-//! Clientbound map item data packet.
+//! Clientbound map item data packet (`ClientboundMapItemDataPacket`).
 //!
-//! Port of vanilla `MapUpdateS2CPacket` (`PlayPackets.MAP_ITEM_DATA`): the map
-//! id, the map scale/lock flags, an optional replacement decoration list and an
-//! optional rectangular patch of changed colors.
-//!
-//! Wire format (vanilla codecs):
+//! Wire format (vanilla `MapItemSavedData.MapPatch.STREAM_CODEC`):
 //! 1. `map_id` — `VarInt`
 //! 2. `scale` — byte
 //! 3. `locked` — bool
-//! 4. decorations — optional list: a presence byte, then a `VarInt` count of
+//! 4. decorations — optional list: presence bool, then `VarInt` count of
 //!    `(type: VarInt, x: byte, z: byte, rot: byte, name: optional component)`
-//! 5. update data (`MapState.UpdateData`): a presence byte, then when present
-//!    `width`, `height`, `start_x`, `start_z` bytes followed by a
-//!    `VarInt`-prefixed color array.
+//! 5. color patch — `0_u8` when absent; otherwise `width: u8 (> 0), height: u8,
+//!    start_x: u8, start_z: u8` followed by a `VarInt`-prefixed color byte array
+//!    (NO separate boolean presence flag before `width`).
 
 use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_MAP_ITEM_DATA;
 use steel_utils::codec::VarInt;
-use steel_utils::serial::WriteTo as _;
 use text_components::TextComponent;
 
 /// One icon drawn on a map.
@@ -50,20 +45,16 @@ impl MapDecorationEntry {
     }
 }
 
-/// Optional map patch wrapper with vanilla's nonzero-width discriminator.
-///
-/// Vanilla sends the patch through an `Optional`, so the wire format is a
-/// presence byte followed by the patch when present. `MapPatch` itself cannot
-/// start with `0` (its width is never zero), but the explicit flag keeps the
-/// stream unambiguous.
+/// Optional map patch wrapper with vanilla's nonzero-width discriminator
+/// (`MapItemSavedData.MapPatch.STREAM_CODEC`).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct OptionalMapPatch(pub Option<MapPatch>);
 
 impl OptionalMapPatch {
-    /// Wraps an optional patch.
+    /// Wraps an optional patch (zero-width patches normalize to `None` as in vanilla).
     #[must_use]
-    pub const fn new(patch: Option<MapPatch>) -> Self {
-        Self(patch)
+    pub fn new(patch: Option<MapPatch>) -> Self {
+        Self(patch.filter(|p| p.width > 0))
     }
 
     /// Returns the patch, if any.
@@ -81,27 +72,19 @@ impl OptionalMapPatch {
 
 impl steel_utils::serial::WriteTo for OptionalMapPatch {
     fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
-        // Vanilla wraps the patch in an `Optional`: one presence byte, then the
-        // patch itself (`width, height, startX, startZ` + byte array).
         match &self.0 {
-            Some(patch) => {
-                1_u8.write(writer)?;
-                patch.write(writer)
-            }
-            None => 0_u8.write(writer),
+            Some(patch) if patch.width > 0 => patch.write(writer),
+            _ => 0_u8.write(writer),
         }
     }
 }
 
-/// A rectangular patch of changed map colors.
-///
-/// Vanilla `MapState.UpdateData`: only the dirty rectangle is sent, so a moving
-/// player costs a few hundred bytes per tick instead of the whole 16 KiB map.
+/// A rectangular patch of changed map colors (`MapItemSavedData.MapPatch`).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MapPatch {
-    /// Patch width in pixels.
+    /// Patch width in pixels (`1..=128`).
     pub width: u8,
-    /// Patch height in pixels.
+    /// Patch height in pixels (`1..=128`).
     pub height: u8,
     /// X of the first patch pixel.
     pub start_x: u8,
@@ -126,12 +109,12 @@ impl steel_utils::serial::WriteTo for MapPatch {
 #[derive(ClientPacket, WriteTo, Clone, Debug)]
 #[packet_id(Play = C_MAP_ITEM_DATA)]
 pub struct CMapItemData {
-    /// Map saved-data id (`MapIdComponent`).
+    /// Map saved-data id (`MapId`).
     #[write(as = VarInt)]
     pub map_id: i32,
     /// Map scale (`0..=4`).
     pub scale: i8,
-    /// Whether the map is locked (copied in a cartography table).
+    /// Whether the map is locked (copied with glass pane in a cartography table).
     pub locked: bool,
     /// Replacement decoration list, when the decoration set changed.
     pub decorations: Option<Vec<MapDecorationEntry>>,
@@ -164,7 +147,7 @@ impl CMapItemData {
         self.decorations.is_none() && self.patch.is_none()
     }
 
-    /// Builds a decorations-only update (vanilla `getPlayerMarkerPacket`).
+    /// Builds a decorations-only update.
     #[must_use]
     pub const fn decorations_only(
         map_id: i32,
@@ -177,7 +160,7 @@ impl CMapItemData {
             scale,
             locked,
             Some(decorations),
-            OptionalMapPatch::new(None),
+            OptionalMapPatch(None),
         )
     }
 }
@@ -195,7 +178,7 @@ mod tests {
     }
 
     #[test]
-    fn full_packet_encodes_vanilla_field_order() {
+    fn full_packet_encodes_vanilla_field_order_with_width_discriminator() {
         let packet = CMapItemData::new(
             300,
             1,
@@ -225,8 +208,7 @@ mod tests {
                 5,    // z
                 12,   // rotation
                 0,    // no display name
-                1,    // patch present
-                2, 1, 3, 4, // width, height, startX, startZ
+                2, 1, 3, 4, // MapPatch: width (>0 acts as discriminator), height, startX, startY
                 2, // VarInt color count
                 0x2A, 0x0B,
             ]
@@ -247,15 +229,13 @@ mod tests {
         let packet = CMapItemData::new(1, 4, false, Some(vec![entry]), OptionalMapPatch::default());
 
         let bytes = encode(&packet);
-        // 1 map id, 4 scale, 0 locked, 1 decorations, 1 count, 3 type, 64, -64,
-        // 0 rotation, 1 "name present", then the serialized component.
         assert_eq!(&bytes[..10], &[1, 4, 0, 1, 1, 3, 64, 0xC0, 0, 1]);
         assert!(bytes.len() > 10);
-        assert_eq!(*bytes.last().unwrap(), 0, "patch marker is absent");
+        assert_eq!(*bytes.last().unwrap(), 0, "patch width 0 marks absent");
     }
 
     #[test]
-    fn patch_without_decorations_still_reports_colors() {
+    fn patch_without_decorations_writes_width_directly() {
         let packet = CMapItemData::new(
             1_000,
             2,
@@ -272,7 +252,7 @@ mod tests {
 
         assert_eq!(
             encode(&packet),
-            vec![0xE8, 0x07, 2, 0, 0, 1, 1, 1, 0, 0, 1, 0xFF]
+            vec![0xE8, 0x07, 2, 0, 0, 1, 1, 0, 0, 1, 0xFF]
         );
     }
 }

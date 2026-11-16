@@ -746,7 +746,7 @@ impl Player {
             .iter()
             .map(|(_, rule)| {
                 (
-                    rule.key().to_string(),
+                    rule.key().clone(),
                     world.get_erased_game_rule(rule).to_string(),
                 )
             })

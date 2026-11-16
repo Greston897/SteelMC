@@ -18,7 +18,7 @@ use std::borrow::Cow;
 use simdnbt::owned::{NbtCompound, NbtTag};
 use steel_utils::{
     BlockPos, Identifier,
-    nbt::{NbtPath, NbtPathMutationError, to_canonical_snbt},
+    nbt::{NbtPathMutationError, to_canonical_snbt},
 };
 use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;

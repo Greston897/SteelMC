@@ -1,7 +1,6 @@
 //! Pick item from entity packet.
 
 use steel_macros::{ReadFrom, ServerPacket};
-use steel_utils::codec::VarInt;
 
 /// Serverbound packet sent when the player middle-clicks an entity.
 #[derive(ReadFrom, ServerPacket, Clone, Debug)]

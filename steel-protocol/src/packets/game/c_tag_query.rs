@@ -2,7 +2,6 @@
 
 use steel_macros::{ClientPacket, WriteTo};
 use steel_registry::packets::play::C_TAG_QUERY;
-use steel_utils::codec::VarInt;
 use steel_utils::serial::OptionalNbt;
 
 /// Clientbound response to a `block_entity_tag_query` or `entity_tag_query`.

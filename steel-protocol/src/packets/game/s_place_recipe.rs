@@ -1,7 +1,6 @@
 //! Place recipe packet.
 
 use steel_macros::{ReadFrom, ServerPacket};
-use steel_utils::codec::VarInt;
 
 /// Serverbound packet that fills the crafting grid from a recipe.
 #[derive(ReadFrom, ServerPacket, Clone, Debug)]
