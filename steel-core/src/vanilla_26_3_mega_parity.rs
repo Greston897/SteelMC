@@ -58,7 +58,7 @@ use text_components::TextComponent;
 use tokio::runtime::Builder;
 use uuid::Uuid;
 
-use crate::behavior::items::filled_map::{FilledMapItem, send_map_packets};
+use crate::behavior::items::filled_map::{FilledMapItem, send_map_packets, update_colors};
 use crate::behavior::{
     BLOCK_BEHAVIORS, CONSUME_EFFECT_BEHAVIORS, FLUID_BEHAVIORS, ITEM_BEHAVIORS,
     MOB_EFFECT_BEHAVIORS, init_behaviors,
@@ -91,9 +91,9 @@ use crate::inventory::click::{Click, MouseButton};
 use crate::inventory::container::{Container as _, SimpleContainer};
 use crate::inventory::lock::ContainerRef;
 use crate::inventory::menu::kinds::{
-    anvil, brewing_stand, cartography_table, chest, crafting, dispenser, enchantment,
-    furnace_menu, grindstone, hopper, inventory_size as mount_inventory_size, lectern, loom,
-    merchant, mount, shulker_box, smithing, stonecutter,
+    anvil, brewing_stand, cartography_table, chest, crafting, dispenser, enchantment, furnace_menu,
+    grindstone, hopper, inventory_size as mount_inventory_size, lectern, loom, merchant, mount,
+    shulker_box, smithing, stonecutter,
 };
 use crate::inventory::recipe_manager;
 use crate::permission::{
@@ -1728,11 +1728,13 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     armored_zombie.with_equipment_slot_mut(EquipmentSlot::Chest, &mut |slot| {
         *slot = prot_chest.clone();
     });
-    assert!(armored_zombie.hurt(
-        &world,
-        &DamageSource::environment(&vanilla_damage_types::FIREWORKS),
-        8.0,
-    ));
+    assert!(
+        armored_zombie.hurt(
+            &world,
+            &DamageSource::environment(&vanilla_damage_types::FIREWORKS),
+            8.0,
+        )
+    );
     armored_zombie.with_equipment_slot(EquipmentSlot::Chest, &mut |slot| {
         assert!(
             slot.get_damage_value() > 0,
@@ -1762,7 +1764,11 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         &WorldAabb::of_size(DVec3::new(7.5, 64.0, 7.5), 3.0, 3.0, 3.0),
         |e| e.downcast_ref::<CowEntity>().is_some(),
     );
-    assert_eq!(converted_cows.len(), 1, "sheared mooshroom converts to 1 cow");
+    assert_eq!(
+        converted_cows.len(),
+        1,
+        "sheared mooshroom converts to 1 cow"
+    );
     let cow = converted_cows[0]
         .downcast_ref::<CowEntity>()
         .expect("cow downcast");
@@ -1813,9 +1819,21 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     let _ = world.players.remove_sync(&joiner.base().uuid());
 
     // Filled Map creation, live world terrain sampling & CMapItemData streaming
+    op_player
+        .try_set_position(DVec3::new(2.5, 64.0, 2.5))
+        .expect("set op_player pos");
+    guest_player
+        .try_set_position(DVec3::new(8.5, 64.0, 8.5))
+        .expect("set guest_player pos");
     let map_stack = FilledMapItem::create_map(&world, 4, 4, 0, true, false);
-    assert!(FilledMapItem::map_id(&map_stack).is_some());
+    let map_id = FilledMapItem::map_id(&map_stack).expect("filled map id");
     op_player.inventory.lock().set_item(0, map_stack);
+    {
+        let mut maps = world.map_states.lock();
+        let map_state = maps.get_mut(map_id).expect("allocated map state");
+        map_state.update(&world, &op_player);
+        update_colors(&world, &op_player, map_state);
+    }
     op_packets.lock().clear();
     send_map_packets(&op_player);
     assert!(
@@ -1950,6 +1968,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     );
 
     // Creaking player-gaze freeze + carved pumpkin bypass!
+    op_player.set_rotation((180.0, 0.0)); // look away (-Z) so Guest is sole observer
     guest_player
         .try_set_position(DVec3::new(0.5, 64.0, 0.5))
         .expect("set guest position");
@@ -2080,6 +2099,8 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         "recipe give Admin minecraft:stick",
         "recipe take Admin minecraft:stick",
         "stopsound Admin",
+        "posteffect add Admin minecraft:invert",
+        "posteffect list Admin",
         "posteffect clear Admin",
     ];
     let _rt_guard = rt.enter();

@@ -63,28 +63,26 @@ fn spread(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSy
         )));
     }
 
+    let center = context.coordinates("center")?.position(&source);
     let targets = context.entities("targets")?;
     let world = source.world();
     let y = f64::from(world.sea_level);
 
     let mut placed: Vec<(f64, f64)> = Vec::with_capacity(targets.len());
     let mut spread = 0;
-    let mut min_x = 0.0f64;
-    let mut min_z = 0.0f64;
     for target in &targets {
-        if let Some((x, z)) = find_position(spread_distance, max_range, &placed) {
-            let pos = DVec3::new(x, y, z);
+        if let Some((dx, dz)) = find_position(spread_distance, max_range, &placed) {
+            let pos = DVec3::new(center.x + dx, y, center.z + dz);
             if target.teleport_to(pos).is_ok() {
-                placed.push((x, z));
+                placed.push((dx, dz));
                 spread += 1;
-                min_x = min_x.min(x);
-                min_z = min_z.min(z);
             }
         }
     }
 
     let message = TextComponent::plain(format!(
-        "Spread {spread} entities around ({min_x}, {min_z})"
+        "Spread {spread} entities around ({}, {})",
+        center.x, center.z
     ));
     source.send_success(&message, true);
     Ok(spread)
