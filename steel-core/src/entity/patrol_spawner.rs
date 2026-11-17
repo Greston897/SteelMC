@@ -129,6 +129,8 @@ fn patrol_candidate(player: &Player) -> bool {
 /// Vanilla `ServerLevel.isCloseToVillage`: a five-section cube around the
 /// position must be free of an inhabited meeting point.
 fn near_village(player: &Player) -> bool {
+    // Five sections per axis, so two sections of radius around the player.
+    const SECTION_RADIUS_BLOCKS: i32 = 2 * 16;
     let Some(world) = player.level() else {
         return false;
     };
@@ -139,8 +141,6 @@ fn near_village(player: &Player) -> bool {
     else {
         return false;
     };
-    // Five sections per axis, so two sections of radius around the player.
-    const SECTION_RADIUS_BLOCKS: i32 = 2 * 16;
     let storage = world.poi_storage.lock();
     !storage
         .get_in_horizontal_square(

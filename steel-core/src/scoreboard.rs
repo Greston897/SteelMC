@@ -237,7 +237,7 @@ impl TeamVisibility {
     /// Returns whether `viewer_team` (the viewer's team name, if any) may see a
     /// message emitted on `message_team`.
     #[must_use]
-    pub fn visible_to(&self, message_team: &str, viewer_team: Option<&str>) -> bool {
+    pub fn visible_to(self, message_team: &str, viewer_team: Option<&str>) -> bool {
         let same_team = viewer_team == Some(message_team);
         match self {
             Self::Always => true,

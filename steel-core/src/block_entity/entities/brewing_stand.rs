@@ -235,39 +235,33 @@ impl BlockEntity for BrewingStandBlockEntity {
     }
 
     fn tick(&self, world: &Arc<World>) {
+        // Vanilla `BrewingStandBlockEntity.serverTick`:
+        // 1. Refuel first when `fuel <= 0` and the fuel slot holds a `brewing_fuel` item.
+        // 2. Count down an active brew (finishing at 0), or sync bottle states and start one.
         let pos = self.get_block_pos();
-        let state = self.state.lock();
-        // Vanilla `BrewingStandBlockEntity.serverTick`.
-        //
-        // 1. Refuel first: an empty fuel counter takes one item from the fuel
-        //    slot and sets `fuel = getUses(...)`, `totalFuel = fuel` and
-        //    `speedMultiplier` from the item's `brewing_fuel` component.
-        // 2. Then brew: a running brew counts down and finishes at zero, and an
-        //    idle stand starts a brew when the ingredient can change at least
-        //    one bottle and fuel is available.
-        drop(state);
-
-        let needs_refuel = {
-            let state = self.state.lock();
-            state.fuel <= 0
-        };
+        let needs_refuel = self.state.lock().fuel <= 0;
         if needs_refuel {
-            let fuel_stack = self.container.lock().items[FUEL_SLOT].clone();
-            let uses = Self::fuel_uses(&fuel_stack);
-            if uses > 0 {
+            let refueled = {
+                let mut container = self.container.lock();
+                let fuel_slot = &mut container.items[FUEL_SLOT];
+                let uses = Self::fuel_uses(fuel_slot);
+                if uses > 0 {
+                    let speed = Self::fuel_speed_multiplier(fuel_slot);
+                    fuel_slot.shrink(1);
+                    if fuel_slot.count() <= 0 {
+                        *fuel_slot = ItemStack::empty();
+                    }
+                    Some((uses, speed))
+                } else {
+                    None
+                }
+            };
+            if let Some((uses, speed)) = refueled {
                 let mut state = self.state.lock();
                 state.fuel = uses;
                 state.total_fuel = uses;
-                state.speed_multiplier = Self::fuel_speed_multiplier(&fuel_stack);
+                state.speed_multiplier = speed;
                 drop(state);
-                // Vanilla consumes the fuel item when it starts a burn and
-                // leaves the slot empty (or with the crafting remainder).
-                let mut container = self.container.lock();
-                container.items[FUEL_SLOT].shrink(1);
-                if container.items[FUEL_SLOT].count() <= 0 {
-                    container.items[FUEL_SLOT] = ItemStack::empty();
-                }
-                drop(container);
                 self.container_ref.mark_changed();
             }
         }
@@ -407,15 +401,12 @@ impl BrewingStandBlockEntity {
                 return;
             }
             let mut brewed = false;
-            for slot in 0..POTION_SLOTS {
-                let stack = container.items[slot].clone();
-                if stack.is_empty() {
+            for item in container.items.iter_mut().take(POTION_SLOTS) {
+                if item.is_empty() {
                     continue;
                 }
-                if let Some(result) = potion_brewing::mix(&stack, &ingredient) {
-                    let mut result_stack = stack.clone();
-                    result_stack.set_potion(&result);
-                    container.items[slot] = result_stack;
+                if let Some(result) = potion_brewing::mix(item, &ingredient) {
+                    item.set_potion(&result);
                     brewed = true;
                 }
             }

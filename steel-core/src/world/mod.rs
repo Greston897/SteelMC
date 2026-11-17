@@ -1458,9 +1458,6 @@ impl World {
     /// Game tick: weather, time, chunk game tick (broadcasts + random/scheduled ticks),
     /// and player logic (without chunk sending).
     ///
-    /// * `tick_count` - The current tick number
-    /// * `runs_normally` - Whether game elements (random ticks, entities) should run.
-    ///   When false (frozen), only essential operations like chunk loading run.
     /// Returns whether this dimension is kept active without players.
     ///
     /// Mirrors vanilla `ServerLevel`'s `FLAG_KEEP_DIMENSION_ACTIVE` check: a

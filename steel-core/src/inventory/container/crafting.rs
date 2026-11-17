@@ -62,8 +62,7 @@ impl CraftingContainer {
         // Steel has no saved map data yet, so the facts come from the stack's
         // components instead: a filled map carries `minecraft:map_id`, and the
         // created map is never an exploration map, so it stays extendable.
-        for slot in 0..self.items.len() {
-            let stack = &self.items[slot];
+        for (slot, stack) in self.items.iter().enumerate() {
             if !stack.is(&steel_registry::vanilla_items::FILLED_MAP) {
                 continue;
             }

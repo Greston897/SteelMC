@@ -67,22 +67,28 @@ use crate::block_entity::entities::sculk_sensor::{
     redstone_strength_for_distance, vibration_frequency,
 };
 use crate::block_entity::entities::{
-    CrafterBlockEntity, CreakingHeartBlockEntity, FurnaceKind, HopperBlockEntity,
-    SculkSensorBlockEntity, SculkShriekerBlockEntity, TrialSpawnerBlockEntity, VaultBlockEntity,
+    BrewingStandBlockEntity, CrafterBlockEntity, CreakingHeartBlockEntity, FurnaceKind,
+    HopperBlockEntity, SculkSensorBlockEntity, SculkShriekerBlockEntity, TrialSpawnerBlockEntity,
+    VaultBlockEntity,
 };
 use crate::block_entity::{BLOCK_ENTITIES, BlockEntity as _, init_block_entities};
+use crate::chunk::heightmap::HeightmapType;
 use crate::command::execution::{
     CommandExecutionContext, CommandResultCallback, CommandSource, ExecutionCommandSource as _,
 };
 use crate::command::sender::CommandSender;
 use crate::config::ResolvedDomainConfig;
 use crate::entity::damage::DamageSource;
-use crate::entity::entities::mobs::passive::{CowEntity, MushroomCowEntity, NautilusEntity};
+use crate::entity::entities::mobs::bosses::{ALL_DRAGON_PHASES, DragonPhase};
+use crate::entity::entities::mobs::passive::{
+    CamelHuskEntity, CowEntity, HappyGhastEntity, MushroomCowEntity, NautilusEntity,
+    SulfurCubeEntity,
+};
 use crate::entity::entities::objects::vehicles::AbstractMinecart as _;
 use crate::entity::entities::{
-    ArmadilloEntity, ArmorStandEntity, ChestMinecartEntity, CreakingEntity, FurnaceMinecartEntity,
-    HopperMinecartEntity, ItemEntity, MinecartEntity, PrimedTntEntity, TntMinecartEntity,
-    WardenEntity, ZombieEntity,
+    ArmadilloEntity, ArmorStandEntity, ChestMinecartEntity, CreakingEntity, EnderDragonEntity,
+    FurnaceMinecartEntity, HopperMinecartEntity, ItemEntity, MinecartEntity, PrimedTntEntity,
+    TntMinecartEntity, WardenEntity, WitherBossEntity, ZombieEntity,
 };
 use crate::entity::villager_trades::offers_for;
 use crate::entity::{
@@ -101,7 +107,8 @@ use crate::inventory::recipe_manager;
 use crate::permission::{
     OP_GROUP, PermissionMetadataSet, PermissionSet, PermissionSubjectIndex, PermissionSubjectState,
 };
-use crate::player::connection::NetworkConnection;
+use crate::player::connection::{NetworkConnection, ScheduledPlayPacket};
+use crate::player::player_data_storage::GlobalPlayerData;
 use crate::player::{PlayerConnection, ResetReason};
 use crate::scoreboard::{ScoreHolder, Scoreboard, criterion_is_read_only};
 use crate::server::bans::{BanEntry, BanList};
@@ -110,8 +117,8 @@ use crate::test_support::{
     TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk, test_runtime_config,
     tick_test_world,
 };
-use crate::world::World;
 use crate::world::game_event::GameEventContext;
+use crate::world::{ExplosionInteraction, ExplosionOptions, LevelReader as _, World};
 use crate::world::raid::RaidManager;
 use crate::world::waypoint::compute_waypoint_data;
 
@@ -2111,13 +2118,23 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         "posteffect add Admin minecraft:invert",
         "posteffect list Admin",
         "posteffect clear Admin",
+        "gamemode creative Admin",
+        "gamemode survival Admin",
+        "teleport Guest 10 65 10",
+        "me verifies Vanilla 26.3 mega parity",
+        "msg Guest hello from steel 26.3",
+        "playsound minecraft:entity.experience_orb.pickup master Admin",
+        "fillbiome 0 64 0 4 68 4 minecraft:desert",
+        "whitelist list",
+        "banlist players",
     ];
-    let _rt_guard = rt.enter();
+    let rt_guard = rt.enter();
     for cmd in console_commands {
         let res = exec_command(&server, CommandSender::Console, cmd);
         let (ok, val) = res.unwrap_or_else(|err| panic!("command `{cmd}` failed to parse: {err}"));
         assert!(ok, "command `{cmd}` executed with failure (val={val})");
     }
+    drop(rt_guard);
     // Verify `/teammsg` & `/tm` from a player inside team `alpha`!
     assert!(
         exec_command(
@@ -2149,11 +2166,471 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     );
 
     // ------------------------------------------------------------------------
-    // PHASE 14: Zero-Lag / Hot-Path 20 TPS Stress & No-Leak Verification
+    // PHASE 14: Live Smelting (Furnace / Blast Furnace / Smoker) & 3-Stage Potion Brewing
     // ------------------------------------------------------------------------
-    // Populate live entities + block entities + mob effects and tick 40 full world ticks.
-    let mut stress_entities = Vec::with_capacity(32);
-    for i in 0..32_i32 {
+    let furnace_pos = BlockPos::new(-12, 65, -12);
+    world.set_block(
+        furnace_pos,
+        vanilla_blocks::FURNACE.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    let furnace_be = world
+        .get_block_entity(furnace_pos)
+        .expect("furnace block entity");
+    {
+        let fref = furnace_be.container_ref().expect("furnace container");
+        let mut fguard = fref.lock();
+        fguard.set_item(0, ItemStack::with_count(&vanilla_items::IRON_ORE, 2));
+        fguard.set_item(1, ItemStack::new(&vanilla_items::COAL));
+    }
+    for _ in 0..200 {
+        furnace_be.tick(&world);
+    }
+    assert!(
+        world
+            .get_block_state(furnace_pos)
+            .get_value(&BlockStateProperties::LIT),
+        "furnace must set LIT=true in the world while burning coal"
+    );
+    {
+        let fref = furnace_be.container_ref().expect("furnace container");
+        let fguard = fref.lock();
+        assert_eq!(fguard.get_item(0).count(), 1);
+        assert!(fguard.get_item(2).is(&vanilla_items::IRON_INGOT));
+        assert_eq!(fguard.get_item(2).count(), 1);
+    }
+
+    // Blast Furnace smelts iron ore in 100 ticks (exact 2x Vanilla speed)
+    let blast_pos = BlockPos::new(-10, 65, -12);
+    world.set_block(
+        blast_pos,
+        vanilla_blocks::BLAST_FURNACE.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    let blast_be = world
+        .get_block_entity(blast_pos)
+        .expect("blast furnace block entity");
+    {
+        let bref = blast_be.container_ref().expect("blast container");
+        let mut bguard = bref.lock();
+        bguard.set_item(0, ItemStack::new(&vanilla_items::IRON_ORE));
+        bguard.set_item(1, ItemStack::new(&vanilla_items::COAL));
+    }
+    for _ in 0..100 {
+        blast_be.tick(&world);
+    }
+    {
+        let bref = blast_be.container_ref().expect("blast container");
+        let bguard = bref.lock();
+        assert!(bguard.get_item(0).is_empty());
+        assert!(bguard.get_item(2).is(&vanilla_items::IRON_INGOT));
+    }
+
+    // Smoker cooks raw beef in 100 ticks (exact 2x Vanilla speed)
+    let smoker_pos = BlockPos::new(-8, 65, -12);
+    world.set_block(
+        smoker_pos,
+        vanilla_blocks::SMOKER.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    let smoker_be = world
+        .get_block_entity(smoker_pos)
+        .expect("smoker block entity");
+    {
+        let sref = smoker_be.container_ref().expect("smoker container");
+        let mut sguard = sref.lock();
+        sguard.set_item(0, ItemStack::new(&vanilla_items::BEEF));
+        sguard.set_item(1, ItemStack::new(&vanilla_items::COAL));
+    }
+    for _ in 0..100 {
+        smoker_be.tick(&world);
+    }
+    {
+        let sref = smoker_be.container_ref().expect("smoker container");
+        let sguard = sref.lock();
+        assert!(sguard.get_item(0).is_empty());
+        assert!(sguard.get_item(2).is(&vanilla_items::COOKED_BEEF));
+    }
+
+    // Full 3-stage Vanilla alchemy chain in live BrewingStandBlockEntity:
+    //   water + nether_wart -> awkward -> + sugar -> swiftness -> + redstone -> long_swiftness
+    let brew_pos = BlockPos::new(-6, 65, -12);
+    world.set_block(
+        brew_pos,
+        vanilla_blocks::BREWING_STAND.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    let brew_be = world
+        .get_block_entity(brew_pos)
+        .expect("brewing stand block entity");
+    let brew_stand = brew_be
+        .as_any()
+        .downcast_ref::<BrewingStandBlockEntity>()
+        .expect("BrewingStandBlockEntity downcast");
+    {
+        let cref = brew_be.container_ref().expect("brewing container");
+        let mut cguard = cref.lock();
+        for slot in 0..3 {
+            let mut water = ItemStack::new(&vanilla_items::POTION);
+            water.set_potion(&Identifier::vanilla_static("water"));
+            cguard.set_item(slot, water);
+        }
+        cguard.set_item(3, ItemStack::new(&vanilla_items::NETHER_WART));
+        cguard.set_item(4, ItemStack::new(&vanilla_items::BLAZE_POWDER));
+    }
+    for _ in 0..401 {
+        brew_be.tick(&world);
+    }
+    let brew_state = world.get_block_state(brew_pos);
+    assert!(brew_state.get_value(&BlockStateProperties::HAS_BOTTLE_0));
+    assert!(brew_state.get_value(&BlockStateProperties::HAS_BOTTLE_1));
+    assert!(brew_state.get_value(&BlockStateProperties::HAS_BOTTLE_2));
+    {
+        let cref = brew_be.container_ref().expect("brewing container");
+        let mut cguard = cref.lock();
+        for slot in 0..3 {
+            assert_eq!(
+                cguard.get_item(slot).potion_key(),
+                Some(Identifier::vanilla_static("awkward"))
+            );
+        }
+        assert!(cguard.get_item(3).is_empty());
+        assert!(cguard.get_item(4).is_empty());
+        cguard.set_item(3, ItemStack::new(&vanilla_items::SUGAR));
+    }
+    for _ in 0..401 {
+        brew_be.tick(&world);
+    }
+    {
+        let cref = brew_be.container_ref().expect("brewing container");
+        let mut cguard = cref.lock();
+        for slot in 0..3 {
+            assert_eq!(
+                cguard.get_item(slot).potion_key(),
+                Some(Identifier::vanilla_static("swiftness"))
+            );
+        }
+        cguard.set_item(3, ItemStack::new(&vanilla_items::REDSTONE));
+    }
+    for _ in 0..401 {
+        brew_be.tick(&world);
+    }
+    {
+        let cref = brew_be.container_ref().expect("brewing container");
+        let cguard = cref.lock();
+        for slot in 0..3 {
+            assert_eq!(
+                cguard.get_item(slot).potion_key(),
+                Some(Identifier::vanilla_static("long_swiftness"))
+            );
+        }
+    }
+    // 20 fuel uses from 1 blaze powder minus 3 brew cycles == 17 remaining!
+    assert_eq!(brew_stand.fuel(), 17);
+
+    // ------------------------------------------------------------------------
+    // PHASE 15: Redstone Circuits (Copper Bulb T-Flip-Flop + Piston + Obsidian) & Explosions
+    // ------------------------------------------------------------------------
+    let bulb_pos = BlockPos::new(-12, 68, -8);
+    let bulb_power = BlockPos::new(-11, 68, -8);
+    world.set_block(
+        bulb_pos,
+        vanilla_blocks::COPPER_BULB.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    assert!(
+        !world
+            .get_block_state(bulb_pos)
+            .get_value(&BlockStateProperties::LIT)
+    );
+    // 1st rising edge -> LIT=true, POWERED=true, comparator=15
+    world.set_block(
+        bulb_power,
+        vanilla_blocks::REDSTONE_BLOCK.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    let bulb_s1 = world.get_block_state(bulb_pos);
+    assert!(bulb_s1.get_value(&BlockStateProperties::POWERED));
+    assert!(bulb_s1.get_value(&BlockStateProperties::LIT));
+    assert_eq!(
+        BLOCK_BEHAVIORS
+            .get_behavior(bulb_s1.get_block())
+            .get_analog_output_signal(bulb_s1, &world, bulb_pos, Direction::North),
+        15
+    );
+    // 1st falling edge -> LIT stays true, POWERED=false, comparator=15
+    world.set_block(
+        bulb_power,
+        vanilla_blocks::AIR.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    let bulb_s2 = world.get_block_state(bulb_pos);
+    assert!(!bulb_s2.get_value(&BlockStateProperties::POWERED));
+    assert!(bulb_s2.get_value(&BlockStateProperties::LIT));
+    // 2nd rising edge -> LIT toggles false, POWERED=true, comparator=0
+    world.set_block(
+        bulb_power,
+        vanilla_blocks::REDSTONE_BLOCK.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    let bulb_s3 = world.get_block_state(bulb_pos);
+    assert!(bulb_s3.get_value(&BlockStateProperties::POWERED));
+    assert!(!bulb_s3.get_value(&BlockStateProperties::LIT));
+    assert_eq!(
+        BLOCK_BEHAVIORS
+            .get_behavior(bulb_s3.get_block())
+            .get_analog_output_signal(bulb_s3, &world, bulb_pos, Direction::North),
+        0
+    );
+    world.set_block(
+        bulb_power,
+        vanilla_blocks::AIR.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+
+    // Piston pushes GOLD_BLOCK east, while OBSIDIAN blocks a second piston from extending
+    let piston_pos = BlockPos::new(-12, 70, -4);
+    let pushed_from = BlockPos::new(-11, 70, -4);
+    let pushed_to = BlockPos::new(-10, 70, -4);
+    let piston_pwr = BlockPos::new(-13, 70, -4);
+    world.set_block(
+        pushed_from,
+        vanilla_blocks::GOLD_BLOCK.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    world.set_block(
+        piston_pos,
+        vanilla_blocks::PISTON
+            .default_state()
+            .set_value(&BlockStateProperties::FACING, Direction::East),
+        UpdateFlags::UPDATE_ALL,
+    );
+    world.set_block(
+        piston_pwr,
+        vanilla_blocks::REDSTONE_BLOCK.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    for t in 1..=4_u64 {
+        tick_test_world(&world, t, true);
+    }
+    assert!(
+        world
+            .get_block_state(piston_pos)
+            .get_value(&BlockStateProperties::EXTENDED),
+        "powered piston must extend"
+    );
+    assert_eq!(
+        world.get_block_state(pushed_from).get_block(),
+        &vanilla_blocks::PISTON_HEAD
+    );
+    assert_eq!(
+        world.get_block_state(pushed_to).get_block(),
+        &vanilla_blocks::GOLD_BLOCK
+    );
+
+    let blocked_piston = BlockPos::new(-12, 72, -4);
+    let obsidian_blocker = BlockPos::new(-11, 72, -4);
+    world.set_block(
+        obsidian_blocker,
+        vanilla_blocks::OBSIDIAN.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    world.set_block(
+        blocked_piston,
+        vanilla_blocks::PISTON
+            .default_state()
+            .set_value(&BlockStateProperties::FACING, Direction::East),
+        UpdateFlags::UPDATE_ALL,
+    );
+    world.set_block(
+        BlockPos::new(-13, 72, -4),
+        vanilla_blocks::REDSTONE_BLOCK.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    for t in 5..=8_u64 {
+        tick_test_world(&world, t, true);
+    }
+    assert!(
+        !world
+            .get_block_state(blocked_piston)
+            .get_value(&BlockStateProperties::EXTENDED),
+        "piston must not push obsidian"
+    );
+    assert_eq!(
+        world.get_block_state(obsidian_blocker).get_block(),
+        &vanilla_blocks::OBSIDIAN
+    );
+
+    // Live TNT server explosion: destroys dirt, preserves obsidian, and hurts exposed mobs
+    let blast_dirt = BlockPos::new(11, 74, -10);
+    let blast_obsidian = BlockPos::new(9, 74, -10);
+    world.set_block(
+        blast_dirt,
+        vanilla_blocks::DIRT.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    world.set_block(
+        blast_obsidian,
+        vanilla_blocks::OBSIDIAN.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    let blast_victim = Arc::new(ZombieEntity::new(
+        &vanilla_entities::ZOMBIE,
+        next_entity_id(),
+        DVec3::new(10.5, 75.5, -9.5),
+        Arc::downgrade(&world),
+    ));
+    assert!(world.try_add_entity(Arc::clone(&blast_victim) as SharedEntity).is_ok());
+    let hp_before_blast = blast_victim.health();
+    let explosion_outcome = world.explode(ExplosionOptions::new(
+        DVec3::new(10.5, 74.5, -9.5),
+        3.0,
+        ExplosionInteraction::Tnt,
+    ));
+    assert!(
+        explosion_outcome.affected_block_count >= 1,
+        "TNT explosion must destroy nearby dirt"
+    );
+    assert_eq!(
+        world.get_block_state(blast_dirt).get_block(),
+        &vanilla_blocks::AIR,
+        "dirt adjacent to explosion center must be destroyed"
+    );
+    assert_eq!(
+        world.get_block_state(blast_obsidian).get_block(),
+        &vanilla_blocks::OBSIDIAN,
+        "obsidian must survive standard TNT explosion"
+    );
+    assert!(
+        blast_victim.health() < hp_before_blast,
+        "exposed mob must take explosion damage ({} -> {})",
+        hp_before_blast,
+        blast_victim.health()
+    );
+    blast_victim.set_removed(RemovalReason::Discarded);
+
+    // ------------------------------------------------------------------------
+    // PHASE 16: Bosses (Ender Dragon + Wither) & MC 26.3 Signature Mobs
+    // ------------------------------------------------------------------------
+    let dragon = Arc::new(EnderDragonEntity::new(
+        &vanilla_entities::ENDER_DRAGON,
+        next_entity_id(),
+        DVec3::new(0.0, 96.0, 0.0),
+        Arc::downgrade(&world),
+    ));
+    assert_eq!(ALL_DRAGON_PHASES.len(), 11);
+    for &phase in &ALL_DRAGON_PHASES {
+        dragon.set_phase(phase);
+        assert_eq!(dragon.phase(), phase);
+    }
+    dragon.set_phase(DragonPhase::SittingFlaming);
+    let mut dragon_nbt = NbtCompound::new();
+    dragon.save_additional(&mut dragon_nbt);
+    assert_eq!(
+        dragon_nbt.int("DragonPhase"),
+        Some(DragonPhase::SittingFlaming.id())
+    );
+    dragon.set_removed(RemovalReason::Discarded);
+
+    let wither = Arc::new(WitherBossEntity::new(
+        &vanilla_entities::WITHER,
+        next_entity_id(),
+        DVec3::new(0.0, 96.0, 8.0),
+        Arc::downgrade(&world),
+    ));
+    assert!((wither.max_health() - 300.0).abs() < f32::EPSILON);
+    wither.set_removed(RemovalReason::Discarded);
+
+    // MC 26.3 signature passive mobs: Happy Ghast, Camel Husk, Sulfur Cube
+    let happy_ghast = Arc::new(HappyGhastEntity::new(
+        &vanilla_entities::HAPPY_GHAST,
+        next_entity_id(),
+        DVec3::new(-4.0, 80.0, 4.0),
+        Arc::downgrade(&world),
+    ));
+    let camel_husk = Arc::new(CamelHuskEntity::new(
+        &vanilla_entities::CAMEL_HUSK,
+        next_entity_id(),
+        DVec3::new(-2.0, 65.0, 4.0),
+        Arc::downgrade(&world),
+    ));
+    let sulfur_cube = Arc::new(SulfurCubeEntity::new(
+        &vanilla_entities::SULFUR_CUBE,
+        next_entity_id(),
+        DVec3::new(2.0, 65.0, 4.0),
+        Arc::downgrade(&world),
+    ));
+    assert!(world.try_add_entity(Arc::clone(&happy_ghast) as SharedEntity).is_ok());
+    assert!(world.try_add_entity(Arc::clone(&camel_husk) as SharedEntity).is_ok());
+    assert!(world.try_add_entity(Arc::clone(&sulfur_cube) as SharedEntity).is_ok());
+    tick_test_world(&world, 9, true);
+    assert!(happy_ghast.is_alive());
+    assert!(camel_husk.is_alive());
+    assert!(sulfur_cube.is_alive());
+    happy_ghast.set_removed(RemovalReason::Discarded);
+    camel_husk.set_removed(RemovalReason::Discarded);
+    sulfur_cube.set_removed(RemovalReason::Discarded);
+
+    // ------------------------------------------------------------------------
+    // PHASE 17: Async Player Data Persistence + Heightmap & Biome Verification
+    // ------------------------------------------------------------------------
+    rt.block_on(async {
+        server
+            .player_data_storage
+            .save_domain(world.domain(), &op_player)
+            .await
+            .expect("save domain player data");
+        let loaded = server
+            .player_data_storage
+            .load_domain(world.domain(), op_uuid)
+            .await
+            .expect("load domain player data");
+        assert!(loaded.is_some(), "saved domain player data must round-trip");
+
+        let global = GlobalPlayerData {
+            last_active_domain: world.domain().to_owned(),
+        };
+        server
+            .player_data_storage
+            .save_global(op_uuid, &global)
+            .await
+            .expect("save global player data");
+        let loaded_global = server
+            .player_data_storage
+            .load_global(op_uuid)
+            .await
+            .expect("load global player data")
+            .expect("global player data entry");
+        assert_eq!(loaded_global.last_active_domain, world.domain());
+    });
+
+    // Verify chunk heightmap tracking updates live when placing tall column blocks
+    let pillar_top = BlockPos::new(13, 95, 13);
+    world.set_block(
+        pillar_top,
+        vanilla_blocks::STONE.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    assert!(
+        world.height_at(HeightmapType::WorldSurface, 13, 13) >= 96,
+        "WorldSurface heightmap must reflect placed block at y=95"
+    );
+
+    // ------------------------------------------------------------------------
+    // PHASE 18: Zero-Lag / Hot-Path Optimization & 100-Tick 20 TPS Stress Suite
+    // ------------------------------------------------------------------------
+    // Hot-path packet-queue layout invariant: oversized admin/UI packets are boxed
+    // so every MovePlayer / ClientTickEnd / PlayerInput slot stays cache-line compact.
+    assert!(
+        size_of::<ScheduledPlayPacket>() <= 96,
+        "ScheduledPlayPacket bloated to {} bytes; box cold oversized variants",
+        size_of::<ScheduledPlayPacket>()
+    );
+
+    // Populate 48 live entities + active smelting/brewing/redstone + mob effects
+    // and execute 100 full server ticks verifying 20 TPS headroom & zero lag spikes.
+    let mut stress_entities = Vec::with_capacity(48);
+    for i in 0..48_i32 {
         let x = f64::from(i % 8) + 1.5;
         let z = f64::from(i / 8) + 1.5;
         let item = Arc::new(ItemEntity::new(
@@ -2184,7 +2661,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
 
     let start = Instant::now();
     let mut max_single_tick_us = 0_u128;
-    for tick_idx in 1..=40_u64 {
+    for tick_idx in 1..=100_u64 {
         let tick_start = Instant::now();
         tick_test_world(&world, tick_idx, true);
         world.waypoints.tick(&world);
@@ -2196,12 +2673,12 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         }
     }
     let elapsed = start.elapsed();
-    // Even in unoptimized debug CI builds, 40 ticks of a 9-chunk arena + 32 entities
-    // + block entities + waypoints + raids + stopwatches must complete in < 2.0s
+    // Even in unoptimized debug CI builds, 100 ticks of a 9-chunk arena + 48 entities
+    // + block entities + waypoints + raids + stopwatches must complete in < 4.0s
     // (average well below the 50 ms / 20 TPS budget) with no single spike > 250 ms!
     assert!(
-        elapsed.as_millis() < 2_000,
-        "40 server ticks exceeded 20 TPS budget: took {} ms (max tick {} us)",
+        elapsed.as_millis() < 4_000,
+        "100 server ticks exceeded 20 TPS budget: took {} ms (max tick {} us)",
         elapsed.as_millis(),
         max_single_tick_us
     );

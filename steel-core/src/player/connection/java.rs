@@ -100,8 +100,8 @@ enum ScheduledPlayPacketKind {
     CustomPayload(SCustomPayload),
     Chat(Box<SChat>),
     ChatAck(SChatAck),
-    ChatSessionUpdate(SChatSessionUpdate),
-    ClientInformation(SClientInformation),
+    ChatSessionUpdate(Box<SChatSessionUpdate>),
+    ClientInformation(Box<SClientInformation>),
     ClientTickEnd,
     MovePlayer(SMovePlayer),
     MoveVehicle(SMoveVehicle),
@@ -109,11 +109,11 @@ enum ScheduledPlayPacketKind {
     ChatCommand(SChatCommand),
     CommandSuggestion(SCommandSuggestion),
     ContainerButtonClick(SContainerButtonClick),
-    ContainerClick(SContainerClick),
+    ContainerClick(Box<SContainerClick>),
     ContainerClose(SContainerClose),
     ContainerSlotStateChanged(SContainerSlotStateChanged),
-    EditBook(SEditBook),
-    SetCreativeModeSlot(SSetCreativeModeSlot),
+    EditBook(Box<SEditBook>),
+    SetCreativeModeSlot(Box<SSetCreativeModeSlot>),
     PlayerInput(SPlayerInput),
     PaddleBoat(SPaddleBoat),
     PlayerCommand(SPlayerCommand),
@@ -126,7 +126,7 @@ enum ScheduledPlayPacketKind {
     Punch(SPunch),
     PlayerAction(SPlayerAction),
     PickItemFromBlock(SPickItemFromBlock),
-    SignUpdate(SSignUpdate),
+    SignUpdate(Box<SSignUpdate>),
     SpectatorAction(SSpectatorAction),
     ClientCommand(SClientCommand),
     ChangeGameMode(SChangeGameMode),
@@ -134,7 +134,7 @@ enum ScheduledPlayPacketKind {
     UpdateSelectedTab(SSeenAdvancement),
     BlockEntityTagQuery(SBlockEntityTagQuery),
     BundleItemSelected(SBundleItemSelected),
-    ChatCommandSigned(SChatCommandSigned),
+    ChatCommandSigned(Box<SChatCommandSigned>),
     ConfigurationAcknowledged(SConfigurationAcknowledged),
     CookieResponse(SCookieResponse),
     DebugSubscriptionRequest(SDebugSubscriptionRequest),
@@ -148,15 +148,15 @@ enum ScheduledPlayPacketKind {
     RecipeBookSeenRecipe(SRecipeBookSeenRecipe),
     ResourcePack(SResourcePack),
     SelectTrade(SSelectTrade),
-    SetCommandBlock(SSetCommandBlock),
-    SetCommandMinecart(SSetCommandMinecart),
+    SetCommandBlock(Box<SSetCommandBlock>),
+    SetCommandMinecart(Box<SSetCommandMinecart>),
     SetGameRule(SSetGameRule),
-    SetJigsawBlock(SSetJigsawBlock),
-    SetStructureBlock(SSetStructureBlock),
-    SetTestBlock(SSetTestBlock),
+    SetJigsawBlock(Box<SSetJigsawBlock>),
+    SetStructureBlock(Box<SSetStructureBlock>),
+    SetTestBlock(Box<SSetTestBlock>),
     TeleportToEntity(STeleportToEntity),
-    TestInstanceBlockAction(STestInstanceBlockAction),
-    CustomClickAction(SCustomClickAction),
+    TestInstanceBlockAction(Box<STestInstanceBlockAction>),
+    CustomClickAction(Box<SCustomClickAction>),
 }
 
 enum ImmediatePlayPacket {
@@ -220,17 +220,18 @@ impl ScheduledPlayPacket {
             | ScheduledPlayPacketKind::Punch(_)
             | ScheduledPlayPacketKind::PickItemFromBlock(_)
             | ScheduledPlayPacketKind::ClientCommand(_)
-            // Recipe book toggles and game rule changes only touch player-owned state.
+            // Recipe book toggles only touch player-owned state.
             | ScheduledPlayPacketKind::RecipeBookChangeSettings(_)
-            | ScheduledPlayPacketKind::RecipeBookSeenRecipe(_)
-            | ScheduledPlayPacketKind::SetGameRule(_) => ScheduledPacketExecution::PlayerLocal,
+            | ScheduledPlayPacketKind::RecipeBookSeenRecipe(_) => {
+                ScheduledPacketExecution::PlayerLocal
+            }
             ScheduledPlayPacketKind::PlayerCommand(packet) => match packet.action {
                 PlayerCommandAction::StartSprinting
                 | PlayerCommandAction::StopSprinting
                 | PlayerCommandAction::StartFallFlying => ScheduledPacketExecution::PlayerLocal,
                 PlayerCommandAction::LeaveBed => ScheduledPacketExecution::Serialized,
-                // These handlers are not implemented, so their eventual vehicle transaction
-                // cannot yet be audited against concurrently player-local work.
+                // Vehicle jump charge and mount-inventory open span both rider and vehicle state,
+                // so keep them exclusive against concurrent player-local work.
                 PlayerCommandAction::StartRidingJump
                 | PlayerCommandAction::StopRidingJump
                 | PlayerCommandAction::OpenVehicleInventory => ScheduledPacketExecution::Exclusive,
@@ -266,6 +267,7 @@ impl ScheduledPlayPacket {
             | ScheduledPlayPacketKind::SpectatorAction(_)
             | ScheduledPlayPacketKind::ChangeGameMode(_)
             | ScheduledPlayPacketKind::ChangeDifficulty(_)
+            | ScheduledPlayPacketKind::SetGameRule(_)
             | ScheduledPlayPacketKind::UpdateSelectedTab(_) => ScheduledPacketExecution::Serialized,
             // Combat spans source and target state, custom payloads have no constrained resource
             // contract, and the unimplemented menu handlers have no auditable transaction yet.
@@ -336,10 +338,10 @@ impl ScheduledPlayPacket {
             }
             ScheduledPlayPacketKind::ChatAck(packet) => player.handle_chat_ack(packet),
             ScheduledPlayPacketKind::ChatSessionUpdate(packet) => {
-                player.handle_chat_session_update(packet);
+                player.handle_chat_session_update(*packet);
             }
             ScheduledPlayPacketKind::ClientInformation(packet) => {
-                player.handle_client_information(packet);
+                player.handle_client_information(*packet);
             }
             ScheduledPlayPacketKind::ClientTickEnd => player.handle_client_tick_end(),
             ScheduledPlayPacketKind::MovePlayer(packet) => player.handle_move_player(packet),
@@ -376,7 +378,7 @@ impl ScheduledPlayPacket {
                 player.handle_set_beacon_packet(packet);
             }
             ScheduledPlayPacketKind::ContainerClick(packet) => {
-                player.handle_container_click(packet);
+                player.handle_container_click(*packet);
             }
             ScheduledPlayPacketKind::ContainerClose(packet) => {
                 player.handle_container_close(packet);
@@ -385,7 +387,7 @@ impl ScheduledPlayPacket {
                 player.handle_container_slot_state_changed(packet);
             }
             ScheduledPlayPacketKind::SetCreativeModeSlot(packet) => {
-                player.handle_set_creative_mode_slot(packet);
+                player.handle_set_creative_mode_slot(*packet);
             }
             ScheduledPlayPacketKind::PlayerInput(packet) => player.handle_player_input(packet),
             ScheduledPlayPacketKind::PaddleBoat(packet) => player.handle_paddle_boat(packet),
@@ -396,7 +398,7 @@ impl ScheduledPlayPacket {
                 player.handle_player_abilities(packet);
             }
             ScheduledPlayPacketKind::RenameItem(packet) => player.handle_rename_item(packet),
-            ScheduledPlayPacketKind::EditBook(packet) => player.handle_edit_book(packet),
+            ScheduledPlayPacketKind::EditBook(packet) => player.handle_edit_book(*packet),
             ScheduledPlayPacketKind::UseItemOn(packet) => player.handle_use_item_on(packet),
             ScheduledPlayPacketKind::UseItem(packet) => player.handle_use_item(packet),
             ScheduledPlayPacketKind::SetCarriedItem(packet) => {
@@ -409,7 +411,7 @@ impl ScheduledPlayPacket {
             ScheduledPlayPacketKind::PickItemFromBlock(packet) => {
                 player.handle_pick_item_from_block(packet);
             }
-            ScheduledPlayPacketKind::SignUpdate(packet) => player.handle_sign_update(packet),
+            ScheduledPlayPacketKind::SignUpdate(packet) => player.handle_sign_update(*packet),
             ScheduledPlayPacketKind::SpectatorAction(packet) => {
                 player.handle_spectator_action(packet);
             }
@@ -511,17 +513,17 @@ impl ScheduledPlayPacket {
                 player.handle_select_trade(packet);
             }
             ScheduledPlayPacketKind::SetCommandBlock(packet) => {
-                player.handle_set_command_block(packet);
+                player.handle_set_command_block(*packet);
             }
             ScheduledPlayPacketKind::SetCommandMinecart(packet) => {
-                player.handle_set_command_minecart(packet);
+                player.handle_set_command_minecart(*packet);
             }
             ScheduledPlayPacketKind::SetGameRule(packet) => player.handle_set_game_rule(packet),
             ScheduledPlayPacketKind::SetJigsawBlock(packet) => {
-                player.handle_set_jigsaw_block(packet);
+                player.handle_set_jigsaw_block(*packet);
             }
             ScheduledPlayPacketKind::SetStructureBlock(packet) => {
-                player.handle_set_structure_block(packet);
+                player.handle_set_structure_block(*packet);
             }
             ScheduledPlayPacketKind::SetTestBlock(packet) => {
                 player.handle_set_test_block(packet);
@@ -530,10 +532,10 @@ impl ScheduledPlayPacket {
                 player.handle_teleport_to_entity(packet);
             }
             ScheduledPlayPacketKind::TestInstanceBlockAction(packet) => {
-                player.handle_test_instance_block_action(packet);
+                player.handle_test_instance_block_action(*packet);
             }
             ScheduledPlayPacketKind::CustomClickAction(packet) => {
-                player.handle_custom_click_action(packet);
+                player.handle_custom_click_action(*packet);
             }
         }
     }
@@ -886,13 +888,13 @@ impl JavaConnection {
                 data,
             )?))),
             play::S_CHAT_SESSION_UPDATE => scheduled(ScheduledPlayPacketKind::ChatSessionUpdate(
-                SChatSessionUpdate::read_packet(data)?,
+                Box::new(SChatSessionUpdate::read_packet(data)?),
             )),
             play::S_CHAT_ACK => scheduled(ScheduledPlayPacketKind::ChatAck(SChatAck::read_packet(
                 data,
             )?)),
             play::S_CLIENT_INFORMATION => scheduled(ScheduledPlayPacketKind::ClientInformation(
-                SClientInformation::read_packet(data)?,
+                Box::new(SClientInformation::read_packet(data)?),
             )),
             play::S_CLIENT_TICK_END => {
                 let _ = SClientTickEnd::read_packet(data)?;
@@ -935,7 +937,7 @@ impl JavaConnection {
                 ))
             }
             play::S_CONTAINER_CLICK => scheduled(ScheduledPlayPacketKind::ContainerClick(
-                SContainerClick::read_packet(data)?,
+                Box::new(SContainerClick::read_packet(data)?),
             )),
             play::S_CONTAINER_CLOSE => scheduled(ScheduledPlayPacketKind::ContainerClose(
                 SContainerClose::read_packet(data)?,
@@ -948,13 +950,13 @@ impl JavaConnection {
                     SContainerSlotStateChanged::read_packet(data)?,
                 ))
             }
-            play::S_EDIT_BOOK => scheduled(ScheduledPlayPacketKind::EditBook(
+            play::S_EDIT_BOOK => scheduled(ScheduledPlayPacketKind::EditBook(Box::new(
                 SEditBook::read_packet(data)?,
-            )),
+            ))),
             play::S_SET_CREATIVE_MODE_SLOT => {
-                scheduled(ScheduledPlayPacketKind::SetCreativeModeSlot(
+                scheduled(ScheduledPlayPacketKind::SetCreativeModeSlot(Box::new(
                     SSetCreativeModeSlot::read_packet(data)?,
-                ))
+                )))
             }
             play::S_SET_BEACON => scheduled(ScheduledPlayPacketKind::SetBeacon(
                 SSetBeacon::read_packet(data)?,
@@ -990,9 +992,9 @@ impl JavaConnection {
             play::S_PICK_ITEM_FROM_BLOCK => scheduled(ScheduledPlayPacketKind::PickItemFromBlock(
                 SPickItemFromBlock::read_packet(data)?,
             )),
-            play::S_SIGN_UPDATE => scheduled(ScheduledPlayPacketKind::SignUpdate(
+            play::S_SIGN_UPDATE => scheduled(ScheduledPlayPacketKind::SignUpdate(Box::new(
                 SSignUpdate::read_packet(data)?,
-            )),
+            ))),
             play::S_SPECTATOR_ACTION => scheduled(ScheduledPlayPacketKind::SpectatorAction(
                 SSpectatorAction::read_packet(data)?,
             )),
@@ -1020,7 +1022,7 @@ impl JavaConnection {
                 SBundleItemSelected::read_packet(data)?,
             )),
             play::S_CHAT_COMMAND_SIGNED => scheduled(ScheduledPlayPacketKind::ChatCommandSigned(
-                SChatCommandSigned::read_packet(data)?,
+                Box::new(SChatCommandSigned::read_packet(data)?),
             )),
             play::S_CONFIGURATION_ACKNOWLEDGED => {
                 scheduled(ScheduledPlayPacketKind::ConfigurationAcknowledged(
@@ -1067,19 +1069,19 @@ impl JavaConnection {
                 SSelectTrade::read_packet(data)?,
             )),
             play::S_SET_COMMAND_BLOCK => scheduled(ScheduledPlayPacketKind::SetCommandBlock(
-                SSetCommandBlock::read_packet(data)?,
+                Box::new(SSetCommandBlock::read_packet(data)?),
             )),
             play::S_SET_COMMAND_MINECART => scheduled(ScheduledPlayPacketKind::SetCommandMinecart(
-                SSetCommandMinecart::read_packet(data)?,
+                Box::new(SSetCommandMinecart::read_packet(data)?),
             )),
             play::S_SET_GAME_RULE => scheduled(ScheduledPlayPacketKind::SetGameRule(
                 SSetGameRule::read_packet(data)?,
             )),
             play::S_SET_JIGSAW_BLOCK => scheduled(ScheduledPlayPacketKind::SetJigsawBlock(
-                SSetJigsawBlock::read_packet(data)?,
+                Box::new(SSetJigsawBlock::read_packet(data)?),
             )),
             play::S_SET_STRUCTURE_BLOCK => scheduled(ScheduledPlayPacketKind::SetStructureBlock(
-                SSetStructureBlock::read_packet(data)?,
+                Box::new(SSetStructureBlock::read_packet(data)?),
             )),
             play::S_SET_TEST_BLOCK => scheduled(ScheduledPlayPacketKind::SetTestBlock(
                 SSetTestBlock::read_packet(data)?,
@@ -1088,12 +1090,12 @@ impl JavaConnection {
                 STeleportToEntity::read_packet(data)?,
             )),
             play::S_TEST_INSTANCE_BLOCK_ACTION => {
-                scheduled(ScheduledPlayPacketKind::TestInstanceBlockAction(
+                scheduled(ScheduledPlayPacketKind::TestInstanceBlockAction(Box::new(
                     STestInstanceBlockAction::read_packet(data)?,
-                ))
+                )))
             }
             play::S_CUSTOM_CLICK_ACTION => scheduled(ScheduledPlayPacketKind::CustomClickAction(
-                SCustomClickAction::read_packet(data)?,
+                Box::new(SCustomClickAction::read_packet(data)?),
             )),
             id => DecodedPlayPacket::Immediate(ImmediatePlayPacket::Unknown(id)),
         })
@@ -1484,7 +1486,7 @@ mod tests {
         };
 
         assert_eq!(
-            execution(ScheduledPlayPacketKind::ContainerClick(click)),
+            execution(ScheduledPlayPacketKind::ContainerClick(Box::new(click))),
             ScheduledPacketExecution::Serialized
         );
         assert_eq!(
@@ -1494,12 +1496,12 @@ mod tests {
             ScheduledPacketExecution::PlayerLocal
         );
         assert_eq!(
-            execution(ScheduledPlayPacketKind::SetCreativeModeSlot(
+            execution(ScheduledPlayPacketKind::SetCreativeModeSlot(Box::new(
                 SSetCreativeModeSlot {
                     slot_num: 1,
                     item_stack: ItemStack::empty(),
                 },
-            )),
+            ))),
             ScheduledPacketExecution::PlayerLocal
         );
     }
@@ -1631,18 +1633,18 @@ mod tests {
             ScheduledPacketExecution::PlayerLocal
         );
         assert_eq!(
-            execution(ScheduledPlayPacketKind::ChatSessionUpdate(
+            execution(ScheduledPlayPacketKind::ChatSessionUpdate(Box::new(
                 SChatSessionUpdate {
                     session_id: Uuid::nil(),
                     expires_at: 0,
                     public_key: Vec::new(),
                     key_signature: Vec::new(),
                 },
-            )),
+            ))),
             ScheduledPacketExecution::PlayerLocal
         );
         assert_eq!(
-            execution(ScheduledPlayPacketKind::ClientInformation(
+            execution(ScheduledPlayPacketKind::ClientInformation(Box::new(
                 SClientInformation {
                     language: "en_us".to_owned(),
                     view_distance: 8,
@@ -1654,7 +1656,7 @@ mod tests {
                     allows_listing: true,
                     particle_status: ParticleStatus::All,
                 },
-            )),
+            ))),
             ScheduledPacketExecution::PlayerLocal
         );
         assert_eq!(
@@ -1673,12 +1675,26 @@ mod tests {
             ScheduledPacketExecution::PlayerLocal
         );
         assert_eq!(
-            execution(ScheduledPlayPacketKind::SignUpdate(SSignUpdate {
+            execution(ScheduledPlayPacketKind::SignUpdate(Box::new(SSignUpdate {
                 pos: BlockPos::new(0, 64, 0),
                 lines: array::from_fn(|_| String::new()),
                 slot: SignTextSlot::Front,
+            }))),
+            ScheduledPacketExecution::Serialized
+        );
+        assert_eq!(
+            execution(ScheduledPlayPacketKind::SetGameRule(SSetGameRule {
+                entries: Vec::new(),
             })),
             ScheduledPacketExecution::Serialized
+        );
+        // Oversized cold admin/UI packets are boxed so every queued hot-path packet
+        // (MovePlayer, ClientTickEnd, PlayerInput, Attack, Interact, UseItemOn)
+        // stays compact and avoids multi-cache-line copies in PacketProcessor.
+        assert!(
+            size_of::<ScheduledPlayPacket>() <= 96,
+            "ScheduledPlayPacket bloated to {} bytes; box cold oversized variants",
+            size_of::<ScheduledPlayPacket>(),
         );
         assert_eq!(
             execution(ScheduledPlayPacketKind::Punch(SPunch {})),

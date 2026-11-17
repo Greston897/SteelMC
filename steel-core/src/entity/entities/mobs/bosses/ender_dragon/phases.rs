@@ -477,23 +477,22 @@ impl DragonPhaseManager {
     }
 
     /// Records the arena waypoints once, from the world's terrain heights.
-    pub fn ensure_nodes(&mut self, world: &World) {
-        if self.nodes.is_some() {
-            return;
-        }
-        self.nodes = Some(std::array::from_fn(|index| {
-            let (x, z, y_adjustment) = node_polar_position(index);
-            let height = world.level_height_at(
-                crate::chunk::heightmap::HeightmapType::MotionBlockingNoLeaves,
-                x,
-                z,
-            );
-            DVec3::new(
-                f64::from(x),
-                f64::from(height.max(73) + y_adjustment),
-                f64::from(z),
-            )
-        }));
+    pub fn ensure_nodes(&mut self, world: &World) -> &[DVec3; NODE_COUNT] {
+        self.nodes.get_or_insert_with(|| {
+            std::array::from_fn(|index| {
+                let (x, z, y_adjustment) = node_polar_position(index);
+                let height = world.level_height_at(
+                    crate::chunk::heightmap::HeightmapType::MotionBlockingNoLeaves,
+                    x,
+                    z,
+                );
+                DVec3::new(
+                    f64::from(x),
+                    f64::from(height.max(73) + y_adjustment),
+                    f64::from(z),
+                )
+            })
+        })
     }
 
     /// Vanilla `EnderDragon.findClosestNode()`.
@@ -516,11 +515,7 @@ impl DragonPhaseManager {
     }
 
     fn find_closest_node_from(&mut self, world: &World, position: DVec3, start: usize) -> usize {
-        self.ensure_nodes(world);
-        let nodes = self
-            .nodes
-            .as_ref()
-            .expect("ensure_nodes always fills the node array");
+        let nodes = self.ensure_nodes(world);
         // Vanilla compares `Node.distanceToSqr` from the floored dragon position and
         // keeps the *first* strictly-closer waypoint, so ties keep the lower index.
         // The waypoints are stored as `DVec3`, so the squared distance is computed
@@ -560,14 +555,9 @@ impl DragonPhaseManager {
         end_index: usize,
         final_node: Option<DVec3>,
     ) -> Option<Path> {
-        self.ensure_nodes(world);
         // `[DVec3; NODE_COUNT]` is `Copy`, so dereferencing gives an owned array to
         // `array::map` (`&[T; N]` has no `map` of its own).
-        let arena = (*self
-            .nodes
-            .as_ref()
-            .expect("ensure_nodes always fills the node array"))
-        .map(node_from_position);
+        let arena = (*self.ensure_nodes(world)).map(node_from_position);
 
         // Slot `FINAL_SLOT` is vanilla's `finalNode`; it exists only so the search
         // state can address it like any other node.

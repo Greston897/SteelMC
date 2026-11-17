@@ -76,13 +76,13 @@ pub struct BeamSection {
 impl BeamSection {
     /// Returns the tint of this beam run.
     #[must_use]
-    pub const fn color(&self) -> ArgbColor {
+    pub const fn color(self) -> ArgbColor {
         self.color
     }
 
     /// Returns the number of beam blocks in this run.
     #[must_use]
-    pub const fn height(&self) -> i32 {
+    pub const fn height(self) -> i32 {
         self.height
     }
 

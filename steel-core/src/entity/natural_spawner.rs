@@ -250,7 +250,7 @@ fn try_spawn_category_in_random_chunk(world: &Arc<World>, category: MobCategory)
     let pos = BlockPos::new(x, y, z);
     let spawn_point = world.level_data.read().data().spawn;
     let world_spawn = BlockPos::new(spawn_point.x, spawn_point.y, spawn_point.z);
-    if !is_right_distance_for_spawn(world, &chunk_pos, pos, world_spawn) {
+    if !is_right_distance_for_spawn(world, chunk_pos, pos, world_spawn) {
         return 0;
     }
 
@@ -270,10 +270,11 @@ fn try_spawn_category_in_random_chunk(world: &Arc<World>, category: MobCategory)
 /// Vanilla `NaturalSpawner.isRightDistanceToPlayerAndSpawnPoint`.
 fn is_right_distance_for_spawn(
     world: &Arc<World>,
-    chunk_pos: &ChunkPos,
+    chunk_pos: ChunkPos,
     pos: BlockPos,
     world_spawn: BlockPos,
 ) -> bool {
+    const MIN_SPAWN_DISTANCE: f64 = 24.0;
     // Vanilla: `!chunk.isAtOrAbove(level.getWorldSpawn())` rejects the spawn
     // point's own chunk, and 24 blocks of clearance from the world spawn.
     if chunk_pos.x() == (world_spawn.x() >> 4) && chunk_pos.z() == (world_spawn.z() >> 4) {
@@ -281,7 +282,6 @@ fn is_right_distance_for_spawn(
     }
     let dx = f64::from(pos.x() - world_spawn.x());
     let dz = f64::from(pos.z() - world_spawn.z());
-    const MIN_SPAWN_DISTANCE: f64 = 24.0;
     if dx * dx + dz * dz < MIN_SPAWN_DISTANCE * MIN_SPAWN_DISTANCE {
         return false;
     }
