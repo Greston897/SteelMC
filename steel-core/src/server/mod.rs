@@ -400,7 +400,7 @@ fn direct_passengers_allow_end_return(entity: &dyn Entity) -> bool {
     true
 }
 
-fn local_respawn_data_for_world(world: &World) -> RespawnData {
+pub(crate) fn local_respawn_data_for_world(world: &World) -> RespawnData {
     let level_data = world.level_data.read();
     let data = level_data.data();
     RespawnData::of(world.key.clone(), data.spawn_pos(), data.spawn.angle, 0.0)

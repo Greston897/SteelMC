@@ -36,9 +36,13 @@ use steel_protocol::utils::ConnectionProtocol;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, Direction, SculkSensorPhase};
 use steel_registry::data_components::vanilla_components::{CUSTOM_NAME, DAMAGE};
+use steel_registry::equipment::EquipmentSlot;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::packets::CURRENT_MC_PROTOCOL;
-use steel_registry::packets::play::{C_MAP_ITEM_DATA, C_WAYPOINT};
+use steel_registry::packets::play::{
+    C_MAP_ITEM_DATA, C_SET_CHUNK_CACHE_RADIUS, C_SET_DEFAULT_SPAWN_POSITION,
+    C_SET_SIMULATION_DISTANCE, C_WAYPOINT,
+};
 use steel_registry::recipe::{CraftingInput, vanilla_recipe_types};
 use steel_registry::{
     REGISTRY, RegistryExt as _, init_vanilla_registry, vanilla_attributes, vanilla_blocks,
@@ -63,37 +67,40 @@ use crate::block_entity::entities::sculk_sensor::{
     redstone_strength_for_distance, vibration_frequency,
 };
 use crate::block_entity::entities::{
-    CrafterBlockEntity, CreakingHeartBlockEntity, HopperBlockEntity, SculkSensorBlockEntity,
-    SculkShriekerBlockEntity, TrialSpawnerBlockEntity, VaultBlockEntity,
+    CrafterBlockEntity, CreakingHeartBlockEntity, FurnaceKind, HopperBlockEntity,
+    SculkSensorBlockEntity, SculkShriekerBlockEntity, TrialSpawnerBlockEntity, VaultBlockEntity,
 };
 use crate::block_entity::{BLOCK_ENTITIES, BlockEntity as _, init_block_entities};
 use crate::command::execution::{CommandExecutionContext, CommandResultCallback, CommandSource};
 use crate::command::sender::CommandSender;
 use crate::config::ResolvedDomainConfig;
 use crate::entity::damage::DamageSource;
+use crate::entity::entities::mobs::passive::{CowEntity, MushroomCowEntity, NautilusEntity};
 use crate::entity::entities::objects::vehicles::AbstractMinecart as _;
 use crate::entity::entities::{
-    ArmadilloEntity, ChestMinecartEntity, CreakingEntity, FurnaceMinecartEntity,
+    ArmadilloEntity, ArmorStandEntity, ChestMinecartEntity, CreakingEntity, FurnaceMinecartEntity,
     HopperMinecartEntity, ItemEntity, MinecartEntity, PrimedTntEntity, TntMinecartEntity,
     WardenEntity, ZombieEntity,
 };
 use crate::entity::villager_trades::offers_for;
 use crate::entity::{
-    ENTITIES, Entity, LivingEntity as _, Mob as _, MobEffectInstance, RemovalReason, SharedEntity,
-    init_entities, next_entity_id,
+    AgeableMob as _, ENTITIES, Entity, LivingEntity as _, Mob as _, MobEffectInstance,
+    RemovalReason, SharedEntity, init_entities, next_entity_id,
 };
 use crate::inventory::click::{Click, MouseButton};
 use crate::inventory::container::{Container as _, SimpleContainer};
+use crate::inventory::lock::ContainerRef;
 use crate::inventory::menu::kinds::{
-    anvil, brewing_stand, cartography_table, chest, crafting, dispenser, grindstone, hopper,
-    lectern, loom, merchant, smithing, stonecutter,
+    anvil, brewing_stand, cartography_table, chest, crafting, dispenser, enchantment,
+    furnace_menu, grindstone, hopper, inventory_size as mount_inventory_size, lectern, loom,
+    merchant, mount, shulker_box, smithing, stonecutter,
 };
 use crate::inventory::recipe_manager;
 use crate::permission::{
     OP_GROUP, PermissionMetadataSet, PermissionSet, PermissionSubjectIndex, PermissionSubjectState,
 };
-use crate::player::PlayerConnection;
 use crate::player::connection::NetworkConnection;
+use crate::player::{PlayerConnection, ResetReason};
 use crate::scoreboard::{ScoreHolder, Scoreboard, criterion_is_read_only};
 use crate::server::bans::{BanEntry, BanList};
 use crate::server::{Server, test_server_with_worlds_and_config};
@@ -905,6 +912,86 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     assert!(world.get_block_state(disp_front).is_air());
     assert!(disp_inv.lock().get_item(4).is(&vanilla_items::WATER_BUCKET));
 
+    // Powder snow bucket place & scoop back into POWDER_SNOW_BUCKET
+    disp_inv
+        .lock()
+        .set_item(4, ItemStack::new(&vanilla_items::POWDER_SNOW_BUCKET));
+    disp_behavior.tick(disp_state, &world, disp_pos);
+    assert_eq!(
+        world.get_block_state(disp_front).get_block(),
+        &vanilla_blocks::POWDER_SNOW
+    );
+    assert!(disp_inv.lock().get_item(4).is(&vanilla_items::BUCKET));
+    disp_behavior.tick(disp_state, &world, disp_pos);
+    assert!(world.get_block_state(disp_front).is_air());
+    assert!(
+        disp_inv
+            .lock()
+            .get_item(4)
+            .is(&vanilla_items::POWDER_SNOW_BUCKET)
+    );
+
+    // Glowstone charges a facing Respawn Anchor by +1
+    world.set_block(
+        disp_front,
+        vanilla_blocks::RESPAWN_ANCHOR.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    disp_inv
+        .lock()
+        .set_item(4, ItemStack::with_count(&vanilla_items::GLOWSTONE, 2));
+    disp_behavior.tick(disp_state, &world, disp_pos);
+    assert_eq!(
+        world
+            .get_block_state(disp_front)
+            .get_value(&BlockStateProperties::RESPAWN_ANCHOR_CHARGES),
+        1,
+        "dispenser glowstone must increment Respawn Anchor charge to 1"
+    );
+    assert_eq!(disp_inv.lock().get_item(4).count(), 1);
+    disp_inv.lock().set_item(4, ItemStack::empty());
+    world.set_block(disp_front, air, UpdateFlags::UPDATE_ALL);
+
+    // Vanilla quasi-connectivity (`pos.above()` powered via redstone block two above)
+    // schedules a 4-tick block tick and flips `TRIGGERED = true` on the rising edge!
+    let qc_power_pos = disp_pos.above().above();
+    world.set_block(
+        qc_power_pos,
+        vanilla_blocks::REDSTONE_BLOCK.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    disp_behavior.handle_neighbor_changed(
+        world.get_block_state(disp_pos),
+        &world,
+        disp_pos,
+        &vanilla_blocks::REDSTONE_BLOCK,
+        false,
+    );
+    assert!(
+        world
+            .get_block_state(disp_pos)
+            .get_value(&BlockStateProperties::TRIGGERED),
+        "dispenser must recognize vanilla quasi-connectivity from pos.above()"
+    );
+    assert!(
+        world.has_scheduled_block_tick(disp_pos, &vanilla_blocks::DISPENSER),
+        "dispenser rising edge must schedule its vanilla 4-tick dispense"
+    );
+    world.set_block(qc_power_pos, air, UpdateFlags::UPDATE_ALL);
+    disp_behavior.handle_neighbor_changed(
+        world.get_block_state(disp_pos),
+        &world,
+        disp_pos,
+        &vanilla_blocks::REDSTONE_BLOCK,
+        false,
+    );
+    assert!(
+        !world
+            .get_block_state(disp_pos)
+            .get_value(&BlockStateProperties::TRIGGERED),
+        "dispenser falling edge must clear TRIGGERED"
+    );
+
     // Flint and steel lights fire and takes 1 durability without being consumed
     disp_inv
         .lock()
@@ -1550,14 +1637,180 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     let _m_anvil = anvil(Arc::clone(&inv), 6, menu_pos, &world);
     let _m_grind = grindstone(Arc::clone(&inv), 7, menu_pos, &world);
     let sc27 = SimpleContainer::new(27).into_shared();
+    let sc27_shulker = SimpleContainer::new(27).into_shared();
     let sc9 = SimpleContainer::new(9).into_shared();
     let sc5 = SimpleContainer::new(5).into_shared();
+    let sc3_furnace = SimpleContainer::new(3).into_shared();
+    let sc3_blast = SimpleContainer::new(3).into_shared();
+    let sc3_smoker = SimpleContainer::new(3).into_shared();
     let sc1 = SimpleContainer::new(1).into_shared();
     let _m_chest = chest(Arc::clone(&inv), 8, sc27, 3);
+    let _m_shulker = shulker_box(Arc::clone(&inv), 14, sc27_shulker);
     let _m_disp = dispenser(Arc::clone(&inv), 9, sc9);
     let _m_hop = hopper(Arc::clone(&inv), 10, Arc::clone(&sc5));
     let _m_brew = brewing_stand(Arc::clone(&inv), 11, sc5);
     let _m_lect = lectern(12, sc1);
+    let _m_furnace = furnace_menu(
+        Arc::clone(&inv),
+        15,
+        ContainerRef::from(sc3_furnace),
+        FurnaceKind::Furnace,
+    );
+    let _m_blast = furnace_menu(
+        Arc::clone(&inv),
+        16,
+        ContainerRef::from(sc3_blast),
+        FurnaceKind::BlastFurnace,
+    );
+    let _m_smoker = furnace_menu(
+        Arc::clone(&inv),
+        17,
+        ContainerRef::from(sc3_smoker),
+        FurnaceKind::Smoker,
+    );
+    let _m_enchant = enchantment(Arc::clone(&inv), 18, menu_pos, &world, 42);
+
+    // MC 26.3 Mount menu (saddle + body armor + 3x5 storage) — distinct non-overlapping slots!
+    let nautilus_mount: SharedEntity = Arc::new(NautilusEntity::new(
+        &vanilla_entities::NAUTILUS,
+        next_entity_id(),
+        DVec3::new(3.5, 64.0, 3.5),
+        Arc::downgrade(&world),
+    ));
+    let mount_cols = 5;
+    let mount_container = SimpleContainer::new(mount_inventory_size(mount_cols)).into_shared();
+    let m_mount = mount(
+        Arc::clone(&inv),
+        19,
+        mount_container,
+        mount_cols,
+        Arc::downgrade(&nautilus_mount),
+    );
+    assert_eq!(
+        m_mount.behavior().slot_count(),
+        mount_inventory_size(mount_cols) + 36,
+        "mount menu must cover saddle + body armor + 15 storage + 36 player slots"
+    );
+
+    // MC 26.3 Combat, Protection Enchantment & Vanilla hurtArmor parity:
+    // - ArmorStandEntity (`LivingEntity` non-mob/non-player) does NOT wear down equipped armor
+    // - ZombieEntity (`Mob`) DOES wear down equipped armor and honours Protection IV reduction
+    let stand = ArmorStandEntity::new(
+        &vanilla_entities::ARMOR_STAND,
+        next_entity_id(),
+        DVec3::new(5.5, 64.0, 5.5),
+        Arc::downgrade(&world),
+    );
+    stand.with_equipment_slot_mut(EquipmentSlot::Chest, &mut |slot| {
+        *slot = ItemStack::new(&vanilla_items::DIAMOND_CHESTPLATE);
+    });
+    let _ = stand.hurt(
+        &world,
+        &DamageSource::environment(&vanilla_damage_types::FIREWORKS),
+        6.0,
+    );
+    stand.with_equipment_slot(EquipmentSlot::Chest, &mut |slot| {
+        assert_eq!(
+            slot.get_damage_value(),
+            0,
+            "ArmorStand must not take armor durability damage (vanilla LivingEntity.hurtArmor)"
+        );
+    });
+
+    let armored_zombie = ZombieEntity::new(
+        &vanilla_entities::ZOMBIE,
+        next_entity_id(),
+        DVec3::new(6.5, 64.0, 5.5),
+        Arc::downgrade(&world),
+    );
+    let mut prot_chest = ItemStack::new(&vanilla_items::DIAMOND_CHESTPLATE);
+    prot_chest.set_enchantments(&[(Identifier::vanilla_static("protection"), 4)], false);
+    armored_zombie.with_equipment_slot_mut(EquipmentSlot::Chest, &mut |slot| {
+        *slot = prot_chest.clone();
+    });
+    assert!(armored_zombie.hurt(
+        &world,
+        &DamageSource::environment(&vanilla_damage_types::FIREWORKS),
+        8.0,
+    ));
+    armored_zombie.with_equipment_slot(EquipmentSlot::Chest, &mut |slot| {
+        assert!(
+            slot.get_damage_value() > 0,
+            "Mob equipped armor must take durability damage on non-bypassing hits"
+        );
+    });
+
+    // MC 26.3 Mob Conversion + Golden Dandelion `age_locked` preservation:
+    // Shearing a MushroomCow converts it into a CowEntity while preserving age, age_locked & effects!
+    let mooshroom = Arc::new(MushroomCowEntity::new(
+        &vanilla_entities::MOOSHROOM,
+        next_entity_id(),
+        DVec3::new(7.5, 64.0, 7.5),
+        Arc::downgrade(&world),
+    ));
+    mooshroom.set_age(500);
+    mooshroom.set_age_locked(true);
+    mooshroom.add_mob_effect(MobEffectInstance::with_duration(
+        vanilla_mob_effects::SPEED,
+        400,
+        0,
+    ));
+    let mooshroom_shared: SharedEntity = Arc::clone(&mooshroom) as _;
+    assert!(world.try_add_entity(Arc::clone(&mooshroom_shared)).is_ok());
+    mooshroom.shear(&world, &ItemStack::new(&vanilla_items::SHEARS));
+    let converted_cows = world.get_entities_in_aabb_matching(
+        &WorldAabb::of_size(DVec3::new(7.5, 64.0, 7.5), 3.0, 3.0, 3.0),
+        |e| e.downcast_ref::<CowEntity>().is_some(),
+    );
+    assert_eq!(converted_cows.len(), 1, "sheared mooshroom converts to 1 cow");
+    let cow = converted_cows[0]
+        .downcast_ref::<CowEntity>()
+        .expect("cow downcast");
+    assert!(
+        cow.is_age_locked(),
+        "MC 26.3 entity conversion must preserve Golden Dandelion age_locked flag"
+    );
+    assert_eq!(cow.get_age(), 500);
+    assert!(cow.mob_effect(vanilla_mob_effects::SPEED).is_some());
+    for e in world.get_entities_in_aabb_matching(
+        &WorldAabb::of_size(DVec3::new(7.5, 64.0, 7.5), 4.0, 4.0, 4.0),
+        |e| {
+            e.downcast_ref::<CowEntity>().is_some()
+                || e.downcast_ref::<ItemEntity>().is_some()
+                || e.downcast_ref::<MushroomCowEntity>().is_some()
+        },
+    ) {
+        e.set_removed(RemovalReason::Discarded);
+    }
+
+    // Vanilla initial-join packet ordering: CSetDefaultSpawnPosition -> CSetChunkCacheRadius -> CSetSimulationDistance
+    let (join_cap, join_pkts) = CapturingConnection::new();
+    let joiner = TestPlayerBuilder::new(Arc::clone(&world), "JoinOrderCheck", next_entity_id())
+        .connection(Arc::new(PlayerConnection::Other(Box::new(SharedNetConn(
+            join_cap,
+        )))))
+        .build();
+    join_pkts.lock().clear();
+    assert!(joiner.spawn(
+        DVec3::new(2.5, 64.0, 2.5),
+        (0.0, 0.0),
+        ResetReason::InitialJoin
+    ));
+    let join_ids: Vec<i32> = join_pkts.lock().iter().map(decode_packet_id).collect();
+    let pos_spawn = join_ids
+        .iter()
+        .position(|&id| id == C_SET_DEFAULT_SPAWN_POSITION)
+        .expect("InitialJoin must emit CSetDefaultSpawnPosition");
+    let pos_radius = join_ids
+        .iter()
+        .position(|&id| id == C_SET_CHUNK_CACHE_RADIUS)
+        .expect("InitialJoin must emit CSetChunkCacheRadius");
+    let pos_sim = join_ids
+        .iter()
+        .position(|&id| id == C_SET_SIMULATION_DISTANCE)
+        .expect("InitialJoin must emit CSetSimulationDistance");
+    assert!(pos_spawn < pos_radius && pos_sim == pos_radius + 1);
+    let _ = world.players.remove_sync(&joiner.base().uuid());
 
     // Filled Map creation, live world terrain sampling & CMapItemData streaming
     let map_stack = FilledMapItem::create_map(&world, 4, 4, 0, true, false);
@@ -1900,19 +2153,32 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     assert!(server.cached_favicon_png().is_none());
 
     let start = Instant::now();
+    let mut max_single_tick_us = 0_u128;
     for tick_idx in 1..=40_u64 {
+        let tick_start = Instant::now();
         tick_test_world(&world, tick_idx, true);
         world.waypoints.tick(&world);
         world.raids.tick(&world);
         server.scoreboards.tick_stopwatches();
+        let tick_us = tick_start.elapsed().as_micros();
+        if tick_us > max_single_tick_us {
+            max_single_tick_us = tick_us;
+        }
     }
     let elapsed = start.elapsed();
     // Even in unoptimized debug CI builds, 40 ticks of a 9-chunk arena + 32 entities
-    // + block entities + waypoints + raids + stopwatches must complete in < 2.0s (50ms/tick = 20 TPS)!
+    // + block entities + waypoints + raids + stopwatches must complete in < 2.0s
+    // (average well below the 50 ms / 20 TPS budget) with no single spike > 250 ms!
     assert!(
         elapsed.as_millis() < 2_000,
-        "40 server ticks exceeded 20 TPS budget: took {} ms",
-        elapsed.as_millis()
+        "40 server ticks exceeded 20 TPS budget: took {} ms (max tick {} us)",
+        elapsed.as_millis(),
+        max_single_tick_us
+    );
+    assert!(
+        max_single_tick_us < 250_000,
+        "single server tick lag spike detected: {} us",
+        max_single_tick_us
     );
 
     for item in stress_entities {

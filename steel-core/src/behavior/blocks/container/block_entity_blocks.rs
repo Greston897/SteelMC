@@ -19,6 +19,7 @@ use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_block_entity_types;
 use steel_registry::vanilla_items;
 use steel_registry::{sound_events, vanilla_entities};
+use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _};
 use text_components::TextComponent;
 
@@ -282,21 +283,31 @@ macro_rules! funnel_like {
                 _source_block: BlockRef,
                 _moved_by_piston: bool,
             ) {
-                // Vanilla `DispenserBlock.neighborChanged` triggers on the rising
-                // edge of a redstone signal only, so a constant signal does not
-                // empty the funnel every tick.
-                let powered = world.get_best_neighbor_signal(pos) > 0;
+                // Vanilla `DispenserBlock.neighborChanged`: checks direct and
+                // quasi-connectivity (`pos.above()`) power, scheduling a 4-tick
+                // dispense on the rising edge and clearing `TRIGGERED` on the
+                // falling edge.
+                let powered =
+                    world.has_neighbor_signal(pos) || world.has_neighbor_signal(pos.above());
                 let was_powered = state.get_value(&BlockStateProperties::TRIGGERED);
-                if powered != was_powered {
+                if powered && !was_powered {
+                    world.schedule_block_tick_default(pos, self.block, 4);
                     world.set_block(
                         pos,
-                        state.set_value(&BlockStateProperties::TRIGGERED, powered),
-                        steel_utils::types::UpdateFlags::UPDATE_CLIENTS,
+                        state.set_value(&BlockStateProperties::TRIGGERED, true),
+                        UpdateFlags::UPDATE_CLIENTS,
                     );
-                    if powered {
-                        $fire(world, pos, state);
-                    }
+                } else if !powered && was_powered {
+                    world.set_block(
+                        pos,
+                        state.set_value(&BlockStateProperties::TRIGGERED, false),
+                        UpdateFlags::UPDATE_CLIENTS,
+                    );
                 }
+            }
+
+            fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+                $fire(world, pos, state);
             }
 
             fn get_state_for_placement(
@@ -513,7 +524,6 @@ fn launch_point(pos: BlockPos, facing: Direction) -> (DVec3, DVec3) {
 )]
 fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool {
     use steel_registry::vanilla_blocks;
-    use steel_utils::types::UpdateFlags;
 
     let facing = state.get_value(&BlockStateProperties::FACING);
     let Some((container, slot, snapshot)) = pick_random_non_empty_slot(world, pos) else {
@@ -548,16 +558,20 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
         return true;
     }
 
-    // 2. Water / Lava buckets: place source block and leave an empty bucket.
-    if (item == &*vanilla_items::WATER_BUCKET || item == &*vanilla_items::LAVA_BUCKET)
+    // 2. Water / Lava / Powder-Snow buckets: place block and leave an empty bucket.
+    if (item == &*vanilla_items::WATER_BUCKET
+        || item == &*vanilla_items::LAVA_BUCKET
+        || item == &*vanilla_items::POWDER_SNOW_BUCKET)
         && target_state.is_air()
     {
-        let liquid = if item == &*vanilla_items::WATER_BUCKET {
+        let placed = if item == &*vanilla_items::WATER_BUCKET {
             vanilla_blocks::WATER.default_state()
-        } else {
+        } else if item == &*vanilla_items::LAVA_BUCKET {
             vanilla_blocks::LAVA.default_state()
+        } else {
+            vanilla_blocks::POWDER_SNOW.default_state()
         };
-        world.set_block(target_pos, liquid, UpdateFlags::UPDATE_ALL);
+        world.set_block(target_pos, placed, UpdateFlags::UPDATE_ALL);
         replace_or_store_dispensed_result(
             world,
             pos,
@@ -577,7 +591,7 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
         return true;
     }
 
-    // 3. Empty bucket: scoop water/lava source block in front.
+    // 3. Empty bucket: scoop water/lava source block or powder snow in front.
     if item == &*vanilla_items::BUCKET {
         let is_source = target_state
             .try_get_value(&BlockStateProperties::LEVEL)
@@ -586,6 +600,8 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
             Some(ItemStack::new(&vanilla_items::WATER_BUCKET))
         } else if target_block == &vanilla_blocks::LAVA && is_source {
             Some(ItemStack::new(&vanilla_items::LAVA_BUCKET))
+        } else if target_block == &vanilla_blocks::POWDER_SNOW {
+            Some(ItemStack::new(&vanilla_items::POWDER_SNOW_BUCKET))
         } else {
             None
         };
@@ -606,6 +622,30 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
             );
             return true;
         }
+    }
+
+    // 3b. Glowstone charges a facing Respawn Anchor up to 4 charges.
+    if item == &*vanilla_items::GLOWSTONE
+        && target_block == &vanilla_blocks::RESPAWN_ANCHOR
+        && let Some(charges) =
+            target_state.try_get_value(&BlockStateProperties::RESPAWN_ANCHOR_CHARGES)
+        && charges < 4
+    {
+        let _ = container.lock().remove_item(slot, 1);
+        world.set_block(
+            target_pos,
+            target_state.set_value(&BlockStateProperties::RESPAWN_ANCHOR_CHARGES, charges + 1),
+            UpdateFlags::UPDATE_ALL,
+        );
+        world.play_sound(
+            &sound_events::BLOCK_RESPAWN_ANCHOR_CHARGE,
+            SoundSource::Blocks,
+            target_pos,
+            1.0,
+            1.0,
+            None,
+        );
+        return true;
     }
 
     // 4. Flint and steel: light air fire, unlit campfire, or TNT, damaging by 1.

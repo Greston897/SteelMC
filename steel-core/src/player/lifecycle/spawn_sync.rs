@@ -343,23 +343,25 @@ impl Player {
     }
 
     fn send_default_spawn_position(&self, world: &World) {
-        if let Some(server) = self.server.upgrade() {
+        let respawn_data = if let Some(server) = self.server.upgrade() {
             match server.respawn_data_for_domain(world.domain()) {
-                Ok(respawn_data) => {
-                    self.send_packet(CSetDefaultSpawnPosition {
-                        global_pos: respawn_data.global_pos,
-                        yaw: respawn_data.yaw,
-                        pitch: respawn_data.pitch,
-                    });
-                }
+                Ok(respawn_data) => respawn_data,
                 Err(error) => {
                     log::error!(
                         "Failed to send default spawn position to player {}: {error}",
                         self.gameprofile.name()
                     );
+                    return;
                 }
             }
-        }
+        } else {
+            crate::server::local_respawn_data_for_world(world)
+        };
+        self.send_packet(CSetDefaultSpawnPosition {
+            global_pos: respawn_data.global_pos,
+            yaw: respawn_data.yaw,
+            pitch: respawn_data.pitch,
+        });
     }
 
     fn send_weather_sync(&self, world: &World) {

@@ -154,6 +154,7 @@ jobs:
           timeout 300 cargo test -p steel-core --all-features --lib \
             vanilla_26_3_mega_parity::vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite \
             -- --exact --nocapture 2>&1 | tee /tmp/mega-parity.log
+          grep -q "test result: ok. 1 passed; 0 failed" /tmp/mega-parity.log
 
       - name: Publish test & mega-suite summary
         if: always()

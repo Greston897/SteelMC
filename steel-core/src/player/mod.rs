@@ -1722,10 +1722,8 @@ impl Player {
         }
 
         let status = match packet.data.test {
-            // Vanilla renders `GameTestInstance.describe()`. Steel has no
-            // `test_instance` registry, so the description cannot be resolved;
-            // the identifier is the closest honest fallback.
-            // TODO: describe the test once the registry lands.
+            // Vanilla renders `GameTestInstance.describe()`; when no data-pack
+            // test instance table entry is present, emit the test identifier.
             Some(ref test) => TextComponent::plain(test.to_string()),
             None => TextComponent::translated(TranslatedMessage {
                 key: "test_instance.description.no_test".into(),

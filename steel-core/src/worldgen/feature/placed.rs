@@ -453,12 +453,14 @@ impl FeatureDecorationRunner {
                 // chain. Steel does the equivalent: run the chosen modifier with
                 // the tail spliced in after it.
                 let Ok(count) = i32::try_from(placements.len()) else {
-                    panic!("vanilla randomly selected placement count exceeds i32")
+                    return false;
                 };
-                assert!(count > 0, "vanilla requires a non-empty placements list");
+                if count <= 0 {
+                    return false;
+                }
 
                 let index = random.next_i32_bounded(count) as usize;
-                let mut chain = Vec::with_capacity(placements.len().saturating_add(rest.len()));
+                let mut chain = Vec::with_capacity(1_usize.saturating_add(rest.len()));
                 chain.push(placements[index].clone());
                 chain.extend_from_slice(rest);
                 placed = Self::place_placed_feature_from_modifier(

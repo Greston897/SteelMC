@@ -1277,8 +1277,7 @@ impl World {
             self.broadcast_to_all::<CBossEvent>(bar.add_packet());
             return;
         };
-        if previous.progress.to_bits() == bar.progress.to_bits()
-            && previous.visible == bar.visible
+        if previous.progress.to_bits() == bar.progress.to_bits() && previous.visible == bar.visible
         {
             return;
         }
