@@ -2126,6 +2126,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         "playsound minecraft:entity.experience_orb.pickup master Admin",
         "fillbiome 0 64 0 4 68 4 minecraft:desert",
         "whitelist list",
+        "banlist",
         "banlist players",
     ];
     let rt_guard = rt.enter();

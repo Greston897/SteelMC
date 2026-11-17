@@ -65,8 +65,9 @@ fn pardon_command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
 
 fn banlist_command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
     literal("banlist")
-        .executes(|context| list(context, Listing::Players))
+        .executes(|context| list(context, Listing::All))
         .then(literal("ips").executes(|context| list(context, Listing::Addresses)))
+        .then(literal("players").executes(|context| list(context, Listing::Players)))
 }
 
 /// Builds a translated component with a literal fallback.
@@ -208,6 +209,7 @@ async fn run_pardon(
 
 #[derive(Clone, Copy)]
 enum Listing {
+    All,
     Players,
     Addresses,
 }
@@ -218,27 +220,38 @@ fn list(
 ) -> Result<i32, CommandSyntaxError> {
     let bans = &context.source().server().bans;
     let now = now();
-    let (entries, key, fallback) = match listing {
-        Listing::Players => (
-            bans.player_bans(),
-            "commands.banlist.players",
-            "There are banned players:",
-        ),
-        Listing::Addresses => (
-            bans.address_bans(),
-            "commands.banlist.ips",
-            "There are banned IP addresses:",
-        ),
+    let entries: Vec<_> = match listing {
+        Listing::All => bans
+            .player_bans()
+            .into_iter()
+            .chain(bans.address_bans())
+            .filter(|entry| !entry.is_expired(now))
+            .collect(),
+        Listing::Players => bans
+            .player_bans()
+            .into_iter()
+            .filter(|entry| !entry.is_expired(now))
+            .collect(),
+        Listing::Addresses => bans
+            .address_bans()
+            .into_iter()
+            .filter(|entry| !entry.is_expired(now))
+            .collect(),
     };
 
-    let entries: Vec<_> = entries
-        .into_iter()
-        .filter(|entry| !entry.is_expired(now))
-        .collect();
+    if entries.is_empty() {
+        let header = translated(
+            "commands.banlist.none",
+            "There are no bans".to_owned(),
+            Vec::new(),
+        );
+        context.source().send_success(&header, false);
+        return Ok(0);
+    }
 
     let header = translated(
-        key,
-        format!("{fallback} {}", entries.len()),
+        "commands.banlist.list",
+        format!("There are {} ban(s):", entries.len()),
         vec![TextComponent::from(entries.len().to_string())],
     );
     context.source().send_success(&header, false);
@@ -246,9 +259,15 @@ fn list(
     for entry in &entries {
         let line = translated(
             "commands.banlist.entry",
-            format!("- {}: {}", entry.name, entry.display_reason()),
+            format!(
+                "{} was banned by {}: {}",
+                entry.name,
+                entry.source,
+                entry.display_reason()
+            ),
             vec![
                 TextComponent::from(entry.name.clone()),
+                TextComponent::from(entry.source.clone()),
                 TextComponent::from(entry.display_reason().to_owned()),
             ],
         );
