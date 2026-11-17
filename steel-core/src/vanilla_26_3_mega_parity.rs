@@ -2388,11 +2388,13 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         UpdateFlags::UPDATE_ALL,
     );
 
-    // Piston pushes GOLD_BLOCK east, while OBSIDIAN blocks a second piston from extending
-    let piston_pos = BlockPos::new(-12, 70, -4);
-    let pushed_from = BlockPos::new(-11, 70, -4);
-    let pushed_to = BlockPos::new(-10, 70, -4);
-    let piston_pwr = BlockPos::new(-13, 70, -4);
+    // Sticky Piston extends & pushes GOLD_BLOCK east (via MOVING_PISTON -> settles in 3 ticks),
+    // retracts & pulls GOLD_BLOCK back on unpower, and OBSIDIAN blocks a second piston!
+    let _piston_chunk = insert_ready_full_chunk(&world, ChunkPos::new(2, 2));
+    let piston_pos = BlockPos::new(36, 70, 36);
+    let pushed_from = BlockPos::new(37, 70, 36);
+    let pushed_to = BlockPos::new(38, 70, 36);
+    let piston_pwr = BlockPos::new(35, 70, 36);
     world.set_block(
         pushed_from,
         vanilla_blocks::GOLD_BLOCK.default_state(),
@@ -2400,7 +2402,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     );
     world.set_block(
         piston_pos,
-        vanilla_blocks::PISTON
+        vanilla_blocks::STICKY_PISTON
             .default_state()
             .set_value(&BlockStateProperties::FACING, Direction::East),
         UpdateFlags::UPDATE_ALL,
@@ -2410,15 +2412,24 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         vanilla_blocks::REDSTONE_BLOCK.default_state(),
         UpdateFlags::UPDATE_ALL,
     );
-    for t in 1..=4_u64 {
-        tick_test_world(&world, t, true);
-    }
+    world.run_block_events();
     assert!(
         world
             .get_block_state(piston_pos)
             .get_value(&BlockStateProperties::EXTENDED),
-        "powered piston must extend"
+        "powered sticky piston must extend"
     );
+    assert_eq!(
+        world.get_block_state(pushed_from).get_block(),
+        &vanilla_blocks::MOVING_PISTON
+    );
+    assert_eq!(
+        world.get_block_state(pushed_to).get_block(),
+        &vanilla_blocks::MOVING_PISTON
+    );
+    for _ in 0..3 {
+        world.block_entity_tickers().tick(&world, true);
+    }
     assert_eq!(
         world.get_block_state(pushed_from).get_block(),
         &vanilla_blocks::PISTON_HEAD
@@ -2427,9 +2438,28 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         world.get_block_state(pushed_to).get_block(),
         &vanilla_blocks::GOLD_BLOCK
     );
+    // Unpower sticky piston -> pulls GOLD_BLOCK cleanly back to pushed_from!
+    world.remove_block(piston_pwr, false);
+    world.run_block_events();
+    for _ in 0..3 {
+        world.block_entity_tickers().tick(&world, true);
+    }
+    assert!(
+        !world
+            .get_block_state(piston_pos)
+            .get_value(&BlockStateProperties::EXTENDED)
+    );
+    assert_eq!(
+        world.get_block_state(pushed_from).get_block(),
+        &vanilla_blocks::GOLD_BLOCK
+    );
+    assert_eq!(
+        world.get_block_state(pushed_to).get_block(),
+        &vanilla_blocks::AIR
+    );
 
-    let blocked_piston = BlockPos::new(-12, 72, -4);
-    let obsidian_blocker = BlockPos::new(-11, 72, -4);
+    let blocked_piston = BlockPos::new(36, 72, 36);
+    let obsidian_blocker = BlockPos::new(37, 72, 36);
     world.set_block(
         obsidian_blocker,
         vanilla_blocks::OBSIDIAN.default_state(),
@@ -2443,13 +2473,11 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         UpdateFlags::UPDATE_ALL,
     );
     world.set_block(
-        BlockPos::new(-13, 72, -4),
+        BlockPos::new(35, 72, 36),
         vanilla_blocks::REDSTONE_BLOCK.default_state(),
         UpdateFlags::UPDATE_ALL,
     );
-    for t in 5..=8_u64 {
-        tick_test_world(&world, t, true);
-    }
+    world.run_block_events();
     assert!(
         !world
             .get_block_state(blocked_piston)
@@ -2462,8 +2490,8 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     );
 
     // Live TNT server explosion: destroys dirt, preserves obsidian, and hurts exposed mobs
-    let blast_dirt = BlockPos::new(11, 74, -10);
-    let blast_obsidian = BlockPos::new(9, 74, -10);
+    let blast_dirt = BlockPos::new(43, 74, 42);
+    let blast_obsidian = BlockPos::new(41, 74, 42);
     world.set_block(
         blast_dirt,
         vanilla_blocks::DIRT.default_state(),
@@ -2477,7 +2505,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     let blast_victim = Arc::new(ZombieEntity::new(
         &vanilla_entities::ZOMBIE,
         next_entity_id(),
-        DVec3::new(10.5, 75.5, -9.5),
+        DVec3::new(42.5, 75.5, 42.5),
         Arc::downgrade(&world),
     ));
     assert!(
@@ -2487,7 +2515,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     );
     let hp_before_blast = blast_victim.get_health();
     let explosion_outcome = world.explode(ExplosionOptions::new(
-        DVec3::new(10.5, 74.5, -9.5),
+        DVec3::new(42.5, 74.5, 42.5),
         3.0,
         ExplosionInteraction::Tnt,
     ));
