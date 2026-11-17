@@ -143,7 +143,7 @@ fn create_objective(
     context: &SteelCommandContext<CommandSource>,
 ) -> Result<i32, CommandSyntaxError> {
     let scoreboard = scoreboard_of(context)?;
-    let name = context.objective_name("objective")?;
+    let name = context.string("objective")?;
     // Vanilla `ObjectiveCriteria.byName`: a missing `criteria` argument defaults
     // to `dummy`, and an unknown criterion fails the command.
     let criterion = match context.string("criteria") {
