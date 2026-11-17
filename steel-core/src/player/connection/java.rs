@@ -526,7 +526,7 @@ impl ScheduledPlayPacket {
                 player.handle_set_structure_block(*packet);
             }
             ScheduledPlayPacketKind::SetTestBlock(packet) => {
-                player.handle_set_test_block(packet);
+                player.handle_set_test_block(*packet);
             }
             ScheduledPlayPacketKind::TeleportToEntity(packet) => {
                 player.handle_teleport_to_entity(packet);
@@ -1083,9 +1083,9 @@ impl JavaConnection {
             play::S_SET_STRUCTURE_BLOCK => scheduled(ScheduledPlayPacketKind::SetStructureBlock(
                 Box::new(SSetStructureBlock::read_packet(data)?),
             )),
-            play::S_SET_TEST_BLOCK => scheduled(ScheduledPlayPacketKind::SetTestBlock(
+            play::S_SET_TEST_BLOCK => scheduled(ScheduledPlayPacketKind::SetTestBlock(Box::new(
                 SSetTestBlock::read_packet(data)?,
-            )),
+            ))),
             play::S_TELEPORT_TO_ENTITY => scheduled(ScheduledPlayPacketKind::TeleportToEntity(
                 STeleportToEntity::read_packet(data)?,
             )),

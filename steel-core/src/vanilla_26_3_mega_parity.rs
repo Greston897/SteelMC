@@ -118,9 +118,9 @@ use crate::test_support::{
     tick_test_world,
 };
 use crate::world::game_event::GameEventContext;
-use crate::world::{ExplosionInteraction, ExplosionOptions, LevelReader as _, World};
 use crate::world::raid::RaidManager;
 use crate::world::waypoint::compute_waypoint_data;
+use crate::world::{ExplosionInteraction, ExplosionOptions, LevelReader as _, World};
 
 /// Bootstrap every global registry and behavior table once for the whole process.
 fn bootstrap_all() {
@@ -2264,7 +2264,6 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         .get_block_entity(brew_pos)
         .expect("brewing stand block entity");
     let brew_stand = brew_be
-        .as_any()
         .downcast_ref::<BrewingStandBlockEntity>()
         .expect("BrewingStandBlockEntity downcast");
     {
@@ -2480,8 +2479,12 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         DVec3::new(10.5, 75.5, -9.5),
         Arc::downgrade(&world),
     ));
-    assert!(world.try_add_entity(Arc::clone(&blast_victim) as SharedEntity).is_ok());
-    let hp_before_blast = blast_victim.health();
+    assert!(
+        world
+            .try_add_entity(Arc::clone(&blast_victim) as SharedEntity)
+            .is_ok()
+    );
+    let hp_before_blast = blast_victim.get_health();
     let explosion_outcome = world.explode(ExplosionOptions::new(
         DVec3::new(10.5, 74.5, -9.5),
         3.0,
@@ -2502,10 +2505,10 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         "obsidian must survive standard TNT explosion"
     );
     assert!(
-        blast_victim.health() < hp_before_blast,
+        blast_victim.get_health() < hp_before_blast,
         "exposed mob must take explosion damage ({} -> {})",
         hp_before_blast,
-        blast_victim.health()
+        blast_victim.get_health()
     );
     blast_victim.set_removed(RemovalReason::Discarded);
 
@@ -2538,7 +2541,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         DVec3::new(0.0, 96.0, 8.0),
         Arc::downgrade(&world),
     ));
-    assert!((wither.max_health() - 300.0).abs() < f32::EPSILON);
+    assert!((wither.get_max_health() - 300.0).abs() < f32::EPSILON);
     wither.set_removed(RemovalReason::Discarded);
 
     // MC 26.3 signature passive mobs: Happy Ghast, Camel Husk, Sulfur Cube
@@ -2560,13 +2563,25 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         DVec3::new(2.0, 65.0, 4.0),
         Arc::downgrade(&world),
     ));
-    assert!(world.try_add_entity(Arc::clone(&happy_ghast) as SharedEntity).is_ok());
-    assert!(world.try_add_entity(Arc::clone(&camel_husk) as SharedEntity).is_ok());
-    assert!(world.try_add_entity(Arc::clone(&sulfur_cube) as SharedEntity).is_ok());
+    assert!(
+        world
+            .try_add_entity(Arc::clone(&happy_ghast) as SharedEntity)
+            .is_ok()
+    );
+    assert!(
+        world
+            .try_add_entity(Arc::clone(&camel_husk) as SharedEntity)
+            .is_ok()
+    );
+    assert!(
+        world
+            .try_add_entity(Arc::clone(&sulfur_cube) as SharedEntity)
+            .is_ok()
+    );
     tick_test_world(&world, 9, true);
-    assert!(happy_ghast.is_alive());
-    assert!(camel_husk.is_alive());
-    assert!(sulfur_cube.is_alive());
+    assert!(Entity::is_alive(&*happy_ghast));
+    assert!(Entity::is_alive(&*camel_husk));
+    assert!(Entity::is_alive(&*sulfur_cube));
     happy_ghast.set_removed(RemovalReason::Discarded);
     camel_husk.set_removed(RemovalReason::Discarded);
     sulfur_cube.set_removed(RemovalReason::Discarded);
