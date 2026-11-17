@@ -4,6 +4,7 @@
 //! `canSurvive` should depend on the world-reading surface, not on the concrete
 //! `World` type. `World` and `WorldGenRegion` both implement this trait.
 
+use steel_registry::biome::BiomeRef;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::Direction;
@@ -87,6 +88,20 @@ pub trait LevelReader {
 
     /// Returns the dimension's sea level.
     fn sea_level(&self) -> i32;
+
+    /// Returns the biome at a block position when this level surface tracks
+    /// biomes (used by the `matching_biomes` block predicate).
+    fn biome_at(&self, _pos: BlockPos) -> Option<BiomeRef> {
+        None
+    }
+
+    /// Vanilla `Level.isUnobstructed`: no entity or collision blocks the
+    /// block space at a position (used by the `unobstructed` block
+    /// predicate). Level surfaces without collision tracking report open
+    /// space, matching vanilla worldgen where no entities exist yet.
+    fn is_unobstructed(&self, _pos: BlockPos) -> bool {
+        true
+    }
 
     /// Returns the exclusive maximum build height.
     fn max_y_exclusive(&self) -> i32 {

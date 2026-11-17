@@ -127,48 +127,98 @@ fn parse_provider(value: &Value) -> BlockStateProviderKind {
         .unwrap_or_else(|error| panic!("invalid block transformer state provider: {error}"))
 }
 
+/// Vanilla `BlockTransformData.CODEC` field order with `optionalFieldOf`
+/// omit-defaults encoding: `sound` (empty), `particle` (none),
+/// `disallowed_faces` ([]), `drop_strategy` (from_middle),
+/// `update_from_neighbors` (true), `transform_type` (single_block),
+/// `consume_on_use` (true) and `item_damage_per_use` (0) are only written
+/// when they differ from the default; `loot` is written when present.
 fn block_transform_nbt_token(value: &Value) -> TokenStream {
     let transform = object(value, "block transformer transform");
+    for name in transform.keys() {
+        match name.as_str() {
+            "block_state_provider" | "sound" | "particle" | "disallowed_faces" | "loot"
+            | "drop_strategy" | "update_from_neighbors" | "transform_type" | "consume_on_use"
+            | "item_damage_per_use" => {}
+            field => panic!("unsupported block transformer field {field}"),
+        }
+    }
+
     let provider = parse_provider(required(transform, "block_state_provider"));
     let provider = generate_block_state_provider_kind_nbt(&provider);
-
     let mut fields = vec![quote! { compound.insert("block_state_provider", #provider); }];
 
-    for (name, value) in transform {
-        let field = match name.as_str() {
-            "block_state_provider" => continue,
-            "sound" | "particle" | "loot" | "drop_strategy" | "transform_type" => {
-                let value = string(value, name);
-                quote! { compound.insert(#name, #value); }
-            }
-
-            "disallowed_faces" => {
-                let values: Vec<_> = value
-                    .as_array()
-                    .unwrap_or_else(|| panic!("faces must be an array"))
-                    .iter()
-                    .map(|value| string(value, name))
-                    .collect();
-                quote! { compound.insert(#name, NbtList::String(vec![#(#values.into()),*])); }
-            }
-
-            "update_from_neighbors" | "consume_on_use" => {
-                let value = i8::from(
-                    value
-                        .as_bool()
-                        .unwrap_or_else(|| panic!("{name} must be a boolean")),
-                );
-                quote! { compound.insert(#name, #value); }
-            }
-
-            "item_damage_per_use" => {
-                let value = required_i32(transform, name);
-                quote! { compound.insert(#name, #value); }
-            }
-            field => panic!("unsupported block transformer field {field}"),
-        };
-
-        fields.push(field);
+    if let Some(sound) = transform.get("sound").map(|value| string(value, "sound")) {
+        // `SoundEvent.CODEC` is a holder codec: the id string, unless it is
+        // the `EMPTY` default.
+        if sound != "minecraft:empty" {
+            fields.push(quote! { compound.insert("sound", #sound); });
+        }
+    }
+    if let Some(particle) = transform
+        .get("particle")
+        .map(|value| string(value, "particle"))
+    {
+        if particle != "none" {
+            fields.push(quote! { compound.insert("particle", #particle); });
+        }
+    }
+    if let Some(faces) = transform.get("disallowed_faces") {
+        let values: Vec<_> = faces
+            .as_array()
+            .unwrap_or_else(|| panic!("disallowed_faces must be an array"))
+            .iter()
+            .map(|value| string(value, "disallowed face"))
+            .collect();
+        if !values.is_empty() {
+            fields.push(
+                quote! { compound.insert("disallowed_faces", NbtList::String(vec![#(#values.into()),*])); },
+            );
+        }
+    }
+    if let Some(loot) = transform.get("loot").map(|value| string(value, "loot")) {
+        fields.push(quote! { compound.insert("loot", #loot); });
+    }
+    if let Some(drop_strategy) = transform
+        .get("drop_strategy")
+        .map(|value| string(value, "drop_strategy"))
+    {
+        if drop_strategy != "from_middle" {
+            fields.push(quote! { compound.insert("drop_strategy", #drop_strategy); });
+        }
+    }
+    if let Some(false) = transform.get("update_from_neighbors").map(|value| {
+        value
+            .as_bool()
+            .unwrap_or_else(|| panic!("update_from_neighbors must be a boolean"))
+    }) {
+        fields.push(quote! { compound.insert("update_from_neighbors", 0_i8); });
+    }
+    if let Some(transform_type) = transform
+        .get("transform_type")
+        .map(|value| string(value, "transform_type"))
+    {
+        if transform_type != "single_block" {
+            fields.push(quote! { compound.insert("transform_type", #transform_type); });
+        }
+    }
+    if let Some(false) = transform.get("consume_on_use").map(|value| {
+        value
+            .as_bool()
+            .unwrap_or_else(|| panic!("consume_on_use must be a boolean"))
+    }) {
+        fields.push(quote! { compound.insert("consume_on_use", 0_i8); });
+    }
+    if let Some(damage) = transform.get("item_damage_per_use") {
+        let damage = damage
+            .as_i64()
+            .unwrap_or_else(|| panic!("item_damage_per_use must be an integer"));
+        let damage = i32::try_from(damage)
+            .unwrap_or_else(|_| panic!("item_damage_per_use must fit an i32"));
+        assert!(damage >= 0, "item_damage_per_use must be nonnegative");
+        if damage != 0 {
+            fields.push(quote! { compound.insert("item_damage_per_use", #damage); });
+        }
     }
 
     quote! {{

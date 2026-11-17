@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use super::{
-    BlockHolderSet, BlockStateData, Direction, FluidStateData, Ident, Identifier, IdentifierList,
-    Rotation, Span, ToShoutySnakeCase, TokenStream, VerticalAnchor, fs, quote,
+    BiomeHolderSet, BlockHolderSet, BlockStateData, Direction, FluidHolderSet, FluidStateData, Ident,
+    Identifier, Rotation, Span, ToShoutySnakeCase, TokenStream, VerticalAnchor, fs, quote,
 };
 
 /// Recursively collects every `.json` file under `dir`, sorted for
@@ -66,6 +66,12 @@ pub(super) fn generate_fluid_ref(identifier: &Identifier) -> TokenStream {
     quote! { &vanilla_fluids::#ident }
 }
 
+pub(super) fn generate_biome_ref(identifier: &Identifier) -> TokenStream {
+    let ident = vanilla_registry_ident(identifier, "biome");
+    // Biomes are `LazyLock` statics, unlike blocks/fluids.
+    quote! { &*crate::vanilla_biomes::#ident }
+}
+
 pub(super) fn generate_configured_feature_entry_ref(identifier: &Identifier) -> TokenStream {
     let ident = vanilla_registry_ident(identifier, "configured feature");
     quote! { &crate::vanilla_configured_features::#ident }
@@ -105,11 +111,6 @@ pub(super) fn generate_offset(offset: &[i32; 3]) -> TokenStream {
     quote! { IVec3::new(#x, #y, #z) }
 }
 
-pub(super) fn generate_block_ref_list(list: &IdentifierList) -> TokenStream {
-    let values = generate_vec(&list.0, generate_block_ref);
-    quote! { BlockRefList(#values) }
-}
-
 pub(super) fn generate_block_holder_set(set: &BlockHolderSet) -> TokenStream {
     match set {
         BlockHolderSet::Tag(tag) => {
@@ -123,9 +124,30 @@ pub(super) fn generate_block_holder_set(set: &BlockHolderSet) -> TokenStream {
     }
 }
 
-pub(super) fn generate_fluid_ref_list(list: &IdentifierList) -> TokenStream {
-    let values = generate_vec(&list.0, generate_fluid_ref);
-    quote! { FluidRefList(#values) }
+pub(super) fn generate_fluid_holder_set(set: &FluidHolderSet) -> TokenStream {
+    match set {
+        FluidHolderSet::Tag(tag) => {
+            let tag = generate_identifier(tag);
+            quote! { FluidHolderSet::Tag(#tag) }
+        }
+        FluidHolderSet::Entries(entries) => {
+            let entries = generate_vec(entries, generate_fluid_ref);
+            quote! { FluidHolderSet::Entries(#entries) }
+        }
+    }
+}
+
+pub(super) fn generate_biome_holder_set(set: &BiomeHolderSet) -> TokenStream {
+    match set {
+        BiomeHolderSet::Tag(tag) => {
+            let tag = generate_identifier(tag);
+            quote! { BiomeHolderSet::Tag(#tag) }
+        }
+        BiomeHolderSet::Entries(entries) => {
+            let entries = generate_vec(entries, generate_biome_ref);
+            quote! { BiomeHolderSet::Entries(#entries) }
+        }
+    }
 }
 
 pub(super) fn generate_block_state_data(data: &BlockStateData) -> TokenStream {

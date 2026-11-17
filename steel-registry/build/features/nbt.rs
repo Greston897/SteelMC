@@ -3,21 +3,32 @@
 //! the same names already used by this module's JSON [`Deserialize`] impls,
 //! since vanilla's codecs are format-agnostic.
 
+use std::collections::BTreeMap;
+
 use super::{
-    BlockHolderSet, BlockPredicate, BlockStateData, BlockStateProviderKind, FeatureNoiseParameters,
-    Identifier, IntProvider, TokenStream, VerticalAnchor, WeightedIntProvider, quote,
+    BiomeHolderSet, BlockHolderSet, BlockPredicate, BlockStateData, BlockStateProviderKind,
+    FeatureNoiseParameters, FluidHolderSet, Identifier, IntProvider, TokenStream, VerticalAnchor,
+    WeightedIntProvider, quote,
 };
+use crate::block_state_defaults::block_property_defaults;
 
 pub(super) fn generate_identifier_nbt(identifier: &Identifier) -> TokenStream {
     let id = identifier.to_string();
     quote! { NbtTag::String(#id.into()) }
 }
 
-fn generate_identifier_list_nbt(items: &[Identifier]) -> TokenStream {
-    if let [item] = items {
+/// Vanilla `HolderSetCodec` encoding: a named set is the `#tag` string
+/// (`TagKey.hashedCodec`), a single direct entry is the bare id, and anything
+/// else is the id list (`ExtraCodecs.compactListCodec`).
+fn generate_holder_set_nbt(tag: Option<&Identifier>, entries: &[Identifier]) -> TokenStream {
+    if let Some(tag) = tag {
+        let tag = format!("#{tag}");
+        return quote! { NbtTag::String(#tag.into()) };
+    }
+    if let [item] = entries {
         generate_identifier_nbt(item)
     } else {
-        generate_nbt_list(items.iter().map(generate_identifier_nbt))
+        generate_nbt_list(entries.iter().map(generate_identifier_nbt))
     }
 }
 
@@ -41,16 +52,56 @@ fn generate_nbt_list(items: impl Iterator<Item = TokenStream>) -> TokenStream {
     }
 }
 
+/// Resolves a file-level state against vanilla's full property set: start
+/// from the block's defaults, overlay explicit entries, and drop unknown
+/// keys (vanilla's codec ignores them on decode). Unknown blocks pass
+/// through untouched.
+fn resolve_state_properties(data: &BlockStateData) -> BTreeMap<String, String> {
+    let Some(defaults) = block_property_defaults().get(&data.name.to_string()) else {
+        return data.properties.clone();
+    };
+    let mut resolved = defaults.clone();
+    for (key, value) in &data.properties {
+        if let Some(slot) = resolved.get_mut(key) {
+            *slot = value.clone();
+        }
+    }
+    resolved
+}
+
+/// Emits a `BlockState.CODEC` value: a state resolving to the block's
+/// defaults encodes as the bare block id, anything else as the
+/// `{id, properties}` object. Used for weighted `data`, noise `states`,
+/// threshold states and `would_survive` state — every nested state position
+/// except `FULL_CODEC` ones (top-level `Simple`, holder-inline
+/// `source`/`then`/`state`).
+pub(super) fn generate_block_state_data_codec_nbt(data: &BlockStateData) -> TokenStream {
+    let resolved = resolve_state_properties(data);
+    let is_default = match block_property_defaults().get(&data.name.to_string()) {
+        Some(defaults) => resolved == *defaults,
+        // Unknown blocks have no known defaults; only the bare `{id}` form
+        // can collapse to the id string.
+        None => data.properties.is_empty(),
+    };
+    if is_default {
+        return generate_identifier_nbt(&data.name);
+    }
+    generate_block_state_data_nbt(data)
+}
+
 pub(super) fn generate_block_state_data_nbt(data: &BlockStateData) -> TokenStream {
     let id = generate_identifier_nbt(&data.name);
-    if data.properties.is_empty() {
+    // `FULL_CODEC` writes the complete sorted property map for
+    // property-having blocks; only singleton blocks omit `properties`.
+    let properties = resolve_state_properties(data);
+    if properties.is_empty() {
         quote! {{
             let mut compound = NbtCompound::new();
             compound.insert("id", #id);
             NbtTag::Compound(compound)
         }}
     } else {
-        let entries = data.properties.iter().map(|(key, value)| {
+        let entries = properties.iter().map(|(key, value)| {
             quote! { properties.insert(#key, #value); }
         });
         quote! {{
@@ -66,13 +117,22 @@ pub(super) fn generate_block_state_data_nbt(data: &BlockStateData) -> TokenStrea
 
 pub(super) fn generate_block_holder_set_nbt(set: &BlockHolderSet) -> TokenStream {
     match set {
-        BlockHolderSet::Tag(tag) => {
-            let tag = format!("#{tag}");
-            quote! { NbtTag::String(#tag.into()) }
-        }
-        BlockHolderSet::Entries(entries) => {
-            generate_nbt_list(entries.iter().map(generate_identifier_nbt))
-        }
+        BlockHolderSet::Tag(tag) => generate_holder_set_nbt(Some(tag), &[]),
+        BlockHolderSet::Entries(entries) => generate_holder_set_nbt(None, entries),
+    }
+}
+
+fn generate_fluid_holder_set_nbt(set: &FluidHolderSet) -> TokenStream {
+    match set {
+        FluidHolderSet::Tag(tag) => generate_holder_set_nbt(Some(tag), &[]),
+        FluidHolderSet::Entries(entries) => generate_holder_set_nbt(None, entries),
+    }
+}
+
+fn generate_biome_holder_set_nbt(set: &BiomeHolderSet) -> TokenStream {
+    match set {
+        BiomeHolderSet::Tag(tag) => generate_holder_set_nbt(Some(tag), &[]),
+        BiomeHolderSet::Entries(entries) => generate_holder_set_nbt(None, entries),
     }
 }
 
@@ -230,32 +290,42 @@ pub(super) fn generate_block_predicate_nbt(predicate: &BlockPredicate) -> TokenS
             quote! {{
                 let mut compound = NbtCompound::new();
                 compound.insert("type", "minecraft:matching_block_tag");
-                compound.insert("tag", #tag);
                 #offset
+                compound.insert("tag", #tag);
                 NbtTag::Compound(compound)
             }}
         }
         BlockPredicate::MatchingBlocks { blocks, offset } => {
-            let blocks = generate_identifier_list_nbt(&blocks.0);
+            let blocks = generate_block_holder_set_nbt(blocks);
             let offset = generate_predicate_offset(offset);
 
             quote! {{
                 let mut compound = NbtCompound::new();
                 compound.insert("type", "minecraft:matching_blocks");
-                compound.insert("blocks", #blocks);
                 #offset
+                compound.insert("blocks", #blocks);
                 NbtTag::Compound(compound)
             }}
         }
         BlockPredicate::MatchingFluids { fluids, offset } => {
-            let fluids = generate_identifier_list_nbt(&fluids.0);
+            let fluids = generate_fluid_holder_set_nbt(fluids);
             let offset = generate_predicate_offset(offset);
 
             quote! {{
                 let mut compound = NbtCompound::new();
                 compound.insert("type", "minecraft:matching_fluids");
-                compound.insert("fluids", #fluids);
                 #offset
+                compound.insert("fluids", #fluids);
+                NbtTag::Compound(compound)
+            }}
+        }
+        BlockPredicate::MatchingBiomes { biomes } => {
+            let biomes = generate_biome_holder_set_nbt(biomes);
+
+            quote! {{
+                let mut compound = NbtCompound::new();
+                compound.insert("type", "minecraft:matching_biomes");
+                compound.insert("biomes", #biomes);
                 NbtTag::Compound(compound)
             }}
         }
@@ -270,14 +340,14 @@ pub(super) fn generate_block_predicate_nbt(predicate: &BlockPredicate) -> TokenS
             }}
         }
         BlockPredicate::WouldSurvive { state, offset } => {
-            let state = generate_block_state_data_nbt(state);
+            let state = generate_block_state_data_codec_nbt(state);
             let offset = generate_predicate_offset(offset);
 
             quote! {{
                 let mut compound = NbtCompound::new();
                 compound.insert("type", "minecraft:would_survive");
-                compound.insert("state", #state);
                 #offset
+                compound.insert("state", #state);
                 NbtTag::Compound(compound)
             }}
         }
@@ -298,8 +368,8 @@ pub(super) fn generate_block_predicate_nbt(predicate: &BlockPredicate) -> TokenS
             quote! {{
                 let mut compound = NbtCompound::new();
                 compound.insert("type", "minecraft:has_sturdy_face");
-                compound.insert("direction", #direction);
                 #offset
+                compound.insert("direction", #direction);
                 NbtTag::Compound(compound)
             }}
         }
@@ -309,6 +379,16 @@ pub(super) fn generate_block_predicate_nbt(predicate: &BlockPredicate) -> TokenS
             quote! {{
                 let mut compound = NbtCompound::new();
                 compound.insert("type", "minecraft:inside_world_bounds");
+                #offset
+                NbtTag::Compound(compound)
+            }}
+        }
+        BlockPredicate::Unobstructed { offset } => {
+            let offset = generate_predicate_offset(offset);
+
+            quote! {{
+                let mut compound = NbtCompound::new();
+                compound.insert("type", "minecraft:unobstructed");
                 #offset
                 NbtTag::Compound(compound)
             }}
@@ -357,23 +437,36 @@ const fn direction_name(direction: steel_utils::Direction) -> &'static str {
 pub(super) fn generate_feature_noise_parameters_nbt(
     parameters: &FeatureNoiseParameters,
 ) -> TokenStream {
-    let base_amplitude = parameters.base_amplitude;
+    // Exact `NormalNoise$Parameters.CODEC` order. `base_octave` is required;
+    // every other field is `optionalFieldOf` and DFU omits defaulted values
+    // on encode (`base_amplitude: 1.0`, `octave_count: 1`,
+    // `normalize: ENABLED`, empty `amplitude_modifiers`).
+    let mut fields = Vec::new();
+    if parameters.base_amplitude != 1.0 {
+        let base_amplitude = parameters.base_amplitude;
+        fields.push(quote! { compound.insert("base_amplitude", #base_amplitude); });
+    }
     let base_octave = parameters.base_octave;
-    let octave_count = parameters.octave_count;
-    let normalize = i8::from(parameters.normalize);
-    let amplitude_modifiers = generate_nbt_list(
-        parameters
-            .amplitude_modifiers
-            .iter()
-            .map(|value| quote! { NbtTag::Double(#value) }),
-    );
+    fields.push(quote! { compound.insert("base_octave", #base_octave); });
+    if parameters.octave_count != 1 {
+        let octave_count = parameters.octave_count;
+        fields.push(quote! { compound.insert("octave_count", #octave_count); });
+    }
+    if !parameters.normalize {
+        fields.push(quote! { compound.insert("normalize", NbtTag::Byte(0_i8)); });
+    }
+    if !parameters.amplitude_modifiers.is_empty() {
+        let amplitude_modifiers = generate_nbt_list(
+            parameters
+                .amplitude_modifiers
+                .iter()
+                .map(|value| quote! { NbtTag::Double(#value) }),
+        );
+        fields.push(quote! { compound.insert("amplitude_modifiers", #amplitude_modifiers); });
+    }
     quote! {{
         let mut compound = NbtCompound::new();
-        compound.insert("base_amplitude", #base_amplitude);
-        compound.insert("base_octave", #base_octave);
-        compound.insert("octave_count", #octave_count);
-        compound.insert("normalize", NbtTag::Byte(#normalize));
-        compound.insert("amplitude_modifiers", #amplitude_modifiers);
+        #(#fields)*
         NbtTag::Compound(compound)
     }}
 }
@@ -386,7 +479,7 @@ pub(crate) fn generate_block_state_provider_kind_nbt(
         BlockStateProviderKind::Simple { state } => generate_block_state_data_nbt(state),
         BlockStateProviderKind::Weighted { entries } => {
             let entries = generate_nbt_list(entries.iter().map(|entry| {
-                let data = generate_block_state_data_nbt(&entry.data);
+                let data = generate_block_state_data_codec_nbt(&entry.data);
                 let weight = entry.weight;
                 quote! {{
                     let mut compound = NbtCompound::new();
@@ -426,8 +519,8 @@ pub(crate) fn generate_block_state_provider_kind_nbt(
             quote! {{
                 let mut compound = NbtCompound::new();
                 compound.insert("type", "minecraft:randomized_int");
-                compound.insert("property", #property);
                 compound.insert("source", #source);
+                compound.insert("property", #property);
                 compound.insert("values", #values);
                 NbtTag::Compound(compound)
             }}
@@ -461,14 +554,18 @@ pub(crate) fn generate_block_state_provider_kind_nbt(
             let noise = generate_feature_noise_parameters_nbt(&provider.noise);
             let scale = provider.scale;
             let seed = provider.seed;
-            let states =
-                generate_nbt_list(provider.states.iter().map(generate_block_state_data_nbt));
+            let states = generate_nbt_list(
+                provider
+                    .states
+                    .iter()
+                    .map(generate_block_state_data_codec_nbt),
+            );
             quote! {{
                 let mut compound = NbtCompound::new();
                 compound.insert("type", "minecraft:noise");
+                compound.insert("seed", #seed);
                 compound.insert("noise", #noise);
                 compound.insert("scale", #scale);
-                compound.insert("seed", #seed);
                 compound.insert("states", #states);
                 NbtTag::Compound(compound)
             }}
@@ -479,25 +576,25 @@ pub(crate) fn generate_block_state_provider_kind_nbt(
             let seed = provider.seed;
             let threshold = provider.threshold;
             let high_chance = provider.high_chance;
-            let default_state = generate_block_state_data_nbt(&provider.default_state);
+            let default_state = generate_block_state_data_codec_nbt(&provider.default_state);
             let low_states = generate_nbt_list(
                 provider
                     .low_states
                     .iter()
-                    .map(generate_block_state_data_nbt),
+                    .map(generate_block_state_data_codec_nbt),
             );
             let high_states = generate_nbt_list(
                 provider
                     .high_states
                     .iter()
-                    .map(generate_block_state_data_nbt),
+                    .map(generate_block_state_data_codec_nbt),
             );
             quote! {{
                 let mut compound = NbtCompound::new();
                 compound.insert("type", "minecraft:noise_threshold");
+                compound.insert("seed", #seed);
                 compound.insert("noise", #noise);
                 compound.insert("scale", #scale);
-                compound.insert("seed", #seed);
                 compound.insert("threshold", #threshold);
                 compound.insert("high_chance", #high_chance);
                 compound.insert("default_state", #default_state);
@@ -512,19 +609,31 @@ pub(crate) fn generate_block_state_provider_kind_nbt(
             let seed = provider.seed;
             let slow_noise = generate_feature_noise_parameters_nbt(&provider.slow_noise);
             let slow_scale = provider.slow_scale;
-            let states =
-                generate_nbt_list(provider.states.iter().map(generate_block_state_data_nbt));
+            let states = generate_nbt_list(
+                provider
+                    .states
+                    .iter()
+                    .map(generate_block_state_data_codec_nbt),
+            );
+            // `InclusiveRange.codec` encodes a degenerate range as the bare
+            // point and anything else as a 2-element int list (a Java
+            // `List`, i.e. an NBT int list — never an int array).
             let [variety_min, variety_max] = provider.variety;
+            let variety = if variety_min == variety_max {
+                quote! { NbtTag::Int(#variety_min) }
+            } else {
+                quote! { NbtTag::List(NbtList::Int(vec![#variety_min, #variety_max])) }
+            };
             quote! {{
                 let mut compound = NbtCompound::new();
                 compound.insert("type", "minecraft:dual_noise");
-                compound.insert("noise", #noise);
-                compound.insert("scale", #scale);
-                compound.insert("seed", #seed);
+                compound.insert("variety", #variety);
                 compound.insert("slow_noise", #slow_noise);
                 compound.insert("slow_scale", #slow_scale);
+                compound.insert("seed", #seed);
+                compound.insert("noise", #noise);
+                compound.insert("scale", #scale);
                 compound.insert("states", #states);
-                compound.insert("variety", NbtTag::IntArray(vec![#variety_min, #variety_max]));
                 NbtTag::Compound(compound)
             }}
         }

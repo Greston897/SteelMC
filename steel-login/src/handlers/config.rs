@@ -22,6 +22,19 @@ use crate::tcp_client::{ConnectionAction, ConnectionUpdate, JavaTcpClient};
 
 const BRAND_PAYLOAD: [u8; 5] = *b"Steel";
 
+/// The packs Steel requests in `CSelectKnownPacks`: just the vanilla core
+/// pack at this server's game version. Clients that echo this exact list
+/// already hold every registry entry, so they get the id-only sync form
+/// (vanilla `SynchronizeRegistriesTask.handleResponse` +
+/// `RegistrySynchronization.packRegistry`).
+fn requested_known_packs() -> Vec<KnownPack> {
+    vec![KnownPack::new(
+        "minecraft".to_string(),
+        "core".to_string(),
+        steel_utils::MC_VERSION.to_string(),
+    )]
+}
+
 impl JavaTcpClient {
     /// Handles a custom payload packet during the configuration state.
     #[expect(clippy::unused_self, reason = "this is an api function")]
@@ -81,12 +94,8 @@ impl JavaTcpClient {
         })
         .await;
 
-        self.send_bare_packet_now(CSelectKnownPacks::new(vec![KnownPack::new(
-            "minecraft".to_string(),
-            "core".to_string(),
-            steel_utils::MC_VERSION.to_string(),
-        )]))
-        .await;
+        self.send_bare_packet_now(CSelectKnownPacks::new(requested_known_packs()))
+            .await;
 
         // Vanilla `ServerConfigurationPacketListenerImpl` registers this as a
         // configuration task, so the pack is pushed before the client can
@@ -134,8 +143,17 @@ impl JavaTcpClient {
         }
         log::debug!("Select known packs packet: {packet:?}");
 
-        let registry_cache = Arc::clone(&self.server.registry_cache.registry_packets);
-        for encoded_packet in registry_cache.iter() {
+        // Vanilla `SynchronizeRegistriesTask.handleResponse`: only an exact
+        // echo of the requested packs negotiates elision — anything else
+        // (unknown, reordered, or version-skewed packs) falls back to full
+        // entry data.
+        let negotiated = packet.packs == requested_known_packs();
+        let registry_packets = if negotiated {
+            Arc::clone(&self.server.registry_cache.elided_registry_packets)
+        } else {
+            Arc::clone(&self.server.registry_cache.registry_packets)
+        };
+        for encoded_packet in registry_packets.iter() {
             self.send_packet_now(encoded_packet).await;
         }
 

@@ -1,6 +1,7 @@
 //! Vanilla-compatible NBT helpers.
 
 mod codec;
+mod json;
 mod path;
 mod snbt;
 mod value_input;
@@ -9,6 +10,10 @@ use rustc_hash::FxHashSet;
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 
 pub use codec::NbtNumeric;
+pub use json::{
+    JsonNbtError, json_object_to_nbt_compound, json_to_nbt, json_to_nbt_float_preferred,
+    nbt_compound_to_json, nbt_to_json, pack_nbt_list,
+};
 pub use path::{
     NbtPath, NbtPathError, NbtPathErrorKind, NbtPathMutationError, parse_nbt_path,
     parse_nbt_path_argument,

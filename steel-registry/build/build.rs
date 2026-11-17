@@ -40,6 +40,7 @@ mod attributes;
 mod banner_patterns;
 mod biomes;
 mod block_entity_types;
+mod block_state_defaults;
 mod block_transformers;
 mod blocks;
 mod carvers;

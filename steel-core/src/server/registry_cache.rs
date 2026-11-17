@@ -17,11 +17,13 @@ use steel_registry::{
     CHAT_TYPE_REGISTRY, CHICKEN_SOUND_VARIANT_REGISTRY, CHICKEN_VARIANT_REGISTRY,
     COW_SOUND_VARIANT_REGISTRY, COW_VARIANT_REGISTRY, DAMAGE_TYPE_REGISTRY,
     DECORATED_POT_PATTERN_REGISTRY, DIALOG_REGISTRY, DIMENSION_TYPE_REGISTRY, ENCHANTMENT_REGISTRY,
-    ENTITY_TYPE_REGISTRY, FLUID_REGISTRY, FROG_VARIANT_REGISTRY, INSTRUMENT_REGISTRY,
-    ITEMS_REGISTRY, JUKEBOX_SONG_REGISTRY, PAINTING_VARIANT_REGISTRY, PIG_SOUND_VARIANT_REGISTRY,
-    PIG_VARIANT_REGISTRY, REGISTRY, Registry, RegistryEntry as _, TIMELINE_REGISTRY,
-    TRIM_MATERIAL_REGISTRY, TRIM_PATTERN_REGISTRY, TaggedRegistryExt, WOLF_SOUND_VARIANT_REGISTRY,
-    WOLF_VARIANT_REGISTRY, WORLD_CLOCK_REGISTRY, ZOMBIE_NAUTILUS_VARIANT_REGISTRY,
+    ENTITY_TYPE_REGISTRY, FLUID_REGISTRY, FROG_VARIANT_REGISTRY, GAME_EVENT_REGISTRY,
+    INSTRUMENT_REGISTRY, ITEMS_REGISTRY, JUKEBOX_SONG_REGISTRY, PAINTING_VARIANT_REGISTRY,
+    PIG_SOUND_VARIANT_REGISTRY, PIG_VARIANT_REGISTRY, POI_TYPE_REGISTRY, POTION_REGISTRY, REGISTRY,
+    Registry, RegistryEntry as _, SULFUR_CUBE_ARCHETYPE_REGISTRY, TEST_ENVIRONMENT_REGISTRY,
+    TEST_INSTANCE_REGISTRY, TIMELINE_REGISTRY, TRIM_MATERIAL_REGISTRY, TRIM_PATTERN_REGISTRY,
+    TaggedRegistryExt, WOLF_SOUND_VARIANT_REGISTRY, WOLF_VARIANT_REGISTRY, WORLD_CLOCK_REGISTRY,
+    ZOMBIE_NAUTILUS_VARIANT_REGISTRY,
 };
 use steel_utils::Identifier;
 use steel_utils::codec::VarInt;
@@ -30,8 +32,11 @@ use steel_protocol::packet_traits::CompressionInfo;
 
 /// Caches compressed registry packets to avoid re-compressing them for every player.
 pub struct RegistryCache {
-    /// The cached registry data packets.
+    /// The cached registry data packets, with full entry NBT.
     pub registry_packets: Arc<[EncodedPacket]>,
+    /// The cached registry data packets with entry contents elided (id-only
+    /// entries), for clients that negotiated our known packs.
+    pub elided_registry_packets: Arc<[EncodedPacket]>,
     /// The cached tags packet.
     pub tags_packet: Arc<EncodedPacket>,
 }
@@ -40,20 +45,29 @@ impl RegistryCache {
     /// Creates a new `RegistryCache` from the given registry.
     #[must_use]
     pub fn new(compression: Option<CompressionInfo>) -> Self {
-        let registry_packets = Self::build_registry_packets(&REGISTRY);
+        let registry_packets = Self::build_registry_packets(&REGISTRY, true);
         let tags_by_registry_packet = Self::build_tags_packet(&REGISTRY);
 
         let (registry_packets, tags_packet) =
             build_compressed_packets(registry_packets, tags_by_registry_packet, compression);
 
+        // Vanilla `RegistrySynchronization.packRegistry` skips an entry's
+        // contents when its known pack is in the negotiated client set. Steel
+        // serves a frozen all-vanilla registry, so every entry belongs to
+        // `minecraft:core` and a negotiated client gets the id-only form of
+        // every packet. Tags are never elided.
+        let elided_packets = Self::build_registry_packets(&REGISTRY, false);
+        let elided_registry_packets = compress_registry_packets(elided_packets, compression);
+
         Self {
             registry_packets,
+            elided_registry_packets,
             tags_packet: Arc::new(tags_packet),
         }
     }
 
-    fn build_registry_packets(registry: &Registry) -> Vec<CRegistryData> {
-        let mut packets = Vec::with_capacity(9);
+    fn build_registry_packets(registry: &Registry, include_data: bool) -> Vec<CRegistryData> {
+        let mut packets = Vec::with_capacity(32);
 
         macro_rules! add_registry {
             ($reg_key:expr, $field:ident) => {
@@ -63,7 +77,8 @@ impl RegistryCache {
                         .$field
                         .iter()
                         .map(|(_, entry)| {
-                            RegistryEntry::new(entry.key.clone(), Some(entry.to_nbt_tag()))
+                            let data = include_data.then(|| entry.to_nbt_tag());
+                            RegistryEntry::new(entry.key.clone(), data)
                         })
                         .collect(),
                 ));
@@ -77,11 +92,13 @@ impl RegistryCache {
         // a type that cannot produce NBT is therefore a compile error rather than
         // a silently empty payload on the wire.
 
+        // Exact vanilla MC 26.3 `RegistryDataLoader.SYNCHRONIZED_REGISTRIES`
+        // order (32/32). Vanilla clients resolve registry IDs positionally in
+        // some paths, so any deviation desyncs IDs.
         add_registry!(BIOMES_REGISTRY, biomes);
         add_registry!(CHAT_TYPE_REGISTRY, chat_types);
         add_registry!(TRIM_PATTERN_REGISTRY, trim_patterns);
         add_registry!(TRIM_MATERIAL_REGISTRY, trim_materials);
-        add_registry!(DECORATED_POT_PATTERN_REGISTRY, decorated_pot_patterns);
         add_registry!(WOLF_VARIANT_REGISTRY, wolf_variants);
         add_registry!(WOLF_SOUND_VARIANT_REGISTRY, wolf_sound_variants);
         add_registry!(PIG_VARIANT_REGISTRY, pig_variants);
@@ -89,32 +106,41 @@ impl RegistryCache {
         add_registry!(FROG_VARIANT_REGISTRY, frog_variants);
         add_registry!(CAT_VARIANT_REGISTRY, cat_variants);
         add_registry!(CAT_SOUND_VARIANT_REGISTRY, cat_sound_variants);
-        add_registry!(COW_VARIANT_REGISTRY, cow_variants);
         add_registry!(COW_SOUND_VARIANT_REGISTRY, cow_sound_variants);
-        add_registry!(CHICKEN_VARIANT_REGISTRY, chicken_variants);
+        add_registry!(COW_VARIANT_REGISTRY, cow_variants);
         add_registry!(CHICKEN_SOUND_VARIANT_REGISTRY, chicken_sound_variants);
+        add_registry!(CHICKEN_VARIANT_REGISTRY, chicken_variants);
+        add_registry!(ZOMBIE_NAUTILUS_VARIANT_REGISTRY, zombie_nautilus_variants);
         add_registry!(PAINTING_VARIANT_REGISTRY, painting_variants);
+        add_registry!(SULFUR_CUBE_ARCHETYPE_REGISTRY, sulfur_cube_archetypes);
         add_registry!(DIMENSION_TYPE_REGISTRY, dimension_types);
         add_registry!(DAMAGE_TYPE_REGISTRY, damage_types);
         add_registry!(BANNER_PATTERN_REGISTRY, banner_patterns);
-        add_registry!(ZOMBIE_NAUTILUS_VARIANT_REGISTRY, zombie_nautilus_variants);
-
         add_registry!(ENCHANTMENT_REGISTRY, enchantments);
-
         add_registry!(JUKEBOX_SONG_REGISTRY, jukebox_songs);
         add_registry!(INSTRUMENT_REGISTRY, instruments);
-        add_registry!(TIMELINE_REGISTRY, timelines);
+        add_registry!(TEST_ENVIRONMENT_REGISTRY, test_environments);
+        add_registry!(TEST_INSTANCE_REGISTRY, test_instances);
         add_registry!(DIALOG_REGISTRY, dialogs);
-
         add_registry!(WORLD_CLOCK_REGISTRY, world_clocks);
-        add_registry!(BLOCK_STATE_PROVIDER_REGISTRY, block_state_providers);
+        add_registry!(TIMELINE_REGISTRY, timelines);
+        add_registry!(DECORATED_POT_PATTERN_REGISTRY, decorated_pot_patterns);
         add_registry!(BLOCK_TRANSFORMER_REGISTRY, block_transformers);
+        add_registry!(BLOCK_STATE_PROVIDER_REGISTRY, block_state_providers);
 
         packets
     }
 
     fn build_tags_packet(registry: &Registry) -> CUpdateTags {
-        let mut tags_by_registry: TagCollection = Vec::with_capacity(10);
+        // All 15 vanilla MC 26.3 synced tag registries (vanilla
+        // `TagNetworkSerialization.serializeTagsToNetwork` over
+        // `networkSafeRegistries`, skipping empty payloads: every static
+        // registry plus the networkable dynamic ones). The remaining tag
+        // folders (`worldgen/structure`,
+        // `villager_trade`, `worldgen/feature`,
+        // `worldgen/flat_level_generator_preset`, `worldgen/world_preset`) are
+        // server-only and never sent.
+        let mut tags_by_registry: TagCollection = Vec::with_capacity(15);
         macro_rules! add_tags {
             ($reg_key:expr, $field:ident) => {
                 let mut tags: Vec<(Identifier, Vec<VarInt>)> =
@@ -132,28 +158,19 @@ impl RegistryCache {
 
         add_tags!(BLOCKS_REGISTRY, blocks);
         add_tags!(ITEMS_REGISTRY, items);
-        add_tags!(TIMELINE_REGISTRY, timelines);
-        add_tags!(DIALOG_REGISTRY, dialogs);
-        add_tags!(DAMAGE_TYPE_REGISTRY, damage_types);
-        add_tags!(BANNER_PATTERN_REGISTRY, banner_patterns);
+        add_tags!(FLUID_REGISTRY, fluids);
         add_tags!(ENTITY_TYPE_REGISTRY, entity_types);
+        add_tags!(GAME_EVENT_REGISTRY, game_events);
+        add_tags!(BIOMES_REGISTRY, biomes);
+        add_tags!(DAMAGE_TYPE_REGISTRY, damage_types);
+        add_tags!(ENCHANTMENT_REGISTRY, enchantments);
         add_tags!(INSTRUMENT_REGISTRY, instruments);
         add_tags!(PAINTING_VARIANT_REGISTRY, painting_variants);
-        add_tags!(ENCHANTMENT_REGISTRY, enchantments);
-
-        // Build fluid tags
-        let mut fluid_tags: Vec<(Identifier, Vec<VarInt>)> =
-            Vec::with_capacity(registry.fluids.tag_keys().count());
-        for tag_key in registry.fluids.tag_keys() {
-            let mut fluid_ids = Vec::with_capacity(registry.fluids.iter_tag(tag_key).count());
-
-            for fluid in registry.fluids.iter_tag(tag_key) {
-                fluid_ids.push(VarInt::from(fluid.id() as i32));
-            }
-
-            fluid_tags.push((tag_key.clone(), fluid_ids));
-        }
-        tags_by_registry.push((FLUID_REGISTRY, fluid_tags));
+        add_tags!(BANNER_PATTERN_REGISTRY, banner_patterns);
+        add_tags!(DIALOG_REGISTRY, dialogs);
+        add_tags!(TIMELINE_REGISTRY, timelines);
+        add_tags!(POI_TYPE_REGISTRY, poi_types);
+        add_tags!(POTION_REGISTRY, potions);
 
         // Build and return a CUpdateTagsPacket based on the registry data
         CUpdateTags::new(tags_by_registry)
@@ -176,12 +193,10 @@ fn compress_packet<P: ClientPacket>(
 
 /// # Panics
 /// This function will panic if the compression fails.
-#[must_use]
-pub fn build_compressed_packets(
+fn compress_registry_packets(
     registry_packets: Vec<CRegistryData>,
-    tags_packet: CUpdateTags,
     compression: Option<CompressionInfo>,
-) -> (Arc<[EncodedPacket]>, EncodedPacket) {
+) -> Arc<[EncodedPacket]> {
     let mut compressed_packets = Vec::with_capacity(registry_packets.len());
 
     for packet in registry_packets {
@@ -189,8 +204,21 @@ pub fn build_compressed_packets(
             .push(compress_packet(packet, compression).expect("Failed to compress packet"));
     }
 
+    compressed_packets.into()
+}
+
+/// # Panics
+/// This function will panic if the compression fails.
+#[must_use]
+pub fn build_compressed_packets(
+    registry_packets: Vec<CRegistryData>,
+    tags_packet: CUpdateTags,
+    compression: Option<CompressionInfo>,
+) -> (Arc<[EncodedPacket]>, EncodedPacket) {
+    let compressed_packets = compress_registry_packets(registry_packets, compression);
+
     let compressed_tags_packet =
         compress_packet(tags_packet, compression).expect("Failed to compress tags packet");
 
-    (compressed_packets.into(), compressed_tags_packet)
+    (compressed_packets, compressed_tags_packet)
 }

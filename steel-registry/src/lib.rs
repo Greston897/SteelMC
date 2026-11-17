@@ -31,6 +31,7 @@ pub mod chat_type;
 pub mod chicken_sound_variant;
 pub mod chicken_variant;
 pub mod consume_effect;
+pub mod context_provider;
 pub mod cow_sound_variant;
 pub mod cow_variant;
 pub mod damage_type;
@@ -41,6 +42,8 @@ pub mod dialog;
 pub mod dimension_type;
 pub mod dye_color;
 pub mod enchantment;
+pub mod enchantment_provider;
+pub mod environment_attribute;
 pub use enchantment::effect as enchantment_effect;
 pub mod entity_data;
 pub mod entity_type;
@@ -52,6 +55,7 @@ pub mod frog_variant;
 pub mod game_events;
 pub mod game_profile;
 pub mod game_rules;
+pub mod gametest;
 pub mod instrument;
 pub mod item_predicate;
 pub mod item_stack;
@@ -83,6 +87,8 @@ pub mod resolvable_profile;
 pub mod sound_event;
 pub mod stat;
 pub mod steel_ticket_types;
+pub mod sulfur_cube_archetype;
+pub mod trial_spawner;
 pub mod structure;
 pub use structure::processor as structure_processor;
 pub use structure::set as structure_set;
@@ -95,10 +101,12 @@ pub mod trim_pattern;
 pub mod vanilla_criteria_triggers;
 pub mod vanilla_ticket_types;
 pub mod villager_profession;
+pub mod villager_trade;
 pub mod villager_type;
 pub mod wolf_sound_variant;
 pub mod wolf_variant;
 pub mod world_clock;
+pub mod world_preset;
 pub mod zombie_nautilus_variant;
 
 pub use consume_effect::{ConsumeEffectData, ConsumeEffectType, ConsumeEffectTypeRef};
@@ -513,3 +521,93 @@ pub mod vanilla_suspicious_stew_effects;
 #[rustfmt::skip]
 #[path = "generated/vanilla_advancements.rs"]
 pub mod vanilla_advancements;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_sulfur_cube_archetypes.rs"]
+pub mod vanilla_sulfur_cube_archetypes;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_test_environments.rs"]
+pub mod vanilla_test_environments;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_test_instances.rs"]
+pub mod vanilla_test_instances;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_predicates.rs"]
+pub mod vanilla_predicates;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_context_int_providers.rs"]
+pub mod vanilla_context_int_providers;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_context_float_providers.rs"]
+pub mod vanilla_context_float_providers;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_enchantment_providers.rs"]
+pub mod vanilla_enchantment_providers;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_trial_spawners.rs"]
+pub mod vanilla_trial_spawners;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_villager_trades.rs"]
+pub mod vanilla_villager_trades;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_trade_sets.rs"]
+pub mod vanilla_trade_sets;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_dimensions.rs"]
+pub mod vanilla_dimensions;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_flat_level_generator_presets.rs"]
+pub mod vanilla_flat_level_generator_presets;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_world_presets.rs"]
+pub mod vanilla_world_presets;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_game_event_tags.rs"]
+pub mod vanilla_game_event_tags;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_villager_trade_tags.rs"]
+pub mod vanilla_villager_trade_tags;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_flat_level_generator_preset_tags.rs"]
+pub mod vanilla_flat_level_generator_preset_tags;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_world_preset_tags.rs"]
+pub mod vanilla_world_preset_tags;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/vanilla_feature_tags.rs"]
+pub mod vanilla_feature_tags;

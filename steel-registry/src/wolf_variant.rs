@@ -21,8 +21,11 @@ pub struct WolfAssetInfo {
     pub angry: Identifier,
 }
 
-impl ToNbtTag for &WolfVariant {
-    fn to_nbt_tag(self) -> NbtTag {
+impl WolfVariant {
+    /// Vanilla `WolfVariant.NETWORK_CODEC` — syncable fields only
+    /// (`spawn_conditions` is server-only and never sent to the client).
+    #[must_use]
+    pub fn to_network_nbt(&self) -> NbtTag {
         use simdnbt::owned::NbtCompound;
         let mut compound = NbtCompound::new();
         let mut assets = NbtCompound::new();
@@ -41,8 +44,24 @@ impl ToNbtTag for &WolfVariant {
         let angry = self.baby_assets.angry.to_string();
         baby_assets.insert("angry", angry.as_str());
         compound.insert("baby_assets", NbtTag::Compound(baby_assets));
+        NbtTag::Compound(compound)
+    }
+
+    /// Full direct codec including server-only `spawn_conditions`.
+    #[must_use]
+    pub fn to_direct_nbt_tag(&self) -> NbtTag {
+        use simdnbt::owned::NbtTag;
+        let NbtTag::Compound(mut compound) = self.to_network_nbt() else {
+            unreachable!("wolf variant network NBT is always a compound");
+        };
         insert_spawn_conditions(&mut compound, self.spawn_conditions);
         NbtTag::Compound(compound)
+    }
+}
+
+impl ToNbtTag for &WolfVariant {
+    fn to_nbt_tag(self) -> NbtTag {
+        self.to_network_nbt()
     }
 }
 

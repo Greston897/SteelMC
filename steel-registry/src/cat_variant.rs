@@ -27,12 +27,25 @@ pub enum SpawnCondition {
     Biome { biomes: &'static str },
 }
 
-impl ToNbtTag for &CatVariant {
-    fn to_nbt_tag(self) -> NbtTag {
-        use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
+impl CatVariant {
+    /// Vanilla `CatVariant.NETWORK_CODEC` — syncable fields only
+    /// (`spawn_conditions` is server-only and never sent to the client).
+    #[must_use]
+    pub fn to_network_nbt(&self) -> NbtTag {
+        use simdnbt::owned::{NbtCompound, NbtTag};
         let mut compound = NbtCompound::new();
         compound.insert("asset_id", self.asset_id.clone());
         compound.insert("baby_asset_id", self.baby_asset_id.clone());
+        NbtTag::Compound(compound)
+    }
+
+    /// Full direct codec including server-only `spawn_conditions`.
+    #[must_use]
+    pub fn to_direct_nbt_tag(&self) -> NbtTag {
+        use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
+        let NbtTag::Compound(mut compound) = self.to_network_nbt() else {
+            unreachable!("cat variant network NBT is always a compound");
+        };
         let conditions: Vec<NbtCompound> = self
             .spawn_conditions
             .iter()
@@ -70,6 +83,12 @@ impl ToNbtTag for &CatVariant {
             NbtTag::List(NbtList::Compound(conditions)),
         );
         NbtTag::Compound(compound)
+    }
+}
+
+impl ToNbtTag for &CatVariant {
+    fn to_nbt_tag(self) -> NbtTag {
+        self.to_network_nbt()
     }
 }
 

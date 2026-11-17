@@ -305,13 +305,13 @@ impl World {
     /// Returns whether it is currently bright enough outside for daytime
     /// mob behavior (dimensions with a fixed time are never "bright").
     pub fn is_bright_outside(&self) -> bool {
-        self.dimension_type.fixed_time.is_none() && self.sky_darkening() < 4
+        !self.dimension_type.has_fixed_time && self.sky_darkening() < 4
     }
 
     /// Returns whether it is currently dark enough outside for hostile mobs
     /// to spawn in daylight (dimensions with a fixed time are never "dark").
     pub fn is_dark_outside(&self) -> bool {
-        self.dimension_type.fixed_time.is_none() && !self.is_bright_outside()
+        !self.dimension_type.has_fixed_time && !self.is_bright_outside()
     }
 
     /// Checks whether the world can have weather.

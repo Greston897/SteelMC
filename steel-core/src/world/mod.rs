@@ -1700,7 +1700,7 @@ impl World {
     /// threshold.
     #[must_use]
     pub fn is_day(&self) -> bool {
-        self.dimension_type.fixed_time.is_none() && self.sky_darkening() < 4
+        !self.dimension_type.has_fixed_time && self.sky_darkening() < 4
     }
 
     /// Whether phantoms may spawn in this world at all.

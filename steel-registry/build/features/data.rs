@@ -343,23 +343,30 @@ fn deserialize_configured_feature_kind(
     })
 }
 
-/// Identifier list that accepts vanilla's single-or-list codec shape.
-#[derive(Debug, Clone)]
-pub struct IdentifierList(pub Vec<Identifier>);
+/// Raw shape shared by every vanilla `HolderSet` codec: a `#tag` string, a
+/// single entry id, or a list of entry ids (`HolderSetCodec` with
+/// `compactListCodec` direct values).
+fn deserialize_holder_set_raw<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<(Option<Identifier>, Vec<Identifier>), D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Raw {
+        Single(String),
+        Many(Vec<Identifier>),
+    }
 
-impl<'de> Deserialize<'de> for IdentifierList {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        #[derive(Deserialize)]
-        #[serde(untagged)]
-        enum Raw {
-            Single(Identifier),
-            Many(Vec<Identifier>),
+    match Raw::deserialize(deserializer)? {
+        Raw::Single(value) => {
+            if let Some(tag) = value.strip_prefix('#') {
+                let tag = tag.parse().map_err(D::Error::custom)?;
+                Ok((Some(tag), Vec::new()))
+            } else {
+                let entry = value.parse().map_err(D::Error::custom)?;
+                Ok((None, vec![entry]))
+            }
         }
-
-        Ok(match Raw::deserialize(deserializer)? {
-            Raw::Single(value) => Self(vec![value]),
-            Raw::Many(values) => Self(values),
-        })
+        Raw::Many(values) => Ok((None, values)),
     }
 }
 
@@ -372,25 +379,42 @@ pub enum BlockHolderSet {
 
 impl<'de> Deserialize<'de> for BlockHolderSet {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        #[derive(Deserialize)]
-        #[serde(untagged)]
-        enum Raw {
-            Single(String),
-            Many(Vec<Identifier>),
-        }
+        Ok(match deserialize_holder_set_raw(deserializer)? {
+            (Some(tag), _) => Self::Tag(tag),
+            (None, entries) => Self::Entries(entries),
+        })
+    }
+}
 
-        match Raw::deserialize(deserializer)? {
-            Raw::Single(value) => {
-                if let Some(tag) = value.strip_prefix('#') {
-                    let tag = tag.parse().map_err(D::Error::custom)?;
-                    Ok(Self::Tag(tag))
-                } else {
-                    let entry = value.parse().map_err(D::Error::custom)?;
-                    Ok(Self::Entries(vec![entry]))
-                }
-            }
-            Raw::Many(values) => Ok(Self::Entries(values)),
-        }
+/// Vanilla holder set for fluids, preserving tag-vs-entry semantics.
+#[derive(Debug, Clone)]
+pub enum FluidHolderSet {
+    Tag(Identifier),
+    Entries(Vec<Identifier>),
+}
+
+impl<'de> Deserialize<'de> for FluidHolderSet {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Ok(match deserialize_holder_set_raw(deserializer)? {
+            (Some(tag), _) => Self::Tag(tag),
+            (None, entries) => Self::Entries(entries),
+        })
+    }
+}
+
+/// Vanilla holder set for biomes, preserving tag-vs-entry semantics.
+#[derive(Debug, Clone)]
+pub enum BiomeHolderSet {
+    Tag(Identifier),
+    Entries(Vec<Identifier>),
+}
+
+impl<'de> Deserialize<'de> for BiomeHolderSet {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Ok(match deserialize_holder_set_raw(deserializer)? {
+            (Some(tag), _) => Self::Tag(tag),
+            (None, entries) => Self::Entries(entries),
+        })
     }
 }
 
@@ -459,16 +483,18 @@ pub enum BlockPredicate {
     },
     #[serde(rename = "minecraft:matching_blocks")]
     MatchingBlocks {
-        blocks: IdentifierList,
+        blocks: BlockHolderSet,
         #[serde(default = "default_offset")]
         offset: Offset,
     },
     #[serde(rename = "minecraft:matching_fluids")]
     MatchingFluids {
-        fluids: IdentifierList,
+        fluids: FluidHolderSet,
         #[serde(default = "default_offset")]
         offset: Offset,
     },
+    #[serde(rename = "minecraft:matching_biomes")]
+    MatchingBiomes { biomes: BiomeHolderSet },
     #[serde(rename = "minecraft:solid")]
     Solid {
         #[serde(default = "default_offset")]
@@ -494,6 +520,11 @@ pub enum BlockPredicate {
     },
     #[serde(rename = "minecraft:inside_world_bounds")]
     InsideWorldBounds {
+        #[serde(default = "default_offset")]
+        offset: Offset,
+    },
+    #[serde(rename = "minecraft:unobstructed")]
+    Unobstructed {
         #[serde(default = "default_offset")]
         offset: Offset,
     },
@@ -718,6 +749,42 @@ pub struct NoiseThresholdProvider {
     pub high_states: Vec<BlockStateData>,
 }
 
+/// `InclusiveRange.codec(INT, 1, 64)` for `DualNoiseProvider.variety`:
+/// a bare point, a `[min, max]` list, or a
+/// `{min_inclusive, max_inclusive}` object.
+fn deserialize_variety<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<[i32; 2], D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Raw {
+        Single(i32),
+        Pair([i32; 2]),
+        Ranged {
+            min_inclusive: i32,
+            max_inclusive: i32,
+        },
+    }
+
+    let [min_inclusive, max_inclusive] = match Raw::deserialize(deserializer)? {
+        Raw::Single(value) => [value, value],
+        Raw::Pair(pair) => pair,
+        Raw::Ranged {
+            min_inclusive,
+            max_inclusive,
+        } => [min_inclusive, max_inclusive],
+    };
+    if min_inclusive < 1 || max_inclusive > 64 {
+        return Err(D::Error::custom("dual_noise variety must be within [1, 64]"));
+    }
+    if min_inclusive > max_inclusive {
+        return Err(D::Error::custom(
+            "min_inclusive must be less than or equal to max_inclusive",
+        ));
+    }
+    Ok([min_inclusive, max_inclusive])
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DualNoiseProvider {
@@ -727,6 +794,7 @@ pub struct DualNoiseProvider {
     pub slow_noise: FeatureNoiseParameters,
     pub slow_scale: f32,
     pub states: Vec<BlockStateData>,
+    #[serde(deserialize_with = "deserialize_variety")]
     pub variety: [i32; 2],
 }
 
