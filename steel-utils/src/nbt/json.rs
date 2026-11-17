@@ -297,7 +297,6 @@ fn is_wrapper_compound(compound: &NbtCompound) -> bool {
 #[must_use]
 pub fn nbt_to_json(tag: &NbtTag) -> JsonValue {
     match tag {
-        NbtTag::Empty => JsonValue::Null,
         NbtTag::Byte(v) => JsonValue::Number((*v).into()),
         NbtTag::Short(v) => JsonValue::Number((*v).into()),
         NbtTag::Int(v) => JsonValue::Number((*v).into()),
