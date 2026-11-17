@@ -71,7 +71,9 @@ use crate::block_entity::entities::{
     SculkSensorBlockEntity, SculkShriekerBlockEntity, TrialSpawnerBlockEntity, VaultBlockEntity,
 };
 use crate::block_entity::{BLOCK_ENTITIES, BlockEntity as _, init_block_entities};
-use crate::command::execution::{CommandExecutionContext, CommandResultCallback, CommandSource};
+use crate::command::execution::{
+    CommandExecutionContext, CommandResultCallback, CommandSource, ExecutionCommandSource as _,
+};
 use crate::command::sender::CommandSender;
 use crate::config::ResolvedDomainConfig;
 use crate::entity::damage::DamageSource;
@@ -210,14 +212,12 @@ fn exec_command(
     };
     let outcome = Arc::new(SyncMutex::new((false, 0_i32)));
     let outcome_sink = Arc::clone(&outcome);
+    let callback = CommandResultCallback::new(move |ok, val| {
+        *outcome_sink.lock() = (ok, val);
+    });
+    let source = source.with_callback(callback.clone());
     let mut ctx = CommandExecutionContext::for_source(&source);
-    ctx.queue_initial_command(
-        chain,
-        source,
-        CommandResultCallback::new(move |ok, val| {
-            *outcome_sink.lock() = (ok, val);
-        }),
-    );
+    ctx.queue_initial_command(chain, source, callback);
     let _ = ctx.run();
     let result = *outcome.lock();
     Ok(result)
@@ -1728,13 +1728,12 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     armored_zombie.with_equipment_slot_mut(EquipmentSlot::Chest, &mut |slot| {
         *slot = prot_chest.clone();
     });
-    assert!(
-        armored_zombie.hurt(
-            &world,
-            &DamageSource::environment(&vanilla_damage_types::FIREWORKS),
-            8.0,
-        )
+    let damaged = armored_zombie.hurt(
+        &world,
+        &DamageSource::environment(&vanilla_damage_types::FIREWORKS),
+        8.0,
     );
+    assert!(damaged);
     armored_zombie.with_equipment_slot(EquipmentSlot::Chest, &mut |slot| {
         assert!(
             slot.get_damage_value() > 0,
@@ -2007,6 +2006,14 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     let console_commands = [
         "time set day",
         "time add 100",
+        "time pause",
+        "time resume",
+        "time query gametime",
+        "return 42",
+        "swing Admin",
+        "rotate Admin 90 0",
+        "tpsbar",
+        "tpsbar",
         "weather clear",
         "difficulty normal",
         "defaultgamemode survival",
