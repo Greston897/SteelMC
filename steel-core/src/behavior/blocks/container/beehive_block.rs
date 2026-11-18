@@ -322,7 +322,7 @@ mod tests {
         let world = &fixture.world;
         let pos = BlockPos::new(8, 64, 8);
         let _holder = insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
-        let state = vanilla_blocks::BEEHIVE.default_state().set_value(LEVEL_HONEY, MAX_HONEY_LEVEL);
+        let state = vanilla_blocks::BEEHIVE.default_state().set_value(LEVEL_HONEY, 5);
         world.set_block(pos, state, UpdateFlags::UPDATE_ALL);
         let player = TestPlayerBuilder::new(std::sync::Arc::clone(world), "HiveShearer", 1).build();
         let entity = world.get_block_entity(pos).expect("hive block entity");
