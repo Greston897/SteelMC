@@ -36,7 +36,7 @@ impl BoneMealItem {
         }
     }
 
-    fn grow(world: &Arc<World>, pos: BlockPos) -> bool {
+    pub(crate) fn grow(world: &Arc<World>, pos: BlockPos) -> bool {
         let state = world.get_block_state(pos);
         let Some(behavior) = BLOCK_BEHAVIORS.get_behavior_for_state(state) else {
             return false;
@@ -92,7 +92,7 @@ impl BoneMealItem {
         );
     }
 
-    fn grow_water_plant(world: &Arc<World>, pos: BlockPos, _clicked_face: Direction) -> bool {
+    pub(crate) fn grow_water_plant(world: &Arc<World>, pos: BlockPos, _clicked_face: Direction) -> bool {
         let state = world.get_block_state(pos);
         if state.get_block() != &vanilla_blocks::WATER || !state.get_fluid_state().is_full() {
             return false;

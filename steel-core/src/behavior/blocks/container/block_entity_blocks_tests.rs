@@ -1,0 +1,78 @@
+//! Registered block dispatch and scheduled-tick integration, not helper-only tests.
+use super::*;
+use crate::bootstrap::init_globals;
+use crate::test_support::{fresh_test_world, insert_ready_full_chunk, tick_test_world, TestWorld};
+use steel_utils::ChunkPos;
+use steel_registry::vanilla_blocks;
+
+const SOURCE: BlockPos = BlockPos::new(8, 64, 8);
+const TARGET: BlockPos = BlockPos::new(9, 64, 8);
+
+fn fixture(name: &str, stack: ItemStack) -> (TestWorld, ContainerRef) {
+    init_globals();
+    let fixture = fresh_test_world(name);
+    let world = &fixture.world;
+    insert_ready_full_chunk(world, ChunkPos::from_block_pos(SOURCE));
+    world.set_block(SOURCE, vanilla_blocks::DISPENSER.default_state().set_value(&BlockStateProperties::FACING, Direction::East), UpdateFlags::UPDATE_ALL);
+    let container = world.get_block_entity(SOURCE).unwrap().container_ref().unwrap();
+    container.lock().set_item(0, stack);
+    (fixture, container)
+}
+
+fn pulse(world: &Arc<World>) {
+    world.set_block(SOURCE.above(), vanilla_blocks::REDSTONE_BLOCK.default_state(), UpdateFlags::UPDATE_ALL);
+    for tick in 0..3 { tick_test_world(world, tick, true); }
+    tick_test_world(world, 3, true);
+}
+
+#[test]
+fn powered_dispenser_grows_wheat_and_consumes_exactly_one_bone_meal() {
+    let (fixture, container) = fixture("dispenser_bonemeal_wheat", ItemStack::with_count(&vanilla_items::BONE_MEAL, 3));
+    let world = &fixture.world;
+    world.set_block(TARGET.below(), vanilla_blocks::FARMLAND.default_state(), UpdateFlags::UPDATE_ALL);
+    world.set_block(TARGET, vanilla_blocks::WHEAT.default_state(), UpdateFlags::UPDATE_ALL);
+    pulse(world);
+    assert!(world.get_block_state(TARGET).get_value(&BlockStateProperties::AGE_7) > 0);
+    assert_eq!(container.lock().get_item(0).count(), 2);
+}
+
+#[test]
+fn failed_bone_meal_dispense_keeps_inventory_intact() {
+    let (fixture, container) = fixture("dispenser_bonemeal_invalid", ItemStack::with_count(&vanilla_items::BONE_MEAL, 3));
+    pulse(&fixture.world);
+    assert_eq!(container.lock().get_item(0).count(), 3);
+}
+
+#[test]
+fn bottles_fill_from_source_flowing_water_and_waterlogged_blocks_without_draining() {
+    use steel_registry::data_components::vanilla_components::POTION_CONTENTS;
+    let targets = [
+        vanilla_blocks::WATER.default_state(),
+        vanilla_blocks::WATER.default_state().set_value(&BlockStateProperties::LEVEL, 3),
+        vanilla_blocks::OAK_SLAB.default_state().set_value(&BlockStateProperties::WATERLOGGED, true),
+    ];
+    for target in targets {
+        let (fixture, container) = fixture("dispenser_bottle_water", ItemStack::new(&vanilla_items::GLASS_BOTTLE));
+        let world = &fixture.world;
+        world.set_block(TARGET.below(), vanilla_blocks::STONE.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(TARGET, target, UpdateFlags::UPDATE_ALL);
+        pulse(world);
+        let filled = container.lock().get_item(0).clone();
+        assert!(filled.is(&vanilla_items::POTION));
+        assert!(filled.get(POTION_CONTENTS).is_some());
+        assert_eq!(world.get_block_state(TARGET), target);
+    }
+}
+
+#[test]
+fn bottle_collects_honey_resets_hive_and_stores_stack_remainder() {
+    let (fixture, container) = fixture("dispenser_bottle_honey", ItemStack::with_count(&vanilla_items::GLASS_BOTTLE, 2));
+    let world = &fixture.world;
+    world.set_block(TARGET, vanilla_blocks::BEEHIVE.default_state().set_value(&BlockStateProperties::LEVEL_HONEY, 5), UpdateFlags::UPDATE_ALL);
+    pulse(world);
+    assert_eq!(world.get_block_state(TARGET).get_value(&BlockStateProperties::LEVEL_HONEY), 0);
+    assert!(container.lock().get_item(0).is(&vanilla_items::GLASS_BOTTLE));
+    assert_eq!(container.lock().get_item(0).count(), 1);
+    assert!(container.lock().get_item(1).is(&vanilla_items::HONEY_BOTTLE));
+    assert_eq!(container.lock().get_item(1).count(), 1);
+}

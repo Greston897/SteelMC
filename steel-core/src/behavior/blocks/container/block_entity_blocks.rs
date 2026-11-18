@@ -556,6 +556,43 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
         return true;
     }
 
+    // Optional bone-meal dispensing keeps the item if neither a crop nor an
+    // underwater growth target accepts it. Reuse the player-side growth logic.
+    if item == &*vanilla_items::BONE_MEAL {
+        let success = crate::behavior::items::BoneMealItem::grow(world, target_pos)
+            || crate::behavior::items::BoneMealItem::grow_water_plant(world, target_pos, facing);
+        if success {
+            let _ = container.lock().remove_item(slot, 1);
+            world.level_event(steel_registry::level_events::PARTICLES_AND_SOUND_PLANT_GROWTH, target_pos, 15, None);
+        }
+        let sound = if success { &sound_events::BLOCK_DISPENSER_DISPENSE } else { &sound_events::BLOCK_DISPENSER_FAIL };
+        world.play_sound(sound, SoundSource::Blocks, pos, 1.0, 1.0, None);
+        return success;
+    }
+
+    if item == &*vanilla_items::GLASS_BOTTLE {
+        use crate::fluid::FluidStateExt as _;
+        use crate::block_entity::entities::BeehiveBlockEntity;
+        let filled = if target_state.try_get_value(&BlockStateProperties::LEVEL_HONEY).is_some_and(|level| level >= 5) {
+            world.get_block_entity(target_pos).and_then(|entity| {
+                let hive = entity.downcast_ref::<BeehiveBlockEntity>()?;
+                hive.on_honey_harvested(target_state, world, target_pos, 0, true);
+                Some(ItemStack::new(&vanilla_items::HONEY_BOTTLE))
+            })
+        } else if target_state.get_fluid_state().is_water() {
+            Some(steel_registry::data_components::PotionContents::create_item_stack(&vanilla_items::POTION, &steel_registry::vanilla_potions::WATER))
+        } else {
+            None
+        };
+        if let Some(filled) = filled {
+            replace_or_store_dispensed_result(world, pos, facing, &container, slot, filled);
+            world.game_event(&steel_registry::vanilla_game_events::FLUID_PICKUP, pos, &crate::world::game_event::GameEventContext::new(None, None));
+            world.play_sound(&sound_events::BLOCK_DISPENSER_DISPENSE, SoundSource::Blocks, pos, 1.0, 1.0, None);
+            return true;
+        }
+        // Invalid bottle targets use ordinary item ejection, not a no-op.
+    }
+
     // 1. TNT: prime TNT in front if space allows.
     if item == &*vanilla_items::TNT && target_state.is_air() {
         let _ = container.lock().remove_item(slot, 1);
@@ -1223,3 +1260,7 @@ fn container_signal(world: &dyn crate::world::LevelReader, pos: BlockPos) -> i32
             calculate_redstone_signal_from_container(container)
         })
 }
+
+#[cfg(test)]
+#[path = "block_entity_blocks_tests.rs"]
+mod regression_tests;
