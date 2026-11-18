@@ -68,7 +68,22 @@ impl FireBlock {
         if SoulFireBlock::can_survive_at(world, pos) {
             vanilla_blocks::SOUL_FIRE.default_state()
         } else {
-            vanilla_blocks::FIRE.default_state()
+            let mut state = vanilla_blocks::FIRE.default_state();
+            let below = pos.below();
+            let below_state = world.get_block_state(below);
+            if Self::can_burn(below_state) || world.is_face_sturdy(below_state, below, Direction::Up) {
+                return state;
+            }
+            for (direction, property) in [
+                (Direction::North, &BlockStateProperties::NORTH),
+                (Direction::East, &BlockStateProperties::EAST),
+                (Direction::South, &BlockStateProperties::SOUTH),
+                (Direction::West, &BlockStateProperties::WEST),
+                (Direction::Up, &BlockStateProperties::UP),
+            ] {
+                state = state.set_value(property, Self::can_burn(world.get_block_state(pos.relative(direction))));
+            }
+            state
         }
     }
 
@@ -379,21 +394,17 @@ impl BlockBehavior for FireBlock {
         state: BlockStateId,
         world: &dyn ScheduledTickAccess,
         pos: BlockPos,
-        direction: Direction,
+        _direction: Direction,
         _neighbor_pos: BlockPos,
         _neighbor_state: BlockStateId,
     ) -> BlockStateId {
-        if direction == Direction::Down && !self.can_survive(state, world, pos) {
+        if !self.can_survive(state, world, pos) {
             return vanilla_blocks::AIR.default_state();
         }
-        state
+        Self::state_with_age(world, pos, state.get_value(AGE))
     }
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
-        if SoulFireBlock::can_survive_at(context.world.as_ref(), context.place_pos()) {
-            Some(vanilla_blocks::SOUL_FIRE.default_state())
-        } else {
-            Some(self.block.default_state())
-        }
+        Some(Self::get_state(context.world.as_ref(), context.place_pos()))
     }
 
     fn can_survive(&self, _state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
@@ -598,6 +609,24 @@ mod tests {
             vanilla_blocks::AIR.default_state(),
         );
         assert_eq!(result.get_block(), &vanilla_blocks::AIR);
+    }
+
+    #[test]
+    fn horizontal_support_removal_extinguishes_fire() {
+        init_vanilla_registry();
+        let level = TestLevel::default();
+        let state = vanilla_blocks::FIRE.default_state();
+        let behavior = FireBlock::new(&vanilla_blocks::FIRE);
+        assert!(behavior.update_shape(state, &level, POS, Direction::West, POS.west(), vanilla_blocks::AIR.default_state()).is_air());
+    }
+
+    #[test]
+    fn changing_floor_to_soul_sand_converts_existing_fire() {
+        init_vanilla_registry();
+        let level = level_with_support(vanilla_blocks::SOUL_SAND.default_state());
+        let behavior = FireBlock::new(&vanilla_blocks::FIRE);
+        let result = behavior.update_shape(vanilla_blocks::FIRE.default_state(), &level, POS, Direction::Down, POS.below(), vanilla_blocks::SOUL_SAND.default_state());
+        assert_eq!(result.get_block(), &vanilla_blocks::SOUL_FIRE);
     }
 
     #[test]
