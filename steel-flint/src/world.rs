@@ -533,6 +533,27 @@ mod tests {
     }
 
     #[test]
+    fn runner_applies_world_setup_before_the_first_assertion_and_surfaces_invalid_setup() {
+        crate::init();
+        let runner = flint_core::TestRunner::new(Arc::new(crate::SteelAdapter));
+        for (time, expected) in [("6000", 6000), ("18000", 18000), ("minecraft:day", 1000)] {
+            let spec: flint_core::TestSpec = serde_json::from_value(serde_json::json!({
+                "name": "runner_world_setup", "setup": {"world": {"time": time}},
+                "timeline": [{"at": 0, "do": "assert", "checks": [{"time": expected}]}]
+            })).unwrap();
+            let result = runner.run_test(&spec);
+            assert!(result.success, "setup {time}: {result:?}");
+        }
+        let spec: flint_core::TestSpec = serde_json::from_value(serde_json::json!({
+            "name": "invalid_world_setup", "setup": {"world": {"time": "minecraft:missing_marker"}},
+            "timeline": []
+        })).unwrap();
+        let result = runner.run_test(&spec);
+        assert!(!result.success);
+        assert!(result.failure_reason.unwrap().contains("unknown time marker"));
+    }
+
+    #[test]
     fn daytime_wraps_at_midnight_and_normalizes_negative_clock_values() {
         assert_eq!(daytime_from_ticks(0), 0);
         assert_eq!(daytime_from_ticks(23_999), 23_999);
