@@ -316,6 +316,39 @@ mod tests {
     use crate::{TestLoader, TestRunner};
     use std::sync::Arc;
 
+    fn shard_paths(mut paths: Vec<PathBuf>, index: usize, count: usize) -> Vec<PathBuf> {
+        assert!(count > 0 && index < count, "invalid Flint shard");
+        paths.sort();
+        paths.into_iter().enumerate().filter_map(|(i, path)| {
+            (i % count == index).then_some(path)
+        }).collect()
+    }
+
+    fn configured_shard(paths: Vec<PathBuf>) -> Vec<PathBuf> {
+        let index = var("FLINT_SHARD_INDEX").ok().map(|s| s.parse::<usize>().expect("shard index"));
+        let count = var("FLINT_SHARD_COUNT").ok().map(|s| s.parse::<usize>().expect("shard count"));
+        match (index, count) {
+            (None, None) => paths,
+            (Some(index), Some(count)) => shard_paths(paths, index, count),
+            _ => panic!("both Flint shard variables must be specified"),
+        }
+    }
+
+    #[test]
+    fn shards_cover_each_fixture_once_without_overlap() {
+        let paths: Vec<PathBuf> = (0..1012).map(|i| PathBuf::from(format!("test-{i}"))).collect();
+        let mut covered = Vec::new();
+        for index in 0..32 {
+            let shard = shard_paths(paths.clone(), index, 32);
+            assert!(!shard.is_empty());
+            covered.extend(shard);
+        }
+        covered.sort();
+        let mut expected = paths;
+        expected.sort();
+        assert_eq!(covered, expected);
+    }
+
     #[test]
     #[ignore = "needs FlintBenchmark tests (TEST_PATH); run with --ignored"]
     fn test_run_flint_selected() {
@@ -326,6 +359,7 @@ mod tests {
         let loader = TestLoader::new(&cfg.test_path(), true)
             .unwrap_or_else(|e| panic!("error while loading test files: {e}"));
         let paths = collect_filtered_paths(&loader, &cfg);
+        let paths = configured_shard(paths);
         let specs = loader
             .load_specs(&paths, false)
             .unwrap_or_else(|e| panic!("error while loading test specs: {e}"));
@@ -365,6 +399,7 @@ mod tests {
 
         println!("Found {} test(s) to run", paths.len());
 
+        let paths = configured_shard(paths);
         let specs = loader
             .load_specs(&paths, false)
             .unwrap_or_else(|e| panic!("error while loading test specs: {e}"));

@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: vanilla-evidence-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   evidence:
@@ -60,11 +60,43 @@ jobs:
               cargo test --release -p steel-core --test structure_starts -- --ignored --nocapture --test-threads=1 2>&1 | tee /tmp/evidence.log
               ;;
             chunk-stages)
-              cargo test --release -p steel-core --lib worldgen::chunk_stage_hashes::chunk_stage_hashes -- --exact --ignored --nocapture 2>&1 | tee /tmp/evidence.log
+              cargo test --release -p steel-core --lib --no-run 2>&1 | tee /tmp/evidence.log
+              status=0
+              : > /tmp/chunk-summary.log
+              for dimension in overworld the_nether the_end; do
+                for stage in terrain features light; do
+                  log="/tmp/chunk-$dimension-$stage.log"
+                  if STEEL_HASH_DEBUG_DIMENSION="minecraft:$dimension" STEEL_HASH_DEBUG_STAGE="minecraft:$stage" timeout --kill-after=15s 240s cargo test --release -p steel-core --lib worldgen::chunk_stage_hashes::chunk_stage_hashes -- --exact --ignored --nocapture > "$log" 2>&1; then
+                    echo "$dimension/$stage: PASS" >> /tmp/chunk-summary.log
+                  else
+                    code=$?
+                    echo "$dimension/$stage: FAIL exit=$code" >> /tmp/chunk-summary.log
+                    status=1
+                  fi
+                  cat "$log" >> /tmp/evidence.log
+                done
+              done
+              cat /tmp/chunk-summary.log | tee -a /tmp/evidence.log
+              test "$status" -eq 0
               ;;
             flint-all)
               test -d "$TEST_PATH"
-              cargo test --release -p steel-flint --lib -- --ignored --nocapture --test-threads=1 2>&1 | tee /tmp/evidence.log
+              cargo test --release -p steel-flint --lib --no-run 2>&1 | tee /tmp/evidence.log
+              status=0
+              # A fresh process per shard bounds the legacy test world's
+              # retained resources; every spec belongs to exactly one shard.
+              for shard in $(seq 0 31); do
+                echo "=== Flint shard $shard/32 ===" | tee -a /tmp/evidence.log
+                if FLINT_SHARD_INDEX="$shard" FLINT_SHARD_COUNT=32 timeout --kill-after=15s 120s cargo test --release -p steel-flint --lib -- --ignored --nocapture --test-threads=1 > "/tmp/flint-$shard.log" 2>&1; then
+                  echo "Flint shard $shard: PASS" | tee -a /tmp/evidence.log
+                else
+                  code=$?
+                  echo "Flint shard $shard: FAIL exit=$code" | tee -a /tmp/evidence.log
+                  status=1
+                fi
+                cat "/tmp/flint-$shard.log" >> /tmp/evidence.log
+              done
+              test "$status" -eq 0
               ;;
             ignored-doctests)
               # rustdoc can report ignored examples as "ok" without compiling
@@ -81,7 +113,7 @@ jobs:
           assert count >= 13, count
           print(f'Forcing compilation/execution of {count} formerly ignored doc examples')
           PYDOC
-              cargo test --release --workspace --doc -- --nocapture 2>&1 | tee /tmp/evidence.log
+              timeout --kill-after=30s 900s cargo test --release --workspace --doc -- --nocapture 2>&1 | tee /tmp/evidence.log
               ;;
             registry-sync-tags)
               cargo test --release -p steel-core --lib server::registry_cache::tests:: -- --nocapture 2>&1 | tee /tmp/evidence.log
@@ -93,7 +125,7 @@ jobs:
           import os, re
           text = open('/tmp/evidence.log').read()
           results = [tuple(map(int, m)) for m in re.findall(r'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;', text)]
-          expected = {'biomes': 3, 'structures': 1, 'chunk-stages': 1, 'flint-all': 2, 'ignored-doctests': 13, 'registry-sync-tags': 2}[os.environ['AREA']]
+          expected = {'biomes': 3, 'structures': 1, 'chunk-stages': 9, 'flint-all': 64, 'ignored-doctests': 13, 'registry-sync-tags': 2}[os.environ['AREA']]
           assert sum(r[0] for r in results) >= expected, (os.environ['AREA'], results)
           assert all(r[1] == 0 for r in results), results
           PY
@@ -114,3 +146,5 @@ jobs:
           path: |
             /tmp/evidence.log
             steel-flint/log/
+            /tmp/flint-*.log
+            /tmp/chunk-*.log
