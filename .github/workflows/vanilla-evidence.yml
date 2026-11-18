@@ -67,7 +67,21 @@ jobs:
               cargo test --release -p steel-flint --lib -- --ignored --nocapture --test-threads=1 2>&1 | tee /tmp/evidence.log
               ;;
             ignored-doctests)
-              cargo test --release --workspace --doc -- --ignored --nocapture 2>&1 | tee /tmp/evidence.log
+              # rustdoc can report ignored examples as "ok" without compiling
+              # their bodies. In this isolated job, turn them into real Rust
+              # examples before invoking rustdoc; incomplete examples must fail.
+              python3 - <<'PYDOC'
+          from pathlib import Path
+          count = 0
+          for path in Path('.').glob('steel-*/src/**/*.rs'):
+              text = path.read_text()
+              count += text.count('```ignore')
+              if '```ignore' in text:
+                  path.write_text(text.replace('```ignore', '```rust'))
+          assert count >= 13, count
+          print(f'Forcing compilation/execution of {count} formerly ignored doc examples')
+          PYDOC
+              cargo test --release --workspace --doc -- --nocapture 2>&1 | tee /tmp/evidence.log
               ;;
             registry-sync-tags)
               cargo test --release -p steel-core --lib server::registry_cache::tests:: -- --nocapture 2>&1 | tee /tmp/evidence.log

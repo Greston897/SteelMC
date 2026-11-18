@@ -468,3 +468,19 @@ impl FlintWorld for SteelTestWorld {
         Box::new(SteelTestPlayer::new(self.world.clone(), &self.server))
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_player_is_registered_in_world_for_real_item_interactions() {
+        crate::init();
+        let mut world = SteelTestWorld::new();
+        let _player = world.create_player();
+        let uuid = steel_core::player::offline_uuid("flintmc_testbot");
+        let registered = world.world.players.get_by_uuid(&uuid);
+        assert!(registered.is_some(), "player must be available to fishing rods");
+    }
+}

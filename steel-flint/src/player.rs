@@ -38,7 +38,7 @@ impl SteelTestPlayer {
     /// Creates a new test player in the given world.
     ///
     /// # Panics
-    /// Never in practice: the fixed test player name always passes validation.
+    /// Panics if the test identity is invalid or already registered in this world.
     pub fn new(world: Arc<World>, server: &Arc<Server>) -> Self {
         // Same identity as the FlintCLI bot, so specs asserting an `Owner` UUID
         // stay portable between runners.
@@ -55,7 +55,7 @@ impl SteelTestPlayer {
             game_profile,
             player_connection,
             Arc::new(PlayerSession::new(10, 10)),
-            world,
+            Arc::clone(&world),
             Arc::downgrade(server),
             server.config.clone(),
             -1, // Negative entity ID for test players
@@ -63,9 +63,12 @@ impl SteelTestPlayer {
         );
         // Mark as loaded so interactions work
         player.set_client_loaded(true);
-        Self {
-            player: Arc::new(player),
-        }
+        let player = Arc::new(player);
+        assert!(
+            world.add_test_player(Arc::clone(&player)),
+            "Flint player must be registered through the normal join path"
+        );
+        Self { player }
     }
 }
 

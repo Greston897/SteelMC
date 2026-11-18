@@ -229,6 +229,7 @@ mod tests {
 
     #[test]
     fn every_synced_tag_matches_pinned_vanilla_membership() {
+        steel_registry::init_vanilla_registry();
         use std::collections::{BTreeMap, BTreeSet};
 
         use serde::Deserialize;
@@ -290,6 +291,10 @@ mod tests {
                 entries.sort();
                 assert!(actual_tags.insert(key.to_string(), entries).is_none());
             }
+            // Steel deliberately also loads Fabric common (`c:`) tags. Their
+            // IDs were validated above, but they are not vanilla fixture data.
+            // Do not suppress them on the wire: vanilla syncs custom tags too.
+            actual_tags.retain(|key, _| key.starts_with("minecraft:"));
             assert!(actual.insert(name, actual_tags).is_none());
         }
         assert_eq!(actual.keys().collect::<Vec<_>>(), fixture.registries.keys().collect::<Vec<_>>());
@@ -304,6 +309,7 @@ mod tests {
 
     #[test]
     fn synchronized_registries_match_vanilla_order_and_known_pack_elision() {
+        steel_registry::init_vanilla_registry();
         let full = RegistryCache::build_registry_packets(&REGISTRY, true);
         let elided = RegistryCache::build_registry_packets(&REGISTRY, false);
         let expected = [
