@@ -70,16 +70,16 @@ impl CarvedPumpkinBlock {
     }
 
     fn copper_variant(block: BlockRef) -> Option<(BlockRef, i32)> {
-        use steel_registry::vanilla_blocks::*;
+        use steel_registry::vanilla_blocks as blocks;
         [
-            (&COPPER_BLOCK, &COPPER_CHEST, 0),
-            (&EXPOSED_COPPER, &EXPOSED_COPPER_CHEST, 1),
-            (&WEATHERED_COPPER, &WEATHERED_COPPER_CHEST, 2),
-            (&OXIDIZED_COPPER, &OXIDIZED_COPPER_CHEST, 3),
-            (&WAXED_COPPER_BLOCK, &WAXED_COPPER_CHEST, 0),
-            (&WAXED_EXPOSED_COPPER, &WAXED_EXPOSED_COPPER_CHEST, 1),
-            (&WAXED_WEATHERED_COPPER, &WAXED_WEATHERED_COPPER_CHEST, 2),
-            (&WAXED_OXIDIZED_COPPER, &WAXED_OXIDIZED_COPPER_CHEST, 3),
+            (&blocks::COPPER_BLOCK, &blocks::COPPER_CHEST, 0),
+            (&blocks::EXPOSED_COPPER, &blocks::EXPOSED_COPPER_CHEST, 1),
+            (&blocks::WEATHERED_COPPER, &blocks::WEATHERED_COPPER_CHEST, 2),
+            (&blocks::OXIDIZED_COPPER, &blocks::OXIDIZED_COPPER_CHEST, 3),
+            (&blocks::WAXED_COPPER_BLOCK, &blocks::WAXED_COPPER_CHEST, 0),
+            (&blocks::WAXED_EXPOSED_COPPER, &blocks::WAXED_EXPOSED_COPPER_CHEST, 1),
+            (&blocks::WAXED_WEATHERED_COPPER, &blocks::WAXED_WEATHERED_COPPER_CHEST, 2),
+            (&blocks::WAXED_OXIDIZED_COPPER, &blocks::WAXED_OXIDIZED_COPPER_CHEST, 3),
         ].into_iter().find_map(|(source, chest, age)| (block == source).then_some((chest, age)))
     }
 }

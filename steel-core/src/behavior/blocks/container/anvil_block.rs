@@ -146,8 +146,8 @@ mod tests {
         let fixture = fresh_test_world("anvil_gravity_variants");
         let world = &fixture.world;
         let _holder = insert_ready_full_chunk(world, ChunkPos::new(0, 0));
-        for (index, block) in [&vanilla_blocks::ANVIL, &vanilla_blocks::CHIPPED_ANVIL, &vanilla_blocks::DAMAGED_ANVIL].into_iter().enumerate() {
-            let pos = BlockPos::new(4 + index as i32 * 3, 72, 4);
+        for (x, block) in [(4, &vanilla_blocks::ANVIL), (7, &vanilla_blocks::CHIPPED_ANVIL), (10, &vanilla_blocks::DAMAGED_ANVIL)] {
+            let pos = BlockPos::new(x, 72, 4);
             let state = block.default_state();
             world.set_block(pos, state, UpdateFlags::UPDATE_ALL);
             let behavior = AnvilBlock::new(block);
