@@ -325,7 +325,7 @@ impl HopperBlockEntity {
             let Some(level) = self.get_level() else { return false; };
             let candidate = {
                 let hopper = self.container.lock();
-                hopper.items.iter().enumerate().find(|(_, item)| !item.is_empty())
+                hopper.items.iter().enumerate().find(|(_, item)| !item.is_empty() && item.get(steel_registry::data_components::vanilla_components::COMPOSTABLE).is_some())
                     .map(|(slot, item)| (slot, item.copy_with_count(1)))
             };
             let Some((slot, item)) = candidate else { return false; };

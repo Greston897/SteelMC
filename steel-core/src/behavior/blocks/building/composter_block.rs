@@ -5,10 +5,11 @@ use std::sync::Arc;
 
 use steel_macros::block_behavior;
 use steel_protocol::packets::game::SoundSource;
-use steel_registry::{REGISTRY, vanilla_blocks, vanilla_items, sound_events, vanilla_game_events, vanilla_stat_types};
+use steel_registry::{REGISTRY, vanilla_blocks, vanilla_items, sound_events, vanilla_game_events};
 use steel_registry::data_components::vanilla_components::COMPOSTABLE;
 use steel_registry::context_provider::ProviderEvalContext;
 use steel_registry::item_stack::ItemStack;
+use steel_registry::stat::vanilla_stat_types;
 use steel_utils::random::{Random, legacy_random::LegacyRandom};
 use steel_utils::types::{UpdateFlags, InteractionHand};
 use crate::behavior::{InventoryAccess, InteractionResult, BlockHitResult};
@@ -44,7 +45,7 @@ impl ComposterBlock {
     /// Attempts one automated insertion. Accepted items are consumed by the caller,
     /// including unsuccessful probabilistic layer rolls, as in vanilla.
     pub(crate) fn insert(world: &Arc<World>, pos: BlockPos, stack: &ItemStack) -> bool {
-        let mut random = LegacyRandom::new(rand::random());
+        let mut random = LegacyRandom::from_seed(rand::random());
         Self::insert_with_random(world, pos, stack, &mut random)
     }
 
@@ -185,7 +186,7 @@ mod tests {
         let stack = ItemStack::new(&vanilla_items::WHEAT_SEEDS);
         for seed in 0..64 {
             fixture.world.set_block(POS, vanilla_blocks::COMPOSTER.default_state(), UpdateFlags::UPDATE_ALL);
-            assert!(ComposterBlock::insert_with_random(&fixture.world, POS, &stack, &mut LegacyRandom::new(seed)));
+            assert!(ComposterBlock::insert_with_random(&fixture.world, POS, &stack, &mut LegacyRandom::from_seed(seed)));
             assert_eq!(level(&fixture.world), 1, "first layer at random seed {seed}");
         }
     }
@@ -277,6 +278,44 @@ mod tests {
         hopper.container_ref().unwrap().lock().set_item(0, ItemStack::new(&vanilla_items::CAKE));
         assert!(!hopper.try_move_items(world, side));
         assert_eq!(level(world), 0);
+    }
+
+    #[test]
+    fn player_dispatch_consumes_in_survival_and_adventure_but_not_creative() {
+        use crate::entity::Entity as _;
+        use crate::test_support::TestPlayerBuilder;
+        use steel_utils::types::GameType;
+        use glam::DVec3;
+        for mode in [GameType::Survival, GameType::Adventure, GameType::Creative] {
+            let fixture = fixture("composter_player_dispatch", 0);
+            let world = &fixture.world;
+            let player = TestPlayerBuilder::new(std::sync::Arc::clone(world), "ComposterPlayer", 1).build();
+            player.set_game_mode(mode);
+            player.base().set_position_local(DVec3::new(8.5, 64.0, 6.5));
+            player.inventory.lock().set_item_in_hand(InteractionHand::MainHand, ItemStack::with_count(&vanilla_items::CAKE, 2));
+            let hit = BlockHitResult { block_pos: POS, direction: Direction::Up, location: DVec3::new(8.5, 64.9, 8.5), miss: false, inside: false, world_border_hit: false };
+            let result = crate::player::game_mode::use_item_on(&player, world, InteractionHand::MainHand, &hit);
+            assert!(result.consumes_action(), "mode {mode:?}: {result:?}");
+            assert_eq!(level(world), 1);
+            assert_eq!(player.inventory.lock().get_item_in_hand(InteractionHand::MainHand).count(), if mode == GameType::Creative { 2 } else { 1 });
+        }
+    }
+
+    #[test]
+    fn hopper_skips_non_compostable_first_slot_without_consuming_it() {
+        let fixture = fixture("composter_hopper_mixed", 0);
+        let world = &fixture.world;
+        let top = POS.above();
+        world.set_block(top, vanilla_blocks::HOPPER.default_state(), UpdateFlags::UPDATE_ALL);
+        let entity = world.get_block_entity(top).unwrap();
+        let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
+        let container = hopper.container_ref().unwrap();
+        container.lock().set_item(0, ItemStack::with_count(&vanilla_items::STONE, 4));
+        container.lock().set_item(1, ItemStack::with_count(&vanilla_items::CAKE, 2));
+        assert!(hopper.try_move_items(world, top));
+        assert_eq!(container.lock().get_item(0).count(), 4);
+        assert_eq!(container.lock().get_item(1).count(), 1);
+        assert_eq!(level(world), 1);
     }
 
     #[test]
