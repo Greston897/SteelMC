@@ -363,19 +363,6 @@ impl HopperBlockEntity {
         true
     }
 
-    #[test]
-    fn transfer_cooldown_expires_on_the_eighth_tick_not_the_ninth() {
-        let hopper = test_hopper();
-        hopper.set_cooldown(MOVE_COOLDOWN_TICKS);
-        for remaining in (1..MOVE_COOLDOWN_TICKS).rev() {
-            assert!(!hopper.advance_transfer_cooldown());
-            assert_eq!(hopper.cooldown(), remaining);
-        }
-        assert!(hopper.advance_transfer_cooldown());
-        assert_eq!(hopper.cooldown(), 0);
-        assert!(hopper.advance_transfer_cooldown());
-    }
-
     /// Vanilla `HopperBlockEntity.facing`: the block state's `FACING` property.
     fn facing(&self) -> Direction {
         self.get_block_state()
@@ -642,6 +629,19 @@ mod tests {
             .lock()
             .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 100));
         assert_eq!(hopper.container.lock().get_item(0).count(), 64);
+    }
+
+    #[test]
+    fn transfer_cooldown_expires_on_the_eighth_tick_not_the_ninth() {
+        let hopper = test_hopper();
+        hopper.set_cooldown(MOVE_COOLDOWN_TICKS);
+        for remaining in (1..MOVE_COOLDOWN_TICKS).rev() {
+            assert!(!hopper.advance_transfer_cooldown());
+            assert_eq!(hopper.cooldown(), remaining);
+        }
+        assert!(hopper.advance_transfer_cooldown());
+        assert_eq!(hopper.cooldown(), 0);
+        assert!(hopper.advance_transfer_cooldown());
     }
 
     #[test]
