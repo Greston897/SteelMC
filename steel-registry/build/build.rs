@@ -80,12 +80,15 @@ mod pig_variants;
 mod poi_types;
 mod position_source_types;
 mod potions;
+mod predicates;
 mod recipes;
 mod sound_events;
 mod sound_types;
 mod structure;
+mod sulfur_cube_archetypes;
 mod suspicious_stew_effects;
 mod timelines;
+mod trial_spawners;
 mod trim_materials;
 mod trim_patterns;
 mod villager_professions;
@@ -183,6 +186,24 @@ const CONFIGURED_FEATURES: &str = "configured_features";
 const PLACED_FEATURES: &str = "placed_features";
 const CUSTOM_STATS: &str = "custom_stats";
 const SUSPICIOUS_STEW_EFFECTS: &str = "suspicious_stew_effects";
+const SULFUR_CUBE_ARCHETYPES: &str = "sulfur_cube_archetypes";
+const TEST_ENVIRONMENTS: &str = "test_environments";
+const TEST_INSTANCES: &str = "test_instances";
+const PREDICATES: &str = "predicates";
+const CONTEXT_INT_PROVIDERS: &str = "context_int_providers";
+const CONTEXT_FLOAT_PROVIDERS: &str = "context_float_providers";
+const ENCHANTMENT_PROVIDERS: &str = "enchantment_providers";
+const TRIAL_SPAWNERS: &str = "trial_spawners";
+const VILLAGER_TRADES: &str = "villager_trades";
+const TRADE_SETS: &str = "trade_sets";
+const DIMENSION_STEMS: &str = "dimensions";
+const FLAT_LEVEL_GENERATOR_PRESETS: &str = "flat_level_generator_presets";
+const WORLD_PRESETS: &str = "world_presets";
+const GAME_EVENT_TAGS: &str = "game_event_tags";
+const VILLAGER_TRADE_TAGS: &str = "villager_trade_tags";
+const FLAT_LEVEL_GENERATOR_PRESET_TAGS: &str = "flat_level_generator_preset_tags";
+const WORLD_PRESET_TAGS: &str = "world_preset_tags";
+const FEATURE_TAGS: &str = "feature_tags";
 
 pub fn main() {
     // Rerun build script when any file in the build/ directory changes
@@ -281,6 +302,33 @@ pub fn main() {
         (suspicious_stew_effects::build(), SUSPICIOUS_STEW_EFFECTS),
         (advancements::build(), ADVANCEMENTS),
         (functions::build(), FUNCTIONS),
+        (sulfur_cube_archetypes::build(), SULFUR_CUBE_ARCHETYPES),
+        (gametests::build_environments(), TEST_ENVIRONMENTS),
+        (gametests::build_instances(), TEST_INSTANCES),
+        (predicates::build(), PREDICATES),
+        (context_providers::build_int(), CONTEXT_INT_PROVIDERS),
+        (
+            context_providers::build_float(),
+            CONTEXT_FLOAT_PROVIDERS,
+        ),
+        (enchantment_providers::build(), ENCHANTMENT_PROVIDERS),
+        (trial_spawners::build(), TRIAL_SPAWNERS),
+        (villager_trades::build_trades(), VILLAGER_TRADES),
+        (villager_trades::build_sets(), TRADE_SETS),
+        (dimensions::build(), DIMENSION_STEMS),
+        (
+            world_presets::build_flat(),
+            FLAT_LEVEL_GENERATOR_PRESETS,
+        ),
+        (world_presets::build_world(), WORLD_PRESETS),
+        (tags::game_event(), GAME_EVENT_TAGS),
+        (tags::villager_trade(), VILLAGER_TRADE_TAGS),
+        (
+            tags::flat_level_generator_preset(),
+            FLAT_LEVEL_GENERATOR_PRESET_TAGS,
+        ),
+        (tags::world_preset(), WORLD_PRESET_TAGS),
+        (tags::feature(), FEATURE_TAGS),
     ];
 
     // Track which files we're generating this run

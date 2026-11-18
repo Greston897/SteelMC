@@ -17,6 +17,24 @@ macro_rules! simple_tag_builder {
             common::build_simple_tags($tag_subdir, $registry_module, $registry_type)
         }
     };
+    (
+        $function:ident,
+        $tag_subdir:literal,
+        $registry_module:literal,
+        $registry_type:literal,
+        $tag_struct:literal,
+        $register_fn:literal
+    ) => {
+        pub(crate) fn $function() -> TokenStream {
+            common::build_simple_tags_named(
+                $tag_subdir,
+                $registry_module,
+                $registry_type,
+                $tag_struct,
+                $register_fn,
+            )
+        }
+    };
 }
 
 simple_tag_builder!(
@@ -61,3 +79,37 @@ simple_tag_builder!(
     "StructureRegistry"
 );
 simple_tag_builder!(timeline, "timeline", "timeline", "TimelineRegistry");
+simple_tag_builder!(
+    game_event,
+    "game_event",
+    "game_events",
+    "GameEventRegistry",
+    "GameEventTag",
+    "register_game_event_tags"
+);
+simple_tag_builder!(
+    villager_trade,
+    "villager_trade",
+    "villager_trade",
+    "VillagerTradeRegistry"
+);
+simple_tag_builder!(
+    flat_level_generator_preset,
+    "worldgen/flat_level_generator_preset",
+    "world_preset",
+    "FlatLevelGeneratorPresetRegistry",
+    "FlatLevelGeneratorPresetTag",
+    "register_flat_level_generator_preset_tags"
+);
+simple_tag_builder!(
+    world_preset,
+    "worldgen/world_preset",
+    "world_preset",
+    "WorldPresetRegistry"
+);
+simple_tag_builder!(
+    feature,
+    "worldgen/feature",
+    "feature",
+    "ConfiguredFeatureRegistry"
+);
