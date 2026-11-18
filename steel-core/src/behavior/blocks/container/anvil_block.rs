@@ -14,10 +14,10 @@ use steel_utils::{BlockPos, BlockStateId, Direction, translations};
 use text_components::TextComponent;
 
 use crate::{
-    behavior::{BlockBehavior, BlockPlaceContext, InteractionResult, InventoryAccess},
+    behavior::{BlockBehavior, BlockPlaceContext, InteractionResult, InventoryAccess, Fallable},
     inventory::menu::kinds::anvil,
     player::Player,
-    world::World,
+    world::{World, ScheduledTickAccess},
 };
 
 /// Behavior for Anvils
@@ -58,7 +58,42 @@ impl AnvilBlock {
     }
 }
 
+impl Fallable for AnvilBlock {}
+
 impl BlockBehavior for AnvilBlock {
+    fn on_place(
+        &self,
+        _state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _old_state: BlockStateId,
+        _moved_by_piston: bool,
+    ) {
+        crate::behavior::blocks::FallingBlock::new(self.block).on_place(world, pos);
+    }
+
+    fn update_shape(
+        &self,
+        state: BlockStateId,
+        ticks: &dyn ScheduledTickAccess,
+        pos: BlockPos,
+        _direction: Direction,
+        _neighbor_pos: BlockPos,
+        _neighbor_state: BlockStateId,
+    ) -> BlockStateId {
+        crate::behavior::blocks::FallingBlock::new(self.block).update_shape(state, ticks, pos)
+    }
+
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        if let Some(entity) = crate::behavior::blocks::FallingBlock::tick(state, world, pos) {
+            entity.set_hurts_entities(2.0, 40);
+        }
+    }
+
+    fn as_fallable(&self) -> Option<&dyn Fallable> {
+        Some(self)
+    }
+
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(self.block.default_state().set_value(
             HORIZONTAL_FACING,

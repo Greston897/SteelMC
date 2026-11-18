@@ -110,12 +110,12 @@ impl BeehiveBlock {
             1.0,
             Some(player.id()),
         );
-        // Vanilla spawns one honeycomb item entity at the hive.
+        // Vanilla drops one item entity containing three honeycombs.
         world.drop_item_stack(
             pos,
-            steel_registry::item_stack::ItemStack::new(&vanilla_items::HONEYCOMB),
+            steel_registry::item_stack::ItemStack::with_count(&vanilla_items::HONEYCOMB, 3),
         );
-        hive.on_honey_harvested(state, world, pos, MAX_HONEY_LEVEL, false);
+        hive.on_honey_harvested(state, world, pos, 0, false);
     }
 
     /// Vanilla `BeehiveBlock.useItemOn` for bottles, shears, and campfires.
