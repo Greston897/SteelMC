@@ -54,7 +54,7 @@ pub enum LevelStemGenerator {
 }
 
 /// Registered `minecraft:dimension` (`LevelStem`) entry.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct DimensionStem {
     pub key: Identifier,
     pub dimension_type: Identifier,
@@ -97,7 +97,7 @@ crate::impl_registry!(
 );
 
 /// Registered `minecraft:worldgen/flat_level_generator_preset` entry.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct FlatLevelGeneratorPreset {
     pub key: Identifier,
     pub display_item: Identifier,
@@ -162,7 +162,7 @@ crate::impl_tagged_registry!(
 );
 
 /// Registered `minecraft:worldgen/world_preset` entry.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct WorldPreset {
     pub key: Identifier,
     pub dimensions: Vec<DimensionStem>,

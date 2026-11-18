@@ -552,6 +552,27 @@ pub(crate) fn build() -> TokenStream {
         let downfall = biome.downfall;
         let temperature_modifier = generate_temperature_modifier(&biome.temperature_modifier);
         let effects = generate_biome_effects(&biome.effects);
+        // EnvironmentAttributeMap.NETWORK_CODEC retains only syncable entries.
+        // All visual/audio attributes are syncable; gameplay attributes opt in.
+        let network_attributes: serde_json::Map<String, Value> = biome
+            .attributes
+            .iter()
+            .filter(|(key, _)| {
+                key.starts_with("minecraft:visual/")
+                    || key.starts_with("minecraft:audio/")
+                    || matches!(
+                        key.as_str(),
+                        "minecraft:gameplay/water_evaporates"
+                            | "minecraft:gameplay/fast_lava"
+                            | "minecraft:gameplay/piglins_zombify"
+                            | "minecraft:gameplay/sky_light_level"
+                            | "minecraft:gameplay/creaking_active"
+                    )
+            })
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect();
+        let network_attributes_json = serde_json::to_string(&network_attributes)
+            .expect("syncable biome attributes must serialize");
         let creature_spawn_probability = biome.creature_spawn_probability;
         let spawners =
             generate_hashmap_string(&biome.spawners, |v| generate_vec(v, generate_spawner_data));
@@ -569,6 +590,7 @@ pub(crate) fn build() -> TokenStream {
                 downfall: #downfall,
                 temperature_modifier: #temperature_modifier,
                 effects: #effects,
+                network_attributes_json: #network_attributes_json,
                 creature_spawn_probability: #creature_spawn_probability,
                 spawners: #spawners,
                 spawn_costs: #spawn_costs,
