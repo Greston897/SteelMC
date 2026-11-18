@@ -163,7 +163,6 @@ mod tests {
     use crate::bootstrap::init_globals;
     use crate::block_entity::BlockEntity as _;
     use crate::block_entity::entities::HopperBlockEntity;
-    use crate::inventory::container::Container as _;
     use crate::test_support::{insert_ready_full_chunk, tick_test_world, TestWorld};
 
     const POS: BlockPos = BlockPos::new(8, 64, 8);

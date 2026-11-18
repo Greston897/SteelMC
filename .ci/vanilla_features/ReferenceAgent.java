@@ -14,7 +14,17 @@ public class ReferenceAgent {
     public static void premain(String jar, Instrumentation instrumentation) throws Exception {
         // The bundled server uses a loader whose parent is the platform loader.
         // A bootstrap helper accepting Object is visible without linking game classes.
-        instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(jar));
+        JarFile archive = new JarFile(jar);
+        // Keep the transformer and all its nested visitors in the agent loader.
+        // The duplicate bootstrap class is used only by the public Object hook.
+        for (var entry : Collections.list(archive.entries())) {
+            String name = entry.getName();
+            if (name.startsWith("ReferenceAgent$") && name.endsWith(".class")) {
+                Class.forName(name.substring(0, name.length() - 6).replace('/', '.'), true,
+                              ReferenceAgent.class.getClassLoader());
+            }
+        }
+        instrumentation.appendToBootstrapClassLoaderSearch(archive);
         instrumentation.addTransformer(new ClassFileTransformer() {
             public byte[] transform(Module module, ClassLoader loader, String name, Class<?> type,
                                     ProtectionDomain domain, byte[] bytes) {
