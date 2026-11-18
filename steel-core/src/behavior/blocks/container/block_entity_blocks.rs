@@ -700,14 +700,17 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
 
     // 4. Flint and steel: light air fire, unlit campfire, or TNT, damaging by 1.
     if item == &*vanilla_items::FLINT_AND_STEEL {
-        let mut ignited = false;
-        if target_state.is_air() {
+        // Vanilla optional behavior succeeds (and damages the tool) even for
+        // a blocked target; only a rejected TNT prime changes that result.
+        let ignited = true;
+        if crate::behavior::blocks::FireBlock::can_be_placed_at(world, target_pos, facing) {
             world.set_block(
                 target_pos,
-                vanilla_blocks::FIRE.default_state(),
+                crate::behavior::blocks::FireBlock::get_state(world.as_ref(), target_pos),
                 UpdateFlags::UPDATE_ALL,
             );
-            ignited = true;
+            world.game_event(&steel_registry::vanilla_game_events::BLOCK_PLACE, target_pos,
+                &crate::world::game_event::GameEventContext::new(None, None));
         } else if target_block == &vanilla_blocks::TNT {
             world.set_block(
                 target_pos,
@@ -715,17 +718,11 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
                 UpdateFlags::UPDATE_ALL,
             );
             crate::behavior::blocks::TntBlock::prime(world, target_pos);
-            ignited = true;
-        } else if (target_block == &vanilla_blocks::CAMPFIRE
-            || target_block == &vanilla_blocks::SOUL_CAMPFIRE)
-            && target_state.try_get_value(&BlockStateProperties::LIT) == Some(false)
-        {
-            world.set_block(
-                target_pos,
-                target_state.set_value(&BlockStateProperties::LIT, true),
-                UpdateFlags::UPDATE_ALL,
-            );
-            ignited = true;
+        } else if crate::behavior::items::FlintAndSteelItem::can_light(target_state) {
+            let next = target_state.set_value(&BlockStateProperties::LIT, true);
+            world.set_block(target_pos, next, UpdateFlags::UPDATE_ALL);
+            world.game_event(&steel_registry::vanilla_game_events::BLOCK_CHANGE, target_pos,
+                &crate::world::game_event::GameEventContext::new(None, Some(next)));
         }
         if ignited {
             let mut guard = container.lock();

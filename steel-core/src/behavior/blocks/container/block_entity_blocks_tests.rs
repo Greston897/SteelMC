@@ -76,3 +76,30 @@ fn bottle_collects_honey_resets_hive_and_stores_stack_remainder() {
     assert!(container.lock().get_item(1).is(&vanilla_items::HONEY_BOTTLE));
     assert_eq!(container.lock().get_item(1).count(), 1);
 }
+
+#[test]
+fn dispenser_flint_lights_candles_cakes_campfires_and_always_wears_on_blocked_targets() {
+    use steel_registry::data_components::vanilla_components::DAMAGE;
+    let targets = [
+        vanilla_blocks::CANDLE.default_state(),
+        vanilla_blocks::CANDLE_CAKE.default_state(),
+        vanilla_blocks::CAMPFIRE.default_state().set_value(&BlockStateProperties::LIT, false),
+        vanilla_blocks::SOUL_CAMPFIRE.default_state().set_value(&BlockStateProperties::LIT, false),
+        vanilla_blocks::CANDLE.default_state().set_value(&BlockStateProperties::WATERLOGGED, true),
+        vanilla_blocks::STONE.default_state(),
+    ];
+    for (index, target) in targets.into_iter().enumerate() {
+        let (fixture, container) = fixture("dispenser_flint_targets", ItemStack::new(&vanilla_items::FLINT_AND_STEEL));
+        let world = &fixture.world;
+        world.set_block(TARGET.below(), vanilla_blocks::STONE.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(TARGET, target, UpdateFlags::UPDATE_ALL);
+        pulse(world);
+        assert_eq!(container.lock().get_item(0).get(DAMAGE), Some(1), "target {index}");
+        let actual = world.get_block_state(TARGET);
+        if index < 4 {
+            assert_eq!(actual.get_value(&BlockStateProperties::LIT), true, "target {index}");
+        } else {
+            assert_eq!(actual, target);
+        }
+    }
+}

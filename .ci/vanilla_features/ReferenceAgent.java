@@ -7,7 +7,9 @@ import java.security.ProtectionDomain;
 import java.util.*;
 import java.util.jar.JarFile;
 import java.util.zip.GZIPOutputStream;
-import jdk.internal.org.objectweb.asm.*;
+import java.lang.classfile.*;
+import java.lang.constant.*;
+import static java.lang.constant.ConstantDescs.*;
 
 /** Capture vanilla block data, never replace Steel's expected hash fixture. */
 public class ReferenceAgent {
@@ -29,25 +31,16 @@ public class ReferenceAgent {
             public byte[] transform(Module module, ClassLoader loader, String name, Class<?> type,
                                     ProtectionDomain domain, byte[] bytes) {
                 if (!name.equals("net/minecraft/server/MinecraftServer")) return null;
-                ClassReader reader = new ClassReader(bytes);
-                ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-                reader.accept(new ClassVisitor(Opcodes.ASM8, writer) {
-                    public MethodVisitor visitMethod(int access, String name, String desc,
-                                                     String signature, String[] exceptions) {
-                        MethodVisitor target = super.visitMethod(access, name, desc, signature, exceptions);
-                        if (!name.equals("runServer") || !desc.equals("()V")) return target;
-                        return new MethodVisitor(Opcodes.ASM8, target) {
-                            public void visitCode() {
-                                super.visitCode();
-                                visitVarInsn(Opcodes.ALOAD, 0);
-                                visitMethodInsn(Opcodes.INVOKESTATIC, "ReferenceAgent", "capture",
-                                                "(Ljava/lang/Object;)V", false);
-                            }
-                        };
-                    }
-                }, 0);
+                ClassFile classFile = ClassFile.of();
+                byte[] transformed = classFile.transformClass(classFile.parse(bytes),
+                    ClassTransform.transformingMethodBodies(
+                        method -> method.methodName().equalsString("runServer")
+                               && method.methodType().equalsString("()V"),
+                        CodeTransform.atStart(code -> code.aload(0).invokestatic(
+                            ClassDesc.of("ReferenceAgent"), "capture",
+                            MethodTypeDesc.of(CD_void, CD_Object)))));
                 System.out.println("REFERENCE hooked server startup; generation code is unchanged");
-                return writer.toByteArray();
+                return transformed;
             }
         });
     }

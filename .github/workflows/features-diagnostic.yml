@@ -34,12 +34,12 @@ jobs:
           cp steel-core/test_assets/chunk_stage_hashes.json /tmp/feature-reference/fixture.json
           cd /tmp/feature-reference
           python3 prepare.py
-          javac --add-exports java.base/jdk.internal.org.objectweb.asm=ALL-UNNAMED ReferenceAgent.java
+          javac ReferenceAgent.java
           printf 'Premain-Class: ReferenceAgent\n\n' > MANIFEST.MF
           jar cfm reference-agent.jar MANIFEST.MF ./*.class
           printf 'eula=true\n' > eula.txt
           printf 'level-seed=13579\nonline-mode=false\nview-distance=2\nsimulation-distance=2\nspawn-protection=0\n' > server.properties
-          timeout --kill-after=30s 1800 java -Xmx4G --add-exports java.base/jdk.internal.org.objectweb.asm=ALL-UNNAMED -javaagent:reference-agent.jar=/tmp/feature-reference/reference-agent.jar -jar server.jar nogui 2>&1 | tee /tmp/vanilla-server.log
+          timeout --kill-after=30s 1800 java -Xmx4G -javaagent:reference-agent.jar=/tmp/feature-reference/reference-agent.jar -jar server.jar nogui 2>&1 | tee /tmp/vanilla-server.log
           python3 validate.py 
           # Only a capture matching ALL existing failing-chunk goldens is trusted.
           cp reference.bin.gz "$GITHUB_WORKSPACE/steel-core/test_assets/chunk_stage_overworld_features_blocks.bin.gz"

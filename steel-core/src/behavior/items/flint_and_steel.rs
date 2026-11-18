@@ -21,6 +21,13 @@ use crate::world::game_event::GameEventContext;
 #[item_behavior]
 pub struct FlintAndSteelItem;
 
+impl FlintAndSteelItem {
+    /// Shared ignition predicate for player and dispenser paths.
+    pub(crate) fn can_light(state: BlockStateId) -> bool {
+        can_light(state)
+    }
+}
+
 impl ItemBehavior for FlintAndSteelItem {
     fn use_on(&self, context: &mut UseOnContext) -> InteractionResult {
         let click_pos = context.hit_result.block_pos;
