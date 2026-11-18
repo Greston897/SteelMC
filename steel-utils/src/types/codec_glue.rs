@@ -1,6 +1,6 @@
 use std::io::{self, Cursor, Write};
 
-use simdnbt::owned::NbtTag;
+use simdnbt::{owned::NbtTag, borrow::NbtTag as BorrowedNbtTag};
 
 use crate::{
     codec::VarInt,
@@ -46,7 +46,7 @@ impl simdnbt::ToNbtTag for BlockStateId {
 }
 
 impl simdnbt::FromNbtTag for BlockStateId {
-    fn from_nbt_tag(tag: simdnbt::borrow::NbtTag<'_, '_>) -> Option<Self> {
+    fn from_nbt_tag(tag: BorrowedNbtTag<'_, '_>) -> Option<Self> {
         let value = u16::try_from(tag.codec_i32()?).ok()?;
         Some(Self(value))
     }

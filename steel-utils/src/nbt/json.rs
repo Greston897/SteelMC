@@ -254,6 +254,10 @@ pub fn pack_nbt_list(tags: Vec<NbtTag>) -> NbtList {
                 .collect(),
         );
     }
+    pack_compound_or_heterogeneous_list(tags)
+}
+
+fn pack_compound_or_heterogeneous_list(tags: Vec<NbtTag>) -> NbtList {
     if tags.iter().all(|tag| matches!(tag, NbtTag::Compound(_))) {
         let needs_wrap = tags
             .iter()
