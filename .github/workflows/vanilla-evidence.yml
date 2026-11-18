@@ -76,6 +76,7 @@ jobs:
                     status=1
                   fi
                   cat "$log" >> /tmp/evidence.log
+                  grep -E 'chunks do not match|expected .*, got ' "$log" >> /tmp/chunk-summary.log || true
                 done
               done
               cat /tmp/chunk-summary.log | tee -a /tmp/evidence.log
@@ -99,6 +100,7 @@ jobs:
                   status=1
                 fi
                 cat "/tmp/flint-$shard.log" >> /tmp/evidence.log
+                grep -E '^[0-9]+ passed, [0-9]+ failed|^\[[^]]+\]Open in flint-viz:' "/tmp/flint-$shard.log" | sed -E 's/(Open in flint-viz:).*/\1 [see full shard log]/' >> /tmp/flint-summary.log || true
               done
               cat /tmp/flint-summary.log | tee -a /tmp/evidence.log
               test "$status" -eq 0

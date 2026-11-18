@@ -543,6 +543,19 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
     let target_block = target_state.get_block();
     let item = snapshot.item();
 
+    // Honeycomb consumes one item only when the facing block can be waxed.
+    if item == &*vanilla_items::HONEYCOMB
+        && let Some(waxed) = crate::behavior::waxables::get_waxed_from_normal_variant(target_block)
+    {
+        let waxed_state = steel_registry::REGISTRY.blocks.copy_matching_properties(target_state, waxed);
+        world.set_block(target_pos, waxed_state, UpdateFlags::UPDATE_ALL);
+        let _ = container.lock().remove_item(slot, 1);
+        world.level_event(steel_registry::level_events::PARTICLES_WAX_ON, target_pos, 0, None);
+        world.game_event(&steel_registry::vanilla_game_events::BLOCK_CHANGE, target_pos,
+            &crate::world::game_event::GameEventContext::new(None, Some(waxed_state)));
+        return true;
+    }
+
     // 1. TNT: prime TNT in front if space allows.
     if item == &*vanilla_items::TNT && target_state.is_air() {
         let _ = container.lock().remove_item(slot, 1);

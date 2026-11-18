@@ -148,6 +148,11 @@ impl CopperGolemEntity {
         }
     }
 
+    /// Applies the oxidation stage inherited from a copper construction block.
+    pub(crate) fn set_spawn_weather_state(&self, state: i32) {
+        self.set_weather_state(state);
+    }
+
     /// Vanilla `CopperGolem.getWeatherState`.
     fn weather_state(&self) -> i32 {
         *self.entity_data.lock().weather_state.get()
