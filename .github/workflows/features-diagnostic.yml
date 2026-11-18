@@ -17,6 +17,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
+      - name: Test reference trust gate
+        run: python3 .ci/vanilla_features/test_validate.py
       - name: Capture independent vanilla blocks for mismatching clusters
         shell: bash
         run: |
