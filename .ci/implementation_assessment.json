@@ -1,0 +1,388 @@
+{
+  "methodology": {
+    "scope": "60 explicitly listed high-level capabilities; not every Minecraft mechanic",
+    "scores": {
+      "1": "main execution path exists",
+      "0.5": "partial/known limitations or completeness unaudited",
+      "0": "not credited as a complete external API"
+    },
+    "weight": "equal per capability; subjective engineering rubric, not a measurement of all implementation"
+  },
+  "areas": [
+    {
+      "name": "Инфраструктура",
+      "criteria": [
+        {
+          "capability": "Запуск и конфигурация",
+          "score": 1,
+          "source": "steel-core/src/bootstrap.rs"
+        },
+        {
+          "capability": "Планировщик, домены и workers",
+          "score": 1,
+          "source": "steel-core/src/server/schedule.rs"
+        },
+        {
+          "capability": "RCON и администрирование",
+          "score": 1,
+          "source": "steel-core/src/server/rcon.rs"
+        },
+        {
+          "capability": "Стабильный внешний plugin API",
+          "score": 0,
+          "source": "steel-core/src/lib.rs"
+        }
+      ]
+    },
+    {
+      "name": "Мир и тики",
+      "criteria": [
+        {
+          "capability": "Игровой цикл и погода",
+          "score": 1,
+          "source": "steel-core/src/world/weather.rs"
+        },
+        {
+          "capability": "Часы и временные шкалы",
+          "score": 1,
+          "source": "steel-core/src/world/clock.rs"
+        },
+        {
+          "capability": "Симуляция и scheduled ticks",
+          "score": 1,
+          "source": "steel-core/src/world/tick_scheduler"
+        },
+        {
+          "capability": "Все пограничные случаи переходов между мирами",
+          "score": 0.5,
+          "source": "steel-core/src/server/world_changes.rs"
+        }
+      ]
+    },
+    {
+      "name": "Чанки и сохранение",
+      "criteria": [
+        {
+          "capability": "Загрузка, tickets и статусы",
+          "score": 1,
+          "source": "steel-core/src/chunk/chunk_map"
+        },
+        {
+          "capability": "Region-хранилище и NBT",
+          "score": 1,
+          "source": "steel-core/src/chunk_saver"
+        },
+        {
+          "capability": "Свет и распространение изменений",
+          "score": 1,
+          "source": "steel-core/src/chunk/light"
+        },
+        {
+          "capability": "Миграция произвольных старых миров",
+          "score": 0.5,
+          "source": "steel-core/src/chunk_saver/format.rs"
+        }
+      ]
+    },
+    {
+      "name": "Синхронизация и протокол",
+      "criteria": [
+        {
+          "capability": "Configuration и registry cache",
+          "score": 1,
+          "source": "steel-core/src/server/registry_cache.rs"
+        },
+        {
+          "capability": "Игрок и соединение",
+          "score": 1,
+          "source": "steel-core/src/player/connection"
+        },
+        {
+          "capability": "Отслеживание и обновления сущностей",
+          "score": 1,
+          "source": "steel-core/src/world/world_entities.rs"
+        },
+        {
+          "capability": "Полная перезагрузка datapack-состояния онлайн",
+          "score": 0.5,
+          "source": "steel-core/src/server/registry_cache.rs"
+        }
+      ]
+    },
+    {
+      "name": "Реестры, теги, кодеки",
+      "criteria": [
+        {
+          "capability": "Статические и динамические записи",
+          "score": 1,
+          "source": "steel-registry/src"
+        },
+        {
+          "capability": "Теги и ID",
+          "score": 1,
+          "source": "steel-core/src/server/registry_cache.rs"
+        },
+        {
+          "capability": "Полностью типизированные кодеки всех данных",
+          "score": 0.5,
+          "source": "steel-utils/src/nbt/json.rs"
+        },
+        {
+          "capability": "Стек datapack/reload/provenance",
+          "score": 0.5,
+          "source": "steel-registry/src"
+        }
+      ]
+    },
+    {
+      "name": "Генерация мира",
+      "criteria": [
+        {
+          "capability": "Биомы и noise",
+          "score": 1,
+          "source": "steel-worldgen/src"
+        },
+        {
+          "capability": "Terrain и carvers",
+          "score": 1,
+          "source": "steel-core/src/worldgen/stages"
+        },
+        {
+          "capability": "Structure starts, references и размещение",
+          "score": 1,
+          "source": "steel-core/src/worldgen/structure"
+        },
+        {
+          "capability": "Features без известных расхождений",
+          "score": 0.5,
+          "source": "steel-core/src/worldgen/feature"
+        }
+      ]
+    },
+    {
+      "name": "Блоки",
+      "criteria": [
+        {
+          "capability": "Размещение и состояния",
+          "score": 1,
+          "source": "steel-core/src/behavior/block"
+        },
+        {
+          "capability": "Формы и соседние обновления",
+          "score": 1,
+          "source": "steel-core/src/world/block_updates"
+        },
+        {
+          "capability": "Все механизмы redstone",
+          "score": 0.5,
+          "source": "steel-core/src/behavior/blocks/redstone"
+        },
+        {
+          "capability": "Все специальные взаимодействия",
+          "score": 0.5,
+          "source": "steel-core/src/behavior/blocks"
+        }
+      ]
+    },
+    {
+      "name": "Предметы",
+      "criteria": [
+        {
+          "capability": "Использование и размещение",
+          "score": 1,
+          "source": "steel-core/src/behavior/items"
+        },
+        {
+          "capability": "Компоненты и ItemStack",
+          "score": 1,
+          "source": "steel-registry/src/item_stack.rs"
+        },
+        {
+          "capability": "Базовые боевые действия",
+          "score": 1,
+          "source": "steel-core/src/player/game_mode"
+        },
+        {
+          "capability": "Все предметные исключения и взаимодействия",
+          "score": 0.5,
+          "source": "steel-core/src/behavior/items"
+        }
+      ]
+    },
+    {
+      "name": "Block entities",
+      "criteria": [
+        {
+          "capability": "Фабрики типов",
+          "score": 1,
+          "source": "steel-core/src/block_entity/registry.rs"
+        },
+        {
+          "capability": "Загрузка и сохранение NBT",
+          "score": 1,
+          "source": "steel-core/src/block_entity"
+        },
+        {
+          "capability": "Все runtime-механизмы",
+          "score": 0.5,
+          "source": "steel-core/src/block_entity/entities"
+        },
+        {
+          "capability": "Полнота всех специальных контейнеров",
+          "score": 0.5,
+          "source": "steel-core/src/behavior/blocks/container"
+        }
+      ]
+    },
+    {
+      "name": "Сущности и AI",
+      "criteria": [
+        {
+          "capability": "Создание, загрузка и жизненный цикл",
+          "score": 1,
+          "source": "steel-core/src/entity/spawn.rs"
+        },
+        {
+          "capability": "Синхронизированные данные и атрибуты",
+          "score": 1,
+          "source": "steel-core/src/entity/attribute.rs"
+        },
+        {
+          "capability": "Навигация и цели во всех ситуациях",
+          "score": 0.5,
+          "source": "steel-core/src/entity/ai"
+        },
+        {
+          "capability": "Полное видовое поведение всех мобов",
+          "score": 0.5,
+          "source": "steel-core/src/entity/entities/mobs"
+        }
+      ]
+    },
+    {
+      "name": "Игрок",
+      "criteria": [
+        {
+          "capability": "Вход и жизненный цикл",
+          "score": 1,
+          "source": "steel-core/src/server/player_lifecycle.rs"
+        },
+        {
+          "capability": "Движение и состояния",
+          "score": 1,
+          "source": "steel-core/src/player/movement"
+        },
+        {
+          "capability": "Игровые действия и взаимодействие",
+          "score": 1,
+          "source": "steel-core/src/player/game_mode"
+        },
+        {
+          "capability": "Полнота всех advancement-предикатов",
+          "score": 0.5,
+          "source": "steel-core/src/player/advancement"
+        }
+      ]
+    },
+    {
+      "name": "Инвентарь и меню",
+      "criteria": [
+        {
+          "capability": "Контейнеры и слоты",
+          "score": 1,
+          "source": "steel-core/src/inventory/container"
+        },
+        {
+          "capability": "Клики и переносы",
+          "score": 1,
+          "source": "steel-core/src/inventory/click.rs"
+        },
+        {
+          "capability": "Рецепты и крафт",
+          "score": 1,
+          "source": "steel-core/src/inventory/recipe_manager.rs"
+        },
+        {
+          "capability": "Все транзакционные edge cases",
+          "score": 0.5,
+          "source": "steel-core/src/inventory/menu"
+        }
+      ]
+    },
+    {
+      "name": "Физика, жидкости, снаряды",
+      "criteria": [
+        {
+          "capability": "Коллизии и движение",
+          "score": 1,
+          "source": "steel-core/src/physics"
+        },
+        {
+          "capability": "Распространение жидкостей",
+          "score": 1,
+          "source": "steel-core/src/fluid"
+        },
+        {
+          "capability": "Снаряды и столкновения",
+          "score": 1,
+          "source": "steel-core/src/entity/entities/objects/projectiles"
+        },
+        {
+          "capability": "Все межсистемные edge cases",
+          "score": 0.5,
+          "source": "steel-core/src/physics"
+        }
+      ]
+    },
+    {
+      "name": "Команды и права",
+      "criteria": [
+        {
+          "capability": "Парсер и дерево команд",
+          "score": 1,
+          "source": "steel-core/src/command/brigadier"
+        },
+        {
+          "capability": "Permissions и command sources",
+          "score": 1,
+          "source": "steel-core/src/permission"
+        },
+        {
+          "capability": "Встроенные команды",
+          "score": 1,
+          "source": "steel-core/src/command/builtins"
+        },
+        {
+          "capability": "Полный внешний scripting API",
+          "score": 0,
+          "source": "steel-core/src/command/api.rs"
+        }
+      ]
+    },
+    {
+      "name": "Loot, зачарования, прогрессия",
+      "criteria": [
+        {
+          "capability": "Вычисление loot tables",
+          "score": 1,
+          "source": "steel-core/src/loot"
+        },
+        {
+          "capability": "Зачарования и эффекты",
+          "score": 1,
+          "source": "steel-core/src/enchantment_helper"
+        },
+        {
+          "capability": "Разблокировка рецептов",
+          "score": 1,
+          "source": "steel-core/src/inventory/recipe_manager.rs"
+        },
+        {
+          "capability": "Все сложные цепочки прогрессии и торговли",
+          "score": 0.5,
+          "source": "steel-core/src/entity/entities/mobs"
+        }
+      ]
+    }
+  ]
+}

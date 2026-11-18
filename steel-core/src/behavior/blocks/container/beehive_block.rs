@@ -305,3 +305,34 @@ impl BlockBehavior for BeehiveBlock {
         );
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::bootstrap::init_globals;
+    use crate::entity::entities::ItemEntity;
+    use crate::test_support::{TestPlayerBuilder, dropped_items, fresh_test_world, insert_ready_full_chunk};
+    use glam::DVec3;
+    use steel_utils::ChunkPos;
+
+    #[test]
+    fn shearing_full_hive_resets_honey_and_drops_three_honeycombs() {
+        init_globals();
+        let fixture = fresh_test_world("hive_shear_resets_honey");
+        let world = &fixture.world;
+        let pos = BlockPos::new(8, 64, 8);
+        let _holder = insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+        let state = vanilla_blocks::BEEHIVE.default_state().set_value(LEVEL_HONEY, MAX_HONEY_LEVEL);
+        world.set_block(pos, state, UpdateFlags::UPDATE_ALL);
+        let player = TestPlayerBuilder::new(std::sync::Arc::clone(world), "HiveShearer", 1).build();
+        let entity = world.get_block_entity(pos).expect("hive block entity");
+        let hive = entity.downcast_ref::<BeehiveBlockEntity>().expect("typed hive");
+        BeehiveBlock::drop_honeycomb(world, pos, &player, state, hive);
+        assert_eq!(world.get_block_state(pos).get_value(LEVEL_HONEY), 0);
+        let drops = dropped_items(world, DVec3::new(8.5, 65.0, 8.5));
+        assert_eq!(drops.len(), 1);
+        let item = drops[0].downcast_ref::<ItemEntity>().expect("honeycomb item").get_item();
+        assert!(item.is(&vanilla_items::HONEYCOMB));
+        assert_eq!(item.count, 3);
+    }
+}
