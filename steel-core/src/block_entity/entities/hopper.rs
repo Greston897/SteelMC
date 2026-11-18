@@ -138,6 +138,21 @@ impl HopperBlockEntity {
         if inventory_full(&*self.container.lock()) {
             return false;
         }
+        let above = pos.above();
+        let above_state = world.get_block_state(above);
+        if above_state.get_block() == &steel_registry::vanilla_blocks::COMPOSTER {
+            if above_state.get_value(&BlockStateProperties::LEVEL_COMPOSTER) != 8 {
+                return false;
+            }
+            let Some(level) = self.get_level() else { return false; };
+            let mut bone_meal = ItemStack::new(&steel_registry::vanilla_items::BONE_MEAL);
+            let inserted = add_into_slots(&mut *self.container.lock(), &[0, 1, 2, 3, 4], Direction::Up, &mut bone_meal);
+            if inserted {
+                crate::behavior::blocks::ComposterBlock::empty(&level, above);
+                self.base.set_changed();
+            }
+            return inserted;
+        }
         if let Some(source) = world
             .get_block_entity(pos.above())
             .and_then(ContainerRef::from_block_entity)
@@ -303,6 +318,25 @@ impl HopperBlockEntity {
     /// Returns whether an item moved.
     pub fn try_move_items(&self, world: &World, pos: BlockPos) -> bool {
         let facing = self.facing();
+        let destination_pos = pos.relative(facing);
+        if world.get_block_state(destination_pos).get_block() == &steel_registry::vanilla_blocks::COMPOSTER {
+            // Composter input containers expose only their top face.
+            if facing != Direction::Down { return false; }
+            let Some(level) = self.get_level() else { return false; };
+            let candidate = {
+                let hopper = self.container.lock();
+                hopper.items.iter().enumerate().find(|(_, item)| !item.is_empty())
+                    .map(|(slot, item)| (slot, item.copy_with_count(1)))
+            };
+            let Some((slot, item)) = candidate else { return false; };
+            if !crate::behavior::blocks::ComposterBlock::insert(&level, destination_pos, &item) {
+                return false;
+            }
+            // World callbacks must never run while the inventory mutex is held.
+            self.container.lock().items[slot].shrink(1);
+            self.base.set_changed();
+            return true;
+        }
         let Some(destination) = world
             .get_block_entity(pos.relative(facing))
             .and_then(ContainerRef::from_block_entity)
