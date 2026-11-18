@@ -343,13 +343,12 @@ impl HopperBlockEntity {
         else {
             return false;
         };
-        // Vanilla drains the output slot (0) first, then the four input slots.
-        let Some(slot) = ({
-            let hopper = self.container.lock();
-            (0..HOPPER_SLOTS).find(|slot| !hopper.items[*slot].is_empty())
-        }) else {
-            return false;
-        };
+        // Try every occupied source slot in order: a rejected first item must
+        // not starve later items accepted by a sided or filtered destination.
+        for slot in 0..HOPPER_SLOTS {
+            if self.container.lock().items[slot].is_empty() {
+                continue;
+            }
         let mut moving = {
             let hopper = self.container.lock();
             hopper.items[slot].copy_with_count(1)
@@ -375,7 +374,7 @@ impl HopperBlockEntity {
                 add_into_slots(container, &slots, destination_direction, &mut moving)
             };
             if !inserted {
-                return false;
+                continue;
             }
             // The storage-level `set_changed` is a no-op; the destination's owner
             // is notified through the guard, which is what marks it dirty and
@@ -394,7 +393,9 @@ impl HopperBlockEntity {
             }
         }
         self.base.set_changed();
-        true
+        return true;
+        }
+        false
     }
 
     /// Vanilla `HopperBlockEntity.facing`: the block state's `FACING` property.
@@ -646,6 +647,37 @@ mod tests {
             BlockPos::new(1, 2, 3),
             vanilla_blocks::HOPPER.default_state(),
         )
+    }
+
+    #[test]
+    fn shulker_rejects_nested_boxes_and_hopper_continues_to_next_acceptable_slot() {
+        use crate::bootstrap::init_globals;
+        use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
+        use steel_utils::ChunkPos;
+        init_globals();
+        for facing in [Direction::Down, Direction::North, Direction::East] {
+            let fixture = fresh_test_world("hopper_filtered_shulker");
+            let world = &fixture.world;
+            let pos = BlockPos::new(8, 64, 8);
+            insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+            world.set_block(pos, vanilla_blocks::HOPPER.default_state().set_value(&BlockStateProperties::FACING_HOPPER, facing), steel_utils::types::UpdateFlags::UPDATE_ALL);
+            let destination = pos.relative(facing);
+            world.set_block(destination, vanilla_blocks::SHULKER_BOX.default_state(), steel_utils::types::UpdateFlags::UPDATE_ALL);
+            let entity = world.get_block_entity(pos).unwrap();
+            let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
+            for item in [&vanilla_items::SHULKER_BOX, &vanilla_items::RED_SHULKER_BOX] {
+                hopper.container.lock().set_item(0, ItemStack::new(item));
+                assert!(!hopper.try_move_items(world, pos));
+                assert_eq!(hopper.container.lock().get_item(0).count(), 1);
+            }
+            hopper.container.lock().set_item(1, ItemStack::with_count(&vanilla_items::STONE, 3));
+            assert!(hopper.try_move_items(world, pos));
+            assert_eq!(hopper.container.lock().get_item(0).count(), 1);
+            assert_eq!(hopper.container.lock().get_item(1).count(), 2);
+            let target = world.get_block_entity(destination).unwrap().container_ref().unwrap();
+            assert!(target.lock().get_item(0).is(&vanilla_items::STONE));
+            assert_eq!(target.lock().get_item(0).count(), 1);
+        }
     }
 
     #[test]
