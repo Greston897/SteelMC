@@ -484,6 +484,27 @@ mod tests {
     use super::*;
 
     #[test]
+    fn daylight_detector_registered_ticker_corrects_stale_power_at_noon() {
+        use steel_registry::{vanilla_blocks, vanilla_world_clocks};
+        use steel_registry::blocks::properties::BlockStateProperties;
+        crate::init();
+        let mut fixture = SteelTestWorld::new();
+        let pos = BlockPos::new(1, 0, 0);
+        fixture.ensure_chunk_at(&pos);
+        fixture.world.set_clock_total_ticks(&vanilla_world_clocks::OVERWORLD, 6000).unwrap();
+        let state = vanilla_blocks::DAYLIGHT_DETECTOR.default_state()
+            .set_value(&BlockStateProperties::POWER, 7);
+        assert!(fixture.world.set_block(pos, state, UpdateFlags::UPDATE_ALL));
+        for _ in 0..40 { fixture.do_tick().unwrap(); }
+        let actual = fixture.world.get_block_state(pos);
+        assert_eq!(actual.get_value(&BlockStateProperties::POWER), 15,
+            "game_time={} light={} darkening={} sun={} entity={}",
+            fixture.world.game_time(), fixture.world.effective_sky_brightness(pos),
+            fixture.world.sky_darkening(), fixture.world.sun_angle_degrees(),
+            fixture.world.get_block_entity(pos).is_some());
+    }
+
+    #[test]
     fn daytime_wraps_at_midnight_and_normalizes_negative_clock_values() {
         assert_eq!(daytime_from_ticks(0), 0);
         assert_eq!(daytime_from_ticks(23_999), 23_999);
