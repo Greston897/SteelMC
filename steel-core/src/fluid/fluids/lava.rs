@@ -53,7 +53,7 @@ impl LavaFluid {
 
     /// Returns true if this world uses fast lava (nether-like).
     fn is_fast_lava(world: &Arc<World>) -> bool {
-        world.dimension_type.fast_lava
+        world.dimension_type.fast_lava.unwrap_or(false)
     }
 
     /// Returns the lava current scale for entity fluid pushing.

@@ -723,7 +723,7 @@ impl SpeleothemBlockBehavior {
         };
 
         if fluid_info.source_state.get_block() == &vanilla_blocks::MUD && is_water {
-            if !world.dimension_type.water_evaporates {
+            if !world.dimension_type.water_evaporates.unwrap_or(false) {
                 let clay_state = vanilla_blocks::CLAY.default_state();
                 let _ =
                     push_entities_up(fluid_info.source_state, clay_state, world, fluid_info.pos);
@@ -771,7 +771,7 @@ impl SpeleothemBlockBehavior {
         let above_state = world.get_block_state(above_pos);
 
         let fluid = if above_state.get_block() == &vanilla_blocks::MUD
-            && !world.dimension_type.water_evaporates
+            && !world.dimension_type.water_evaporates.unwrap_or(false)
         {
             &vanilla_fluids::WATER
         } else {

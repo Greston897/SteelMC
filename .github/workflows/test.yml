@@ -26,7 +26,13 @@ jobs:
         run: |
           # `CARGO_TERM_COLOR=always` leaves ANSI escapes in the log; strip
           # them before matching or every failure surfaces silently.
-          sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log | grep -E "^(error|failures:|test .* FAILED|---- )" | head -40 | while IFS= read -r line; do
-            echo "::error title=test::$line"
+          sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log > /tmp/test.clean.log
+          {
+            grep -E "^(error|failures:|test .* FAILED|---- )" /tmp/test.clean.log | head -40
+            # Build-script panics hide behind `failed to run custom build
+            # command`; surface the panic location and message as well.
+            grep -A8 '^  --- stderr' /tmp/test.clean.log | grep -v '^--$' | head -40
+          } | while IFS= read -r line; do
+            if [ -n "$line" ]; then echo "::error title=test::$line"; fi
           done
           exit 1

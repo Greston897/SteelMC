@@ -19,8 +19,6 @@ pub struct DimensionTypeJson {
 
     #[serde(default)]
     has_fixed_time: bool,
-    #[serde(default)]
-    fixed_time: Option<i64>,
     has_skylight: bool,
     has_ceiling: bool,
     coordinate_scale: f64,
@@ -301,17 +299,8 @@ pub(crate) fn build() -> TokenStream {
         if path.extension().and_then(|s| s.to_str()) == Some("json") {
             let dimension_type_name = path.file_stem().unwrap().to_str().unwrap().to_string();
             let content = fs::read_to_string(&path).unwrap();
-            let mut dimension_type: DimensionTypeJson = serde_json::from_str(&content)
+            let dimension_type: DimensionTypeJson = serde_json::from_str(&content)
                 .unwrap_or_else(|e| panic!("Failed to parse {dimension_type_name}: {e}"));
-
-            // Extract fixed_time from attributes if has_fixed_time is true but fixed_time is None
-            if dimension_type.has_fixed_time && dimension_type.fixed_time.is_none() {
-                dimension_type.fixed_time = match dimension_type_name.as_str() {
-                    "the_end" => Some(6000),
-                    "the_nether" => Some(18000),
-                    _ => None,
-                };
-            }
 
             dimension_types.push((dimension_type_name, dimension_type));
         }
@@ -341,7 +330,7 @@ pub(crate) fn build() -> TokenStream {
         let dimension_type_name_str = dimension_type_name.clone();
 
         let key = quote! { Identifier::vanilla_static(#dimension_type_name_str) };
-        let fixed_time = generate_option(&dimension_type.fixed_time, |t| quote! { #t });
+        let has_fixed_time = dimension_type.has_fixed_time;
         let has_skylight = dimension_type.has_skylight;
         let has_ceiling = dimension_type.has_ceiling;
 
@@ -450,24 +439,37 @@ pub(crate) fn build() -> TokenStream {
             },
         );
 
-        // Gameplay attributes
-        let respawn_anchor_works = dimension_type
-            .attributes
-            .respawn_anchor_works
-            .unwrap_or(false);
-        let can_start_raid = dimension_type.attributes.can_start_raid.unwrap_or(true);
-        let fast_lava = dimension_type.attributes.fast_lava.unwrap_or(false);
-        let piglins_zombify = dimension_type.attributes.piglins_zombify.unwrap_or(true);
+        // Gameplay attributes: presence-preserving `Option<bool>` passthrough.
+        // Vanilla codecs encode exactly the entries present in the dimension
+        // JSON map, so defaults must NOT be materialized here.
+        let respawn_anchor_works = generate_option(
+            &dimension_type.attributes.respawn_anchor_works,
+            |v| quote! { #v },
+        );
+        let can_start_raid =
+            generate_option(&dimension_type.attributes.can_start_raid, |v| quote! { #v });
+        let fast_lava =
+            generate_option(&dimension_type.attributes.fast_lava, |v| quote! { #v });
+        let piglins_zombify = generate_option(
+            &dimension_type.attributes.piglins_zombify,
+            |v| quote! { #v },
+        );
         let sky_light_level = generate_option(
             &dimension_type.attributes.sky_light_level,
             |v| quote! { #v },
         );
-        let snow_golem_melts = dimension_type.attributes.snow_golem_melts.unwrap_or(false);
-        let water_evaporates = dimension_type.attributes.water_evaporates.unwrap_or(false);
-        let nether_portal_spawns_piglin = dimension_type
-            .attributes
-            .nether_portal_spawns_piglin
-            .unwrap_or(false);
+        let snow_golem_melts = generate_option(
+            &dimension_type.attributes.snow_golem_melts,
+            |v| quote! { #v },
+        );
+        let water_evaporates = generate_option(
+            &dimension_type.attributes.water_evaporates,
+            |v| quote! { #v },
+        );
+        let nether_portal_spawns_piglin = generate_option(
+            &dimension_type.attributes.nether_portal_spawns_piglin,
+            |v| quote! { #v },
+        );
 
         let bed_rule = generate_bed_rule(
             dimension_type
@@ -506,7 +508,7 @@ pub(crate) fn build() -> TokenStream {
         stream.extend(quote! {
             pub static #dimension_type_ident: DimensionType = DimensionType {
                 key: #key,
-                fixed_time: #fixed_time,
+                has_fixed_time: #has_fixed_time,
                 has_skylight: #has_skylight,
                 has_ceiling: #has_ceiling,
                 coordinate_scale: #coordinate_scale,

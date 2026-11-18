@@ -123,7 +123,7 @@ impl RespawnAnchorBlock {
 
     #[must_use]
     pub(crate) const fn can_set_spawn(world: &World, _pos: BlockPos) -> bool {
-        world.dimension_type.respawn_anchor_works
+        matches!(world.dimension_type.respawn_anchor_works, Some(true))
     }
 
     pub(crate) fn find_standup_position(
