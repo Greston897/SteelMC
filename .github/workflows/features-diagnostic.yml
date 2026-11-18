@@ -28,6 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          exec > >(tee /tmp/reference.log) 2>&1
           mkdir /tmp/feature-reference
           cp .ci/vanilla_features/* /tmp/feature-reference/
           cp steel-core/test_assets/chunk_stage_hashes.json /tmp/feature-reference/fixture.json
@@ -38,8 +39,8 @@ jobs:
           jar cfm reference-agent.jar MANIFEST.MF ./*.class
           printf 'eula=true\n' > eula.txt
           printf 'level-seed=13579\nonline-mode=false\nview-distance=2\nsimulation-distance=2\nspawn-protection=0\n' > server.properties
-          timeout --kill-after=30s 1800 java -Xmx4G --add-exports java.base/jdk.internal.org.objectweb.asm=ALL-UNNAMED -javaagent:reference-agent.jar=/tmp/feature-reference/reference-agent.jar -jar server.jar nogui 2>&1 | tee /tmp/reference.log
-          python3 validate.py 2>&1 | tee -a /tmp/reference.log
+          timeout --kill-after=30s 1800 java -Xmx4G --add-exports java.base/jdk.internal.org.objectweb.asm=ALL-UNNAMED -javaagent:reference-agent.jar=/tmp/feature-reference/reference-agent.jar -jar server.jar nogui 2>&1 | tee /tmp/vanilla-server.log
+          python3 validate.py 
           # Only a capture matching ALL existing failing-chunk goldens is trusted.
           cp reference.bin.gz "$GITHUB_WORKSPACE/steel-core/test_assets/chunk_stage_overworld_features_blocks.bin.gz"
       - name: Report block-level mismatches without replacing goldens
