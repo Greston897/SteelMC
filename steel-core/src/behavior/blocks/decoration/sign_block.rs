@@ -886,8 +886,8 @@ mod tests {
         use glam::DVec3;
         init_vanilla_registry();
         init_behaviors();
-        for block in [&*vanilla_blocks::OAK_SIGN, &*vanilla_blocks::OAK_WALL_SIGN,
-                      &*vanilla_blocks::OAK_HANGING_SIGN, &*vanilla_blocks::OAK_WALL_HANGING_SIGN] {
+        for block in [&vanilla_blocks::OAK_SIGN, &vanilla_blocks::OAK_WALL_SIGN,
+                      &vanilla_blocks::OAK_HANGING_SIGN, &vanilla_blocks::OAK_WALL_HANGING_SIGN] {
             for water_level in [None, Some(0), Some(3)] {
                 let fixture = fresh_test_world("sign_water_placement");
                 let world = &fixture.world;

@@ -94,7 +94,7 @@ fn dispenser_flint_lights_candles_cakes_campfires_and_always_wears_on_blocked_ta
         world.set_block(TARGET.below(), vanilla_blocks::STONE.default_state(), UpdateFlags::UPDATE_ALL);
         world.set_block(TARGET, target, UpdateFlags::UPDATE_ALL);
         pulse(world);
-        assert_eq!(container.lock().get_item(0).get(DAMAGE), Some(1), "target {index}");
+        assert_eq!(container.lock().get_item(0).get(DAMAGE), Some(&1), "target {index}");
         let actual = world.get_block_state(TARGET);
         if index < 4 {
             assert_eq!(actual.get_value(&BlockStateProperties::LIT), true, "target {index}");
