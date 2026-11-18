@@ -59,9 +59,14 @@ mod fluids;
 
 mod cat_sound_variants;
 mod chicken_sound_variants;
+mod context_providers;
 mod cow_sound_variants;
 mod custom_stats;
+mod datapack;
+mod dimensions;
+mod enchantment_providers;
 mod frog_variants;
+mod gametests;
 mod game_events;
 mod game_rules;
 mod instruments;
@@ -92,10 +97,12 @@ mod trial_spawners;
 mod trim_materials;
 mod trim_patterns;
 mod villager_professions;
+mod villager_trades;
 mod villager_types;
 mod wolf_sound_variants;
 mod wolf_variants;
 mod world_clocks;
+mod world_presets;
 mod zombie_nautilus_variants;
 
 mod enchantments;

@@ -226,17 +226,8 @@ pub(crate) fn build() -> TokenStream {
             &name.replace('/', "_").to_shouty_snake_case(),
             Span::call_site(),
         );
-        // `generate_config` splices `#key`; bind it here for the call below.
         let key = quote_id(&format!("minecraft:{name}"));
-        let config = {
-            let tokens = generate_config(name, json);
-            quote! {
-                {
-                    let key = #key;
-                    #tokens
-                }
-            }
-        };
+        let config = generate_config(name, json, &key);
         stream.extend(quote! {
             pub static #ident: LazyLock<TrialSpawnerConfig> = LazyLock::new(|| #config);
         });

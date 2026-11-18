@@ -474,9 +474,10 @@ pub(crate) fn build_int() -> TokenStream {
 
         use steel_utils::Identifier;
 
+        // NOTE: `EnchantmentRequirement` is intentionally not imported — no
+        // vanilla context_int_provider uses `match_tool`.
         use crate::context_provider::{
             ContextCondition, ContextIntExpr, ContextIntProvider, ContextIntProviderRegistry,
-            EnchantmentRequirement,
         };
     });
 
