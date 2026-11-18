@@ -36,9 +36,15 @@ public class ReferenceAgent {
                     ClassTransform.transformingMethodBodies(
                         method -> method.methodName().equalsString("runServer")
                                && method.methodType().equalsString("()V"),
-                        CodeTransform.atStart(code -> code.aload(0).invokestatic(
-                            ClassDesc.of("ReferenceAgent"), "capture",
-                            MethodTypeDesc.of(CD_void, CD_Object)))));
+                        new CodeTransform() {
+                            @Override public void atStart(CodeBuilder code) {
+                                code.aload(0).invokestatic(ClassDesc.of("ReferenceAgent"), "capture",
+                                    MethodTypeDesc.of(CD_void, CD_Object));
+                            }
+                            @Override public void accept(CodeBuilder code, CodeElement element) {
+                                code.with(element);
+                            }
+                        }));
                 System.out.println("REFERENCE hooked server startup; generation code is unchanged");
                 return transformed;
             }

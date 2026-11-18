@@ -282,6 +282,13 @@ impl Default for SteelTestWorld {
 }
 
 impl FlintWorld for SteelTestWorld {
+    fn configure_world(&mut self, config: &flint_core::test_spec::WorldConfig) -> anyhow::Result<()> {
+        use flint_core::test_spec::Weather;
+        self.world.configure_test_environment(&config.time,
+            config.weather != Weather::Clear, config.weather == Weather::Thunder)
+            .map_err(anyhow::Error::msg)
+    }
+
     fn do_tick(&mut self) -> Result<(), anyhow::Error> {
         let tick_count = self.tick.fetch_add(1, Ordering::SeqCst);
 
@@ -485,13 +492,15 @@ mod tests {
 
     #[test]
     fn daylight_detector_registered_ticker_corrects_stale_power_at_noon() {
-        use steel_registry::{vanilla_blocks, vanilla_world_clocks};
+        use steel_registry::vanilla_blocks;
         use steel_registry::blocks::properties::BlockStateProperties;
         crate::init();
         let mut fixture = SteelTestWorld::new();
         let pos = BlockPos::new(1, 0, 0);
         fixture.ensure_chunk_at(&pos);
-        fixture.world.set_clock_total_ticks(&vanilla_world_clocks::OVERWORLD, 6000).unwrap();
+        fixture.configure_world(&flint_core::test_spec::WorldConfig {
+            time: "6000".to_owned(), ..Default::default()
+        }).unwrap();
         let state = vanilla_blocks::DAYLIGHT_DETECTOR.default_state()
             .set_value(&BlockStateProperties::POWER, 7);
         assert!(fixture.world.set_block(pos, state, UpdateFlags::UPDATE_ALL));
@@ -502,6 +511,25 @@ mod tests {
             fixture.world.game_time(), fixture.world.effective_sky_brightness(pos),
             fixture.world.sky_darkening(), fixture.world.sun_angle_degrees(),
             fixture.world.get_block_entity(pos).is_some());
+    }
+
+    #[test]
+    fn setup_applies_numeric_and_registry_marker_times_and_weather_or_reports_errors() {
+        use flint_core::test_spec::{WorldConfig, Weather};
+        crate::init();
+        for (time, expected, weather) in [("6000", 6000, Weather::Clear),
+            ("minecraft:midnight", 18000, Weather::Thunder), ("minecraft:noon", 6000, Weather::Rain)] {
+            let mut fixture = SteelTestWorld::new();
+            fixture.configure_world(&WorldConfig { time: time.to_owned(), weather, ..Default::default() }).unwrap();
+            assert_eq!(fixture.get_time().unwrap(), expected);
+            for _ in 0..110 { fixture.do_tick().unwrap(); }
+            assert_eq!(fixture.world.is_raining(), weather != Weather::Clear);
+            assert_eq!(fixture.world.is_thundering(), weather == Weather::Thunder);
+        }
+        let mut fixture = SteelTestWorld::new();
+        for time in ["-1", "minecraft:missing_marker"] {
+            assert!(fixture.configure_world(&WorldConfig { time: time.to_owned(), ..Default::default() }).is_err());
+        }
     }
 
     #[test]
