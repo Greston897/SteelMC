@@ -363,6 +363,19 @@ impl HopperBlockEntity {
         true
     }
 
+    #[test]
+    fn transfer_cooldown_expires_on_the_eighth_tick_not_the_ninth() {
+        let hopper = test_hopper();
+        hopper.set_cooldown(MOVE_COOLDOWN_TICKS);
+        for remaining in (1..MOVE_COOLDOWN_TICKS).rev() {
+            assert!(!hopper.advance_transfer_cooldown());
+            assert_eq!(hopper.cooldown(), remaining);
+        }
+        assert!(hopper.advance_transfer_cooldown());
+        assert_eq!(hopper.cooldown(), 0);
+        assert!(hopper.advance_transfer_cooldown());
+    }
+
     /// Vanilla `HopperBlockEntity.facing`: the block state's `FACING` property.
     fn facing(&self) -> Direction {
         self.get_block_state()
@@ -380,15 +393,20 @@ impl HopperBlockEntity {
         *self.cooldown.lock() = value;
     }
 
+    /// Vanilla decrements before testing readiness, so a cooldown of eight
+    /// permits another transfer on the eighth tick, not the ninth.
+    fn advance_transfer_cooldown(&self) -> bool {
+        let mut cooldown = self.cooldown.lock();
+        *cooldown = cooldown.saturating_sub(1);
+        *cooldown == 0
+    }
+
     /// Advances the transfer state by one game tick, matching vanilla's
     /// Vanilla `HopperBlockEntity.pushItemsTick` cooldown gate.
     pub fn tick_transfer(&self, world: &World, pos: BlockPos) {
-        let mut cooldown = self.cooldown.lock();
-        if *cooldown > 0 {
-            *cooldown -= 1;
+        if !self.advance_transfer_cooldown() {
             return;
         }
-        drop(cooldown);
         // Vanilla `tryMoveItems` runs as
         // `tryMoveItems(level, pos, state, entity, () -> suckInItems(level, entity))`
         // and ORs the two into one `changed` flag, so a single tick both pushes
