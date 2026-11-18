@@ -228,6 +228,81 @@ mod tests {
     use super::*;
 
     #[test]
+    fn every_synced_tag_matches_pinned_vanilla_membership() {
+        use std::collections::{BTreeMap, BTreeSet};
+
+        use serde::Deserialize;
+
+        #[derive(Deserialize)]
+        struct Fixture {
+            source_commit: String,
+            minecraft_version: String,
+            registries: BTreeMap<String, BTreeMap<String, Vec<String>>>,
+        }
+
+        let fixture: Fixture = serde_json::from_str(include_str!(
+            "../../test_assets/26_3_synced_tags.json"
+        ))
+        .expect("pinned vanilla tag fixture must parse");
+        assert_eq!(fixture.minecraft_version, "26.3");
+        assert_eq!(fixture.source_commit, "538b2b167248c648b2198f2c0d56eced10dfc0cf");
+        let mut actual = BTreeMap::new();
+        let mut seen_registries = BTreeSet::new();
+        let packet = RegistryCache::build_tags_packet(&REGISTRY);
+        for (registry_key, tags) in packet.tags {
+            let name = registry_key.to_string();
+            assert!(seen_registries.insert(name.clone()), "duplicate registry: {name}");
+            let mut by_id: BTreeMap<i32, String> = BTreeMap::new();
+            macro_rules! index_entries {
+                ($field:ident) => {
+                    for (_, entry) in REGISTRY.$field.iter() {
+                        assert!(by_id.insert(VarInt::from(entry.id()).0, entry.key.to_string()).is_none());
+                    }
+                };
+            }
+            match name.as_str() {
+                "minecraft:block" => index_entries!(blocks),
+                "minecraft:item" => index_entries!(items),
+                "minecraft:fluid" => index_entries!(fluids),
+                "minecraft:entity_type" => index_entries!(entity_types),
+                "minecraft:game_event" => index_entries!(game_events),
+                "minecraft:worldgen/biome" => index_entries!(biomes),
+                "minecraft:damage_type" => index_entries!(damage_types),
+                "minecraft:enchantment" => index_entries!(enchantments),
+                "minecraft:instrument" => index_entries!(instruments),
+                "minecraft:painting_variant" => index_entries!(painting_variants),
+                "minecraft:banner_pattern" => index_entries!(banner_patterns),
+                "minecraft:dialog" => index_entries!(dialogs),
+                "minecraft:timeline" => index_entries!(timelines),
+                "minecraft:point_of_interest_type" => index_entries!(poi_types),
+                "minecraft:potion" => index_entries!(potions),
+                _ => panic!("unexpected network tag registry: {name}"),
+            }
+            let mut actual_tags = BTreeMap::new();
+            assert!(!tags.is_empty(), "empty tag payload must not be sent: {name}");
+            for (key, ids) in tags {
+                let mut entries = Vec::new();
+                let mut seen = BTreeSet::new();
+                for id in ids {
+                    assert!(seen.insert(id.0), "duplicate ID in {name}/{key}");
+                    entries.push(by_id.get(&id.0).expect("tag ID must resolve").clone());
+                }
+                entries.sort();
+                assert!(actual_tags.insert(key.to_string(), entries).is_none());
+            }
+            assert!(actual.insert(name, actual_tags).is_none());
+        }
+        assert_eq!(actual.keys().collect::<Vec<_>>(), fixture.registries.keys().collect::<Vec<_>>());
+        for (registry, expected_tags) in fixture.registries {
+            let actual_tags = &actual[&registry];
+            assert_eq!(actual_tags.keys().collect::<Vec<_>>(), expected_tags.keys().collect::<Vec<_>>(), "tag keys: {registry}");
+            for (tag, expected) in expected_tags {
+                assert_eq!(actual_tags[&tag], expected, "vanilla tag mismatch: {registry}/{tag}");
+            }
+        }
+    }
+
+    #[test]
     fn synchronized_registries_match_vanilla_order_and_known_pack_elision() {
         let full = RegistryCache::build_registry_packets(&REGISTRY, true);
         let elided = RegistryCache::build_registry_packets(&REGISTRY, false);

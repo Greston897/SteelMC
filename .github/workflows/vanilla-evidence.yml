@@ -1,0 +1,102 @@
+name: Vanilla Evidence
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vanilla-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evidence:
+    name: ${{ matrix.area }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        area: [biomes, structures, chunk-stages, flint-all, ignored-doctests, registry-sync-tags]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        if: matrix.area == 'flint-all'
+        with:
+          repository: FlintTestMC/FlintBenchmark
+          ref: caa22dbbbfff3d1b9766939834a308c335f7a989
+          path: FlintBenchmark
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: vanilla-evidence-release
+      - name: Reproduce independent vanilla tag fixture
+        if: matrix.area == 'registry-sync-tags'
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 https://codeload.github.com/misode/mcmeta/tar.gz/538b2b167248c648b2198f2c0d56eced10dfc0cf -o /tmp/mcmeta.tar.gz
+          mkdir -p /tmp/mcmeta
+          tar xzf /tmp/mcmeta.tar.gz -C /tmp/mcmeta
+          python3 .ci/build_vanilla_tag_fixture.py /tmp/mcmeta/mcmeta-538b2b167248c648b2198f2c0d56eced10dfc0cf/data/minecraft > /tmp/vanilla-tags.json
+          cmp steel-core/test_assets/26_3_synced_tags.json /tmp/vanilla-tags.json
+      - name: Run real checks (failures are blocking)
+        env:
+          AREA: ${{ matrix.area }}
+          TEST_PATH: ${{ github.workspace }}/FlintBenchmark/tests
+          FLINT_IMPLEMENTED_ONLY: 'false'
+          RUST_BACKTRACE: '1'
+          CARGO_TERM_COLOR: never
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$AREA" in
+            biomes)
+              cargo test --release -p steel-core --test biome_hashes -- --ignored --nocapture --test-threads=1 2>&1 | tee /tmp/evidence.log
+              ;;
+            structures)
+              cargo test --release -p steel-core --test structure_starts -- --ignored --nocapture --test-threads=1 2>&1 | tee /tmp/evidence.log
+              ;;
+            chunk-stages)
+              cargo test --release -p steel-core --lib worldgen::chunk_stage_hashes::chunk_stage_hashes -- --exact --ignored --nocapture 2>&1 | tee /tmp/evidence.log
+              ;;
+            flint-all)
+              test -d "$TEST_PATH"
+              cargo test --release -p steel-flint --lib -- --ignored --nocapture --test-threads=1 2>&1 | tee /tmp/evidence.log
+              ;;
+            ignored-doctests)
+              cargo test --release --workspace --doc -- --ignored --nocapture 2>&1 | tee /tmp/evidence.log
+              ;;
+            registry-sync-tags)
+              cargo test --release -p steel-core --lib server::registry_cache::tests:: -- --nocapture 2>&1 | tee /tmp/evidence.log
+              ;;
+            *) exit 2 ;;
+          esac
+          # A typo in the filter must never produce a green zero-test run.
+          python3 - <<'PY'
+          import os, re
+          text = open('/tmp/evidence.log').read()
+          results = [tuple(map(int, m)) for m in re.findall(r'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;', text)]
+          expected = {'biomes': 3, 'structures': 1, 'chunk-stages': 1, 'flint-all': 2, 'ignored-doctests': 13, 'registry-sync-tags': 2}[os.environ['AREA']]
+          assert sum(r[0] for r in results) >= expected, (os.environ['AREA'], results)
+          assert all(r[1] == 0 for r in results), results
+          PY
+      - name: Publish evidence even on failure
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          AREA: ${{ matrix.area }}
+        run: |
+          python3 .ci/report.py "Vanilla Evidence — $AREA" /tmp/evidence.log
+          if [ -f /tmp/evidence.log ]; then
+            grep -E '^(test result:|test .*FAILED|error|failures:)' /tmp/evidence.log >> "$GITHUB_STEP_SUMMARY" || true
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vanilla-evidence-${{ matrix.area }}
+          path: |
+            /tmp/evidence.log
+            steel-flint/log/

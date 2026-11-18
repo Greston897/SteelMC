@@ -330,6 +330,7 @@ mod tests {
             .load_specs(&paths, false)
             .unwrap_or_else(|e| panic!("error while loading test specs: {e}"));
 
+        assert!(!specs.is_empty(), "Flint must execute at least one vanilla fixture");
         let runner = TestRunner::new(Arc::new(SteelAdapter));
         let summary = runner.run_tests(&specs);
         summary.print_concise_summary();
@@ -368,6 +369,7 @@ mod tests {
             .load_specs(&paths, false)
             .unwrap_or_else(|e| panic!("error while loading test specs: {e}"));
 
+        assert!(!specs.is_empty(), "Flint must execute at least one vanilla fixture");
         let runner = TestRunner::new(Arc::new(SteelAdapter));
         let summary = runner.run_tests(&specs);
         summary.print_concise_summary();
