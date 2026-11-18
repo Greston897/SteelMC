@@ -61,13 +61,14 @@ jobs:
               cargo test --profile evidence -p steel-core --test structure_starts -- --ignored --nocapture --test-threads=1 2>&1 | tee /tmp/evidence.log
               ;;
             chunk-stages)
-              cargo test --profile evidence -p steel-core --lib --no-run 2>&1 | tee /tmp/evidence.log
+              python3 .ci/compile_test_binary.py steel-core /tmp/core-test-binary 2>&1 | tee /tmp/evidence.log
+              binary=$(cat /tmp/core-test-binary)
               status=0
               : > /tmp/chunk-summary.log
               for dimension in overworld the_nether the_end; do
                 for stage in terrain features light; do
                   log="/tmp/chunk-$dimension-$stage.log"
-                  if STEEL_HASH_DEBUG_DIMENSION="minecraft:$dimension" STEEL_HASH_DEBUG_STAGE="minecraft:$stage" timeout --kill-after=15s 240s cargo test --profile evidence -p steel-core --lib worldgen::chunk_stage_hashes::chunk_stage_hashes -- --exact --ignored --nocapture > "$log" 2>&1; then
+                  if STEEL_HASH_DEBUG_DIMENSION="minecraft:$dimension" STEEL_HASH_DEBUG_STAGE="minecraft:$stage" timeout --kill-after=15s 240s "$binary" worldgen::chunk_stage_hashes::chunk_stage_hashes --exact --ignored --nocapture > "$log" 2>&1; then
                     echo "$dimension/$stage: PASS" >> /tmp/chunk-summary.log
                   else
                     code=$?
@@ -82,21 +83,24 @@ jobs:
               ;;
             flint-all)
               test -d "$TEST_PATH"
-              cargo test --profile evidence -p steel-flint --lib --no-run 2>&1 | tee /tmp/evidence.log
+              python3 .ci/compile_test_binary.py steel-flint /tmp/flint-test-binary 2>&1 | tee /tmp/evidence.log
+              binary=$(cat /tmp/flint-test-binary)
               status=0
+              : > /tmp/flint-summary.log
               # A fresh process per shard bounds the legacy test world's
               # retained resources; every spec belongs to exactly one shard.
               for shard in $(seq 0 31); do
                 echo "=== Flint shard $shard/32 ===" | tee -a /tmp/evidence.log
-                if FLINT_SHARD_INDEX="$shard" FLINT_SHARD_COUNT=32 timeout --kill-after=15s 120s cargo test --profile evidence -p steel-flint --lib -- --ignored --nocapture --test-threads=1 > "/tmp/flint-$shard.log" 2>&1; then
-                  echo "Flint shard $shard: PASS" | tee -a /tmp/evidence.log
+                if (cd steel-flint && FLINT_SHARD_INDEX="$shard" FLINT_SHARD_COUNT=32 timeout --kill-after=15s 120s "$binary" --ignored --nocapture --test-threads=1) > "/tmp/flint-$shard.log" 2>&1; then
+                  echo "Flint shard $shard: PASS" | tee -a /tmp/evidence.log /tmp/flint-summary.log
                 else
                   code=$?
-                  echo "Flint shard $shard: FAIL exit=$code" | tee -a /tmp/evidence.log
+                  echo "Flint shard $shard: FAIL exit=$code" | tee -a /tmp/evidence.log /tmp/flint-summary.log
                   status=1
                 fi
                 cat "/tmp/flint-$shard.log" >> /tmp/evidence.log
               done
+              cat /tmp/flint-summary.log | tee -a /tmp/evidence.log
               test "$status" -eq 0
               ;;
             api-doctests)
