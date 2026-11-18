@@ -17,13 +17,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: vanilla-evidence-optimized-no-lto
-      - name: Compile exact Steel test binary once
-        env:
-          CARGO_BUILD_JOBS: 2
-        run: python3 .ci/compile_test_binary.py steel-core /tmp/core-test-binary
       - name: Capture independent vanilla blocks for mismatching clusters
         shell: bash
         run: |
@@ -43,6 +36,13 @@ jobs:
           python3 validate.py 
           # Only a capture matching ALL existing failing-chunk goldens is trusted.
           cp reference.bin.gz "$GITHUB_WORKSPACE/steel-core/test_assets/chunk_stage_overworld_features_blocks.bin.gz"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: vanilla-evidence-optimized-no-lto
+      - name: Compile exact Steel test binary once
+        env:
+          CARGO_BUILD_JOBS: 2
+        run: python3 .ci/compile_test_binary.py steel-core /tmp/core-test-binary
       - name: Report block-level mismatches without replacing goldens
         env:
           STEEL_HASH_DEBUG_DIMENSION: minecraft:overworld
