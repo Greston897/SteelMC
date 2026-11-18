@@ -416,22 +416,27 @@ fn generate_trade(name: &str, json: &serde_json::Value, key: &TokenStream) -> To
                 Some("minecraft:entity_properties"),
                 "trade {name} merchant_predicate must be entity_properties"
             );
-            let variants = predicate
+            // Vanilla accepts a single variant id or a list (6 trades use the
+            // bare-string form: cartographer banners, fisherman boats).
+            let variant_value = predicate
                 .get("predicate")
                 .and_then(|v| v.get("minecraft:predicates"))
                 .and_then(|v| v.get("minecraft:villager/variant"))
-                .and_then(serde_json::Value::as_array)
                 .unwrap_or_else(|| {
                     panic!("trade {name} merchant_predicate must check villager/variant")
-                })
-                .iter()
-                .map(|entry| {
-                    quote_id(entry.as_str().unwrap_or_else(|| {
-                        panic!("trade {name} villager variant must be a string")
-                    }))
-                })
-                .collect::<Vec<_>>();
-            variants
+                });
+            let quote_variant = |entry: &serde_json::Value| {
+                quote_id(entry.as_str().unwrap_or_else(|| {
+                    panic!("trade {name} villager variant must be a string")
+                }))
+            };
+            match variant_value {
+                serde_json::Value::String(_) => vec![quote_variant(variant_value)],
+                serde_json::Value::Array(list) => list.iter().map(quote_variant).collect(),
+                other => panic!(
+                    "trade {name} villager variant must be a string or list: {other}"
+                ),
+            }
         }
     };
     let given_item_modifiers = match json.get("given_item_modifier") {
