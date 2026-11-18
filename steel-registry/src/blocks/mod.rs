@@ -446,7 +446,7 @@ impl Block {
     /// `default_state!` macro instead of calculating the offset manually.
     ///
     /// # Example
-    /// ```ignore
+    /// ```text
     /// const REPEATER: Block = Block::new("repeater", props, &[...])
     ///     .with_default_state(4);
     /// ```
@@ -1279,16 +1279,15 @@ impl BlockRegistry {
 /// (true=0, false=1 for Java compatibility).
 ///
 /// # Example
-/// ```ignore
-/// use steel_registry::{offset, properties::{BlockStateProperties as Props, RedstoneSide}};
-///
-/// const WIRE: Block = Block::new("wire", behavior, PROPS)
-///     .with_default_state(offset!(
-///         Props::EAST_REDSTONE => RedstoneSide::Up,
-///         Props::NORTH_REDSTONE => RedstoneSide::None,
-///         Props::POWER => 10,
-///         Props::ATTACHED => Props::ATTACHED.index_of(false)  // Bools need .index_of()
-///     ));
+/// ```rust
+/// use steel_registry::offset;
+/// use steel_registry::blocks::properties::BlockStateProperties as Props;
+/// // Last property is the inner loop; bool false has vanilla index 1.
+/// const OFFSET: u16 = offset!(
+///     Props::POWER => 10,
+///     Props::ATTACHED => Props::ATTACHED.index_of(false),
+/// );
+/// assert_eq!(OFFSET, 21);
 /// ```
 #[macro_export]
 macro_rules! offset {

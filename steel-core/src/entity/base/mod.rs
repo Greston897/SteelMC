@@ -371,7 +371,7 @@ impl EntityBaseState {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```text
 /// pub struct MyEntity {
 ///     base: EntityBase,
 ///     // Entity-specific fields...

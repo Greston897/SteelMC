@@ -147,7 +147,7 @@ impl<T: Entity> EntityEventSource for T {
 /// Entities expose [`EntityBase`] to get default implementations for common
 /// methods like `id()`, `uuid()`, `position()`, etc.
 ///
-/// ```ignore
+/// ```text
 /// impl Entity for MyEntity {
 ///     fn base(&self) -> &EntityBase { &self.base }
 ///     fn entity_type(&self) -> EntityTypeRef { vanilla_entities::MY_ENTITY }

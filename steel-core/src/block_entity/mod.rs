@@ -13,14 +13,18 @@
 //!
 //! # Usage
 //!
-//! ```ignore
+//! ```rust
+//! use std::sync::Weak;
 //! use steel_core::block_entity::{init_block_entities, BLOCK_ENTITIES};
-//!
-//! // After registry is frozen, call once at startup:
+//! use steel_registry::{init_vanilla_registry, vanilla_blocks, vanilla_block_entity_types};
+//! use steel_utils::BlockPos;
+//! init_vanilla_registry();
 //! init_block_entities();
-//!
-//! // Create a block entity:
-//! let entity = BLOCK_ENTITIES.create(block_entity_type, pos, state);
+//! let entity = BLOCK_ENTITIES.create(
+//!     &vanilla_block_entity_types::CHEST, Weak::new(), BlockPos::new(0, 64, 0),
+//!     vanilla_blocks::CHEST.default_state(),
+//! );
+//! assert!(entity.is_some());
 //! ```
 
 pub(crate) mod block_state_nbt;

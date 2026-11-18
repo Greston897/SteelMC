@@ -62,13 +62,17 @@ use codecs::{
 /// The actual storage uses keyed type erasure through [`ComponentData`].
 ///
 /// # Example
-/// ```ignore
-/// pub const DAMAGE: DataComponentType<Damage> =
-///     DataComponentType::new(Identifier::vanilla_static("damage"));
-///
-/// // Type-safe access
-/// let damage: Option<Damage> = components.get(DAMAGE);
-/// components.set(DAMAGE, Damage(10));
+/// ```rust
+/// use steel_registry::data_components::{DataComponentMap, vanilla_components::DAMAGE};
+/// use steel_utils::Identifier;
+/// let mut components = DataComponentMap::new();
+/// assert_eq!(components.get(DAMAGE), None);
+/// components.set(DAMAGE, Some(10));
+/// assert_eq!(components.get(DAMAGE), Some(10));
+/// assert_eq!(components.get_ref(DAMAGE), Some(&10));
+/// assert!(components.get_raw(&Identifier::vanilla_static("damage")).is_some());
+/// components.set(DAMAGE, None);
+/// assert_eq!(components.get(DAMAGE), None);
 /// ```
 ///
 /// Steel declares component handles alongside their registered codecs; external

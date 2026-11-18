@@ -14,14 +14,14 @@
 //!
 //! # Usage
 //!
-//! ```ignore
-//! use steel_core::behavior::{init_behaviors, BLOCK_BEHAVIORS, ITEM_BEHAVIORS};
-//!
-//! // After registry is frozen, call once at startup:
+//! ```rust
+//! use steel_core::behavior::{init_behaviors, BLOCK_BEHAVIORS};
+//! use steel_registry::{init_vanilla_registry, vanilla_blocks};
+//! init_vanilla_registry();
 //! init_behaviors();
-//!
-//! // Then access behaviors via the global registries:
-//! let behavior = BLOCK_BEHAVIORS.get_behavior(block);
+//! let behavior = BLOCK_BEHAVIORS.get_behavior(&vanilla_blocks::STONE);
+//! let by_state = BLOCK_BEHAVIORS.get_behavior_for_state(vanilla_blocks::STONE.default_state()).unwrap();
+//! assert!(std::ptr::eq(behavior, by_state));
 //! ```
 
 pub mod block;

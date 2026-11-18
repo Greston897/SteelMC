@@ -325,7 +325,7 @@ impl ConstPyramidBuilder {
 /// Macro for defining chunk pyramids with nice syntax.
 ///
 /// # Example
-/// ```ignore
+/// ```text
 /// define_pyramid! {
 ///     pub static MY_PYRAMID = {
 ///         Empty => { task: my_task },

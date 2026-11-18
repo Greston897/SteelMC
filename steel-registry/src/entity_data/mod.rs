@@ -14,9 +14,15 @@
 //! # Serialization Flow
 //!
 //! Serialization happens through the registry, not directly on `EntityData`:
-//! ```ignore
-//! let writer = REGISTRY.entity_data_serializers.get_writer(serializer_id).unwrap();
-//! writer(&entity_data_value, &mut buf)?;
+//! ```rust
+//! use steel_registry::{init_vanilla_registry, REGISTRY};
+//! use steel_registry::entity_data::EntityData;
+//! init_vanilla_registry();
+//! // Vanilla serializer ID 0 is BYTE.
+//! let writer = REGISTRY.entity_data_serializers.get_writer(0).unwrap();
+//! let mut bytes = Vec::new();
+//! writer(&EntityData::Byte(42), &mut bytes).unwrap();
+//! assert_eq!(bytes, vec![42]);
 //! ```
 //!
 //! # Generated Code

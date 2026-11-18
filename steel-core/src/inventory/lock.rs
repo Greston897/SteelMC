@@ -230,17 +230,16 @@ impl ContainerRef {
 ///
 /// # Example
 ///
-/// ```ignore
-/// let player_inv = ContainerRef::from(player_inv_arc);
-/// let chest = ContainerRef::from(chest_arc);
-///
-/// let mut guard = ContainerLockGuard::lock_all(&[&player_inv, &chest]);
-///
-/// // Access containers by their IDs
-/// let player_id = player_inv.container_id();
-/// if let Some(inv) = guard.get_mut(player_id) {
-///     // Modify the player inventory
-/// }
+/// ```rust
+/// use steel_core::inventory::container::SimpleContainer;
+/// use steel_core::inventory::lock::{ContainerLockGuard, ContainerRef};
+/// use steel_utils::locks::IntoShared;
+/// steel_registry::init_vanilla_registry();
+/// let player_inv = ContainerRef::from(SimpleContainer::new(9).into_shared());
+/// let chest = ContainerRef::from(SimpleContainer::new(27).into_shared());
+/// let mut guard = ContainerLockGuard::lock_all(&[&player_inv, &chest, &chest]);
+/// assert!(guard.get_mut(player_inv.container_id()).is_some());
+/// assert!(guard.get_mut(chest.container_id()).is_some());
 /// ```
 pub struct ContainerLockGuard {
     // Stable sources retained while guards are temporarily released for an owner callback.
