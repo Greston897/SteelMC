@@ -56,6 +56,17 @@ pub fn read_entries(subdir: &str) -> Vec<(String, serde_json::Value)> {
     out
 }
 
+/// Reads one JSON file under `builtin_datapacks/minecraft/`.
+pub fn read_json_file(relative_path: &str) -> serde_json::Value {
+    let path =
+        format!("../steel-utils/build_assets/builtin_datapacks/minecraft/{relative_path}");
+    println!("cargo:rerun-if-changed={path}");
+    let content =
+        fs::read_to_string(&path).unwrap_or_else(|e| panic!("Failed to read {path}: {e}"));
+    serde_json::from_str(&content)
+        .unwrap_or_else(|e| panic!("Failed to parse {relative_path}: {e}"))
+}
+
 /// Emits an `Identifier` literal for a (possibly namespaced) id string.
 ///
 /// Vanilla datapack ids always use the `minecraft` namespace; anything else is

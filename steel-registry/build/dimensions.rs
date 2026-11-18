@@ -12,7 +12,7 @@ use heck::ToShoutySnakeCase;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
-use crate::datapack::{quote_id, read_entries};
+use crate::datapack::{quote_id, read_json_file, strip_vanilla};
 
 fn generate_biome_source(owner: &str, json: &serde_json::Value) -> TokenStream {
     let kind = json
@@ -199,12 +199,27 @@ pub(crate) fn generate_stem(owner: &str, key: &TokenStream, json: &serde_json::V
 }
 
 pub(crate) fn build() -> TokenStream {
-    let entries = read_entries("dimension");
+    // The vanilla *server* jar ships no `dimension/` dir (standalone stem
+    // files exist in the client jar / mcmeta only); dedicated servers derive
+    // stems from the active world preset. `normal.json` stems are
+    // value-identical to mcmeta `dimension/*.json`, so the default world
+    // preset is the codegen source for the 3 vanilla stems.
+    let preset = read_json_file("worldgen/world_preset/normal.json");
+    let stems = preset
+        .get("dimensions")
+        .and_then(serde_json::Value::as_object)
+        .unwrap_or_else(|| panic!("world preset normal is missing dimensions"));
+    let mut entries: Vec<(&String, &serde_json::Value)> = stems.iter().collect();
+    entries.sort_by(|a, b| a.0.cmp(b.0));
+    let keys: Vec<&str> = entries.iter().map(|(id, _)| id.as_str()).collect();
     assert_eq!(
-        entries.len(),
-        3,
-        "expected 3 vanilla dimension files, got {}",
-        entries.len()
+        keys,
+        [
+            "minecraft:overworld",
+            "minecraft:the_end",
+            "minecraft:the_nether",
+        ],
+        "expected the 3 vanilla dimension stems, got {keys:?}"
     );
 
     let mut stream = TokenStream::new();
@@ -221,10 +236,11 @@ pub(crate) fn build() -> TokenStream {
     });
 
     let mut register_stream = TokenStream::new();
-    for (name, json) in &entries {
+    for (stem_id, stem_json) in &entries {
+        let name = strip_vanilla(stem_id);
         let ident = Ident::new(&name.to_shouty_snake_case(), Span::call_site());
-        let key = quote_id(&format!("minecraft:{name}"));
-        let stem = generate_stem(&format!("dimension {name}"), &key, json);
+        let key = quote_id(stem_id);
+        let stem = generate_stem(&format!("dimension {name}"), &key, stem_json);
         stream.extend(quote! {
             pub static #ident: LazyLock<DimensionStem> = LazyLock::new(|| #stem);
         });
