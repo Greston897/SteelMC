@@ -72,6 +72,13 @@ impl SteelTestPlayer {
     }
 }
 
+impl Drop for SteelTestPlayer {
+    fn drop(&mut self) {
+        let world = self.player.world.load_full();
+        world.remove_test_player(&self.player);
+    }
+}
+
 /// Converts a Flint [`PlayerSlot`] to a Steel inventory slot index.
 ///
 /// Flint uses semantic slot names (e.g., `Hotbar1`, `OffHand`, `Helmet`),

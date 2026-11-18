@@ -4,7 +4,6 @@
 //! configured with RAM-only storage for instant chunk creation without disk I/O.
 
 use std::io::Cursor;
-use std::mem;
 use std::slice;
 use std::sync::{
     Arc,
@@ -270,7 +269,9 @@ impl SteelTestWorld {
 
 impl Drop for SteelTestWorld {
     fn drop(&mut self) {
-        mem::forget(Arc::clone(&self.world));
+        self.chunk_requests.lock().clear();
+        self.world.chunk_map.stop_generation_refill_loop();
+        self.world.chunk_map.cancel_token.cancel();
     }
 }
 
@@ -473,6 +474,27 @@ impl FlintWorld for SteelTestWorld {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_world_is_released_after_adapter_drop() {
+        crate::init();
+        let weak = {
+            let world = SteelTestWorld::new();
+            Arc::downgrade(&world.world)
+        };
+        assert!(weak.upgrade().is_none(), "test worlds must not be leaked");
+    }
+
+    #[test]
+    fn test_player_is_removed_from_world_on_adapter_drop() {
+        crate::init();
+        let mut world = SteelTestWorld::new();
+        let player = world.create_player();
+        let uuid = steel_core::player::offline_uuid("flintmc_testbot");
+        assert!(world.world.players.get_by_uuid(&uuid).is_some());
+        drop(player);
+        assert!(world.world.players.get_by_uuid(&uuid).is_none());
+    }
 
     #[test]
     fn test_player_is_registered_in_world_for_real_item_interactions() {

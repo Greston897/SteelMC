@@ -328,6 +328,12 @@ impl World {
         self.add_player(player, ResetReason::InitialJoin)
     }
 
+    /// Removes a test-framework player through the normal synchronous exit path.
+    #[cfg(feature = "test-framework")]
+    pub fn remove_test_player(self: &Arc<Self>, player: &Arc<Player>) {
+        self.remove_player_for_world_change(player);
+    }
+
     /// Adds a player to the world.
     ///
     /// On `InitialJoin`, sends full tab list + entity spawn synchronization to/from all
