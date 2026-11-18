@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: vanilla-evidence-${{ github.ref }}
+  group: vanilla-evidence-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
@@ -113,7 +113,7 @@ jobs:
           assert count >= 13, count
           print(f'Forcing compilation/execution of {count} formerly ignored doc examples')
           PYDOC
-              timeout --kill-after=30s 900s cargo test --release --workspace --doc -- --nocapture 2>&1 | tee /tmp/evidence.log
+              timeout --kill-after=30s 900s cargo test --release --workspace --doc --no-fail-fast -- --nocapture 2>&1 | tee /tmp/evidence.log
               ;;
             registry-sync-tags)
               cargo test --release -p steel-core --lib server::registry_cache::tests:: -- --nocapture 2>&1 | tee /tmp/evidence.log
