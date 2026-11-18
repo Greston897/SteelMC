@@ -222,3 +222,61 @@ pub fn build_compressed_packets(
 
     (compressed_packets, compressed_tags_packet)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn synchronized_registries_match_vanilla_order_and_known_pack_elision() {
+        let full = RegistryCache::build_registry_packets(&REGISTRY, true);
+        let elided = RegistryCache::build_registry_packets(&REGISTRY, false);
+        let expected = [
+            BIOMES_REGISTRY,
+            CHAT_TYPE_REGISTRY,
+            TRIM_PATTERN_REGISTRY,
+            TRIM_MATERIAL_REGISTRY,
+            WOLF_VARIANT_REGISTRY,
+            WOLF_SOUND_VARIANT_REGISTRY,
+            PIG_VARIANT_REGISTRY,
+            PIG_SOUND_VARIANT_REGISTRY,
+            FROG_VARIANT_REGISTRY,
+            CAT_VARIANT_REGISTRY,
+            CAT_SOUND_VARIANT_REGISTRY,
+            COW_SOUND_VARIANT_REGISTRY,
+            COW_VARIANT_REGISTRY,
+            CHICKEN_SOUND_VARIANT_REGISTRY,
+            CHICKEN_VARIANT_REGISTRY,
+            ZOMBIE_NAUTILUS_VARIANT_REGISTRY,
+            PAINTING_VARIANT_REGISTRY,
+            SULFUR_CUBE_ARCHETYPE_REGISTRY,
+            DIMENSION_TYPE_REGISTRY,
+            DAMAGE_TYPE_REGISTRY,
+            BANNER_PATTERN_REGISTRY,
+            ENCHANTMENT_REGISTRY,
+            JUKEBOX_SONG_REGISTRY,
+            INSTRUMENT_REGISTRY,
+            TEST_ENVIRONMENT_REGISTRY,
+            TEST_INSTANCE_REGISTRY,
+            DIALOG_REGISTRY,
+            WORLD_CLOCK_REGISTRY,
+            TIMELINE_REGISTRY,
+            DECORATED_POT_PATTERN_REGISTRY,
+            BLOCK_TRANSFORMER_REGISTRY,
+            BLOCK_STATE_PROVIDER_REGISTRY,
+        ];
+        assert_eq!(full.len(), expected.len());
+        assert_eq!(elided.len(), expected.len());
+        for ((full, elided), expected) in full.iter().zip(&elided).zip(&expected) {
+            assert_eq!(&full.registry, expected);
+            assert_eq!(full.registry, elided.registry);
+            assert_eq!(full.entries.len(), elided.entries.len());
+            assert!(!full.entries.is_empty(), "empty registry: {expected}");
+            for (full, elided) in full.entries.iter().zip(&elided.entries) {
+                assert_eq!(full.id, elided.id);
+                assert!(full.data.is_some(), "missing full data: {}", full.id);
+                assert!(elided.data.is_none(), "unelided entry: {}", elided.id);
+            }
+        }
+    }
+}
