@@ -231,11 +231,14 @@ mod tests {
         world.set_block(top, vanilla_blocks::HOPPER.default_state(), UpdateFlags::UPDATE_ALL);
         let entity = world.get_block_entity(top).unwrap();
         let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
-        hopper.container_ref().unwrap().lock().set_item(0, ItemStack::with_count(&vanilla_items::CAKE, 8));
+        // Cake is unstackable: Container::set_item correctly caps it at one.
+        // Refill between transfers rather than constructing an illegal stack.
         for expected in 1..=7 {
+            hopper.container_ref().unwrap().lock().set_item(0, ItemStack::new(&vanilla_items::CAKE));
             assert!(hopper.try_move_items(world, top));
             assert_eq!(level(world), expected);
         }
+        hopper.container_ref().unwrap().lock().set_item(0, ItemStack::new(&vanilla_items::CAKE));
         assert!(!hopper.try_move_items(world, top));
         assert_eq!(hopper.container_ref().unwrap().lock().get_item(0).count(), 1);
         let behavior = BLOCK_BEHAVIORS.get_behavior(&vanilla_blocks::COMPOSTER);
@@ -310,10 +313,10 @@ mod tests {
         let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
         let container = hopper.container_ref().unwrap();
         container.lock().set_item(0, ItemStack::with_count(&vanilla_items::STONE, 4));
-        container.lock().set_item(1, ItemStack::with_count(&vanilla_items::CAKE, 2));
+        container.lock().set_item(1, ItemStack::new(&vanilla_items::CAKE));
         assert!(hopper.try_move_items(world, top));
         assert_eq!(container.lock().get_item(0).count(), 4);
-        assert_eq!(container.lock().get_item(1).count(), 1);
+        assert!(container.lock().get_item(1).is_empty());
         assert_eq!(level(world), 1);
     }
 
