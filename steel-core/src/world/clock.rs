@@ -224,7 +224,7 @@ impl World {
     }
 
     /// Returns the total ticks of one clock in this world.
-    pub(crate) fn clock_total_ticks(&self, clock: WorldClockRef) -> Option<i64> {
+    pub fn clock_total_ticks(&self, clock: WorldClockRef) -> Option<i64> {
         self.level_data.read().world_clocks().total_ticks(clock)
     }
 

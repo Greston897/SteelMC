@@ -299,7 +299,11 @@ impl FlintWorld for SteelTestWorld {
     }
 
     fn get_time(&self) -> Result<u64, anyhow::Error> {
-        Ok(self.world.game_time() as u64)
+        // Flint asks for daytime, not the monotonic simulation/game-time counter.
+        // These diverge with /time set, advance_time=false and at day rollover.
+        let ticks = self.world.clock_total_ticks(&steel_registry::vanilla_world_clocks::OVERWORLD)
+            .ok_or_else(|| anyhow::anyhow!("Overworld clock is missing"))?;
+        Ok(daytime_from_ticks(ticks))
     }
 
     fn get_block(
@@ -471,9 +475,22 @@ impl FlintWorld for SteelTestWorld {
 }
 
 
+fn daytime_from_ticks(ticks: i64) -> u64 {
+    ticks.rem_euclid(24_000) as u64
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn daytime_wraps_at_midnight_and_normalizes_negative_clock_values() {
+        assert_eq!(daytime_from_ticks(0), 0);
+        assert_eq!(daytime_from_ticks(23_999), 23_999);
+        assert_eq!(daytime_from_ticks(24_000), 0);
+        assert_eq!(daytime_from_ticks(48_180), 180);
+        assert_eq!(daytime_from_ticks(-1), 23_999);
+    }
 
     #[test]
     fn test_world_is_released_after_adapter_drop() {
