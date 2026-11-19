@@ -62,7 +62,7 @@ fn command() -> Builder {
 }
 
 fn replace_block(context: &SteelCommandContext<CommandSource>, count: Option<i32>) -> Result<i32, CommandSyntaxError> {
-    let pos = context.block_pos("pos")?;
+    let pos = context.coordinates("pos")?.block_pos(context.source());
     let slot = context.string("slot")?.strip_prefix("container.")
         .and_then(|s| s.parse::<usize>().ok())
         .ok_or_else(|| CommandSyntaxError::dynamic("Unknown container slot"))?;

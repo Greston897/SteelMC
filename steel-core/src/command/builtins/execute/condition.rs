@@ -470,7 +470,7 @@ fn items_condition(expected: bool) -> Builder {
 }
 
 fn block_items_count(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
-    let pos = context.block_pos("pos")?;
+    let pos = context.coordinates("pos")?.block_pos(context.source());
     let entity = context.source().world().get_block_entity(pos)
         .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
     let container = crate::inventory::lock::ContainerRef::from_block_entity(entity)
