@@ -792,7 +792,7 @@ mod lifecycle_tests {
             .living_base()
             .equipment()
             .lock()
-            .get(crate::inventory::equipment::EquipmentSlot::Head)
+            .get_ref(crate::inventory::equipment::EquipmentSlot::Head)
             .clone();
         assert_eq!(
             banner
