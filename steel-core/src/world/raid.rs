@@ -502,6 +502,29 @@ pub(crate) fn ominous_banner() -> steel_registry::item_stack::ItemStack {
     banner
 }
 
+// Vanilla Pillager/Vindicator.applyRaidBuffs selects extracted providers by wave.
+fn raid_weapon(kind: usize, wave: i32, omen: i32, roll: f32) -> Option<steel_registry::item_stack::ItemStack> {
+    use steel_registry::{vanilla_items, vanilla_enchantment_providers as providers};
+    use steel_registry::data_components::vanilla_components::{ENCHANTMENTS, ItemEnchantments};
+    let odds = match omen { 1 => 0.1, 2 => 0.25, 3 => 0.5, 4 => 0.75, _ => 0.0 };
+    let (item, provider) = match kind {
+        0 => (&vanilla_items::IRON_AXE, Some(if wave > 5 { &*providers::RAID_VINDICATOR_POST_WAVE_5 } else { &*providers::RAID_VINDICATOR })),
+        2 => (&vanilla_items::CROSSBOW, if wave > 5 { Some(&*providers::RAID_PILLAGER_POST_WAVE_5) }
+            else if wave > 3 { Some(&*providers::RAID_PILLAGER_POST_WAVE_3) } else { None }),
+        _ => return None,
+    };
+    let mut stack = steel_registry::item_stack::ItemStack::new(item);
+    if roll <= odds && let Some(provider) = provider {
+        let mut rng = steel_utils::random::legacy_random::LegacyRandom::from_seed(rand::random());
+        let mut enchantments = ItemEnchantments::empty();
+        for (enchantment, level) in provider.sample(0.0, &mut rng) {
+            enchantments.set(enchantment.key.clone(), level as u32);
+        }
+        stack.set(ENCHANTMENTS, enchantments);
+    }
+    Some(stack)
+}
+
 fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
     let wave = raid.waves_spawned + 1;
     raid.total_health = 0;
@@ -539,15 +562,9 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
                     .as_living_entity()
                     .map_or(0, |living| living.get_health().ceil() as i32);
                 if let Some(living) = entity.as_living_entity() {
-                    if kind == 0 {
-                        living.with_equipment_slot_mut(
-                            crate::inventory::equipment::EquipmentSlot::MainHand,
-                            &mut |item| {
-                                *item = steel_registry::item_stack::ItemStack::new(
-                                    &steel_registry::vanilla_items::IRON_AXE,
-                                )
-                            },
-                        );
+                    if let Some(weapon) = raid_weapon(kind, wave, raid.omen_level, rand::random()) {
+                        living.with_equipment_slot_mut(crate::inventory::equipment::EquipmentSlot::MainHand,
+                            &mut |item| *item = weapon.clone());
                     }
                     if raid.leader.is_none() && kind <= 2 {
                         living.with_equipment_slot_mut(
@@ -587,6 +604,11 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
                     {
                         if let Some(mob) = rider.as_mob() {
                             mob.set_persistence_required();
+                        }
+                        if let Some(living) = rider.as_living_entity()
+                            && let Some(weapon) = raid_weapon(if entity_type == &vanilla_entities::VINDICATOR { 0 } else { 2 }, wave, raid.omen_level, rand::random()) {
+                            living.with_equipment_slot_mut(crate::inventory::equipment::EquipmentSlot::MainHand,
+                                &mut |item| *item = weapon.clone());
                         }
                         rider.start_riding(&entity);
                         raid.total_health += rider
@@ -1070,5 +1092,27 @@ mod village_and_unload_tests {
         assert_eq!(raid.raiders, vec![member]);
         assert_eq!(raid.waves_cleared, 0);
         assert!(!raid.is_victory());
+    }
+}
+
+#[cfg(test)]
+mod raid_enchantment_tests {
+    use super::*;
+    use steel_registry::{vanilla_enchantments, data_components::vanilla_components::ENCHANTMENTS};
+
+    #[test]
+    fn extracted_raid_weapon_providers_follow_wave_thresholds_and_omen_probability() {
+        steel_registry::init_vanilla_registry();
+        for (kind, wave, level) in [(0, 1, 1), (0, 5, 1), (0, 6, 2), (2, 3, 0), (2, 4, 1), (2, 5, 1), (2, 6, 2)] {
+            let weapon = raid_weapon(kind, wave, 4, 0.1).unwrap();
+            let enchantment = if kind == 0 { &vanilla_enchantments::SHARPNESS } else { &vanilla_enchantments::QUICK_CHARGE };
+            assert_eq!(weapon.get(ENCHANTMENTS).map_or(0, |value| value.get_level(&enchantment.key)), level);
+            let plain = raid_weapon(kind, wave, 0, 0.1).unwrap();
+            assert_eq!(plain.get(ENCHANTMENTS).map_or(0, |value| value.get_level(&enchantment.key)), 0);
+        }
+        for (omen, odds) in [(1, 0.1_f32), (2, 0.25), (3, 0.5), (4, 0.75)] {
+            assert_eq!(raid_weapon(0, 6, omen, odds).unwrap().get(ENCHANTMENTS).unwrap().get_level(&vanilla_enchantments::SHARPNESS.key), 2);
+            assert_eq!(raid_weapon(0, 6, omen, odds + 0.01).unwrap().get(ENCHANTMENTS).map_or(0, |value| value.get_level(&vanilla_enchantments::SHARPNESS.key)), 0);
+        }
     }
 }
