@@ -1,6 +1,6 @@
 //! Persistent, entity-driven raid waves. Wave progress is never inferred from elapsed time.
 
-use std::sync::Arc;
+use std::{sync::Arc, collections::BTreeMap};
 
 use glam::IVec3;
 use steel_utils::locks::SyncMutex;
@@ -38,6 +38,8 @@ pub enum RaidStatus {
 #[serde(default)]
 pub struct Raid {
     pub center: IVec3,
+    pub uuid: Uuid,
+    pub total_health: i32,
     /// Zero-based omen amplifier, retained for compatibility with older saves.
     pub omen_level: i32,
     pub ticks_active: i32,
@@ -55,7 +57,7 @@ pub struct Raid {
 impl Default for Raid {
     fn default() -> Self {
         Self {
-            center: IVec3::ZERO, omen_level: 0, ticks_active: 0,
+            center: IVec3::ZERO, uuid: Uuid::new_v4(), total_health: 0, omen_level: 0, ticks_active: 0,
             waves_cleared: 0, waves_spawned: 0, num_groups: 5,
             cooldown: PRE_WAVE_TICKS, post_raid_ticks: 0, celebration_ticks: 0,
             status: RaidStatus::Ongoing, raiders: Vec::new(), heroes: Vec::new(),
@@ -120,6 +122,7 @@ pub(crate) struct RaidSavedData {
 #[derive(Debug, Default)]
 pub struct RaidManager {
     raids: SyncMutex<Vec<Raid>>,
+    viewers: SyncMutex<BTreeMap<Uuid, Vec<Uuid>>>,
 }
 
 impl RaidManager {
@@ -134,6 +137,7 @@ impl RaidManager {
     pub const fn from_raids(raids: Vec<Raid>) -> Self {
         Self {
             raids: SyncMutex::new(raids),
+            viewers: SyncMutex::new(BTreeMap::new()),
         }
     }
 
@@ -236,7 +240,18 @@ impl RaidManager {
                 let delta = pos.as_i64vec3() - raid.center.as_i64vec3();
                 !entity.is_removed() && delta.length_squared() < 12_544
             });
-            if !raid.raiders.is_empty() { return true; }
+            if !raid.raiders.is_empty() {
+                if raid.ticks_active % 20 == 0 {
+                    for id in &raid.raiders {
+                        if let Some(entity) = world.get_entity_by_uuid(id)
+                            && let Some(mob) = entity.as_pathfinder_mob()
+                            && mob.target().is_none() {
+                            mob.move_to_pos(raid.center.as_dvec3(), 1.0);
+                        }
+                    }
+                }
+                return true;
+            }
             if raid.waves_spawned > raid.waves_cleared {
                 raid.waves_cleared = raid.waves_spawned;
                 raid.cooldown = PRE_WAVE_TICKS;
@@ -259,11 +274,54 @@ impl RaidManager {
             true
         });
         for raid in victories { Self::award_hero_of_the_village(world, &raid); }
+        self.sync_boss_bars(world);
+    }
+
+    fn sync_boss_bars(&self, world: &Arc<World>) {
+        use steel_protocol::packets::game::{CBossEvent, BossBarColor, BossBarOverlay};
+        use text_components::{TextComponent, translation::TranslatedMessage};
+        let raids = self.raids();
+        let mut viewers = self.viewers.lock();
+        viewers.retain(|uuid, shown| {
+            if raids.iter().any(|raid| raid.uuid == *uuid) { return true; }
+            for player in shown.iter().filter_map(|id| world.players.get_by_uuid(id)) {
+                player.send_packet(CBossEvent::remove(*uuid));
+            }
+            false
+        });
+        for raid in &raids {
+            let shown = viewers.entry(raid.uuid).or_default();
+            shown.retain(|id| {
+                let Some(player) = world.players.get_by_uuid(id) else { return false; };
+                if within_village_radius(raid.center, player.block_position().0) { return true; }
+                player.send_packet(CBossEvent::remove(raid.uuid));
+                false
+            });
+            let health: f32 = raid.raiders.iter().filter_map(|id| world.get_entity_by_uuid(id))
+                .filter_map(|entity| entity.as_living_entity().map(|living| living.get_health().max(0.0))).sum();
+            let progress = if raid.raiders.is_empty() && raid.status == RaidStatus::Ongoing {
+                1.0 - raid.cooldown as f32 / PRE_WAVE_TICKS as f32
+            } else if raid.total_health > 0 { health / raid.total_health as f32 } else { 0.0 };
+            let key = match raid.status { RaidStatus::Ongoing => "event.minecraft.raid",
+                RaidStatus::Victory => "event.minecraft.raid.victory", RaidStatus::Loss => "event.minecraft.raid.defeat" };
+            let name = TextComponent::translated(TranslatedMessage { key: key.into(), fallback: None, args: None });
+            world.players.iter_players(|id, player| {
+                if !within_village_radius(raid.center, player.block_position().0) { return true; }
+                if !shown.contains(id) {
+                    player.send_packet(CBossEvent::add(raid.uuid, name.clone(), progress.clamp(0.0, 1.0), BossBarColor::Red, BossBarOverlay::Progress, 0));
+                    shown.push(*id);
+                } else if raid.ticks_active % 20 == 0 || raid.status != RaidStatus::Ongoing {
+                    player.send_packet(CBossEvent::update_progress(raid.uuid, progress.clamp(0.0, 1.0)));
+                    player.send_packet(CBossEvent::update_name(raid.uuid, name.clone()));
+                }
+                true
+            });
+        }
     }
 
     fn award_hero_of_the_village(world: &Arc<World>, raid: &Raid) {
         world.players.iter_players(|uuid, player| {
-            if !raid.heroes.contains(uuid) || !player.is_alive() || player.is_spectator() {
+            if !raid.heroes.contains(uuid) || !crate::entity::Entity::is_alive(player.as_ref()) || player.is_spectator() {
                 return true;
             }
             player.add_mob_effect(MobEffectInstance::with_duration(
@@ -304,6 +362,7 @@ fn find_spawn_pos(world: &Arc<World>, center: IVec3) -> Option<BlockPos> {
 
 fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
     let wave = raid.waves_spawned + 1;
+    raid.total_health = 0;
     let bonus = wave > raid.num_groups;
     let index = if bonus { raid.num_groups } else { wave }.clamp(0, 7) as usize;
     let types = [vanilla_entities::VINDICATOR, vanilla_entities::EVOKER,
@@ -320,6 +379,7 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
             };
             if let Ok(entity) = spawn_entity(world, request) {
                 if let Some(mob) = entity.as_mob() { mob.set_persistence_required(); }
+                raid.total_health += entity.as_living_entity().map_or(0, |living| living.get_health().ceil() as i32);
                 raid.raiders.push(entity.uuid());
                 if kind == 4 {
                     let rider = if wave == 5 { Some(vanilla_entities::PILLAGER) }
@@ -329,6 +389,7 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
                         && let Ok(rider) = spawn_entity(world, EntitySpawnRequest { entity_type, ..request }) {
                         if let Some(mob) = rider.as_mob() { mob.set_persistence_required(); }
                         rider.start_riding(&entity);
+                        raid.total_health += rider.as_living_entity().map_or(0, |living| living.get_health().ceil() as i32);
                         raid.raiders.push(rider.uuid());
                     }
                 }
@@ -341,9 +402,10 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
 
 /// Vanilla `Raid.isVillage` distance rule: the same radius village detection uses.
 const fn within_village_radius(center: IVec3, pos: IVec3) -> bool {
-    let dx = (center.x - pos.x).abs();
-    let dz = (center.z - pos.z).abs();
-    dx <= VILLAGE_SCAN_RADIUS && dz <= VILLAGE_SCAN_RADIUS
+    let dx = center.x as i64 - pos.x as i64;
+    let dy = center.y as i64 - pos.y as i64;
+    let dz = center.z as i64 - pos.z as i64;
+    dx * dx + dy * dy + dz * dz < 9_216
 }
 
 /// An occupied village POI, not an unclaimed bell, establishes a village.
