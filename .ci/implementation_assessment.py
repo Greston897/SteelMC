@@ -5,8 +5,23 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
+def validate_updates(data):
+    """Only confirmed, source-backed runs belong in the verified ledger."""
+    seen = set()
+    for update in data.get('verified_updates', []):
+        assert update['result'] == 'success'
+        assert isinstance(update['run'], int) and update['run'] > 0
+        assert update['run'] not in seen
+        seen.add(update['run'])
+        assert 7 <= len(update['commit']) <= 40
+        assert all(c in '0123456789abcdef' for c in update['commit'])
+        assert update['limit'] and update['sources']
+        for source in update['sources']:
+            assert (ROOT / source).exists(), source
+
 def main():
     data = json.loads((ROOT / '.ci/implementation_assessment.json').read_text())
+    validate_updates(data)
     print('# Реализация всего ядра — укрупнённая инженерная оценка\n')
     print('Это **оценка по коду, не процент vanilla-паритета и не доля прошедших тестов**. '
           'Охвачены все 15 основных подсистем, но только 60 явно перечисленных возможностей. '
@@ -40,6 +55,15 @@ def main():
         for c in area['criteria']:
             print(f"- **{c['score']:g}** — {c['capability']}: `{c['source']}`.")
         print()
+    print('## Подтверждённые дополнения после исходного аудита\n')
+    print('Дополнения включены в основания оценки, но не повышают баллы широких '
+          'критериев «все механизмы»: непроверенные ветви остаются. '
+          'Success ниже относится к конкретному SHA и workflow, не к текущему HEAD автоматически.\n')
+    for update in data.get('verified_updates', []):
+        print(f"- **{update['area']} — {update['capability']}**: `{update['commit']}`, "
+              f"[{update['workflow']} {update['run']}](https://github.com/Greston897/SteelMC/actions/runs/{update['run']}) — success.")
+        print('  Источники: ' + ', '.join(f'`{s}`' for s in update['sources']) + '.')
+        print(f"  Граница проверки: {update['limit']}\n")
     print('## Открытые ошибки отдельно от оценки\n\n'
           '- Overworld FEATURES: известное расхождение хешей не исправлено.\n'
           '- Полный Flint остаётся красным; исправление отдельных механик не закрывает весь набор.\n'

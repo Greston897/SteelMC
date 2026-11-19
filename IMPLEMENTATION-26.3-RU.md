@@ -132,6 +132,34 @@
 - **1** — Разблокировка рецептов: `steel-core/src/inventory/recipe_manager.rs`.
 - **0.5** — Все сложные цепочки прогрессии и торговли: `steel-core/src/entity/entities/mobs`.
 
+## Подтверждённые дополнения после исходного аудита
+
+Дополнения включены в основания оценки, но не повышают баллы широких критериев «все механизмы»: непроверенные ветви остаются. Success ниже относится к конкретному SHA и workflow, не к текущему HEAD автоматически.
+
+- **Block entities / инвентарь — Hopper insert/extract для jukebox**: `2c2b5b1`, [Test 44436804867](https://github.com/Greston897/SteelMC/actions/runs/44436804867) — success.
+  Источники: `steel-core/src/block_entity/entities/jukebox.rs`, `steel-core/src/block_entity/entities/hopper.rs`.
+  Граница проверки: Не универсальный ContainerRef для jukebox; не означает полный Flint PASS.
+
+- **Блоки / redstone — Обновление ENABLED воронки при изменении питания и проверка тика с играющим jukebox**: `4062196`, [Test 44437496005](https://github.com/Greston897/SteelMC/actions/runs/44437496005) — success.
+  Источники: `steel-core/src/behavior/blocks/container/block_entity_blocks.rs`, `steel-core/src/behavior/blocks/container/block_entity_blocks_tests.rs`.
+  Граница проверки: Проверенный путь питания, не все redstone-механизмы.
+
+- **Блоки / предметы / игрок — Котлы: вёдра, бутылки, зелья и сохранение содержимого при стирке шалкера**: `93de792`, [Test 44502831719](https://github.com/Greston897/SteelMC/actions/runs/44502831719) — success.
+  Источники: `steel-core/src/behavior/blocks/building/cauldron_block.rs`, `steel-core/src/player/game_mode/item_interaction/use_on_tests.rs`.
+  Граница проверки: Не полная проверка entity-inside/dripstone взаимодействий.
+
+- **Блоки / предметы / компоненты — Стирка окрашенной экипировки и последнего слоя знамени**: `54e249f`, [Test 44505745626](https://github.com/Greston897/SteelMC/actions/runs/44505745626) — success.
+  Источники: `steel-core/src/behavior/blocks/building/cauldron_block.rs`, `steel-core/src/player/game_mode/item_interaction/use_on_tests.rs`.
+  Граница проверки: Полный cargo test зелёный; живой сервер и vanilla parity этим не доказаны.
+
+- **Мир / тики / чанки — Отдельный проход осадков и заполнение совместимых котлов**: `67f8367`, [Test 44506561386](https://github.com/Greston897/SteelMC/actions/runs/44506561386) — success.
+  Источники: `steel-core/src/world/weather.rs`, `steel-core/src/world/tests.rs`, `steel-core/src/chunk/chunk_map/mod.rs`.
+  Граница проверки: Не реализует замерзание воды; полное соответствие осадков не установлено.
+
+- **Block entities / инвентарь / redstone / игрок — Фактический пересчёт открытых меню; lifecycle бочки и обеих половин сундука; сигнал сундука-ловушки**: `acf741d`, [Test 44509839280](https://github.com/Greston897/SteelMC/actions/runs/44509839280) — success.
+  Источники: `steel-core/src/inventory/openers_counter.rs`, `steel-core/src/inventory/menu/kinds/chest_menu.rs`, `steel-core/src/behavior/blocks/container/chest_block.rs`, `steel-core/src/behavior/blocks/container/barrel_block.rs`, `steel-core/src/player/player_inventory/mod.rs`.
+  Граница проверки: Пять новых интеграционных тестов: lifecycle двух игроков, устаревший счётчик через world tick, две половины/дистанция/spectator, замена block entity, 16 уровней сигнала с соседней воронкой. CONTAINER_OPEN/CLOSE game events и непользовательские ContainerUser не покрыты этой реализацией; полная vanilla-эквивалентность не заявляется.
+
 ## Открытые ошибки отдельно от оценки
 
 - Overworld FEATURES: известное расхождение хешей не исправлено.
