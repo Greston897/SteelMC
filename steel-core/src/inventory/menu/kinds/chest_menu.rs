@@ -193,6 +193,11 @@ fn change_openers(container: &ContainerRef, player: &Player, opening: bool) {
     let Some(block_entity) = world.get_block_entity(pos) else {
         return;
     };
+    // A menu may outlive block replacement at the same position. Never alter
+    // the new block entity's count when closing the old inventory's menu.
+    if !block_entity.container_ref().is_some_and(|current| current.container_id() == container.container_id()) {
+        return;
+    }
     let counter = if let Some(chest) = block_entity.downcast_ref::<ChestBlockEntity>() {
         chest.openers_counter()
     } else if let Some(barrel) = block_entity.downcast_ref::<BarrelBlockEntity>() {

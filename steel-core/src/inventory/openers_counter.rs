@@ -264,6 +264,28 @@ mod integration_tests {
     }
 
     #[test]
+    fn closing_old_menu_does_not_decrement_replacement_container() {
+        init_globals();
+        let fixture = fresh_test_world("barrel_replaced_viewer_identity");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        world.set_block(POS, vanilla_blocks::BARREL.default_state(), UpdateFlags::UPDATE_ALL);
+        let player = TestPlayerBuilder::new(Arc::clone(world), "OldViewer", 1).build();
+        player.base().set_position_local(DVec3::new(8.5, 64.0, 7.5));
+        let old = world.get_block_entity(POS).unwrap().container_ref().unwrap();
+        let inventory = Arc::clone(&player.inventory);
+        player.open_menu(TextComponent::plain("Old barrel"), move |ctx| chest(inventory, ctx.container_id, old, 3));
+        world.set_block(POS, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(POS, vanilla_blocks::BARREL.default_state(), UpdateFlags::UPDATE_ALL);
+        let replacement = world.get_block_entity(POS).unwrap();
+        let counter = replacement.downcast_ref::<BarrelBlockEntity>().unwrap().openers_counter();
+        counter.increment_openers(world, POS, world.get_block_state(POS), &vanilla_blocks::BARREL);
+        player.close_container();
+        assert_eq!(counter.openers(), 1);
+        assert!(world.get_block_state(POS).get_value(&BlockStateProperties::OPEN));
+    }
+
+    #[test]
     fn scheduled_recheck_clears_stale_barrel_opener_without_menu() {
         init_globals();
         let fixture = fresh_test_world("barrel_stale_recheck");
