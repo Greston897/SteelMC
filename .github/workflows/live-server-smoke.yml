@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: live-server-smoke-${{ github.ref }}
-  cancel-in-progress: true
+  group: live-server-smoke-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   live-server:
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
         with:
-          shared-key: live-server-smoke
+          shared-key: vanilla-evidence-optimized-no-lto
       - name: Check wire harness and readiness accounting
         env:
           PYTHONDONTWRITEBYTECODE: '1'
@@ -36,6 +36,24 @@ jobs:
             --binary target/evidence/steel \
             --workdir "$RUNNER_TEMP/live-server-world" \
             --output "$RUNNER_TEMP/live-server-evidence"
+      - name: Surface runtime failures
+        if: failure()
+        run: |
+          python3 - <<'PYERROR'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'live-server-evidence'
+          path = root / 'results.json'
+          def annotate(text):
+              text = text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print('::error title=Real server smoke::' + text)
+          if path.exists():
+              for result in json.loads(path.read_text())['results']:
+                  if not result['passed']:
+                      annotate(result['name'] + ': ' + result.get('error', 'failed'))
+          for log in root.glob('server-*.log'):
+              annotate(log.name + '\n' + '\n'.join(log.read_text(errors='replace').splitlines()[-35:]))
+          PYERROR
       - name: Publish runtime evidence
         if: always()
         uses: actions/upload-artifact@v4
