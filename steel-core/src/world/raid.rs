@@ -1,6 +1,6 @@
 //! Persistent, entity-driven raid waves. Wave progress is never inferred from elapsed time.
 
-use std::{sync::Arc, collections::BTreeMap};
+use std::{collections::BTreeMap, sync::Arc};
 
 use glam::IVec3;
 use steel_utils::locks::SyncMutex;
@@ -8,15 +8,17 @@ use steel_utils::{BlockPos, types::Difficulty};
 use uuid::Uuid;
 
 use serde::{Deserialize, Serialize};
-use steel_registry::{vanilla_mob_effects, vanilla_entities, RegistryExt as _, TaggedRegistryExt as _};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::{
+    RegistryExt as _, TaggedRegistryExt as _, vanilla_entities, vanilla_mob_effects,
+};
 
-use crate::entity::{Entity as _, LivingEntity as _, MobEffectInstance};
+use crate::chunk::heightmap::HeightmapType;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
 use crate::entity::spawn_entity;
-use crate::chunk::heightmap::HeightmapType;
+use crate::entity::{Entity as _, LivingEntity as _, MobEffectInstance};
 use crate::poi::OccupationStatus;
-use crate::world::{World, LevelReader};
+use crate::world::{LevelReader, World};
 
 /// Maximum zero-based effect amplifier; the raid's internal level is amplifier + 1.
 pub const MAX_OMEN_LEVEL: i32 = 4;
@@ -57,10 +59,20 @@ pub struct Raid {
 impl Default for Raid {
     fn default() -> Self {
         Self {
-            center: IVec3::ZERO, uuid: Uuid::new_v4(), total_health: 0, omen_level: 0, ticks_active: 0,
-            waves_cleared: 0, waves_spawned: 0, num_groups: 5,
-            cooldown: PRE_WAVE_TICKS, post_raid_ticks: 0, celebration_ticks: 0,
-            status: RaidStatus::Ongoing, raiders: Vec::new(), heroes: Vec::new(),
+            center: IVec3::ZERO,
+            uuid: Uuid::new_v4(),
+            total_health: 0,
+            omen_level: 0,
+            ticks_active: 0,
+            waves_cleared: 0,
+            waves_spawned: 0,
+            num_groups: 5,
+            cooldown: PRE_WAVE_TICKS,
+            post_raid_ticks: 0,
+            celebration_ticks: 0,
+            status: RaidStatus::Ongoing,
+            raiders: Vec::new(),
+            heroes: Vec::new(),
         }
     }
 }
@@ -200,10 +212,14 @@ impl RaidManager {
     /// the manager. Only actual kills earn hero credit; unloading never does.
     pub fn raider_died(&self, raider: Uuid, killer: Option<Uuid>) {
         for raid in self.raids.lock().iter_mut() {
-            if raid.status != RaidStatus::Ongoing { continue; }
+            if raid.status != RaidStatus::Ongoing {
+                continue;
+            }
             if let Some(index) = raid.raiders.iter().position(|id| *id == raider) {
                 raid.raiders.swap_remove(index);
-                if let Some(killer) = killer && !raid.heroes.contains(&killer) {
+                if let Some(killer) = killer
+                    && !raid.heroes.contains(&killer)
+                {
                     raid.heroes.push(killer);
                 }
             }
@@ -216,8 +232,15 @@ impl RaidManager {
         let mut victories = Vec::new();
         self.raids.lock().retain_mut(|raid| {
             if !world.get_game_rule(&steel_registry::vanilla_game_rules::RAIDS)
-                || world.difficulty() == Difficulty::Peaceful { return false; }
-            if world.as_ref().height_at(HeightmapType::WorldSurface, raid.center.x, raid.center.z).is_none() {
+                || world.difficulty() == Difficulty::Peaceful
+            {
+                return false;
+            }
+            if world
+                .as_ref()
+                .height_at(HeightmapType::WorldSurface, raid.center.x, raid.center.z)
+                .is_none()
+            {
                 return true;
             }
             if raid.status != RaidStatus::Ongoing {
@@ -225,17 +248,25 @@ impl RaidManager {
                 return raid.celebration_ticks < 600;
             }
             raid.ticks_active += 1;
-            if raid.ticks_active >= RAID_TIMEOUT_TICKS { return false; }
+            if raid.ticks_active >= RAID_TIMEOUT_TICKS {
+                return false;
+            }
             if !is_village(world, raid.center) {
-                if raid.waves_spawned == 0 { return false; }
+                if raid.waves_spawned == 0 {
+                    return false;
+                }
                 raid.status = RaidStatus::Loss;
                 return true;
             }
-            if raid.waves_spawned == 0 { raid.num_groups = difficulty_groups(world.difficulty()); }
+            if raid.waves_spawned == 0 {
+                raid.num_groups = difficulty_groups(world.difficulty());
+            }
             // Keep missing UUIDs: a member may be in an unloaded chunk. Deaths
             // are removed by raider_died, not by failure of an entity lookup.
             raid.raiders.retain(|id| {
-                let Some(entity) = world.get_entity_by_uuid(id) else { return true; };
+                let Some(entity) = world.get_entity_by_uuid(id) else {
+                    return true;
+                };
                 let pos = entity.block_position().0;
                 let delta = pos.as_i64vec3() - raid.center.as_i64vec3();
                 !entity.is_removed() && delta.length_squared() < 12_544
@@ -245,7 +276,8 @@ impl RaidManager {
                     for id in &raid.raiders {
                         if let Some(entity) = world.get_entity_by_uuid(id)
                             && let Some(mob) = entity.as_pathfinder_mob()
-                            && mob.target().is_none() {
+                            && mob.target().is_none()
+                        {
                             mob.move_to_pos(raid.center.as_dvec3(), 1.0);
                         }
                     }
@@ -264,7 +296,10 @@ impl RaidManager {
                 }
                 return true;
             }
-            if raid.cooldown > 0 { raid.cooldown -= 1; return true; }
+            if raid.cooldown > 0 {
+                raid.cooldown -= 1;
+                return true;
+            }
             if let Some(pos) = find_spawn_pos(world, raid.center) {
                 spawn_wave(world, raid, pos);
             } else {
@@ -273,17 +308,21 @@ impl RaidManager {
             }
             true
         });
-        for raid in victories { Self::award_hero_of_the_village(world, &raid); }
+        for raid in victories {
+            Self::award_hero_of_the_village(world, &raid);
+        }
         self.sync_boss_bars(world);
     }
 
     fn sync_boss_bars(&self, world: &Arc<World>) {
-        use steel_protocol::packets::game::{CBossEvent, BossBarColor, BossBarOverlay};
+        use steel_protocol::packets::game::{BossBarColor, BossBarOverlay, CBossEvent};
         use text_components::{TextComponent, translation::TranslatedMessage};
         let raids = self.raids();
         let mut viewers = self.viewers.lock();
         viewers.retain(|uuid, shown| {
-            if raids.iter().any(|raid| raid.uuid == *uuid) { return true; }
+            if raids.iter().any(|raid| raid.uuid == *uuid) {
+                return true;
+            }
             for player in shown.iter().filter_map(|id| world.players.get_by_uuid(id)) {
                 player.send_packet(CBossEvent::remove(*uuid));
             }
@@ -292,26 +331,61 @@ impl RaidManager {
         for raid in &raids {
             let shown = viewers.entry(raid.uuid).or_default();
             shown.retain(|id| {
-                let Some(player) = world.players.get_by_uuid(id) else { return false; };
-                if within_village_radius(raid.center, player.block_position().0) { return true; }
+                let Some(player) = world.players.get_by_uuid(id) else {
+                    return false;
+                };
+                if within_village_radius(raid.center, player.block_position().0) {
+                    return true;
+                }
                 player.send_packet(CBossEvent::remove(raid.uuid));
                 false
             });
-            let health: f32 = raid.raiders.iter().filter_map(|id| world.get_entity_by_uuid(id))
-                .filter_map(|entity| entity.as_living_entity().map(|living| living.get_health().max(0.0))).sum();
+            let health: f32 = raid
+                .raiders
+                .iter()
+                .filter_map(|id| world.get_entity_by_uuid(id))
+                .filter_map(|entity| {
+                    entity
+                        .as_living_entity()
+                        .map(|living| living.get_health().max(0.0))
+                })
+                .sum();
             let progress = if raid.raiders.is_empty() && raid.status == RaidStatus::Ongoing {
                 1.0 - raid.cooldown as f32 / PRE_WAVE_TICKS as f32
-            } else if raid.total_health > 0 { health / raid.total_health as f32 } else { 0.0 };
-            let key = match raid.status { RaidStatus::Ongoing => "event.minecraft.raid",
-                RaidStatus::Victory => "event.minecraft.raid.victory", RaidStatus::Loss => "event.minecraft.raid.defeat" };
-            let name = TextComponent::translated(TranslatedMessage { key: key.into(), fallback: None, args: None });
+            } else if raid.total_health > 0 {
+                health / raid.total_health as f32
+            } else {
+                0.0
+            };
+            let key = match raid.status {
+                RaidStatus::Ongoing => "event.minecraft.raid",
+                RaidStatus::Victory => "event.minecraft.raid.victory",
+                RaidStatus::Loss => "event.minecraft.raid.defeat",
+            };
+            let name = TextComponent::translated(TranslatedMessage {
+                key: key.into(),
+                fallback: None,
+                args: None,
+            });
             world.players.iter_players(|id, player| {
-                if !within_village_radius(raid.center, player.block_position().0) { return true; }
+                if !within_village_radius(raid.center, player.block_position().0) {
+                    return true;
+                }
                 if !shown.contains(id) {
-                    player.send_packet(CBossEvent::add(raid.uuid, name.clone(), progress.clamp(0.0, 1.0), BossBarColor::Red, BossBarOverlay::Progress, 0));
+                    player.send_packet(CBossEvent::add(
+                        raid.uuid,
+                        name.clone(),
+                        progress.clamp(0.0, 1.0),
+                        BossBarColor::Red,
+                        BossBarOverlay::Progress,
+                        0,
+                    ));
                     shown.push(*id);
                 } else if raid.ticks_active % 20 == 0 || raid.status != RaidStatus::Ongoing {
-                    player.send_packet(CBossEvent::update_progress(raid.uuid, progress.clamp(0.0, 1.0)));
+                    player.send_packet(CBossEvent::update_progress(
+                        raid.uuid,
+                        progress.clamp(0.0, 1.0),
+                    ));
                     player.send_packet(CBossEvent::update_name(raid.uuid, name.clone()));
                 }
                 true
@@ -321,22 +395,27 @@ impl RaidManager {
 
     fn award_hero_of_the_village(world: &Arc<World>, raid: &Raid) {
         world.players.iter_players(|uuid, player| {
-            if !raid.heroes.contains(uuid) || !crate::entity::Entity::is_alive(player.as_ref()) || player.is_spectator() {
+            if !raid.heroes.contains(uuid)
+                || !crate::entity::Entity::is_alive(player.as_ref())
+                || player.is_spectator()
+            {
                 return true;
             }
             player.add_mob_effect(MobEffectInstance::with_duration(
-                vanilla_mob_effects::HERO_OF_THE_VILLAGE, 48_000, raid.omen_level,
+                vanilla_mob_effects::HERO_OF_THE_VILLAGE,
+                48_000,
+                raid.omen_level,
             ));
             player.trigger_advancement_with_context(
                 &steel_registry::vanilla_criteria_triggers::HERO_OF_THE_VILLAGE,
                 &crate::player::advancement::predicate::TriggerContext::at(
-                    &player.get_world(), player.position(),
+                    &player.get_world(),
+                    player.position(),
                 ),
             );
             true
         });
     }
-
 }
 
 /// Searches loaded surface terrain; never creates a wave in missing chunks.
@@ -347,13 +426,20 @@ fn find_spawn_pos(world: &Arc<World>, center: IVec3) -> Option<BlockPos> {
             let angle = angle + f64::from(attempt) * std::f64::consts::PI / 8.0;
             let x = center.x + (angle.cos() * radius).floor() as i32;
             let z = center.z + (angle.sin() * radius).floor() as i32;
-            let Some(y) = world.as_ref().height_at(HeightmapType::WorldSurface, x, z) else { continue; };
-            if (y - center.y).abs() > 96 { continue; }
+            let Some(y) = world.as_ref().height_at(HeightmapType::WorldSurface, x, z) else {
+                continue;
+            };
+            if (y - center.y).abs() > 96 {
+                continue;
+            }
             let pos = BlockPos::new(x, y, z);
             if !world.get_block_state(BlockPos::new(x, y - 1, z)).is_solid()
                 || !world.get_block_state(pos).is_air()
                 || !world.get_block_state(BlockPos::new(x, y + 1, z)).is_air()
-                || !world.get_block_state(BlockPos::new(x, y + 2, z)).is_air() { continue; }
+                || !world.get_block_state(BlockPos::new(x, y + 2, z)).is_air()
+            {
+                continue;
+            }
             return Some(pos);
         }
     }

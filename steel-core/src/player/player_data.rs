@@ -570,7 +570,9 @@ impl PersistentPlayerData {
         player.set_score(self.score);
         player.set_seen_credits(self.seen_credits);
         player.replace_post_effects(self.post_effects.clone());
-        *player.raid_omen_position.lock() = self.raid_omen_position.map(|pos| steel_utils::BlockPos(glam::IVec3::from_array(pos)));
+        *player.raid_omen_position.lock() = self
+            .raid_omen_position
+            .map(|pos| steel_utils::BlockPos(glam::IVec3::from_array(pos)));
 
         // Statistics
         {

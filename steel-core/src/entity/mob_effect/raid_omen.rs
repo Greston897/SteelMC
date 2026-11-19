@@ -23,7 +23,9 @@ impl MobEffectBehavior for RaidOmenBehavior {
             return true;
         }
 
-        let Some(pos) = player.raid_omen_position.lock().take() else { return true; };
+        let Some(pos) = player.raid_omen_position.lock().take() else {
+            return true;
+        };
         if !world.get_game_rule(&steel_registry::vanilla_game_rules::RAIDS) {
             return false;
         }
@@ -32,7 +34,8 @@ impl MobEffectBehavior for RaidOmenBehavior {
         player.trigger_advancement_with_context(
             &steel_registry::vanilla_criteria_triggers::VOLUNTARY_EXILE,
             &crate::player::advancement::predicate::TriggerContext::at(
-                &player.get_world(), player.position(),
+                &player.get_world(),
+                player.position(),
             ),
         );
         false
@@ -45,9 +48,9 @@ mod tests {
     use crate::entity::mob_effect::{BadOmenBehavior, MobEffectBehavior};
     use crate::entity::{MobEffectInstance, next_entity_id};
     use crate::test_support::{TestPlayerBuilder, fresh_test_world};
-    use steel_registry::{vanilla_mob_effects, REGISTRY};
-    use steel_utils::BlockPos;
     use std::sync::Arc;
+    use steel_registry::{REGISTRY, vanilla_mob_effects};
+    use steel_utils::BlockPos;
 
     #[test]
     fn bad_omen_converts_once_and_raid_uses_captured_not_current_position() {
@@ -56,19 +59,35 @@ mod tests {
         let fixture = fresh_test_world("omen_origin");
         let world = &fixture.world;
         let origin = BlockPos::new(4, 64, 4);
-        let home = REGISTRY.poi_types.iter().find(|(_, poi)| poi.key.path.as_ref() == "home").unwrap().0;
+        let home = REGISTRY
+            .poi_types
+            .iter()
+            .find(|(_, poi)| poi.key.path.as_ref() == "home")
+            .unwrap()
+            .0;
         world.poi_storage.lock().add(origin, home, 1);
         assert!(world.poi_storage.lock().reserve_ticket(origin));
-        let player = TestPlayerBuilder::new(Arc::clone(world), "RaidTest", next_entity_id()).build();
-        player.try_set_position(glam::DVec3::new(4.0, 64.0, 4.0)).unwrap();
-        player.add_mob_effect(MobEffectInstance::with_duration(vanilla_mob_effects::BAD_OMEN, 12_000, 2));
+        let player =
+            TestPlayerBuilder::new(Arc::clone(world), "RaidTest", next_entity_id()).build();
+        player
+            .try_set_position(glam::DVec3::new(4.0, 64.0, 4.0))
+            .unwrap();
+        player.add_mob_effect(MobEffectInstance::with_duration(
+            vanilla_mob_effects::BAD_OMEN,
+            12_000,
+            2,
+        ));
         player.tick_mob_effects();
         assert!(!player.has_mob_effect(vanilla_mob_effects::BAD_OMEN));
         assert!(player.has_mob_effect(vanilla_mob_effects::RAID_OMEN));
         assert!(world.raids.raids().is_empty());
         assert_eq!(*player.raid_omen_position.lock(), Some(origin));
-        player.try_set_position(glam::DVec3::new(1_000.0, 70.0, 1_000.0)).unwrap();
-        for _ in 0..599 { player.tick_mob_effects(); }
+        player
+            .try_set_position(glam::DVec3::new(1_000.0, 70.0, 1_000.0))
+            .unwrap();
+        for _ in 0..599 {
+            player.tick_mob_effects();
+        }
         assert!(world.raids.raids().is_empty());
         player.tick_mob_effects();
         let raids = world.raids.raids();
@@ -83,7 +102,9 @@ mod tests {
     #[test]
     fn manually_given_raid_omen_without_source_cannot_start_a_raid() {
         let fixture = fresh_test_world("omen_no_origin");
-        let player = TestPlayerBuilder::new(Arc::clone(&fixture.world), "RaidTest", next_entity_id()).build();
+        let player =
+            TestPlayerBuilder::new(Arc::clone(&fixture.world), "RaidTest", next_entity_id())
+                .build();
         assert!(RaidOmenBehavior.apply_effect_tick(&fixture.world, player.as_ref(), 4));
         assert!(fixture.world.raids.raids().is_empty());
     }

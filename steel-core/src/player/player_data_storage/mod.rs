@@ -190,8 +190,6 @@ impl PlayerDataFileV12 {
     }
 }
 
-
-
 /// Vanilla `warden_spawn_tracker` in the player save.
 #[derive(Debug, SchemaWrite, SchemaRead)]
 struct WardenSpawnTrackerFile {

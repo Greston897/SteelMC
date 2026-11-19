@@ -25,7 +25,9 @@ impl MobEffectBehavior for BadOmenBehavior {
         }
 
         let pos = player.block_position();
-        if !raid::is_village_world(world, pos) { return true; }
+        if !raid::is_village_world(world, pos) {
+            return true;
+        }
 
         // Vanilla refuses to extend a raid that already reached the omen cap.
         if let Some(existing) = world.raids.raid_at(pos.0)
@@ -38,7 +40,9 @@ impl MobEffectBehavior for BadOmenBehavior {
             return true;
         }
         player.add_mob_effect(crate::entity::MobEffectInstance::with_duration(
-            steel_registry::vanilla_mob_effects::RAID_OMEN, 600, amplifier,
+            steel_registry::vanilla_mob_effects::RAID_OMEN,
+            600,
+            amplifier,
         ));
         *player.raid_omen_position.lock() = Some(pos);
         false
