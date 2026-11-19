@@ -2027,11 +2027,12 @@ fn combat_critical_requires_full_cooldown_and_does_not_multiply_enchantment_bonu
 fn combat_sweep_requires_grounded_charged_sword_and_uses_primary_target_box() {
     init_vanilla_registry();
     init_behaviors();
-    for (sword, grounded, charged, expected) in [
-        (true, true, true, 1.0_f32),
-        (false, true, true, 0.0),
-        (true, false, true, 0.0),
-        (true, true, false, 0.0),
+    for (sword, grounded, charged, ratio, expected) in [
+        (true, true, true, 0.0, 1.0_f32),
+        (true, true, true, 0.5, 1.5),
+        (false, true, true, 0.0, 0.0),
+        (true, false, true, 0.0, 0.0),
+        (true, true, false, 0.0, 0.0),
     ] {
         let fixture = fresh_test_world("combat_sweep_target_box");
         let world = &fixture.world;
@@ -2053,13 +2054,13 @@ fn combat_sweep_requires_grounded_charged_sword_and_uses_primary_target_box() {
         attacker.inventory.lock().set_selected_item(ItemStack::new(if sword {
             &vanilla_items::DIAMOND_SWORD
         } else { &vanilla_items::DIAMOND_AXE }));
-        attacker.attributes().lock().set_base_value(vanilla_attributes::SWEEPING_DAMAGE_RATIO, 0.0);
+        attacker.attributes().lock().set_base_value(vanilla_attributes::SWEEPING_DAMAGE_RATIO, ratio);
         if charged { for _ in 0..30 { attacker.tick_attack_strength(); } }
         let before = secondary.get_health();
         let target: SharedEntity = primary.clone();
         assert!(attacker.attack(&target));
         assert!((before - secondary.get_health() - expected).abs() < 0.001,
-            "sword={sword} grounded={grounded} charged={charged}");
+            "sword={sword} grounded={grounded} charged={charged} ratio={ratio}");
         for player in [&attacker, &primary, &secondary] {
             world.remove_player_for_world_change(player);
         }
