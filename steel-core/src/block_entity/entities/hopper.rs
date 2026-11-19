@@ -751,7 +751,8 @@ mod tests {
             assert!(!output.suck_in_items(world, bottom));
             assert!(jukebox.is_record_playing());
             output.container.lock().set_item(0, ItemStack::empty());
-            // 26.3 does NOT lock extraction while playing (unlike older specs).
+            // Direct transfer has no playback restriction. Production ticking is
+            // separately gated by ENABLED (a playing jukebox supplies power).
             assert!(output.suck_in_items(world, bottom));
             assert!(!jukebox.is_record_playing());
             assert!(!world.get_block_state(target_pos).get_value(&BlockStateProperties::HAS_RECORD));

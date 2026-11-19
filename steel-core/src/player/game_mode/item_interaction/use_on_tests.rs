@@ -383,3 +383,47 @@ fn honeycomb_can_wax_blank_signs_without_consuming_in_creative() {
     assert_eq!(interaction.count(&vanilla_items::HONEYCOMB), 1);
     assert_eq!(interaction.used(&vanilla_items::HONEYCOMB), 1);
 }
+
+#[test]
+fn water_cauldron_bottle_dispatch_lowers_every_level_and_preserves_creative_bottles() {
+    use steel_registry::blocks::properties::BlockStateProperties;
+    use steel_registry::data_components::vanilla_components::POTION_CONTENTS;
+    for hand in [InteractionHand::MainHand, InteractionHand::OffHand] {
+        for mode in [GameType::Survival, GameType::Creative] {
+            for level in 1..=3 {
+                let fixture = Interaction::new("cauldron_bottle_dispatch");
+                fixture.player.set_game_mode(mode);
+                fixture.block(vanilla_blocks::WATER_CAULDRON.default_state()
+                    .set_value(&BlockStateProperties::LEVEL_CAULDRON, level));
+                fixture.hold(hand, ItemStack::with_count(&vanilla_items::GLASS_BOTTLE, 2));
+                assert!(fixture.use_on(hand).consumes_action());
+                let world = &fixture.world_fixture.world;
+                let next = world.get_block_state(fixture.pos);
+                if level == 1 { assert_eq!(next.get_block(), &vanilla_blocks::CAULDRON); }
+                else { assert_eq!(next.get_value(&BlockStateProperties::LEVEL_CAULDRON), level - 1); }
+                assert_eq!(fixture.count(&vanilla_items::GLASS_BOTTLE), if mode == GameType::Creative { 2 } else { 1 });
+                assert_eq!(fixture.count(&vanilla_items::POTION), 1);
+                assert_eq!(fixture.used(&vanilla_items::GLASS_BOTTLE), 1);
+                let inventory = fixture.player.inventory.lock();
+                assert!((0..inventory.get_container_size()).any(|slot| {
+                    let item = inventory.get_item(slot);
+                    item.is(&vanilla_items::POTION) && item.get(POTION_CONTENTS).is_some()
+                }));
+            }
+        }
+    }
+}
+
+#[test]
+fn bottle_does_not_extract_water_from_powder_snow_cauldron() {
+    use steel_registry::blocks::properties::BlockStateProperties;
+    let fixture = Interaction::new("powder_snow_rejects_bottle");
+    let state = vanilla_blocks::POWDER_SNOW_CAULDRON.default_state()
+        .set_value(&BlockStateProperties::LEVEL_CAULDRON, 3);
+    fixture.block(state);
+    fixture.hold(InteractionHand::MainHand, ItemStack::new(&vanilla_items::GLASS_BOTTLE));
+    fixture.use_on(InteractionHand::MainHand);
+    assert_eq!(fixture.world_fixture.world.get_block_state(fixture.pos), state);
+    assert_eq!(fixture.count(&vanilla_items::GLASS_BOTTLE), 1);
+    assert_eq!(fixture.count(&vanilla_items::POTION), 0);
+}

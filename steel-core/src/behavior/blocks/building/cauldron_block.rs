@@ -119,6 +119,35 @@ impl BlockBehavior for LayeredCauldronBlock {
         Some(self.block.default_state())
     }
 
+    fn use_item_on(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &crate::player::Player,
+        hand: steel_utils::types::InteractionHand,
+        _hit: &crate::behavior::BlockHitResult,
+        inv: &mut crate::behavior::InventoryAccess,
+    ) -> crate::behavior::InteractionResult {
+        use crate::behavior::InteractionResult;
+        use steel_registry::{vanilla_items, vanilla_potions, sound_events};
+        if state.get_block() != &vanilla_blocks::WATER_CAULDRON
+            || !inv.with_item(|item| item.is(&vanilla_items::GLASS_BOTTLE)) {
+            return InteractionResult::TryEmptyHandInteraction;
+        }
+        crate::behavior::item_utils::create_filled_result_for_hand(player, inv, hand,
+            steel_registry::data_components::PotionContents::create_item_stack(&vanilla_items::POTION, &vanilla_potions::WATER), true);
+        player.award_stat(&steel_registry::stat::vanilla_stat_types::ITEM_USED, &vanilla_items::GLASS_BOTTLE);
+        player.award_custom_stat(&steel_registry::vanilla_custom_stats::USE_CAULDRON);
+        let level = state.get_value(LEVEL_CAULDRON);
+        let next = if level == 1 { vanilla_blocks::CAULDRON.default_state() }
+            else { state.set_value(LEVEL_CAULDRON, level - 1) };
+        world.set_block(pos, next, UpdateFlags::UPDATE_ALL);
+        world.play_sound(&sound_events::ITEM_BOTTLE_FILL, steel_protocol::packets::game::SoundSource::Blocks, pos, 1.0, 1.0, None);
+        world.game_event(&vanilla_game_events::FLUID_PICKUP, pos, &GameEventContext::new(None, None));
+        InteractionResult::Success
+    }
+
     fn has_analog_output_signal(&self, _state: BlockStateId) -> bool {
         true
     }

@@ -33,15 +33,25 @@ pub(crate) fn create_filled_result(
     result_stack: ItemStack,
     limit_creative_stack_size: bool,
 ) {
-    let player = context.player;
-    let overflow = context.inv.with_guard(|guard| {
+    create_filled_result_for_hand(context.player, context.inv, context.hand, result_stack, limit_creative_stack_size);
+}
+
+/// The same filled-result transaction for block interactions such as cauldrons.
+pub(crate) fn create_filled_result_for_hand(
+    player: &Player,
+    inventory: &crate::behavior::InventoryAccess,
+    hand: steel_utils::types::InteractionHand,
+    result_stack: ItemStack,
+    limit_creative_stack_size: bool,
+) {
+    let overflow = inventory.with_guard(|guard| {
         let inv_id = ContainerId::from_arc(&player.inventory);
         let Some(inv) = guard.get_typed_mut::<PlayerInventory>(inv_id) else {
             return result_stack;
         };
 
         inv.apply_filled_result(
-            context.hand,
+            hand,
             result_stack,
             player.has_infinite_materials(),
             limit_creative_stack_size,
