@@ -62,6 +62,9 @@ pub struct Raid {
     pub num_groups: i32,
     /// Ticks remaining before the next wave.
     pub cooldown: i32,
+    /// Transient vanilla wave-position cache; rebuilt after loading a save.
+    #[serde(skip)]
+    pub wave_spawn_pos: Option<IVec3>,
     /// Empty final-wave ticks before victory is declared.
     pub post_raid_ticks: i32,
     /// Ticks since entering victory or loss.
@@ -87,6 +90,7 @@ impl Default for Raid {
             waves_spawned: 0,
             num_groups: 5,
             cooldown: PRE_WAVE_TICKS,
+            wave_spawn_pos: None,
             post_raid_ticks: 0,
             celebration_ticks: 0,
             status: RaidStatus::Ongoing,
@@ -317,10 +321,14 @@ impl RaidManager {
                 return true;
             }
             if raid.cooldown > 0 {
+                update_wave_spawn_cache(world, raid);
                 raid.cooldown -= 1;
                 return true;
             }
-            if let Some(pos) = find_spawn_pos(world, raid.center) {
+            let cached = raid.wave_spawn_pos.take().map(BlockPos);
+            // Vanilla makes six independent 20-candidate attempts before stopping.
+            let position = cached.or_else(|| (0..6).find_map(|_| find_spawn_pos(world, raid.center, raid.cooldown, 20)));
+            if let Some(pos) = position {
                 spawn_wave(world, raid, pos);
             } else {
                 // No legal terrain is not a cleared wave or a victory.
@@ -438,28 +446,75 @@ impl RaidManager {
     }
 }
 
-/// Searches loaded surface terrain; never creates a wave in missing chunks.
-fn find_spawn_pos(world: &Arc<World>, center: IVec3) -> Option<BlockPos> {
-    let angle: f64 = rand::random_range(0.0..std::f64::consts::TAU);
-    for radius in [64.0, 32.0, 16.0] {
-        for attempt in 0..20 {
-            let angle = angle + f64::from(attempt) * std::f64::consts::PI / 8.0;
-            let x = center.x + (angle.cos() * radius).floor() as i32;
-            let z = center.z + (angle.sin() * radius).floor() as i32;
-            let Some(y) = world.as_ref().height_at(HeightmapType::WorldSurface, x, z) else {
-                continue;
-            };
-            if (y - center.y).abs() > 96 {
-                continue;
+fn wave_spawn_column(center: IVec3, cooldown: i32, start_angle: f32, attempt: i32, jitter_x: i32, jitter_z: i32) -> (i32, i32) {
+    let how_far = 0.22_f32 * (cooldown / 20) as f32 - 0.24_f32;
+    let angle = start_angle + std::f32::consts::PI * attempt as f32 / 8.0;
+    let jitter_scale = how_far.floor() as i32;
+    (
+        center.x + (steel_math::trig::cos(angle) * 32.0 * how_far).floor() as i32 + jitter_x * jitter_scale,
+        center.z + (steel_math::trig::sin(angle) * 32.0 * how_far).floor() as i32 + jitter_z * jitter_scale,
+    )
+}
+
+fn update_wave_spawn_cache(world: &Arc<World>, raid: &mut Raid) {
+    let retry = raid.wave_spawn_pos.map_or(raid.cooldown % 5 == 0, |pos| {
+        !world.chunk_map.is_entity_ticking_full_chunk_loaded(steel_utils::ChunkPos::from_block_pos(BlockPos(pos)))
+    });
+    if retry {
+        raid.wave_spawn_pos = find_spawn_pos(world, raid.center, raid.cooldown, 8).map(|pos| pos.0);
+    }
+}
+
+fn spawn_region_loaded(world: &Arc<World>, pos: BlockPos) -> bool {
+    for x in (pos.x() - 10).div_euclid(16)..=(pos.x() + 10).div_euclid(16) {
+        for z in (pos.z() - 10).div_euclid(16)..=(pos.z() + 10).div_euclid(16) {
+            if world.chunk_map.with_full_chunk(steel_utils::ChunkPos::new(x, z), |_| ()).is_none() {
+                return false;
             }
-            let pos = BlockPos::new(x, y, z);
-            if !world.get_block_state(BlockPos::new(x, y - 1, z)).is_solid()
-                || !world.get_block_state(pos).is_air()
-                || !world.get_block_state(BlockPos::new(x, y + 1, z)).is_air()
-                || !world.get_block_state(BlockPos::new(x, y + 2, z)).is_air()
-            {
-                continue;
-            }
+        }
+    }
+    world.chunk_map.is_entity_ticking_full_chunk_loaded(steel_utils::ChunkPos::from_block_pos(pos))
+}
+
+fn valid_empty_raid_spawn_block(world: &Arc<World>, pos: BlockPos) -> bool {
+    use crate::behavior::{BLOCK_BEHAVIORS, BlockCollisionContext};
+    use crate::entity::ai::walk::WalkPathEvaluator;
+    use steel_registry::blocks::shapes::is_shape_full_block;
+    use steel_registry::{vanilla_blocks, vanilla_fluids};
+    let state = world.get_block_state(pos);
+    let block = state.get_block();
+    let behavior = BLOCK_BEHAVIORS.get_behavior(block);
+    let dangerous = WalkPathEvaluator::is_burning_block(state)
+        || block == &vanilla_blocks::WITHER_ROSE || block == &vanilla_blocks::SWEET_BERRY_BUSH
+        || block == &vanilla_blocks::CACTUS || block == &vanilla_blocks::POWDER_SNOW;
+    !is_shape_full_block(behavior.get_collision_shape(state, world.as_ref(), pos, BlockCollisionContext::empty()))
+        && !behavior.is_signal_source(state, crate::world::SignalQueryContext::DEFAULT)
+        && state.get_fluid_state().fluid_id == &vanilla_fluids::EMPTY
+        && !block.has_tag(&steel_utils::Identifier::vanilla_static("prevent_mob_spawning_inside"))
+        && !dangerous
+}
+
+fn valid_raid_spawn_surface(world: &Arc<World>, pos: BlockPos) -> bool {
+    use crate::behavior::BLOCK_BEHAVIORS;
+    let below = pos.below();
+    let state = world.get_block_state(below);
+    let on_ground = world.is_block_within_world_border(pos)
+        && BLOCK_BEHAVIORS.get_behavior(state.get_block()).is_valid_spawn(state, world.as_ref(), below, &vanilla_entities::RAVAGER)
+        && valid_empty_raid_spawn_block(world, pos)
+        && valid_empty_raid_spawn_block(world, pos.above());
+    on_ground || (state.get_block() == &steel_registry::vanilla_blocks::SNOW && world.get_block_state(pos).is_air())
+}
+
+/// Vanilla 26.3 cooldown-dependent surface search, with loaded simulation gating.
+fn find_spawn_pos(world: &Arc<World>, center: IVec3, cooldown: i32, max_tries: i32) -> Option<BlockPos> {
+    let start_angle = rand::random::<f32>() * std::f32::consts::TAU;
+    for attempt in 0..max_tries {
+        let (x, z) = wave_spawn_column(center, cooldown, start_angle, attempt, rand::random_range(0..3), rand::random_range(0..3));
+        let Some(y) = world.as_ref().height_at(HeightmapType::WorldSurface, x, z) else { continue; };
+        if (y - center.y).abs() > 96 { continue; }
+        let pos = BlockPos::new(x, y, z);
+        if cooldown / 20 > 7 && is_village(world, pos.0) { continue; }
+        if spawn_region_loaded(world, pos) && valid_raid_spawn_surface(world, pos) {
             return Some(pos);
         }
     }
@@ -1006,7 +1061,9 @@ mod complete_wave_tests {
         let world = &fixture.world;
         for x in -1..=1 {
             for z in -1..=1 {
-                insert_ready_full_chunk(world, ChunkPos::new(x, z));
+                let holder = insert_ready_full_chunk(world, ChunkPos::new(x, z));
+                holder.set_simulation_level(Some(crate::chunk::chunk_ticket_manager::ChunkTicketLevel::ENTITY_TICKING_CHUNK));
+                let _ = holder.transition_ticking_readiness(crate::chunk::chunk_holder::TickingReadiness::EntityTicking);
             }
         }
         for x in -16..32 {
@@ -1160,5 +1217,85 @@ mod horn_tests {
         assert!((projected.distance(listener) - 13.0).abs() < 1.0e-10);
         assert_eq!(projected.y, 64.0);
         assert_eq!(horn_position(listener, listener), listener);
+    }
+}
+
+#[cfg(test)]
+mod spawn_search_tests {
+    use super::*;
+    use crate::chunk::chunk_holder::TickingReadiness;
+    use crate::chunk::chunk_ticket_manager::ChunkTicketLevel;
+    use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
+    use steel_registry::vanilla_blocks;
+    use steel_utils::{ChunkPos, types::UpdateFlags};
+
+    #[test]
+    fn search_radius_uses_whole_countdown_seconds_and_signed_floor_jitter() {
+        assert_eq!(wave_spawn_column(IVec3::ZERO, 300, 0.0, 0, 0, 0), (97, 0));
+        assert_eq!(wave_spawn_column(IVec3::ZERO, 300, 0.0, 0, 2, 1), (103, 3));
+        assert_eq!(wave_spawn_column(IVec3::ZERO, 299, 0.0, 0, 0, 0), (90, 0));
+        assert_eq!(wave_spawn_column(IVec3::ZERO, 0, 0.0, 0, 2, 2), (-10, -2));
+        assert_eq!(wave_spawn_column(IVec3::ZERO, 19, 0.0, 0, 2, 2), (-10, -2));
+    }
+
+    #[test]
+    fn spawn_requires_loaded_ten_block_margin_and_entity_not_only_block_ticks() {
+        let fixture = fresh_test_world("raid_spawn_simulation");
+        let world = &fixture.world;
+        for x in -1..=1 { for z in -1..=1 { insert_ready_full_chunk(world, ChunkPos::new(x, z)); } }
+        let pos = BlockPos::new(0, 64, 0);
+        assert!(!spawn_region_loaded(world, pos));
+        let holder = world.chunk_map.chunks.read_sync(&ChunkPos::new(0, 0), |_, holder| Arc::clone(holder)).unwrap();
+        holder.set_simulation_level(Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK));
+        let _ = holder.transition_ticking_readiness(TickingReadiness::EntityTicking);
+        assert!(spawn_region_loaded(world, pos));
+        assert!(!spawn_region_loaded(world, BlockPos::new(30, 64, 30)));
+    }
+
+    #[test]
+    fn cached_position_survives_countdown_but_not_loss_of_entity_simulation() {
+        let fixture = fresh_test_world("raid_spawn_cache");
+        let world = &fixture.world;
+        let holder = insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        holder.set_simulation_level(Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK));
+        let _ = holder.transition_ticking_readiness(TickingReadiness::EntityTicking);
+        let cached = IVec3::new(0, 64, 0);
+        let mut raid = Raid { cooldown: 121, wave_spawn_pos: Some(cached), ..Raid::default() };
+        update_wave_spawn_cache(world, &mut raid);
+        assert_eq!(raid.wave_spawn_pos, Some(cached));
+        holder.set_simulation_level(Some(ChunkTicketLevel::BLOCK_TICKING_CHUNK));
+        update_wave_spawn_cache(world, &mut raid);
+        assert!(raid.wave_spawn_pos.is_none());
+    }
+
+    #[test]
+    fn ground_placement_accepts_non_air_vegetation_and_rejects_hazards_and_signals() {
+        steel_registry::init_vanilla_registry();
+        crate::behavior::init_behaviors();
+        let fixture = fresh_test_world("raid_spawn_surface");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let pos = BlockPos::new(1, 64, 1);
+        world.set_block(pos.below(), vanilla_blocks::STONE.default_state(), UpdateFlags::UPDATE_NONE);
+        for block in [&vanilla_blocks::AIR, &vanilla_blocks::SHORT_GRASS] {
+            world.set_block(pos, block.default_state(), UpdateFlags::UPDATE_NONE);
+            assert!(valid_raid_spawn_surface(world, pos), "{}", block.key);
+        }
+        for block in [&vanilla_blocks::STONE, &vanilla_blocks::WATER, &vanilla_blocks::WITHER_ROSE, &vanilla_blocks::STONE_PRESSURE_PLATE] {
+            world.set_block(pos, block.default_state(), UpdateFlags::UPDATE_NONE);
+            assert!(!valid_raid_spawn_surface(world, pos), "{}", block.key);
+        }
+        world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_NONE);
+        world.set_block(pos.below(), vanilla_blocks::SNOW.default_state(), UpdateFlags::UPDATE_NONE);
+        assert!(valid_raid_spawn_surface(world, pos), "vanilla snow fallback");
+    }
+
+    #[test]
+    fn spawn_position_cache_is_transient_like_vanilla() {
+        let data = RaidSavedData { raids: vec![Raid { wave_spawn_pos: Some(IVec3::new(50, 64, -60)), ..Raid::default() }] };
+        let encoded = toml::to_string(&data).unwrap();
+        let decoded: RaidSavedData = toml::from_str(&encoded).unwrap();
+        assert!(decoded.raids[0].wave_spawn_pos.is_none());
+        assert_eq!(decoded.raids[0].uuid, data.raids[0].uuid);
     }
 }
