@@ -617,3 +617,57 @@ fn cauldron_banner_washing_removes_only_top_layer_from_one_banner() {
         }
     }
 }
+
+// Reproduce independent Flint campfire/hay scenarios through the real player
+// ray and full game-mode interaction path, not just a placement-state helper.
+fn ray_use(interaction: &Interaction) -> InteractionResult {
+    let (start, end) = interaction.player.get_ray_endpoints();
+    let hit = interaction.world_fixture.world.clip(
+        start, end, crate::world::ClipBlockShape::Outline, crate::world::ClipFluid::None,
+    );
+    assert!(!hit.is_miss(), "ray {start:?} -> {end:?} must hit the fixture");
+    use_item_on(
+        &interaction.player, &interaction.world_fixture.world, InteractionHand::MainHand,
+        &BlockHitResult {
+            block_pos: hit.block_pos, direction: hit.direction, location: hit.location,
+            miss: hit.miss, inside: hit.inside, world_border_hit: hit.world_border_hit,
+        },
+    )
+}
+
+#[test]
+fn survival_shovel_ray_extinguishes_campfire_preserving_properties() {
+    use steel_registry::blocks::properties::BlockStateProperties as P;
+    let interaction = Interaction::new("ray_campfire_shovel");
+    interaction.player.set_game_mode(GameType::Survival);
+    interaction.player.base().set_position_local(DVec3::new(8.5, 66.0, 8.5));
+    interaction.player.set_rotation([0.0, 90.0].into());
+    let state = vanilla_blocks::CAMPFIRE.default_state()
+        .set_value(&P::LIT, true)
+        .set_value(&P::SIGNAL_FIRE, false)
+        .set_value(&P::WATERLOGGED, false)
+        .set_value(&P::HORIZONTAL_FACING, Direction::North);
+    interaction.world_fixture.world.set_block(
+        interaction.pos.below(), vanilla_blocks::STONE.default_state(), UpdateFlags::UPDATE_ALL,
+    );
+    interaction.block(state);
+    interaction.hold(InteractionHand::MainHand, ItemStack::new(&vanilla_items::IRON_SHOVEL));
+    assert!(ray_use(&interaction).consumes_action());
+    assert_eq!(interaction.world_fixture.world.get_block_state(interaction.pos), state.set_value(&P::LIT, false));
+    assert_eq!(interaction.count(&vanilla_items::IRON_SHOVEL), 1);
+}
+
+#[test]
+fn survival_hay_east_face_ray_places_x_axis_and_consumes_stack() {
+    use steel_registry::blocks::properties::BlockStateProperties as P;
+    let interaction = Interaction::new("ray_hay_east_placement");
+    interaction.player.set_game_mode(GameType::Survival);
+    interaction.player.base().set_position_local(DVec3::new(11.5, 63.0, 8.5));
+    interaction.player.set_rotation([90.0, 0.0].into());
+    interaction.block(vanilla_blocks::STONE.default_state());
+    interaction.hold(InteractionHand::MainHand, ItemStack::new(&vanilla_items::HAY_BLOCK));
+    assert!(ray_use(&interaction).consumes_action());
+    assert_eq!(interaction.world_fixture.world.get_block_state(interaction.pos.east()),
+        vanilla_blocks::HAY_BLOCK.default_state().set_value(&P::AXIS, steel_utils::axis::Axis::X));
+    assert_eq!(interaction.count(&vanilla_items::HAY_BLOCK), 0);
+}
