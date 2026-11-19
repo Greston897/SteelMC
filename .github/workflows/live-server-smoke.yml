@@ -21,6 +21,12 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: live-server-smoke
+      - name: Check wire harness and readiness accounting
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          python3 -m unittest discover -s .ci -p 'test_*.py' -v
+          python3 -m unittest discover -s .ci/vanilla_features -p 'test_*.py' -v
       - name: Build actual server executable
         run: cargo build -p steel --profile evidence
       - name: Boot, exercise TCP and RCON, save, restart and verify disk state
