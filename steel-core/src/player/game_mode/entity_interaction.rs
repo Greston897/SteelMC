@@ -502,6 +502,11 @@ impl Player {
                     + sprint_knockback,
                 old_movement,
             );
+            // Sweep reads the attacking item's attributes before post-hit
+            // durability/enchantment effects can break or replace the weapon.
+            if can_sweep {
+                self.do_sweep_attack(target, base_damage, attack_strength_scale, &attacking_item);
+            }
             self.item_attack_interaction(target, &damage_source, true);
             // Vanilla `SpearMobsTrigger` (`spear_mobs`): a spear hit on a mob
             // counts, whether or not it kills. The `count` condition counts hits,
@@ -532,10 +537,8 @@ impl Player {
             self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_NODAMAGE, 1.0, 1.0);
         }
 
-        if was_hurt {
-            if can_sweep {
-                self.do_sweep_attack(target, base_damage, attack_strength_scale, &attacking_item);
-            } else if critical {
+        if was_hurt && !can_sweep {
+            if critical {
                 self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_CRIT, 1.0, 1.0);
             } else {
                 self.play_sound(if full_strength_attack {

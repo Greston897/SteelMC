@@ -1991,10 +1991,11 @@ fn spawn_sends_view_and_simulation_distances_in_vanilla_order() {
 fn combat_critical_requires_full_cooldown_and_does_not_multiply_enchantment_bonus() {
     init_vanilla_registry();
     init_behaviors();
-    for (charged, enchanted, expected) in [
-        (false, false, 2.08_f32),
-        (true, false, 15.0),
-        (true, true, 16.0),
+    for (charged, enchanted, blind, expected) in [
+        (false, false, false, 2.08_f32),
+        (true, false, false, 15.0),
+        (true, true, false, 16.0),
+        (true, false, true, 10.0),
     ] {
         let fixture = fresh_test_world("combat_critical_cooldown_bonus");
         let attacker = test_player(Arc::clone(&fixture.world));
@@ -2002,6 +2003,7 @@ fn combat_critical_requires_full_cooldown_and_does_not_multiply_enchantment_bonu
         victim.set_client_loaded(true);
         attacker.set_on_ground(false);
         attacker.base().set_fall_distance(1.0);
+        attacker.set_mob_effect_active(steel_registry::vanilla_mob_effects::BLINDNESS, blind);
         attacker.attributes().lock().set_base_value(vanilla_attributes::ATTACK_DAMAGE, 10.0);
         attacker.attributes().lock().set_base_value(vanilla_attributes::ATTACK_SPEED, 4.0);
         if enchanted {
@@ -2017,7 +2019,7 @@ fn combat_critical_requires_full_cooldown_and_does_not_multiply_enchantment_bonu
         assert!(attacker.attack(&target));
         let dealt = health - victim.get_health();
         assert!((dealt - expected).abs() < 0.001,
-            "charged={charged} enchanted={enchanted}: expected {expected}, got {dealt}");
+            "charged={charged} enchanted={enchanted} blind={blind}: expected {expected}, got {dealt}");
     }
 }
 
