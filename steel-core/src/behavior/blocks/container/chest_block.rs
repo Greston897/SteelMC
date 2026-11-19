@@ -289,18 +289,18 @@ impl BlockBehavior for TrappedChestBlock {
         }
     }
 
-    fn is_signal_source(&self, _state: BlockStateId, _context: crate::behavior::SignalQueryContext) -> bool {
+    fn is_signal_source(&self, _state: BlockStateId, _context: crate::world::SignalQueryContext) -> bool {
         true
     }
 
     fn get_own_signal(&self, _state: BlockStateId, world: &dyn crate::world::LevelReader, pos: BlockPos,
-        _context: crate::behavior::SignalQueryContext) -> i32 {
+        _context: crate::world::SignalQueryContext) -> i32 {
         world.get_block_entity(pos).and_then(|entity| entity.downcast_ref::<ChestBlockEntity>()
             .map(|chest| chest.openers_counter().openers().clamp(0, 15))).unwrap_or(0)
     }
 
     fn get_direct_signal(&self, state: BlockStateId, world: &dyn crate::world::LevelReader, pos: BlockPos,
-        direction: Direction, context: crate::behavior::SignalQueryContext) -> i32 {
+        direction: Direction, context: crate::world::SignalQueryContext) -> i32 {
         if direction == Direction::Up { self.get_own_signal(state, world, pos, context) } else { 0 }
     }
 

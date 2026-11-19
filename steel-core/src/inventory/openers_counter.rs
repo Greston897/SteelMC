@@ -320,3 +320,44 @@ mod integration_tests {
         assert_eq!(cb.openers(), 0);
     }
 }
+
+#[cfg(test)]
+mod signal_tests {
+    use super::*;
+    use crate::{bootstrap::init_globals, behavior::BLOCK_BEHAVIORS,
+        block_entity::entities::ChestBlockEntity,
+        test_support::{fresh_test_world, insert_ready_full_chunk}, world::SignalQueryContext};
+    use steel_registry::vanilla_blocks;
+    use steel_utils::{ChunkPos, Direction, Downcast as _, types::UpdateFlags};
+
+    #[test]
+    fn trapped_chest_signal_clamps_and_updates_adjacent_hopper_on_every_viewer_edge() {
+        init_globals();
+        let fixture = fresh_test_world("trapped_chest_viewer_signal");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let pos = BlockPos::new(8, 64, 8);
+        let hopper = pos.offset(1, 0, 0);
+        world.set_block(pos, vanilla_blocks::TRAPPED_CHEST.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(hopper, vanilla_blocks::HOPPER.default_state(), UpdateFlags::UPDATE_ALL);
+        let entity = world.get_block_entity(pos).unwrap();
+        let counter = entity.downcast_ref::<ChestBlockEntity>().unwrap().openers_counter();
+        let behavior = BLOCK_BEHAVIORS.get_behavior(&vanilla_blocks::TRAPPED_CHEST);
+        let state = world.get_block_state(pos);
+        let ctx = SignalQueryContext::DEFAULT;
+        assert!(behavior.is_signal_source(state, ctx));
+        for count in 1..=16 {
+            counter.increment_openers(world, pos, state, &vanilla_blocks::TRAPPED_CHEST);
+            for direction in Direction::ALL {
+                assert_eq!(behavior.get_signal(state, world.as_ref(), pos, direction, ctx), count.min(15));
+                assert_eq!(behavior.get_direct_signal(state, world.as_ref(), pos, direction, ctx), if direction == Direction::Up { count.min(15) } else { 0 });
+            }
+            assert!(!world.get_block_state(hopper).get_value(&BlockStateProperties::ENABLED));
+        }
+        for remaining in (0..16).rev() {
+            assert_eq!(counter.decrement_openers(world, pos, state, &vanilla_blocks::TRAPPED_CHEST), remaining);
+            assert_eq!(behavior.get_own_signal(state, world.as_ref(), pos, ctx), remaining.min(15));
+            assert_eq!(world.get_block_state(hopper).get_value(&BlockStateProperties::ENABLED), remaining == 0);
+        }
+    }
+}
