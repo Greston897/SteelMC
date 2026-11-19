@@ -206,6 +206,7 @@ fn change_openers(container: &ContainerRef, player: &Player, opening: bool) {
     } else { return; };
     let state = world.get_block_state(pos);
     if opening {
+        counter.register_interaction_range(player.block_interaction_range());
         counter.increment_openers(&world, pos, state, state.get_block());
     } else {
         counter.decrement_openers(&world, pos, state, state.get_block());

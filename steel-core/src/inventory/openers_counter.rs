@@ -7,7 +7,7 @@
 //! both halves open together while each keeps its own viewer count.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::atomic::{AtomicI32, AtomicU64, Ordering};
 
 use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::blocks::{BlockRef, block_state_ext::BlockStateExt};
@@ -36,6 +36,7 @@ pub struct OpenerHooks {
 /// inventory.
 pub struct ContainerOpenersCounter {
     openers: AtomicI32,
+    max_interaction_range: AtomicU64,
     hooks: OpenerHooks,
 }
 
@@ -45,6 +46,7 @@ impl ContainerOpenersCounter {
     pub const fn new(hooks: OpenerHooks) -> Self {
         Self {
             openers: AtomicI32::new(0),
+            max_interaction_range: AtomicU64::new(0),
             hooks,
         }
     }
@@ -57,6 +59,13 @@ impl ContainerOpenersCounter {
             close_sound,
             sets_open_state: false,
         })
+    }
+
+    /// Tracks the greatest active opener reach (vanilla uses reach + 4 for its scan).
+    pub(crate) fn register_interaction_range(&self, range: f64) {
+        if range.is_finite() && range >= 0.0 {
+            self.max_interaction_range.fetch_max(range.to_bits(), Ordering::AcqRel);
+        }
     }
 
     /// Current number of viewers.
@@ -100,6 +109,7 @@ impl ContainerOpenersCounter {
             self.notify_signal_change(world, pos, block);
         }
         if old == 1 {
+            self.max_interaction_range.store(0, Ordering::Release);
             self.on_close(world, pos, state, block);
         }
         remaining
@@ -120,16 +130,21 @@ impl ContainerOpenersCounter {
             return;
         };
         let mut actual = 0;
+        let mut max_range: f64 = 0.0;
+        let range = f64::from_bits(self.max_interaction_range.load(Ordering::Acquire)) + 4.0;
         let mut unavailable = false;
         world.players.iter_players(|_, player| {
             let p = player.position();
-            if player.is_spectator() || p.x < f64::from(pos.x() - 5) || p.x >= f64::from(pos.x() + 6)
-                || p.y < f64::from(pos.y() - 5) || p.y >= f64::from(pos.y() + 6)
-                || p.z < f64::from(pos.z() - 5) || p.z >= f64::from(pos.z() + 6) {
+            if player.is_spectator() || p.x < f64::from(pos.x()) - range || p.x >= f64::from(pos.x() + 1) + range
+                || p.y < f64::from(pos.y()) - range || p.y >= f64::from(pos.y() + 1) + range
+                || p.z < f64::from(pos.z()) - range || p.z >= f64::from(pos.z() + 1) + range {
                 return true;
             }
             match player.views_container(container.container_id()) {
-                Some(true) => actual += 1,
+                Some(true) => {
+                    actual += 1;
+                    max_range = max_range.max(player.block_interaction_range());
+                },
                 Some(false) => {},
                 None => unavailable = true,
             }
@@ -139,6 +154,7 @@ impl ContainerOpenersCounter {
             world.schedule_block_tick_default(pos, block, 5);
             return;
         }
+        self.max_interaction_range.store(max_range.to_bits(), Ordering::Release);
         let old = self.openers.swap(actual, Ordering::AcqRel);
         if old != actual {
             self.notify_signal_change(world, pos, block);
@@ -327,6 +343,10 @@ mod integration_tests {
             counter.recheck_openers(world, pos, world.get_block_state(pos), &vanilla_blocks::CHEST);
             assert_eq!(counter.openers(), 1);
         }
+        // Vanilla 26.3 uses the maximum opener reach + 4, not a fixed radius 5.
+        player.base().set_position_local(DVec3::new(14.5, 64.0, 7.5));
+        ca.recheck_openers(world, POS, world.get_block_state(POS), &vanilla_blocks::CHEST);
+        assert_eq!(ca.openers(), 1);
         // Radius scan only counts nearby non-spectators with this inventory.
         player.base().set_position_local(DVec3::new(40.0, 64.0, 7.5));
         ca.recheck_openers(world, POS, world.get_block_state(POS), &vanilla_blocks::CHEST);
