@@ -161,7 +161,18 @@ fn tag_result(tag: &NbtTag) -> Result<i32, CommandSyntaxError> {
     let size = match tag {
         NbtTag::String(s) => s.to_string().encode_utf16().count(),
         NbtTag::Compound(c) => c.len(),
-        NbtTag::List(l) => l.len(),
+        NbtTag::List(l) => {
+            use simdnbt::owned::NbtList;
+            match l {
+                NbtList::Empty => 0,
+                NbtList::Byte(v) => v.len(), NbtList::Short(v) => v.len(),
+                NbtList::Int(v) => v.len(), NbtList::Long(v) => v.len(),
+                NbtList::Float(v) => v.len(), NbtList::Double(v) => v.len(),
+                NbtList::ByteArray(v) => v.len(), NbtList::String(v) => v.len(),
+                NbtList::List(v) => v.len(), NbtList::Compound(v) => v.len(),
+                NbtList::IntArray(v) => v.len(), NbtList::LongArray(v) => v.len(),
+            }
+        },
         NbtTag::ByteArray(a) => a.len(),
         NbtTag::IntArray(a) => a.len(),
         NbtTag::LongArray(a) => a.len(),
@@ -354,6 +365,8 @@ mod data_result_tests {
     fn data_get_collection_lengths_and_nonnumeric_scale_match_vanilla() {
         assert_eq!(tag_result(&NbtTag::String("a😀".into())).unwrap(), 3);
         assert_eq!(tag_result(&NbtTag::IntArray(vec![1, 2, 3])).unwrap(), 3);
+        assert_eq!(tag_result(&NbtTag::List(simdnbt::owned::NbtList::Empty)).unwrap(), 0);
+        assert_eq!(tag_result(&NbtTag::List(simdnbt::owned::NbtList::Int(vec![1, 2]))).unwrap(), 2);
         let mut compound = NbtCompound::new();
         compound.insert("one", 1_i32);
         assert_eq!(tag_result(&NbtTag::Compound(compound)).unwrap(), 1);
