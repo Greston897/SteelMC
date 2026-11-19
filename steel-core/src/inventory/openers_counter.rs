@@ -94,7 +94,7 @@ impl ContainerOpenersCounter {
         state: BlockStateId,
         block: BlockRef,
     ) -> i32 {
-        let old = self.openers.fetch_update(Ordering::AcqRel, Ordering::Acquire, |value| Some((value - 1).max(0))).unwrap_or(0);
+        let old = self.openers.try_update(Ordering::AcqRel, Ordering::Acquire, |value| Some((value - 1).max(0))).unwrap_or(0);
         let remaining = (old - 1).max(0);
         if old != remaining {
             self.notify_signal_change(world, pos, block);

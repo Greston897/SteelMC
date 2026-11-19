@@ -13,6 +13,7 @@ use steel_utils::Downcast as _;
 use crate::block_entity::entities::{ChestBlockEntity, BarrelBlockEntity};
 use crate::inventory::prelude::*;
 use crate::player::player_inventory::PlayerInventory;
+use crate::entity::Entity as _;
 
 /// Builds a chest-like menu with `rows` rows of 9 slots plus the player inventory.
 ///
