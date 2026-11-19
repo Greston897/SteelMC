@@ -30,25 +30,6 @@ jobs:
         if: always()
         run: cargo fmt --all --check 2>&1 | tee /tmp/fmt.log
 
-      - name: Capture suggested formatting patch
-        if: always()
-        run: |
-          rustfmt --edition 2024 --config skip_children=true steel-core/src/world/raid.rs steel-core/src/entity/mob_effect/bad_omen.rs steel-core/src/entity/mob_effect/raid_omen.rs steel-core/src/player/mod.rs steel-core/src/player/player_data.rs steel-core/src/player/player_data_storage/mod.rs steel-core/src/player/player_data_storage/tests.rs
-          git diff --binary > /tmp/rustfmt.patch
-          python3 - <<'PYFMT'
-          import base64
-          data = base64.b64encode(open('/tmp/rustfmt.patch', 'rb').read()).decode()
-          for index, start in enumerate(range(0, len(data), 3000)):
-              print(f"::notice title=rustfmt-patch-{index:04d}::{data[start:start + 3000]}")
-          PYFMT
-
-      - name: Publish suggested formatting patch
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: rustfmt-patch
-          path: /tmp/rustfmt.patch
-
       - name: Clippy
         if: always()
         run: cargo clippy -r --workspace --all-targets --all-features 2>&1 | tee /tmp/clippy.log
