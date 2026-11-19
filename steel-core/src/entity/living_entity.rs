@@ -1240,6 +1240,10 @@ pub trait LivingEntity: Entity {
             return;
         }
 
+        if let Some(world) = self.level() {
+            world.raids.raider_died(self.uuid(), self.last_hurt_by_player_uuid());
+        }
+
         self.handle_killing_blow();
         // Vanilla `LivingEntity.die` calls `getCombatTracker().recheckStatus()`
         // right after the killing blow: the tracker sees `!isAlive()` and closes
