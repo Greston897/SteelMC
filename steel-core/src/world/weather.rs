@@ -24,6 +24,7 @@ use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::vanilla_game_rules::MAX_SNOW_ACCUMULATION_HEIGHT;
 
 use crate::chunk::light::MAX_LIGHT_LEVEL;
+use steel_registry::fluid::FluidStateExt as _;
 
 /// Vanilla `Biome.Precipitation.SNOW` threshold: below this temperature
 /// precipitation falls as snow instead of rain.
