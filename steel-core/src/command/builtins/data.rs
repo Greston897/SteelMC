@@ -75,21 +75,21 @@ fn command() -> Builder {
         .then(
             literal("block").then(
                 argument("targetPos", SteelArgumentType::block_pos())
-                    .executes(|context| get(context, DataTarget::Block, GetKind::Tag))
+                    .executes(|context| get(context, DataTarget::Block, GetKind::Root))
                     .then(get_path_tail(DataTarget::Block)),
             ),
         )
         .then(
             literal("entity").then(
                 argument("target", SteelArgumentType::entity())
-                    .executes(|context| get(context, DataTarget::Entity, GetKind::Tag))
+                    .executes(|context| get(context, DataTarget::Entity, GetKind::Root))
                     .then(get_path_tail(DataTarget::Entity)),
             ),
         )
         .then(
             literal("storage").then(
                 argument("target", SteelArgumentType::storage_key())
-                    .executes(|context| get(context, DataTarget::Storage, GetKind::Tag))
+                    .executes(|context| get(context, DataTarget::Storage, GetKind::Root))
                     .then(get_path_tail(DataTarget::Storage)),
             ),
         );
@@ -103,8 +103,6 @@ fn command() -> Builder {
 fn get_path_tail(target: DataTarget) -> Builder {
     argument("path", SteelArgumentType::nbt_path())
         .executes(move |context| get(context, target, GetKind::Tag))
-        .then(literal("value").executes(move |context| get(context, target, GetKind::Value)))
-        .then(literal("string").executes(move |context| get(context, target, GetKind::String)))
         .then(
             argument(
                 "scale",
@@ -123,16 +121,7 @@ fn remove_tail(target: DataTarget) -> Builder {
 }
 
 #[derive(Clone, Copy)]
-enum GetKind {
-    /// The whole tag at the path, printed as SNBT.
-    Tag,
-    /// A single numeric value, printed bare.
-    Value,
-    /// A stringified scalar.
-    String,
-    /// A numeric value divided by the `scale` argument.
-    Scaled,
-}
+enum GetKind { Root, Tag, Scaled }
 
 fn get(
     context: &SteelCommandContext<CommandSource>,
@@ -140,63 +129,45 @@ fn get(
     kind: GetKind,
 ) -> Result<i32, CommandSyntaxError> {
     let root = read_root(context, target)?;
-    let path = context.nbt_path("path")?.clone();
-    let tags = path.get(&NbtTag::Compound(root));
-    if tags.is_empty() {
-        context.source().send_failure(translated(
-            "commands.data.path.no_data",
-            "Nothing matches that NBT path".to_owned(),
-            Vec::new(),
-        ));
-        return Ok(0);
-    }
-
-    let printed = match kind {
-        GetKind::Tag => tags
-            .iter()
-            .filter_map(to_canonical_snbt)
-            .collect::<Vec<_>>()
-            .join(", "),
-        GetKind::Value => {
-            let Some(value) = tags.first().and_then(numeric_value) else {
-                context.source().send_failure(translated(
-                    "commands.data.path.not_a_number",
-                    "The tag at that path is not a number".to_owned(),
-                    Vec::new(),
-                ));
-                return Ok(0);
-            };
-            format!("{value}")
+    let (printed, result) = if matches!(kind, GetKind::Root) {
+        (to_canonical_snbt(&NbtTag::Compound(root)).unwrap_or_default(), 1)
+    } else {
+        let path = context.nbt_path("path")?.clone();
+        let root = NbtTag::Compound(root);
+        let tags = path.get(&root);
+        if tags.len() != 1 {
+            return Err(CommandSyntaxError::dynamic("Expected exactly one NBT value"));
         }
-        GetKind::String => {
-            let Some(value) = tags.first() else {
-                return Ok(0);
-            };
-            value_string(value)
-        }
-        GetKind::Scaled => {
-            let scale = context.double("scale")?;
-            let Some(value) = tags.first().and_then(numeric_value) else {
-                context.source().send_failure(translated(
-                    "commands.data.path.not_a_number",
-                    "The tag at that path is not a number".to_owned(),
-                    Vec::new(),
-                ));
-                return Ok(0);
-            };
-            format!("{}", value / scale)
-        }
+        let tag = &tags[0];
+        let result = if matches!(kind, GetKind::Scaled) {
+            scaled_numeric_result(tag, context.double("scale")?)?
+        } else { tag_result(tag)? };
+        (to_canonical_snbt(tag).unwrap_or_default(), result)
     };
+    context.source().send_success(&translated("commands.data.get.success",
+        format!("Value: {printed}"), vec![TextComponent::from(printed)]), false);
+    Ok(result)
+}
 
-    context.source().send_success(
-        &translated(
-            "commands.data.get.success",
-            format!("Value: {printed}"),
-            vec![TextComponent::from(printed)],
-        ),
-        false,
-    );
-    Ok(1)
+fn scaled_numeric_result(tag: &NbtTag, scale: f64) -> Result<i32, CommandSyntaxError> {
+    numeric_value(tag).map(|n| (n * scale).floor() as i32)
+        .ok_or_else(|| CommandSyntaxError::dynamic("NBT value is not numeric"))
+}
+
+/// Vanilla DataCommands.getData returns the numeric floor or collection size,
+/// not a constant success count. Java string lengths count UTF-16 code units.
+fn tag_result(tag: &NbtTag) -> Result<i32, CommandSyntaxError> {
+    if let Some(n) = numeric_value(tag) { return Ok(n.floor() as i32); }
+    let size = match tag {
+        NbtTag::String(s) => s.to_string().encode_utf16().count(),
+        NbtTag::Compound(c) => c.len(),
+        NbtTag::List(l) => l.len(),
+        NbtTag::ByteArray(a) => a.len(),
+        NbtTag::IntArray(a) => a.len(),
+        NbtTag::LongArray(a) => a.len(),
+        _ => return Err(CommandSyntaxError::dynamic("NBT value has no size")),
+    };
+    Ok(size as i32)
 }
 
 fn merge(
@@ -358,13 +329,6 @@ fn numeric_value(tag: &NbtTag) -> Option<f64> {
     }
 }
 
-fn value_string(tag: &NbtTag) -> String {
-    match tag {
-        NbtTag::String(value) => value.to_string(),
-        other => to_canonical_snbt(other).unwrap_or_default(),
-    }
-}
-
 /// Builds a translated component with a literal fallback.
 fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> TextComponent {
     TextComponent::translated(TranslatedMessage {
@@ -372,4 +336,27 @@ fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> 
         fallback: Some(Cow::Owned(fallback)),
         args: Some(args.into_boxed_slice()),
     })
+}
+
+#[cfg(test)]
+mod data_result_tests {
+    use super::*;
+
+    #[test]
+    fn data_get_returns_numeric_floor_not_constant_success() {
+        assert_eq!(tag_result(&NbtTag::Float(6.0)).unwrap(), 6);
+        assert_eq!(tag_result(&NbtTag::Double(-1.2)).unwrap(), -2);
+        assert_eq!(scaled_numeric_result(&NbtTag::Double(2.5), 3.0).unwrap(), 7);
+        assert_eq!(scaled_numeric_result(&NbtTag::Double(-1.2), 2.0).unwrap(), -3);
+    }
+
+    #[test]
+    fn data_get_collection_lengths_and_nonnumeric_scale_match_vanilla() {
+        assert_eq!(tag_result(&NbtTag::String("a😀".into())).unwrap(), 3);
+        assert_eq!(tag_result(&NbtTag::IntArray(vec![1, 2, 3])).unwrap(), 3);
+        let mut compound = NbtCompound::new();
+        compound.insert("one", 1_i32);
+        assert_eq!(tag_result(&NbtTag::Compound(compound)).unwrap(), 1);
+        assert!(scaled_numeric_result(&NbtTag::String("6".into()), 1.0).is_err());
+    }
 }
