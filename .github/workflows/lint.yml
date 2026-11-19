@@ -33,8 +33,11 @@ jobs:
       - name: Capture suggested formatting patch
         if: always()
         run: |
-          cargo fmt --all
+          rustfmt --edition 2024 --config skip_children=true steel-core/src/world/raid.rs steel-core/src/entity/mob_effect/bad_omen.rs steel-core/src/entity/mob_effect/raid_omen.rs steel-core/src/player/mod.rs steel-core/src/player/player_data.rs steel-core/src/player/player_data_storage/mod.rs steel-core/src/player/player_data_storage/tests.rs
           git diff --binary > /tmp/rustfmt.patch
+          base64 -w 6000 /tmp/rustfmt.patch | while IFS= read -r line; do
+            echo "::notice title=rustfmt-patch::$line"
+          done
 
       - name: Publish suggested formatting patch
         if: always()
