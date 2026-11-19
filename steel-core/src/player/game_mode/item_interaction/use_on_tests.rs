@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use glam::DVec3;
 use steel_registry::block_transformer::BlockTransformerComponent;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::data_components::UseRemainder;
 use steel_registry::data_components::vanilla_components::{
     BLOCK_TRANSFORMER, USE_COOLDOWN, USE_REMAINDER, UseCooldown,

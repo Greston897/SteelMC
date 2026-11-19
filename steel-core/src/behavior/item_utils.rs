@@ -33,7 +33,7 @@ pub(crate) fn create_filled_result(
     result_stack: ItemStack,
     limit_creative_stack_size: bool,
 ) {
-    create_filled_result_for_hand(context.player, context.inv, context.hand, result_stack, limit_creative_stack_size);
+    create_filled_result_for_hand(context.player, &context.inv, context.hand, result_stack, limit_creative_stack_size);
 }
 
 /// The same filled-result transaction for block interactions such as cauldrons.
