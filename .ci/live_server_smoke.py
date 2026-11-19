@@ -102,6 +102,12 @@ class Rcon:
         self.stream.close()
 
 
+def probe_reply(text):
+    # Scoreboard get_score emits this literal server-side response. Merely
+    # echoing a command or an error mentioning 731 is not proof of execution.
+    return any(line.strip() == "probe has 731 [ci]" for line in text.splitlines())
+
+
 def run(binary, root, output, timeout):
     root.mkdir(parents=True, exist_ok=False)
     output.mkdir(parents=True, exist_ok=True)
@@ -156,13 +162,13 @@ def run(binary, root, output, timeout):
 
     def check(condition, wait=30):
         # A successful conditional must execute a distinct command returning the
-        # pre-existing marker. Neither the condition nor the get command contains
-        # that marker, preventing echoed input from becoming a false PASS.
+        # pre-existing marker. Require its exact response, not an echoed input
+        # or an error message containing the number.
         deadline = time.monotonic() + wait
         last = ""
         while time.monotonic() < deadline:
             last = client.command(f"execute if {condition} run scoreboard players get probe ci")
-            if "731" in last:
+            if probe_reply(last):
                 return
             time.sleep(0.2)
         raise AssertionError(f"condition not satisfied: {condition}; response={last!r}")

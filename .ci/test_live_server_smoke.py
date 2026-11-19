@@ -18,6 +18,12 @@ class Bytes(io.BytesIO):
 
 
 class WireTests(unittest.TestCase):
+    def test_only_executed_score_get_is_runtime_evidence(self):
+        self.assertTrue(smoke.probe_reply("probe has 731 [ci]"))
+        self.assertTrue(smoke.probe_reply("Test passed\nprobe has 731 [ci]\n"))
+        for text in ["execute if score probe ci matches 731", "error: 731", "", "probe has 0 [ci]"]:
+            self.assertFalse(smoke.probe_reply(text))
+
     def test_varint_boundaries(self):
         for value in [0, 1, 127, 128, 255, 2**21, 2**31 - 1, -1]:
             self.assertEqual(smoke.read_varint(Bytes(smoke.varint(value))), value & 0xffffffff)
