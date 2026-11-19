@@ -2155,6 +2155,11 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         )
         .is_ok()
     );
+    // Vanilla Entity.isAlliedTo includes self and scoreboard teammates. This
+    // is consumed by sweep exclusions and AI combat targeting, not just UI.
+    assert!(op_player.is_allied_to(op_player.as_ref()));
+    assert!(op_player.is_allied_to(guest_player.as_ref()));
+    assert!(guest_player.is_allied_to(op_player.as_ref()));
     // Verify scoreboard score mutated by `/scoreboard players set` + `add` == 125!
     let domain_sb = server
         .scoreboards

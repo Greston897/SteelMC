@@ -613,8 +613,12 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     }
 
     /// Returns whether this entity is allied to `other`.
-    fn is_allied_to(&self, _other: &dyn Entity) -> bool {
-        false
+    fn is_allied_to(&self, other: &dyn Entity) -> bool {
+        if self.uuid() == other.uuid() {
+            return true;
+        }
+        let Some(team) = self.team_name() else { return false; };
+        other.team_name().is_some_and(|other_team| other_team == team)
     }
 
     /// Returns whether this entity is a marker armor stand.
