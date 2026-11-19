@@ -39,7 +39,7 @@ use steel_utils::{BlockPos, Identifier};
 const PLAYER_MAGIC: [u8; 4] = *b"STLP";
 const GLOBAL_MAGIC: [u8; 4] = *b"STLG";
 /// Current on-disk layout version of a player data file.
-const PLAYER_STORAGE_VERSION: u16 = 12;
+const PLAYER_STORAGE_VERSION: u16 = 13;
 /// Oldest on-disk layout this build can still read.
 ///
 /// Version 10 lacked the vanilla `warden_spawn_tracker` block that version 11
@@ -105,7 +105,92 @@ struct PlayerDataFile {
     warden_spawn_tracker: WardenSpawnTrackerFile,
     /// Vanilla `post_effects` ids; empty for every save older than version 12.
     post_effects: Vec<String>,
+    raid_omen_position: Option<[i32; 3]>,
 }
+
+/// Version 12 layout, before the pending raid origin was appended.
+#[derive(SchemaWrite, SchemaRead)]
+struct PlayerDataFileV12 {
+    data_version: i32,
+    pos: [f64; 3],
+    motion: [f64; 3],
+    rotation: [f32; 2],
+    on_ground: bool,
+    fall_flying: bool,
+    remaining_fire_ticks: i32,
+    ticks_frozen: i32,
+    is_in_powder_snow: bool,
+    was_in_powder_snow: bool,
+    has_visual_fire: bool,
+    health: f32,
+    game_mode: i32,
+    prev_game_mode: Option<i32>,
+    abilities: AbilitiesFile,
+    inventory: Vec<SlotFile>,
+    selected_slot: i32,
+    world: String,
+    food_level: i32,
+    food_saturation_level: f32,
+    food_exhaustion_level: f32,
+    food_tick_timer: i32,
+    experience_level: i32,
+    experience_progress: f32,
+    experience_total: i32,
+    enchantment_seed: i32,
+    score: i32,
+    seen_credits: bool,
+    root_vehicle: Option<RootVehicleFile>,
+    respawn_config: Option<RespawnConfigFile>,
+    ender_pearls: Vec<EnderPearlFile>,
+    ender_items: Vec<SlotFile>,
+    warden_spawn_tracker: WardenSpawnTrackerFile,
+    /// Vanilla `post_effects` ids; empty for every save older than version 12.
+    post_effects: Vec<String>,
+}
+
+impl PlayerDataFileV12 {
+    fn into_current(self) -> PlayerDataFile {
+        PlayerDataFile {
+            data_version: self.data_version,
+            pos: self.pos,
+            motion: self.motion,
+            rotation: self.rotation,
+            on_ground: self.on_ground,
+            fall_flying: self.fall_flying,
+            remaining_fire_ticks: self.remaining_fire_ticks,
+            ticks_frozen: self.ticks_frozen,
+            is_in_powder_snow: self.is_in_powder_snow,
+            was_in_powder_snow: self.was_in_powder_snow,
+            has_visual_fire: self.has_visual_fire,
+            health: self.health,
+            game_mode: self.game_mode,
+            prev_game_mode: self.prev_game_mode,
+            abilities: self.abilities,
+            inventory: self.inventory,
+            selected_slot: self.selected_slot,
+            world: self.world,
+            food_level: self.food_level,
+            food_saturation_level: self.food_saturation_level,
+            food_exhaustion_level: self.food_exhaustion_level,
+            food_tick_timer: self.food_tick_timer,
+            experience_level: self.experience_level,
+            experience_progress: self.experience_progress,
+            experience_total: self.experience_total,
+            enchantment_seed: self.enchantment_seed,
+            score: self.score,
+            seen_credits: self.seen_credits,
+            root_vehicle: self.root_vehicle,
+            respawn_config: self.respawn_config,
+            ender_pearls: self.ender_pearls,
+            ender_items: self.ender_items,
+            warden_spawn_tracker: self.warden_spawn_tracker,
+            post_effects: self.post_effects,
+            raid_omen_position: None,
+        }
+    }
+}
+
+
 
 /// Vanilla `warden_spawn_tracker` in the player save.
 #[derive(Debug, SchemaWrite, SchemaRead)]
@@ -402,6 +487,7 @@ impl PlayerDataFileV10 {
             },
             // Vanilla default: no screen effect was ever added.
             post_effects: Vec::new(),
+            raid_omen_position: None,
         }
     }
 }
@@ -482,6 +568,7 @@ impl PlayerDataFileV11 {
             ender_items: self.ender_items,
             warden_spawn_tracker: self.warden_spawn_tracker,
             post_effects: Vec::new(),
+            raid_omen_position: None,
         }
     }
 }
@@ -566,6 +653,7 @@ impl PlayerDataFile {
                 cooldown_ticks: data.warden_spawn_tracker.cooldown_ticks,
             },
             post_effects: data.post_effects.iter().map(ToString::to_string).collect(),
+            raid_omen_position: data.raid_omen_position,
         })
     }
 
@@ -663,6 +751,7 @@ impl PlayerDataFile {
                 warning_level: self.warden_spawn_tracker.warning_level,
                 cooldown_ticks: self.warden_spawn_tracker.cooldown_ticks,
             },
+            raid_omen_position: self.raid_omen_position,
             post_effects: self
                 .post_effects
                 .iter()
@@ -741,6 +830,12 @@ fn decode_player_file(bytes: &[u8]) -> io::Result<PlayerDataFile> {
             let payload = decode_file(PLAYER_MAGIC, PLAYER_STORAGE_VERSION, bytes)?;
             wincode::deserialize(&payload)
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))
+        }
+        12 => {
+            let payload = decode_file(PLAYER_MAGIC, 12, bytes)?;
+            let old: PlayerDataFileV12 = wincode::deserialize(&payload)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))?;
+            Ok(old.into_current())
         }
         11 => {
             // Saves written before `post_effects` existed: the payload is a

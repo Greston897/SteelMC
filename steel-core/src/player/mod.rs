@@ -211,6 +211,8 @@ pub struct Player {
 
     /// Client lifecycle flags.
     lifecycle: SyncMutex<PlayerLifecycleState>,
+    /// Position captured when bad omen becomes raid omen.
+    pub(crate) raid_omen_position: SyncMutex<Option<BlockPos>>,
 
     /// Movement tracking state
     pub(crate) movement: SyncMutex<MovementState>,
@@ -909,6 +911,7 @@ impl Player {
                 world_ref,
             ),
             lifecycle: SyncMutex::new(PlayerLifecycleState::default()),
+            raid_omen_position: SyncMutex::new(None),
             movement: SyncMutex::new(MovementState::new()),
             entity_data: SyncMutex::new({
                 let mut data = PlayerEntityData::new();

@@ -32,7 +32,7 @@ use crate::{
 /// and quiet ticks), version 9 the vanilla `post_effects` list. Older saves
 /// start with the defaults, which is exactly vanilla's behaviour for a player
 /// that never triggered a shrieker and never had a screen effect applied.
-pub const PLAYER_DATA_VERSION: i32 = 9;
+pub const PLAYER_DATA_VERSION: i32 = 10;
 
 /// Persistent player data saved by Steel's storage backend.
 ///
@@ -148,6 +148,8 @@ pub struct PersistentPlayerData {
     /// Vanilla `post_effects`: the ordered list of screen effects the client
     /// applies, stored as registry ids.
     pub post_effects: Vec<Identifier>,
+    /// Vanilla pending raid origin, independent of subsequent player movement.
+    pub raid_omen_position: Option<[i32; 3]>,
 }
 
 /// Vanilla `WardenSpawnTracker` saved with the player.
@@ -330,6 +332,7 @@ impl PersistentPlayerData {
                 }
             },
             post_effects,
+            raid_omen_position: player.raid_omen_position.lock().map(|pos| pos.0.to_array()),
         }
     }
 
@@ -408,6 +411,7 @@ impl Player {
         // A first visit has no saved render state, so the empty list is the
         // vanilla default and still has to reach the client.
         self.replace_post_effects(Vec::new());
+        *self.raid_omen_position.lock() = None;
     }
 }
 
@@ -566,6 +570,7 @@ impl PersistentPlayerData {
         player.set_score(self.score);
         player.set_seen_credits(self.seen_credits);
         player.replace_post_effects(self.post_effects.clone());
+        *player.raid_omen_position.lock() = self.raid_omen_position.map(|pos| steel_utils::BlockPos(glam::IVec3::from_array(pos)));
 
         // Statistics
         {

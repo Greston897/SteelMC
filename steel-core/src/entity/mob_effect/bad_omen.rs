@@ -42,17 +42,13 @@ impl MobEffectBehavior for BadOmenBehavior {
             return true;
         }
 
-        world.raids.raise_omen(center, amplifier);
-        // Vanilla `BadOmenMobEffect.applyEffectTick` fires `CriteriaTriggers.
-        // VOLUNTARY_EXILE` on the player that caused the raid, which is exactly
-        // this player walking bad omen into a village.
-        player.trigger_advancement_with_context(
-            &steel_registry::vanilla_criteria_triggers::VOLUNTARY_EXILE,
-            &crate::player::advancement::predicate::TriggerContext::at(
-                &player.get_world(),
-                player.position(),
-            ),
-        );
-        true
+        if world.difficulty() == steel_utils::types::Difficulty::Peaceful {
+            return true;
+        }
+        player.add_mob_effect(crate::entity::MobEffectInstance::with_duration(
+            steel_registry::vanilla_mob_effects::RAID_OMEN, 600, amplifier,
+        ));
+        *player.raid_omen_position.lock() = Some(pos);
+        false
     }
 }

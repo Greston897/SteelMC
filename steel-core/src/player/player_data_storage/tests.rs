@@ -79,6 +79,7 @@ fn sample_player_file(data_version: i32) -> PlayerDataFile {
             cooldown_ticks: 40,
         },
         post_effects: vec!["minecraft:invert".to_owned(), "minecraft:blur".to_owned()],
+        raid_omen_position: Some([-31, 64, 128]),
     }
 }
 

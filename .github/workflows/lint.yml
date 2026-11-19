@@ -30,6 +30,19 @@ jobs:
         if: always()
         run: cargo fmt --all --check 2>&1 | tee /tmp/fmt.log
 
+      - name: Capture suggested formatting patch
+        if: always()
+        run: |
+          cargo fmt --all
+          git diff --binary > /tmp/rustfmt.patch
+
+      - name: Publish suggested formatting patch
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustfmt-patch
+          path: /tmp/rustfmt.patch
+
       - name: Clippy
         if: always()
         run: cargo clippy -r --workspace --all-targets --all-features 2>&1 | tee /tmp/clippy.log
