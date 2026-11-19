@@ -287,7 +287,7 @@ def run(binary, root, output, timeout, vanilla_jar=None):
         record("instant_health_restores_live_entity", lambda: check("score health ci matches 10",
             before=lambda: client.command("execute store result score health ci run data get entity @e[tag=ci_combat,limit=1] Health")))
         client.command("damage @e[tag=ci_combat,limit=1] 100 minecraft:generic_kill")
-        record("dead_entity_is_removed_on_server_ticks", lambda: check("entity @e[tag=ci_combat,limit=1]", expected=False))
+        record("dead_entity_is_not_selectable", lambda: check("entity @e[tag=ci_combat,limit=1]", expected=False))
         record("graceful_stop_saves_world", stop)
         record("restart_same_disk_world", lambda: boot("restart"))
         record("scoreboard_survives_restart", lambda: check("score probe ci matches 731"))

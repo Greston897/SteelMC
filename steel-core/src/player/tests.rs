@@ -2066,3 +2066,23 @@ fn combat_sweep_requires_grounded_charged_sword_and_uses_primary_target_box() {
         }
     }
 }
+
+#[test]
+fn combat_melee_redirects_fireball_and_transfers_owner_without_destroying_it() {
+    use crate::entity::{Projectile as _, entities::LargeFireballEntity};
+    init_vanilla_registry();
+    init_behaviors();
+    let fixture = fresh_test_world("combat_fireball_deflection");
+    let attacker = test_player(Arc::clone(&fixture.world));
+    attacker.set_rotation((90.0, 0.0));
+    for _ in 0..30 { attacker.tick_attack_strength(); }
+    let fireball = Arc::new(LargeFireballEntity::new(&vanilla_entities::FIREBALL,
+        2, DVec3::new(8.0, 64.0, 8.0), Arc::downgrade(&fixture.world)));
+    fireball.set_velocity(DVec3::new(0.0, 0.0, -1.0));
+    let target: SharedEntity = fireball.clone();
+    assert!(attacker.attack(&target));
+    assert_eq!(fireball.owner_uuid(), Some(attacker.uuid()));
+    assert!(fireball.velocity().distance(attacker.look_angle()) < 1.0e-6);
+    assert!(!fireball.is_removed());
+    assert!(attacker.attack_strength_scale(0.0) < 0.001);
+}

@@ -453,6 +453,20 @@ impl Player {
         let knockback_attack = self.is_sprinting() && full_strength_attack;
         self.reset_attack_strength_ticker();
 
+        // Vanilla performs attack deflection before testing damage or applying
+        // crit/sweep, and transfers projectile ownership to the deflector.
+        if {
+            use steel_registry::TaggedRegistryExt as _;
+            steel_registry::REGISTRY.entity_types.is_in_tag(entity.entity_type(),
+                &steel_registry::vanilla_entity_type_tags::EntityTypeTag::REDIRECTABLE_PROJECTILE)
+        } && let Some(projectile) = entity.as_projectile()
+            && projectile.deflect(crate::entity::ProjectileDeflection::AimDeflect,
+                Some(self.as_ref()), Some(crate::entity::EntityReference::from_uuid(self.uuid())), true)
+        {
+            self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_NODAMAGE, 1.0, 1.0);
+            return true;
+        }
+
         if total_damage <= 0.0 {
             return false;
         }
