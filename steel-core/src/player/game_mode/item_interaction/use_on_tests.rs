@@ -541,3 +541,79 @@ fn washing_colored_shulker_preserves_components_and_consumes_one_water_level() {
         }));
     }
 }
+
+#[test]
+fn water_cauldron_washes_dyed_equipment_in_place_including_creative_and_offhand() {
+    use steel_registry::data_components::{DyedItemColor, vanilla_components::{DYED_COLOR, CUSTOM_NAME}};
+    use steel_registry::blocks::properties::BlockStateProperties;
+    for hand in [InteractionHand::MainHand, InteractionHand::OffHand] {
+        for mode in [GameType::Survival, GameType::Creative] {
+            for item in [&vanilla_items::LEATHER_HELMET, &vanilla_items::LEATHER_CHESTPLATE,
+                &vanilla_items::LEATHER_LEGGINGS, &vanilla_items::LEATHER_BOOTS, &vanilla_items::LEATHER_HORSE_ARMOR] {
+                let fixture = Interaction::new("cauldron_equipment_wash");
+                fixture.player.set_game_mode(mode);
+                fixture.block(vanilla_blocks::WATER_CAULDRON.default_state().set_value(&BlockStateProperties::LEVEL_CAULDRON, 2));
+                let mut stack = ItemStack::new(item);
+                stack.set(DYED_COLOR, DyedItemColor::new(0xff00aa));
+                stack.set(CUSTOM_NAME, TextComponent::plain("Keep name"));
+                fixture.hold(hand, stack);
+                assert!(fixture.use_on(hand).consumes_action());
+                assert_eq!(fixture.count(item), 1);
+                let inventory = fixture.player.inventory.lock();
+                let washed = inventory.get_item_in_hand(hand);
+                assert!(washed.get(DYED_COLOR).is_none());
+                assert_eq!(washed.get(CUSTOM_NAME), Some(&TextComponent::plain("Keep name")));
+                assert_eq!(fixture.world_fixture.world.get_block_state(fixture.pos).get_value(&BlockStateProperties::LEVEL_CAULDRON), 1);
+            }
+        }
+    }
+}
+
+#[test]
+fn cauldron_dye_washing_rejects_uncolored_equipment_wrong_items_and_snow() {
+    use steel_registry::data_components::{DyedItemColor, vanilla_components::DYED_COLOR};
+    for (item, colored, block) in [(&vanilla_items::LEATHER_HELMET, false, &vanilla_blocks::WATER_CAULDRON),
+        (&vanilla_items::STICK, true, &vanilla_blocks::WATER_CAULDRON),
+        (&vanilla_items::LEATHER_HELMET, true, &vanilla_blocks::POWDER_SNOW_CAULDRON)] {
+        let fixture = Interaction::new("cauldron_wash_reject");
+        let state = block.default_state();
+        fixture.block(state);
+        let mut stack = ItemStack::new(item);
+        if colored { stack.set(DYED_COLOR, DyedItemColor::new(123)); }
+        fixture.hold(InteractionHand::MainHand, stack.clone());
+        fixture.use_on(InteractionHand::MainHand);
+        assert_eq!(fixture.world_fixture.world.get_block_state(fixture.pos), state);
+        assert_eq!(fixture.player.inventory.lock().get_item_in_hand(InteractionHand::MainHand), &stack);
+    }
+}
+
+#[test]
+fn cauldron_banner_washing_removes_only_top_layer_from_one_banner() {
+    use steel_registry::{DyeColor, RegistryHolder, vanilla_banner_patterns};
+    use steel_registry::data_components::{BannerPatternLayer, BannerPatternLayers, vanilla_components::{BANNER_PATTERNS, CUSTOM_NAME}};
+    use steel_registry::blocks::properties::BlockStateProperties;
+    for mode in [GameType::Survival, GameType::Creative] {
+        for hand in [InteractionHand::MainHand, InteractionHand::OffHand] {
+            let fixture = Interaction::new("cauldron_banner_wash");
+            fixture.player.set_game_mode(mode);
+            fixture.block(vanilla_blocks::WATER_CAULDRON.default_state().set_value(&BlockStateProperties::LEVEL_CAULDRON, 3));
+            let bottom = BannerPatternLayer::new(RegistryHolder::reference(&vanilla_banner_patterns::STRIPE_BOTTOM), DyeColor::Red);
+            let top = BannerPatternLayer::new(RegistryHolder::reference(&vanilla_banner_patterns::CROSS), DyeColor::Blue);
+            let mut stack = ItemStack::with_count(&vanilla_items::WHITE_BANNER, 2);
+            stack.set(BANNER_PATTERNS, BannerPatternLayers::new(vec![bottom.clone(), top]));
+            stack.set(CUSTOM_NAME, TextComponent::plain("Flag"));
+            fixture.hold(hand, stack);
+            assert!(fixture.use_on(hand).consumes_action());
+            let inventory = fixture.player.inventory.lock();
+            assert_eq!(inventory.get_item_in_hand(hand).count(), if mode == GameType::Creative { 2 } else { 1 });
+            assert_eq!(inventory.get_item_in_hand(hand).get(BANNER_PATTERNS).unwrap().layers().len(), 2);
+            let cleaned: Vec<_> = (0..inventory.get_container_size()).map(|slot| inventory.get_item(slot))
+                .filter(|item| item.is(&vanilla_items::WHITE_BANNER) && item.get(BANNER_PATTERNS).is_some_and(|p| p.layers().len() == 1)).collect();
+            assert_eq!(cleaned.len(), 1);
+            assert_eq!(cleaned[0].count(), 1);
+            assert_eq!(cleaned[0].get(BANNER_PATTERNS).unwrap().layers(), &[bottom]);
+            assert_eq!(cleaned[0].get(CUSTOM_NAME), Some(&TextComponent::plain("Flag")));
+            assert_eq!(fixture.world_fixture.world.get_block_state(fixture.pos).get_value(&BlockStateProperties::LEVEL_CAULDRON), 2);
+        }
+    }
+}

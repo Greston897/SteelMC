@@ -1,8 +1,4 @@
-//! State-driven cauldron behavior needed by comparators.
-//!
-//! Cauldron item interactions and drip filling remain separate block mechanics;
-//! this module implements the complete vanilla analog-output contract shared by
-//! empty, water, and powder-snow cauldrons.
+//! Cauldron analog output, drip filling and shared vanilla item interactions.
 
 use std::sync::Arc;
 
@@ -246,6 +242,21 @@ pub(super) fn cauldron_item_interaction(
     let level = if water || snow { state.get_value(LEVEL_CAULDRON) } else { 0 };
     let lower = || if level <= 1 { vanilla_blocks::CAULDRON.default_state() }
         else { state.set_value(LEVEL_CAULDRON, level - 1) };
+    use steel_registry::data_components::vanilla_components::{DYED_COLOR, BANNER_PATTERNS};
+    use steel_registry::vanilla_item_tags::ItemTag;
+    // The tagged equipment path mutates the held item, rather than exchanging
+    // one item. Creative players also lose the dye, without duplicating armor.
+    if water && item.has_tag(&ItemTag::CAULDRON_CAN_REMOVE_DYE) {
+        if held.get(DYED_COLOR).is_none() {
+            return InteractionResult::TryEmptyHandInteraction;
+        }
+        inv.with_item(|item| item.remove(DYED_COLOR));
+        player.award_custom_stat(&stats::CLEAN_ARMOR);
+        let next = lower();
+        world.set_block(pos, next, UpdateFlags::UPDATE_ALL);
+        world.game_event(&vanilla_game_events::BLOCK_CHANGE, pos, &GameEventContext::new(None, Some(next)));
+        return InteractionResult::Success;
+    }
     let (result, next, sound, placing, stat, award_item, creative_limit) = if item == &*items::WATER_BUCKET
         || item == &*items::LAVA_BUCKET || item == &*items::POWDER_SNOW_BUCKET {
         if item != &*items::WATER_BUCKET && world.get_block_state(pos.above()).get_fluid_state().is_water() {
@@ -269,6 +280,15 @@ pub(super) fn cauldron_item_interaction(
     } else if (empty || water && level < 3) && item == &*items::POTION
         && held.get(steel_registry::data_components::vanilla_components::POTION_CONTENTS).is_some_and(|potion| potion.is(&vanilla_potions::WATER)) {
         (ItemStack::new(&items::GLASS_BOTTLE), vanilla_blocks::WATER_CAULDRON.default_state().set_value(LEVEL_CAULDRON, level + 1), Some(&sounds::ITEM_BOTTLE_EMPTY), true, &stats::USE_CAULDRON, true, true)
+    } else if water && item.has_tag(&ItemTag::BANNERS) {
+        let Some(patterns) = held.get(BANNER_PATTERNS).filter(|patterns| !patterns.layers().is_empty()) else {
+            return InteractionResult::TryEmptyHandInteraction;
+        };
+        let mut layers = patterns.layers().to_vec();
+        layers.pop();
+        let mut cleaned = held.copy_with_count(1);
+        cleaned.set(BANNER_PATTERNS, steel_registry::data_components::BannerPatternLayers::new(layers));
+        (cleaned, lower(), None, false, &stats::CLEAN_BANNER, false, false)
     } else if water && item != &*items::SHULKER_BOX && item.block.is_some_and(|block| block.has_tag(&steel_registry::vanilla_block_tags::BlockTag::SHULKER_BOXES)) {
         (ItemStack::with_count_and_patch(&items::SHULKER_BOX, 1, held.components_patch().clone()), lower(), None, false, &stats::CLEAN_SHULKER_BOX, false, false)
     } else { return InteractionResult::TryEmptyHandInteraction; };
