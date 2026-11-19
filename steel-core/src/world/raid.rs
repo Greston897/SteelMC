@@ -8,7 +8,7 @@ use steel_utils::{BlockPos, types::Difficulty};
 use uuid::Uuid;
 
 use serde::{Deserialize, Serialize};
-use steel_registry::{vanilla_mob_effects, vanilla_entities, RegistryExt as _};
+use steel_registry::{vanilla_mob_effects, vanilla_entities, RegistryExt as _, TaggedRegistryExt as _};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 
 use crate::entity::{Entity as _, LivingEntity as _, MobEffectInstance};
@@ -213,7 +213,7 @@ impl RaidManager {
         self.raids.lock().retain_mut(|raid| {
             if !world.get_game_rule(&steel_registry::vanilla_game_rules::RAIDS)
                 || world.difficulty() == Difficulty::Peaceful { return false; }
-            if world.height_at(HeightmapType::WorldSurface, raid.center.x, raid.center.z).is_none() {
+            if world.as_ref().height_at(HeightmapType::WorldSurface, raid.center.x, raid.center.z).is_none() {
                 return true;
             }
             if raid.status != RaidStatus::Ongoing {
@@ -289,7 +289,7 @@ fn find_spawn_pos(world: &Arc<World>, center: IVec3) -> Option<BlockPos> {
             let angle = angle + f64::from(attempt) * std::f64::consts::PI / 8.0;
             let x = center.x + (angle.cos() * radius).floor() as i32;
             let z = center.z + (angle.sin() * radius).floor() as i32;
-            let Some(y) = world.height_at(HeightmapType::WorldSurface, x, z) else { continue; };
+            let Some(y) = world.as_ref().height_at(HeightmapType::WorldSurface, x, z) else { continue; };
             if (y - center.y).abs() > 96 { continue; }
             let pos = BlockPos::new(x, y, z);
             if !world.get_block_state(BlockPos::new(x, y - 1, z)).is_solid()
@@ -462,6 +462,7 @@ mod lifecycle_tests {
 
     #[test]
     fn real_spawned_wave_does_not_clear_with_elapsed_time_and_death_hook_removes_it() {
+        steel_registry::init_vanilla_registry();
         init_behaviors();
         let fixture = fresh_test_world_with_difficulty("raid_real_wave", Difficulty::Normal);
         let world = &fixture.world;

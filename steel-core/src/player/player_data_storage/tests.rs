@@ -1045,3 +1045,48 @@ async fn in_memory_permission_subjects_round_trip() {
         subjects
     );
 }
+
+#[test]
+fn version_12_player_save_migrates_without_inventing_raid_origin() {
+    let current = sample_player_file(PLAYER_DATA_VERSION);
+    let old = PlayerDataFileV12 {
+        data_version: current.data_version,
+        pos: current.pos,
+        motion: current.motion,
+        rotation: current.rotation,
+        on_ground: current.on_ground,
+        fall_flying: current.fall_flying,
+        remaining_fire_ticks: current.remaining_fire_ticks,
+        ticks_frozen: current.ticks_frozen,
+        is_in_powder_snow: current.is_in_powder_snow,
+        was_in_powder_snow: current.was_in_powder_snow,
+        has_visual_fire: current.has_visual_fire,
+        health: current.health,
+        game_mode: current.game_mode,
+        prev_game_mode: current.prev_game_mode,
+        abilities: current.abilities,
+        inventory: current.inventory,
+        selected_slot: current.selected_slot,
+        world: current.world,
+        food_level: current.food_level,
+        food_saturation_level: current.food_saturation_level,
+        food_exhaustion_level: current.food_exhaustion_level,
+        food_tick_timer: current.food_tick_timer,
+        experience_level: current.experience_level,
+        experience_progress: current.experience_progress,
+        experience_total: current.experience_total,
+        enchantment_seed: current.enchantment_seed,
+        score: current.score,
+        seen_credits: current.seen_credits,
+        root_vehicle: current.root_vehicle,
+        respawn_config: current.respawn_config,
+        ender_pearls: current.ender_pearls,
+        ender_items: current.ender_items,
+        warden_spawn_tracker: current.warden_spawn_tracker,
+        post_effects: current.post_effects,
+    };
+    let bytes = encode_file(PLAYER_MAGIC, 12, wincode::serialize(&old)).unwrap();
+    let decoded = decode_player_file(&bytes).unwrap();
+    assert!(decoded.raid_omen_position.is_none());
+    assert_eq!(decoded.post_effects.len(), 2);
+}
