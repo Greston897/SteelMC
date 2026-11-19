@@ -40,7 +40,6 @@ use crate::physics::MoveResult;
 use crate::world::World;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
-const CROSSBOW_CHARGE_TICKS: i32 = 25;
 const CROSSBOW_ATTACK_RADIUS: f64 = 15.0;
 const CROSSBOW_ATTACK_RADIUS_SQR: f64 = CROSSBOW_ATTACK_RADIUS * CROSSBOW_ATTACK_RADIUS;
 const CROSSBOW_RELOAD_TICKS: i32 = 20;
@@ -159,6 +158,10 @@ impl PillagerCrossbowAttackGoal {
     }
 }
 
+fn pillager_crossbow_charge_ticks(mob: &dyn PathfinderMob) -> i32 {
+    crate::behavior::items::CrossbowItem::charge_duration(&mob.equipment_in_slot(EquipmentSlot::MainHand))
+}
+
 impl Goal for PillagerCrossbowAttackGoal {
     fn controls(&self) -> GoalControls {
         GoalControls::MOVE | GoalControls::LOOK
@@ -210,7 +213,7 @@ impl Goal for PillagerCrossbowAttackGoal {
             } else {
                 self.set_charging(true);
                 self.charge_ticks += 1;
-                if self.charge_ticks >= CROSSBOW_CHARGE_TICKS {
+                if self.charge_ticks >= pillager_crossbow_charge_ticks(mob) {
                     mob.perform_ranged_attack(entity, &target, 1.0);
                     self.charge_ticks = 0;
                     self.reload_ticks = CROSSBOW_RELOAD_TICKS;
@@ -407,6 +410,20 @@ mod tests {
     use crate::entity::{Entity, LivingEntity, Mob};
     use crate::inventory::equipment::EquipmentSlot;
     use steel_registry::vanilla_items;
+
+    #[test]
+    fn raid_quick_charge_equipment_changes_real_pillager_charge_time() {
+        init_vanilla_registry();
+        let pillager = PillagerEntity::new(&vanilla_entities::PILLAGER, 1, DVec3::ZERO, Weak::new());
+        for (level, duration) in [(0, 25), (1, 20), (2, 15)] {
+            let mut enchantments = steel_registry::data_components::vanilla_components::ItemEnchantments::empty();
+            enchantments.set(steel_registry::vanilla_enchantments::QUICK_CHARGE.key.clone(), level);
+            pillager.with_equipment_slot_mut(EquipmentSlot::MainHand, &mut |weapon| {
+                weapon.set(steel_registry::data_components::vanilla_components::ENCHANTMENTS, enchantments.clone());
+            });
+            assert_eq!(pillager_crossbow_charge_ticks(&pillager), duration);
+        }
+    }
 
     #[test]
     fn pillager_uses_registry_attributes_and_round_trips_nbt() {

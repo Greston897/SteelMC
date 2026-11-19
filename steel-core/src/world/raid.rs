@@ -562,7 +562,9 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
                     .as_living_entity()
                     .map_or(0, |living| living.get_health().ceil() as i32);
                 if let Some(living) = entity.as_living_entity() {
-                    if let Some(weapon) = raid_weapon(kind, wave, raid.omen_level, rand::random()) {
+                    if let Some(weapon) = raid_weapon(kind, wave, raid.omen_level, rand::random())
+                        && (kind == 0 || weapon.get(steel_registry::data_components::vanilla_components::ENCHANTMENTS).is_some_and(|value| !value.levels.is_empty()))
+                    {
                         living.with_equipment_slot_mut(crate::inventory::equipment::EquipmentSlot::MainHand,
                             &mut |item| *item = weapon.clone());
                     }
@@ -605,8 +607,11 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
                         if let Some(mob) = rider.as_mob() {
                             mob.set_persistence_required();
                         }
+                        let rider_kind = if entity_type == &vanilla_entities::VINDICATOR { 0 } else if entity_type == &vanilla_entities::PILLAGER { 2 } else { 1 };
                         if let Some(living) = rider.as_living_entity()
-                            && let Some(weapon) = raid_weapon(if entity_type == &vanilla_entities::VINDICATOR { 0 } else if entity_type == &vanilla_entities::PILLAGER { 2 } else { 1 }, wave, raid.omen_level, rand::random()) {
+                            && let Some(weapon) = raid_weapon(rider_kind, wave, raid.omen_level, rand::random())
+                            && (rider_kind == 0 || weapon.get(steel_registry::data_components::vanilla_components::ENCHANTMENTS).is_some_and(|value| !value.levels.is_empty()))
+                        {
                             living.with_equipment_slot_mut(crate::inventory::equipment::EquipmentSlot::MainHand,
                                 &mut |item| *item = weapon.clone());
                         }
