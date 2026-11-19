@@ -65,6 +65,9 @@ pub struct Raid {
     /// Transient vanilla wave-position cache; rebuilt after loading a save.
     #[serde(skip)]
     pub wave_spawn_pos: Option<IVec3>,
+    /// Runtime Raider.ticksOutsideRaid counters; vanilla does not persist them.
+    #[serde(skip)]
+    pub outside_raid_checks: BTreeMap<Uuid, u8>,
     /// Empty final-wave ticks before victory is declared.
     pub post_raid_ticks: i32,
     /// Ticks since entering victory or loss.
@@ -91,6 +94,7 @@ impl Default for Raid {
             num_groups: 5,
             cooldown: PRE_WAVE_TICKS,
             wave_spawn_pos: None,
+            outside_raid_checks: BTreeMap::new(),
             post_raid_ticks: 0,
             celebration_ticks: 0,
             status: RaidStatus::Ongoing,
@@ -637,6 +641,7 @@ fn play_raid_horn(world: &Arc<World>, raid: &Raid, pos: BlockPos) {
 fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
     let wave = raid.waves_spawned + 1;
     raid.total_health = 0;
+    raid.outside_raid_checks.clear();
     raid.leader = None;
     let bonus = wave > raid.num_groups;
     let index = if bonus { raid.num_groups } else { wave }.clamp(0, 7) as usize;
@@ -749,12 +754,22 @@ fn update_raiders(world: &Arc<World>, raid: &mut Raid) {
         let Some(entity) = world.get_entity_by_uuid(id) else { return true; };
         let delta = entity.block_position().0.as_i64vec3() - raid.center.as_i64vec3();
         let different_world = entity.level().is_some_and(|level| !Arc::ptr_eq(&level, world));
-        let departed = entity.is_removed() || different_world || delta.length_squared() >= 12_544;
+        let outside_expired = if entity.tick_count() > 600 {
+            let checks = raid.outside_raid_checks.entry(*id).or_default();
+            if !is_village(world, entity.block_position().0)
+                && entity.as_living_entity().is_some_and(|living| living.no_action_time() > 2_400)
+            {
+                *checks = checks.saturating_add(1);
+            }
+            *checks >= 30
+        } else { false };
+        let departed = entity.is_removed() || different_world || delta.length_squared() >= 12_544 || outside_expired;
         if departed {
             departed_health += entity.as_living_entity().map_or(0, |living| living.get_health().max(0.0).ceil() as i32);
         }
         !departed
     });
+    raid.outside_raid_checks.retain(|id, _| raid.raiders.contains(id));
     raid.total_health = (raid.total_health - departed_health).max(0);
     if raid.leader.is_some_and(|leader| !raid.raiders.contains(&leader)) {
         raid.leader = None;
@@ -1491,4 +1506,34 @@ mod departure_tests {
         update_raiders(world, &mut raid);
         assert!(raid.raiders.contains(&entity.uuid())); // 111 is still a member
     }
+    #[test]
+    fn inactive_outside_members_require_age_and_thirty_checks_not_thirty_ticks() {
+        let fixture = fresh_test_world("raid_inactive_departure");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let entity = spawn_entity(world, EntitySpawnRequest {
+            entity_type: &vanilla_entities::PILLAGER,
+            placement: EntitySpawnPlacement::Block { pos: BlockPos::new(2, 64, 2), try_move_down: false, moved_up: false },
+            reason: EntitySpawnReason::Event, finalize_spawn: true, play_ambient_sound: false,
+            item_stack: None, user_is_operator: false,
+        }).unwrap();
+        let mut raid = Raid { center: IVec3::new(2, 64, 2), total_health: 24,
+            raiders: vec![entity.uuid()], ..Raid::default() };
+        entity.as_living_entity().unwrap().set_no_action_time(2_401);
+        for _ in 0..35 { update_raiders(world, &mut raid); }
+        assert_eq!(raid.raiders.len(), 1); // <=600 ticks old
+        for _ in 0..601 { entity.advance_tick_count(); }
+        entity.as_living_entity().unwrap().set_no_action_time(2_400);
+        update_raiders(world, &mut raid);
+        assert_eq!(raid.outside_raid_checks[&entity.uuid()], 0);
+        entity.as_living_entity().unwrap().set_no_action_time(2_401);
+        for _ in 0..29 { update_raiders(world, &mut raid); }
+        assert_eq!(raid.raiders.len(), 1);
+        update_raiders(world, &mut raid);
+        assert!(raid.raiders.is_empty());
+        assert_eq!(raid.total_health, 0);
+        assert!(raid.outside_raid_checks.is_empty());
+        assert!(raid.heroes.is_empty());
+    }
+
 }
