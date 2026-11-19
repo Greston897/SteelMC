@@ -177,7 +177,7 @@ impl MenuKind for ChestKind {
     }
 }
 
-/// Decrements the opener counter of the chest block entity that owns `container`.
+/// Updates the viewer count of the chest or barrel owning `container`.
 ///
 /// The owner handle on [`ContainerRef`] is the block entity base, which does not
 /// expose its counter, so the block entity is looked up through the world at the
