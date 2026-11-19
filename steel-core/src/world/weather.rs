@@ -326,13 +326,41 @@ impl World {
         self.light_value_at(LightLayer::Sky, pos) >= MAX_LIGHT_LEVEL
     }
 
+    /// Per-column precipitation pass, sampled separately from block random ticks.
+    pub(crate) fn tick_precipitation_column(self: &Arc<Self>, x: i32, z: i32) {
+        if !self.can_have_weather() || !self.is_raining() { return; }
+        let Some(y) = self.height_at(HeightmapType::MotionBlocking, x, z) else { return; };
+        let top = BlockPos::new(x, y, z);
+        self.try_accumulate_snow(top);
+        let pos = top.below();
+        let Some(biome) = self.biome_at(pos) else { return; };
+        if !biome.has_precipitation { return; }
+        let snow = self.biome_temperature(biome, pos) < SNOW_TEMPERATURE;
+        self.try_fill_cauldron_from_precipitation(pos, snow, rand::random::<f32>());
+    }
+
+    /// Applies vanilla's rain/snow probability and matching-fluid restriction.
+    pub(crate) fn try_fill_cauldron_from_precipitation(self: &Arc<Self>, pos: BlockPos, snow: bool, roll: f32) {
+        if roll >= if snow { 0.1 } else { 0.05 } { return; }
+        let state = self.get_block_state(pos);
+        let block = state.get_block();
+        let target = if snow { &vanilla_blocks::POWDER_SNOW_CAULDRON } else { &vanilla_blocks::WATER_CAULDRON };
+        let next = if block == &vanilla_blocks::CAULDRON {
+            target.default_state()
+        } else if block == target && state.get_value(&BlockStateProperties::LEVEL_CAULDRON) < 3 {
+            state.set_value(&BlockStateProperties::LEVEL_CAULDRON, state.get_value(&BlockStateProperties::LEVEL_CAULDRON) + 1)
+        } else { return; };
+        self.set_block(pos, next, UpdateFlags::UPDATE_ALL);
+        self.game_event(&steel_registry::vanilla_game_events::BLOCK_CHANGE, pos,
+            &crate::world::game_event::GameEventContext::new(None,
+                if block == &vanilla_blocks::CAULDRON { None } else { Some(next) }));
+    }
+
     /// Requires full sky light and an unobstructed motion-blocking heightmap.
     /// The light check excludes water; the heightmap excludes glass roofs.
     /// Vanilla `SnowAndFreezeFeature.place`: accumulates snow during snowfall.
     ///
-    /// Vanilla runs this once per chunk section per tick from `ChunkMap`'s rain
-    /// pass. Steel calls it from the random-tick path for positions that already
-    /// see the sky, which is where vanilla places the feature too.
+    /// Called from the per-chunk precipitation pass at the motion-blocking height.
     ///
     /// The layer count is capped by `maxSnowAccumulationHeight`; a value of `0`
     /// disables accumulation entirely (a layer that is already there is left

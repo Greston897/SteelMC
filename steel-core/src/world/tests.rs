@@ -806,3 +806,32 @@ fn fluid_clip_height_treats_source_and_flowing_variants_as_same_fluid_above() {
 
     assert_eq!(height.to_bits(), 1.0_f64.to_bits());
 }
+
+#[test]
+fn precipitation_cauldron_probability_and_matching_fluid_matrix() {
+    use steel_registry::blocks::properties::BlockStateProperties;
+    init_vanilla_registry();
+    init_behaviors();
+    let fixture = fresh_test_world("precipitation_cauldron_matrix");
+    let world = &fixture.world;
+    insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+    let pos = BlockPos::new(8, 65, 8);
+    for snow in [false, true] {
+        for block in [&vanilla_blocks::CAULDRON, &vanilla_blocks::WATER_CAULDRON,
+            &vanilla_blocks::POWDER_SNOW_CAULDRON, &vanilla_blocks::LAVA_CAULDRON] {
+            for level in 1..=3 {
+                let layered = block == &vanilla_blocks::WATER_CAULDRON || block == &vanilla_blocks::POWDER_SNOW_CAULDRON;
+                let state = if layered { block.default_state().set_value(&BlockStateProperties::LEVEL_CAULDRON, level) } else { block.default_state() };
+                world.set_block(pos, state, UpdateFlags::UPDATE_ALL);
+                world.try_fill_cauldron_from_precipitation(pos, snow, if snow { 0.1 } else { 0.05 });
+                assert_eq!(world.get_block_state(pos), state);
+                world.try_fill_cauldron_from_precipitation(pos, snow, 0.0);
+                let target = if snow { &vanilla_blocks::POWDER_SNOW_CAULDRON } else { &vanilla_blocks::WATER_CAULDRON };
+                let expected = if block == &vanilla_blocks::CAULDRON { target.default_state() }
+                    else if block == target && level < 3 { state.set_value(&BlockStateProperties::LEVEL_CAULDRON, level + 1) }
+                    else { state };
+                assert_eq!(world.get_block_state(pos), expected);
+            }
+        }
+    }
+}

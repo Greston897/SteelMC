@@ -964,10 +964,16 @@ impl ChunkMap {
                     // Vanilla random chunk ticks use the entity-ticking range but only
                     // require the same confirmed block-ticking chunk used by scheduled ticks.
                     let tickable_chunk = &tickable_chunks.block[index];
-                    if tickable_chunk.randomly_ticking_sections.is_empty() {
-                        continue;
-                    }
                     if let Some(chunk) = tickable_chunk.holder.try_full_chunk() {
+                        // Precipitation samples the column height, independently
+                        // of whether any section contains random-ticking blocks.
+                        for _ in 0..random_tick_speed {
+                            if rand::random_range(0..48) == 0 {
+                                let (x, _, z) = random_positions.next_local();
+                                let pos = tickable_chunk.pos;
+                                world.tick_precipitation_column(pos.0.x * 16 + x as i32, pos.0.y * 16 + z as i32);
+                            }
+                        }
                         chunk.tick_random_blocks(world, random_tick_speed, &mut random_positions);
                     }
                 }
