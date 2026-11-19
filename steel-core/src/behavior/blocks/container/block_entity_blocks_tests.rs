@@ -103,3 +103,34 @@ fn dispenser_flint_lights_candles_cakes_campfires_and_always_wears_on_blocked_ta
         }
     }
 }
+
+#[test]
+fn hopper_power_edges_and_playing_jukebox_refresh_enabled_state_and_ticker() {
+    use crate::block_entity::entities::{HopperBlockEntity, JukeboxBlockEntity};
+    use crate::block_entity::BlockEntity as _;
+    for prepowered in [false, true] {
+        let fixture = fresh_test_world("hopper_power_edges");
+        init_globals();
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::from_block_pos(SOURCE));
+        if prepowered { world.set_block(SOURCE.east(), vanilla_blocks::REDSTONE_BLOCK.default_state(), UpdateFlags::UPDATE_ALL); }
+        world.set_block(SOURCE, vanilla_blocks::HOPPER.default_state(), UpdateFlags::UPDATE_ALL);
+        assert_eq!(world.get_block_state(SOURCE).get_value(&BlockStateProperties::ENABLED), !prepowered);
+        world.set_block(SOURCE.east(), vanilla_blocks::REDSTONE_BLOCK.default_state(), UpdateFlags::UPDATE_ALL);
+        assert!(!world.get_block_state(SOURCE).get_value(&BlockStateProperties::ENABLED));
+        world.set_block(SOURCE.east(), vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
+        assert!(world.get_block_state(SOURCE).get_value(&BlockStateProperties::ENABLED));
+        world.set_block(SOURCE.above(), vanilla_blocks::JUKEBOX.default_state(), UpdateFlags::UPDATE_ALL);
+        let entity = world.get_block_entity(SOURCE.above()).unwrap();
+        let jukebox = entity.downcast_ref::<JukeboxBlockEntity>().unwrap();
+        jukebox.set_the_item(ItemStack::new(&vanilla_items::MUSIC_DISC_13));
+        assert!(!world.get_block_state(SOURCE).get_value(&BlockStateProperties::ENABLED));
+        for tick in 0..16 { tick_test_world(world, tick, true); }
+        assert!(jukebox.is_record_playing());
+        let entity = world.get_block_entity(SOURCE).unwrap();
+        let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
+        assert!(hopper.container_ref().unwrap().lock().get_item(0).is_empty());
+        jukebox.finish_hopper_extraction();
+        assert!(world.get_block_state(SOURCE).get_value(&BlockStateProperties::ENABLED));
+    }
+}

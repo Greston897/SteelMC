@@ -150,6 +150,21 @@ impl HopperBlock {
 }
 
 impl BlockBehavior for HopperBlock {
+    fn on_place(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos,
+        old_state: BlockStateId, _moved_by_piston: bool) {
+        if old_state.get_block() != state.get_block() {
+            self.handle_neighbor_changed(state, world, pos, self.block, false);
+        }
+    }
+
+    fn handle_neighbor_changed(&self, state: BlockStateId, world: &Arc<World>,
+        pos: BlockPos, _source: BlockRef, _moved_by_piston: bool) {
+        let enabled = !world.has_neighbor_signal(pos);
+        if state.get_value(&BlockStateProperties::ENABLED) != enabled {
+            world.set_block(pos, state.set_value(&BlockStateProperties::ENABLED, enabled), UpdateFlags::UPDATE_CLIENTS);
+        }
+    }
+
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         // Vanilla `HopperBlock.getStateForPlacement`: a hopper points down unless
         // it is placed against a horizontal face, in which case it points into
