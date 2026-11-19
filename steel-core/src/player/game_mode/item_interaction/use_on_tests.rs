@@ -524,7 +524,7 @@ fn washing_colored_shulker_preserves_components_and_consumes_one_water_level() {
         fixture.player.set_game_mode(mode);
         fixture.block(vanilla_blocks::WATER_CAULDRON.default_state().set_value(&BlockStateProperties::LEVEL_CAULDRON, 1));
         let mut shulker = ItemStack::new(&vanilla_items::RED_SHULKER_BOX);
-        shulker.set(CUSTOM_NAME, Some(TextComponent::plain("Stored cargo")));
+        shulker.set(CUSTOM_NAME, TextComponent::plain("Stored cargo"));
         fixture.hold(InteractionHand::MainHand, shulker);
         assert!(fixture.use_on(InteractionHand::MainHand).consumes_action());
         assert_eq!(fixture.count(&vanilla_items::SHULKER_BOX), 1);
