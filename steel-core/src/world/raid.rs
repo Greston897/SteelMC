@@ -566,3 +566,57 @@ mod lifecycle_tests {
         assert!(!restored.raids[0].is_victory());
     }
 }
+
+#[cfg(test)]
+mod outcome_tests {
+    use super::*;
+    use crate::test_support::{fresh_test_world, insert_ready_full_chunk, TestPlayerBuilder};
+    use crate::entity::next_entity_id;
+    use steel_utils::ChunkPos;
+
+    #[test]
+    fn victory_waits_forty_ticks_rewards_only_credited_hero_then_expires() {
+        steel_registry::init_vanilla_registry();
+        crate::behavior::init_behaviors();
+        let fixture = fresh_test_world("raid_victory");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let center = IVec3::new(0, 64, 0);
+        let home = steel_registry::REGISTRY.poi_types.iter().find(|(_, poi)| poi.key.path.as_ref() == "home").unwrap().0;
+        world.poi_storage.lock().add(BlockPos(center), home, 1);
+        world.poi_storage.lock().reserve_ticket(BlockPos(center));
+        let hero = TestPlayerBuilder::new(Arc::clone(world), "Hero", next_entity_id()).build();
+        let bystander = TestPlayerBuilder::new(Arc::clone(world), "Bystander", next_entity_id()).build();
+        world.players.insert(Arc::clone(&hero));
+        world.players.insert(Arc::clone(&bystander));
+        // Hard raid with omen III: seven normal groups and exactly one bonus.
+        *world.raids.raids.lock() = vec![Raid { center, num_groups: 7, omen_level: 2,
+            waves_spawned: 8, waves_cleared: 8, heroes: vec![hero.uuid()], ..Raid::default() }];
+        for _ in 0..40 { world.raids.tick(world); }
+        assert!(!world.raids.raids()[0].is_victory());
+        assert!(!hero.has_mob_effect(vanilla_mob_effects::HERO_OF_THE_VILLAGE));
+        world.raids.tick(world);
+        assert!(world.raids.raids()[0].is_victory());
+        let effect = hero.mob_effect(vanilla_mob_effects::HERO_OF_THE_VILLAGE).unwrap();
+        assert_eq!(effect.duration(), 48_000);
+        assert_eq!(effect.amplifier(), 2);
+        assert!(!bystander.has_mob_effect(vanilla_mob_effects::HERO_OF_THE_VILLAGE));
+        for _ in 0..600 { world.raids.tick(world); }
+        assert!(world.raids.raids().is_empty());
+        assert!(world.raids.viewers.lock().is_empty());
+    }
+
+    #[test]
+    fn destroyed_village_is_loss_and_timeout_is_global_not_per_wave() {
+        let fixture = fresh_test_world("raid_loss_timeout");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        *world.raids.raids.lock() = vec![Raid { waves_spawned: 1, ..Raid::default() }];
+        world.raids.tick(world);
+        assert_eq!(world.raids.raids()[0].status, RaidStatus::Loss);
+        assert!(!world.raids.raids()[0].is_victory());
+        *world.raids.raids.lock() = vec![Raid { ticks_active: 47_999, ..Raid::default() }];
+        world.raids.tick(world);
+        assert!(world.raids.raids().is_empty());
+    }
+}

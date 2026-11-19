@@ -593,6 +593,7 @@ fn player_file_roundtrip_preserves_domain_world_data() {
         u16::from_le_bytes([encoded[4], encoded[5]]),
         PLAYER_STORAGE_VERSION
     );
+    assert_eq!(decoded.raid_omen_position, Some([-31, 64, 128]));
     assert_eq!(decoded.world, "lobby:void");
     assert_eq!(decoded.game_mode, 2);
     assert_eq!(decoded.selected_slot, 4);
@@ -612,6 +613,7 @@ fn player_file_roundtrip_preserves_domain_world_data() {
     let persistent = decoded
         .into_persistent()
         .expect("player file should convert to persistent data");
+    assert_eq!(persistent.raid_omen_position, Some([-31, 64, 128]));
     assert_eq!(
         persistent.post_effects,
         [
