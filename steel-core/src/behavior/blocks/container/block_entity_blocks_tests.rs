@@ -108,9 +108,9 @@ fn dispenser_flint_lights_candles_cakes_campfires_and_always_wears_on_blocked_ta
 fn hopper_power_edges_and_playing_jukebox_refresh_enabled_state_and_ticker() {
     use crate::block_entity::entities::{HopperBlockEntity, JukeboxBlockEntity};
     use crate::block_entity::BlockEntity as _;
+    init_globals();
     for prepowered in [false, true] {
         let fixture = fresh_test_world("hopper_power_edges");
-        init_globals();
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::from_block_pos(SOURCE));
         if prepowered { world.set_block(SOURCE.east(), vanilla_blocks::REDSTONE_BLOCK.default_state(), UpdateFlags::UPDATE_ALL); }
