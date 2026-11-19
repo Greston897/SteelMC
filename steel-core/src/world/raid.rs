@@ -147,6 +147,12 @@ fn bonus_spawns(kind: usize, wave: i32, difficulty: Difficulty, bonus: bool) -> 
     rand::random_range(0..=max)
 }
 
+pub(crate) fn is_raider_type(entity_type: steel_registry::entity_type::EntityTypeRef) -> bool {
+    entity_type == &vanilla_entities::PILLAGER || entity_type == &vanilla_entities::VINDICATOR
+        || entity_type == &vanilla_entities::EVOKER || entity_type == &vanilla_entities::WITCH
+        || entity_type == &vanilla_entities::RAVAGER || entity_type == &vanilla_entities::ILLUSIONER
+}
+
 /// TOML documents require a table root, including when the raid list is empty.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct RaidSavedData {
@@ -232,6 +238,29 @@ impl RaidManager {
         raids.len() != before
     }
 
+    /// Whether an ongoing encounter owns this raider, including unloaded members.
+    pub fn contains_raider(&self, uuid: Uuid) -> bool {
+        self.raids.lock().iter().any(|raid| raid.status == RaidStatus::Ongoing && raid.raiders.contains(&uuid))
+    }
+
+    /// Vanilla Raider.aiStep: eligible nearby mobs join once, without respawning
+    /// or replacing their equipment. The closest raid within 96 blocks owns them.
+    pub fn try_join_raider(&self, entity: &crate::entity::SharedEntity) -> bool {
+        let Some(mob) = entity.as_mob() else { return false; };
+        if !is_raider_type(entity.entity_type()) || !entity.is_alive()
+            || !mob.can_join_raid() || mob.no_action_time() > 2_400 { return false; }
+        let mut raids = self.raids.lock();
+        let uuid = entity.uuid();
+        if raids.iter().any(|raid| raid.raiders.contains(&uuid)) { return false; }
+        let pos = entity.block_position().0;
+        let Some(raid) = raids.iter_mut()
+            .filter(|raid| raid.status == RaidStatus::Ongoing && within_village_radius(raid.center, pos))
+            .min_by_key(|raid| (raid.center.as_i64vec3() - pos.as_i64vec3()).length_squared()) else { return false; };
+        raid.raiders.push(uuid);
+        raid.total_health += mob.get_health().max(0.0).ceil() as i32;
+        true
+    }
+
     /// Called synchronously from the death path, before entities disappear from
     /// the manager. Only actual kills earn hero credit; unloading never does.
     pub fn raider_died(&self, raider: Uuid, killer: Option<Uuid>) {
@@ -241,6 +270,7 @@ impl RaidManager {
             }
             if let Some(index) = raid.raiders.iter().position(|id| *id == raider) {
                 raid.raiders.swap_remove(index);
+                if raid.leader == Some(raider) { raid.leader = None; }
                 if let Some(killer) = killer
                     && !raid.heroes.contains(&killer)
                 {
@@ -1307,5 +1337,110 @@ mod spawn_search_tests {
         let decoded: RaidSavedData = toml::from_str(&encoded).unwrap();
         assert!(decoded.raids[0].wave_spawn_pos.is_none());
         assert_eq!(decoded.raids[0].uuid, data.raids[0].uuid);
+    }
+}
+
+#[cfg(test)]
+mod joining_and_killer_tests {
+    use super::*;
+    use crate::entity::{SharedEntity, next_entity_id};
+    use crate::entity::damage::DamageSource;
+    use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
+    use steel_registry::{entity_type::EntityTypeRef, vanilla_damage_types};
+    use steel_utils::ChunkPos;
+
+    fn spawn(world: &Arc<World>, entity_type: EntityTypeRef, reason: EntitySpawnReason) -> SharedEntity {
+        spawn_entity(world, EntitySpawnRequest {
+            entity_type, placement: EntitySpawnPlacement::Block { pos: BlockPos::new(2, 64, 2), try_move_down: false, moved_up: false },
+            reason, finalize_spawn: true, play_ambient_sound: false, item_stack: None, user_is_operator: false,
+        }).unwrap()
+    }
+
+    #[test]
+    fn raider_ai_joins_once_blocks_despawning_and_respects_idle_and_witch_exclusions() {
+        steel_registry::init_vanilla_registry();
+        crate::behavior::init_behaviors();
+        let fixture = fresh_test_world("raid_external_join");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let center = IVec3::new(0, 64, 0);
+        world.raids.raise_omen(center, 0);
+        let raider = spawn(world, &vanilla_entities::PILLAGER, EntitySpawnReason::Command);
+        let mob = raider.as_mob().unwrap();
+        mob.mob_server_ai_step(&raider);
+        assert!(world.raids.contains_raider(raider.uuid()));
+        assert_eq!(world.raids.raids()[0].total_health, 24);
+        assert!(!world.raids.try_join_raider(&raider));
+        assert!(!mob.remove_when_far_away(1_000_000.0));
+        let witch = spawn(world, &vanilla_entities::WITCH, EntitySpawnReason::Natural);
+        assert!(!witch.as_mob().unwrap().can_join_raid());
+        assert!(!world.raids.try_join_raider(&witch));
+        let event_witch = spawn(world, &vanilla_entities::WITCH, EntitySpawnReason::Event);
+        assert!(world.raids.try_join_raider(&event_witch));
+        let idle = spawn(world, &vanilla_entities::VINDICATOR, EntitySpawnReason::Command);
+        idle.as_living_entity().unwrap().set_no_action_time(2_401);
+        assert!(!world.raids.try_join_raider(&idle));
+        idle.as_living_entity().unwrap().set_no_action_time(2_400);
+        assert!(world.raids.try_join_raider(&idle));
+        let pig = spawn(world, &vanilla_entities::PIG, EntitySpawnReason::Command);
+        pig.as_mob().unwrap().set_can_join_raid(true);
+        assert!(!world.raids.try_join_raider(&pig));
+        assert!(world.raids.stop(center));
+        assert!(mob.remove_when_far_away(1_000_000.0));
+    }
+
+    #[test]
+    fn eligibility_round_trips_and_missing_old_nbt_flag_defaults_to_false() {
+        let fixture = fresh_test_world("raid_eligibility_nbt");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let raider = spawn(world, &vanilla_entities::PILLAGER, EntitySpawnReason::Command);
+        let mob = raider.as_mob().unwrap();
+        for eligible in [false, true] {
+            mob.set_can_join_raid(eligible);
+            let mut nbt = simdnbt::owned::NbtCompound::new();
+            mob.save_mob(&mut nbt);
+            let mut bytes = Vec::new();
+            nbt.write(&mut bytes);
+            let borrowed = simdnbt::borrow::read_compound(&mut std::io::Cursor::new(&bytes)).unwrap();
+            mob.set_can_join_raid(!eligible);
+            mob.load_mob((&borrowed).into());
+            assert_eq!(mob.can_join_raid(), eligible);
+        }
+        let empty = simdnbt::owned::NbtCompound::new();
+        let mut bytes = Vec::new();
+        empty.write(&mut bytes);
+        let borrowed = simdnbt::borrow::read_compound(&mut std::io::Cursor::new(&bytes)).unwrap();
+        mob.load_mob((&borrowed).into());
+        assert!(!mob.can_join_raid());
+    }
+
+    #[test]
+    fn hero_credit_uses_killing_damage_source_not_remembered_previous_player_hit() {
+        steel_registry::init_vanilla_registry();
+        crate::behavior::init_behaviors();
+        let fixture = fresh_test_world("raid_killing_source");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        world.raids.raise_omen(IVec3::new(0, 64, 0), 0);
+        let hero = TestPlayerBuilder::new(Arc::clone(world), "Hero", next_entity_id()).build();
+        world.players.insert(Arc::clone(&hero));
+        let first = spawn(world, &vanilla_entities::PILLAGER, EntitySpawnReason::Event);
+        assert!(world.raids.try_join_raider(&first));
+        let living = first.as_living_entity().unwrap();
+        living.set_last_hurt_by_player(hero.uuid(), 100);
+        living.set_health(0.0);
+        living.die(&DamageSource::environment(&vanilla_damage_types::GENERIC));
+        assert!(world.raids.raids()[0].heroes.is_empty());
+        let second = spawn(world, &vanilla_entities::PILLAGER, EntitySpawnReason::Event);
+        assert!(world.raids.try_join_raider(&second));
+        world.raids.raids.lock()[0].leader = Some(second.uuid());
+        second.as_living_entity().unwrap().set_health(0.0);
+        let hero_entity: SharedEntity = hero.clone();
+        second.as_living_entity().unwrap().die(&DamageSource::direct(&vanilla_damage_types::PLAYER_ATTACK, hero_entity));
+        let raid = &world.raids.raids()[0];
+        assert_eq!(raid.heroes, vec![hero.uuid()]);
+        assert!(raid.raiders.is_empty());
+        assert!(raid.leader.is_none());
     }
 }

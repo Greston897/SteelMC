@@ -178,6 +178,7 @@ pub struct MobBase {
     navigation: SyncMutex<PathNavigation>,
     pathfinding_malus: SyncMutex<PathfindingMalus>,
     persistence_required: SyncMutex<bool>,
+    can_join_raid: SyncMutex<bool>,
     can_pick_up_loot: SyncMutex<bool>,
     drop_chances: SyncMutex<DropChances>,
     home_restriction: SyncMutex<MobHomeRestriction>,
@@ -214,6 +215,7 @@ impl MobBase {
             navigation: SyncMutex::new(PathNavigation::new()),
             pathfinding_malus: SyncMutex::new(PathfindingMalus::new()),
             persistence_required: SyncMutex::new(false),
+            can_join_raid: SyncMutex::new(false),
             can_pick_up_loot: SyncMutex::new(false),
             drop_chances: SyncMutex::new(DropChances::DEFAULT),
             home_restriction: SyncMutex::new(MobHomeRestriction::none()),
@@ -553,6 +555,9 @@ pub trait Mob: LivingEntity + Leashable {
         _spawn_reason: EntitySpawnReason,
         group_data: Option<SpawnGroupData>,
     ) -> Option<SpawnGroupData> {
+        if crate::world::raid::is_raider_type(self.entity_type()) {
+            self.set_can_join_raid(self.entity_type() != &vanilla_entities::WITCH || _spawn_reason != EntitySpawnReason::Natural);
+        }
         let needs_random_spawn_bonus = !self
             .attributes()
             .lock()
@@ -756,12 +761,26 @@ pub trait Mob: LivingEntity + Leashable {
     }
 
     fn remove_when_far_away(&self, dist_sqr: f64) -> bool {
+        if crate::world::raid::is_raider_type(self.entity_type())
+            && self.level().is_some_and(|world| world.raids.contains_raider(self.uuid())) {
+            return false;
+        }
         self.as_animal()
             .is_none_or(|animal| animal.remove_when_far_away_animal(dist_sqr))
     }
 
     fn requires_custom_persistence(&self) -> bool {
         self.is_passenger() || self.is_leashed()
+    }
+
+    /// Vanilla Raider.CanJoinRaid; natural witches are excluded at spawn time.
+    fn can_join_raid(&self) -> bool {
+        *self.mob_base().can_join_raid.lock()
+    }
+
+    /// Updates the persisted vanilla CanJoinRaid flag.
+    fn set_can_join_raid(&self, eligible: bool) {
+        *self.mob_base().can_join_raid.lock() = eligible;
     }
 
     fn is_persistence_required(&self) -> bool {
@@ -1223,6 +1242,9 @@ pub trait Mob: LivingEntity + Leashable {
 
     fn save_mob(&self, nbt: &mut NbtCompound) {
         self.save_equipment(nbt);
+        if crate::world::raid::is_raider_type(self.entity_type()) {
+            nbt.insert("CanJoinRaid", i8::from(self.can_join_raid()));
+        }
         nbt.insert("CanPickUpLoot", i8::from(self.can_pick_up_loot()));
         nbt.insert(
             "PersistenceRequired",
@@ -1261,6 +1283,7 @@ pub trait Mob: LivingEntity + Leashable {
 
     fn load_mob(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_equipment(nbt);
+        self.set_can_join_raid(nbt.byte_value("CanJoinRaid").is_some_and(|value| value != 0));
         self.set_can_pick_up_loot(
             nbt.byte_value("CanPickUpLoot")
                 .is_some_and(|value| value != 0),
@@ -1710,6 +1733,12 @@ pub trait Mob: LivingEntity + Leashable {
     }
 
     fn mob_server_ai_step(&self, entity: &SharedEntity) {
+        if crate::world::raid::is_raider_type(self.entity_type())
+            && self.can_join_raid()
+            && let Some(world) = self.level()
+            && world.game_time() % 20 == 0 {
+            world.raids.try_join_raider(entity);
+        }
         self.increment_no_action_time();
         self.mob_base().sensing().lock().tick();
         if self.tick_count() % 5 == 0 {
