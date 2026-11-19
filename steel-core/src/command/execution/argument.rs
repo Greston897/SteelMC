@@ -8,7 +8,7 @@ use super::{
     biome::{parse_biome_or_tag, suggest_biomes},
     block::{parse_block_input, parse_block_predicate, suggest_block_inputs, suggest_blocks},
     coordinates::{
-        parse_block_pos, parse_rotation, parse_vec2, parse_vec3, suggest_coordinates, suggest_vec2,
+        parse_block_pos, parse_column_pos, parse_rotation, parse_vec2, parse_vec3, suggest_coordinates, suggest_vec2,
     },
     item::{parse_item_stack, suggest_item_stack},
     item_predicate::{parse_item_predicate, suggest_item_predicate},
@@ -182,6 +182,10 @@ impl SteelArgumentType {
 
     pub(crate) fn block_pos() -> Self {
         Self::new(BlockPosParser)
+    }
+
+    pub(crate) fn column_pos() -> Self {
+        Self::new(ColumnPosParser)
     }
 
     /// Parses a plain namespaced identifier, as vanilla does for registry keys.
@@ -720,6 +724,22 @@ impl SteelArgumentParser for Vec3Parser {
 
     fn protocol_argument(&self) -> (ProtocolArgumentType, Option<ProtocolSuggestionType>) {
         (ProtocolArgumentType::Vec3, None)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct ColumnPosParser;
+impl_downcast_type!(ColumnPosParser, "steel:command/parser/column_pos");
+impl SteelArgumentParser for ColumnPosParser {
+    type Value = Coordinates;
+    fn parse(&self, reader: &mut StringReader<'_>, _source: &dyn CommandArgumentSource) -> Result<Self::Value, CommandSyntaxError> {
+        parse_column_pos(reader)
+    }
+    fn list_suggestions(&self, _context: &dyn SteelArgumentSuggestionContext, builder: &mut SuggestionsBuilder<'_>) {
+        suggest_vec2(builder, parse_column_pos);
+    }
+    fn protocol_argument(&self) -> (ProtocolArgumentType, Option<ProtocolSuggestionType>) {
+        (ProtocolArgumentType::ColumnPos, None)
     }
 }
 

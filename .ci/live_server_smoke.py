@@ -75,6 +75,7 @@ class Rcon:
     def __init__(self, port, password):
         self.stream = socket.create_connection(("127.0.0.1", port), timeout=15)
         self.ident = 0
+        self.transcript = []
         ident, kind, _ = self.exchange(3, password)
         if ident == -1 or kind != 2:
             self.close()
@@ -96,6 +97,7 @@ class Rcon:
     def command(self, command):
         ident, kind, body = self.exchange(2, command)
         assert ident == self.ident and kind == 0
+        self.transcript.append({"command": command, "reply": body})
         return body
 
     def close(self):
@@ -126,6 +128,7 @@ def run(binary, root, output, timeout):
     (config / "config.toml").write_text(text)
     shutil.copy(repo / "package-content/worlds.toml", config / "worlds.toml")
     results = []
+    transcript = []
     process = None
     client = None
 
@@ -151,6 +154,7 @@ def run(binary, root, output, timeout):
                 raise RuntimeError(f"server exited during startup: {process.returncode}")
             try:
                 client = Rcon(25595, password)
+                client.transcript = transcript
                 response = client.command("list")
                 if response:
                     return
@@ -234,6 +238,7 @@ def run(binary, root, output, timeout):
                 process.wait(timeout=10)
         report = {"scope": "real steel binary; TCP status, RCON, disk-world restart; no real players",
                   "complete_vanilla_parity": False, "results": results}
+        (output / "commands.json").write_text(json.dumps(transcript, indent=2) + "\n")
         (output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
         print(json.dumps(report, indent=2), flush=True)
 

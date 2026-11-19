@@ -7,13 +7,8 @@
 //! is persisted with the world, which is exactly what Steel's ticket storage
 //! does for this type.
 //!
-//! Two differences from vanilla are deliberate and visible:
-//!
-//! * The forced-chunk set is not capped at 256 chunks per command. Vanilla caps
-//!   it to keep a single command from pinning an entire dimension; Steel reports
-//!   the size instead of refusing, since the tick loop already bounds chunk work.
-//! * `query` prints the count and the first few coordinates rather than the full
-//!   list, because a force-loaded region can span thousands of chunks.
+//! Arguments are vanilla two-coordinate column positions. Requests are bounded
+//! to 256 chunks before allocation and to the vanilla world coordinate limit.
 
 use std::borrow::Cow;
 
@@ -38,8 +33,8 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 }
 
 fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
-    let from = argument(FROM_ARGUMENT, SteelArgumentType::block_pos());
-    let to = argument(TO_ARGUMENT, SteelArgumentType::block_pos());
+    let from = argument(FROM_ARGUMENT, SteelArgumentType::column_pos());
+    let to = argument(TO_ARGUMENT, SteelArgumentType::column_pos());
 
     // `forceload query` reports the source dimension's forced chunks.
     let query = literal("query")
@@ -101,6 +96,20 @@ fn chunks_between(from: BlockPos, to: BlockPos) -> Vec<ChunkPos> {
     chunks
 }
 
+fn validate_region(from: BlockPos, to: BlockPos) -> Result<(), CommandSyntaxError> {
+    for coordinate in [from.x(), from.z(), to.x(), to.z()] {
+        if !(-30_000_000..30_000_000).contains(&coordinate) {
+            return Err(CommandSyntaxError::dynamic("Position outside world bounds"));
+        }
+    }
+    let a = ChunkPos::from_block_pos(from);
+    let b = ChunkPos::from_block_pos(to);
+    let count = (i64::from(a.x()) - i64::from(b.x())).abs() + 1;
+    let count = count * ((i64::from(a.z()) - i64::from(b.z())).abs() + 1);
+    if count > 256 { return Err(CommandSyntaxError::dynamic("Cannot force load more than 256 chunks")); }
+    Ok(())
+}
+
 fn change(
     context: &SteelCommandContext<CommandSource>,
     change: Change,
@@ -116,6 +125,7 @@ fn change(
         from
     };
 
+    validate_region(from, to)?;
     let chunks = chunks_between(from, to);
     let world = context.source().world();
     let chunk_map = &world.chunk_map;
@@ -238,5 +248,19 @@ mod tests {
         forward_sorted.sort_by_key(|chunk| (chunk.x(), chunk.z()));
         backward_sorted.sort_by_key(|chunk| (chunk.x(), chunk.z()));
         assert_eq!(forward_sorted, backward_sorted);
+    }
+}
+
+#[cfg(test)]
+mod bounds_tests {
+    use super::*;
+    #[test]
+    fn validates_limits_before_allocating_chunk_rectangle() {
+        let origin = BlockPos::new(0, 64, 0);
+        assert!(validate_region(origin, BlockPos::new(255, 64, 255)).is_ok());
+        assert!(validate_region(origin, BlockPos::new(256, 64, 255)).is_err());
+        assert!(validate_region(BlockPos::new(-30_000_001, 0, 0), origin).is_err());
+        assert!(validate_region(origin, BlockPos::new(30_000_000, 0, 0)).is_err());
+        assert!(validate_region(origin, BlockPos::new(-16, 0, -16)).is_ok());
     }
 }

@@ -173,6 +173,18 @@ pub(super) fn parse_vec3(
     }
 }
 
+pub(super) fn parse_column_pos(reader: &mut StringReader<'_>) -> Result<Coordinates, CommandSyntaxError> {
+    let start = reader.checkpoint();
+    let x = parse_world_coordinate_int(reader)?;
+    if reader.peek() != Some(' ') {
+        reader.restore(start);
+        return Err(translated_error(reader, &translations::ARGUMENT_POS2D_INCOMPLETE));
+    }
+    reader.skip();
+    let z = parse_world_coordinate_int(reader)?;
+    Ok(Coordinates::World(WorldCoordinates::new(x, WorldCoordinate::new(true, 0.0), z)))
+}
+
 pub(super) fn parse_vec2(
     reader: &mut StringReader<'_>,
     center_integers: bool,

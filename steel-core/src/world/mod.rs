@@ -456,10 +456,10 @@ impl World {
         };
         let ticket_storage = ChunkTicketStorage::load(&saved_data, &key).await;
         let raids = match saved_data
-            .load_or_default::<Vec<raid::Raid>>(saved_data_names::RAIDS)
+            .load_or_default::<raid::RaidSavedData>(saved_data_names::RAIDS)
             .await
         {
-            Ok(raids) => raid::RaidManager::from_raids(raids),
+            Ok(data) => raid::RaidManager::from_raids(data.raids),
             Err(error) => {
                 log::warn!("Could not load raids for world {key}; starting empty: {error}");
                 raid::RaidManager::new()
@@ -646,9 +646,9 @@ impl World {
 
         // Active raids must survive a restart, otherwise a raid in progress is
         // silently forgotten when the server stops.
-        let raids = self.raids.to_persistent();
+        let raids = raid::RaidSavedData { raids: self.raids.to_persistent() };
         match self.saved_data.save(saved_data_names::RAIDS, &raids).await {
-            Ok(()) => log::info!("World {} saved {} raid(s)", self.key, raids.len()),
+            Ok(()) => log::info!("World {} saved {} raid(s)", self.key, raids.raids.len()),
             Err(e) => log::error!("Failed to save world raids: {e}"),
         }
 

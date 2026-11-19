@@ -51,6 +51,10 @@ jobs:
               for result in json.loads(path.read_text())['results']:
                   if not result['passed']:
                       annotate(result['name'] + ': ' + result.get('error', 'failed'))
+          commands = root / 'commands.json'
+          if commands.exists():
+              entries = json.loads(commands.read_text())
+              annotate('initial command responses: ' + json.dumps(entries[:12]))
           for log in root.glob('server-*.log'):
               annotate(log.name + '\n' + '\n'.join(log.read_text(errors='replace').splitlines()[-35:]))
           PYERROR

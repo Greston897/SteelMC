@@ -63,6 +63,13 @@ impl Raid {
     }
 }
 
+/// TOML documents require a table root, including when the raid list is empty.
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct RaidSavedData {
+    #[serde(default)]
+    pub raids: Vec<Raid>,
+}
+
 /// Raids currently alive per world.
 #[derive(Debug, Default)]
 pub struct RaidManager {
@@ -284,4 +291,22 @@ pub fn village_center(world: &Arc<World>, pos: IVec3) -> Option<IVec3> {
         dx * dx + dz * dz
     });
     matches.first().map(|(bell, _)| bell.0)
+}
+
+#[cfg(test)]
+mod persistence_tests {
+    use super::*;
+    use steel_utils::saved_data::{SavedDataManager, names};
+    #[tokio::test]
+    async fn empty_and_active_raids_round_trip_through_real_disk_toml() {
+        let directory = std::env::temp_dir().join(format!("steel-raid-save-{}", uuid::Uuid::new_v4()));
+        let manager = SavedDataManager::new(Some(&directory));
+        for raids in [Vec::new(), vec![Raid { center: IVec3::new(-5, 64, 8), omen_level: 3, ticks_active: 129, waves_cleared: 1 }]] {
+            let data = RaidSavedData { raids };
+            manager.save(names::RAIDS, &data).await.unwrap();
+            let loaded: RaidSavedData = manager.load_or_default(names::RAIDS).await.unwrap();
+            assert_eq!(loaded, data);
+        }
+        std::fs::remove_dir_all(directory).unwrap();
+    }
 }
