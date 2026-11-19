@@ -16,6 +16,10 @@ jobs:
   live-server:
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [steel, vanilla]
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
@@ -28,13 +32,26 @@ jobs:
         run: |
           python3 -m unittest discover -s .ci -p 'test_*.py' -v
           python3 -m unittest discover -s .ci/vanilla_features -p 'test_*.py' -v
+      - uses: actions/setup-java@v4
+        if: matrix.engine == 'vanilla'
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Fetch verified official vanilla 26.3
+        if: matrix.engine == 'vanilla'
+        run: python3 .ci/download_vanilla_server.py
       - name: Build actual server executable
+        if: matrix.engine == 'steel'
         run: cargo build -p steel --profile evidence
       - name: Boot, exercise TCP and RCON, save, restart and verify disk state
         timeout-minutes: 12
         run: |
-          python3 .ci/live_server_smoke.py \
-            --binary target/evidence/steel \
+          if [ "${{ matrix.engine }}" = vanilla ]; then
+            ENGINE_ARGS="--vanilla-jar $GITHUB_WORKSPACE/server.jar"
+          else
+            ENGINE_ARGS="--binary target/evidence/steel"
+          fi
+          python3 .ci/live_server_smoke.py $ENGINE_ARGS \
             --workdir "$RUNNER_TEMP/live-server-world" \
             --output "$RUNNER_TEMP/live-server-evidence"
       - name: Surface runtime failures
@@ -63,7 +80,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: live-server-evidence
+          name: live-server-evidence-${{ matrix.engine }}
           path: ${{ runner.temp }}/live-server-evidence
           if-no-files-found: warn
       - name: Summarize real-server checks

@@ -110,7 +110,7 @@ def probe_reply(text):
     return any(line.strip() == "probe has 731 [ci]" for line in text.splitlines())
 
 
-def run(binary, root, output, timeout):
+def run(binary, root, output, timeout, vanilla_jar=None):
     root.mkdir(parents=True, exist_ok=False)
     output.mkdir(parents=True, exist_ok=True)
     repo = Path(__file__).resolve().parent.parent
@@ -127,6 +127,12 @@ def run(binary, root, output, timeout):
         text = text.replace(old, new)
     (config / "config.toml").write_text(text)
     shutil.copy(repo / "package-content/worlds.toml", config / "worlds.toml")
+    if vanilla_jar is not None:
+        (root / "eula.txt").write_text("eula=true\n")
+        (root / "server.properties").write_text(
+            f"server-port=25585\nenable-rcon=true\nrcon.port=25595\nrcon.password={password}\n"
+            "online-mode=false\nview-distance=2\nsimulation-distance=2\n"
+            "spawn-protection=0\npause-when-empty-seconds=-1\n")
     results = []
     transcript = []
     process = None
@@ -145,7 +151,9 @@ def run(binary, root, output, timeout):
     def boot(phase):
         nonlocal process, client
         log = (output / f"server-{phase}.log").open("wb")
-        process = subprocess.Popen([str(binary)], cwd=root, stdin=subprocess.DEVNULL,
+        command = (["java", "-Xms512M", "-Xmx2G", "-jar", str(vanilla_jar), "nogui"]
+                   if vanilla_jar is not None else [str(binary)])
+        process = subprocess.Popen(command, cwd=root, stdin=subprocess.DEVNULL,
                                    stdout=log, stderr=subprocess.STDOUT)
         log.close()
         deadline = time.monotonic() + timeout
@@ -164,14 +172,15 @@ def run(binary, root, output, timeout):
             time.sleep(0.5)
         raise TimeoutError("server did not become RCON-ready")
 
-    def check(condition, wait=30):
+    def check(condition, wait=30, expected=True):
         # A successful conditional must execute a distinct command returning the
         # pre-existing marker. Require its exact response, not an echoed input
         # or an error message containing the number.
         deadline = time.monotonic() + wait
         last = ""
         while time.monotonic() < deadline:
-            last = client.command(f"execute if {condition} run scoreboard players get probe ci")
+            branch = "if" if expected else "unless"
+            last = client.command(f"execute {branch} {condition} run scoreboard players get probe ci")
             if probe_reply(last):
                 return
             time.sleep(0.2)
@@ -219,12 +228,31 @@ def run(binary, root, output, timeout):
         client.command("setblock 10 101 11 hopper[facing=down]")
         client.command("item replace block 10 101 11 container.0 with minecraft:emerald 2")
         record("hopper_moves_items_on_server_ticks_without_players", lambda: check("items block 10 100 11 container.0 minecraft:emerald"))
+        record("container_wildcard_matches", lambda: check("items block 8 102 8 container.* minecraft:diamond"))
+        record("container_negative_predicate", lambda: check("items block 8 102 8 container.* minecraft:emerald", expected=False))
+        client.command("setblock 6 100 6 stone")
+        client.command("setblock 6 104 6 sand")
+        record("falling_sand_lands_on_solid_block", lambda: check("block 6 101 6 sand"))
+        client.command("setblock 6 100 9 piston[facing=up]")
+        client.command("setblock 6 101 9 stone")
+        client.command("setblock 5 100 9 redstone_block")
+        record("piston_extends_and_pushes", lambda: check("block 6 102 9 stone"))
+        record("piston_head_created", lambda: check("block 6 101 9 piston_head[facing=up]"))
+        client.command("setblock 5 100 9 air")
+        record("piston_retracts", lambda: check("block 6 100 9 piston[extended=false]"))
+        record("normal_piston_does_not_pull", lambda: check("block 6 102 9 stone"))
+        client.command("setblock 13 100 13 furnace")
+        client.command("item replace block 13 100 13 container.0 with minecraft:iron_ore")
+        client.command("item replace block 13 100 13 container.1 with minecraft:coal")
+        record("furnace_smelts_on_real_ticks", lambda: check("items block 13 100 13 container.2 minecraft:iron_ingot"))
         record("graceful_stop_saves_world", stop)
         record("restart_same_disk_world", lambda: boot("restart"))
         record("scoreboard_survives_restart", lambda: check("score probe ci matches 731"))
         record("chunk_blocks_survive_restart", lambda: check("block 8 101 8 diamond_block", wait=120))
         record("container_items_survive_restart", lambda: check("items block 8 102 8 container.0 minecraft:diamond"))
         record("transferred_items_survive_restart", lambda: check("items block 10 100 11 container.0 minecraft:emerald"))
+        record("furnace_output_survives_restart", lambda: check("items block 13 100 13 container.2 minecraft:iron_ingot"))
+        record("falling_block_result_survives_restart", lambda: check("block 6 101 6 sand"))
         record("second_clean_shutdown", stop)
     finally:
         if client:
@@ -236,7 +264,8 @@ def run(binary, root, output, timeout):
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait(timeout=10)
-        report = {"scope": "real steel binary; TCP status, RCON, disk-world restart; no real players",
+        report = {"scope": "real server; TCP status, RCON, disk-world restart; no real players",
+                  "engine": "vanilla-26.3" if vanilla_jar is not None else "steel",
                   "complete_vanilla_parity": False, "results": results}
         (output / "commands.json").write_text(json.dumps(transcript, indent=2) + "\n")
         (output / "results.json").write_text(json.dumps(report, indent=2) + "\n")
@@ -245,9 +274,12 @@ def run(binary, root, output, timeout):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--binary", type=Path, required=True)
+    engine = parser.add_mutually_exclusive_group(required=True)
+    engine.add_argument("--binary", type=Path)
+    engine.add_argument("--vanilla-jar", type=Path)
     parser.add_argument("--workdir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--startup-timeout", type=float, default=180)
     args = parser.parse_args()
-    run(args.binary.resolve(), args.workdir.resolve(), args.output.resolve(), args.startup_timeout)
+    run(args.binary.resolve() if args.binary else None, args.workdir.resolve(), args.output.resolve(),
+        args.startup_timeout, args.vanilla_jar.resolve() if args.vanilla_jar else None)
