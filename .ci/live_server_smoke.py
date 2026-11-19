@@ -172,13 +172,15 @@ def run(binary, root, output, timeout, vanilla_jar=None):
             time.sleep(0.5)
         raise TimeoutError("server did not become RCON-ready")
 
-    def check(condition, wait=30, expected=True):
+    def check(condition, wait=30, expected=True, before=None):
         # A successful conditional must execute a distinct command returning the
         # pre-existing marker. Require its exact response, not an echoed input
         # or an error message containing the number.
         deadline = time.monotonic() + wait
         last = ""
         while time.monotonic() < deadline:
+            if before is not None:
+                before()
             branch = "if" if expected else "unless"
             last = client.command(f"execute {branch} {condition} run scoreboard players get probe ci")
             if probe_reply(last):
@@ -282,8 +284,8 @@ def run(binary, root, output, timeout, vanilla_jar=None):
         client.command("execute store result score health ci run data get entity @e[tag=ci_combat,limit=1] Health")
         record("live_damage_changes_pig_health_to_six", lambda: check("score health ci matches 6"))
         client.command("effect give @e[tag=ci_combat,limit=1] minecraft:instant_health 1 0 true")
-        client.command("execute store result score health ci run data get entity @e[tag=ci_combat,limit=1] Health")
-        record("instant_health_restores_live_entity", lambda: check("score health ci matches 10"))
+        record("instant_health_restores_live_entity", lambda: check("score health ci matches 10",
+            before=lambda: client.command("execute store result score health ci run data get entity @e[tag=ci_combat,limit=1] Health")))
         client.command("damage @e[tag=ci_combat,limit=1] 100 minecraft:generic_kill")
         record("dead_entity_is_removed_on_server_ticks", lambda: check("entity @e[tag=ci_combat,limit=1]", expected=False))
         record("graceful_stop_saves_world", stop)
