@@ -1,6 +1,6 @@
 # MC 26.3 — воспроизводимая инвентаризация исходников
 
-Код на момент замера: `62f1bcbaf23e20c73e4d9d539bd3d7b0ab3d18df`. Генератор: `.ci/progress_inventory.py`.
+Код на момент замера: `0da2e9b804b377c92e25933edcccb5985f620f3a`. Генератор: `.ci/progress_inventory.py`.
 
 Это **статический подсчёт**, не результаты запуска. Тесты = функции с `#[test]`/`#[tokio::test]`, включая условно компилируемые; макрогенерируемые, doc-тесты и внешние тестовые таргеты не учтены. Маркеры ищутся лексически (включая комментарии). LOC включает комментарии и пустые строки. Числа не являются процентом реализации.
 
@@ -15,7 +15,7 @@
 | steel-registry | 307 | 94739 | 438 | 0 | `steel-registry/src`, `steel-registry/build` |
 | steel-worldgen | 76 | 29190 | 98 | 0 | `steel-worldgen/src`, `steel-worldgen/build` |
 | steel-utils | 69 | 18947 | 255 | 0 | `steel-utils/src`, `steel-utils/build` |
-| steel-core | 1383 | 469051 | 3728 | 0 | `steel-core/src`, `steel-core/build` |
+| steel-core | 1383 | 470158 | 3745 | 0 | `steel-core/src`, `steel-core/build` |
 | steel-crypto | 4 | 504 | 10 | 0 | `steel-crypto/src`, `steel-crypto/build` |
 | steel-math | 10 | 1055 | 14 | 0 | `steel-math/src`, `steel-math/build` |
 | steel-flint | 6 | 1468 | 12 | 0 | `steel-flint/src`, `steel-flint/build` |
@@ -29,11 +29,11 @@
 | Поведение блоков | 250 | 55324 | 355 | 0 | `steel-core/src/behavior/blocks`, `steel-core/src/behavior/block` |
 | Поведение предметов | 66 | 12294 | 108 | 0 | `steel-core/src/behavior/items` |
 | Block entities | 54 | 19533 | 140 | 0 | `steel-core/src/block_entity` |
-| Сущности и AI | 359 | 128822 | 1225 | 0 | `steel-core/src/entity` |
-| Игрок и соединение | 73 | 35067 | 348 | 0 | `steel-core/src/player` |
+| Сущности и AI | 359 | 128926 | 1229 | 0 | `steel-core/src/entity` |
+| Игрок и соединение | 73 | 35218 | 349 | 0 | `steel-core/src/player` |
 | Инвентарь и меню | 55 | 16657 | 133 | 0 | `steel-core/src/inventory` |
 | Команды и права | 163 | 51528 | 427 | 0 | `steel-core/src/command`, `steel-core/src/permission` |
-| Мир и тик | 92 | 46494 | 375 | 0 | `steel-core/src/world`, `steel-core/src/server` |
+| Мир и тик | 92 | 47346 | 387 | 0 | `steel-core/src/world`, `steel-core/src/server` |
 | Чанки, свет, сохранение | 80 | 40011 | 335 | 0 | `steel-core/src/chunk`, `steel-core/src/chunk_saver`, `steel-core/src/level_data` |
 | Worldgen | 185 | 62911 | 192 | 0 | `steel-core/src/worldgen`, `steel-worldgen/src` |
 | Loot, зачарования | 5 | 1968 | 19 | 0 | `steel-core/src/loot`, `steel-core/src/enchantment_helper.rs`, `steel-core/src/enchantment_helper` |
@@ -46,7 +46,7 @@
 |---|---:|---:|---:|---:|---|
 | Мирные мобы | 64 | 22836 | 179 | 0 | `steel-core/src/entity/entities/mobs/passive` |
 | Нейтральные мобы | 2 | 397 | 3 | 0 | `steel-core/src/entity/entities/mobs/neutral` |
-| Враждебные мобы | 44 | 14889 | 43 | 0 | `steel-core/src/entity/entities/mobs/hostile` |
+| Враждебные мобы | 44 | 14906 | 44 | 0 | `steel-core/src/entity/entities/mobs/hostile` |
 | Боссы | 7 | 4680 | 31 | 0 | `steel-core/src/entity/entities/mobs/bosses` |
 | Транспорт | 18 | 5770 | 45 | 0 | `steel-core/src/entity/entities/objects/vehicles` |
 | Снаряды | 19 | 7101 | 60 | 0 | `steel-core/src/entity/entities/objects/projectiles` |
@@ -1518,7 +1518,7 @@
 | `steel-core/src/entity/entities/mobs/hostile/phantom.rs` | 433 | `phantom_phase_cycle_matches_vanilla`, `phantom_flight_defaults_match_vanilla` | 0 |
 | `steel-core/src/entity/entities/mobs/hostile/piglin.rs` | 299 | `piglin_uses_registry_attributes_and_round_trips_nbt` | 0 |
 | `steel-core/src/entity/entities/mobs/hostile/piglin_brute.rs` | 296 | `piglin_brute_uses_registry_attributes_and_round_trips_nbt` | 0 |
-| `steel-core/src/entity/entities/mobs/hostile/pillager.rs` | 435 | `pillager_uses_registry_attributes_and_round_trips_nbt` | 0 |
+| `steel-core/src/entity/entities/mobs/hostile/pillager.rs` | 452 | `raid_quick_charge_equipment_changes_real_pillager_charge_time`, `pillager_uses_registry_attributes_and_round_trips_nbt` | 0 |
 | `steel-core/src/entity/entities/mobs/hostile/ravager.rs` | 254 | — | 0 |
 | `steel-core/src/entity/entities/mobs/hostile/shulker.rs` | 297 | — | 0 |
 | `steel-core/src/entity/entities/mobs/hostile/silverfish.rs` | 301 | `silverfish_uses_registry_attributes_and_round_trips_nbt` | 0 |
@@ -1683,7 +1683,7 @@
 | `steel-core/src/entity/leash.rs` | 545 | — | 0 |
 | `steel-core/src/entity/living_base/mod.rs` | 1962 | — | 0 |
 | `steel-core/src/entity/living_base/tests.rs` | 674 | `ends_within_treats_infinite_duration_as_never_ending`, `living_constructor_initializes_health_from_max_health`, `absorption_amount_clamps_to_attribute_range`, `fall_damage_starts_above_safe_fall_distance`, `last_hurt_by_player_memory_ticks_down_then_clears_reference`, `fall_damage_applies_block_and_attribute_multipliers`, `post_impulse_grace_counts_down_by_tick`, `post_impulse_grace_keeps_larger_existing_window`, `current_impulse_context_tracks_fall_damage_impact_position`, `current_impulse_context_resets_after_grace_window`, `fall_flying_is_living_entity_state`, `fall_flying_ticks_are_living_entity_state`, `living_rotation_is_base_tick_snapshot_state`, `living_swing_uses_vanilla_restart_gate`, `living_swing_tick_keeps_full_progress_until_after_duration`, `living_swing_restart_preserves_progress_only_for_same_description`, `living_swing_nonpositive_duration_never_divides_by_zero`, `equipment_is_living_entity_state`, `sprinting_is_living_entity_state_and_speed_modifier`, `active_mob_effect_presence_is_living_entity_state`, `active_mob_effect_amplifier_is_living_entity_state`, `mob_effect_attribute_modifiers_use_extracted_vanilla_data`, `mob_effect_duration_tick_removes_expired_effect`, `stronger_shorter_effect_downgrades_to_hidden_effect`, `sleeping_uses_living_entity_sleeping_position`, `last_climbable_pos_is_living_entity_state`, `discard_friction_is_living_entity_state`, `living_travel_input_is_shared_living_state`, `jumping_and_jump_delay_are_shared_living_state`, `poison_and_regeneration_tick_schedules_match_vanilla_interval_formulas`, `refreshing_an_active_effect_is_not_reported_as_added` | 0 |
-| `steel-core/src/entity/living_entity.rs` | 3871 | `shield_component_is_present_on_shield_items`, `non_shield_items_do_not_block` | 0 |
+| `steel-core/src/entity/living_entity.rs` | 3875 | `shield_component_is_present_on_shield_items`, `non_shield_items_do_not_block` | 0 |
 | `steel-core/src/entity/living_reference.rs` | 31 | — | 0 |
 | `steel-core/src/entity/manager/benchmark_support.rs` | 81 | — | 0 |
 | `steel-core/src/entity/manager/entries.rs` | 85 | — | 0 |
@@ -1700,14 +1700,14 @@
 | `steel-core/src/entity/mob/pathfinder.rs` | 463 | — | 0 |
 | `steel-core/src/entity/mob/tests.rs` | 1693 | `spawner_obstruction_rejects_overlapping_players`, `equipment_drop_attempt_gate_matches_vanilla_conditions`, `mob_base_uses_vanilla_fire_path_malus_defaults`, `pathfinder_mob_reads_below_surface_capability_from_navigation`, `mob_server_ai_step_increments_no_action_time`, `mob_control_flags_enable_goals_without_controller_or_boat`, `mob_control_flags_disable_goals_for_mob_controller`, `mob_control_flags_disable_jump_when_riding_boat`, `mob_attack_damage_source_uses_item_damage_type_component`, `mob_target_stores_living_target_weakly`, `mob_target_can_be_cleared`, `mob_target_expires_with_target_entity`, `mob_target_rejects_non_living_entities`, `mob_target_rejects_targets_it_cannot_attack`, `mob_target_filters_invalid_target_without_clearing_stored_target`, `mob_target_clears_previous_target_when_new_target_is_invalid`, `melee_attack_range_uses_vanilla_default_reach`, `melee_attack_range_uses_vehicle_expanded_attack_box`, `target_reach_uses_vanilla_horizontal_endpoint_distance`, `mob_can_attack_excludes_ghasts`, `mob_base_tick_increments_ambient_sound_time_when_roll_fails`, `mob_base_tick_resets_ambient_sound_time_after_vanilla_roll`, `mob_hurt_sound_resets_ambient_sound_time`, `mob_do_hurt_target_applies_attack_damage_and_records_target`, `mob_do_hurt_target_applies_vanilla_extra_knockback`, `mob_look_control_rotates_head_yaw_without_turning_body_yaw`, `mob_look_control_returns_head_yaw_toward_body_when_idle`, `mob_body_rotation_control_uses_tick_position_delta`, `mob_tick_leash_applies_default_elastic_pull`, `mob_leash_snap_drops_leash_and_disables_move_control`, `pathfinder_leash_attach_pins_home_restriction_to_holder`, `mob_on_leash_removed_clears_home_restriction`, `pathfinder_close_range_leash_navigates_toward_holder`, `pathfinder_close_range_leash_skips_following_while_panicking`, `mob_that_cannot_be_leashed_refuses_a_lead`, `mob_despawn_resets_no_action_time_near_player`, `mob_despawn_discards_far_removable_mob`, `mob_persistence_resets_no_action_time_and_blocks_removal`, `mob_home_restriction_uses_vanilla_radius`, `looting_collects_nearby_item_into_main_hand`, `looting_runs_through_ai_step_even_with_no_ai`, `looting_skips_when_mob_cannot_pick_up_loot`, `pick_up_item_leaves_an_occupied_main_hand_untouched`, `equip_routes_armor_to_its_armor_slot`, `equip_replaces_worse_armor_and_drops_the_old_piece`, `equip_carries_worse_armor_in_a_free_hand`, `equip_rejects_worse_armor_when_the_hands_are_full`, `equip_respects_prevent_armor_change_on_worn_gear`, `pick_up_item_takes_one_from_a_stack_and_leaves_the_rest`, `equip_keeps_a_preferred_weapon_over_a_stronger_one`, `equip_takes_a_preferred_weapon_over_a_held_non_preferred_one`, `ground_path_target_air_rewrites_to_surface_above_ground`, `ground_path_target_solid_rewrites_to_first_open_block_above`, `daylight_burning_ignites_unprotected_mob_in_burn_in_daylight_tag`, `daylight_burning_damages_a_protecting_helmet_without_igniting`, `daylight_burning_is_gated_off_at_night_and_in_the_nether`, `mob_ai_step_gates_daylight_burning_on_burn_in_daylight_tag` | 0 |
 | `steel-core/src/entity/mob_effect/absorption.rs` | 29 | — | 0 |
-| `steel-core/src/entity/mob_effect/bad_omen.rs` | 58 | — | 0 |
+| `steel-core/src/entity/mob_effect/bad_omen.rs` | 50 | — | 0 |
 | `steel-core/src/entity/mob_effect/heal_or_harm.rs` | 84 | — | 0 |
 | `steel-core/src/entity/mob_effect/hunger.rs` | 24 | — | 0 |
 | `steel-core/src/entity/mob_effect/infested.rs` | 48 | — | 0 |
 | `steel-core/src/entity/mob_effect/mod.rs` | 108 | — | 0 |
 | `steel-core/src/entity/mob_effect/oozing.rs` | 45 | — | 0 |
 | `steel-core/src/entity/mob_effect/poison.rs` | 32 | — | 0 |
-| `steel-core/src/entity/mob_effect/raid_omen.rs` | 37 | — | 0 |
+| `steel-core/src/entity/mob_effect/raid_omen.rs` | 131 | `bad_omen_converts_once_and_raid_uses_captured_not_current_position`, `manually_given_raid_omen_without_source_cannot_start_a_raid`, `dimensions_that_forbid_raids_consume_origin_without_starting_encounter` | 0 |
 | `steel-core/src/entity/mob_effect/regeneration.rs` | 24 | — | 0 |
 | `steel-core/src/entity/mob_effect/saturation.rs` | 25 | — | 0 |
 | `steel-core/src/entity/mob_effect/weaving.rs` | 38 | — | 0 |
@@ -1719,7 +1719,7 @@
 | `steel-core/src/entity/mount.rs` | 223 | `resizing_keeps_the_saddle`, `a_fresh_mount_inventory_has_no_saddle` | 0 |
 | `steel-core/src/entity/movement_sync.rs` | 1326 | `movement_sync_records_delta_when_packed_delta_fits`, `movement_sync_records_full_when_forced`, `movement_sync_records_full_when_delta_overflows`, `rotation_sync_records_body_rotation_only_when_packed_angle_changes`, `rotation_sync_records_head_rotation_only_when_packed_angle_changes`, `velocity_sync_records_packet_when_delta_exceeds_threshold`, `velocity_sync_skips_sub_threshold_non_zero_delta`, `velocity_sync_records_packet_when_entity_becomes_stationary`, `movement_sync_state_tracks_position_and_rotation_together`, `movement_sync_update_emits_position_rotation_before_head_rotation`, `movement_sync_update_full_position_marks_body_and_head_rotation_sent`, `server_entity_sync_sends_track_delta_velocity_before_position`, `server_entity_sync_skips_velocity_for_non_track_delta_without_needs_sync`, `server_entity_sync_processes_and_clears_explicit_needs_sync`, `server_entity_sync_processes_dirty_data_gate_between_intervals`, `server_entity_sync_forces_full_position_when_on_ground_changes`, `server_entity_sync_rotates_passenger_without_position_packet`, `sync_decision_builds_position_delta_packet`, `sync_decision_builds_position_rotation_delta_packet`, `sync_decision_builds_full_position_sync_packet` | 0 |
 | `steel-core/src/entity/natural_spawner.rs` | 418 | `spawn_interval_matches_vanilla`, `spawn_ring_matches_vanilla`, `monster_cap_matches_vanilla_math`, `peaceful_world_spawns_nothing`, `category_names_are_the_biome_spawner_keys` | 0 |
-| `steel-core/src/entity/patrol_spawner.rs` | 300 | `the_delay_stays_inside_the_vanilla_window`, `the_effective_difficulty_matches_the_vanilla_ids` | 0 |
+| `steel-core/src/entity/patrol_spawner.rs` | 297 | `the_delay_stays_inside_the_vanilla_window`, `the_effective_difficulty_matches_the_vanilla_ids` | 0 |
 | `steel-core/src/entity/phantom_spawner.rs` | 232 | `the_delay_stays_inside_the_vanilla_window`, `the_group_size_follows_the_difficulty`, `insomnia_threshold_is_three_in_game_days` | 0 |
 | `steel-core/src/entity/potion_contents.rs` | 154 | `splash_rebuild_takes_its_icon_flag_from_visibility`, `instant_health_amplifier_at_shift_width_does_not_panic_and_wraps_like_vanilla` | 0 |
 | `steel-core/src/entity/projectile/mod.rs` | 1293 | `compute_margin_ramps_from_zero_to_cap`, `compute_margin_matches_vanilla_float_widening`, `clip_segment_hits_box_in_path`, `clip_segment_returns_start_when_inside`, `may_break_requires_impact_projectile_tag`, `move_vector_synthesizes_world_border_block_hit`, `firework_deflects_without_exploding_on_deflecting_entity`, `base_block_hit_dispatches_vanilla_block_callbacks`, `owner_collision_range_checks_root_vehicle_passengers`, `owner_collision_range_ignores_non_pickable_root_vehicle_passengers` | 0 |
@@ -1895,20 +1895,20 @@
 | `steel-core/src/player/lifecycle/respawn_restore.rs` | 481 | `replacement_retains_ender_chest_for_death_and_end_respawns`, `replacement_is_fresh_detached_entity_in_same_session`, `respawn_preserves_enchantment_seed_independently_of_experience_transfer`, `restore_all_copies_vanilla_restore_state_without_mutating_source`, `death_restore_keeps_fresh_state_unless_inventory_transfer_is_requested` | 0 |
 | `steel-core/src/player/lifecycle/spawn_sync.rs` | 454 | — | 0 |
 | `steel-core/src/player/lifecycle/world_transition.rs` | 117 | — | 0 |
-| `steel-core/src/player/mod.rs` | 3692 | — | 0 |
+| `steel-core/src/player/mod.rs` | 3695 | — | 0 |
 | `steel-core/src/player/movement/input.rs` | 170 | `movement_input_matches_vanilla_intent_axes`, `input_flags_round_trip` | 0 |
 | `steel-core/src/player/movement/mod.rs` | 1317 | `test_clamp_horizontal`, `test_clamp_vertical`, `test_wrap_degrees`, `sprinting_charges_food_exhaustion_once_per_move`, `floating_validation_exempts_the_riptide_spin_attack`, `floating_validation_exempts_levitation_like_vanilla` | 0 |
 | `steel-core/src/player/movement/state.rs` | 386 | `movement_state_starts_with_zero_known_client_movement`, `client_tick_end_clears_known_movement_without_accepted_movement`, `client_tick_end_keeps_known_movement_after_accepted_movement`, `movement_state_tracks_last_client_input`, `tick_reset_updates_both_good_positions_and_packet_count`, `position_sync_reset_clears_packet_counts_and_known_movement`, `floating_tracker_counts_only_while_client_is_floating`, `floating_tracker_resets_when_tick_conditions_do_not_count`, `vehicle_tick_reset_tracks_active_vehicle_id`, `vehicle_last_good_update_is_guarded_by_active_vehicle_id`, `vehicle_floating_update_is_guarded_by_active_vehicle_id`, `vehicle_state_clears_when_no_controlled_vehicle_is_active`, `reset_flying_ticks_applies_to_vehicle_counter` | 0 |
 | `steel-core/src/player/movement/teleport.rs` | 58 | — | 0 |
 | `steel-core/src/player/permissions.rs` | 169 | — | 0 |
-| `steel-core/src/player/player_data.rs` | 596 | — | 0 |
+| `steel-core/src/player/player_data.rs` | 603 | — | 0 |
 | `steel-core/src/player/player_data_storage/file_storage.rs` | 506 | — | 0 |
 | `steel-core/src/player/player_data_storage/known_players.rs` | 76 | — | 0 |
 | `steel-core/src/player/player_data_storage/memory_storage.rs` | 82 | — | 0 |
-| `steel-core/src/player/player_data_storage/mod.rs` | 846 | — | 0 |
+| `steel-core/src/player/player_data_storage/mod.rs` | 939 | — | 0 |
 | `steel-core/src/player/player_data_storage/permissions.rs` | 428 | `subject_file_round_trip_preserves_groups_and_contextual_rules`, `subject_file_rejects_invalid_group_names`, `empty_subject_state_removes_the_file_entry`, `subject_file_rejects_duplicate_uuid_spellings` | 0 |
 | `steel-core/src/player/player_data_storage/stats.rs` | 94 | — | 0 |
-| `steel-core/src/player/player_data_storage/tests.rs` | 1046 | `atomic_path_replacement_retains_the_last_committed_generation`, `interrupted_permission_publication_recovers_before_the_next_update`, `corrupt_live_permission_file_does_not_fall_back_to_its_backup`, `interrupted_first_known_player_publication_discards_its_temporary_file`, `corrupt_known_player_cache_loads_as_empty`, `incompatible_known_player_cache_version_loads_as_empty`, `interrupted_first_permission_publication_does_not_apply_uncommitted_access`, `known_player_cache_round_trips_and_rejects_stale_writes`, `known_player_cache_persists_vanillas_mru_limit`, `a_version_10_player_file_still_loads`, `a_version_11_player_file_still_loads`, `an_unknown_player_storage_version_is_rejected`, `a_newer_payload_data_version_is_rejected`, `player_file_roundtrip_preserves_domain_world_data`, `player_file_roundtrip_preserves_absent_previous_game_mode`, `global_file_roundtrip_preserves_last_active_domain`, `permission_subject_snapshot_removes_noncanonical_uuid_key`, `player_file_roundtrip_preserves_root_vehicle`, `player_file_roundtrip_preserves_respawn_config`, `stale_player_payload_version_is_rejected`, `player_stats_file_roundtrips`, `duplicate_stat_fails_conversion`, `in_memory_player_data_round_trips_per_domain`, `disk_player_data_advancements_round_trip`, `in_memory_known_player_cache_rejects_stale_writes`, `in_memory_permission_subjects_round_trip` | 0 |
+| `steel-core/src/player/player_data_storage/tests.rs` | 1094 | `atomic_path_replacement_retains_the_last_committed_generation`, `interrupted_permission_publication_recovers_before_the_next_update`, `corrupt_live_permission_file_does_not_fall_back_to_its_backup`, `interrupted_first_known_player_publication_discards_its_temporary_file`, `corrupt_known_player_cache_loads_as_empty`, `incompatible_known_player_cache_version_loads_as_empty`, `interrupted_first_permission_publication_does_not_apply_uncommitted_access`, `known_player_cache_round_trips_and_rejects_stale_writes`, `known_player_cache_persists_vanillas_mru_limit`, `a_version_10_player_file_still_loads`, `a_version_11_player_file_still_loads`, `an_unknown_player_storage_version_is_rejected`, `a_newer_payload_data_version_is_rejected`, `player_file_roundtrip_preserves_domain_world_data`, `player_file_roundtrip_preserves_absent_previous_game_mode`, `global_file_roundtrip_preserves_last_active_domain`, `permission_subject_snapshot_removes_noncanonical_uuid_key`, `player_file_roundtrip_preserves_root_vehicle`, `player_file_roundtrip_preserves_respawn_config`, `stale_player_payload_version_is_rejected`, `player_stats_file_roundtrips`, `duplicate_stat_fails_conversion`, `in_memory_player_data_round_trips_per_domain`, `disk_player_data_advancements_round_trip`, `in_memory_known_player_cache_rejects_stale_writes`, `in_memory_permission_subjects_round_trip`, `version_12_player_save_migrates_without_inventing_raid_origin` | 0 |
 | `steel-core/src/player/player_inventory/container.rs` | 249 | — | 0 |
 | `steel-core/src/player/player_inventory/core.rs` | 316 | — | 0 |
 | `steel-core/src/player/player_inventory/equipment.rs` | 370 | — | 0 |
@@ -2013,7 +2013,7 @@
 | `steel-core/src/world/player_spawn_finder/tests.rs` | 435 | `candidates_are_consumed_in_vanilla_order_across_chunks`, `prefetched_chunks_are_read_directly_once_their_tickets_are_committed`, `prefetch_follows_the_radius_the_search_uses`, `ground_removed_before_the_search_reaches_a_spot_is_noticed`, `ground_placed_before_the_search_reaches_a_spot_is_noticed`, `a_zero_budget_evaluates_one_candidate_per_poll`, `a_poll_budget_that_ends_mid_chunk_does_not_skip_candidates`, `safe_spawn_in_a_ceiling_dimension_avoids_fluid_and_the_roof`, `safe_spawn_does_not_drop_through_an_ocean_floor_into_a_cave`, `a_surface_that_cannot_be_stood_on_ends_the_search_with_the_height_fixup`, `failed_search_in_a_lava_cavern_falls_back_to_a_ledge_only_when_asked` | 0 |
 | `steel-core/src/world/portals.rs` | 592 | — | 0 |
 | `steel-core/src/world/properties.rs` | 311 | — | 0 |
-| `steel-core/src/world/raid.rs` | 312 | `empty_and_active_raids_round_trip_through_real_disk_toml` | 0 |
+| `steel-core/src/world/raid.rs` | 1164 | `empty_and_active_raids_round_trip_through_real_disk_toml`, `difficulty_not_omen_selects_base_groups_and_omen_adds_only_one_bonus`, `omen_absorption_is_additive_and_capped`, `death_removes_only_members_and_credits_unique_killers`, `real_spawned_wave_does_not_clear_with_elapsed_time_and_death_hook_removes_it`, `missing_members_survive_serialization_without_false_clear`, `victory_waits_forty_ticks_rewards_only_credited_hero_then_expires`, `destroyed_village_is_loss_and_timeout_is_global_not_per_wave`, `all_difficulties_and_bonus_waves_require_real_member_deaths`, `unclaimed_bell_is_not_a_village_and_section_distance_includes_height`, `loaded_raid_with_missing_member_does_not_turn_unload_into_wave_clear`, `extracted_raid_weapon_providers_follow_wave_thresholds_and_omen_probability`, `horn_projects_toward_wave_thirteen_blocks_at_listener_height` | 0 |
 | `steel-core/src/world/raycast.rs` | 1705 | `voxel_shape_clip_matches_java_full_cube_at_exact_opposite_boundaries`, `aabb_clip_matches_java_strict_side_epsilon_in_every_axis`, `aabb_clip_matches_java_direction_threshold_in_every_axis`, `aabb_clip_preserves_java_axis_order_for_equal_corner_hits`, `scalar_axis_envelope_matches_full_vanilla_dda_visits`, `collision_path_matches_vanilla_axis_tie_breaking`, `collision_path_preserves_vanilla_lerp_rounding_at_integer_boundaries`, `extensible_collision_query_invalidates_every_exposure_cache` | 0 |
 | `steel-core/src/world/redstone.rs` | 99 | `burnout_requires_eight_toggles_at_the_same_position`, `toggle_window_expires_only_after_sixty_game_ticks` | 0 |
 | `steel-core/src/world/signal_getter.rs` | 364 | `powered_button_directly_powers_its_support_block`, `non_conductor_does_not_relay_direct_signal`, `control_input_special_cases_redstone_block_and_wire` | 0 |
