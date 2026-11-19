@@ -180,3 +180,15 @@ impl OpenMenuState {
 
 #[cfg(test)]
 mod tests;
+
+impl Player {
+    /// Returns None while a menu callback temporarily owns the active menu.
+    /// Rechecks must retry instead of treating that interval as a closed menu.
+    pub(crate) fn views_container(&self, id: crate::inventory::lock::ContainerId) -> Option<bool> {
+        let state = self.open_menu.lock();
+        if state.dispatch.is_some() {
+            return None;
+        }
+        Some(state.menu.as_ref().is_some_and(|menu| menu.behavior().references_container(id)))
+    }
+}

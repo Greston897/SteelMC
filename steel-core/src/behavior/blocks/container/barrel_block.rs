@@ -42,6 +42,14 @@ impl BarrelBlock {
 }
 
 impl BlockBehavior for BarrelBlock {
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        if let Some(entity) = world.get_block_entity(pos) {
+            if let Some(container) = entity.downcast_ref::<BarrelBlockEntity>() {
+                container.openers_counter().recheck_openers(world, pos, state, state.get_block());
+            }
+        }
+    }
+
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         // Barrel faces opposite to the player's look direction (all 6 directions).
         let facing = context.get_nearest_looking_direction().opposite();
@@ -77,14 +85,7 @@ impl BlockBehavior for BarrelBlock {
             // Vanilla `BarrelBlock.useWithoutItem` unpacks the loot table before
             // the viewer count moves, so the opener sees the rolled contents.
             barrel.unpack_loot();
-            // Vanilla flips the `open` state, plays the open sound and notifies
-            // neighbours through the container viewer counter.
-            barrel.openers_counter().increment_openers(
-                world,
-                pos,
-                world.get_block_state(pos),
-                &vanilla_blocks::BARREL,
-            );
+
         }
 
         // Create a container reference from the block entity

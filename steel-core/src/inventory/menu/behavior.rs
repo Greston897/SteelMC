@@ -100,6 +100,11 @@ impl MenuBehavior {
         }
     }
 
+    /// Checks backing-container identity without acquiring inventory locks.
+    pub(crate) fn references_container(&self, id: crate::inventory::lock::ContainerId) -> bool {
+        self.container_refs.iter().any(|container| container.container_id() == id)
+    }
+
     /// Locks all containers referenced by slots in this menu.
     #[must_use]
     pub fn lock_all_containers(&self) -> ContainerLockGuard {

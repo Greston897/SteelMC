@@ -101,16 +101,8 @@ impl ChestBlock {
             // Vanilla `ChestBlock.useWithoutItem` → `unpackLootTable` before the
             // viewer count moves, so the opener sees the rolled contents.
             chest.unpack_loot();
-            chest
-                .openers_counter()
-                .increment_openers(world, pos, state, state.get_block());
         } else {
-            let pitch = if state.get_value(&BlockStateProperties::CHEST_TYPE) == ChestType::Single {
-                rand::random_range(0.9..1.0)
-            } else {
-                0.5
-            };
-            world.play_block_sound(self.open_sound, pos, 0.5, pitch, None);
+            world.play_block_sound(self.open_sound, pos, 0.5, 0.5, None);
         }
 
         let inventory = Arc::clone(&player.inventory);
@@ -144,6 +136,14 @@ impl ChestBlock {
 }
 
 impl BlockBehavior for ChestBlock {
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        if let Some(entity) = world.get_block_entity(pos) {
+            if let Some(container) = entity.downcast_ref::<ChestBlockEntity>() {
+                container.openers_counter().recheck_openers(world, pos, state, state.get_block());
+            }
+        }
+    }
+
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(self.state_for_placement(context))
     }

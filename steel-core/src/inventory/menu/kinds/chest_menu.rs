@@ -10,8 +10,7 @@ use steel_registry::menu_type::MenuTypeRef;
 use steel_registry::vanilla_menu_types;
 use steel_utils::Downcast as _;
 
-use crate::block_entity::BlockEntity as _;
-use crate::block_entity::entities::ChestBlockEntity;
+use crate::block_entity::entities::{ChestBlockEntity, BarrelBlockEntity};
 use crate::inventory::prelude::*;
 use crate::player::player_inventory::PlayerInventory;
 
@@ -111,14 +110,21 @@ unsafe impl steel_utils::DowncastType for DoubleChestKind {
 }
 
 impl MenuKind for DoubleChestKind {
+    fn on_open(&mut self, _behavior: &mut MenuBehavior, guard: &mut ContainerLockGuard, player: &Player) {
+        guard.run_unlocked(|| {
+            change_openers(&self.first, player, true);
+            change_openers(&self.second, player, true);
+        });
+    }
+
     fn still_valid(&self, _behavior: &MenuBehavior, player: &Player) -> bool {
         self.first.still_valid(player) && self.second.still_valid(player)
     }
 
     fn removed(&mut self, _behavior: &mut MenuBehavior, player: &Player) {
         // Vanilla counts viewers on each half of a double chest separately.
-        decrement_chest_openers(&self.first, player);
-        decrement_chest_openers(&self.second, player);
+        change_openers(&self.first, player, false);
+        change_openers(&self.second, player, false);
     }
 }
 
@@ -153,6 +159,12 @@ unsafe impl steel_utils::DowncastType for ChestKind {
 }
 
 impl MenuKind for ChestKind {
+    fn on_open(&mut self, _behavior: &mut MenuBehavior, guard: &mut ContainerLockGuard, player: &Player) {
+        guard.run_unlocked(|| {
+            change_openers(&self.container, player, true);
+        });
+    }
+
     /// Returns true if the backing container is still valid for the player.
     fn still_valid(&self, _behavior: &MenuBehavior, player: &Player) -> bool {
         self.container.still_valid(player)
@@ -161,7 +173,7 @@ impl MenuKind for ChestKind {
     fn removed(&mut self, _behavior: &mut MenuBehavior, player: &Player) {
         // Vanilla `ChestBlock` decrements the opener count when the menu closes,
         // which drops the `open` state and the comparator signal back to zero.
-        decrement_chest_openers(&self.container, player);
+        change_openers(&self.container, player, false);
     }
 }
 
@@ -170,7 +182,8 @@ impl MenuKind for ChestKind {
 /// The owner handle on [`ContainerRef`] is the block entity base, which does not
 /// expose its counter, so the block entity is looked up through the world at the
 /// base's position instead.
-fn decrement_chest_openers(container: &ContainerRef, _player: &Player) {
+fn change_openers(container: &ContainerRef, player: &Player, opening: bool) {
+    if player.is_spectator() { return; }
     let Some(world) = container.level() else {
         return;
     };
@@ -180,13 +193,17 @@ fn decrement_chest_openers(container: &ContainerRef, _player: &Player) {
     let Some(block_entity) = world.get_block_entity(pos) else {
         return;
     };
-    let Some(chest) = block_entity.downcast_ref::<ChestBlockEntity>() else {
-        return;
-    };
-    let state = chest.get_block_state();
-    chest
-        .openers_counter()
-        .decrement_openers(&world, pos, state, state.get_block());
+    let counter = if let Some(chest) = block_entity.downcast_ref::<ChestBlockEntity>() {
+        chest.openers_counter()
+    } else if let Some(barrel) = block_entity.downcast_ref::<BarrelBlockEntity>() {
+        barrel.openers_counter()
+    } else { return; };
+    let state = world.get_block_state(pos);
+    if opening {
+        counter.increment_openers(&world, pos, state, state.get_block());
+    } else {
+        counter.decrement_openers(&world, pos, state, state.get_block());
+    }
 }
 
 #[cfg(test)]
