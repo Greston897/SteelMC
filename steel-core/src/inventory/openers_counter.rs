@@ -76,6 +76,7 @@ impl ContainerOpenersCounter {
         block: BlockRef,
     ) {
         let openers = self.openers.fetch_add(1, Ordering::AcqRel) + 1;
+        self.notify_signal_change(world, pos, block);
         if openers != 1 {
             return;
         }
@@ -95,6 +96,9 @@ impl ContainerOpenersCounter {
     ) -> i32 {
         let old = self.openers.fetch_update(Ordering::AcqRel, Ordering::Acquire, |value| Some((value - 1).max(0))).unwrap_or(0);
         let remaining = (old - 1).max(0);
+        if old != remaining {
+            self.notify_signal_change(world, pos, block);
+        }
         if old == 1 {
             self.on_close(world, pos, state, block);
         }
@@ -136,6 +140,9 @@ impl ContainerOpenersCounter {
             return;
         }
         let old = self.openers.swap(actual, Ordering::AcqRel);
+        if old != actual {
+            self.notify_signal_change(world, pos, block);
+        }
         if old == 0 && actual > 0 {
             self.on_open(world, pos, state, block);
         } else if old > 0 && actual == 0 {
@@ -146,6 +153,13 @@ impl ContainerOpenersCounter {
         }
         if actual > 0 {
             world.schedule_block_tick_default(pos, block, 5);
+        }
+    }
+
+    fn notify_signal_change(&self, world: &Arc<World>, pos: BlockPos, block: BlockRef) {
+        if block == &steel_registry::vanilla_blocks::TRAPPED_CHEST {
+            world.update_neighbors_at(pos, block);
+            world.update_neighbors_at(pos.below(), block);
         }
     }
 

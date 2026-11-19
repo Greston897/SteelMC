@@ -281,6 +281,29 @@ impl TrappedChestBlock {
 }
 
 impl BlockBehavior for TrappedChestBlock {
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        if let Some(entity) = world.get_block_entity(pos) {
+            if let Some(chest) = entity.downcast_ref::<ChestBlockEntity>() {
+                chest.openers_counter().recheck_openers(world, pos, state, state.get_block());
+            }
+        }
+    }
+
+    fn is_signal_source(&self, _state: BlockStateId, _context: crate::behavior::SignalQueryContext) -> bool {
+        true
+    }
+
+    fn get_own_signal(&self, _state: BlockStateId, world: &dyn crate::world::LevelReader, pos: BlockPos,
+        _context: crate::behavior::SignalQueryContext) -> i32 {
+        world.get_block_entity(pos).and_then(|entity| entity.downcast_ref::<ChestBlockEntity>()
+            .map(|chest| chest.openers_counter().openers().clamp(0, 15))).unwrap_or(0)
+    }
+
+    fn get_direct_signal(&self, state: BlockStateId, world: &dyn crate::world::LevelReader, pos: BlockPos,
+        direction: Direction, context: crate::behavior::SignalQueryContext) -> i32 {
+        if direction == Direction::Up { self.get_own_signal(state, world, pos, context) } else { 0 }
+    }
+
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(self.state_for_placement(context))
     }
@@ -317,26 +340,7 @@ impl BlockBehavior for TrappedChestBlock {
         _hit_result: &BlockHitResult,
         _inv: &mut InventoryAccess,
     ) -> InteractionResult {
-        let Some(container_ref) = world
-            .get_block_entity(pos)
-            .and_then(ContainerRef::from_block_entity)
-        else {
-            return InteractionResult::Pass;
-        };
-
-        let pitch = if state.get_value(&BlockStateProperties::CHEST_TYPE) == ChestType::Single {
-            rand::random_range(0.9..1.0)
-        } else {
-            0.5
-        };
-        world.play_block_sound(self.open_sound, pos, 0.5, pitch, None);
-
-        let inventory = Arc::clone(&player.inventory);
-        player.open_menu(TextComponent::plain("Chest"), move |context| {
-            chest(inventory, context.container_id, container_ref, 3)
-        });
-
-        InteractionResult::Success
+        ChestBlock::new(self.block, self.open_sound, self.close_sound).open_menu(world, pos, state, player)
     }
 
     fn new_block_entity(
