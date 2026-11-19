@@ -246,30 +246,30 @@ pub(super) fn cauldron_item_interaction(
     let level = if water || snow { state.get_value(LEVEL_CAULDRON) } else { 0 };
     let lower = || if level <= 1 { vanilla_blocks::CAULDRON.default_state() }
         else { state.set_value(LEVEL_CAULDRON, level - 1) };
-    let (result, next, sound, placing, stat, award_item, creative_limit) = if item == &items::WATER_BUCKET
-        || item == &items::LAVA_BUCKET || item == &items::POWDER_SNOW_BUCKET {
-        if item != &items::WATER_BUCKET && world.get_block_state(pos.above()).get_fluid_state().is_water() {
+    let (result, next, sound, placing, stat, award_item, creative_limit) = if item == &*items::WATER_BUCKET
+        || item == &*items::LAVA_BUCKET || item == &*items::POWDER_SNOW_BUCKET {
+        if item != &*items::WATER_BUCKET && world.get_block_state(pos.above()).get_fluid_state().is_water() {
             return InteractionResult::Consume;
         }
-        let (next, sound) = if item == &items::WATER_BUCKET {
+        let (next, sound) = if item == &*items::WATER_BUCKET {
             (vanilla_blocks::WATER_CAULDRON.default_state().set_value(LEVEL_CAULDRON, 3), &sounds::ITEM_BUCKET_EMPTY)
-        } else if item == &items::LAVA_BUCKET {
+        } else if item == &*items::LAVA_BUCKET {
             (vanilla_blocks::LAVA_CAULDRON.default_state(), &sounds::ITEM_BUCKET_EMPTY_LAVA)
         } else {
             (vanilla_blocks::POWDER_SNOW_CAULDRON.default_state().set_value(LEVEL_CAULDRON, 3), &sounds::ITEM_BUCKET_EMPTY_POWDER_SNOW)
         };
         (ItemStack::new(&items::BUCKET), next, Some(sound), true, &stats::FILL_CAULDRON, true, true)
-    } else if item == &items::BUCKET && ((water || snow) && level == 3 || state.get_block() == &vanilla_blocks::LAVA_CAULDRON) {
+    } else if item == &*items::BUCKET && ((water || snow) && level == 3 || state.get_block() == &vanilla_blocks::LAVA_CAULDRON) {
         let (filled, sound) = if water { (&items::WATER_BUCKET, &sounds::ITEM_BUCKET_FILL) }
             else if snow { (&items::POWDER_SNOW_BUCKET, &sounds::ITEM_BUCKET_FILL_POWDER_SNOW) }
             else { (&items::LAVA_BUCKET, &sounds::ITEM_BUCKET_FILL_LAVA) };
         (ItemStack::new(filled), vanilla_blocks::CAULDRON.default_state(), Some(sound), false, &stats::USE_CAULDRON, true, true)
-    } else if water && item == &items::GLASS_BOTTLE {
+    } else if water && item == &*items::GLASS_BOTTLE {
         (steel_registry::data_components::PotionContents::create_item_stack(&items::POTION, &vanilla_potions::WATER), lower(), Some(&sounds::ITEM_BOTTLE_FILL), false, &stats::USE_CAULDRON, true, true)
-    } else if (empty || water && level < 3) && item == &items::POTION
+    } else if (empty || water && level < 3) && item == &*items::POTION
         && held.get(steel_registry::data_components::vanilla_components::POTION_CONTENTS).is_some_and(|potion| potion.is(&vanilla_potions::WATER)) {
         (ItemStack::new(&items::GLASS_BOTTLE), vanilla_blocks::WATER_CAULDRON.default_state().set_value(LEVEL_CAULDRON, level + 1), Some(&sounds::ITEM_BOTTLE_EMPTY), true, &stats::USE_CAULDRON, true, true)
-    } else if water && item != &items::SHULKER_BOX && item.block.is_some_and(|block| block.has_tag(&steel_registry::vanilla_block_tags::BlockTag::SHULKER_BOXES)) {
+    } else if water && item != &*items::SHULKER_BOX && item.block.is_some_and(|block| block.has_tag(&steel_registry::vanilla_block_tags::BlockTag::SHULKER_BOXES)) {
         (ItemStack::with_count_and_patch(&items::SHULKER_BOX, 1, held.components_patch().clone()), lower(), None, false, &stats::CLEAN_SHULKER_BOX, false, false)
     } else { return InteractionResult::TryEmptyHandInteraction; };
     crate::behavior::item_utils::create_filled_result_for_hand(player, inv, hand, result, creative_limit);
@@ -278,7 +278,7 @@ pub(super) fn cauldron_item_interaction(
     world.set_block(pos, next, UpdateFlags::UPDATE_ALL);
     // LayeredCauldronBlock.lowerFillLevel emits BLOCK_CHANGE, in addition
     // to a bottle's FLUID_PICKUP. Washing uses only this level-change event.
-    if water && (item == &items::GLASS_BOTTLE || !award_item) {
+    if water && (item == &*items::GLASS_BOTTLE || !award_item) {
         world.game_event(&vanilla_game_events::BLOCK_CHANGE, pos, &GameEventContext::new(None, Some(next)));
     }
     if let Some(sound) = sound {
