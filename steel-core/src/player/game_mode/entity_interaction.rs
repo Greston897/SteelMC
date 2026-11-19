@@ -863,6 +863,10 @@ impl Player {
         self.broadcast_inventory_changes();
     }
 
+    fn damage_indicator_count(actual_damage: f32) -> Option<i32> {
+        (actual_damage > 2.0).then_some((actual_damage * 0.5) as i32)
+    }
+
     /// Awards stats and sends particles when an entity gets attacked by this player.
     pub fn damage_stats_and_hearts(&self, entity: &dyn Entity, old_entity_living_health: f32) {
         const PARTICLES_PER_HEALTH: f32 = 0.5;
@@ -876,7 +880,9 @@ impl Player {
                 (actual_damage * 10.0).round() as i32,
             );
 
-            let count = (actual_damage * 0.5).round() as i32;
+            let Some(count) = Self::damage_indicator_count(actual_damage) else {
+                return;
+            };
             let offset = DVec3::new(
                 0.0,
                 f64::from(entity.base().dimensions().height * PARTICLES_PER_HEALTH),
@@ -890,5 +896,20 @@ impl Player {
                 PARTICLE_SPEED,
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod combat_visual_tests {
+    use super::Player;
+
+    #[test]
+    fn damage_indicators_use_vanilla_threshold_and_truncate_not_round() {
+        for damage in [-1.0, 0.0, 1.0, 2.0] {
+            assert_eq!(Player::damage_indicator_count(damage), None);
+        }
+        assert_eq!(Player::damage_indicator_count(2.01), Some(1));
+        assert_eq!(Player::damage_indicator_count(3.99), Some(1));
+        assert_eq!(Player::damage_indicator_count(4.0), Some(2));
     }
 }
