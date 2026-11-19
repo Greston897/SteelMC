@@ -49,4 +49,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     report = summarize(args.log.read_text(errors='replace'))
     args.output.write_text(json.dumps(report, indent=2) + '\n')
-    print(json.dumps({'totals': report['totals'], 'groups': report['groups']}, indent=2))
+    summary = {'totals': report['totals'], 'groups': report['groups']}
+    print(json.dumps(summary, indent=2))
+    # Annotations remain accessible through api.github.com even when the log
+    # storage host is unreachable. Counts are outcomes, never parity scores.
+    print('::notice title=Observed Rust test outcomes::' + json.dumps(summary))

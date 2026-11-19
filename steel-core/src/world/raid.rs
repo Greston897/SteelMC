@@ -315,16 +315,9 @@ impl RaidManager {
             if raid.waves_spawned == 0 {
                 raid.num_groups = difficulty_groups(world.difficulty());
             }
-            // Keep missing UUIDs: a member may be in an unloaded chunk. Deaths
-            // are removed by raider_died, not by failure of an entity lookup.
-            raid.raiders.retain(|id| {
-                let Some(entity) = world.get_entity_by_uuid(id) else {
-                    return true;
-                };
-                let pos = entity.block_position().0;
-                let delta = pos.as_i64vec3() - raid.center.as_i64vec3();
-                !entity.is_removed() && delta.length_squared() < 12_544
-            });
+            if raid.ticks_active % 20 == 0 {
+                update_raiders(world, raid);
+            }
             if !raid.raiders.is_empty() {
                 if raid.ticks_active % 20 == 0 {
                     for id in &raid.raiders {
@@ -745,6 +738,26 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
     if !raid.raiders.is_empty() {
         raid.waves_spawned = wave;
         play_raid_horn(world, raid, pos);
+    }
+}
+
+/// Vanilla checks membership every second, not every simulation tick. Missing
+/// UUIDs alone are deliberately not deaths: unloaded entities need reconnection.
+fn update_raiders(world: &Arc<World>, raid: &mut Raid) {
+    let mut departed_health = 0;
+    raid.raiders.retain(|id| {
+        let Some(entity) = world.get_entity_by_uuid(id) else { return true; };
+        let delta = entity.block_position().0.as_i64vec3() - raid.center.as_i64vec3();
+        let different_world = entity.level().is_some_and(|level| !Arc::ptr_eq(&level, world));
+        let departed = entity.is_removed() || different_world || delta.length_squared() >= 12_544;
+        if departed {
+            departed_health += entity.as_living_entity().map_or(0, |living| living.get_health().max(0.0).ceil() as i32);
+        }
+        !departed
+    });
+    raid.total_health = (raid.total_health - departed_health).max(0);
+    if raid.leader.is_some_and(|leader| !raid.raiders.contains(&leader)) {
+        raid.leader = None;
     }
 }
 
@@ -1442,5 +1455,40 @@ mod joining_and_killer_tests {
         assert_eq!(raid.heroes, vec![hero.uuid()]);
         assert!(raid.raiders.is_empty());
         assert!(raid.leader.is_none());
+    }
+}
+
+#[cfg(test)]
+mod departure_tests {
+    use super::*;
+    use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
+    use steel_utils::ChunkPos;
+
+    #[test]
+    fn departed_member_subtracts_current_health_clears_leader_and_never_credits_kills() {
+        let fixture = fresh_test_world("raid_member_departure");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let entity = spawn_entity(world, EntitySpawnRequest {
+            entity_type: &vanilla_entities::PILLAGER,
+            placement: EntitySpawnPlacement::Block { pos: BlockPos::new(2, 64, 2), try_move_down: false, moved_up: false },
+            reason: EntitySpawnReason::Event, finalize_spawn: true, play_ambient_sound: false,
+            item_stack: None, user_is_operator: false,
+        }).unwrap();
+        entity.as_living_entity().unwrap().set_health(13.0);
+        let missing = Uuid::new_v4();
+        let mut raid = Raid { center: IVec3::new(114, 64, 2), total_health: 48,
+            raiders: vec![entity.uuid(), missing], leader: Some(entity.uuid()), ..Raid::default() };
+        update_raiders(world, &mut raid);
+        assert_eq!(raid.raiders, vec![missing]); // distance exactly 112 blocks
+        assert_eq!(raid.total_health, 35); // current health, not max health
+        assert!(raid.leader.is_none());
+        assert!(raid.heroes.is_empty());
+        update_raiders(world, &mut raid);
+        assert_eq!(raid.total_health, 35); // departure is charged only once
+        raid.center = IVec3::new(113, 64, 2);
+        raid.raiders.push(entity.uuid());
+        update_raiders(world, &mut raid);
+        assert!(raid.raiders.contains(&entity.uuid())); // 111 is still a member
     }
 }
