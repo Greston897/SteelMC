@@ -525,6 +525,30 @@ fn raid_weapon(kind: usize, wave: i32, omen: i32, roll: f32) -> Option<steel_reg
     Some(stack)
 }
 
+fn horn_position(listener: glam::DVec3, origin: glam::DVec3) -> glam::DVec3 {
+    let delta = glam::DVec3::new(origin.x - listener.x, 0.0, origin.z - listener.z);
+    if delta.length_squared() == 0.0 { return listener; }
+    listener + delta.normalize() * 13.0
+}
+
+fn play_raid_horn(world: &Arc<World>, raid: &Raid, pos: BlockPos) {
+    use steel_protocol::packets::game::{CSound, SoundSource};
+    let Some(sound) = steel_registry::REGISTRY.sound_events.by_key(
+        &steel_utils::Identifier::vanilla_static("event.raid.horn"),
+    ) else { return; };
+    let origin = pos.0.as_dvec3() + glam::DVec3::splat(0.5);
+    let seed = rand::random();
+    world.players.iter_players(|_, player| {
+        let position = player.position();
+        let dx = origin.x - position.x;
+        let dz = origin.z - position.z;
+        if dx * dx + dz * dz <= 64.0 * 64.0 || within_village_radius(raid.center, player.block_position().0) {
+            player.send_packet(CSound::new(sound, SoundSource::Neutral, horn_position(position, origin), 64.0, 1.0, seed));
+        }
+        true
+    });
+}
+
 fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
     let wave = raid.waves_spawned + 1;
     raid.total_health = 0;
@@ -628,6 +652,7 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
     // Failure to create mobs must never manufacture progress.
     if !raid.raiders.is_empty() {
         raid.waves_spawned = wave;
+        play_raid_horn(world, raid, pos);
     }
 }
 
@@ -1119,5 +1144,21 @@ mod raid_enchantment_tests {
             assert_eq!(raid_weapon(0, 6, omen, odds).unwrap().get(ENCHANTMENTS).unwrap().get_level(&vanilla_enchantments::SHARPNESS.key), 2);
             assert_eq!(raid_weapon(0, 6, omen, odds + 0.01).unwrap().get(ENCHANTMENTS).map_or(0, |value| value.get_level(&vanilla_enchantments::SHARPNESS.key)), 0);
         }
+    }
+}
+
+#[cfg(test)]
+mod horn_tests {
+    use super::*;
+
+    #[test]
+    fn horn_projects_toward_wave_thirteen_blocks_at_listener_height() {
+        steel_registry::init_vanilla_registry();
+        assert!(steel_registry::REGISTRY.sound_events.by_key(&steel_utils::Identifier::vanilla_static("event.raid.horn")).is_some());
+        let listener = glam::DVec3::new(1.0, 64.0, 2.0);
+        let projected = horn_position(listener, glam::DVec3::new(31.0, 90.0, 42.0));
+        assert!((projected.distance(listener) - 13.0).abs() < 1.0e-10);
+        assert_eq!(projected.y, 64.0);
+        assert_eq!(horn_position(listener, listener), listener);
     }
 }
