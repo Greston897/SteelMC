@@ -44,6 +44,13 @@ impl BlockBehavior for CauldronBlock {
         Some(self.block.default_state())
     }
 
+    fn use_item_on(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos,
+        player: &crate::player::Player, hand: steel_utils::types::InteractionHand,
+        _hit: &crate::behavior::BlockHitResult, inv: &mut crate::behavior::InventoryAccess,
+    ) -> crate::behavior::InteractionResult {
+        cauldron_item_interaction(state, world, pos, player, hand, inv)
+    }
+
     fn has_analog_output_signal(&self, _state: BlockStateId) -> bool {
         true
     }
@@ -119,33 +126,11 @@ impl BlockBehavior for LayeredCauldronBlock {
         Some(self.block.default_state())
     }
 
-    fn use_item_on(
-        &self,
-        state: BlockStateId,
-        world: &Arc<World>,
-        pos: BlockPos,
-        player: &crate::player::Player,
-        hand: steel_utils::types::InteractionHand,
-        _hit: &crate::behavior::BlockHitResult,
-        inv: &mut crate::behavior::InventoryAccess,
+    fn use_item_on(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos,
+        player: &crate::player::Player, hand: steel_utils::types::InteractionHand,
+        _hit: &crate::behavior::BlockHitResult, inv: &mut crate::behavior::InventoryAccess,
     ) -> crate::behavior::InteractionResult {
-        use crate::behavior::InteractionResult;
-        use steel_registry::{vanilla_items, vanilla_potions, sound_events};
-        if state.get_block() != &vanilla_blocks::WATER_CAULDRON
-            || !inv.with_item(|item| item.is(&vanilla_items::GLASS_BOTTLE)) {
-            return InteractionResult::TryEmptyHandInteraction;
-        }
-        crate::behavior::item_utils::create_filled_result_for_hand(player, inv, hand,
-            steel_registry::data_components::PotionContents::create_item_stack(&vanilla_items::POTION, &vanilla_potions::WATER), true);
-        player.award_stat(&steel_registry::stat::vanilla_stat_types::ITEM_USED, &vanilla_items::GLASS_BOTTLE);
-        player.award_custom_stat(&steel_registry::vanilla_custom_stats::USE_CAULDRON);
-        let level = state.get_value(LEVEL_CAULDRON);
-        let next = if level == 1 { vanilla_blocks::CAULDRON.default_state() }
-            else { state.set_value(LEVEL_CAULDRON, level - 1) };
-        world.set_block(pos, next, UpdateFlags::UPDATE_ALL);
-        world.play_sound(&sound_events::ITEM_BOTTLE_FILL, steel_protocol::packets::game::SoundSource::Blocks, pos, 1.0, 1.0, None);
-        world.game_event(&vanilla_game_events::FLUID_PICKUP, pos, &GameEventContext::new(None, None));
-        InteractionResult::Success
+        cauldron_item_interaction(state, world, pos, player, hand, inv)
     }
 
     fn has_analog_output_signal(&self, _state: BlockStateId) -> bool {
@@ -242,4 +227,58 @@ mod tests {
             );
         }
     }
+}
+
+/// Vanilla 26.3 CauldronInteractions dispatch, shared by all cauldron types.
+pub(super) fn cauldron_item_interaction(
+    state: BlockStateId, world: &Arc<World>, pos: BlockPos,
+    player: &crate::player::Player, hand: steel_utils::types::InteractionHand,
+    inv: &mut crate::behavior::InventoryAccess,
+) -> crate::behavior::InteractionResult {
+    use crate::{behavior::InteractionResult, fluid::FluidStateExt as _};
+    use steel_registry::{vanilla_items as items, vanilla_potions, sound_events as sounds, vanilla_custom_stats as stats};
+    use steel_registry::item_stack::ItemStack;
+    let held = inv.with_item(|item| item.clone());
+    let item = held.item();
+    let water = state.get_block() == &vanilla_blocks::WATER_CAULDRON;
+    let snow = state.get_block() == &vanilla_blocks::POWDER_SNOW_CAULDRON;
+    let empty = state.get_block() == &vanilla_blocks::CAULDRON;
+    let level = if water || snow { state.get_value(LEVEL_CAULDRON) } else { 0 };
+    let lower = || if level <= 1 { vanilla_blocks::CAULDRON.default_state() }
+        else { state.set_value(LEVEL_CAULDRON, level - 1) };
+    let (result, next, sound, placing, stat, award_item, creative_limit) = if item == &items::WATER_BUCKET
+        || item == &items::LAVA_BUCKET || item == &items::POWDER_SNOW_BUCKET {
+        if item != &items::WATER_BUCKET && world.get_block_state(pos.above()).get_fluid_state().is_water() {
+            return InteractionResult::Consume;
+        }
+        let (next, sound) = if item == &items::WATER_BUCKET {
+            (vanilla_blocks::WATER_CAULDRON.default_state().set_value(LEVEL_CAULDRON, 3), &sounds::ITEM_BUCKET_EMPTY)
+        } else if item == &items::LAVA_BUCKET {
+            (vanilla_blocks::LAVA_CAULDRON.default_state(), &sounds::ITEM_BUCKET_EMPTY_LAVA)
+        } else {
+            (vanilla_blocks::POWDER_SNOW_CAULDRON.default_state().set_value(LEVEL_CAULDRON, 3), &sounds::ITEM_BUCKET_EMPTY_POWDER_SNOW)
+        };
+        (ItemStack::new(&items::BUCKET), next, Some(sound), true, &stats::FILL_CAULDRON, true, true)
+    } else if item == &items::BUCKET && ((water || snow) && level == 3 || state.get_block() == &vanilla_blocks::LAVA_CAULDRON) {
+        let (filled, sound) = if water { (&items::WATER_BUCKET, &sounds::ITEM_BUCKET_FILL) }
+            else if snow { (&items::POWDER_SNOW_BUCKET, &sounds::ITEM_BUCKET_FILL_POWDER_SNOW) }
+            else { (&items::LAVA_BUCKET, &sounds::ITEM_BUCKET_FILL_LAVA) };
+        (ItemStack::new(filled), vanilla_blocks::CAULDRON.default_state(), Some(sound), false, &stats::USE_CAULDRON, true, true)
+    } else if water && item == &items::GLASS_BOTTLE {
+        (steel_registry::data_components::PotionContents::create_item_stack(&items::POTION, &vanilla_potions::WATER), lower(), Some(&sounds::ITEM_BOTTLE_FILL), false, &stats::USE_CAULDRON, true, true)
+    } else if (empty || water && level < 3) && item == &items::POTION
+        && held.get(steel_registry::data_components::vanilla_components::POTION_CONTENTS).is_some_and(|potion| potion.is(&vanilla_potions::WATER)) {
+        (ItemStack::new(&items::GLASS_BOTTLE), vanilla_blocks::WATER_CAULDRON.default_state().set_value(LEVEL_CAULDRON, level + 1), Some(&sounds::ITEM_BOTTLE_EMPTY), true, &stats::USE_CAULDRON, true, true)
+    } else if water && item != &items::SHULKER_BOX && item.block.is_some_and(|block| block.has_tag(&steel_registry::vanilla_block_tags::BlockTag::SHULKER_BOXES)) {
+        (ItemStack::with_count_and_patch(&items::SHULKER_BOX, 1, held.components_patch().clone()), lower(), None, false, &stats::CLEAN_SHULKER_BOX, false, false)
+    } else { return InteractionResult::TryEmptyHandInteraction; };
+    crate::behavior::item_utils::create_filled_result_for_hand(player, inv, hand, result, creative_limit);
+    if award_item { player.award_stat(&steel_registry::stat::vanilla_stat_types::ITEM_USED, item); }
+    player.award_custom_stat(stat);
+    world.set_block(pos, next, UpdateFlags::UPDATE_ALL);
+    if let Some(sound) = sound {
+        world.play_sound(sound, steel_protocol::packets::game::SoundSource::Blocks, pos, 1.0, 1.0, None);
+        world.game_event(if placing { &vanilla_game_events::FLUID_PLACE } else { &vanilla_game_events::FLUID_PICKUP }, pos, &GameEventContext::new(None, None));
+    }
+    InteractionResult::Success
 }

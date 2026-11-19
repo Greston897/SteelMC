@@ -428,3 +428,111 @@ fn bottle_does_not_extract_water_from_powder_snow_cauldron() {
     assert_eq!(fixture.count(&vanilla_items::GLASS_BOTTLE), 1);
     assert_eq!(fixture.count(&vanilla_items::POTION), 0);
 }
+
+#[test]
+fn cauldron_filled_buckets_replace_every_cauldron_type_in_both_hands_and_modes() {
+    use steel_registry::blocks::properties::BlockStateProperties;
+    for hand in [InteractionHand::MainHand, InteractionHand::OffHand] {
+        for mode in [GameType::Survival, GameType::Creative] {
+            for original in [vanilla_blocks::CAULDRON.default_state(), vanilla_blocks::WATER_CAULDRON.default_state(),
+                vanilla_blocks::LAVA_CAULDRON.default_state(), vanilla_blocks::POWDER_SNOW_CAULDRON.default_state()] {
+                for (bucket, expected) in [
+                    (&vanilla_items::WATER_BUCKET, vanilla_blocks::WATER_CAULDRON.default_state().set_value(&BlockStateProperties::LEVEL_CAULDRON, 3)),
+                    (&vanilla_items::LAVA_BUCKET, vanilla_blocks::LAVA_CAULDRON.default_state()),
+                    (&vanilla_items::POWDER_SNOW_BUCKET, vanilla_blocks::POWDER_SNOW_CAULDRON.default_state().set_value(&BlockStateProperties::LEVEL_CAULDRON, 3)),
+                ] {
+                    let fixture = Interaction::new("cauldron_bucket_fill");
+                    fixture.player.set_game_mode(mode);
+                    fixture.block(original);
+                    fixture.hold(hand, ItemStack::new(bucket));
+                    assert!(fixture.use_on(hand).consumes_action());
+                    assert_eq!(fixture.world_fixture.world.get_block_state(fixture.pos), expected);
+                    assert_eq!(fixture.count(bucket), if mode == GameType::Creative { 1 } else { 0 });
+                    assert_eq!(fixture.count(&vanilla_items::BUCKET), 1);
+                    assert_eq!(fixture.used(bucket), 1);
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn bucket_extraction_requires_full_water_or_snow_but_accepts_lava() {
+    use steel_registry::blocks::properties::BlockStateProperties;
+    for (block, bucket) in [(&vanilla_blocks::WATER_CAULDRON, &vanilla_items::WATER_BUCKET),
+        (&vanilla_blocks::POWDER_SNOW_CAULDRON, &vanilla_items::POWDER_SNOW_BUCKET)] {
+        for level in 1..=3 {
+            let fixture = Interaction::new("cauldron_bucket_extract");
+            let state = block.default_state().set_value(&BlockStateProperties::LEVEL_CAULDRON, level);
+            fixture.block(state);
+            fixture.hold(InteractionHand::MainHand, ItemStack::new(&vanilla_items::BUCKET));
+            fixture.use_on(InteractionHand::MainHand);
+            assert_eq!(fixture.count(bucket), i32::from(level == 3));
+            assert_eq!(fixture.world_fixture.world.get_block_state(fixture.pos), if level == 3 { vanilla_blocks::CAULDRON.default_state() } else { state });
+        }
+    }
+    let fixture = Interaction::new("lava_bucket_extract");
+    fixture.block(vanilla_blocks::LAVA_CAULDRON.default_state());
+    fixture.hold(InteractionHand::OffHand, ItemStack::new(&vanilla_items::BUCKET));
+    assert!(fixture.use_on(InteractionHand::OffHand).consumes_action());
+    assert_eq!(fixture.count(&vanilla_items::LAVA_BUCKET), 1);
+    assert_eq!(fixture.world_fixture.world.get_block_state(fixture.pos), vanilla_blocks::CAULDRON.default_state());
+}
+
+#[test]
+fn water_potion_refills_only_empty_or_nonfull_water_cauldron() {
+    use steel_registry::{data_components::PotionContents, vanilla_potions};
+    use steel_registry::blocks::properties::BlockStateProperties;
+    for level in 0..=3 {
+        let fixture = Interaction::new("cauldron_potion_refill");
+        let state = if level == 0 { vanilla_blocks::CAULDRON.default_state() }
+            else { vanilla_blocks::WATER_CAULDRON.default_state().set_value(&BlockStateProperties::LEVEL_CAULDRON, level) };
+        fixture.block(state);
+        fixture.hold(InteractionHand::MainHand, PotionContents::create_item_stack(&vanilla_items::POTION, &vanilla_potions::WATER));
+        fixture.use_on(InteractionHand::MainHand);
+        assert_eq!(fixture.count(&vanilla_items::GLASS_BOTTLE), i32::from(level < 3));
+        assert_eq!(fixture.count(&vanilla_items::POTION), i32::from(level == 3));
+        assert_eq!(fixture.world_fixture.world.get_block_state(fixture.pos).get_value(&BlockStateProperties::LEVEL_CAULDRON), (level + 1).min(3));
+    }
+    let fixture = Interaction::new("cauldron_rejects_healing");
+    fixture.block(vanilla_blocks::CAULDRON.default_state());
+    fixture.hold(InteractionHand::MainHand, PotionContents::create_item_stack(&vanilla_items::POTION, &vanilla_potions::HEALING));
+    fixture.use_on(InteractionHand::MainHand);
+    assert_eq!(fixture.count(&vanilla_items::POTION), 1);
+    assert_eq!(fixture.world_fixture.world.get_block_state(fixture.pos), vanilla_blocks::CAULDRON.default_state());
+}
+
+#[test]
+fn underwater_cauldron_rejects_lava_and_snow_without_consuming_bucket() {
+    for bucket in [&vanilla_items::LAVA_BUCKET, &vanilla_items::POWDER_SNOW_BUCKET] {
+        let fixture = Interaction::new("cauldron_underwater");
+        fixture.block(vanilla_blocks::CAULDRON.default_state());
+        fixture.world_fixture.world.set_block(fixture.pos.above(), vanilla_blocks::WATER.default_state(), UpdateFlags::UPDATE_ALL);
+        fixture.hold(InteractionHand::MainHand, ItemStack::new(bucket));
+        assert!(fixture.use_on(InteractionHand::MainHand).consumes_action());
+        assert_eq!(fixture.count(bucket), 1);
+        assert_eq!(fixture.world_fixture.world.get_block_state(fixture.pos), vanilla_blocks::CAULDRON.default_state());
+    }
+}
+
+#[test]
+fn washing_colored_shulker_preserves_components_and_consumes_one_water_level() {
+    use steel_registry::data_components::vanilla_components::CUSTOM_NAME;
+    use steel_registry::blocks::properties::BlockStateProperties;
+    for mode in [GameType::Survival, GameType::Creative] {
+        let fixture = Interaction::new("cauldron_shulker_wash");
+        fixture.player.set_game_mode(mode);
+        fixture.block(vanilla_blocks::WATER_CAULDRON.default_state().set_value(&BlockStateProperties::LEVEL_CAULDRON, 1));
+        let mut shulker = ItemStack::new(&vanilla_items::RED_SHULKER_BOX);
+        shulker.set(CUSTOM_NAME, Some(TextComponent::plain("Stored cargo")));
+        fixture.hold(InteractionHand::MainHand, shulker);
+        assert!(fixture.use_on(InteractionHand::MainHand).consumes_action());
+        assert_eq!(fixture.count(&vanilla_items::SHULKER_BOX), 1);
+        assert_eq!(fixture.world_fixture.world.get_block_state(fixture.pos), vanilla_blocks::CAULDRON.default_state());
+        let inventory = fixture.player.inventory.lock();
+        assert!((0..inventory.get_container_size()).any(|slot| {
+            let item = inventory.get_item(slot);
+            item.is(&vanilla_items::SHULKER_BOX) && item.get(CUSTOM_NAME) == Some(&TextComponent::plain("Stored cargo"))
+        }));
+    }
+}
