@@ -2091,6 +2091,8 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         "loot give Admin loot minecraft:blocks/diamond_ore",
         "spreadplayers 4 4 1 6 false Admin",
         "item replace entity Admin hotbar.2 with minecraft:diamond_sword 1",
+        "execute if items entity Admin hotbar.* minecraft:diamond_sword run scoreboard players get Admin pts",
+        "execute if items entity Admin hotbar.2 minecraft:diamond_sword run scoreboard players get Admin pts",
         "setblock 8 100 8 barrel",
         "item replace block 8 100 8 container.0 with minecraft:diamond 3",
         "execute if items block 8 100 8 container.0 minecraft:diamond run scoreboard players get Admin pts",

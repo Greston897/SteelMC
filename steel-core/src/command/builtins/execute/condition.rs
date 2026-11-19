@@ -459,7 +459,10 @@ fn items_condition(expected: bool) -> Builder {
             argument("targets", SteelArgumentType::entities()).then(
                 argument("slots", SteelArgumentType::item_slots()).then(
                     argument("item_predicate", SteelArgumentType::item_predicate())
-                        .then(items_count_range(expected)),
+                        .forks(EXECUTE_ROOT, move |context| {
+                            Ok(conditional_sources(context.source(), expected, entity_items_count(context)? > 0))
+                        })
+                        .executes(move |context| execute_numeric_condition(context, expected, entity_items_count(context)?)),
                 ),
             ),
         ),
@@ -484,67 +487,60 @@ fn block_items_count(context: &SteelCommandContext<CommandSource>) -> Result<i32
     Ok(count)
 }
 
-fn items_count_range(expected: bool) -> Builder {
-    argument("count", SteelArgumentType::int_range())
-        .forks(EXECUTE_ROOT, move |context| {
-            let matches = items_match(context)?;
-            Ok(conditional_sources(context.source(), expected, matches))
-        })
-        .executes(move |context| {
-            execute_boolean_condition(context, expected, items_match(context)?)
-        })
-}
-
-/// Vanilla `ItemConditions`: the predicate must match at least `count.min`
-/// matching items across the selected slots.
-fn items_match(context: &SteelCommandContext<CommandSource>) -> Result<bool, CommandSyntaxError> {
+/// Vanilla counts matching items, not matching slots, and has no trailing
+/// count argument. A zero count fails `if` and passes `unless`.
+fn entity_items_count(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let predicate = context.item_predicate("item_predicate")?;
     let slots = context.string("slots")?;
-    // Only `container.*` slot ranges are meaningful for a single entity stack
-    // provider, and vanilla's wildcard form selects everything.
-    let range = match slots {
-        "container.*" | "*" => None,
-        other => Some(parse_container_slot_range(other)?),
-    };
-    let count_range = context.int_range("count")?;
-
     let mut counted = 0_i32;
     for entity in context.optional_entities("targets")? {
-        let Some(player) = entity.as_player() else {
-            continue;
-        };
+        let Some(player) = entity.as_player() else { continue; };
         let inventory = player.inventory.lock();
-        for (index, stack) in inventory.items().iter().enumerate() {
-            let index = i32::try_from(index).unwrap_or(i32::MAX);
-            if range.is_some_and(|(min, max)| index < min || index > max) {
-                continue;
-            }
+        for slot in player_item_slots(slots, inventory.get_selected_slot() as usize)? {
+            let Some(stack) = inventory.items().get(slot) else { continue; };
             if !stack.is_empty() && predicate.matches(stack) {
                 counted = counted.saturating_add(stack.count());
             }
         }
     }
-    Ok(count_range.matches(counted))
+    Ok(counted)
 }
 
-/// Parses `container.<index>` and `container.<min>..<max>` slot selectors.
-fn parse_container_slot_range(slots: &str) -> Result<(i32, i32), CommandSyntaxError> {
-    let Some(rest) = slots.strip_prefix("container.") else {
-        return Err(CommandSyntaxError::dynamic(format!(
-            "Unknown item slot provider '{slots}'"
-        )));
-    };
-    let parse = |value: &str| {
-        value
-            .parse::<i32>()
-            .map_err(|_| CommandSyntaxError::dynamic(format!("Invalid container slot '{value}'")))
-    };
-    if let Some((min, max)) = rest.split_once("..") {
-        Ok((parse(min)?, parse(max)?))
-    } else {
-        let slot = parse(rest)?;
-        Ok((slot, slot))
+fn player_item_slots(name: &str, selected: usize) -> Result<Vec<usize>, CommandSyntaxError> {
+    use crate::player::player_inventory::PlayerInventory as Inv;
+    let unknown = || CommandSyntaxError::dynamic(format!("Unknown item slot '{name}'"));
+    match name {
+        "container.*" => return Ok((0..36).collect()),
+        "hotbar.*" => return Ok((0..9).collect()),
+        "inventory.*" => return Ok((9..36).collect()),
+        "weapon" | "weapon.mainhand" => return Ok(vec![selected]),
+        "weapon.offhand" => return Ok(vec![Inv::SLOT_OFFHAND]),
+        "weapon.*" => return Ok(vec![selected, Inv::SLOT_OFFHAND]),
+        "armor.head" => return Ok(vec![39]),
+        "armor.chest" => return Ok(vec![38]),
+        "armor.legs" => return Ok(vec![37]),
+        "armor.feet" => return Ok(vec![36]),
+        "armor.*" => return Ok(Inv::ARMOR_TOP_DOWN.to_vec()),
+        _ => {}
     }
+    for (prefix, size, offset) in [("container.", 54, 0), ("hotbar.", 9, 0), ("inventory.", 27, 9)] {
+        if let Some(index) = name.strip_prefix(prefix) {
+            let index: usize = index.parse().map_err(|_| unknown())?;
+            if index >= size { return Err(unknown()); }
+            // Player exposes only main-inventory slots through container.N.
+            return Ok(if prefix == "container." && index >= 36 { vec![] } else { vec![index + offset] });
+        }
+    }
+    Err(unknown())
+}
+
+/// Literal vanilla container selectors are container.0 through container.53.
+/// Arbitrary numeric intervals are not vanilla slot-range names.
+fn parse_container_slot_range(slots: &str) -> Result<(i32, i32), CommandSyntaxError> {
+    let index = slots.strip_prefix("container.").and_then(|s| s.parse::<i32>().ok())
+        .filter(|&index| (0..54).contains(&index))
+        .ok_or_else(|| CommandSyntaxError::dynamic(format!("Unknown container slot '{slots}'")))?;
+    Ok((index, index))
 }
 
 fn entity_condition(expected: bool) -> Builder {
@@ -791,6 +787,25 @@ mod tests {
             )
             .expect("fallback block entity should load owned NBT"),
         )
+    }
+
+    #[test]
+    fn item_slot_selection_preserves_vanilla_inventory_offsets() {
+        assert_eq!(player_item_slots("inventory.0", 4).unwrap(), vec![9]);
+        assert_eq!(player_item_slots("inventory.26", 4).unwrap(), vec![35]);
+        assert_eq!(player_item_slots("weapon.*", 4).unwrap(), vec![4, 40]);
+        assert_eq!(player_item_slots("armor.*", 4).unwrap(), vec![39, 38, 37, 36]);
+        assert_eq!(player_item_slots("container.*", 4).unwrap().len(), 36);
+        assert!(player_item_slots("hotbar.9", 0).is_err());
+        assert!(player_item_slots("inventory.27", 0).is_err());
+    }
+
+    #[test]
+    fn container_slots_reject_nonvanilla_intervals_and_bounds() {
+        assert_eq!(parse_container_slot_range("container.53").unwrap(), (53, 53));
+        for invalid in ["container.-1", "container.54", "container.0..3", "*", "container.no"] {
+            assert!(parse_container_slot_range(invalid).is_err(), "{invalid}");
+        }
     }
 
     #[test]
