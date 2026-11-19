@@ -311,6 +311,11 @@ impl RaidManager {
             if raid.waves_spawned > raid.waves_cleared {
                 raid.waves_cleared = raid.waves_spawned;
                 raid.cooldown = PRE_WAVE_TICKS;
+                if raid.waves_spawned < raid.wave_count() {
+                    // Vanilla resets the inter-wave timer and returns; its
+                    // first decrement happens on the following tick.
+                    return true;
+                }
             }
             if raid.waves_spawned >= raid.wave_count() {
                 raid.post_raid_ticks += 1;
@@ -323,7 +328,9 @@ impl RaidManager {
             if raid.cooldown > 0 {
                 update_wave_spawn_cache(world, raid);
                 raid.cooldown -= 1;
-                return true;
+                if raid.cooldown > 0 {
+                    return true;
+                }
             }
             let cached = raid.wave_spawn_pos.take().map(BlockPos);
             // Vanilla makes six independent 20-candidate attempts before stopping.
@@ -1086,9 +1093,12 @@ mod complete_wave_tests {
         assert!(world.poi_storage.lock().reserve_ticket(BlockPos(center)));
         world.raids.raise_omen(center, omen);
         for wave in 1..=waves {
-            for _ in 0..301 {
+            let wait = if wave == 1 { 300 } else { 301 };
+            for _ in 0..wait - 1 {
                 world.raids.tick(world);
             }
+            assert_eq!(world.raids.raids()[0].waves_spawned, wave - 1, "wave must not spawn early");
+            world.raids.tick(world);
             let raid = world.raids.raids()[0].clone();
             assert_eq!(raid.waves_spawned, wave);
             assert_eq!(raid.waves_cleared, wave - 1);
