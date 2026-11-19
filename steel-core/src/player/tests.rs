@@ -1986,3 +1986,37 @@ fn spawn_sends_view_and_simulation_distances_in_vanilla_order() {
         "both distance packets follow ClientboundSetDefaultSpawnPositionPacket"
     );
 }
+
+#[test]
+fn combat_critical_requires_full_cooldown_and_does_not_multiply_enchantment_bonus() {
+    init_vanilla_registry();
+    init_behaviors();
+    for (charged, enchanted, expected) in [
+        (false, false, 2.08_f32),
+        (true, false, 15.0),
+        (true, true, 16.0),
+    ] {
+        let fixture = fresh_test_world("combat_critical_cooldown_bonus");
+        let attacker = test_player(Arc::clone(&fixture.world));
+        let victim = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Victim", 2).build();
+        victim.set_client_loaded(true);
+        attacker.set_on_ground(false);
+        attacker.base().set_fall_distance(1.0);
+        attacker.attributes().lock().set_base_value(vanilla_attributes::ATTACK_DAMAGE, 10.0);
+        attacker.attributes().lock().set_base_value(vanilla_attributes::ATTACK_SPEED, 4.0);
+        if enchanted {
+            let mut weapon = ItemStack::new(&vanilla_items::STICK);
+            weapon.set_enchantments(&[(vanilla_enchantments::SHARPNESS.key.clone(), 1)], false);
+            attacker.inventory.lock().set_selected_item(weapon);
+        }
+        if charged {
+            for _ in 0..10 { attacker.tick_attack_strength(); }
+        }
+        let health = victim.get_health();
+        let target: SharedEntity = victim.clone();
+        assert!(attacker.attack(&target));
+        let dealt = health - victim.get_health();
+        assert!((dealt - expected).abs() < 0.001,
+            "charged={charged} enchanted={enchanted}: expected {expected}, got {dealt}");
+    }
+}

@@ -463,31 +463,30 @@ impl Player {
 
         // Vanilla `Player.attack`: critical hit when falling, not on ground,
         // not climbing/liquid, no passenger, and not sprinting.
-        let critical = self.fall_distance() > 0.0
+        let critical = full_strength_attack
+            && entity.is_living_entity()
+            && !self.has_mob_effect(steel_registry::vanilla_mob_effects::BLINDNESS)
+            && self.fall_distance() > 0.0
             && !self.on_ground()
             && !self.on_climbable()
             && !self.is_in_water()
-            && !self.is_in_lava()
             && !self.is_passenger()
             && !self.is_sprinting();
         let damage = if critical {
-            total_damage * 1.5
+            base_damage * 1.5 + magic_boost
         } else {
             total_damage
         };
 
-        let sound = if critical {
-            Some(&sound_events::ENTITY_PLAYER_ATTACK_CRIT)
-        } else if knockback_attack {
-            Some(&sound_events::ENTITY_PLAYER_ATTACK_KNOCKBACK)
-        } else if full_strength_attack {
-            Some(&sound_events::ENTITY_PLAYER_ATTACK_STRONG)
-        } else {
-            Some(&sound_events::ENTITY_PLAYER_ATTACK_WEAK)
-        };
-        if let Some(sound) = sound {
-            self.play_sound(sound, 1.0, 1.0);
+        if knockback_attack {
+            self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_KNOCKBACK, 1.0, 1.0);
         }
+        let movement = self.known_movement();
+        let can_sweep = full_strength_attack && !critical && !knockback_attack
+            && self.on_ground()
+            && movement.x * movement.x + movement.z * movement.z
+                < (f64::from(self.get_speed()) * 2.5).powi(2)
+            && attacking_item.item().has_tag(&vanilla_item_tags::ItemTag::SWORDS);
 
         let old_movement = entity.velocity();
         let Some(target_world) = entity.level() else {
@@ -533,10 +532,16 @@ impl Player {
             self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_NODAMAGE, 1.0, 1.0);
         }
 
-        if was_hurt && full_strength_attack && !critical && !knockback_attack {
-            // Vanilla `Player.attack`: a full-strength, non-critical, non-sprint
-            // hit triggers a sweep against the surrounding entities.
-            self.do_sweep_attack(target, attack_knockback, &attacking_item);
+        if was_hurt {
+            if can_sweep {
+                self.do_sweep_attack(target, base_damage, attack_strength_scale, &attacking_item);
+            } else if critical {
+                self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_CRIT, 1.0, 1.0);
+            } else {
+                self.play_sound(if full_strength_attack {
+                    &sound_events::ENTITY_PLAYER_ATTACK_STRONG
+                } else { &sound_events::ENTITY_PLAYER_ATTACK_WEAK }, 1.0, 1.0);
+            }
         }
 
         let world = self.get_world();
@@ -544,99 +549,52 @@ impl Player {
         was_hurt
     }
 
-    /// Vanilla `sweeping_edge` enchantment, the only enchantment that scales the
-    /// sweep attack.
-    const SWEEPING_EDGE_ID: Identifier =
-        Identifier::new_static(Identifier::VANILLA_NAMESPACE, "sweeping_edge");
-
-    /// Vanilla `Player.doSweepAttack`: sweeping-edge level scales the extra
-    /// damage and the arc radius; every other living entity inside the arc in
-    /// front of the player takes `1 + ratio * attackDamage` damage and is
-    /// knocked back.
+    /// Vanilla 26.3 Player.doSweepAttack: target-centred box, fixed reach,
+    /// attribute-based damage, no enchantment-dependent radius or forward arc.
     fn do_sweep_attack(
         self: &Arc<Self>,
         target: &SharedEntity,
-        attack_knockback: f64,
+        base_damage: f32,
+        attack_strength_scale: f32,
         attacking_item: &ItemStack,
     ) {
-        const BASE_SWEEP_DAMAGE: f32 = 1.0;
-        const SWEEP_DAMAGE_RATIO_PER_LEVEL: f64 = 0.5;
-        const SWEEP_RANGE: f64 = 1.0;
-        const SWEEP_RANGE_RATIO_PER_LEVEL: f64 = 1.0;
-        const SWEEP_KNOCKBACK: f64 = 0.4;
-
-        let sweeping_level = f64::from(
-            attacking_item
-                .get_enchantment_level(&Self::SWEEPING_EDGE_ID)
-                .max(0),
-        );
-        let sweeping_damage_ratio = sweeping_level * SWEEP_DAMAGE_RATIO_PER_LEVEL;
-        let sweep_radius = SWEEP_RANGE + sweeping_level * SWEEP_RANGE_RATIO_PER_LEVEL;
-
+        let ratio = self.attributes().lock()
+            .required_value(vanilla_attributes::SWEEPING_DAMAGE_RATIO) as f32;
+        let sweep_damage = 1.0 + ratio * base_damage;
         let world = self.get_world();
-        let center = self.position();
-        let search_box = self.bounding_box().inflate(sweep_radius);
-        let look = self.look_angle();
-
+        let search_box = target.bounding_box().inflate_xyz(1.0, 0.25, 1.0);
         let damage_source = self.attack_damage_source(attacking_item);
-        let attack_damage = {
-            let attributes = self.attributes().lock();
-            attributes.required_value(vanilla_attributes::ATTACK_DAMAGE) as f32
-        };
-        let sweep_damage =
-            BASE_SWEEP_DAMAGE + (sweeping_damage_ratio * f64::from(attack_damage)) as f32;
-        let mut hit_any = false;
-
+        self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_SWEEP, 1.0, 1.0);
+        let yaw = self.rotation().0.to_radians();
+        let yaw_sin = trig::sin(yaw);
+        let yaw_cos = trig::cos(yaw);
         for other in world.entity_manager().get_entities_in_aabb(&search_box) {
             let entity = other.as_ref();
-            if entity.id() == target.as_ref().id() || entity.id() == self.id() {
+            if entity.id() == target.id() || entity.id() == self.id()
+                || !entity.is_living_entity() || self.is_allied_to(entity)
+                || entity.is_marker_armor_stand()
+                || self.position().distance_squared(entity.position()) >= 9.0 {
                 continue;
             }
-            if !entity.is_living_entity() {
-                continue;
-            }
-            if entity.as_player().is_some_and(Player::is_spectator) {
-                continue;
-            }
-            // Arc test: the victim must be in front of the player.
-            let offset = entity.position() - center;
-            let horizontal_sq = offset.x * offset.x + offset.z * offset.z;
-            if horizontal_sq >= sweep_radius * sweep_radius {
-                continue;
-            }
-            if look.x * offset.x + look.z * offset.z <= 0.0 {
-                continue;
-            }
-            let Some(entity_world) = entity.level() else {
-                continue;
-            };
-            let old_health = entity
-                .as_living_entity()
-                .map_or(0.0, LivingEntity::get_health);
-            if entity.hurt(&entity_world, &damage_source, sweep_damage) {
-                hit_any = true;
-                self.damage_stats_and_hearts(entity, old_health);
-                self.cause_extra_knockback(
-                    entity,
-                    SWEEP_KNOCKBACK + attack_knockback,
-                    entity.velocity(),
-                );
+            let context = EnchantmentDamageContext::new(entity.entity_type(),
+                Some(self.entity_type()), Some(self.entity_type()), &damage_source);
+            let damage = enchantment_helper::modify_damage(attacking_item, &context, sweep_damage)
+                * attack_strength_scale;
+            if entity.hurt(&world, &damage_source, damage) {
+                if let Some(living) = entity.as_living_entity() {
+                    living.knockback(0.4, f64::from(yaw_sin), -f64::from(yaw_cos));
+                }
+                let context = EnchantmentPostAttackContext::new(&other, &damage_source);
+                enchantment_helper::do_post_attack_effects_with_item_source(
+                    &world, entity, attacking_item, &context);
             }
         }
-
-        if hit_any {
-            self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_SWEEP, 1.0, 1.0);
-            // Vanilla `ServerLevel.sendParticles(SWEEP_ATTACK, ...)` at the
-            // player's feet, one particle.
-            let position = self.position();
-            world.send_particles(
-                ParticleData::simple(&vanilla_particle_types::SWEEP_ATTACK),
-                DVec3::new(position.x, position.y + 0.5, position.z),
-                1,
-                DVec3::new(0.0, 0.0, 0.0),
-                0.0,
-            );
-        }
+        let position = self.position();
+        let dx = -f64::from(yaw_sin);
+        let dz = f64::from(yaw_cos);
+        world.send_particles(ParticleData::simple(&vanilla_particle_types::SWEEP_ATTACK),
+            DVec3::new(position.x + dx, position.y + f64::from(self.base().dimensions().height) * 0.5,
+                position.z + dz), 0, DVec3::new(dx, 0.0, dz), 0.0);
     }
 
     fn item_attack_interaction(
