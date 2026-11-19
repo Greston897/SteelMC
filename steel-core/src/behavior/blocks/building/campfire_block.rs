@@ -27,7 +27,7 @@ use crate::{
         context::BlockHitResult,
     },
     block_entity::{BLOCK_ENTITIES, BlockEntityTicker, entities::CampfireBlockEntity},
-    entity::{Entity, InsideBlockEffectCollector, damage::DamageSource, projectile::Projectile},
+    entity::{Entity, LivingEntity as _, InsideBlockEffectCollector, damage::DamageSource, projectile::Projectile},
     world::{
         ClipHitResult, LevelAccessor, ScheduledTickAccess, World, game_event::GameEventContext,
     },
@@ -150,7 +150,7 @@ impl BlockBehavior for CampfireBlock {
                 stack.item().has_tag(&steel_registry::vanilla_item_tags::ItemTag::DOUSES_CAMPFIRES)
             }) {
                 world.level_event(steel_registry::level_events::SOUND_EXTINGUISH_FIRE, pos, 0, None);
-                Self::douse(Some(player), world.as_ref(), pos);
+                Self::douse(Some(player), world, pos);
                 world.set_block(pos, state.set_value(LIT, false), UpdateFlags::UPDATE_ALL);
                 let broken = inv.with_item(|stack| {
                     let item = stack.item();
