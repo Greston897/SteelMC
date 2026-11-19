@@ -473,7 +473,7 @@ fn block_items_count(context: &SteelCommandContext<CommandSource>) -> Result<i32
     let pos = context.block_pos("pos")?;
     let entity = context.source().world().get_block_entity(pos)
         .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
-    let container = entity.as_container()
+    let container = crate::inventory::lock::ContainerRef::from_block_entity(entity)
         .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
     let slots = context.string("slots")?;
     let range = if slots == "container.*" { None } else { Some(parse_container_slot_range(slots)?) };

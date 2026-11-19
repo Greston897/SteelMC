@@ -68,15 +68,16 @@ fn replace_block(context: &SteelCommandContext<CommandSource>, count: Option<i32
         .ok_or_else(|| CommandSyntaxError::dynamic("Unknown container slot"))?;
     let entity = context.source().world().get_block_entity(pos)
         .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
-    let container = entity.as_container()
+    let container = crate::inventory::lock::ContainerRef::from_block_entity(entity)
         .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
-    let mut container = container.lock();
-    if slot >= container.get_container_size() {
+    let mut guard = container.lock();
+    if slot >= guard.get_container_size() {
         return Err(CommandSyntaxError::dynamic("Container slot out of range"));
     }
     let stack = context.item_stack("item")?;
-    container.set_item(slot, count.map_or_else(|| stack.clone(), |n| stack.copy_with_count(n)));
-    drop(container);
+    guard.set_item(slot, count.map_or_else(|| stack.clone(), |n| stack.copy_with_count(n)));
+    drop(guard);
+    container.mark_changed();
     context.source().send_success(&TextComponent::plain("Replaced container slot"), true);
     Ok(1)
 }
