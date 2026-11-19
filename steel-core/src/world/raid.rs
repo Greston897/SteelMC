@@ -782,7 +782,13 @@ mod lifecycle_tests {
             ..Raid::default()
         };
         spawn_wave(world, &mut raid, BlockPos::new(2, 64, 2));
-        assert!((4..=5).contains(&raid.raiders.len()));
+        // Normal difficulty independently adds 0..=1 pillagers AND 0..=1
+        // vindicators, including on the first wave (Raid.getPotentialBonusSpawns).
+        assert!((4..=6).contains(&raid.raiders.len()));
+        let members_of_type = |entity_type| raid.raiders.iter().filter_map(|id| world.get_entity_by_uuid(id))
+            .filter(|entity| entity.entity_type() == entity_type).count();
+        assert!((4..=5).contains(&members_of_type(&vanilla_entities::PILLAGER)));
+        assert!(members_of_type(&vanilla_entities::VINDICATOR) <= 1);
         let captain = world
             .get_entity_by_uuid(&raid.leader.expect("wave captain"))
             .unwrap();
