@@ -865,7 +865,7 @@ mod outcome_tests {
             .unwrap()
             .0;
         world.poi_storage.lock().add(BlockPos(center), home, 1);
-        world.poi_storage.lock().reserve_ticket(BlockPos(center));
+        assert!(world.poi_storage.lock().reserve_ticket(BlockPos(center)));
         let hero = TestPlayerBuilder::new(Arc::clone(world), "Hero", next_entity_id()).build();
         let bystander =
             TestPlayerBuilder::new(Arc::clone(world), "Bystander", next_entity_id()).build();
@@ -957,7 +957,7 @@ mod complete_wave_tests {
             .0;
         let center = IVec3::new(0, 64, 0);
         world.poi_storage.lock().add(BlockPos(center), home, 1);
-        world.poi_storage.lock().reserve_ticket(BlockPos(center));
+        assert!(world.poi_storage.lock().reserve_ticket(BlockPos(center)));
         world.raids.raise_omen(center, 0);
         for wave in 1..=3 {
             for _ in 0..301 {
@@ -1029,7 +1029,7 @@ mod village_and_unload_tests {
             .0;
         let center = BlockPos::new(0, 64, 0);
         world.poi_storage.lock().add(center, home, 1);
-        world.poi_storage.lock().reserve_ticket(center);
+        assert!(world.poi_storage.lock().reserve_ticket(center));
         let member = Uuid::new_v4();
         *world.raids.raids.lock() = vec![Raid {
             center: center.0,
