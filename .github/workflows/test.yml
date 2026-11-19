@@ -21,6 +21,18 @@ jobs:
         run: |
           set -o pipefail
           cargo test --workspace --verbose 2>&1 | tee /tmp/test.log
+      - name: Index every observed test by crate and subsystem
+        if: always()
+        run: python3 .ci/summarize_rust_tests.py /tmp/test.log /tmp/automated-mechanics-tests.json
+      - name: Publish complete per-test outcomes (including ignored and failed)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: automated-mechanics-tests
+          path: |
+            /tmp/automated-mechanics-tests.json
+            /tmp/test.log
+          if-no-files-found: error
       - name: Surface failing tests
         if: failure()
         run: |
