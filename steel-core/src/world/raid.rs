@@ -606,7 +606,7 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
                             mob.set_persistence_required();
                         }
                         if let Some(living) = rider.as_living_entity()
-                            && let Some(weapon) = raid_weapon(if entity_type == &vanilla_entities::VINDICATOR { 0 } else { 2 }, wave, raid.omen_level, rand::random()) {
+                            && let Some(weapon) = raid_weapon(if entity_type == &vanilla_entities::VINDICATOR { 0 } else if entity_type == &vanilla_entities::PILLAGER { 2 } else { 1 }, wave, raid.omen_level, rand::random()) {
                             living.with_equipment_slot_mut(crate::inventory::equipment::EquipmentSlot::MainHand,
                                 &mut |item| *item = weapon.clone());
                         }
