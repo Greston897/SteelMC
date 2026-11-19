@@ -498,7 +498,7 @@ const fn within_village_radius(center: IVec3, pos: IVec3) -> bool {
 fn village_poi(type_id: usize) -> bool {
     steel_registry::REGISTRY.poi_types.by_id(type_id).is_some_and(|poi| {
         steel_registry::REGISTRY.poi_types.is_in_tag(
-            poi, &steel_utils::Identifier::vanilla("village"),
+            poi, &steel_utils::Identifier::vanilla_static("village"),
         )
     })
 }
