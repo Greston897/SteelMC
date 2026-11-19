@@ -28,6 +28,8 @@ jobs:
           # them before matching or every failure surfaces silently.
           sed 's/\x1b\[[0-9;]*m//g' /tmp/test.log > /tmp/test.clean.log
           {
+            # Put the actual panic before headings: check annotations may be capped.
+            grep -A14 '^---- .* stdout ----' /tmp/test.clean.log | head -60
             grep -E "^(error|failures:|test .* FAILED|---- )" /tmp/test.clean.log | head -40
             # Build-script panics hide behind `failed to run custom build
             # command`; surface the panic location and message as well.

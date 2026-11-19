@@ -776,7 +776,7 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
         if world.try_add_entity(entity).is_err() { return false; }
         let _ = container.lock().remove_item(slot, 1);
         // Vanilla overrideDispenseEvent=1004 (firework shoot).
-        world.level_event(1004, pos, 0, None);
+        world.level_event(steel_registry::level_events::SOUND_FIREWORK_SHOOT, pos, 0, None);
         return true;
     }
 

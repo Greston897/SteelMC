@@ -142,9 +142,18 @@ fn powered_dispenser_initializes_firework_lifetime_source_and_straight_angled_fl
         let mut stack = ItemStack::with_count(&vanilla_items::FIREWORK_ROCKET, 2);
         stack.set(FIREWORKS, Fireworks::new(2, Vec::new()).unwrap());
         stack.set(CUSTOM_NAME, TextComponent::plain("Dispensed rocket"));
-        let (fixture, container) = fixture("dispenser_firework_initialized", stack);
+        init_globals();
+        let fixture = fresh_test_world("dispenser_firework_initialized");
         let world = &fixture.world;
+        let chunk_pos = ChunkPos::from_block_pos(SOURCE);
+        let holder = insert_ready_full_chunk(world, chunk_pos);
+        holder.set_simulation_level(Some(crate::chunk::chunk_ticket_manager::ChunkTicketLevel::ENTITY_TICKING_CHUNK));
+        holder.transition_ticking_readiness(crate::chunk::chunk_holder::TickingReadiness::EntityTicking);
+        world.update_entity_chunk_visibility(chunk_pos, holder.entity_visibility());
+        world.chunk_map.rebuild_ticking_chunk_snapshot();
         world.set_block(SOURCE, vanilla_blocks::DISPENSER.default_state().set_value(&BlockStateProperties::FACING, facing), UpdateFlags::UPDATE_ALL);
+        let container = world.get_block_entity(SOURCE).unwrap().container_ref().unwrap();
+        container.lock().set_item(0, stack);
         world.set_block(SOURCE.below(), vanilla_blocks::REDSTONE_BLOCK.default_state(), UpdateFlags::UPDATE_ALL);
         for tick in 0..8 { tick_test_world(world, tick, true); }
         assert_eq!(container.lock().get_item(0).count(), 1);
