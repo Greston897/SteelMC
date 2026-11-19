@@ -466,21 +466,21 @@ mod event_tests {
         let player = TestPlayerBuilder::new(Arc::clone(world), "EventSource", 731).build();
         let state = world.get_block_state(pos);
         for _ in 0..2 { counter.increment_openers_with_source(world, pos, state, &vanilla_blocks::BARREL, Some(player.as_ref())); }
-        assert_eq!(events.lock().as_slice(), &[(&*vanilla_game_events::CONTAINER_OPEN, Some(731))]);
+        assert_eq!(events.lock().as_slice(), &[(&vanilla_game_events::CONTAINER_OPEN, Some(731))]);
         counter.decrement_openers_with_source(world, pos, state, &vanilla_blocks::BARREL, Some(player.as_ref()));
         assert_eq!(events.lock().len(), 1);
         counter.decrement_openers_with_source(world, pos, state, &vanilla_blocks::BARREL, Some(player.as_ref()));
         counter.decrement_openers_with_source(world, pos, state, &vanilla_blocks::BARREL, Some(player.as_ref()));
         assert_eq!(events.lock().as_slice(), &[
-            (&*vanilla_game_events::CONTAINER_OPEN, Some(731)),
-            (&*vanilla_game_events::CONTAINER_CLOSE, Some(731)),
+            (&vanilla_game_events::CONTAINER_OPEN, Some(731)),
+            (&vanilla_game_events::CONTAINER_CLOSE, Some(731)),
         ]);
         events.lock().clear();
         counter.increment_openers(world, pos, state, &vanilla_blocks::BARREL);
         counter.recheck_openers(world, pos, world.get_block_state(pos), &vanilla_blocks::BARREL);
         assert_eq!(events.lock().as_slice(), &[
-            (&*vanilla_game_events::CONTAINER_OPEN, None),
-            (&*vanilla_game_events::CONTAINER_CLOSE, None),
+            (&vanilla_game_events::CONTAINER_OPEN, None),
+            (&vanilla_game_events::CONTAINER_CLOSE, None),
         ]);
     }
 }

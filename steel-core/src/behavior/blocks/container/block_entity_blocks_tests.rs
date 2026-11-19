@@ -137,7 +137,7 @@ fn hopper_power_edges_and_playing_jukebox_refresh_enabled_state_and_ticker() {
 
 #[test]
 fn powered_dispenser_initializes_firework_lifetime_source_and_straight_angled_flight() {
-    use steel_registry::data_components::{Fireworks, vanilla_components::{FIREWORKS, CUSTOM_NAME}};
+    use steel_registry::data_components::{components::Fireworks, vanilla_components::{FIREWORKS, CUSTOM_NAME}};
     for facing in [Direction::East, Direction::Up] {
         let mut stack = ItemStack::with_count(&vanilla_items::FIREWORK_ROCKET, 2);
         stack.set(FIREWORKS, Fireworks::new(2, Vec::new()).unwrap());
