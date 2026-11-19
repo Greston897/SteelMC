@@ -936,10 +936,21 @@ mod complete_wave_tests {
     use steel_utils::{ChunkPos, types::UpdateFlags};
 
     #[test]
-    fn easy_raid_spawns_three_real_waves_and_requires_all_three_to_die() {
+    fn all_difficulties_and_bonus_waves_require_real_member_deaths() {
         steel_registry::init_vanilla_registry();
         crate::behavior::init_behaviors();
-        let fixture = fresh_test_world_with_difficulty("raid_three_waves", Difficulty::Easy);
+        for (difficulty, omen, waves) in [
+            (Difficulty::Easy, 0, 3), (Difficulty::Easy, 1, 4),
+            (Difficulty::Normal, 0, 5), (Difficulty::Normal, 1, 6),
+            (Difficulty::Hard, 0, 7), (Difficulty::Hard, 4, 8),
+        ] {
+            run_encounter(difficulty, omen, waves);
+        }
+    }
+
+    fn run_encounter(difficulty: Difficulty, omen: i32, waves: i32) {
+        let key = format!("raid_{difficulty:?}_{omen}").to_lowercase();
+        let fixture = fresh_test_world_with_difficulty(&key, difficulty);
         let world = &fixture.world;
         for x in -1..=1 {
             for z in -1..=1 {
@@ -964,8 +975,8 @@ mod complete_wave_tests {
         let center = IVec3::new(0, 64, 0);
         world.poi_storage.lock().add(BlockPos(center), home, 1);
         assert!(world.poi_storage.lock().reserve_ticket(BlockPos(center)));
-        world.raids.raise_omen(center, 0);
-        for wave in 1..=3 {
+        world.raids.raise_omen(center, omen);
+        for wave in 1..=waves {
             for _ in 0..301 {
                 world.raids.tick(world);
             }
@@ -974,6 +985,15 @@ mod complete_wave_tests {
             assert_eq!(raid.waves_cleared, wave - 1);
             assert!(!raid.raiders.is_empty());
             assert!(!raid.is_victory());
+            if wave == 5 || wave >= 7 {
+                for id in &raid.raiders {
+                    let entity = world.get_entity_by_uuid(id).unwrap();
+                    if entity.entity_type() == &vanilla_entities::RAVAGER {
+                        assert_eq!(entity.passengers().len(), 1, "ravager rider in wave {wave}");
+                        assert!(raid.raiders.contains(&entity.passengers()[0].uuid()));
+                    }
+                }
+            }
             for id in raid.raiders {
                 let entity = world.get_entity_by_uuid(&id).unwrap();
                 let living = entity.as_living_entity().unwrap();
@@ -987,7 +1007,7 @@ mod complete_wave_tests {
             world.raids.tick(world);
         }
         let raid = &world.raids.raids()[0];
-        assert_eq!(raid.waves_cleared, 3);
+        assert_eq!(raid.waves_cleared, waves);
         assert!(raid.is_victory());
         assert!(
             raid.heroes.is_empty(),
