@@ -974,7 +974,9 @@ impl ChunkMap {
                                 world.tick_precipitation_column(pos.0.x * 16 + x as i32, pos.0.y * 16 + z as i32);
                             }
                         }
-                        chunk.tick_random_blocks(world, random_tick_speed, &mut random_positions);
+                        if !tickable_chunk.randomly_ticking_sections.is_empty() {
+                            chunk.tick_random_blocks(world, random_tick_speed, &mut random_positions);
+                        }
                     }
                 }
                 timings.tick_chunks += start.elapsed();
