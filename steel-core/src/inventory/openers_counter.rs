@@ -132,12 +132,13 @@ impl ContainerOpenersCounter {
         let mut actual = 0;
         let mut max_range: f64 = 0.0;
         let range = f64::from_bits(self.max_interaction_range.load(Ordering::Acquire)) + 4.0;
+        let search = steel_utils::WorldAabb::new(
+            f64::from(pos.x()) - range, f64::from(pos.y()) - range, f64::from(pos.z()) - range,
+            f64::from(pos.x() + 1) + range, f64::from(pos.y() + 1) + range, f64::from(pos.z() + 1) + range,
+        );
         let mut unavailable = false;
         world.players.iter_players(|_, player| {
-            let p = player.position();
-            if player.is_spectator() || p.x < f64::from(pos.x()) - range || p.x >= f64::from(pos.x() + 1) + range
-                || p.y < f64::from(pos.y()) - range || p.y >= f64::from(pos.y() + 1) + range
-                || p.z < f64::from(pos.z()) - range || p.z >= f64::from(pos.z() + 1) + range {
+            if player.is_spectator() || !search.intersects(player.bounding_box()) {
                 return true;
             }
             match player.views_container(container.container_id()) {
