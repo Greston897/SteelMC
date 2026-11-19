@@ -26,7 +26,9 @@ impl MobEffectBehavior for RaidOmenBehavior {
         let Some(pos) = player.raid_omen_position.lock().take() else {
             return true;
         };
-        if !world.get_game_rule(&steel_registry::vanilla_game_rules::RAIDS) {
+        if !world.get_game_rule(&steel_registry::vanilla_game_rules::RAIDS)
+            || world.dimension_type.can_start_raid == Some(false)
+        {
             return false;
         }
         let center = crate::world::raid::village_center_world(world, pos).unwrap_or(pos.0);
@@ -107,5 +109,23 @@ mod tests {
                 .build();
         assert!(RaidOmenBehavior.apply_effect_tick(&fixture.world, player.as_ref(), 4));
         assert!(fixture.world.raids.raids().is_empty());
+    }
+}
+
+#[cfg(test)]
+mod dimension_tests {
+    use super::*;
+    use crate::test_support::{TestPlayerBuilder, fresh_test_world_with_dimension_type};
+    use crate::entity::next_entity_id;
+    use std::sync::Arc;
+
+    #[test]
+    fn dimensions_that_forbid_raids_consume_origin_without_starting_encounter() {
+        let fixture = fresh_test_world_with_dimension_type("raid", "nether_omen", &steel_registry::vanilla_dimension_types::THE_NETHER);
+        let player = TestPlayerBuilder::new(Arc::clone(&fixture.world), "NetherOmen", next_entity_id()).build();
+        *player.raid_omen_position.lock() = Some(steel_utils::BlockPos::new(0, 64, 0));
+        assert!(!RaidOmenBehavior.apply_effect_tick(&fixture.world, player.as_ref(), 0));
+        assert!(fixture.world.raids.raids().is_empty());
+        assert!(player.raid_omen_position.lock().is_none());
     }
 }

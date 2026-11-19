@@ -789,7 +789,11 @@ mod lifecycle_tests {
         let banner = captain
             .as_living_entity()
             .unwrap()
-            .equipment_in_slot(crate::inventory::equipment::EquipmentSlot::Head);
+            .living_base()
+            .equipment()
+            .lock()
+            .get(crate::inventory::equipment::EquipmentSlot::Head)
+            .clone();
         assert_eq!(
             banner
                 .get(steel_registry::data_components::vanilla_components::BANNER_PATTERNS)
