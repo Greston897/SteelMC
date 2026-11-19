@@ -446,6 +446,18 @@ fn unloaded_position() -> CommandSyntaxError {
 /// block-entity slot API that Steel does not expose to commands yet.
 fn items_condition(expected: bool) -> Builder {
     literal("items").then(
+        literal("block").then(
+            argument("pos", SteelArgumentType::block_pos()).then(
+                argument("slots", ArgumentType::word()).then(
+                    argument("item_predicate", SteelArgumentType::item_predicate())
+                        .forks(EXECUTE_ROOT, move |context| {
+                            Ok(conditional_sources(context.source(), expected, block_items_count(context)? > 0))
+                        })
+                        .executes(move |context| execute_numeric_condition(context, expected, block_items_count(context)?)),
+                ),
+            ),
+        ),
+    ).then(
         literal("entity").then(
             argument("targets", SteelArgumentType::entities()).then(
                 argument("slots", ArgumentType::word()).then(
@@ -455,6 +467,24 @@ fn items_condition(expected: bool) -> Builder {
             ),
         ),
     )
+}
+
+fn block_items_count(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
+    let pos = context.block_pos("pos")?;
+    let entity = context.source().world().get_block_entity(pos)
+        .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
+    let container = entity.as_container()
+        .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
+    let slots = context.string("slots")?;
+    let range = if slots == "container.*" { None } else { Some(parse_container_slot_range(slots)?) };
+    let predicate = context.item_predicate("item_predicate")?;
+    let container = container.lock();
+    let mut count = 0_i32;
+    for (index, stack) in container.items().iter().enumerate() {
+        if range.is_some_and(|(min, max)| (index as i32) < min || (index as i32) > max) { continue; }
+        if !stack.is_empty() && predicate.matches(stack) { count = count.saturating_add(stack.count()); }
+    }
+    Ok(count)
 }
 
 fn items_count_range(expected: bool) -> Builder {

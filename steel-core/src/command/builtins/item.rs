@@ -1,11 +1,6 @@
 //! Vanilla `/item` command.
 //!
-//! Implements `replace entity <targets> <slot> <item> [count]` for player
-//! inventories, using the vanilla slot names (`hotbar.N`, `inventory.N`,
-//! `weapon.mainhand`, `weapon.offhand`). Vanilla also offers the `block` form and
-//! the `modify` form; the block form needs a container block-entity lookup and
-//! the modify form needs the item component patch parser, both of which follow in
-//! a later pass.
+//! Replaces player or block-container slots with parsed item stacks.
 
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -35,6 +30,20 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 fn command() -> Builder {
     literal("item").then(
         literal("replace").then(
+            literal("block").then(
+                argument("pos", SteelArgumentType::block_pos()).then(
+                    argument("slot", ArgumentType::word()).then(
+                        literal("with").then(
+                            argument("item", SteelArgumentType::item_stack())
+                                .executes(|context| replace_block(context, None))
+                                .then(argument("count", ArgumentType::integer(1, 99)).executes(
+                                    |context| replace_block(context, Some(context.integer("count")?)),
+                                )),
+                        ),
+                    ),
+                ),
+            ),
+        ).then(
             literal("entity").then(
                 argument("targets", SteelArgumentType::players()).then(
                     argument("slot", SteelArgumentType::identifier()).then(
@@ -50,6 +59,26 @@ fn command() -> Builder {
             ),
         ),
     )
+}
+
+fn replace_block(context: &SteelCommandContext<CommandSource>, count: Option<i32>) -> Result<i32, CommandSyntaxError> {
+    let pos = context.block_pos("pos")?;
+    let slot = context.string("slot")?.strip_prefix("container.")
+        .and_then(|s| s.parse::<usize>().ok())
+        .ok_or_else(|| CommandSyntaxError::dynamic("Unknown container slot"))?;
+    let entity = context.source().world().get_block_entity(pos)
+        .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
+    let container = entity.as_container()
+        .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
+    let mut container = container.lock();
+    if slot >= container.get_container_size() {
+        return Err(CommandSyntaxError::dynamic("Container slot out of range"));
+    }
+    let stack = context.item_stack("item")?;
+    container.set_item(slot, count.map_or_else(|| stack.clone(), |n| stack.copy_with_count(n)));
+    drop(container);
+    context.source().send_success(&TextComponent::plain("Replaced container slot"), true);
+    Ok(1)
 }
 
 /// Vanilla slot names mapped onto the player inventory container index.
