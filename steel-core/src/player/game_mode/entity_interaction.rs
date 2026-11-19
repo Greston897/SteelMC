@@ -445,10 +445,6 @@ impl Player {
             enchantment_helper::modify_damage(&attacking_item, &enchantment_context, attack_damage);
         let magic_boost = attack_strength_scale * (enchanted_damage - attack_damage);
         let mut base_damage = attack_damage * Self::base_damage_scale_factor(attack_strength_scale);
-        base_damage += ITEM_BEHAVIORS
-            .get_behavior(attacking_item.item())
-            .get_attack_damage_bonus(self.as_ref(), entity, base_damage, &damage_source);
-        let total_damage = base_damage + magic_boost;
         let full_strength_attack = attack_strength_scale > 0.9;
         let knockback_attack = self.is_sprinting() && full_strength_attack;
         self.reset_attack_strength_ticker();
@@ -467,6 +463,10 @@ impl Player {
             return true;
         }
 
+        base_damage += ITEM_BEHAVIORS
+            .get_behavior(attacking_item.item())
+            .get_attack_damage_bonus(self.as_ref(), entity, base_damage, &damage_source);
+        let total_damage = base_damage + magic_boost;
         if total_damage <= 0.0 {
             return false;
         }
