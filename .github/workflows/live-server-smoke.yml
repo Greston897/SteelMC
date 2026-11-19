@@ -99,3 +99,24 @@ jobs:
                   for result in json.loads(path.read_text())['results']:
                       out.write(f"- {'PASS' if result['passed'] else 'FAIL'}: {result['name']}\n")
           PY
+
+  compare:
+    needs: live-server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: live-server-evidence-steel
+          path: /tmp/steel-evidence
+      - uses: actions/download-artifact@v4
+        with:
+          name: live-server-evidence-vanilla
+          path: /tmp/vanilla-evidence
+      - name: Require matching complete scenario inventories and successful conditions
+        run: |
+          set -o pipefail
+          python3 .ci/compare_live_servers.py \
+            /tmp/steel-evidence/results.json /tmp/vanilla-evidence/results.json \
+            | tee /tmp/comparison.json
+          cat /tmp/comparison.json >> "$GITHUB_STEP_SUMMARY"
