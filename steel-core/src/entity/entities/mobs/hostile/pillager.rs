@@ -406,7 +406,7 @@ mod tests {
     use simdnbt::owned::NbtCompound;
     use steel_registry::{init_vanilla_registry, vanilla_entities};
 
-    use super::PillagerEntity;
+    use super::{PillagerEntity, pillager_crossbow_charge_ticks};
     use crate::entity::{Entity, LivingEntity, Mob};
     use crate::inventory::equipment::EquipmentSlot;
     use steel_registry::vanilla_items;
