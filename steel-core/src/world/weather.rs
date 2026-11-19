@@ -328,15 +328,30 @@ impl World {
 
     /// Per-column precipitation pass, sampled separately from block random ticks.
     pub(crate) fn tick_precipitation_column(self: &Arc<Self>, x: i32, z: i32) {
-        if !self.can_have_weather() || !self.is_raining() { return; }
+        if !self.can_have_weather() { return; }
         let Some(y) = self.height_at(HeightmapType::MotionBlocking, x, z) else { return; };
         let top = BlockPos::new(x, y, z);
-        self.try_accumulate_snow(top);
         let pos = top.below();
-        let Some(biome) = self.biome_at(pos) else { return; };
+        let Some(biome) = self.biome_at(top) else { return; };
+        self.try_freeze_precipitation_water(pos, biome);
+        if !self.is_raining() { return; }
+        self.try_accumulate_snow(top);
         if !biome.has_precipitation { return; }
         let snow = self.biome_temperature(biome, pos) < SNOW_TEMPERATURE;
         self.try_fill_cauldron_from_precipitation(pos, snow, rand::random::<f32>());
+    }
+
+    /// Vanilla Biome.shouldFreeze: cold water with block light below ten at
+    /// an exposed edge. Freezing is sampled even when it is not raining.
+    pub(super) fn try_freeze_precipitation_water(self: &Arc<Self>, pos: BlockPos, biome: BiomeRef) {
+        if self.is_outside_build_height(pos.y()) || self.biome_temperature(biome, pos) >= SNOW_TEMPERATURE
+            || self.light_value_at(LightLayer::Block, pos) >= 10 {
+            return;
+        }
+        if self.get_block_state(pos).get_block() != &vanilla_blocks::WATER { return; }
+        let is_water = |pos| crate::fluid::state::get_fluid_state_from_block(self.get_block_state(pos)).is_water();
+        if is_water(pos.west()) && is_water(pos.east()) && is_water(pos.north()) && is_water(pos.south()) { return; }
+        self.set_block(pos, vanilla_blocks::ICE.default_state(), UpdateFlags::UPDATE_ALL);
     }
 
     /// Applies vanilla's rain/snow probability and matching-fluid restriction.

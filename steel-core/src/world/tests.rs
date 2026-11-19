@@ -835,3 +835,34 @@ fn precipitation_cauldron_probability_and_matching_fluid_matrix() {
         }
     }
 }
+
+#[test]
+fn runtime_freezing_checks_temperature_water_edges_and_block_light_without_rain() {
+    use steel_registry::vanilla_biomes;
+    init_vanilla_registry();
+    init_behaviors();
+    let fixture = fresh_test_world("runtime_ice_matrix");
+    let world = &fixture.world;
+    insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+    let pos = BlockPos::new(8, 65, 8);
+    for warm in [false, true] {
+        for surrounded in [false, true] {
+            for water in [false, true] {
+                let biome = if warm { &*vanilla_biomes::DESERT } else { &*vanilla_biomes::SNOWY_PLAINS };
+                for neighbor in [pos.west(), pos.east(), pos.north(), pos.south()] {
+                    world.set_block(neighbor, if surrounded { vanilla_blocks::WATER.default_state() } else { vanilla_blocks::STONE.default_state() }, UpdateFlags::UPDATE_NONE);
+                }
+                let original = if water { vanilla_blocks::WATER.default_state() } else { vanilla_blocks::STONE.default_state() };
+                world.set_block(pos, original, UpdateFlags::UPDATE_NONE);
+                world.try_freeze_precipitation_water(pos, biome);
+                assert_eq!(world.get_block_state(pos), if water && !warm && !surrounded { vanilla_blocks::ICE.default_state() } else { original });
+            }
+        }
+    }
+    world.set_block(pos, vanilla_blocks::WATER.default_state(), UpdateFlags::UPDATE_ALL);
+    world.set_block(pos.east(), vanilla_blocks::GLOWSTONE.default_state(), UpdateFlags::UPDATE_ALL);
+    world.chunk_map.broadcast_changed_chunks();
+    assert!(world.light_value_at(LightLayer::Block, pos) >= 10);
+    world.try_freeze_precipitation_water(pos, &vanilla_biomes::SNOWY_PLAINS);
+    assert_eq!(world.get_block_state(pos).get_block(), &vanilla_blocks::WATER);
+}

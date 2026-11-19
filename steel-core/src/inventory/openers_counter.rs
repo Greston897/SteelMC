@@ -84,12 +84,19 @@ impl ContainerOpenersCounter {
         state: BlockStateId,
         block: BlockRef,
     ) {
+        self.increment_openers_with_source(world, pos, state, block, None);
+    }
+
+    /// Opens with the originating player attached to the vibration context.
+    pub(crate) fn increment_openers_with_source(&self, world: &Arc<World>, pos: BlockPos,
+        state: BlockStateId, block: BlockRef, source: Option<&dyn crate::entity::Entity>) {
         let openers = self.openers.fetch_add(1, Ordering::AcqRel) + 1;
         self.notify_signal_change(world, pos, block);
         if openers != 1 {
             return;
         }
         self.on_open(world, pos, state, block);
+        self.container_event(world, pos, true, source);
         world.schedule_block_tick_default(pos, block, 5);
     }
 
@@ -103,6 +110,12 @@ impl ContainerOpenersCounter {
         state: BlockStateId,
         block: BlockRef,
     ) -> i32 {
+        self.decrement_openers_with_source(world, pos, state, block, None)
+    }
+
+    /// Closes with the originating player attached to the vibration context.
+    pub(crate) fn decrement_openers_with_source(&self, world: &Arc<World>, pos: BlockPos,
+        state: BlockStateId, block: BlockRef, source: Option<&dyn crate::entity::Entity>) -> i32 {
         let old = self.openers.try_update(Ordering::AcqRel, Ordering::Acquire, |value| Some((value - 1).max(0))).unwrap_or(0);
         let remaining = (old - 1).max(0);
         if old != remaining {
@@ -111,6 +124,7 @@ impl ContainerOpenersCounter {
         if old == 1 {
             self.max_interaction_range.store(0, Ordering::Release);
             self.on_close(world, pos, state, block);
+            self.container_event(world, pos, false, source);
         }
         remaining
     }
@@ -162,8 +176,10 @@ impl ContainerOpenersCounter {
         }
         if old == 0 && actual > 0 {
             self.on_open(world, pos, state, block);
+            self.container_event(world, pos, true, None);
         } else if old > 0 && actual == 0 {
             self.on_close(world, pos, state, block);
+            self.container_event(world, pos, false, None);
         }
         if self.hooks.sets_open_state {
             self.sync_open_state(world, pos, state, block, actual > 0);
@@ -171,6 +187,13 @@ impl ContainerOpenersCounter {
         if actual > 0 {
             world.schedule_block_tick_default(pos, block, 5);
         }
+    }
+
+    fn container_event(&self, world: &Arc<World>, pos: BlockPos, opening: bool,
+        source: Option<&dyn crate::entity::Entity>) {
+        let event = if opening { &steel_registry::vanilla_game_events::CONTAINER_OPEN }
+            else { &steel_registry::vanilla_game_events::CONTAINER_CLOSE };
+        world.game_event(event, pos, &crate::world::game_event::GameEventContext::new(source, None));
     }
 
     fn notify_signal_change(&self, world: &Arc<World>, pos: BlockPos, block: BlockRef) {
@@ -402,5 +425,62 @@ mod signal_tests {
             assert_eq!(behavior.get_own_signal(state, world.as_ref(), pos, ctx), remaining.min(15));
             assert_eq!(world.get_block_state(hopper).get_value(&BlockStateProperties::ENABLED), remaining == 0);
         }
+    }
+}
+
+#[cfg(test)]
+mod event_tests {
+    use super::*;
+    use glam::DVec3;
+    use steel_registry::{game_events::GameEventRef, vanilla_blocks, vanilla_game_events};
+    use steel_utils::{ChunkPos, SectionPos, Downcast as _, locks::SyncMutex, types::UpdateFlags};
+    use crate::{bootstrap::init_globals, block_entity::entities::BarrelBlockEntity,
+        test_support::{fresh_test_world, insert_ready_full_chunk, TestPlayerBuilder},
+        world::game_event::{GameEventContext, GameEventListener, SharedGameEventListener}};
+
+    type Recorded = Arc<SyncMutex<Vec<(GameEventRef, Option<i32>)>>>;
+    struct Listener(Recorded);
+    impl GameEventListener for Listener {
+        fn listener_pos(&self) -> Option<DVec3> { Some(DVec3::new(8.5, 64.5, 8.5)) }
+        fn listener_radius(&self) -> i32 { 16 }
+        fn handle_game_event(&self, _world: &Arc<World>, event: GameEventRef,
+            context: &GameEventContext<'_>, _pos: DVec3) -> bool {
+            self.0.lock().push((event, context.source_entity().map(|source| source.id())));
+            true
+        }
+    }
+
+    #[test]
+    fn container_events_only_fire_on_first_open_last_close_and_recheck_edges() {
+        init_globals();
+        let fixture = fresh_test_world("container_event_source_edges");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let pos = BlockPos::new(8, 64, 8);
+        world.set_block(pos, vanilla_blocks::BARREL.default_state(), UpdateFlags::UPDATE_ALL);
+        let entity = world.get_block_entity(pos).unwrap();
+        let counter = entity.downcast_ref::<BarrelBlockEntity>().unwrap().openers_counter();
+        let events: Recorded = Arc::new(SyncMutex::new(Vec::new()));
+        let listener: SharedGameEventListener = Arc::new(Listener(Arc::clone(&events)));
+        world.register_game_event_listener(SectionPos::from_block_pos(pos), listener);
+        let player = TestPlayerBuilder::new(Arc::clone(world), "EventSource", 731).build();
+        let state = world.get_block_state(pos);
+        for _ in 0..2 { counter.increment_openers_with_source(world, pos, state, &vanilla_blocks::BARREL, Some(player.as_ref())); }
+        assert_eq!(events.lock().as_slice(), &[(&*vanilla_game_events::CONTAINER_OPEN, Some(731))]);
+        counter.decrement_openers_with_source(world, pos, state, &vanilla_blocks::BARREL, Some(player.as_ref()));
+        assert_eq!(events.lock().len(), 1);
+        counter.decrement_openers_with_source(world, pos, state, &vanilla_blocks::BARREL, Some(player.as_ref()));
+        counter.decrement_openers_with_source(world, pos, state, &vanilla_blocks::BARREL, Some(player.as_ref()));
+        assert_eq!(events.lock().as_slice(), &[
+            (&*vanilla_game_events::CONTAINER_OPEN, Some(731)),
+            (&*vanilla_game_events::CONTAINER_CLOSE, Some(731)),
+        ]);
+        events.lock().clear();
+        counter.increment_openers(world, pos, state, &vanilla_blocks::BARREL);
+        counter.recheck_openers(world, pos, world.get_block_state(pos), &vanilla_blocks::BARREL);
+        assert_eq!(events.lock().as_slice(), &[
+            (&*vanilla_game_events::CONTAINER_OPEN, None),
+            (&*vanilla_game_events::CONTAINER_CLOSE, None),
+        ]);
     }
 }
