@@ -108,13 +108,6 @@ fn dispense_projectile(stack: &ItemStack, world: &Arc<World>, pos: DVec3) -> Opt
                 pos,
                 weak,
             ))
-        } else if kind == &*vanilla_items::FIREWORK_ROCKET {
-            Arc::new(FireworkRocketEntity::new(
-                &vanilla_entities::FIREWORK_ROCKET,
-                id,
-                pos,
-                weak,
-            ))
         } else if kind == &*vanilla_items::WIND_CHARGE {
             Arc::new(WindChargeEntity::new(
                 &vanilla_entities::WIND_CHARGE,
@@ -764,6 +757,27 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
             );
         }
         return ignited;
+    }
+
+    // Fireworks have a distinct position/power and must initialize their
+    // source component and lifetime. `new` is the deserialization constructor;
+    // dispensing it made the uninitialized rocket expire on its first tick.
+    if item == &*vanilla_items::FIREWORK_ROCKET {
+        use crate::entity::Projectile as _;
+        let (x, y, z) = facing.offset();
+        let direction = DVec3::new(f64::from(x), f64::from(y), f64::from(z));
+        let center = DVec3::new(f64::from(pos.x()) + 0.5, f64::from(pos.y()) + 0.5, f64::from(pos.z()) + 0.5);
+        let rocket = FireworkRocketEntity::launched(&vanilla_entities::FIREWORK_ROCKET,
+            next_entity_id(), center + direction * 0.500_009_999_999_747_4,
+            Arc::downgrade(world), snapshot.copy_with_count(1));
+        rocket.set_shot_at_angle(true);
+        rocket.shoot(direction, 0.5, 1.0);
+        let entity: SharedEntity = Arc::new(rocket);
+        if world.try_add_entity(entity).is_err() { return false; }
+        let _ = container.lock().remove_item(slot, 1);
+        // Vanilla overrideDispenseEvent=1004 (firework shoot).
+        world.level_event(1004, pos, 0, None);
+        return true;
     }
 
     // 5. Projectiles & DefaultDispenseItemBehavior.

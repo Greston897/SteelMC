@@ -134,3 +134,29 @@ fn hopper_power_edges_and_playing_jukebox_refresh_enabled_state_and_ticker() {
         assert!(world.get_block_state(SOURCE).get_value(&BlockStateProperties::ENABLED));
     }
 }
+
+#[test]
+fn powered_dispenser_initializes_firework_lifetime_source_and_straight_angled_flight() {
+    use steel_registry::data_components::{Fireworks, vanilla_components::{FIREWORKS, CUSTOM_NAME}};
+    for facing in [Direction::East, Direction::Up] {
+        let mut stack = ItemStack::with_count(&vanilla_items::FIREWORK_ROCKET, 2);
+        stack.set(FIREWORKS, Fireworks::new(2, Vec::new()).unwrap());
+        stack.set(CUSTOM_NAME, TextComponent::plain("Dispensed rocket"));
+        let (fixture, container) = fixture("dispenser_firework_initialized", stack);
+        let world = &fixture.world;
+        world.set_block(SOURCE, vanilla_blocks::DISPENSER.default_state().set_value(&BlockStateProperties::FACING, facing), UpdateFlags::UPDATE_ALL);
+        world.set_block(SOURCE.below(), vanilla_blocks::REDSTONE_BLOCK.default_state(), UpdateFlags::UPDATE_ALL);
+        for tick in 0..8 { tick_test_world(world, tick, true); }
+        assert_eq!(container.lock().get_item(0).count(), 1);
+        let rockets: Vec<_> = world.get_entities_in_aabb(&steel_utils::WorldAabb::new(1.0, 60.0, 1.0, 15.0, 80.0, 15.0))
+            .into_iter().filter(|entity| entity.entity_type() == &vanilla_entities::FIREWORK_ROCKET).collect();
+        assert_eq!(rockets.len(), 1, "rocket must survive more than its first tick");
+        let rocket = rockets[0].downcast_ref::<FireworkRocketEntity>().unwrap();
+        assert!(rocket.is_shot_at_angle());
+        assert_eq!(rocket.get_item().get(CUSTOM_NAME), Some(&TextComponent::plain("Dispensed rocket")));
+        assert_eq!(rocket.get_item().get(FIREWORKS).unwrap().flight_duration(), 2);
+        let axis_speed = if facing == Direction::East { rocket.velocity().x } else { rocket.velocity().y };
+        assert!((0.45..0.55).contains(&axis_speed), "{facing:?}: {}", rocket.velocity());
+        assert!(if facing == Direction::East { rocket.position().x > 10.0 } else { rocket.position().y > 66.0 });
+    }
+}
