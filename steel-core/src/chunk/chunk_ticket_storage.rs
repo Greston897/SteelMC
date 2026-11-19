@@ -589,7 +589,7 @@ mod tests {
         init_registry();
         let pos = ChunkPos::new(3, -2);
         let mut storage = ChunkTicketStorage::new();
-        storage.add_forced_ticket(pos);
+        let _ = storage.add_forced_ticket(pos);
         assert_eq!(storage.load_source_level(pos), Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK));
         assert_eq!(storage.simulation_source_level(pos), Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK));
         assert!(storage.remove_forced_ticket(pos));
