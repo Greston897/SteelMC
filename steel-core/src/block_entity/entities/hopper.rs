@@ -153,6 +153,23 @@ impl HopperBlockEntity {
             }
             return inserted;
         }
+        if let Some(entity) = world.get_block_entity(above)
+            && let Some(jukebox) = entity.downcast_ref::<super::JukeboxBlockEntity>()
+        {
+            // Vanilla requires an empty receiver slot, not just merge space.
+            let mut item = jukebox.automation_item();
+            if item.is_empty() { return false; }
+            let inserted = {
+                let mut container = self.container.lock();
+                if !container.items.iter().any(ItemStack::is_empty) { return false; }
+                add_into_slots(&mut *container, &[0, 1, 2, 3, 4], Direction::Up, &mut item)
+            };
+            if inserted {
+                jukebox.finish_hopper_extraction();
+                self.base.set_changed();
+            }
+            return inserted;
+        }
         if let Some(source) = world
             .get_block_entity(pos.above())
             .and_then(ContainerRef::from_block_entity)
@@ -336,6 +353,23 @@ impl HopperBlockEntity {
             self.container.lock().items[slot].shrink(1);
             self.base.set_changed();
             return true;
+        }
+        if let Some(entity) = world.get_block_entity(destination_pos)
+            && let Some(jukebox) = entity.downcast_ref::<super::JukeboxBlockEntity>()
+        {
+            for slot in 0..HOPPER_SLOTS {
+                let item = {
+                    let container = self.container.lock();
+                    if container.items[slot].is_empty() { continue; }
+                    container.items[slot].copy_with_count(1)
+                };
+                if jukebox.insert_from_hopper(&item) {
+                    self.container.lock().items[slot].shrink(1);
+                    self.base.set_changed();
+                    return true;
+                }
+            }
+            return false;
         }
         let Some(destination) = world
             .get_block_entity(pos.relative(facing))
@@ -677,6 +711,53 @@ mod tests {
             let target = world.get_block_entity(destination).unwrap().container_ref().unwrap();
             assert!(target.lock().get_item(0).is(&vanilla_items::STONE));
             assert_eq!(target.lock().get_item(0).count(), 1);
+        }
+    }
+
+    #[test]
+    fn jukebox_hopper_insertion_extraction_and_no_duplicate_on_second_transfer() {
+        use crate::bootstrap::init_globals;
+        use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
+        use steel_utils::ChunkPos;
+        use steel_utils::types::UpdateFlags;
+        init_globals();
+        for facing in [Direction::Down, Direction::North, Direction::East] {
+            let fixture = fresh_test_world("jukebox_hopper_pipeline");
+            let world = &fixture.world;
+            let pos = BlockPos::new(8, 64, 8);
+            insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+            world.set_block(pos, vanilla_blocks::HOPPER.default_state().set_value(&BlockStateProperties::FACING_HOPPER, facing), UpdateFlags::UPDATE_ALL);
+            let target_pos = pos.relative(facing);
+            world.set_block(target_pos, vanilla_blocks::JUKEBOX.default_state(), UpdateFlags::UPDATE_ALL);
+            let entity = world.get_block_entity(pos).unwrap();
+            let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
+            hopper.container.lock().set_item(0, ItemStack::with_count(&vanilla_items::STONE, 3));
+            assert!(!hopper.try_move_items(world, pos));
+            hopper.container.lock().set_item(1, ItemStack::new(&vanilla_items::MUSIC_DISC_13));
+            assert!(hopper.try_move_items(world, pos));
+            assert!(hopper.container.lock().get_item(1).is_empty());
+            assert_eq!(hopper.container.lock().get_item(0).count(), 3);
+            let entity = world.get_block_entity(target_pos).unwrap();
+            let jukebox = entity.downcast_ref::<super::super::JukeboxBlockEntity>().unwrap();
+            assert!(jukebox.is_record_playing());
+            assert!(world.get_block_state(target_pos).get_value(&BlockStateProperties::HAS_RECORD));
+            assert!(!hopper.try_move_items(world, pos));
+
+            let bottom = target_pos.below();
+            world.set_block(bottom, vanilla_blocks::HOPPER.default_state(), UpdateFlags::UPDATE_ALL);
+            let output_entity = world.get_block_entity(bottom).unwrap();
+            let output = output_entity.downcast_ref::<HopperBlockEntity>().unwrap();
+            for slot in 0..HOPPER_SLOTS { output.container.lock().set_item(slot, ItemStack::with_count(&vanilla_items::STONE, 64)); }
+            assert!(!output.suck_in_items(world, bottom));
+            assert!(jukebox.is_record_playing());
+            output.container.lock().set_item(0, ItemStack::empty());
+            // 26.3 does NOT lock extraction while playing (unlike older specs).
+            assert!(output.suck_in_items(world, bottom));
+            assert!(!jukebox.is_record_playing());
+            assert!(!world.get_block_state(target_pos).get_value(&BlockStateProperties::HAS_RECORD));
+            assert!(output.container.lock().get_item(0).is(&vanilla_items::MUSIC_DISC_13));
+            assert!(!output.suck_in_items(world, bottom));
+            assert!(!hopper.try_move_items(world, pos), "zero-count disc must not be resurrected");
         }
     }
 
