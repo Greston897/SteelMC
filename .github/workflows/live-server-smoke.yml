@@ -1,0 +1,55 @@
+name: Live Server Smoke
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-server-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live-server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: live-server-smoke
+      - name: Build actual server executable
+        run: cargo build -p steel --profile evidence
+      - name: Boot, exercise TCP and RCON, save, restart and verify disk state
+        timeout-minutes: 12
+        run: |
+          python3 .ci/live_server_smoke.py \
+            --binary target/evidence/steel \
+            --workdir "$RUNNER_TEMP/live-server-world" \
+            --output "$RUNNER_TEMP/live-server-evidence"
+      - name: Publish runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-server-evidence
+          path: ${{ runner.temp }}/live-server-evidence
+          if-no-files-found: warn
+      - name: Summarize real-server checks
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP']) / 'live-server-evidence/results.json'
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
+              out.write('## Real Steel process, no real players\n\n')
+              out.write('Not a measurement of complete Minecraft parity.\n\n')
+              if not path.exists():
+                  out.write('No runtime results: build/startup did not reach the harness.\n')
+              else:
+                  for result in json.loads(path.read_text())['results']:
+                      out.write(f"- {'PASS' if result['passed'] else 'FAIL'}: {result['name']}\n")
+          PY
