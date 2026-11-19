@@ -1,6 +1,6 @@
 # MC 26.3 — воспроизводимая инвентаризация исходников
 
-Код на момент замера: `18811aff87a86d92232a2d09e74cf77d24e44428`. Генератор: `.ci/progress_inventory.py`.
+Код на момент замера: `e6b3959e61a61f3f410e6a8c7f9f2c6b6cda622d`. Генератор: `.ci/progress_inventory.py`.
 
 Это **статический подсчёт**, не результаты запуска. Тесты = функции с `#[test]`/`#[tokio::test]`, включая условно компилируемые; макрогенерируемые, doc-тесты и внешние тестовые таргеты не учтены. Маркеры ищутся лексически (включая комментарии). LOC включает комментарии и пустые строки. Числа не являются процентом реализации.
 
@@ -15,10 +15,10 @@
 | steel-registry | 307 | 94739 | 438 | 0 | `steel-registry/src`, `steel-registry/build` |
 | steel-worldgen | 76 | 29190 | 98 | 0 | `steel-worldgen/src`, `steel-worldgen/build` |
 | steel-utils | 69 | 18947 | 255 | 0 | `steel-utils/src`, `steel-utils/build` |
-| steel-core | 1381 | 467010 | 3672 | 0 | `steel-core/src`, `steel-core/build` |
+| steel-core | 1382 | 467582 | 3690 | 0 | `steel-core/src`, `steel-core/build` |
 | steel-crypto | 4 | 504 | 10 | 0 | `steel-crypto/src`, `steel-crypto/build` |
 | steel-math | 10 | 1055 | 14 | 0 | `steel-math/src`, `steel-math/build` |
-| steel-flint | 6 | 1398 | 9 | 0 | `steel-flint/src`, `steel-flint/build` |
+| steel-flint | 6 | 1468 | 12 | 0 | `steel-flint/src`, `steel-flint/build` |
 
 ## Зоны ядра (строки могут пересекаться; не суммировать)
 
@@ -26,14 +26,14 @@
 |---|---:|---:|---:|---:|---|
 | Реестры, теги, кодеки | 307 | 94739 | 438 | 0 | `steel-registry/src`, `steel-registry/build` |
 | Синхронизация конфигурации | 12 | 3077 | 34 | 0 | `steel-core/src/server/registry_cache.rs`, `steel-core/src/player/connection`, `steel-protocol/src/packets/config` |
-| Поведение блоков | 249 | 54645 | 337 | 0 | `steel-core/src/behavior/blocks`, `steel-core/src/behavior/block` |
-| Поведение предметов | 66 | 12287 | 108 | 0 | `steel-core/src/behavior/items` |
-| Block entities | 54 | 19339 | 137 | 0 | `steel-core/src/block_entity` |
+| Поведение блоков | 250 | 55103 | 353 | 0 | `steel-core/src/behavior/blocks`, `steel-core/src/behavior/block` |
+| Поведение предметов | 66 | 12294 | 108 | 0 | `steel-core/src/behavior/items` |
+| Block entities | 54 | 19428 | 139 | 0 | `steel-core/src/block_entity` |
 | Сущности и AI | 359 | 128818 | 1225 | 0 | `steel-core/src/entity` |
 | Игрок и соединение | 73 | 34641 | 331 | 0 | `steel-core/src/player` |
 | Инвентарь и меню | 55 | 16311 | 127 | 0 | `steel-core/src/inventory` |
 | Команды и права | 162 | 51341 | 419 | 0 | `steel-core/src/command`, `steel-core/src/permission` |
-| Мир и тик | 92 | 46347 | 372 | 0 | `steel-core/src/world`, `steel-core/src/server` |
+| Мир и тик | 92 | 46365 | 372 | 0 | `steel-core/src/world`, `steel-core/src/server` |
 | Чанки, свет, сохранение | 80 | 39985 | 334 | 0 | `steel-core/src/chunk`, `steel-core/src/chunk_saver`, `steel-core/src/level_data` |
 | Worldgen | 185 | 62911 | 192 | 0 | `steel-core/src/worldgen`, `steel-worldgen/src` |
 | Loot, зачарования | 5 | 1968 | 19 | 0 | `steel-core/src/loot`, `steel-core/src/enchantment_helper.rs`, `steel-core/src/enchantment_helper` |
@@ -802,7 +802,7 @@
 | `steel-core/src/behavior/blocks/building/budding_amethyst.rs` | 175 | `growth_state_waterlogs_when_replacing_water_block`, `cluster_can_grow_in_falling_full_water`, `cluster_cannot_grow_in_partial_flowing_water` | 0 |
 | `steel-core/src/behavior/blocks/building/campfire_block.rs` | 482 | `lit_campfire_damages_living_entities`, `unlit_campfire_does_not_damage_entities`, `campfire_does_not_damage_non_living_entities`, `burning_projectile_lights_only_dry_unlit_campfires`, `placement_state_sets_facing_and_signal_fire`, `update_shape_recomputes_signal_fire_from_below`, `water_placement_extinguishes_lit_campfire`, `is_lit_campfire_accepts_only_lit_campfires`, `douse_emits_block_change_without_touching_the_block` | 0 |
 | `steel-core/src/behavior/blocks/building/cauldron_block.rs` | 216 | `registered_cauldron_behaviors_expose_vanilla_fill_levels` | 0 |
-| `steel-core/src/behavior/blocks/building/composter_block.rs` | 95 | `registered_composter_outputs_its_full_state_level` | 0 |
+| `steel-core/src/behavior/blocks/building/composter_block.rs` | 344 | `first_layer_uses_context_provider_for_low_chance_compostable_items`, `cake_fills_seven_layers_then_waits_exactly_twenty_world_ticks`, `non_compostable_item_is_not_accepted_at_any_level`, `hopper_above_composts_one_item_and_hopper_below_extracts_once`, `full_hopper_cannot_delete_composter_produce`, `horizontal_hopper_does_not_compost_through_side`, `player_dispatch_consumes_in_survival_and_adventure_but_not_creative`, `hopper_skips_non_compostable_first_slot_without_consuming_it`, `registered_composter_outputs_its_full_state_level` | 0 |
 | `steel-core/src/behavior/blocks/building/conduit_block.rs` | 95 | — | 0 |
 | `steel-core/src/behavior/blocks/building/door_block.rs` | 584 | `lower_half_copies_transformed_upper_half_state`, `door_wooden_query_uses_can_open_by_hand_like_vanilla` | 0 |
 | `steel-core/src/behavior/blocks/building/drop_experience_block.rs` | 110 | `generated_constant_and_uniform_providers_control_ore_experience`, `silk_touch_and_disabled_experience_suppress_ore_experience` | 0 |
@@ -848,7 +848,8 @@
 | `steel-core/src/behavior/blocks/container/barrel_block.rs` | 146 | — | 0 |
 | `steel-core/src/behavior/blocks/container/beacon_block.rs` | 113 | — | 0 |
 | `steel-core/src/behavior/blocks/container/beehive_block.rs` | 338 | `shearing_full_hive_resets_honey_and_drops_three_honeycombs` | 0 |
-| `steel-core/src/behavior/blocks/container/block_entity_blocks.rs` | 1225 | — | 0 |
+| `steel-core/src/behavior/blocks/container/block_entity_blocks.rs` | 1263 | — | 0 |
+| `steel-core/src/behavior/blocks/container/block_entity_blocks_tests.rs` | 105 | `powered_dispenser_grows_wheat_and_consumes_exactly_one_bone_meal`, `failed_bone_meal_dispense_keeps_inventory_intact`, `bottles_fill_from_source_flowing_water_and_waterlogged_blocks_without_draining`, `bottle_collects_honey_resets_hive_and_stores_stack_remainder`, `dispenser_flint_lights_candles_cakes_campfires_and_always_wears_on_blocked_targets` | 0 |
 | `steel-core/src/behavior/blocks/container/chest_block.rs` | 492 | — | 0 |
 | `steel-core/src/behavior/blocks/container/chiseled_bookshelf_block.rs` | 836 | `all_six_hit_regions_map_identically_for_every_horizontal_facing`, `hit_boundaries_use_vanilla_pixel_sections`, `placement_faces_the_player_and_uses_the_extracted_full_block_shape`, `interactions_update_inventory_occupied_state_and_comparator`, `enchanted_books_select_the_enchanted_insert_and_pickup_sounds`, `placement_applies_the_container_component_to_the_block_entity`, `destruction_drains_and_drops_every_stored_book` | 0 |
 | `steel-core/src/behavior/blocks/container/copper_chest_block.rs` | 244 | — | 0 |
@@ -871,7 +872,7 @@
 | `steel-core/src/behavior/blocks/decoration/jukebox_tests.rs` | 760 | `insertion_consumption_ejection_and_no_duplication_match_vanilla`, `stackable_component_backed_record_consumes_one_item`, `level_events_periodic_game_events_and_duration_completion_match_song_data`, `placement_data_and_nonzero_persistence_resume_without_restarting_audio`, `breaking_a_playing_jukebox_drops_one_record_and_runs_vanilla_cleanup` | 0 |
 | `steel-core/src/behavior/blocks/decoration/lantern_block.rs` | 96 | — | 0 |
 | `steel-core/src/behavior/blocks/decoration/mod.rs` | 29 | — | 0 |
-| `steel-core/src/behavior/blocks/decoration/sign_block.rs` | 1061 | `standing_sign_only_schedules_water_when_support_survives`, `sign_variants_select_their_matching_vanilla_tickers`, `try_open_sign_editor_checks_waxed_and_may_build`, `try_apply_sign_item_dyes_sign_text` | 0 |
+| `steel-core/src/behavior/blocks/decoration/sign_block.rs` | 1098 | `all_sign_placements_preserve_source_and_flowing_water`, `standing_sign_only_schedules_water_when_support_survives`, `sign_variants_select_their_matching_vanilla_tickers`, `try_open_sign_editor_checks_waxed_and_may_build`, `try_apply_sign_item_dyes_sign_text` | 0 |
 | `steel-core/src/behavior/blocks/decoration/skull/abstract_skull_block.rs` | 104 | — | 0 |
 | `steel-core/src/behavior/blocks/decoration/skull/mod.rs` | 337 | `roundtrip` | 0 |
 | `steel-core/src/behavior/blocks/decoration/skull/piglin_wall_skull_block.rs` | 82 | — | 0 |
@@ -896,7 +897,7 @@
 | `steel-core/src/behavior/blocks/mod.rs` | 27 | — | 0 |
 | `steel-core/src/behavior/blocks/portal/end_portal_block.rs` | 367 | `registered_end_portal_blocks_reject_fluid_replacement`, `end_portal_entity_inside_shape_uses_outline_shape`, `end_portal_creates_end_portal_block_entity`, `end_portal_marks_non_player_inside_end_portal`, `end_gateway_creates_typed_block_entity` | 0 |
 | `steel-core/src/behavior/blocks/portal/end_portal_frame_block.rs` | 91 | `end_portal_frame_analog_output_depends_on_eye` | 0 |
-| `steel-core/src/behavior/blocks/portal/fire.rs` | 619 | `get_state_selects_soul_fire_on_soul_fire_base_block`, `get_state_selects_regular_fire_otherwise`, `update_shape_removes_unsupported_fire`, `update_shape_removes_unsupported_soul_fire` | 0 |
+| `steel-core/src/behavior/blocks/portal/fire.rs` | 648 | `get_state_selects_soul_fire_on_soul_fire_base_block`, `get_state_selects_regular_fire_otherwise`, `update_shape_removes_unsupported_fire`, `horizontal_support_removal_extinguishes_fire`, `changing_floor_to_soul_sand_converts_existing_fire`, `update_shape_removes_unsupported_soul_fire` | 0 |
 | `steel-core/src/behavior/blocks/portal/mod.rs` | 11 | — | 0 |
 | `steel-core/src/behavior/blocks/portal/nether_portal_block.rs` | 134 | `nether_portal_marks_entity_inside_portal` | 0 |
 | `steel-core/src/behavior/blocks/portal/respawn_anchor_block.rs` | 556 | `in_water_follows_vanilla_flow_rules`, `water_shields_blocks_from_anchor_explosion`, `standup_candidates_match_vanilla_order`, `charge_helpers_match_vanilla_bounds`, `charge_consume_after_respawn_matches_vanilla_condition`, `consumed_charge_state_decrements_exactly_once` | 0 |
@@ -1074,7 +1075,7 @@
 | `steel-core/src/behavior/items/filled_map.rs` | 493 | `water_brightness_uses_vanilla_thresholds`, `land_brightness_uses_vanilla_thresholds`, `palette_picks_the_most_frequent_color`, `palette_ties_keep_first_seen_order`, `palette_ignores_never_seen_ids` | 0 |
 | `steel-core/src/behavior/items/firework_rocket.rs` | 148 | `placement_position_offsets_outside_clicked_face` | 0 |
 | `steel-core/src/behavior/items/fishing_rod.rs` | 271 | `retrieving_grounded_hook_does_not_relock_inventory`, `use_emits_vanilla_interact_vibrations`, `casting_fishing_rod_spawns_and_links_hook` | 0 |
-| `steel-core/src/behavior/items/flint_and_steel.rs` | 228 | `can_light_rejects_waterlogged_campfires_and_candles`, `can_light_accepts_unlit_candle_cakes` | 0 |
+| `steel-core/src/behavior/items/flint_and_steel.rs` | 235 | `can_light_rejects_waterlogged_campfires_and_candles`, `can_light_accepts_unlit_candle_cakes` | 0 |
 | `steel-core/src/behavior/items/food_on_a_stick.rs` | 65 | — | 0 |
 | `steel-core/src/behavior/items/game_master_block_item.rs` | 138 | `command_blocks_are_operator_only` | 0 |
 | `steel-core/src/behavior/items/hanging_entity_item.rs` | 259 | `placing_a_painting_consumes_one_item`, `paintings_are_not_placed_on_vertical_faces`, `paintings_are_not_placed_without_a_wall`, `painting_placement_copies_the_stack_custom_name` | 0 |
@@ -1135,7 +1136,7 @@
 | `steel-core/src/block_entity/entities/end_gateway.rs` | 281 | `end_gateway_saves_vanilla_nbt_keys`, `full_metadata_includes_type_and_position_after_additional_data`, `end_gateway_loads_vanilla_nbt_keys`, `end_gateway_rejects_exit_outside_spawnable_bounds` | 0 |
 | `steel-core/src/block_entity/entities/end_portal.rs` | 45 | — | 0 |
 | `steel-core/src/block_entity/entities/ender_chest.rs` | 46 | — | 0 |
-| `steel-core/src/block_entity/entities/hopper.rs` | 731 | `hopper_has_five_slots`, `set_item_limits_stack_to_vanilla_container_maximum`, `cooldown_starts_at_zero_and_round_trips`, `facing_is_read_from_the_block_state`, `add_into_slots_only_touches_slots_exposed_to_the_face`, `add_into_slots_respects_the_destination_max_stack_size`, `suck_column_matches_the_vanilla_shape_bounds`, `a_full_hopper_does_not_claim_an_item_entity`, `cooldown_is_persisted_in_nbt` | 0 |
+| `steel-core/src/block_entity/entities/hopper.rs` | 815 | `shulker_rejects_nested_boxes_and_hopper_continues_to_next_acceptable_slot`, `hopper_has_five_slots`, `set_item_limits_stack_to_vanilla_container_maximum`, `transfer_cooldown_expires_on_the_eighth_tick_not_the_ninth`, `cooldown_starts_at_zero_and_round_trips`, `facing_is_read_from_the_block_state`, `add_into_slots_only_touches_slots_exposed_to_the_face`, `add_into_slots_respects_the_destination_max_stack_size`, `suck_column_matches_the_vanilla_shape_bounds`, `a_full_hopper_does_not_claim_an_item_entity`, `cooldown_is_persisted_in_nbt` | 0 |
 | `steel-core/src/block_entity/entities/jigsaw_block.rs` | 231 | — | 0 |
 | `steel-core/src/block_entity/entities/jukebox.rs` | 524 | `saved_song_resumes_before_but_not_at_its_vanilla_finish_tick`, `item_block_entity_data_merges_with_existing_record_before_loading`, `direct_song_uses_vanilla_unknown_registry_level_event_data`, `value_input_long_uses_each_numeric_tag_long_value` | 0 |
 | `steel-core/src/block_entity/entities/lectern.rs` | 191 | `lectern_holds_books_and_tracks_page` | 0 |
@@ -1146,7 +1147,7 @@
 | `steel-core/src/block_entity/entities/sculk_catalyst.rs` | 592 | `shrieker_tracks_warning_level`, `the_warning_level_saturates_at_the_vanilla_maximum`, `a_saved_cooldown_survives_a_round_trip` | 0 |
 | `steel-core/src/block_entity/entities/sculk_sensor.rs` | 519 | `sensor_records_frequency`, `vibration_frequencies_match_vanilla_26_3_table`, `distance_attenuation_matches_vanilla_formula` | 0 |
 | `steel-core/src/block_entity/entities/shelf.rs` | 157 | `shelf_has_three_slots` | 0 |
-| `steel-core/src/block_entity/entities/shulker_box.rs` | 478 | — | 0 |
+| `steel-core/src/block_entity/entities/shulker_box.rs` | 483 | — | 0 |
 | `steel-core/src/block_entity/entities/sign.rs` | 544 | `plain_sign_lines_save_as_a_string_list`, `mixed_sign_lines_round_trip_through_the_component_codec`, `styled_plain_text_is_editable_but_translations_are_not`, `placed_sign_takes_text_and_wax_from_item_components`, `sign_tick_releases_state_before_player_lookup_and_editor_clear`, `set_color_updates_color_and_reports_change` | 0 |
 | `steel-core/src/block_entity/entities/skull.rs` | 138 | — | 0 |
 | `steel-core/src/block_entity/entities/spawner/base_spawner.rs` | 676 | — | 0 |
@@ -1977,7 +1978,7 @@
 | `steel-core/src/world/block_updates/neighbor_updater.rs` | 364 | `nested_updates_interrupt_multi_update_and_keep_sibling_fifo_order`, `chained_update_limit_counts_enqueued_tasks_and_reports_only_first_skip`, `zero_limit_still_starts_and_resets_a_root_run_without_executing_it` | 0 |
 | `steel-core/src/world/border.rs` | 813 | `default_border_matches_vanilla_initial_settings`, `border_bounds_are_clamped_to_absolute_max_size`, `block_position_bounds_use_vanilla_inclusive_min_exclusive_max`, `clamp_to_bounds_matches_vanilla_blockpos_containing`, `moving_border_ticks_to_target_size`, `close_to_border_matches_vanilla_distance_gate`, `collision_shape_represents_outside_of_border`, `outside_damage_is_ignored_inside_safe_zone`, `outside_damage_uses_vanilla_minimum_damage`, `outside_damage_uses_vanilla_floor_after_scaling`, `outside_damage_is_disabled_when_damage_per_block_is_not_positive` | 0 |
 | `steel-core/src/world/broadcasts.rs` | 344 | — | 0 |
-| `steel-core/src/world/clock.rs` | 442 | `initializes_every_registered_clock`, `separate_worlds_keep_independent_clock_state`, `rate_accumulates_partial_ticks_like_vanilla`, `pause_and_advance_time_gate_network_rate_and_ticks`, `repeating_time_marker_moves_strictly_forward`, `manager_round_trips_through_toml` | 0 |
+| `steel-core/src/world/clock.rs` | 460 | `initializes_every_registered_clock`, `separate_worlds_keep_independent_clock_state`, `rate_accumulates_partial_ticks_like_vanilla`, `pause_and_advance_time_gate_network_rate_and_ticks`, `repeating_time_marker_moves_strictly_forward`, `manager_round_trips_through_toml` | 0 |
 | `steel-core/src/world/domain_entity_directory.rs` | 50 | — | 0 |
 | `steel-core/src/world/dragon_fight.rs` | 919 | `saved_data_round_trips_every_field`, `every_respawn_stage_name_round_trips`, `gateway_ring_is_a_seeded_permutation`, `a_live_dragon_owns_the_bar_and_blocks_respawn`, `the_first_kill_drops_the_egg_and_the_second_does_not`, `killing_a_crystal_on_the_exit_portal_column_arms_the_respawn_once` | 0 |
 | `steel-core/src/world/entity_management.rs` | 826 | — | 0 |
@@ -2177,4 +2178,4 @@
 | `steel-flint/src/lib.rs` | 48 | — | 0 |
 | `steel-flint/src/player.rs` | 266 | `stack_conversion_reports_requested_plain_components` | 0 |
 | `steel-flint/src/test_connection.rs` | 41 | — | 0 |
-| `steel-flint/src/world.rs` | 525 | `daytime_wraps_at_midnight_and_normalizes_negative_clock_values`, `test_world_is_released_after_adapter_drop`, `test_player_is_removed_from_world_on_adapter_drop`, `test_player_is_registered_in_world_for_real_item_interactions` | 0 |
+| `steel-flint/src/world.rs` | 595 | `daylight_detector_registered_ticker_corrects_stale_power_at_noon`, `setup_applies_numeric_and_registry_marker_times_and_weather_or_reports_errors`, `runner_applies_world_setup_before_the_first_assertion_and_surfaces_invalid_setup`, `daytime_wraps_at_midnight_and_normalizes_negative_clock_values`, `test_world_is_released_after_adapter_drop`, `test_player_is_removed_from_world_on_adapter_drop`, `test_player_is_registered_in_world_for_real_item_interactions` | 0 |

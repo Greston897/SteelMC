@@ -1,6 +1,6 @@
 {
   "methodology": {
-    "scope": "60 explicitly listed high-level capabilities; not every Minecraft mechanic",
+    "scope": "60 high-level capabilities across all kernel areas; vanilla/server and infrastructure scope, not plugins or external scripting; overlapping areas; not every Minecraft mechanic",
     "scores": {
       "1": "main execution path exists",
       "0.5": "partial/known limitations or completeness unaudited",
@@ -28,9 +28,9 @@
           "source": "steel-core/src/server/rcon.rs"
         },
         {
-          "capability": "Стабильный внешний plugin API",
+          "capability": "Полный runtime reload внешних vanilla datapacks",
           "score": 0,
-          "source": "steel-core/src/lib.rs"
+          "source": "steel-core/src/command/builtins/datapack.rs"
         }
       ]
     },
@@ -353,9 +353,9 @@
           "source": "steel-core/src/command/builtins"
         },
         {
-          "capability": "Полный внешний scripting API",
+          "capability": "Vanilla /datapack enable и disable",
           "score": 0,
-          "source": "steel-core/src/command/api.rs"
+          "source": "steel-core/src/command/builtins/datapack.rs"
         }
       ]
     },

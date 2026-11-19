@@ -32,7 +32,7 @@
 - **1** — Запуск и конфигурация: `steel-core/src/bootstrap.rs`.
 - **1** — Планировщик, домены и workers: `steel-core/src/server/schedule.rs`.
 - **1** — RCON и администрирование: `steel-core/src/server/rcon.rs`.
-- **0** — Стабильный внешний plugin API: `steel-core/src/lib.rs`.
+- **0** — Полный runtime reload внешних vanilla datapacks: `steel-core/src/command/builtins/datapack.rs`.
 
 ### Мир и тики
 
@@ -123,7 +123,7 @@
 - **1** — Парсер и дерево команд: `steel-core/src/command/brigadier`.
 - **1** — Permissions и command sources: `steel-core/src/permission`.
 - **1** — Встроенные команды: `steel-core/src/command/builtins`.
-- **0** — Полный внешний scripting API: `steel-core/src/command/api.rs`.
+- **0** — Vanilla /datapack enable и disable: `steel-core/src/command/builtins/datapack.rs`.
 
 ### Loot, зачарования, прогрессия
 
