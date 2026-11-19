@@ -365,8 +365,8 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
     raid.total_health = 0;
     let bonus = wave > raid.num_groups;
     let index = if bonus { raid.num_groups } else { wave }.clamp(0, 7) as usize;
-    let types = [vanilla_entities::VINDICATOR, vanilla_entities::EVOKER,
-        vanilla_entities::PILLAGER, vanilla_entities::WITCH, vanilla_entities::RAVAGER];
+    let types = [&vanilla_entities::VINDICATOR, &vanilla_entities::EVOKER,
+        &vanilla_entities::PILLAGER, &vanilla_entities::WITCH, &vanilla_entities::RAVAGER];
     for (kind, entity_type) in types.into_iter().enumerate() {
         let count = WAVE_COUNTS[kind][index] + bonus_spawns(kind, wave, world.difficulty(), bonus);
         for number in 0..count {
@@ -382,9 +382,9 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
                 raid.total_health += entity.as_living_entity().map_or(0, |living| living.get_health().ceil() as i32);
                 raid.raiders.push(entity.uuid());
                 if kind == 4 {
-                    let rider = if wave == 5 { Some(vanilla_entities::PILLAGER) }
-                        else if wave >= 7 { Some(if number == 0 { vanilla_entities::EVOKER }
-                            else { vanilla_entities::VINDICATOR }) } else { None };
+                    let rider = if wave == 5 { Some(&vanilla_entities::PILLAGER) }
+                        else if wave >= 7 { Some(if number == 0 { &vanilla_entities::EVOKER }
+                            else { &vanilla_entities::VINDICATOR }) } else { None };
                     if let Some(entity_type) = rider
                         && let Ok(rider) = spawn_entity(world, EntitySpawnRequest { entity_type, ..request }) {
                         if let Some(mob) = rider.as_mob() { mob.set_persistence_required(); }
@@ -419,45 +419,44 @@ fn village_poi(type_id: usize) -> bool {
 
 #[must_use]
 pub fn is_village(world: &Arc<World>, pos: IVec3) -> bool {
-    village_center_world(world, BlockPos(pos)).is_some()
+    is_village_world(world, BlockPos(pos))
 }
 
-/// [`village_center`] for callers holding a `&World` (mob-effect behaviours).
+/// Village distance is measured in sections, including the vertical axis.
 #[must_use]
-pub fn village_center_world(world: &World, pos: steel_utils::BlockPos) -> Option<IVec3> {
-    let storage = world.poi_storage.lock();
-    storage
-        .get_in_horizontal_square(
-            &village_poi,
-            pos,
-            VILLAGE_SCAN_RADIUS,
-            OccupationStatus::Occupied,
-        )
-        .into_iter()
-        .min_by_key(|(bell, _)| {
-            let dx = i64::from(bell.0.x - pos.0.x);
-            let dz = i64::from(bell.0.z - pos.0.z);
-            dx * dx + dz * dz
-        })
-        .map(|(bell, _)| bell.0)
+pub fn is_village_world(world: &World, pos: BlockPos) -> bool {
+    world.poi_storage.lock().get_in_horizontal_square(
+        &village_poi, pos, 32, OccupationStatus::Occupied,
+    ).iter().any(|(poi, _)| {
+        let delta = (poi.0 >> 4) - (pos.0 >> 4);
+        delta.abs().max_element() <= 1
+    })
 }
 
-/// Returns the nearest occupied village point, used as the raid center.
+/// Vanilla averages occupied village POIs in a 64-block sphere to center a raid.
+#[must_use]
+pub fn village_center_world(world: &World, pos: BlockPos) -> Option<IVec3> {
+    let matches = world.poi_storage.lock().get_in_horizontal_square(
+        &village_poi, pos, VILLAGE_SCAN_RADIUS, OccupationStatus::Occupied,
+    );
+    let mut total = glam::I64Vec3::ZERO;
+    let mut count = 0;
+    for (poi, _) in matches {
+        let delta = poi.0.as_i64vec3() - pos.0.as_i64vec3();
+        if delta.length_squared() <= i64::from(VILLAGE_SCAN_RADIUS).pow(2) {
+            total += poi.0.as_i64vec3();
+            count += 1;
+        }
+    }
+    (count > 0).then(|| IVec3::new(
+        total.x.div_euclid(count) as i32, total.y.div_euclid(count) as i32,
+        total.z.div_euclid(count) as i32,
+    ))
+}
+
 #[must_use]
 pub fn village_center(world: &Arc<World>, pos: IVec3) -> Option<IVec3> {
-    let storage = world.poi_storage.lock();
-    let mut matches = storage.get_in_horizontal_square(
-        &village_poi,
-        steel_utils::BlockPos::new(pos.x, pos.y, pos.z),
-        VILLAGE_SCAN_RADIUS,
-        OccupationStatus::Occupied,
-    );
-    matches.sort_by_key(|(bell, _)| {
-        let dx = bell.0.x - pos.x;
-        let dz = bell.0.z - pos.z;
-        dx * dx + dz * dz
-    });
-    matches.first().map(|(bell, _)| bell.0)
+    village_center_world(world, BlockPos(pos))
 }
 
 #[cfg(test)]
@@ -618,5 +617,49 @@ mod outcome_tests {
         *world.raids.raids.lock() = vec![Raid { ticks_active: 47_999, ..Raid::default() }];
         world.raids.tick(world);
         assert!(world.raids.raids().is_empty());
+    }
+}
+
+#[cfg(test)]
+mod complete_wave_tests {
+    use super::*;
+    use crate::test_support::{fresh_test_world_with_difficulty, insert_ready_full_chunk};
+    use steel_utils::{ChunkPos, types::UpdateFlags};
+    use steel_registry::vanilla_blocks;
+
+    #[test]
+    fn easy_raid_spawns_three_real_waves_and_requires_all_three_to_die() {
+        steel_registry::init_vanilla_registry();
+        crate::behavior::init_behaviors();
+        let fixture = fresh_test_world_with_difficulty("raid_three_waves", Difficulty::Easy);
+        let world = &fixture.world;
+        for x in -1..=1 { for z in -1..=1 { insert_ready_full_chunk(world, ChunkPos::new(x, z)); } }
+        for x in -16..32 { for z in -16..32 {
+            world.set_block(BlockPos::new(x, 63, z), vanilla_blocks::STONE.default_state(), UpdateFlags::UPDATE_NONE);
+        } }
+        let home = steel_registry::REGISTRY.poi_types.iter().find(|(_, poi)| poi.key.path.as_ref() == "home").unwrap().0;
+        let center = IVec3::new(0, 64, 0);
+        world.poi_storage.lock().add(BlockPos(center), home, 1);
+        world.poi_storage.lock().reserve_ticket(BlockPos(center));
+        world.raids.raise_omen(center, 0);
+        for wave in 1..=3 {
+            for _ in 0..301 { world.raids.tick(world); }
+            let raid = world.raids.raids()[0].clone();
+            assert_eq!(raid.waves_spawned, wave);
+            assert_eq!(raid.waves_cleared, wave - 1);
+            assert!(!raid.raiders.is_empty());
+            assert!(!raid.is_victory());
+            for id in raid.raiders {
+                let entity = world.get_entity_by_uuid(&id).unwrap();
+                let living = entity.as_living_entity().unwrap();
+                living.set_health(0.0);
+                living.die(&crate::entity::damage::DamageSource::environment(steel_registry::vanilla_damage_types::GENERIC));
+            }
+        }
+        for _ in 0..41 { world.raids.tick(world); }
+        let raid = &world.raids.raids()[0];
+        assert_eq!(raid.waves_cleared, 3);
+        assert!(raid.is_victory());
+        assert!(raid.heroes.is_empty(), "environmental kills do not fabricate hero credit");
     }
 }

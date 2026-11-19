@@ -24,19 +24,11 @@ impl MobEffectBehavior for BadOmenBehavior {
             return true;
         }
 
-        // Vanilla `BadOmenMobEffect` bails out when the `raids` game rule is off,
-        // so a disabled rule never starts or extends a raid.
-        if !world.get_game_rule(&steel_registry::vanilla_game_rules::RAIDS) {
-            return true;
-        }
-
         let pos = player.block_position();
-        let Some(center) = raid::village_center_world(world, pos) else {
-            return true;
-        };
+        if !raid::is_village_world(world, pos) { return true; }
 
         // Vanilla refuses to extend a raid that already reached the omen cap.
-        if let Some(existing) = world.raids.raid_at(center)
+        if let Some(existing) = world.raids.raid_at(pos.0)
             && existing.omen_level >= raid::MAX_OMEN_LEVEL
         {
             return true;
