@@ -267,7 +267,7 @@ def run(binary, root, output, timeout, vanilla_jar=None):
         client.command("setblock 10 101 14 air")
         record("unpowered_hopper_resumes_transfer", lambda: check("items block 9 100 14 container.* minecraft:gold_ingot"))
         client.command("setblock 9 101 8 stone")
-        client.command("setblock 9 102 8 comparator[facing=east]")
+        client.command("setblock 9 102 8 comparator[facing=west]")
         client.command("setblock 10 102 8 redstone_lamp")
         record("comparator_reads_filled_container", lambda: check("block 10 102 8 redstone_lamp[lit=true]"))
         client.command("item replace block 8 102 8 container.0 with minecraft:air")

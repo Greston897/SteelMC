@@ -72,7 +72,7 @@ jobs:
           commands = root / 'commands.json'
           if commands.exists():
               entries = json.loads(commands.read_text())
-              annotate('initial command responses: ' + json.dumps(entries[:12]))
+              annotate('last command responses: ' + json.dumps(entries[-20:]))
           for log in root.glob('server-*.log'):
               annotate(log.name + '\n' + '\n'.join(log.read_text(errors='replace').splitlines()[-35:]))
           PYERROR
