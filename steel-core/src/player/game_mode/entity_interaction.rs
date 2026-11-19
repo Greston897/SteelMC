@@ -3,7 +3,7 @@ use std::sync::Arc;
 use super::{
     ATTACK_RANGE_BUFFER, CSetEntityMotion, ClipBlockShape, ClipFluid, DVec3, DamageSource,
     DamageType, ENTITY_INTERACTION_RANGE_BUFFER, EnchantmentDamageContext,
-    EnchantmentPostAttackContext, Entity, EntityTypeRef, GameType, ITEM_BEHAVIORS, Identifier,
+    EnchantmentPostAttackContext, Entity, EntityTypeRef, GameType, ITEM_BEHAVIORS,
     InteractionHand, InteractionResult, InventoryAccess, ItemStack, LivingEntity, PiercingWeapon,
     Player, SAttack, SInteract, SharedEntity, SoundEventHolder, TextComponent, TranslatedMessage,
     World, WorldAabb, enchantment_helper, piercing_ray_hit_t, vanilla_attributes,
