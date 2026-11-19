@@ -186,6 +186,18 @@ def run(binary, root, output, timeout, vanilla_jar=None):
             time.sleep(0.2)
         raise AssertionError(f"condition not satisfied: {condition}; response={last!r}")
 
+    def observe(condition, expected, seconds=1.0):
+        """A negative tick assertion must remain true, not pass before tick one."""
+        deadline = time.monotonic() + seconds
+        while True:
+            branch = "if" if expected else "unless"
+            reply = client.command(f"execute {branch} {condition} run scoreboard players get probe ci")
+            if not probe_reply(reply):
+                raise AssertionError(f"unstable condition: {condition}; response={reply!r}")
+            if time.monotonic() >= deadline:
+                return
+            time.sleep(0.1)
+
     def stop():
         nonlocal client
         try:
@@ -245,6 +257,23 @@ def run(binary, root, output, timeout, vanilla_jar=None):
         client.command("item replace block 13 100 13 container.0 with minecraft:iron_ore")
         client.command("item replace block 13 100 13 container.1 with minecraft:coal")
         record("furnace_smelts_on_real_ticks", lambda: check("items block 13 100 13 container.2 minecraft:iron_ingot"))
+        client.command("setblock 9 100 14 barrel")
+        client.command("setblock 10 101 14 redstone_block")
+        client.command("setblock 9 101 14 hopper[facing=down]")
+        record("powered_hopper_is_disabled", lambda: check("block 9 101 14 hopper[enabled=false]"))
+        client.command("item replace block 9 101 14 container.0 with minecraft:gold_ingot 2")
+        record("powered_hopper_does_not_transfer_over_ticks", lambda: observe("items block 9 100 14 container.* minecraft:gold_ingot", False))
+        record("locked_hopper_retains_source", lambda: check("items block 9 101 14 container.0 minecraft:gold_ingot"))
+        client.command("setblock 10 101 14 air")
+        record("unpowered_hopper_resumes_transfer", lambda: check("items block 9 100 14 container.* minecraft:gold_ingot"))
+        client.command("setblock 9 101 8 stone")
+        client.command("setblock 9 102 8 comparator[facing=east]")
+        client.command("setblock 10 102 8 redstone_lamp")
+        record("comparator_reads_filled_container", lambda: check("block 10 102 8 redstone_lamp[lit=true]"))
+        client.command("item replace block 8 102 8 container.0 with minecraft:air")
+        record("inventory_write_updates_comparator", lambda: check("block 10 102 8 redstone_lamp[lit=false]"))
+        client.command("item replace block 8 102 8 container.0 with minecraft:diamond 3")
+        record("comparator_relights_after_item_write", lambda: check("block 10 102 8 redstone_lamp[lit=true]"))
         record("graceful_stop_saves_world", stop)
         record("restart_same_disk_world", lambda: boot("restart"))
         record("scoreboard_survives_restart", lambda: check("score probe ci matches 731"))
