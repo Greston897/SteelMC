@@ -816,7 +816,7 @@ mod lifecycle_tests {
             let living = entity.as_living_entity().unwrap();
             living.set_health(0.0);
             living.die(&crate::entity::damage::DamageSource::environment(
-                steel_registry::vanilla_damage_types::GENERIC,
+                &steel_registry::vanilla_damage_types::GENERIC,
             ));
         }
         world.raids.tick(world);
@@ -973,7 +973,7 @@ mod complete_wave_tests {
                 let living = entity.as_living_entity().unwrap();
                 living.set_health(0.0);
                 living.die(&crate::entity::damage::DamageSource::environment(
-                    steel_registry::vanilla_damage_types::GENERIC,
+                    &steel_registry::vanilla_damage_types::GENERIC,
                 ));
             }
         }
