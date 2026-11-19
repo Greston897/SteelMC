@@ -440,15 +440,12 @@ fn unloaded_position() -> CommandSyntaxError {
     CommandSyntaxError::dynamic(TextComponent::from(&translations::ARGUMENT_POS_UNLOADED))
 }
 
-/// Vanilla `execute if items entity <targets> <slots> <item_predicate> <count>`.
-///
-/// Only the `entity` slot provider is modelled; block containers need the
-/// block-entity slot API that Steel does not expose to commands yet.
+/// Item predicates for block containers and entity inventory providers.
 fn items_condition(expected: bool) -> Builder {
     literal("items").then(
         literal("block").then(
             argument("pos", SteelArgumentType::block_pos()).then(
-                argument("slots", ArgumentType::word()).then(
+                argument("slots", SteelArgumentType::item_slots()).then(
                     argument("item_predicate", SteelArgumentType::item_predicate())
                         .forks(EXECUTE_ROOT, move |context| {
                             Ok(conditional_sources(context.source(), expected, block_items_count(context)? > 0))
@@ -460,7 +457,7 @@ fn items_condition(expected: bool) -> Builder {
     ).then(
         literal("entity").then(
             argument("targets", SteelArgumentType::entities()).then(
-                argument("slots", ArgumentType::word()).then(
+                argument("slots", SteelArgumentType::item_slots()).then(
                     argument("item_predicate", SteelArgumentType::item_predicate())
                         .then(items_count_range(expected)),
                 ),

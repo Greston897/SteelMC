@@ -184,6 +184,10 @@ impl SteelArgumentType {
         Self::new(BlockPosParser)
     }
 
+    pub(crate) fn item_slots() -> Self {
+        Self::new(ItemSlotsParser)
+    }
+
     pub(crate) fn column_pos() -> Self {
         Self::new(ColumnPosParser)
     }
@@ -817,6 +821,23 @@ unit_argument_parser!(
         suggest_entity_anchors(builder);
     },
     protocol(ProtocolArgumentType::EntityAnchor, None)
+);
+
+// Brigadier word() intentionally excludes '*'. Slot selectors are a custom
+// Minecraft argument, so read the complete token rather than loosening word().
+unit_argument_parser!(
+    ItemSlotsParser,
+    "steel:command/parser/item_slots",
+    PrimitiveArgumentValue,
+    parse | reader, _source | {
+        let token = reader.read_unquoted_token();
+        if token.is_empty() {
+            return Err(CommandSyntaxError::dynamic("Expected item slot selector"));
+        }
+        Ok(PrimitiveArgumentValue::String(token.into()))
+    },
+    suggest | _context, _builder | {},
+    protocol(ProtocolArgumentType::ItemSlots, None)
 );
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
