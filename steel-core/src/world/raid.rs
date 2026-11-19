@@ -554,7 +554,7 @@ pub fn is_village_world(world: &World, pos: BlockPos) -> bool {
     world.poi_storage.lock().get_in_horizontal_square(
         &village_poi, pos, 32, OccupationStatus::Occupied,
     ).iter().any(|(poi, _)| {
-        let delta = (poi.0 >> 4) - (pos.0 >> 4);
+        let delta = (poi.0 >> 4_i32) - (pos.0 >> 4_i32);
         delta.abs().max_element() <= 1
     })
 }
@@ -663,6 +663,9 @@ mod lifecycle_tests {
         let mut raid = Raid { center, ..Raid::default() };
         spawn_wave(world, &mut raid, BlockPos::new(2, 64, 2));
         assert!((4..=5).contains(&raid.raiders.len()));
+        let captain = world.get_entity_by_uuid(&raid.leader.expect("wave captain")).unwrap();
+        let banner = captain.as_living_entity().unwrap().equipment_in_slot(crate::inventory::equipment::EquipmentSlot::Head);
+        assert_eq!(banner.get(steel_registry::data_components::vanilla_components::BANNER_PATTERNS).unwrap().layers().len(), 8);
         let members = raid.raiders.clone();
         *world.raids.raids.lock() = vec![raid];
         for _ in 0..1_201 { world.raids.tick(world); }
