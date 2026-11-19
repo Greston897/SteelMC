@@ -126,11 +126,11 @@ impl BlockBehavior for CampfireBlock {
 
     fn use_item_on(
         &self,
-        _state: BlockStateId,
+        state: BlockStateId,
         world: &Arc<World>,
         pos: BlockPos,
         player: &Player,
-        _hand: InteractionHand,
+        hand: InteractionHand,
         _hit_result: &BlockHitResult,
         inv: &mut InventoryAccess,
     ) -> InteractionResult {
@@ -144,6 +144,27 @@ impl BlockBehavior for CampfireBlock {
                 .is_some()
         });
         if !accepted {
+            // In 26.3 dousing moved from ShovelItem to this block's item-use
+            // path and is driven by the DOUSES_CAMPFIRES item tag.
+            if state.get_value(LIT) && inv.with_item(|stack| {
+                stack.item().has_tag(&steel_registry::vanilla_item_tags::ItemTag::DOUSES_CAMPFIRES)
+            }) {
+                world.level_event(steel_registry::level_events::SOUND_EXTINGUISH_FIRE, pos, 0, None);
+                Self::douse(Some(player), world.as_ref(), pos);
+                world.set_block(pos, state.set_value(LIT, false), UpdateFlags::UPDATE_ALL);
+                let broken = inv.with_item(|stack| {
+                    let item = stack.item();
+                    stack.hurt_and_break(1, player.has_infinite_materials()).then_some(item)
+                });
+                if let Some(item) = broken {
+                    let slot = match hand {
+                        InteractionHand::MainHand => crate::inventory::equipment::EquipmentSlot::MainHand,
+                        InteractionHand::OffHand => crate::inventory::equipment::EquipmentSlot::OffHand,
+                    };
+                    player.on_equipped_item_broken(item, slot);
+                }
+                return InteractionResult::Success;
+            }
             return InteractionResult::TryEmptyHandInteraction;
         }
 
