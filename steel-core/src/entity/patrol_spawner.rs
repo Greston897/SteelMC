@@ -244,10 +244,7 @@ fn mark_captain(entity: &crate::entity::SharedEntity) {
     };
     living.with_equipment_slot_mut(EquipmentSlot::Head, &mut |head| {
         if head.is_empty() {
-            *head = steel_registry::item_stack::ItemStack::with_count(
-                &steel_registry::vanilla_items::WHITE_BANNER,
-                1,
-            );
+            *head = crate::world::raid::ominous_banner();
         }
     });
 }

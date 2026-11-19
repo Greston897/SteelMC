@@ -42,6 +42,7 @@ pub struct Raid {
     pub center: IVec3,
     pub uuid: Uuid,
     pub total_health: i32,
+    pub leader: Option<Uuid>,
     /// Zero-based omen amplifier, retained for compatibility with older saves.
     pub omen_level: i32,
     pub ticks_active: i32,
@@ -62,6 +63,7 @@ impl Default for Raid {
             center: IVec3::ZERO,
             uuid: Uuid::new_v4(),
             total_health: 0,
+            leader: None,
             omen_level: 0,
             ticks_active: 0,
             waves_cleared: 0,
@@ -446,9 +448,33 @@ fn find_spawn_pos(world: &Arc<World>, center: IVec3) -> Option<BlockPos> {
     None
 }
 
+/// Shared vanilla captain banner, including all eight ordered pattern layers.
+pub(crate) fn ominous_banner() -> steel_registry::item_stack::ItemStack {
+    use steel_registry::{DyeColor, RegistryHolder, vanilla_banner_patterns as patterns};
+    use steel_registry::data_components::{BannerPatternLayer, BannerPatternLayers, Rarity};
+    use steel_registry::data_components::vanilla_components::{BANNER_PATTERNS, ITEM_NAME, RARITY};
+    use text_components::{TextComponent, translation::TranslatedMessage};
+    let layers = [
+        (&patterns::RHOMBUS_MIDDLE, DyeColor::Cyan),
+        (&patterns::STRIPE_BOTTOM, DyeColor::LightGray),
+        (&patterns::STRIPE_CENTER, DyeColor::Gray),
+        (&patterns::BORDER, DyeColor::LightGray),
+        (&patterns::STRIPE_MIDDLE, DyeColor::Black),
+        (&patterns::HALF_HORIZONTAL, DyeColor::LightGray),
+        (&patterns::CIRCLE_MIDDLE, DyeColor::LightGray),
+        (&patterns::BORDER, DyeColor::Black),
+    ].into_iter().map(|(pattern, color)| BannerPatternLayer::new(RegistryHolder::reference(pattern), color)).collect();
+    let mut banner = steel_registry::item_stack::ItemStack::new(&steel_registry::vanilla_items::WHITE_BANNER);
+    banner.set(BANNER_PATTERNS, BannerPatternLayers::new(layers));
+    banner.set(ITEM_NAME, TextComponent::translated(TranslatedMessage { key: "block.minecraft.ominous_banner".into(), fallback: None, args: None }));
+    banner.set(RARITY, Rarity::Uncommon);
+    banner
+}
+
 fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
     let wave = raid.waves_spawned + 1;
     raid.total_health = 0;
+    raid.leader = None;
     let bonus = wave > raid.num_groups;
     let index = if bonus { raid.num_groups } else { wave }.clamp(0, 7) as usize;
     let types = [&vanilla_entities::VINDICATOR, &vanilla_entities::EVOKER,
@@ -466,6 +492,20 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
             if let Ok(entity) = spawn_entity(world, request) {
                 if let Some(mob) = entity.as_mob() { mob.set_persistence_required(); }
                 raid.total_health += entity.as_living_entity().map_or(0, |living| living.get_health().ceil() as i32);
+                if let Some(living) = entity.as_living_entity() {
+                    if kind == 0 {
+                        living.with_equipment_slot_mut(crate::inventory::equipment::EquipmentSlot::MainHand,
+                            &mut |item| *item = steel_registry::item_stack::ItemStack::new(&steel_registry::vanilla_items::IRON_AXE));
+                    }
+                    if raid.leader.is_none() && kind <= 2 {
+                        living.with_equipment_slot_mut(crate::inventory::equipment::EquipmentSlot::Head,
+                            &mut |item| *item = ominous_banner());
+                        if let Some(mob) = entity.as_mob() {
+                            mob.set_equipment_drop_chance(crate::inventory::equipment::EquipmentSlot::Head, 2.0);
+                        }
+                        raid.leader = Some(entity.uuid());
+                    }
+                }
                 raid.raiders.push(entity.uuid());
                 if kind == 4 {
                     let rider = if wave == 5 { Some(&vanilla_entities::PILLAGER) }
