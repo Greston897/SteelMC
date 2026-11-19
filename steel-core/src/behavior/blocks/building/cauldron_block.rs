@@ -276,6 +276,11 @@ pub(super) fn cauldron_item_interaction(
     if award_item { player.award_stat(&steel_registry::stat::vanilla_stat_types::ITEM_USED, item); }
     player.award_custom_stat(stat);
     world.set_block(pos, next, UpdateFlags::UPDATE_ALL);
+    // LayeredCauldronBlock.lowerFillLevel emits BLOCK_CHANGE, in addition
+    // to a bottle's FLUID_PICKUP. Washing uses only this level-change event.
+    if water && (item == &items::GLASS_BOTTLE || !award_item) {
+        world.game_event(&vanilla_game_events::BLOCK_CHANGE, pos, &GameEventContext::new(None, Some(next)));
+    }
     if let Some(sound) = sound {
         world.play_sound(sound, steel_protocol::packets::game::SoundSource::Blocks, pos, 1.0, 1.0, None);
         world.game_event(if placing { &vanilla_game_events::FLUID_PLACE } else { &vanilla_game_events::FLUID_PICKUP }, pos, &GameEventContext::new(None, None));

@@ -517,7 +517,8 @@ fn underwater_cauldron_rejects_lava_and_snow_without_consuming_bucket() {
 
 #[test]
 fn washing_colored_shulker_preserves_components_and_consumes_one_water_level() {
-    use steel_registry::data_components::vanilla_components::CUSTOM_NAME;
+    use steel_registry::data_components::vanilla_components::{CUSTOM_NAME, CONTAINER};
+    use steel_registry::data_components::ItemContainerContents;
     use steel_registry::blocks::properties::BlockStateProperties;
     for mode in [GameType::Survival, GameType::Creative] {
         let fixture = Interaction::new("cauldron_shulker_wash");
@@ -525,6 +526,9 @@ fn washing_colored_shulker_preserves_components_and_consumes_one_water_level() {
         fixture.block(vanilla_blocks::WATER_CAULDRON.default_state().set_value(&BlockStateProperties::LEVEL_CAULDRON, 1));
         let mut shulker = ItemStack::new(&vanilla_items::RED_SHULKER_BOX);
         shulker.set(CUSTOM_NAME, TextComponent::plain("Stored cargo"));
+        let cargo = ItemContainerContents::new(vec![Some(steel_registry::ItemStackTemplate::from_stack(
+            &ItemStack::with_count(&vanilla_items::DIAMOND, 17)).unwrap())]).unwrap();
+        shulker.set(CONTAINER, cargo.clone());
         fixture.hold(InteractionHand::MainHand, shulker);
         assert!(fixture.use_on(InteractionHand::MainHand).consumes_action());
         assert_eq!(fixture.count(&vanilla_items::SHULKER_BOX), 1);
@@ -533,6 +537,7 @@ fn washing_colored_shulker_preserves_components_and_consumes_one_water_level() {
         assert!((0..inventory.get_container_size()).any(|slot| {
             let item = inventory.get_item(slot);
             item.is(&vanilla_items::SHULKER_BOX) && item.get(CUSTOM_NAME) == Some(&TextComponent::plain("Stored cargo"))
+                && item.get(CONTAINER) == Some(&cargo)
         }));
     }
 }
