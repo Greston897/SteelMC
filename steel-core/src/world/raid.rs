@@ -789,3 +789,43 @@ mod complete_wave_tests {
         assert!(raid.heroes.is_empty(), "environmental kills do not fabricate hero credit");
     }
 }
+
+#[cfg(test)]
+mod village_and_unload_tests {
+    use super::*;
+    use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
+    use steel_utils::ChunkPos;
+
+    #[test]
+    fn unclaimed_bell_is_not_a_village_and_section_distance_includes_height() {
+        let fixture = fresh_test_world("raid_village_sections");
+        let world = &fixture.world;
+        let meeting = steel_registry::REGISTRY.poi_types.iter().find(|(_, poi)| poi.key.path.as_ref() == "meeting").unwrap().0;
+        let center = BlockPos::new(0, 64, 0);
+        world.poi_storage.lock().add(center, meeting, 32);
+        assert!(!is_village(world, center.0));
+        assert!(world.poi_storage.lock().reserve_ticket(center));
+        assert!(is_village(world, center.0));
+        assert!(is_village(world, IVec3::new(31, 95, 31)));
+        assert!(!is_village(world, IVec3::new(32, 64, 0)));
+        assert!(!is_village(world, IVec3::new(0, 96, 0)));
+    }
+
+    #[test]
+    fn loaded_raid_with_missing_member_does_not_turn_unload_into_wave_clear() {
+        let fixture = fresh_test_world("raid_missing_member");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let home = steel_registry::REGISTRY.poi_types.iter().find(|(_, poi)| poi.key.path.as_ref() == "home").unwrap().0;
+        let center = BlockPos::new(0, 64, 0);
+        world.poi_storage.lock().add(center, home, 1);
+        world.poi_storage.lock().reserve_ticket(center);
+        let member = Uuid::new_v4();
+        *world.raids.raids.lock() = vec![Raid { center: center.0, waves_spawned: 1, raiders: vec![member], ..Raid::default() }];
+        for _ in 0..1_201 { world.raids.tick(world); }
+        let raid = &world.raids.raids()[0];
+        assert_eq!(raid.raiders, vec![member]);
+        assert_eq!(raid.waves_cleared, 0);
+        assert!(!raid.is_victory());
+    }
+}
