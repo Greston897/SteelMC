@@ -21,6 +21,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: vanilla-evidence-optimized-no-lto
+          cache-on-failure: true
       - name: Check wire harness and readiness accounting
         env:
           PYTHONDONTWRITEBYTECODE: '1'
