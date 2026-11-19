@@ -655,6 +655,17 @@ fn survival_shovel_ray_extinguishes_campfire_preserving_properties() {
     assert!(ray_use(&interaction).consumes_action());
     assert_eq!(interaction.world_fixture.world.get_block_state(interaction.pos), state.set_value(&P::LIT, false));
     assert_eq!(interaction.count(&vanilla_items::IRON_SHOVEL), 1);
+    {
+        let inventory = interaction.player.inventory.lock();
+        assert_eq!(inventory.get_item_in_hand(InteractionHand::MainHand)
+            .get(steel_registry::data_components::vanilla_components::DAMAGE), Some(&1));
+    }
+    // Repeating the click on an already unlit campfire must neither consume
+    // another use nor damage the shovel again.
+    assert!(!ray_use(&interaction).consumes_action());
+    let inventory = interaction.player.inventory.lock();
+    assert_eq!(inventory.get_item_in_hand(InteractionHand::MainHand)
+        .get(steel_registry::data_components::vanilla_components::DAMAGE), Some(&1));
 }
 
 #[test]
@@ -670,4 +681,23 @@ fn survival_hay_east_face_ray_places_x_axis_and_consumes_stack() {
     assert_eq!(interaction.world_fixture.world.get_block_state(interaction.pos.east()),
         vanilla_blocks::HAY_BLOCK.default_state().set_value(&P::AXIS, steel_utils::axis::Axis::X));
     assert_eq!(interaction.count(&vanilla_items::HAY_BLOCK), 0);
+}
+
+#[test]
+fn creative_soul_campfire_dousing_preserves_tool_durability() {
+    use steel_registry::blocks::properties::BlockStateProperties as P;
+    let interaction = Interaction::new("ray_soul_campfire_creative");
+    interaction.player.set_game_mode(GameType::Creative);
+    interaction.player.base().set_position_local(DVec3::new(8.5, 66.0, 8.5));
+    interaction.player.set_rotation([0.0, 90.0].into());
+    interaction.world_fixture.world.set_block(
+        interaction.pos.below(), vanilla_blocks::STONE.default_state(), UpdateFlags::UPDATE_ALL,
+    );
+    interaction.block(vanilla_blocks::SOUL_CAMPFIRE.default_state().set_value(&P::LIT, true));
+    interaction.hold(InteractionHand::MainHand, ItemStack::new(&vanilla_items::IRON_SHOVEL));
+    assert!(ray_use(&interaction).consumes_action());
+    assert!(!interaction.world_fixture.world.get_block_state(interaction.pos).get_value(&P::LIT));
+    let inventory = interaction.player.inventory.lock();
+    assert_eq!(inventory.get_item_in_hand(InteractionHand::MainHand)
+        .get(steel_registry::data_components::vanilla_components::DAMAGE), Some(&0));
 }
