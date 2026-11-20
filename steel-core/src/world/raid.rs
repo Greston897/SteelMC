@@ -52,6 +52,13 @@ pub struct Raid {
     pub total_health: i32,
     /// Captain UUID for the most recently spawned wave.
     pub leader: Option<Uuid>,
+    /// Captains are scoped to their wave, including loaded older members.
+    pub wave_leaders: BTreeMap<i32, Uuid>,
+    /// Persisted wave identity must not change when a newer group spawns.
+    pub member_waves: BTreeMap<Uuid, i32>,
+    /// Failed banner paths expire after 600 active ticks; never persisted.
+    #[serde(skip)]
+    pub unreachable_banners: BTreeMap<(Uuid, Uuid), i32>,
     /// Zero-based omen amplifier, retained for compatibility with older saves.
     pub omen_level: i32,
     /// Loaded active ticks counted against the global timeout.
@@ -90,6 +97,9 @@ impl Default for Raid {
             uuid: Uuid::new_v4(),
             total_health: 0,
             leader: None,
+            wave_leaders: BTreeMap::new(),
+            member_waves: BTreeMap::new(),
+            unreachable_banners: BTreeMap::new(),
             omen_level: 0,
             ticks_active: 0,
             waves_cleared: 0,
@@ -295,6 +305,7 @@ impl RaidManager {
             .filter(|raid| raid.status == RaidStatus::Ongoing && within_village_radius(raid.center, pos))
             .min_by_key(|raid| (raid.center.as_i64vec3() - pos.as_i64vec3()).length_squared()) else { return false; };
         raid.raiders.push(uuid);
+        raid.member_waves.insert(uuid, raid.waves_spawned);
         raid.total_health += mob.get_health().max(0.0).ceil() as i32;
         true
     }
@@ -308,7 +319,10 @@ impl RaidManager {
     /// not yet carry RaidId. Membership already in the manager is authoritative.
     pub fn member_save_data(&self, uuid: Uuid) -> Option<(i32, i32, bool)> {
         self.raids.lock().iter().find(|raid| raid.raiders.contains(&uuid))
-            .map(|raid| (raid.id, raid.waves_spawned, raid.leader == Some(uuid)))
+            .map(|raid| {
+                let wave = *raid.member_waves.get(&uuid).unwrap_or(&raid.waves_spawned);
+                (raid.id, wave, raid.wave_leaders.get(&wave) == Some(&uuid) || raid.leader == Some(uuid))
+            })
     }
 
     /// Reconnects loaded entities by RaidId, never by proximity. Repeated loads
@@ -321,8 +335,10 @@ impl RaidManager {
         if !raid.raiders.contains(&entity.uuid()) {
             raid.raiders.push(entity.uuid());
         }
-        if leader && raid.leader.is_none() { raid.leader = Some(entity.uuid()); }
-        let is_leader = raid.leader == Some(entity.uuid());
+        raid.member_waves.insert(entity.uuid(), wave);
+        if leader { raid.wave_leaders.entry(wave).or_insert(entity.uuid()); }
+        let is_leader = raid.wave_leaders.get(&wave) == Some(&entity.uuid());
+        if wave == raid.waves_spawned && is_leader { raid.leader = Some(entity.uuid()); }
         drop(raids);
         if is_leader && let Some(mob) = entity.as_mob() {
             let head = crate::inventory::equipment::EquipmentSlot::Head;
@@ -347,7 +363,8 @@ impl RaidManager {
         let Some(mob) = entity.as_mob() else { return; };
         if ItemStack::matches(&mob.equipment_in_slot(EquipmentSlot::Head), &ominous_banner()) { return; }
         let eligible = self.raids.lock().iter().any(|raid| raid.status == RaidStatus::Ongoing
-            && raid.leader.is_none() && raid.raiders.contains(&entity.uuid()));
+            && !raid.wave_leaders.contains_key(raid.member_waves.get(&entity.uuid()).unwrap_or(&raid.waves_spawned))
+            && raid.leader != Some(entity.uuid()) && raid.raiders.contains(&entity.uuid()));
         if !eligible { return; }
         let range = mob.attributes().lock().required_value(steel_registry::vanilla_attributes::FOLLOW_RANGE);
         let mut items = world.get_entities_in_aabb(&entity.bounding_box().inflate_xyz(range, 8.0, range));
@@ -356,6 +373,9 @@ impl RaidManager {
         for candidate in items {
             let Some(item) = candidate.downcast_ref::<ItemEntity>() else { continue; };
             if item.is_removed() || item.has_pickup_delay() || !ItemStack::matches(&item.get_item(), &ominous_banner()) { continue; }
+            let cached = self.raids.lock().iter().any(|raid| raid.unreachable_banners
+                .get(&(entity.uuid(), item.uuid())).is_some_and(|until| *until > raid.ticks_active));
+            if cached { continue; }
             if entity.position().distance_squared(item.position()) >= 1.414_f64.powi(2) {
                 let following = {
                     let navigation = mob.mob_base().navigation().lock();
@@ -364,14 +384,22 @@ impl RaidManager {
                 if following { return; }
                 if let Some(pathfinder) = entity.as_pathfinder_mob()
                     && pathfinder.move_to_pos_with_reach(item.position(), 1, 1.15) { return; }
+                for raid in self.raids.lock().iter_mut().filter(|raid| raid.raiders.contains(&entity.uuid())) {
+                    let now = raid.ticks_active;
+                    raid.unreachable_banners.retain(|_, until| *until > now);
+                    raid.unreachable_banners.insert((entity.uuid(), item.uuid()), now + 600);
+                }
                 continue;
             }
             {
                 let mut raids = self.raids.lock();
                 let Some(raid) = raids.iter_mut().find(|raid| raid.status == RaidStatus::Ongoing
-                    && raid.leader.is_none() && raid.raiders.contains(&entity.uuid())) else { return; };
+                    && !raid.wave_leaders.contains_key(raid.member_waves.get(&entity.uuid()).unwrap_or(&raid.waves_spawned))
+                    && raid.raiders.contains(&entity.uuid())) else { return; };
                 if item.is_removed() { return; }
-                raid.leader = Some(entity.uuid());
+                let wave = *raid.member_waves.get(&entity.uuid()).unwrap_or(&raid.waves_spawned);
+                raid.wave_leaders.insert(wave, entity.uuid());
+                if wave == raid.waves_spawned { raid.leader = Some(entity.uuid()); }
                 item.set_removed(RemovalReason::Discarded);
             }
             let old = mob.equipment_in_slot(EquipmentSlot::Head);
@@ -392,6 +420,8 @@ impl RaidManager {
         for raid in self.raids.lock().iter_mut() {
             if let Some(index) = raid.raiders.iter().position(|member| *member == uuid) {
                 raid.raiders.swap_remove(index);
+                raid.member_waves.remove(&uuid);
+                raid.wave_leaders.retain(|_, leader| *leader != uuid);
                 raid.outside_raid_checks.remove(&uuid);
                 raid.total_health = (raid.total_health - health.max(0.0).ceil() as i32).max(0);
                 if raid.leader == Some(uuid) { raid.leader = None; }
@@ -408,6 +438,8 @@ impl RaidManager {
             }
             if let Some(index) = raid.raiders.iter().position(|id| *id == raider) {
                 raid.raiders.swap_remove(index);
+                raid.member_waves.remove(&raider);
+                raid.wave_leaders.retain(|_, leader| *leader != raider);
                 if raid.leader == Some(raider) { raid.leader = None; }
                 if let Some(killer) = killer
                     && !raid.heroes.contains(&killer)
@@ -828,9 +860,11 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
                             );
                         }
                         raid.leader = Some(entity.uuid());
+                        raid.wave_leaders.insert(wave, entity.uuid());
                     }
                 }
                 raid.raiders.push(entity.uuid());
+                raid.member_waves.insert(entity.uuid(), wave);
                 if kind == 4 {
                     let rider = if wave == 5 {
                         Some(&vanilla_entities::PILLAGER)
@@ -868,6 +902,7 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
                             .as_living_entity()
                             .map_or(0, |living| living.get_health().ceil() as i32);
                         raid.raiders.push(rider.uuid());
+                        raid.member_waves.insert(rider.uuid(), wave);
                     }
                 }
             }
@@ -905,6 +940,8 @@ fn update_raiders(world: &Arc<World>, raid: &mut Raid) {
     });
     raid.outside_raid_checks.retain(|id, _| raid.raiders.contains(id));
     raid.total_health = (raid.total_health - departed_health).max(0);
+    raid.wave_leaders.retain(|_, leader| raid.raiders.contains(leader));
+    raid.member_waves.retain(|member, _| raid.raiders.contains(member));
     if raid.leader.is_some_and(|leader| !raid.raiders.contains(&leader)) {
         raid.leader = None;
     }

@@ -25,7 +25,7 @@ use steel_utils::{DowncastType, DowncastTypeKey};
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntitySyncedData, MobEffectInstance, Projectile, ProjectileBase,
-    ProjectileHit, RemovalReason, SharedEntity, ThrowableProjectile,
+    ProjectileHit, RemovalReason, SharedEntity,
 };
 use crate::world::World;
 use crate::world::explosion::{ExplosionInteraction, ExplosionOptions};
@@ -49,6 +49,7 @@ pub struct WitherSkullEntity {
     entity_type: EntityTypeRef,
     projectile_base: ProjectileBase,
     entity_data: SyncMutex<WitherSkullEntityData>,
+    acceleration_power: SyncMutex<f64>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `WitherSkullEntity`.
@@ -65,6 +66,7 @@ impl WitherSkullEntity {
             entity_type,
             projectile_base: ProjectileBase::new(),
             entity_data: SyncMutex::new(WitherSkullEntityData::new()),
+            acceleration_power: SyncMutex::new(0.1),
         }
     }
 
@@ -76,6 +78,7 @@ impl WitherSkullEntity {
             entity_type,
             projectile_base: ProjectileBase::new(),
             entity_data: SyncMutex::new(WitherSkullEntityData::new()),
+            acceleration_power: SyncMutex::new(0.1),
         }
     }
 
@@ -129,7 +132,41 @@ impl Entity for WitherSkullEntity {
     }
 
     fn tick(self: Arc<Self>) {
-        self.throwable_projectile_tick();
+        self.set_old_position_to_current();
+        self.base().set_old_rotation_to_current();
+        let owner_removed = self.projectile_base.state.lock().owner.as_ref()
+            .is_some_and(|owner| owner.cached_entity_is_removed());
+        let movement = self.velocity();
+        let inertia = if self.is_in_water() { 0.8 } else if self.is_dangerous() { 0.73 } else { 0.95 };
+        if self.is_in_water() && let Some(world) = self.level() {
+            for _ in 0..4 {
+                world.send_particles(steel_registry::particle_type::ParticleData::simple(&steel_registry::vanilla_particle_types::BUBBLE),
+                    self.position() - movement * 0.25, 0, movement, 1.0);
+            }
+        }
+        self.set_velocity((movement + movement.normalize_or_zero() * *self.acceleration_power.lock()) * inertia);
+        let Some(world) = self.level() else { return; };
+        let chunk = steel_utils::ChunkPos::from_entity_pos(self.position());
+        if owner_removed
+            || world.chunk_map.with_full_chunk(chunk, |_| ()).is_none()
+        {
+            self.set_removed(RemovalReason::Discarded);
+            return;
+        }
+        let hit = self.get_hit_result_on_move_vector();
+        let position = hit.as_ref().map_or_else(|| self.position() + self.velocity(), ProjectileHit::location);
+        self.update_rotation();
+        if self.try_set_position(position).is_err() {
+            self.set_removed(RemovalReason::Discarded);
+            return;
+        }
+        self.apply_effects_from_blocks();
+        self.projectile_base_tick();
+        if let Some(hit) = hit && self.is_alive() && !self.is_world_change_pending() {
+            Arc::clone(&self).hit_target_or_deflect_self(&hit);
+        }
+        world.send_particles(steel_registry::particle_type::ParticleData::simple(&steel_registry::vanilla_particle_types::SMOKE),
+            self.position() + DVec3::new(0.0, 0.5, 0.0), 0, DVec3::ZERO, 0.0);
     }
 
     fn sound_source(&self) -> SoundSource {
@@ -154,11 +191,13 @@ impl Entity for WitherSkullEntity {
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
         self.save_projectile(nbt);
+        nbt.insert("acceleration_power", *self.acceleration_power.lock());
         nbt.insert("dangerous", i8::from(self.is_dangerous()));
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_projectile(nbt);
+        *self.acceleration_power.lock() = nbt.double_value("acceleration_power").unwrap_or(0.1);
         self.set_dangerous(nbt.byte_value("dangerous").is_some_and(|value| value != 0));
     }
 }
@@ -166,6 +205,15 @@ impl Entity for WitherSkullEntity {
 impl Projectile for WitherSkullEntity {
     fn projectile_base(&self) -> &ProjectileBase {
         &self.projectile_base
+    }
+
+    fn can_hit_entity(&self, entity: &dyn Entity) -> bool {
+        self.base_can_hit_entity(entity) && !entity.no_physics()
+    }
+
+    fn on_deflection(&self, by_attack: bool) {
+        let mut acceleration = self.acceleration_power.lock();
+        *acceleration = if by_attack { 0.1 } else { *acceleration * 0.5 };
     }
 
     fn on_hit(self: Arc<Self>, hit: &ProjectileHit) {
@@ -181,7 +229,13 @@ impl Projectile for WitherSkullEntity {
                         else { DamageSource::environment(&vanilla_damage_types::MAGIC) };
                     let was_hurt = entity.hurt(&world, &source, if living_owner.is_some() { WITHER_SKULL_DAMAGE } else { 5.0 });
                     if was_hurt {
-                        if !entity.is_alive() && let Some(owner) = living_owner { owner.heal(5.0); }
+                        if let Some(owner) = living_owner {
+                            if entity.is_alive() {
+                                let context = crate::enchantment_helper::EnchantmentPostAttackContext::new(&hit.entity, &source);
+                                crate::enchantment_helper::do_post_attack_effects_with_item_source(
+                                    &world, entity, &steel_registry::item_stack::ItemStack::empty(), &context);
+                            } else { owner.heal(5.0); }
+                        }
                         let ticks = match world.difficulty() {
                             steel_utils::types::Difficulty::Normal => WITHER_SKULL_WITHER_TICKS,
                             steel_utils::types::Difficulty::Hard => 800,
@@ -199,14 +253,6 @@ impl Projectile for WitherSkullEntity {
         }
         if let Some(world) = self.level() { self.explode(&world); }
         self.set_removed(RemovalReason::Discarded);
-    }
-}
-
-impl ThrowableProjectile for WitherSkullEntity {
-    fn apply_inertia(&self) {
-        let movement = self.velocity();
-        let inertia = if self.is_in_water() { 0.8 } else if self.is_dangerous() { 0.73 } else { 0.95 };
-        self.set_velocity((movement + movement.normalize_or_zero() * 0.1) * inertia);
     }
 }
 

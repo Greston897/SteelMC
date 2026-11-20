@@ -59,6 +59,7 @@ impl Goal for RaidBreakDoorGoal {
         let pos = self.door.door_pos();
         if rand::random_range(0..20) == 0 {
             world.level_event(1019, pos, 0, None);
+            mob.swing_for_attack(steel_utils::types::InteractionHand::MainHand);
         }
         self.elapsed += 1;
         let progress = self.elapsed * 10 / 240;
@@ -67,8 +68,10 @@ impl Goal for RaidBreakDoorGoal {
             self.progress = progress;
         }
         if self.elapsed == 240 && Self::allowed(mob) {
+            let state = world.get_block_state(pos);
             world.remove_block(pos, false);
             world.level_event(1021, pos, 0, None);
+            world.level_event(2001, pos, i32::from(state.0), None);
         }
     }
 }
