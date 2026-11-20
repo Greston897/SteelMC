@@ -15,6 +15,13 @@ AREAS = [
     ('Предметы', ['steel-core/src/behavior/items'], ['steel_core/behavior::items']),
     ('Block entities', ['steel-core/src/block_entity'], ['steel_core/block_entity']),
     ('Сущности и AI', ['steel-core/src/entity'], ['steel_core/entity']),
+    ('  Мирные мобы (внутри AI)', ['steel-core/src/entity/entities/mobs/passive'], ['steel_core/entity::entities::mobs::passive']),
+    ('  Враждебные мобы (внутри AI)', ['steel-core/src/entity/entities/mobs/hostile'], ['steel_core/entity::entities::mobs::hostile']),
+    ('  Нейтральные мобы (внутри AI)', ['steel-core/src/entity/entities/mobs/neutral'], ['steel_core/entity::entities::mobs::neutral']),
+    ('  Боссы (внутри AI)', ['steel-core/src/entity/entities/mobs/bosses'], ['steel_core/entity::entities::mobs::bosses']),
+    ('  Транспорт (внутри AI)', ['steel-core/src/entity/entities/objects/vehicles'], ['steel_core/entity::entities::objects::vehicles']),
+    ('  Снаряды (внутри AI)', ['steel-core/src/entity/entities/objects/projectiles'], ['steel_core/entity::entities::objects::projectiles']),
+    ('  Рейды (внутри мира)', ['steel-core/src/world/raid.rs'], ['steel_core/world::raid']),
     ('Игрок и соединение', ['steel-core/src/player'], ['steel_core/player']),
     ('Инвентарь и меню', ['steel-core/src/inventory'], ['steel_core/inventory']),
     ('Команды и права', ['steel-core/src/command', 'steel-core/src/permission'], ['steel_core/command', 'steel_core/permission']),
@@ -48,7 +55,7 @@ def build_report(report, sha, run_url):
              if not any(((test['crate'] + '/' + test['name']).startswith(prefix) if prefix.endswith(('/', '::')) else (test['crate'] + '/' + test['name']).startswith(prefix + '::')) for prefix in matched)]
     lines = ['# Подсистемы: код и фактически исполненные тесты', '', f'Код: `{sha}`. Run: {run_url}', '',
              'Это наблюдаемые результаты одного полного cargo test. Passed — число тестовых случаев, не число механик. Static — функции в исходниках; ignored не исполнены. Процент реализации и процент покрытия механик **не установлены**: полного согласованного списка vanilla-механик и ветвей нет.', '',
-             'Server-строка включает инфраструктурные пути, взаимодействующие с миром; строки не следует складывать как независимые механики. Интеграционные и doctest-сценарии, не сопоставленные по префиксу, приведены отдельным числом, не теряются.', '',
+             'Server-строка включает инфраструктурные пути, взаимодействующие с миром; строки с пометкой «внутри» входят в родительские. Строки нельзя складывать как независимые механики. Интеграционные и doctest-сценарии, не сопоставленные по префиксу, приведены отдельным числом, не теряются.', '',
              '| Подсистема | Rust-файлы | LOC | Static tests | Passed | Failed | Ignored |',
              '|---|---:|---:|---:|---:|---:|---:|']
     for row in rows:
