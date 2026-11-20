@@ -117,7 +117,8 @@ fn load_block_property_defaults() -> FxHashMap<String, BTreeMap<String, String>>
         serde_json::from_str(&fs::read_to_string("build_assets/blocks.json").unwrap()).unwrap();
     let names = load_property_names();
 
-    let mut defaults = FxHashMap::with_capacity_and_hasher(file.blocks.len(), Default::default());
+    let mut defaults = FxHashMap::default();
+    defaults.reserve(file.blocks.len());
     for block in &file.blocks {
         assert_eq!(
             block.properties.len(),
