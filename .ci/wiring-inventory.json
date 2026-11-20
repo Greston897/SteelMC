@@ -1347,7 +1347,7 @@
       "name": "wither",
       "class": "WitherBoss",
       "implementation_sites": [
-        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:52"
+        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:50"
       ],
       "status": "ANNOTATION_FOUND_REQUIRES_CALL_PATH_AUDIT"
     },
@@ -27220,7 +27220,7 @@
       "implementation": "steel-core/src/entity/ai/goal/float_goal.rs:6",
       "production_references": [
         "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:25",
-        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:99",
+        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:97",
         "steel-core/src/entity/entities/mobs/hostile/endermite.rs:19",
         "steel-core/src/entity/entities/mobs/hostile/endermite.rs:94",
         "steel-core/src/entity/entities/mobs/hostile/giant.rs:21",
@@ -27458,7 +27458,7 @@
       "implementation": "steel-core/src/entity/ai/goal/hurt_by_target.rs:12",
       "production_references": [
         "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:25",
-        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:106",
+        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:104",
         "steel-core/src/entity/entities/mobs/hostile/endermite.rs:19",
         "steel-core/src/entity/entities/mobs/hostile/endermite.rs:102",
         "steel-core/src/entity/entities/mobs/hostile/giant.rs:21",
@@ -27573,7 +27573,7 @@
         "steel-core/src/entity/ai/goal/interact.rs:7",
         "steel-core/src/entity/ai/goal/interact.rs:14",
         "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:25",
-        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:102",
+        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:100",
         "steel-core/src/entity/entities/mobs/hostile/endermite.rs:19",
         "steel-core/src/entity/entities/mobs/hostile/endermite.rs:98",
         "steel-core/src/entity/entities/mobs/hostile/giant.rs:21",
@@ -27865,7 +27865,7 @@
       "implementation": "steel-core/src/entity/ai/goal/nearest_attackable_target.rs:17",
       "production_references": [
         "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:25",
-        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:109",
+        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:107",
         "steel-core/src/entity/entities/mobs/hostile/endermite.rs:20",
         "steel-core/src/entity/entities/mobs/hostile/endermite.rs:105",
         "steel-core/src/entity/entities/mobs/hostile/giant.rs:21",
@@ -28102,7 +28102,7 @@
       "implementation": "steel-core/src/entity/ai/goal/random_look_around.rs:11",
       "production_references": [
         "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:26",
-        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:103",
+        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:101",
         "steel-core/src/entity/entities/mobs/hostile/endermite.rs:20",
         "steel-core/src/entity/entities/mobs/hostile/endermite.rs:99",
         "steel-core/src/entity/entities/mobs/hostile/giant.rs:22",
@@ -28304,7 +28304,7 @@
       "production_references": [
         "steel-core/src/entity/ranged_attack.rs:3",
         "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:25",
-        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:100",
+        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:98",
         "steel-core/src/entity/entities/mobs/hostile/bogged.rs:9",
         "steel-core/src/entity/entities/mobs/hostile/bogged.rs:37",
         "steel-core/src/entity/entities/mobs/hostile/bogged.rs:125",
@@ -28427,7 +28427,7 @@
       "implementation": "steel-core/src/entity/ai/goal/water_avoiding_random_stroll.rs:10",
       "production_references": [
         "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:26",
-        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:101",
+        "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs:99",
         "steel-core/src/entity/entities/mobs/hostile/endermite.rs:20",
         "steel-core/src/entity/entities/mobs/hostile/endermite.rs:97",
         "steel-core/src/entity/entities/mobs/hostile/giant.rs:22",

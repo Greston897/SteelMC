@@ -74,3 +74,19 @@
 - Полный перечень **всех механик** Minecraft: 3105 входов генератора — объекты, а не количество механик; 37 общих целей — не весь AI.
 
 Источники сверки: Java mirror `0khs/minecraft_source_26.3`, commit `74720c2890f22942b72d7d84958eff1b3f72b95b`; fluid tag `misode/mcmeta`, ref `26.3-data`, `data/minecraft/tags/fluid/dolphin_tries_to_find.json` (только `minecraft:water`, без flowing_water).
+
+## Подтверждённые результаты для кода `b32beff`
+
+Эта запись относится именно к указанному SHA. Последующее обновление этого Markdown или координат инвентаря не является новым прогоном кода.
+
+| Проверка | Запуск Actions | Результат |
+|---|---|---|
+| Workspace tests | [44657024633](https://github.com/Greston897/SteelMC/actions/runs/44657024633) | SUCCESS: 4806 passed, 7 ignored; пропуски не засчитаны как PASS |
+| Build Report | [44657024731](https://github.com/Greston897/SteelMC/actions/runs/44657024731) | SUCCESS |
+| Flint Tests | [44657024657](https://github.com/Greston897/SteelMC/actions/runs/44657024657) | SUCCESS данного workflow, не автоматическое закрытие других Flint-наборов |
+| Full Conformance | [44657024684](https://github.com/Greston897/SteelMC/actions/runs/44657024684) | SUCCESS существующего набора; название workflow не означает охват всех механик vanilla |
+| Live Server Smoke | [44657024683](https://github.com/Greston897/SteelMC/actions/runs/44657024683) | SUCCESS всех трёх jobs: Steel, официальный vanilla, compare; настоящий запуск серверов, TCP/RCON, save/restart |
+| Lint | [44657024670](https://github.com/Greston897/SteelMC/actions/runs/44657024670) | FAILURE; Spell Check завершился ошибкой. Не объявлено исправленным |
+| Vanilla Evidence | [44657024628](https://github.com/Greston897/SteelMC/actions/runs/44657024628) | На момент фиксации QUEUED, результат не засчитан |
+
+Live smoke не заменяет дифференциальные сценарии рейдов, AI и полного datapack pipeline. Эта работа не закрывает все пункты раздела «незакрытый объём» выше.
