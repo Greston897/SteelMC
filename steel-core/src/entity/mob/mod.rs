@@ -527,7 +527,8 @@ pub trait Mob: LivingEntity + Leashable {
     fn base_tick_mob(&self) {
         self.base_tick_living_entity();
         // Reattach saved membership even when NoAI disables serverAiStep.
-        if self.mob_base().saved_raid.lock().is_some()
+        let has_saved_raid = self.mob_base().saved_raid.lock().is_some();
+        if has_saved_raid
             && let Some(world) = self.level()
             && let Some(entity) = world.get_entity_by_uuid(&self.uuid())
         {

@@ -369,6 +369,19 @@ impl RaidManager {
         }
     }
 
+    /// Removal with no death (discard or dimension transfer) must not leave an
+    /// unreachable UUID holding the wave open, or award hero credit.
+    pub fn raider_left_world(&self, uuid: Uuid, health: f32) {
+        for raid in self.raids.lock().iter_mut() {
+            if let Some(index) = raid.raiders.iter().position(|member| *member == uuid) {
+                raid.raiders.swap_remove(index);
+                raid.outside_raid_checks.remove(&uuid);
+                raid.total_health = (raid.total_health - health.max(0.0).ceil() as i32).max(0);
+                if raid.leader == Some(uuid) { raid.leader = None; }
+            }
+        }
+    }
+
     /// Called synchronously from the death path, before entities disappear from
     /// the manager. Only actual kills earn hero credit; unloading never does.
     pub fn raider_died(&self, raider: Uuid, killer: Option<Uuid>) {

@@ -260,10 +260,10 @@ impl WitherBossEntity {
     /// Vanilla `WitherBoss.setInvulnerableTicks`: starts the spawn sequence.
     ///
     /// Vanilla calls this from the entity constructor, so a wither is born with
-    /// 220 protected ticks at full health, healing while the counter runs.
+    /// 220 protected ticks at one third health, healing while the counter runs.
     pub fn begin_spawn_phase(&self) {
         self.set_invulnerable_ticks(SPAWN_INVULNERABLE_TICKS);
-        self.set_health(MAX_HEALTH);
+        self.set_health(self.get_max_health() / 3.0);
     }
 
     /// Vanilla `WitherBoss.customServerAiStep` spawn phase.
@@ -301,9 +301,8 @@ impl WitherBossEntity {
         }
 
         self.set_invulnerable_ticks(next);
-        // `heal(10.0F)` every 10 ticks is what keeps a spawning wither alive.
-        // Vanilla heals before it decrements, so the first tick already heals.
-        if ticks % 10 == 0 {
+        // Vanilla uses entity tickCount, not the remaining invulnerability timer.
+        if self.tick_count() % 10 == 0 {
             let health = self.get_health();
             if health > 0.0 && health < MAX_HEALTH {
                 self.set_health((health + SPAWN_HEAL_PER_STEP).min(MAX_HEALTH));
@@ -518,7 +517,7 @@ impl Mob for WitherBossEntity {
         spawn_reason: EntitySpawnReason,
         group_data: Option<SpawnGroupData>,
     ) -> Option<SpawnGroupData> {
-        self.begin_spawn_phase();
+        if spawn_reason == EntitySpawnReason::Event { self.begin_spawn_phase(); }
         self.finalize_spawn_mob_base(world, spawn_reason, group_data)
     }
 
@@ -579,7 +578,7 @@ mod tests {
         assert_eq!(wither.invulnerable_ticks(), SPAWN_INVULNERABLE_TICKS);
         // A spawning wither must never start at zero health, otherwise the heal
         // branch would never fire and the boss would die to its own blast.
-        assert_eq!(wither.get_health(), wither.get_max_health());
-        assert_eq!(wither.get_health(), MAX_HEALTH);
+        assert_eq!(wither.get_health(), wither.get_max_health() / 3.0);
+        assert_eq!(wither.get_health(), MAX_HEALTH / 3.0);
     }
 }

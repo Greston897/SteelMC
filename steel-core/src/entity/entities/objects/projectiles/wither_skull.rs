@@ -179,7 +179,7 @@ impl Projectile for WitherSkullEntity {
                     let living_owner = owner.as_ref().and_then(|owner| owner.as_living_entity());
                     let source = if living_owner.is_some() { self.impact_damage_source() }
                         else { DamageSource::environment(&vanilla_damage_types::MAGIC) };
-                    let was_hurt = entity.hurt(&world, &source, if living_owner.is_some() { 8.0 } else { 5.0 });
+                    let was_hurt = entity.hurt(&world, &source, if living_owner.is_some() { WITHER_SKULL_DAMAGE } else { 5.0 });
                     if was_hurt {
                         if !entity.is_alive() && let Some(owner) = living_owner { owner.heal(5.0); }
                         let ticks = match world.difficulty() {
