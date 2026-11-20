@@ -2965,7 +2965,7 @@
 | iron_nugget | Item | Нет точной аннотации: проверить наследование/генератор/fallback |
 | copper_nugget | Item | Нет точной аннотации: проверить наследование/генератор/fallback |
 | knowledge_book | KnowledgeBookItem | `steel-core/src/behavior/items/knowledge_book.rs:22` |
-| debug_stick | DebugStickItem | Нет точной аннотации: проверить наследование/генератор/fallback |
+| debug_stick | DebugStickItem | `steel-core/src/behavior/items/debug_stick.rs:36` |
 | music_disc_13 | Item | Нет точной аннотации: проверить наследование/генератор/fallback |
 | music_disc_cat | Item | Нет точной аннотации: проверить наследование/генератор/fallback |
 | music_disc_blocks | Item | Нет точной аннотации: проверить наследование/генератор/fallback |

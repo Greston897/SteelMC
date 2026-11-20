@@ -25415,8 +25415,10 @@
       "category": "items",
       "name": "debug_stick",
       "class": "DebugStickItem",
-      "implementation_sites": [],
-      "status": "NO_EXACT_ANNOTATION_CHECK_GENERATOR_INHERITANCE_OR_FALLBACK"
+      "implementation_sites": [
+        "steel-core/src/behavior/items/debug_stick.rs:36"
+      ],
+      "status": "ANNOTATION_FOUND_REQUIRES_CALL_PATH_AUDIT"
     },
     {
       "category": "items",

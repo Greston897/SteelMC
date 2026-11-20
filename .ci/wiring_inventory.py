@@ -17,9 +17,39 @@ def location(path, text, offset):
     return f'{path.relative_to(ROOT)}:{text.count(chr(10), 0, offset) + 1}'
 
 
+
+def without_test_items(text):
+    # Preserve offsets/line numbers, including cfg(test) imports before live code.
+    # Truncating at the first cfg(test) would incorrectly erase DebugStickItem.
+    masked = re.sub(r'r(\#*)"[\s\S]*?"\1|"(?:\\.|[^"\\])*"|//[^\n]*|/\*[\s\S]*?\*/',
+                    lambda m: ''.join('\n' if c == '\n' else ' ' for c in m[0]), text)
+    result = list(text)
+    for match in re.finditer(r'#\[cfg\(test\)\]', masked):
+        start = match.start()
+        depth = 0
+        opened = False
+        for end in range(match.end(), len(masked)):
+            char = masked[end]
+            if char == '{':
+                depth += 1
+                opened = True
+            elif char == '}':
+                depth -= 1
+                if opened and depth == 0:
+                    break
+            elif char == ';' and not opened:
+                break
+        else:
+            end = len(masked) - 1
+        for index in range(start, end + 1):
+            if result[index] != '\n':
+                result[index] = ' '
+    return ''.join(result)
+
+
 def inventory():
     sources = {p: p.read_text() for p in SRC.rglob('*.rs')}
-    production = {p: text.split('#[cfg(test)]', 1)[0] for p, text in sources.items()}
+    production = {p: ('' if p.name == 'tests.rs' or 'tests' in p.relative_to(SRC).parts else without_test_items(text)) for p, text in sources.items()}
     classes = json.loads((ROOT / 'steel-core/build/classes.json').read_text())
     objects = []
     for category, attribute in [('entities', 'entity_behavior'), ('blocks', 'block_behavior'), ('items', 'item_behavior')]:
