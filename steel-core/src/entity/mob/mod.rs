@@ -526,6 +526,14 @@ pub trait Mob: LivingEntity + Leashable {
     /// tick and halve the effective despawn period.
     fn base_tick_mob(&self) {
         self.base_tick_living_entity();
+        // Reattach saved membership even when NoAI disables serverAiStep.
+        if self.mob_base().saved_raid.lock().is_some()
+            && let Some(world) = self.level()
+            && let Some(entity) = world.get_entity_by_uuid(&self.uuid())
+        {
+            let saved = self.mob_base().saved_raid.lock().take();
+            if let Some((id, wave, leader)) = saved { world.raids.restore_raider(&entity, id, wave, leader); }
+        }
         self.mob_base_tick();
     }
 

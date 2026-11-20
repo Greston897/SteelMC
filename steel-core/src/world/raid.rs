@@ -315,7 +315,6 @@ impl RaidManager {
         if wave < 0 || wave > raid.waves_spawned { return; }
         if !raid.raiders.contains(&entity.uuid()) {
             raid.raiders.push(entity.uuid());
-            raid.total_health += entity.as_living_entity().map_or(0, |living| living.get_health().max(0.0).ceil() as i32);
         }
         if leader && raid.leader.is_none() { raid.leader = Some(entity.uuid()); }
     }
