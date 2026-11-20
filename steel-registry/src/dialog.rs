@@ -396,7 +396,10 @@ pub struct Dialog {
 #[derive(Debug, Clone)]
 pub enum DialogVariant {
     /// A two-button confirmation dialog.
-    Confirmation { yes: DialogAction, no: DialogAction },
+    Confirmation {
+        yes: DialogAction,
+        no: Box<DialogAction>,
+    },
     /// A dialog that displays a list of other dialogs.
     DialogList {
         dialogs: &'static str,
@@ -558,7 +561,7 @@ impl Dialog {
         let variant = match type_name {
             "confirmation" => DialogVariant::Confirmation {
                 yes: parse_action(obj, "yes", &key)?,
-                no: parse_action(obj, "no", &key)?,
+                no: Box::new(parse_action(obj, "no", &key)?),
             },
             "dialog_list" => DialogVariant::DialogList {
                 dialogs: leak_str(
@@ -572,13 +575,11 @@ impl Dialog {
                 columns: obj
                     .get("columns")
                     .and_then(serde_json::Value::as_i64)
-                    .map(|v| v as i32)
-                    .unwrap_or(2),
+                    .map_or(2, |v| v as i32),
                 button_width: obj
                     .get("button_width")
                     .and_then(serde_json::Value::as_i64)
-                    .map(|v| v as i32)
-                    .unwrap_or(150),
+                    .map_or(150, |v| v as i32),
             },
             "multi_action" => DialogVariant::MultiAction {
                 actions: parse_action_list(obj.get("actions"), &key)?,
@@ -586,13 +587,11 @@ impl Dialog {
                 columns: obj
                     .get("columns")
                     .and_then(serde_json::Value::as_i64)
-                    .map(|v| v as i32)
-                    .unwrap_or(2),
+                    .map_or(2, |v| v as i32),
                 button_width: obj
                     .get("button_width")
                     .and_then(serde_json::Value::as_i64)
-                    .map(|v| v as i32)
-                    .unwrap_or(150),
+                    .map_or(150, |v| v as i32),
             },
             "notice" => DialogVariant::Notice {
                 action: parse_action(obj, "action", &key)?,
@@ -602,13 +601,11 @@ impl Dialog {
                 columns: obj
                     .get("columns")
                     .and_then(serde_json::Value::as_i64)
-                    .map(|v| v as i32)
-                    .unwrap_or(2),
+                    .map_or(2, |v| v as i32),
                 button_width: obj
                     .get("button_width")
                     .and_then(serde_json::Value::as_i64)
-                    .map(|v| v as i32)
-                    .unwrap_or(150),
+                    .map_or(150, |v| v as i32),
             },
             unknown => return Err(format!("dialog {key} has unknown type '{unknown}'")),
         };
@@ -675,8 +672,7 @@ fn parse_body_list(value: &serde_json::Value, key: &Identifier) -> Result<Vec<Di
                     width: obj
                         .get("width")
                         .and_then(serde_json::Value::as_i64)
-                        .map(|v| v as i32)
-                        .unwrap_or(200),
+                        .map_or(200, |v| v as i32),
                 }),
                 "item" => Ok(DialogBody::Item {
                     items: obj
@@ -696,13 +692,11 @@ fn parse_body_list(value: &serde_json::Value, key: &Identifier) -> Result<Vec<Di
                     width: obj
                         .get("width")
                         .and_then(serde_json::Value::as_i64)
-                        .map(|v| v as i32)
-                        .unwrap_or(16),
+                        .map_or(16, |v| v as i32),
                     height: obj
                         .get("height")
                         .and_then(serde_json::Value::as_i64)
-                        .map(|v| v as i32)
-                        .unwrap_or(16),
+                        .map_or(16, |v| v as i32),
                 }),
                 unknown => Err(format!("dialog {key} has unknown body type '{unknown}'")),
             }
@@ -766,8 +760,7 @@ fn parse_input_list(
                     width: obj
                         .get("width")
                         .and_then(serde_json::Value::as_i64)
-                        .map(|v| v as i32)
-                        .unwrap_or(200),
+                        .map_or(200, |v| v as i32),
                     start: obj
                         .get("start")
                         .and_then(serde_json::Value::as_f64)
@@ -822,8 +815,7 @@ fn parse_input_list(
                         width: obj
                             .get("width")
                             .and_then(serde_json::Value::as_i64)
-                            .map(|v| v as i32)
-                            .unwrap_or(200),
+                            .map_or(200, |v| v as i32),
                         entries: parsed,
                     })
                 }
@@ -837,13 +829,11 @@ fn parse_input_list(
                     width: obj
                         .get("width")
                         .and_then(serde_json::Value::as_i64)
-                        .map(|v| v as i32)
-                        .unwrap_or(200),
+                        .map_or(200, |v| v as i32),
                     max_length: obj
                         .get("max_length")
                         .and_then(serde_json::Value::as_i64)
-                        .map(|v| v as i32)
-                        .unwrap_or(32),
+                        .map_or(32, |v| v as i32),
                     multiline: obj
                         .get("multiline")
                         .and_then(serde_json::Value::as_object)
@@ -912,8 +902,7 @@ fn parse_click_action(
             page: obj
                 .get("page")
                 .and_then(serde_json::Value::as_i64)
-                .map(|v| v as i32)
-                .unwrap_or(0),
+                .map_or(0, |v| v as i32),
         }),
         "show_dialog" => Ok(DialogClickAction::ShowDialog {
             dialog: get_str("dialog")?,
@@ -961,8 +950,7 @@ fn parse_action(
         width: obj
             .get("width")
             .and_then(serde_json::Value::as_i64)
-            .map(|v| v as i32)
-            .unwrap_or(150),
+            .map_or(150, |v| v as i32),
         action: parse_click_action(
             obj.get("action")
                 .ok_or_else(|| format!("dialog {key} action button is missing 'action'"))?,
@@ -990,8 +978,7 @@ fn parse_action_list(
                 width: obj
                     .get("width")
                     .and_then(serde_json::Value::as_i64)
-                    .map(|v| v as i32)
-                    .unwrap_or(150),
+                    .map_or(150, |v| v as i32),
                 action: parse_click_action(
                     obj.get("action")
                         .ok_or_else(|| format!("dialog {key} action button is missing 'action'"))?,
@@ -1015,8 +1002,7 @@ fn parse_exit_action(
         width: obj
             .get("width")
             .and_then(serde_json::Value::as_i64)
-            .map(|v| v as i32)
-            .unwrap_or(150),
+            .map_or(150, |v| v as i32),
     })
 }
 

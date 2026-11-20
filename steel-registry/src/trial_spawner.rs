@@ -47,10 +47,10 @@ impl TrialSpawnPotential {
     #[must_use]
     pub fn size(&self) -> Option<i32> {
         self.extra_entity_tags.iter().find_map(|(key, value)| {
-            if key == "Size" {
-                if let TrialEntityTagValue::Int(size) = value {
-                    return Some(*size);
-                }
+            if key == "Size"
+                && let TrialEntityTagValue::Int(size) = value
+            {
+                return Some(*size);
             }
             None
         })
