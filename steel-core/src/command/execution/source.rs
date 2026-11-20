@@ -452,10 +452,7 @@ impl CommandSource {
         self.position
     }
 
-    #[expect(
-        dead_code,
-        reason = "silent command-source derivation is retained for future vanilla command paths"
-    )]
+    /// Derive the silent source used by function bodies without losing context.
     pub(crate) fn with_suppressed_output(&self) -> Self {
         let mut source = self.clone();
         source.silent = true;
