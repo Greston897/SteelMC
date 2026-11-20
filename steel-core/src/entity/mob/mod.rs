@@ -179,6 +179,7 @@ pub struct MobBase {
     pathfinding_malus: SyncMutex<PathfindingMalus>,
     persistence_required: SyncMutex<bool>,
     can_join_raid: SyncMutex<bool>,
+    saved_raid: SyncMutex<Option<(i32, i32, bool)>>,
     can_pick_up_loot: SyncMutex<bool>,
     drop_chances: SyncMutex<DropChances>,
     home_restriction: SyncMutex<MobHomeRestriction>,
@@ -216,6 +217,7 @@ impl MobBase {
             pathfinding_malus: SyncMutex::new(PathfindingMalus::new()),
             persistence_required: SyncMutex::new(false),
             can_join_raid: SyncMutex::new(false),
+            saved_raid: SyncMutex::new(None),
             can_pick_up_loot: SyncMutex::new(false),
             drop_chances: SyncMutex::new(DropChances::DEFAULT),
             home_restriction: SyncMutex::new(MobHomeRestriction::none()),
@@ -1244,6 +1246,13 @@ pub trait Mob: LivingEntity + Leashable {
         self.save_equipment(nbt);
         if crate::world::raid::is_raider_type(self.entity_type()) {
             nbt.insert("CanJoinRaid", i8::from(self.can_join_raid()));
+            let membership = self.level().and_then(|world| world.raids.member_save_data(self.uuid()))
+                .or(*self.mob_base().saved_raid.lock());
+            if let Some((id, wave, leader)) = membership {
+                nbt.insert("RaidId", id);
+                nbt.insert("Wave", wave);
+                nbt.insert("PatrolLeader", i8::from(leader));
+            }
         }
         nbt.insert("CanPickUpLoot", i8::from(self.can_pick_up_loot()));
         nbt.insert(
@@ -1284,6 +1293,10 @@ pub trait Mob: LivingEntity + Leashable {
     fn load_mob(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_equipment(nbt);
         self.set_can_join_raid(nbt.byte_value("CanJoinRaid").is_some_and(|value| value != 0));
+        *self.mob_base().saved_raid.lock() = nbt.int_value("RaidId").map(|id| (
+            id, nbt.int_value("Wave").unwrap_or(0),
+            nbt.byte_value("PatrolLeader").is_some_and(|value| value != 0),
+        ));
         self.set_can_pick_up_loot(
             nbt.byte_value("CanPickUpLoot")
                 .is_some_and(|value| value != 0),
@@ -1750,6 +1763,12 @@ pub trait Mob: LivingEntity + Leashable {
     }
 
     fn mob_server_ai_step(&self, entity: &SharedEntity) {
+        let saved_raid = self.mob_base().saved_raid.lock().take();
+        if let Some((id, wave, leader)) = saved_raid
+            && let Some(world) = self.level()
+        {
+            world.raids.restore_raider(entity, id, wave, leader);
+        }
         if crate::world::raid::is_raider_type(self.entity_type())
             && self.can_join_raid()
             && let Some(world) = self.level()
@@ -1762,6 +1781,11 @@ pub trait Mob: LivingEntity + Leashable {
             self.update_control_flags();
         }
         self.tick_goal_selectors(entity);
+        if crate::world::raid::is_raider_type(self.entity_type())
+            && let Some(world) = self.level()
+        {
+            world.raids.tick_captain_banner(entity, &world);
+        }
         self.tick_path_navigation();
         self.custom_server_ai_step();
         self.tick_move_control();

@@ -42,6 +42,8 @@ pub enum RaidStatus {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Raid {
+    /// Stable vanilla RaidId used by saved raiders; zero marks legacy saves.
+    pub id: i32,
     /// Village center used for membership and spawn searches.
     pub center: IVec3,
     /// Persistent wire identity of the raid boss bar.
@@ -83,6 +85,7 @@ pub struct Raid {
 impl Default for Raid {
     fn default() -> Self {
         Self {
+            id: 0,
             center: IVec3::ZERO,
             uuid: Uuid::new_v4(),
             total_health: 0,
@@ -162,6 +165,8 @@ pub(crate) fn is_raider_type(entity_type: steel_registry::entity_type::EntityTyp
 pub(crate) struct RaidSavedData {
     #[serde(default)]
     pub raids: Vec<Raid>,
+    #[serde(default)]
+    pub next_id: i32,
 }
 
 /// Raids currently alive per world.
@@ -169,6 +174,7 @@ pub(crate) struct RaidSavedData {
 pub struct RaidManager {
     raids: SyncMutex<Vec<Raid>>,
     viewers: SyncMutex<BTreeMap<Uuid, Vec<Uuid>>>,
+    next_id: SyncMutex<i32>,
 }
 
 impl RaidManager {
@@ -180,11 +186,35 @@ impl RaidManager {
 
     /// Creates a manager over raids loaded from disk.
     #[must_use]
-    pub const fn from_raids(raids: Vec<Raid>) -> Self {
+    pub fn from_raids(mut raids: Vec<Raid>) -> Self {
+        let mut used: std::collections::BTreeSet<i32> = raids.iter().map(|raid| raid.id).filter(|id| *id > 0).collect();
+        let mut seen = std::collections::BTreeSet::new();
+        let mut next = 1;
+        for raid in &mut raids {
+            if raid.id <= 0 || !seen.insert(raid.id) {
+                while used.contains(&next) { next += 1; }
+                raid.id = next;
+                used.insert(next);
+                seen.insert(next);
+            }
+        }
+        let next = used.last().copied().unwrap_or(0).saturating_add(1);
         Self {
             raids: SyncMutex::new(raids),
             viewers: SyncMutex::new(BTreeMap::new()),
+            next_id: SyncMutex::new(next),
         }
+    }
+
+    pub(crate) fn from_saved_data(data: RaidSavedData) -> Self {
+        let manager = Self::from_raids(data.raids);
+        let next = (*manager.next_id.lock()).max(data.next_id);
+        *manager.next_id.lock() = next;
+        manager
+    }
+
+    pub(crate) fn to_saved_data(&self) -> RaidSavedData {
+        RaidSavedData { raids: self.to_persistent(), next_id: *self.next_id.lock() }
     }
 
     /// Snapshot of the raids in the form persisted to disk.
@@ -223,7 +253,11 @@ impl RaidManager {
             existing.omen_level = (existing.omen_level + omen_level + 1).min(MAX_OMEN_LEVEL);
             return existing.clone();
         }
+        let mut next_id = self.next_id.lock();
+        let id = (*next_id).max(1);
+        *next_id = id.checked_add(1).expect("raid id space exhausted");
         let raid = Raid {
+            id,
             center,
             omen_level,
             ticks_active: 0,
@@ -263,6 +297,77 @@ impl RaidManager {
         raid.raiders.push(uuid);
         raid.total_health += mob.get_health().max(0.0).ceil() as i32;
         true
+    }
+
+    /// Vanilla raider save fields, including legacy worlds whose entities did
+    /// not yet carry RaidId. Membership already in the manager is authoritative.
+    pub fn member_save_data(&self, uuid: Uuid) -> Option<(i32, i32, bool)> {
+        self.raids.lock().iter().find(|raid| raid.raiders.contains(&uuid))
+            .map(|raid| (raid.id, raid.waves_spawned, raid.leader == Some(uuid)))
+    }
+
+    /// Reconnects loaded entities by RaidId, never by proximity. Repeated loads
+    /// must not add health twice or turn a saved captain into a second leader.
+    pub fn restore_raider(&self, entity: &crate::entity::SharedEntity, id: i32, wave: i32, leader: bool) {
+        if !is_raider_type(entity.entity_type()) || !entity.is_alive() { return; }
+        let mut raids = self.raids.lock();
+        let Some(raid) = raids.iter_mut().find(|raid| raid.id == id && raid.status == RaidStatus::Ongoing) else { return; };
+        if wave < 0 || wave > raid.waves_spawned { return; }
+        if !raid.raiders.contains(&entity.uuid()) {
+            raid.raiders.push(entity.uuid());
+            raid.total_health += entity.as_living_entity().map_or(0, |living| living.get_health().max(0.0).ceil() as i32);
+        }
+        if leader && raid.leader.is_none() { raid.leader = Some(entity.uuid()); }
+    }
+
+    /// Raider.ObtainRaidLeaderBannerGoal. Only a leader-capable current member
+    /// can claim the dropped, exact ominous banner; ordinary white banners do
+    /// not promote raiders. The manager lock arbitrates competing claimants.
+    pub fn tick_captain_banner(&self, entity: &crate::entity::SharedEntity, world: &Arc<World>) {
+        use crate::entity::entities::objects::items::ItemEntity;
+        use crate::entity::RemovalReason;
+        use crate::inventory::equipment::EquipmentSlot;
+        use steel_registry::item_stack::ItemStack;
+        use steel_utils::Downcast as _;
+        if !entity.is_alive() || !(entity.entity_type() == &vanilla_entities::PILLAGER
+            || entity.entity_type() == &vanilla_entities::VINDICATOR
+            || entity.entity_type() == &vanilla_entities::EVOKER
+            || entity.entity_type() == &vanilla_entities::ILLUSIONER) { return; }
+        let Some(mob) = entity.as_mob() else { return; };
+        if ItemStack::matches(&mob.equipment_in_slot(EquipmentSlot::Head), &ominous_banner()) { return; }
+        let eligible = self.raids.lock().iter().any(|raid| raid.status == RaidStatus::Ongoing
+            && raid.leader.is_none() && raid.raiders.contains(&entity.uuid()));
+        if !eligible { return; }
+        let range = mob.get_attribute_value(steel_registry::vanilla_attributes::FOLLOW_RANGE);
+        let mut items = world.get_entities_in_aabb(&entity.bounding_box().inflate_xyz(range, 8.0, range));
+        items.sort_by(|a, b| a.position().distance_squared(entity.position())
+            .total_cmp(&b.position().distance_squared(entity.position())));
+        for candidate in items {
+            let Some(item) = candidate.downcast_ref::<ItemEntity>() else { continue; };
+            if item.is_removed() || item.has_pickup_delay() || !ItemStack::matches(&item.get_item(), &ominous_banner()) { continue; }
+            if entity.position().distance_squared(item.position()) >= 1.414_f64.powi(2) {
+                if let Some(pathfinder) = entity.as_pathfinder_mob()
+                    && pathfinder.move_to_pos_with_reach(item.position(), 1, 1.15) { return; }
+                continue;
+            }
+            {
+                let mut raids = self.raids.lock();
+                let Some(raid) = raids.iter_mut().find(|raid| raid.status == RaidStatus::Ongoing
+                    && raid.leader.is_none() && raid.raiders.contains(&entity.uuid())) else { return; };
+                if item.is_removed() { return; }
+                raid.leader = Some(entity.uuid());
+                item.set_removed(RemovalReason::Discarded);
+            }
+            let old = mob.equipment_in_slot(EquipmentSlot::Head);
+            if !old.is_empty() && (rand::random::<f32>() - 0.1).max(0.0) < mob.equipment_drop_chance(EquipmentSlot::Head) {
+                mob.spawn_at_location(old, 0.0);
+            }
+            mob.with_equipment_slot_mut(EquipmentSlot::Head, &mut |head| *head = ominous_banner());
+            mob.set_equipment_drop_chance(EquipmentSlot::Head, 2.0);
+            world.broadcast_to_nearby(steel_utils::ChunkPos::from_entity_pos(item.position()),
+                steel_protocol::packets::game::CTakeItemEntity::new(item.id(), entity.id(), 1), None);
+            return;
+        }
     }
 
     /// Called synchronously from the death path, before entities disappear from
@@ -868,7 +973,7 @@ mod persistence_tests {
                 ..Raid::default()
             }],
         ] {
-            let data = RaidSavedData { raids };
+            let data = RaidSavedData { raids, ..RaidSavedData::default() };
             manager.save(names::RAIDS, &data).await.unwrap();
             let loaded: RaidSavedData = manager.load_or_default(names::RAIDS).await.unwrap();
             assert_eq!(loaded, data);
@@ -1013,6 +1118,7 @@ mod lifecycle_tests {
         };
         let document = toml::to_string(&RaidSavedData {
             raids: vec![raid.clone()],
+            ..RaidSavedData::default()
         })
         .unwrap();
         let restored: RaidSavedData = toml::from_str(&document).unwrap();
@@ -1360,7 +1466,7 @@ mod spawn_search_tests {
 
     #[test]
     fn spawn_position_cache_is_transient_like_vanilla() {
-        let data = RaidSavedData { raids: vec![Raid { wave_spawn_pos: Some(IVec3::new(50, 64, -60)), ..Raid::default() }] };
+        let data = RaidSavedData { raids: vec![Raid { wave_spawn_pos: Some(IVec3::new(50, 64, -60)), ..Raid::default() }], ..RaidSavedData::default() };
         let encoded = toml::to_string(&data).unwrap();
         let decoded: RaidSavedData = toml::from_str(&encoded).unwrap();
         assert!(decoded.raids[0].wave_spawn_pos.is_none());
