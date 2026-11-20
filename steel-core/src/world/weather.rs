@@ -278,6 +278,17 @@ impl World {
         environment::monsters_burn(self.dimension_type, level_data.world_clocks())
     }
 
+    /// Whether the vanilla `INCREASED_FIRE_BURNOUT` environment attribute is
+    /// enabled.
+    ///
+    /// Vanilla `FireBlock.tick` shortens the burn-out window by 50 ticks and
+    /// halves the fire spread odds while it holds.
+    #[must_use]
+    pub fn increased_fire_burnout(&self) -> bool {
+        let level_data = self.level_data.read();
+        environment::increased_fire_burnout(self.dimension_type, level_data.world_clocks())
+    }
+
     /// Returns one `minecraft:gameplay/...` environment attribute sampled off
     /// this dimension's timelines, like vanilla `EnvironmentAttributeSystem`.
     #[must_use]

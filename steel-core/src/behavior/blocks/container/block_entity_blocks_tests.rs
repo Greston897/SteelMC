@@ -423,3 +423,215 @@ fn jack_o_lantern_is_ejected_as_a_slow_item_not_a_projectile_or_golem() {
     assert!(items[0].velocity().x < 0.404);
     assert_eq!(items[0].get_item().item(), &*vanilla_items::JACK_O_LANTERN);
 }
+
+/// Vanilla `ProjectileDispenseBehavior` for the fire charge: the projectile
+/// spawns at `DispenserBlock.getDispensePosition(source, 1.0, Vec3.ZERO)` and
+/// flies along the normalized, noised facing direction (`FireChargeItem.shoot`
+/// is a no-op, so the velocity comes from `asProjectile`).
+#[test]
+fn dispenser_fire_charge_launches_a_small_fireball_with_vanilla_position_and_speed() {
+    use crate::entity::Entity as _;
+    use crate::entity::ThrowableItemProjectile as _;
+    use crate::entity::entities::SmallFireballEntity;
+
+    let (fixture, container) = fixture(
+        "dispenser_fire_charge_launch",
+        ItemStack::with_count(&vanilla_items::FIRE_CHARGE, 2),
+    );
+    let world = &fixture.world;
+    assert!(dispense_from(world, SOURCE, world.get_block_state(SOURCE)));
+
+    assert_eq!(
+        container.lock().get_item(0).count(),
+        1,
+        "the dispenser consumes exactly one fire charge"
+    );
+
+    let entities = world.get_entities_in_aabb(&steel_utils::WorldAabb::new(
+        7.0, 62.0, 7.0, 12.0, 68.0, 10.0,
+    ));
+    let fireballs: Vec<_> = entities
+        .iter()
+        .filter_map(|entity| entity.downcast_ref::<SmallFireballEntity>())
+        .collect();
+    assert_eq!(fireballs.len(), 1);
+
+    let fireball = fireballs[0];
+    let position = fireball.position();
+    assert!(
+        (position.x - 9.5).abs() < 1.0e-6
+            && (position.y - 64.5).abs() < 1.0e-6
+            && (position.z - 8.5).abs() < 1.0e-6,
+        "the fireball spawns one block in front of the dispenser: {position:?}"
+    );
+
+    let velocity = fireball.velocity();
+    let speed = velocity.length();
+    assert!(
+        (speed - 1.0).abs() < 1.0e-6,
+        "the fireball flies at unit speed: {speed}"
+    );
+    assert!(
+        velocity.x > 0.88,
+        "the fireball flies along the dispenser facing: {velocity:?}"
+    );
+
+    let item = fireball.get_item();
+    assert_eq!(item.item(), &*vanilla_items::FIRE_CHARGE);
+    assert_eq!(item.count(), 1);
+}
+
+/// Vanilla `WindChargeItem.asProjectile` keeps the raw noised facing vector as
+/// the delta movement; it is deliberately *not* normalized.
+#[test]
+fn dispenser_wind_charge_keeps_the_unnormalized_launch_velocity() {
+    use crate::entity::Entity as _;
+    use crate::entity::entities::WindChargeEntity;
+
+    let (fixture, container) = fixture(
+        "dispenser_wind_charge_launch",
+        ItemStack::with_count(&vanilla_items::WIND_CHARGE, 1),
+    );
+    let world = &fixture.world;
+    assert!(dispense_from(world, SOURCE, world.get_block_state(SOURCE)));
+    assert!(container.lock().get_item(0).is_empty());
+
+    let entities = world.get_entities_in_aabb(&steel_utils::WorldAabb::new(
+        7.0, 62.0, 7.0, 12.0, 68.0, 10.0,
+    ));
+    let charges: Vec<_> = entities
+        .iter()
+        .filter_map(|entity| entity.downcast_ref::<WindChargeEntity>())
+        .collect();
+    assert_eq!(charges.len(), 1);
+
+    let velocity = charges[0].velocity();
+    assert!(
+        (velocity.x - 1.0).abs() <= 0.114_850_000_000_000_01,
+        "the wind charge keeps the raw facing step: {velocity:?}"
+    );
+    assert!(
+        (velocity.y).abs() <= 0.114_850_000_000_000_01
+            && (velocity.z).abs() <= 0.114_850_000_000_000_01,
+        "the wind charge spread only affects the facing axis: {velocity:?}"
+    );
+    assert!(
+        velocity.length() > 0.88 && velocity.length() < 1.12,
+        "the wind charge speed matches the unnormalized facing vector: {velocity:?}"
+    );
+}
+
+/// Vanilla `ProjectileItem.DispenseConfig.DEFAULT`: the projectile spawns at
+/// `getDispensePosition(source, 0.7, (0, 0.1, 0))` and is shot with power
+/// `1.1` and uncertainty `6.0`.
+#[test]
+fn dispenser_arrow_uses_the_default_vanilla_launch_config() {
+    use crate::entity::Entity as _;
+    use crate::entity::entities::ArrowEntity;
+    use crate::entity::entities::objects::projectiles::AbstractArrow as _;
+
+    let (fixture, container) = fixture(
+        "dispenser_arrow_launch",
+        ItemStack::with_count(&vanilla_items::ARROW, 1),
+    );
+    let world = &fixture.world;
+    assert!(dispense_from(world, SOURCE, world.get_block_state(SOURCE)));
+    assert!(container.lock().get_item(0).is_empty());
+
+    let entities = world.get_entities_in_aabb(&steel_utils::WorldAabb::new(
+        7.0, 62.0, 7.0, 12.0, 68.0, 10.0,
+    ));
+    let arrows: Vec<_> = entities
+        .iter()
+        .filter_map(|entity| entity.downcast_ref::<ArrowEntity>())
+        .collect();
+    assert_eq!(arrows.len(), 1);
+
+    let arrow = arrows[0];
+    let position = arrow.position();
+    assert!(
+        (position.x - 9.2).abs() < 1.0e-6
+            && (position.y - 64.6).abs() < 1.0e-6
+            && (position.z - 8.5).abs() < 1.0e-6,
+        "the arrow spawns at the vanilla default dispense position: {position:?}"
+    );
+
+    let velocity = arrow.velocity();
+    let speed = velocity.length();
+    assert!(
+        (speed - 1.1).abs() < 0.05,
+        "the arrow is shot with the default power of 1.1: {velocity:?}"
+    );
+    assert!(velocity.x > 1.0, "the arrow flies east: {velocity:?}");
+
+    let item = arrow.pickup_item();
+    assert_eq!(item.item(), &*vanilla_items::ARROW);
+    assert_eq!(item.count(), 1);
+}
+
+/// Vanilla `EnderpearlItem` is a plain `Item`, not a `ProjectileItem`, so the
+/// dispenser ejects it as an ordinary item instead of launching a projectile.
+#[test]
+fn dispenser_ender_pearl_is_ejected_as_an_item_not_a_projectile() {
+    let (fixture, container) = fixture(
+        "dispenser_ender_pearl",
+        ItemStack::with_count(&vanilla_items::ENDER_PEARL, 1),
+    );
+    let world = &fixture.world;
+    assert!(dispense_from(world, SOURCE, world.get_block_state(SOURCE)));
+    assert!(container.lock().get_item(0).is_empty());
+
+    let entities = world.get_entities_in_aabb(&steel_utils::WorldAabb::new(
+        7.0, 62.0, 7.0, 12.0, 68.0, 10.0,
+    ));
+    let items: Vec<_> = entities
+        .iter()
+        .filter_map(|entity| entity.downcast_ref::<ItemEntity>())
+        .collect();
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0].get_item().item(), &*vanilla_items::ENDER_PEARL);
+}
+
+/// Vanilla `FlintAndSteelDispenseItemBehavior` primes TNT and only removes the
+/// block when the prime was accepted. The tool only wears when the behavior
+/// succeeded.
+#[test]
+fn dispenser_flint_and_steel_priming_tnt_removes_the_block_and_wears_the_tool() {
+    use steel_registry::data_components::vanilla_components::DAMAGE;
+
+    let (fixture, container) = fixture(
+        "dispenser_flint_tnt",
+        ItemStack::new(&vanilla_items::FLINT_AND_STEEL),
+    );
+    let world = &fixture.world;
+    world.set_block(TARGET, vanilla_blocks::TNT.default_state(), UpdateFlags::UPDATE_ALL);
+    assert!(dispense_from(world, SOURCE, world.get_block_state(SOURCE)));
+
+    assert!(
+        world.get_block_state(TARGET).is_air(),
+        "a successfully primed TNT block is removed"
+    );
+    assert_eq!(container.lock().get_item(0).get(DAMAGE), Some(&1));
+}
+
+/// When the TNT prime is rejected the TNT stays, the tool is not damaged and
+/// the dispenser plays the failure event.
+#[test]
+fn dispenser_flint_and_steel_keeps_the_tnt_when_priming_is_rejected() {
+    use steel_registry::data_components::vanilla_components::DAMAGE;
+
+    let (fixture, container) = fixture(
+        "dispenser_flint_tnt_rejected",
+        ItemStack::new(&vanilla_items::FLINT_AND_STEEL),
+    );
+    let world = &fixture.world;
+    world.set_block(TARGET, vanilla_blocks::TNT.default_state(), UpdateFlags::UPDATE_ALL);
+    world.set_game_rule(&steel_registry::vanilla_game_rules::TNT_EXPLODES, false);
+
+    assert!(!dispense_from(world, SOURCE, world.get_block_state(SOURCE)));
+    assert!(
+        !world.get_block_state(TARGET).is_air(),
+        "a rejected TNT prime keeps the block"
+    );
+    assert_eq!(container.lock().get_item(0).get(DAMAGE), None);
+}

@@ -863,8 +863,8 @@ mod tests {
         EntityMovementSyncPacket, EntityMovementSyncState, EntityMovementSyncUpdate,
         EntityPositionRotSyncPacket, EntityPositionSyncDecision, EntityPositionSyncPacket,
         EntityPositionSyncSnapshot, EntityPositionSyncState, EntityRotationSyncState,
-        EntityVelocitySyncState, PackedEntityRotation, PositionPath, ServerEntityMovementSyncState,
-        ServerEntityMovementSyncUpdate,
+        EntityVelocitySyncState, POSITION_SYNC_THRESHOLD, PackedEntityRotation, PositionPath,
+        ServerEntityMovementSyncState, ServerEntityMovementSyncUpdate,
     };
 
     #[test]

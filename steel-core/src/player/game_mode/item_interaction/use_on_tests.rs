@@ -682,7 +682,7 @@ fn water_cauldron_washes_dyed_equipment_in_place_including_creative_and_offhand(
                         .set_value(&BlockStateProperties::LEVEL_CAULDRON, 2),
                 );
                 let mut stack = ItemStack::new(item);
-                stack.set(DYED_COLOR, DyedItemColor::new(0xff00aa));
+                stack.set(DYED_COLOR, DyedItemColor::new(0x00ff_00aa));
                 stack.set(CUSTOM_NAME, TextComponent::plain("Keep name"));
                 fixture.hold(hand, stack);
                 assert!(fixture.use_on(hand).consumes_action());
@@ -974,4 +974,33 @@ fn creative_soul_campfire_dousing_preserves_tool_durability() {
             .get(steel_registry::data_components::vanilla_components::DAMAGE),
         Some(&0)
     );
+}
+
+#[test]
+fn ignition_items_place_fire_and_do_not_charge_again_for_an_occupied_target() {
+    for hand in [InteractionHand::MainHand, InteractionHand::OffHand] {
+        for item in [&vanilla_items::FLINT_AND_STEEL, &vanilla_items::FIRE_CHARGE] {
+            let interaction = Interaction::new("ignition_occupied_target");
+            interaction.player.set_game_mode(GameType::Survival);
+            interaction.block(vanilla_blocks::STONE.default_state());
+            let mut stack = ItemStack::new(item);
+            if item == &vanilla_items::FIRE_CHARGE {
+                stack.set_count(2);
+            }
+            interaction.hold(hand, stack);
+            assert!(interaction.use_on(hand).consumes_action());
+            assert_eq!(
+                interaction.world_fixture.world.get_block_state(interaction.pos.above()).get_block(),
+                &vanilla_blocks::FIRE,
+            );
+            let before = interaction.player.inventory.lock().get_item_in_hand(hand).clone();
+            if item == &vanilla_items::FLINT_AND_STEEL {
+                assert_eq!(before.get_damage_value(), 1);
+            } else {
+                assert_eq!(before.count(), 1);
+            }
+            assert_eq!(interaction.use_on(hand), InteractionResult::Fail);
+            assert_eq!(*interaction.player.inventory.lock().get_item_in_hand(hand), before);
+        }
+    }
 }

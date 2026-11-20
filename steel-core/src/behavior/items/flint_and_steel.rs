@@ -1,7 +1,7 @@
 //! Flint and steel item behavior with portal ignition.
 
 use crate::behavior::blocks::FireBlock;
-use crate::behavior::context::{InteractionResult, UseOnContext};
+use crate::behavior::context::{InteractionResult, UseItemContext, UseOnContext};
 use crate::behavior::item::ItemBehavior;
 use steel_macros::item_behavior;
 use steel_registry::item_stack::ItemStack;
@@ -38,6 +38,7 @@ impl ItemBehavior for FlintAndSteelItem {
             clicked_state,
             &sound_events::ITEM_FLINTANDSTEEL_USE,
             flint_and_steel_pitch(),
+            UpdateFlags::UPDATE_ALL_IMMEDIATE,
         ) {
             let has_infinite_materials = context.player.has_infinite_materials();
             context
@@ -64,7 +65,7 @@ impl ItemBehavior for FlintAndSteelItem {
         context.world.set_block(
             fire_pos,
             FireBlock::get_state(context.world.as_ref(), fire_pos),
-            UpdateFlags::UPDATE_ALL,
+            UpdateFlags::UPDATE_ALL_IMMEDIATE,
         );
         context.world.game_event(
             &vanilla_game_events::BLOCK_PLACE,
@@ -86,6 +87,19 @@ impl ItemBehavior for FlintAndSteelItem {
 pub struct FireChargeItem;
 
 impl ItemBehavior for FireChargeItem {
+    /// Vanilla `FireChargeItem` does not override `Item.use`, so right-clicking
+    /// with a fire charge in the air does nothing.
+    ///
+    /// Vanilla `FireChargeItem` only implements `useOn` (right-clicking a
+    /// block) and the `ProjectileItem` contract used by the dispenser
+    /// (`asProjectile`/`shoot`/`createDispenseConfig`). Hand use never
+    /// launches a fireball: only a dispenser does. Returning `Pass` keeps the
+    /// item in the player's hand and matches vanilla `Item.use` for an item
+    /// without consumable/equippable/attack components.
+    fn use_item(&self, _context: &mut UseItemContext) -> InteractionResult {
+        InteractionResult::Pass
+    }
+
     fn use_on(&self, context: &mut UseOnContext) -> InteractionResult {
         let click_pos = context.hit_result.block_pos;
         let clicked_state = context.world.get_block_state(click_pos);
@@ -95,6 +109,7 @@ impl ItemBehavior for FireChargeItem {
             clicked_state,
             &sound_events::ITEM_FIRECHARGE_USE,
             fire_charge_pitch(),
+            UpdateFlags::UPDATE_ALL,
         ) {
             context.inv.with_item(ItemStack::shrink_one);
             return InteractionResult::Success;
@@ -138,6 +153,7 @@ fn try_light_block(
     state: BlockStateId,
     sound: SoundEventRef,
     pitch: f32,
+    flags: UpdateFlags,
 ) -> bool {
     if !can_light(state) {
         return false;
@@ -149,7 +165,7 @@ fn try_light_block(
     context.world.set_block(
         pos,
         state.set_value(&BlockStateProperties::LIT, true),
-        UpdateFlags::UPDATE_ALL_IMMEDIATE,
+        flags,
     );
     context.world.game_event(
         &vanilla_game_events::BLOCK_CHANGE,
@@ -231,5 +247,70 @@ mod tests {
 
         assert!(can_light(unlit_candle_cake));
         assert!(!can_light(lit_candle_cake));
+    }
+
+    /// Vanilla `FireChargeItem` does not override `Item.use`: right-clicking
+    /// with a fire charge in the air neither launches a fireball nor consumes
+    /// the item.
+    #[test]
+    fn using_a_fire_charge_in_the_air_does_nothing() {
+        use std::sync::Arc;
+
+        use steel_registry::item_stack::ItemStack;
+        use steel_registry::{init_vanilla_registry, vanilla_items};
+        use steel_utils::types::InteractionHand;
+        use steel_utils::{ChunkPos, Downcast as _, WorldAabb};
+
+        use crate::behavior::{ITEM_BEHAVIORS, InteractionResult, UseItemContext, init_behaviors};
+        use crate::entity::Entity as _;
+        use crate::entity::entities::SmallFireballEntity;
+        use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
+
+        init_vanilla_registry();
+        init_behaviors();
+        let fixture = fresh_test_world("fire_charge_use_air");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let player = TestPlayerBuilder::new(Arc::clone(world), "Thrower", 1).build();
+        player.set_client_loaded(true);
+
+        {
+            let mut inventory = player.inventory.lock();
+            inventory.set_item_in_hand(
+                InteractionHand::MainHand,
+                ItemStack::with_count(&vanilla_items::FIRE_CHARGE, 2),
+            );
+        }
+
+        let behavior = ITEM_BEHAVIORS.get_behavior(&vanilla_items::FIRE_CHARGE);
+        let inventory = Arc::clone(&player.inventory);
+        let mut context = UseItemContext::new(&player, InteractionHand::MainHand, world, inventory);
+        let result = behavior.use_item(&mut context);
+
+        assert_eq!(result, InteractionResult::Pass);
+
+        let remaining = {
+            let inventory = player.inventory.lock();
+            inventory
+                .get_item_in_hand(InteractionHand::MainHand)
+                .count()
+        };
+        assert_eq!(remaining, 2, "vanilla does not consume the fire charge");
+
+        let eye = player.position();
+        let search = WorldAabb::new(
+            eye.x - 4.0,
+            eye.y - 4.0,
+            eye.z - 4.0,
+            eye.x + 4.0,
+            eye.y + 4.0,
+            eye.z + 4.0,
+        );
+        let fireballs = world
+            .get_entities_in_aabb(&search)
+            .iter()
+            .filter(|entity| entity.as_ref().downcast_ref::<SmallFireballEntity>().is_some())
+            .count();
+        assert_eq!(fireballs, 0, "hand use never launches a fireball");
     }
 }

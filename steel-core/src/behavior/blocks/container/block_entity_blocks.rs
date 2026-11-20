@@ -31,11 +31,12 @@ use crate::block_entity::BlockEntityTicker;
 use crate::block_entity::entities::CrafterBlockEntity;
 use crate::entity::entities::objects::projectiles::AbstractArrow as _;
 use crate::entity::entities::{
-    ArrowEntity, EnderPearlEntity, ExperienceBottleEntity, FireworkRocketEntity, ItemEntity,
+    ArrowEntity, ExperienceBottleEntity, FireworkRocketEntity, ItemEntity,
     LingeringPotionEntity, SmallFireballEntity, SnowballEntity, SpectralArrowEntity,
     SplashPotionEntity, ThrownEggEntity, WindChargeEntity,
 };
-use crate::entity::{Entity as _, SharedEntity, next_entity_id};
+use crate::entity::projectile::triangle_random;
+use crate::entity::{Entity as _, SharedEntity, ThrowableItemProjectile as _, next_entity_id};
 use crate::inventory::container::calculate_redstone_signal_from_container;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::inventory::menu::kinds::{brewing_stand, chest, crafter, dispenser, hopper, lectern};
@@ -44,84 +45,131 @@ use crate::world::{SignalGetter, World};
 
 const HOPPER_FACING: &EnumProperty<Direction> = &BlockStateProperties::FACING_HOPPER;
 
-/// Vanilla `DispenseItemBehavior` launch speed for dispensed projectiles.
-const DISPENSE_POWER: f64 = 1.1;
+/// Vanilla `FireChargeItem.asProjectile` / `WindChargeItem.asProjectile`
+/// direction spread.
+///
+/// Vanilla builds the launch direction from the dispenser facing plus a
+/// triangular random deviation of `0.11485` per axis
+/// (`RandomSource.triangle(mean, spread)`).
+fn as_projectile_direction(facing: Direction) -> DVec3 {
+    const SPREAD: f64 = 0.114_850_000_000_000_01;
+    let (dx, dy, dz) = facing.offset();
+    DVec3::new(
+        triangle_random(f64::from(dx), SPREAD),
+        triangle_random(f64::from(dy), SPREAD),
+        triangle_random(f64::from(dz), SPREAD),
+    )
+}
+
+/// Vanilla `Vec3.normalize`: returns the zero vector for near-zero lengths.
+fn vanilla_normalize(vector: DVec3) -> DVec3 {
+    let length = vector.length();
+    if length < 1.0e-4 {
+        DVec3::ZERO
+    } else {
+        vector / length
+    }
+}
 
 /// Maps a dispensed item to the projectile entity vanilla fires for it.
 ///
 /// Items without a `ProjectileItem` implementation return `None`, which makes
 /// `dispense_from` drop them instead.
-fn dispense_projectile(stack: &ItemStack, world: &Arc<World>, pos: DVec3) -> Option<SharedEntity> {
+fn dispense_projectile(
+    stack: &ItemStack,
+    world: &Arc<World>,
+    pos: DVec3,
+    facing: Direction,
+) -> Option<SharedEntity> {
     let kind = stack.item();
     let weak = Arc::downgrade(world);
     let id = next_entity_id();
 
     let entity: SharedEntity =
         if kind == &*vanilla_items::ARROW || kind == &*vanilla_items::TIPPED_ARROW {
+            // Vanilla `ArrowItem.asProjectile`.
             let arrow = Arc::new(ArrowEntity::new(&vanilla_entities::ARROW, id, pos, weak));
             arrow.set_arrow_item(stack.copy_with_count(1));
             arrow
         } else if kind == &*vanilla_items::SPECTRAL_ARROW {
-            Arc::new(SpectralArrowEntity::new(
+            // Vanilla `SpectralArrowItem.asProjectile`.
+            let arrow = Arc::new(SpectralArrowEntity::new(
                 &vanilla_entities::SPECTRAL_ARROW,
                 id,
                 pos,
                 weak,
-            ))
+            ));
+            arrow.set_arrow_item(stack.copy_with_count(1));
+            arrow
         } else if kind == &*vanilla_items::SPLASH_POTION {
-            Arc::new(SplashPotionEntity::new(
+            let potion = SplashPotionEntity::new(
                 &vanilla_entities::SPLASH_POTION,
                 id,
                 pos,
                 weak,
-            ))
+            );
+            potion.set_item_clamped(stack.copy_with_count(1));
+            Arc::new(potion)
         } else if kind == &*vanilla_items::LINGERING_POTION {
-            Arc::new(LingeringPotionEntity::new(
+            let potion = LingeringPotionEntity::new(
                 &vanilla_entities::LINGERING_POTION,
                 id,
                 pos,
                 weak,
-            ))
+            );
+            potion.set_item_clamped(stack.copy_with_count(1));
+            Arc::new(potion)
         } else if kind == &*vanilla_items::EXPERIENCE_BOTTLE {
-            Arc::new(ExperienceBottleEntity::new(
+            let bottle = ExperienceBottleEntity::new(
                 &vanilla_entities::EXPERIENCE_BOTTLE,
                 id,
                 pos,
                 weak,
-            ))
+            );
+            bottle.set_item_clamped(stack.copy_with_count(1));
+            Arc::new(bottle)
         } else if kind == &*vanilla_items::SNOWBALL {
-            Arc::new(SnowballEntity::new(
-                &vanilla_entities::SNOWBALL,
-                id,
-                pos,
-                weak,
-            ))
+            let snowball = SnowballEntity::new(&vanilla_entities::SNOWBALL, id, pos, weak);
+            snowball.set_item_clamped(stack.copy_with_count(1));
+            Arc::new(snowball)
         } else if kind == &*vanilla_items::EGG
             || kind == &*vanilla_items::BROWN_EGG
             || kind == &*vanilla_items::BLUE_EGG
         {
-            Arc::new(ThrownEggEntity::new(&vanilla_entities::EGG, id, pos, weak))
-        } else if kind == &*vanilla_items::ENDER_PEARL {
-            Arc::new(EnderPearlEntity::new(
-                &vanilla_entities::ENDER_PEARL,
-                id,
-                pos,
-                weak,
-            ))
+            // Vanilla `EggItem.asProjectile`.
+            let egg = ThrownEggEntity::new(&vanilla_entities::EGG, id, pos, weak);
+            egg.set_item_clamped(stack.copy_with_count(1));
+            Arc::new(egg)
         } else if kind == &*vanilla_items::WIND_CHARGE {
-            Arc::new(WindChargeEntity::new(
-                &vanilla_entities::WIND_CHARGE,
-                id,
-                pos,
-                weak,
-            ))
+            // Vanilla `WindChargeItem.asProjectile` sets the delta movement to
+            // the noised facing direction. The direction is *not* normalized
+            // and `WindChargeItem.shoot` is a no-op, so the projectile keeps
+            // this velocity.
+            let charge = WindChargeEntity::new(&vanilla_entities::WIND_CHARGE, id, pos, weak);
+            charge.set_velocity(as_projectile_direction(facing));
+            Arc::new(charge)
         } else if kind == &*vanilla_items::FIRE_CHARGE {
-            Arc::new(SmallFireballEntity::new(
-                &vanilla_entities::SMALL_FIREBALL,
+            // Vanilla `FireChargeItem.asProjectile` copies the source stack
+            // into the fireball's synced item (count one) and flies along the
+            // normalized noised facing direction. `FireChargeItem.shoot` is a
+            // no-op, so the fireball keeps this velocity.
+            let fireball =
+                SmallFireballEntity::new(&vanilla_entities::SMALL_FIREBALL, id, pos, weak);
+            fireball.set_item_clamped(stack.copy_with_count(1));
+            fireball.set_velocity(vanilla_normalize(as_projectile_direction(facing)));
+            Arc::new(fireball)
+        } else if kind == &*vanilla_items::FIREWORK_ROCKET {
+            // Vanilla `FireworkRocketItem.asProjectile` creates the rocket with
+            // the source stack and the `shotAtAngle` flag set.
+            let rocket = FireworkRocketEntity::launched(
+                &vanilla_entities::FIREWORK_ROCKET,
                 id,
                 pos,
                 weak,
-            ))
+                stack.copy_with_count(1),
+            );
+            rocket.set_shot_at_angle(true);
+            Arc::new(rocket)
         } else {
             return None;
         };
@@ -523,17 +571,127 @@ fn try_insert_into_container(
     false
 }
 
-/// Vanilla dispenser launch geometry: the entity appears just past the funnel
-/// face, travelling along the facing axis.
-fn launch_point(pos: BlockPos, facing: Direction) -> (DVec3, DVec3) {
+/// Vanilla `DispenserBlock.getDispensePosition(source)`: the block center
+/// offset by `0.7` along the facing axis.
+fn launch_point(pos: BlockPos, facing: Direction) -> DVec3 {
     let (dx, dy, dz) = facing.offset();
-    let (dx, dy, dz) = (f64::from(dx), f64::from(dy), f64::from(dz));
-    let spawn_pos = DVec3::new(
-        f64::from(pos.x()) + 0.5 + dx * 0.7,
-        f64::from(pos.y()) + 0.5 + dy * 0.7,
-        f64::from(pos.z()) + 0.5 + dz * 0.7,
-    );
-    (spawn_pos, DVec3::new(dx, dy, dz) * DISPENSE_POWER)
+    DVec3::new(
+        f64::from(pos.x()) + 0.5 + f64::from(dx) * 0.7,
+        f64::from(pos.y()) + 0.5 + f64::from(dy) * 0.7,
+        f64::from(pos.z()) + 0.5 + f64::from(dz) * 0.7,
+    )
+}
+
+/// Vanilla `ProjectileItem.DispenseConfig.PositionFunction`.
+///
+/// Vanilla positions the projectile relative to the dispenser block center,
+/// either along the facing axis (`DispenserBlock.getDispensePosition`) or just
+/// outside of the block (`FireworkRocketItem.getEntityJustOutsideOfBlockPos`).
+#[derive(Clone, Copy)]
+enum DispensePosition {
+    /// `DispenserBlock.getDispensePosition(source, scale, offset)`.
+    AxisOffset { scale: f64, offset: DVec3 },
+    /// `FireworkRocketItem.getEntityJustOutsideOfBlockPos`.
+    JustOutsideOfBlock,
+}
+
+/// Vanilla `ProjectileItem.DispenseConfig`.
+#[derive(Clone, Copy)]
+struct DispenseConfig {
+    position: DispensePosition,
+    /// The launch accuracy; vanilla adds `0.0172275 * uncertainty` of noise.
+    uncertainty: f32,
+    /// The launch speed multiplier.
+    power: f32,
+    /// `overrideDispenseEvent`: the level event played instead of the default
+    /// projectile-launch event.
+    override_dispense_event: Option<i32>,
+}
+
+impl DispenseConfig {
+    /// Vanilla `ProjectileItem.DispenseConfig.DEFAULT`.
+    const DEFAULT: Self = Self {
+        position: DispensePosition::AxisOffset {
+            scale: 0.7,
+            offset: DVec3::new(0.0, 0.1, 0.0),
+        },
+        uncertainty: 6.0,
+        power: 1.1,
+        override_dispense_event: None,
+    };
+
+    /// Vanilla `ProjectileItem.DispenseConfig` for the dispensed item.
+    fn for_item(item: steel_registry::items::ItemRef) -> Self {
+        if item == &*vanilla_items::FIRE_CHARGE || item == &*vanilla_items::WIND_CHARGE {
+            // Vanilla `FireChargeItem.createDispenseConfig` and
+            // `WindChargeItem.createDispenseConfig`.
+            return Self {
+                position: DispensePosition::AxisOffset {
+                    scale: 1.0,
+                    offset: DVec3::ZERO,
+                },
+                uncertainty: 6.666_666_5,
+                power: 1.0,
+                override_dispense_event: Some(if item == &*vanilla_items::FIRE_CHARGE {
+                    steel_registry::level_events::SOUND_BLAZE_FIREBALL
+                } else {
+                    steel_registry::level_events::SOUND_WIND_CHARGE_SHOOT
+                }),
+            };
+        }
+        if item == &*vanilla_items::FIREWORK_ROCKET {
+            // Vanilla `FireworkRocketItem.createDispenseConfig`.
+            return Self {
+                position: DispensePosition::JustOutsideOfBlock,
+                uncertainty: 1.0,
+                power: 0.5,
+                override_dispense_event: Some(steel_registry::level_events::SOUND_FIREWORK_SHOOT),
+            };
+        }
+        if item == &*vanilla_items::SPLASH_POTION
+            || item == &*vanilla_items::LINGERING_POTION
+            || item == &*vanilla_items::EXPERIENCE_BOTTLE
+        {
+            // Vanilla `ThrowablePotionItem.createDispenseConfig` and
+            // `ExperienceBottleItem.createDispenseConfig` halve the default
+            // accuracy and raise the default power by a quarter.
+            return Self {
+                uncertainty: Self::DEFAULT.uncertainty * 0.5,
+                power: Self::DEFAULT.power * 1.25,
+                ..Self::DEFAULT
+            };
+        }
+        Self::DEFAULT
+    }
+
+    /// The position the projectile is spawned at.
+    fn spawn_position(self, pos: BlockPos, facing: Direction) -> DVec3 {
+        let (dx, dy, dz) = facing.offset();
+        let center = DVec3::new(
+            f64::from(pos.x()) + 0.5,
+            f64::from(pos.y()) + 0.5,
+            f64::from(pos.z()) + 0.5,
+        );
+        match self.position {
+            DispensePosition::AxisOffset { scale, offset } => {
+                center
+                    + DVec3::new(
+                        scale * f64::from(dx) + offset.x,
+                        scale * f64::from(dy) + offset.y,
+                        scale * f64::from(dz) + offset.z,
+                    )
+            }
+            DispensePosition::JustOutsideOfBlock => {
+                let offset = 0.500_009_999_999_747_4;
+                center
+                    + DVec3::new(
+                        f64::from(dx) * offset,
+                        f64::from(dy) * offset,
+                        f64::from(dz) * offset,
+                    )
+            }
+        }
+    }
 }
 
 /// Vanilla `DispenserBlock.dispenseFrom`: selects a random non-empty slot and
@@ -759,11 +917,13 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
         return true;
     }
 
-    // 4. Flint and steel: light air fire, unlit campfire, or TNT, damaging by 1.
+    // 4. Flint and steel: vanilla `FlintAndSteelDispenseItemBehavior`.
+    //
+    // The optional behavior starts out successful, so the tool is damaged even
+    // when the target cannot be ignited. Only a rejected TNT prime flips the
+    // result to a failure.
     if item == &*vanilla_items::FLINT_AND_STEEL {
-        // Vanilla optional behavior succeeds (and damages the tool) even for
-        // a blocked target; only a rejected TNT prime changes that result.
-        let ignited = true;
+        let mut success = true;
         if crate::behavior::blocks::FireBlock::can_be_placed_at(world, target_pos, facing) {
             world.set_block(
                 target_pos,
@@ -775,13 +935,6 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
                 target_pos,
                 &crate::world::game_event::GameEventContext::new(None, None),
             );
-        } else if target_block == &vanilla_blocks::TNT {
-            world.set_block(
-                target_pos,
-                vanilla_blocks::AIR.default_state(),
-                UpdateFlags::UPDATE_ALL,
-            );
-            crate::behavior::blocks::TntBlock::prime(world, target_pos);
         } else if crate::behavior::items::FlintAndSteelItem::can_light(target_state) {
             let next = target_state.set_value(&BlockStateProperties::LIT, true);
             world.set_block(target_pos, next, UpdateFlags::UPDATE_ALL);
@@ -790,8 +943,20 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
                 target_pos,
                 &crate::world::game_event::GameEventContext::new(None, Some(next)),
             );
+        } else if target_block == &vanilla_blocks::TNT {
+            // Vanilla primes the TNT first and only removes the block when the
+            // prime was accepted.
+            if crate::behavior::blocks::TntBlock::prime(world, target_pos) {
+                world.set_block(
+                    target_pos,
+                    vanilla_blocks::AIR.default_state(),
+                    UpdateFlags::UPDATE_ALL,
+                );
+            } else {
+                success = false;
+            }
         }
-        if ignited {
+        if success {
             let mut guard = container.lock();
             if guard.get_item_mut(slot).hurt_and_break(1, false) {
                 guard.set_item(slot, ItemStack::empty());
@@ -815,52 +980,40 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
                 None,
             );
         }
-        return ignited;
-    }
-
-    // Fireworks have a distinct position/power and must initialize their
-    // source component and lifetime. `new` is the deserialization constructor;
-    // dispensing it made the uninitialized rocket expire on its first tick.
-    if item == &*vanilla_items::FIREWORK_ROCKET {
-        use crate::entity::Projectile as _;
-        let (x, y, z) = facing.offset();
-        let direction = DVec3::new(f64::from(x), f64::from(y), f64::from(z));
-        let center = DVec3::new(
-            f64::from(pos.x()) + 0.5,
-            f64::from(pos.y()) + 0.5,
-            f64::from(pos.z()) + 0.5,
-        );
-        let rocket = FireworkRocketEntity::launched(
-            &vanilla_entities::FIREWORK_ROCKET,
-            next_entity_id(),
-            center + direction * 0.500_009_999_999_747_4,
-            Arc::downgrade(world),
-            snapshot.copy_with_count(1),
-        );
-        rocket.set_shot_at_angle(true);
-        rocket.shoot(direction, 0.5, 1.0);
-        let entity: SharedEntity = Arc::new(rocket);
-        if world.try_add_entity(entity).is_err() {
-            return false;
-        }
-        let _ = container.lock().remove_item(slot, 1);
-        // Vanilla overrideDispenseEvent=1004 (firework shoot).
-        world.level_event(
-            steel_registry::level_events::SOUND_FIREWORK_SHOOT,
-            pos,
-            0,
-            None,
-        );
-        return true;
+        return success;
     }
 
     // 5. Projectiles & DefaultDispenseItemBehavior.
     let stack = container.lock().remove_item(slot, 1);
-    let (spawn_pos, velocity) = launch_point(pos, facing);
-    let sound = if let Some(projectile) = dispense_projectile(&stack, world, spawn_pos) {
-        projectile.set_velocity(velocity);
+    let config = DispenseConfig::for_item(stack.item());
+    let spawn_pos = config.spawn_position(pos, facing);
+    let sound = if let Some(projectile) = dispense_projectile(&stack, world, spawn_pos, facing) {
+        // Vanilla `ProjectileDispenseBehavior.execute`: the projectile is
+        // launched with `Projectile.shoot`, which normalizes the facing
+        // direction, adds the triangular accuracy noise and scales by the
+        // configured power.
+        //
+        // `FireChargeItem.shoot` and `WindChargeItem.shoot` are no-ops in
+        // vanilla: those projectiles keep the velocity their `asProjectile`
+        // implementation gave them.
+        use crate::entity::Projectile as _;
+        let shoots_with_config = stack.item() != &*vanilla_items::FIRE_CHARGE
+            && stack.item() != &*vanilla_items::WIND_CHARGE;
+        if shoots_with_config {
+            let (dx, dy, dz) = facing.offset();
+            let direction = DVec3::new(f64::from(dx), f64::from(dy), f64::from(dz));
+            if let Some(projectile) = projectile.as_projectile() {
+                projectile.shoot(direction, config.power, config.uncertainty);
+            }
+        }
         let _ = world.try_add_entity(projectile);
-        &sound_events::BLOCK_DISPENSER_LAUNCH
+        // Vanilla `ProjectileDispenseBehavior.playSound` uses the configured
+        // dispense event, defaulting to the projectile-launch event.
+        let event = config
+            .override_dispense_event
+            .unwrap_or(steel_registry::level_events::SOUND_DISPENSER_PROJECTILE_LAUNCH);
+        world.level_event(event, pos, 0, None);
+        return true;
     } else {
         spawn_dropped_item(world, pos, facing, stack);
         &sound_events::BLOCK_DISPENSER_DISPENSE
@@ -919,7 +1072,7 @@ fn default_item_launch(
     facing: Direction,
     random: &mut impl steel_utils::random::Random,
 ) -> (DVec3, DVec3) {
-    let (mut spawn_pos, _) = launch_point(pos, facing);
+    let mut spawn_pos = launch_point(pos, facing);
     spawn_pos.y -= if facing.get_axis() == steel_utils::axis::Axis::Y {
         0.125
     } else {

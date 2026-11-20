@@ -4,6 +4,8 @@
 //! (spreading, aging). This combines the portal-relevant parts from `BaseFireBlock`.
 
 use std::sync::Arc;
+
+use glam::DVec3;
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
@@ -26,6 +28,7 @@ use crate::entity::{Entity, InsideBlockEffectCollector, InsideBlockEffectType};
 use crate::player::Player;
 use crate::portal::portal_shape::{PortalShape, nether_portal_config};
 use crate::world::{LevelReader, ScheduledTickAccess, World};
+
 /// Behavior for fire blocks.
 #[block_behavior]
 pub struct FireBlock {
@@ -68,28 +71,34 @@ impl FireBlock {
         if SoulFireBlock::can_survive_at(world, pos) {
             vanilla_blocks::SOUL_FIRE.default_state()
         } else {
-            let mut state = vanilla_blocks::FIRE.default_state();
-            let below = pos.below();
-            let below_state = world.get_block_state(below);
-            if Self::can_burn(below_state)
-                || world.is_face_sturdy(below_state, below, Direction::Up)
-            {
-                return state;
-            }
-            for (direction, property) in [
-                (Direction::North, &BlockStateProperties::NORTH),
-                (Direction::East, &BlockStateProperties::EAST),
-                (Direction::South, &BlockStateProperties::SOUTH),
-                (Direction::West, &BlockStateProperties::WEST),
-                (Direction::Up, &BlockStateProperties::UP),
-            ] {
-                state = state.set_value(
-                    property,
-                    Self::can_burn(world.get_block_state(pos.relative(direction))),
-                );
-            }
-            state
+            Self::fire_state_for_placement(world, pos)
         }
+    }
+
+    /// Vanilla `FireBlock.getStateForPlacement(BlockGetter, BlockPos)`.
+    ///
+    /// Unlike `BaseFireBlock.getState` this never selects soul fire: it is
+    /// the state the fire block itself takes when it is placed.
+    fn fire_state_for_placement(world: &dyn LevelReader, pos: BlockPos) -> BlockStateId {
+        let below = pos.below();
+        let below_state = world.get_block_state(below);
+        if Self::can_burn(below_state) || world.is_face_sturdy(below_state, below, Direction::Up) {
+            return vanilla_blocks::FIRE.default_state();
+        }
+        let mut state = vanilla_blocks::FIRE.default_state();
+        for (direction, property) in [
+            (Direction::North, &BlockStateProperties::NORTH),
+            (Direction::East, &BlockStateProperties::EAST),
+            (Direction::South, &BlockStateProperties::SOUTH),
+            (Direction::West, &BlockStateProperties::WEST),
+            (Direction::Up, &BlockStateProperties::UP),
+        ] {
+            state = state.set_value(
+                property,
+                Self::can_burn(world.get_block_state(pos.relative(direction))),
+            );
+        }
+        state
     }
 
     /// Vanilla `FireBlock.getFireTickDelay`: `30 + random.nextInt(10)`.
@@ -101,6 +110,14 @@ impl FireBlock {
         SoulFireBlock::can_survive_at(world, pos) || Self::can_survive_at(world, pos)
     }
 
+    /// Vanilla `FireBlock.isValidFireLocation`: at least one of the six
+    /// neighbours can burn.
+    fn is_valid_fire_location(world: &dyn LevelReader, pos: BlockPos) -> bool {
+        Direction::ALL
+            .into_iter()
+            .any(|direction| Self::can_burn(world.get_block_state(pos.relative(direction))))
+    }
+
     /// Matches vanilla's `FireBlock.canSurvive`: block below has a sturdy top face,
     /// or an adjacent block is flammable.
     fn can_survive_at(world: &dyn LevelReader, pos: BlockPos) -> bool {
@@ -110,28 +127,21 @@ impl FireBlock {
         }
         // Vanilla `FireBlock.canSurvive`: fire also lives next to a block whose
         // `igniteOdds` is above zero, which is what lets fire climb a tree.
-        Direction::ALL
-            .into_iter()
-            .any(|direction| Self::is_flammable(world.get_block_state(pos.relative(direction))))
+        Self::is_valid_fire_location(world, pos)
     }
 
-    /// Vanilla `FireBlock.getIgniteOdds(BlockState)` on a live state: a
-    /// waterlogged block never catches fire.
-    fn is_flammable(state: BlockStateId) -> bool {
-        if state.get_block() == &vanilla_blocks::FIRE
-            || state.get_block() == &vanilla_blocks::SOUL_FIRE
-        {
-            return false;
-        }
+    /// Vanilla `FireBlock.getIgniteOdds(BlockState)`: the raw ignite odds of
+    /// the block, or zero when the state is waterlogged.
+    fn ignite_odds_of_state(state: BlockStateId) -> i32 {
         if state.try_get_value(&BlockStateProperties::WATERLOGGED) == Some(true) {
-            return false;
+            return 0;
         }
-        crate::behavior::flammable::ignite_odds(state.get_block()) > 0
+        i32::try_from(crate::behavior::flammable::ignite_odds(state.get_block())).unwrap_or(0)
     }
 
-    /// Vanilla `FireBlock.canBurn`.
+    /// Vanilla `FireBlock.canBurn`: `getIgniteOdds(state) > 0`.
     fn can_burn(state: BlockStateId) -> bool {
-        crate::behavior::flammable::burn_odds(state.get_block()) > 0 || Self::is_flammable(state)
+        Self::ignite_odds_of_state(state) > 0
     }
 
     /// Vanilla `FireBlock.getBurnOdds(BlockState)`.
@@ -165,14 +175,17 @@ impl FireBlock {
     /// touching.
     fn check_burn_out(world: &Arc<World>, pos: BlockPos, chance: i32, age: u8) {
         let state = world.get_block_state(pos);
-        if rand::random_range(0..chance) >= Self::burn_odds(state) {
+        let odds = Self::burn_odds(state);
+        if rand::random_range(0..chance) >= odds {
             return;
         }
-        let i32_age = i32::from(age);
-        if rand::random_range(0..i32_age + 10) < 5 && !world.is_raining_at(pos) {
+        if rand::random_range(0..i32::from(age) + 10) < 5 && !world.is_raining_at(pos) {
             let new_age = u8::min(15, age.saturating_add(rand::random_range(0..5) as u8 / 4));
-            let aged = Self::state_with_age(world.as_ref(), pos, new_age);
-            world.set_block(pos, aged, UpdateFlags::UPDATE_CLIENTS);
+            world.set_block(
+                pos,
+                Self::state_with_age(world.as_ref(), pos, new_age),
+                UpdateFlags::UPDATE_ALL,
+            );
         } else {
             world.set_block(
                 pos,
@@ -187,32 +200,48 @@ impl FireBlock {
     }
 
     /// Vanilla `FireBlock.getIgniteOdds(LevelReader, BlockPos)`: an occupied
-    /// position picks up odds from its own block, an empty one looks down for
-    /// something that can burn.
+    /// position never ignites, and an empty one takes the highest raw ignite
+    /// odds of its six neighbours.
     fn ignition_odds_at(world: &dyn LevelReader, pos: BlockPos) -> i32 {
-        let state = world.get_block_state(pos);
-        if state.get_block() != &vanilla_blocks::AIR {
-            if Self::is_flammable(state) {
-                return 0;
-            }
-            if state.try_get_value(&BlockStateProperties::WATERLOGGED) == Some(true) {
-                return 0;
-            }
-            return i32::try_from(crate::behavior::flammable::ignite_odds(state.get_block()))
-                .unwrap_or(0);
+        if !world.get_block_state(pos).is_air() {
+            return 0;
         }
-
-        // Vanilla walks the neighbouring blocks for the highest ignite odds.
-        let mut best = 0;
+        let mut odds = 0;
         for direction in Direction::ALL {
             let neighbour = world.get_block_state(pos.relative(direction));
-            let odds = i32::try_from(crate::behavior::flammable::ignite_odds(
-                neighbour.get_block(),
-            ))
-            .unwrap_or(0);
-            best = best.max(odds);
+            odds = odds.max(Self::ignite_odds_of_state(neighbour));
         }
-        if best > 0 { i32::midpoint(best, 10) } else { 0 }
+        odds
+    }
+
+    /// Vanilla `ServerLevel.canSpreadFireAround(BlockPos)`.
+    ///
+    /// The `fire_spread_radius_around_player` rule is `-1` for "always",
+    /// otherwise a non-spectator player has to be strictly closer to the block
+    /// than the configured radius.
+    fn can_spread_fire_around(world: &Arc<World>, pos: BlockPos) -> bool {
+        let radius = world
+            .get_game_rule(&steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER);
+        if radius == -1 {
+            return true;
+        }
+        let target = DVec3::new(
+            f64::from(pos.x()),
+            f64::from(pos.y()),
+            f64::from(pos.z()),
+        );
+        let mut close_enough = false;
+        world.players.iter_players(|_, player| {
+            if player.is_spectator() {
+                return true;
+            }
+            if player.position().distance_to(target) < f64::from(radius) {
+                close_enough = true;
+                return false;
+            }
+            true
+        });
+        close_enough
     }
 
     /// Matches vanilla's `BaseFireBlock.isPortal`: checks if placing fire here could form a portal.
@@ -266,20 +295,26 @@ impl FireBlock {
 }
 
 impl BlockBehavior for FireBlock {
-    /// Vanilla `FireBlock.tick`: survival check, `infiniburn` check, rain
-    /// extinguishing, age advancement, adjacent block burn-out (including TNT
-    /// ignition), and 3D neighbor fire spread respecting
-    /// `fire_spread_radius_around_player`.
+    /// Vanilla `FireBlock.tick`: the `canSpreadFireAround` gate, the survival
+    /// check, the `infiniburn` check, rain extinguishing, age advancement,
+    /// adjacent block burn-out (including TNT ignition), and 3D neighbour fire
+    /// spread.
     fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
         world.schedule_block_tick_default(pos, self.block, Self::tick_delay());
 
+        // Vanilla checks `ServerLevel.canSpreadFireAround` first: when no
+        // player is close enough the fire neither ages nor burns away.
+        if !Self::can_spread_fire_around(world, pos) {
+            return;
+        }
+
         if !self.can_survive(state, world.as_ref(), pos) {
+            // Vanilla removes the block but keeps running the rest of the tick.
             world.set_block(
                 pos,
                 vanilla_blocks::AIR.default_state(),
                 UpdateFlags::UPDATE_ALL,
             );
-            return;
         }
 
         let below = world.get_block_state(pos.below());
@@ -308,17 +343,8 @@ impl BlockBehavior for FireBlock {
             );
         }
 
-        let spread_radius = world
-            .get_game_rule(&steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER);
-        if spread_radius == 0 {
-            return;
-        }
-
         if !infiniburn {
-            let has_valid_neighbor = Direction::ALL
-                .iter()
-                .any(|&dir| Self::can_burn(world.get_block_state(pos.relative(dir))));
-            if !has_valid_neighbor {
+            if !Self::is_valid_fire_location(world.as_ref(), pos) {
                 let below_pos = pos.below();
                 if !world.is_face_sturdy(below, below_pos, Direction::Up) || age > 3 {
                     world.set_block(
@@ -339,17 +365,18 @@ impl BlockBehavior for FireBlock {
             }
         }
 
-        if spread_radius < 0 {
-            return;
-        }
+        // Vanilla `EnvironmentAttributes.INCREASED_FIRE_BURNOUT` shortens the
+        // burn-out window by 50 ticks and halves the spread odds.
+        let increased_burnout = world.increased_fire_burnout();
+        let extra = if increased_burnout { -50 } else { 0 };
 
         // Burn adjacent flammable blocks (horizontal 300, vertical 250).
-        Self::check_burn_out(world, pos.east(), 300, next_age);
-        Self::check_burn_out(world, pos.west(), 300, next_age);
-        Self::check_burn_out(world, pos.below(), 250, next_age);
-        Self::check_burn_out(world, pos.above(), 250, next_age);
-        Self::check_burn_out(world, pos.north(), 300, next_age);
-        Self::check_burn_out(world, pos.south(), 300, next_age);
+        Self::check_burn_out(world, pos.east(), 300 + extra, age);
+        Self::check_burn_out(world, pos.west(), 300 + extra, age);
+        Self::check_burn_out(world, pos.below(), 250 + extra, age);
+        Self::check_burn_out(world, pos.above(), 250 + extra, age);
+        Self::check_burn_out(world, pos.north(), 300 + extra, age);
+        Self::check_burn_out(world, pos.south(), 300 + extra, age);
 
         // Spread fire into the vanilla 3x6x3 neighborhood.
         let difficulty_bonus = match world.difficulty() {
@@ -365,29 +392,30 @@ impl BlockBehavior for FireBlock {
                         continue;
                     }
                     let target = pos.offset(dx, dy, dz);
-                    if world.get_block_state(target).get_block() != &vanilla_blocks::AIR {
-                        continue;
-                    }
-                    let odds = Self::ignition_odds_at(world.as_ref(), target);
-                    if odds <= 0 {
+                    let ignite_odds = Self::ignition_odds_at(world.as_ref(), target);
+                    if ignite_odds <= 0 {
                         continue;
                     }
                     let rate = if dy > 1 { 100 + (dy - 1) * 100 } else { 100 };
-                    let mut max_odds = (odds + 40 + difficulty_bonus) / (i32::from(next_age) + 30);
+                    let mut odds = (ignite_odds + 40 + difficulty_bonus) / (i32::from(age) + 30);
+                    if increased_burnout {
+                        odds /= 2;
+                    }
+                    if odds <= 0 {
+                        continue;
+                    }
+                    if rand::random_range(0..rate) > odds {
+                        continue;
+                    }
                     if world.is_raining() && Self::is_near_rain(world, target) {
-                        max_odds /= 2;
+                        continue;
                     }
-                    if max_odds > 0 && rand::random_range(0..rate) <= max_odds {
-                        let spread_age = u8::min(
-                            15,
-                            next_age.saturating_add(rand::random_range(0..5) as u8 / 4),
-                        );
-                        world.set_block(
-                            target,
-                            Self::state_with_age(world.as_ref(), target, spread_age),
-                            UpdateFlags::UPDATE_ALL,
-                        );
-                    }
+                    let spread_age = u8::min(15, age.saturating_add(rand::random_range(0..5) as u8 / 4));
+                    world.set_block(
+                        target,
+                        Self::state_with_age(world.as_ref(), target, spread_age),
+                        UpdateFlags::UPDATE_ALL,
+                    );
                 }
             }
         }
@@ -409,7 +437,12 @@ impl BlockBehavior for FireBlock {
         Self::state_with_age(world, pos, state.get_value(AGE))
     }
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
-        Some(Self::get_state(context.world.as_ref(), context.place_pos()))
+        // Vanilla `FireBlock.getStateForPlacement(BlockPlaceContext)` uses the
+        // non-soul placement state.
+        Some(Self::fire_state_for_placement(
+            context.world.as_ref(),
+            context.place_pos(),
+        ))
     }
 
     fn can_survive(&self, _state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
@@ -573,6 +606,40 @@ mod tests {
         TestLevel::default()
             .with_min_y(0)
             .with_block(POS.below(), support_state)
+    }
+
+    #[test]
+    fn waterlogged_flammable_blocks_never_attach_fire_faces() {
+        use steel_registry::blocks::properties::BlockStateProperties;
+
+        init_vanilla_registry();
+        let dry = vanilla_blocks::OAK_SLAB.default_state();
+        let wet = dry.set_value(&BlockStateProperties::WATERLOGGED, true);
+        assert!(FireBlock::can_burn(dry));
+        assert!(!FireBlock::can_burn(wet));
+        let dry_level = TestLevel::default().with_block(POS.north(), dry);
+        let wet_level = TestLevel::default().with_block(POS.north(), wet);
+        assert!(FireBlock::get_state(&dry_level, POS).get_value(&BlockStateProperties::NORTH));
+        assert!(!FireBlock::get_state(&wet_level, POS).get_value(&BlockStateProperties::NORTH));
+        assert!(FireBlock::can_survive_at(&dry_level, POS));
+        assert!(!FireBlock::can_survive_at(&wet_level, POS));
+    }
+
+    #[test]
+    fn ignition_odds_are_raw_and_skip_occupied_positions() {
+        init_vanilla_registry();
+
+        // Vanilla `FireBlock.getIgniteOdds(LevelReader, BlockPos)` returns the
+        // raw neighbour odds for an empty position and zero for an occupied
+        // one — never the midpoint transform Steel used before.
+        let leaves = vanilla_blocks::OAK_LEAVES.default_state();
+        let level = TestLevel::default().with_block(POS.north(), leaves);
+        assert_eq!(FireBlock::ignition_odds_at(&level, POS), 30);
+
+        let occupied = TestLevel::default()
+            .with_block(POS.north(), leaves)
+            .with_block(POS, vanilla_blocks::STONE.default_state());
+        assert_eq!(FireBlock::ignition_odds_at(&occupied, POS), 0);
     }
 
     #[test]

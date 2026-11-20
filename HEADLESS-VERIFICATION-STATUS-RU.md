@@ -97,3 +97,10 @@
 Сопоставлен `net/minecraft/server/network/PlayerChunkSender.java` pinned 26.3. Найдено намеренное, но не соответствующее vanilla ограничение ACK-rate: Steel 0.1..500 chunks/tick вместо vanilla 0.01..64. Исправлены обе границы. Добавлен тест с **буквальными vanilla-значениями**, а не только сравнение с production-константами (старые тесты могли проходить при неверных константах). Рассмотрены prepare quota, очередь ACK, zero-outstanding reset и окно 1→10; полный concurrency-аудит prepare/encode/commit и отправки при смене мира остаётся открыт.
 
 Текущий прогресс затронутых подсистем: tracker/protocol — 5 новых регрессионных тестов за проход; chunk delivery — 1 новый тест границ; 29 Python PASS. Новые Rust tests и повторный CI пока не засчитаны. Проценты vanilla parity не вычисляются по этим счётчикам.
+
+
+## Актуализация после результатов f8bd310
+
+Test 44669242334 FAIL: E0425 в новом тесте movement_sync (POSITION_SYNC_THRESHOLD не импортирован). В рабочем дереве исправлен импорт. Live Server Smoke 44669242343 SUCCESS, Build Report 44669242292 SUCCESS; Test/LLVM/Lint/Flint/Vanilla Evidence/Conformance не прошли. Selected Flint: 853 PASS / 45 FAIL — не полный parity.
+
+Подтверждён отсутствующий canBeReplaced у плит относительно SlabBlock.java 26.3. Реализован для обычных и weathering copper slabs. Новый зарегистрированный тест покрывает 216 написанных комбинаций состояния/воды/грани/высоты, но пока не исполнен. Детали сохранения и полный честный счётчик — FULL-AUDIT-PROGRESS-26.3-RU.md.

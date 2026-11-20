@@ -10,6 +10,7 @@ use super::clock::WorldClockManager;
 const SKY_LIGHT_LEVEL_ATTRIBUTE: &str = "minecraft:gameplay/sky_light_level";
 const SUN_ANGLE_ATTRIBUTE: &str = "minecraft:visual/sun_angle";
 const MONSTERS_BURN_ATTRIBUTE: &str = "minecraft:gameplay/monsters_burn";
+const INCREASED_FIRE_BURNOUT_ATTRIBUTE: &str = "minecraft:gameplay/increased_fire_burnout";
 const DEFAULT_SKY_LIGHT_LEVEL: f32 = 15.0;
 const DEFAULT_SUN_ANGLE: f32 = 0.0;
 const MIN_SKY_LIGHT_LEVEL: f32 = 0.0;
@@ -81,6 +82,28 @@ pub(super) fn monsters_burn(
     let mut value = false;
     for_each_timeline(dimension_type, |timeline| {
         value = apply_timeline_bool_track(value, timeline, clock_manager, MONSTERS_BURN_ATTRIBUTE);
+    });
+    value
+}
+
+/// Samples the boolean `INCREASED_FIRE_BURNOUT` environment attribute.
+///
+/// Vanilla `EnvironmentAttributes.INCREASED_FIRE_BURNOUT` is a boolean
+/// attribute: `FireBlock.tick` shortens the burn-out window by 50 ticks and
+/// halves the spread odds when it is enabled.
+#[must_use]
+pub(super) fn increased_fire_burnout(
+    dimension_type: DimensionTypeRef,
+    clock_manager: &WorldClockManager,
+) -> bool {
+    let mut value = false;
+    for_each_timeline(dimension_type, |timeline| {
+        value = apply_timeline_bool_track(
+            value,
+            timeline,
+            clock_manager,
+            INCREASED_FIRE_BURNOUT_ATTRIBUTE,
+        );
     });
     value
 }

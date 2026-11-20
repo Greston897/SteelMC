@@ -13,7 +13,7 @@ use steel_registry::{
         properties::{BlockStateProperties, BoolProperty, Direction, EnumProperty, SlabType},
     },
     fluid::{FluidRef, FluidState},
-    vanilla_fluids,
+    REGISTRY, vanilla_fluids,
 };
 use steel_utils::{BlockPos, BlockStateId};
 
@@ -55,6 +55,26 @@ impl SlabBlock {
 }
 
 impl BlockBehavior for SlabBlock {
+    fn can_be_replaced(&self, state: BlockStateId, context: &BlockPlaceContext<'_>) -> bool {
+        let slab_type = state.get_value(SLAB_TYPE);
+        if slab_type == SlabType::Double
+            || !context.with_item(|stack| stack.item() == REGISTRY.items.by_block(self.block))
+        {
+            return false;
+        }
+        if !context.replaces_clicked_block() {
+            return true;
+        }
+        let above = context.click_location().y - f64::from(context.place_pos().y()) > 0.5;
+        let face = context.clicked_face();
+        let horizontal = !matches!(face, Direction::Up | Direction::Down);
+        if slab_type == SlabType::Bottom {
+            face == Direction::Up || (above && horizontal)
+        } else {
+            face == Direction::Down || (!above && horizontal)
+        }
+    }
+
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         let existing_state = context.world.get_block_state(context.place_pos());
         if existing_state.get_block() == self.block {
@@ -123,6 +143,10 @@ impl WeatheringCopperSlabBlock {
 }
 
 impl BlockBehavior for WeatheringCopperSlabBlock {
+    fn can_be_replaced(&self, state: BlockStateId, context: &BlockPlaceContext<'_>) -> bool {
+        self.slab.can_be_replaced(state, context)
+    }
+
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         self.slab.get_state_for_placement(context)
     }
@@ -199,5 +223,94 @@ mod tests {
             .set_value(WATERLOGGED, false);
 
         assert!(!behavior.can_place_liquid(bottom_slab, &vanilla_fluids::FLOWING_WATER));
+    }
+
+    #[test]
+    fn registered_slab_merge_geometry_matches_vanilla_and_clears_water() {
+        use glam::DVec3;
+        use steel_registry::{item_stack::ItemStack, vanilla_items};
+        use steel_utils::{
+            ChunkPos,
+            types::{InteractionHand, UpdateFlags},
+        };
+
+        use crate::behavior::{
+            BLOCK_BEHAVIORS,
+            context::{BlockHitResult, PlacementOrientation, PlacementSource},
+        };
+        use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
+
+        crate::bootstrap::init_globals();
+        let fixture = fresh_test_world("slab_merge_geometry");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let pos = BlockPos::new(8, 64, 8);
+        for block in [&vanilla_blocks::OAK_SLAB, &vanilla_blocks::CUT_COPPER_SLAB] {
+            let behavior = BLOCK_BEHAVIORS.get_behavior(block);
+            for slab_type in [SlabType::Bottom, SlabType::Top, SlabType::Double] {
+                for wet in [false, true] {
+                    let state = block
+                        .default_state()
+                        .set_value(SLAB_TYPE, slab_type)
+                        .set_value(WATERLOGGED, wet);
+                    for face in [
+                        Direction::Up,
+                        Direction::Down,
+                        Direction::North,
+                        Direction::East,
+                        Direction::South,
+                        Direction::West,
+                    ] {
+                        for height in [0.25, 0.5, 0.75] {
+                            world.set_block(pos, state, UpdateFlags::UPDATE_NONE);
+                            let mut stack = ItemStack::new(REGISTRY.items.by_block(block));
+                            let source = PlacementSource::direct(
+                                None,
+                                InteractionHand::MainHand,
+                                &mut stack,
+                                PlacementOrientation::Player { rotation: 0.0, pitch: 0.0 },
+                                false,
+                            );
+                            let hit = BlockHitResult {
+                                location: DVec3::new(8.5, 64.0 + height, 8.5),
+                                direction: face,
+                                block_pos: pos,
+                                miss: false,
+                                inside: false,
+                                world_border_hit: false,
+                            };
+                            let context = BlockPlaceContext::new(world, source, &hit);
+                            let horizontal = !matches!(face, Direction::Up | Direction::Down);
+                            let merge = match slab_type {
+                                SlabType::Bottom => {
+                                    face == Direction::Up || (height > 0.5 && horizontal)
+                                }
+                                SlabType::Top => {
+                                    face == Direction::Down || (height <= 0.5 && horizontal)
+                                }
+                                SlabType::Double => false,
+                            };
+                            assert_eq!(
+                                context.replaces_clicked_block(), merge,
+                                "{slab_type:?} {face:?} height={height}",
+                            );
+                            if merge {
+                                assert_eq!(context.place_pos(), pos);
+                                let merged = behavior
+                                    .get_state_for_placement(&context)
+                                    .expect("merged state");
+                                assert_eq!(merged.get_value(SLAB_TYPE), SlabType::Double);
+                                assert!(!merged.get_value(WATERLOGGED));
+                            }
+                        }
+                    }
+                    let mut other = ItemStack::new(&vanilla_items::STONE);
+                    let context = BlockPlaceContext::directional(
+                        world, pos, Direction::Down, &mut other, Direction::Up,
+                    );
+                    assert!(!behavior.can_be_replaced(state, &context));
+                }
+            }
+        }
     }
 }

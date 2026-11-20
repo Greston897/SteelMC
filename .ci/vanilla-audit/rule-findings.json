@@ -252,6 +252,16 @@
       "finding": "Ограничения ACK-rate vanilla 0.01..64 вместо 0.1..500",
       "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
       "parity_verified": false
+    },
+    {
+      "id": "SL-01",
+      "subsystem": "Блоки",
+      "vanilla_path": "net/minecraft/world/level/block/SlabBlock.java",
+      "vanilla_method": "canBeReplaced",
+      "steel_path": "steel-core/src/behavior/blocks/building/slab_block.rs",
+      "finding": "Отсутствовало разрешение объединения плит по грани/высоте; добавлено для SlabBlock и WeatheringCopperSlabBlock",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
     }
   ]
 }

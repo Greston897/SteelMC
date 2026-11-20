@@ -439,6 +439,10 @@
     60,
     100
   ],
+  "orange_poplar_leaves": [
+    30,
+    60
+  ],
   "orange_tulip": [
     60,
     100
@@ -511,7 +515,47 @@
     60,
     100
   ],
+  "poplar_fence": [
+    5,
+    20
+  ],
+  "poplar_fence_gate": [
+    5,
+    20
+  ],
+  "poplar_log": [
+    5,
+    5
+  ],
+  "poplar_planks": [
+    5,
+    20
+  ],
+  "poplar_shelf": [
+    30,
+    20
+  ],
+  "poplar_slab": [
+    5,
+    20
+  ],
+  "poplar_stairs": [
+    5,
+    20
+  ],
+  "poplar_wood": [
+    5,
+    5
+  ],
   "poppy": [
+    60,
+    100
+  ],
+  "red_poplar_leaves": [
+    30,
+    60
+  ],
+  "red_shrub": [
     60,
     100
   ],
@@ -578,6 +622,10 @@
   "spruce_wood": [
     5,
     5
+  ],
+  "straw_bed": [
+    30,
+    60
   ],
   "stripped_acacia_log": [
     5,
@@ -647,6 +695,14 @@
     5,
     5
   ],
+  "stripped_poplar_log": [
+    5,
+    5
+  ],
+  "stripped_poplar_wood": [
+    5,
+    5
+  ],
   "stripped_spruce_log": [
     5,
     5
@@ -698,5 +754,9 @@
   "wither_rose": [
     60,
     100
+  ],
+  "yellow_poplar_leaves": [
+    30,
+    60
   ]
 }
