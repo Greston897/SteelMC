@@ -979,28 +979,43 @@ fn creative_soul_campfire_dousing_preserves_tool_durability() {
 #[test]
 fn ignition_items_place_fire_and_do_not_charge_again_for_an_occupied_target() {
     for hand in [InteractionHand::MainHand, InteractionHand::OffHand] {
-        for item in [&vanilla_items::FLINT_AND_STEEL, &vanilla_items::FIRE_CHARGE] {
+        for item in [
+            &*vanilla_items::FLINT_AND_STEEL,
+            &*vanilla_items::FIRE_CHARGE,
+        ] {
             let interaction = Interaction::new("ignition_occupied_target");
             interaction.player.set_game_mode(GameType::Survival);
             interaction.block(vanilla_blocks::STONE.default_state());
             let mut stack = ItemStack::new(item);
-            if item == &vanilla_items::FIRE_CHARGE {
+            if item == &*vanilla_items::FIRE_CHARGE {
                 stack.set_count(2);
             }
             interaction.hold(hand, stack);
             assert!(interaction.use_on(hand).consumes_action());
             assert_eq!(
-                interaction.world_fixture.world.get_block_state(interaction.pos.above()).get_block(),
+                interaction
+                    .world_fixture
+                    .world
+                    .get_block_state(interaction.pos.above())
+                    .get_block(),
                 &vanilla_blocks::FIRE,
             );
-            let before = interaction.player.inventory.lock().get_item_in_hand(hand).clone();
-            if item == &vanilla_items::FLINT_AND_STEEL {
+            let before = interaction
+                .player
+                .inventory
+                .lock()
+                .get_item_in_hand(hand)
+                .clone();
+            if item == &*vanilla_items::FLINT_AND_STEEL {
                 assert_eq!(before.get_damage_value(), 1);
             } else {
                 assert_eq!(before.count(), 1);
             }
             assert_eq!(interaction.use_on(hand), InteractionResult::Fail);
-            assert_eq!(*interaction.player.inventory.lock().get_item_in_hand(hand), before);
+            assert_eq!(
+                *interaction.player.inventory.lock().get_item_in_hand(hand),
+                before
+            );
         }
     }
 }

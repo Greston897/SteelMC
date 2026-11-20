@@ -225,17 +225,13 @@ impl FireBlock {
         if radius == -1 {
             return true;
         }
-        let target = DVec3::new(
-            f64::from(pos.x()),
-            f64::from(pos.y()),
-            f64::from(pos.z()),
-        );
+        let target = DVec3::new(f64::from(pos.x()), f64::from(pos.y()), f64::from(pos.z()));
         let mut close_enough = false;
         world.players.iter_players(|_, player| {
             if player.is_spectator() {
                 return true;
             }
-            if player.position().distance_to(target) < f64::from(radius) {
+            if player.position().distance(target) < f64::from(radius) {
                 close_enough = true;
                 return false;
             }
@@ -410,7 +406,8 @@ impl BlockBehavior for FireBlock {
                     if world.is_raining() && Self::is_near_rain(world, target) {
                         continue;
                     }
-                    let spread_age = u8::min(15, age.saturating_add(rand::random_range(0..5) as u8 / 4));
+                    let spread_age =
+                        u8::min(15, age.saturating_add(rand::random_range(0..5) as u8 / 4));
                     world.set_block(
                         target,
                         Self::state_with_age(world.as_ref(), target, spread_age),

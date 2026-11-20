@@ -604,7 +604,11 @@ fn dispenser_flint_and_steel_priming_tnt_removes_the_block_and_wears_the_tool() 
         ItemStack::new(&vanilla_items::FLINT_AND_STEEL),
     );
     let world = &fixture.world;
-    world.set_block(TARGET, vanilla_blocks::TNT.default_state(), UpdateFlags::UPDATE_ALL);
+    world.set_block(
+        TARGET,
+        vanilla_blocks::TNT.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
     assert!(dispense_from(world, SOURCE, world.get_block_state(SOURCE)));
 
     assert!(
@@ -625,7 +629,11 @@ fn dispenser_flint_and_steel_keeps_the_tnt_when_priming_is_rejected() {
         ItemStack::new(&vanilla_items::FLINT_AND_STEEL),
     );
     let world = &fixture.world;
-    world.set_block(TARGET, vanilla_blocks::TNT.default_state(), UpdateFlags::UPDATE_ALL);
+    world.set_block(
+        TARGET,
+        vanilla_blocks::TNT.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
     world.set_game_rule(&steel_registry::vanilla_game_rules::TNT_EXPLODES, false);
 
     assert!(!dispense_from(world, SOURCE, world.get_block_state(SOURCE)));

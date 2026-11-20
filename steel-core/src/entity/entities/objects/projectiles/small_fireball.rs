@@ -20,6 +20,7 @@ use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
@@ -34,8 +35,8 @@ use steel_utils::{BlockPos, Direction, DowncastType, DowncastTypeKey};
 use crate::behavior::blocks::FireBlock;
 use crate::entity::damage::DamageSource;
 use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, EntitySyncedData, Projectile, ProjectileBase, ProjectileHit,
-    RemovalReason, SharedEntity, ThrowableItemProjectile, ThrowableProjectile,
+    Entity, EntityBase, EntityBaseLoad, EntitySyncedData, Projectile, ProjectileBase,
+    ProjectileHit, RemovalReason, SharedEntity, ThrowableItemProjectile, ThrowableProjectile,
 };
 use crate::world::World;
 
@@ -100,9 +101,7 @@ impl SmallFireballEntity {
     /// Mob-owned fireballs skip the placement when `mobGriefing` is disabled.
     fn light_block_on_hit(&self, world: &Arc<World>, block_pos: BlockPos, direction: Direction) {
         let owner = self.get_owner();
-        let owner_is_mob = owner
-            .as_ref()
-            .is_some_and(|owner| owner.as_ref().is_mob());
+        let owner_is_mob = owner.as_ref().is_some_and(|owner| owner.as_ref().is_mob());
         let mob_griefing = world.get_game_rule(&vanilla_game_rules::MOB_GRIEFING);
         if owner_is_mob && !mob_griefing {
             return;

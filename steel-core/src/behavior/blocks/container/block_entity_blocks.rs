@@ -31,9 +31,9 @@ use crate::block_entity::BlockEntityTicker;
 use crate::block_entity::entities::CrafterBlockEntity;
 use crate::entity::entities::objects::projectiles::AbstractArrow as _;
 use crate::entity::entities::{
-    ArrowEntity, ExperienceBottleEntity, FireworkRocketEntity, ItemEntity,
-    LingeringPotionEntity, SmallFireballEntity, SnowballEntity, SpectralArrowEntity,
-    SplashPotionEntity, ThrownEggEntity, WindChargeEntity,
+    ArrowEntity, ExperienceBottleEntity, FireworkRocketEntity, ItemEntity, LingeringPotionEntity,
+    SmallFireballEntity, SnowballEntity, SpectralArrowEntity, SplashPotionEntity, ThrownEggEntity,
+    WindChargeEntity,
 };
 use crate::entity::projectile::triangle_random;
 use crate::entity::{Entity as _, SharedEntity, ThrowableItemProjectile as _, next_entity_id};
@@ -85,94 +85,80 @@ fn dispense_projectile(
     let weak = Arc::downgrade(world);
     let id = next_entity_id();
 
-    let entity: SharedEntity =
-        if kind == &*vanilla_items::ARROW || kind == &*vanilla_items::TIPPED_ARROW {
-            // Vanilla `ArrowItem.asProjectile`.
-            let arrow = Arc::new(ArrowEntity::new(&vanilla_entities::ARROW, id, pos, weak));
-            arrow.set_arrow_item(stack.copy_with_count(1));
-            arrow
-        } else if kind == &*vanilla_items::SPECTRAL_ARROW {
-            // Vanilla `SpectralArrowItem.asProjectile`.
-            let arrow = Arc::new(SpectralArrowEntity::new(
-                &vanilla_entities::SPECTRAL_ARROW,
-                id,
-                pos,
-                weak,
-            ));
-            arrow.set_arrow_item(stack.copy_with_count(1));
-            arrow
-        } else if kind == &*vanilla_items::SPLASH_POTION {
-            let potion = SplashPotionEntity::new(
-                &vanilla_entities::SPLASH_POTION,
-                id,
-                pos,
-                weak,
-            );
-            potion.set_item_clamped(stack.copy_with_count(1));
-            Arc::new(potion)
-        } else if kind == &*vanilla_items::LINGERING_POTION {
-            let potion = LingeringPotionEntity::new(
-                &vanilla_entities::LINGERING_POTION,
-                id,
-                pos,
-                weak,
-            );
-            potion.set_item_clamped(stack.copy_with_count(1));
-            Arc::new(potion)
-        } else if kind == &*vanilla_items::EXPERIENCE_BOTTLE {
-            let bottle = ExperienceBottleEntity::new(
-                &vanilla_entities::EXPERIENCE_BOTTLE,
-                id,
-                pos,
-                weak,
-            );
-            bottle.set_item_clamped(stack.copy_with_count(1));
-            Arc::new(bottle)
-        } else if kind == &*vanilla_items::SNOWBALL {
-            let snowball = SnowballEntity::new(&vanilla_entities::SNOWBALL, id, pos, weak);
-            snowball.set_item_clamped(stack.copy_with_count(1));
-            Arc::new(snowball)
-        } else if kind == &*vanilla_items::EGG
-            || kind == &*vanilla_items::BROWN_EGG
-            || kind == &*vanilla_items::BLUE_EGG
-        {
-            // Vanilla `EggItem.asProjectile`.
-            let egg = ThrownEggEntity::new(&vanilla_entities::EGG, id, pos, weak);
-            egg.set_item_clamped(stack.copy_with_count(1));
-            Arc::new(egg)
-        } else if kind == &*vanilla_items::WIND_CHARGE {
-            // Vanilla `WindChargeItem.asProjectile` sets the delta movement to
-            // the noised facing direction. The direction is *not* normalized
-            // and `WindChargeItem.shoot` is a no-op, so the projectile keeps
-            // this velocity.
-            let charge = WindChargeEntity::new(&vanilla_entities::WIND_CHARGE, id, pos, weak);
-            charge.set_velocity(as_projectile_direction(facing));
-            Arc::new(charge)
-        } else if kind == &*vanilla_items::FIRE_CHARGE {
-            // Vanilla `FireChargeItem.asProjectile` copies the source stack
-            // into the fireball's synced item (count one) and flies along the
-            // normalized noised facing direction. `FireChargeItem.shoot` is a
-            // no-op, so the fireball keeps this velocity.
-            let fireball =
-                SmallFireballEntity::new(&vanilla_entities::SMALL_FIREBALL, id, pos, weak);
-            fireball.set_item_clamped(stack.copy_with_count(1));
-            fireball.set_velocity(vanilla_normalize(as_projectile_direction(facing)));
-            Arc::new(fireball)
-        } else if kind == &*vanilla_items::FIREWORK_ROCKET {
-            // Vanilla `FireworkRocketItem.asProjectile` creates the rocket with
-            // the source stack and the `shotAtAngle` flag set.
-            let rocket = FireworkRocketEntity::launched(
-                &vanilla_entities::FIREWORK_ROCKET,
-                id,
-                pos,
-                weak,
-                stack.copy_with_count(1),
-            );
-            rocket.set_shot_at_angle(true);
-            Arc::new(rocket)
-        } else {
-            return None;
-        };
+    let entity: SharedEntity = if kind == &*vanilla_items::ARROW
+        || kind == &*vanilla_items::TIPPED_ARROW
+    {
+        // Vanilla `ArrowItem.asProjectile`.
+        let arrow = Arc::new(ArrowEntity::new(&vanilla_entities::ARROW, id, pos, weak));
+        arrow.set_arrow_item(stack.copy_with_count(1));
+        arrow
+    } else if kind == &*vanilla_items::SPECTRAL_ARROW {
+        // Vanilla `SpectralArrowItem.asProjectile`.
+        let arrow = Arc::new(SpectralArrowEntity::new(
+            &vanilla_entities::SPECTRAL_ARROW,
+            id,
+            pos,
+            weak,
+        ));
+        arrow.set_arrow_item(stack.copy_with_count(1));
+        arrow
+    } else if kind == &*vanilla_items::SPLASH_POTION {
+        let potion = SplashPotionEntity::new(&vanilla_entities::SPLASH_POTION, id, pos, weak);
+        potion.set_item_clamped(stack.copy_with_count(1));
+        Arc::new(potion)
+    } else if kind == &*vanilla_items::LINGERING_POTION {
+        let potion = LingeringPotionEntity::new(&vanilla_entities::LINGERING_POTION, id, pos, weak);
+        potion.set_item_clamped(stack.copy_with_count(1));
+        Arc::new(potion)
+    } else if kind == &*vanilla_items::EXPERIENCE_BOTTLE {
+        let bottle =
+            ExperienceBottleEntity::new(&vanilla_entities::EXPERIENCE_BOTTLE, id, pos, weak);
+        bottle.set_item_clamped(stack.copy_with_count(1));
+        Arc::new(bottle)
+    } else if kind == &*vanilla_items::SNOWBALL {
+        let snowball = SnowballEntity::new(&vanilla_entities::SNOWBALL, id, pos, weak);
+        snowball.set_item_clamped(stack.copy_with_count(1));
+        Arc::new(snowball)
+    } else if kind == &*vanilla_items::EGG
+        || kind == &*vanilla_items::BROWN_EGG
+        || kind == &*vanilla_items::BLUE_EGG
+    {
+        // Vanilla `EggItem.asProjectile`.
+        let egg = ThrownEggEntity::new(&vanilla_entities::EGG, id, pos, weak);
+        egg.set_item_clamped(stack.copy_with_count(1));
+        Arc::new(egg)
+    } else if kind == &*vanilla_items::WIND_CHARGE {
+        // Vanilla `WindChargeItem.asProjectile` sets the delta movement to
+        // the noised facing direction. The direction is *not* normalized
+        // and `WindChargeItem.shoot` is a no-op, so the projectile keeps
+        // this velocity.
+        let charge = WindChargeEntity::new(&vanilla_entities::WIND_CHARGE, id, pos, weak);
+        charge.set_velocity(as_projectile_direction(facing));
+        Arc::new(charge)
+    } else if kind == &*vanilla_items::FIRE_CHARGE {
+        // Vanilla `FireChargeItem.asProjectile` copies the source stack
+        // into the fireball's synced item (count one) and flies along the
+        // normalized noised facing direction. `FireChargeItem.shoot` is a
+        // no-op, so the fireball keeps this velocity.
+        let fireball = SmallFireballEntity::new(&vanilla_entities::SMALL_FIREBALL, id, pos, weak);
+        fireball.set_item_clamped(stack.copy_with_count(1));
+        fireball.set_velocity(vanilla_normalize(as_projectile_direction(facing)));
+        Arc::new(fireball)
+    } else if kind == &*vanilla_items::FIREWORK_ROCKET {
+        // Vanilla `FireworkRocketItem.asProjectile` creates the rocket with
+        // the source stack and the `shotAtAngle` flag set.
+        let rocket = FireworkRocketEntity::launched(
+            &vanilla_entities::FIREWORK_ROCKET,
+            id,
+            pos,
+            weak,
+            stack.copy_with_count(1),
+        );
+        rocket.set_shot_at_angle(true);
+        Arc::new(rocket)
+    } else {
+        return None;
+    };
     Some(entity)
 }
 
@@ -996,7 +982,6 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
         // `FireChargeItem.shoot` and `WindChargeItem.shoot` are no-ops in
         // vanilla: those projectiles keep the velocity their `asProjectile`
         // implementation gave them.
-        use crate::entity::Projectile as _;
         let shoots_with_config = stack.item() != &*vanilla_items::FIRE_CHARGE
             && stack.item() != &*vanilla_items::WIND_CHARGE;
         if shoots_with_config {

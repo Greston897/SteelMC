@@ -7,13 +7,14 @@ use std::sync::Arc;
 
 use steel_macros::block_behavior;
 use steel_registry::{
+    REGISTRY,
     blocks::{
         BlockRef,
         block_state_ext::BlockStateExt as _,
         properties::{BlockStateProperties, BoolProperty, Direction, EnumProperty, SlabType},
     },
     fluid::{FluidRef, FluidState},
-    REGISTRY, vanilla_fluids,
+    vanilla_fluids,
 };
 use steel_utils::{BlockPos, BlockStateId};
 
@@ -268,7 +269,10 @@ mod tests {
                                 None,
                                 InteractionHand::MainHand,
                                 &mut stack,
-                                PlacementOrientation::Player { rotation: 0.0, pitch: 0.0 },
+                                PlacementOrientation::Player {
+                                    rotation: 0.0,
+                                    pitch: 0.0,
+                                },
                                 false,
                             );
                             let hit = BlockHitResult {
@@ -291,7 +295,8 @@ mod tests {
                                 SlabType::Double => false,
                             };
                             assert_eq!(
-                                context.replaces_clicked_block(), merge,
+                                context.replaces_clicked_block(),
+                                merge,
                                 "{slab_type:?} {face:?} height={height}",
                             );
                             if merge {
@@ -306,7 +311,11 @@ mod tests {
                     }
                     let mut other = ItemStack::new(&vanilla_items::STONE);
                     let context = BlockPlaceContext::directional(
-                        world, pos, Direction::Down, &mut other, Direction::Up,
+                        world,
+                        pos,
+                        Direction::Down,
+                        &mut other,
+                        Direction::Up,
                     );
                     assert!(!behavior.can_be_replaced(state, &context));
                 }
