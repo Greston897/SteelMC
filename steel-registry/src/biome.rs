@@ -164,8 +164,10 @@ impl Biome {
         compound.insert("effects", NbtTag::Compound(effects));
 
         // Syncable environment attributes (pre-filtered JSON from the build script).
-        if !self.network_attributes_json.is_empty() && self.network_attributes_json != "{}"
-            && let Ok(value) = serde_json::from_str::<serde_json::Value>(self.network_attributes_json)
+        if !self.network_attributes_json.is_empty()
+            && self.network_attributes_json != "{}"
+            && let Ok(value) =
+                serde_json::from_str::<serde_json::Value>(self.network_attributes_json)
             && let Ok(NbtTag::Compound(attributes)) = steel_utils::nbt::json_to_nbt(&value)
             && !attributes.is_empty()
         {

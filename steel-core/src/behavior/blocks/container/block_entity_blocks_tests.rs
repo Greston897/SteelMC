@@ -362,3 +362,64 @@ fn powered_dispenser_initializes_firework_lifetime_source_and_straight_angled_fl
         });
     }
 }
+
+#[test]
+fn ordinary_dispenser_items_use_vanilla_spawn_offset_and_triangular_velocity() {
+    use steel_utils::random::{RandomSource as _, legacy_random::LegacyRandom};
+    for facing in [
+        Direction::Down,
+        Direction::Up,
+        Direction::North,
+        Direction::South,
+        Direction::West,
+        Direction::East,
+    ] {
+        for seed in 0..128 {
+            let mut random = LegacyRandom::from_seed(seed);
+            let mut expected_random = LegacyRandom::from_seed(seed);
+            let (actual_pos, actual_velocity) = default_item_launch(SOURCE, facing, &mut random);
+            let (dx, dy, dz) = facing.offset();
+            let vertical = dy != 0;
+            let expected_pos = DVec3::new(
+                8.5 + f64::from(dx) * 0.7,
+                64.5 + f64::from(dy) * 0.7 - if vertical { 0.125 } else { 0.15625 },
+                8.5 + f64::from(dz) * 0.7,
+            );
+            use steel_utils::random::Random as _;
+            let power = expected_random.next_f64() * 0.1 + 0.2;
+            let deviation = 0.0172275 * 6.0;
+            let expected_velocity = DVec3::new(
+                expected_random.triangle(f64::from(dx) * power, deviation),
+                expected_random.triangle(0.2, deviation),
+                expected_random.triangle(f64::from(dz) * power, deviation),
+            );
+            assert_eq!(actual_pos, expected_pos);
+            assert_eq!(actual_velocity, expected_velocity);
+            assert!(actual_velocity.x.abs() < 0.404);
+            assert!(actual_velocity.z.abs() < 0.404);
+            assert!((0.096..0.304).contains(&actual_velocity.y));
+        }
+    }
+}
+
+#[test]
+fn jack_o_lantern_is_ejected_as_a_slow_item_not_a_projectile_or_golem() {
+    let (fixture, container) = fixture(
+        "dispenser_default_item_velocity",
+        ItemStack::new(&vanilla_items::JACK_O_LANTERN),
+    );
+    let world = &fixture.world;
+    assert!(dispense_from(world, SOURCE, world.get_block_state(SOURCE)));
+    assert!(container.lock().get_item(0).is_empty());
+    let entities = world.get_entities_in_aabb(&steel_utils::WorldAabb::new(
+        7.0, 63.0, 7.0, 11.0, 67.0, 10.0,
+    ));
+    let items: Vec<_> = entities
+        .iter()
+        .filter_map(|entity| entity.downcast_ref::<ItemEntity>())
+        .collect();
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0].position(), DVec3::new(9.2, 64.34375, 8.5));
+    assert!(items[0].velocity().x < 0.404);
+    assert_eq!(items[0].get_item().item(), &*vanilla_items::JACK_O_LANTERN);
+}

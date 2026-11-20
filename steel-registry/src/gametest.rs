@@ -11,9 +11,9 @@ use std::str::FromStr;
 use rustc_hash::FxHashMap;
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use simdnbt::{FromNbtTag, ToNbtTag};
+use steel_utils::Identifier;
 use steel_utils::nbt::NbtNumeric as _;
 use steel_utils::types::Difficulty;
-use steel_utils::Identifier;
 
 use crate::RegistryTags;
 

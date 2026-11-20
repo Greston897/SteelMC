@@ -468,8 +468,7 @@ fn replace_or_store_dispensed_result(
         }
     }
     drop(guard);
-    let (spawn_pos, velocity) = launch_point(pos, facing);
-    spawn_dropped_item(world, spawn_pos, velocity, replacement);
+    spawn_dropped_item(world, pos, facing, replacement);
 }
 
 /// Tries to insert a single item stack into `destination` on `side`.
@@ -863,7 +862,7 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
         let _ = world.try_add_entity(projectile);
         &sound_events::BLOCK_DISPENSER_LAUNCH
     } else {
-        spawn_dropped_item(world, spawn_pos, velocity, stack);
+        spawn_dropped_item(world, pos, facing, stack);
         &sound_events::BLOCK_DISPENSER_DISPENSE
     };
 
@@ -901,8 +900,7 @@ fn drop_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool {
     }
 
     let stack = container.lock().remove_item(slot, 1);
-    let (spawn_pos, velocity) = launch_point(pos, facing);
-    spawn_dropped_item(world, spawn_pos, velocity, stack);
+    spawn_dropped_item(world, pos, facing, stack);
     world.play_sound(
         &sound_events::BLOCK_DISPENSER_DISPENSE,
         SoundSource::Blocks,
@@ -914,8 +912,36 @@ fn drop_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool {
     true
 }
 
-/// Spawns an item entity that travels along `velocity`.
-fn spawn_dropped_item(world: &Arc<World>, spawn_pos: DVec3, velocity: DVec3, stack: ItemStack) {
+/// Vanilla `DefaultDispenseItemBehavior.spawnItem`, separate from projectile
+/// launching: lower the spawn point and apply triangular noise at accuracy 6.
+fn default_item_launch(
+    pos: BlockPos,
+    facing: Direction,
+    random: &mut impl steel_utils::random::Random,
+) -> (DVec3, DVec3) {
+    let (mut spawn_pos, _) = launch_point(pos, facing);
+    spawn_pos.y -= if facing.get_axis() == steel_utils::axis::Axis::Y {
+        0.125
+    } else {
+        0.15625
+    };
+    let (dx, _, dz) = facing.offset();
+    let power = random.next_f64() * 0.1 + 0.2;
+    let deviation = 0.0172275 * 6.0;
+    let velocity = DVec3::new(
+        random.triangle(f64::from(dx) * power, deviation),
+        random.triangle(0.2, deviation),
+        random.triangle(f64::from(dz) * power, deviation),
+    );
+    (spawn_pos, velocity)
+}
+
+/// Spawns an ordinary dispensed item, never with the projectile launch speed.
+fn spawn_dropped_item(world: &Arc<World>, pos: BlockPos, facing: Direction, stack: ItemStack) {
+    use steel_utils::random::{RandomSource as _, legacy_random::LegacyRandom};
+
+    let mut random = LegacyRandom::from_seed(rand::random());
+    let (spawn_pos, velocity) = default_item_launch(pos, facing, &mut random);
     let entity = ItemEntity::new(
         &vanilla_entities::ITEM,
         next_entity_id(),

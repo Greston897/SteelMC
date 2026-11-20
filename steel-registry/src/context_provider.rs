@@ -112,11 +112,7 @@ pub enum ContextCondition {
 impl ContextCondition {
     /// Evaluates this condition against `ctx` and `rng`.
     #[must_use]
-    pub fn evaluate<R: Random + ?Sized>(
-        &self,
-        ctx: &ProviderEvalContext<'_>,
-        rng: &mut R,
-    ) -> bool {
+    pub fn evaluate<R: Random + ?Sized>(&self, ctx: &ProviderEvalContext<'_>, rng: &mut R) -> bool {
         self.eval_bounded(ctx, rng, 0)
     }
 
@@ -191,10 +187,9 @@ impl ContextCondition {
                 for req in enchantments {
                     let matched = ctx.tool_enchantments.iter().any(|(ench_key, level)| {
                         let key_ok = if req.is_tag {
-                            REGISTRY
-                                .enchantments
-                                .by_key(ench_key)
-                                .is_some_and(|e| REGISTRY.enchantments.is_in_tag(e, &req.enchantment))
+                            REGISTRY.enchantments.by_key(ench_key).is_some_and(|e| {
+                                REGISTRY.enchantments.is_in_tag(e, &req.enchantment)
+                            })
                         } else {
                             ench_key == &req.enchantment
                         };
@@ -329,9 +324,9 @@ impl ContextIntExpr {
                     rng.next_i32_between(min, max)
                 }
             }
-            Self::Clamped { source, min, max } => source
-                .sample_bounded(ctx, rng, depth + 1)
-                .clamp(*min, *max),
+            Self::Clamped { source, min, max } => {
+                source.sample_bounded(ctx, rng, depth + 1).clamp(*min, *max)
+            }
             Self::WeightedList(entries) => {
                 let total: u64 = entries.iter().map(|(_, w)| u64::from(*w)).sum();
                 if total == 0 {

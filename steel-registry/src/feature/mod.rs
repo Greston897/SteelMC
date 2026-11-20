@@ -99,11 +99,7 @@ impl crate::RegistryEntry for ConfiguredFeature {
     }
 }
 
-crate::impl_tagged_registry!(
-    ConfiguredFeatureRegistry,
-    features_by_key,
-    "feature"
-);
+crate::impl_tagged_registry!(ConfiguredFeatureRegistry, features_by_key, "feature");
 
 /// A placed feature registry entry.
 #[derive(Debug)]

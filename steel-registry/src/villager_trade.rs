@@ -77,7 +77,11 @@ impl TradeNumberProvider {
             Self::Uniform { min, max } => {
                 let lo = min.sample_int(rng);
                 let hi = max.sample_int(rng);
-                if hi <= lo { lo } else { rng.next_i32_between(lo, hi) }
+                if hi <= lo {
+                    lo
+                } else {
+                    rng.next_i32_between(lo, hi)
+                }
             }
             Self::Binomial { n, p } => {
                 let trials = n.sample_int(rng).max(0);
@@ -91,9 +95,11 @@ impl TradeNumberProvider {
                 result
             }
             // Vanilla `Sum.getInt` floors the float sum.
-            Self::Add(inputs) => {
-                inputs.iter().map(|p| p.sample_float(rng)).sum::<f32>().floor() as i32
-            }
+            Self::Add(inputs) => inputs
+                .iter()
+                .map(|p| p.sample_float(rng))
+                .sum::<f32>()
+                .floor() as i32,
         }
     }
 
@@ -185,9 +191,7 @@ pub enum TradeItemModifier {
     /// (`None` means every registered potion).
     SetRandomPotion { options: Option<TradeHolderSet> },
     /// `minecraft:set_random_dyes` — mixes `number_of_dyes` random dyes.
-    SetRandomDyes {
-        number_of_dyes: TradeNumberProvider,
-    },
+    SetRandomDyes { number_of_dyes: TradeNumberProvider },
     /// `filtered` requiring any live enchantments (`minecraft:enchantments: [{}]`).
     RequireEnchantments,
     /// `filtered` requiring stored enchantments (enchanted books).
@@ -241,10 +245,7 @@ impl VillagerTrade {
                     .collect(),
                 EnchantmentProviderSet::List(keys) => keys.clone(),
             };
-            if result_stored_enchantments
-                .iter()
-                .any(|e| pool.contains(e))
-            {
+            if result_stored_enchantments.iter().any(|e| pool.contains(e)) {
                 cost *= 2;
             }
         }

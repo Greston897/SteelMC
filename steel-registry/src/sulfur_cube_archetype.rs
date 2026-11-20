@@ -220,9 +220,7 @@ fn float_provider_from_nbt(tag: simdnbt::borrow::NbtTag<'_, '_>) -> Option<Float
     let kind = compound.get("type")?.string()?.to_str();
     let kind = kind.strip_prefix("minecraft:").unwrap_or(&kind);
     match kind {
-        "constant" => Some(FloatProvider::Constant(
-            compound.get("value")?.codec_f32()?,
-        )),
+        "constant" => Some(FloatProvider::Constant(compound.get("value")?.codec_f32()?)),
         "uniform" => Some(FloatProvider::Uniform {
             min_inclusive: compound.get("min_inclusive")?.codec_f32()?,
             max_exclusive: compound.get("max_exclusive")?.codec_f32()?,
@@ -373,7 +371,9 @@ impl FromNbtTag for SulfurCubeArchetypeValue {
             None => false,
         };
         let explosion = match compound.get("explosion") {
-            Some(tag) => Some(SulfurCubeExplosion::from_borrowed_compound(tag.compound()?)?),
+            Some(tag) => Some(SulfurCubeExplosion::from_borrowed_compound(
+                tag.compound()?,
+            )?),
             None => None,
         };
         let contact_damage = match compound.get("contact_damage") {
@@ -389,9 +389,8 @@ impl FromNbtTag for SulfurCubeArchetypeValue {
         let mut attribute_modifiers = Vec::new();
         if !attr_list.empty() {
             for entry in attr_list.compounds()? {
-                attribute_modifiers.push(SulfurCubeAttributeModifier::from_borrowed_compound(
-                    entry,
-                )?);
+                attribute_modifiers
+                    .push(SulfurCubeAttributeModifier::from_borrowed_compound(entry)?);
             }
         }
         let sound_settings = SulfurCubeSoundSettings::from_borrowed_compound(

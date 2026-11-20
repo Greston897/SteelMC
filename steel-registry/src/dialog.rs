@@ -69,10 +69,7 @@ impl ExitAction {
 #[derive(Debug, Clone)]
 pub enum DialogBody {
     /// `minecraft:plain_message` — wrapped body text.
-    PlainMessage {
-        contents: TextComponent,
-        width: i32,
-    },
+    PlainMessage { contents: TextComponent, width: i32 },
     /// `minecraft:item` — item-stack preview with optional description.
     Item {
         items: String,
@@ -281,43 +278,29 @@ impl DialogInput {
 #[derive(Debug, Clone)]
 pub enum DialogClickAction {
     /// `minecraft:open_url` — opens a URL in the browser.
-    OpenUrl {
-        url: String,
-    },
+    OpenUrl { url: String },
     /// `minecraft:run_command` — runs a command as the clicking player.
-    RunCommand {
-        command: String,
-    },
+    RunCommand { command: String },
     /// `minecraft:suggest_command` — suggests a command in chat.
-    SuggestCommand {
-        command: String,
-    },
+    SuggestCommand { command: String },
     /// `minecraft:change_page` — turns the dialog-list page.
-    ChangePage {
-        page: i32,
-    },
+    ChangePage { page: i32 },
     /// `minecraft:show_dialog` — opens another dialog by id or `#tag`.
-    ShowDialog {
-        dialog: String,
-    },
+    ShowDialog { dialog: String },
     /// `minecraft:custom` — fires a custom click action with an NBT payload.
     Custom {
         id: Identifier,
         payload: Option<NbtCompound>,
     },
     /// `minecraft:dynamic/run_command` — runs a templated command with input values.
-    DynamicRunCommand {
-        template: String,
-    },
+    DynamicRunCommand { template: String },
     /// `minecraft:dynamic/custom` — custom click action with templated additions.
     DynamicCustom {
         id: Identifier,
         additions: Option<NbtCompound>,
     },
     /// `minecraft:copy_to_clipboard` — copies text to the clipboard.
-    CopyToClipboard {
-        value: String,
-    },
+    CopyToClipboard { value: String },
 }
 
 impl DialogClickAction {
@@ -413,10 +396,7 @@ pub struct Dialog {
 #[derive(Debug, Clone)]
 pub enum DialogVariant {
     /// A two-button confirmation dialog.
-    Confirmation {
-        yes: DialogAction,
-        no: DialogAction,
-    },
+    Confirmation { yes: DialogAction, no: DialogAction },
     /// A dialog that displays a list of other dialogs.
     DialogList {
         dialogs: &'static str,
@@ -432,9 +412,7 @@ pub enum DialogVariant {
         button_width: i32,
     },
     /// A single-action notice dialog.
-    Notice {
-        action: DialogAction,
-    },
+    Notice { action: DialogAction },
     /// A dialog that displays server links.
     ServerLinks {
         exit_action: ExitAction,
@@ -467,8 +445,11 @@ impl Dialog {
             compound.insert("body", NbtTag::List(NbtList::Compound(list)));
         }
         if !self.inputs.is_empty() {
-            let list: Vec<NbtCompound> =
-                self.inputs.iter().map(DialogInput::to_nbt_compound).collect();
+            let list: Vec<NbtCompound> = self
+                .inputs
+                .iter()
+                .map(DialogInput::to_nbt_compound)
+                .collect();
             compound.insert("inputs", NbtTag::List(NbtList::Compound(list)));
         }
         if !self.can_close_with_escape {
@@ -492,7 +473,10 @@ impl Dialog {
                 button_width,
             } => {
                 compound.insert("dialogs", *dialogs);
-                compound.insert("exit_action", NbtTag::Compound(exit_action.to_nbt_compound()));
+                compound.insert(
+                    "exit_action",
+                    NbtTag::Compound(exit_action.to_nbt_compound()),
+                );
                 compound.insert("columns", *columns);
                 compound.insert("button_width", *button_width);
             }
@@ -505,7 +489,10 @@ impl Dialog {
                 let list: Vec<NbtCompound> =
                     actions.iter().map(DialogAction::to_nbt_compound).collect();
                 compound.insert("actions", NbtTag::List(NbtList::Compound(list)));
-                compound.insert("exit_action", NbtTag::Compound(exit_action.to_nbt_compound()));
+                compound.insert(
+                    "exit_action",
+                    NbtTag::Compound(exit_action.to_nbt_compound()),
+                );
                 compound.insert("columns", *columns);
                 compound.insert("button_width", *button_width);
             }
@@ -517,7 +504,10 @@ impl Dialog {
                 columns,
                 button_width,
             } => {
-                compound.insert("exit_action", NbtTag::Compound(exit_action.to_nbt_compound()));
+                compound.insert(
+                    "exit_action",
+                    NbtTag::Compound(exit_action.to_nbt_compound()),
+                );
                 compound.insert("columns", *columns);
                 compound.insert("button_width", *button_width);
             }
@@ -574,7 +564,9 @@ impl Dialog {
                 dialogs: leak_str(
                     obj.get("dialogs")
                         .and_then(serde_json::Value::as_str)
-                        .ok_or_else(|| format!("dialog {key} is missing required field 'dialogs'"))?,
+                        .ok_or_else(|| {
+                            format!("dialog {key} is missing required field 'dialogs'")
+                        })?,
                 ),
                 exit_action: parse_exit_action(obj, &key)?,
                 columns: obj
@@ -663,10 +655,7 @@ fn parse_optional_component(
         .transpose()
 }
 
-fn parse_body_list(
-    value: &serde_json::Value,
-    key: &Identifier,
-) -> Result<Vec<DialogBody>, String> {
+fn parse_body_list(value: &serde_json::Value, key: &Identifier) -> Result<Vec<DialogBody>, String> {
     let items = value
         .as_array()
         .ok_or_else(|| format!("dialog {key} field 'body' must be a list"))?;
@@ -693,9 +682,7 @@ fn parse_body_list(
                     items: obj
                         .get("items")
                         .and_then(serde_json::Value::as_str)
-                        .ok_or_else(|| {
-                            format!("dialog {key} item body is missing 'items'")
-                        })?
+                        .ok_or_else(|| format!("dialog {key} item body is missing 'items'"))?
                         .to_owned(),
                     description: parse_optional_component(obj, "description", key)?,
                     show_decorations: obj
@@ -912,7 +899,9 @@ fn parse_click_action(
             .map(str::to_owned)
     };
     match raw_type.strip_prefix("minecraft:").unwrap_or(raw_type) {
-        "open_url" => Ok(DialogClickAction::OpenUrl { url: get_str("url")? }),
+        "open_url" => Ok(DialogClickAction::OpenUrl {
+            url: get_str("url")?,
+        }),
         "run_command" => Ok(DialogClickAction::RunCommand {
             command: get_str("command")?,
         }),
@@ -1004,9 +993,8 @@ fn parse_action_list(
                     .map(|v| v as i32)
                     .unwrap_or(150),
                 action: parse_click_action(
-                    obj.get("action").ok_or_else(|| {
-                        format!("dialog {key} action button is missing 'action'")
-                    })?,
+                    obj.get("action")
+                        .ok_or_else(|| format!("dialog {key} action button is missing 'action'"))?,
                     key,
                 )?,
             })

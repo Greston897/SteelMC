@@ -213,8 +213,4 @@ crate::impl_registry!(
     world_presets
 );
 
-crate::impl_tagged_registry!(
-    WorldPresetRegistry,
-    presets_by_key,
-    "worldgen/world_preset"
-);
+crate::impl_tagged_registry!(WorldPresetRegistry, presets_by_key, "worldgen/world_preset");

@@ -38,9 +38,9 @@ impl TrialSpawnPotential {
     /// Whether the spawned entity is a baby (`IsBaby: 1b`).
     #[must_use]
     pub fn is_baby(&self) -> bool {
-        self.extra_entity_tags.iter().any(|(key, value)| {
-            key == "IsBaby" && matches!(value, TrialEntityTagValue::Byte(true))
-        })
+        self.extra_entity_tags
+            .iter()
+            .any(|(key, value)| key == "IsBaby" && matches!(value, TrialEntityTagValue::Byte(true)))
     }
 
     /// Slime/magma-cube `Size`, when the spawn data sets one.
@@ -102,7 +102,7 @@ impl TrialSpawnerConfig {
     pub fn calculate_target_simultaneous_mobs(&self, additional_players: usize) -> i32 {
         (self.simultaneous_mobs
             + self.simultaneous_mobs_added_per_player * (additional_players as f32))
-        .floor() as i32
+            .floor() as i32
     }
 }
 
@@ -171,7 +171,10 @@ impl ToNbtTag for &TrialSpawnerConfig {
                 e
             })
             .collect();
-        compound.insert("loot_tables_to_eject", NbtTag::List(NbtList::Compound(loot)));
+        compound.insert(
+            "loot_tables_to_eject",
+            NbtTag::List(NbtList::Compound(loot)),
+        );
         compound.insert(
             "items_to_drop_when_ominous",
             self.items_to_drop_when_ominous.to_string().as_str(),
