@@ -134,8 +134,7 @@ impl Entity for WitherSkullEntity {
     fn tick(self: Arc<Self>) {
         self.set_old_position_to_current();
         self.base().set_old_rotation_to_current();
-        let owner_removed = self.projectile_base.state.lock().owner.as_ref()
-            .is_some_and(|owner| owner.cached_entity_is_removed());
+        let owner_removed = self.projectile_base.owner_was_removed();
         let movement = self.velocity();
         let inertia = if self.is_in_water() { 0.8 } else if self.is_dangerous() { 0.73 } else { 0.95 };
         if self.is_in_water() && let Some(world) = self.level() {
