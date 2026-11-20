@@ -24,10 +24,15 @@ def inventory():
     objects = []
     for category, attribute in [('entities', 'entity_behavior'), ('blocks', 'block_behavior'), ('items', 'item_behavior')]:
         discovered = {}
-        pattern = re.compile(r'#\[' + attribute + r'\s*\(\s*class\s*=\s*"([^"]+)"')
+        pattern = re.compile(r'#\[' + attribute + r'(?:\(([^]]*)\))?\]')
         for path, text in production.items():
             for match in pattern.finditer(text):
-                discovered.setdefault(match[1], []).append(location(path, text, match.start()))
+                override = re.search(r'class\s*=\s*"([^"]+)"', match[1] or '')
+                struct = re.search(r'\bstruct\s+(\w+)', text[match.end():])
+                if not struct:
+                    continue
+                class_name = override[1] if override else struct[1]
+                discovered.setdefault(class_name, []).append(location(path, text, match.start()))
         for entry in classes.get(category, []):
             sites = discovered.get(entry['class'], [])
             objects.append({'category': category, 'name': entry['name'], 'class': entry['class'],
