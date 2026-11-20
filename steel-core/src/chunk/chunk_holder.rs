@@ -865,11 +865,15 @@ impl ChunkHolder {
 
         let cache = Arc::clone(cache);
         let context = Arc::clone(&chunk_map.world_gen_context);
+        // A producer can outlive its request/world owner. Pin the world for
+        // this producer without introducing a permanent World -> context cycle.
+        let world = context.weak_world().upgrade()?;
         let self_clone = Arc::clone(self);
         let storage = Arc::clone(&chunk_map.storage);
         let save_dependency = self.add_save_dependency();
 
         let future = chunk_map.task_tracker.spawn(async move {
+            let _world = world;
             // Keep the claim alive for the producer task so Drop can roll back abandoned work.
             let _status_claim = status_claim;
             let _save_dependency = save_dependency;
@@ -1114,7 +1118,13 @@ impl ChunkHolder {
         holder: Arc<Self>,
     ) {
         let task = step.task;
+        let Some(world) = context.weak_world().upgrade() else {
+            return;
+        };
         rayon_spawn(&thread_pool, move || {
+            // Dropping the async waiter does not cancel a queued Rayon closure.
+            // The closure must itself retain the world until generation ends.
+            let _world = world;
             task(context, step, &cache, holder);
         })
         .await;
@@ -1402,7 +1412,9 @@ where
 {
     let (sender, receiver) = oneshot::channel();
     thread_pool.spawn(move || {
-        sender.send(func()).expect("Failed to send result");
+        // Cancellation of an async waiter is normal during world teardown.
+        // It must not panic on the Rayon worker and abort the entire server.
+        let _ = sender.send(func());
     });
     async move { receiver.await.expect("Failed to receive rayon task result") }
 }
@@ -1419,6 +1431,34 @@ mod tests {
     use crate::test_support::fresh_test_world;
     use crate::world::tick_scheduler::TickPriority;
     use steel_registry::{init_vanilla_registry, vanilla_blocks, vanilla_fluids};
+
+    #[test]
+    fn dropping_rayon_waiter_does_not_panic_on_generation_worker() {
+        let panics = Arc::new(AtomicUsize::new(0));
+        let reported_panics = Arc::clone(&panics);
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(1)
+            .panic_handler(move |_| {
+                reported_panics.fetch_add(1, Ordering::SeqCst);
+            })
+            .build()
+            .unwrap();
+        let (started_tx, started_rx) = std::sync::mpsc::channel();
+        let (release_tx, release_rx) = std::sync::mpsc::channel();
+        let (done_tx, done_rx) = std::sync::mpsc::channel();
+        let waiter = rayon_spawn(&pool, move || {
+            started_tx.send(()).unwrap();
+            release_rx.recv().unwrap();
+            done_tx.send(()).unwrap();
+            42
+        });
+        started_rx.recv_timeout(TestDuration::from_secs(5)).unwrap();
+        drop(waiter);
+        release_tx.send(()).unwrap();
+        done_rx.recv_timeout(TestDuration::from_secs(5)).unwrap();
+        pool.install(|| ());
+        assert_eq!(panics.load(Ordering::SeqCst), 0);
+    }
 
     fn init_chunk_test_registry() {
         init_vanilla_registry();

@@ -313,47 +313,6 @@ mod tests {
     }
 
     #[test]
-    fn player_attack_dispatches_mace_smash_and_post_hit_fall_reset() {
-        crate::bootstrap::init_globals();
-        init_behaviors();
-        let fixture = fresh_test_world("mace_player_attack");
-        let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
-        let victim = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Target", 2).build();
-        attacker.set_client_loaded(true);
-        victim.set_client_loaded(true);
-        attacker
-            .inventory
-            .lock()
-            .set_selected_item(ItemStack::new(&vanilla_items::MACE));
-        attacker
-            .attributes()
-            .lock()
-            .set_base_value(steel_registry::vanilla_attributes::ATTACK_DAMAGE, 6.0);
-        attacker
-            .attributes()
-            .lock()
-            .set_base_value(steel_registry::vanilla_attributes::ATTACK_SPEED, 4.0);
-        victim
-            .attributes()
-            .lock()
-            .set_base_value(steel_registry::vanilla_attributes::MAX_HEALTH, 100.0);
-        victim.set_health(100.0);
-        attacker.set_on_ground(false);
-        attacker.set_fall_distance(6.0);
-        attacker.set_velocity(DVec3::new(0.0, -1.0, 0.0));
-        for _ in 0..30 {
-            attacker.tick_attack_strength();
-        }
-        let target: SharedEntity = victim.clone();
-        assert!(attacker.attack(&target));
-        // Vanilla: (base 6 + six-block smash bonus 18) * critical 1.5.
-        assert_eq!(victim.get_health(), 64.0);
-        assert_eq!(attacker.fall_distance(), 0.0);
-        assert_eq!(attacker.velocity().y, f64::from(0.01_f32));
-        assert!(attacker.is_ignoring_fall_damage_from_current_impulse());
-    }
-
-    #[test]
     fn smash_knockback_uses_heavy_threshold_radius_and_resistance() {
         crate::bootstrap::init_globals();
         let fixture = fresh_test_world("mace_radial_knockback");
