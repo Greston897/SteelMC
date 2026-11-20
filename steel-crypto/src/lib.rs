@@ -14,14 +14,6 @@
     clippy::missing_panics_doc,
     reason = "crypto code keeps direct error-path tests and small explicit RSA type paths"
 )]
-#![cfg_attr(
-    test,
-    expect(
-        clippy::unwrap_used,
-        reason = "crypto unit tests use unwraps for direct failure diagnostics"
-    )
-)]
-
 pub mod key_store;
 pub mod rsa_utils;
 pub mod signature;
