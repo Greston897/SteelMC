@@ -322,6 +322,13 @@ impl RaidManager {
             raid.raiders.push(entity.uuid());
         }
         if leader && raid.leader.is_none() { raid.leader = Some(entity.uuid()); }
+        let is_leader = raid.leader == Some(entity.uuid());
+        drop(raids);
+        if is_leader && let Some(mob) = entity.as_mob() {
+            let head = crate::inventory::equipment::EquipmentSlot::Head;
+            mob.with_equipment_slot_mut(head, &mut |item| *item = ominous_banner());
+            mob.set_equipment_drop_chance(head, 2.0);
+        }
     }
 
     /// Raider.ObtainRaidLeaderBannerGoal. Only a leader-capable current member
@@ -350,6 +357,11 @@ impl RaidManager {
             let Some(item) = candidate.downcast_ref::<ItemEntity>() else { continue; };
             if item.is_removed() || item.has_pickup_delay() || !ItemStack::matches(&item.get_item(), &ominous_banner()) { continue; }
             if entity.position().distance_squared(item.position()) >= 1.414_f64.powi(2) {
+                let following = {
+                    let navigation = mob.mob_base().navigation().lock();
+                    !navigation.is_done() && navigation.target_pos() == Some(item.block_position())
+                };
+                if following { return; }
                 if let Some(pathfinder) = entity.as_pathfinder_mob()
                     && pathfinder.move_to_pos_with_reach(item.position(), 1, 1.15) { return; }
                 continue;

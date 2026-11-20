@@ -49,7 +49,7 @@ impl Goal for OpenDoorGoal {
     }
 
     fn stop(&mut self, mob: &dyn PathfinderMob) {
-        self.door_interact.set_open(mob, false);
+        if self.close_door { self.door_interact.set_open(mob, false); }
     }
 
     fn requires_update_every_tick(&self) -> bool {

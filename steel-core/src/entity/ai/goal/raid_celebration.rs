@@ -9,7 +9,7 @@ impl Goal for RaidCelebrationGoal {
     fn controls(&self) -> GoalControls { GoalControls::MOVE }
 
     fn can_use(&mut self, mob: &dyn PathfinderMob) -> bool {
-        mob.is_alive() && mob.target().is_none()
+        crate::entity::LivingEntity::is_alive(mob) && mob.target().is_none()
             && mob.level().is_some_and(|world| world.raids.is_loss_member(mob.uuid()))
     }
 
