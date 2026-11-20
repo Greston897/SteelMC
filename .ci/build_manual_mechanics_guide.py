@@ -43,6 +43,25 @@ FAMILIES = [
      {'vehicles': ['RED05', 'PHY01', 'INV01'], 'explosives': ['MOB06', 'DATA02']}),
     ('Команды', 'steel-core/src/command/builtins', ['SYS03', 'CMD01', 'CMD02', 'CMD03', 'CMD04'], {}),
 ]
+SPECIFIC = {
+    'fishing_rod': ['ITEM01'], 'brush': ['ITEM02'], 'lead': ['ITEM03'], 'name_tag': ['ITEM03'],
+    'shears': ['ITEM04'], 'block_transformer': ['ITEM04'], 'mace': ['ITEM05'], 'wind_charge': ['ITEM05'],
+    'ender_pearl': ['ITEM06'], 'ender_eye': ['ITEM06'], 'firework_rocket': ['ITEM07'],
+    'bucket': ['ITEM08'], 'solid_bucket_item': ['ITEM08'], 'mob_bucket': ['ITEM08'], 'bottle': ['ITEM08'],
+    'wolf': ['MOB13'], 'cat': ['MOB13'], 'ocelot': ['MOB13'],
+    'sheep': ['MOB14'], 'cow': ['MOB14'], 'mooshroom': ['MOB14'], 'chicken': ['MOB14'],
+    'goat': ['MOB15'], 'armadillo': ['MOB15'], 'sniffer': ['MOB15'],
+    'frog': ['MOB16'], 'tadpole': ['MOB16'], 'slime': ['MOB16'], 'magma_cube': ['MOB16'],
+    'panda': ['MOB17'], 'parrot': ['MOB17'], 'rabbit': ['MOB17'], 'turtle': ['MOB18'],
+    'cod': ['MOB19'], 'salmon': ['MOB19'], 'tropical_fish': ['MOB19'], 'pufferfish': ['MOB19'],
+    'llama': ['MOB20'], 'trader_llama': ['MOB20'], 'sulfur_cube': ['MOB21'],
+    'camel_husk': ['MOB22'], 'skeleton_horse': ['MOB22'], 'zombie_horse': ['MOB22'],
+    'blaze': ['MOB23'], 'breeze': ['MOB23'], 'snow_golem': ['MOB23'], 'iron_golem': ['MOB23'],
+    'vex': ['MOB24'], 'evoker': ['MOB24', 'RAID08'], 'illusioner': ['MOB24'],
+    'wither_boss': ['BOSS01'], 'villager': ['MOB03', 'MOB04'],
+    'pillager': ['MOB05', 'RAID04'], 'ravager': ['RAID02'], 'vindicator': ['RAID08'],
+}
+
 HOOKS = {
     'random_tick': 'Дайте пройти random ticks; затем повторите с randomTickSpeed=0. Изменение не должно происходить без своего триггера.',
     'tick': 'Вызовите отложенное изменение, выгрузите чанк до его исполнения, загрузите и проверьте однократное завершение.',
@@ -76,6 +95,7 @@ def source_objects():
             for part, ids in by_part.items():
                 if part in path.relative_to(ROOT / directory).parts:
                     refs = ids
+            refs = SPECIFIC.get(path.stem, refs)
             hooks = [name for name in HOOKS if re.search(r'\bfn\s+' + name + r'\s*\(', text)]
             objects.append({'family': family, 'path': str(path.relative_to(ROOT)),
                             'name': path.stem, 'cases': refs, 'hooks': hooks,

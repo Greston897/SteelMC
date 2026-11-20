@@ -8,7 +8,8 @@
 
 Читаемый исходник `0khs/minecraft_source_26.3`, commit
 `74720c2890f22942b72d7d84958eff1b3f72b95b` использовался в предыдущем проходе.
-В этом проходе дополнительно прочитаны актуальные файлы ветки `main`:
+В этом проходе дополнительно прочитаны файлы ветки `main`, чей SHA на момент
+проверки также `74720c2890f22942b72d7d84958eff1b3f72b95b`:
 
 - `net/minecraft/world/entity/raid/Raid.java`: `updateRaiders`,
   `removeFromRaid`, countdown/spawn и проверка участников каждые 20 тиков.
@@ -57,7 +58,7 @@
 |---|---|---|---|---|
 | Raid captain succession | Подбор точного ominous banner подходящим raider, новый лидер волны | Баннер, начальный капитан и очистка leader при смерти/уходе | Сам pickup goal, передача роли и корректные drop rules | RAID05 |
 | Raid save/load | RaidId/Wave/CanJoinRaid связывают загруженного raider с рейдом | Список UUID в рейде и CanJoinRaid NBT | Полный цикл привязки и восстановления по обе стороны unload/load; потерянный UUID не должен навсегда блокировать рейд | RAID06 |
-| Raider noActionTime | Особый increment на 2, сброс при цели player/iron golem в активном рейде | Базовое поведение Mob плюс новые пороги исключения | Отдельная точная семантика Raider и проверка порядка AI | RAID04, MOB01 |
+| Raider noActionTime | Особый increment на 2, сброс при цели player/iron golem в активном рейде | Теперь подключены increment/reset; регрессия active raid + iron golem / non-raid / другая цель | Отдельная проверка player-ветки и полного порядка AI относительно vanilla | RAID04, MOB01 |
 | Raid AI | Captain pickup, door-breaking, celebration, patrol restrictions | Общие mob goals и движение к центру | Проверить и подключить специальные goals, не выдавать обычный melee за эквивалент | RAID08 |
 | Wither | Bossbar с player tracking, три головы и skull projectiles, собственные ranged goals | Spawn protection/взрыв, поля целей, общий melee-путь | Bossbar/tracking и настоящий ranged бой; melee не является vanilla-заменой | BOSS01 |
 | Runtime datapacks | Диск, enable/disable/reorder/reload и согласованное применение данных | Встроенный pack, явный отказ runtime enable/disable | Реальный loader и атомарное обновление зависимых runtime-реестров | DATA01, CMD04 |
@@ -75,3 +76,12 @@ unit-тесты полезны, но могут повторять ошибоч�
 `SUBSYSTEMS-26.3-ACTIONS.md` фиксирует наблюдаемые результаты Actions по зонам,
 если получен соответствующий run; отсутствие результата обозначается явно.
 Процент завершённости всего vanilla здесь не вычисляется.
+
+## Более широкий поиск незавершённого
+
+В SOURCE-LIMITATIONS-26.3-RU.md сохранены исходные фрагменты 57 файлов
+с маркерами отклонений/заглушек. Среди кандидатов — специальные AI goats,
+armadillo, sniffer, turtle, wolf/sulfur cube, horse family, fish schooling,
+trading/restock. Часть комментариев шаблонная и может быть устаревшей: это
+не повод автоматически записать все 57 файлов в подтверждённо отсутствующие
+механики. Каждому нужен просмотр действующего call path и vanilla-сценарий.
