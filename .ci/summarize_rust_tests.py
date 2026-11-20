@@ -10,7 +10,7 @@ from pathlib import Path
 import re
 
 ANSI = re.compile(r'\x1b\[[0-9;]*m')
-BINARY = re.compile(r'/deps/([a-zA-Z0-9_]+)-[0-9a-f]+(?:[\s`)]|$)')
+BINARY = re.compile(r'(?:[/\\]|^)([a-zA-Z0-9_]+)-[0-9a-fA-F]{7,}(?:\.exe)?(?=[\s`\)\']|$)')
 TEST = re.compile(r'^test (.+?) \.\.\. (ok|FAILED|ignored)(?:,.*)?$')
 
 
@@ -20,7 +20,7 @@ def summarize(text):
     groups = collections.defaultdict(collections.Counter)
     for raw in text.splitlines():
         line = ANSI.sub('', raw).strip()
-        if 'Running ' in line:
+        if re.search(r'\bRunning\b', line):
             match = BINARY.search(line)
             if match:
                 crate = match[1]
@@ -47,7 +47,11 @@ if __name__ == '__main__':
     parser.add_argument('log', type=Path)
     parser.add_argument('output', type=Path)
     args = parser.parse_args()
-    report = summarize(args.log.read_text(errors='replace'))
+    text = args.log.read_text(errors='replace')
+    report = summarize(text)
+    headers = [ANSI.sub('', line).strip() for line in text.splitlines()
+               if re.search(r'\bRunning\b', ANSI.sub('', line))]
+    print('::notice title=Rust runner provenance headers::' + json.dumps(headers[:16]))
     args.output.write_text(json.dumps(report, indent=2) + '\n')
     summary = {'totals': report['totals'], 'groups': report['groups']}
     print(json.dumps(summary, indent=2))
