@@ -53,6 +53,7 @@ pub struct Raid {
     /// Captain UUID for the most recently spawned wave.
     pub leader: Option<Uuid>,
     /// Captains are scoped to their wave, including loaded older members.
+    #[serde(with = "wave_leaders_save")]
     pub wave_leaders: BTreeMap<i32, Uuid>,
     /// Persisted wave identity must not change when a newer group spawns.
     pub member_waves: BTreeMap<Uuid, i32>,
@@ -170,6 +171,17 @@ pub(crate) fn is_raider_type(entity_type: steel_registry::entity_type::EntityTyp
         || entity_type == &vanilla_entities::RAVAGER || entity_type == &vanilla_entities::ILLUSIONER
 }
 
+// TOML table keys are strings; encode integer wave keys as pairs instead.
+mod wave_leaders_save {
+    use super::*;
+    pub fn serialize<S: serde::Serializer>(value: &BTreeMap<i32, Uuid>, serializer: S) -> Result<S::Ok, S::Error> {
+        value.iter().map(|(wave, uuid)| (*wave, *uuid)).collect::<Vec<_>>().serialize(serializer)
+    }
+    pub fn deserialize<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<BTreeMap<i32, Uuid>, D::Error> {
+        Ok(Vec::<(i32, Uuid)>::deserialize(deserializer)?.into_iter().collect())
+    }
+}
+
 /// TOML documents require a table root, including when the raid list is empty.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct RaidSavedData {
@@ -201,6 +213,12 @@ impl RaidManager {
         let mut seen = std::collections::BTreeSet::new();
         let mut next = 1;
         for raid in &mut raids {
+            for member in &raid.raiders {
+                raid.member_waves.entry(*member).or_insert(raid.waves_spawned);
+            }
+            if let Some(leader) = raid.leader {
+                raid.wave_leaders.entry(raid.waves_spawned).or_insert(leader);
+            }
             if raid.id <= 0 || !seen.insert(raid.id) {
                 while used.contains(&next) { next += 1; }
                 raid.id = next;
