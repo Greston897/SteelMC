@@ -35,10 +35,18 @@ class FileEvidenceTests(unittest.TestCase):
     def test_ambiguous_names_are_never_assigned_arbitrarily(self):
         data = self.fixture({'steel-core/src/world/one.rs': '#[test] fn same() {}',
                              'steel-core/src/world/two.rs': '#[test] fn same() {}'},
-                            [{'crate': 'steel_core', 'name': 'world::one::same', 'status': 'passed'}])
+                            [{'crate': 'steel_core', 'name': 'world::alias::same', 'status': 'passed'}])
         self.assertEqual(len(data['unmatched_observations']), 1)
         self.assertEqual(data['unmatched_observations'][0]['reason'], 'ambiguous')
         self.assertTrue(all(not f['observed_tests'] for f in data['files']))
+
+    def test_duplicate_leaf_resolves_only_with_matching_compiler_module_prefix(self):
+        data = self.fixture({'steel-core/src/world/one.rs': '#[test] fn same() {}',
+                             'steel-core/src/world/two.rs': '#[test] fn same() {}'},
+                            [{'crate': 'steel_core', 'name': 'world::two::tests::same', 'status': 'passed'}])
+        self.assertEqual(data['unmatched_observations'], [])
+        self.assertEqual(data['files'][0]['counts']['passed'], 0)
+        self.assertEqual(data['files'][1]['counts']['passed'], 1)
 
     def test_exact_doctest_path_and_integration_binary_are_attributed(self):
         data = self.fixture({'steel-core/tests/biome_hashes.rs': '#[test] fn check_biome() {}',
@@ -75,6 +83,19 @@ class FileEvidenceTests(unittest.TestCase):
         data = self.fixture({'steel-core/src/lib.rs': ''}, [])
         with self.assertRaises(ValueError):
             attach_coverage(data, {'data': []}, Path('/repo'))
+
+    def test_expected_panic_suffix_is_not_part_of_the_function_name(self):
+        data = self.fixture({'steel-core/src/lib.rs': '#[test] #[should_panic] fn reject() {}'},
+                            [{'crate': 'steel_core', 'name': 'tests::reject - should panic', 'status': 'passed'}])
+        self.assertEqual(data['unmatched_observations'], [])
+        self.assertEqual(data['files'][0]['counts']['passed'], 1)
+
+    def test_explicit_path_imported_build_tests_use_the_integration_target(self):
+        data = self.fixture({'steel-worldgen/build/density/types.rs': '#[test] fn rarity() {}',
+                             'steel-worldgen/tests/density_codegen.rs': '#[path = "../build/density/types.rs"] mod density;'},
+                            [{'crate': 'density_codegen', 'name': 'density::tests::rarity', 'status': 'passed'}])
+        self.assertEqual(data['unmatched_observations'], [])
+        self.assertEqual(data['files'][0]['counts']['passed'], 1)
 
     def test_unknown_status_cannot_be_published(self):
         with self.assertRaises(ValueError):

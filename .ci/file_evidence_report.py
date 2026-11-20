@@ -52,6 +52,27 @@ def source_index(root, paths):
         records[path] = {'path': path, 'sha256': hashlib.sha256((root / path).read_bytes()).hexdigest(),
                          'loc': len(text.splitlines()), 'declared_tests': declarations,
                          'observed_tests': []}
+    # Explicit #[path] imports can execute build-time source in an integration
+    # binary (e.g. density_codegen), not in the package's library test binary.
+    for path in paths:
+        parts = Path(path).parts
+        if len(parts) != 3 or parts[1] != 'tests' or not path.endswith('.rs'):
+            continue
+        target = Path(path).stem
+        text = (root / path).read_text()
+        for match in re.finditer(r'#\[path\s*=\s*"([^"]+)"\]\s*(?:pub\s+)?mod\s+\w+\s*;', text):
+            imported = ((root / path).parent / match[1]).resolve()
+            try:
+                imported_name = str(imported.relative_to(root.resolve()))
+            except ValueError:
+                continue
+            for name, record in records.items():
+                if name != imported_name and not (imported.name == 'mod.rs' and name.startswith(str(Path(imported_name).parent) + '/')):
+                    continue
+                for declaration in record['declared_tests']:
+                    key = (target, declaration['name'])
+                    if declaration not in index[key]:
+                        index[key].append(declaration)
     return index, records
 
 
@@ -66,7 +87,25 @@ def build(report, root, sha, run_url, paths=None):
             path = test['name'].split(' - ', 1)[0]
             candidates = [{'path': path, 'line': None}] if path in records else []
         else:
-            candidates = index.get((crate, test['name'].rsplit('::', 1)[-1]), [])
+            candidates = index.get((crate, test['name'].removesuffix(' - should panic').rsplit('::', 1)[-1]), [])
+        if len(candidates) > 1:
+            # Resolve duplicate test leaf names only when the compiler-reported
+            # module prefix agrees with exactly one conventional source path.
+            # Aliased #[path] modules remain unresolved instead of guessed.
+            matching = []
+            for candidate in candidates:
+                parts = Path(candidate['path']).parts
+                if 'src' not in parts:
+                    continue
+                module = list(parts[parts.index('src') + 1:])
+                module[-1] = Path(module[-1]).stem
+                if module[-1] in ('mod', 'lib', 'main'):
+                    module.pop()
+                prefix = '::'.join(module)
+                if prefix and test['name'].startswith(prefix + '::'):
+                    matching.append(candidate)
+            if len(matching) == 1:
+                candidates = matching
         if len(candidates) != 1:
             unmatched.append({'test_index': number, **test, 'candidate_files': sorted({c['path'] for c in candidates}),
                               'reason': 'ambiguous' if candidates else 'no_exact_source_declaration'})
