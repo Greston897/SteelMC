@@ -173,3 +173,70 @@ impl FunctionPacks {
         functions
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct Fixture(PathBuf);
+    impl Fixture {
+        fn new() -> Result<Self, Box<dyn std::error::Error>> {
+            let root = std::env::temp_dir().join(format!("steel-function-pack-{}", uuid::Uuid::new_v4()));
+            fs::create_dir_all(root.join("test/data/example/function"))?;
+            fs::create_dir_all(root.join("test/data/minecraft/tags/function"))?;
+            fs::write(root.join("test/pack.mcmeta"), r#"{"pack":{"description":"test","pack_format":1}}"#)?;
+            Ok(Self(root))
+        }
+    }
+    impl Drop for Fixture {
+        fn drop(&mut self) { let _ = fs::remove_dir_all(&self.0); }
+    }
+
+    #[test]
+    fn directory_functions_load_and_reload_without_leaking_failed_snapshots() -> Result<(), Box<dyn std::error::Error>> {
+        steel_registry::init_vanilla_registry();
+        let fixture = Fixture::new()?;
+        let function = fixture.0.join("test/data/example/function/hello.mcfunction");
+        fs::write(&function, "# comment\n\nreturn 7\n")?;
+        let packs = FunctionPacks::from_root(fixture.0.clone())?;
+        let key = "example:hello".parse::<Identifier>()?;
+        assert_eq!(packs.commands(&key), Some(vec!["return 7".to_owned()]));
+        fs::write(&function, "/return 9")?;
+        assert!(packs.reload().is_err());
+        assert_eq!(packs.commands(&key), Some(vec!["return 7".to_owned()]));
+        fs::write(&function, "return 9")?;
+        assert_eq!(packs.reload()?, 1);
+        assert_eq!(packs.commands(&key), Some(vec!["return 9".to_owned()]));
+        Ok(())
+    }
+
+    #[test]
+    fn load_tag_runs_once_tick_tag_repeats_and_successful_reload_rearms_load() -> Result<(), Box<dyn std::error::Error>> {
+        steel_registry::init_vanilla_registry();
+        let fixture = Fixture::new()?;
+        fs::write(fixture.0.join("test/data/example/function/hello.mcfunction"), "return 7")?;
+        for name in ["load", "tick"] {
+            fs::write(fixture.0.join(format!("test/data/minecraft/tags/function/{name}.json")),
+                r#"{"values":["example:hello",{"id":"example:optional","required":false}]}"#)?;
+        }
+        let packs = FunctionPacks::from_root(fixture.0.clone())?;
+        let key = "example:hello".parse::<Identifier>()?;
+        assert_eq!(packs.tick_functions(), vec![key.clone(), key.clone()]);
+        assert_eq!(packs.tick_functions(), vec![key.clone()]);
+        packs.reload()?;
+        assert_eq!(packs.tick_functions(), vec![key.clone(), key]);
+        Ok(())
+    }
+
+    #[test]
+    fn cyclic_and_missing_required_function_tags_reject_publication() -> Result<(), Box<dyn std::error::Error>> {
+        steel_registry::init_vanilla_registry();
+        let fixture = Fixture::new()?;
+        let tag = fixture.0.join("test/data/minecraft/tags/function/tick.json");
+        fs::write(&tag, r##"{"values":["#minecraft:tick"]}"##)?;
+        assert!(FunctionPacks::from_root(fixture.0.clone()).is_err());
+        fs::write(&tag, r#"{"values":["example:missing"]}"#)?;
+        assert!(FunctionPacks::from_root(fixture.0.clone()).is_err());
+        Ok(())
+    }
+}

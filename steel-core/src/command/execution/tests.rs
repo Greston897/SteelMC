@@ -1455,3 +1455,55 @@ fn pending_execution_queue_cancels_work_whose_owner_is_stale() {
     assert!(!queue.blocks(CommandSenderKey::Console));
     assert_eq!(*cancellations.lock(), 1);
 }
+
+struct FunctionFrameExecutor {
+    body: Vec<SteelContextChain<TestSource>>,
+    results: Arc<SyncMutex<Vec<(bool, i32)>>>,
+}
+
+impl CustomCommandExecutor<TestSource> for FunctionFrameExecutor {
+    fn run(
+        &self,
+        source: Arc<TestSource>,
+        _chain: &SteelContextChain<TestSource>,
+        _modifiers: ChainModifiers,
+        control: &mut ExecutionControl<'_, TestSource>,
+    ) {
+        let results = Arc::clone(&self.results);
+        control.queue_function(self.body.clone(), source,
+            CommandResultCallback::new(move |success, value| results.lock().push((success, value))));
+    }
+}
+
+#[test]
+fn function_child_frame_preserves_source_and_return_does_not_discard_caller() {
+    let observed = Arc::new(Observed::default());
+    let depths = Arc::new(SyncMutex::new(Vec::new()));
+    let results = Arc::new(SyncMutex::new(Vec::new()));
+    let mut dispatcher = TestDispatcher::new();
+    let calls = Arc::clone(&observed);
+    register(&mut dispatcher, literal::<TestSource>("normal").executes(move |context| {
+        calls.invocations.lock().push(context.source().name);
+        Ok(1)
+    }));
+    register(&mut dispatcher, literal::<TestSource>("return").executes_custom(FrameReturnExecutor {
+        result: Some(42), depths: Arc::clone(&depths),
+    }));
+    let body = vec![
+        chain(&dispatcher, "normal", Arc::clone(&observed)),
+        chain(&dispatcher, "return", Arc::clone(&observed)),
+        chain(&dispatcher, "normal", Arc::clone(&observed)),
+    ];
+    register(&mut dispatcher, literal::<TestSource>("function").executes_custom(FunctionFrameExecutor {
+        body, results: Arc::clone(&results),
+    }));
+    let mut execution = CommandExecutionContext::new(20, 10);
+    execution.queue_initial_command(chain(&dispatcher, "function", Arc::clone(&observed)),
+        TestSource::new("function-source", Arc::clone(&observed)), CommandResultCallback::empty());
+    execution.queue_initial_command(chain(&dispatcher, "normal", Arc::clone(&observed)),
+        TestSource::new("caller", Arc::clone(&observed)), CommandResultCallback::empty());
+    assert_eq!(execution.run(), ExecutionStop::Completed);
+    assert_eq!(*observed.invocations.lock(), ["function-source", "caller"]);
+    assert_eq!(*results.lock(), [(true, 42)]);
+    assert_eq!(*depths.lock(), [1]);
+}
