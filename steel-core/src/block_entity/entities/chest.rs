@@ -14,12 +14,12 @@ use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as Nbt
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
-use steel_registry::sound_events::BLOCK_CHEST_CLOSE;
-use steel_registry::sound_events::BLOCK_CHEST_OPEN;
 use steel_registry::data_components::{
     DataComponentMap, SeededContainerLoot, vanilla_components::CONTAINER_LOOT,
 };
 use steel_registry::item_stack::ItemStack;
+use steel_registry::sound_events::BLOCK_CHEST_CLOSE;
+use steel_registry::sound_events::BLOCK_CHEST_OPEN;
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
 

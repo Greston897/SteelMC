@@ -551,7 +551,7 @@ fn a_version_11_player_file_still_loads() {
         .expect("version 11 player file should encode");
 
     let decoded = decode_player_file(&encoded).expect("version 11 player file should decode");
-    assert!(decoded.post_effects.is_empty());
+    assert_eq!(decoded.post_effects, [] as [String; 0]);
     assert_eq!(decoded.warden_spawn_tracker.warning_level, 2);
 }
 
@@ -1087,8 +1087,9 @@ fn version_12_player_save_migrates_without_inventing_raid_origin() {
         warden_spawn_tracker: current.warden_spawn_tracker,
         post_effects: current.post_effects,
     };
-    let bytes = encode_file(PLAYER_MAGIC, 12, wincode::serialize(&old)).unwrap();
-    let decoded = decode_player_file(&bytes).unwrap();
+    let bytes = encode_file(PLAYER_MAGIC, 12, wincode::serialize(&old))
+        .expect("the player data should serialize");
+    let decoded = decode_player_file(&bytes).expect("the player file should decode");
     assert!(decoded.raid_omen_position.is_none());
     assert_eq!(decoded.post_effects.len(), 2);
 }

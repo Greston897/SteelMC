@@ -1,16 +1,16 @@
 //! Entity summoning command.
 
-use std::sync::Arc;
 use std::io::Cursor;
+use std::sync::Arc;
 
+use crate::player::advancement::predicate::TriggerContext;
 use glam::DVec3;
+use simdnbt::borrow::read_compound;
 use simdnbt::owned::NbtCompound;
 use steel_registry::entity_type::EntityTypeRef;
+use steel_registry::vanilla_criteria_triggers::SUMMONED_ENTITY;
 use steel_utils::{BlockPos, Identifier, translations, types::Difficulty};
 use text_components::{TextComponent, translation::Translation};
-use simdnbt::borrow::read_compound;
-use steel_registry::vanilla_criteria_triggers::SUMMONED_ENTITY;
-use crate::player::advancement::predicate::TriggerContext;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
@@ -129,9 +129,7 @@ pub(super) fn create_entity(
             if let Some(player) = context.source().player() {
                 player.trigger_advancement_with_context(
                     &SUMMONED_ENTITY,
-                    &TriggerContext::entity(
-                        &entity_type.key,
-                    ),
+                    &TriggerContext::entity(&entity_type.key),
                 );
             }
             Ok(entity)

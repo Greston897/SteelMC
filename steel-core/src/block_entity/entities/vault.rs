@@ -10,6 +10,7 @@ use std::sync::{Arc, Weak};
 use glam::DVec3;
 use rustc_hash::FxHashSet;
 use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
+use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::block_entity_type::BlockEntityTypeRef;
@@ -23,11 +24,11 @@ use steel_utils::{
 };
 use uuid::Uuid;
 
+use crate::behavior::block::drop_from_block_interact_loot_table;
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::Entity as _;
 use crate::player::Player;
 use crate::world::World;
-use crate::behavior::block::drop_from_block_interact_loot_table;
 
 const DEFAULT_VAULT_LOOT_TABLE: &str = "minecraft:chests/trial_chambers/reward";
 const DEFAULT_OMINOUS_VAULT_LOOT_TABLE: &str = "minecraft:chests/trial_chambers/reward_ominous";
@@ -242,14 +243,8 @@ impl VaultBlockEntity {
             return 0;
         };
         let mut random = rand::rng();
-        let items = drop_from_block_interact_loot_table(
-            table,
-            block_state,
-            None,
-            None,
-            None,
-            &mut random,
-        );
+        let items =
+            drop_from_block_interact_loot_table(table, block_state, None, None, None, &mut random);
         let dropped = items.len();
         for item in items {
             world.drop_item_stack(drop_pos, item);
@@ -346,7 +341,7 @@ impl BlockEntity for VaultBlockEntity {
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
-        let view: simdnbt::borrow::NbtCompound<'_, '_> = nbt.into();
+        let view: BorrowedNbtCompoundView<'_, '_> = nbt.into();
         let mut state = self.state.lock();
         state.loot_table = view
             .string("loot_table")
@@ -411,7 +406,7 @@ mod tests {
             BlockPos::new(0, 0, 0),
             vanilla_blocks::VAULT.default_state(),
         );
-        assert!(vault.loot_table().is_empty());
+        assert_eq!(vault.loot_table(), "");
         assert_eq!(vault.total_players(), 0);
     }
 

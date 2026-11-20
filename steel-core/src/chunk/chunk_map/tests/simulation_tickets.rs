@@ -3,6 +3,7 @@ use crate::chunk::chunk_ticket_storage::PORTAL_TICKET_RADIUS;
 use crate::entity::damage::DamageHistory;
 use crate::level_data::{GameTimeSource, WorldGenerationSettings};
 use crate::world::{WorldConfig, WorldStorageConfig};
+use std::sync::OnceLock;
 use std::{
     env::temp_dir,
     fs,
@@ -18,7 +19,6 @@ use steel_utils::{
 use steel_worldgen::density_functions::overworld::OverworldNoiseSettings;
 use toml::map::Map;
 use uuid::Uuid;
-use std::sync::OnceLock;
 
 const TEST_WORLD_SEED: i64 = 0;
 const TEST_VIEW_AND_SIMULATION_DISTANCE_CHUNKS: u8 = 2;

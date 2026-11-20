@@ -33,8 +33,10 @@ use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, Direction, DowncastType, DowncastTypeKey};
 
 use crate::behavior::blocks::FireBlock;
+use crate::enchantment_helper::{
+    EnchantmentPostAttackContext, do_post_attack_effects_with_item_source,
+};
 use crate::entity::damage::DamageSource;
-use crate::enchantment_helper::do_post_attack_effects_with_item_source;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntitySyncedData, Projectile, ProjectileBase,
     ProjectileHit, RemovalReason, SharedEntity, ThrowableItemProjectile, ThrowableProjectile,
@@ -191,19 +193,16 @@ impl Projectile for SmallFireballEntity {
                 let remaining_fire_ticks = hit.entity.remaining_fire_ticks();
                 hit.entity
                     .ignite_for_ticks(SMALL_FIREBALL_FIRE_SECONDS * 20);
-                if !hit.entity.hurt(&world, &source, SMALL_FIREBALL_DAMAGE) {
-                    hit.entity.set_remaining_fire_ticks(remaining_fire_ticks);
-                } else {
-                    let context = crate::enchantment_helper::EnchantmentPostAttackContext::new(
-                        &hit.entity,
-                        &source,
-                    );
+                if hit.entity.hurt(&world, &source, SMALL_FIREBALL_DAMAGE) {
+                    let context = EnchantmentPostAttackContext::new(&hit.entity, &source);
                     do_post_attack_effects_with_item_source(
                         &world,
                         hit.entity.as_ref(),
                         &ItemStack::empty(),
                         &context,
                     );
+                } else {
+                    hit.entity.set_remaining_fire_ticks(remaining_fire_ticks);
                 }
             }
             ProjectileHit::Block { hit, .. } => {

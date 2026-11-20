@@ -43,6 +43,10 @@ const TRADE_SLOTS: usize = 3;
 /// Shared handle to a villager's trade list.
 pub type SharedTrades = Arc<SyncMutex<Vec<TradeOffer>>>;
 
+/// Callback a merchant menu runs when it closes, carrying the player that had
+/// it open.
+type OnClose = Box<dyn FnOnce(&Player) + Send>;
+
 /// Merchant menu state.
 pub struct MerchantKind {
     /// The villager's offers, shared with the entity so a completed trade
@@ -59,7 +63,7 @@ pub struct MerchantKind {
     /// Behind a mutex because [`MenuKind`] requires `Sync` and a boxed
     /// `FnOnce` is not: the callback is moved out through the mutex, which is
     /// the same access pattern as the plain `take` it replaces.
-    on_close: SyncMutex<Option<Box<dyn FnOnce(&Player) + Send>>>,
+    on_close: SyncMutex<Option<OnClose>>,
 }
 
 // SAFETY: This Steel-owned key uniquely identifies the concrete menu kind
@@ -320,9 +324,9 @@ impl MenuKind for MerchantKind {
 #[cfg(test)]
 mod tests {
     use super::*;
-use steel_registry::vanilla_items::STICK;
-use steel_registry::vanilla_items::WHEAT;
-use crate::entity::villager_trades::offers_for;
+    use crate::entity::villager_trades::offers_for;
+    use steel_registry::vanilla_items::STICK;
+    use steel_registry::vanilla_items::WHEAT;
 
     #[test]
     fn the_merchant_menu_has_three_trade_slots_above_the_inventory() {
@@ -354,9 +358,7 @@ use crate::entity::villager_trades::offers_for;
 
     #[test]
     fn an_offer_without_a_second_cost_ignores_the_second_slot() {
-        let trades = Arc::new(SyncMutex::new(offers_for(
-            "minecraft:farmer",
-        )));
+        let trades = Arc::new(SyncMutex::new(offers_for("minecraft:farmer")));
         let container: ContainerRef = SimpleContainer::new(TRADE_SLOTS).into_shared().into();
         let kind = MerchantKind::new(trades, container);
 

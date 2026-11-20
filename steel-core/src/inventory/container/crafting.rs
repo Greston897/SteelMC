@@ -1,11 +1,11 @@
 //! Crafting containers and related types.
 
+use steel_registry::vanilla_items::FILLED_MAP;
 use steel_registry::{
     item_stack::ItemStack,
     recipe::{CraftingInput, MapRecipeData, PositionedCraftingInput},
 };
 use steel_utils::{DowncastType, DowncastTypeKey};
-use steel_registry::vanilla_items::FILLED_MAP;
 
 use crate::inventory::container::Container;
 

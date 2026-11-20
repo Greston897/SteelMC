@@ -230,10 +230,10 @@ impl ItemBehavior for MaceItem {
 mod tests {
     use super::*;
     use crate::behavior::{ITEM_BEHAVIORS, init_behaviors};
+    use crate::bootstrap::init_globals;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world};
+    use steel_registry::vanilla_attributes::KNOCKBACK_RESISTANCE;
     use steel_registry::vanilla_items;
-use steel_registry::vanilla_attributes::KNOCKBACK_RESISTANCE;
-use crate::bootstrap::init_globals;
 
     #[test]
     fn registered_mace_smash_threshold_and_fall_flying_gate_damage_source() {
@@ -241,7 +241,7 @@ use crate::bootstrap::init_globals;
         init_behaviors();
         let fixture = fresh_test_world("mace_smash_source");
         let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
-        let shared: SharedEntity = attacker.clone();
+        let shared: SharedEntity = Arc::clone(&attacker);
         let behavior = ITEM_BEHAVIORS.get_behavior(&vanilla_items::MACE);
         for (fall, flying, smash) in [
             (0.0, false, false),
@@ -255,7 +255,12 @@ use crate::bootstrap::init_globals;
             assert_eq!(source.is_some(), smash, "fall={fall} flying={flying}");
             if let Some(source) = source {
                 assert_eq!(source.damage_type.key, vanilla_damage_types::MACE_SMASH.key);
-                assert!(Arc::ptr_eq(source.direct_entity().unwrap(), &shared));
+                assert!(Arc::ptr_eq(
+                    source
+                        .direct_entity()
+                        .expect("the damage source should have a direct entity"),
+                    &shared
+                ));
             }
         }
     }
@@ -267,7 +272,7 @@ use crate::bootstrap::init_globals;
         let fixture = fresh_test_world("mace_smash_bonus");
         let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
         let victim = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Target", 2).build();
-        let source = DamageSource::direct(&vanilla_damage_types::MACE_SMASH, attacker.clone());
+        let source = DamageSource::direct(&vanilla_damage_types::MACE_SMASH, Arc::clone(&attacker));
         let behavior = ITEM_BEHAVIORS.get_behavior(&vanilla_items::MACE);
         for (fall, expected) in [
             (1.5, 0.0),
@@ -320,10 +325,10 @@ use crate::bootstrap::init_globals;
         let fixture = fresh_test_world("mace_radial_knockback");
         let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
         let nearby = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Nearby", 2).build();
-        nearby.attributes().lock().set_base_value(
-            KNOCKBACK_RESISTANCE,
-            0.5,
-        );
+        nearby
+            .attributes()
+            .lock()
+            .set_base_value(KNOCKBACK_RESISTANCE, 0.5);
         for (fall, distance, expected) in [
             (5.0, 1.5, f64::from(0.7_f32)),
             (5.001, 1.5, 2.0 * f64::from(0.7_f32)),
@@ -339,10 +344,10 @@ use crate::bootstrap::init_globals;
                 expected
             );
         }
-        nearby.attributes().lock().set_base_value(
-            KNOCKBACK_RESISTANCE,
-            1.0,
-        );
+        nearby
+            .attributes()
+            .lock()
+            .set_base_value(KNOCKBACK_RESISTANCE, 1.0);
         assert_eq!(
             MaceItem::knockback_power(attacker.as_ref(), nearby.as_ref(), DVec3::X),
             0.0

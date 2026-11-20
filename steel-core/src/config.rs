@@ -6,8 +6,6 @@
 
 use rustc_hash::{FxHashMap, FxHashSet};
 use serde::{Deserialize, Deserializer, de::Error as DeError};
-use steel_utils::threading::available_worker_threads;
-use steel_utils::threading::effective_cores;
 use std::{
     collections::BTreeMap,
     path::{Component, Path, PathBuf},
@@ -18,6 +16,8 @@ use steel_protocol::packets::game::CResourcePackPush;
 use steel_registry::vanilla_dimension_types;
 use steel_utils::Identifier;
 use steel_utils::codec::Or;
+use steel_utils::threading::available_worker_threads;
+use steel_utils::threading::effective_cores;
 use steel_utils::types::{Difficulty, GameType};
 use text_components::TextComponent;
 use toml::map::Map;
@@ -987,7 +987,7 @@ mod tests {
     use super::*;
     use std::env::temp_dir;
     use steel_registry::init_vanilla_registry;
-use steel_utils::threading::available_worker_threads;
+    use steel_utils::threading::available_worker_threads;
 
     #[test]
     fn a_container_quota_caps_the_configured_core_count() {
@@ -1542,9 +1542,10 @@ default = true
 
     #[test]
     fn view_distance_clamp_lifts_the_floor_on_both_sides() {
-        let mut config = RuntimeConfig::default();
-
-        config.view_distance = 10;
+        let mut config = RuntimeConfig {
+            view_distance: 10,
+            ..RuntimeConfig::default()
+        };
         assert_eq!(config.clamp_view_distance(0), 2);
         assert_eq!(config.clamp_view_distance(1), 2);
         assert_eq!(config.clamp_view_distance(2), 2);
@@ -1617,7 +1618,7 @@ mod resource_pack_tests {
             ..ResourcePackConfig::default()
         });
         let packet = config.resource_pack_push_packet().expect("packet");
-        assert!(packet.hash.is_empty());
+        assert_eq!(packet.hash, "");
         assert!(!packet.required);
     }
 }

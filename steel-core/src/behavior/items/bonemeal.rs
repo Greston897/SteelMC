@@ -4,8 +4,8 @@ use std::sync::OnceLock;
 use glam::DVec3;
 use rand::RngExt;
 use steel_macros::item_behavior;
-use steel_registry::particle_type::ParticleData;
 use steel_registry::blocks::BlockRef;
+use steel_registry::particle_type::ParticleData;
 use steel_registry::{
     REGISTRY, TaggedRegistryExt as _,
     blocks::{block_state_ext::BlockStateExt, shapes::is_offset_shape_full_block},
@@ -67,8 +67,7 @@ impl BoneMealItem {
     /// may grow. The tag is loaded from the vanilla datapack at build time, so a
     /// datapack that extends it automatically widens the growth set.
     fn underwater_bonemeal_blocks() -> &'static [BlockRef] {
-        static CANDIDATES: OnceLock<Vec<BlockRef>> =
-            OnceLock::new();
+        static CANDIDATES: OnceLock<Vec<BlockRef>> = OnceLock::new();
         CANDIDATES.get_or_init(|| {
             let tag = steel_utils::Identifier::vanilla_static("underwater_bonemeals");
             REGISTRY

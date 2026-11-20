@@ -2,6 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::behavior::BlockHitResult;
+use crate::behavior::InventoryAccess;
+use crate::behavior::item_utils::create_filled_result_for_hand;
+use crate::player::Player;
 use steel_macros::block_behavior;
 use steel_protocol::packets::game::SoundSource::Blocks;
 use steel_registry::data_components::BannerPatternLayers;
@@ -9,7 +13,6 @@ use steel_registry::data_components::PotionContents;
 use steel_registry::data_components::vanilla_components::POTION_CONTENTS;
 use steel_registry::stat::vanilla_stat_types::ITEM_USED;
 use steel_registry::vanilla_block_tags::BlockTag;
-use steel_utils::types::InteractionHand;
 use steel_registry::{
     blocks::{
         BlockRef,
@@ -18,11 +21,8 @@ use steel_registry::{
     },
     level_events, vanilla_blocks, vanilla_fluids, vanilla_game_events,
 };
+use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, BlockStateId, types::UpdateFlags};
-use crate::behavior::BlockHitResult;
-use crate::behavior::InventoryAccess;
-use crate::behavior::item_utils::create_filled_result_for_hand;
-use crate::player::Player;
 
 use crate::{
     behavior::{BlockBehavior, BlockPlaceContext, blocks::vegetation},
@@ -200,55 +200,8 @@ impl BlockBehavior for LayeredCauldronBlock {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use steel_registry::{init_vanilla_registry, vanilla_blocks};
-
-    use super::*;
-    use crate::{
-        behavior::{BLOCK_BEHAVIORS, init_behaviors},
-        test_support::fresh_test_world,
-    };
-
-    #[test]
-    fn registered_cauldron_behaviors_expose_vanilla_fill_levels() {
-        init_vanilla_registry();
-        init_behaviors();
-        let world = fresh_test_world("cauldron_analog_output");
-        let pos = BlockPos::ZERO;
-
-        let empty = vanilla_blocks::CAULDRON.default_state();
-        let empty_behavior = BLOCK_BEHAVIORS.get_behavior(empty.get_block());
-        assert!(empty_behavior.has_analog_output_signal(empty));
-        assert_eq!(
-            empty_behavior.get_analog_output_signal(
-                empty,
-                world.world.as_ref(),
-                pos,
-                Direction::North,
-            ),
-            0,
-        );
-
-        for level_value in 1..=3 {
-            let state = vanilla_blocks::WATER_CAULDRON
-                .default_state()
-                .set_value(LEVEL_CAULDRON, level_value);
-            let behavior = BLOCK_BEHAVIORS.get_behavior(state.get_block());
-            assert_eq!(
-                behavior.get_analog_output_signal(
-                    state,
-                    world.world.as_ref(),
-                    pos,
-                    Direction::North
-                ),
-                i32::from(level_value),
-            );
-        }
-    }
-}
-
-/// Vanilla 26.3 CauldronInteractions dispatch, shared by all cauldron types.
+/// Vanilla 26.3 `CauldronInteractions` dispatch, shared by all cauldron types.
+#[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
 pub(super) fn cauldron_item_interaction(
     state: BlockStateId,
     world: &Arc<World>,
@@ -258,7 +211,10 @@ pub(super) fn cauldron_item_interaction(
     inv: &mut InventoryAccess,
 ) -> InteractionResult {
     use crate::{behavior::InteractionResult, fluid::FluidStateExt as _};
+    use steel_registry::data_components::vanilla_components::{BANNER_PATTERNS, DYED_COLOR};
     use steel_registry::item_stack::ItemStack;
+    use steel_registry::item_stack::ItemStack;
+    use steel_registry::vanilla_item_tags::ItemTag;
     use steel_registry::{
         sound_events as sounds, vanilla_custom_stats as stats, vanilla_items as items,
         vanilla_potions,
@@ -280,8 +236,6 @@ pub(super) fn cauldron_item_interaction(
             state.set_value(LEVEL_CAULDRON, level - 1)
         }
     };
-    use steel_registry::data_components::vanilla_components::{BANNER_PATTERNS, DYED_COLOR};
-    use steel_registry::vanilla_item_tags::ItemTag;
     // The tagged equipment path mutates the held item, rather than exchanging
     // one item. Creative players also lose the dye, without duplicating armor.
     if water && item.has_tag(&ItemTag::CAULDRON_CAN_REMOVE_DYE) {
@@ -365,10 +319,7 @@ pub(super) fn cauldron_item_interaction(
         )
     } else if water && item == &*items::GLASS_BOTTLE {
         (
-            PotionContents::create_item_stack(
-                &items::POTION,
-                &vanilla_potions::WATER,
-            ),
+            PotionContents::create_item_stack(&items::POTION, &vanilla_potions::WATER),
             lower(),
             Some(&sounds::ITEM_BOTTLE_FILL),
             false,
@@ -403,10 +354,7 @@ pub(super) fn cauldron_item_interaction(
         let mut layers = patterns.layers().to_vec();
         layers.pop();
         let mut cleaned = held.copy_with_count(1);
-        cleaned.set(
-            BANNER_PATTERNS,
-            BannerPatternLayers::new(layers),
-        );
+        cleaned.set(BANNER_PATTERNS, BannerPatternLayers::new(layers));
         (
             cleaned,
             lower(),
@@ -418,9 +366,9 @@ pub(super) fn cauldron_item_interaction(
         )
     } else if water
         && item != &*items::SHULKER_BOX
-        && item.block.is_some_and(|block| {
-            block.has_tag(&BlockTag::SHULKER_BOXES)
-        })
+        && item
+            .block
+            .is_some_and(|block| block.has_tag(&BlockTag::SHULKER_BOXES))
     {
         (
             ItemStack::with_count_and_patch(
@@ -438,13 +386,7 @@ pub(super) fn cauldron_item_interaction(
     } else {
         return InteractionResult::TryEmptyHandInteraction;
     };
-    create_filled_result_for_hand(
-        player,
-        inv,
-        hand,
-        result,
-        creative_limit,
-    );
+    create_filled_result_for_hand(player, inv, hand, result, creative_limit);
     if award_item {
         player.award_stat(&ITEM_USED, item);
     }
@@ -460,14 +402,7 @@ pub(super) fn cauldron_item_interaction(
         );
     }
     if let Some(sound) = sound {
-        world.play_sound(
-            sound,
-            Blocks,
-            pos,
-            1.0,
-            1.0,
-            None,
-        );
+        world.play_sound(sound, Blocks, pos, 1.0, 1.0, None);
         world.game_event(
             if placing {
                 &vanilla_game_events::FLUID_PLACE
@@ -479,4 +414,52 @@ pub(super) fn cauldron_item_interaction(
         );
     }
     InteractionResult::Success
+}
+
+#[cfg(test)]
+mod tests {
+    use steel_registry::{init_vanilla_registry, vanilla_blocks};
+
+    use super::*;
+    use crate::{
+        behavior::{BLOCK_BEHAVIORS, init_behaviors},
+        test_support::fresh_test_world,
+    };
+
+    #[test]
+    fn registered_cauldron_behaviors_expose_vanilla_fill_levels() {
+        init_vanilla_registry();
+        init_behaviors();
+        let world = fresh_test_world("cauldron_analog_output");
+        let pos = BlockPos::ZERO;
+
+        let empty = vanilla_blocks::CAULDRON.default_state();
+        let empty_behavior = BLOCK_BEHAVIORS.get_behavior(empty.get_block());
+        assert!(empty_behavior.has_analog_output_signal(empty));
+        assert_eq!(
+            empty_behavior.get_analog_output_signal(
+                empty,
+                world.world.as_ref(),
+                pos,
+                Direction::North,
+            ),
+            0,
+        );
+
+        for level_value in 1..=3 {
+            let state = vanilla_blocks::WATER_CAULDRON
+                .default_state()
+                .set_value(LEVEL_CAULDRON, level_value);
+            let behavior = BLOCK_BEHAVIORS.get_behavior(state.get_block());
+            assert_eq!(
+                behavior.get_analog_output_signal(
+                    state,
+                    world.world.as_ref(),
+                    pos,
+                    Direction::North
+                ),
+                i32::from(level_value),
+            );
+        }
+    }
 }

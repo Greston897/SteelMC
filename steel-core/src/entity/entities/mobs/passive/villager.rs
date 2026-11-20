@@ -15,13 +15,13 @@ use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
+use steel_registry::entity_data::VillagerData;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::VillagerEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
-use steel_registry::entity_data::VillagerData;
 
 use crate::entity::ai::goal::{
     AvoidEntityGoal, BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal,

@@ -3,11 +3,12 @@
 //! Vanilla `ShelfBlockEntity` holds three display items (`SLOT_COUNT = 3`), one
 //! per shelf compartment, plus a `powered` flag mirrored from the block state.
 
-use std::sync::{Arc, Weak};
 use std::mem::replace;
+use std::sync::{Arc, Weak};
 
 use simdnbt::ToNbtTag;
 use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
+use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_block_entity_types;
@@ -84,7 +85,7 @@ impl BlockEntity for ShelfBlockEntity {
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
-        let view: simdnbt::borrow::NbtCompound<'_, '_> = nbt.into();
+        let view: BorrowedNbtCompoundView<'_, '_> = nbt.into();
         let mut container = self.container.lock();
         container.items.fill(ItemStack::empty());
         load_all_items(view, &mut container.items);

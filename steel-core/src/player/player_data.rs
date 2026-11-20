@@ -224,6 +224,7 @@ pub struct PersistentStat {
 impl PersistentPlayerData {
     /// Extracts persistent data from a live player.
     #[must_use]
+    #[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
     pub fn from_player(player: &Player) -> Self {
         let pos = player.position();
         let (yaw, pitch) = player.rotation();

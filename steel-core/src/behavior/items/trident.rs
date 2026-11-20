@@ -17,22 +17,22 @@
 use std::sync::Arc;
 
 use steel_macros::item_behavior;
+use steel_math::trig::cos;
+use steel_math::trig::sin;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::stat::vanilla_stat_types;
 use steel_registry::{sound_events, vanilla_enchantments, vanilla_entities};
 use steel_utils::types::GameType;
-use steel_math::trig::cos;
-use steel_math::trig::sin;
 
 use crate::behavior::ItemUseAnimation;
 use crate::behavior::context::{InteractionResult, UseItemContext};
 use crate::behavior::item::ItemBehavior;
 use crate::entity::entities::{AbstractArrow as _, ArrowPickup, ThrownTridentEntity};
 use crate::entity::{Entity, LivingEntity, next_entity_id, spawn_projectile_from_rotation};
+use crate::player::Player;
 use crate::world::World;
 use glam::DVec3;
-use crate::player::Player;
 
 /// Vanilla `TridentItem.MAX_USE_DURATION`.
 pub const MAX_USE_TICKS: i32 = 72000;

@@ -22,15 +22,15 @@
 //! `respawn_time`, `dragon_uuid`, `exit_portal_location`, `gateways` and
 //! `respawn_crystals`.
 
+use crate::worldgen::feature::FeatureDecorationRunner;
 use glam::IVec3;
 use serde::{Deserialize, Serialize};
-use steel_utils::BlockPos;
-use steel_utils::locks::SyncMutex;
+use std::f64::consts::PI;
 use steel_math::trig::cos;
 use steel_math::trig::sin;
 use steel_registry::feature::EndSpike;
-use crate::worldgen::feature::FeatureDecorationRunner;
-use std::f64::consts::PI;
+use steel_utils::BlockPos;
+use steel_utils::locks::SyncMutex;
 
 /// Vanilla exit portal position in the End (`0, 0` column).
 pub const EXIT_PORTAL: IVec3 = IVec3::new(0, 0, 0);
@@ -866,7 +866,7 @@ mod tests {
 
         let order = first.gateways();
         assert_eq!(order, second.gateways());
-        let mut sorted = order.clone();
+        let mut sorted = order;
         sorted.sort_unstable();
         assert_eq!(sorted, (0..GATEWAY_COUNT).collect::<Vec<_>>());
     }

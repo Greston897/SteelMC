@@ -7,10 +7,10 @@ use std::sync::Arc;
 
 use steel_protocol::packets::game::CBlockUpdate;
 use steel_registry::attribute::AttributeRef;
+use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::equipment::EquipmentSlot;
 use steel_registry::stat::vanilla_stat_types;
-use steel_registry::blocks::BlockRef;
 use steel_registry::{
     REGISTRY, blocks::properties::Direction, item_stack::ItemStack, level_events, vanilla_blocks,
     vanilla_game_events,

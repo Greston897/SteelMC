@@ -779,9 +779,7 @@ pub trait LivingEntity: Entity {
         {
             victim.trigger_advancement_with_context(
                 &vanilla_criteria_triggers::ENTITY_HURT_PLAYER,
-                &TriggerContext::entity(
-                    &attacker.entity_type().key,
-                ),
+                &TriggerContext::entity(&attacker.entity_type().key),
             );
         }
 
@@ -1620,9 +1618,7 @@ pub trait LivingEntity: Entity {
         // requires an active impulse (the explosion that launched the entity).
         if let Some(player) = self.as_player() {
             let had_impulse = self.living_base().current_impulse_impact_pos().is_some();
-            let mut context = TriggerContext::nether_travel(
-                effective_fall_distance,
-            );
+            let mut context = TriggerContext::nether_travel(effective_fall_distance);
             context.position = Some({
                 let position = self.position();
                 (position.x, position.y, position.z)
@@ -3065,10 +3061,7 @@ pub trait LivingEntity: Entity {
         {
             player.trigger_advancement_with_context(
                 &vanilla_criteria_triggers::SLIDE_DOWN_BLOCK,
-                &TriggerContext::block(
-                    &block_state.get_block().key,
-                    None,
-                ),
+                &TriggerContext::block(&block_state.get_block().key, None),
             );
         }
 
@@ -3835,23 +3828,6 @@ pub(crate) fn shearing_loot_items_with_rng<R: rand::Rng, E: LivingEntity + ?Size
     loot_table.get_random_items(&mut context)
 }
 
-#[cfg(test)]
-mod shield_tests {
-    use super::*;
-
-    #[test]
-    fn shield_component_is_present_on_shield_items() {
-        let shield = ItemStack::new(&vanilla_items::SHIELD);
-        assert!(shield.has(BLOCKS_ATTACKS));
-    }
-
-    #[test]
-    fn non_shield_items_do_not_block() {
-        let dirt = ItemStack::new(&vanilla_items::DIRT);
-        assert!(!dirt.has(BLOCKS_ATTACKS));
-    }
-}
-
 /// Vanilla `WitherRoseBlock.createWitherRose`: when the causing entity is a
 /// wither skeleton and the victim's position accepts the rose, place it.
 pub fn create_wither_rose(dead: &dyn Entity, source: &DamageSource) {
@@ -3878,4 +3854,21 @@ pub fn create_wither_rose(dead: &dyn Entity, source: &DamageSource) {
         return;
     }
     set_block_state(&world, pos, rose, UpdateFlags::UPDATE_ALL);
+}
+
+#[cfg(test)]
+mod shield_tests {
+    use super::*;
+
+    #[test]
+    fn shield_component_is_present_on_shield_items() {
+        let shield = ItemStack::new(&vanilla_items::SHIELD);
+        assert!(shield.has(BLOCKS_ATTACKS));
+    }
+
+    #[test]
+    fn non_shield_items_do_not_block() {
+        let dirt = ItemStack::new(&vanilla_items::DIRT);
+        assert!(!dirt.has(BLOCKS_ATTACKS));
+    }
 }

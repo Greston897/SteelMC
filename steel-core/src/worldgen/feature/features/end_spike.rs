@@ -7,8 +7,8 @@ use steel_registry::vanilla_entities;
 
 use super::super::prelude::*;
 use super::super::runner::FeatureDecorationRunner;
-use crate::entity::{Entity, entities::EndCrystalEntity, next_entity_id};
 use crate::entity::SharedEntity;
+use crate::entity::{Entity, entities::EndCrystalEntity, next_entity_id};
 use crate::world::World;
 
 const END_SPIKE_COUNT: usize = 10;

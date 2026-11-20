@@ -12,19 +12,19 @@ use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
+use steel_registry::vanilla_damage_types::IN_FIRE;
+use steel_registry::vanilla_damage_types::ON_FIRE;
 use steel_registry::vanilla_entity_data::MinecartEntityData;
+use steel_registry::vanilla_game_rules::TNT_EXPLODES;
 use steel_utils::BlockStateId;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey};
-use steel_registry::vanilla_damage_types::IN_FIRE;
-use steel_registry::vanilla_damage_types::ON_FIRE;
-use steel_registry::vanilla_game_rules::TNT_EXPLODES;
 
 use super::abstract_minecart::{AbstractMinecart, AbstractMinecartBase};
+use crate::entity::RemovalReason::Killed;
 use crate::entity::damage::DamageSource;
 use crate::entity::{Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, SharedEntity};
-use crate::entity::RemovalReason::Killed;
 use crate::world::{
     DefaultExplosionDamageCalculator, ExplosionInteraction, ExplosionOptions, World,
 };
@@ -196,8 +196,8 @@ impl Entity for TntMinecartEntity {
     fn hurt(&self, world: &World, source: &DamageSource, amount: f32) -> bool {
         // Vanilla primes the fuse when the cart takes damage from a source
         // that is not fire, and only if the cart was not already primed.
-        let ignites = source.damage_type.key != IN_FIRE.key
-            && source.damage_type.key != ON_FIRE.key;
+        let ignites =
+            source.damage_type.key != IN_FIRE.key && source.damage_type.key != ON_FIRE.key;
         if ignites && !self.is_primed() {
             self.prime_fuse(true);
         }

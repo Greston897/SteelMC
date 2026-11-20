@@ -13,8 +13,6 @@ use rustc_hash::FxHashSet;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_math::{trig, wrap_degrees};
-use steel_registry::vanilla_criteria_triggers::ENTER_BLOCK;
-use steel_registry::vanilla_criteria_triggers::STARTED_RIDING;
 use steel_protocol::packets::game::{
     AttributeSnapshot, CDamageEvent, CEntityEvent, CSwingAnimation, CTeleportEntity,
     EquipmentSlotItem, RelativeMovement, SoundSource,
@@ -44,6 +42,8 @@ use steel_registry::particle_type::{BlockParticleOption, ParticleData};
 use steel_registry::sound_event::{SoundEventHolder, SoundEventRef};
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_blocks;
+use steel_registry::vanilla_criteria_triggers::ENTER_BLOCK;
+use steel_registry::vanilla_criteria_triggers::STARTED_RIDING;
 use steel_registry::vanilla_entities;
 use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
 use steel_registry::vanilla_game_rules::{MAX_ENTITY_CRAMMING, MOB_DROPS};
@@ -74,11 +74,11 @@ use crate::chunk_saver::ChunkStorage;
 use crate::entity::attribute::{AttributeMap, AttributeModifier, AttributeModifierOperation};
 use crate::fluid::{LavaFluid, get_fluid_state, get_height};
 use crate::inventory::equipment::EquipmentSlot;
-use crate::player::advancement::predicate::TriggerContext;
 use crate::physics::{
     COLLISION_EPSILON, CollisionWorld, EntityPhysicsState, MoveResult, MoverType,
     WorldCollisionProvider, move_entity as resolve_entity_movement,
 };
+use crate::player::advancement::predicate::TriggerContext;
 use crate::world::game_event::GameEventContext;
 use crate::world::{ClipBlockShape, ClipFluid, Explosion, LevelReader, World};
 use crate::{enchantment_helper, entity::damage::DamageSource, player::Player};
@@ -556,10 +556,7 @@ fn apply_block_effect_segment(
                 if let Some(player) = entity.as_player() {
                     player.trigger_advancement_with_context(
                         &ENTER_BLOCK,
-                        &TriggerContext::block(
-                            &state.get_block().key,
-                            None,
-                        ),
+                        &TriggerContext::block(&state.get_block().key, None),
                     );
                 }
                 let moved_far = from.distance_squared(to) > 0.999_990_000_000_252_6_f64.powi(2);
@@ -993,9 +990,7 @@ pub(crate) fn start_riding_entities(
     if let Some(player) = passenger.as_player() {
         player.trigger_advancement_with_context(
             &STARTED_RIDING,
-            &TriggerContext::entity(
-                &entity_to_ride.entity_type().key,
-            ),
+            &TriggerContext::entity(&entity_to_ride.entity_type().key),
         );
     }
     true

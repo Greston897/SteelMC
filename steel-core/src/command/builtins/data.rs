@@ -15,6 +15,7 @@
 
 use std::borrow::Cow;
 
+use crate::command::storage::CommandStorage;
 use simdnbt::owned::{NbtCompound, NbtTag};
 use steel_utils::translations::COMMANDS_DATA_BLOCK_INVALID;
 use steel_utils::{
@@ -23,7 +24,6 @@ use steel_utils::{
 };
 use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
-use crate::command::storage::CommandStorage;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
@@ -254,7 +254,7 @@ fn remove(
     };
     let mut root = NbtTag::Compound(storage.get(&key));
     match path.set(&mut root, NbtTag::Compound(NbtCompound::new())) {
-        Ok(0) => {
+        Ok(0) | Err(NbtPathMutationError::NothingFound(_)) => {
             context.source().send_failure(translated(
                 "commands.data.path.no_data",
                 "Nothing matches that NBT path".to_owned(),
@@ -263,14 +263,6 @@ fn remove(
             return Ok(0);
         }
         Ok(_) => {}
-        Err(NbtPathMutationError::NothingFound(_)) => {
-            context.source().send_failure(translated(
-                "commands.data.path.no_data",
-                "Nothing matches that NBT path".to_owned(),
-                Vec::new(),
-            ));
-            return Ok(0);
-        }
         Err(error) => {
             context
                 .source()
@@ -292,6 +284,10 @@ fn remove(
     Ok(1)
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn unsupported_write(
     context: &SteelCommandContext<CommandSource>,
     target: DataTarget,
@@ -349,9 +345,7 @@ fn read_root(
     }
 }
 
-fn command_storage(
-    context: &SteelCommandContext<CommandSource>,
-) -> Option<&CommandStorage> {
+fn command_storage(context: &SteelCommandContext<CommandSource>) -> Option<&CommandStorage> {
     let source = context.source();
     source.server().command_storage.get(source.world().domain())
 }
@@ -380,35 +374,55 @@ fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> 
 #[cfg(test)]
 mod data_result_tests {
     use super::*;
-use simdnbt::owned::NbtList::Empty;
-use simdnbt::owned::NbtList::Int;
+    use simdnbt::owned::NbtList::Empty;
+    use simdnbt::owned::NbtList::Int;
 
     #[test]
     fn data_get_returns_numeric_floor_not_constant_success() {
-        assert_eq!(tag_result(&NbtTag::Float(6.0)).unwrap(), 6);
-        assert_eq!(tag_result(&NbtTag::Double(-1.2)).unwrap(), -2);
-        assert_eq!(scaled_numeric_result(&NbtTag::Double(2.5), 3.0).unwrap(), 7);
         assert_eq!(
-            scaled_numeric_result(&NbtTag::Double(-1.2), 2.0).unwrap(),
+            tag_result(&NbtTag::Float(6.0)).expect("the tag should produce a result"),
+            6
+        );
+        assert_eq!(
+            tag_result(&NbtTag::Double(-1.2)).expect("the tag should produce a result"),
+            -2
+        );
+        assert_eq!(
+            scaled_numeric_result(&NbtTag::Double(2.5), 3.0)
+                .expect("the tag should produce a scaled result"),
+            7
+        );
+        assert_eq!(
+            scaled_numeric_result(&NbtTag::Double(-1.2), 2.0)
+                .expect("the tag should produce a scaled result"),
             -3
         );
     }
 
     #[test]
     fn data_get_collection_lengths_and_nonnumeric_scale_match_vanilla() {
-        assert_eq!(tag_result(&NbtTag::String("a😀".into())).unwrap(), 3);
-        assert_eq!(tag_result(&NbtTag::IntArray(vec![1, 2, 3])).unwrap(), 3);
         assert_eq!(
-            tag_result(&NbtTag::List(Empty)).unwrap(),
+            tag_result(&NbtTag::String("a😀".into())).expect("the tag should produce a result"),
+            3
+        );
+        assert_eq!(
+            tag_result(&NbtTag::IntArray(vec![1, 2, 3])).expect("the tag should produce a result"),
+            3
+        );
+        assert_eq!(
+            tag_result(&NbtTag::List(Empty)).expect("the tag should produce a result"),
             0
         );
         assert_eq!(
-            tag_result(&NbtTag::List(Int(vec![1, 2]))).unwrap(),
+            tag_result(&NbtTag::List(Int(vec![1, 2]))).expect("the tag should produce a result"),
             2
         );
         let mut compound = NbtCompound::new();
         compound.insert("one", 1_i32);
-        assert_eq!(tag_result(&NbtTag::Compound(compound)).unwrap(), 1);
+        assert_eq!(
+            tag_result(&NbtTag::Compound(compound)).expect("the tag should produce a result"),
+            1
+        );
         assert!(scaled_numeric_result(&NbtTag::String("6".into()), 1.0).is_err());
     }
 }

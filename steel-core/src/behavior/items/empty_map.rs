@@ -4,6 +4,7 @@
 //! plays `ui.cartography_table.take_result`, awards `minecraft:used` and turns
 //! the consumed slot into a fresh scale-0 filled map centred on the player.
 
+use crate::behavior::UseItemContext;
 use steel_macros::item_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::item_stack::ItemStack;
@@ -102,7 +103,7 @@ mod tests {
             .lock()
             .set_selected_item(ItemStack::new(&vanilla_items::MAP));
 
-        let mut context = crate::behavior::UseItemContext::new(
+        let mut context = UseItemContext::new(
             &player,
             InteractionHand::MainHand,
             world,
@@ -149,7 +150,7 @@ mod tests {
             inventory.set_selected_item(stack);
         }
 
-        let mut context = crate::behavior::UseItemContext::new(
+        let mut context = UseItemContext::new(
             &player,
             InteractionHand::MainHand,
             world,

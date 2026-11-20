@@ -6,12 +6,12 @@
 //! palette entry for the containing cell.
 
 use std::borrow::Cow;
+use std::sync::Arc;
 use steel_protocol::packets::game::{CChunksBiomes, ChunkBiomeData};
 use steel_registry::vanilla_game_rules::MAX_BLOCK_MODIFICATIONS;
 use steel_utils::{BlockPos, BoundingBox, ChunkPos, Identifier};
 use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
-use std::sync::Arc;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
@@ -149,6 +149,15 @@ fn set_biome_at(world: &World, pos: BlockPos, biome_id: u16) -> bool {
         == Some(true)
 }
 
+/// Builds a translated component with a literal fallback.
+fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> TextComponent {
+    TextComponent::translated(TranslatedMessage {
+        key: Cow::Borrowed(key),
+        fallback: Some(Cow::Owned(fallback)),
+        args: Some(args.into_boxed_slice()),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -164,13 +173,4 @@ mod tests {
         let region = BoundingBox::from_corners(BlockPos::new(0, 0, 0), BlockPos::new(1, 1, 1));
         assert_eq!(block_region_volume(region), 8);
     }
-}
-
-/// Builds a translated component with a literal fallback.
-fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> TextComponent {
-    TextComponent::translated(TranslatedMessage {
-        key: Cow::Borrowed(key),
-        fallback: Some(Cow::Owned(fallback)),
-        args: Some(args.into_boxed_slice()),
-    })
 }

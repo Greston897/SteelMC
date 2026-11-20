@@ -1422,9 +1422,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::mpsc::channel;
     use std::{task::Poll, time::Duration as TestDuration};
     use tokio::time::sleep as test_sleep;
-use std::sync::mpsc::channel;
 
     use crate::behavior::init_behaviors;
     use crate::chunk::Chunk;
@@ -1443,20 +1443,32 @@ use std::sync::mpsc::channel;
                 reported_panics.fetch_add(1, Ordering::SeqCst);
             })
             .build()
-            .unwrap();
+            .expect("the thread pool should build");
         let (started_tx, started_rx) = channel();
         let (release_tx, release_rx) = channel();
         let (done_tx, done_rx) = channel();
         let waiter = rayon_spawn(&pool, move || {
-            started_tx.send(()).unwrap();
-            release_rx.recv().unwrap();
-            done_tx.send(()).unwrap();
+            started_tx
+                .send(())
+                .expect("the channel should accept the message");
+            release_rx
+                .recv()
+                .expect("the channel should deliver the message");
+            done_tx
+                .send(())
+                .expect("the channel should accept the message");
             42
         });
-        started_rx.recv_timeout(TestDuration::from_secs(5)).unwrap();
+        started_rx
+            .recv_timeout(TestDuration::from_secs(5))
+            .expect("the channel should deliver the message");
         drop(waiter);
-        release_tx.send(()).unwrap();
-        done_rx.recv_timeout(TestDuration::from_secs(5)).unwrap();
+        release_tx
+            .send(())
+            .expect("the channel should accept the message");
+        done_rx
+            .recv_timeout(TestDuration::from_secs(5))
+            .expect("the channel should deliver the message");
         pool.install(|| ());
         assert_eq!(panics.load(Ordering::SeqCst), 0);
     }

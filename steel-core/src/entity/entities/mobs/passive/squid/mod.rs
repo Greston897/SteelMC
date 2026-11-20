@@ -7,11 +7,11 @@ use std::{
     sync::{Arc, Weak},
 };
 
+use crate::entity::aabb_contains_any_liquid;
 use glam::DVec3;
 use simdnbt::{borrow, owned};
 use steel_macros::entity_behavior;
 use steel_math::{angle::DEGREE_90, vector};
-use crate::entity::aabb_contains_any_liquid;
 use steel_registry::{
     entity_data::{EntityPose, ParticleData},
     entity_type::{EntityAttachments, EntityDimensions, EntityTypeRef},

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use steel_macros::block_behavior;
 use crate::world::Explosion;
+use steel_macros::block_behavior;
 use steel_registry::{
     blocks::{
         BlockRef,

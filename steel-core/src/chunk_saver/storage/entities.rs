@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
+
 use super::*;
 use crate::entity::clamp_loaded_entity_position;
 
@@ -58,7 +60,7 @@ impl ChunkStorage {
             );
             return None;
         };
-        let root = simdnbt::borrow::NbtCompound::from(&root);
+        let root = BorrowedNbtCompoundView::from(&root);
         let tag = root.get("CustomName")?;
         let custom_name = TextComponent::from_nbt(&tag.to_owned());
         if custom_name.is_none() {
@@ -93,7 +95,7 @@ impl ChunkStorage {
             );
             return NbtCompound::new();
         };
-        simdnbt::borrow::NbtCompound::from(&compound).to_owned()
+        BorrowedNbtCompoundView::from(&compound).to_owned()
     }
 
     pub(super) fn save_data_from_persistent(

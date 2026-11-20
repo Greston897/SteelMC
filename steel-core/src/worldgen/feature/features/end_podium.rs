@@ -80,11 +80,7 @@ impl FeatureDecorationRunner {
 /// The fight's exit-portal spawn is exactly the worldgen feature with an
 /// `active` flag, so it is executed here against the live world rather than
 /// rebuilt with a second block loop that could drift from worldgen.
-pub(crate) fn place_end_podium_in_world(
-    world: &Arc<World>,
-    origin: BlockPos,
-    active: bool,
-) {
+pub(crate) fn place_end_podium_in_world(world: &Arc<World>, origin: BlockPos, active: bool) {
     let bedrock = REGISTRY
         .blocks
         .get_default_state_id(&vanilla_blocks::BEDROCK);

@@ -6,11 +6,8 @@ use super::{
 };
 use std::borrow::Cow;
 
+use crate::scoreboard::ScoreHolder;
 use crate::scoreboard::Scoreboard;
-use steel_protocol::packets::game::{CDisguisedChat, ChatTypeBound};
-use steel_registry::RegistryEntry as _;
-use steel_registry::chat_type::{ChatStyle, ChatTypeDecoration, ChatTypeRef};
-use text_components::translation::TranslatedMessage;
 use steel_protocol::packets::game::CCodeOfConduct;
 use steel_protocol::packets::game::CCustomChatCompletions;
 use steel_protocol::packets::game::CCustomReportDetails;
@@ -18,7 +15,10 @@ use steel_protocol::packets::game::CDeleteChat;
 use steel_protocol::packets::game::CustomChatCompletionAction;
 use steel_protocol::packets::game::PackedMessageSignature;
 use steel_protocol::packets::game::ReportDetail;
-use crate::scoreboard::ScoreHolder;
+use steel_protocol::packets::game::{CDisguisedChat, ChatTypeBound};
+use steel_registry::RegistryEntry as _;
+use steel_registry::chat_type::{ChatStyle, ChatTypeDecoration, ChatTypeRef};
+use text_components::translation::TranslatedMessage;
 
 impl Server {
     /// Logs and broadcasts a system chat message to online players.
@@ -75,6 +75,10 @@ impl Server {
     /// Vanilla `PlayerList.broadcastChatMessage(message, filter, recipients)`
     /// counterpart: used by `/msg`, where the incoming and outgoing variants of
     /// the same message go to disjoint audiences.
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     pub fn broadcast_decorated_chat_to(
         &self,
         chat_type: ChatTypeRef,
@@ -124,10 +128,8 @@ impl Server {
                 .scoreboards
                 .get(world.domain())
                 .is_none_or(|scoreboard| {
-                    scoreboard.can_see_team_message(
-                        &ScoreHolder::new(player.scoreboard_name()),
-                        team,
-                    )
+                    scoreboard
+                        .can_see_team_message(&ScoreHolder::new(player.scoreboard_name()), team)
                 });
             if can_see {
                 player.send_packet(CSystemChat::new(message, false, player));
@@ -338,37 +340,29 @@ impl Server {
     /// Builds a `CCodeOfConduct` packet if a non-empty code of conduct is active.
     #[must_use]
     pub fn code_of_conduct_packet(&self) -> Option<CCodeOfConduct> {
-        self.code_of_conduct.lock().clone().map(|code_of_conduct| {
-            CCodeOfConduct { code_of_conduct }
-        })
+        self.code_of_conduct
+            .lock()
+            .clone()
+            .map(|code_of_conduct| CCodeOfConduct { code_of_conduct })
     }
 
     /// Replaces the custom report details attached to client crash/abuse reports
     /// (`ClientboundCustomReportDetailsPacket`) and pushes the update to online players.
-    pub fn set_custom_report_details(
-        &self,
-        details: Vec<ReportDetail>,
-    ) {
+    pub fn set_custom_report_details(&self, details: Vec<ReportDetail>) {
         self.custom_report_details.lock().clone_from(&details);
         self.broadcast_to_online(CCustomReportDetails { details });
     }
 
     /// Builds a `CCustomReportDetails` packet if custom report details are registered.
     #[must_use]
-    pub fn custom_report_details_packet(
-        &self,
-    ) -> Option<CCustomReportDetails> {
+    pub fn custom_report_details_packet(&self) -> Option<CCustomReportDetails> {
         let details = self.custom_report_details.lock().clone();
-        (!details.is_empty())
-            .then_some(CCustomReportDetails { details })
+        (!details.is_empty()).then_some(CCustomReportDetails { details })
     }
 
     /// Vanilla `PlayerList.deleteMessage`: instructs all connected clients to
     /// hide/delete a previously seen signed chat message (`ClientboundDeleteChatPacket`).
-    pub fn delete_signed_chat(
-        &self,
-        message_signature: PackedMessageSignature,
-    ) {
+    pub fn delete_signed_chat(&self, message_signature: PackedMessageSignature) {
         self.broadcast_to_online(CDeleteChat { message_signature });
     }
 
@@ -379,10 +373,7 @@ impl Server {
         action: CustomChatCompletionAction,
         entries: Vec<String>,
     ) {
-        self.broadcast_to_online(CCustomChatCompletions {
-            action,
-            entries,
-        });
+        self.broadcast_to_online(CCustomChatCompletions { action, entries });
     }
 }
 

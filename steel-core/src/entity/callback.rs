@@ -6,6 +6,7 @@ use glam::DVec3;
 use steel_utils::{ChunkPos, WorldAabb};
 
 use super::EntityMoveError;
+use crate::entity::LivingEntity;
 use crate::world::World;
 use crate::world::raid::is_raider_type;
 
@@ -290,7 +291,7 @@ impl EntityLevelCallback for EntityChunkCallback {
                     entity.uuid(),
                     entity
                         .as_living_entity()
-                        .map_or(0.0, |living| living.get_health()),
+                        .map_or(0.0, LivingEntity::get_health),
                 );
             }
             world.mark_chunk_dirty(ChunkPos::from_entity_pos(entity.position()));

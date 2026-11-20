@@ -5,7 +5,6 @@ use steel_registry::block_transformer::BlockTransformerComponent;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::data_components::UseRemainder;
 use steel_registry::data_components::vanilla_components::DAMAGE;
-use steel_utils::axis::Axis::X;
 use steel_registry::data_components::vanilla_components::{
     BLOCK_TRANSFORMER, USE_COOLDOWN, USE_REMAINDER, UseCooldown,
 };
@@ -13,6 +12,7 @@ use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::stat::vanilla_stat_types;
 use steel_registry::{ItemStackTemplate, init_vanilla_registry, vanilla_blocks, vanilla_items};
+use steel_utils::axis::Axis::X;
 use steel_utils::types::{GameType, InteractionHand, SignTextSlot, UpdateFlags};
 use steel_utils::{BlockPos, BlockStateId, ChunkPos, Direction, Downcast as _};
 use text_components::TextComponent;
@@ -26,11 +26,11 @@ use crate::block_entity::entities::{SignBlockEntity, SignText};
 use crate::entity::{Entity as _, entities::ItemEntity};
 use crate::inventory::container::Container as _;
 use crate::player::Player;
-use crate::world::ClipBlockShape::Outline;
-use crate::world::ClipFluid::None;
 use crate::test_support::{
     TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
 };
+use crate::world::ClipBlockShape::Outline;
+use crate::world::ClipFluid::None;
 
 use super::use_item_on;
 
@@ -490,10 +490,7 @@ fn cauldron_filled_buckets_replace_every_cauldron_type_in_both_hands_and_modes()
                         fixture.world_fixture.world.get_block_state(fixture.pos),
                         expected
                     );
-                    assert_eq!(
-                        fixture.count(bucket),
-                        if mode == GameType::Creative { 1 } else { 0 }
-                    );
+                    assert_eq!(fixture.count(bucket), i32::from(mode == GameType::Creative));
                     assert_eq!(fixture.count(&vanilla_items::BUCKET), 1);
                     assert_eq!(fixture.used(bucket), 1);
                 }
@@ -641,9 +638,9 @@ fn washing_colored_shulker_preserves_components_and_consumes_one_water_level() {
                 &vanilla_items::DIAMOND,
                 17,
             ))
-            .unwrap(),
+            .expect("the test setup should succeed"),
         )])
-        .unwrap();
+        .expect("the test setup should succeed");
         shulker.set(CONTAINER, cargo.clone());
         fixture.hold(InteractionHand::MainHand, shulker);
         assert!(fixture.use_on(InteractionHand::MainHand).consumes_action());
@@ -793,7 +790,7 @@ fn cauldron_banner_washing_removes_only_top_layer_from_one_banner() {
                 inventory
                     .get_item_in_hand(hand)
                     .get(BANNER_PATTERNS)
-                    .unwrap()
+                    .expect("the component should be present")
                     .layers()
                     .len(),
                 2
@@ -809,7 +806,13 @@ fn cauldron_banner_washing_removes_only_top_layer_from_one_banner() {
                 .collect();
             assert_eq!(cleaned.len(), 1);
             assert_eq!(cleaned[0].count(), 1);
-            assert_eq!(cleaned[0].get(BANNER_PATTERNS).unwrap().layers(), &[bottom]);
+            assert_eq!(
+                cleaned[0]
+                    .get(BANNER_PATTERNS)
+                    .expect("the component should be present")
+                    .layers(),
+                &[bottom]
+            );
             assert_eq!(
                 cleaned[0].get(CUSTOM_NAME),
                 Some(&TextComponent::plain("Flag"))
@@ -830,12 +833,10 @@ fn cauldron_banner_washing_removes_only_top_layer_from_one_banner() {
 // ray and full game-mode interaction path, not just a placement-state helper.
 fn ray_use(interaction: &Interaction) -> InteractionResult {
     let (start, end) = interaction.player.get_ray_endpoints();
-    let hit = interaction.world_fixture.world.clip(
-        start,
-        end,
-        Outline,
-        None,
-    );
+    let hit = interaction
+        .world_fixture
+        .world
+        .clip(start, end, Outline, None);
     assert!(
         !hit.is_miss(),
         "ray {start:?} -> {end:?} must hit the fixture"

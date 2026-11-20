@@ -180,6 +180,10 @@ impl CommandResultSuspension for WhitelistCommandSuspension {
     }
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn list(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let whitelist = whitelist_of(context);
     let entries = whitelist.entries();
@@ -206,6 +210,10 @@ fn list(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSynt
     Ok(entries.len() as i32)
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn set_enabled(
     context: &SteelCommandContext<CommandSource>,
     enabled: bool,

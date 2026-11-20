@@ -9,20 +9,20 @@
 //! - Supports per-transmitter `WaypointIcon` overrides (style + RGB color) for `/waypoint`.
 
 use std::collections::BTreeMap;
-use std::sync::Arc;
 use std::f32::consts::PI;
 use std::f32::consts::TAU;
 use std::mem::discriminant;
 use std::mem::take;
+use std::sync::Arc;
 
 use glam::DVec3;
 use rustc_hash::FxHashSet;
 use steel_protocol::packets::game::{CWaypoint, TrackedWaypointData, WaypointIcon};
 use steel_registry::vanilla_attributes;
+use steel_registry::vanilla_game_rules::LOCATOR_BAR;
 use steel_utils::locks::SyncMutex;
 use steel_utils::types::GameType;
 use uuid::Uuid;
-use steel_registry::vanilla_game_rules::LOCATOR_BAR;
 
 use crate::entity::{Entity, LivingEntity as _};
 use crate::player::Player;
@@ -201,6 +201,7 @@ impl WaypointManager {
     }
 
     /// Refreshes the locator bar of every player in `world`.
+    #[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
     pub fn tick(&self, world: &Arc<World>) {
         if !world.get_game_rule(&LOCATOR_BAR) {
             // Untrack any previously visible waypoints when the rule is turned off.
@@ -316,8 +317,7 @@ impl WaypointManager {
                         Some(prev) if needs_update(prev.data, &prev.icon, data, &source.icon) => {
                             // Switching representation type (Vec3i <-> Chunk <-> Azimuth)
                             // mirrors vanilla's connection transition cleanly via `Track`.
-                            let same_kind =
-                                discriminant(&prev.data) == discriminant(&data);
+                            let same_kind = discriminant(&prev.data) == discriminant(&data);
                             let packet = if same_kind {
                                 CWaypoint::update_uuid(source.uuid, source.icon.clone(), data)
                             } else {

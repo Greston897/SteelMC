@@ -6,6 +6,7 @@ use crate::player::Player;
 use crate::world::World;
 use glam::DVec3;
 use parking_lot::MutexGuard;
+use simdnbt::borrow::NbtTag as BorrowedNbtTag;
 use simdnbt::owned::{NbtCompound, NbtTag};
 use simdnbt::{FromNbtTag, ToNbtTag};
 use std::sync::Arc;
@@ -297,7 +298,7 @@ impl PlayerAction {
 }
 
 impl FromNbtTag for PlayerAction {
-    fn from_nbt_tag(tag: simdnbt::borrow::NbtTag) -> Option<Self> {
+    fn from_nbt_tag(tag: BorrowedNbtTag) -> Option<Self> {
         let compound = tag.compound()?;
         Some(Self {
             player: Uuid::from_int_array(&compound.int_array(TAG_PLAYER)?)?,

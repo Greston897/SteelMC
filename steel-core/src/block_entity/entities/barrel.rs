@@ -11,12 +11,12 @@ use std::{
 use simdnbt::ToNbtTag;
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
-use steel_registry::sound_events::BLOCK_BARREL_CLOSE;
-use steel_registry::sound_events::BLOCK_BARREL_OPEN;
 use steel_registry::data_components::{
     DataComponentMap, SeededContainerLoot, vanilla_components::CONTAINER_LOOT,
 };
 use steel_registry::item_stack::ItemStack;
+use steel_registry::sound_events::BLOCK_BARREL_CLOSE;
+use steel_registry::sound_events::BLOCK_BARREL_OPEN;
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
 

@@ -1,11 +1,11 @@
 //! Vanilla `/msg` (aliases `tell`, `w`) private-message command.
 
 use crate::entity::Entity;
+use crate::server::broadcasting::decorated_chat_component;
+use std::slice::from_ref;
 use steel_registry::vanilla_chat_types;
 use steel_utils::Identifier;
 use text_components::TextComponent;
-use crate::server::broadcasting::decorated_chat_component;
-use std::slice::from_ref;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},

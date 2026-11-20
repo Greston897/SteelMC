@@ -2,12 +2,12 @@
 
 use std::sync::Arc;
 
+use crate::world::World;
 use glam::DVec3;
 use simdnbt::owned::NbtCompound;
 use steel_registry::particle_type::ParticleData;
 use steel_registry::{REGISTRY, RegistryExt as _};
 use steel_utils::Identifier;
-use crate::world::World;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},

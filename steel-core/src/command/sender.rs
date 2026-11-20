@@ -1,11 +1,11 @@
 //! Module defining the sender of a command.
 use std::{fmt, sync::Arc};
 use text_components::TextComponent;
-use uuid::Uuid;
 use tokio::sync::mpsc::UnboundedSender;
+use uuid::Uuid;
 
-use steel_utils::locks::SyncMutex;
 use crate::world::World;
+use steel_utils::locks::SyncMutex;
 
 use crate::{
     player::{DomainResidenceToken, Player},
@@ -184,9 +184,10 @@ impl CommandExecutionOwner {
                 session_address: Arc::as_ptr(player) as usize,
                 residence: self.player_residence,
             },
-            CommandSender::Console => CommandSuggestionKey::Console,
+            CommandSender::Console | CommandSender::CommandBlock(_) => {
+                CommandSuggestionKey::Console
+            }
             CommandSender::Rcon(_) => CommandSuggestionKey::Rcon,
-            CommandSender::CommandBlock(_) => CommandSuggestionKey::Console,
         }
     }
 

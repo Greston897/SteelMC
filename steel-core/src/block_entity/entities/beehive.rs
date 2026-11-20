@@ -1,16 +1,16 @@
 //! Beehive block entity implementation.
 
-use std::sync::Weak;
 use std::mem::take;
+use std::sync::Weak;
 
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList};
-use steel_registry::{vanilla_block_entity_types, vanilla_entities};
-use steel_utils::nbt::NbtNumeric as _;
-use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
 use steel_registry::blocks::shapes::SupportType::Full;
+use steel_registry::{vanilla_block_entity_types, vanilla_entities};
 use steel_utils::geometry::WorldAabb;
+use steel_utils::nbt::NbtNumeric as _;
 use steel_utils::types::UpdateFlags;
+use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
 
 use std::sync::Arc;
 
@@ -299,12 +299,7 @@ impl BeehiveBlockEntity {
         let exit_blocked = {
             let exit_pos = pos.relative(front);
             let exit_state = world.get_block_state(exit_pos);
-            world.is_face_sturdy_for(
-                exit_state,
-                exit_pos,
-                front.opposite(),
-                Full,
-            )
+            world.is_face_sturdy_for(exit_state, exit_pos, front.opposite(), Full)
         };
 
         let can_release = world.is_day() && !world.is_raining();
@@ -352,11 +347,7 @@ impl BeehiveBlockEntity {
         let new_level = honey_level.saturating_add(honey_gain).min(MAX_HONEY_LEVEL);
         if new_level != honey_level {
             let updated = state.set_value(LEVEL_HONEY, new_level);
-            world.set_block(
-                pos,
-                updated,
-                UpdateFlags::UPDATE_CLIENTS,
-            );
+            world.set_block(pos, updated, UpdateFlags::UPDATE_CLIENTS);
         }
     }
 

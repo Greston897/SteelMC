@@ -13,8 +13,8 @@
 //! trades that are bought out too often.
 
 use steel_registry::item_stack::ItemStack;
-use steel_registry::{RegistryExt as _, vanilla_items};
 use steel_registry::items::ItemRef;
+use steel_registry::{RegistryExt as _, vanilla_items};
 
 /// One trade a villager offers.
 #[derive(Clone, Debug)]
@@ -143,6 +143,7 @@ impl Trade {
 /// The list covers the novice tier only: later tiers need experience tracking
 /// and profession levelling, which the villager does not have yet. An unknown or
 /// jobless profession trades nothing, exactly like a vanilla nitwit.
+#[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
 fn trades_for(profession: &str) -> Vec<Trade> {
     use vanilla_items as i;
     match profession {
@@ -301,7 +302,7 @@ pub const PROFESSIONS: [&str; 14] = [
 #[cfg(test)]
 mod tests {
     use super::*;
-use steel_registry::vanilla_villager_professions::FARMER;
+    use steel_registry::vanilla_villager_professions::FARMER;
 
     #[test]
     fn every_profession_offers_at_least_one_trade() {

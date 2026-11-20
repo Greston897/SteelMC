@@ -5,20 +5,18 @@
 //! `InfestedBlock` spawns a silverfish, `NyliumBlock` converts to netherrack when
 //! unsupported, and `SculkBlock` grows sculk veins from nearby sculk catalysts.
 
-use std::sync::Arc;
+use crate::world::game_event::GameEventContext;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 use std::sync::Weak;
 
 use steel_macros::block_behavior;
+use steel_protocol::packets::game::SoundSource::Blocks;
 use steel_registry::REGISTRY;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
-use steel_registry::blocks::properties::{BlockStateProperties, Direction};
-use steel_utils::Downcast as _;
-use steel_utils::types::UpdateFlags;
-use steel_utils::{BlockPos, BlockStateId};
-use steel_protocol::packets::game::SoundSource::Blocks;
 use steel_registry::blocks::properties::PropertyEnum::as_str;
+use steel_registry::blocks::properties::{BlockStateProperties, Direction};
 use steel_registry::sound_events::BLOCK_DRIED_GHAST_TRANSITION;
 use steel_registry::sound_events::BLOCK_FROGSPAWN_HATCH;
 use steel_registry::sound_events::ENTITY_COPPER_GOLEM_BECOME_STATUE;
@@ -26,7 +24,10 @@ use steel_registry::sound_events::ENTITY_GHASTLING_SPAWN;
 use steel_registry::vanilla_blocks::AIR;
 use steel_registry::vanilla_blocks::NETHERRACK;
 use steel_registry::vanilla_game_events::BLOCK_CHANGE;
+use steel_utils::Downcast as _;
 use steel_utils::types::InteractionHand;
+use steel_utils::types::UpdateFlags;
+use steel_utils::{BlockPos, BlockStateId};
 
 use glam::DVec3;
 use steel_registry::item_stack::ItemStack;
@@ -36,20 +37,20 @@ use steel_registry::{vanilla_blocks, vanilla_entities, vanilla_items};
 
 use crate::behavior::BlockPlaceContext;
 use crate::behavior::block::BlockEntityCreation;
+use crate::behavior::block::schedule_water_tick_if_waterlogged;
+use crate::behavior::blocks::building::WeatheringCopper;
 use crate::behavior::blocks::building::weathering_block::WeatherState;
+use crate::behavior::context::BlockHitResult;
+use crate::behavior::context::InventoryAccess;
 use crate::behavior::{BlockBehavior, InteractionResult};
 use crate::block_entity::entities::CopperGolemStatueBlockEntity;
 use crate::block_entity::{BlockEntity as _, SharedBlockEntity};
-use crate::entity::{ENTITIES, Entity, InsideBlockEffectCollector, next_entity_id};
-use crate::world::{LevelReader, ScheduledTickAccess, World};
-use crate::behavior::block::schedule_water_tick_if_waterlogged;
-use crate::behavior::blocks::building::WeatheringCopper;
-use crate::behavior::context::BlockHitResult;
-use crate::behavior::context::InventoryAccess;
 use crate::entity::ai::path::PathComputationType;
 use crate::entity::ai::path::PathComputationType::Water;
+use crate::entity::{ENTITIES, Entity, InsideBlockEffectCollector, next_entity_id};
 use crate::fluid::get_fluid_state_from_block;
 use crate::player::Player;
+use crate::world::{LevelReader, ScheduledTickAccess, World};
 
 /// Vanilla `InfestedBlock`: breaking it spawns a silverfish instead of dropping
 /// the block itself.
@@ -169,11 +170,7 @@ impl BlockBehavior for NyliumBlock {
         // sustain it; both nylium variants convert to netherrack.
         let above = world.get_block_state(pos.above());
         if above.get_block() == &AIR {
-            world.set_block(
-                pos,
-                NETHERRACK.default_state(),
-                UpdateFlags::UPDATE_ALL,
-            );
+            world.set_block(pos, NETHERRACK.default_state(), UpdateFlags::UPDATE_ALL);
         }
     }
 }
@@ -240,8 +237,7 @@ impl FrogspawnBlock {
     fn may_place_on(world: &dyn LevelReader, pos: BlockPos) -> bool {
         let below = world.get_block_state(pos);
         let below_fluid = get_fluid_state_from_block(below);
-        let above_fluid =
-            get_fluid_state_from_block(world.get_block_state(pos.above()));
+        let above_fluid = get_fluid_state_from_block(world.get_block_state(pos.above()));
 
         (below_fluid.fluid_id.has_tag(&FluidTag::SUPPORTS_FROGSPAWN)
             || below.get_block().has_tag(&BlockTag::SUPPORTS_FROGSPAWN))
@@ -355,9 +351,7 @@ impl BlockBehavior for FrogspawnBlock {
         _neighbor_state: BlockStateId,
     ) -> BlockStateId {
         if !self.can_survive(state, world, pos) {
-            return REGISTRY
-                .blocks
-                .get_default_state_id(&AIR);
+            return REGISTRY.blocks.get_default_state_id(&AIR);
         }
         state
     }
@@ -397,9 +391,7 @@ impl BlockBehavior for SnifferEggBlock {
         _neighbor_state: BlockStateId,
     ) -> BlockStateId {
         if direction == Direction::Down && !self.can_survive(state, world, pos) {
-            return REGISTRY
-                .blocks
-                .get_default_state_id(&AIR);
+            return REGISTRY.blocks.get_default_state_id(&AIR);
         }
         state
     }
@@ -448,7 +440,7 @@ impl DriedGhastBlock {
             world.game_event(
                 &BLOCK_CHANGE,
                 pos,
-                &crate::world::game_event::GameEventContext::new(None, Some(state)),
+                &GameEventContext::new(None, Some(state)),
             );
         } else {
             Self::spawn_ghastling(world, pos, state);
@@ -559,7 +551,7 @@ impl BlockBehavior for DriedGhastBlock {
             world.game_event(
                 &BLOCK_CHANGE,
                 pos,
-                &crate::world::game_event::GameEventContext::new(None, Some(state)),
+                &GameEventContext::new(None, Some(state)),
             );
         }
     }
@@ -581,12 +573,7 @@ impl CopperGolemStatueBlock {
 
     /// Vanilla `CopperGolemStatueBlock.updatePose`: plays the statue sound, cycles
     /// the pose and fires the `BLOCK_CHANGE` game event.
-    pub fn update_pose(
-        world: &Arc<World>,
-        state: BlockStateId,
-        pos: BlockPos,
-        player: &Player,
-    ) {
+    pub fn update_pose(world: &Arc<World>, state: BlockStateId, pos: BlockPos, player: &Player) {
         world.play_sound_at(
             &ENTITY_COPPER_GOLEM_BECOME_STATUE,
             Blocks,
@@ -610,10 +597,7 @@ impl CopperGolemStatueBlock {
         world.game_event(
             &BLOCK_CHANGE,
             pos,
-            &crate::world::game_event::GameEventContext::new(
-                Some(player as &dyn Entity),
-                Some(state),
-            ),
+            &GameEventContext::new(Some(player as &dyn Entity), Some(state)),
         );
     }
 }
@@ -702,13 +686,8 @@ impl BlockBehavior for CopperGolemStatueBlock {
 
     /// Vanilla `CopperGolemStatueBlock.isPathfindable`: only water inside a
     /// waterlogged statue is pathfindable.
-    fn is_pathfindable(
-        &self,
-        state: BlockStateId,
-        computation_type: PathComputationType,
-    ) -> bool {
-        computation_type == Water
-            && state.get_value(&BlockStateProperties::WATERLOGGED)
+    fn is_pathfindable(&self, state: BlockStateId, computation_type: PathComputationType) -> bool {
+        computation_type == Water && state.get_value(&BlockStateProperties::WATERLOGGED)
     }
 
     /// Vanilla `CopperGolemStatueBlock.getCloneItemStack`: the picked stack keeps
@@ -742,10 +721,7 @@ impl BlockBehavior for CopperGolemStatueBlock {
 
         let pose = state.get_value(&BlockStateProperties::COPPER_GOLEM_POSE);
         let mut properties = BTreeMap::new();
-        properties.insert(
-            "copper_golem_pose".to_owned(),
-            as_str(&pose).to_owned(),
-        );
+        properties.insert("copper_golem_pose".to_owned(), as_str(&pose).to_owned());
         stack.set(BLOCK_STATE, BlockItemStateProperties::new(properties));
         Some(stack)
     }
@@ -777,9 +753,7 @@ impl BlockBehavior for CopperGolemStatueBlock {
 
 /// Vanilla `CopperGolemStatueBlock.Pose.getNextPose`: `ByIdMap.continuous`
 /// wraps past the last pose instead of clamping.
-const fn next_statue_pose(
-    pose: Pose,
-) -> Pose {
+const fn next_statue_pose(pose: Pose) -> Pose {
     use steel_registry::blocks::properties::Pose;
 
     match pose {
@@ -802,10 +776,7 @@ pub struct WeatheringCopperGolemStatueBlock {
 impl WeatheringCopperGolemStatueBlock {
     /// Creates a new weathering copper golem statue behavior.
     #[must_use]
-    pub const fn new(
-        block: BlockRef,
-        weather_state: WeatherState,
-    ) -> Self {
+    pub const fn new(block: BlockRef, weather_state: WeatherState) -> Self {
         Self {
             block,
             weathering: WeatheringCopper::new(weather_state),

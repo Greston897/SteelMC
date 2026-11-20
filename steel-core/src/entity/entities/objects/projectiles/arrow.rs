@@ -19,22 +19,22 @@ use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::data_components::{PotionContents, vanilla_components};
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_criteria_triggers::KILLED_BY_ARROW;
 use steel_registry::{sound_events, vanilla_damage_types, vanilla_items};
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtNumeric as _;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey};
-use steel_registry::vanilla_criteria_triggers::KILLED_BY_ARROW;
 
 use crate::behavior::MOB_EFFECT_BEHAVIORS;
 use crate::entity::LivingEntity;
 use crate::entity::damage::DamageSource;
 use crate::entity::potion_contents::to_runtime_instance_icon_from_visibility;
-use crate::player::advancement::predicate::TriggerContext;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, MobEffectInstance, Player, Projectile, ProjectileBase,
     RemovalReason, SharedEntity,
 };
+use crate::player::advancement::predicate::TriggerContext;
 use crate::world::{ClipHitResult, World};
 use steel_utils::types::GameType;
 
@@ -397,12 +397,8 @@ pub trait AbstractArrow: Projectile + Sized {
             } else {
                 &vanilla_items::BOW.key
             };
-            let context = TriggerContext::item(weapon)
-                .with_entity_type(&entity.entity_type().key);
-            player.trigger_advancement_with_context(
-                &KILLED_BY_ARROW,
-                &context,
-            );
+            let context = TriggerContext::item(weapon).with_entity_type(&entity.entity_type().key);
+            player.trigger_advancement_with_context(&KILLED_BY_ARROW, &context);
         }
 
         let sound = if hit_player {

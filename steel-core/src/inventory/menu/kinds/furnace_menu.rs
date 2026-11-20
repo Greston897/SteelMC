@@ -1,7 +1,6 @@
 //! Furnace, blast-furnace, and smoker menus.
 
 use crate::player::player_inventory::Prediction;
-use std::array::from_fn;
 use crate::player::player_inventory::Prediction::Predicted;
 use crate::player::recipe_placement::PlacementRequest;
 use crate::player::recipe_placement::PostPlaceAction;
@@ -9,6 +8,7 @@ use crate::player::recipe_placement::StackedItemContents;
 use crate::player::recipe_placement::apply_inventory_take;
 use crate::player::recipe_placement::plan_placement;
 use crate::player::recipe_placement::single_item_matches;
+use std::array::from_fn;
 
 use steel_registry::recipe::SingleItemRecipeInput;
 use steel_registry::{REGISTRY, menu_type::MenuTypeRef, vanilla_menu_types};
@@ -141,10 +141,7 @@ impl MenuKind for FurnaceMenuKind {
         // Vanilla `AbstractFurnaceMenu.handlePlacement` clears the input *and*
         // the fuel slot, so a placed recipe never sits on a running burn.
         let slots_to_clear = [container.get_item(0).clone(), container.get_item(2).clone()];
-        let matches = single_item_matches(
-            container.get_item(0),
-            request.placement,
-        );
+        let matches = single_item_matches(container.get_item(0), request.placement);
         let inv_id = ContainerId::from_arc(&player.inventory);
         let inventory: Vec<ItemStack> = guard
             .get_typed::<PlayerInventory>(inv_id)?
@@ -175,11 +172,7 @@ impl MenuKind for FurnaceMenuKind {
         );
 
         for stack in plan.inventory_give {
-            player.add_item_or_drop_with_guard(
-                guard,
-                stack,
-                Predicted,
-            );
+            player.add_item_or_drop_with_guard(guard, stack, Predicted);
         }
         apply_inventory_take(guard, player, &plan.inventory_take);
         if let Some(container) = guard.get_mut(self.container.container_id()) {

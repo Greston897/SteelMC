@@ -255,7 +255,7 @@ fn build_generated_entity(
 #[cfg(test)]
 mod tests {
     use super::*;
-use steel_utils::random::xoroshiro::Xoroshiro;
+    use steel_utils::random::xoroshiro::Xoroshiro;
 
     fn entry(
         entity_type: &'static str,

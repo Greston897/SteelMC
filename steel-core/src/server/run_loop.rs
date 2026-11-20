@@ -1,7 +1,5 @@
 use super::tick_overload::TickOverloadGuard;
 use super::world_tick_workers::{WorldTickWorkerError, WorldTickWorkers};
-use crate::command::BackgroundCommandResult;
-use crate::server::schedule::ScheduleMode::Append;
 use super::{
     Arc, CCommandSuggestions, CHUNK_SENDING_TPS, COMMAND_DATA_AUTOSAVE_INTERVAL,
     COMMAND_REQUESTS_PER_TICK, COMMAND_RESUMPTIONS_PER_TICK, CancellationToken, ChunkPos,
@@ -13,14 +11,16 @@ use super::{
     SuggestionError, Suggestions, TAB_LIST_UPDATE_INTERVAL, TabListTickStats, ThreadPool, World,
     command_suggestions_packet, sleep, spawn_blocking,
 };
+use crate::command::BackgroundCommandResult;
+use crate::server::schedule::ScheduleMode::Append;
 
-use steel_registry::vanilla_custom_stats;
-use steel_utils::threading::worker_threads_for_available;
-use steel_utils::translations;
-use steel_registry::vanilla_game_rules::COMMAND_BLOCK_OUTPUT;
-use tokio::sync::oneshot::Sender;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering::Relaxed;
+use steel_registry::vanilla_custom_stats;
+use steel_registry::vanilla_game_rules::COMMAND_BLOCK_OUTPUT;
+use steel_utils::threading::worker_threads_for_available;
+use steel_utils::translations;
+use tokio::sync::oneshot::Sender;
 
 impl Server {
     pub(super) fn advance_server_tick(&self) -> (u64, bool) {
@@ -442,12 +442,8 @@ impl Server {
                     command = %scheduled.command,
                     "Command queue full while running a scheduled command; requeueing"
                 );
-                self.schedules.schedule(
-                    scheduled.key,
-                    scheduled.command,
-                    tick + 1,
-                    Append,
-                );
+                self.schedules
+                    .schedule(scheduled.key, scheduled.command, tick + 1, Append);
             }
         }
     }
@@ -576,9 +572,7 @@ impl Server {
             }
         };
 
-        let output_allowed = source
-            .world()
-            .get_game_rule(&COMMAND_BLOCK_OUTPUT);
+        let output_allowed = source.world().get_game_rule(&COMMAND_BLOCK_OUTPUT);
         let success_flag = Arc::new(AtomicBool::new(false));
         let callback = CommandResultCallback::new({
             let success_flag = Arc::clone(&success_flag);

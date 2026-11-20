@@ -14,21 +14,21 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_type::EntityTypeRef;
+use steel_registry::vanilla_criteria_triggers::CHANNELED_LIGHTNING;
+use steel_registry::vanilla_criteria_triggers::LIGHTNING_STRIKE;
 use steel_registry::vanilla_entity_data::BaseEntityData;
 use steel_registry::{sound_events, vanilla_damage_types};
 use steel_utils::BlockPos;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey, WorldAabb};
-use steel_registry::vanilla_criteria_triggers::CHANNELED_LIGHTNING;
-use steel_registry::vanilla_criteria_triggers::LIGHTNING_STRIKE;
 
+use crate::behavior::BLOCK_BEHAVIORS;
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::mobs::passive::MushroomCowEntity;
 use crate::entity::{Entity, EntityBase, EntityBaseLoad, EntitySyncedData, RemovalReason};
-use crate::world::World;
-use crate::behavior::BLOCK_BEHAVIORS;
 use crate::player::advancement::predicate::TriggerContext;
+use crate::world::World;
 
 /// Vanilla `LightningBolt.LIFE`.
 const LIGHTNING_LIFE: i32 = 2;
@@ -147,14 +147,8 @@ impl LightningBoltEntity {
                 continue;
             };
             let context = TriggerContext::at(&world, pos);
-            player.trigger_advancement_with_context(
-                &LIGHTNING_STRIKE,
-                &context,
-            );
-            player.trigger_advancement_with_context(
-                &CHANNELED_LIGHTNING,
-                &context,
-            );
+            player.trigger_advancement_with_context(&LIGHTNING_STRIKE, &context);
+            player.trigger_advancement_with_context(&CHANNELED_LIGHTNING, &context);
         }
 
         let source = DamageSource::environment(&vanilla_damage_types::LIGHTNING_BOLT);
@@ -223,12 +217,12 @@ impl Entity for LightningBoltEntity {
 
 #[cfg(test)]
 mod tests {
+    use simdnbt::borrow::read_compound;
     use steel_registry::init_vanilla_registry;
     use steel_registry::vanilla_entities;
-use simdnbt::borrow::read_compound;
 
     use super::*;
-use std::io::Cursor;
+    use std::io::Cursor;
 
     fn bolt() -> LightningBoltEntity {
         LightningBoltEntity::new(

@@ -33,8 +33,22 @@ mod tick_state;
 mod title;
 
 use crate::block_entity::BlockEntity as _;
+use crate::block_entity::entities::CommandBlockBlockEntity;
+use crate::block_entity::entities::CommandBlockMode;
+use crate::block_entity::entities::CommandBlockMode::Auto;
+use crate::block_entity::entities::CommandBlockMode::Redstone;
+use crate::block_entity::entities::CommandBlockMode::Sequence;
+use crate::block_entity::entities::JigsawBlockEntity;
+use crate::block_entity::entities::StructureBlockEntity;
+use crate::block_entity::entities::TestBlockEntity;
+use crate::block_entity::entities::TestInstanceBlockEntity;
+use crate::block_entity::entities::WardenSpawnTracker;
+use crate::entity::create_wither_rose;
+use crate::entity::entities::CommandBlockMinecartEntity;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::player::player_inventory::Prediction;
 use crate::player::recipe_placement::{PlacementOutcome, PostPlaceAction};
+use crate::scoreboard::ScoreHolder;
 pub use abilities::{Abilities, DEFAULT_FLYING_SPEED};
 use chat::ChatState;
 pub use chat::{LastSeen, LastSeenMessagesValidator, MessageCache};
@@ -55,6 +69,20 @@ use movement::{MovementState, TeleportState};
 use permissions::PlayerPermissionState;
 pub use post_effects::PlayerPostEffects;
 pub(crate) use profile::{GAME_PROFILE_CACHE_LIMIT, KnownPlayerNameLookup, lookup_online_profile};
+pub use profile::{
+    GameProfile, KnownPlayer, KnownPlayers, ProfileLookupError, is_valid_player_name, offline_uuid,
+};
+pub use session::PlayerSession;
+pub(crate) use session::PlayerSessionId;
+use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
+use sleep_state::PlayerSleepState;
+use std::io::Cursor;
+use std::ptr;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
+use std::sync::{Arc, LazyLock, Weak};
+use std::time::{Duration, Instant};
+use steel_math::RAD_TO_DEG_F64;
 use steel_protocol::packets::game::CCookieRequest;
 use steel_protocol::packets::game::CCustomChatCompletions;
 use steel_protocol::packets::game::CGameTestHighlightPos;
@@ -64,52 +92,6 @@ use steel_protocol::packets::game::CStoreCookie;
 use steel_protocol::packets::game::CustomChatCompletionAction;
 use steel_protocol::packets::game::SCookieResponse;
 use steel_protocol::packets::game::SCustomClickAction;
-use steel_registry::recipe::display_for_recipe;
-use steel_registry::slot_display::RecipeDisplay::CraftingShaped;
-use steel_registry::slot_display::RecipeDisplay::CraftingShapeless;
-use steel_registry::slot_display::RecipeDisplay::Furnace;
-use steel_registry::stat::custom::CustomStatRef;
-use steel_registry::vanilla_criteria_triggers::KILL_MOB_NEAR_SCULK_CATALYST;
-use steel_registry::vanilla_criteria_triggers::LEVITATION;
-use steel_registry::vanilla_criteria_triggers::PLAYER_KILLED_ENTITY;
-use steel_registry::vanilla_criteria_triggers::RECIPE_CRAFTED;
-use steel_registry::vanilla_criteria_triggers::RECIPE_UNLOCKED;
-use steel_registry::vanilla_criteria_triggers::RIDE_ENTITY_IN_LAVA;
-use steel_registry::vanilla_criteria_triggers::USING_ITEM;
-use steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK;
-use steel_utils::geometry::WorldAabb;
-use steel_utils::serial::OptionalNbt;
-use steel_utils::serial::ReadFrom;
-use steel_utils::translations_registry::TRANSLATIONS;
-use steel_utils::types::UpdateFlags;
-use crate::block_entity::entities::CommandBlockBlockEntity;
-use crate::block_entity::entities::CommandBlockMode;
-use crate::block_entity::entities::CommandBlockMode::Auto;
-use crate::block_entity::entities::CommandBlockMode::Redstone;
-use crate::block_entity::entities::CommandBlockMode::Sequence;
-use crate::block_entity::entities::JigsawBlockEntity;
-use crate::block_entity::entities::StructureBlockEntity;
-use crate::block_entity::entities::TestBlockEntity;
-use crate::block_entity::entities::TestInstanceBlockEntity;
-use crate::block_entity::entities::WardenSpawnTracker;
-use crate::entity::create_wither_rose;
-use crate::entity::entities::CommandBlockMinecartEntity;
-use crate::player::advancement::predicate::TriggerContext;
-use crate::scoreboard::ScoreHolder;
-pub use profile::{
-    GameProfile, KnownPlayer, KnownPlayers, ProfileLookupError, is_valid_player_name, offline_uuid,
-};
-pub use session::PlayerSession;
-pub(crate) use session::PlayerSessionId;
-use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
-use sleep_state::PlayerSleepState;
-use std::ptr;
-use std::sync::atomic::Ordering;
-use std::sync::{Arc, LazyLock, Weak};
-use std::time::{Duration, Instant};
-use steel_math::RAD_TO_DEG_F64;
-use std::io::Cursor;
-use std::sync::atomic::AtomicBool;
 use steel_protocol::packets::game::{
     CEntityEvent, CHurtAnimation, CPlaceGhostRecipe, CPlayerCombatEnd, CPlayerCombatEnter,
     CPlayerCombatKill, CPlayerLookAt, CPlayerRotation, CRespawn, CSetChunkCacheRadius,
@@ -125,9 +107,22 @@ use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_data::{EntityPose, HumanoidArm, ParticleList};
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::game_rules::GameRuleRef;
+use steel_registry::recipe::display_for_recipe;
+use steel_registry::slot_display::RecipeDisplay::CraftingShaped;
+use steel_registry::slot_display::RecipeDisplay::CraftingShapeless;
+use steel_registry::slot_display::RecipeDisplay::Furnace;
 use steel_registry::sound_event::SoundEventRef;
+use steel_registry::stat::custom::CustomStatRef;
 use steel_registry::vanilla_block_tags::BlockTag;
+use steel_registry::vanilla_criteria_triggers::KILL_MOB_NEAR_SCULK_CATALYST;
+use steel_registry::vanilla_criteria_triggers::LEVITATION;
+use steel_registry::vanilla_criteria_triggers::PLAYER_KILLED_ENTITY;
+use steel_registry::vanilla_criteria_triggers::RECIPE_CRAFTED;
+use steel_registry::vanilla_criteria_triggers::RECIPE_UNLOCKED;
+use steel_registry::vanilla_criteria_triggers::RIDE_ENTITY_IN_LAVA;
+use steel_registry::vanilla_criteria_triggers::USING_ITEM;
 use steel_registry::vanilla_entity_data::PlayerEntityData;
+use steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK;
 use steel_registry::vanilla_game_rules::{
     DROWNING_DAMAGE, FALL_DAMAGE, FIRE_DAMAGE, FREEZE_DAMAGE, IMMEDIATE_RESPAWN, KEEP_INVENTORY,
     SHOW_DEATH_MESSAGES,
@@ -136,6 +131,11 @@ use steel_registry::{
     REGISTRY, level_events, sound_events, vanilla_attributes, vanilla_blocks, vanilla_custom_stats,
     vanilla_damage_type_tags, vanilla_entities, vanilla_game_events, vanilla_mob_effects,
 };
+use steel_utils::geometry::WorldAabb;
+use steel_utils::serial::OptionalNbt;
+use steel_utils::serial::ReadFrom;
+use steel_utils::translations_registry::TRANSLATIONS;
+use steel_utils::types::UpdateFlags;
 use steel_utils::{
     Downcast as _, Identifier, entity_events::EntityStatus, locks::Shared, translations,
 };
@@ -350,10 +350,7 @@ pub struct Player {
 
     /// Cookie keys requested by the server (`CCookieRequest`) awaiting a single
     /// client `SCookieResponse`, plus the latest verified cookie values received.
-    cookie_state: SyncMutex<(
-        rustc_hash::FxHashSet<Identifier>,
-        rustc_hash::FxHashMap<Identifier, Option<Vec<u8>>>,
-    )>,
+    cookie_state: SyncMutex<CookieState>,
 
     /// Whether the server has sent `CStartConfiguration` and is awaiting the
     /// client's `SConfigurationAcknowledged` packet.
@@ -409,6 +406,22 @@ pub struct Player {
     /// advancement trigger. Vanilla `LevitationMobEffect` keeps the same pair in
     /// `startLevitation`.
     levitation_start: SyncMutex<Option<(glam::DVec3, i32)>>,
+}
+
+/// The cookie keys the server asked for, plus the payloads the client answered
+/// with.
+type CookieState = (
+    rustc_hash::FxHashSet<Identifier>,
+    rustc_hash::FxHashMap<Identifier, ReceivedCookie>,
+);
+
+/// The answer the client gave to a cookie request.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ReceivedCookie {
+    /// The client sent the cookie payload.
+    Value(Vec<u8>),
+    /// The client answered without a payload.
+    Empty,
 }
 
 /// Vanilla `LivingEntity` spin-attack activation ticks (`startAutoSpinAttack(20, ...)`).
@@ -505,10 +518,7 @@ impl Player {
     /// recipe key, so every `recipe_crafted` criterion of that recipe progresses.
     /// Fires `recipe_unlocked`, mirroring vanilla `ServerPlayer.awardRecipes`.
     pub fn trigger_recipe_unlocked(&self, recipe: &Identifier) -> usize {
-        self.trigger_advancement_with_context(
-            &RECIPE_UNLOCKED,
-            &TriggerContext::recipe(recipe),
-        )
+        self.trigger_advancement_with_context(&RECIPE_UNLOCKED, &TriggerContext::recipe(recipe))
     }
 
     /// Fires the `recipe_crafted` advancement criterion for `recipe`.
@@ -695,10 +705,7 @@ impl Player {
         // Vanilla `Item.use` fires `using_item` once per tick while the item is
         // held in use, which is how `adventure/salvage_sherd`-style criteria see
         // sustained use.
-        self.trigger_advancement_with_context(
-            &USING_ITEM,
-            &TriggerContext::item(&item.item().key),
-        );
+        self.trigger_advancement_with_context(&USING_ITEM, &TriggerContext::item(&item.item().key));
         behavior.on_use_tick(&world, user, &mut item, active.remaining_ticks());
 
         if self.active_item_use_hand() != Some(hand) {
@@ -740,6 +747,10 @@ impl Player {
     /// `minecraft:linear` value) in `data/minecraft/enchantment/riptide.json`.
     /// The enchantment cannot stack, so only one level ever applies.
     #[must_use]
+    #[expect(
+        clippy::unused_self,
+        reason = "public API mirrors the vanilla signature"
+    )]
     pub fn trident_spin_attack_strength(&self, riptide_level: i32) -> f32 {
         if riptide_level <= 0 {
             return 0.0;
@@ -1005,9 +1016,7 @@ impl Player {
             ender_pearls: SyncMutex::new(Vec::new()),
             fishing: SyncMutex::new(None),
             stats: SyncMutex::new(StatsCounter::new()),
-            warden_spawn_tracker: SyncMutex::new(
-                WardenSpawnTracker::new(),
-            ),
+            warden_spawn_tracker: SyncMutex::new(WardenSpawnTracker::new()),
             last_action_time: SyncMutex::new(Instant::now()),
             advancements: SyncMutex::new(PlayerAdvancement::default()),
             riptide: SyncMutex::new(None),
@@ -1153,10 +1162,7 @@ impl Player {
     }
 
     /// Replaces the player's tracker, as vanilla `copyData` does.
-    pub fn set_warden_spawn_tracker(
-        &self,
-        tracker: WardenSpawnTracker,
-    ) {
+    pub fn set_warden_spawn_tracker(&self, tracker: WardenSpawnTracker) {
         *self.warden_spawn_tracker.lock() = tracker;
     }
 
@@ -1214,13 +1220,9 @@ impl Player {
         let distance = position.distance(start_position);
         let duration = self.tick_count().saturating_sub(start_tick);
         drop(start);
-        let mut context =
-            TriggerContext::nether_travel(distance);
+        let mut context = TriggerContext::nether_travel(distance);
         context.duration = Some(duration);
-        self.trigger_advancement_with_context(
-            &LEVITATION,
-            &context,
-        );
+        self.trigger_advancement_with_context(&LEVITATION, &context);
     }
 
     /// Vanilla `Entity.baseTick`: a player riding a vehicle while submerged in
@@ -1234,9 +1236,7 @@ impl Player {
         };
         self.trigger_advancement_with_context(
             &RIDE_ENTITY_IN_LAVA,
-            &TriggerContext::entity(
-                &vehicle.entity_type().key,
-            ),
+            &TriggerContext::entity(&vehicle.entity_type().key),
         );
     }
 
@@ -1413,18 +1413,11 @@ impl Player {
         let old_mode = command_block.mode();
         let current_state = world.get_block_state(packet.pos);
         let facing: steel_utils::Direction = current_state.get_value(&BlockStateProperties::FACING);
-        let new_mode =
-            CommandBlockMode::from_packet_ordinal(packet.mode);
+        let new_mode = CommandBlockMode::from_packet_ordinal(packet.mode);
         let base_block = match new_mode {
-            Sequence => {
-                &vanilla_blocks::CHAIN_COMMAND_BLOCK
-            }
-            Auto => {
-                &vanilla_blocks::REPEATING_COMMAND_BLOCK
-            }
-            Redstone => {
-                &vanilla_blocks::COMMAND_BLOCK
-            }
+            Sequence => &vanilla_blocks::CHAIN_COMMAND_BLOCK,
+            Auto => &vanilla_blocks::REPEATING_COMMAND_BLOCK,
+            Redstone => &vanilla_blocks::COMMAND_BLOCK,
         };
         let conditional = packet.flags & 2 != 0;
         let new_state = base_block
@@ -1433,11 +1426,7 @@ impl Player {
             .set_value(&BlockStateProperties::CONDITIONAL, conditional);
         if new_state != current_state {
             // Flag 2 = update clients only, exactly like vanilla.
-            world.set_block(
-                packet.pos,
-                new_state,
-                UpdateFlags::UPDATE_CLIENTS,
-            );
+            world.set_block(packet.pos, new_state, UpdateFlags::UPDATE_CLIENTS);
         }
 
         command_block.set_command(packet.command.clone());
@@ -1450,8 +1439,7 @@ impl Player {
         // Vanilla answers with `advMode.setCommand.success` (or `.disabled` when
         // command blocks are switched off) once the command is not empty.
         if !packet.command.trim().is_empty() {
-            let works =
-                world.get_game_rule(&COMMAND_BLOCKS_WORK);
+            let works = world.get_game_rule(&COMMAND_BLOCKS_WORK);
             // `advMode.setCommand.success` / `.disabled`, both take the command.
             let message = if works {
                 translations::ADV_MODE_SET_COMMAND_SUCCESS.message([packet.command.clone()])
@@ -1483,9 +1471,7 @@ impl Player {
         let Some(entity) = world.get_entity_by_id(packet.entity_id) else {
             return;
         };
-        let Some(minecart) =
-            entity.downcast_ref::<CommandBlockMinecartEntity>()
-        else {
+        let Some(minecart) = entity.downcast_ref::<CommandBlockMinecartEntity>() else {
             return;
         };
 
@@ -1526,9 +1512,7 @@ impl Player {
         let Some(block_entity) = world.get_block_entity(packet.pos) else {
             return;
         };
-        let Some(structure) =
-            block_entity.downcast_ref::<StructureBlockEntity>()
-        else {
+        let Some(structure) = block_entity.downcast_ref::<StructureBlockEntity>() else {
             return;
         };
 
@@ -1687,15 +1671,11 @@ impl Player {
 
         let display = display_for_recipe(recipe)?;
         let recipe_size = match &display {
-            CraftingShaped {
-                width, height, ..
-            } => (
+            CraftingShaped { width, height, .. } => (
                 usize::try_from(*width).unwrap_or(0),
                 usize::try_from(*height).unwrap_or(0),
             ),
-            CraftingShapeless {
-                ingredients, ..
-            } => (ingredients.len(), 1),
+            CraftingShapeless { ingredients, .. } => (ingredients.len(), 1),
             Furnace { .. } => (1, 1),
             _ => return None,
         };
@@ -1735,9 +1715,7 @@ impl Player {
         let Some(block_entity) = world.get_block_entity(packet.pos) else {
             return;
         };
-        let Some(test_instance) =
-            block_entity.downcast_ref::<TestInstanceBlockEntity>()
-        else {
+        let Some(test_instance) = block_entity.downcast_ref::<TestInstanceBlockEntity>() else {
             return;
         };
 
@@ -1846,7 +1824,13 @@ impl Player {
         let accepted = {
             let mut state = self.cookie_state.lock();
             if state.0.remove(&packet.key) {
-                state.1.insert(packet.key, packet.payload);
+                state.1.insert(
+                    packet.key,
+                    match packet.payload {
+                        Some(payload) => ReceivedCookie::Value(payload),
+                        None => ReceivedCookie::Empty,
+                    },
+                );
                 true
             } else {
                 false
@@ -1859,7 +1843,7 @@ impl Player {
 
     /// Returns the most recent validated cookie value returned by the client for `key`.
     #[must_use]
-    pub fn received_cookie(&self, key: &Identifier) -> Option<Option<Vec<u8>>> {
+    pub fn received_cookie(&self, key: &Identifier) -> Option<ReceivedCookie> {
         self.cookie_state.lock().1.get(key).cloned()
     }
 
@@ -1916,10 +1900,7 @@ impl Player {
     }
 
     /// Handles `ServerboundCustomClickActionPacket` (vanilla `MinecraftServer.handleCustomClickAction`).
-    pub fn handle_custom_click_action(
-        &self,
-        packet: SCustomClickAction,
-    ) {
+    pub fn handle_custom_click_action(&self, packet: SCustomClickAction) {
         log::debug!(
             "Player {} triggered custom click action {}",
             self.gameprofile.name(),
@@ -1948,9 +1929,7 @@ impl Player {
         let Some(block_entity) = world.get_block_entity(packet.pos) else {
             return;
         };
-        let Some(jigsaw) =
-            block_entity.downcast_ref::<JigsawBlockEntity>()
-        else {
+        let Some(jigsaw) = block_entity.downcast_ref::<JigsawBlockEntity>() else {
             return;
         };
         jigsaw.set_name(packet.name);
@@ -1980,10 +1959,7 @@ impl Player {
         let Some(block_entity) = world.get_block_entity(packet.pos) else {
             return;
         };
-        if block_entity
-            .downcast_ref::<JigsawBlockEntity>()
-            .is_none()
-        {
+        if block_entity.downcast_ref::<JigsawBlockEntity>().is_none() {
             return;
         }
         log::warn!(
@@ -2009,9 +1985,7 @@ impl Player {
         let Some(block_entity) = world.get_block_entity(packet.pos) else {
             return;
         };
-        let Some(test_block) =
-            block_entity.downcast_ref::<TestBlockEntity>()
-        else {
+        let Some(test_block) = block_entity.downcast_ref::<TestBlockEntity>() else {
             return;
         };
         test_block.set_mode(test_mode_from_ordinal(packet.mode));
@@ -3167,9 +3141,7 @@ impl Entity for Player {
             // `monster_hunter` advancements listen for.
             self.trigger_advancement_with_context(
                 &PLAYER_KILLED_ENTITY,
-                &TriggerContext::entity(
-                    &victim.entity_type().key,
-                ),
+                &TriggerContext::entity(&victim.entity_type().key),
             );
             // Vanilla `ServerPlayer.awardKillScore` fires
             // `CriteriaTriggers.KILL_MOB_NEAR_SCULK_CATALYST` when the victim is
@@ -3188,9 +3160,7 @@ impl Entity for Player {
                 if near_catalyst {
                     self.trigger_advancement_with_context(
                         &KILL_MOB_NEAR_SCULK_CATALYST,
-                        &TriggerContext::entity(
-                            &victim.entity_type().key,
-                        ),
+                        &TriggerContext::entity(&victim.entity_type().key),
                     );
                 }
             }
@@ -3249,6 +3219,7 @@ impl LivingEntity for Player {
         });
     }
 
+    #[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
     fn tick_living_entity(&self, entity: &SharedEntity) {
         self.advance_tick();
         // Vanilla `ServerPlayer.tick` runs `this.getCombatTracker().recheckStatus()`
@@ -3330,8 +3301,7 @@ impl LivingEntity for Player {
             // registered `location` predicates against the player's new position.
             let location_context = {
                 let position = self.position();
-                let mut context =
-                    TriggerContext::at(&world, position);
+                let mut context = TriggerContext::at(&world, position);
                 context.player_sneaking = Some(self.is_discrete());
                 context
             };
@@ -3728,9 +3698,7 @@ impl TextResolutor for Player {
     /// Vanilla `TranslatableContents.resolve` for a server-side view: the
     /// English translation table.
     fn translate(&self, key: &str) -> Option<String> {
-        TRANSLATIONS
-            .get(key)
-            .map(|value| (*value).to_owned())
+        TRANSLATIONS.get(key).map(|value| (*value).to_owned())
     }
 }
 

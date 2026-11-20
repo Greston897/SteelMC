@@ -1,5 +1,7 @@
 use crate::behavior::blocks::WallSkullBlock;
 use crate::behavior::blocks::decoration::skull::abstract_skull_block::AbstractSkullBlock;
+use crate::behavior::blocks::decoration::skull::wither_skull_block::WitherSkullBlock;
+use crate::behavior::context::PlacementSource;
 use crate::behavior::{BlockBehavior, BlockEntityCreation, BlockLootContext, BlockPlaceContext};
 use crate::block_entity::SharedBlockEntity;
 use crate::entity::ai::path::PathComputationType;
@@ -9,8 +11,6 @@ use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_registry::item_stack::ItemStack;
 use steel_utils::{BlockPos, BlockStateId};
-use crate::behavior::blocks::decoration::skull::wither_skull_block::WitherSkullBlock;
-use crate::behavior::context::PlacementSource;
 
 /// Behavior for wither wall skull blocks.
 #[block_behavior]
@@ -83,9 +83,7 @@ impl BlockBehavior for WitherWallSkullBlock {
         _source: &PlacementSource<'_>,
     ) {
         // A wall skull completes the wither pattern exactly like a floor skull.
-        WitherSkullBlock::check_spawn(
-            world, pos,
-        );
+        WitherSkullBlock::check_spawn(world, pos);
     }
 }
 

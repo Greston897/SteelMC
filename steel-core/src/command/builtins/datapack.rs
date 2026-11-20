@@ -48,6 +48,10 @@ fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> 
     })
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn list(
     context: &SteelCommandContext<CommandSource>,
     listing: Listing,
@@ -79,6 +83,10 @@ fn list(
     Ok(count as i32)
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn unsupported(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     context.source().send_failure(translated(
         "commands.datapack.unknown",

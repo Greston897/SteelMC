@@ -12,7 +12,6 @@ use std::{
 };
 
 use glam::DVec3;
-use steel_registry::vanilla_criteria_triggers::CONSTRUCT_BEACON;
 use simdnbt::borrow::{
     BaseNbtCompound as BorrowedNbtCompound, NbtCompound as BorrowedNbtCompoundView,
 };
@@ -23,6 +22,7 @@ use steel_registry::data_components::{DataComponentMap, vanilla_components::CUST
 use steel_registry::item_predicate::LockCode;
 use steel_registry::mob_effect::MobEffectRef;
 use steel_registry::sound_event::SoundEventRef;
+use steel_registry::vanilla_criteria_triggers::CONSTRUCT_BEACON;
 use steel_registry::{
     REGISTRY, RegistryExt, TaggedRegistryExt, sound_events, vanilla_block_entity_types,
     vanilla_block_tags, vanilla_blocks, vanilla_entities, vanilla_mob_effects,
@@ -40,8 +40,8 @@ use crate::chunk::heightmap::HeightmapType;
 use crate::chunk::light::MAX_LIGHT_LEVEL;
 use crate::entity::{Entity as _, LivingEntity as _, MobEffectInstance};
 use crate::player::Player;
-use crate::world::World;
 use crate::player::advancement::predicate::TriggerContext;
+use crate::world::World;
 
 const MAX_LEVELS: i32 = 4;
 
@@ -386,7 +386,7 @@ impl BeaconBlockEntity {
     }
 
     fn load_effect(nbt: &BorrowedNbtCompound<'_>, field: &str) -> Option<MobEffectRef> {
-        let nbt: simdnbt::borrow::NbtCompound<'_, '_> = nbt.into();
+        let nbt: BorrowedNbtCompoundView<'_, '_> = nbt.into();
         let key = Identifier::from_str(&nbt.string(field)?.to_str()).ok()?;
         let effect = REGISTRY.mob_effects.by_key(&key)?;
         BeaconState::filter_effect(Some(effect))
@@ -497,13 +497,9 @@ impl BlockEntity for BeaconBlockEntity {
             let center = DVec3::new(center_x, center_y, center_z);
             world.players.iter_players(|_uuid, player| {
                 if player.position().distance_squared(center) <= BEACON_TRIGGER_RADIUS_SQUARED {
-                    let mut context =
-                        TriggerContext::at(world, center);
+                    let mut context = TriggerContext::at(world, center);
                     context.dimension_level = Some(levels);
-                    player.trigger_advancement_with_context(
-                        &CONSTRUCT_BEACON,
-                        &context,
-                    );
+                    player.trigger_advancement_with_context(&CONSTRUCT_BEACON, &context);
                 }
                 true
             });

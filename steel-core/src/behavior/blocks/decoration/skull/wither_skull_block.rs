@@ -2,8 +2,10 @@ use crate::behavior::blocks::SkullBlock;
 use crate::behavior::blocks::decoration::skull::abstract_skull_block::AbstractSkullBlock;
 use crate::behavior::{BlockBehavior, BlockEntityCreation, BlockLootContext, BlockPlaceContext};
 use crate::block_entity::SharedBlockEntity;
+use crate::entity::ENTITIES;
 use crate::entity::EntitySpawnReason;
 use crate::entity::ai::path::PathComputationType;
+use crate::entity::next_entity_id;
 use crate::world::World;
 use glam::DVec3;
 use std::sync::{Arc, Weak};
@@ -14,8 +16,6 @@ use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_blocks;
 use steel_registry::vanilla_entities;
 use steel_utils::{BlockPos, BlockStateId};
-use crate::entity::ENTITIES;
-use crate::entity::next_entity_id;
 
 /// Behavior for wither skull blocks.
 #[block_behavior]

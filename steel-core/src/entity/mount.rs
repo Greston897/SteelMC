@@ -6,8 +6,8 @@
 //! keep the same shape: growing the size when a chest is added must keep the
 //! existing items, which is what `AbstractHorse.createInventory` does.
 
-use std::sync::Weak;
 use std::sync::Arc;
+use std::sync::Weak;
 
 use simdnbt::ToNbtTag as _;
 use simdnbt::borrow::NbtCompound as NbtCompoundView;
@@ -17,11 +17,11 @@ use steel_registry::vanilla_items;
 use steel_utils::locks::{IntoShared as _, SyncMutex};
 
 use crate::entity::Entity;
+use crate::inventory::container::load_all_items;
 use crate::inventory::container::{Container as _, SimpleContainer};
 use crate::inventory::menu::kinds::mount_menu;
 use crate::inventory::prelude::*;
 use crate::player::Player;
-use crate::inventory::container::load_all_items;
 
 /// The saddle and armor container of one mount.
 pub struct MountInventory {

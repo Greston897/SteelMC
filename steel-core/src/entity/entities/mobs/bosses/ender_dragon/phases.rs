@@ -27,24 +27,24 @@
 //! deliberately separate and lock-free, because the manager is behind a mutex and
 //! a tick that re-entered it would deadlock.
 
+use std::array::from_fn;
 use std::cmp::Ordering;
 use std::f32::consts::{FRAC_PI_4, FRAC_PI_8, PI};
-use std::array::from_fn;
 use std::mem::take;
 
 use glam::DVec3;
-use steel_utils::BlockPos;
 use steel_math::trig::cos;
 use steel_math::trig::sin;
+use steel_utils::BlockPos;
 
 use super::EnderDragonEntity;
 use super::flight_history::DragonFlightHistory;
 use super::part::DragonParts;
+use crate::chunk::heightmap::HeightmapType::MotionBlockingNoLeaves;
 use crate::entity::ai::node::Node;
 use crate::entity::ai::path::Path;
 use crate::entity::{Entity, WeakEntity};
 use crate::world::World;
-use crate::chunk::heightmap::HeightmapType::MotionBlockingNoLeaves;
 
 /// Vanilla `EnderDragonPhase` ids, in registry order.
 ///
@@ -486,11 +486,7 @@ impl DragonPhaseManager {
         self.nodes.get_or_insert_with(|| {
             from_fn(|index| {
                 let (x, z, y_adjustment) = node_polar_position(index);
-                let height = world.level_height_at(
-                    MotionBlockingNoLeaves,
-                    x,
-                    z,
-                );
+                let height = world.level_height_at(MotionBlockingNoLeaves, x, z);
                 DVec3::new(
                     f64::from(x),
                     f64::from(height.max(73) + y_adjustment),
@@ -567,11 +563,10 @@ impl DragonPhaseManager {
         // Slot `FINAL_SLOT` is vanilla's `finalNode`; it exists only so the search
         // state can address it like any other node.
         // `Node` is `Clone` but not `Copy`, so the arena is cloned into the slots.
-        let mut positions: [Node; SEARCH_SLOTS] =
-            from_fn(|slot| match arena.get(slot) {
-                Some(node) => node.clone(),
-                None => Node::new(0, 0, 0),
-            });
+        let mut positions: [Node; SEARCH_SLOTS] = from_fn(|slot| match arena.get(slot) {
+            Some(node) => node.clone(),
+            None => Node::new(0, 0, 0),
+        });
         let final_slot = final_node.map(|position| {
             positions[FINAL_SLOT] = node_from_position(position);
             FINAL_SLOT
@@ -872,7 +867,7 @@ pub fn find_path(
 #[cfg(test)]
 mod tests {
     use super::*;
-use std::array::from_fn;
+    use std::array::from_fn;
 
     #[test]
     fn phase_ids_are_vanilla_registry_order() {
@@ -937,10 +932,10 @@ use std::array::from_fn;
         // Vanilla's table describes an undirected arena graph, so every edge must
         // appear in both rows. This catches a transcription slip in the literals.
         for (from, row) in NODE_ADJACENCY.iter().enumerate() {
-            for to in 0..NODE_COUNT {
+            for (to, other) in NODE_ADJACENCY.iter().enumerate() {
                 assert_eq!(
                     row & (1 << to) != 0,
-                    NODE_ADJACENCY[to] & (1 << from) != 0,
+                    other & (1 << from) != 0,
                     "edge {from} <-> {to} is not symmetric"
                 );
             }

@@ -6,9 +6,9 @@
 //! loop consults it before scheduling an autosave, and `/save-all` writes every
 //! command-owned data set immediately.
 
+use std::sync::Arc;
 use steel_utils::Identifier;
 use text_components::TextComponent;
-use std::sync::Arc;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
@@ -39,6 +39,10 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
 }
 
 /// Runs one save pass, matching vanilla `SaveAllCommand`.
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn save_all(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let server = context.source().server();
     if !server.is_auto_save_enabled() {
@@ -74,6 +78,10 @@ fn save_all(context: &SteelCommandContext<CommandSource>) -> Result<i32, Command
     Ok(1)
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn save_off(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     context.source().server().set_auto_save_enabled(false);
     context.source().send_success(
@@ -83,6 +91,10 @@ fn save_off(context: &SteelCommandContext<CommandSource>) -> Result<i32, Command
     Ok(1)
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn save_on(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     context.source().server().set_auto_save_enabled(true);
     context.source().send_success(

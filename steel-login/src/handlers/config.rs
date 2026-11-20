@@ -11,7 +11,9 @@ use steel_protocol::packets::common::{SClientInformation, SCustomPayload};
 use steel_protocol::packets::config::CFinishConfiguration;
 use steel_protocol::packets::config::CSelectKnownPacks;
 use steel_protocol::packets::config::SSelectKnownPacks;
+use steel_protocol::packets::game::{CConfigPing, CConfigShowDialog, CResetChat};
 use steel_protocol::packets::game::{CUpdateEnabledFeatures, ResourcePackAction, SResourcePack};
+use steel_protocol::packets::login::{CCustomQuery, CLoginCookieRequest};
 use steel_protocol::packets::shared_implementation::KnownPack;
 use steel_protocol::utils::ConnectionProtocol;
 use steel_utils::{Identifier, translations};
@@ -182,23 +184,18 @@ impl JavaTcpClient {
     }
 
     /// Sends a Configuration-state custom dialog (`ClientboundShowDialogPacket`).
-    pub async fn send_config_dialog(
-        &self,
-        packet: steel_protocol::packets::game::CConfigShowDialog,
-    ) {
+    pub async fn send_config_dialog(&self, packet: CConfigShowDialog) {
         self.send_bare_packet_now(packet).await;
     }
 
     /// Sends a Configuration-state ping (`ClientboundPingPacket`).
     pub async fn send_config_ping(&self, id: i32) {
-        self.send_bare_packet_now(steel_protocol::packets::game::CConfigPing { id })
-            .await;
+        self.send_bare_packet_now(CConfigPing { id }).await;
     }
 
     /// Resets the client's chat state during Configuration (`ClientboundResetChatPacket`).
     pub async fn send_reset_chat(&self) {
-        self.send_bare_packet_now(steel_protocol::packets::game::CResetChat {})
-            .await;
+        self.send_bare_packet_now(CResetChat {}).await;
     }
 
     /// Sends a Login-state custom plugin query (`ClientboundCustomQueryPacket`).
@@ -208,7 +205,7 @@ impl JavaTcpClient {
         channel: Identifier,
         data: Vec<u8>,
     ) {
-        self.send_bare_packet_now(steel_protocol::packets::login::CCustomQuery {
+        self.send_bare_packet_now(CCustomQuery {
             transaction_id,
             channel,
             data,
@@ -218,8 +215,7 @@ impl JavaTcpClient {
 
     /// Requests a stored cookie during Login (`ClientboundCookieRequestPacket`).
     pub async fn request_login_cookie(&self, key: Identifier) {
-        self.send_bare_packet_now(steel_protocol::packets::login::CLoginCookieRequest { key })
-            .await;
+        self.send_bare_packet_now(CLoginCookieRequest { key }).await;
     }
 
     /// Finishes the configuration process and transitions to the play state.

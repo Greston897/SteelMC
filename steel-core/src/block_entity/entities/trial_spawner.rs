@@ -11,6 +11,7 @@ use std::sync::{Arc, Weak};
 use glam::DVec3;
 use rand::RngExt as _;
 use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
+use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
@@ -26,11 +27,11 @@ use steel_utils::{
 };
 use uuid::Uuid;
 
+use crate::behavior::block::drop_from_block_interact_loot_table;
 use crate::block_entity::{BlockEntity, BlockEntityBase};
+use crate::entity::LivingEntity::is_alive;
 use crate::entity::{ENTITIES, Entity as _, LivingEntity as _, MobEffectInstance, next_entity_id};
 use crate::world::World;
-use crate::behavior::block::drop_from_block_interact_loot_table;
-use crate::entity::LivingEntity::is_alive;
 
 const PLAYER_DETECT_RANGE: f64 = 14.0;
 const SPAWN_RANGE: i32 = 4;
@@ -115,14 +116,8 @@ impl TrialSpawnerBlockEntity {
             return 0;
         };
         let mut random = rand::rng();
-        let items = drop_from_block_interact_loot_table(
-            table,
-            state,
-            None,
-            None,
-            None,
-            &mut random,
-        );
+        let items =
+            drop_from_block_interact_loot_table(table, state, None, None, None, &mut random);
         let dropped = items.len();
         for item in items {
             world.drop_item_stack(pos, item);
@@ -232,6 +227,7 @@ impl BlockEntity for TrialSpawnerBlockEntity {
         &self.base
     }
 
+    #[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
     fn tick(&self, world: &Arc<World>) {
         let pos = self.get_block_pos();
         let state = world.get_block_state(pos);
@@ -404,10 +400,7 @@ impl BlockEntity for TrialSpawnerBlockEntity {
                         } else {
                             &vanilla_items::TRIAL_KEY
                         };
-                        world.drop_item_stack(
-                            pos.above(),
-                            ItemStack::new(key_item),
-                        );
+                        world.drop_item_stack(pos.above(), ItemStack::new(key_item));
                     } else {
                         let _ = Self::drop_loot_key(world, pos.above(), state, &loot_table);
                     }
@@ -431,7 +424,7 @@ impl BlockEntity for TrialSpawnerBlockEntity {
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
-        let view: simdnbt::borrow::NbtCompound<'_, '_> = nbt.into();
+        let view: BorrowedNbtCompoundView<'_, '_> = nbt.into();
         let mut state = self.state.lock();
         let nested_entity = view
             .compound("spawn_data")
@@ -483,7 +476,7 @@ mod tests {
             BlockPos::new(0, 0, 0),
             vanilla_blocks::TRIAL_SPAWNER.default_state(),
         );
-        assert!(spawner.entity().is_empty());
+        assert_eq!(spawner.entity(), "");
         assert_eq!(spawner.total_mobs(), 0);
     }
 }

@@ -1,9 +1,9 @@
-//! Vanilla VindicatorBreakDoorGoal / BreakDoorGoal, restricted to active raids.
+//! Vanilla `VindicatorBreakDoorGoal`/`BreakDoorGoal`, restricted to active raids.
 use super::door_interact::DoorInteractGoal;
 use super::selector::{Goal, GoalControls};
 use crate::entity::{PathfinderMob, SharedEntity};
-use steel_utils::types::Difficulty;
 use steel_registry::vanilla_game_rules::MOB_GRIEFING;
+use steel_utils::types::Difficulty;
 use steel_utils::types::InteractionHand::MainHand;
 
 pub(crate) struct RaidBreakDoorGoal {

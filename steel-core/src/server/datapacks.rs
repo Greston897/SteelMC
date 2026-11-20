@@ -308,14 +308,13 @@ impl FunctionPacks {
 #[cfg(test)]
 mod tests {
     use super::*;
-use std::env::temp_dir;
-use std::error::Error;
+    use std::env::temp_dir;
+    use std::error::Error;
 
     struct Fixture(PathBuf);
     impl Fixture {
         fn new() -> Result<Self, Box<dyn Error>> {
-            let root =
-                temp_dir().join(format!("steel-function-pack-{}", uuid::Uuid::new_v4()));
+            let root = temp_dir().join(format!("steel-function-pack-{}", uuid::Uuid::new_v4()));
             fs::create_dir_all(root.join("test/data/example/function"))?;
             fs::create_dir_all(root.join("test/data/minecraft/tags/function"))?;
             fs::write(
@@ -381,8 +380,8 @@ use std::error::Error;
     }
 
     #[test]
-    fn cyclic_and_missing_required_function_tags_reject_publication()
-    -> Result<(), Box<dyn Error>> {
+    fn cyclic_and_missing_required_function_tags_reject_publication() -> Result<(), Box<dyn Error>>
+    {
         steel_registry::init_vanilla_registry();
         let fixture = Fixture::new()?;
         let tag = fixture

@@ -19,30 +19,30 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::registry::TaggedRegistryExt as _;
 use steel_registry::sound_event::SoundEventRef;
+use steel_registry::vanilla_damage_type_tags::DamageTypeTag;
 use steel_registry::vanilla_entity_data::IronGolemEntityData;
 use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
+use steel_registry::vanilla_items::IRON_INGOT;
 use steel_registry::{REGISTRY, sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
-use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
-use steel_registry::vanilla_damage_type_tags::DamageTypeTag;
-use steel_registry::vanilla_items::IRON_INGOT;
 use steel_utils::types::InteractionHand;
+use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
+use crate::behavior::InteractionResult;
+use crate::behavior::InteractionResult::Pass;
+use crate::behavior::InteractionResult::SuccessServer;
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, MoveTowardsTargetGoal,
     NearestAttackableTargetGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
-use crate::behavior::InteractionResult;
-use crate::behavior::InteractionResult::Pass;
-use crate::behavior::InteractionResult::SuccessServer;
-use crate::player::Player;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity,
     sync_dirty_mob_effects,
 };
 use crate::physics::MoveResult;
+use crate::player::Player;
 use crate::world::World;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
@@ -125,14 +125,12 @@ impl IronGolemEntity {
     /// Whether this iron golem was built by a player (`PlayerCreated` NBT tag).
     #[must_use]
     pub fn is_player_created(&self) -> bool {
-        self.player_created
-            .load(Relaxed)
+        self.player_created.load(Relaxed)
     }
 
     /// Marks this iron golem as player-created (`PlayerCreated` NBT tag).
     pub fn set_player_created(&self, player_created: bool) {
-        self.player_created
-            .store(player_created, Relaxed);
+        self.player_created.store(player_created, Relaxed);
     }
 
     fn update_dirty_mob_effect_entity_data(&self) {
@@ -274,11 +272,7 @@ impl Mob for IronGolemEntity {
     }
 
     /// Vanilla `IronGolem.mobInteract`: using an iron ingot repairs 25 health.
-    fn mob_interact(
-        &self,
-        player: &Player,
-        hand: InteractionHand,
-    ) -> InteractionResult {
+    fn mob_interact(&self, player: &Player, hand: InteractionHand) -> InteractionResult {
         let item_stack = {
             let inventory = player.inventory.lock();
             let held = inventory.get_item_in_hand(hand);

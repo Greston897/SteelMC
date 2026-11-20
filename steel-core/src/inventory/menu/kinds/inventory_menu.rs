@@ -9,13 +9,13 @@
 //! - Slot 45: Offhand
 
 use crate::player::player_inventory::Prediction;
-use std::sync::Arc;
 use crate::player::recipe_placement::PlacementRequest;
 use crate::player::recipe_placement::PostPlaceAction;
 use crate::player::recipe_placement::StackedItemContents;
 use crate::player::recipe_placement::apply_plan;
 use crate::player::recipe_placement::grid_produces;
 use crate::player::recipe_placement::plan_placement;
+use std::sync::Arc;
 
 use steel_registry::item_stack::ItemStack;
 use steel_utils::locks::{IntoShared, Shared};

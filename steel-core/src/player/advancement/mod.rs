@@ -375,6 +375,34 @@ impl PlayerAdvancement {
     }
 }
 
+/// Collects the criteria of `trigger` that carry a predicate, the way vanilla's
+/// `PlayerAdvancements.registerListeners` does on advancement load.
+fn collect_listeners(trigger: &Identifier) -> Vec<(AdvancementRef, String)> {
+    let mut listeners = Vec::new();
+    for advancement in REGISTRY.advancements.advancements() {
+        let advancement = *advancement;
+        for criterion_id in advancement.criteria_ids() {
+            let Some(criterion) = advancement.get_criterion(criterion_id) else {
+                continue;
+            };
+            if &criterion.id() != trigger {
+                continue;
+            }
+            let Some(instance) = criterion.instance() else {
+                continue;
+            };
+            // Vanilla registers a listener only for the typed instance (a
+            // `LocationPredicate` for `location`); a bare trigger would re-check
+            // the same predicate every tick for no reason.
+            if !instance.contains("\"conditions\"") && !instance.contains("\"location\"") {
+                continue;
+            }
+            listeners.push((advancement, criterion_id.to_owned()));
+        }
+    }
+    listeners
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -473,32 +501,4 @@ mod tests {
 
         assert!(player_advancement.progress.is_empty());
     }
-}
-
-/// Collects the criteria of `trigger` that carry a predicate, the way vanilla's
-/// `PlayerAdvancements.registerListeners` does on advancement load.
-fn collect_listeners(trigger: &Identifier) -> Vec<(AdvancementRef, String)> {
-    let mut listeners = Vec::new();
-    for advancement in REGISTRY.advancements.advancements() {
-        let advancement = *advancement;
-        for criterion_id in advancement.criteria_ids() {
-            let Some(criterion) = advancement.get_criterion(criterion_id) else {
-                continue;
-            };
-            if &criterion.id() != trigger {
-                continue;
-            }
-            let Some(instance) = criterion.instance() else {
-                continue;
-            };
-            // Vanilla registers a listener only for the typed instance (a
-            // `LocationPredicate` for `location`); a bare trigger would re-check
-            // the same predicate every tick for no reason.
-            if !instance.contains("\"conditions\"") && !instance.contains("\"location\"") {
-                continue;
-            }
-            listeners.push((advancement, criterion_id.to_owned()));
-        }
-    }
-    listeners
 }

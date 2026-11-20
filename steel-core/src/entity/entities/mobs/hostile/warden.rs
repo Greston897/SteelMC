@@ -18,12 +18,12 @@ use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
+use steel_registry::vanilla_damage_types::SONIC_BOOM;
 use steel_registry::vanilla_entity_data::WardenEntityData;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_mob_effects};
 use steel_utils::WorldAabb;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
-use steel_registry::vanilla_damage_types::SONIC_BOOM;
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
@@ -297,9 +297,7 @@ impl Mob for WardenEntity {
                     *cd = SONIC_BOOM_COOLDOWN_TICKS;
                     drop(cd);
                     self.play_sound(&sound_events::ENTITY_WARDEN_SONIC_BOOM, 3.0, 1.0);
-                    let source = DamageSource::environment(
-                        &SONIC_BOOM,
-                    );
+                    let source = DamageSource::environment(&SONIC_BOOM);
                     if target.hurt(&world, &source, SONIC_BOOM_DAMAGE) {
                         let kb_resist = target.as_living_entity().map_or(0.0, |l| {
                             l.attributes()

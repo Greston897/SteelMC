@@ -109,7 +109,7 @@ use crate::permission::{
 };
 use crate::player::connection::{NetworkConnection, ScheduledPlayPacket};
 use crate::player::player_data_storage::GlobalPlayerData;
-use crate::player::{PlayerConnection, ResetReason};
+use crate::player::{PlayerConnection, ReceivedCookie, ResetReason};
 use crate::scoreboard::{ScoreHolder, Scoreboard, criterion_is_read_only};
 use crate::server::bans::{BanEntry, BanList};
 use crate::server::{Server, test_server_with_worlds_and_config};
@@ -1909,7 +1909,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     assert!(!op_cap.closed.load(Ordering::Acquire));
     assert_eq!(
         op_player.received_cookie(&cookie_key),
-        Some(Some(vec![0xDE, 0xAD]))
+        Some(ReceivedCookie::Value(vec![0xDE, 0xAD]))
     );
 
     op_player.start_configuration();
@@ -2737,14 +2737,12 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     // (average well below the 50 ms / 20 TPS budget) with no single spike > 250 ms!
     assert!(
         elapsed.as_millis() < 4_000,
-        "100 server ticks exceeded 20 TPS budget: took {} ms (max tick {} us)",
-        elapsed.as_millis(),
-        max_single_tick_us
+        "100 server ticks exceeded 20 TPS budget: took {} ms (max tick {max_single_tick_us} us)",
+        elapsed.as_millis()
     );
     assert!(
         max_single_tick_us < 250_000,
-        "single server tick lag spike detected: {} us",
-        max_single_tick_us
+        "single server tick lag spike detected: {max_single_tick_us} us"
     );
 
     for item in stress_entities {

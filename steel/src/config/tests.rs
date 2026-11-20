@@ -11,6 +11,7 @@ use steel_core::{
         PermissionMetadataRuleConfig, PermissionMetadataValue,
     },
 };
+use steel_utils::threading::available_worker_threads;
 use tokio::fs as async_fs;
 
 use super::{
@@ -313,7 +314,7 @@ fn validate_allows_zero_simulation_distance() {
 fn configured_core_count_flows_to_the_runtime_config() {
     // A Pterodactyl/Docker limit expressed in cores: the operator sets `cores`
     // and every auto-sized pool follows it, capped by what the container offers.
-    let detected = steel_utils::threading::available_worker_threads();
+    let detected = available_worker_threads();
     let configured = detected.saturating_sub(1).max(1);
     let config_toml = DEFAULT_CONFIG.replace("cores = 0", &format!("cores = {configured}"));
     let config: SteelConfig = toml::from_str(&config_toml).expect("config parses");
@@ -326,7 +327,7 @@ fn configured_core_count_flows_to_the_runtime_config() {
 fn a_configured_core_count_never_exceeds_the_container_limit() {
     // A panel may keep `cores = 64` while the container is started with
     // `--cpus=4`; the pools must size for four cores, not sixty-four.
-    let detected = steel_utils::threading::available_worker_threads();
+    let detected = available_worker_threads();
     let config_toml = DEFAULT_CONFIG.replace("cores = 0", &format!("cores = {}", detected + 1));
     let config: SteelConfig = toml::from_str(&config_toml).expect("config parses");
 

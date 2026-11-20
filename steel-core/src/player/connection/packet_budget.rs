@@ -269,8 +269,8 @@ impl ViolationBudget {
 
 #[cfg(test)]
 mod tests {
+    use std::thread::sleep;
     use std::time::Duration;
-use std::thread::sleep;
 
     use super::{
         Admission, DROP_THRESHOLD, MAX_CONNECTION_BYTES_PER_SECOND, MAX_PACKETS_PER_SECOND,

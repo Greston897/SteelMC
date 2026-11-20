@@ -24,9 +24,9 @@
 //! `getEntity(id)` lookups, or in entity-tracking packets.
 
 use glam::DVec3;
+use std::mem::swap;
 use steel_registry::entity_type::EntityDimensions;
 use steel_utils::{WorldAabb, axis::Axis};
-use std::mem::swap;
 
 /// Index of the head part.
 pub const DRAGON_PART_HEAD: usize = 0;

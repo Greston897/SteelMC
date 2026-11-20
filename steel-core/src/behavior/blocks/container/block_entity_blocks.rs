@@ -5,15 +5,20 @@
 //! items), and the block entity factory. The `open` sound and state changes are
 //! driven by the block entity where vanilla does that.
 
+use crate::world::game_event::GameEventContext;
 use std::sync::{Arc, Weak};
 
 use glam::DVec3;
 use steel_macros::block_behavior;
 use steel_protocol::packets::game::SoundSource;
+use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
-use steel_registry::block_entity_type::BlockEntityTypeRef;
+use steel_registry::blocks::properties::{
+    BlockStateProperties, Direction, EnumProperty, FrontAndTop,
+};
 use steel_registry::data_components::PotionContents;
+use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::level_events::PARTICLES_AND_SOUND_PLANT_GROWTH;
 use steel_registry::level_events::PARTICLES_WAX_ON;
@@ -21,36 +26,31 @@ use steel_registry::level_events::SOUND_BLAZE_FIREBALL;
 use steel_registry::level_events::SOUND_DISPENSER_PROJECTILE_LAUNCH;
 use steel_registry::level_events::SOUND_FIREWORK_SHOOT;
 use steel_registry::level_events::SOUND_WIND_CHARGE_SHOOT;
+use steel_registry::vanilla_block_entity_types;
 use steel_registry::vanilla_game_events::BLOCK_CHANGE;
 use steel_registry::vanilla_game_events::BLOCK_PLACE;
 use steel_registry::vanilla_game_events::FLUID_PICKUP;
+use steel_registry::vanilla_items;
 use steel_registry::vanilla_potions::WATER;
+use steel_registry::{sound_events, vanilla_entities};
 use steel_utils::axis::Axis::Y;
 use steel_utils::random::Random;
-use steel_registry::blocks::properties::{
-    BlockStateProperties, Direction, EnumProperty, FrontAndTop,
-};
-use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_block_entity_types;
-use steel_registry::vanilla_items;
-use steel_registry::{sound_events, vanilla_entities};
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _};
 use text_components::TextComponent;
 
 use crate::behavior::InventoryAccess;
 use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
+use crate::behavior::blocks::FireBlock;
+use crate::behavior::blocks::TntBlock;
 use crate::behavior::context::{BlockHitResult, BlockPlaceContext, InteractionResult};
+use crate::behavior::items::BoneMealItem;
+use crate::behavior::items::FlintAndSteelItem;
+use crate::behavior::waxables::get_waxed_from_normal_variant;
 use crate::block_entity::BLOCK_ENTITIES;
 use crate::block_entity::BlockEntityTicker;
 use crate::block_entity::entities::CrafterBlockEntity;
 use crate::entity::entities::objects::projectiles::AbstractArrow as _;
-use crate::behavior::blocks::FireBlock;
-use crate::behavior::blocks::TntBlock;
-use crate::behavior::items::BoneMealItem;
-use crate::behavior::items::FlintAndSteelItem;
-use crate::behavior::waxables::get_waxed_from_normal_variant;
-use crate::world::LevelReader;
 use crate::entity::entities::{
     ArrowEntity, ExperienceBottleEntity, FireworkRocketEntity, ItemEntity, LingeringPotionEntity,
     SmallFireballEntity, SnowballEntity, SpectralArrowEntity, SplashPotionEntity, ThrownEggEntity,
@@ -62,6 +62,7 @@ use crate::inventory::container::calculate_redstone_signal_from_container;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::inventory::menu::kinds::{brewing_stand, chest, crafter, dispenser, hopper, lectern};
 use crate::player::Player;
+use crate::world::LevelReader;
 use crate::world::{SignalGetter, World};
 
 const HOPPER_FACING: &EnumProperty<Direction> = &BlockStateProperties::FACING_HOPPER;
@@ -740,16 +741,11 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
             .copy_matching_properties(target_state, waxed);
         world.set_block(target_pos, waxed_state, UpdateFlags::UPDATE_ALL);
         let _ = container.lock().remove_item(slot, 1);
-        world.level_event(
-            PARTICLES_WAX_ON,
-            target_pos,
-            0,
-            None,
-        );
+        world.level_event(PARTICLES_WAX_ON, target_pos, 0, None);
         world.game_event(
             &BLOCK_CHANGE,
             target_pos,
-            &crate::world::game_event::GameEventContext::new(None, Some(waxed_state)),
+            &GameEventContext::new(None, Some(waxed_state)),
         );
         return true;
     }
@@ -761,12 +757,7 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
             || BoneMealItem::grow_water_plant(world, target_pos, facing);
         if success {
             let _ = container.lock().remove_item(slot, 1);
-            world.level_event(
-                PARTICLES_AND_SOUND_PLANT_GROWTH,
-                target_pos,
-                15,
-                None,
-            );
+            world.level_event(PARTICLES_AND_SOUND_PLANT_GROWTH, target_pos, 15, None);
         }
         let sound = if success {
             &sound_events::BLOCK_DISPENSER_DISPENSE
@@ -790,22 +781,16 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
                 Some(ItemStack::new(&vanilla_items::HONEY_BOTTLE))
             })
         } else if target_state.get_fluid_state().is_water() {
-            Some(
-                PotionContents::create_item_stack(
-                    &vanilla_items::POTION,
-                    &WATER,
-                ),
-            )
+            Some(PotionContents::create_item_stack(
+                &vanilla_items::POTION,
+                &WATER,
+            ))
         } else {
             None
         };
         if let Some(filled) = filled {
             replace_or_store_dispensed_result(world, pos, facing, &container, slot, filled);
-            world.game_event(
-                &FLUID_PICKUP,
-                pos,
-                &crate::world::game_event::GameEventContext::new(None, None),
-            );
+            world.game_event(&FLUID_PICKUP, pos, &GameEventContext::new(None, None));
             world.play_sound(
                 &sound_events::BLOCK_DISPENSER_DISPENSE,
                 SoundSource::Blocks,
@@ -937,18 +922,14 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
                 FireBlock::get_state(world.as_ref(), target_pos),
                 UpdateFlags::UPDATE_ALL,
             );
-            world.game_event(
-                &BLOCK_PLACE,
-                target_pos,
-                &crate::world::game_event::GameEventContext::new(None, None),
-            );
+            world.game_event(&BLOCK_PLACE, target_pos, &GameEventContext::new(None, None));
         } else if FlintAndSteelItem::can_light(target_state) {
             let next = target_state.set_value(&BlockStateProperties::LIT, true);
             world.set_block(target_pos, next, UpdateFlags::UPDATE_ALL);
             world.game_event(
                 &BLOCK_CHANGE,
                 target_pos,
-                &crate::world::game_event::GameEventContext::new(None, Some(next)),
+                &GameEventContext::new(None, Some(next)),
             );
         } else if target_block == &vanilla_blocks::TNT {
             // Vanilla primes the TNT first and only removes the block when the

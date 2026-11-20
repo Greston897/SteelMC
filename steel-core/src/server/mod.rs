@@ -24,19 +24,19 @@ mod world_tick_workers;
 pub mod worlds;
 
 use crate::bootstrap::init_globals;
-use crate::command::BackgroundCommandResult;
-use crate::command::brigadier::CommandSyntaxError;
-use crate::command::execution::SteelContextChain;
-use crate::command::sender::CommandBlockOutput;
 use crate::chunk::{
     chunk_request::{ChunkRequest, ChunkRequestHandle, ChunkRequestState, ChunkTicketKind},
     status::ChunkStatus,
 };
+use crate::command::BackgroundCommandResult;
+use crate::command::brigadier::CommandSyntaxError;
 use crate::command::brigadier::{StringReader, SuggestionError, Suggestions};
+use crate::command::execution::SteelContextChain;
 use crate::command::execution::{
     CommandExecutionContext, CommandResultCallback, CommandSource, ExecutionCommandSource,
     ExecutionStop,
 };
+use crate::command::sender::CommandBlockOutput;
 use crate::command::sender::{CommandExecutionOwner, CommandSender};
 use crate::command::storage::DomainCommandStorage;
 use crate::command::{
@@ -92,13 +92,10 @@ use crossbeam::queue::SegQueue;
 use glam::DVec3;
 use rayon::{ThreadPool, ThreadPoolBuilder};
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::sync::atomic::{AtomicBool, AtomicI32};
-use steel_protocol::packets::game::ReportDetail;
-use tokio::sync::oneshot::Receiver;
-use tokio::sync::oneshot::channel;
 use std::fs::read;
 use std::sync::OnceLock;
 use std::sync::atomic::Ordering::Relaxed;
+use std::sync::atomic::{AtomicBool, AtomicI32};
 use std::{
     collections::BTreeSet,
     io, mem,
@@ -107,6 +104,7 @@ use std::{
 };
 use steel_crypto::{key_store::KeyStore, signature::ProfileKeyValidator};
 use steel_protocol::packet_traits::{ClientPacket, EncodedPacket};
+use steel_protocol::packets::game::ReportDetail;
 use steel_protocol::packets::game::{
     CCommandSuggestions, CDebugSample, CEntityEvent, CLogin, CLowDiskSpaceWarning,
     CPlayerInfoUpdate, CRemovePlayerInfo, CSetDefaultSpawnPosition, CSystemChat, CTabList,
@@ -130,6 +128,8 @@ use steel_utils::{
 };
 use text_components::{Modifier, TextComponent, format::Color};
 use tick_rate_manager::{SprintReport, TickRateManager};
+use tokio::sync::oneshot::Receiver;
+use tokio::sync::oneshot::channel;
 use tokio::{
     runtime::Runtime,
     sync::Notify,
@@ -1194,14 +1194,12 @@ impl Server {
     /// Whether automatic saves are currently enabled.
     #[must_use]
     pub fn is_auto_save_enabled(&self) -> bool {
-        self.auto_save_enabled
-            .load(Relaxed)
+        self.auto_save_enabled.load(Relaxed)
     }
 
     /// Enables or disables automatic saves, as `/save-on` and `/save-off` do.
     pub fn set_auto_save_enabled(&self, enabled: bool) {
-        self.auto_save_enabled
-            .store(enabled, Relaxed);
+        self.auto_save_enabled.store(enabled, Relaxed);
     }
 
     /// Writes the whitelist through the overworld's saved data.
@@ -1259,10 +1257,7 @@ impl Server {
         &self,
         command: &str,
         source: &CommandSource,
-    ) -> Result<
-        SteelContextChain<CommandSource>,
-        CommandSyntaxError,
-    > {
+    ) -> Result<SteelContextChain<CommandSource>, CommandSyntaxError> {
         let dispatcher = self.command_dispatcher.read();
         dispatcher.context_chain(dispatcher.parse(command, source.clone()))
     }
@@ -1290,10 +1285,7 @@ impl Server {
         &self,
         world: Arc<World>,
         command: String,
-    ) -> Result<
-        Receiver<BackgroundCommandResult>,
-        CommandQueueFull,
-    > {
+    ) -> Result<Receiver<BackgroundCommandResult>, CommandQueueFull> {
         let (reply, receiver) = channel();
         let output = CommandBlockOutput::new(world);
         self.command_requests.submit(CommandRequest::Background {

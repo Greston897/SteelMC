@@ -201,7 +201,7 @@ fn steel_main() {
             .thread_name("chunk-worker")
             .enable_all()
             .build()
-            .unwrap(),
+            .expect("chunk runtime builds with a positive worker count"),
     );
 
     let main_runtime = Builder::new_multi_thread()
@@ -209,7 +209,7 @@ fn steel_main() {
         .thread_name("main-worker")
         .enable_all()
         .build()
-        .unwrap();
+        .expect("main runtime builds with a positive worker count");
 
     main_runtime.block_on(main_async(Arc::clone(&chunk_runtime), steel_config));
 

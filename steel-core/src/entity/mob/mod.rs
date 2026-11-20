@@ -3,14 +3,14 @@
 mod pathfinder;
 
 use crate::entity::leash::{LeashData, Leashable};
-pub use pathfinder::PathfinderMob;
-use pathfinder::tick_path_navigation_target;
-use steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_ENTITY;
-use steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_PLAYER;
 use crate::player::advancement::predicate::TriggerContext;
 use crate::world::raid::is_raider_type;
+pub use pathfinder::PathfinderMob;
+use pathfinder::tick_path_navigation_target;
 #[cfg(test)]
 use pathfinder::{find_ground_path_target_surface, path_end_node_can_reach_target};
+use steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_ENTITY;
+use steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_PLAYER;
 
 use std::sync::Arc;
 
@@ -569,13 +569,13 @@ pub trait Mob: LivingEntity + Leashable {
     fn finalize_spawn_mob_base(
         &self,
         _world: &Arc<World>,
-        _spawn_reason: EntitySpawnReason,
+        spawn_reason: EntitySpawnReason,
         group_data: Option<SpawnGroupData>,
     ) -> Option<SpawnGroupData> {
         if is_raider_type(self.entity_type()) {
             self.set_can_join_raid(
                 self.entity_type() != &vanilla_entities::WITCH
-                    || _spawn_reason != EntitySpawnReason::Natural,
+                    || spawn_reason != EntitySpawnReason::Natural,
             );
         }
         let needs_random_spawn_bonus = !self
@@ -796,7 +796,7 @@ pub trait Mob: LivingEntity + Leashable {
         self.is_passenger() || self.is_leashed()
     }
 
-    /// Updates Raider.IS_CELEBRATING on raider implementations.
+    /// Updates `Raider.IS_CELEBRATING` on raider implementations.
     fn set_raid_celebrating(&self, _celebrating: bool) {}
 
     /// Vanilla Raider.CanJoinRaid; natural witches are excluded at spawn time.
@@ -804,7 +804,7 @@ pub trait Mob: LivingEntity + Leashable {
         *self.mob_base().can_join_raid.lock()
     }
 
-    /// Updates the persisted vanilla CanJoinRaid flag.
+    /// Updates the persisted vanilla `CanJoinRaid` flag.
     fn set_can_join_raid(&self, eligible: bool) {
         *self.mob_base().can_join_raid.lock() = eligible;
     }
@@ -925,12 +925,8 @@ pub trait Mob: LivingEntity + Leashable {
         // the `thrown_item_picked_up_by_entity` criterion on the picking entity,
         // which for a player is the advancement owner.
         if let Some(player) = self.as_player() {
-            let context =
-                TriggerContext::item(&equipped.item().key);
-            player.trigger_advancement_with_context(
-                &THROWN_ITEM_PICKED_UP_BY_ENTITY,
-                &context,
-            );
+            let context = TriggerContext::item(&equipped.item().key);
+            player.trigger_advancement_with_context(&THROWN_ITEM_PICKED_UP_BY_ENTITY, &context);
             // Vanilla `ItemEntity.playerTouch` additionally fires
             // `thrown_item_picked_up_by_player` when the thrown item's owner is
             // the picking player, which is how `husbandry/throw_trident` and
@@ -939,10 +935,7 @@ pub trait Mob: LivingEntity + Leashable {
                 .get_owner()
                 .is_some_and(|owner| owner == player.gameprofile.id())
             {
-                player.trigger_advancement_with_context(
-                    &THROWN_ITEM_PICKED_UP_BY_PLAYER,
-                    &context,
-                );
+                player.trigger_advancement_with_context(&THROWN_ITEM_PICKED_UP_BY_PLAYER, &context);
             }
         }
         let chunk_pos = ChunkPos::from_entity_pos(item_entity.position());

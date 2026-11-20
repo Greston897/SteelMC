@@ -16,10 +16,10 @@ use steel_registry::data_components::vanilla_components;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::item_stack_template::ItemStackTemplate;
 use steel_registry::stat::vanilla_stat_types;
+use steel_registry::vanilla_criteria_triggers::SHOT_CROSSBOW;
 use steel_registry::{sound_events, vanilla_entities, vanilla_items};
 use steel_utils::Identifier;
 use steel_utils::types::GameType;
-use steel_registry::vanilla_criteria_triggers::SHOT_CROSSBOW;
 
 use crate::behavior::items::{ArrowItem, SpectralArrowItem};
 use crate::behavior::{InteractionResult, ItemBehavior, ItemUseAnimation, UseItemContext};
@@ -27,8 +27,8 @@ use crate::entity::LivingEntity;
 use crate::entity::entities::{AbstractArrow, ArrowPickup, FireworkRocketEntity};
 use crate::entity::{Entity, LivingEntityRef, Projectile as _, SharedEntity, next_entity_id};
 use crate::player::Player;
-use crate::world::World;
 use crate::player::advancement::predicate::TriggerContext;
+use crate::world::World;
 
 /// Vanilla `CrossbowItem.DEFAULT_CHARGE_DURATION`.
 pub const DEFAULT_CHARGE_DURATION: i32 = 25;
@@ -254,9 +254,7 @@ impl CrossbowItem {
         // crossbow stack, which `adventure/arbalistic` requires.
         context.player.trigger_advancement_with_context(
             &SHOT_CROSSBOW,
-            &TriggerContext::item(
-                &context.inv.with_item(|stack| stack.item().key.clone()),
-            ),
+            &TriggerContext::item(&context.inv.with_item(|stack| stack.item().key.clone())),
         );
         let item = context.inv.with_item(|stack| stack.item());
         context.inv.with_item(|stack| {

@@ -20,8 +20,8 @@ use steel_utils::ChunkPos;
 use steel_utils::locks::{SyncMutex, SyncRwLock};
 
 use crate::chunk::player_chunk_view::PlayerChunkView;
-use crate::entity::leash::Leashable;
 use crate::entity::entities::mobs::bosses::WitherBossEntity;
+use crate::entity::leash::Leashable;
 use crate::entity::{
     Entity, EntityMovementSyncPacket, MobEffectSyncPacket, ServerEntityMovementSyncState,
     ServerEntityMovementSyncUpdate, SharedEntity, WeakEntity,
@@ -211,9 +211,7 @@ impl EntityTracker {
                     if let Some(entity) = &entity
                         && entity.entity_type() == &vanilla_entities::WITHER
                     {
-                        player.send_packet(CBossEvent::remove(
-                            entity.uuid(),
-                        ));
+                        player.send_packet(CBossEvent::remove(entity.uuid()));
                     }
                     player.send_packet(CRemoveEntities::single(entity_id));
                 }
@@ -284,7 +282,7 @@ impl EntityTracker {
             if let Some(packet) = vehicle_packet {
                 player.send_packet(packet);
             }
-            self.send_despawn_packets(entity_id, &player);
+            self.send_despawn_packets(entity_id, player);
         }
 
         for entity in entities_to_spawn {
@@ -546,7 +544,7 @@ impl EntityTracker {
         });
 
         for entity_id in entities_to_despawn {
-            self.send_despawn_packets(entity_id, &player);
+            self.send_despawn_packets(entity_id, player);
         }
 
         for entity_id in dead_entities {
@@ -732,13 +730,12 @@ impl EntityTracker {
     }
 
     fn send_spawn_packets(&self, entity: &SharedEntity, player: &Player) {
+        use steel_utils::Downcast as _;
+
         let entity_id = entity.id();
         self.spawn_pairing(entity, player.id())
             .send_to(entity_id, player);
-        use steel_utils::Downcast as _;
-        if let Some(wither) =
-            entity.downcast_ref::<WitherBossEntity>()
-        {
+        if let Some(wither) = entity.downcast_ref::<WitherBossEntity>() {
             player.send_packet(wither.boss_bar_packet());
         }
     }

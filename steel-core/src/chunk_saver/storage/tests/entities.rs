@@ -1,16 +1,17 @@
 use super::*;
-use crate::entity::{ENTITY_LOAD_MAX_HORIZONTAL_POSITION, ENTITY_LOAD_MAX_VERTICAL_POSITION};
-use steel_registry::RegistryEntry as _;
-use steel_registry::data_components::vanilla_components::{CUSTOM_NAME, REPAIR_COST};
-use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_items;
-use simdnbt::borrow::read_compound;
 use crate::block_entity::BlockEntity::collect_components;
 use crate::block_entity::BlockEntity::save_without_metadata;
 use crate::block_entity::SharedBlockEntity;
 use crate::block_entity::entities::UnimplementedBlockEntity;
+use crate::entity::{ENTITY_LOAD_MAX_HORIZONTAL_POSITION, ENTITY_LOAD_MAX_VERTICAL_POSITION};
+use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
+use simdnbt::borrow::read_compound;
 use std::io::Cursor;
 use std::sync::Arc;
+use steel_registry::RegistryEntry as _;
+use steel_registry::data_components::vanilla_components::{CUSTOM_NAME, REPAIR_COST};
+use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_items;
 
 fn test_persistent_end_crystal(pos: DVec3) -> PersistentEntity {
     PersistentEntity {
@@ -115,7 +116,7 @@ fn block_entity_stored_components_survive_chunk_save_load() {
         &prepared.persistent.block_entities[0].nbt_data,
     ))
     .expect("saved block entity should contain valid NBT");
-    let saved = simdnbt::borrow::NbtCompound::from(&saved);
+    let saved = BorrowedNbtCompoundView::from(&saved);
     assert_eq!(
         saved
             .compound("components")
@@ -208,10 +209,7 @@ fn owned_block_entity_load_preserves_stored_components() {
         fallback_nbt,
     )
     .expect("fallback block entity should load NBT");
-    assert_eq!(
-        collect_components(&fallback).get(REPAIR_COST),
-        Some(3)
-    );
+    assert_eq!(collect_components(&fallback).get(REPAIR_COST), Some(3));
     let saved = save_without_metadata(&fallback);
     assert_eq!(saved.int("marker"), Some(7));
 }
@@ -383,7 +381,7 @@ fn proto_entities_roundtrip_and_promote_to_full_chunk() {
         &prepared.persistent.entities[0].custom_name_nbt,
     ))
     .expect("saved custom name should be valid NBT");
-    let custom_name_nbt = simdnbt::borrow::NbtCompound::from(&custom_name_nbt);
+    let custom_name_nbt = BorrowedNbtCompoundView::from(&custom_name_nbt);
     assert_eq!(
         custom_name_nbt
             .string("CustomName")
@@ -695,7 +693,7 @@ fn unimplemented_block_entities_preserve_nbt_through_proto_save_load() {
         &prepared.persistent.block_entities[0].nbt_data,
     ))
     .expect("saved proto block entity should contain valid NBT");
-    let saved_be = simdnbt::borrow::NbtCompound::from(&saved_be);
+    let saved_be = BorrowedNbtCompoundView::from(&saved_be);
     assert_eq!(
         saved_be
             .string("LootTable")

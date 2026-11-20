@@ -6,7 +6,7 @@
 use std::io::Cursor;
 use std::slice;
 use std::sync::{
-    Arc,
+    Arc, OnceLock,
     atomic::{AtomicU64, Ordering},
 };
 use std::thread;
@@ -18,6 +18,7 @@ use crate::convert::{
 use crate::player::SteelTestPlayer;
 use crate::runtime;
 use flint_core::Block;
+use flint_core::test_spec::WorldConfig as FlintWorldConfig;
 use flint_core::test_spec::{EntityNbt, GameruleValue};
 use flint_core::traits::EntityState;
 use flint_core::{BlockPos as FlintBlockPos, FlintPlayer, FlintWorld};
@@ -32,11 +33,13 @@ use steel_core::entity::damage::DamageHistory;
 use steel_core::entity::{ENTITIES, Entity, SharedEntity, next_entity_id};
 use steel_core::level_data::{GameTimeSource, WorldGenerationSettings};
 use steel_core::permission::PermissionSubjectIndex;
+use steel_core::player::offline_uuid;
 use steel_core::server::{Server, test_server_with_worlds_and_config};
 use steel_core::world::{LevelReader, World, WorldConfig, WorldStorageConfig};
 use steel_core::worldgen::{ChunkGeneratorType, EmptyChunkGenerator};
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::vanilla_dimension_types::OVERWORLD;
+use steel_registry::vanilla_world_clocks::OVERWORLD as OVERWORLD_CLOCK;
 use steel_registry::{REGISTRY, RegistryExt};
 use steel_utils::Identifier;
 use steel_utils::locks::SyncMutex;
@@ -89,7 +92,7 @@ impl SteelTestWorld {
 
         let damage_history = Arc::new(DamageHistory::default());
         let config = WorldConfig {
-            server: std::sync::OnceLock::new(),
+            server: OnceLock::new(),
             damage_history: Arc::clone(&damage_history),
             storage: WorldStorageConfig::RamOnly,
             level_data_path: None,
@@ -282,10 +285,7 @@ impl Default for SteelTestWorld {
 }
 
 impl FlintWorld for SteelTestWorld {
-    fn configure_world(
-        &mut self,
-        config: &flint_core::test_spec::WorldConfig,
-    ) -> anyhow::Result<()> {
+    fn configure_world(&mut self, config: &FlintWorldConfig) -> anyhow::Result<()> {
         use flint_core::test_spec::Weather;
         self.world
             .configure_test_environment(
@@ -317,7 +317,7 @@ impl FlintWorld for SteelTestWorld {
         // These diverge with /time set, advance_time=false and at day rollover.
         let ticks = self
             .world
-            .clock_total_ticks(&steel_registry::vanilla_world_clocks::OVERWORLD)
+            .clock_total_ticks(&OVERWORLD_CLOCK)
             .ok_or_else(|| anyhow::anyhow!("Overworld clock is missing"))?;
         Ok(daytime_from_ticks(ticks))
     }
@@ -507,7 +507,7 @@ mod tests {
         let pos = BlockPos::new(1, 0, 0);
         fixture.ensure_chunk_at(&pos);
         fixture
-            .configure_world(&flint_core::test_spec::WorldConfig {
+            .configure_world(&FlintWorldConfig {
                 time: "6000".to_owned(),
                 ..Default::default()
             })
@@ -621,7 +621,7 @@ mod tests {
         crate::init();
         let mut world = SteelTestWorld::new();
         let player = world.create_player();
-        let uuid = steel_core::player::offline_uuid("flintmc_testbot");
+        let uuid = offline_uuid("flintmc_testbot");
         assert!(world.world.players.get_by_uuid(&uuid).is_some());
         drop(player);
         assert!(world.world.players.get_by_uuid(&uuid).is_none());
@@ -632,7 +632,7 @@ mod tests {
         crate::init();
         let mut world = SteelTestWorld::new();
         let _player = world.create_player();
-        let uuid = steel_core::player::offline_uuid("flintmc_testbot");
+        let uuid = offline_uuid("flintmc_testbot");
         let registered = world.world.players.get_by_uuid(&uuid);
         assert!(
             registered.is_some(),

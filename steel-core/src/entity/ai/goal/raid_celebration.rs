@@ -1,8 +1,8 @@
 //! Raider.RaiderCelebration: surviving raiders celebrate a lost village raid.
 use super::selector::{Goal, GoalControls};
+use crate::entity::LivingEntity::is_alive;
 use crate::entity::{PathfinderMob, SharedEntity};
 use steel_registry::{sound_events, vanilla_entities};
-use crate::entity::LivingEntity::is_alive;
 
 pub(crate) struct RaidCelebrationGoal;
 

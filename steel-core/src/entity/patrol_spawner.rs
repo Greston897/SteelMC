@@ -21,20 +21,20 @@ use steel_registry::vanilla_custom_stats;
 use steel_registry::vanilla_entities;
 use steel_registry::vanilla_game_rules;
 use steel_utils::types::Difficulty;
-use steel_utils::{BlockPos, Identifier};
 use steel_utils::types::GameType::Spectator;
+use steel_utils::{BlockPos, Identifier};
 
 use crate::chunk::heightmap::HeightmapType;
 use crate::chunk::light::LightLayer;
+use crate::entity::SharedEntity;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
 use crate::entity::{Entity as _, LivingEntity as _, spawn_entity};
 use crate::inventory::equipment::EquipmentSlot;
 use crate::player::Player;
 use crate::poi::OccupationStatus;
 use crate::world::World;
-use steel_registry::RegistryExt as _;
-use crate::entity::SharedEntity;
 use crate::world::raid::ominous_banner;
+use steel_registry::RegistryExt as _;
 
 /// Vanilla `PatrolSpawner` first delay window in ticks.
 const FIRST_DELAY: i32 = 12_000;

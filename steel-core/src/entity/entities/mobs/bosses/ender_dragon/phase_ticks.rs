@@ -19,31 +19,31 @@
 //! That is vanilla's "each phase mutates its own fields" model, expressed with the
 //! lock discipline Steel needs.
 
-use std::sync::Arc;
 use std::cell::Cell;
+use std::sync::Arc;
 use std::sync::Weak;
 
 use glam::DVec3;
-use steel_utils::BlockPos;
 use steel_math::trig::atan2;
 use steel_math::trig::cos;
 use steel_math::trig::sin;
 use steel_registry::vanilla_entities::WIND_CHARGE;
+use steel_utils::BlockPos;
 
 use super::EnderDragonEntity;
 use super::part::{DRAGON_PART_HEAD, DRAGON_PART_HEAD_HEIGHT};
-use crate::chunk::heightmap::HeightmapType::MotionBlocking;
-use crate::entity::LivingEntity::has_line_of_sight;
-use crate::entity::SharedEntity;
-use crate::player::Player;
 use super::phases::{
     DragonPhase, DragonPhaseManager, find_closest_node_with_crystals, find_path, wrap_degrees,
 };
+use crate::chunk::heightmap::HeightmapType::MotionBlocking;
 use crate::entity::Entity;
 use crate::entity::LivingEntity;
+use crate::entity::LivingEntity::has_line_of_sight;
+use crate::entity::SharedEntity;
 use crate::entity::ai::path::Path;
 use crate::entity::ai::targeting::TargetingConditions;
 use crate::entity::damage::DamageSource;
+use crate::player::Player;
 use crate::world::World;
 
 /// Vanilla `DragonStrafePlayerPhase.FIREBALL_CHARGE_AMOUNT`.
@@ -229,8 +229,7 @@ pub fn sitting_on_hurt(dragon: &EnderDragonEntity, source: &DamageSource, damage
     // `is_abstract_arrow` is the generated flag for the `AbstractArrow` family,
     // so arrows, spectral arrows and thrown tridents all count.
     let entity_type = direct.entity_type();
-    let is_arrow_or_charge = entity_type.is_abstract_arrow
-        || entity_type == &WIND_CHARGE;
+    let is_arrow_or_charge = entity_type.is_abstract_arrow || entity_type == &WIND_CHARGE;
 
     if !is_arrow_or_charge {
         return damage;
@@ -284,12 +283,7 @@ impl PhaseContext<'_> {
     #[must_use]
     pub fn facing(&self) -> DVec3 {
         let yaw = f64::from(self.yaw.to_radians());
-        DVec3::new(
-            f64::from(sin(yaw)),
-            0.0,
-            -f64::from(cos(yaw)),
-        )
-        .normalize_or_zero()
+        DVec3::new(f64::from(sin(yaw)), 0.0, -f64::from(cos(yaw))).normalize_or_zero()
     }
 }
 
@@ -424,11 +418,7 @@ fn find_new_holding_target(manager: &mut DragonPhaseManager, ctx: &PhaseContext<
 ///
 /// The phase switch runs `begin()` on the strafe state before the target lands,
 /// matching `setPhase` then `setTarget` in Java.
-fn strafe_player(
-    manager: &mut DragonPhaseManager,
-    ctx: &PhaseContext<'_>,
-    player: &SharedEntity,
-) {
+fn strafe_player(manager: &mut DragonPhaseManager, ctx: &PhaseContext<'_>, player: &SharedEntity) {
     manager.set_phase(DragonPhase::StrafePlayer);
     set_strafe_target(manager, ctx, player);
 }
@@ -978,10 +968,7 @@ fn tick_dying(
 
     if manager.current_state().target_location.is_none() {
         // Vanilla uses `MOTION_BLOCKING` (leaves included) for the death dive.
-        let egg = ctx.world.heightmap_pos(
-            MotionBlocking,
-            ctx.podium_location,
-        );
+        let egg = ctx.world.heightmap_pos(MotionBlocking, ctx.podium_location);
         manager.current_state_mut().target_location = Some(DVec3::new(
             f64::from(egg.x()) + 0.5,
             f64::from(egg.y()),
@@ -1045,10 +1032,7 @@ fn random_below(ctx: &PhaseContext<'_>, bound: i32) -> i32 {
 /// dragon turns to strafe whoever broke it. Vanilla only reacts while the dragon
 /// is alive and holds off during the death animation, so the dying phase is left
 /// untouched.
-pub fn on_crystal_destroyed(
-    dragon: &EnderDragonEntity,
-    player: Option<&SharedEntity>,
-) {
+pub fn on_crystal_destroyed(dragon: &EnderDragonEntity, player: Option<&SharedEntity>) {
     // Vanilla `if (this.isDeadOrDying()) return;` -- a dying dragon ignores the
     // crystal, its phase is already `Dying` and must not be replaced.
     if dragon.phase() == DragonPhase::Dying {
@@ -1072,8 +1056,8 @@ pub fn on_crystal_destroyed(
 #[cfg(test)]
 mod tests {
     use super::*;
-use steel_math::trig::cos;
-use steel_math::trig::sin;
+    use steel_math::trig::cos;
+    use steel_math::trig::sin;
 
     #[test]
     fn the_podium_distance_is_the_largest_axis_delta() {

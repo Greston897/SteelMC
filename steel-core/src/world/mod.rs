@@ -13,6 +13,11 @@ use std::{
 use crate::chunk::chunk_ticket_storage::ChunkTicketStorage;
 use crate::chunk::full_chunk::{FullChunkBlockSetResult, FullChunkRef};
 use crate::chunk::gameplay_chunk_lookup_cache::GameplayChunkLookupCacheScope;
+use crate::chunk::light::{
+    LightLayer, LightSectionEmptinessChange, MAX_LIGHT_LEVEL, has_different_light_properties,
+};
+use crate::chunk::status::ChunkStatus;
+use crate::entity::damage::DamageHistory;
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::EndCrystalEntity;
 use crate::entity::entities::EnderDragonEntity;
@@ -22,35 +27,30 @@ use crate::entity::natural_spawner::tick_natural_spawning;
 use crate::entity::next_entity_id;
 use crate::entity::patrol_spawner::PatrolSpawner;
 use crate::entity::phantom_spawner::PhantomSpawner;
+use crate::poi::OccupationStatus;
+use crate::portal::WorldChangeRequest;
 use crate::scoreboard::Scoreboard;
 use crate::server::Server;
 use crate::server::boss_bars::BossBar;
 use crate::server::boss_bars::DRAGON_BAR_ID;
 use crate::server::boss_bars::dragon_bar_uuid;
 use crate::world::explosion::ExplosionInteraction::None;
+use crate::world::game_event::{
+    GameEventContext, GameEventDispatcher, GameEventListenerCount, GameEventListenerStorage,
+    SharedGameEventListener,
+};
 use crate::worldgen::feature::FeatureDecorationRunner;
 use crate::worldgen::feature::place_end_gateway_in_world;
 use crate::worldgen::feature::place_end_podium_in_world;
 use crate::worldgen::feature::rebuild_spike_crystal_in_world;
 use crate::worldgen::feature::rebuild_spike_in_world;
-use crate::chunk::light::{
-    LightLayer, LightSectionEmptinessChange, MAX_LIGHT_LEVEL, has_different_light_properties,
-};
-use crate::chunk::status::ChunkStatus;
-use crate::entity::damage::DamageHistory;
-use crate::poi::OccupationStatus;
-use crate::portal::WorldChangeRequest;
-use crate::world::game_event::{
-    GameEventContext, GameEventDispatcher, GameEventListenerCount, GameEventListenerStorage,
-    SharedGameEventListener,
-};
 use crate::{chunk::chunk_map::ChunkMapGameTickTimings, world::weather::Weather};
-use steel_utils::saved_data::{SavedDataManager, names as saved_data_names};
 use steel_registry::feature::EndGatewayConfiguration;
 use steel_registry::feature::EndSpike;
-use steel_registry::vanilla_entities::ENDER_DRAGON;
 use steel_registry::vanilla_entities::END_CRYSTAL;
+use steel_registry::vanilla_entities::ENDER_DRAGON;
 use steel_registry::vanilla_entities::WANDERING_TRADER;
+use steel_utils::saved_data::{SavedDataManager, names as saved_data_names};
 use text_components::translation::TranslatedMessage;
 use tokio::fs::create_dir_all;
 use tokio::fs::write;
@@ -207,11 +207,11 @@ pub use tick_scheduler::ScheduledTick;
 
 #[cfg(test)]
 use level_effects::sound_is_within_range;
-use std::sync::OnceLock;
 #[cfg(test)]
 use portals::{
     closest_portal_candidate, nether_portal_creation_scan_origin, nether_portal_frame_offset_pos,
 };
+use std::sync::OnceLock;
 
 const fn initialize_border_packet(snapshot: WorldBorderSnapshot) -> CInitializeBorder {
     CInitializeBorder {
@@ -736,10 +736,7 @@ impl World {
     /// The scoreboard is built once from all worlds, so it borrows from the
     /// server; callers clone whatever slice of state they need.
     #[must_use]
-    pub fn with_scoreboard<R>(
-        &self,
-        f: impl FnOnce(&Scoreboard) -> R,
-    ) -> Option<R> {
+    pub fn with_scoreboard<R>(&self, f: impl FnOnce(&Scoreboard) -> R) -> Option<R> {
         let server = self.server()?;
         server.scoreboards.get(self.domain()).map(f)
     }
@@ -794,17 +791,10 @@ impl World {
             .dragon_uuid()
             .and_then(|uuid| self.get_entity_by_uuid(&uuid));
         if let Some(entity) = dragon_entity
-            && let Some(dragon) = entity
-                .as_ref()
-                .downcast_ref::<EnderDragonEntity>()
+            && let Some(dragon) = entity.as_ref().downcast_ref::<EnderDragonEntity>()
         {
-            let player = source
-                .and_then(DamageSource::causing_entity)
-                .cloned();
-            on_crystal_destroyed(
-                dragon,
-                player.as_ref(),
-            );
+            let player = source.and_then(DamageSource::causing_entity).cloned();
+            on_crystal_destroyed(dragon, player.as_ref());
         }
     }
 
@@ -1028,8 +1018,7 @@ impl World {
         // Vanilla `getDragons()` = `getEntities(ENDER_DRAGON, LivingEntity::isAlive)`,
         // so a dragon that is already dying does not count as still alive.
         let dragons = self.get_entities_in_aabb_matching(&self.arena_box(), |entity| {
-            entity.entity_type() == &ENDER_DRAGON
-                && Entity::is_alive(entity)
+            entity.entity_type() == &ENDER_DRAGON && Entity::is_alive(entity)
         });
 
         // Vanilla keeps a live dragon only when it also has a portal; otherwise
@@ -1068,8 +1057,7 @@ impl World {
         // Vanilla `getDragons()` filters on `LivingEntity::isAlive`, so a dying
         // dragon is not adopted.
         let dragons = self.get_entities_in_aabb_matching(&self.arena_box(), |entity| {
-            entity.entity_type() == &ENDER_DRAGON
-                && Entity::is_alive(entity)
+            entity.entity_type() == &ENDER_DRAGON && Entity::is_alive(entity)
         });
 
         // `findOrCreateDragon`: adopt whatever dragon the level has.
@@ -1149,21 +1137,15 @@ impl World {
     }
 
     /// Calls `f` on the crystal behind `entity`, if it is one.
-    fn with_crystal<R>(
-        entity: &SharedEntity,
-        f: impl FnOnce(&EndCrystalEntity) -> R,
-    ) -> Option<R> {
-        let crystal = entity
-            .as_ref()
-            .downcast_ref::<EndCrystalEntity>()?;
+    fn with_crystal<R>(entity: &SharedEntity, f: impl FnOnce(&EndCrystalEntity) -> R) -> Option<R> {
+        let crystal = entity.as_ref().downcast_ref::<EndCrystalEntity>()?;
         Some(f(crystal))
     }
 
     /// Vanilla `EnderDragonFight.resetSpikeCrystals`: rebuild every spike's
     /// crystal.
     fn reset_end_spike_crystals(self: &Arc<Self>) {
-        let spikes =
-            FeatureDecorationRunner::end_spikes_for_level(self.seed());
+        let spikes = FeatureDecorationRunner::end_spikes_for_level(self.seed());
         for spike in spikes {
             rebuild_spike_crystal_in_world(self, &spike);
         }
@@ -1180,11 +1162,7 @@ impl World {
         for crystal in self.respawn_crystals() {
             Self::with_crystal(&crystal, |crystal| crystal.set_beam_target(None));
             let position = Entity::position(crystal.as_ref());
-            let mut options = crate::world::explosion::ExplosionOptions::new(
-                position,
-                6.0,
-                None,
-            );
+            let mut options = ExplosionOptions::new(position, 6.0, None);
             options.source = None;
             self.explode(options);
             crystal.set_removed(RemovalReason::Killed);
@@ -1236,8 +1214,7 @@ impl World {
             return;
         }
 
-        let spikes =
-            FeatureDecorationRunner::end_spikes_for_level(self.seed());
+        let spikes = FeatureDecorationRunner::end_spikes_for_level(self.seed());
         let mut alive = 0;
         for spike in spikes {
             let radius = f64::from(spike.radius);
@@ -1284,23 +1261,20 @@ impl World {
         };
         let bar = BossBar {
             uuid: dragon_bar_uuid(),
-            name: text_components::TextComponent::translated(
-                TranslatedMessage {
-                    key: "entity.minecraft.ender_dragon".into(),
-                    fallback: None,
-                    args: None,
-                },
-            ),
+            name: text_components::TextComponent::translated(TranslatedMessage {
+                key: "entity.minecraft.ender_dragon".into(),
+                fallback: None,
+                args: None,
+            }),
             progress: self.dragon_fight.progress(),
             color: BossBarColor::Pink,
             overlay: BossBarOverlay::Progress,
             flags: 0,
             visible: self.dragon_fight.bar_visible(),
         };
-        let previous = server.boss_bars.insert(
-            DRAGON_BAR_ID.to_owned(),
-            bar.clone(),
-        );
+        let previous = server
+            .boss_bars
+            .insert(DRAGON_BAR_ID.to_owned(), bar.clone());
         let Some(previous) = previous else {
             // A brand new bar has to be pushed in full before updates matter.
             self.broadcast_to_all::<CBossEvent>(bar.add_packet());
@@ -1362,10 +1336,7 @@ impl World {
         let Some(server) = self.server() else {
             return;
         };
-        let Some(bar) = server
-            .boss_bars
-            .remove(DRAGON_BAR_ID)
-        else {
+        let Some(bar) = server.boss_bars.remove(DRAGON_BAR_ID) else {
             return;
         };
         self.broadcast_to_all::<CBossEvent>(bar.remove_packet());
@@ -1769,9 +1740,8 @@ impl World {
     /// that would go stale when the trader despawns or is killed.
     #[must_use]
     pub fn has_natural_wandering_trader(&self) -> bool {
-        World::entity_manager(self).any_accessible_entity(|entity| {
-            entity.entity_type() == &WANDERING_TRADER
-        })
+        World::entity_manager(self)
+            .any_accessible_entity(|entity| entity.entity_type() == &WANDERING_TRADER)
     }
 }
 

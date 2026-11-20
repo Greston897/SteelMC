@@ -13,16 +13,16 @@ use simdnbt::owned::NbtCompound;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, StructureMode};
 use steel_registry::vanilla_block_entity_types;
+use steel_registry::vanilla_blocks::STRUCTURE_BLOCK;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
-use steel_registry::vanilla_blocks::STRUCTURE_BLOCK;
 use steel_utils::types::UpdateFlags;
 
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
-use crate::world::World;
 use crate::player::Player;
+use crate::world::World;
 
 /// Vanilla `StructureBlockEntity.MAX_OFFSET_PER_AXIS`.
 pub const MAX_OFFSET_PER_AXIS: i32 = 48;
@@ -288,11 +288,7 @@ impl StructureBlockEntity {
         let mode = self.state.lock().mode;
         let updated = state.set_value(&BlockStateProperties::STRUCTUREBLOCK_MODE, mode);
         if updated != state {
-            world.set_block(
-                pos,
-                updated,
-                UpdateFlags::UPDATE_CLIENTS,
-            );
+            world.set_block(pos, updated, UpdateFlags::UPDATE_CLIENTS);
         }
     }
 
@@ -300,6 +296,10 @@ impl StructureBlockEntity {
     /// editor. The menu itself is client-side, so `true` is the whole server
     /// response.
     #[must_use]
+    #[expect(
+        clippy::unused_self,
+        reason = "public API mirrors the vanilla signature"
+    )]
     pub fn used_by(&self, player: &Player) -> bool {
         player.has_game_master_permissions()
     }

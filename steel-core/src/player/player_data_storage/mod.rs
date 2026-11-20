@@ -9,6 +9,7 @@ mod stats;
 #[cfg(test)]
 mod tests;
 
+use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use std::{io::Cursor, path::PathBuf};
 
 use simdnbt::{ToNbtTag, borrow::read_compound as read_borrowed_compound, owned::NbtTag};
@@ -808,7 +809,7 @@ fn item_from_nbt_bytes(bytes: &[u8]) -> io::Result<ItemStack> {
             format!("failed to parse item NBT: {e}"),
         )
     })?;
-    let compound = simdnbt::borrow::NbtCompound::from(&nbt);
+    let compound = BorrowedNbtCompoundView::from(&nbt);
     ItemStack::from_borrowed_compound(&compound)
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "invalid item stack data"))
 }

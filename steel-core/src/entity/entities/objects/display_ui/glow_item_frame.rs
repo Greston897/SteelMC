@@ -1,5 +1,6 @@
 //! Minimal persistent item-frame entity used by structure generation.
 
+use crate::physics::collision::WorldCollisionProvider;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Weak};
 
@@ -158,7 +159,7 @@ impl GlowItemFrameEntity {
         };
 
         let check_box = self.base.bounding_box();
-        let collision = crate::physics::collision::WorldCollisionProvider::new(&world);
+        let collision = WorldCollisionProvider::new(&world);
         if collision::has_block_collision(&collision, check_box) {
             return false;
         }
@@ -174,27 +175,47 @@ impl GlowItemFrameEntity {
     }
 
     /// Sound played when the frame is broken.
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     fn break_sound(&self) -> SoundEventRef {
         &sound_events::ENTITY_GLOW_ITEM_FRAME_BREAK
     }
 
     /// Sound played when the framed item is rotated.
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     fn rotate_item_sound(&self) -> SoundEventRef {
         &sound_events::ENTITY_GLOW_ITEM_FRAME_ROTATE_ITEM
     }
 
     /// Sound played when an item is inserted into the frame.
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     fn add_item_sound(&self) -> SoundEventRef {
         &sound_events::ENTITY_GLOW_ITEM_FRAME_ADD_ITEM
     }
 
     /// Sound played when the frame is placed.
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     pub fn place_sound(&self) -> SoundEventRef {
         &sound_events::ENTITY_GLOW_ITEM_FRAME_PLACE
     }
 
     /// Returns the item that places this frame (vanilla `getAsItemStack`).
     #[must_use]
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     pub fn placeable_item(&self) -> ItemRef {
         &vanilla_items::GLOW_ITEM_FRAME
     }

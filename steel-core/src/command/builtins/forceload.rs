@@ -172,6 +172,10 @@ fn change(
     Ok(changed)
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn query_all(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let world = context.source().world();
     let blocked = world.chunk_map.forced_chunk_count();
@@ -247,8 +251,8 @@ mod tests {
     fn the_corner_order_does_not_matter() {
         let forward = chunks_between(BlockPos::new(0, 0, 0), BlockPos::new(40, 0, 40));
         let backward = chunks_between(BlockPos::new(40, 0, 40), BlockPos::new(0, 0, 0));
-        let mut forward_sorted = forward.clone();
-        let mut backward_sorted = backward.clone();
+        let mut forward_sorted = forward;
+        let mut backward_sorted = backward;
         forward_sorted.sort_by_key(|chunk| (chunk.x(), chunk.z()));
         backward_sorted.sort_by_key(|chunk| (chunk.x(), chunk.z()));
         assert_eq!(forward_sorted, backward_sorted);

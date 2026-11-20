@@ -1,5 +1,6 @@
 //! Minimal persistent item-frame entity used by structure generation.
 
+use crate::physics::collision::WorldCollisionProvider;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Weak};
 
@@ -160,7 +161,7 @@ impl ItemFrameEntity {
         };
 
         let check_box = self.base.bounding_box();
-        let collision = crate::physics::collision::WorldCollisionProvider::new(&world);
+        let collision = WorldCollisionProvider::new(&world);
         if collision::has_block_collision(&collision, check_box) {
             return false;
         }

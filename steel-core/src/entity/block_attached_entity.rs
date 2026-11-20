@@ -4,6 +4,7 @@
 //! checking whether it can survive when it reaches the maximum value.
 //! They are also bound to a position, and cannot move.
 
+use crate::entity::Explosion;
 use crate::entity::damage::DamageSource;
 use crate::entity::mob::block_pos_distance_sqr;
 use crate::entity::{BorrowedNbtCompoundView, EntityMoveError, SharedEntity};
@@ -18,7 +19,6 @@ use steel_registry::vanilla_game_events;
 use steel_registry::vanilla_game_rules::MOB_GRIEFING;
 use steel_utils::BlockPos;
 use steel_utils::locks::SyncMutex;
-use crate::entity::Explosion;
 
 pub const VALID_READ_DISTANCE_SQR: f64 = 16.0 * 16.0;
 
@@ -238,10 +238,7 @@ pub trait BlockAttachedEntity: Entity {
         dead_code,
         reason = "vanilla BlockAttachedEntity default override hook"
     )]
-    fn ignore_explosion_block_attached_entity(
-        &self,
-        _explosion: &dyn Explosion,
-    ) -> bool {
+    fn ignore_explosion_block_attached_entity(&self, _explosion: &dyn Explosion) -> bool {
         true
     }
 }

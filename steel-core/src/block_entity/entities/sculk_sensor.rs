@@ -17,6 +17,7 @@ use std::sync::{Arc, Weak};
 
 use glam::DVec3;
 use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
+use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::block_entity_type::BlockEntityTypeRef;
@@ -439,7 +440,7 @@ impl BlockEntity for SculkSensorBlockEntity {
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
-        let view: simdnbt::borrow::NbtCompound<'_, '_> = nbt.into();
+        let view: BorrowedNbtCompoundView<'_, '_> = nbt.into();
         *self.last_vibration_frequency.lock() = view
             .int("last_vibration_frequency")
             .unwrap_or(0)

@@ -28,9 +28,9 @@ use crate::inventory::container::calculate_redstone_signal_from_container;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::inventory::menu::kinds::{chest, double_chest};
 use crate::player::Player;
-use crate::world::{ScheduledTickAccess, World};
 use crate::world::LevelReader;
 use crate::world::SignalQueryContext;
+use crate::world::{ScheduledTickAccess, World};
 
 /// Behavior for the wooden chest family (plain and trapped).
 #[block_behavior]
@@ -139,12 +139,12 @@ impl ChestBlock {
 
 impl BlockBehavior for ChestBlock {
     fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
-        if let Some(entity) = world.get_block_entity(pos) {
-            if let Some(container) = entity.downcast_ref::<ChestBlockEntity>() {
-                container
-                    .openers_counter()
-                    .recheck_openers(world, pos, state, state.get_block());
-            }
+        if let Some(entity) = world.get_block_entity(pos)
+            && let Some(container) = entity.downcast_ref::<ChestBlockEntity>()
+        {
+            container
+                .openers_counter()
+                .recheck_openers(world, pos, state, state.get_block());
         }
     }
 
@@ -286,20 +286,16 @@ impl TrappedChestBlock {
 
 impl BlockBehavior for TrappedChestBlock {
     fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
-        if let Some(entity) = world.get_block_entity(pos) {
-            if let Some(chest) = entity.downcast_ref::<ChestBlockEntity>() {
-                chest
-                    .openers_counter()
-                    .recheck_openers(world, pos, state, state.get_block());
-            }
+        if let Some(entity) = world.get_block_entity(pos)
+            && let Some(chest) = entity.downcast_ref::<ChestBlockEntity>()
+        {
+            chest
+                .openers_counter()
+                .recheck_openers(world, pos, state, state.get_block());
         }
     }
 
-    fn is_signal_source(
-        &self,
-        _state: BlockStateId,
-        _context: SignalQueryContext,
-    ) -> bool {
+    fn is_signal_source(&self, _state: BlockStateId, _context: SignalQueryContext) -> bool {
         true
     }
 

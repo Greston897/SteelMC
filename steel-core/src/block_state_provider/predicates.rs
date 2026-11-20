@@ -3,13 +3,13 @@ use crate::{
     behavior::BLOCK_BEHAVIORS, fluid::state::get_fluid_state_from_block, world::LevelReader,
 };
 use glam::IVec3;
+use std::ptr::eq;
 use steel_registry::{
     Registry,
     blocks::block_state_ext::BlockStateExt as _,
     feature::{BiomeHolderSet, BlockHolderSet, BlockPredicate, FluidHolderSet},
 };
 use steel_utils::BlockPos;
-use std::ptr::eq;
 
 impl BlockStateProviderEvaluator {
     pub(crate) fn test_block_predicate(

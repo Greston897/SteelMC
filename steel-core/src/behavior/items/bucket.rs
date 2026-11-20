@@ -1,12 +1,12 @@
 //! Bucket item behavior implementation.
 use crate::behavior::context::InteractionResult;
 use crate::behavior::item_utils::create_filled_result;
-use crate::player::advancement::predicate::TriggerContext;
 use crate::behavior::{
     BLOCK_BEHAVIORS, BlockStateBehaviorExt, FLUID_BEHAVIORS, ItemBehavior, UseItemContext,
 };
 use crate::entity::Entity;
 use crate::fluid::{fluid_state_to_block, is_lava_fluid, is_water_fluid};
+use crate::player::advancement::predicate::TriggerContext;
 use crate::world::RaytraceAction;
 use steel_macros::item_behavior;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
@@ -17,12 +17,12 @@ use steel_registry::level_events;
 use steel_registry::sound_events;
 use steel_registry::stat::vanilla_stat_types;
 use steel_registry::vanilla_blocks;
+use steel_registry::vanilla_criteria_triggers::FILLED_BUCKET;
 use steel_registry::vanilla_fluids;
 use steel_registry::vanilla_game_events;
 use steel_registry::vanilla_items;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
-use steel_registry::vanilla_criteria_triggers::FILLED_BUCKET;
 
 use crate::world::game_event::GameEventContext;
 
@@ -125,9 +125,7 @@ fn use_empty_bucket(context: &mut UseItemContext) -> InteractionResult {
     // chain off.
     context.player.trigger_advancement_with_context(
         &FILLED_BUCKET,
-        &TriggerContext::item(
-            &result.filled_bucket.item().key,
-        ),
+        &TriggerContext::item(&result.filled_bucket.item().key),
     );
     create_filled_result(context, result.filled_bucket, true);
     context.world.game_event(

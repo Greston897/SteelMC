@@ -7,13 +7,14 @@
 //! Tests all dimensions (overworld, nether, end) using the new JSON format
 //! with a `dimensions` wrapper.
 
+use crate::worldgen::WorldGenRegion;
 use std::env;
 use std::fmt::Write;
 use std::fs;
 use std::io::{BufReader, Cursor, Read as IoRead};
 use std::mem;
-use std::sync::{Arc, Weak};
 use std::sync::OnceLock;
+use std::sync::{Arc, Weak};
 
 use crate::chunk::Chunk;
 use crate::chunk::chunk_generation_task::StaticCache2D;
@@ -995,7 +996,7 @@ fn generate_features_for_positions(
         let region_random = inputs
             .generator
             .create_worldgen_region_random(inputs.seed as i64, center);
-        let mut region = crate::worldgen::WorldGenRegion::new(
+        let mut region = WorldGenRegion::new(
             inputs.context,
             inputs.feature_step,
             &cache,

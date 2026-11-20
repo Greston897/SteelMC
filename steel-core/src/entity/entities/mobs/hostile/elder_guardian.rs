@@ -14,27 +14,27 @@ use rand::Rng;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
+use steel_protocol::packets::game::CGameEvent;
+use steel_protocol::packets::game::GameEventType::GuardianElderEffect;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::fluid::is_water_fluid;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::GuardianEntityData;
+use steel_registry::vanilla_mob_effects::MINING_FATIGUE;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
-use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
-use steel_protocol::packets::game::CGameEvent;
-use steel_protocol::packets::game::GameEventType::GuardianElderEffect;
-use steel_registry::vanilla_mob_effects::MINING_FATIGUE;
 use steel_utils::types::GameType::Adventure;
 use steel_utils::types::GameType::Survival;
+use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
 
+use crate::entity::MobEffectInstance;
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
-use crate::entity::MobEffectInstance;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySpawnReason, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster,
@@ -295,21 +295,15 @@ impl Mob for ElderGuardianEntity {
         let r2 = CURSE_RADIUS * CURSE_RADIUS;
         world.players.iter_players(|_, player| {
             let mode = player.game_mode();
-            if !matches!(
-                mode,
-                Survival | Adventure
-            ) || !LivingEntity::is_alive(player.as_ref())
-            {
+            if !matches!(mode, Survival | Adventure) || !LivingEntity::is_alive(player.as_ref()) {
                 return true;
             }
             if player.position().distance_squared(pos) >= r2 {
                 return true;
             }
-            let needs_curse = player
-                .mob_effect(MINING_FATIGUE)
-                .is_none_or(|active| {
-                    active.amplifier() < CURSE_AMPLIFIER || active.duration() < CURSE_INTERVAL_TICKS
-                });
+            let needs_curse = player.mob_effect(MINING_FATIGUE).is_none_or(|active| {
+                active.amplifier() < CURSE_AMPLIFIER || active.duration() < CURSE_INTERVAL_TICKS
+            });
             if needs_curse {
                 player.send_packet(CGameEvent {
                     event: GuardianElderEffect,

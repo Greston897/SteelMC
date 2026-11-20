@@ -8,36 +8,36 @@
 //! * jumping, galloping, the chest inventory and breeding stats are not
 //!   implemented.
 
-use std::sync::Weak;
 use std::sync::Arc;
+use std::sync::Weak;
 
 use glam::DVec3;
 use simdnbt::{borrow, owned};
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
+use steel_protocol::packets::game::SoundSource::Neutral;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
+use steel_registry::sound_events::ENTITY_DONKEY_CHEST;
 use steel_registry::vanilla_attributes;
 use steel_registry::vanilla_entity_data::LlamaEntityData;
-use steel_utils::locks::SyncMutex;
-use steel_utils::{DowncastType, DowncastTypeKey};
-use steel_protocol::packets::game::SoundSource::Neutral;
-use steel_registry::sound_events::ENTITY_DONKEY_CHEST;
 use steel_registry::vanilla_items::CHEST;
+use steel_utils::locks::SyncMutex;
 use steel_utils::types::InteractionHand;
+use steel_utils::{DowncastType, DowncastTypeKey};
 
+use crate::behavior::InteractionResult;
+use crate::behavior::InteractionResult::Pass;
+use crate::behavior::InteractionResult::Success;
 use crate::entity::ai::goal::{
     FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
     WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
-use crate::entity::mount::{SharedMountInventory, open_mount_menu};
-use crate::behavior::InteractionResult;
-use crate::behavior::InteractionResult::Pass;
-use crate::behavior::InteractionResult::Success;
 use crate::entity::mount::shared_inventory;
+use crate::entity::mount::{SharedMountInventory, open_mount_menu};
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityDimensions, EntityMovementEmission, EntitySyncedData, LivingEntity,
@@ -446,11 +446,7 @@ impl Mob for LlamaEntity {
     /// Vanilla `AbstractHorse.mobInteract`: a tamed mount opens its inventory on
     /// a secondary use, everything else falls back to the shared animal
     /// interaction (feeding, saddling and riding).
-    fn mob_interact(
-        &self,
-        player: &Player,
-        hand: InteractionHand,
-    ) -> InteractionResult {
+    fn mob_interact(&self, player: &Player, hand: InteractionHand) -> InteractionResult {
         if !Entity::is_vehicle(self)
             && !LivingEntity::is_baby(self)
             && self.is_tamed()

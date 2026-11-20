@@ -127,6 +127,6 @@ mod tests {
             BlockPos::new(0, 0, 0),
             vanilla_blocks::WHITE_BANNER.default_state(),
         );
-        assert!(banner.layers().is_empty());
+        assert_eq!(banner.layers(), [] as [BannerPatternLayer; 0]);
     }
 }

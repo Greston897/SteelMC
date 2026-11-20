@@ -132,7 +132,7 @@ impl SulfurCubeEntity {
 
     /// Vanilla `SulfurCube.fromBucket`.
     #[must_use]
-    pub fn from_bucket(&self) -> bool {
+    pub fn is_from_bucket(&self) -> bool {
         *self.entity_data.lock().sulfur_cube().from_bucket.get()
     }
 

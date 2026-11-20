@@ -377,7 +377,7 @@ impl ChunkTicketStorage {
     /// Adds Vanilla's persistent `FORCED` ticket, which is what `/forceload`
     /// uses to keep a chunk loaded across restarts.
     ///
-    /// Vanilla ChunkMap.FORCED_TICKET_LEVEL is the entity-ticking boundary,
+    /// Vanilla `ChunkMap.FORCED_TICKET_LEVEL` is the entity-ticking boundary,
     /// not level zero (which would request a 128-chunk entity-ticking radius).
     pub(crate) fn add_forced_ticket(&mut self, pos: ChunkPos) -> SourceProjectionChanges {
         self.add_ticket(pos, forced_ticket())

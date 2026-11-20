@@ -43,12 +43,12 @@ impl BarrelBlock {
 
 impl BlockBehavior for BarrelBlock {
     fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
-        if let Some(entity) = world.get_block_entity(pos) {
-            if let Some(container) = entity.downcast_ref::<BarrelBlockEntity>() {
-                container
-                    .openers_counter()
-                    .recheck_openers(world, pos, state, state.get_block());
-            }
+        if let Some(entity) = world.get_block_entity(pos)
+            && let Some(container) = entity.downcast_ref::<BarrelBlockEntity>()
+        {
+            container
+                .openers_counter()
+                .recheck_openers(world, pos, state, state.get_block());
         }
     }
 

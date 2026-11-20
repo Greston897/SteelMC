@@ -7,11 +7,11 @@ use steel_utils::{BlockPos, ErasedType};
 
 use crate::inventory::container::DEFAULT_DISTANCE_BUFFER;
 use crate::inventory::menu::behavior::MenuBehavior;
-use crate::world::World;
-use crate::{inventory::lock::ContainerLockGuard, player::Player};
 use crate::player::recipe_placement::PlacementRequest;
 use crate::player::recipe_placement::PostPlaceAction;
 use crate::player::recipe_placement::StackedItemContents;
+use crate::world::World;
+use crate::{inventory::lock::ContainerLockGuard, player::Player};
 
 use crate::inventory::click::{Click, ClickOutcome, QuickCraft};
 

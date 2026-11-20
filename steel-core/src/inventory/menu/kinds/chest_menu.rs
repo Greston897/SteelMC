@@ -208,9 +208,9 @@ fn change_openers(container: &ContainerRef, player: &Player, opening: bool) {
     };
     // A menu may outlive block replacement at the same position. Never alter
     // the new block entity's count when closing the old inventory's menu.
-    if !block_entity
+    if block_entity
         .container_ref()
-        .is_some_and(|current| current.container_id() == container.container_id())
+        .is_none_or(|current| current.container_id() != container.container_id())
     {
         return;
     }

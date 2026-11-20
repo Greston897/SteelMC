@@ -167,6 +167,15 @@ const fn boxes_intersect(left: BoundingBox, right: BoundingBox) -> bool {
         && left.max_z() >= right.min_z()
 }
 
+/// Builds a translated component with a literal fallback.
+fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> TextComponent {
+    TextComponent::translated(TranslatedMessage {
+        key: Cow::Borrowed(key),
+        fallback: Some(Cow::Owned(fallback)),
+        args: Some(args.into_boxed_slice()),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -184,13 +193,4 @@ mod tests {
         let right = BoundingBox::from_corners(BlockPos::new(2, 2, 2), BlockPos::new(4, 4, 4));
         assert!(boxes_intersect(left, right));
     }
-}
-
-/// Builds a translated component with a literal fallback.
-fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> TextComponent {
-    TextComponent::translated(TranslatedMessage {
-        key: Cow::Borrowed(key),
-        fallback: Some(Cow::Owned(fallback)),
-        args: Some(args.into_boxed_slice()),
-    })
 }

@@ -8,11 +8,11 @@ use steel_utils::{BlockPos, BlockStateId, Direction, types::UpdateFlags};
 use super::snowy_block::{snowy_placement_state, update_snowy_shape};
 use super::spreading_grass_block::SpreadingGrassBlock;
 use crate::behavior::block::BlockBehavior;
+use crate::behavior::blocks::vegetation::bonemealable::has_spreadable_neighbor_pos;
 use crate::behavior::blocks::vegetation::bonemealable::{BonemealAction, Bonemealable};
 use crate::behavior::context::BlockPlaceContext;
 use crate::world::{LevelReader, ScheduledTickAccess, World};
 use std::sync::Arc;
-use crate::behavior::blocks::vegetation::bonemealable::has_spreadable_neighbor_pos;
 
 /// Behavior for grass blocks.
 #[block_behavior]
@@ -73,11 +73,7 @@ impl Bonemealable for GrassBlock {
         if world.get_block_state(pos.above()).get_light_dampening() != 0 {
             return false;
         }
-        has_spreadable_neighbor_pos(
-            world,
-            pos,
-            self.block.default_state(),
-        )
+        has_spreadable_neighbor_pos(world, pos, self.block.default_state())
     }
 
     fn perform_bonemeal(

@@ -1,12 +1,12 @@
 //! Registered block dispatch and scheduled-tick integration, not helper-only tests.
 use super::*;
 use crate::bootstrap::init_globals;
-use crate::test_support::{TestWorld, fresh_test_world, insert_ready_full_chunk, tick_test_world};
-use steel_registry::vanilla_blocks;
-use steel_utils::ChunkPos;
-use steel_registry::vanilla_game_rules::TNT_EXPLODES;
 use crate::chunk::chunk_holder::TickingReadiness::EntityTicking;
 use crate::chunk::chunk_ticket_manager::ChunkTicketLevel;
+use crate::test_support::{TestWorld, fresh_test_world, insert_ready_full_chunk, tick_test_world};
+use steel_registry::vanilla_blocks;
+use steel_registry::vanilla_game_rules::TNT_EXPLODES;
+use steel_utils::ChunkPos;
 
 const SOURCE: BlockPos = BlockPos::new(8, 64, 8);
 const TARGET: BlockPos = BlockPos::new(9, 64, 8);
@@ -25,9 +25,9 @@ fn fixture(name: &str, stack: ItemStack) -> (TestWorld, ContainerRef) {
     );
     let container = world
         .get_block_entity(SOURCE)
-        .unwrap()
+        .expect("the block entity should exist")
         .container_ref()
-        .unwrap();
+        .expect("the container should be present");
     container.lock().set_item(0, stack);
     (fixture, container)
 }
@@ -187,9 +187,8 @@ fn dispenser_flint_lights_candles_cakes_campfires_and_always_wears_on_blocked_ta
         );
         let actual = world.get_block_state(TARGET);
         if index < 4 {
-            assert_eq!(
+            assert!(
                 actual.get_value(&BlockStateProperties::LIT),
-                true,
                 "target {index}"
             );
         } else {
@@ -250,8 +249,12 @@ fn hopper_power_edges_and_playing_jukebox_refresh_enabled_state_and_ticker() {
             vanilla_blocks::JUKEBOX.default_state(),
             UpdateFlags::UPDATE_ALL,
         );
-        let entity = world.get_block_entity(SOURCE.above()).unwrap();
-        let jukebox = entity.downcast_ref::<JukeboxBlockEntity>().unwrap();
+        let entity = world
+            .get_block_entity(SOURCE.above())
+            .expect("the block entity should exist");
+        let jukebox = entity
+            .downcast_ref::<JukeboxBlockEntity>()
+            .expect("the block entity should have the expected type");
         jukebox.set_the_item(ItemStack::new(&vanilla_items::MUSIC_DISC_13));
         assert!(
             !world
@@ -262,12 +265,16 @@ fn hopper_power_edges_and_playing_jukebox_refresh_enabled_state_and_ticker() {
             tick_test_world(world, tick, true);
         }
         assert!(jukebox.is_record_playing());
-        let entity = world.get_block_entity(SOURCE).unwrap();
-        let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
+        let entity = world
+            .get_block_entity(SOURCE)
+            .expect("the block entity should exist");
+        let hopper = entity
+            .downcast_ref::<HopperBlockEntity>()
+            .expect("the block entity should have the expected type");
         assert!(
             hopper
                 .container_ref()
-                .unwrap()
+                .expect("the container should be present")
                 .lock()
                 .get_item(0)
                 .is_empty()
@@ -289,19 +296,18 @@ fn powered_dispenser_initializes_firework_lifetime_source_and_straight_angled_fl
     };
     for facing in [Direction::East, Direction::Up] {
         let mut stack = ItemStack::with_count(&vanilla_items::FIREWORK_ROCKET, 2);
-        stack.set(FIREWORKS, Fireworks::new(2, Vec::new()).unwrap());
+        stack.set(
+            FIREWORKS,
+            Fireworks::new(2, Vec::new()).expect("the firework should be created"),
+        );
         stack.set(CUSTOM_NAME, TextComponent::plain("Dispensed rocket"));
         init_globals();
         let fixture = fresh_test_world("dispenser_firework_initialized");
         let world = &fixture.world;
         let chunk_pos = ChunkPos::from_block_pos(SOURCE);
         let holder = insert_ready_full_chunk(world, chunk_pos);
-        holder.set_simulation_level(Some(
-            ChunkTicketLevel::ENTITY_TICKING_CHUNK,
-        ));
-        holder.transition_ticking_readiness(
-            EntityTicking,
-        );
+        holder.set_simulation_level(Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK));
+        holder.transition_ticking_readiness(EntityTicking);
         world.update_entity_chunk_visibility(chunk_pos, holder.entity_visibility());
         world.chunk_map.rebuild_ticking_chunk_snapshot();
         world.set_block(
@@ -313,9 +319,9 @@ fn powered_dispenser_initializes_firework_lifetime_source_and_straight_angled_fl
         );
         let container = world
             .get_block_entity(SOURCE)
-            .unwrap()
+            .expect("the block entity should exist")
             .container_ref()
-            .unwrap();
+            .expect("the container should be present");
         container.lock().set_item(0, stack);
         world.set_block(
             SOURCE.below(),
@@ -338,14 +344,20 @@ fn powered_dispenser_initializes_firework_lifetime_source_and_straight_angled_fl
             1,
             "rocket must survive more than its first tick"
         );
-        let rocket = rockets[0].downcast_ref::<FireworkRocketEntity>().unwrap();
+        let rocket = rockets[0]
+            .downcast_ref::<FireworkRocketEntity>()
+            .expect("the block entity should have the expected type");
         assert!(rocket.is_shot_at_angle());
         assert_eq!(
             rocket.get_item().get(CUSTOM_NAME),
             Some(&TextComponent::plain("Dispensed rocket"))
         );
         assert_eq!(
-            rocket.get_item().get(FIREWORKS).unwrap().flight_duration(),
+            rocket
+                .get_item()
+                .get(FIREWORKS)
+                .expect("the component should be present")
+                .flight_duration(),
             2
         );
         let axis_speed = if facing == Direction::East {
@@ -388,7 +400,6 @@ fn ordinary_dispenser_items_use_vanilla_spawn_offset_and_triangular_velocity() {
                 64.5 + f64::from(dy) * 0.7 - if vertical { 0.125 } else { 0.15625 },
                 8.5 + f64::from(dz) * 0.7,
             );
-            use steel_utils::random::Random as _;
             let power = expected_random.next_f64() * 0.1 + 0.2;
             let deviation = 0.017_227_5 * 6.0;
             let expected_velocity = DVec3::new(
@@ -567,7 +578,8 @@ fn dispenser_arrow_uses_the_default_vanilla_launch_config() {
     // default power instead of hitting an exact value.
     let deviation = 0.0172275_f64 * 6.0_f64;
     let lowest = 1.1 * (1.0 - deviation);
-    let highest = 1.1 * ((1.0 + deviation) * (1.0 + deviation) + 2.0 * deviation * deviation).sqrt();
+    let highest =
+        1.1 * ((1.0 + deviation) * (1.0 + deviation) + 2.0 * deviation * deviation).sqrt();
     assert!(
         speed >= lowest && speed <= highest,
         "the arrow is shot with the default power of 1.1: {velocity:?}"

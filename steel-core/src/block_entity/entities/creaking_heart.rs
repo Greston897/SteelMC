@@ -8,9 +8,10 @@
 use std::sync::{Arc, Weak};
 
 use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
+use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::{NbtCompound, NbtTag};
-use steel_registry::vanilla_block_entity_types;
 use steel_registry::blocks::properties::CreakingHeartState::Awake;
+use steel_registry::vanilla_block_entity_types;
 use steel_registry::vanilla_damage_types::GENERIC_KILL;
 use steel_registry::vanilla_game_rules::SPAWN_MOBS;
 use steel_utils::types::Difficulty::Peaceful;
@@ -25,10 +26,10 @@ use steel_registry::{vanilla_blocks, vanilla_entities};
 use steel_utils::Direction;
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
-use crate::entity::{ENTITIES, Entity, next_entity_id};
-use crate::world::World;
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::mobs::hostile::CreakingEntity;
+use crate::entity::{ENTITIES, Entity, next_entity_id};
+use crate::world::World;
 
 /// Vanilla distance within which a player keeps a heart active.
 const CREAKING_SPAWN_PLAYER_RANGE: f64 = 32.0;
@@ -88,16 +89,10 @@ impl CreakingHeartBlockEntity {
         }
 
         let desired_state = Self::compute_heart_state(world, pos, state);
-        if state.try_get_value(
-            &BlockStateProperties::CREAKING_HEART_STATE,
-        ) != Some(desired_state)
-        {
+        if state.try_get_value(&BlockStateProperties::CREAKING_HEART_STATE) != Some(desired_state) {
             world.set_block(
                 pos,
-                state.set_value(
-                    &BlockStateProperties::CREAKING_HEART_STATE,
-                    desired_state,
-                ),
+                state.set_value(&BlockStateProperties::CREAKING_HEART_STATE, desired_state),
                 UpdateFlags::UPDATE_ALL,
             );
         }
@@ -109,14 +104,9 @@ impl CreakingHeartBlockEntity {
             match world.get_entity_by_uuid(&uuid) {
                 None => self.set_creaking(None),
                 Some(entity) if !entity.is_alive() => self.set_creaking(None),
-                Some(entity)
-                    if desired_state
-                        != Awake =>
-                {
+                Some(entity) if desired_state != Awake => {
                     self.set_creaking(None);
-                    let kill = DamageSource::environment(
-                        &GENERIC_KILL,
-                    );
+                    let kill = DamageSource::environment(&GENERIC_KILL);
                     entity.hurt(world, &kill, f32::MAX);
                     return;
                 }
@@ -148,9 +138,7 @@ impl CreakingHeartBlockEntity {
         ) else {
             return;
         };
-        if let Some(creaking_entity) =
-            creaking.downcast_ref::<CreakingEntity>()
-        {
+        if let Some(creaking_entity) = creaking.downcast_ref::<CreakingEntity>() {
             creaking_entity.set_creaking_heart_pos(Some(pos));
         }
         let creaking_uuid = Entity::uuid(creaking.as_ref()).as_u128();
@@ -251,7 +239,7 @@ impl BlockEntity for CreakingHeartBlockEntity {
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
-        let view: simdnbt::borrow::NbtCompound<'_, '_> = nbt.into();
+        let view: BorrowedNbtCompoundView<'_, '_> = nbt.into();
         // Vanilla stores the creaking as a four-int UUID array.
         let linked = view.int_array("creaking").and_then(|values| {
             let mut bytes = [0u8; 16];

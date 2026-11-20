@@ -40,9 +40,9 @@ pub const fn max_instances_per_chunk(category: MobCategory) -> usize {
         MobCategory::Monster => 70,
         MobCategory::Creature => 10,
         MobCategory::Ambient => 15,
-        MobCategory::Axolotls => 5,
-        MobCategory::UndergroundWaterCreature => 5,
-        MobCategory::WaterCreature => 5,
+        MobCategory::Axolotls
+        | MobCategory::UndergroundWaterCreature
+        | MobCategory::WaterCreature => 5,
         MobCategory::WaterAmbient => 20,
         MobCategory::Misc => 0,
     }

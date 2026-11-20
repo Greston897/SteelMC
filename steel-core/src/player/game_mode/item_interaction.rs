@@ -3,11 +3,12 @@ use super::{
     InteractionResult, InventoryAccess, LivingEntity, Player, REGISTRY, SUseItem, UseOnContext,
     World, adventure_mode, wrap_degrees,
 };
+use crate::behavior::UseItemContext;
+use crate::player::advancement::predicate::TriggerContext;
 use steel_registry::data_components::vanilla_components::USE_REMAINDER;
 use steel_registry::stat::vanilla_stat_types;
 use steel_registry::vanilla_criteria_triggers::ANY_BLOCK_USE;
 use steel_registry::vanilla_criteria_triggers::DEFAULT_BLOCK_USE;
-use crate::player::advancement::predicate::TriggerContext;
 
 /// Handles using an item on a block.
 ///
@@ -20,6 +21,7 @@ use crate::player::advancement::predicate::TriggerContext;
 /// 4. If block returns `TryEmptyHandInteraction` and main hand: Call block's `use_without_item`
 /// 5. If item not empty: Call item behavior's `use_on` for placement
 /// 6. Handle creative mode infinite materials
+#[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
 pub fn use_item_on(
     player: &Arc<Player>,
     world: &Arc<World>,
@@ -114,19 +116,10 @@ pub fn use_item_on(
     // `default_block_use` (the main-hand fallthrough) before the item's own
     // `useOn` runs, with a context holding both the item and the clicked block.
     if let Some(block) = REGISTRY.blocks.by_state_id(state) {
-        let context = TriggerContext::block(
-            &block.key,
-            Some(&item_ref.key),
-        );
-        player.trigger_advancement_with_context(
-            &ANY_BLOCK_USE,
-            &context,
-        );
+        let context = TriggerContext::block(&block.key, Some(&item_ref.key));
+        player.trigger_advancement_with_context(&ANY_BLOCK_USE, &context);
         if hand == InteractionHand::MainHand {
-            player.trigger_advancement_with_context(
-                &DEFAULT_BLOCK_USE,
-                &context,
-            );
+            player.trigger_advancement_with_context(&DEFAULT_BLOCK_USE, &context);
         }
     }
 
@@ -208,12 +201,7 @@ pub fn use_item(
             return InteractionResult::Pass;
         }
 
-        let mut context = crate::behavior::UseItemContext::new(
-            player,
-            hand,
-            world,
-            Arc::clone(&player.inventory),
-        );
+        let mut context = UseItemContext::new(player, hand, world, Arc::clone(&player.inventory));
 
         // Get behavior registries
         let item_behaviors = &*ITEM_BEHAVIORS;

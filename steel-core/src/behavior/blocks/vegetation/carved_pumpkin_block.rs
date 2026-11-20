@@ -209,7 +209,7 @@ mod tests {
             }
             assert_eq!(
                 CarvedPumpkinBlock::golem_for_pattern(world, head)
-                    .unwrap()
+                    .expect("the golem pattern should match")
                     .0,
                 &vanilla_entities::IRON_GOLEM
             );

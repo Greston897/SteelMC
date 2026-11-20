@@ -425,7 +425,7 @@ impl TextDisplayEntity {
 mod tests {
     use steel_registry::init_vanilla_registry;
     use steel_registry::vanilla_entities;
-use steel_registry::vanilla_items::STICK;
+    use steel_registry::vanilla_items::STICK;
 
     use super::*;
 

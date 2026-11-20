@@ -10,10 +10,10 @@
 
 use std::borrow::Cow;
 
+use steel_protocol::packets::game::CSetCamera;
 use steel_utils::Identifier;
 use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
-use steel_protocol::packets::game::CSetCamera;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},

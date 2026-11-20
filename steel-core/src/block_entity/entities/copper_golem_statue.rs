@@ -13,11 +13,11 @@ use simdnbt::owned::NbtCompound;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::data_components::vanilla_components::CUSTOM_NAME;
+use steel_registry::sound_events::ENTITY_COPPER_GOLEM_SPAWN;
 use steel_registry::vanilla_block_entity_types;
 use steel_registry::vanilla_entities;
 use steel_utils::Direction;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
-use steel_registry::sound_events::ENTITY_COPPER_GOLEM_SPAWN;
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::{ENTITIES, Entity, SharedEntity, next_entity_id};
@@ -97,11 +97,7 @@ impl CopperGolemStatueBlockEntity {
             living.set_y_head_rot(y_rot);
             living.set_y_body_rot(y_rot);
         }
-        golem.play_sound(
-            &ENTITY_COPPER_GOLEM_SPAWN,
-            1.0,
-            1.0,
-        );
+        golem.play_sound(&ENTITY_COPPER_GOLEM_SPAWN, 1.0, 1.0);
         golem
     }
 }
@@ -119,10 +115,9 @@ impl BlockEntity for CopperGolemStatueBlockEntity {
 /// Vanilla `Direction.toYRot`.
 const fn direction_to_y_rot(direction: Direction) -> f32 {
     match direction {
-        Direction::South => 0.0,
+        Direction::South | Direction::Down | Direction::Up => 0.0,
         Direction::West => 90.0,
         Direction::North => 180.0,
         Direction::East => 270.0,
-        Direction::Down | Direction::Up => 0.0,
     }
 }

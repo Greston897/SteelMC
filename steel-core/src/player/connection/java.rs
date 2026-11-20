@@ -6,7 +6,6 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use steel_protocol::packet_reader::TCPNetworkDecoder;
 use steel_protocol::packet_traits::{ClientPacket, CompressionInfo, EncodedPacket, ServerPacket};
 use steel_protocol::packet_writer::TCPNetworkEncoder;
-use steel_utils::translations_registry::TRANSLATIONS;
 use steel_protocol::packets::common::{
     CDisconnect, CKeepAlive, CPongResponse, SClientInformation, SCustomPayload, SKeepAlive,
     SPingRequest,
@@ -28,6 +27,7 @@ use steel_protocol::packets::game::{
     SSignUpdate, SSpectatorAction, STeleportToEntity, STestInstanceBlockAction, SUseItem,
     SUseItemOn,
 };
+use steel_utils::translations_registry::TRANSLATIONS;
 
 use crate::command::{handle_client_request, sender::CommandSender};
 use steel_protocol::utils::{ConnectionProtocol, PacketError, RawPacket};
@@ -1264,9 +1264,7 @@ impl TextResolutor for JavaConnection {
     /// Uses the English translation table, like a server-side view of a
     /// translatable component.
     fn translate(&self, key: &str) -> Option<String> {
-        TRANSLATIONS
-            .get(key)
-            .map(|value| (*value).to_owned())
+        TRANSLATIONS.get(key).map(|value| (*value).to_owned())
     }
 }
 

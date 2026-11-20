@@ -215,7 +215,7 @@ mod tests {
     use steel_registry::{init_vanilla_registry, vanilla_blocks};
 
     use super::*;
-use crate::player::game_mode::use_item_on;
+    use crate::player::game_mode::use_item_on;
     use crate::{
         behavior::{BLOCK_BEHAVIORS, init_behaviors},
         test_support::fresh_test_world,
@@ -320,14 +320,18 @@ use crate::player::game_mode::use_item_on;
             vanilla_blocks::HOPPER.default_state(),
             UpdateFlags::UPDATE_ALL,
         );
-        let entity = world.get_block_entity(top).unwrap();
-        let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
+        let entity = world
+            .get_block_entity(top)
+            .expect("the block entity should exist");
+        let hopper = entity
+            .downcast_ref::<HopperBlockEntity>()
+            .expect("the block entity should have the expected type");
         // Cake is unstackable: Container::set_item correctly caps it at one.
         // Refill between transfers rather than constructing an illegal stack.
         for expected in 1..=7 {
             hopper
                 .container_ref()
-                .unwrap()
+                .expect("the container should be present")
                 .lock()
                 .set_item(0, ItemStack::new(&vanilla_items::CAKE));
             assert!(hopper.try_move_items(world, top));
@@ -335,12 +339,17 @@ use crate::player::game_mode::use_item_on;
         }
         hopper
             .container_ref()
-            .unwrap()
+            .expect("the container should be present")
             .lock()
             .set_item(0, ItemStack::new(&vanilla_items::CAKE));
         assert!(!hopper.try_move_items(world, top));
         assert_eq!(
-            hopper.container_ref().unwrap().lock().get_item(0).count(),
+            hopper
+                .container_ref()
+                .expect("the container should be present")
+                .lock()
+                .get_item(0)
+                .count(),
             1
         );
         let behavior = BLOCK_BEHAVIORS.get_behavior(&vanilla_blocks::COMPOSTER);
@@ -351,11 +360,17 @@ use crate::player::game_mode::use_item_on;
             vanilla_blocks::HOPPER.default_state(),
             UpdateFlags::UPDATE_ALL,
         );
-        let entity = world.get_block_entity(bottom).unwrap();
-        let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
+        let entity = world
+            .get_block_entity(bottom)
+            .expect("the block entity should exist");
+        let hopper = entity
+            .downcast_ref::<HopperBlockEntity>()
+            .expect("the block entity should have the expected type");
         assert!(hopper.suck_in_items(world, bottom));
         assert_eq!(level(world), 0);
-        let container = hopper.container_ref().unwrap();
+        let container = hopper
+            .container_ref()
+            .expect("the container should be present");
         assert_eq!(container.lock().get_item(0).count(), 1);
         assert!(container.lock().get_item(0).is(&vanilla_items::BONE_MEAL));
         assert!(!hopper.suck_in_items(world, bottom));
@@ -371,9 +386,15 @@ use crate::player::game_mode::use_item_on;
             vanilla_blocks::HOPPER.default_state(),
             UpdateFlags::UPDATE_ALL,
         );
-        let entity = world.get_block_entity(bottom).unwrap();
-        let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
-        let container = hopper.container_ref().unwrap();
+        let entity = world
+            .get_block_entity(bottom)
+            .expect("the block entity should exist");
+        let hopper = entity
+            .downcast_ref::<HopperBlockEntity>()
+            .expect("the block entity should have the expected type");
+        let container = hopper
+            .container_ref()
+            .expect("the container should be present");
         for slot in 0..5 {
             container
                 .lock()
@@ -395,11 +416,15 @@ use crate::player::game_mode::use_item_on;
                 .set_value(&BlockStateProperties::FACING_HOPPER, Direction::East),
             UpdateFlags::UPDATE_ALL,
         );
-        let entity = world.get_block_entity(side).unwrap();
-        let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
+        let entity = world
+            .get_block_entity(side)
+            .expect("the block entity should exist");
+        let hopper = entity
+            .downcast_ref::<HopperBlockEntity>()
+            .expect("the block entity should have the expected type");
         hopper
             .container_ref()
-            .unwrap()
+            .expect("the container should be present")
             .lock()
             .set_item(0, ItemStack::new(&vanilla_items::CAKE));
         assert!(!hopper.try_move_items(world, side));
@@ -415,8 +440,7 @@ use crate::player::game_mode::use_item_on;
         for mode in [GameType::Survival, GameType::Adventure, GameType::Creative] {
             let fixture = fixture("composter_player_dispatch", 0);
             let world = &fixture.world;
-            let player =
-                TestPlayerBuilder::new(Arc::clone(world), "ComposterPlayer", 1).build();
+            let player = TestPlayerBuilder::new(Arc::clone(world), "ComposterPlayer", 1).build();
             player.set_game_mode(mode);
             player.base().set_position_local(DVec3::new(8.5, 64.0, 6.5));
             player.inventory.lock().set_item_in_hand(
@@ -431,12 +455,7 @@ use crate::player::game_mode::use_item_on;
                 inside: false,
                 world_border_hit: false,
             };
-            let result = use_item_on(
-                &player,
-                world,
-                InteractionHand::MainHand,
-                &hit,
-            );
+            let result = use_item_on(&player, world, InteractionHand::MainHand, &hit);
             assert!(result.consumes_action(), "mode {mode:?}: {result:?}");
             assert_eq!(level(world), 1);
             assert_eq!(
@@ -460,9 +479,15 @@ use crate::player::game_mode::use_item_on;
             vanilla_blocks::HOPPER.default_state(),
             UpdateFlags::UPDATE_ALL,
         );
-        let entity = world.get_block_entity(top).unwrap();
-        let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
-        let container = hopper.container_ref().unwrap();
+        let entity = world
+            .get_block_entity(top)
+            .expect("the block entity should exist");
+        let hopper = entity
+            .downcast_ref::<HopperBlockEntity>()
+            .expect("the block entity should have the expected type");
+        let container = hopper
+            .container_ref()
+            .expect("the container should be present");
         container
             .lock()
             .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 4));

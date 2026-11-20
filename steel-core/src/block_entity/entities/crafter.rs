@@ -4,8 +4,8 @@
 //! mask, a trigger count used by the `triggered` block state, and a crafting
 //! ticker that runs every game tick.
 
-use std::sync::{Arc, Weak};
 use std::mem::replace;
+use std::sync::{Arc, Weak};
 
 use glam::DVec3;
 use simdnbt::ToNbtTag;
@@ -13,7 +13,6 @@ use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as Nbt
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_registry::REGISTRY;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
-use steel_registry::vanilla_criteria_triggers::CRAFTER_RECIPE_CRAFTED;
 use steel_registry::blocks::properties::{
     BlockStateProperties, BoolProperty, Direction, FrontAndTop,
 };
@@ -23,6 +22,7 @@ use steel_registry::data_components::{
 use steel_registry::item_stack::ItemStack;
 use steel_registry::recipe::{CraftingInput, vanilla_recipe_types};
 use steel_registry::vanilla_block_entity_types;
+use steel_registry::vanilla_criteria_triggers::CRAFTER_RECIPE_CRAFTED;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
 use uuid::Uuid;
@@ -32,8 +32,8 @@ use crate::block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter}
 use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerRef, SharedContainer};
 use crate::inventory::recipe_manager;
-use crate::world::World;
 use crate::player::advancement::predicate::TriggerContext;
+use crate::world::World;
 
 /// Number of slots in the crafter grid.
 pub const CRAFTER_SLOTS: usize = 9;
@@ -327,12 +327,8 @@ impl CrafterBlockEntity {
                 .lock()
                 .and_then(|uuid| world.players.get_by_uuid(&uuid));
             if let Some(player) = starter {
-                let context =
-                    TriggerContext::recipe(&recipe_key);
-                player.trigger_advancement_with_context(
-                    &CRAFTER_RECIPE_CRAFTED,
-                    &context,
-                );
+                let context = TriggerContext::recipe(&recipe_key);
+                player.trigger_advancement_with_context(&CRAFTER_RECIPE_CRAFTED, &context);
             }
         }
         ejected
@@ -479,11 +475,11 @@ impl Container for CrafterContainer {
 
 #[cfg(test)]
 mod tests {
+    use steel_registry::vanilla_items::FLINT;
+    use steel_registry::vanilla_items::IRON_INGOT;
+    use steel_registry::vanilla_items::OAK_PLANKS;
+    use steel_registry::vanilla_items::STICK;
     use steel_registry::{init_vanilla_registry, vanilla_blocks};
-use steel_registry::vanilla_items::FLINT;
-use steel_registry::vanilla_items::IRON_INGOT;
-use steel_registry::vanilla_items::OAK_PLANKS;
-use steel_registry::vanilla_items::STICK;
 
     use super::*;
 
@@ -513,10 +509,10 @@ use steel_registry::vanilla_items::STICK;
         let crafter = test_crafter();
         // A single stick cannot form a 3x3 recipe, so no craft starts and
         // nothing is consumed.
-        crafter.container.lock().set_item(
-            0,
-            ItemStack::with_count(&STICK, 1),
-        );
+        crafter
+            .container
+            .lock()
+            .set_item(0, ItemStack::with_count(&STICK, 1));
         assert!(!crafter.has_matching_recipe());
         assert_eq!(crafter.container.lock().get_item(0).count(), 1);
     }
@@ -528,14 +524,8 @@ use steel_registry::vanilla_items::STICK;
         {
             let mut container = crafter.container.lock();
             // Two planks stacked in the left column match the vanilla shaped `stick` recipe.
-            container.set_item(
-                0,
-                ItemStack::with_count(&OAK_PLANKS, 3),
-            );
-            container.set_item(
-                3,
-                ItemStack::with_count(&OAK_PLANKS, 3),
-            );
+            container.set_item(0, ItemStack::with_count(&OAK_PLANKS, 3));
+            container.set_item(3, ItemStack::with_count(&OAK_PLANKS, 3));
         }
         assert!(
             crafter.has_matching_recipe(),
@@ -551,14 +541,8 @@ use steel_registry::vanilla_items::STICK;
         let crafter = test_crafter();
         {
             let mut container = crafter.container.lock();
-            container.set_item(
-                0,
-                ItemStack::with_count(&IRON_INGOT, 1),
-            );
-            container.set_item(
-                1,
-                ItemStack::with_count(&FLINT, 1),
-            );
+            container.set_item(0, ItemStack::with_count(&IRON_INGOT, 1));
+            container.set_item(1, ItemStack::with_count(&FLINT, 1));
         }
         assert!(crafter.has_matching_recipe());
         // Disabling the iron ingot leaves a single flint (no 1-flint recipe),
@@ -577,14 +561,8 @@ use steel_registry::vanilla_items::STICK;
 
         {
             let mut container = crafter.container.lock();
-            container.set_item(
-                0,
-                ItemStack::with_count(&OAK_PLANKS, 1),
-            );
-            container.set_item(
-                3,
-                ItemStack::with_count(&OAK_PLANKS, 1),
-            );
+            container.set_item(0, ItemStack::with_count(&OAK_PLANKS, 1));
+            container.set_item(3, ItemStack::with_count(&OAK_PLANKS, 1));
         }
         assert!(crafter.begin_crafting());
         assert_eq!(crafter.triggered(), CRAFT_COOLDOWN_TICKS);

@@ -169,8 +169,8 @@ impl Slot for ResultSlot {
 
 #[cfg(test)]
 mod tests {
+    use steel_registry::vanilla_items::STONE;
     use steel_utils::locks::IntoShared;
-use steel_registry::vanilla_items::STONE;
 
     use super::*;
     use crate::inventory::container::SimpleContainer;
@@ -228,11 +228,7 @@ use steel_registry::vanilla_items::STONE;
         let container = ContainerRef::from(SimpleContainer::new(1).into_shared());
         let slot = ResultSlot::crafting(NoopResultHandler(container.clone()));
         let mut guard = ContainerLockGuard::lock_all(&[&container]);
-        Slot::set_item(
-            &slot,
-            &mut guard,
-            ItemStack::with_count(&STONE, 8),
-        );
+        Slot::set_item(&slot, &mut guard, ItemStack::with_count(&STONE, 8));
 
         let removed = Slot::remove(&slot, &mut guard, 3);
         assert_eq!(removed.count(), 8, "vanilla empties the slot");

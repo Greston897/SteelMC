@@ -12,6 +12,9 @@ use crate::inventory::container::{CraftingContainer, ResultContainer};
 use crate::inventory::prelude::*;
 use crate::inventory::slots::CraftingHandler;
 use crate::player::player_inventory::PlayerInventory;
+use crate::player::recipe_placement::PlacementRequest;
+use crate::player::recipe_placement::apply_plan;
+use crate::player::recipe_placement::grid_produces;
 use crate::player::recipe_placement::{PostPlaceAction, StackedItemContents, plan_placement};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_blocks;
@@ -19,9 +22,6 @@ use steel_registry::vanilla_menu_types;
 use steel_utils::BlockPos;
 use steel_utils::locks::IntoShared;
 use steel_utils::locks::Shared;
-use crate::player::recipe_placement::PlacementRequest;
-use crate::player::recipe_placement::apply_plan;
-use crate::player::recipe_placement::grid_produces;
 
 /// Builds the crafting table menu with a 3x3 grid.
 #[must_use]

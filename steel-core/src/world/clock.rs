@@ -1,9 +1,9 @@
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
+use steel_registry::vanilla_world_clocks::OVERWORLD;
 use steel_registry::{REGISTRY, world_clock::WorldClockRef};
 use steel_utils::Identifier;
 use thiserror::Error;
-use steel_registry::vanilla_world_clocks::OVERWORLD;
 
 /// Game-time synchronization interval, measured in simulation ticks.
 const GAME_TIME_SYNC_INTERVAL_TICKS: i64 = 20;

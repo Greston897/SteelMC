@@ -5,6 +5,8 @@ use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::{NbtCompound, NbtTag};
 use steel_math::trig;
+use steel_protocol::packets::game::CMoveMinecartAlongTrack;
+use steel_protocol::packets::game::MinecartStep;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{Direction, RailShape};
 use steel_registry::entity_type::EntityTypeRef;
@@ -16,8 +18,6 @@ use steel_utils::block_util::FoundRectangle;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtNumeric;
 use steel_utils::{BlockPos, BlockStateId};
-use steel_protocol::packets::game::CMoveMinecartAlongTrack;
-use steel_protocol::packets::game::MinecartStep;
 
 use super::minecart_behavior::MinecartBehavior;
 use super::vehicle_entity::VehicleEntity;
@@ -549,10 +549,7 @@ pub trait AbstractMinecart: VehicleEntity + AbstractMinecartEventSource {
     /// Builds a `ClientboundMoveMinecartAlongTrackPacket` for the experimental
     /// `NewMinecartBehavior` client interpolation steps.
     #[must_use]
-    fn build_track_lerp_packet(
-        &self,
-        steps: Vec<MinecartStep>,
-    ) -> CMoveMinecartAlongTrack {
+    fn build_track_lerp_packet(&self, steps: Vec<MinecartStep>) -> CMoveMinecartAlongTrack {
         CMoveMinecartAlongTrack {
             entity_id: self.id(),
             steps,

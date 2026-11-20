@@ -27,32 +27,32 @@ pub mod part;
 pub mod phase_ticks;
 pub mod phases;
 
-use std::sync::{Arc, Weak};
 use std::cell::Cell;
 use std::f32::consts::PI;
+use std::sync::{Arc, Weak};
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::{NbtCompound, NbtTag};
 use steel_macros::entity_behavior;
-use steel_protocol::packets::game::SoundSource;
-use steel_registry::blocks::block_state_ext::BlockStateExt as _;
-use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
-use steel_registry::sound_event::SoundEventRef;
-use steel_registry::vanilla_entity_data::EnderDragonEntityData;
 use steel_math::trig::atan2;
 use steel_math::trig::cos;
 use steel_math::trig::sin;
+use steel_protocol::packets::game::SoundSource;
 use steel_registry::blocks::BlockRef;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::data_components::components::PotionContents;
+use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::mob_effect::instance::MobEffectInstance;
 use steel_registry::particle_type::ParticleData;
 use steel_registry::particle_type::ParticleTypeRef;
 use steel_registry::particle_type::PowerParticleOption;
+use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events::ENTITY_ENDER_DRAGON_AMBIENT;
 use steel_registry::sound_events::ENTITY_ENDER_DRAGON_DEATH;
 use steel_registry::sound_events::ENTITY_ENDER_DRAGON_HURT;
 use steel_registry::sound_events::ENTITY_ENDER_DRAGON_SHOOT;
+use steel_registry::vanilla_entity_data::EnderDragonEntityData;
 use steel_registry::vanilla_mob_effects::INSTANT_DAMAGE;
 use steel_registry::vanilla_particle_types::DRAGON_BREATH;
 use steel_registry::{
@@ -71,13 +71,12 @@ use self::phase_ticks::{
     FLAME_DURATION, PhaseAction, SITTING_FLAME_RADIUS, phase_fly_target, tick_phase,
 };
 use self::phases::{DragonPhase, DragonPhaseManager, turn_speed};
+use crate::chunk::heightmap::HeightmapType::MotionBlockingNoLeaves;
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::ExperienceOrbEntity;
 use crate::entity::entities::objects::effects::AreaEffectCloudEntity;
 use crate::entity::entities::objects::projectiles::DragonFireballEntity;
-use crate::chunk::heightmap::HeightmapType::MotionBlockingNoLeaves;
 use crate::entity::next_entity_id;
-use crate::world::dragon_fight::DragonFight;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
@@ -86,6 +85,7 @@ use crate::entity::{
 use crate::physics::MoveResult;
 use crate::player::Player;
 use crate::world::World;
+use crate::world::dragon_fight::DragonFight;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
 
@@ -247,6 +247,10 @@ impl EnderDragonEntity {
     /// Vanilla reads `EnderDragonFight.aliveCrystals()`; the fight lives on the
     /// world, so this is the dragon's accessor for it.
     #[must_use]
+    #[expect(
+        clippy::unused_self,
+        reason = "public API mirrors the vanilla signature"
+    )]
     pub fn alive_crystals(&self, world: &World) -> i32 {
         world.dragon_fight.alive_crystals()
     }
@@ -259,10 +263,7 @@ impl EnderDragonEntity {
         if let Some(podium) = cached {
             return podium;
         }
-        let podium = world.heightmap_pos(
-            MotionBlockingNoLeaves,
-            DragonFight::podium_pos(),
-        );
+        let podium = world.heightmap_pos(MotionBlockingNoLeaves, DragonFight::podium_pos());
         self.phases.lock().podium_location = Some(podium);
         podium
     }
@@ -273,6 +274,10 @@ impl EnderDragonEntity {
     /// passes a positive bound, so a zero or negative bound is clamped to `1`
     /// (always returning `0`) to keep the function total.
     #[must_use]
+    #[expect(
+        clippy::unused_self,
+        reason = "public API mirrors the vanilla signature"
+    )]
     pub fn random_below(&self, bound: i32) -> i32 {
         if bound <= 1 {
             return 0;
@@ -282,6 +287,10 @@ impl EnderDragonEntity {
 
     /// Vanilla `RandomSource.nextFloat()`.
     #[must_use]
+    #[expect(
+        clippy::unused_self,
+        reason = "public API mirrors the vanilla signature"
+    )]
     pub fn random_f32(&self) -> f32 {
         rand::random::<f32>()
     }
@@ -292,6 +301,10 @@ impl EnderDragonEntity {
     /// single `RandomSource`, so Steel seeds one [`PhaseContext`] stream from here
     /// and advances it per draw.
     #[must_use]
+    #[expect(
+        clippy::unused_self,
+        reason = "public API mirrors the vanilla signature"
+    )]
     pub fn random_i64(&self) -> i64 {
         rand::random::<i64>()
     }
@@ -301,6 +314,10 @@ impl EnderDragonEntity {
     /// Vanilla uses `TargetingConditions.forCombat().ignoreLineOfSight()`, which
     /// admits any visible, non-spectator, non-creative player.
     #[must_use]
+    #[expect(
+        clippy::unused_self,
+        reason = "public API mirrors the vanilla signature"
+    )]
     pub fn can_target_player(&self, player: &Player) -> bool {
         let mode = player.game_mode();
         mode != GameType::Spectator && mode != GameType::Creative && LivingEntity::is_alive(player)
@@ -491,6 +508,10 @@ impl EnderDragonEntity {
     /// Vanilla spawns it `2.0` blocks behind the head along the look vector and
     /// lets the fireball's own `shoot` aim it; Steel passes the pre-computed
     /// direction so the phase tick stays free of entity handles.
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     fn spawn_dragon_fireball(&self, world: &Arc<World>, origin: DVec3, direction: DVec3) {
         let fireball = DragonFireballEntity::new(
             &vanilla_entities::DRAGON_FIREBALL,
@@ -510,6 +531,10 @@ impl EnderDragonEntity {
     /// cloud is given radius five, a 200-tick life, the dragon-breath particle and
     /// instant damage at a quarter duration scale, matching
     /// `AreaEffectCloud.setPotionDurationScale(0.25F)`.
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     fn spawn_breath_cloud(
         &self,
         world: &Arc<World>,
@@ -537,24 +562,20 @@ impl EnderDragonEntity {
         cloud.set_potion_duration_scale(0.25);
         // Vanilla `flame.addEffect(new MobEffectInstance(MobEffects.INSTANT_DAMAGE))`,
         // i.e. the 3-argument constructor: duration 0, amplifier 0.
-        cloud.set_potion_contents(
-            PotionContents::new(
+        cloud.set_potion_contents(PotionContents::new(
+            None,
+            None,
+            vec![MobEffectInstance::new(
+                INSTANT_DAMAGE,
+                0,
+                0,
+                false,
+                true,
+                true,
                 None,
-                None,
-                vec![
-                    MobEffectInstance::new(
-                        INSTANT_DAMAGE,
-                        0,
-                        0,
-                        false,
-                        true,
-                        true,
-                        None,
-                    ),
-                ],
-                None,
-            ),
-        );
+            )],
+            None,
+        ));
         let shared = cloud as SharedEntity;
         if let Err(error) = world.try_add_entity(Arc::clone(&shared)) {
             log::debug!("world rejected a dragon breath cloud: {error}");
@@ -726,8 +747,7 @@ impl EnderDragonEntity {
         let (tilt, y_offset) = {
             let history = &guard.flight_history;
             let tilt =
-                ((history.get(5).y - history.get(10).y) * 10.0 * f64::from(PI)
-                    / 180.0) as f32;
+                ((history.get(5).y - history.get(10).y) * 10.0 * f64::from(PI) / 180.0) as f32;
             let y_offset = if guard.current().is_sitting() {
                 -1.0
             } else {
@@ -895,6 +915,10 @@ impl EnderDragonEntity {
     }
 
     /// Vanilla `EnderDragon.hurt(List)`: the head and neck boxes deal ten damage.
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     fn head_contact_damage(
         &self,
         world: &Arc<World>,
@@ -1016,11 +1040,7 @@ impl EnderDragonEntity {
         self.send_dragon_particle(world, &vanilla_particle_types::EXPLOSION_EMITTER);
     }
 
-    fn send_dragon_particle(
-        &self,
-        world: &Arc<World>,
-        particle: ParticleTypeRef,
-    ) {
+    fn send_dragon_particle(&self, world: &Arc<World>, particle: ParticleTypeRef) {
         let offset = DVec3::new(
             f64::from((self.random_f32() - 0.5) * 8.0),
             2.0 + f64::from((self.random_f32() - 0.5) * 4.0),

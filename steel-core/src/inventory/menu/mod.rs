@@ -8,9 +8,9 @@ pub mod kinds;
 mod layout;
 
 use crate::player::player_inventory::Prediction;
-use std::sync::Arc;
 use crate::player::recipe_placement::PlacementRequest;
 use crate::player::recipe_placement::PostPlaceAction;
+use std::sync::Arc;
 
 use crate::inventory::container::Container as _;
 pub use behavior::MenuBehavior;

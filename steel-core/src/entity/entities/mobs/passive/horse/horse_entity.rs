@@ -14,8 +14,8 @@
 //! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
 //! * galloping and breeding stats are not implemented.
 
-use std::sync::Weak;
 use std::sync::Arc;
+use std::sync::Weak;
 
 use glam::DVec3;
 use simdnbt::{borrow, owned};
@@ -35,14 +35,14 @@ use steel_utils::types::InteractionHand;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::behavior::InteractionResult;
-use crate::entity::mount::SharedMountInventory;
-use crate::entity::mount::open_mount_menu;
-use crate::entity::mount::shared_inventory;
 use crate::entity::ai::goal::{
     FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
     WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::entity::mount::SharedMountInventory;
+use crate::entity::mount::open_mount_menu;
+use crate::entity::mount::shared_inventory;
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityDimensions, EntityMovementEmission, EntitySyncedData, LivingEntity,
@@ -529,7 +529,7 @@ mod tests {
 
     use super::*;
     use crate::test_support::TestPlayerBuilder;
-use crate::test_support::fresh_test_world;
+    use crate::test_support::fresh_test_world;
 
     #[test]
     fn horse_tame_and_saddle_bits_are_independent() {

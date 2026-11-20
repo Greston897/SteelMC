@@ -5,6 +5,7 @@ use rand::{Rng, RngExt};
 use steel_macros::block_behavior;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, IntProperty};
+use steel_registry::feature::ConfiguredFeature;
 use steel_registry::feature::{ConfiguredFeatureKind, TrunkPlacer};
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::{REGISTRY, RegistryExt as _};
@@ -12,15 +13,14 @@ use steel_utils::random::worldgen_random::WorldgenRandom;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, Direction, Identifier};
 use steel_worldgen::biomes::obfuscate_biome_seed;
-use steel_registry::feature::ConfiguredFeature;
 
 use crate::behavior::block::BlockBehavior;
 use crate::behavior::blocks::vegetation::bonemealable::Bonemealable;
 use crate::behavior::context::BlockPlaceContext;
+use crate::fluid::fluid_state_to_block;
 use crate::world::{LevelReader, ScheduledTickAccess, World};
 use crate::worldgen::feature::FeatureDecorationRunner;
 use crate::worldgen::feature::no_nested_features;
-use crate::fluid::fluid_state_to_block;
 
 use super::{BlockRef, default_surviving_state, survives_on_tag};
 
@@ -162,9 +162,7 @@ impl SaplingBlock {
     }
 
     /// Resolves a grower name to its `minecraft:<name>` configured feature.
-    fn configured_feature(
-        name: &str,
-    ) -> Option<&'static ConfiguredFeature> {
+    fn configured_feature(name: &str) -> Option<&'static ConfiguredFeature> {
         let key = Identifier::from_str(&format!("minecraft:{name}")).ok()?;
         REGISTRY.configured_features.by_key(&key)
     }
@@ -344,11 +342,11 @@ impl Bonemealable for SaplingBlock {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::bootstrap::init_globals;
     use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
     use rand::{SeedableRng as _, rngs::StdRng};
     use steel_registry::vanilla_blocks;
     use steel_utils::ChunkPos;
-use crate::bootstrap::init_globals;
 
     #[test]
     fn bonemeal_advances_stage_and_scheduled_tick_does_not() {
@@ -431,7 +429,7 @@ use crate::bootstrap::init_globals;
             );
             world.set_block(
                 *pos,
-                state.set_value(STAGE, if index == 0 { 0 } else { 1 }),
+                state.set_value(STAGE, i32::from(index != 0)),
                 UpdateFlags::UPDATE_NONE,
             );
             world.set_block(

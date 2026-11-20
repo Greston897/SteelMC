@@ -67,6 +67,10 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         )
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn list_waypoints(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let source = context.source();
     let world = source.world();

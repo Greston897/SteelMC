@@ -15,11 +15,11 @@ use steel_utils::{BlockPos, BlockStateId, Direction, Downcast as _, types::Updat
 use crate::behavior::MOB_EFFECT_BEHAVIORS;
 use crate::behavior::blocks::{CampfireBlock, CandleBlock};
 use crate::entity::damage::DamageSource;
+use crate::entity::entities::AxolotlEntity;
 use crate::entity::projectile::ThrowableItemProjectile;
 use crate::entity::{LivingEntity, ProjectileHit, RemovalReason, SharedEntity};
 use crate::world::ClipHitResult;
 use crate::world::World;
-use crate::entity::entities::AxolotlEntity;
 
 /// Squared distance within which a splash reaches an entity.
 pub const SPLASH_RANGE_SQ: f64 = 16.0;

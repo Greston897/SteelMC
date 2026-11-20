@@ -7,26 +7,26 @@
 //! `Block` behavior with a single overridden predicate. Modelling them explicitly
 //! keeps the generated registry complete and makes the differences greppable.
 
-use std::sync::{Arc, Weak};
 use std::collections::BTreeMap;
+use std::sync::{Arc, Weak};
 
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::item_stack::ItemStack;
-use steel_utils::{BlockPos, BlockStateId, Downcast as _};
 use steel_utils::types::UpdateFlags;
+use steel_utils::{BlockPos, BlockStateId, Downcast as _};
 
 use crate::behavior::block::BlockBehavior;
 use crate::behavior::block::BlockEntityCreation;
 use crate::behavior::blocks::redstone::{MAX_REDSTONE_SIGNAL, MIN_REDSTONE_SIGNAL};
 use crate::behavior::context::{BlockHitResult, InteractionResult};
 use crate::behavior::{BlockPlaceContext, InventoryAccess};
+use crate::block_entity::SharedBlockEntity;
 use crate::block_entity::entities::{TestBlockEntity, TestInstanceBlockEntity};
 use crate::player::Player;
 use crate::world::{LevelReader, SignalGetter as _, SignalQueryContext, World};
-use crate::block_entity::SharedBlockEntity;
 
 /// Vanilla `AirBlock`: no collision, no block entity, never drops.
 #[block_behavior]
@@ -312,9 +312,7 @@ impl BlockBehavior for TestBlock {
         let Some(block_entity) = world.get_block_entity(pos) else {
             return;
         };
-        let Some(test_block) =
-            block_entity.downcast_ref::<TestBlockEntity>()
-        else {
+        let Some(test_block) = block_entity.downcast_ref::<TestBlockEntity>() else {
             return;
         };
         let should_trigger = world.has_neighbor_signal(pos);
@@ -333,9 +331,7 @@ impl BlockBehavior for TestBlock {
         let Some(block_entity) = world.get_block_entity(pos) else {
             return;
         };
-        if let Some(test_block) =
-            block_entity.downcast_ref::<TestBlockEntity>()
-        {
+        if let Some(test_block) = block_entity.downcast_ref::<TestBlockEntity>() {
             test_block.reset(world);
         }
     }

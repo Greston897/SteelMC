@@ -108,10 +108,10 @@ impl Bonemealable for AzaleaBlock {
 mod tests {
     use super::*;
     use crate::behavior::BLOCK_BEHAVIORS;
+    use crate::bootstrap::init_globals;
     use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
     use steel_registry::vanilla_blocks;
     use steel_utils::{ChunkPos, types::UpdateFlags};
-use crate::bootstrap::init_globals;
 
     #[test]
     fn both_azaleas_register_bonemeal_and_reject_fluid_above_or_build_limit() {

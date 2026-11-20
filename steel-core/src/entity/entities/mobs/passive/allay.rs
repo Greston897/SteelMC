@@ -19,24 +19,24 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
+use steel_registry::vanilla_criteria_triggers::ALLAY_DROP_ITEM_ON_BLOCK;
 use steel_registry::vanilla_entity_data::AllayEntityData;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_blocks, vanilla_entities};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, Downcast as _, DowncastType, DowncastTypeKey};
-use steel_registry::vanilla_criteria_triggers::ALLAY_DROP_ITEM_ON_BLOCK;
 
 use crate::entity::ai::goal::{
     FloatGoal, LookAtPlayerGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::objects::items::ItemEntity;
-use crate::player::advancement::predicate::TriggerContext;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, RemovalReason,
     SharedEntity, next_entity_id, sync_dirty_mob_effects,
 };
 use crate::inventory::container::Container as _;
+use crate::player::advancement::predicate::TriggerContext;
 use steel_registry::item_stack::ItemStack;
 use steel_utils::WorldAabb;
 

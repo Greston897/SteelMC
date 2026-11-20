@@ -17,15 +17,15 @@ use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::BlockStateProperties;
-use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
-use steel_registry::item_stack::ItemStack;
-use steel_registry::sound_event::SoundEventRef;
-use steel_registry::vanilla_entity_data::CopperGolemEntityData;
 use steel_registry::blocks::properties::Pose::Running;
 use steel_registry::blocks::properties::Pose::Sitting;
 use steel_registry::blocks::properties::Pose::Standing;
 use steel_registry::blocks::properties::Pose::Star;
+use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
+use steel_registry::item_stack::ItemStack;
+use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events::ITEM_AXE_SCRAPE;
+use steel_registry::vanilla_entity_data::CopperGolemEntityData;
 use steel_registry::{
     level_events, sound_events, vanilla_attributes, vanilla_blocks, vanilla_game_rules,
     vanilla_items,
@@ -39,7 +39,6 @@ use steel_utils::{
 
 use crate::behavior::InteractionResult;
 use crate::block_entity::entities::CopperGolemStatueBlockEntity;
-use crate::player::Player;
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
@@ -53,6 +52,7 @@ use crate::entity::{
 };
 use crate::inventory::equipment::EquipmentSlot;
 use crate::physics::MoveResult;
+use crate::player::Player;
 use crate::world::World;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
@@ -253,9 +253,7 @@ impl CopperGolemEntity {
         world.set_block(pos, state, UpdateFlags::UPDATE_ALL);
 
         if let Some(block_entity) = world.get_block_entity(pos)
-            && let Some(statue) = block_entity
-                .downcast_ref::<CopperGolemStatueBlockEntity>(
-            )
+            && let Some(statue) = block_entity.downcast_ref::<CopperGolemStatueBlockEntity>()
         {
             statue.create_statue(self);
         }
@@ -443,11 +441,7 @@ impl Mob for CopperGolemEntity {
     /// Vanilla `CopperGolem.mobInteract`: shears drop the held item, honeycomb
     /// waxes the golem permanently, and an axe scrapes one oxidation stage back
     /// off an oxidized golem.
-    fn mob_interact(
-        &self,
-        player: &Player,
-        hand: InteractionHand,
-    ) -> InteractionResult {
+    fn mob_interact(&self, player: &Player, hand: InteractionHand) -> InteractionResult {
         use steel_registry::vanilla_item_tags::ItemTag;
 
         let stack = {

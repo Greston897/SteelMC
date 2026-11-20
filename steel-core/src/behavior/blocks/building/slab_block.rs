@@ -189,7 +189,7 @@ mod tests {
     use steel_registry::{init_vanilla_registry, vanilla_blocks};
 
     use super::*;
-use crate::bootstrap::init_globals;
+    use crate::bootstrap::init_globals;
 
     #[test]
     fn double_slabs_cannot_be_waterlogged() {

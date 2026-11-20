@@ -403,8 +403,8 @@ mod tests {
 
         use steel_registry::item_stack::ItemStack;
         use steel_registry::{init_vanilla_registry, vanilla_items};
-        use steel_utils::types::InteractionHand;
         use steel_utils::ChunkPos;
+        use steel_utils::types::InteractionHand;
 
         use crate::behavior::init_behaviors;
         use crate::player::game_mode;

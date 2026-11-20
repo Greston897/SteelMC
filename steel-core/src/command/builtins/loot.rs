@@ -11,10 +11,10 @@
 use std::sync::Arc;
 
 use steel_registry::REGISTRY;
+use steel_registry::item_stack::ItemStack;
 use steel_registry::loot_table::LootTableRef;
 use steel_utils::{BlockPos, Identifier};
 use text_components::TextComponent;
-use steel_registry::item_stack::ItemStack;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
@@ -24,8 +24,8 @@ use super::super::{
     },
     registration::CommandRegistration,
 };
-use crate::player::Player;
 use crate::behavior::block::drop_from_block_interact_loot_table;
+use crate::player::Player;
 use crate::player::player_inventory::Prediction::ServerOnly;
 use crate::world::World;
 
@@ -83,21 +83,10 @@ fn loot_table_of(
         .ok_or_else(|| CommandSyntaxError::dynamic(format!("Unknown loot table '{key}'")))
 }
 
-fn roll(
-    table: LootTableRef,
-    world: &Arc<World>,
-    pos: BlockPos,
-) -> Vec<ItemStack> {
+fn roll(table: LootTableRef, world: &Arc<World>, pos: BlockPos) -> Vec<ItemStack> {
     let state = world.get_block_state(pos);
     let mut random = rand::rng();
-    drop_from_block_interact_loot_table(
-        table,
-        state,
-        None,
-        None,
-        None,
-        &mut random,
-    )
+    drop_from_block_interact_loot_table(table, state, None, None, None, &mut random)
 }
 
 fn give(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
@@ -144,10 +133,7 @@ fn insert_or_give(
 }
 
 fn give_to_player(player: &Player, item: ItemStack) {
-    player.add_item_or_drop(
-        item,
-        ServerOnly,
-    );
+    player.add_item_or_drop(item, ServerOnly);
 }
 
 #[cfg(test)]

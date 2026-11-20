@@ -1039,7 +1039,7 @@ mod tests {
     fn loom_applies_pattern_and_enforces_six_layer_limit() {
         init_vanilla_registry();
         let patterns = selectable_banner_patterns(&ItemStack::empty());
-        assert!(!patterns.is_empty());
+        assert_ne!(patterns, [] as [BannerPatternRef; 0]);
         let mut banner = ItemStack::new(&vanilla_items::WHITE_BANNER);
         let dye = ItemStack::new(&vanilla_items::BLUE_DYE);
 

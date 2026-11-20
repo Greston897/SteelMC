@@ -12,13 +12,13 @@ use crate::block_entity::BlockEntity;
 use crate::entity::loot_equipment;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::loot::resolvers::{WorldScoreResolver, WorldStorageResolver};
-use steel_registry::sound_event::SoundEventHolder;
-use steel_registry::vanilla_particle_types::{BUBBLE, SPLASH};
 use steel_protocol::packets::game::CDebugBlockValue;
 use steel_protocol::packets::game::CDebugChunkValue;
 use steel_protocol::packets::game::CDebugEntityValue;
 use steel_protocol::packets::game::CDebugEvent;
 use steel_protocol::packets::game::DebugSubscriptionUpdate;
+use steel_registry::sound_event::SoundEventHolder;
+use steel_registry::vanilla_particle_types::{BUBBLE, SPLASH};
 
 pub(super) fn sound_is_within_range(
     sound: &SoundEventHolder,
@@ -596,6 +596,10 @@ impl World {
     ///
     /// Returns `false` when no player could hear the sound, matching vanilla's
     /// "sound was a no-op" contract.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "the vanilla sound packet carries these fields"
+    )]
     pub fn play_entity_sound(
         &self,
         sound: &SoundEventHolder,

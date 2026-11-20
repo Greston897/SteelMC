@@ -87,6 +87,10 @@ fn triggering_player(
 }
 
 /// `count` for the command result and the vanilla success message.
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn report(
     context: &SteelCommandContext<CommandSource>,
     _scoreboard: &Scoreboard,

@@ -1,5 +1,5 @@
-use std::{f32::consts::TAU, mem, sync::Arc};
 use std::sync::Weak;
+use std::{f32::consts::TAU, mem, sync::Arc};
 
 use super::MountScreen;
 use crate::inventory::menu::kinds::mount;
@@ -21,7 +21,6 @@ use crate::{
 use glam::DVec3;
 use steel_math::trig;
 use steel_protocol::packets::game::SSeenAdvancement::Opened;
-use steel_registry::vanilla_criteria_triggers::INVENTORY_CHANGED;
 use steel_protocol::packets::game::{
     CContainerClose, CMountScreenOpen, COpenScreen, CSetPlayerInventory, ClickType,
     SContainerButtonClick, SContainerClick, SContainerClose, SContainerSlotStateChanged, SEditBook,
@@ -38,6 +37,7 @@ use steel_registry::item_stack::ItemStack;
 use steel_registry::mob_effect::MobEffectRef;
 use steel_registry::sound_events;
 use steel_registry::stat::vanilla_stat_types;
+use steel_registry::vanilla_criteria_triggers::INVENTORY_CHANGED;
 use steel_registry::{REGISTRY, RegistryExt};
 use steel_registry::{vanilla_custom_stats, vanilla_items};
 use steel_utils::{

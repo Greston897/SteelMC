@@ -13,12 +13,12 @@ use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::{REGISTRY, RegistryExt, TaggedRegistryExt, vanilla_entities, vanilla_items};
 
+use crate::entity::attribute::AttributeMap;
+use crate::entity::attribute::AttributeModifier;
 use crate::entity::damage::DamageSource;
 use crate::entity::{Entity, LivingEntity, MobEffectInstance, SharedEntity};
 use crate::inventory::equipment::EquipmentSlot;
 use crate::world::World;
-use crate::entity::attribute::AttributeMap;
-use crate::entity::attribute::AttributeModifier;
 
 mod selection;
 

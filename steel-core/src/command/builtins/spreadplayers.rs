@@ -114,6 +114,15 @@ fn find_position(
     None
 }
 
+/// Builds a translated component with a literal fallback.
+fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> TextComponent {
+    TextComponent::translated(TranslatedMessage {
+        key: Cow::Borrowed(key),
+        fallback: Some(Cow::Owned(fallback)),
+        args: Some(args.into_boxed_slice()),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -137,13 +146,4 @@ mod tests {
         let placed = vec![(0.0, 0.0)];
         assert!(find_position(100.0, 1.0, &placed).is_none());
     }
-}
-
-/// Builds a translated component with a literal fallback.
-fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> TextComponent {
-    TextComponent::translated(TranslatedMessage {
-        key: Cow::Borrowed(key),
-        fallback: Some(Cow::Owned(fallback)),
-        args: Some(args.into_boxed_slice()),
-    })
 }

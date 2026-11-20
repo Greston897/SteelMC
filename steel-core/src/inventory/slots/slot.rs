@@ -88,9 +88,7 @@ pub trait Slot: ErasedType + Send + Sync {
 
     /// Vanilla `Slot.getSelectedBundleItemIndex` (`-1` when unset).
     fn selected_bundle_item_index(&self) -> i32 {
-        self.storage()
-            .selected_bundle_item_index
-            .load(Relaxed)
+        self.storage().selected_bundle_item_index.load(Relaxed)
     }
 
     /// Vanilla `Slot.setSelectedBundleItemIndex`.

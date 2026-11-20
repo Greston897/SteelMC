@@ -15,9 +15,9 @@ use super::super::{
     },
     registration::CommandRegistration,
 };
+use crate::scoreboard::criterion_is_read_only;
 use crate::scoreboard::{ScoreHolder, Scoreboard, ScoreboardObjective};
 use crate::server::scoreboard_sync;
-use crate::scoreboard::criterion_is_read_only;
 
 pub(super) fn registration() -> CommandRegistration<CommandSource> {
     CommandRegistration::new(Identifier::vanilla_static("scoreboard"), |_| command())

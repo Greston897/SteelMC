@@ -4,11 +4,11 @@ use super::selector::{Goal, GoalControls};
 use crate::entity::ai::path::Path;
 use crate::entity::entities::objects::items::ItemEntity;
 use crate::entity::{Entity as _, PathfinderMob, SharedEntity};
+use crate::world::raid::ominous_banner;
 use std::collections::BTreeMap;
 use steel_registry::item_stack::ItemStack;
-use steel_utils::Downcast as _;
 use steel_registry::vanilla_attributes::FOLLOW_RANGE;
-use crate::world::raid::ominous_banner;
+use steel_utils::Downcast as _;
 
 pub(crate) struct ObtainRaidBannerGoal {
     unreachable_until: BTreeMap<uuid::Uuid, i64>,
@@ -40,10 +40,7 @@ impl Goal for ObtainRaidBannerGoal {
         }
         let now = world.game_time();
         self.unreachable_until.retain(|_, until| *until > now);
-        let range = mob
-            .attributes()
-            .lock()
-            .required_value(FOLLOW_RANGE);
+        let range = mob.attributes().lock().required_value(FOLLOW_RANGE);
         for candidate in
             world.get_entities_in_aabb(&mob.bounding_box().inflate_xyz(range, 8.0, range))
         {

@@ -1,5 +1,6 @@
 //! Shared spawn-cycle state and ticking used by spawner block entities.
 
+use crate::world::game_event::GameEventContext;
 use std::mem;
 use std::sync::Arc;
 
@@ -505,7 +506,7 @@ impl BaseSpawner {
             world.game_event(
                 &vanilla_game_events::ENTITY_PLACE,
                 spawn_block_pos,
-                &crate::world::game_event::GameEventContext::new(Some(entity.as_ref()), None),
+                &GameEventContext::new(Some(entity.as_ref()), None),
             );
             if entity.as_mob().is_some() {
                 entity.broadcast_entity_event(EntityStatus::SilverfishMergeAnim);

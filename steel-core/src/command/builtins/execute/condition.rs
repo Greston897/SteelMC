@@ -20,8 +20,8 @@ use super::super::super::{
 };
 use super::{objective, source_command_storage, source_scoreboard};
 use crate::inventory::container::Container as _;
-use crate::{block_entity::SharedBlockEntity, command::missing_argument, world::World};
 use crate::inventory::lock::ContainerRef;
+use crate::{block_entity::SharedBlockEntity, command::missing_argument, world::World};
 
 type Builder = CommandNodeBuilder<CommandSource, SteelCommandRuntime>;
 
@@ -61,6 +61,10 @@ fn stopwatch_condition(expected: bool) -> Builder {
     )
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn scoreboard_stopwatch_running(
     source: &CommandSource,
     name: &str,
@@ -845,14 +849,28 @@ mod tests {
 
     #[test]
     fn item_slot_selection_preserves_vanilla_inventory_offsets() {
-        assert_eq!(player_item_slots("inventory.0", 4).unwrap(), vec![9]);
-        assert_eq!(player_item_slots("inventory.26", 4).unwrap(), vec![35]);
-        assert_eq!(player_item_slots("weapon.*", 4).unwrap(), vec![4, 40]);
         assert_eq!(
-            player_item_slots("armor.*", 4).unwrap(),
+            player_item_slots("inventory.0", 4).expect("the slot selector should resolve"),
+            vec![9]
+        );
+        assert_eq!(
+            player_item_slots("inventory.26", 4).expect("the slot selector should resolve"),
+            vec![35]
+        );
+        assert_eq!(
+            player_item_slots("weapon.*", 4).expect("the slot selector should resolve"),
+            vec![4, 40]
+        );
+        assert_eq!(
+            player_item_slots("armor.*", 4).expect("the slot selector should resolve"),
             vec![39, 38, 37, 36]
         );
-        assert_eq!(player_item_slots("container.*", 4).unwrap().len(), 36);
+        assert_eq!(
+            player_item_slots("container.*", 4)
+                .expect("the slot selector should resolve")
+                .len(),
+            36
+        );
         assert!(player_item_slots("hotbar.9", 0).is_err());
         assert!(player_item_slots("inventory.27", 0).is_err());
     }
@@ -860,7 +878,7 @@ mod tests {
     #[test]
     fn container_slots_reject_nonvanilla_intervals_and_bounds() {
         assert_eq!(
-            parse_container_slot_range("container.53").unwrap(),
+            parse_container_slot_range("container.53").expect("the slot range should parse"),
             (53, 53)
         );
         for invalid in [

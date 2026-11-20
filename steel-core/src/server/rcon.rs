@@ -10,7 +10,6 @@
 //! Vanilla's `RconConsoleSource` collects output into a buffer and sends it once
 //! the command finishes; that is exactly what the reply channel here models.
 
-use std::sync::Arc;
 use std::error::Error;
 use std::fmt::Display;
 use std::fmt::Formatter;
@@ -19,6 +18,7 @@ use std::io::Error;
 use std::io::ErrorKind::UnexpectedEof;
 use std::io::Result;
 use std::str::from_utf8;
+use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::behavior::blocks::FallingBlock;
 use steel_macros::block_behavior;
 use steel_registry::{
     blocks::{
@@ -12,7 +13,6 @@ use steel_registry::{
 };
 use steel_utils::{BlockPos, BlockStateId, Direction, translations};
 use text_components::TextComponent;
-use crate::behavior::blocks::FallingBlock;
 
 use crate::{
     behavior::{BlockBehavior, BlockPlaceContext, Fallable, InteractionResult, InventoryAccess},

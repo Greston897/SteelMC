@@ -12,35 +12,35 @@ use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
-use steel_protocol::packets::game::SoundSource;
-use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
-use steel_registry::sound_event::SoundEventRef;
-use steel_registry::vanilla_entity_data::WitherEntityData;
-use steel_registry::{TaggedRegistryExt as _, level_events, sound_events, vanilla_attributes};
-use steel_utils::locks::SyncMutex;
-use steel_utils::nbt::NbtValueInput as _;
-use steel_utils::{DowncastType, DowncastTypeKey};
 use steel_math::trig::cos;
 use steel_math::trig::sin;
+use steel_protocol::packets::game::SoundSource;
+use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::item_stack::ItemStack;
+use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_entities::WIND_CHARGE;
 use steel_registry::vanilla_entities::WITHER;
 use steel_registry::vanilla_entities::WITHER_SKULL;
+use steel_registry::vanilla_entity_data::WitherEntityData;
 use steel_registry::vanilla_game_rules::MOB_GRIEFING;
 use steel_registry::vanilla_items::NETHER_STAR;
+use steel_registry::{TaggedRegistryExt as _, level_events, sound_events, vanilla_attributes};
+use steel_utils::locks::SyncMutex;
+use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::types::Difficulty::Hard;
 use steel_utils::types::Difficulty::Normal;
 use steel_utils::types::Difficulty::Peaceful;
+use steel_utils::{DowncastType, DowncastTypeKey};
 
+use crate::enchantment_helper::is_immune_to_damage;
+use crate::entity::MobEffectInstance;
+use crate::entity::RemovalReason::Discarded;
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, RangedAttackGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
-use crate::enchantment_helper::is_immune_to_damage;
-use crate::entity::MobEffectInstance;
-use crate::entity::RemovalReason::Discarded;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySpawnReason, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster,
@@ -119,10 +119,9 @@ impl WitherBossEntity {
             target_selector.add_goal(
                 2,
                 NearestAttackableTargetGoal::new(true, |target, _| {
-                    !steel_registry::REGISTRY.entity_types.is_in_tag(
-                        target.entity_type(),
-                        &EntityTypeTag::WITHER_FRIENDS,
-                    )
+                    !steel_registry::REGISTRY
+                        .entity_types
+                        .is_in_tag(target.entity_type(), &EntityTypeTag::WITHER_FRIENDS)
                 }),
             );
         }
@@ -177,10 +176,7 @@ impl WitherBossEntity {
         if self.tick_count() % 20 == 0 {
             world.broadcast_to_entity_trackers(
                 self.id(),
-                CBossEvent::update_name(
-                    self.uuid(),
-                    self.display_name(),
-                ),
+                CBossEvent::update_name(self.uuid(), self.display_name()),
                 None,
             );
         }
@@ -234,6 +230,7 @@ impl WitherBossEntity {
         }
     }
 
+    #[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
     fn tick_side_heads(&self, shooter: &SharedEntity) {
         use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
         let Some(world) = self.level() else {
@@ -246,10 +243,7 @@ impl WitherBossEntity {
                 continue;
             }
             timers.0[side] = self.tick_count() + rand::random_range(10..20);
-            if matches!(
-                world.difficulty(),
-                Normal | Hard
-            ) {
+            if matches!(world.difficulty(), Normal | Hard) {
                 let previous = timers.1[side];
                 timers.1[side] += 1;
                 if previous > 15 {
@@ -278,7 +272,7 @@ impl WitherBossEntity {
                 self.fire_skull(
                     shooter,
                     side + 2,
-                    target.position() + DVec3::Y * (f64::from(target.get_eye_height()) * 0.5),
+                    target.position() + DVec3::Y * (target.get_eye_height() * 0.5),
                     false,
                 );
                 timers.0[side] = self.tick_count() + rand::random_range(40..60);
@@ -341,10 +335,9 @@ impl WitherBossEntity {
                         );
                         let state = world.get_block_state(pos);
                         if !state.is_air()
-                            && !steel_registry::REGISTRY.blocks.is_in_tag(
-                                state.get_block(),
-                                &BlockTag::WITHER_IMMUNE,
-                            )
+                            && !steel_registry::REGISTRY
+                                .blocks
+                                .is_in_tag(state.get_block(), &BlockTag::WITHER_IMMUNE)
                         {
                             destroyed = world.destroy_block_by_entity(pos, true, self) || destroyed;
                         }
@@ -565,8 +558,7 @@ impl LivingEntity for WitherBossEntity {
             })
             || (self.get_health() <= self.get_max_health() * 0.5
                 && source.direct_entity().is_some_and(|entity| {
-                    entity.is_abstract_arrow()
-                        || entity.entity_type() == &WIND_CHARGE
+                    entity.is_abstract_arrow() || entity.entity_type() == &WIND_CHARGE
                 }))
     }
 
@@ -580,7 +572,8 @@ impl LivingEntity for WitherBossEntity {
                 *countdown = 20;
             }
         }
-        for idle in &mut self.head_timers.lock().1 {
+        let mut head_timers = self.head_timers.lock();
+        for idle in &mut head_timers.1 {
             *idle += 3;
         }
         self.default_hurt_server(world, source, amount)
@@ -595,10 +588,7 @@ impl LivingEntity for WitherBossEntity {
     }
 
     fn drop_custom_death_loot(&self, _source: &DamageSource, _killed_by_player: bool) {
-        if let Some(star) = self.spawn_at_location(
-            ItemStack::new(&NETHER_STAR),
-            0.0,
-        ) {
+        if let Some(star) = self.spawn_at_location(ItemStack::new(&NETHER_STAR), 0.0) {
             star.set_age(-6000);
         }
     }
@@ -700,7 +690,7 @@ impl PathfinderMob for WitherBossEntity {
         self.fire_skull(
             shooter,
             0,
-            target.position() + DVec3::Y * (f64::from(target.get_eye_height()) * 0.5),
+            target.position() + DVec3::Y * (target.get_eye_height() * 0.5),
             rand::random::<f32>() < 0.001,
         );
     }

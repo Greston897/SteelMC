@@ -106,6 +106,10 @@ const SELF_RESULT: i32 = 0;
 /// Vanilla answers `/reload` with `commands.reload.success` on success and
 /// `commands.reload.failure` when the reloader throws; it always reports result
 /// `0` and never fails the command itself.
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn start_reload(
     context: &SteelCommandContext<CommandSource>,
 ) -> Result<ReloadSuspension, CommandSyntaxError> {

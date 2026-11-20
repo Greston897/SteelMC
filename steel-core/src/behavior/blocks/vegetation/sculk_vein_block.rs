@@ -137,6 +137,10 @@ impl SculkVeinBlock {
 
     /// Vanilla `SculkVeinBlock.attemptUseCharge`: a vein next to plain sculk inside
     /// a patch converts into sculk, which is how catalysts "grow" solid sculk.
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     fn attempt_use_charge(
         &self,
         state: BlockStateId,

@@ -1,8 +1,8 @@
 use super::{CSetChunkCenter, ChunkMap, ChunkPos, Entity, Player, PlayerChunkView};
 use crate::chunk::chunk_scheduler::PlayerTicketOperation;
+use std::sync::atomic::Ordering::Relaxed;
 use steel_registry::vanilla_game_rules;
 use steel_utils::types::GameType;
-use std::sync::atomic::Ordering::Relaxed;
 
 impl ChunkMap {
     /// Vanilla `ChunkMap#skipPlayer`: a spectator holds no distance-manager
@@ -63,19 +63,13 @@ impl ChunkMap {
         let mut last_view_guard = player.last_tracking_view.lock();
 
         let mut retired_center = None;
-        if player
-            .skip_player
-            .load(Relaxed)
-            != skip_player
-        {
+        if player.skip_player.load(Relaxed) != skip_player {
             // Vanilla flags a player `skippedPlayer` and forces the next
             // `updatePlayerStatus` to run the full path, which retires the
             // distance-manager ticket when the rule turns the player off and
             // re-adds it when the player stops being skipped. A spectator that
             // never moves would otherwise keep its old ticket forever.
-            player
-                .skip_player
-                .store(skip_player, Relaxed);
+            player.skip_player.store(skip_player, Relaxed);
             retired_center = last_view_guard.as_ref().map(|last_view| last_view.center);
             *last_view_guard = None;
         }
@@ -181,9 +175,7 @@ impl ChunkMap {
         let removed_view = last_view.take();
         // A player that leaves the world starts untracked, so the next join
         // re-runs the full ticket path even if it was a skipped spectator.
-        player
-            .skip_player
-            .store(false, Relaxed);
+        player.skip_player.store(false, Relaxed);
         {
             let mut chunk_sender = player.chunk_sender().lock();
             let mut chunk_send_epoch = player.chunk_send_epoch.lock();

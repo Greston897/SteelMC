@@ -1,11 +1,11 @@
 //! `BadOmenMobEffect` behavior.
 
 use super::MobEffectBehavior;
+use crate::entity::MobEffectInstance;
 use crate::entity::{Entity as _, LivingEntity};
 use crate::world::{World, raid};
 use steel_registry::vanilla_mob_effects::RAID_OMEN;
 use steel_utils::types::Difficulty::Peaceful;
-use crate::entity::MobEffectInstance;
 
 /// Bad omen mob effect behavior.
 ///
@@ -42,11 +42,7 @@ impl MobEffectBehavior for BadOmenBehavior {
         if world.difficulty() == Peaceful {
             return true;
         }
-        player.add_mob_effect(MobEffectInstance::with_duration(
-            RAID_OMEN,
-            600,
-            amplifier,
-        ));
+        player.add_mob_effect(MobEffectInstance::with_duration(RAID_OMEN, 600, amplifier));
         *player.raid_omen_position.lock() = Some(pos);
         false
     }

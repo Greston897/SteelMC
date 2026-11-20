@@ -226,20 +226,19 @@ pub fn build_compressed_packets(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde::Deserialize;
+    use std::collections::{BTreeMap, BTreeSet};
+
+    #[derive(Deserialize)]
+    struct Fixture {
+        source_commit: String,
+        minecraft_version: String,
+        registries: BTreeMap<String, BTreeMap<String, Vec<String>>>,
+    }
 
     #[test]
     fn every_synced_tag_matches_pinned_vanilla_membership() {
         steel_registry::init_vanilla_registry();
-        use std::collections::{BTreeMap, BTreeSet};
-
-        use serde::Deserialize;
-
-        #[derive(Deserialize)]
-        struct Fixture {
-            source_commit: String,
-            minecraft_version: String,
-            registries: BTreeMap<String, BTreeMap<String, Vec<String>>>,
-        }
 
         let fixture: Fixture =
             serde_json::from_str(include_str!("../../test_assets/26_3_synced_tags.json"))

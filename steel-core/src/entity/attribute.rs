@@ -704,7 +704,7 @@ mod tests {
     use steel_registry::{REGISTRY, init_vanilla_registry, vanilla_attributes, vanilla_entities};
 
     use super::*;
-use std::ptr::eq;
+    use std::ptr::eq;
 
     #[test]
     fn attribute_supplier_is_cached_per_entity_type() {

@@ -1,7 +1,7 @@
 use super::*;
+use crate::player::advancement::predicate::TriggerContext;
 use steel_registry::vanilla_criteria_triggers::CHANGED_DIMENSION;
 use steel_registry::vanilla_criteria_triggers::NETHER_TRAVEL;
-use crate::player::advancement::predicate::TriggerContext;
 
 impl Player {
     fn apply_post_teleport_transition(&self, post_transition: &TeleportPostTransition) {
@@ -80,17 +80,12 @@ impl Player {
             let target_dimension = new_world.key.clone();
             self.trigger_advancement_with_context(
                 &CHANGED_DIMENSION,
-                &TriggerContext::dimension(
-                    &source_dimension,
-                    &target_dimension,
-                ),
+                &TriggerContext::dimension(&source_dimension, &target_dimension),
             );
             if is_nether_dimension(&source_dimension) || is_nether_dimension(&target_dimension) {
                 self.trigger_advancement_with_context(
                     &NETHER_TRAVEL,
-                    &TriggerContext::nether_travel(
-                        position.distance(current_position),
-                    ),
+                    &TriggerContext::nether_travel(position.distance(current_position)),
                 );
             }
             self.reset(new_world, ResetReason::WorldChange);

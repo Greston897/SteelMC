@@ -12,17 +12,17 @@
 //! table in `unpackLootTable`, which is what this module mirrors.
 
 use rand::{Rng, RngExt as _};
+use simdnbt::borrow::NbtCompound;
+use simdnbt::owned::NbtCompound;
+use std::mem::take;
 use steel_registry::REGISTRY;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::loot_table::LootContext;
 use steel_registry::loot_table::LootRngSeed;
+use steel_registry::loot_table::LootTableRef;
 use steel_registry::loot_table::LootTableRegistry;
 use steel_utils::Identifier;
 use steel_utils::locks::SyncMutex;
-use simdnbt::borrow::NbtCompound;
-use simdnbt::owned::NbtCompound;
-use steel_registry::loot_table::LootTableRef;
-use std::mem::take;
 
 /// Loot state of one container, mirroring vanilla `RandomizableContainer`.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -132,11 +132,7 @@ impl RandomizableContainer {
 }
 
 /// Rolls `table` with `rng` and places the result into `items`.
-fn roll_into<R: Rng>(
-    items: &mut [ItemStack],
-    table: LootTableRef,
-    rng: &mut R,
-) {
+fn roll_into<R: Rng>(items: &mut [ItemStack], table: LootTableRef, rng: &mut R) {
     let mut ctx = LootContext::new(rng);
     let loot = table.get_random_items(&mut ctx);
     fill_from_loot(items, loot, rng);
@@ -205,10 +201,10 @@ mod tests {
     use rand::rngs::StdRng;
     use steel_registry::init_vanilla_registry;
     use steel_registry::item_stack::ItemStack;
+    use steel_registry::vanilla_items::DIRT;
+    use steel_registry::vanilla_items::SAND;
+    use steel_registry::vanilla_items::STONE;
     use steel_utils::Identifier;
-use steel_registry::vanilla_items::DIRT;
-use steel_registry::vanilla_items::SAND;
-use steel_registry::vanilla_items::STONE;
 
     fn rng() -> StdRng {
         StdRng::seed_from_u64(7)
@@ -270,11 +266,7 @@ use steel_registry::vanilla_items::STONE;
         let mut slots = vec![ItemStack::empty(); 3];
         let dirt = ItemStack::new(&DIRT);
         slots[1] = dirt.clone();
-        fill_from_loot(
-            &mut slots,
-            vec![ItemStack::new(&STONE)],
-            &mut rng(),
-        );
+        fill_from_loot(&mut slots, vec![ItemStack::new(&STONE)], &mut rng());
         assert_eq!(slots[1], dirt, "the pre-placed item survives the fill");
         assert!(!slots[0].is_empty() || !slots[2].is_empty());
     }

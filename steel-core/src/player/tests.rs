@@ -16,8 +16,8 @@ use super::{
     sleep::BedSleepingProblem,
 };
 use crate::behavior::{InteractionResult, init_behaviors};
-use crate::chunk_saver::PersistentEntity;
 use crate::bootstrap::init_globals;
+use crate::chunk_saver::PersistentEntity;
 use crate::entity::{
     DEFAULT_MAX_AIR_SUPPLY, Entity, EntitySyncedData, LivingEntity, SharedEntity,
     damage::DamageSource,
@@ -39,10 +39,6 @@ use crate::test_support::{
 use crate::world::World;
 use glam::DVec3;
 use steel_protocol::packet_traits::{CompressionInfo, EncodedPacket};
-use steel_registry::vanilla_attributes::ATTACK_DAMAGE;
-use steel_registry::vanilla_attributes::ATTACK_SPEED;
-use steel_registry::vanilla_attributes::MAX_HEALTH;
-use steel_registry::vanilla_mob_effects::BLINDNESS;
 use steel_protocol::packets::common::{
     ChatVisibility, HumanoidArm, ParticleStatus, SClientInformation,
 };
@@ -57,6 +53,10 @@ use steel_registry::packets::play::{
     C_SET_SIMULATION_DISTANCE,
 };
 use steel_registry::stat::vanilla_stat_types;
+use steel_registry::vanilla_attributes::ATTACK_DAMAGE;
+use steel_registry::vanilla_attributes::ATTACK_SPEED;
+use steel_registry::vanilla_attributes::MAX_HEALTH;
+use steel_registry::vanilla_mob_effects::BLINDNESS;
 use steel_registry::{
     RegistryHolderSet, entity_data::EntityData, init_vanilla_registry, item_stack::ItemStack,
     vanilla_attributes, vanilla_blocks, vanilla_custom_stats, vanilla_damage_types,
@@ -2028,7 +2028,7 @@ fn combat_critical_requires_full_cooldown_and_does_not_multiply_enchantment_bonu
             }
         }
         let health = victim.get_health();
-        let target: SharedEntity = victim.clone();
+        let target: SharedEntity = Arc::clone(&victim);
         assert!(attacker.attack(&target));
         let dealt = health - victim.get_health();
         assert!(
@@ -2090,7 +2090,7 @@ fn combat_sweep_requires_grounded_charged_sword_and_uses_primary_target_box() {
             }
         }
         let before = secondary.get_health();
-        let target: SharedEntity = primary.clone();
+        let target: SharedEntity = Arc::clone(&primary);
         assert!(attacker.attack(&target));
         assert!(
             (before - secondary.get_health() - expected).abs() < 0.001,
@@ -2120,7 +2120,7 @@ fn combat_melee_redirects_fireball_and_transfers_owner_without_destroying_it() {
         Arc::downgrade(&fixture.world),
     ));
     fireball.set_velocity(DVec3::new(0.0, 0.0, -1.0));
-    let target: SharedEntity = fireball.clone();
+    let target: SharedEntity = Arc::clone(&fireball);
     assert!(attacker.attack(&target));
     assert_eq!(fireball.owner_uuid(), Some(attacker.uuid()));
     assert!(fireball.velocity().distance(attacker.look_angle()) < 1.0e-6);
@@ -2149,10 +2149,7 @@ fn player_attack_dispatches_mace_smash_and_post_hit_fall_reset() {
         .attributes()
         .lock()
         .set_base_value(ATTACK_SPEED, 4.0);
-    victim
-        .attributes()
-        .lock()
-        .set_base_value(MAX_HEALTH, 100.0);
+    victim.attributes().lock().set_base_value(MAX_HEALTH, 100.0);
     victim.set_health(100.0);
     attacker.set_on_ground(false);
     attacker.set_fall_distance(6.0);
@@ -2160,7 +2157,7 @@ fn player_attack_dispatches_mace_smash_and_post_hit_fall_reset() {
     for _ in 0..30 {
         attacker.tick_attack_strength();
     }
-    let target: SharedEntity = victim.clone();
+    let target: SharedEntity = Arc::clone(&victim);
     assert!(attacker.attack(&target));
     // Vanilla: (base 6 + six-block smash bonus 18) * critical 1.5.
     assert_eq!(victim.get_health(), 64.0);

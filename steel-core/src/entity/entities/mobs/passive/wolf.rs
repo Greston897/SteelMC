@@ -16,13 +16,13 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
+use steel_registry::vanilla_criteria_triggers::TAME_ANIMAL;
 use steel_registry::vanilla_entity_data::WolfEntityData;
 use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_items};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 use uuid::Uuid;
-use steel_registry::vanilla_criteria_triggers::TAME_ANIMAL;
 
 use crate::entity::ai::goal::{
     BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
@@ -31,7 +31,6 @@ use crate::entity::ai::goal::{
 
 use crate::behavior::InteractionResult;
 use crate::entity::damage::DamageSource;
-use crate::player::advancement::predicate::TriggerContext;
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityPose, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase,
@@ -39,6 +38,7 @@ use crate::entity::{
 };
 use crate::physics::MoveResult;
 use crate::player::Player;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::world::World;
 use steel_utils::types::InteractionHand;
 
@@ -356,9 +356,7 @@ impl Mob for WolfEntity {
                 self.set_health(self.get_max_health());
                 player.trigger_advancement_with_context(
                     &TAME_ANIMAL,
-                    &TriggerContext::entity(
-                        &self.entity_type().key,
-                    ),
+                    &TriggerContext::entity(&self.entity_type().key),
                 );
             }
             player.inventory.lock().shrink_item_in_hand(hand, 1);

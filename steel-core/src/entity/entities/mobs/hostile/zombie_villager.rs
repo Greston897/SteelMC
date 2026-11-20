@@ -20,11 +20,11 @@ use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
+use steel_registry::entity_data::VillagerData;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
-use steel_registry::vanilla_entity_data::ZombieVillagerEntityData;
-use steel_registry::entity_data::VillagerData;
 use steel_registry::vanilla_criteria_triggers::CURED_ZOMBIE_VILLAGER;
+use steel_registry::vanilla_entity_data::ZombieVillagerEntityData;
 use steel_registry::{
     sound_events, vanilla_attributes, vanilla_entities, vanilla_items, vanilla_mob_effects,
 };
@@ -34,13 +34,12 @@ use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::behavior::InteractionResult;
-use crate::entity::conversion::ConversionParams;
-use crate::entity::conversion::convert_to;
-use crate::player::advancement::predicate::TriggerContext;
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
+use crate::entity::conversion::ConversionParams;
+use crate::entity::conversion::convert_to;
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::mobs::passive::VillagerEntity;
 use crate::entity::{
@@ -48,6 +47,7 @@ use crate::entity::{
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
     SharedEntity, sync_dirty_mob_effects,
 };
+use crate::player::advancement::predicate::TriggerContext;
 use steel_utils::Downcast as _;
 
 use crate::physics::MoveResult;
@@ -318,9 +318,7 @@ impl ZombieVillagerEntity {
         if let Some(player) = starter {
             player.trigger_advancement_with_context(
                 &CURED_ZOMBIE_VILLAGER,
-                &TriggerContext::entity(
-                    &vanilla_entities::ZOMBIE_VILLAGER.key,
-                ),
+                &TriggerContext::entity(&vanilla_entities::ZOMBIE_VILLAGER.key),
             );
         }
     }

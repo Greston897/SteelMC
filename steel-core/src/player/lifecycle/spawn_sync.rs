@@ -1,6 +1,6 @@
+use crate::server::local_respawn_data_for_world;
 use steel_protocol::packets::game::{CServerData, CommonPlayerSpawnInfo};
 use text_components::TextComponent;
-use crate::server::local_respawn_data_for_world;
 
 use super::{
     Arc, BlockBreakingManager, CContainerClose, CGameEvent, CRespawn, CSetChunkCacheRadius,

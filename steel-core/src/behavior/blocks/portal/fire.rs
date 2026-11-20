@@ -15,14 +15,14 @@ use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_blocks;
 use steel_registry::vanilla_damage_types;
 use steel_registry::vanilla_dimension_types;
-use steel_utils::axis::Axis;
-use steel_utils::types::UpdateFlags;
-use steel_utils::{BlockPos, BlockStateId, Direction};
 use steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER;
+use steel_utils::axis::Axis;
 use steel_utils::types::Difficulty::Easy;
 use steel_utils::types::Difficulty::Hard;
 use steel_utils::types::Difficulty::Normal;
 use steel_utils::types::Difficulty::Peaceful;
+use steel_utils::types::UpdateFlags;
+use steel_utils::{BlockPos, BlockStateId, Direction};
 
 use crate::behavior::block::BlockBehavior;
 use crate::behavior::blocks::TntBlock;
@@ -228,8 +228,7 @@ impl FireBlock {
     /// otherwise a non-spectator player has to be strictly closer to the block
     /// than the configured radius.
     fn can_spread_fire_around(world: &Arc<World>, pos: BlockPos) -> bool {
-        let radius = world
-            .get_game_rule(&FIRE_SPREAD_RADIUS_AROUND_PLAYER);
+        let radius = world.get_game_rule(&FIRE_SPREAD_RADIUS_AROUND_PLAYER);
         if radius == -1 {
             return true;
         }
@@ -303,6 +302,7 @@ impl BlockBehavior for FireBlock {
     /// check, the `infiniburn` check, rain extinguishing, age advancement,
     /// adjacent block burn-out (including TNT ignition), and 3D neighbour fire
     /// spread.
+    #[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
     fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
         world.schedule_block_tick_default(pos, self.block, Self::tick_delay());
 

@@ -11,12 +11,14 @@
 //! * sitting poses and the two-passenger saddle are not implemented; the
 //!   `last_pose_change_tick` synced field is kept.
 
-use std::sync::Weak;
 use std::sync::Arc;
+use std::sync::Weak;
 
 use glam::DVec3;
 use simdnbt::{borrow, owned};
 use steel_macros::entity_behavior;
+use steel_math::trig::cos;
+use steel_math::trig::sin;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::EntityTypeRef;
@@ -28,22 +30,20 @@ use steel_registry::vanilla_entity_data::CamelEntityData;
 use steel_registry::vanilla_game_events;
 use steel_registry::vanilla_item_tags::ItemTag;
 use steel_utils::locks::SyncMutex;
-use steel_utils::{DowncastType, DowncastTypeKey};
-use steel_math::trig::cos;
-use steel_math::trig::sin;
 use steel_utils::types::InteractionHand;
+use steel_utils::{DowncastType, DowncastTypeKey};
 
+use crate::behavior::InteractionResult;
+use crate::behavior::InteractionResult::Pass;
+use crate::behavior::InteractionResult::Success;
 use crate::entity::ai::goal::{
     FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
     WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
-use crate::entity::mount::{SharedMountInventory, open_mount_menu};
-use crate::behavior::InteractionResult;
-use crate::behavior::InteractionResult::Pass;
-use crate::behavior::InteractionResult::Success;
 use crate::entity::living_entity::player_jump_pending_scale;
 use crate::entity::mount::shared_inventory;
+use crate::entity::mount::{SharedMountInventory, open_mount_menu};
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityDimensions, EntityEventSource, EntityMovementEmission, EntitySyncedData,
@@ -386,9 +386,8 @@ impl LivingEntity for CamelEntity {
     fn on_player_jump(&self, jump_amount: i32) {
         if self.is_saddled() && self.dash_cooldown() <= 0 && self.on_ground() {
             let amount = jump_amount.max(0);
-            self.living_base().set_jump_pending_scale(
-                player_jump_pending_scale(amount),
-            );
+            self.living_base()
+                .set_jump_pending_scale(player_jump_pending_scale(amount));
         }
     }
 
@@ -484,11 +483,7 @@ impl Mob for CamelEntity {
     /// Vanilla `AbstractHorse.mobInteract`: a tamed mount opens its inventory on
     /// a secondary use, everything else falls back to the shared animal
     /// interaction (feeding, saddling and riding).
-    fn mob_interact(
-        &self,
-        player: &Player,
-        hand: InteractionHand,
-    ) -> InteractionResult {
+    fn mob_interact(&self, player: &Player, hand: InteractionHand) -> InteractionResult {
         if !Entity::is_vehicle(self)
             && !LivingEntity::is_baby(self)
             && self.is_tamed()

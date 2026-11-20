@@ -17,6 +17,7 @@ use glam::DVec3;
 use serde::{Deserialize, Serialize};
 
 use crate::chunk::heightmap::HeightmapType;
+use crate::entity::entities::WanderingTraderEntity;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
 use crate::entity::{Entity, SharedEntity, spawn_entity};
 use crate::world::{LevelReader, World};
@@ -24,7 +25,6 @@ use steel_registry::RegistryExt as _;
 use steel_registry::{REGISTRY, entity_type::EntityTypeRef, vanilla_game_rules};
 use steel_utils::Downcast as _;
 use steel_utils::{BlockPos, Identifier};
-use crate::entity::entities::WanderingTraderEntity;
 
 /// Vanilla `WanderingTraderSpawner.SPAWN_DELAY`: the counter is reset to this.
 pub const SPAWN_DELAY_TICKS: i32 = 24_000;
@@ -160,6 +160,10 @@ impl WanderingTraderSpawner {
 
     /// Vanilla `tryToSpawnWanderingTrader`: one in ten attempts proceeds past
     /// the player pick, then ten surface positions are tried.
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     fn try_spawn_trader(&self, world: &Arc<World>, reference: DVec3) -> bool {
         // Vanilla `nextInt(10) == 0`.
         if rand::random_range(0..10) != 0 {
@@ -195,10 +199,7 @@ impl WanderingTraderSpawner {
             if let Ok(entity) = spawn_entity(world, request) {
                 // Vanilla `WanderingTraderSpawner`: the trader leaves after
                 // `DESPAWN_DELAY` ticks unless somebody is trading with it.
-                if let Some(trader) = entity
-                    .as_ref()
-                    .downcast_ref::<WanderingTraderEntity>()
-                {
+                if let Some(trader) = entity.as_ref().downcast_ref::<WanderingTraderEntity>() {
                     trader.set_despawn_delay(natural_despawn_delay());
                     // Vanilla `WanderingTraderSpawner.spawn`: `tryToSpawnLlamaFor`
                     // twice, each llama leashed to the trader.

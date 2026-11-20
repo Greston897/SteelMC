@@ -243,9 +243,9 @@ impl BlockBehavior for TntBlock {
         // satisfy the Adventure-mode check.
         let pickup_stack = projectile.pickup_item_stack();
         let can_break = || {
-            pickup_stack.as_ref().is_some_and(|stack| {
-                can_break(stack, world, hit.block_pos)
-            })
+            pickup_stack
+                .as_ref()
+                .is_some_and(|stack| can_break(stack, world, hit.block_pos))
         };
 
         if Self::prime_with_source(world, hit.block_pos, living_owner, can_break) {

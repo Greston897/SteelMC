@@ -1,8 +1,8 @@
 //! Vanilla `/effect` command.
 
+use steel_registry::mob_effect::MobEffectRef;
 use steel_utils::Identifier;
 use text_components::TextComponent;
-use steel_registry::mob_effect::MobEffectRef;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
@@ -13,8 +13,8 @@ use super::super::{
     registration::CommandRegistration,
 };
 use crate::entity::MobEffectInstance;
-use steel_registry::{REGISTRY, RegistryExt as _};
 use crate::entity::SharedEntity;
+use steel_registry::{REGISTRY, RegistryExt as _};
 
 /// Vanilla `MobEffectInstance.INFINITE_DURATION`.
 const INFINITE_DURATION: i32 = -1;
@@ -149,6 +149,10 @@ fn clear_one(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
     Ok(cleared)
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn clear_self(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let Some(entity) = context.source().entity() else {
         return Ok(0);

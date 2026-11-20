@@ -1,18 +1,18 @@
 //! Item behavior trait and registry.
 
+use crate::player::advancement::predicate::TriggerContext;
 use crate::player::player_inventory::Prediction;
 use std::sync::Arc;
-use crate::player::advancement::predicate::TriggerContext;
 
 use std::borrow::Cow;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::data_components::Consumable;
 use steel_registry::data_components::components::OminousBottleAmplifier;
-use steel_registry::vanilla_criteria_triggers::CONSUME_ITEM;
 use steel_registry::data_components::vanilla_components::{
     BLOCKS_ATTACKS, CONSUMABLE, FOOD, KINETIC_WEAPON, OMINOUS_BOTTLE_AMPLIFIER,
     SUSPICIOUS_STEW_EFFECTS, USE_REMAINDER,
 };
+use steel_registry::vanilla_criteria_triggers::CONSUME_ITEM;
 
 use steel_registry::data_components::vanilla_components::ITEM_NAME;
 use steel_registry::item_stack::ItemStack;

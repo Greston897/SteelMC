@@ -7,6 +7,7 @@ use steel_core::{
         RconConfig, ResourcePackConfig, RuntimeConfig, ServerLinks, validate_login_security,
     },
 };
+use steel_utils::threading::{available_worker_threads, effective_cores};
 
 const fn default_spam_threshold_seconds() -> i32 {
     DEFAULT_SPAM_THRESHOLD_SECONDS
@@ -129,10 +130,7 @@ impl ServerConfig {
             // sizes its pools for more than four cores, even when
             // `config.toml` still says sixteen. `0` means "use whatever the
             // container allows".
-            cores: steel_utils::threading::effective_cores(
-                self.threads.cores,
-                steel_utils::threading::available_worker_threads(),
-            ),
+            cores: effective_cores(self.threads.cores, available_worker_threads()),
             compression: self.compression,
             server_links: self.server_links,
             resource_pack: self.resource_pack,

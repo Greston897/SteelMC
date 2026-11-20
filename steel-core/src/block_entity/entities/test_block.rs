@@ -12,9 +12,9 @@ use simdnbt::owned::NbtCompound;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, TestBlockMode};
 use steel_registry::vanilla_block_entity_types;
+use steel_registry::vanilla_blocks::TEST_BLOCK;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
-use steel_registry::vanilla_blocks::TEST_BLOCK;
 use steel_utils::types::UpdateFlags;
 
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
@@ -125,11 +125,7 @@ impl TestBlockEntity {
         let mode = self.state.lock().mode;
         let updated = state.set_value(&BlockStateProperties::TEST_BLOCK_MODE, mode);
         if updated != state {
-            world.set_block(
-                pos,
-                updated,
-                UpdateFlags::UPDATE_CLIENTS,
-            );
+            world.set_block(pos, updated, UpdateFlags::UPDATE_CLIENTS);
         }
     }
 

@@ -18,11 +18,11 @@ use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
+use steel_registry::vanilla_damage_types::MAGIC;
 use steel_registry::vanilla_entity_data::GuardianEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
-use steel_registry::vanilla_damage_types::MAGIC;
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,

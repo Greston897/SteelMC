@@ -210,9 +210,8 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
         "duration" => context
             .duration
             .is_none_or(|duration| matches_number_range(expected, f64::from(duration))),
-        // Nested conditions (e.g. `effects_changed`), evaluated recursively.
-        "conditions" => true,
-        // Unknown predicates are ignored: vanilla deserialization is lenient and
+        // Nested conditions (e.g. `effects_changed`), evaluated recursively, and
+        // unknown predicates are ignored: vanilla deserialization is lenient and
         // an unrecognised key would be a data-pack field Steel does not model.
         _ => true,
     }

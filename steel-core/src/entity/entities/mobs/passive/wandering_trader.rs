@@ -17,10 +17,6 @@ use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
-use steel_registry::vanilla_entity_data::WanderingTraderEntityData;
-use steel_registry::{sound_events, vanilla_attributes};
-use steel_utils::locks::SyncMutex;
-use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey};
 use steel_registry::vanilla_entities::EVOKER;
 use steel_registry::vanilla_entities::ILLUSIONER;
 use steel_registry::vanilla_entities::PILLAGER;
@@ -28,6 +24,10 @@ use steel_registry::vanilla_entities::VEX;
 use steel_registry::vanilla_entities::VINDICATOR;
 use steel_registry::vanilla_entities::ZOGLIN;
 use steel_registry::vanilla_entities::ZOMBIE;
+use steel_registry::vanilla_entity_data::WanderingTraderEntityData;
+use steel_registry::{sound_events, vanilla_attributes};
+use steel_utils::locks::SyncMutex;
+use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     AvoidEntityGoal, FloatGoal, InteractGoal, LookAtPlayerGoal, PanicGoal,

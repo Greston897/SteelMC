@@ -29,8 +29,8 @@ use super::super::{
 use steel_registry::RegistryExt as _;
 use steel_registry::attribute::AttributeRef;
 
-use crate::entity::attribute::{AttributeModifier, AttributeModifierOperation};
 use crate::entity::SharedEntity;
+use crate::entity::attribute::{AttributeModifier, AttributeModifierOperation};
 
 const TARGET_ARGUMENT: &str = "target";
 const ATTRIBUTE_ARGUMENT: &str = "attribute";

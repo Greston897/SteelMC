@@ -10,17 +10,18 @@ use std::ptr;
 use std::sync::{Arc, Weak};
 
 use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
+use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::game_events::GameEventRef;
-use steel_registry::{level_events, vanilla_game_rules};
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_entities::PLAYER;
 use steel_registry::vanilla_game_events::ENTITY_DIE;
 use steel_registry::vanilla_game_events::SCULK_SENSOR_TENDRILS_CLICKING;
 use steel_registry::vanilla_game_events::SHRIEK;
+use steel_registry::{level_events, vanilla_game_rules};
 use steel_registry::{
     sound_events, vanilla_block_entity_types, vanilla_blocks, vanilla_entities, vanilla_mob_effects,
 };
@@ -31,9 +32,9 @@ use steel_utils::{
     locks::SyncMutex,
 };
 
+use crate::block_entity::entities::sculk_sensor::is_vibration_occluded;
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::warden_spawn_tracker::MAX_WARNING_LEVEL;
-use crate::block_entity::entities::sculk_sensor::is_vibration_occluded;
 use crate::entity::{
     Entity, EntitySpawnReason, LivingEntity as _, MobEffectInstance, WardenSpawnTracker, spawn_util,
 };
@@ -152,9 +153,7 @@ impl GameEventListener for SculkCatalystListener {
                     }
                     let target = origin.offset(dx, dy, dz);
                     let current = world.get_block_state(target);
-                    if current
-                        .get_block()
-                        .has_tag(&BlockTag::SCULK_REPLACEABLE)
+                    if current.get_block().has_tag(&BlockTag::SCULK_REPLACEABLE)
                         && world.get_block_state(target.above()).is_air()
                     {
                         world.set_block(target, sculk_state, UpdateFlags::UPDATE_ALL);
@@ -260,6 +259,10 @@ impl SculkShriekerBlockEntity {
     /// Vanilla reads `can_summon` from the block state, so a shrieker placed by a
     /// player (or harvested and replaced) can never summon, even at level 4.
     #[must_use]
+    #[expect(
+        clippy::unused_self,
+        reason = "public API mirrors the vanilla signature"
+    )]
     pub fn can_summon(&self, world: &Arc<World>, pos: BlockPos) -> bool {
         world
             .get_block_state(pos)
@@ -346,6 +349,10 @@ impl SculkShriekerBlockEntity {
 
     /// Vanilla `SculkShriekerBlockEntity.shriek`: the animation, the tone and the
     /// game event, without touching the warning level.
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     fn shriek(&self, world: &Arc<World>, pos: BlockPos) {
         let state = world.get_block_state(pos);
         if ptr::eq(state.get_block(), &raw const vanilla_blocks::SCULK_SHRIEKER) {
@@ -363,11 +370,7 @@ impl SculkShriekerBlockEntity {
         world.level_event(level_events::PARTICLES_SCULK_SHRIEK, pos, 0, None);
         // Vanilla `shriek` also emits the `SHRIEK` game event so sculk sensors
         // and catalysts react to it.
-        world.game_event(
-            &SHRIEK,
-            pos,
-            &GameEventContext::new(None, None),
-        );
+        world.game_event(&SHRIEK, pos, &GameEventContext::new(None, None));
     }
 
     /// Vanilla `SculkShriekerBlockEntity.tryRespond`, called when the shrieking
@@ -437,11 +440,7 @@ fn block_center(pos: BlockPos) -> glam::DVec3 {
 }
 
 /// Every player within `radius` of `center`, matching vanilla's sphere test.
-fn players_near(
-    world: &Arc<World>,
-    center: glam::DVec3,
-    radius: f64,
-) -> Vec<Arc<Player>> {
+fn players_near(world: &Arc<World>, center: glam::DVec3, radius: f64) -> Vec<Arc<Player>> {
     let reach = WorldAabb::new(
         center.x - radius,
         center.y - radius,
@@ -494,11 +493,7 @@ impl GameEventListener for SculkShriekerListener {
         if event.key != SCULK_SENSOR_TENDRILS_CLICKING.key {
             return false;
         }
-        if is_vibration_occluded(
-            world,
-            source_pos,
-            block_center(self.position),
-        ) {
+        if is_vibration_occluded(world, source_pos, block_center(self.position)) {
             return false;
         }
         let Some(block_entity) = world.get_block_entity(self.position) else {
@@ -526,7 +521,7 @@ impl BlockEntity for SculkShriekerBlockEntity {
     }
 
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
-        let view: simdnbt::borrow::NbtCompound<'_, '_> = nbt.into();
+        let view: BorrowedNbtCompoundView<'_, '_> = nbt.into();
         *self.warning_level.lock() = view.int("warning_level").unwrap_or(0);
     }
 

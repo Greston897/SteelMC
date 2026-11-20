@@ -18,18 +18,19 @@ use smallvec::SmallVec;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, Direction};
 use steel_registry::data_components::vanilla_components::COMPOSTABLE;
-use steel_registry::vanilla_blocks::COMPOSTER;
-use steel_registry::vanilla_items::BONE_MEAL;
 use steel_registry::data_components::{
     DataComponentMap, SeededContainerLoot, vanilla_components::CONTAINER_LOOT,
 };
 use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_blocks::COMPOSTER;
+use steel_registry::vanilla_items::BONE_MEAL;
 use steel_registry::{vanilla_block_entity_types, vanilla_entities};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{
     BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, WorldAabb,
 };
 
+use crate::behavior::blocks::ComposterBlock;
 use crate::block_entity::randomizable_container::RandomizableContainer;
 use crate::block_entity::{BlockEntity, BlockEntityBase, ImplicitComponentGetter};
 use crate::entity::entities::objects::items::ItemEntity;
@@ -37,7 +38,6 @@ use crate::entity::{Entity as _, RemovalReason};
 use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef, SharedContainer};
 use crate::world::World;
-use crate::behavior::blocks::ComposterBlock;
 
 /// Number of slots in a hopper.
 pub const HOPPER_SLOTS: usize = 5;
@@ -351,9 +351,7 @@ impl HopperBlockEntity {
     pub fn try_move_items(&self, world: &World, pos: BlockPos) -> bool {
         let facing = self.facing();
         let destination_pos = pos.relative(facing);
-        if world.get_block_state(destination_pos).get_block()
-            == &COMPOSTER
-        {
+        if world.get_block_state(destination_pos).get_block() == &COMPOSTER {
             // Composter input containers expose only their top face.
             if facing != Direction::Down {
                 return false;
@@ -363,7 +361,11 @@ impl HopperBlockEntity {
             };
             let candidate = {
                 let hopper = self.container.lock();
-                hopper.items.iter().enumerate().find(|(_, item)| !item.is_empty() && item.get(COMPOSTABLE).is_some())
+                hopper
+                    .items
+                    .iter()
+                    .enumerate()
+                    .find(|(_, item)| !item.is_empty() && item.get(COMPOSTABLE).is_some())
                     .map(|(slot, item)| (slot, item.copy_with_count(1)))
             };
             let Some((slot, item)) = candidate else {
@@ -698,7 +700,7 @@ mod tests {
     use crate::inventory::container::SimpleContainer;
 
     use super::*;
-use std::io::Cursor;
+    use std::io::Cursor;
 
     fn test_hopper() -> HopperBlockEntity {
         init_vanilla_registry();
@@ -733,8 +735,12 @@ use std::io::Cursor;
                 vanilla_blocks::SHULKER_BOX.default_state(),
                 UpdateFlags::UPDATE_ALL,
             );
-            let entity = world.get_block_entity(pos).unwrap();
-            let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
+            let entity = world
+                .get_block_entity(pos)
+                .expect("the block entity should exist");
+            let hopper = entity
+                .downcast_ref::<HopperBlockEntity>()
+                .expect("the block entity should have the expected type");
             for item in [&vanilla_items::SHULKER_BOX, &vanilla_items::RED_SHULKER_BOX] {
                 hopper.container.lock().set_item(0, ItemStack::new(item));
                 assert!(!hopper.try_move_items(world, pos));
@@ -749,9 +755,9 @@ use std::io::Cursor;
             assert_eq!(hopper.container.lock().get_item(1).count(), 2);
             let target = world
                 .get_block_entity(destination)
-                .unwrap()
+                .expect("the block entity should exist")
                 .container_ref()
-                .unwrap();
+                .expect("the container should be present");
             assert!(target.lock().get_item(0).is(&vanilla_items::STONE));
             assert_eq!(target.lock().get_item(0).count(), 1);
         }
@@ -782,8 +788,12 @@ use std::io::Cursor;
                 vanilla_blocks::JUKEBOX.default_state(),
                 UpdateFlags::UPDATE_ALL,
             );
-            let entity = world.get_block_entity(pos).unwrap();
-            let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
+            let entity = world
+                .get_block_entity(pos)
+                .expect("the block entity should exist");
+            let hopper = entity
+                .downcast_ref::<HopperBlockEntity>()
+                .expect("the block entity should have the expected type");
             hopper
                 .container
                 .lock()
@@ -796,10 +806,12 @@ use std::io::Cursor;
             assert!(hopper.try_move_items(world, pos));
             assert!(hopper.container.lock().get_item(1).is_empty());
             assert_eq!(hopper.container.lock().get_item(0).count(), 3);
-            let entity = world.get_block_entity(target_pos).unwrap();
+            let entity = world
+                .get_block_entity(target_pos)
+                .expect("the block entity should exist");
             let jukebox = entity
                 .downcast_ref::<super::super::JukeboxBlockEntity>()
-                .unwrap();
+                .expect("the block entity should have the expected type");
             assert!(jukebox.is_record_playing());
             assert!(
                 world
@@ -814,8 +826,12 @@ use std::io::Cursor;
                 vanilla_blocks::HOPPER.default_state(),
                 UpdateFlags::UPDATE_ALL,
             );
-            let output_entity = world.get_block_entity(bottom).unwrap();
-            let output = output_entity.downcast_ref::<HopperBlockEntity>().unwrap();
+            let output_entity = world
+                .get_block_entity(bottom)
+                .expect("the block entity should exist");
+            let output = output_entity
+                .downcast_ref::<HopperBlockEntity>()
+                .expect("the block entity should have the expected type");
             for slot in 0..HOPPER_SLOTS {
                 output
                     .container

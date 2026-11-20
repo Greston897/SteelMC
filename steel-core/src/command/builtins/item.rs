@@ -5,10 +5,10 @@
 use std::borrow::Cow;
 use std::sync::Arc;
 
+use steel_registry::item_stack::ItemStack;
 use steel_utils::Identifier;
 use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
-use steel_registry::item_stack::ItemStack;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
@@ -18,10 +18,10 @@ use super::super::{
     },
     registration::CommandRegistration,
 };
+use crate::inventory::lock::ContainerRef;
 use crate::inventory::prelude::*;
 use crate::player::Player;
 use crate::player::player_inventory::PlayerInventory;
-use crate::inventory::lock::ContainerRef;
 
 type Builder = CommandNodeBuilder<CommandSource, SteelCommandRuntime>;
 
@@ -174,11 +174,7 @@ fn replace(
 }
 
 /// Writes one slot of a player inventory, reporting whether it succeeded.
-fn set_player_slot(
-    player: &Arc<Player>,
-    slot: usize,
-    stack: ItemStack,
-) -> bool {
+fn set_player_slot(player: &Arc<Player>, slot: usize, stack: ItemStack) -> bool {
     player.inventory.lock().set_item(slot, stack);
     true
 }

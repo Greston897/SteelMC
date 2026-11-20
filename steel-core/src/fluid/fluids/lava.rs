@@ -14,16 +14,16 @@ use steel_registry::level_events;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
 use steel_registry::vanilla_blocks;
+use steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER;
 use steel_registry::vanilla_game_rules::LAVA_SOURCE_CONVERSION;
 use steel_registry::vanilla_items;
 use steel_utils::BlockPos;
 use steel_utils::BlockStateId;
 use steel_utils::types::UpdateFlags;
-use steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER;
 
+use crate::behavior::blocks::FireBlock;
 use crate::entity::{Entity, InsideBlockEffectCollector, InsideBlockEffectType};
 use crate::fluid::{FlowingFluid, FluidBehavior, get_flow as flowing_fluid_flow};
-use crate::behavior::blocks::FireBlock;
 use crate::fluid::{
     FluidRef, FluidState, FluidStateExt, get_fluid_state, get_height, is_lava_fluid,
     is_water_fluid, lava_id, liquid_block_state,
@@ -98,10 +98,7 @@ impl FluidBehavior for LavaFluid {
         // `fire_spread_radius_around_player` is negative, otherwise a random
         // nearby air block over a flammable neighbour catches fire on a 1-in-3
         // roll.
-        if world
-            .get_game_rule(&FIRE_SPREAD_RADIUS_AROUND_PLAYER)
-            < 0
-        {
+        if world.get_game_rule(&FIRE_SPREAD_RADIUS_AROUND_PLAYER) < 0 {
             return;
         }
 

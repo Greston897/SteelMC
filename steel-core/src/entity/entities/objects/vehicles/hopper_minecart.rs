@@ -397,13 +397,13 @@ impl AbstractMinecart for HopperMinecartEntity {
 
 #[cfg(test)]
 mod tests {
+    use simdnbt::borrow::read_compound;
     use steel_registry::init_vanilla_registry;
     use steel_registry::vanilla_entities;
-use simdnbt::borrow::read_compound;
-use steel_registry::vanilla_items::STONE;
+    use steel_registry::vanilla_items::STONE;
 
     use super::*;
-use std::io::Cursor;
+    use std::io::Cursor;
 
     fn cart() -> HopperMinecartEntity {
         HopperMinecartEntity::new(
@@ -454,7 +454,7 @@ use std::io::Cursor;
         nbt.write(&mut bytes);
         let mut cursor = Cursor::new(bytes.as_slice());
         let borrowed = read_compound(&mut cursor).expect("compound");
-        let view: simdnbt::borrow::NbtCompound<'_, '_> = (&borrowed).into();
+        let view: BorrowedNbtCompoundView<'_, '_> = (&borrowed).into();
         assert_eq!(view.int("TransferCooldown"), Some(5));
     }
 

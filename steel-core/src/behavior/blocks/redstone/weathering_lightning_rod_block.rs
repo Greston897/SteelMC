@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
-use steel_utils::{BlockPos, BlockStateId, Direction};
 use steel_utils::types::UpdateFlags;
+use steel_utils::{BlockPos, BlockStateId, Direction};
 
 use crate::{
     behavior::{

@@ -6,12 +6,12 @@ use steel_macros::block_behavior;
 use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
-use steel_registry::item_stack::ItemStack;
-use steel_registry::vanilla_criteria_triggers::BEE_NEST_DESTROYED;
 use steel_registry::blocks::properties::{
     BlockStateProperties, Direction, EnumProperty, IntProperty,
 };
+use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_block_entity_types;
+use steel_registry::vanilla_criteria_triggers::BEE_NEST_DESTROYED;
 use steel_registry::{sound_events, vanilla_blocks, vanilla_items};
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _};
@@ -25,10 +25,10 @@ use crate::block_entity::entities::BeehiveBlockEntity;
 use crate::block_entity::{BLOCK_ENTITIES, BlockEntityTicker};
 use crate::entity::Entity as _;
 use crate::player::Player;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::player::player_inventory::Prediction;
 use crate::world::World;
 use steel_utils::types::InteractionHand;
-use crate::player::advancement::predicate::TriggerContext;
 
 /// Behavior for beehive and bee nest blocks.
 ///
@@ -114,10 +114,7 @@ impl BeehiveBlock {
             Some(player.id()),
         );
         // Vanilla drops one item entity containing three honeycombs.
-        world.drop_item_stack(
-            pos,
-            ItemStack::with_count(&vanilla_items::HONEYCOMB, 3),
-        );
+        world.drop_item_stack(pos, ItemStack::with_count(&vanilla_items::HONEYCOMB, 3));
         hive.on_honey_harvested(state, world, pos, 0, false);
     }
 
@@ -282,15 +279,9 @@ impl BlockBehavior for BeehiveBlock {
             })
             .is_some_and(|occupants| occupants > 0);
         Self::release_bees(world, pos);
-        let mut context = TriggerContext::block(
-            &state.get_block().key,
-            None,
-        );
+        let mut context = TriggerContext::block(&state.get_block().key, None);
         context.bees_inside = Some(bees_inside);
-        player.trigger_advancement_with_context(
-            &BEE_NEST_DESTROYED,
-            &context,
-        );
+        player.trigger_advancement_with_context(&BEE_NEST_DESTROYED, &context);
     }
 
     fn random_tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {

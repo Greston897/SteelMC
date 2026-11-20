@@ -7,6 +7,7 @@
 //! Charged skulls synchronize their blue variant and cap destructible block
 //! resistance; both block and entity impacts explode.
 
+use crate::enchantment_helper::EnchantmentPostAttackContext;
 use std::sync::{Arc, Weak};
 
 use glam::DVec3;
@@ -15,30 +16,30 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::EntityTypeRef;
-use steel_registry::vanilla_damage_types;
-use steel_registry::vanilla_entity_data::WitherSkullEntityData;
-use steel_registry::vanilla_mob_effects;
-use steel_utils::locks::SyncMutex;
-use steel_utils::nbt::NbtValueInput as _;
-use steel_utils::{DowncastType, DowncastTypeKey};
 use steel_registry::fluid::FluidState;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::particle_type::ParticleData;
 use steel_registry::vanilla_block_tags::BlockTag;
+use steel_registry::vanilla_damage_types;
+use steel_registry::vanilla_entity_data::WitherSkullEntityData;
+use steel_registry::vanilla_mob_effects;
 use steel_registry::vanilla_particle_types::BUBBLE;
 use steel_registry::vanilla_particle_types::SMOKE;
+use steel_utils::locks::SyncMutex;
+use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::types::Difficulty::Hard;
 use steel_utils::types::Difficulty::Normal;
+use steel_utils::{DowncastType, DowncastTypeKey};
 
-use crate::entity::damage::DamageSource;
 use crate::enchantment_helper::do_post_attack_effects_with_item_source;
-use crate::world::Explosion;
-use crate::world::explosion::ExplosionDamageCalculator;
+use crate::entity::damage::DamageSource;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntitySyncedData, MobEffectInstance, Projectile,
     ProjectileBase, ProjectileHit, RemovalReason, SharedEntity,
 };
+use crate::world::Explosion;
 use crate::world::World;
+use crate::world::explosion::ExplosionDamageCalculator;
 use crate::world::explosion::{ExplosionInteraction, ExplosionOptions};
 
 /// Vanilla `WitherSkull` impact damage.
@@ -93,7 +94,7 @@ impl WitherSkullEntity {
         }
     }
 
-    /// Blue skull variant, carried by vanilla DATA_DANGEROUS and NBT.
+    /// Blue skull variant, carried by vanilla `DATA_DANGEROUS` and NBT.
     pub fn set_dangerous(&self, dangerous: bool) {
         self.entity_data.lock().dangerous.set(dangerous);
     }
@@ -165,9 +166,7 @@ impl Entity for WitherSkullEntity {
         {
             for _ in 0..4 {
                 world.send_particles(
-                    ParticleData::simple(
-                        &BUBBLE,
-                    ),
+                    ParticleData::simple(&BUBBLE),
                     self.position() - movement * 0.25,
                     0,
                     movement,
@@ -205,9 +204,7 @@ impl Entity for WitherSkullEntity {
             Arc::clone(&self).hit_target_or_deflect_self(&hit);
         }
         world.send_particles(
-            ParticleData::simple(
-                &SMOKE,
-            ),
+            ParticleData::simple(&SMOKE),
             self.position() + DVec3::new(0.0, 0.5, 0.0),
             0,
             DVec3::ZERO,
@@ -289,10 +286,7 @@ impl Projectile for WitherSkullEntity {
                         if let Some(owner) = living_owner {
                             if entity.is_alive() {
                                 let context =
-                                    crate::enchantment_helper::EnchantmentPostAttackContext::new(
-                                        &hit.entity,
-                                        &source,
-                                    );
+                                    EnchantmentPostAttackContext::new(&hit.entity, &source);
                                 do_post_attack_effects_with_item_source(
                                     &world,
                                     entity,
@@ -348,10 +342,9 @@ impl ExplosionDamageCalculator for ChargedSkullCalculator {
         let resistance = DefaultExplosionDamageCalculator
             .block_explosion_resistance(explosion, world, pos, state, fluid);
         if !state.is_air()
-            && !steel_registry::REGISTRY.blocks.is_in_tag(
-                state.get_block(),
-                &BlockTag::WITHER_IMMUNE,
-            )
+            && !steel_registry::REGISTRY
+                .blocks
+                .is_in_tag(state.get_block(), &BlockTag::WITHER_IMMUNE)
         {
             resistance.map(|value| value.min(0.8))
         } else {

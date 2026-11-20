@@ -5,9 +5,9 @@
 //! Named deterministic `Xoroshiro128++`-style sequences are stored per sequence
 //! identifier so `/random reset` reproduces exact roll streams.
 
+use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash as _, Hasher as _};
 use std::sync::LazyLock;
-use std::collections::hash_map::DefaultHasher;
 
 use rand::rngs::StdRng;
 use rand::{RngExt as _, SeedableRng as _};

@@ -24,16 +24,16 @@ use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{PanicGoal, RandomSwimmingGoal};
 use crate::entity::ai::path::PathType;
-use crate::entity::registry::SpawnRule;
 use crate::entity::damage::DamageSource;
 use crate::entity::living_entity::player_jump_pending_scale;
-use crate::player::Player;
+use crate::entity::registry::SpawnRule;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityDimensions, EntityEventSource,
     EntityMovementEmission, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase,
     PathfinderMob, SharedEntity,
 };
 use crate::physics::MoveResult;
+use crate::player::Player;
 use crate::world::World;
 use crate::world::game_event::GameEventContext;
 
@@ -347,9 +347,8 @@ impl LivingEntity for NautilusEntity {
             return;
         }
         let amount = jump_amount.max(0);
-        self.living_base().set_jump_pending_scale(
-            player_jump_pending_scale(amount),
-        );
+        self.living_base()
+            .set_jump_pending_scale(player_jump_pending_scale(amount));
     }
 
     /// Vanilla `AbstractNautilus.tickRidden`: resolve a stored charge into
@@ -624,9 +623,8 @@ impl LivingEntity for ZombieNautilusEntity {
             return;
         }
         let amount = jump_amount.max(0);
-        self.living_base().set_jump_pending_scale(
-            player_jump_pending_scale(amount),
-        );
+        self.living_base()
+            .set_jump_pending_scale(player_jump_pending_scale(amount));
     }
 
     /// Vanilla `AbstractNautilus.tickRidden`, inherited by the zombie species.

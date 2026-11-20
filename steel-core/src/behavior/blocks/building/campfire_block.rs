@@ -2,15 +2,15 @@ use std::sync::{Arc, Weak};
 
 use steel_macros::block_behavior;
 use steel_registry::block_entity_type::BlockEntityTypeRef;
-use steel_registry::level_events::SOUND_EXTINGUISH_FIRE;
-use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::blocks::properties::{
     BlockStateProperties, BoolProperty, Direction, EnumProperty,
 };
 use steel_registry::blocks::{BlockRef, block_state_ext::BlockStateExt as _};
 use steel_registry::fluid::FluidState;
+use steel_registry::level_events::SOUND_EXTINGUISH_FIRE;
 use steel_registry::recipe::{SingleItemRecipeInput, vanilla_recipe_types};
 use steel_registry::vanilla_damage_types;
+use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{
     REGISTRY, sound_events, vanilla_block_entity_types, vanilla_block_tags::BlockTag,
     vanilla_blocks, vanilla_custom_stats, vanilla_fluids, vanilla_game_events,
@@ -21,9 +21,9 @@ use steel_utils::{
 };
 
 use crate::behavior::block::schedule_water_tick_if_waterlogged;
-use crate::player::Player;
 use crate::inventory::equipment::EquipmentSlot::MainHand;
 use crate::inventory::equipment::EquipmentSlot::OffHand;
+use crate::player::Player;
 use crate::{
     behavior::{
         BlockBehavior, BlockPlaceContext, InteractionResult, InventoryAccess,
@@ -154,18 +154,9 @@ impl BlockBehavior for CampfireBlock {
             // In 26.3 dousing moved from ShovelItem to this block's item-use
             // path and is driven by the DOUSES_CAMPFIRES item tag.
             if state.get_value(LIT)
-                && inv.with_item(|stack| {
-                    stack
-                        .item()
-                        .has_tag(&ItemTag::DOUSES_CAMPFIRES)
-                })
+                && inv.with_item(|stack| stack.item().has_tag(&ItemTag::DOUSES_CAMPFIRES))
             {
-                world.level_event(
-                    SOUND_EXTINGUISH_FIRE,
-                    pos,
-                    0,
-                    None,
-                );
+                world.level_event(SOUND_EXTINGUISH_FIRE, pos, 0, None);
                 Self::douse(Some(player), world, pos);
                 world.set_block(pos, state.set_value(LIT, false), UpdateFlags::UPDATE_ALL);
                 let broken = inv.with_item(|stack| {
@@ -176,12 +167,8 @@ impl BlockBehavior for CampfireBlock {
                 });
                 if let Some(item) = broken {
                     let slot = match hand {
-                        InteractionHand::MainHand => {
-                            MainHand
-                        }
-                        InteractionHand::OffHand => {
-                            OffHand
-                        }
+                        InteractionHand::MainHand => MainHand,
+                        InteractionHand::OffHand => OffHand,
                     };
                     player.on_equipped_item_broken(item, slot);
                 }

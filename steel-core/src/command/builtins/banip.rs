@@ -20,8 +20,8 @@ use super::super::{
     execution::{CommandSource, SteelCommandContext, SteelCommandRuntime, argument, literal},
     registration::CommandRegistration,
 };
-use crate::server::bans::BanEntry;
 use crate::server::Server;
+use crate::server::bans::BanEntry;
 
 const ADDRESS_ARGUMENT: &str = "address";
 const REASON_ARGUMENT: &str = "reason";

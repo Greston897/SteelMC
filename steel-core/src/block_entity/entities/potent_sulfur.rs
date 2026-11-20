@@ -1,5 +1,6 @@
 //! `PotentSulfurBlockEntity` for geyser eruption
 
+use crate::world::game_event::GameEventContext;
 use std::sync::{Arc, Weak};
 
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
@@ -345,7 +346,7 @@ impl BlockEntity for PotentSulfurBlockEntity {
                 world.game_event(
                     &vanilla_game_events::BLOCK_DEACTIVATE,
                     pos,
-                    &crate::world::game_event::GameEventContext::new(None, Some(state)),
+                    &GameEventContext::new(None, Some(state)),
                 );
             }
         }

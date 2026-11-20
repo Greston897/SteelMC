@@ -19,17 +19,17 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::CreakingEntityData;
+use steel_registry::vanilla_items::CARVED_PUMPKIN;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_damage_types};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey};
-use steel_registry::vanilla_items::CARVED_PUMPKIN;
 
+use crate::block_entity::entities::CreakingHeartBlockEntity;
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
-use crate::block_entity::entities::CreakingHeartBlockEntity;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
@@ -89,12 +89,7 @@ impl CreakingEntity {
                 if !matches!(player.game_mode(), GameType::Survival | GameType::Adventure) {
                     return false;
                 }
-                if player
-                    .inventory
-                    .lock()
-                    .get_item(39)
-                    .is(&CARVED_PUMPKIN)
-                {
+                if player.inventory.lock().get_item(39).is(&CARVED_PUMPKIN) {
                     return false;
                 }
                 let p_pos = player.position();
@@ -110,8 +105,7 @@ impl CreakingEntity {
     fn linked_heart(&self, world: &World) -> Option<BlockPos> {
         let pos = self.creaking_heart_pos()?;
         let block_entity = world.get_block_entity(pos)?;
-        let heart = block_entity
-            .downcast_ref::<CreakingHeartBlockEntity>()?;
+        let heart = block_entity.downcast_ref::<CreakingHeartBlockEntity>()?;
         (heart.creaking() == Some(self.uuid().as_u128())).then_some(pos)
     }
     /// Creates a new entity of this vanilla type.

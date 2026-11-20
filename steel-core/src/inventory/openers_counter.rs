@@ -6,21 +6,22 @@
 //! deliberately per block entity: a double chest runs one counter per half, so
 //! both halves open together while each keeps its own viewer count.
 
+use crate::world::game_event::GameEventContext;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI32, AtomicU64, Ordering};
 
 use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::blocks::{BlockRef, block_state_ext::BlockStateExt};
 use steel_registry::sound_event::SoundEventRef;
-use steel_utils::{BlockPos, BlockStateId};
 use steel_registry::vanilla_blocks::TRAPPED_CHEST;
 use steel_registry::vanilla_game_events::CONTAINER_CLOSE;
 use steel_registry::vanilla_game_events::CONTAINER_OPEN;
+use steel_utils::{BlockPos, BlockStateId};
 
 use crate::entity::Entity as _;
+use crate::entity::Entity;
 use crate::inventory::lock::ContainerRef;
 use crate::world::World;
-use crate::entity::Entity;
 
 /// Sounds and state hook used when the viewer count changes.
 #[derive(Clone, Copy)]
@@ -219,6 +220,10 @@ impl ContainerOpenersCounter {
         }
     }
 
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     fn container_event(
         &self,
         world: &Arc<World>,
@@ -231,13 +236,13 @@ impl ContainerOpenersCounter {
         } else {
             &CONTAINER_CLOSE
         };
-        world.game_event(
-            event,
-            pos,
-            &crate::world::game_event::GameEventContext::new(source, None),
-        );
+        world.game_event(event, pos, &GameEventContext::new(source, None));
     }
 
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     fn notify_signal_change(&self, world: &Arc<World>, pos: BlockPos, block: BlockRef) {
         if block == &TRAPPED_CHEST {
             world.update_neighbors_at(pos, block);
@@ -259,6 +264,10 @@ impl ContainerOpenersCounter {
         world.play_block_sound(self.hooks.close_sound, pos, 0.5, 0.5, None);
     }
 
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     fn sync_open_state(
         &self,
         world: &Arc<World>,
@@ -283,8 +292,8 @@ impl ContainerOpenersCounter {
 #[cfg(test)]
 mod tests {
     use super::*;
-use steel_registry::sound_events::BLOCK_BARREL_CLOSE;
-use steel_registry::sound_events::BLOCK_BARREL_OPEN;
+    use steel_registry::sound_events::BLOCK_BARREL_CLOSE;
+    use steel_registry::sound_events::BLOCK_BARREL_OPEN;
 
     #[test]
     fn counter_tracks_viewers() {
@@ -333,14 +342,20 @@ mod integration_tests {
             vanilla_blocks::BARREL.default_state(),
             UpdateFlags::UPDATE_ALL,
         );
-        let entity = world.get_block_entity(POS).unwrap();
-        let barrel = entity.downcast_ref::<BarrelBlockEntity>().unwrap();
+        let entity = world
+            .get_block_entity(POS)
+            .expect("the block entity should exist");
+        let barrel = entity
+            .downcast_ref::<BarrelBlockEntity>()
+            .expect("the block entity should have the expected type");
         let first = TestPlayerBuilder::new(Arc::clone(world), "ViewerA", 1).build();
         let second = TestPlayerBuilder::new(Arc::clone(world), "ViewerB", 2).build();
         for player in [&first, &second] {
             player.base().set_position_local(DVec3::new(8.5, 64.0, 7.5));
             world.players.insert(Arc::clone(player));
-            let container = entity.container_ref().unwrap();
+            let container = entity
+                .container_ref()
+                .expect("the container should be present");
             let inventory = Arc::clone(&player.inventory);
             player.open_menu(TextComponent::plain("Barrel"), move |ctx| {
                 chest(inventory, ctx.container_id, container, 3)
@@ -398,9 +413,9 @@ mod integration_tests {
         player.base().set_position_local(DVec3::new(8.5, 64.0, 7.5));
         let old = world
             .get_block_entity(POS)
-            .unwrap()
+            .expect("the block entity should exist")
             .container_ref()
-            .unwrap();
+            .expect("the container should be present");
         let inventory = Arc::clone(&player.inventory);
         player.open_menu(TextComponent::plain("Old barrel"), move |ctx| {
             chest(inventory, ctx.container_id, old, 3)
@@ -415,10 +430,12 @@ mod integration_tests {
             vanilla_blocks::BARREL.default_state(),
             UpdateFlags::UPDATE_ALL,
         );
-        let replacement = world.get_block_entity(POS).unwrap();
+        let replacement = world
+            .get_block_entity(POS)
+            .expect("the block entity should exist");
         let counter = replacement
             .downcast_ref::<BarrelBlockEntity>()
-            .unwrap()
+            .expect("the block entity should have the expected type")
             .openers_counter();
         counter.increment_openers(
             world,
@@ -446,8 +463,12 @@ mod integration_tests {
             vanilla_blocks::BARREL.default_state(),
             UpdateFlags::UPDATE_ALL,
         );
-        let entity = world.get_block_entity(POS).unwrap();
-        let barrel = entity.downcast_ref::<BarrelBlockEntity>().unwrap();
+        let entity = world
+            .get_block_entity(POS)
+            .expect("the block entity should exist");
+        let barrel = entity
+            .downcast_ref::<BarrelBlockEntity>()
+            .expect("the block entity should have the expected type");
         barrel.openers_counter().increment_openers(
             world,
             POS,
@@ -480,21 +501,25 @@ mod integration_tests {
                 UpdateFlags::UPDATE_ALL,
             );
         }
-        let a = world.get_block_entity(POS).unwrap();
-        let b = world.get_block_entity(other_pos).unwrap();
+        let a = world
+            .get_block_entity(POS)
+            .expect("the block entity should exist");
+        let b = world
+            .get_block_entity(other_pos)
+            .expect("the block entity should exist");
         let ca = a
             .downcast_ref::<ChestBlockEntity>()
-            .unwrap()
+            .expect("the block entity should have the expected type")
             .openers_counter();
         let cb = b
             .downcast_ref::<ChestBlockEntity>()
-            .unwrap()
+            .expect("the block entity should have the expected type")
             .openers_counter();
         let player = TestPlayerBuilder::new(Arc::clone(world), "DoubleViewer", 1).build();
         player.base().set_position_local(DVec3::new(8.5, 64.0, 7.5));
         world.players.insert(Arc::clone(&player));
-        let first = a.container_ref().unwrap();
-        let second = b.container_ref().unwrap();
+        let first = a.container_ref().expect("the container should be present");
+        let second = b.container_ref().expect("the container should be present");
         let inventory = Arc::clone(&player.inventory);
         player.open_menu(TextComponent::plain("Double"), move |ctx| {
             double_chest(inventory, ctx.container_id, first, second)
@@ -589,10 +614,12 @@ mod signal_tests {
             vanilla_blocks::HOPPER.default_state(),
             UpdateFlags::UPDATE_ALL,
         );
-        let entity = world.get_block_entity(pos).unwrap();
+        let entity = world
+            .get_block_entity(pos)
+            .expect("the block entity should exist");
         let counter = entity
             .downcast_ref::<ChestBlockEntity>()
-            .unwrap()
+            .expect("the block entity should have the expected type")
             .openers_counter();
         let behavior = BLOCK_BEHAVIORS.get_behavior(&vanilla_blocks::TRAPPED_CHEST);
         let state = world.get_block_state(pos);
@@ -670,7 +697,7 @@ mod event_tests {
         ) -> bool {
             self.0
                 .lock()
-                .push((event, context.source_entity().map(|source| source.id())));
+                .push((event, context.source_entity().map(Entity::id)));
             true
         }
     }
@@ -687,10 +714,12 @@ mod event_tests {
             vanilla_blocks::BARREL.default_state(),
             UpdateFlags::UPDATE_ALL,
         );
-        let entity = world.get_block_entity(pos).unwrap();
+        let entity = world
+            .get_block_entity(pos)
+            .expect("the block entity should exist");
         let counter = entity
             .downcast_ref::<BarrelBlockEntity>()
-            .unwrap()
+            .expect("the block entity should have the expected type")
             .openers_counter();
         let events: Recorded = Arc::new(SyncMutex::new(Vec::new()));
         let listener: SharedGameEventListener = Arc::new(Listener(Arc::clone(&events)));

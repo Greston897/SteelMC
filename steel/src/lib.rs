@@ -10,6 +10,8 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
+use steel_core::server::attach_server_to_worlds;
+use steel_core::server::rcon::run_rcon;
 use steel_core::{
     GIT_HASH_SHORT, command::CommandRegistry, permission::PermissionGroupManager, server::Server,
 };
@@ -133,7 +135,7 @@ impl SteelServer {
         // now that the `Arc` exists. Scoreboards and other server-owned state are
         // reached from world-scoped code through this link.
         let server = Arc::new(server);
-        steel_core::server::attach_server_to_worlds(&server);
+        attach_server_to_worlds(&server);
 
         let tcp_listener = TcpListener::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, server_port))
             .await
@@ -168,9 +170,7 @@ impl SteelServer {
             let rcon_config = self.server.config.rcon.clone();
             let rcon_token = self.cancel_token.clone();
             tokio::spawn(async move {
-                if let Err(error) =
-                    steel_core::server::rcon::run_rcon(rcon_server, rcon_config, rcon_token).await
-                {
+                if let Err(error) = run_rcon(rcon_server, rcon_config, rcon_token).await {
                     log::error!("RCON stopped: {error}");
                 }
             });

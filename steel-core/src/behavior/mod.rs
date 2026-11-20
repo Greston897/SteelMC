@@ -100,8 +100,8 @@ use steel_registry::vanilla_fluids;
 use steel_registry::vanilla_mob_effects;
 use steel_utils::BlockStateId;
 
-use crate::entity::ai::path::PathComputationType;
 use crate::block_entity::init_block_entities;
+use crate::entity::ai::path::PathComputationType;
 use crate::entity::consume_effect::{
     ApplyEffectsBehavior, ClearAllEffectsBehavior, ConsumeEffectBehavior, PlaySoundBehavior,
     RemoveEffectsBehavior, TeleportRandomlyBehavior,

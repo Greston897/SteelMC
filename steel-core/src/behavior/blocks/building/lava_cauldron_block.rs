@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use steel_macros::block_behavior;
-use steel_registry::blocks::{BlockRef, properties::Direction, shapes::VoxelShape};
-use steel_utils::{BlockLocalAabb, BlockPos, BlockStateId};
-use steel_utils::types::InteractionHand;
 use crate::behavior::BlockHitResult;
 use crate::behavior::InteractionResult;
 use crate::behavior::InventoryAccess;
 use crate::player::Player;
+use steel_macros::block_behavior;
+use steel_registry::blocks::{BlockRef, properties::Direction, shapes::VoxelShape};
+use steel_utils::types::InteractionHand;
+use steel_utils::{BlockLocalAabb, BlockPos, BlockStateId};
 
 use crate::{
     behavior::{BlockBehavior, BlockPlaceContext},

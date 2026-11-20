@@ -9,16 +9,16 @@ use std::sync::{Arc, Weak};
 
 use rand::{Rng, RngExt};
 use steel_macros::block_behavior;
+use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, FrontAndTop, StructureMode};
-use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::data_components::vanilla_components::BLOCK_ENTITY_DATA;
-use steel_utils::types::InteractionHand;
 use steel_registry::{
     vanilla_block_entity_types, vanilla_blocks, vanilla_damage_types, vanilla_game_rules,
 };
 use steel_utils::Downcast as _;
+use steel_utils::types::InteractionHand;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
 
@@ -140,10 +140,8 @@ impl BlockBehavior for CommandBlock {
             return;
         };
 
-        let carries_block_entity_data = source.with_item(|item| {
-            item.get(BLOCK_ENTITY_DATA)
-                .is_some()
-        });
+        let carries_block_entity_data =
+            source.with_item(|item| item.get(BLOCK_ENTITY_DATA).is_some());
         if !carries_block_entity_data {
             block.set_track_output(world.get_game_rule(&vanilla_game_rules::SEND_COMMAND_FEEDBACK));
             block.set_automatic(self.is_automatic());
@@ -264,6 +262,10 @@ impl CommandBlock {
     ///
     /// The command itself is queued; `execute_chain` runs right after, exactly as
     /// vanilla does it after `performCommand`.
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     fn execute(&self, block: &CommandBlockBlockEntity, world: &Arc<World>) {
         let _ = block.try_perform_command(world);
         Self::execute_chain(block, world);

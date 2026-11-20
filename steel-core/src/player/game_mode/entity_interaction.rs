@@ -10,6 +10,9 @@ use super::{
     vanilla_entities,
 };
 
+use crate::entity::EntityReference;
+use crate::entity::ProjectileDeflection::AimDeflect;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::player::food_data::food_constants;
 use std::ops::Add;
 use steel_math::trig;
@@ -18,9 +21,6 @@ use steel_registry::vanilla_criteria_triggers::PLAYER_INTERACTED_WITH_ENTITY;
 use steel_registry::vanilla_criteria_triggers::SPEAR_MOBS;
 use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
 use steel_registry::vanilla_mob_effects::BLINDNESS;
-use crate::entity::EntityReference;
-use crate::entity::ProjectileDeflection::AimDeflect;
-use crate::player::advancement::predicate::TriggerContext;
 use steel_registry::{
     sound_events, vanilla_custom_stats, vanilla_game_rules, vanilla_item_tags,
     vanilla_particle_types,
@@ -416,6 +416,7 @@ impl Player {
     ///
     /// Returns `true` if the target accepted damage.
     #[must_use]
+    #[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
     pub fn attack(self: &Arc<Self>, target: &SharedEntity) -> bool {
         let entity = target.as_ref();
         if self.cannot_attack(entity) {
@@ -548,9 +549,7 @@ impl Player {
             {
                 self.trigger_advancement_with_context(
                     &SPEAR_MOBS,
-                    &TriggerContext::entity(
-                        &entity.entity_type().key,
-                    ),
+                    &TriggerContext::entity(&entity.entity_type().key),
                 );
             }
             self.damage_stats_and_hearts(entity, old_entity_living_health);
@@ -895,13 +894,8 @@ impl Player {
         // Vanilla `ServerPlayerGameMode.interact` fires `player_interacted_with_entity`
         // for a successful interaction, carrying both the entity and the held item.
         if result.consumes_action() {
-            let context =
-                TriggerContext::entity(&target_type)
-                    .with_item(&hand_item);
-            self.trigger_advancement_with_context(
-                &PLAYER_INTERACTED_WITH_ENTITY,
-                &context,
-            );
+            let context = TriggerContext::entity(&target_type).with_item(&hand_item);
+            self.trigger_advancement_with_context(&PLAYER_INTERACTED_WITH_ENTITY, &context);
         }
         self.swing_after_interaction(packet.hand, animation, result);
         self.broadcast_inventory_changes();

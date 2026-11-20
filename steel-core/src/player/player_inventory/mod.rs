@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use text_components::TextComponent;
 
-use crate::{inventory::menu::Menu, player::Player, world::World};
 use crate::inventory::lock::ContainerId;
+use crate::{inventory::menu::Menu, player::Player, world::World};
 
 mod container;
 mod core;

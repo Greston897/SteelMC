@@ -2,7 +2,6 @@ use glam::DVec3;
 use simdnbt::owned::{NbtCompound, NbtTag};
 use std::ptr;
 use std::thread;
-use tokio::sync::mpsc::unbounded_channel;
 use std::{
     cell::Cell,
     env::temp_dir,
@@ -34,6 +33,7 @@ use steel_registry::{
 use steel_utils::{BlockPos, ChunkPos, Identifier, UuidExt as _, translations, types::UpdateFlags};
 use steel_utils::{codec::VarInt, serial::ReadFrom, text::DisplayResolutor};
 use text_components::TextComponent;
+use tokio::sync::mpsc::unbounded_channel;
 use tokio::{
     fs,
     net::TcpListener,
@@ -44,11 +44,11 @@ use tokio::{
 use uuid::Uuid;
 
 use crate::behavior::init_behaviors;
-use crate::command::sender::RconOutput;
 use crate::command::execution::{
     CommandArgumentSource, CommandExecutionContext, CommandPermissionSource, CommandResultCallback,
     CommandSource, ExecutionCommandSource, ExecutionStop, parse_entity_selector_text,
 };
+use crate::command::sender::RconOutput;
 use crate::command::sender::{CommandExecutionOwner, CommandSender};
 use crate::config::{RconConfig, ResolvedDomainConfig, RuntimeConfig, WorldsConfig};
 
@@ -1585,9 +1585,7 @@ fn command_world_scope_survives_entity_transforms() {
         let console_source = CommandSource::new(CommandSender::Console, Arc::clone(&server));
         assert!(console_source.with_world(Arc::clone(beta)).is_ok());
         let rcon_source = CommandSource::new(
-            CommandSender::Rcon(RconOutput::new(
-                unbounded_channel().0,
-            )),
+            CommandSender::Rcon(RconOutput::new(unbounded_channel().0)),
             Arc::clone(&server),
         );
         assert!(rcon_source.with_world(Arc::clone(beta)).is_ok());

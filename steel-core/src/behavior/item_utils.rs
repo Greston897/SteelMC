@@ -1,10 +1,10 @@
 //! Helpers shared by item behavior implementations.
 
+use crate::behavior::InventoryAccess;
 use crate::player::player_inventory::Prediction;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::item::BlockHitResult;
 use steel_utils::types::InteractionHand;
-use crate::behavior::InventoryAccess;
 
 use crate::behavior::UseItemContext;
 use crate::inventory::lock::ContainerId;

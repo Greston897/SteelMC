@@ -216,6 +216,10 @@ enum Listing {
     Addresses,
 }
 
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
 fn list(
     context: &SteelCommandContext<CommandSource>,
     listing: Listing,

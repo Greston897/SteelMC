@@ -193,7 +193,7 @@ impl JukeboxBlockEntity {
     }
 
     /// Complete a successful automation extraction without spawning a dropped
-    /// duplicate. Also stops playback and updates HAS_RECORD/comparators.
+    /// duplicate. Also stops playback and updates `HAS_RECORD`/comparators.
     pub(crate) fn finish_hopper_extraction(&self) {
         self.set_the_item(ItemStack::empty());
     }

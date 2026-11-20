@@ -30,13 +30,13 @@ use chrono::Local;
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::NbtCompound;
 use steel_registry::block_entity_type::BlockEntityTypeRef;
+use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::BlockStateProperties;
+use steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK;
 use steel_registry::{vanilla_block_entity_types, vanilla_blocks};
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
-use steel_registry::blocks::BlockRef;
-use steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK;
 use tokio::sync::oneshot::Receiver;
 use tokio::sync::oneshot::error::TryRecvError::Closed;
 use tokio::sync::oneshot::error::TryRecvError::Empty;
@@ -47,8 +47,8 @@ use steel_utils::{
 use text_components::TextComponent;
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
-use crate::world::World;
 use crate::command::BackgroundCommandResult;
+use crate::world::World;
 
 /// Vanilla `BaseCommandBlock` clock prefix format: `HH:mm:ss`.
 const TIME_FORMAT: &str = "%H:%M:%S";
@@ -346,16 +346,15 @@ impl CommandBlockBlockEntity {
         // behind when that block *is* a command block; otherwise the condition
         // is simply false. Missing that check made a conditional block read a
         // stale block entity that happened to remain at the position.
-        let met = self.source_pos(world.as_ref()).is_some_and(|pos| {
+        let met = {
+            let pos = self.source_pos(world.as_ref());
             let behind_state = world.get_block_state(pos);
-            if !Self::is_command_block(behind_state.get_block()) {
-                return false;
-            }
-            world
-                .get_block_entity(pos)
-                .and_then(|entity| entity.downcast_ref::<Self>().cloned())
-                .is_some_and(|behind| behind.success_count() > 0)
-        });
+            Self::is_command_block(behind_state.get_block())
+                && world
+                    .get_block_entity(pos)
+                    .and_then(|entity| entity.downcast_ref::<Self>().cloned())
+                    .is_some_and(|behind| behind.success_count() > 0)
+        };
         self.state.lock().condition_met = met;
         met
     }
@@ -394,10 +393,10 @@ impl CommandBlockBlockEntity {
             || block.key == vanilla_blocks::CHAIN_COMMAND_BLOCK.key
     }
 
-    fn source_pos(&self, world: &World) -> Option<BlockPos> {
+    fn source_pos(&self, world: &World) -> BlockPos {
         let state = world.get_block_state(self.get_block_pos());
         let facing: Direction = state.get_value(&BlockStateProperties::FACING);
-        Some(self.get_block_pos().relative(facing.opposite()))
+        self.get_block_pos().relative(facing.opposite())
     }
 }
 
@@ -500,8 +499,8 @@ impl CommandBlockBlockEntity {
             // Vanilla falls through to this branch for an empty command and for
             // a disabled rule: the success count resets and the run is consumed.
             state.success_count = 0;
-            let runnable = !state.command.trim().is_empty()
-                && world.get_game_rule(&COMMAND_BLOCKS_WORK);
+            let runnable =
+                !state.command.trim().is_empty() && world.get_game_rule(&COMMAND_BLOCKS_WORK);
             state.last_output = None;
             if state.update_last_execution {
                 state.last_execution = game_time;
@@ -552,12 +551,7 @@ impl CommandBlockBlockEntity {
     }
 
     /// Applies a finished command's outcome.
-    fn apply_result(
-        &self,
-        world: &Arc<World>,
-        result: BackgroundCommandResult,
-        _queued_at: i64,
-    ) {
+    fn apply_result(&self, world: &Arc<World>, result: BackgroundCommandResult, _queued_at: i64) {
         let mut state = self.state.lock();
         // Vanilla's callback increments the success count once per successful
         // command; Steel runs exactly one command per block run.
@@ -619,7 +613,7 @@ mod tests {
         block.set_last_output(Some(TextComponent::plain("old")));
         assert_ne!(block.last_output().to_string(), "");
         block.set_track_output(false);
-        assert!(block.last_output().to_string().is_empty());
+        assert_eq!(block.last_output().to_string(), "");
     }
 
     #[test]

@@ -13,13 +13,13 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_entity_data::MinecartCommandBlockEntityData;
+use steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK;
 use steel_utils::BlockStateId;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
 use text_components::TextComponent;
-use steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK;
 use tokio::sync::oneshot::Receiver;
 use tokio::sync::oneshot::error::TryRecvError::Closed;
 use tokio::sync::oneshot::error::TryRecvError::Empty;
@@ -45,8 +45,7 @@ pub struct CommandBlockMinecartEntity {
     minecart_base: AbstractMinecartBase,
     state: SyncMutex<CommandBlockMinecartState>,
     /// Reply channel of a command still queued on the server.
-    pending:
-        SyncMutex<Option<Receiver<BackgroundCommandResult>>>,
+    pending: SyncMutex<Option<Receiver<BackgroundCommandResult>>>,
 }
 
 #[derive(Debug)]
@@ -328,7 +327,7 @@ mod tests {
     fn new_command_block_minecarts_have_no_command() {
         init_vanilla_registry();
         let cart = cart();
-        assert!(cart.command().is_empty());
+        assert_eq!(cart.command(), "");
     }
 
     #[test]
@@ -357,7 +356,7 @@ mod tests {
         cart.save_additional(&mut nbt);
         let mut encoded = Vec::new();
         nbt.write(&mut encoded);
-        assert!(!encoded.is_empty());
+        assert_ne!(encoded, [] as [u8; 0]);
         assert_eq!(
             nbt.string("Command").map(ToString::to_string),
             Some("time set day".to_owned())

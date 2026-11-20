@@ -19,22 +19,21 @@ use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
+use steel_registry::vanilla_entities::IRON_GOLEM;
+use steel_registry::vanilla_entities::VILLAGER;
+use steel_registry::vanilla_entities::WANDERING_TRADER;
 use steel_registry::vanilla_entity_data::VindicatorEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
-use steel_registry::vanilla_entities::IRON_GOLEM;
-use steel_registry::vanilla_entities::VILLAGER;
-use steel_registry::vanilla_entities::WANDERING_TRADER;
 
+use crate::entity::ai::goal::ObtainRaidBannerGoal;
+use crate::entity::ai::goal::RaidCelebrationGoal;
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     OpenDoorGoal, RaidBreakDoorGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
-use crate::entity::ai::goal::ObtainRaidBannerGoal;
-use crate::entity::ai::goal::RaidCelebrationGoal;
-use crate::world::raid::RaidStatus::Ongoing;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
@@ -42,6 +41,7 @@ use crate::entity::{
 };
 use crate::physics::MoveResult;
 use crate::world::World;
+use crate::world::raid::RaidStatus::Ongoing;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
 
@@ -108,8 +108,7 @@ impl VindicatorEntity {
                 3,
                 NearestAttackableTargetGoal::new(true, |target, _| {
                     target.entity_type() == &VILLAGER
-                        || target.entity_type()
-                            == &WANDERING_TRADER
+                        || target.entity_type() == &WANDERING_TRADER
                         || target.entity_type() == &IRON_GOLEM
                 }),
             );

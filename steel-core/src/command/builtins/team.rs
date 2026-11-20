@@ -14,10 +14,10 @@ use super::super::{
     },
     registration::CommandRegistration,
 };
-use crate::scoreboard::{ScoreHolder, TeamState, TeamVisibility};
-use crate::server::scoreboard_sync;
 use crate::command::execution::ScoreHolderWildcard::Tracked;
 use crate::scoreboard::Scoreboard;
+use crate::scoreboard::{ScoreHolder, TeamState, TeamVisibility};
+use crate::server::scoreboard_sync;
 
 pub(super) fn registration() -> CommandRegistration<CommandSource> {
     CommandRegistration::new(Identifier::vanilla_static("team"), |_| command())
@@ -206,10 +206,7 @@ fn empty_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comma
 
 fn join_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let name = context.string("team")?.to_owned();
-    let holders = context.score_holders(
-        "members",
-        Tracked,
-    )?;
+    let holders = context.score_holders("members", Tracked)?;
     let scoreboard = scoreboard(context)?;
 
     let Some(team) = scoreboard.team(&name) else {
@@ -244,10 +241,7 @@ fn join_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
 }
 
 fn leave_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
-    let holders = context.score_holders(
-        "members",
-        Tracked,
-    )?;
+    let holders = context.score_holders("members", Tracked)?;
     let scoreboard = scoreboard(context)?;
 
     let mut removed = 0;

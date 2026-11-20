@@ -207,10 +207,7 @@ impl BlockBehavior for HoneyBlock {
             if let Some(player) = entity.as_player() {
                 player.trigger_advancement_with_context(
                     &vanilla_criteria_triggers::SLIDE_DOWN_BLOCK,
-                    &TriggerContext::block(
-                        &vanilla_blocks::HONEY_BLOCK.key,
-                        None,
-                    ),
+                    &TriggerContext::block(&vanilla_blocks::HONEY_BLOCK.key, None),
                 );
             }
             Self::do_slide_movement(entity);

@@ -1,6 +1,6 @@
 use super::*;
-use steel_registry::feature::EndGatewayConfiguration;
 use crate::worldgen::feature::place_end_gateway_in_world;
+use steel_registry::feature::EndGatewayConfiguration;
 
 pub(super) fn portal_candidate_distance_sqr(candidate: BlockPos, center: BlockPos) -> i64 {
     let dx = i64::from(candidate.x()) - i64::from(center.x());

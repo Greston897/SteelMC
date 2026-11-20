@@ -1,7 +1,7 @@
 //! Vanilla `/teammsg` (alias `/tm`) team chat command (`TeamMsgCommand`).
 
-use std::sync::Arc;
 use std::slice::from_ref;
+use std::sync::Arc;
 
 use steel_registry::vanilla_chat_types;
 use steel_utils::{Identifier, translations};

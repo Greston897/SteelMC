@@ -20,6 +20,7 @@ use steel_core::player::{
 use steel_core::server::Server;
 use steel_core::world::{ClipBlockShape, ClipFluid, World};
 use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_items::STONE;
 use steel_registry::{REGISTRY, RegistryExt};
 use steel_utils::Identifier;
 use steel_utils::types::{GameType, InteractionHand};
@@ -250,7 +251,7 @@ mod tests {
     #[test]
     fn stack_conversion_reports_requested_plain_components() {
         crate::init();
-        let mut stack = ItemStack::new(&steel_registry::vanilla_items::STONE);
+        let mut stack = ItemStack::new(&STONE);
         stack.set(DAMAGE, 7);
 
         let item = stack_to_flint_item(&stack, vec!["damage".to_owned()])

@@ -24,15 +24,15 @@ use steel_registry::{sound_events, vanilla_attributes, vanilla_entities, vanilla
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
+use crate::behavior::items::CrossbowItem;
+use crate::entity::ai::goal::ObtainRaidBannerGoal;
+use crate::entity::ai::goal::RaidCelebrationGoal;
 use crate::entity::ai::goal::{
     FloatGoal, Goal, GoalControls, HurtByTargetGoal, LookAtPlayerGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::ranged_attack;
-use crate::behavior::items::CrossbowItem;
-use crate::entity::ai::goal::ObtainRaidBannerGoal;
-use crate::entity::ai::goal::RaidCelebrationGoal;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
@@ -164,9 +164,7 @@ impl PillagerCrossbowAttackGoal {
 }
 
 fn pillager_crossbow_charge_ticks(mob: &dyn PathfinderMob) -> i32 {
-    CrossbowItem::charge_duration(
-        &mob.equipment_in_slot(EquipmentSlot::MainHand),
-    )
+    CrossbowItem::charge_duration(&mob.equipment_in_slot(EquipmentSlot::MainHand))
 }
 
 impl Goal for PillagerCrossbowAttackGoal {
@@ -419,10 +417,10 @@ mod tests {
     use glam::DVec3;
     use simdnbt::borrow::read_compound;
     use simdnbt::owned::NbtCompound;
+    use steel_registry::data_components::vanilla_components::ENCHANTMENTS;
+    use steel_registry::data_components::vanilla_components::ItemEnchantments;
+    use steel_registry::vanilla_enchantments::QUICK_CHARGE;
     use steel_registry::{init_vanilla_registry, vanilla_entities};
-use steel_registry::data_components::vanilla_components::ENCHANTMENTS;
-use steel_registry::data_components::vanilla_components::ItemEnchantments;
-use steel_registry::vanilla_enchantments::QUICK_CHARGE;
 
     use super::{PillagerEntity, pillager_crossbow_charge_ticks};
     use crate::entity::{Entity, LivingEntity, Mob};
@@ -435,19 +433,10 @@ use steel_registry::vanilla_enchantments::QUICK_CHARGE;
         let pillager =
             PillagerEntity::new(&vanilla_entities::PILLAGER, 1, DVec3::ZERO, Weak::new());
         for (level, duration) in [(0, 25), (1, 20), (2, 15)] {
-            let mut enchantments =
-                ItemEnchantments::empty();
-            enchantments.set(
-                QUICK_CHARGE
-                    .key
-                    .clone(),
-                level,
-            );
+            let mut enchantments = ItemEnchantments::empty();
+            enchantments.set(QUICK_CHARGE.key.clone(), level);
             pillager.with_equipment_slot_mut(EquipmentSlot::MainHand, &mut |weapon| {
-                weapon.set(
-                    ENCHANTMENTS,
-                    enchantments.clone(),
-                );
+                weapon.set(ENCHANTMENTS, enchantments.clone());
             });
             assert_eq!(pillager_crossbow_charge_ticks(&pillager), duration);
         }

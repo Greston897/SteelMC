@@ -3,18 +3,18 @@ use std::collections::BTreeSet;
 use super::*;
 use crate::behavior::InteractionResult;
 use crate::behavior::InteractionResult::Pass;
-use crate::scoreboard::ScoreHolder;
 use crate::entity::{
     entities::objects::vehicles::{AbstractBoat, AbstractMinecart},
     leash::Leashable,
     pushing::EntityPush,
 };
+use crate::scoreboard::ScoreHolder;
 use rand::{RngExt, rng};
 use steel_math::DEGREE_90;
+use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_criteria_triggers;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::nbt::{NbtNumeric, nbt_collection_values};
-use steel_registry::item_stack::ItemStack;
 
 /// Vanilla `Entity.refreshDimensions` small-entity limit: only entities at most
 /// this wide and tall (in blocks) get their position fudged after growing.

@@ -12,9 +12,9 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
+use steel_registry::stat::is_statistic_criterion;
 use steel_utils::locks::{AsyncMutex, SyncRwLock};
 use thiserror::Error;
-use steel_registry::stat::is_statistic_criterion;
 
 use crate::{server::worlds::WorldMap, world::World};
 use steel_utils::saved_data::names as saved_data_names;
@@ -1336,7 +1336,7 @@ mod tests {
         scoreboard
             .add_objective("kills")
             .expect("objective should be added");
-        assert!(scoreboard.display_slots().is_empty());
+        assert_eq!(scoreboard.display_slots(), [] as [(i32, String); 0]);
 
         scoreboard.set_display_slot(1, "kills");
         assert_eq!(scoreboard.display_slots(), vec![(1, "kills".to_owned())]);
@@ -1344,7 +1344,7 @@ mod tests {
         // An empty objective name clears the slot, matching vanilla
         // `Scoreboard#setDisplayObjective(slot, null)`.
         scoreboard.set_display_slot(1, "");
-        assert!(scoreboard.display_slots().is_empty());
+        assert_eq!(scoreboard.display_slots(), [] as [(i32, String); 0]);
     }
 
     #[test]

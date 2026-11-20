@@ -12,17 +12,17 @@
 
 use rustc_hash::FxHashMap;
 use steel_registry::RegistryExt as _;
+use steel_registry::data_components::vanilla_components::CUSTOM_NAME;
 use steel_registry::data_components::vanilla_components::MAX_STACK_SIZE;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::recipe::{Ingredient, PlacementInfo};
-use steel_registry::data_components::vanilla_components::CUSTOM_NAME;
 use steel_registry::slot_display::RecipeDisplay;
 
 use crate::inventory::container::Container as _;
-use crate::inventory::lock::ContainerLockGuard;
 use crate::inventory::container::CraftingContainer;
 use crate::inventory::lock::ContainerId;
+use crate::inventory::lock::ContainerLockGuard;
 use crate::inventory::recipe_manager::find_recipe;
 use crate::inventory::slots::CraftingHandler;
 use crate::inventory::slots::ResultHandler::update_result;
@@ -212,9 +212,7 @@ impl StackedItemContents {
 /// Vanilla `Inventory.isUsableForCrafting`.
 #[must_use]
 pub fn is_usable_for_crafting(stack: &ItemStack) -> bool {
-    !stack.is_damaged()
-        && !stack.is_enchanted()
-        && !stack.has(CUSTOM_NAME)
+    !stack.is_damaged() && !stack.is_enchanted() && !stack.has(CUSTOM_NAME)
 }
 
 /// Vanilla max stack size of an item type, used by `clampToMaxStackSize`.
@@ -341,6 +339,10 @@ impl RecipePicker {
         result
     }
 
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
     const fn visited_ingredient_offset(&self) -> usize {
         0
     }
@@ -543,6 +545,7 @@ pub struct PlacementOutcome {
     clippy::too_many_arguments,
     reason = "mirrors vanilla ServerPlaceRecipe.placeRecipe"
 )]
+#[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
 pub fn plan_placement(
     inventory: &[ItemStack],
     grid_width: usize,
@@ -796,12 +799,8 @@ pub struct PlacementRequest<'a> {
 /// Vanilla `CraftingMenuAccess.recipeMatches` for a crafting grid: the grid
 /// currently produces `recipe_key`.
 #[must_use]
-pub fn grid_produces(
-    crafting: &CraftingContainer,
-    recipe_key: &steel_utils::Identifier,
-) -> bool {
-    find_recipe(crafting)
-        .is_some_and(|recipe| recipe.key() == recipe_key)
+pub fn grid_produces(crafting: &CraftingContainer, recipe_key: &steel_utils::Identifier) -> bool {
+    find_recipe(crafting).is_some_and(|recipe| recipe.key() == recipe_key)
 }
 
 /// Removes the planned stacks from the player's inventory.
@@ -866,17 +865,11 @@ pub fn apply_plan(
     handler: &CraftingHandler,
 ) -> PostPlaceAction {
     for stack in plan.inventory_give {
-        player.add_item_or_drop_with_guard(
-            guard,
-            stack,
-            Predicted,
-        );
+        player.add_item_or_drop_with_guard(guard, stack, Predicted);
     }
     apply_inventory_take(guard, player, &plan.inventory_take);
 
-    if let Some(container) =
-        guard.get_typed_mut::<CraftingContainer>(crafting)
-    {
+    if let Some(container) = guard.get_typed_mut::<CraftingContainer>(crafting) {
         for (index, stack) in plan.grid.into_iter().enumerate() {
             if index < container.get_container_size() {
                 container.set_item(index, stack);
@@ -903,8 +896,8 @@ pub fn single_item_matches(input: &ItemStack, placement: &PlacementInfo) -> bool
 #[cfg(test)]
 mod tests {
     use super::*;
-use steel_registry::vanilla_items::DIRT;
-use steel_registry::vanilla_items::STONE;
+    use steel_registry::vanilla_items::DIRT;
+    use steel_registry::vanilla_items::STONE;
 
     fn stack(item: ItemRef, count: i32) -> ItemStack {
         ItemStack::with_count(item, count)
