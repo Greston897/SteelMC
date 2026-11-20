@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: write
+
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-Dwarnings"
@@ -20,7 +23,7 @@ jobs:
       - name: cargo test
         run: |
           set -o pipefail
-          cargo test --workspace --verbose 2>&1 | tee /tmp/test.log
+          cargo test --workspace --no-fail-fast --verbose 2>&1 | tee /tmp/test.log
       - name: Index every observed test by crate and subsystem
         if: always()
         run: python3 .ci/summarize_rust_tests.py /tmp/test.log /tmp/automated-mechanics-tests.json
@@ -30,6 +33,15 @@ jobs:
           python3 .ci/subsystem_report.py /tmp/automated-mechanics-tests.json /tmp/SUBSYSTEMS-26.3-ACTIONS.md \
             --sha "$GITHUB_SHA" --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           cat /tmp/SUBSYSTEMS-26.3-ACTIONS.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Attribute actual headless outcomes to every tracked Rust file
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 .ci/file_evidence_report.py /tmp/automated-mechanics-tests.json /tmp/file-evidence.json \
+            --sha "$GITHUB_SHA" --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --publish
+          cat /tmp/file-evidence.md >> "$GITHUB_STEP_SUMMARY"
       - name: Publish complete per-test outcomes (including ignored and failed)
         if: always()
         uses: actions/upload-artifact@v4
@@ -37,6 +49,8 @@ jobs:
           name: automated-mechanics-tests
           path: |
             /tmp/automated-mechanics-tests.json
+            /tmp/file-evidence.json
+            /tmp/file-evidence.md
             /tmp/test.log
             /tmp/SUBSYSTEMS-26.3-ACTIONS.md
           if-no-files-found: error

@@ -33,16 +33,15 @@ jobs:
 
       - name: Build steel-flint
         id: build
-        continue-on-error: true
         timeout-minutes: 15
         run: |
+          set -euo pipefail
           cargo test -p steel-flint --profile cicd --lib --no-run
           cargo build -p steel-flint --profile cicd --example steel-implemented
 
       - name: Run steel-flint tests
         id: tests
         if: steps.build.outcome == 'success'
-        continue-on-error: true
         timeout-minutes: 15
         env:
           TEST_PATH: ${{ github.workspace }}/FlintBenchmark/tests

@@ -4,7 +4,7 @@
 //! and a blast of power `1.0` when it hits a block, which is the same power as a
 //! ghast fireball and enough to break any block below blast resistance 4.
 //!
-//! Charged skulls synchronise their blue variant and cap destructible block
+//! Charged skulls synchronize their blue variant and cap destructible block
 //! resistance; both block and entity impacts explode.
 
 use std::sync::{Arc, Weak};

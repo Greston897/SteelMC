@@ -28,11 +28,15 @@ jobs:
 
       - name: Format
         if: always()
-        run: cargo fmt --all --check 2>&1 | tee /tmp/fmt.log
+        run: |
+          set -o pipefail
+          cargo fmt --all --check 2>&1 | tee /tmp/fmt.log
 
       - name: Clippy
         if: always()
-        run: cargo clippy -r --workspace --all-targets --all-features 2>&1 | tee /tmp/clippy.log
+        run: |
+          set -o pipefail
+          cargo clippy -r --workspace --all-targets --all-features 2>&1 | tee /tmp/clippy.log
 
       - name: Surface lint failures
         if: failure()
