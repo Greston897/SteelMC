@@ -42,8 +42,6 @@ pub const SPAWN_INVULNERABLE_TICKS: i32 = 220;
 /// Vanilla `WitherBoss` blast power when the spawn sequence finishes.
 pub const SPAWN_EXPLOSION_POWER: f32 = 7.0;
 
-/// Vanilla caps the wither's health at this value.
-const MAX_HEALTH: f32 = 300.0;
 
 /// Vanilla `heal(10.0F)` every 10 ticks while `DATA_ID_INV` counts down.
 const SPAWN_HEAL_PER_STEP: f32 = 10.0;
