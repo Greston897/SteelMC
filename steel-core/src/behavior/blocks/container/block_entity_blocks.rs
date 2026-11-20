@@ -938,7 +938,7 @@ fn default_item_launch(
 
 /// Spawns an ordinary dispensed item, never with the projectile launch speed.
 fn spawn_dropped_item(world: &Arc<World>, pos: BlockPos, facing: Direction, stack: ItemStack) {
-    use steel_utils::random::{RandomSource as _, legacy_random::LegacyRandom};
+    use steel_utils::random::legacy_random::LegacyRandom;
 
     let mut random = LegacyRandom::from_seed(rand::random());
     let (spawn_pos, velocity) = default_item_launch(pos, facing, &mut random);

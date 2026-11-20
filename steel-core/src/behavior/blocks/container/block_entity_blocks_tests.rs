@@ -365,7 +365,7 @@ fn powered_dispenser_initializes_firework_lifetime_source_and_straight_angled_fl
 
 #[test]
 fn ordinary_dispenser_items_use_vanilla_spawn_offset_and_triangular_velocity() {
-    use steel_utils::random::{RandomSource as _, legacy_random::LegacyRandom};
+    use steel_utils::random::legacy_random::LegacyRandom;
     for facing in [
         Direction::Down,
         Direction::Up,
