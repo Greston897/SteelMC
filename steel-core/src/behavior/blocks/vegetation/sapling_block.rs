@@ -80,6 +80,21 @@ impl SaplingBlock {
         }
     }
 
+    /// Both random ticks and bonemeal advance STAGE before attempting a tree.
+    fn advance_tree(
+        &self,
+        world: &Arc<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+        rng: &mut dyn Rng,
+    ) {
+        if state.get_value(STAGE) == 0 {
+            world.set_block(pos, state.set_value(STAGE, 1), UpdateFlags::UPDATE_CLIENTS);
+        } else {
+            self.grow_tree(world, pos, state, rng);
+        }
+    }
+
     /// Resolves a grower name to its `minecraft:<name>` configured feature.
     fn configured_feature(
         name: &str,
@@ -169,18 +184,11 @@ impl BlockBehavior for SaplingBlock {
             return;
         }
         // Vanilla only advances light-blocking (fully lit) saplings.
-        if world.max_local_raw_brightness(pos, world.sky_darkening()) < 9 {
+        if world.max_local_raw_brightness(pos.above(), world.sky_darkening()) < 9 {
             return;
         }
         let mut rng = rand::rng();
-        self.grow_tree(world, pos, state, &mut rng);
-    }
-
-    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
-        // Vanilla `SaplingBlock.tick` only runs the post-placement STAGE check.
-        if state.get_value(STAGE) == 0 {
-            world.set_block(pos, state.set_value(STAGE, 1), UpdateFlags::UPDATE_CLIENTS);
-        }
+        self.advance_tree(world, pos, state, &mut rng);
     }
 
     fn as_bonemealable(&self) -> Option<&dyn Bonemealable> {
@@ -192,10 +200,21 @@ impl Bonemealable for SaplingBlock {
     fn is_valid_bonemeal_target(
         &self,
         _state: BlockStateId,
-        _world: &dyn LevelReader,
+        world: &dyn LevelReader,
+        pos: BlockPos,
+    ) -> bool {
+        let height = self.shortest_tree_type.map_or(0, Self::minimum_tree_height);
+        !world.is_outside_build_height(pos.y() + height)
+    }
+
+    fn is_bonemeal_success(
+        &self,
+        _state: BlockStateId,
+        _world: &Arc<World>,
+        rng: &mut dyn Rng,
         _pos: BlockPos,
     ) -> bool {
-        true
+        f64::from(rng.random::<f32>()) < 0.45
     }
 
     fn perform_bonemeal(
@@ -205,6 +224,44 @@ impl Bonemealable for SaplingBlock {
         rng: &mut dyn Rng,
         pos: BlockPos,
     ) {
-        self.grow_tree(world, pos, state, rng);
+        self.advance_tree(world, pos, state, rng);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
+    use rand::{SeedableRng as _, rngs::StdRng};
+    use steel_utils::ChunkPos;
+
+    #[test]
+    fn bonemeal_advances_stage_and_scheduled_tick_does_not() {
+        crate::bootstrap::init_globals();
+        let fixture = fresh_test_world("sapling_stage_parity");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let pos = BlockPos::new(8, 64, 8);
+        let state = vanilla_blocks::OAK_SAPLING.default_state();
+        let sapling = SaplingBlock::new(&vanilla_blocks::OAK_SAPLING, "oak", Some("oak"));
+        world.set_block(
+            pos.below(),
+            vanilla_blocks::DIRT.default_state(),
+            UpdateFlags::UPDATE_NONE,
+        );
+        world.set_block(pos, state, UpdateFlags::UPDATE_NONE);
+        sapling.tick(state, world, pos);
+        assert_eq!(world.get_block_state(pos).get_value(STAGE), 0);
+        sapling.perform_bonemeal(state, world, &mut StdRng::seed_from_u64(263), pos);
+        assert_eq!(
+            world.get_block_state(pos).get_block(),
+            &*vanilla_blocks::OAK_SAPLING
+        );
+        assert_eq!(world.get_block_state(pos).get_value(STAGE), 1);
+        assert!(!sapling.is_valid_bonemeal_target(
+            state,
+            world.as_ref(),
+            BlockPos::new(8, world.min_y() + world.height(), 8)
+        ));
     }
 }
