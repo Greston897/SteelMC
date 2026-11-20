@@ -387,7 +387,7 @@ fn ordinary_dispenser_items_use_vanilla_spawn_offset_and_triangular_velocity() {
             );
             use steel_utils::random::Random as _;
             let power = expected_random.next_f64() * 0.1 + 0.2;
-            let deviation = 0.0172275 * 6.0;
+            let deviation = 0.017_227_5 * 6.0;
             let expected_velocity = DVec3::new(
                 expected_random.triangle(f64::from(dx) * power, deviation),
                 expected_random.triangle(0.2, deviation),

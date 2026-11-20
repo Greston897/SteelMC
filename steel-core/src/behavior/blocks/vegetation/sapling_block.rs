@@ -62,22 +62,81 @@ impl SaplingBlock {
         }
     }
 
-    /// Vanilla `TreeGrower.getConfiguredFeature`: the secondary tree wins at 10%
-    /// when the grower has one, otherwise the primary tree is always used.
-    fn feature_for(&self, rng: &mut dyn Rng) -> Option<&'static str> {
-        match self.shortest_tree_type {
-            // Vanilla picks the secondary tree 10% of the time.
-            Some(primary) if primary != self.tree_grower_name => {
-                if rng.random::<f32>() < 0.1 {
-                    Some(self.tree_grower_name)
+    /// Vanilla 26.3 weighted primary/flower tree lists. Singleton lists do not
+    /// consume a random value; weighted lists use an integer, not a float roll.
+    fn feature_for(&self, rng: &mut dyn Rng, flowers: bool) -> Option<&'static str> {
+        Some(match self.tree_grower_name {
+            "oak" => match (flowers, rng.random_range(0..10)) {
+                (true, 9) => "fancy_oak_bees_005",
+                (true, _) => "oak_bees_005",
+                (false, 9) => "fancy_oak",
+                (false, _) => "oak",
+            },
+            "birch" if flowers => "birch_bees_005",
+            "cherry" if flowers => "cherry_bees_005",
+            "jungle" => "jungle_tree_no_vine",
+            "mangrove" => {
+                if rng.random_range(0..100) < 15 {
+                    "mangrove"
                 } else {
-                    Some(primary)
+                    "tall_mangrove"
                 }
             }
-            // Single-tree growers always use their only tree.
-            Some(primary) => Some(primary),
-            None => Some(self.tree_grower_name),
+            "poplar" => match rng.random_range(0..3) {
+                0 => "red_poplar",
+                1 => "orange_poplar",
+                _ => "yellow_poplar",
+            },
+            "azalea" | "azalea_tree" => "azalea_tree",
+            "dark_oak" | "pale_oak" => return None,
+            other => other,
+        })
+    }
+
+    fn mega_feature_for(&self, rng: &mut dyn Rng) -> Option<&'static str> {
+        match self.tree_grower_name {
+            "spruce" => Some(if rng.random_range(0..2) == 0 {
+                "mega_spruce"
+            } else {
+                "mega_pine"
+            }),
+            "jungle" => Some("mega_jungle_tree"),
+            "dark_oak" => Some("dark_oak"),
+            "pale_oak" => Some("pale_oak_bonemeal"),
+            _ => None,
         }
+    }
+
+    /// Vanilla scans the four possible 2x2 squares containing the clicked
+    /// sapling, comparing block identity, not the saplings' STAGE values.
+    fn two_by_two(world: &dyn LevelReader, pos: BlockPos, state: BlockStateId) -> Option<BlockPos> {
+        for dx in [0, -1] {
+            for dz in [0, -1] {
+                let origin = pos.offset(dx, 0, dz);
+                if [(0, 0), (1, 0), (0, 1), (1, 1)].into_iter().all(|(x, z)| {
+                    world.get_block_state(origin.offset(x, 0, z)).get_block() == state.get_block()
+                }) {
+                    return Some(origin);
+                }
+            }
+        }
+        None
+    }
+
+    fn has_flowers(world: &dyn LevelReader, pos: BlockPos) -> bool {
+        for x in -2..=2 {
+            for y in -1..=1 {
+                for z in -2..=2 {
+                    if world
+                        .get_block_state(pos.offset(x, y, z))
+                        .is_in_tag(&BlockTag::FLOWERS)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
     }
 
     /// Both random ticks and bonemeal advance STAGE before attempting a tree.
@@ -89,7 +148,11 @@ impl SaplingBlock {
         rng: &mut dyn Rng,
     ) {
         if state.get_value(STAGE) == 0 {
-            world.set_block(pos, state.set_value(STAGE, 1), UpdateFlags::UPDATE_CLIENTS);
+            world.set_block(
+                pos,
+                state.set_value(STAGE, 1),
+                UpdateFlags::UPDATE_INVISIBLE | UpdateFlags::UPDATE_SKIP_BLOCK_ENTITY_SIDEEFFECTS,
+            );
         } else {
             self.grow_tree(world, pos, state, rng);
         }
@@ -135,19 +198,46 @@ impl SaplingBlock {
         state: BlockStateId,
         rng: &mut dyn Rng,
     ) -> bool {
-        let Some(name) = self.feature_for(rng) else {
+        // Vanilla attempts a configured mega feature first. A failed mega
+        // placement restores all four original states and never tries a small tree.
+        if let Some(name) = self.mega_feature_for(rng)
+            && Self::configured_feature(name).is_some()
+            && let Some(origin) = Self::two_by_two(world.as_ref(), pos, state)
+        {
+            let saplings = [(0, 0), (1, 0), (0, 1), (1, 1)].map(|(x, z)| {
+                let p = origin.offset(x, 0, z);
+                (p, world.get_block_state(p))
+            });
+            return Self::place_tree(world, origin, name, &saplings, rng);
+        }
+        let Some(name) = self.feature_for(rng, Self::has_flowers(world.as_ref(), pos)) else {
             return false;
         };
+        Self::place_tree(world, pos, name, &[(pos, state)], rng)
+    }
+
+    fn place_tree(
+        world: &Arc<World>,
+        origin: BlockPos,
+        name: &str,
+        saplings: &[(BlockPos, BlockStateId)],
+        rng: &mut dyn Rng,
+    ) -> bool {
         let Some(feature) = Self::configured_feature(name) else {
             return false;
         };
         let ConfiguredFeatureKind::Tree(config) = &feature.kind else {
             return false;
         };
-
-        let replacement = vanilla_blocks::AIR.default_state();
-        world.set_block(pos, replacement, UpdateFlags::UPDATE_NONE);
-
+        let remove_flags = UpdateFlags::UPDATE_CLIENTS
+            | UpdateFlags::UPDATE_KNOWN_SHAPE
+            | UpdateFlags::UPDATE_SUPPRESS_DROPS
+            | UpdateFlags::UPDATE_SKIP_BLOCK_ENTITY_SIDEEFFECTS
+            | UpdateFlags::UPDATE_SKIP_ON_PLACE;
+        for &(pos, original) in saplings {
+            let replacement = crate::fluid::fluid_state_to_block(original.get_fluid_state());
+            world.set_block(pos, replacement, remove_flags);
+        }
         let mut worldgen_random = WorldgenRandom::from_seed(rng.random());
         let mut level = Arc::clone(world);
         let placed = FeatureDecorationRunner::place_tree_feature(
@@ -155,16 +245,19 @@ impl SaplingBlock {
             &REGISTRY,
             &mut worldgen_random,
             config,
-            pos,
+            origin,
             obfuscate_biome_seed(world.seed()),
             no_nested_features,
         );
-
-        if placed {
-            // Vanilla plays the block-change sound through the feature placement.
-            world.send_block_updated(pos);
-        } else {
-            world.set_block(pos, state, UpdateFlags::UPDATE_NONE);
+        if !placed {
+            for &(pos, original) in saplings {
+                world.set_block(
+                    pos,
+                    original,
+                    UpdateFlags::UPDATE_INVISIBLE
+                        | UpdateFlags::UPDATE_SKIP_BLOCK_ENTITY_SIDEEFFECTS,
+                );
+            }
         }
         placed
     }
@@ -199,10 +292,15 @@ impl BlockBehavior for SaplingBlock {
 impl Bonemealable for SaplingBlock {
     fn is_valid_bonemeal_target(
         &self,
-        _state: BlockStateId,
+        state: BlockStateId,
         world: &dyn LevelReader,
         pos: BlockPos,
     ) -> bool {
+        if matches!(self.tree_grower_name, "dark_oak" | "pale_oak")
+            && Self::two_by_two(world, pos, state).is_none()
+        {
+            return false;
+        }
         let height = self.shortest_tree_type.map_or(0, Self::minimum_tree_height);
         !world.is_outside_build_height(pos.y() + height)
     }
@@ -255,7 +353,7 @@ mod tests {
         sapling.perform_bonemeal(state, world, &mut StdRng::seed_from_u64(263), pos);
         assert_eq!(
             world.get_block_state(pos).get_block(),
-            &*vanilla_blocks::OAK_SAPLING
+            &vanilla_blocks::OAK_SAPLING
         );
         assert_eq!(world.get_block_state(pos).get_value(STAGE), 1);
         assert!(!sapling.is_valid_bonemeal_target(
@@ -263,5 +361,79 @@ mod tests {
             world.as_ref(),
             BlockPos::new(8, world.min_y() + world.height(), 8)
         ));
+    }
+
+    #[test]
+    fn primary_tree_lists_and_flower_variants_match_vanilla() {
+        crate::bootstrap::init_globals();
+        let mut rng = StdRng::seed_from_u64(263);
+        for (grower, expected) in [
+            ("jungle", "jungle_tree_no_vine"),
+            ("azalea", "azalea_tree"),
+            ("birch", "birch_bees_005"),
+            ("cherry", "cherry_bees_005"),
+        ] {
+            let tree = SaplingBlock::new(&vanilla_blocks::OAK_SAPLING, grower, None);
+            assert_eq!(tree.feature_for(&mut rng, true), Some(expected));
+        }
+        for grower in ["dark_oak", "pale_oak"] {
+            let tree = SaplingBlock::new(&vanilla_blocks::OAK_SAPLING, grower, None);
+            assert_eq!(tree.feature_for(&mut rng, false), None);
+            assert!(tree.mega_feature_for(&mut rng).is_some());
+        }
+        let tree = SaplingBlock::new(&vanilla_blocks::OAK_SAPLING, "oak", Some("oak"));
+        let mut normal = 0;
+        let mut fancy = 0;
+        for _ in 0..1000 {
+            match tree.feature_for(&mut rng, true) {
+                Some("oak_bees_005") => normal += 1,
+                Some("fancy_oak_bees_005") => fancy += 1,
+                other => panic!("unexpected oak feature: {other:?}"),
+            }
+        }
+        assert!(normal > fancy && fancy > 0);
+    }
+
+    #[test]
+    fn mega_only_target_requires_square_and_failed_growth_restores_each_stage() {
+        crate::bootstrap::init_globals();
+        let fixture = fresh_test_world("mega_sapling_restore");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let origin = BlockPos::new(8, 64, 8);
+        let state = vanilla_blocks::DARK_OAK_SAPLING.default_state();
+        let tree = SaplingBlock::new(&vanilla_blocks::DARK_OAK_SAPLING, "dark_oak", None);
+        world.set_block(origin, state, UpdateFlags::UPDATE_NONE);
+        assert!(!tree.is_valid_bonemeal_target(state, world.as_ref(), origin));
+        let positions = [(0, 0), (1, 0), (0, 1), (1, 1)].map(|(x, z)| origin.offset(x, 0, z));
+        for (index, pos) in positions.iter().enumerate() {
+            world.set_block(
+                pos.below(),
+                vanilla_blocks::DIRT.default_state(),
+                UpdateFlags::UPDATE_NONE,
+            );
+            world.set_block(
+                *pos,
+                state.set_value(STAGE, if index == 0 { 0 } else { 1 }),
+                UpdateFlags::UPDATE_NONE,
+            );
+            world.set_block(
+                pos.above(),
+                vanilla_blocks::STONE.default_state(),
+                UpdateFlags::UPDATE_NONE,
+            );
+        }
+        for pos in positions {
+            assert_eq!(
+                SaplingBlock::two_by_two(world.as_ref(), pos, state),
+                Some(origin)
+            );
+            assert!(tree.is_valid_bonemeal_target(state, world.as_ref(), pos));
+        }
+        let originals = positions.map(|pos| world.get_block_state(pos));
+        assert!(!tree.grow_tree(world, origin, state, &mut StdRng::seed_from_u64(263)));
+        for (pos, original) in positions.into_iter().zip(originals) {
+            assert_eq!(world.get_block_state(pos), original);
+        }
     }
 }

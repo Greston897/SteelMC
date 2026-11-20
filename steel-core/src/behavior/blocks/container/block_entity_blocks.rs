@@ -927,7 +927,7 @@ fn default_item_launch(
     };
     let (dx, _, dz) = facing.offset();
     let power = random.next_f64() * 0.1 + 0.2;
-    let deviation = 0.0172275 * 6.0;
+    let deviation = 0.017_227_5 * 6.0;
     let velocity = DVec3::new(
         random.triangle(f64::from(dx) * power, deviation),
         random.triangle(0.2, deviation),

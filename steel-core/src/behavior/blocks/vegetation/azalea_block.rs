@@ -119,7 +119,7 @@ mod tests {
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
         let pos = BlockPos::new(8, 64, 8);
-        for block in [&*vanilla_blocks::AZALEA, &*vanilla_blocks::FLOWERING_AZALEA] {
+        for block in [&vanilla_blocks::AZALEA, &vanilla_blocks::FLOWERING_AZALEA] {
             let behavior = BLOCK_BEHAVIORS.get_behavior(block);
             let grower = behavior
                 .as_bonemealable()
@@ -172,15 +172,15 @@ mod tests {
         let grower = behavior
             .as_bonemealable()
             .expect("flowering azalea bonemeal registration");
-        let mut rng = StdRng::seed_from_u64(26_3);
+        let mut rng = StdRng::seed_from_u64(263);
         grower.perform_bonemeal(state, world, &mut rng, pos);
         assert_eq!(
             world.get_block_state(pos).get_block(),
-            &*vanilla_blocks::OAK_LOG
+            &vanilla_blocks::OAK_LOG
         );
         assert_eq!(
             world.get_block_state(pos.below()).get_block(),
-            &*vanilla_blocks::ROOTED_DIRT
+            &vanilla_blocks::ROOTED_DIRT
         );
     }
 }
