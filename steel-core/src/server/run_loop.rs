@@ -253,6 +253,11 @@ impl Server {
             let (tick_count, runs_normally) = self.advance_server_tick();
 
             self.tick_pending_command_executions(&mut pending_command_executions);
+            for function in self.function_packs.tick_functions() {
+                if let Err(error) = self.submit_command(CommandSender::Console, format!("function {function}")) {
+                    log::error!("Could not queue datapack function {function}: {error:?}");
+                }
+            }
             self.tick_scheduled_commands();
             self.tick_command_requests(&mut pending_command_executions);
             if let Err(error) = self

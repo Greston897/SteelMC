@@ -489,6 +489,31 @@ where
         );
     }
 
+    /// Insert a function body into this execution, sharing limits and source,
+    /// but isolating `/return` from its caller's remaining commands.
+    pub(crate) fn queue_function(
+        &mut self,
+        chains: Vec<SteelContextChain<S>>,
+        source: Arc<S>,
+        callback: CommandResultCallback,
+    ) {
+        let depth = self.frame.depth + 1;
+        let frame = Frame {
+            depth,
+            return_value_consumer: callback,
+            discard: FrameDiscard::AtOrAbove(depth),
+        };
+        for chain in chains {
+            self.context.queue_next(frame.clone(), BuildContextsAction {
+                chain,
+                original_source: Arc::clone(&source),
+                sources: vec![Arc::clone(&source)],
+                modifiers: ChainModifiers::default(),
+            });
+        }
+        self.context.queue_next(frame, FallthroughAction);
+    }
+
     pub(crate) fn discard_frame(&mut self) {
         self.context.discard(&self.frame);
     }

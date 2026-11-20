@@ -1,15 +1,5 @@
-//! `/datapack` — reports the data packs the server has loaded.
-//!
-//! Vanilla `DatapackCommand` lists packs, enables, disables and reorders them.
-//! Steel has one pack: the built-in `minecraft` datapack, compiled into the
-//! binary at build time (recipes, loot tables, advancements, functions and the
-//! rest of the registry data). There is no folder loading yet, so `enable`,
-//! `disable` and `list available` have nothing to operate on; they report that
-//! plainly instead of pretending to work.
-//!
-//! `list` and `list enabled` are real: they report the pack and how many
-//! functions and recipes came out of it, which is the useful answer to "did the
-//! datapack load at all?".
+//! `/datapack` lists baked vanilla resources and loaded directory function packs.
+//! Enable/disable and other runtime data registries remain explicitly unsupported.
 
 use std::borrow::Cow;
 
@@ -23,7 +13,7 @@ use super::super::{
     registration::CommandRegistration,
 };
 
-/// The only data pack the server has: the vanilla one compiled into the binary.
+/// The always-enabled vanilla data compiled into the binary.
 const BUILTIN_PACK: &str = "vanilla";
 
 pub(super) fn registration() -> CommandRegistration<CommandSource> {
@@ -61,28 +51,29 @@ fn list(
     context: &SteelCommandContext<CommandSource>,
     listing: Listing,
 ) -> Result<i32, CommandSyntaxError> {
-    // Both lists answer the same here: the built-in pack is the only one, and it
-    // is always enabled.
-    let _ = listing;
-    let functions = steel_registry::functions::FUNCTIONS.len();
-    let recipes = steel_registry::REGISTRY.recipes.len();
+    let packs = context.source().server().function_packs.pack_names();
+    let names = match listing {
+        Listing::Enabled => std::iter::once(BUILTIN_PACK.to_owned()).chain(packs).collect::<Vec<_>>(),
+        Listing::Available => Vec::new(),
+    };
+    let count = names.len();
 
     let header = translated(
-        "commands.datapack.list.enabled.success",
-        format!("There is 1 data pack: {BUILTIN_PACK} ({functions} functions, {recipes} recipes)"),
+        match listing { Listing::Enabled => "commands.datapack.list.enabled.success", Listing::Available => "commands.datapack.list.available.success" },
+        format!("{count} data pack(s): {}. Directory packs currently load functions and function tags only", names.join(", ")),
         vec![
             TextComponent::from(BUILTIN_PACK),
-            TextComponent::from("1".to_owned()),
+            TextComponent::from(count.to_string()),
         ],
     );
     context.source().send_success(&header, false);
-    Ok(1)
+    Ok(count as i32)
 }
 
 fn unsupported(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     context.source().send_failure(translated(
         "commands.datapack.unknown",
-        "Steel loads one built-in data pack; loading packs from disk is not supported yet"
+        "Directory-pack functions load at startup and /reload; enable/disable ordering is not implemented"
             .to_owned(),
         Vec::new(),
     ));

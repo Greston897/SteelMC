@@ -1,5 +1,6 @@
 //! This module contains the `Server` struct, which is the main entry point for the server.
 pub mod bans;
+pub mod datapacks;
 pub mod boss_bars;
 pub(crate) mod broadcasting;
 /// Tick-polled server jobs.
@@ -282,6 +283,7 @@ pub async fn test_server_with_worlds_and_config(
         command_permission_keys,
         command_requests: CommandRequestQueue::new(),
         schedules: Arc::new(schedule::ScheduleRegistry::new()),
+        function_packs: datapacks::FunctionPacks::default(),
         whitelist: Arc::new(whitelist::Whitelist::new()),
         bans: Arc::new(bans::BanList::new()),
         boss_bars: Arc::new(boss_bars::BossBarRegistry::new()),
@@ -553,6 +555,8 @@ pub struct Server {
     command_requests: CommandRequestQueue,
     /// Commands waiting for their tick, backing `/schedule`.
     pub schedules: Arc<schedule::ScheduleRegistry>,
+    /// Runtime directory-pack function resources.
+    pub function_packs: datapacks::FunctionPacks,
     /// Login whitelist, backing `/whitelist`.
     pub whitelist: Arc<whitelist::Whitelist>,
     /// Player and address bans, backing `/ban`, `/banip`, `/pardon` and `/banlist`.
@@ -665,6 +669,8 @@ impl Server {
     /// was, which is also how vanilla behaves when a data pack fails to load.
     pub async fn reload_data_driven_state(&self) -> Result<String, String> {
         let mut reloaded = Vec::new();
+        let functions = self.function_packs.reload()?;
+        reloaded.push(format!("{functions} directory-pack function(s) and function tags"));
 
         // Vanilla's `Permissions` data pack is Steel's `groups.toml`: the file is
         // re-read from disk, validated, and only then swapped in, so a broken
@@ -1011,6 +1017,7 @@ impl Server {
             scoreboards,
             command_storage,
             schedules: Arc::new(schedule::ScheduleRegistry::new()),
+            function_packs: datapacks::FunctionPacks::from_root(resolved_worlds.save_path.join("datapacks"))?,
             whitelist: Arc::new(whitelist::Whitelist::new()),
             bans: Arc::new(bans::BanList::new()),
             boss_bars: Arc::new(boss_bars::BossBarRegistry::new()),
@@ -1225,6 +1232,21 @@ impl Server {
             .await?;
         self.bans.apply_saved(bans);
         Ok(())
+    }
+
+    /// Resolve runtime function overrides before the generated vanilla registry.
+    pub(crate) fn function_commands(&self, id: &steel_utils::Identifier) -> Option<Vec<String>> {
+        self.function_packs.commands(id)
+    }
+
+    /// Parse a function line without discarding execute's source transformations.
+    pub(crate) fn parse_function_command(
+        &self,
+        command: &str,
+        source: &CommandSource,
+    ) -> Result<crate::command::execution::SteelContextChain<CommandSource>, crate::command::brigadier::CommandSyntaxError> {
+        let dispatcher = self.command_dispatcher.read();
+        dispatcher.context_chain(dispatcher.parse(command, source.clone()))
     }
 
     /// Queues a command for execution at the start of the next game tick.
