@@ -1793,11 +1793,6 @@ pub trait Mob: LivingEntity + Leashable {
             self.update_control_flags();
         }
         self.tick_goal_selectors(entity);
-        if crate::world::raid::is_raider_type(self.entity_type())
-            && let Some(world) = self.level()
-        {
-            world.raids.tick_captain_banner(entity, &world);
-        }
         self.tick_path_navigation();
         self.custom_server_ai_step();
         self.tick_move_control();

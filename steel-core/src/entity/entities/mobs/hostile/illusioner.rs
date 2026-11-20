@@ -75,6 +75,7 @@ impl IllusionerEntity {
 
         {
             let mut goal_selector = mob_base.goal_selector().lock();
+            goal_selector.add_goal(1, crate::entity::ai::goal::ObtainRaidBannerGoal::new());
             goal_selector.add_goal(5, crate::entity::ai::goal::RaidCelebrationGoal);
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
             goal_selector.add_goal(2, MeleeAttackGoal::new(1.0, false));

@@ -57,9 +57,6 @@ pub struct Raid {
     pub wave_leaders: BTreeMap<i32, Uuid>,
     /// Persisted wave identity must not change when a newer group spawns.
     pub member_waves: BTreeMap<Uuid, i32>,
-    /// Failed banner paths expire after 600 active ticks; never persisted.
-    #[serde(skip)]
-    pub unreachable_banners: BTreeMap<(Uuid, Uuid), i32>,
     /// Zero-based omen amplifier, retained for compatibility with older saves.
     pub omen_level: i32,
     /// Loaded active ticks counted against the global timeout.
@@ -100,7 +97,6 @@ impl Default for Raid {
             leader: None,
             wave_leaders: BTreeMap::new(),
             member_waves: BTreeMap::new(),
-            unreachable_banners: BTreeMap::new(),
             omen_level: 0,
             ticks_active: 0,
             waves_cleared: 0,
@@ -365,71 +361,49 @@ impl RaidManager {
         }
     }
 
-    /// Raider.ObtainRaidLeaderBannerGoal. Only a leader-capable current member
-    /// can claim the dropped, exact ominous banner; ordinary white banners do
-    /// not promote raiders. The manager lock arbitrates competing claimants.
-    pub fn tick_captain_banner(&self, entity: &crate::entity::SharedEntity, world: &Arc<World>) {
-        use crate::entity::entities::objects::items::ItemEntity;
-        use crate::entity::RemovalReason;
+    /// Shared eligibility for the MOVE-controlled captain-banner goal.
+    pub(crate) fn can_pick_up_captain_banner(&self, mob: &dyn crate::entity::PathfinderMob) -> bool {
         use crate::inventory::equipment::EquipmentSlot;
         use steel_registry::item_stack::ItemStack;
-        use steel_utils::Downcast as _;
-        if !entity.is_alive() || !(entity.entity_type() == &vanilla_entities::PILLAGER
-            || entity.entity_type() == &vanilla_entities::VINDICATOR
-            || entity.entity_type() == &vanilla_entities::EVOKER
-            || entity.entity_type() == &vanilla_entities::ILLUSIONER) { return; }
-        let Some(mob) = entity.as_mob() else { return; };
-        if ItemStack::matches(&mob.equipment_in_slot(EquipmentSlot::Head), &ominous_banner()) { return; }
-        let eligible = self.raids.lock().iter().any(|raid| raid.status == RaidStatus::Ongoing
-            && !raid.wave_leaders.contains_key(raid.member_waves.get(&entity.uuid()).unwrap_or(&raid.waves_spawned))
-            && raid.leader != Some(entity.uuid()) && raid.raiders.contains(&entity.uuid()));
-        if !eligible { return; }
-        let range = mob.attributes().lock().required_value(steel_registry::vanilla_attributes::FOLLOW_RANGE);
-        let mut items = world.get_entities_in_aabb(&entity.bounding_box().inflate_xyz(range, 8.0, range));
-        items.sort_by(|a, b| a.position().distance_squared(entity.position())
-            .total_cmp(&b.position().distance_squared(entity.position())));
-        for candidate in items {
-            let Some(item) = candidate.downcast_ref::<ItemEntity>() else { continue; };
-            if item.is_removed() || item.has_pickup_delay() || !ItemStack::matches(&item.get_item(), &ominous_banner()) { continue; }
-            let cached = self.raids.lock().iter().any(|raid| raid.unreachable_banners
-                .get(&(entity.uuid(), item.uuid())).is_some_and(|until| *until > raid.ticks_active));
-            if cached { continue; }
-            if entity.position().distance_squared(item.position()) >= 1.414_f64.powi(2) {
-                let following = {
-                    let navigation = mob.mob_base().navigation().lock();
-                    !navigation.is_done() && navigation.target_pos() == Some(item.block_position())
-                };
-                if following { return; }
-                if let Some(pathfinder) = entity.as_pathfinder_mob()
-                    && pathfinder.move_to_pos_with_reach(item.position(), 1, 1.15) { return; }
-                for raid in self.raids.lock().iter_mut().filter(|raid| raid.raiders.contains(&entity.uuid())) {
-                    let now = raid.ticks_active;
-                    raid.unreachable_banners.retain(|_, until| *until > now);
-                    raid.unreachable_banners.insert((entity.uuid(), item.uuid()), now + 600);
-                }
-                continue;
-            }
-            {
-                let mut raids = self.raids.lock();
-                let Some(raid) = raids.iter_mut().find(|raid| raid.status == RaidStatus::Ongoing
-                    && !raid.wave_leaders.contains_key(raid.member_waves.get(&entity.uuid()).unwrap_or(&raid.waves_spawned))
-                    && raid.raiders.contains(&entity.uuid())) else { return; };
-                if item.is_removed() { return; }
-                let wave = *raid.member_waves.get(&entity.uuid()).unwrap_or(&raid.waves_spawned);
-                raid.wave_leaders.insert(wave, entity.uuid());
-                if wave == raid.waves_spawned { raid.leader = Some(entity.uuid()); }
-                item.set_removed(RemovalReason::Discarded);
-            }
-            let old = mob.equipment_in_slot(EquipmentSlot::Head);
-            if !old.is_empty() && (rand::random::<f32>() - 0.1).max(0.0) < mob.equipment_drop_chance(EquipmentSlot::Head) {
-                mob.spawn_at_location(old, 0.0);
-            }
-            mob.with_equipment_slot_mut(EquipmentSlot::Head, &mut |head| *head = ominous_banner());
-            mob.set_equipment_drop_chance(EquipmentSlot::Head, 2.0);
-            world.broadcast_to_nearby(steel_utils::ChunkPos::from_entity_pos(item.position()),
-                steel_protocol::packets::game::CTakeItemEntity::new(item.id(), entity.id(), 1), None);
-            return;
+        if !crate::entity::LivingEntity::is_alive(mob) || !(mob.entity_type() == &vanilla_entities::PILLAGER
+            || mob.entity_type() == &vanilla_entities::VINDICATOR
+            || mob.entity_type() == &vanilla_entities::EVOKER
+            || mob.entity_type() == &vanilla_entities::ILLUSIONER) { return false; }
+        if ItemStack::matches(&mob.equipment_in_slot(EquipmentSlot::Head), &ominous_banner()) { return false; }
+        self.raids.lock().iter().any(|raid| {
+            let wave = *raid.member_waves.get(&mob.uuid()).unwrap_or(&raid.waves_spawned);
+            raid.status == RaidStatus::Ongoing && raid.raiders.contains(&mob.uuid())
+                && !raid.wave_leaders.contains_key(&wave)
+                && !(wave == raid.waves_spawned && raid.leader.is_some())
+        })
+    }
+
+    /// Atomically claim the pursued banner; competing goals cannot both promote.
+    pub(crate) fn claim_captain_banner(&self, entity: &crate::entity::SharedEntity,
+        item: &crate::entity::entities::objects::items::ItemEntity, world: &Arc<World>) {
+        use crate::inventory::equipment::EquipmentSlot;
+        use steel_registry::item_stack::ItemStack;
+        let Some(mob) = entity.as_pathfinder_mob() else { return; };
+        if !self.can_pick_up_captain_banner(mob) || item.has_pickup_delay()
+            || !ItemStack::matches(&item.get_item(), &ominous_banner())
+            || entity.position().distance_squared(item.position()) >= 1.414_f64.powi(2) { return; }
+        {
+            let mut raids = self.raids.lock();
+            let Some(raid) = raids.iter_mut().find(|raid| raid.status == RaidStatus::Ongoing && raid.raiders.contains(&entity.uuid())) else { return; };
+            let wave = *raid.member_waves.get(&entity.uuid()).unwrap_or(&raid.waves_spawned);
+            if raid.wave_leaders.contains_key(&wave) || item.is_removed() { return; }
+            raid.wave_leaders.insert(wave, entity.uuid());
+            if wave == raid.waves_spawned { raid.leader = Some(entity.uuid()); }
+            item.set_removed(crate::entity::RemovalReason::Discarded);
         }
+        let old = mob.equipment_in_slot(EquipmentSlot::Head);
+        if !old.is_empty() && (rand::random::<f32>() - 0.1).max(0.0) < mob.equipment_drop_chance(EquipmentSlot::Head) {
+            mob.spawn_at_location(old, 0.0);
+        }
+        mob.with_equipment_slot_mut(EquipmentSlot::Head, &mut |head| *head = ominous_banner());
+        mob.set_equipment_drop_chance(EquipmentSlot::Head, 2.0);
+        world.broadcast_to_nearby(steel_utils::ChunkPos::from_entity_pos(item.position()),
+            steel_protocol::packets::game::CTakeItemEntity::new(item.id(), entity.id(), 1), None);
     }
 
     /// Removal with no death (discard or dimension transfer) must not leave an
@@ -740,7 +714,7 @@ fn find_spawn_pos(world: &Arc<World>, center: IVec3, cooldown: i32, max_tries: i
 }
 
 /// Shared vanilla captain banner, including all eight ordered pattern layers.
-pub(crate) fn ominous_banner() -> steel_registry::item_stack::ItemStack {
+pub(crate) pub(crate) fn ominous_banner() -> steel_registry::item_stack::ItemStack {
     use steel_registry::data_components::vanilla_components::{
         BANNER_PATTERNS, ITEM_NAME, RARITY, Rarity,
     };
