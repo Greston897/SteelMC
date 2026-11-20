@@ -3,12 +3,10 @@
 //! A three-headed boss that hovers, fires wither skulls and regenerates while
 //! its invulnerability timer runs.
 //!
-//! Deviations (deliberate, documented in `STATE-26.3-RU.md`):
-//! * the boss bar and the three skull volleys are not implemented; the spawn
-//!   phase (220 protected ticks, escalating regeneration, closing blast) and the
-//!   synced target/invulnerability fields are.
+//! Server-side ranged combat, independent side-head targets and tracker-scoped
+//! boss bar; spawn protection remains separate from the combat AI.
 use std::iter::empty;
-use std::sync::Weak;
+use std::sync::{Arc, Weak};
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
@@ -18,12 +16,12 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::WitherEntityData;
-use steel_registry::{level_events, sound_events, vanilla_attributes};
+use steel_registry::{TaggedRegistryExt as _, level_events, sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
+    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, RangedAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
@@ -57,6 +55,8 @@ pub struct WitherBossEntity {
     living_base: LivingEntityBase,
     mob_base: MobBase,
     entity_data: SyncMutex<WitherEntityData>,
+    head_timers: SyncMutex<([i32; 2], [i32; 2])>,
+    last_bar_progress: SyncMutex<f32>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `WitherBossEntity`.
@@ -84,6 +84,7 @@ impl WitherBossEntity {
     }
 
     fn new_with_base(base: EntityBase, entity_type: EntityTypeRef) -> Self {
+        base.set_no_gravity(true);
         let living_base = LivingEntityBase::new(entity_type);
         let mob_base = MobBase::new();
 
@@ -93,7 +94,7 @@ impl WitherBossEntity {
         {
             let mut goal_selector = mob_base.goal_selector().lock();
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
-            goal_selector.add_goal(2, MeleeAttackGoal::new(1.0, false));
+            goal_selector.add_goal(2, RangedAttackGoal::new(1.0, 40, 20.0));
             goal_selector.add_goal(7, WaterAvoidingRandomStrollGoal::new(1.0));
             goal_selector.add_goal(8, LookAtPlayerGoal::new(8.0));
             goal_selector.add_goal(9, RandomLookAroundGoal::new());
@@ -102,7 +103,9 @@ impl WitherBossEntity {
             target_selector.add_goal(1, HurtByTargetGoal::new().set_alert_others(empty()));
             target_selector.add_goal(
                 2,
-                NearestAttackableTargetGoal::new_for_players(true, |_, _| true),
+                NearestAttackableTargetGoal::new(true, |target, _| {
+                    !steel_registry::REGISTRY.entity_types.is_in_tag(target.entity_type(), &steel_registry::vanilla_entity_type_tags::EntityTypeTag::WITHER_FRIENDS)
+                }),
             );
         }
 
@@ -112,7 +115,89 @@ impl WitherBossEntity {
             living_base,
             mob_base,
             entity_data: SyncMutex::new(entity_data),
+            head_timers: SyncMutex::new(([0; 2], [0; 2])),
+            last_bar_progress: SyncMutex::new(-1.0),
         }
+    }
+
+    /// Full bar pairing is sent only to players actually tracking this boss.
+    pub(crate) fn boss_bar_packet(&self) -> steel_protocol::packets::game::CBossEvent {
+        use steel_protocol::packets::game::{BossBarColor, BossBarOverlay, CBossEvent};
+        CBossEvent::add(self.uuid(), self.display_name(), self.bar_progress(), BossBarColor::Purple, BossBarOverlay::Progress, 1)
+    }
+
+    fn bar_progress(&self) -> f32 {
+        if self.invulnerable_ticks() > 0 {
+            1.0 - self.invulnerable_ticks() as f32 / SPAWN_INVULNERABLE_TICKS as f32
+        } else { self.get_health() / self.get_max_health() }
+    }
+
+    fn sync_boss_bar(&self) {
+        let Some(world) = self.level() else { return; };
+        let progress = self.bar_progress().clamp(0.0, 1.0);
+        let mut last = self.last_bar_progress.lock();
+        if progress.to_bits() != last.to_bits() {
+            world.broadcast_to_entity_trackers(self.id(), steel_protocol::packets::game::CBossEvent::update_progress(self.uuid(), progress), None);
+            *last = progress;
+        }
+        if self.tick_count() % 20 == 0 {
+            world.broadcast_to_entity_trackers(self.id(), steel_protocol::packets::game::CBossEvent::update_name(self.uuid(), self.display_name()), None);
+        }
+    }
+
+    fn set_head_target(&self, head: usize, id: i32) {
+        let mut data = self.entity_data.lock();
+        match head {
+            0 => data.wither_boss_mut().target_a.set(id),
+            1 => data.wither_boss_mut().target_b.set(id),
+            _ => data.wither_boss_mut().target_c.set(id),
+        }
+    }
+
+    fn fire_skull(&self, shooter: &SharedEntity, head: usize, target: DVec3) {
+        use crate::entity::{Projectile, next_entity_id};
+        use crate::entity::entities::objects::projectiles::WitherSkullEntity;
+        let Some(world) = self.level() else { return; };
+        let scale = f64::from(self.get_scale());
+        let angle = (self.y_body_rot() + 180.0 * head.saturating_sub(1) as f32).to_radians();
+        let position = self.position() + if head == 0 { DVec3::new(0.0, 3.0 * scale, 0.0) }
+            else { DVec3::new(f64::from(steel_math::trig::cos(angle)) * 1.3 * scale, 2.2 * scale, f64::from(steel_math::trig::sin(angle)) * 1.3 * scale) };
+        let skull = Arc::new(WitherSkullEntity::new(&steel_registry::vanilla_entities::WITHER_SKULL, next_entity_id(), position, Arc::downgrade(&world)));
+        skull.set_owner_entity(Some(shooter));
+        skull.set_no_gravity(true);
+        skull.shoot(target - position, 1.0, 0.0);
+        let projectile: SharedEntity = skull;
+        if world.try_add_entity(projectile).is_ok() && !self.is_silent() {
+            world.level_event(level_events::SOUND_WITHER_BOSS_SHOOT, self.block_position(), 0, None);
+        }
+    }
+
+    fn tick_side_heads(&self, shooter: &SharedEntity) {
+        use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
+        let Some(world) = self.level() else { return; };
+        self.set_head_target(0, self.target().map_or(0, |target| target.id()));
+        let mut timers = self.head_timers.lock();
+        for side in 0..2 {
+            if self.tick_count() < timers.0[side] { continue; }
+            timers.0[side] = self.tick_count() + rand::random_range(10..20);
+            let current = world.get_entity_by_id(self.alternative_target(side + 1));
+            if let Some(target) = current.filter(|target| target.as_living_entity().is_some_and(|living| Mob::can_attack(self, living))
+                && !steel_registry::REGISTRY.entity_types.is_in_tag(target.entity_type(), &EntityTypeTag::WITHER_FRIENDS)
+                && target.position().distance_squared(self.position()) <= 900.0 && self.has_line_of_sight(target.as_ref())) {
+                self.fire_skull(shooter, side + 2, target.position() + DVec3::Y * (target.bounding_box().height() * 0.5));
+                timers.0[side] = self.tick_count() + rand::random_range(40..60);
+                timers.1[side] = 0;
+            } else {
+                self.set_head_target(side + 1, 0);
+                let targets: Vec<_> = world.get_entities_in_aabb(&self.bounding_box().inflate_xyz(20.0, 8.0, 20.0)).into_iter()
+                    .filter(|target| target.id() != self.id() && target.as_living_entity().is_some_and(|living| Mob::can_attack(self, living))
+                        && !steel_registry::REGISTRY.entity_types.is_in_tag(target.entity_type(), &EntityTypeTag::WITHER_FRIENDS) && self.has_line_of_sight(target.as_ref())).collect();
+                if !targets.is_empty() {
+                    self.set_head_target(side + 1, targets[rand::random_range(0..targets.len())].id());
+                }
+            }
+        }
+        if self.tick_count() % 20 == 0 { self.heal(1.0); }
     }
 
     /// Vanilla `WitherBoss.getInvulnerableTicks` (`DATA_ID_INV`).
@@ -223,6 +308,7 @@ impl Entity for WitherBossEntity {
 
     fn base_tick(&self) {
         Mob::base_tick_mob(self);
+        self.sync_boss_bar();
     }
 
     fn dimensions_for_pose(&self, _pose: EntityPose) -> EntityDimensions {
@@ -316,12 +402,28 @@ impl LivingEntity for WitherBossEntity {
             return;
         }
         Mob::mob_server_ai_step(self, entity);
+        self.tick_side_heads(entity);
     }
 
     fn ai_step(&self, entity: &SharedEntity) -> Option<MoveResult> {
         if self.invulnerable_ticks() > 0 {
             return None;
         }
+        let mut velocity = self.velocity() * DVec3::new(1.0, 0.6, 1.0);
+        if let Some(target) = self.target() {
+            let delta = target.position() - self.position();
+            if delta.y > 0.0 || (self.get_health() > self.get_max_health() * 0.5 && delta.y > -5.0) {
+                velocity.y = velocity.y.max(0.0);
+                velocity.y += 0.3 - velocity.y * 0.6;
+            }
+            let horizontal = DVec3::new(delta.x, 0.0, delta.z);
+            if horizontal.length_squared() > 9.0 {
+                let direction = horizontal.normalize();
+                velocity.x += direction.x * 0.3 - velocity.x * 0.6;
+                velocity.z += direction.z * 0.3 - velocity.z * 0.6;
+            }
+        }
+        self.set_velocity(velocity);
         Monster::monster_ai_step(self, entity)
     }
 }
@@ -367,7 +469,11 @@ impl Mob for WitherBossEntity {
 
 impl Monster for WitherBossEntity {}
 
-impl PathfinderMob for WitherBossEntity {}
+impl PathfinderMob for WitherBossEntity {
+    fn perform_ranged_attack(&self, shooter: &SharedEntity, target: &SharedEntity, _power: f32) {
+        self.fire_skull(shooter, 0, target.position() + DVec3::Y * (target.bounding_box().height() * 0.5));
+    }
+}
 
 #[cfg(test)]
 mod tests {

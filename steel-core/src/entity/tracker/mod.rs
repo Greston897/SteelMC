@@ -206,6 +206,10 @@ impl EntityTracker {
                     {
                         player.send_packet(packet);
                     }
+                    if let Some(entity) = &entity
+                        && entity.entity_type() == &vanilla_entities::WITHER {
+                        player.send_packet(steel_protocol::packets::game::CBossEvent::remove(entity.uuid()));
+                    }
                     player.send_packet(CRemoveEntities::single(entity_id));
                 }
             }
@@ -275,7 +279,7 @@ impl EntityTracker {
             if let Some(packet) = vehicle_packet {
                 player.send_packet(packet);
             }
-            player.send_packet(CRemoveEntities::single(entity_id));
+            self.send_despawn_packets(entity_id, &player);
         }
 
         for entity in entities_to_spawn {
@@ -537,7 +541,7 @@ impl EntityTracker {
         });
 
         for entity_id in entities_to_despawn {
-            player.send_packet(CRemoveEntities::single(entity_id));
+            self.send_despawn_packets(entity_id, &player);
         }
 
         for entity_id in dead_entities {
@@ -597,7 +601,7 @@ impl EntityTracker {
                 {
                     player.send_packet(packet);
                 }
-                player.send_packet(CRemoveEntities::single(entity_id));
+                self.send_despawn_packets(entity_id, &player);
             }
         }
 
@@ -650,7 +654,7 @@ impl EntityTracker {
                 {
                     player.send_packet(packet);
                 }
-                player.send_packet(CRemoveEntities::single(entity_id));
+                self.send_despawn_packets(entity_id, &player);
             }
         }
 
@@ -726,6 +730,20 @@ impl EntityTracker {
         let entity_id = entity.id();
         self.spawn_pairing(entity, player.id())
             .send_to(entity_id, player);
+        use steel_utils::Downcast as _;
+        if let Some(wither) = entity.downcast_ref::<crate::entity::entities::mobs::bosses::WitherBossEntity>() {
+            player.send_packet(wither.boss_bar_packet());
+        }
+    }
+
+    fn send_despawn_packets(&self, entity_id: i32, player: &Player) {
+        let boss = self.entities.read_sync(&entity_id, |_, tracked| {
+            tracked.entity.upgrade().filter(|entity| entity.entity_type() == &vanilla_entities::WITHER).map(|entity| entity.uuid())
+        }).flatten();
+        if let Some(uuid) = boss {
+            player.send_packet(steel_protocol::packets::game::CBossEvent::remove(uuid));
+        }
+        player.send_packet(CRemoveEntities::single(entity_id));
     }
 
     fn spawn_pairing(&self, entity: &SharedEntity, player_id: i32) -> EntitySpawnPairing {
