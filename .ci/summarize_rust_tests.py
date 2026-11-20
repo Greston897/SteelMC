@@ -10,7 +10,7 @@ from pathlib import Path
 import re
 
 ANSI = re.compile(r'\x1b\[[0-9;]*m')
-BINARY = re.compile(r'(?:[/\\]|^)([a-zA-Z0-9_]+)-[0-9a-fA-F]{7,}(?:\.exe)?(?=[\s`\)\']|$)')
+BINARY = re.compile(r'(?:[/\\]|^)([a-zA-Z0-9_]+)-[0-9a-fA-F]+(?:\.exe)?(?=[\s`\)\']|$)')
 TEST = re.compile(r'^test (.+?) \.\.\. (ok|FAILED|ignored)(?:,.*)?$')
 
 

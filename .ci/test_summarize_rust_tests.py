@@ -23,3 +23,14 @@ test steel-utils/src/lib.rs - (line 2) ... ok
 
     def test_unknown_crate_is_explicit_not_invented(self):
         self.assertEqual(summarize('test world::save ... ok')['tests'][0]['crate'], 'unknown')
+
+
+    def test_standard_cargo_runner_headers(self):
+        for header in [
+            'Running unittests src/lib.rs (target/debug/deps/steel_core-0123456789abcdef)',
+            'Running `/tmp/custom/steel_core-0123456789abcdef`',
+            'Running `CARGO=/bin/cargo /tmp/custom/steel_core-0123456789abcdef`',
+        ]:
+            with self.subTest(header=header):
+                report = summarize(header + '\ntest world::raid::case ... ok')
+                self.assertEqual(report['tests'][0]['crate'], 'steel_core')
