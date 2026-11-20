@@ -18,6 +18,7 @@ use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::WitherEntityData;
 use steel_registry::{TaggedRegistryExt as _, level_events, sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
+use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
@@ -57,6 +58,7 @@ pub struct WitherBossEntity {
     entity_data: SyncMutex<WitherEntityData>,
     head_timers: SyncMutex<([i32; 2], [i32; 2])>,
     last_bar_progress: SyncMutex<f32>,
+    destroy_blocks_tick: SyncMutex<i32>,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `WitherBossEntity`.
@@ -117,6 +119,7 @@ impl WitherBossEntity {
             entity_data: SyncMutex::new(entity_data),
             head_timers: SyncMutex::new(([0; 2], [0; 2])),
             last_bar_progress: SyncMutex::new(-1.0),
+            destroy_blocks_tick: SyncMutex::new(0),
         }
     }
 
@@ -208,6 +211,26 @@ impl WitherBossEntity {
             }
         }
         if self.tick_count() % 20 == 0 { self.heal(1.0); }
+        let destroy = {
+            let mut countdown = self.destroy_blocks_tick.lock();
+            if *countdown > 0 { *countdown -= 1; *countdown == 0 } else { false }
+        };
+        if destroy && world.get_game_rule(&steel_registry::vanilla_game_rules::MOB_GRIEFING) {
+            use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+            use crate::world::LevelReader as _;
+            let center = self.block_position();
+            let width = (self.bounding_box().width() * 0.5 + 1.0).floor() as i32;
+            let height = self.bounding_box().height().floor() as i32;
+            let mut destroyed = false;
+            for x in -width..=width { for z in -width..=width { for y in 0..=height {
+                let pos = steel_utils::BlockPos::new(center.x() + x, center.y() + y, center.z() + z);
+                let state = world.get_block_state(pos);
+                if !state.is_air() && !steel_registry::REGISTRY.blocks.is_in_tag(state.get_block(), &steel_registry::vanilla_block_tags::BlockTag::WITHER_IMMUNE) {
+                    destroyed = world.destroy_block_by_entity(pos, true, self) || destroyed;
+                }
+            } } }
+            if destroyed { world.level_event(level_events::SOUND_WITHER_BOSS_BREAK_BLOCK, center, 0, None); }
+        }
     }
 
     /// Vanilla `WitherBoss.getInvulnerableTicks` (`DATA_ID_INV`).
@@ -296,6 +319,15 @@ impl WitherBossEntity {
 impl DefaultEntityPush for WitherBossEntity {}
 
 impl Entity for WitherBossEntity {
+    fn can_use_portal(&self, _ignore_passenger: bool) -> bool { false }
+
+    fn check_despawn(&self) {
+        if self.level().is_some_and(|world| world.difficulty() == steel_utils::types::Difficulty::Peaceful) {
+            self.set_removed(crate::entity::RemovalReason::Discarded);
+        }
+        self.set_no_action_time(0);
+    }
+
     fn is_hard_collision_relevant(&self) -> bool {
         false
     }
@@ -363,10 +395,12 @@ impl Entity for WitherBossEntity {
 
     fn save_additional(&self, nbt: &mut NbtCompound) {
         self.save_mob(nbt);
+        nbt.insert("Invul", self.invulnerable_ticks());
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_mob(nbt);
+        self.set_invulnerable_ticks(nbt.int_value("Invul").unwrap_or(0).max(0));
     }
 }
 
@@ -387,6 +421,37 @@ impl LivingEntity for WitherBossEntity {
             .living_entity_mut()
             .health
             .set(clamped);
+    }
+
+    fn is_invulnerable_to(&self, _world: &World, source: &DamageSource) -> bool {
+        use steel_registry::vanilla_damage_type_tags::DamageTypeTag;
+        use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
+        self.default_is_invulnerable_to(source)
+            || crate::enchantment_helper::is_immune_to_damage(self, source)
+            || source.is(&DamageTypeTag::WITHER_IMMUNE_TO)
+            || (self.invulnerable_ticks() > 0 && !source.bypasses_invulnerability())
+            || source.causing_entity().is_some_and(|entity| steel_registry::REGISTRY.entity_types.is_in_tag(entity.entity_type(), &EntityTypeTag::WITHER_FRIENDS)
+                || entity.entity_type() == &steel_registry::vanilla_entities::WITHER)
+            || (self.get_health() <= self.get_max_health() * 0.5 && source.direct_entity().is_some_and(|entity|
+                entity.as_abstract_arrow().is_some() || entity.entity_type() == &steel_registry::vanilla_entities::WIND_CHARGE))
+    }
+
+    fn hurt_server(&self, world: &World, source: &DamageSource, amount: f32) -> bool {
+        if self.is_invulnerable_to(world, source) { return false; }
+        {
+            let mut countdown = self.destroy_blocks_tick.lock();
+            if *countdown <= 0 { *countdown = 20; }
+        }
+        for idle in &mut self.head_timers.lock().1 { *idle += 3; }
+        self.default_hurt_server(world, source, amount)
+    }
+
+    fn add_mob_effect_with_source(&self, _effect: crate::entity::MobEffectInstance, _source: Option<&dyn Entity>) -> bool { false }
+
+    fn drop_custom_death_loot(&self, _source: &DamageSource, _killed_by_player: bool) {
+        if let Some(star) = self.spawn_at_location(steel_registry::item_stack::ItemStack::new(&steel_registry::vanilla_items::NETHER_STAR), 0.0) {
+            star.set_age(-6000);
+        }
     }
 
     fn hurt_sound(&self, _source: &DamageSource) -> Option<SoundEventRef> {

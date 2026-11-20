@@ -91,7 +91,7 @@ impl WitherSkullEntity {
 
     /// Vanilla `WitherSkull` damage source.
     fn impact_damage_source(self: &Arc<Self>) -> DamageSource {
-        let mut source = DamageSource::environment(&vanilla_damage_types::WITHER)
+        let mut source = DamageSource::environment(&vanilla_damage_types::WITHER_SKULL)
             .with_direct_entity(Arc::clone(self) as SharedEntity);
         if let Some(owner) = self.get_owner() {
             source = source.with_causing_entity(owner);
@@ -217,7 +217,7 @@ impl crate::world::explosion::ExplosionDamageCalculator for ChargedSkullCalculat
     fn block_explosion_resistance(&self, explosion: &dyn crate::world::Explosion, world: &World,
         pos: steel_utils::BlockPos, state: steel_utils::BlockStateId, fluid: steel_registry::fluid::FluidState) -> Option<f32> {
         use steel_registry::{TaggedRegistryExt as _, blocks::block_state_ext::BlockStateExt as _};
-        use crate::world::explosion::{DefaultExplosionDamageCalculator, ExplosionDamageCalculator};
+        use crate::world::explosion::DefaultExplosionDamageCalculator;
         let resistance = DefaultExplosionDamageCalculator.block_explosion_resistance(explosion, world, pos, state, fluid);
         if !state.is_air() && !steel_registry::REGISTRY.blocks.is_in_tag(state.get_block(), &steel_registry::vanilla_block_tags::BlockTag::WITHER_IMMUNE) {
             resistance.map(|value| value.min(0.8))
