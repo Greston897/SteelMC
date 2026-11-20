@@ -231,3 +231,41 @@ fn send_changes_broadcasts_hurt_marked_non_player_motion() {
     assert!(self_updates.is_empty());
     assert!(!entity_typed.hurt_marked());
 }
+
+#[test]
+fn tracker_routes_unchanged_arrow_position_rotation_on_each_update_interval() {
+    init_vanilla_registry();
+    let tracker = EntityTracker::new();
+    let entity_typed = PairingTestEntity::new_with_type(1, &vanilla_entities::ARROW, Vec::new());
+    let entity: SharedEntity = entity_typed;
+    tracker.add(&entity, |_| Vec::new(), |_| None);
+    let interval = entity.entity_type().update_interval;
+    assert!(interval > 0);
+    for tick in 0..interval * 3 {
+        let mut packets = Vec::new();
+        tracker.send_changes(
+            |_| Vec::new(),
+            |_| None,
+            EntityChangeSenders {
+                movement: |id, packet| packets.push((id, packet)),
+                self_movement: |_, _| {},
+                entity_data: |_, _| {},
+                attributes: |_, _| {},
+                mob_effects: |_, _| {},
+                equipment: |_, _| {},
+                passengers: |_, _| {},
+                entity_link: |_, _| {},
+            },
+        );
+        if tick % interval == 0 {
+            assert_eq!(packets.len(), 1);
+            assert_eq!(packets[0].0, 1);
+            assert!(matches!(
+                packets[0].1,
+                EntityMovementSyncPacket::PositionRotation(_)
+            ));
+        } else {
+            assert!(packets.is_empty());
+        }
+    }
+}

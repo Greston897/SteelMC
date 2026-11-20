@@ -8,7 +8,7 @@ use steel_protocol::packets::game::{
 use steel_registry::{entity_type::EntityTypeRef, vanilla_entities};
 
 /// Squared position delta needed before vanilla considers a movement worth syncing.
-pub const POSITION_SYNC_THRESHOLD: f64 = 7.629_394_5e-6;
+pub const POSITION_SYNC_THRESHOLD: f64 = 7.629_394_531_25e-6;
 /// Squared velocity delta needed before vanilla sends an entity motion packet.
 pub const VELOCITY_SYNC_THRESHOLD: f64 = 1.0e-7;
 /// Ticks between forced position updates even when the entity hasn't moved
@@ -647,17 +647,22 @@ impl ServerEntityMovementSyncState {
     ) {
         self.teleport_delay = self.teleport_delay.wrapping_add(1);
 
+        // AbstractArrow always uses a position+rotation packet, even with no
+        // measurable delta or change in packed rotation (ServerEntity 26.3).
+        let is_arrow = update.entity_type.is_abstract_arrow;
+        let should_send_rotation = should_send_rotation || is_arrow;
         let position_changed = self.position.position_changed(update.position);
         let should_send_position =
-            position_changed || self.tick_count % FORCED_POS_UPDATE_PERIOD == 0;
+            is_arrow || position_changed || self.tick_count % FORCED_POS_UPDATE_PERIOD == 0;
 
         let packed_delta = self.position.packed_delta(update.position);
         let delta_too_big = packed_delta.is_none();
         let full_precision_required = should_send_position
             && packed_delta.is_some_and(|delta| update.is_full_precision_encoding_required(delta));
 
-        let force_full = delta_too_big
-            || update.requires_precise_position
+        // Overflow/precision fallback does not reset vanilla teleportDelay.
+        // Only the explicit full-sync conditions in createMovePacket do.
+        let force_full = update.requires_precise_position
             || self.teleport_delay > FORCED_TELEPORT_PERIOD
             || self.was_riding
             || self.was_on_ground != update.on_ground;
@@ -670,7 +675,7 @@ impl ServerEntityMovementSyncState {
             result.packets.push(EntityMovementSyncPacket::from(packet));
         }
 
-        if force_full || full_precision_required {
+        if force_full || (should_send_position && delta_too_big) || full_precision_required {
             if force_full {
                 self.was_on_ground = update.on_ground;
                 self.teleport_delay = 0;
@@ -1322,5 +1327,73 @@ mod tests {
         assert_eq!(packet.y_rot.to_bits(), 90.0_f32.to_bits());
         assert_eq!(packet.x_rot.to_bits(), 45.0_f32.to_bits());
         assert!(packet.on_ground);
+    }
+
+    #[test]
+    fn position_threshold_uses_exact_vanilla_double() {
+        let state = EntityPositionSyncState::new(DVec3::ZERO, false);
+        // Lies between the previous rounded constant and vanilla's literal.
+        let below = DVec3::new(0.002_762_135_86, 0.0, 0.0);
+        assert!(below.length_squared() > 7.629_394_5e-6);
+        assert!(below.length_squared() < POSITION_SYNC_THRESHOLD);
+        assert!(!state.position_changed(below));
+    }
+
+    #[test]
+    fn abstract_arrows_send_position_and_rotation_on_every_processed_update() {
+        steel_registry::init_vanilla_registry();
+        for entity_type in [
+            &vanilla_entities::ARROW,
+            &vanilla_entities::SPECTRAL_ARROW,
+            &vanilla_entities::TRIDENT,
+        ] {
+            assert!(entity_type.is_abstract_arrow);
+            let mut state = ServerEntityMovementSyncState::new(
+                DVec3::ZERO,
+                DVec3::ZERO,
+                false,
+                (0.0, 0.0),
+                0.0,
+                1,
+                false,
+            );
+            let mut update = server_update(DVec3::ZERO, DVec3::ZERO);
+            update.entity_type = entity_type;
+            for _ in 0..3 {
+                let packets = collect_server_packets(&mut state, update);
+                assert_eq!(packets.len(), 1);
+                assert!(matches!(
+                    packets[0],
+                    EntityMovementSyncPacket::PositionRotation(_)
+                ));
+            }
+        }
+    }
+
+    #[test]
+    fn overflow_fallback_preserves_periodic_teleport_deadline() {
+        let mut state = ServerEntityMovementSyncState::new(
+            DVec3::ZERO,
+            DVec3::ZERO,
+            false,
+            (0.0, 0.0),
+            0.0,
+            1,
+            false,
+        );
+        state.teleport_delay = 399;
+        let update = server_update(DVec3::new(16.0, 0.0, 0.0), DVec3::ZERO);
+        let packets = collect_server_packets(&mut state, update);
+        assert!(matches!(
+            packets[0],
+            EntityMovementSyncPacket::PositionSync(_)
+        ));
+        assert_eq!(state.teleport_delay, 400);
+        let packets = collect_server_packets(&mut state, update);
+        assert!(matches!(
+            packets[0],
+            EntityMovementSyncPacket::PositionSync(_)
+        ));
+        assert_eq!(state.teleport_delay, 0);
     }
 }

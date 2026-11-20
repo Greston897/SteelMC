@@ -7,7 +7,7 @@ use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, IntProperty};
 use steel_registry::feature::{ConfiguredFeatureKind, TrunkPlacer};
 use steel_registry::vanilla_block_tags::BlockTag;
-use steel_registry::{REGISTRY, RegistryExt as _, vanilla_blocks};
+use steel_registry::{REGISTRY, RegistryExt as _};
 use steel_utils::random::worldgen_random::WorldgenRandom;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, Direction, Identifier};
@@ -343,6 +343,7 @@ mod tests {
     use super::*;
     use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
     use rand::{SeedableRng as _, rngs::StdRng};
+    use steel_registry::vanilla_blocks;
     use steel_utils::ChunkPos;
 
     #[test]
