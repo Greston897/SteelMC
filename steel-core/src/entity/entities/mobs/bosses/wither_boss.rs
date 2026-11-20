@@ -89,6 +89,7 @@ impl WitherBossEntity {
         base.set_no_gravity(true);
         let living_base = LivingEntityBase::new(entity_type);
         let mob_base = MobBase::new();
+        mob_base.set_xp_reward(50);
 
         let mut entity_data = WitherEntityData::new();
         living_base.initialize_synced_data(&mut entity_data);
@@ -229,7 +230,7 @@ impl WitherBossEntity {
                     destroyed = world.destroy_block_by_entity(pos, true, self) || destroyed;
                 }
             } } }
-            if destroyed { world.level_event(level_events::SOUND_WITHER_BOSS_BREAK_BLOCK, center, 0, None); }
+            if destroyed { world.level_event(level_events::SOUND_WITHER_BLOCK_BREAK, center, 0, None); }
         }
     }
 
@@ -433,7 +434,7 @@ impl LivingEntity for WitherBossEntity {
             || source.causing_entity().is_some_and(|entity| steel_registry::REGISTRY.entity_types.is_in_tag(entity.entity_type(), &EntityTypeTag::WITHER_FRIENDS)
                 || entity.entity_type() == &steel_registry::vanilla_entities::WITHER)
             || (self.get_health() <= self.get_max_health() * 0.5 && source.direct_entity().is_some_and(|entity|
-                entity.as_abstract_arrow().is_some() || entity.entity_type() == &steel_registry::vanilla_entities::WIND_CHARGE))
+                entity.is_abstract_arrow() || entity.entity_type() == &steel_registry::vanilla_entities::WIND_CHARGE))
     }
 
     fn hurt_server(&self, world: &World, source: &DamageSource, amount: f32) -> bool {
