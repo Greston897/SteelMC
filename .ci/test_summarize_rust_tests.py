@@ -28,6 +28,8 @@ test steel-utils/src/lib.rs - (line 2) ... ok
     def test_standard_cargo_runner_headers(self):
         for header in [
             'Running unittests src/lib.rs (target/debug/deps/steel_core-0123456789abcdef)',
+            'Running unittests src/lib.rs (target/debug/deps/steel_core/0123456789abcdef/steel_core)',
+            'Running `/tmp/target/debug/deps/steel_core/0123456789abcdef/steel_core`',
             'Running `/tmp/custom/steel_core-0123456789abcdef`',
             'Running `CARGO=/bin/cargo /tmp/custom/steel_core-0123456789abcdef`',
         ]:

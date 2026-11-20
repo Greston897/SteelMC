@@ -11,6 +11,7 @@ import re
 
 ANSI = re.compile(r'\x1b\[[0-9;]*m')
 BINARY = re.compile(r'(?:[/\\]|^)([a-zA-Z0-9_]+)-[0-9a-fA-F]+(?:\.exe)?(?=[\s`\)\']|$)')
+PLAIN_WORKSPACE_BINARY = re.compile(r'''[/\\](steel(?:_[a-z0-9]+)*)(?:\.exe)?(?=[\s`)'"]|$)''')
 TEST = re.compile(r'^test (.+?) \.\.\. (ok|FAILED|ignored)(?:,.*)?$')
 
 
@@ -21,7 +22,7 @@ def summarize(text):
     for raw in text.splitlines():
         line = ANSI.sub('', raw).strip()
         if re.search(r'\bRunning\b', line):
-            match = BINARY.search(line)
+            match = BINARY.search(line) or PLAIN_WORKSPACE_BINARY.search(line)
             if match:
                 crate = match[1]
         elif line.startswith('Doc-tests '):
@@ -51,7 +52,7 @@ if __name__ == '__main__':
     report = summarize(text)
     headers = [ANSI.sub('', line).strip() for line in text.splitlines()
                if re.search(r'\bRunning\b', ANSI.sub('', line))]
-    print('::notice title=Rust runner provenance headers::' + json.dumps(headers[:16]))
+    print('::notice title=Rust runner provenance headers::' + json.dumps([header[-1200:] for header in headers[-16:]]))
     args.output.write_text(json.dumps(report, indent=2) + '\n')
     summary = {'totals': report['totals'], 'groups': report['groups']}
     print(json.dumps(summary, indent=2))
