@@ -299,6 +299,11 @@ impl RaidManager {
         true
     }
 
+    /// Celebration is a loss-only AI state, not victory animation on any raid.
+    pub fn is_loss_member(&self, uuid: Uuid) -> bool {
+        self.raids.lock().iter().any(|raid| raid.status == RaidStatus::Loss && raid.raiders.contains(&uuid))
+    }
+
     /// Vanilla raider save fields, including legacy worlds whose entities did
     /// not yet carry RaidId. Membership already in the manager is authoritative.
     pub fn member_save_data(&self, uuid: Uuid) -> Option<(i32, i32, bool)> {

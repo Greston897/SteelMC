@@ -35,7 +35,7 @@ impl Goal for RaidBreakDoorGoal {
     fn can_continue_to_use(&mut self, mob: &dyn PathfinderMob) -> bool {
         Self::allowed(mob) && self.elapsed <= 240 && !self.door.is_open(mob)
             && self.door.has_door()
-            && mob.position().distance_squared(self.door.door_pos().center()) < 4.0
+            && self.door.door_pos().closer_to_center_than(mob.position(), 2.0)
     }
 
     fn start(&mut self, mob: &dyn PathfinderMob) {

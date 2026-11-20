@@ -784,6 +784,9 @@ pub trait Mob: LivingEntity + Leashable {
         self.is_passenger() || self.is_leashed()
     }
 
+    /// Updates Raider.IS_CELEBRATING on raider implementations.
+    fn set_raid_celebrating(&self, _celebrating: bool) {}
+
     /// Vanilla Raider.CanJoinRaid; natural witches are excluded at spawn time.
     fn can_join_raid(&self) -> bool {
         *self.mob_base().can_join_raid.lock()

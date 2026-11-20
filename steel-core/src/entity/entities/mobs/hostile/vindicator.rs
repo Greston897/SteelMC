@@ -82,6 +82,7 @@ impl VindicatorEntity {
 
         {
             let mut goal_selector = mob_base.goal_selector().lock();
+            goal_selector.add_goal(5, crate::entity::ai::goal::RaidCelebrationGoal);
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
             goal_selector.add_goal(2, RaidBreakDoorGoal::new());
             goal_selector.add_goal(3, OpenDoorGoal::for_raid());
@@ -242,6 +243,10 @@ impl LivingEntity for VindicatorEntity {
 }
 
 impl Mob for VindicatorEntity {
+    fn set_raid_celebrating(&self, celebrating: bool) {
+        self.entity_data.lock().raider_mut().is_celebrating.set(celebrating);
+    }
+
     fn mob_base(&self) -> &MobBase {
         &self.mob_base
     }

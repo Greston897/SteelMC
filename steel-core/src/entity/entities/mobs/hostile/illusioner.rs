@@ -75,6 +75,7 @@ impl IllusionerEntity {
 
         {
             let mut goal_selector = mob_base.goal_selector().lock();
+            goal_selector.add_goal(5, crate::entity::ai::goal::RaidCelebrationGoal);
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
             goal_selector.add_goal(2, MeleeAttackGoal::new(1.0, false));
             goal_selector.add_goal(7, WaterAvoidingRandomStrollGoal::new(1.0));
@@ -224,6 +225,10 @@ impl LivingEntity for IllusionerEntity {
 }
 
 impl Mob for IllusionerEntity {
+    fn set_raid_celebrating(&self, celebrating: bool) {
+        self.entity_data.lock().raider_mut().is_celebrating.set(celebrating);
+    }
+
     fn mob_base(&self) -> &MobBase {
         &self.mob_base
     }
