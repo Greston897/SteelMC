@@ -665,8 +665,9 @@ impl Server {
     /// # Errors
     ///
     /// Returns the underlying validation error when the reloaded files are
-    /// invalid. Nothing is applied in that case: the live state is left as it
-    /// was, which is also how vanilla behaves when a data pack fails to load.
+    /// invalid. Each function-resource snapshot is published atomically, but
+    /// permission groups and per-world rules are separate reload participants;
+    /// this is not yet vanilla's transactional reload of all data registries.
     pub async fn reload_data_driven_state(&self) -> Result<String, String> {
         let mut reloaded = Vec::new();
         let functions = self.function_packs.reload()?;

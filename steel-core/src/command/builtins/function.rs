@@ -52,7 +52,7 @@ impl CustomCommandExecutor<CommandSource> for RunFunction {
         &self,
         source: Arc<CommandSource>,
         chain: &SteelContextChain<CommandSource>,
-        _modifiers: ChainModifiers,
+        modifiers: ChainModifiers,
         control: &mut ExecutionControl<'_, CommandSource>,
     ) {
         let result = (|| {
@@ -68,12 +68,23 @@ impl CustomCommandExecutor<CommandSource> for RunFunction {
                 source.server().parse_function_command(command, &body_source))
                 .collect::<Result<Vec<_>, _>>()?;
             let count = chains.len();
-            control.queue_function(chains, body_source, source.callback().clone());
+            let callback = if modifiers.is_return() {
+                let frame = control.current_frame().clone();
+                control.discard_frame();
+                CommandResultCallback::new(move |success, value| {
+                    if success { frame.return_success(value); } else { frame.return_failure(); }
+                })
+            } else { source.callback() };
+            control.queue_function(chains, body_source, callback);
             source.send_success(&translated("commands.function.success.single",
                 format!("Executing function {id} with {count} commands"),
                 vec![TextComponent::from(id.to_string()), TextComponent::from(count.to_string())]), true);
             Ok::<(), CommandSyntaxError>(())
         })();
-        if let Err(error) = result { source.handle_error(&error, false); }
+        if let Err(error) = result {
+            source.handle_error(&error, modifiers.is_forked());
+            source.callback().on_result(false, 0);
+            if modifiers.is_return() { control.return_failure(); }
+        }
     }
 }
