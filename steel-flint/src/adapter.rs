@@ -319,14 +319,20 @@ mod tests {
     fn shard_paths(mut paths: Vec<PathBuf>, index: usize, count: usize) -> Vec<PathBuf> {
         assert!(count > 0 && index < count, "invalid Flint shard");
         paths.sort();
-        paths.into_iter().enumerate().filter_map(|(i, path)| {
-            (i % count == index).then_some(path)
-        }).collect()
+        paths
+            .into_iter()
+            .enumerate()
+            .filter_map(|(i, path)| (i % count == index).then_some(path))
+            .collect()
     }
 
     fn configured_shard(paths: Vec<PathBuf>) -> Vec<PathBuf> {
-        let index = var("FLINT_SHARD_INDEX").ok().map(|s| s.parse::<usize>().expect("shard index"));
-        let count = var("FLINT_SHARD_COUNT").ok().map(|s| s.parse::<usize>().expect("shard count"));
+        let index = var("FLINT_SHARD_INDEX")
+            .ok()
+            .map(|s| s.parse::<usize>().expect("shard index"));
+        let count = var("FLINT_SHARD_COUNT")
+            .ok()
+            .map(|s| s.parse::<usize>().expect("shard count"));
         match (index, count) {
             (None, None) => paths,
             (Some(index), Some(count)) => shard_paths(paths, index, count),
@@ -336,7 +342,9 @@ mod tests {
 
     #[test]
     fn shards_cover_each_fixture_once_without_overlap() {
-        let paths: Vec<PathBuf> = (0..1012).map(|i| PathBuf::from(format!("test-{i}"))).collect();
+        let paths: Vec<PathBuf> = (0..1012)
+            .map(|i| PathBuf::from(format!("test-{i}")))
+            .collect();
         let mut covered = Vec::new();
         for index in 0..32 {
             let shard = shard_paths(paths.clone(), index, 32);
@@ -364,7 +372,10 @@ mod tests {
             .load_specs(&paths, false)
             .unwrap_or_else(|e| panic!("error while loading test specs: {e}"));
 
-        assert!(!specs.is_empty(), "Flint must execute at least one vanilla fixture");
+        assert!(
+            !specs.is_empty(),
+            "Flint must execute at least one vanilla fixture"
+        );
         let runner = TestRunner::new(Arc::new(SteelAdapter));
         let summary = runner.run_tests(&specs);
         summary.print_concise_summary();
@@ -404,7 +415,10 @@ mod tests {
             .load_specs(&paths, false)
             .unwrap_or_else(|e| panic!("error while loading test specs: {e}"));
 
-        assert!(!specs.is_empty(), "Flint must execute at least one vanilla fixture");
+        assert!(
+            !specs.is_empty(),
+            "Flint must execute at least one vanilla fixture"
+        );
         let runner = TestRunner::new(Arc::new(SteelAdapter));
         let summary = runner.run_tests(&specs);
         summary.print_concise_summary();

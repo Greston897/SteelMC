@@ -282,10 +282,17 @@ impl Default for SteelTestWorld {
 }
 
 impl FlintWorld for SteelTestWorld {
-    fn configure_world(&mut self, config: &flint_core::test_spec::WorldConfig) -> anyhow::Result<()> {
+    fn configure_world(
+        &mut self,
+        config: &flint_core::test_spec::WorldConfig,
+    ) -> anyhow::Result<()> {
         use flint_core::test_spec::Weather;
-        self.world.configure_test_environment(&config.time,
-            config.weather != Weather::Clear, config.weather == Weather::Thunder)
+        self.world
+            .configure_test_environment(
+                &config.time,
+                config.weather != Weather::Clear,
+                config.weather == Weather::Thunder,
+            )
             .map_err(anyhow::Error::msg)
     }
 
@@ -308,7 +315,9 @@ impl FlintWorld for SteelTestWorld {
     fn get_time(&self) -> Result<u64, anyhow::Error> {
         // Flint asks for daytime, not the monotonic simulation/game-time counter.
         // These diverge with /time set, advance_time=false and at day rollover.
-        let ticks = self.world.clock_total_ticks(&steel_registry::vanilla_world_clocks::OVERWORLD)
+        let ticks = self
+            .world
+            .clock_total_ticks(&steel_registry::vanilla_world_clocks::OVERWORLD)
             .ok_or_else(|| anyhow::anyhow!("Overworld clock is missing"))?;
         Ok(daytime_from_ticks(ticks))
     }
@@ -481,7 +490,6 @@ impl FlintWorld for SteelTestWorld {
     }
 }
 
-
 fn daytime_from_ticks(ticks: i64) -> u64 {
     ticks.rem_euclid(24_000) as u64
 }
@@ -492,43 +500,72 @@ mod tests {
 
     #[test]
     fn daylight_detector_registered_ticker_corrects_stale_power_at_noon() {
-        use steel_registry::vanilla_blocks;
         use steel_registry::blocks::properties::BlockStateProperties;
+        use steel_registry::vanilla_blocks;
         crate::init();
         let mut fixture = SteelTestWorld::new();
         let pos = BlockPos::new(1, 0, 0);
         fixture.ensure_chunk_at(&pos);
-        fixture.configure_world(&flint_core::test_spec::WorldConfig {
-            time: "6000".to_owned(), ..Default::default()
-        }).unwrap();
-        let state = vanilla_blocks::DAYLIGHT_DETECTOR.default_state()
+        fixture
+            .configure_world(&flint_core::test_spec::WorldConfig {
+                time: "6000".to_owned(),
+                ..Default::default()
+            })
+            .unwrap();
+        let state = vanilla_blocks::DAYLIGHT_DETECTOR
+            .default_state()
             .set_value(&BlockStateProperties::POWER, 7);
         assert!(fixture.world.set_block(pos, state, UpdateFlags::UPDATE_ALL));
-        for _ in 0..40 { fixture.do_tick().unwrap(); }
+        for _ in 0..40 {
+            fixture.do_tick().unwrap();
+        }
         let actual = fixture.world.get_block_state(pos);
-        assert_eq!(actual.get_value(&BlockStateProperties::POWER), 15,
+        assert_eq!(
+            actual.get_value(&BlockStateProperties::POWER),
+            15,
             "game_time={} light={} darkening={} sun={} entity={}",
-            fixture.world.game_time(), fixture.world.effective_sky_brightness(pos),
-            fixture.world.sky_darkening(), fixture.world.sun_angle_degrees(),
-            fixture.world.get_block_entity(pos).is_some());
+            fixture.world.game_time(),
+            fixture.world.effective_sky_brightness(pos),
+            fixture.world.sky_darkening(),
+            fixture.world.sun_angle_degrees(),
+            fixture.world.get_block_entity(pos).is_some()
+        );
     }
 
     #[test]
     fn setup_applies_numeric_and_registry_marker_times_and_weather_or_reports_errors() {
-        use flint_core::test_spec::{WorldConfig, Weather};
+        use flint_core::test_spec::{Weather, WorldConfig};
         crate::init();
-        for (time, expected, weather) in [("6000", 6000, Weather::Clear),
-            ("minecraft:midnight", 18000, Weather::Thunder), ("minecraft:noon", 6000, Weather::Rain)] {
+        for (time, expected, weather) in [
+            ("6000", 6000, Weather::Clear),
+            ("minecraft:midnight", 18000, Weather::Thunder),
+            ("minecraft:noon", 6000, Weather::Rain),
+        ] {
             let mut fixture = SteelTestWorld::new();
-            fixture.configure_world(&WorldConfig { time: time.to_owned(), weather, ..Default::default() }).unwrap();
+            fixture
+                .configure_world(&WorldConfig {
+                    time: time.to_owned(),
+                    weather,
+                    ..Default::default()
+                })
+                .unwrap();
             assert_eq!(fixture.get_time().unwrap(), expected);
-            for _ in 0..110 { fixture.do_tick().unwrap(); }
+            for _ in 0..110 {
+                fixture.do_tick().unwrap();
+            }
             assert_eq!(fixture.world.is_raining(), weather != Weather::Clear);
             assert_eq!(fixture.world.is_thundering(), weather == Weather::Thunder);
         }
         let mut fixture = SteelTestWorld::new();
         for time in ["-1", "minecraft:missing_marker"] {
-            assert!(fixture.configure_world(&WorldConfig { time: time.to_owned(), ..Default::default() }).is_err());
+            assert!(
+                fixture
+                    .configure_world(&WorldConfig {
+                        time: time.to_owned(),
+                        ..Default::default()
+                    })
+                    .is_err()
+            );
         }
     }
 
@@ -540,17 +577,24 @@ mod tests {
             let spec: flint_core::TestSpec = serde_json::from_value(serde_json::json!({
                 "name": "runner_world_setup", "setup": {"world": {"time": time}},
                 "timeline": [{"at": 0, "do": "assert", "checks": [{"time": expected}]}]
-            })).unwrap();
+            }))
+            .unwrap();
             let result = runner.run_test(&spec);
             assert!(result.success, "setup {time}: {result:?}");
         }
         let spec: flint_core::TestSpec = serde_json::from_value(serde_json::json!({
             "name": "invalid_world_setup", "setup": {"world": {"time": "minecraft:missing_marker"}},
             "timeline": []
-        })).unwrap();
+        }))
+        .unwrap();
         let result = runner.run_test(&spec);
         assert!(!result.success);
-        assert!(result.failure_reason.unwrap().contains("unknown time marker"));
+        assert!(
+            result
+                .failure_reason
+                .unwrap()
+                .contains("unknown time marker")
+        );
     }
 
     #[test]
@@ -590,6 +634,9 @@ mod tests {
         let _player = world.create_player();
         let uuid = steel_core::player::offline_uuid("flintmc_testbot");
         let registered = world.world.players.get_by_uuid(&uuid);
-        assert!(registered.is_some(), "player must be available to fishing rods");
+        assert!(
+            registered.is_some(),
+            "player must be available to fishing rods"
+        );
     }
 }
