@@ -37,7 +37,7 @@ mod squid_flee_goal;
 mod squid_random_movement_goal;
 mod target_goal;
 mod tempt_goal;
-mod try_find_water;
+mod try_find_liquid;
 mod water_avoiding_random_stroll;
 
 pub(crate) use avoid_entity::AvoidEntityGoal;
@@ -74,6 +74,7 @@ pub(crate) use sleep_in_bed::SleepInBedGoal;
 pub(crate) use squid_flee_goal::SquidFleeGoal;
 pub(crate) use squid_random_movement_goal::SquidRandomMovementGoal;
 pub(crate) use tempt_goal::TemptGoal;
+pub(crate) use try_find_liquid::TryFindLiquidGoal;
 pub(crate) use water_avoiding_random_stroll::WaterAvoidingRandomStrollGoal;
 
 pub(super) const fn reduced_tick_delay(ticks: i32) -> i32 {
