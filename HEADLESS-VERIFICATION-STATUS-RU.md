@@ -91,3 +91,9 @@
 - EntityTracker: конкурентные add/remove/visibility refresh, teleport/dimension transfer, passenger/leash видимость при pairing, stale weak refs, disconnect во время broadcast.
 - Chunk/block/light: порядок chunk delivery → light → block entities → entity spawn; обновления во время pending batch, resend/ack, unload гонки, смена измерения и отрицательные координаты/границы секций.
 - Inventory/player/protocol: state-id/ack, carried stack, cursor rollback, attributes/effects/equipment и self-vs-tracking recipients, codec/framing/backpressure/disconnect. Эти зоны не получают PASS из проверки movement sync.
+
+### Chunk sender pacing (дополнительный проход синхронизации)
+
+Сопоставлен `net/minecraft/server/network/PlayerChunkSender.java` pinned 26.3. Найдено намеренное, но не соответствующее vanilla ограничение ACK-rate: Steel 0.1..500 chunks/tick вместо vanilla 0.01..64. Исправлены обе границы. Добавлен тест с **буквальными vanilla-значениями**, а не только сравнение с production-константами (старые тесты могли проходить при неверных константах). Рассмотрены prepare quota, очередь ACK, zero-outstanding reset и окно 1→10; полный concurrency-аудит prepare/encode/commit и отправки при смене мира остаётся открыт.
+
+Текущий прогресс затронутых подсистем: tracker/protocol — 5 новых регрессионных тестов за проход; chunk delivery — 1 новый тест границ; 29 Python PASS. Новые Rust tests и повторный CI пока не засчитаны. Проценты vanilla parity не вычисляются по этим счётчикам.
