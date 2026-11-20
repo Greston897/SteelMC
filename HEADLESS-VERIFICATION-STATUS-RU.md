@@ -74,3 +74,20 @@
 - Поршневое движение: vanilla сравнивает остаток с `(double)1.0E-5f`, Steel использовал double 1e-5. Константа исправлена, добавлен граничный тест после первого движения 0.5 в том же тике.
 - Прочитаны целиком и разобраны 10 файлов вне LLVM: `.ci/vanilla-audit/outside-llvm-reviewed.md`. Это структурный аудит с переносом обязательств на реальную реализацию, не 10 PASS по механикам.
 - Локально повторно исполнено **29 Python tests: PASS**. Rust-изменения ожидают CI; локальной полной Rust-сборки нет. Strict lint и внешние несовпадения не сняты.
+
+## Аудит синхронизации: ServerEntity / VecDeltaCodec 26.3
+
+Источник: те же pinned исходники `74720c…`, классы `net/minecraft/server/level/ServerEntity.java` и `net/minecraft/network/protocol/game/VecDeltaCodec.java`.
+
+- `4e5ce42`: исправлены AbstractArrow position+rotation на каждом обработанном интервале, точный double-порог позиции 7.62939453125E-6, сохранение teleportDelay при fallback из-за переполнения дельты. Добавлены три теста state machine и тест фактического маршрута EntityTracker.send_changes на трёх интервалах. Включены arrow/spectral_arrow/trident.
+- Повторно прочитан call chain tracker.send_changes → ServerEntityMovementSyncState → packet types. Сравнены passenger branch, выход из riding, velocity-before-position, zero-velocity exception, head yaw, item collision precision. Это просмотр указанных ветвей, не полная проверка всей сетевой синхронизации.
+- Исправлен unused production import vanilla_blocks, оставшийся после предыдущего рефакторинга деревьев. На 98c2e6e Flint FAIL; прочие результаты нового кода ещё не подтверждены.
+- VecDeltaCodec.encode: Java Math.round не эквивалентен floor(x+0.5) для double непосредственно ниже 0.5. Исправлен алгоритм Steel, добавлены тесты соседних half-tie значений, NaN и infinities. Независимая Python-проверка нового математического алгоритма против битового алгоритма Java Math.round: **100402 входа PASS**. Это не запуск Java и не исполнение Rust-теста.
+- Повторные 29 Python CI-tests PASS. Новые Rust-тесты ждут CI; ещё нет оснований заявлять PASS.
+
+### Незакрытая часть сетевого аудита
+
+- ServerEntity: syncPosition/UpdateInterval, interpolation PositionPath.Stepped, special minecart path, AbstractHurtingProjectile motion+power bundle, pairing baseline при позднем подключении, точный порядок dirty metadata/velocity packets.
+- EntityTracker: конкурентные add/remove/visibility refresh, teleport/dimension transfer, passenger/leash видимость при pairing, stale weak refs, disconnect во время broadcast.
+- Chunk/block/light: порядок chunk delivery → light → block entities → entity spawn; обновления во время pending batch, resend/ack, unload гонки, смена измерения и отрицательные координаты/границы секций.
+- Inventory/player/protocol: state-id/ack, carried stack, cursor rollback, attributes/effects/equipment и self-vs-tracking recipients, codec/framing/backpressure/disconnect. Эти зоны не получают PASS из проверки movement sync.
