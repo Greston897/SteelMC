@@ -261,8 +261,8 @@ impl WitherBossEntity {
 
     /// Vanilla `WitherBoss.setInvulnerableTicks`: starts the spawn sequence.
     ///
-    /// Vanilla calls this from the entity constructor, so a wither is born with
-    /// 220 protected ticks at one third health, healing while the counter runs.
+    /// The skull-pyramid spawn path requests 220 protected ticks at one third
+    /// maximum health. Ordinary summons do not automatically charge.
     pub fn begin_spawn_phase(&self) {
         self.set_invulnerable_ticks(SPAWN_INVULNERABLE_TICKS);
         self.set_health(self.get_max_health() / 3.0);
@@ -567,7 +567,7 @@ mod tests {
         assert_eq!(SPAWN_INVULNERABLE_TICKS, 220);
         assert_eq!(SPAWN_EXPLOSION_POWER, 7.0);
         assert_eq!(SPAWN_HEAL_PER_STEP, 10.0);
-        assert_eq!(MAX_HEALTH, 300.0);
+        assert_eq!(wither().get_max_health(), 300.0);
     }
 
     #[test]
@@ -579,6 +579,6 @@ mod tests {
         // A spawning wither must never start at zero health, otherwise the heal
         // branch would never fire and the boss would die to its own blast.
         assert_eq!(wither.get_health(), wither.get_max_health() / 3.0);
-        assert_eq!(wither.get_health(), MAX_HEALTH / 3.0);
+        assert_eq!(wither.get_health(), 100.0);
     }
 }
