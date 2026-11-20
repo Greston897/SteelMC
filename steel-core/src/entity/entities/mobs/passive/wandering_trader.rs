@@ -23,7 +23,7 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
+    AvoidEntityGoal, FloatGoal, InteractGoal, LookAtPlayerGoal, PanicGoal,
     WaterAvoidingRandomStrollGoal,
 };
 
@@ -101,15 +101,26 @@ impl WanderingTraderEntity {
         living_base.initialize_synced_data(&mut entity_data);
 
         {
-            // Shared animal goal priorities and speeds in vanilla order.
+            // WanderingTrader.registerGoals, not a shared breeding-animal profile.
             let mut goal_selector = mob_base.goal_selector().lock();
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
-            goal_selector.add_goal(1, PanicGoal::new(2.0));
-            goal_selector.add_goal(2, BreedGoal::new(1.0));
-            goal_selector.add_goal(4, FollowParentGoal::new(1.25));
-            goal_selector.add_goal(5, WaterAvoidingRandomStrollGoal::new(1.0));
-            goal_selector.add_goal(6, LookAtPlayerGoal::new(6.0));
-            goal_selector.add_goal(7, RandomLookAroundGoal::new());
+            for (kind, distance) in [
+                (&steel_registry::vanilla_entities::ZOMBIE, 8.0),
+                (&steel_registry::vanilla_entities::EVOKER, 12.0),
+                (&steel_registry::vanilla_entities::VINDICATOR, 8.0),
+                (&steel_registry::vanilla_entities::VEX, 8.0),
+                (&steel_registry::vanilla_entities::PILLAGER, 15.0),
+                (&steel_registry::vanilla_entities::ILLUSIONER, 12.0),
+                (&steel_registry::vanilla_entities::ZOGLIN, 10.0),
+            ] {
+                goal_selector.add_goal(1, AvoidEntityGoal::with_selector(distance, 0.5, 0.5,
+                    move |entity, _| entity.entity_type() == kind));
+            }
+            goal_selector.add_goal(1, PanicGoal::new(0.5));
+            goal_selector.add_goal(8, WaterAvoidingRandomStrollGoal::new(0.35));
+            goal_selector.add_goal(9, InteractGoal::new_player(3.0, 1.0));
+            goal_selector.add_goal(10, LookAtPlayerGoal::new_for_living_entities(8.0, 0.02,
+                |entity, _| entity.as_mob().is_some()));
         }
 
         let trades = Arc::new(SyncMutex::new(villager_trades::offers_for(
