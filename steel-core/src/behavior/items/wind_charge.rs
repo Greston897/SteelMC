@@ -85,3 +85,69 @@ fn play_throw_sound(player: &Arc<Player>) {
         None,
     );
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use steel_registry::item_stack::ItemStack;
+    use steel_registry::{init_vanilla_registry, vanilla_items};
+    use steel_utils::types::InteractionHand;
+    use steel_utils::{ChunkPos, Downcast as _, WorldAabb};
+
+    use crate::behavior::{ITEM_BEHAVIORS, InteractionResult, UseItemContext, init_behaviors};
+    use crate::entity::Entity as _;
+    use crate::entity::entities::WindChargeEntity;
+    use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
+
+    /// Vanilla `ExperienceBottleItem.use` throws one bottle and consumes it.
+    #[test]
+    fn using_an_wind_charge_throws_it_and_consumes_one() {
+        init_vanilla_registry();
+        init_behaviors();
+        let fixture = fresh_test_world("wind_charge_use");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let player = TestPlayerBuilder::new(Arc::clone(world), "Thrower", 1).build();
+        player.set_client_loaded(true);
+
+        {
+            let mut inventory = player.inventory.lock();
+            inventory.set_item_in_hand(
+                InteractionHand::MainHand,
+                ItemStack::with_count(&vanilla_items::WIND_CHARGE, 2),
+            );
+        }
+
+        let behavior = ITEM_BEHAVIORS.get_behavior(&vanilla_items::WIND_CHARGE);
+        let inventory = Arc::clone(&player.inventory);
+        let mut context = UseItemContext::new(&player, InteractionHand::MainHand, world, inventory);
+        let result = behavior.use_item(&mut context);
+
+        assert_eq!(result, InteractionResult::Success);
+        assert!(player.is_item_on_cooldown(&ItemStack::new(&vanilla_items::WIND_CHARGE)));
+        let remaining = {
+            let inventory = player.inventory.lock();
+            inventory
+                .get_item_in_hand(InteractionHand::MainHand)
+                .count()
+        };
+        assert_eq!(remaining, 1);
+
+        let eye = player.position();
+        let search = WorldAabb::new(
+            eye.x - 4.0,
+            eye.y - 4.0,
+            eye.z - 4.0,
+            eye.x + 4.0,
+            eye.y + 4.0,
+            eye.z + 4.0,
+        );
+        let charges = world
+            .get_entities_in_aabb(&search)
+            .iter()
+            .filter(|entity| entity.as_ref().downcast_ref::<WindChargeEntity>().is_some())
+            .count();
+        assert_eq!(charges, 1);
+    }
+}

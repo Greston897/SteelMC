@@ -60,12 +60,13 @@ fn generate_test_environment_definition(name: &str, json: &serde_json::Value) ->
             } else {
                 quote! { None }
             };
-            let teardown = if let Some(id) = json.get("teardown").and_then(serde_json::Value::as_str) {
-                let quoted = quote_id(id);
-                quote! { Some(#quoted) }
-            } else {
-                quote! { None }
-            };
+            let teardown =
+                if let Some(id) = json.get("teardown").and_then(serde_json::Value::as_str) {
+                    let quoted = quote_id(id);
+                    quote! { Some(#quoted) }
+                } else {
+                    quote! { None }
+                };
             quote! { TestEnvironmentDefinition::Function { setup: #setup, teardown: #teardown } }
         }
         "minecraft:game_rules" => {

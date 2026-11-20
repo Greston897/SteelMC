@@ -21,7 +21,8 @@ impl MaceItem {
     const SMASH_ATTACK_FALL_THRESHOLD: f64 = 1.5;
     const SMASH_ATTACK_HEAVY_THRESHOLD: f64 = 5.0;
     const SMASH_ATTACK_KNOCKBACK_RADIUS: f64 = 3.5;
-    const SMASH_ATTACK_KNOCKBACK_POWER: f64 = 0.7;
+    // Vanilla promotes the float constant to double before multiplying.
+    const SMASH_ATTACK_KNOCKBACK_POWER: f32 = 0.7;
     const SMASH_ATTACK_PARTICLE_DATA: i32 = 750;
 
     fn can_smash_attack(attacker: &dyn LivingEntity) -> bool {
@@ -61,7 +62,7 @@ impl MaceItem {
             1.0
         };
         (Self::SMASH_ATTACK_KNOCKBACK_RADIUS - direction.length())
-            * Self::SMASH_ATTACK_KNOCKBACK_POWER
+            * f64::from(Self::SMASH_ATTACK_KNOCKBACK_POWER)
             * heavy_multiplier
             * (1.0 - nearby.knockback_resistance())
     }
@@ -129,7 +130,7 @@ impl MaceItem {
             } else {
                 DVec3::ZERO
             };
-            nearby_living.push_impulse(DVec3::new(horizontal.x, 0.7, horizontal.z));
+            nearby_living.push_impulse(DVec3::new(horizontal.x, f64::from(0.7_f32), horizontal.z));
             if let Some(player) = nearby_living.as_player() {
                 player.send_packet(CSetEntityMotion::new(
                     nearby_living.id(),
@@ -191,7 +192,7 @@ impl ItemBehavior for MaceItem {
         }
 
         let velocity = attacker.velocity();
-        attacker.set_velocity(DVec3::new(velocity.x, 0.01, velocity.z));
+        attacker.set_velocity(DVec3::new(velocity.x, f64::from(0.01_f32), velocity.z));
         attacker.set_ignore_fall_damage_from_current_impulse(
             true,
             Self::calculate_impact_position(attacker),
@@ -222,5 +223,178 @@ impl ItemBehavior for MaceItem {
         if Self::can_smash_attack(attacker) {
             attacker.reset_fall_distance();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::behavior::{ITEM_BEHAVIORS, init_behaviors};
+    use crate::test_support::{TestPlayerBuilder, fresh_test_world};
+    use steel_registry::vanilla_items;
+
+    #[test]
+    fn registered_mace_smash_threshold_and_fall_flying_gate_damage_source() {
+        crate::bootstrap::init_globals();
+        init_behaviors();
+        let fixture = fresh_test_world("mace_smash_source");
+        let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
+        let shared: SharedEntity = attacker.clone();
+        let behavior = ITEM_BEHAVIORS.get_behavior(&vanilla_items::MACE);
+        for (fall, flying, smash) in [
+            (0.0, false, false),
+            (1.5, false, false),
+            (1.5001, false, true),
+            (9.0, true, false),
+        ] {
+            attacker.set_fall_distance(fall);
+            attacker.set_fall_flying(flying);
+            let source = behavior.get_item_damage_source(&shared);
+            assert_eq!(source.is_some(), smash, "fall={fall} flying={flying}");
+            if let Some(source) = source {
+                assert_eq!(source.damage_type.key, vanilla_damage_types::MACE_SMASH.key);
+                assert!(Arc::ptr_eq(source.direct_entity().unwrap(), &shared));
+            }
+        }
+    }
+
+    #[test]
+    fn registered_mace_damage_uses_all_three_vanilla_fall_distance_segments() {
+        crate::bootstrap::init_globals();
+        init_behaviors();
+        let fixture = fresh_test_world("mace_smash_bonus");
+        let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
+        let victim = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Target", 2).build();
+        let source = DamageSource::direct(&vanilla_damage_types::MACE_SMASH, attacker.clone());
+        let behavior = ITEM_BEHAVIORS.get_behavior(&vanilla_items::MACE);
+        for (fall, expected) in [
+            (1.5, 0.0),
+            (2.0, 8.0),
+            (3.0, 12.0),
+            (5.0, 16.0),
+            (8.0, 22.0),
+            (9.0, 23.0),
+        ] {
+            attacker.set_fall_distance(fall);
+            let bonus =
+                behavior.get_attack_damage_bonus(attacker.as_ref(), victim.as_ref(), 6.0, &source);
+            assert_eq!(bonus, expected, "fall={fall}");
+        }
+    }
+
+    #[test]
+    fn registered_mace_hit_preserves_horizontal_motion_and_resets_fall_after_hit() {
+        crate::bootstrap::init_globals();
+        init_behaviors();
+        let fixture = fresh_test_world("mace_smash_motion");
+        let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
+        let victim = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Target", 2).build();
+        attacker
+            .base()
+            .set_position_local(DVec3::new(8.0, 70.0, 8.0));
+        attacker.set_velocity(DVec3::new(0.25, -1.0, -0.5));
+        attacker.set_fall_distance(6.0);
+        let impact = DVec3::new(8.0, 65.0, 8.0);
+        attacker.set_ignore_fall_damage_from_current_impulse(true, impact);
+        let behavior = ITEM_BEHAVIORS.get_behavior(&vanilla_items::MACE);
+        let mut stack = ItemStack::new(&vanilla_items::MACE);
+        behavior.hurt_enemy(&mut stack, victim.as_ref(), attacker.as_ref());
+        assert_eq!(
+            attacker.velocity(),
+            DVec3::new(0.25, f64::from(0.01_f32), -0.5)
+        );
+        assert_eq!(attacker.current_impulse_impact_pos(), Some(impact));
+        assert_eq!(attacker.fall_distance(), 6.0);
+        behavior.post_hurt_enemy(&mut stack, victim.as_ref(), attacker.as_ref());
+        assert_eq!(attacker.fall_distance(), 0.0);
+        attacker.set_velocity(DVec3::new(0.0, -0.5, 0.0));
+        behavior.hurt_enemy(&mut stack, victim.as_ref(), attacker.as_ref());
+        assert_eq!(attacker.velocity().y, -0.5);
+    }
+
+    #[test]
+    fn player_attack_dispatches_mace_smash_and_post_hit_fall_reset() {
+        crate::bootstrap::init_globals();
+        init_behaviors();
+        let fixture = fresh_test_world("mace_player_attack");
+        let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
+        let victim = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Target", 2).build();
+        attacker.set_client_loaded(true);
+        victim.set_client_loaded(true);
+        attacker
+            .inventory
+            .lock()
+            .set_selected_item(ItemStack::new(&vanilla_items::MACE));
+        attacker
+            .attributes()
+            .lock()
+            .set_base_value(steel_registry::vanilla_attributes::ATTACK_DAMAGE, 6.0);
+        attacker
+            .attributes()
+            .lock()
+            .set_base_value(steel_registry::vanilla_attributes::ATTACK_SPEED, 4.0);
+        victim
+            .attributes()
+            .lock()
+            .set_base_value(steel_registry::vanilla_attributes::MAX_HEALTH, 100.0);
+        victim.set_health(100.0);
+        attacker.set_on_ground(false);
+        attacker.set_fall_distance(6.0);
+        attacker.set_velocity(DVec3::new(0.0, -1.0, 0.0));
+        for _ in 0..30 {
+            attacker.tick_attack_strength();
+        }
+        let target: SharedEntity = victim.clone();
+        assert!(attacker.attack(&target));
+        // Vanilla: (base 6 + six-block smash bonus 18) * critical 1.5.
+        assert_eq!(victim.get_health(), 64.0);
+        assert_eq!(attacker.fall_distance(), 0.0);
+        assert_eq!(attacker.velocity().y, f64::from(0.01_f32));
+        assert!(attacker.is_ignoring_fall_damage_from_current_impulse());
+    }
+
+    #[test]
+    fn smash_knockback_uses_heavy_threshold_radius_and_resistance() {
+        crate::bootstrap::init_globals();
+        let fixture = fresh_test_world("mace_radial_knockback");
+        let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
+        let nearby = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Nearby", 2).build();
+        nearby.attributes().lock().set_base_value(
+            steel_registry::vanilla_attributes::KNOCKBACK_RESISTANCE,
+            0.5,
+        );
+        for (fall, distance, expected) in [
+            (5.0, 1.5, f64::from(0.7_f32)),
+            (5.001, 1.5, 2.0 * f64::from(0.7_f32)),
+            (8.0, 3.5, 0.0),
+        ] {
+            attacker.set_fall_distance(fall);
+            assert_eq!(
+                MaceItem::knockback_power(
+                    attacker.as_ref(),
+                    nearby.as_ref(),
+                    DVec3::new(distance, 0.0, 0.0)
+                ),
+                expected
+            );
+        }
+        nearby.attributes().lock().set_base_value(
+            steel_registry::vanilla_attributes::KNOCKBACK_RESISTANCE,
+            1.0,
+        );
+        assert_eq!(
+            MaceItem::knockback_power(attacker.as_ref(), nearby.as_ref(), DVec3::X),
+            0.0
+        );
+        assert!(!MaceItem::should_knockback(
+            attacker.as_ref(),
+            nearby.as_ref(),
+            attacker.as_ref()
+        ));
+        assert!(!MaceItem::should_knockback(
+            attacker.as_ref(),
+            nearby.as_ref(),
+            nearby.as_ref()
+        ));
     }
 }

@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: live-server-smoke-${{ github.ref }}-${{ github.sha }}
@@ -76,6 +76,18 @@ jobs:
           for log in root.glob('server-*.log'):
               annotate(log.name + '\n' + '\n'.join(log.read_text(errors='replace').splitlines()[-35:]))
           PYERROR
+      - name: Publish recoverable runtime diagnostics
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 .ci/report.py "Live server ${{ matrix.engine }} — conditions" \
+            "$RUNNER_TEMP/live-server-evidence/results.json" \
+            "$RUNNER_TEMP/live-server-evidence/commands.json"
+          for log in "$RUNNER_TEMP/live-server-evidence"/server-*.log; do
+            [ -f "$log" ] || continue
+            python3 .ci/report.py "Live server ${{ matrix.engine }} — $(basename "$log")" "$log"
+          done
       - name: Publish runtime evidence
         if: always()
         uses: actions/upload-artifact@v4

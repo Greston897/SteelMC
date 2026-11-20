@@ -132,8 +132,7 @@ fn generate_config(name: &str, json: &serde_json::Value, key: &TokenStream) -> T
         });
     let loot_tables_to_eject = match json.get("loot_tables_to_eject") {
         None => {
-            let consumables =
-                quote_id("minecraft:spawners/trial_chamber/consumables");
+            let consumables = quote_id("minecraft:spawners/trial_chamber/consumables");
             let key = quote_id("minecraft:spawners/trial_chamber/key");
             quote! {
                 vec![

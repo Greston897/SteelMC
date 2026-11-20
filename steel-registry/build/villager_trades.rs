@@ -572,12 +572,15 @@ pub(crate) fn build_sets() -> TokenStream {
             .get("allow_duplicates")
             .and_then(serde_json::Value::as_bool)
             .unwrap_or(false);
-        let random_sequence = if let Some(id) = json.get("random_sequence").and_then(serde_json::Value::as_str) {
-                let quoted = quote_id(id);
-                quote! { Some(#quoted) }
-            } else {
-                quote! { None }
-            };
+        let random_sequence = if let Some(id) = json
+            .get("random_sequence")
+            .and_then(serde_json::Value::as_str)
+        {
+            let quoted = quote_id(id);
+            quote! { Some(#quoted) }
+        } else {
+            quote! { None }
+        };
         stream.extend(quote! {
             pub static #ident: LazyLock<TradeSet> = LazyLock::new(|| TradeSet {
                 key: #key,
