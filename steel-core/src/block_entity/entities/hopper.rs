@@ -144,9 +144,16 @@ impl HopperBlockEntity {
             if above_state.get_value(&BlockStateProperties::LEVEL_COMPOSTER) != 8 {
                 return false;
             }
-            let Some(level) = self.get_level() else { return false; };
+            let Some(level) = self.get_level() else {
+                return false;
+            };
             let mut bone_meal = ItemStack::new(&steel_registry::vanilla_items::BONE_MEAL);
-            let inserted = add_into_slots(&mut *self.container.lock(), &[0, 1, 2, 3, 4], Direction::Up, &mut bone_meal);
+            let inserted = add_into_slots(
+                &mut *self.container.lock(),
+                &[0, 1, 2, 3, 4],
+                Direction::Up,
+                &mut bone_meal,
+            );
             if inserted {
                 crate::behavior::blocks::ComposterBlock::empty(&level, above);
                 self.base.set_changed();
@@ -158,10 +165,14 @@ impl HopperBlockEntity {
         {
             // Vanilla requires an empty receiver slot, not just merge space.
             let mut item = jukebox.automation_item();
-            if item.is_empty() { return false; }
+            if item.is_empty() {
+                return false;
+            }
             let inserted = {
                 let mut container = self.container.lock();
-                if !container.items.iter().any(ItemStack::is_empty) { return false; }
+                if !container.items.iter().any(ItemStack::is_empty) {
+                    return false;
+                }
                 add_into_slots(&mut *container, &[0, 1, 2, 3, 4], Direction::Up, &mut item)
             };
             if inserted {
@@ -336,16 +347,24 @@ impl HopperBlockEntity {
     pub fn try_move_items(&self, world: &World, pos: BlockPos) -> bool {
         let facing = self.facing();
         let destination_pos = pos.relative(facing);
-        if world.get_block_state(destination_pos).get_block() == &steel_registry::vanilla_blocks::COMPOSTER {
+        if world.get_block_state(destination_pos).get_block()
+            == &steel_registry::vanilla_blocks::COMPOSTER
+        {
             // Composter input containers expose only their top face.
-            if facing != Direction::Down { return false; }
-            let Some(level) = self.get_level() else { return false; };
+            if facing != Direction::Down {
+                return false;
+            }
+            let Some(level) = self.get_level() else {
+                return false;
+            };
             let candidate = {
                 let hopper = self.container.lock();
                 hopper.items.iter().enumerate().find(|(_, item)| !item.is_empty() && item.get(steel_registry::data_components::vanilla_components::COMPOSTABLE).is_some())
                     .map(|(slot, item)| (slot, item.copy_with_count(1)))
             };
-            let Some((slot, item)) = candidate else { return false; };
+            let Some((slot, item)) = candidate else {
+                return false;
+            };
             if !crate::behavior::blocks::ComposterBlock::insert(&level, destination_pos, &item) {
                 return false;
             }
@@ -360,7 +379,9 @@ impl HopperBlockEntity {
             for slot in 0..HOPPER_SLOTS {
                 let item = {
                     let container = self.container.lock();
-                    if container.items[slot].is_empty() { continue; }
+                    if container.items[slot].is_empty() {
+                        continue;
+                    }
                     container.items[slot].copy_with_count(1)
                 };
                 if jukebox.insert_from_hopper(&item) {
@@ -383,51 +404,51 @@ impl HopperBlockEntity {
             if self.container.lock().items[slot].is_empty() {
                 continue;
             }
-        let mut moving = {
-            let hopper = self.container.lock();
-            hopper.items[slot].copy_with_count(1)
-        };
-
-        let destination_direction = facing.opposite();
-        let destination_id = destination.container_id();
-        let inserted = {
-            let mut guard = ContainerLockGuard::lock_all(&[&destination]);
-            let slots: SmallVec<[usize; 32]> = {
-                let Some(container) = guard.get(destination_id) else {
-                    return false;
-                };
-                match container.slots_for_face(destination_direction) {
-                    Some(slots) => SmallVec::from_slice(slots),
-                    None => (0..container.get_container_size()).collect(),
-                }
+            let mut moving = {
+                let hopper = self.container.lock();
+                hopper.items[slot].copy_with_count(1)
             };
+
+            let destination_direction = facing.opposite();
+            let destination_id = destination.container_id();
             let inserted = {
-                let Some(container) = guard.get_mut(destination_id) else {
-                    return false;
+                let mut guard = ContainerLockGuard::lock_all(&[&destination]);
+                let slots: SmallVec<[usize; 32]> = {
+                    let Some(container) = guard.get(destination_id) else {
+                        return false;
+                    };
+                    match container.slots_for_face(destination_direction) {
+                        Some(slots) => SmallVec::from_slice(slots),
+                        None => (0..container.get_container_size()).collect(),
+                    }
                 };
-                add_into_slots(container, &slots, destination_direction, &mut moving)
+                let inserted = {
+                    let Some(container) = guard.get_mut(destination_id) else {
+                        return false;
+                    };
+                    add_into_slots(container, &slots, destination_direction, &mut moving)
+                };
+                if !inserted {
+                    continue;
+                }
+                // The storage-level `set_changed` is a no-op; the destination's owner
+                // is notified through the guard, which is what marks it dirty and
+                // refreshes its comparator output.
+                let _ = guard.set_changed(destination_id);
+                true
             };
             if !inserted {
-                continue;
+                return false;
             }
-            // The storage-level `set_changed` is a no-op; the destination's owner
-            // is notified through the guard, which is what marks it dirty and
-            // refreshes its comparator output.
-            let _ = guard.set_changed(destination_id);
-            true
-        };
-        if !inserted {
-            return false;
-        }
-        {
-            let mut hopper = self.container.lock();
-            hopper.items[slot].shrink(1);
-            if hopper.items[slot].count() <= 0 {
-                hopper.items[slot] = ItemStack::empty();
+            {
+                let mut hopper = self.container.lock();
+                hopper.items[slot].shrink(1);
+                if hopper.items[slot].count() <= 0 {
+                    hopper.items[slot] = ItemStack::empty();
+                }
             }
-        }
-        self.base.set_changed();
-        return true;
+            self.base.set_changed();
+            return true;
         }
         false
     }
@@ -694,9 +715,19 @@ mod tests {
             let world = &fixture.world;
             let pos = BlockPos::new(8, 64, 8);
             insert_ready_full_chunk(world, ChunkPos::new(0, 0));
-            world.set_block(pos, vanilla_blocks::HOPPER.default_state().set_value(&BlockStateProperties::FACING_HOPPER, facing), steel_utils::types::UpdateFlags::UPDATE_ALL);
+            world.set_block(
+                pos,
+                vanilla_blocks::HOPPER
+                    .default_state()
+                    .set_value(&BlockStateProperties::FACING_HOPPER, facing),
+                steel_utils::types::UpdateFlags::UPDATE_ALL,
+            );
             let destination = pos.relative(facing);
-            world.set_block(destination, vanilla_blocks::SHULKER_BOX.default_state(), steel_utils::types::UpdateFlags::UPDATE_ALL);
+            world.set_block(
+                destination,
+                vanilla_blocks::SHULKER_BOX.default_state(),
+                steel_utils::types::UpdateFlags::UPDATE_ALL,
+            );
             let entity = world.get_block_entity(pos).unwrap();
             let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
             for item in [&vanilla_items::SHULKER_BOX, &vanilla_items::RED_SHULKER_BOX] {
@@ -704,11 +735,18 @@ mod tests {
                 assert!(!hopper.try_move_items(world, pos));
                 assert_eq!(hopper.container.lock().get_item(0).count(), 1);
             }
-            hopper.container.lock().set_item(1, ItemStack::with_count(&vanilla_items::STONE, 3));
+            hopper
+                .container
+                .lock()
+                .set_item(1, ItemStack::with_count(&vanilla_items::STONE, 3));
             assert!(hopper.try_move_items(world, pos));
             assert_eq!(hopper.container.lock().get_item(0).count(), 1);
             assert_eq!(hopper.container.lock().get_item(1).count(), 2);
-            let target = world.get_block_entity(destination).unwrap().container_ref().unwrap();
+            let target = world
+                .get_block_entity(destination)
+                .unwrap()
+                .container_ref()
+                .unwrap();
             assert!(target.lock().get_item(0).is(&vanilla_items::STONE));
             assert_eq!(target.lock().get_item(0).count(), 1);
         }
@@ -726,28 +764,59 @@ mod tests {
             let world = &fixture.world;
             let pos = BlockPos::new(8, 64, 8);
             insert_ready_full_chunk(world, ChunkPos::new(0, 0));
-            world.set_block(pos, vanilla_blocks::HOPPER.default_state().set_value(&BlockStateProperties::FACING_HOPPER, facing), UpdateFlags::UPDATE_ALL);
+            world.set_block(
+                pos,
+                vanilla_blocks::HOPPER
+                    .default_state()
+                    .set_value(&BlockStateProperties::FACING_HOPPER, facing),
+                UpdateFlags::UPDATE_ALL,
+            );
             let target_pos = pos.relative(facing);
-            world.set_block(target_pos, vanilla_blocks::JUKEBOX.default_state(), UpdateFlags::UPDATE_ALL);
+            world.set_block(
+                target_pos,
+                vanilla_blocks::JUKEBOX.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
             let entity = world.get_block_entity(pos).unwrap();
             let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
-            hopper.container.lock().set_item(0, ItemStack::with_count(&vanilla_items::STONE, 3));
+            hopper
+                .container
+                .lock()
+                .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 3));
             assert!(!hopper.try_move_items(world, pos));
-            hopper.container.lock().set_item(1, ItemStack::new(&vanilla_items::MUSIC_DISC_13));
+            hopper
+                .container
+                .lock()
+                .set_item(1, ItemStack::new(&vanilla_items::MUSIC_DISC_13));
             assert!(hopper.try_move_items(world, pos));
             assert!(hopper.container.lock().get_item(1).is_empty());
             assert_eq!(hopper.container.lock().get_item(0).count(), 3);
             let entity = world.get_block_entity(target_pos).unwrap();
-            let jukebox = entity.downcast_ref::<super::super::JukeboxBlockEntity>().unwrap();
+            let jukebox = entity
+                .downcast_ref::<super::super::JukeboxBlockEntity>()
+                .unwrap();
             assert!(jukebox.is_record_playing());
-            assert!(world.get_block_state(target_pos).get_value(&BlockStateProperties::HAS_RECORD));
+            assert!(
+                world
+                    .get_block_state(target_pos)
+                    .get_value(&BlockStateProperties::HAS_RECORD)
+            );
             assert!(!hopper.try_move_items(world, pos));
 
             let bottom = target_pos.below();
-            world.set_block(bottom, vanilla_blocks::HOPPER.default_state(), UpdateFlags::UPDATE_ALL);
+            world.set_block(
+                bottom,
+                vanilla_blocks::HOPPER.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
             let output_entity = world.get_block_entity(bottom).unwrap();
             let output = output_entity.downcast_ref::<HopperBlockEntity>().unwrap();
-            for slot in 0..HOPPER_SLOTS { output.container.lock().set_item(slot, ItemStack::with_count(&vanilla_items::STONE, 64)); }
+            for slot in 0..HOPPER_SLOTS {
+                output
+                    .container
+                    .lock()
+                    .set_item(slot, ItemStack::with_count(&vanilla_items::STONE, 64));
+            }
             assert!(!output.suck_in_items(world, bottom));
             assert!(jukebox.is_record_playing());
             output.container.lock().set_item(0, ItemStack::empty());
@@ -755,10 +824,23 @@ mod tests {
             // separately gated by ENABLED (a playing jukebox supplies power).
             assert!(output.suck_in_items(world, bottom));
             assert!(!jukebox.is_record_playing());
-            assert!(!world.get_block_state(target_pos).get_value(&BlockStateProperties::HAS_RECORD));
-            assert!(output.container.lock().get_item(0).is(&vanilla_items::MUSIC_DISC_13));
+            assert!(
+                !world
+                    .get_block_state(target_pos)
+                    .get_value(&BlockStateProperties::HAS_RECORD)
+            );
+            assert!(
+                output
+                    .container
+                    .lock()
+                    .get_item(0)
+                    .is(&vanilla_items::MUSIC_DISC_13)
+            );
             assert!(!output.suck_in_items(world, bottom));
-            assert!(!hopper.try_move_items(world, pos), "zero-count disc must not be resurrected");
+            assert!(
+                !hopper.try_move_items(world, pos),
+                "zero-count disc must not be resurrected"
+            );
         }
     }
 

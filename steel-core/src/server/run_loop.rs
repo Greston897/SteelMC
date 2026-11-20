@@ -254,7 +254,9 @@ impl Server {
 
             self.tick_pending_command_executions(&mut pending_command_executions);
             for function in self.function_packs.tick_functions() {
-                if let Err(error) = self.submit_command(CommandSender::Console, format!("function {function}")) {
+                if let Err(error) =
+                    self.submit_command(CommandSender::Console, format!("function {function}"))
+                {
                     log::error!("Could not queue datapack function {function}: {error:?}");
                 }
             }

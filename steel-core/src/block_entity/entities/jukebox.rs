@@ -182,8 +182,10 @@ impl JukeboxBlockEntity {
     /// Accept one playable item into an empty jukebox, starting its song through
     /// the same state/event path as player insertion. Caller consumes its item.
     pub(crate) fn insert_from_hopper(&self, item: &ItemStack) -> bool {
-        if item.is_empty() || item.get(JUKEBOX_PLAYABLE).is_none()
-            || !self.state.lock().item.is_empty() {
+        if item.is_empty()
+            || item.get(JUKEBOX_PLAYABLE).is_none()
+            || !self.state.lock().item.is_empty()
+        {
             return false;
         }
         self.set_the_item(item.copy_with_count(1));

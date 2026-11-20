@@ -1,8 +1,3 @@
-#![expect(
-    clippy::unwrap_used,
-    reason = "build script must fail immediately on invalid extracted predicate data"
-)]
-
 //! Build-time codegen for the `minecraft:predicate` registry (3/3).
 
 use heck::ToShoutySnakeCase;

@@ -1,8 +1,3 @@
-#![expect(
-    clippy::unwrap_used,
-    reason = "build script must fail immediately on invalid extracted provider data"
-)]
-
 //! Build-time codegen for `minecraft:context_int_provider` (26/26) and
 //! `minecraft:context_float_provider` (4/4).
 //!
@@ -91,9 +86,10 @@ pub(crate) fn generate_condition(value: &serde_json::Value) -> TokenStream {
             }
             let mut state = Vec::new();
             if let Some(map) = object.get("state") {
-                for (prop, expected) in map.as_object().unwrap_or_else(|| {
-                    panic!("match_block state must be an object: {map}")
-                }) {
+                for (prop, expected) in map
+                    .as_object()
+                    .unwrap_or_else(|| panic!("match_block state must be an object: {map}"))
+                {
                     let expected = expected.as_str().unwrap_or_else(|| {
                         panic!("match_block state value must be a string: {expected}")
                     });
@@ -280,9 +276,15 @@ fn generate_int_expr(value: &serde_json::Value) -> TokenStream {
                     .unwrap_or_else(|| panic!("{kind} int provider is missing right: {value}")),
             );
             match kind {
-                "minecraft:add" => quote! { ContextIntExpr::Add(Box::new(#left), Box::new(#right)) },
-                "minecraft:sub" => quote! { ContextIntExpr::Sub(Box::new(#left), Box::new(#right)) },
-                "minecraft:mul" => quote! { ContextIntExpr::Mul(Box::new(#left), Box::new(#right)) },
+                "minecraft:add" => {
+                    quote! { ContextIntExpr::Add(Box::new(#left), Box::new(#right)) }
+                }
+                "minecraft:sub" => {
+                    quote! { ContextIntExpr::Sub(Box::new(#left), Box::new(#right)) }
+                }
+                "minecraft:mul" => {
+                    quote! { ContextIntExpr::Mul(Box::new(#left), Box::new(#right)) }
+                }
                 _ => quote! { ContextIntExpr::Div(Box::new(#left), Box::new(#right)) },
             }
         }
@@ -317,10 +319,10 @@ fn generate_int_expr(value: &serde_json::Value) -> TokenStream {
                 .unwrap_or_else(|| panic!("number_dispatcher is missing cases: {value}"))
                 .iter()
                 .map(|case| {
-                    let condition = generate_condition(
-                        case.get("condition")
-                            .unwrap_or_else(|| panic!("dispatcher case is missing condition: {case}")),
-                    );
+                    let condition =
+                        generate_condition(case.get("condition").unwrap_or_else(|| {
+                            panic!("dispatcher case is missing condition: {case}")
+                        }));
                     let result = generate_int_expr(
                         case.get("value")
                             .unwrap_or_else(|| panic!("dispatcher case is missing value: {case}")),
@@ -433,10 +435,10 @@ fn generate_float_expr(value: &serde_json::Value) -> TokenStream {
                 .unwrap_or_else(|| panic!("number_dispatcher is missing cases: {value}"))
                 .iter()
                 .map(|case| {
-                    let condition = generate_condition(
-                        case.get("condition")
-                            .unwrap_or_else(|| panic!("dispatcher case is missing condition: {case}")),
-                    );
+                    let condition =
+                        generate_condition(case.get("condition").unwrap_or_else(|| {
+                            panic!("dispatcher case is missing condition: {case}")
+                        }));
                     let result = generate_float_expr(
                         case.get("value")
                             .unwrap_or_else(|| panic!("dispatcher case is missing value: {case}")),

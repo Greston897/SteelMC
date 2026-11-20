@@ -11,7 +11,9 @@ const WATER_SEARCH_HORIZONTAL_RADIUS: f64 = 2.0;
 const WATER_SEARCH_VERTICAL_BELOW: f64 = 2.0;
 const WATER_MOVE_SPEED_MODIFIER: f64 = 1.0;
 
-pub struct TryFindLiquidGoal { fluid_tag: Identifier }
+pub struct TryFindLiquidGoal {
+    fluid_tag: Identifier,
+}
 
 impl TryFindLiquidGoal {
     #[must_use]
@@ -35,7 +37,8 @@ impl Goal for TryFindLiquidGoal {
         };
         !world
             .get_block_state(mob.block_position())
-            .get_fluid_state().fluid_id
+            .get_fluid_state()
+            .fluid_id
             .has_tag(&self.fluid_tag)
     }
 
@@ -46,7 +49,11 @@ impl Goal for TryFindLiquidGoal {
 
         let (min, max) = water_search_bounds(mob.position());
         let Some(water_pos) = first_matching_pos_in_closed_box(min, max, |pos| {
-            world.get_block_state(pos).get_fluid_state().fluid_id.has_tag(&self.fluid_tag)
+            world
+                .get_block_state(pos)
+                .get_fluid_state()
+                .fluid_id
+                .has_tag(&self.fluid_tag)
         }) else {
             return;
         };

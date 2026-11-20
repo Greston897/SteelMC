@@ -161,7 +161,9 @@ impl PillagerCrossbowAttackGoal {
 }
 
 fn pillager_crossbow_charge_ticks(mob: &dyn PathfinderMob) -> i32 {
-    crate::behavior::items::CrossbowItem::charge_duration(&mob.equipment_in_slot(EquipmentSlot::MainHand))
+    crate::behavior::items::CrossbowItem::charge_duration(
+        &mob.equipment_in_slot(EquipmentSlot::MainHand),
+    )
 }
 
 impl Goal for PillagerCrossbowAttackGoal {
@@ -357,7 +359,11 @@ impl LivingEntity for PillagerEntity {
 
 impl Mob for PillagerEntity {
     fn set_raid_celebrating(&self, celebrating: bool) {
-        self.entity_data.lock().raider_mut().is_celebrating.set(celebrating);
+        self.entity_data
+            .lock()
+            .raider_mut()
+            .is_celebrating
+            .set(celebrating);
     }
 
     fn mob_base(&self) -> &MobBase {
@@ -420,12 +426,22 @@ mod tests {
     #[test]
     fn raid_quick_charge_equipment_changes_real_pillager_charge_time() {
         init_vanilla_registry();
-        let pillager = PillagerEntity::new(&vanilla_entities::PILLAGER, 1, DVec3::ZERO, Weak::new());
+        let pillager =
+            PillagerEntity::new(&vanilla_entities::PILLAGER, 1, DVec3::ZERO, Weak::new());
         for (level, duration) in [(0, 25), (1, 20), (2, 15)] {
-            let mut enchantments = steel_registry::data_components::vanilla_components::ItemEnchantments::empty();
-            enchantments.set(steel_registry::vanilla_enchantments::QUICK_CHARGE.key.clone(), level);
+            let mut enchantments =
+                steel_registry::data_components::vanilla_components::ItemEnchantments::empty();
+            enchantments.set(
+                steel_registry::vanilla_enchantments::QUICK_CHARGE
+                    .key
+                    .clone(),
+                level,
+            );
             pillager.with_equipment_slot_mut(EquipmentSlot::MainHand, &mut |weapon| {
-                weapon.set(steel_registry::data_components::vanilla_components::ENCHANTMENTS, enchantments.clone());
+                weapon.set(
+                    steel_registry::data_components::vanilla_components::ENCHANTMENTS,
+                    enchantments.clone(),
+                );
             });
             assert_eq!(pillager_crossbow_charge_ticks(&pillager), duration);
         }

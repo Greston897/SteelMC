@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use super::{
-    BiomeHolderSet, BlockHolderSet, BlockStateData, Direction, FluidHolderSet, FluidStateData, Ident,
-    Identifier, Rotation, Span, ToShoutySnakeCase, TokenStream, VerticalAnchor, fs, quote,
+    BiomeHolderSet, BlockHolderSet, BlockStateData, Direction, FluidHolderSet, FluidStateData,
+    Ident, Identifier, Rotation, Span, ToShoutySnakeCase, TokenStream, VerticalAnchor, fs, quote,
 };
 
 /// Recursively collects every `.json` file under `dir`, sorted for

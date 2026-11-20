@@ -1241,7 +1241,10 @@ pub trait LivingEntity: Entity {
         }
 
         if let Some(world) = self.level() {
-            let killer = source.causing_entity().filter(|entity| entity.as_player().is_some()).map(|entity| entity.uuid());
+            let killer = source
+                .causing_entity()
+                .filter(|entity| entity.as_player().is_some())
+                .map(|entity| entity.uuid());
             world.raids.raider_died(self.uuid(), killer);
         }
 

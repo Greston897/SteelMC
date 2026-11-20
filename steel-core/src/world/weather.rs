@@ -329,15 +329,25 @@ impl World {
 
     /// Per-column precipitation pass, sampled separately from block random ticks.
     pub(crate) fn tick_precipitation_column(self: &Arc<Self>, x: i32, z: i32) {
-        if !self.can_have_weather() { return; }
-        let Some(y) = self.height_at(HeightmapType::MotionBlocking, x, z) else { return; };
+        if !self.can_have_weather() {
+            return;
+        }
+        let Some(y) = self.height_at(HeightmapType::MotionBlocking, x, z) else {
+            return;
+        };
         let top = BlockPos::new(x, y, z);
         let pos = top.below();
-        let Some(biome) = self.biome_at(top) else { return; };
+        let Some(biome) = self.biome_at(top) else {
+            return;
+        };
         self.try_freeze_precipitation_water(pos, biome);
-        if !self.is_raining() { return; }
+        if !self.is_raining() {
+            return;
+        }
         self.try_accumulate_snow(top);
-        if !biome.has_precipitation { return; }
+        if !biome.has_precipitation {
+            return;
+        }
         let snow = self.biome_temperature(biome, pos) < SNOW_TEMPERATURE;
         self.try_fill_cauldron_from_precipitation(pos, snow, rand::random::<f32>());
     }
@@ -345,31 +355,72 @@ impl World {
     /// Vanilla Biome.shouldFreeze: cold water with block light below ten at
     /// an exposed edge. Freezing is sampled even when it is not raining.
     pub(super) fn try_freeze_precipitation_water(self: &Arc<Self>, pos: BlockPos, biome: BiomeRef) {
-        if self.is_outside_build_height(pos.y()) || self.biome_temperature(biome, pos) >= SNOW_TEMPERATURE
-            || self.light_value_at(LightLayer::Block, pos) >= 10 {
+        if self.is_outside_build_height(pos.y())
+            || self.biome_temperature(biome, pos) >= SNOW_TEMPERATURE
+            || self.light_value_at(LightLayer::Block, pos) >= 10
+        {
             return;
         }
-        if self.get_block_state(pos).get_block() != &vanilla_blocks::WATER { return; }
-        let is_water = |pos| crate::fluid::state::get_fluid_state_from_block(self.get_block_state(pos)).is_water();
-        if is_water(pos.west()) && is_water(pos.east()) && is_water(pos.north()) && is_water(pos.south()) { return; }
-        self.set_block(pos, vanilla_blocks::ICE.default_state(), UpdateFlags::UPDATE_ALL);
+        if self.get_block_state(pos).get_block() != &vanilla_blocks::WATER {
+            return;
+        }
+        let is_water = |pos| {
+            crate::fluid::state::get_fluid_state_from_block(self.get_block_state(pos)).is_water()
+        };
+        if is_water(pos.west())
+            && is_water(pos.east())
+            && is_water(pos.north())
+            && is_water(pos.south())
+        {
+            return;
+        }
+        self.set_block(
+            pos,
+            vanilla_blocks::ICE.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
     }
 
     /// Applies vanilla's rain/snow probability and matching-fluid restriction.
-    pub(crate) fn try_fill_cauldron_from_precipitation(self: &Arc<Self>, pos: BlockPos, snow: bool, roll: f32) {
-        if roll >= if snow { 0.1 } else { 0.05 } { return; }
+    pub(crate) fn try_fill_cauldron_from_precipitation(
+        self: &Arc<Self>,
+        pos: BlockPos,
+        snow: bool,
+        roll: f32,
+    ) {
+        if roll >= if snow { 0.1 } else { 0.05 } {
+            return;
+        }
         let state = self.get_block_state(pos);
         let block = state.get_block();
-        let target = if snow { &vanilla_blocks::POWDER_SNOW_CAULDRON } else { &vanilla_blocks::WATER_CAULDRON };
+        let target = if snow {
+            &vanilla_blocks::POWDER_SNOW_CAULDRON
+        } else {
+            &vanilla_blocks::WATER_CAULDRON
+        };
         let next = if block == &vanilla_blocks::CAULDRON {
             target.default_state()
         } else if block == target && state.get_value(&BlockStateProperties::LEVEL_CAULDRON) < 3 {
-            state.set_value(&BlockStateProperties::LEVEL_CAULDRON, state.get_value(&BlockStateProperties::LEVEL_CAULDRON) + 1)
-        } else { return; };
+            state.set_value(
+                &BlockStateProperties::LEVEL_CAULDRON,
+                state.get_value(&BlockStateProperties::LEVEL_CAULDRON) + 1,
+            )
+        } else {
+            return;
+        };
         self.set_block(pos, next, UpdateFlags::UPDATE_ALL);
-        self.game_event(&steel_registry::vanilla_game_events::BLOCK_CHANGE, pos,
-            &crate::world::game_event::GameEventContext::new(None,
-                if block == &vanilla_blocks::CAULDRON { None } else { Some(next) }));
+        self.game_event(
+            &steel_registry::vanilla_game_events::BLOCK_CHANGE,
+            pos,
+            &crate::world::game_event::GameEventContext::new(
+                None,
+                if block == &vanilla_blocks::CAULDRON {
+                    None
+                } else {
+                    Some(next)
+                },
+            ),
+        );
     }
 
     /// Requires full sky light and an unobstructed motion-blocking heightmap.

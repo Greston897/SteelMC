@@ -129,16 +129,23 @@ fn parse_provider(value: &Value) -> BlockStateProviderKind {
 
 /// Vanilla `BlockTransformData.CODEC` field order with `optionalFieldOf`
 /// omit-defaults encoding: `sound` (empty), `particle` (none),
-/// `disallowed_faces` ([]), `drop_strategy` (from_middle),
-/// `update_from_neighbors` (true), `transform_type` (single_block),
+/// `disallowed_faces` ([]), `drop_strategy` (`from_middle`),
+/// `update_from_neighbors` (true), `transform_type` (`single_block`),
 /// `consume_on_use` (true) and `item_damage_per_use` (0) are only written
 /// when they differ from the default; `loot` is written when present.
 fn block_transform_nbt_token(value: &Value) -> TokenStream {
     let transform = object(value, "block transformer transform");
     for name in transform.keys() {
         match name.as_str() {
-            "block_state_provider" | "sound" | "particle" | "disallowed_faces" | "loot"
-            | "drop_strategy" | "update_from_neighbors" | "transform_type" | "consume_on_use"
+            "block_state_provider"
+            | "sound"
+            | "particle"
+            | "disallowed_faces"
+            | "loot"
+            | "drop_strategy"
+            | "update_from_neighbors"
+            | "transform_type"
+            | "consume_on_use"
             | "item_damage_per_use" => {}
             field => panic!("unsupported block transformer field {field}"),
         }
@@ -158,10 +165,9 @@ fn block_transform_nbt_token(value: &Value) -> TokenStream {
     if let Some(particle) = transform
         .get("particle")
         .map(|value| string(value, "particle"))
+        && particle != "none"
     {
-        if particle != "none" {
-            fields.push(quote! { compound.insert("particle", #particle); });
-        }
+        fields.push(quote! { compound.insert("particle", #particle); });
     }
     if let Some(faces) = transform.get("disallowed_faces") {
         let values: Vec<_> = faces
@@ -182,10 +188,9 @@ fn block_transform_nbt_token(value: &Value) -> TokenStream {
     if let Some(drop_strategy) = transform
         .get("drop_strategy")
         .map(|value| string(value, "drop_strategy"))
+        && drop_strategy != "from_middle"
     {
-        if drop_strategy != "from_middle" {
-            fields.push(quote! { compound.insert("drop_strategy", #drop_strategy); });
-        }
+        fields.push(quote! { compound.insert("drop_strategy", #drop_strategy); });
     }
     if let Some(false) = transform.get("update_from_neighbors").map(|value| {
         value
@@ -197,10 +202,9 @@ fn block_transform_nbt_token(value: &Value) -> TokenStream {
     if let Some(transform_type) = transform
         .get("transform_type")
         .map(|value| string(value, "transform_type"))
+        && transform_type != "single_block"
     {
-        if transform_type != "single_block" {
-            fields.push(quote! { compound.insert("transform_type", #transform_type); });
-        }
+        fields.push(quote! { compound.insert("transform_type", #transform_type); });
     }
     if let Some(false) = transform.get("consume_on_use").map(|value| {
         value
@@ -213,8 +217,8 @@ fn block_transform_nbt_token(value: &Value) -> TokenStream {
         let damage = damage
             .as_i64()
             .unwrap_or_else(|| panic!("item_damage_per_use must be an integer"));
-        let damage = i32::try_from(damage)
-            .unwrap_or_else(|_| panic!("item_damage_per_use must fit an i32"));
+        let damage =
+            i32::try_from(damage).unwrap_or_else(|_| panic!("item_damage_per_use must fit an i32"));
         assert!(damage >= 0, "item_damage_per_use must be nonnegative");
         if damage != 0 {
             fields.push(quote! { compound.insert("item_damage_per_use", #damage); });

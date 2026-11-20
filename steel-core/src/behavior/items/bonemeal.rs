@@ -92,7 +92,11 @@ impl BoneMealItem {
         );
     }
 
-    pub(crate) fn grow_water_plant(world: &Arc<World>, pos: BlockPos, _clicked_face: Direction) -> bool {
+    pub(crate) fn grow_water_plant(
+        world: &Arc<World>,
+        pos: BlockPos,
+        _clicked_face: Direction,
+    ) -> bool {
         let state = world.get_block_state(pos);
         if state.get_block() != &vanilla_blocks::WATER || !state.get_fluid_state().is_full() {
             return false;

@@ -29,44 +29,65 @@ pub(super) fn registration() -> CommandRegistration<CommandSource> {
 
 fn command() -> Builder {
     literal("item").then(
-        literal("replace").then(
-            literal("block").then(
-                argument("pos", SteelArgumentType::block_pos()).then(
-                    argument("slot", ArgumentType::word()).then(
-                        literal("with").then(
-                            argument("item", SteelArgumentType::item_stack())
-                                .executes(|context| replace_block(context, None))
-                                .then(argument("count", ArgumentType::integer(1, 99)).executes(
-                                    |context| replace_block(context, Some(context.integer("count")?)),
-                                )),
+        literal("replace")
+            .then(
+                literal("block").then(
+                    argument("pos", SteelArgumentType::block_pos()).then(
+                        argument("slot", ArgumentType::word()).then(
+                            literal("with").then(
+                                argument("item", SteelArgumentType::item_stack())
+                                    .executes(|context| replace_block(context, None))
+                                    .then(
+                                        argument("count", ArgumentType::integer(1, 99)).executes(
+                                            |context| {
+                                                replace_block(
+                                                    context,
+                                                    Some(context.integer("count")?),
+                                                )
+                                            },
+                                        ),
+                                    ),
+                            ),
+                        ),
+                    ),
+                ),
+            )
+            .then(
+                literal("entity").then(
+                    argument("targets", SteelArgumentType::players()).then(
+                        argument("slot", SteelArgumentType::identifier()).then(
+                            literal("with").then(
+                                argument("item", SteelArgumentType::item_stack())
+                                    .executes(|context| replace(context, None))
+                                    .then(
+                                        argument("count", ArgumentType::integer(1, 99)).executes(
+                                            |context| {
+                                                replace(context, Some(context.integer("count")?))
+                                            },
+                                        ),
+                                    ),
+                            ),
                         ),
                     ),
                 ),
             ),
-        ).then(
-            literal("entity").then(
-                argument("targets", SteelArgumentType::players()).then(
-                    argument("slot", SteelArgumentType::identifier()).then(
-                        literal("with").then(
-                            argument("item", SteelArgumentType::item_stack())
-                                .executes(|context| replace(context, None))
-                                .then(argument("count", ArgumentType::integer(1, 99)).executes(
-                                    |context| replace(context, Some(context.integer("count")?)),
-                                )),
-                        ),
-                    ),
-                ),
-            ),
-        ),
     )
 }
 
-fn replace_block(context: &SteelCommandContext<CommandSource>, count: Option<i32>) -> Result<i32, CommandSyntaxError> {
+fn replace_block(
+    context: &SteelCommandContext<CommandSource>,
+    count: Option<i32>,
+) -> Result<i32, CommandSyntaxError> {
     let pos = context.coordinates("pos")?.block_pos(context.source());
-    let slot = context.string("slot")?.strip_prefix("container.")
+    let slot = context
+        .string("slot")?
+        .strip_prefix("container.")
         .and_then(|s| s.parse::<usize>().ok())
         .ok_or_else(|| CommandSyntaxError::dynamic("Unknown container slot"))?;
-    let entity = context.source().world().get_block_entity(pos)
+    let entity = context
+        .source()
+        .world()
+        .get_block_entity(pos)
         .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
     let container = crate::inventory::lock::ContainerRef::from_block_entity(entity)
         .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
@@ -75,10 +96,15 @@ fn replace_block(context: &SteelCommandContext<CommandSource>, count: Option<i32
         return Err(CommandSyntaxError::dynamic("Container slot out of range"));
     }
     let stack = context.item_stack("item")?;
-    guard.set_item(slot, count.map_or_else(|| stack.clone(), |n| stack.copy_with_count(n)));
+    guard.set_item(
+        slot,
+        count.map_or_else(|| stack.clone(), |n| stack.copy_with_count(n)),
+    );
     drop(guard);
     container.mark_changed();
-    context.source().send_success(&TextComponent::plain("Replaced container slot"), true);
+    context
+        .source()
+        .send_success(&TextComponent::plain("Replaced container slot"), true);
     Ok(1)
 }
 

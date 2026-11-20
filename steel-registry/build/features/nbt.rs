@@ -63,7 +63,7 @@ fn resolve_state_properties(data: &BlockStateData) -> BTreeMap<String, String> {
     let mut resolved = defaults.clone();
     for (key, value) in &data.properties {
         if let Some(slot) = resolved.get_mut(key) {
-            *slot = value.clone();
+            slot.clone_from(value);
         }
     }
     resolved

@@ -29,17 +29,17 @@ jobs:
       - name: Spell Check
         uses: crate-ci/typos@v1.48.0
 
-      - name: Format
-        if: always()
-        run: |
-          set -o pipefail
-          cargo fmt --all --check 2>&1 | tee /tmp/fmt.log
-
       - name: Clippy
         if: always()
         run: |
           set -o pipefail
           cargo clippy -r --workspace --all-targets --all-features 2>&1 | tee /tmp/clippy.log
+
+      - name: Format
+        if: always()
+        run: |
+          set -o pipefail
+          cargo fmt --all --check 2>&1 | tee /tmp/fmt.log
 
       - name: Surface lint failures
         if: failure()

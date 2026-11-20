@@ -121,7 +121,11 @@ fn remove_tail(target: DataTarget) -> Builder {
 }
 
 #[derive(Clone, Copy)]
-enum GetKind { Root, Tag, Scaled }
+enum GetKind {
+    Root,
+    Tag,
+    Scaled,
+}
 
 fn get(
     context: &SteelCommandContext<CommandSource>,
@@ -130,34 +134,50 @@ fn get(
 ) -> Result<i32, CommandSyntaxError> {
     let root = read_root(context, target)?;
     let (printed, result) = if matches!(kind, GetKind::Root) {
-        (to_canonical_snbt(&NbtTag::Compound(root)).unwrap_or_default(), 1)
+        (
+            to_canonical_snbt(&NbtTag::Compound(root)).unwrap_or_default(),
+            1,
+        )
     } else {
         let path = context.nbt_path("path")?.clone();
         let root = NbtTag::Compound(root);
         let tags = path.get(&root);
         if tags.len() != 1 {
-            return Err(CommandSyntaxError::dynamic("Expected exactly one NBT value"));
+            return Err(CommandSyntaxError::dynamic(
+                "Expected exactly one NBT value",
+            ));
         }
         let tag = &tags[0];
         let result = if matches!(kind, GetKind::Scaled) {
             scaled_numeric_result(tag, context.double("scale")?)?
-        } else { tag_result(tag)? };
+        } else {
+            tag_result(tag)?
+        };
         (to_canonical_snbt(tag).unwrap_or_default(), result)
     };
-    context.source().send_success(&translated("commands.data.get.success",
-        format!("Value: {printed}"), vec![TextComponent::from(printed)]), false);
+    context.source().send_success(
+        &translated(
+            "commands.data.get.success",
+            format!("Value: {printed}"),
+            vec![TextComponent::from(printed)],
+        ),
+        false,
+    );
     Ok(result)
 }
 
 fn scaled_numeric_result(tag: &NbtTag, scale: f64) -> Result<i32, CommandSyntaxError> {
-    numeric_value(tag).map(|n| (n * scale).floor() as i32)
+    numeric_value(tag)
+        .map(|n| (n * scale).floor() as i32)
         .ok_or_else(|| CommandSyntaxError::dynamic("NBT value is not numeric"))
 }
 
 /// Vanilla DataCommands.getData returns the numeric floor or collection size,
 /// not a constant success count. Java string lengths count UTF-16 code units.
 fn tag_result(tag: &NbtTag) -> Result<i32, CommandSyntaxError> {
-    if let Some(n) = numeric_value(tag) { return Ok(n.floor() as i32); }
+    if let Some(n) = numeric_value(tag) {
+        return Ok(n.floor() as i32);
+    }
     let size = match tag {
         NbtTag::String(s) => s.to_string().encode_utf16().count(),
         NbtTag::Compound(c) => c.len(),
@@ -165,14 +185,20 @@ fn tag_result(tag: &NbtTag) -> Result<i32, CommandSyntaxError> {
             use simdnbt::owned::NbtList;
             match l {
                 NbtList::Empty => 0,
-                NbtList::Byte(v) => v.len(), NbtList::Short(v) => v.len(),
-                NbtList::Int(v) => v.len(), NbtList::Long(v) => v.len(),
-                NbtList::Float(v) => v.len(), NbtList::Double(v) => v.len(),
-                NbtList::ByteArray(v) => v.len(), NbtList::String(v) => v.len(),
-                NbtList::List(v) => v.len(), NbtList::Compound(v) => v.len(),
-                NbtList::IntArray(v) => v.len(), NbtList::LongArray(v) => v.len(),
+                NbtList::Byte(v) => v.len(),
+                NbtList::Short(v) => v.len(),
+                NbtList::Int(v) => v.len(),
+                NbtList::Long(v) => v.len(),
+                NbtList::Float(v) => v.len(),
+                NbtList::Double(v) => v.len(),
+                NbtList::ByteArray(v) => v.len(),
+                NbtList::String(v) => v.len(),
+                NbtList::List(v) => v.len(),
+                NbtList::Compound(v) => v.len(),
+                NbtList::IntArray(v) => v.len(),
+                NbtList::LongArray(v) => v.len(),
             }
-        },
+        }
         NbtTag::ByteArray(a) => a.len(),
         NbtTag::IntArray(a) => a.len(),
         NbtTag::LongArray(a) => a.len(),
@@ -358,15 +384,24 @@ mod data_result_tests {
         assert_eq!(tag_result(&NbtTag::Float(6.0)).unwrap(), 6);
         assert_eq!(tag_result(&NbtTag::Double(-1.2)).unwrap(), -2);
         assert_eq!(scaled_numeric_result(&NbtTag::Double(2.5), 3.0).unwrap(), 7);
-        assert_eq!(scaled_numeric_result(&NbtTag::Double(-1.2), 2.0).unwrap(), -3);
+        assert_eq!(
+            scaled_numeric_result(&NbtTag::Double(-1.2), 2.0).unwrap(),
+            -3
+        );
     }
 
     #[test]
     fn data_get_collection_lengths_and_nonnumeric_scale_match_vanilla() {
         assert_eq!(tag_result(&NbtTag::String("a😀".into())).unwrap(), 3);
         assert_eq!(tag_result(&NbtTag::IntArray(vec![1, 2, 3])).unwrap(), 3);
-        assert_eq!(tag_result(&NbtTag::List(simdnbt::owned::NbtList::Empty)).unwrap(), 0);
-        assert_eq!(tag_result(&NbtTag::List(simdnbt::owned::NbtList::Int(vec![1, 2]))).unwrap(), 2);
+        assert_eq!(
+            tag_result(&NbtTag::List(simdnbt::owned::NbtList::Empty)).unwrap(),
+            0
+        );
+        assert_eq!(
+            tag_result(&NbtTag::List(simdnbt::owned::NbtList::Int(vec![1, 2]))).unwrap(),
+            2
+        );
         let mut compound = NbtCompound::new();
         compound.insert("one", 1_i32);
         assert_eq!(tag_result(&NbtTag::Compound(compound)).unwrap(), 1);

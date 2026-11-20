@@ -51,7 +51,9 @@ pub trait FlintWorld: Send + Sync {
     /// Apply declared setup time and weather before any timeline actions.
     /// The upstream 1.2.2 runner parsed these fields but silently ignored them.
     fn configure_world(&mut self, _config: &crate::test_spec::WorldConfig) -> Result<()> {
-        Err(anyhow!("world time/weather setup is not implemented by this adapter"))
+        Err(anyhow!(
+            "world time/weather setup is not implemented by this adapter"
+        ))
     }
 
     /// Execute exactly one game tick

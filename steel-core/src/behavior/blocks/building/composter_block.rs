@@ -3,23 +3,23 @@
 
 use std::sync::Arc;
 
-use steel_macros::block_behavior;
-use steel_protocol::packets::game::SoundSource;
-use steel_registry::{REGISTRY, vanilla_blocks, vanilla_items, sound_events, vanilla_game_events};
-use steel_registry::data_components::vanilla_components::COMPOSTABLE;
-use steel_registry::context_provider::ProviderEvalContext;
-use steel_registry::item_stack::ItemStack;
-use steel_registry::stat::vanilla_stat_types;
-use steel_utils::random::{Random, legacy_random::LegacyRandom};
-use steel_utils::types::{UpdateFlags, InteractionHand};
-use crate::behavior::{InventoryAccess, InteractionResult, BlockHitResult};
+use crate::behavior::{BlockHitResult, InteractionResult, InventoryAccess};
 use crate::player::Player;
 use crate::world::{ScheduledTickAccess, game_event::GameEventContext};
+use steel_macros::block_behavior;
+use steel_protocol::packets::game::SoundSource;
 use steel_registry::blocks::{
     BlockRef,
     block_state_ext::BlockStateExt as _,
     properties::{BlockStateProperties, Direction, IntProperty},
 };
+use steel_registry::context_provider::ProviderEvalContext;
+use steel_registry::data_components::vanilla_components::COMPOSTABLE;
+use steel_registry::item_stack::ItemStack;
+use steel_registry::stat::vanilla_stat_types;
+use steel_registry::{REGISTRY, sound_events, vanilla_blocks, vanilla_game_events, vanilla_items};
+use steel_utils::random::{Random, legacy_random::LegacyRandom};
+use steel_utils::types::{InteractionHand, UpdateFlags};
 use steel_utils::{BlockPos, BlockStateId};
 
 use crate::{
@@ -49,22 +49,36 @@ impl ComposterBlock {
         Self::insert_with_random(world, pos, stack, &mut random)
     }
 
-    fn insert_with_random(world: &Arc<World>, pos: BlockPos, stack: &ItemStack, random: &mut impl Random) -> bool {
+    fn insert_with_random(
+        world: &Arc<World>,
+        pos: BlockPos,
+        stack: &ItemStack,
+        random: &mut impl Random,
+    ) -> bool {
         let state = world.get_block_state(pos);
         let level = state.get_value(LEVEL_COMPOSTER);
         if state.get_block() != &vanilla_blocks::COMPOSTER || level >= 7 || stack.is_empty() {
             return false;
         }
-        let Some(component) = stack.get(COMPOSTABLE) else { return false; };
+        let Some(component) = stack.get(COMPOSTABLE) else {
+            return false;
+        };
         let level_text = level.to_string();
         let properties = [("level", level_text.as_str())];
         let context = ProviderEvalContext::for_block_state(&state.get_block().key, &properties);
-        let layers = REGISTRY.context_int_providers.sample(&component.layers, &context, random).unwrap_or(0);
+        let layers = REGISTRY
+            .context_int_providers
+            .sample(&component.layers, &context, random)
+            .unwrap_or(0);
         if layers > 0 {
             let next_level = (i32::from(level).saturating_add(layers)).clamp(0, 7) as u8;
             let next = state.set_value(LEVEL_COMPOSTER, next_level);
             world.set_block(pos, next, UpdateFlags::UPDATE_ALL);
-            world.game_event(&vanilla_game_events::BLOCK_CHANGE, pos, &GameEventContext::new(None, Some(next)));
+            world.game_event(
+                &vanilla_game_events::BLOCK_CHANGE,
+                pos,
+                &GameEventContext::new(None, Some(next)),
+            );
             if next_level == 7 {
                 world.schedule_block_tick_default(pos, state.get_block(), 20);
             }
@@ -76,18 +90,30 @@ impl ComposterBlock {
     /// Empties a ready composter without spawning loot (hopper extraction).
     pub(crate) fn empty(world: &Arc<World>, pos: BlockPos) -> bool {
         let state = world.get_block_state(pos);
-        if state.get_block() != &vanilla_blocks::COMPOSTER || state.get_value(LEVEL_COMPOSTER) != 8 {
+        if state.get_block() != &vanilla_blocks::COMPOSTER || state.get_value(LEVEL_COMPOSTER) != 8
+        {
             return false;
         }
         let next = state.set_value(LEVEL_COMPOSTER, 0);
         world.set_block(pos, next, UpdateFlags::UPDATE_ALL);
-        world.game_event(&vanilla_game_events::BLOCK_CHANGE, pos, &GameEventContext::new(None, Some(next)));
+        world.game_event(
+            &vanilla_game_events::BLOCK_CHANGE,
+            pos,
+            &GameEventContext::new(None, Some(next)),
+        );
         true
     }
 }
 
 impl BlockBehavior for ComposterBlock {
-    fn on_place(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos, _old_state: BlockStateId, _moved_by_piston: bool) {
+    fn on_place(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _old_state: BlockStateId,
+        _moved_by_piston: bool,
+    ) {
         if state.get_value(LEVEL_COMPOSTER) == 7 {
             world.schedule_block_tick_default(pos, self.block, 20);
         }
@@ -95,12 +121,32 @@ impl BlockBehavior for ComposterBlock {
 
     fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
         if state.get_value(LEVEL_COMPOSTER) == 7 {
-            world.set_block(pos, state.set_value(LEVEL_COMPOSTER, 8), UpdateFlags::UPDATE_ALL);
-            world.play_sound(&sound_events::BLOCK_COMPOSTER_READY, SoundSource::Blocks, pos, 1.0, 1.0, None);
+            world.set_block(
+                pos,
+                state.set_value(LEVEL_COMPOSTER, 8),
+                UpdateFlags::UPDATE_ALL,
+            );
+            world.play_sound(
+                &sound_events::BLOCK_COMPOSTER_READY,
+                SoundSource::Blocks,
+                pos,
+                1.0,
+                1.0,
+                None,
+            );
         }
     }
 
-    fn use_item_on(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos, player: &Player, _hand: InteractionHand, _hit: &BlockHitResult, inv: &mut InventoryAccess) -> InteractionResult {
+    fn use_item_on(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+        _hand: InteractionHand,
+        _hit: &BlockHitResult,
+        inv: &mut InventoryAccess,
+    ) -> InteractionResult {
         let stack = inv.with_item(|stack| stack.clone());
         let level = state.get_value(LEVEL_COMPOSTER);
         if level < 8 && stack.get(COMPOSTABLE).is_some() {
@@ -113,12 +159,27 @@ impl BlockBehavior for ComposterBlock {
         InteractionResult::TryEmptyHandInteraction
     }
 
-    fn use_without_item(&self, _state: BlockStateId, world: &Arc<World>, pos: BlockPos, _player: &Player, _hit: &BlockHitResult, _inv: &mut InventoryAccess) -> InteractionResult {
+    fn use_without_item(
+        &self,
+        _state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _player: &Player,
+        _hit: &BlockHitResult,
+        _inv: &mut InventoryAccess,
+    ) -> InteractionResult {
         if !Self::empty(world, pos) {
             return InteractionResult::Pass;
         }
         world.drop_item_stack(pos.above(), ItemStack::new(&vanilla_items::BONE_MEAL));
-        world.play_sound(&sound_events::BLOCK_COMPOSTER_EMPTY, SoundSource::Blocks, pos, 1.0, 1.0, None);
+        world.play_sound(
+            &sound_events::BLOCK_COMPOSTER_EMPTY,
+            SoundSource::Blocks,
+            pos,
+            1.0,
+            1.0,
+            None,
+        );
         InteractionResult::Success
     }
 
@@ -159,11 +220,11 @@ mod tests {
         test_support::fresh_test_world,
     };
 
-    use steel_utils::{ChunkPos, Downcast as _};
-    use crate::bootstrap::init_globals;
     use crate::block_entity::BlockEntity as _;
     use crate::block_entity::entities::HopperBlockEntity;
-    use crate::test_support::{insert_ready_full_chunk, tick_test_world, TestWorld};
+    use crate::bootstrap::init_globals;
+    use crate::test_support::{TestWorld, insert_ready_full_chunk, tick_test_world};
+    use steel_utils::{ChunkPos, Downcast as _};
 
     const POS: BlockPos = BlockPos::new(8, 64, 8);
 
@@ -171,7 +232,13 @@ mod tests {
         init_globals();
         let fixture = fresh_test_world(name);
         insert_ready_full_chunk(&fixture.world, ChunkPos::from_block_pos(POS));
-        fixture.world.set_block(POS, vanilla_blocks::COMPOSTER.default_state().set_value(LEVEL_COMPOSTER, level), UpdateFlags::UPDATE_ALL);
+        fixture.world.set_block(
+            POS,
+            vanilla_blocks::COMPOSTER
+                .default_state()
+                .set_value(LEVEL_COMPOSTER, level),
+            UpdateFlags::UPDATE_ALL,
+        );
         fixture
     }
 
@@ -184,9 +251,22 @@ mod tests {
         let fixture = fixture("composter_first_layer", 0);
         let stack = ItemStack::new(&vanilla_items::WHEAT_SEEDS);
         for seed in 0..64 {
-            fixture.world.set_block(POS, vanilla_blocks::COMPOSTER.default_state(), UpdateFlags::UPDATE_ALL);
-            assert!(ComposterBlock::insert_with_random(&fixture.world, POS, &stack, &mut LegacyRandom::from_seed(seed)));
-            assert_eq!(level(&fixture.world), 1, "first layer at random seed {seed}");
+            fixture.world.set_block(
+                POS,
+                vanilla_blocks::COMPOSTER.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
+            assert!(ComposterBlock::insert_with_random(
+                &fixture.world,
+                POS,
+                &stack,
+                &mut LegacyRandom::from_seed(seed)
+            ));
+            assert_eq!(
+                level(&fixture.world),
+                1,
+                "first layer at random seed {seed}"
+            );
         }
     }
 
@@ -217,7 +297,13 @@ mod tests {
         let fixture = fixture("composter_rejects_stone", 0);
         let stone = ItemStack::new(&vanilla_items::STONE);
         for input in 0..=8 {
-            fixture.world.set_block(POS, vanilla_blocks::COMPOSTER.default_state().set_value(LEVEL_COMPOSTER, input), UpdateFlags::UPDATE_ALL);
+            fixture.world.set_block(
+                POS,
+                vanilla_blocks::COMPOSTER
+                    .default_state()
+                    .set_value(LEVEL_COMPOSTER, input),
+                UpdateFlags::UPDATE_ALL,
+            );
             assert!(!ComposterBlock::insert(&fixture.world, POS, &stone));
             assert_eq!(level(&fixture.world), input);
         }
@@ -228,23 +314,42 @@ mod tests {
         let fixture = fixture("composter_hopper_pipeline", 0);
         let world = &fixture.world;
         let top = POS.above();
-        world.set_block(top, vanilla_blocks::HOPPER.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(
+            top,
+            vanilla_blocks::HOPPER.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
         let entity = world.get_block_entity(top).unwrap();
         let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
         // Cake is unstackable: Container::set_item correctly caps it at one.
         // Refill between transfers rather than constructing an illegal stack.
         for expected in 1..=7 {
-            hopper.container_ref().unwrap().lock().set_item(0, ItemStack::new(&vanilla_items::CAKE));
+            hopper
+                .container_ref()
+                .unwrap()
+                .lock()
+                .set_item(0, ItemStack::new(&vanilla_items::CAKE));
             assert!(hopper.try_move_items(world, top));
             assert_eq!(level(world), expected);
         }
-        hopper.container_ref().unwrap().lock().set_item(0, ItemStack::new(&vanilla_items::CAKE));
+        hopper
+            .container_ref()
+            .unwrap()
+            .lock()
+            .set_item(0, ItemStack::new(&vanilla_items::CAKE));
         assert!(!hopper.try_move_items(world, top));
-        assert_eq!(hopper.container_ref().unwrap().lock().get_item(0).count(), 1);
+        assert_eq!(
+            hopper.container_ref().unwrap().lock().get_item(0).count(),
+            1
+        );
         let behavior = BLOCK_BEHAVIORS.get_behavior(&vanilla_blocks::COMPOSTER);
         behavior.tick(world.get_block_state(POS), world, POS);
         let bottom = POS.below();
-        world.set_block(bottom, vanilla_blocks::HOPPER.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(
+            bottom,
+            vanilla_blocks::HOPPER.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
         let entity = world.get_block_entity(bottom).unwrap();
         let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
         assert!(hopper.suck_in_items(world, bottom));
@@ -260,11 +365,19 @@ mod tests {
         let fixture = fixture("composter_full_hopper", 8);
         let world = &fixture.world;
         let bottom = POS.below();
-        world.set_block(bottom, vanilla_blocks::HOPPER.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(
+            bottom,
+            vanilla_blocks::HOPPER.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
         let entity = world.get_block_entity(bottom).unwrap();
         let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
         let container = hopper.container_ref().unwrap();
-        for slot in 0..5 { container.lock().set_item(slot, ItemStack::with_count(&vanilla_items::STONE, 64)); }
+        for slot in 0..5 {
+            container
+                .lock()
+                .set_item(slot, ItemStack::with_count(&vanilla_items::STONE, 64));
+        }
         assert!(!hopper.suck_in_items(world, bottom));
         assert_eq!(level(world), 8);
     }
@@ -274,10 +387,20 @@ mod tests {
         let fixture = fixture("composter_side_hopper", 0);
         let world = &fixture.world;
         let side = POS.west();
-        world.set_block(side, vanilla_blocks::HOPPER.default_state().set_value(&BlockStateProperties::FACING_HOPPER, Direction::East), UpdateFlags::UPDATE_ALL);
+        world.set_block(
+            side,
+            vanilla_blocks::HOPPER
+                .default_state()
+                .set_value(&BlockStateProperties::FACING_HOPPER, Direction::East),
+            UpdateFlags::UPDATE_ALL,
+        );
         let entity = world.get_block_entity(side).unwrap();
         let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
-        hopper.container_ref().unwrap().lock().set_item(0, ItemStack::new(&vanilla_items::CAKE));
+        hopper
+            .container_ref()
+            .unwrap()
+            .lock()
+            .set_item(0, ItemStack::new(&vanilla_items::CAKE));
         assert!(!hopper.try_move_items(world, side));
         assert_eq!(level(world), 0);
     }
@@ -286,20 +409,43 @@ mod tests {
     fn player_dispatch_consumes_in_survival_and_adventure_but_not_creative() {
         use crate::entity::Entity as _;
         use crate::test_support::TestPlayerBuilder;
-        use steel_utils::types::GameType;
         use glam::DVec3;
+        use steel_utils::types::GameType;
         for mode in [GameType::Survival, GameType::Adventure, GameType::Creative] {
             let fixture = fixture("composter_player_dispatch", 0);
             let world = &fixture.world;
-            let player = TestPlayerBuilder::new(std::sync::Arc::clone(world), "ComposterPlayer", 1).build();
+            let player =
+                TestPlayerBuilder::new(std::sync::Arc::clone(world), "ComposterPlayer", 1).build();
             player.set_game_mode(mode);
             player.base().set_position_local(DVec3::new(8.5, 64.0, 6.5));
-            player.inventory.lock().set_item_in_hand(InteractionHand::MainHand, ItemStack::with_count(&vanilla_items::CAKE, 2));
-            let hit = BlockHitResult { block_pos: POS, direction: Direction::Up, location: DVec3::new(8.5, 64.9, 8.5), miss: false, inside: false, world_border_hit: false };
-            let result = crate::player::game_mode::use_item_on(&player, world, InteractionHand::MainHand, &hit);
+            player.inventory.lock().set_item_in_hand(
+                InteractionHand::MainHand,
+                ItemStack::with_count(&vanilla_items::CAKE, 2),
+            );
+            let hit = BlockHitResult {
+                block_pos: POS,
+                direction: Direction::Up,
+                location: DVec3::new(8.5, 64.9, 8.5),
+                miss: false,
+                inside: false,
+                world_border_hit: false,
+            };
+            let result = crate::player::game_mode::use_item_on(
+                &player,
+                world,
+                InteractionHand::MainHand,
+                &hit,
+            );
             assert!(result.consumes_action(), "mode {mode:?}: {result:?}");
             assert_eq!(level(world), 1);
-            assert_eq!(player.inventory.lock().get_item_in_hand(InteractionHand::MainHand).count(), if mode == GameType::Creative { 2 } else { 1 });
+            assert_eq!(
+                player
+                    .inventory
+                    .lock()
+                    .get_item_in_hand(InteractionHand::MainHand)
+                    .count(),
+                if mode == GameType::Creative { 2 } else { 1 }
+            );
         }
     }
 
@@ -308,12 +454,20 @@ mod tests {
         let fixture = fixture("composter_hopper_mixed", 0);
         let world = &fixture.world;
         let top = POS.above();
-        world.set_block(top, vanilla_blocks::HOPPER.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(
+            top,
+            vanilla_blocks::HOPPER.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
         let entity = world.get_block_entity(top).unwrap();
         let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
         let container = hopper.container_ref().unwrap();
-        container.lock().set_item(0, ItemStack::with_count(&vanilla_items::STONE, 4));
-        container.lock().set_item(1, ItemStack::new(&vanilla_items::CAKE));
+        container
+            .lock()
+            .set_item(0, ItemStack::with_count(&vanilla_items::STONE, 4));
+        container
+            .lock()
+            .set_item(1, ItemStack::new(&vanilla_items::CAKE));
         assert!(hopper.try_move_items(world, top));
         assert_eq!(container.lock().get_item(0).count(), 4);
         assert!(container.lock().get_item(1).is_empty());

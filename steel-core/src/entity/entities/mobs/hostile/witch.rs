@@ -227,7 +227,11 @@ impl LivingEntity for WitchEntity {
 
 impl Mob for WitchEntity {
     fn set_raid_celebrating(&self, celebrating: bool) {
-        self.entity_data.lock().raider_mut().is_celebrating.set(celebrating);
+        self.entity_data
+            .lock()
+            .raider_mut()
+            .is_celebrating
+            .set(celebrating);
     }
 
     fn mob_base(&self) -> &MobBase {

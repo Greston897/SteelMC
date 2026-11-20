@@ -125,7 +125,10 @@ const fn portal_ticket() -> ChunkTicket {
 /// Vanilla `/forceload`'s ticket: a full-chunk ticket with no timeout that
 /// survives a restart.
 fn forced_ticket() -> ChunkTicket {
-    ChunkTicket::new(&vanilla_ticket_types::FORCED, ChunkTicketLevel::ENTITY_TICKING_CHUNK)
+    ChunkTicket::new(
+        &vanilla_ticket_types::FORCED,
+        ChunkTicketLevel::ENTITY_TICKING_CHUNK,
+    )
 }
 
 #[must_use]
@@ -502,9 +505,12 @@ impl ChunkTicketStorage {
         };
         // Migrate the old Steel FORCED level-zero bug. Otherwise reopening a
         // world could request tens of thousands of chunks from one /forceload.
-        let level = if ptr::eq(ticket_type_ref, &raw const vanilla_ticket_types::FORCED) && level == 0 {
-            ChunkTicketLevel::ENTITY_TICKING_CHUNK.raw()
-        } else { level };
+        let level =
+            if ptr::eq(ticket_type_ref, &raw const vanilla_ticket_types::FORCED) && level == 0 {
+                ChunkTicketLevel::ENTITY_TICKING_CHUNK.raw()
+            } else {
+                level
+            };
         let Some(ticket_level) = ChunkTicketLevel::new(level) else {
             return Err(ChunkTicketStorageLoadError::InvalidTicketLevel { ticket_type, level });
         };
@@ -590,15 +596,29 @@ mod tests {
         let pos = ChunkPos::new(3, -2);
         let mut storage = ChunkTicketStorage::new();
         let _ = storage.add_forced_ticket(pos);
-        assert_eq!(storage.load_source_level(pos), Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK));
-        assert_eq!(storage.simulation_source_level(pos), Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK));
+        assert_eq!(
+            storage.load_source_level(pos),
+            Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK)
+        );
+        assert_eq!(
+            storage.simulation_source_level(pos),
+            Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK)
+        );
         assert!(storage.remove_forced_ticket(pos));
-        let legacy = PersistentChunkTickets { tickets: vec![PersistentChunkTicket {
-            ticket_type: Identifier::vanilla_static("forced"), chunk_x: 3, chunk_z: -2,
-            level: 0, ticks_left: 0,
-        }] };
+        let legacy = PersistentChunkTickets {
+            tickets: vec![PersistentChunkTicket {
+                ticket_type: Identifier::vanilla_static("forced"),
+                chunk_x: 3,
+                chunk_z: -2,
+                level: 0,
+                ticks_left: 0,
+            }],
+        };
         let mut restored = ChunkTicketStorage::from_persistent(legacy);
-        assert_eq!(restored.load_source_level(pos), Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK));
+        assert_eq!(
+            restored.load_source_level(pos),
+            Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK)
+        );
         assert!(restored.remove_forced_ticket(pos));
     }
 

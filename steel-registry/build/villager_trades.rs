@@ -1,8 +1,3 @@
-#![expect(
-    clippy::unwrap_used,
-    reason = "build script must fail immediately on invalid extracted trade data"
-)]
-
 //! Build-time codegen for `minecraft:villager_trade` (391/391) and
 //! `minecraft:trade_set` (68/68).
 //!
@@ -24,9 +19,9 @@ fn generate_number_provider(value: &serde_json::Value) -> TokenStream {
         let number = number as f32;
         return quote! { TradeNumberProvider::Constant(#number) };
     }
-    let object = value.as_object().unwrap_or_else(|| {
-        panic!("trade number provider must be a number or object: {value}")
-    });
+    let object = value
+        .as_object()
+        .unwrap_or_else(|| panic!("trade number provider must be a number or object: {value}"));
     let kind = object
         .get("type")
         .and_then(serde_json::Value::as_str)
@@ -94,9 +89,9 @@ fn generate_cost(name: &str, side: &str, json: &serde_json::Value) -> TokenStrea
     let potion = match json.get("components") {
         None => quote! { None },
         Some(components) => {
-            let map = components.as_object().unwrap_or_else(|| {
-                panic!("trade {name} {side} components must be an object")
-            });
+            let map = components
+                .as_object()
+                .unwrap_or_else(|| panic!("trade {name} {side} components must be an object"));
             assert_eq!(
                 map.len(),
                 1,
@@ -181,9 +176,8 @@ fn generate_modifier(name: &str, json: &serde_json::Value) -> TokenStream {
     match kind {
         "minecraft:enchant_randomly" => {
             let options = generate_enchantment_set(
-                json.get("options").unwrap_or_else(|| {
-                    panic!("trade {name} enchant_randomly is missing options")
-                }),
+                json.get("options")
+                    .unwrap_or_else(|| panic!("trade {name} enchant_randomly is missing options")),
             );
             let only_compatible = json
                 .get("only_compatible")
@@ -202,11 +196,10 @@ fn generate_modifier(name: &str, json: &serde_json::Value) -> TokenStream {
             }
         }
         "minecraft:enchant_with_levels" => {
-            let levels = generate_number_provider(
-                json.get("levels").unwrap_or_else(|| {
+            let levels =
+                generate_number_provider(json.get("levels").unwrap_or_else(|| {
                     panic!("trade {name} enchant_with_levels is missing levels")
-                }),
-            );
+                }));
             let options = match json.get("options") {
                 None => quote! { None },
                 Some(holder) => {
@@ -230,9 +223,7 @@ fn generate_modifier(name: &str, json: &serde_json::Value) -> TokenStream {
             let destination = json
                 .get("destination")
                 .and_then(serde_json::Value::as_str)
-                .unwrap_or_else(|| {
-                    panic!("trade {name} exploration_map is missing destination")
-                });
+                .unwrap_or_else(|| panic!("trade {name} exploration_map is missing destination"));
             assert!(
                 destination.starts_with('#'),
                 "trade {name} exploration_map destination must be a structure tag: {destination}"
@@ -271,7 +262,7 @@ fn generate_modifier(name: &str, json: &serde_json::Value) -> TokenStream {
             let effects = json
                 .get("effects")
                 .and_then(serde_json::Value::as_array)
-                .map(|list| {
+                .map_or_else(Vec::new, |list| {
                     list.iter()
                         .map(|entry| {
                             let effect = quote_id(
@@ -292,8 +283,7 @@ fn generate_modifier(name: &str, json: &serde_json::Value) -> TokenStream {
                             quote! { (#effect, #duration) }
                         })
                         .collect::<Vec<_>>()
-                })
-                .unwrap_or_default();
+                });
             quote! { TradeItemModifier::SetStewEffect { effects: vec![#(#effects),*] } }
         }
         "minecraft:set_potion" => {
@@ -315,11 +305,10 @@ fn generate_modifier(name: &str, json: &serde_json::Value) -> TokenStream {
             quote! { TradeItemModifier::SetRandomPotion { options: #options } }
         }
         "minecraft:set_random_dyes" => {
-            let number_of_dyes = generate_number_provider(
-                json.get("number_of_dyes").unwrap_or_else(|| {
+            let number_of_dyes =
+                generate_number_provider(json.get("number_of_dyes").unwrap_or_else(|| {
                     panic!("trade {name} set_random_dyes is missing number_of_dyes")
-                }),
-            );
+                }));
             quote! { TradeItemModifier::SetRandomDyes { number_of_dyes: #number_of_dyes } }
         }
         "minecraft:filtered" => {
@@ -425,17 +414,16 @@ fn generate_trade(name: &str, json: &serde_json::Value, key: &TokenStream) -> To
                 .unwrap_or_else(|| {
                     panic!("trade {name} merchant_predicate must check villager/variant")
                 });
-            let quote_variant = |entry: &serde_json::Value| {
-                quote_id(entry.as_str().unwrap_or_else(|| {
-                    panic!("trade {name} villager variant must be a string")
-                }))
-            };
+            let quote_variant =
+                |entry: &serde_json::Value| {
+                    quote_id(entry.as_str().unwrap_or_else(|| {
+                        panic!("trade {name} villager variant must be a string")
+                    }))
+                };
             match variant_value {
                 serde_json::Value::String(_) => vec![quote_variant(variant_value)],
                 serde_json::Value::Array(list) => list.iter().map(quote_variant).collect(),
-                other => panic!(
-                    "trade {name} villager variant must be a string or list: {other}"
-                ),
+                other => panic!("trade {name} villager variant must be a string or list: {other}"),
             }
         }
     };
@@ -445,7 +433,9 @@ fn generate_trade(name: &str, json: &serde_json::Value, key: &TokenStream) -> To
             if value.is_object() {
                 vec![generate_modifier(name, value)]
             } else if let Some(list) = value.as_array() {
-                list.iter().map(|entry| generate_modifier(name, entry)).collect()
+                list.iter()
+                    .map(|entry| generate_modifier(name, entry))
+                    .collect()
             } else {
                 panic!("trade {name} given_item_modifier must be an object or list")
             }
@@ -582,14 +572,12 @@ pub(crate) fn build_sets() -> TokenStream {
             .get("allow_duplicates")
             .and_then(serde_json::Value::as_bool)
             .unwrap_or(false);
-        let random_sequence = match json.get("random_sequence").and_then(serde_json::Value::as_str)
-        {
-            Some(id) => {
+        let random_sequence = if let Some(id) = json.get("random_sequence").and_then(serde_json::Value::as_str) {
                 let quoted = quote_id(id);
                 quote! { Some(#quoted) }
-            }
-            None => quote! { None },
-        };
+            } else {
+                quote! { None }
+            };
         stream.extend(quote! {
             pub static #ident: LazyLock<TradeSet> = LazyLock::new(|| TradeSet {
                 key: #key,

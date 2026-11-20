@@ -3,11 +3,11 @@ use std::sync::Arc;
 use super::{
     ATTACK_RANGE_BUFFER, CSetEntityMotion, ClipBlockShape, ClipFluid, DVec3, DamageSource,
     DamageType, ENTITY_INTERACTION_RANGE_BUFFER, EnchantmentDamageContext,
-    EnchantmentPostAttackContext, Entity, EntityTypeRef, GameType, ITEM_BEHAVIORS,
-    InteractionHand, InteractionResult, InventoryAccess, ItemStack, LivingEntity, PiercingWeapon,
-    Player, SAttack, SInteract, SharedEntity, SoundEventHolder, TextComponent, TranslatedMessage,
-    World, WorldAabb, enchantment_helper, piercing_ray_hit_t, vanilla_attributes,
-    vanilla_damage_types, vanilla_entities,
+    EnchantmentPostAttackContext, Entity, EntityTypeRef, GameType, ITEM_BEHAVIORS, InteractionHand,
+    InteractionResult, InventoryAccess, ItemStack, LivingEntity, PiercingWeapon, Player, SAttack,
+    SInteract, SharedEntity, SoundEventHolder, TextComponent, TranslatedMessage, World, WorldAabb,
+    enchantment_helper, piercing_ray_hit_t, vanilla_attributes, vanilla_damage_types,
+    vanilla_entities,
 };
 
 use crate::player::food_data::food_constants;
@@ -453,11 +453,17 @@ impl Player {
         // crit/sweep, and transfers projectile ownership to the deflector.
         if {
             use steel_registry::TaggedRegistryExt as _;
-            steel_registry::REGISTRY.entity_types.is_in_tag(entity.entity_type(),
-                &steel_registry::vanilla_entity_type_tags::EntityTypeTag::REDIRECTABLE_PROJECTILE)
+            steel_registry::REGISTRY.entity_types.is_in_tag(
+                entity.entity_type(),
+                &steel_registry::vanilla_entity_type_tags::EntityTypeTag::REDIRECTABLE_PROJECTILE,
+            )
         } && let Some(projectile) = entity.as_projectile()
-            && projectile.deflect(crate::entity::ProjectileDeflection::AimDeflect,
-                Some(self.as_ref()), Some(crate::entity::EntityReference::from_uuid(self.uuid())), true)
+            && projectile.deflect(
+                crate::entity::ProjectileDeflection::AimDeflect,
+                Some(self.as_ref()),
+                Some(crate::entity::EntityReference::from_uuid(self.uuid())),
+                true,
+            )
         {
             self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_NODAMAGE, 1.0, 1.0);
             return true;
@@ -496,11 +502,15 @@ impl Player {
             self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_KNOCKBACK, 1.0, 1.0);
         }
         let movement = self.known_movement();
-        let can_sweep = full_strength_attack && !critical && !knockback_attack
+        let can_sweep = full_strength_attack
+            && !critical
+            && !knockback_attack
             && self.on_ground()
             && movement.x * movement.x + movement.z * movement.z
                 < (f64::from(self.get_speed()) * 2.5).powi(2)
-            && attacking_item.item().has_tag(&vanilla_item_tags::ItemTag::SWORDS);
+            && attacking_item
+                .item()
+                .has_tag(&vanilla_item_tags::ItemTag::SWORDS);
 
         let old_movement = entity.velocity();
         let Some(target_world) = entity.level() else {
@@ -555,9 +565,15 @@ impl Player {
             if critical {
                 self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_CRIT, 1.0, 1.0);
             } else {
-                self.play_sound(if full_strength_attack {
-                    &sound_events::ENTITY_PLAYER_ATTACK_STRONG
-                } else { &sound_events::ENTITY_PLAYER_ATTACK_WEAK }, 1.0, 1.0);
+                self.play_sound(
+                    if full_strength_attack {
+                        &sound_events::ENTITY_PLAYER_ATTACK_STRONG
+                    } else {
+                        &sound_events::ENTITY_PLAYER_ATTACK_WEAK
+                    },
+                    1.0,
+                    1.0,
+                );
             }
         }
 
@@ -575,7 +591,9 @@ impl Player {
         attack_strength_scale: f32,
         attacking_item: &ItemStack,
     ) {
-        let ratio = self.attributes().lock()
+        let ratio = self
+            .attributes()
+            .lock()
             .required_value(vanilla_attributes::SWEEPING_DAMAGE_RATIO) as f32;
         let sweep_damage = 1.0 + ratio * base_damage;
         let world = self.get_world();
@@ -587,14 +605,21 @@ impl Player {
         let yaw_cos = trig::cos(yaw);
         for other in world.entity_manager().get_entities_in_aabb(&search_box) {
             let entity = other.as_ref();
-            if entity.id() == target.id() || entity.id() == self.id()
-                || !entity.is_living_entity() || self.is_allied_to(entity)
+            if entity.id() == target.id()
+                || entity.id() == self.id()
+                || !entity.is_living_entity()
+                || self.is_allied_to(entity)
                 || entity.is_marker_armor_stand()
-                || self.position().distance_squared(entity.position()) >= 9.0 {
+                || self.position().distance_squared(entity.position()) >= 9.0
+            {
                 continue;
             }
-            let context = EnchantmentDamageContext::new(entity.entity_type(),
-                Some(self.entity_type()), Some(self.entity_type()), &damage_source);
+            let context = EnchantmentDamageContext::new(
+                entity.entity_type(),
+                Some(self.entity_type()),
+                Some(self.entity_type()),
+                &damage_source,
+            );
             let damage = enchantment_helper::modify_damage(attacking_item, &context, sweep_damage)
                 * attack_strength_scale;
             if entity.hurt(&world, &damage_source, damage) {
@@ -603,15 +628,27 @@ impl Player {
                 }
                 let context = EnchantmentPostAttackContext::new(&other, &damage_source);
                 enchantment_helper::do_post_attack_effects_with_item_source(
-                    &world, entity, attacking_item, &context);
+                    &world,
+                    entity,
+                    attacking_item,
+                    &context,
+                );
             }
         }
         let position = self.position();
         let dx = -f64::from(yaw_sin);
         let dz = f64::from(yaw_cos);
-        world.send_particles(ParticleData::simple(&vanilla_particle_types::SWEEP_ATTACK),
-            DVec3::new(position.x + dx, position.y + f64::from(self.base().dimensions().height) * 0.5,
-                position.z + dz), 0, DVec3::new(dx, 0.0, dz), 0.0);
+        world.send_particles(
+            ParticleData::simple(&vanilla_particle_types::SWEEP_ATTACK),
+            DVec3::new(
+                position.x + dx,
+                position.y + f64::from(self.base().dimensions().height) * 0.5,
+                position.z + dz,
+            ),
+            0,
+            DVec3::new(dx, 0.0, dz),
+            0.0,
+        );
     }
 
     fn item_attack_interaction(

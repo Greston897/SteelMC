@@ -106,7 +106,11 @@ fn validate_region(from: BlockPos, to: BlockPos) -> Result<(), CommandSyntaxErro
     let b = ChunkPos::from_block_pos(to);
     let count = (i64::from(a.x()) - i64::from(b.x())).abs() + 1;
     let count = count * ((i64::from(a.z()) - i64::from(b.z())).abs() + 1);
-    if count > 256 { return Err(CommandSyntaxError::dynamic("Cannot force load more than 256 chunks")); }
+    if count > 256 {
+        return Err(CommandSyntaxError::dynamic(
+            "Cannot force load more than 256 chunks",
+        ));
+    }
     Ok(())
 }
 

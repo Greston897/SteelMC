@@ -14,10 +14,10 @@ use steel_utils::{BlockPos, BlockStateId, Direction, translations};
 use text_components::TextComponent;
 
 use crate::{
-    behavior::{BlockBehavior, BlockPlaceContext, InteractionResult, InventoryAccess, Fallable},
+    behavior::{BlockBehavior, BlockPlaceContext, Fallable, InteractionResult, InventoryAccess},
     inventory::menu::kinds::anvil,
     player::Player,
-    world::{World, ScheduledTickAccess},
+    world::{ScheduledTickAccess, World},
 };
 
 /// Behavior for Anvils
@@ -137,8 +137,8 @@ mod tests {
     use crate::bootstrap::init_globals;
     use crate::entity::entities::FallingBlockEntity;
     use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
-    use steel_utils::{ChunkPos, Downcast as _, WorldAabb};
     use steel_utils::types::UpdateFlags;
+    use steel_utils::{ChunkPos, Downcast as _, WorldAabb};
 
     #[test]
     fn every_anvil_variant_starts_falling_without_support() {
@@ -146,15 +146,30 @@ mod tests {
         let fixture = fresh_test_world("anvil_gravity_variants");
         let world = &fixture.world;
         let _holder = insert_ready_full_chunk(world, ChunkPos::new(0, 0));
-        for (x, block) in [(4, &vanilla_blocks::ANVIL), (7, &vanilla_blocks::CHIPPED_ANVIL), (10, &vanilla_blocks::DAMAGED_ANVIL)] {
+        for (x, block) in [
+            (4, &vanilla_blocks::ANVIL),
+            (7, &vanilla_blocks::CHIPPED_ANVIL),
+            (10, &vanilla_blocks::DAMAGED_ANVIL),
+        ] {
             let pos = BlockPos::new(x, 72, 4);
             let state = block.default_state();
             world.set_block(pos, state, UpdateFlags::UPDATE_ALL);
             let behavior = AnvilBlock::new(block);
             assert!(behavior.as_fallable().is_some());
             behavior.tick(state, world, pos);
-            let entities = world.get_entities_in_aabb(&WorldAabb::new(f64::from(pos.x()), 71.0, 4.0, f64::from(pos.x()) + 1.0, 74.0, 5.0));
-            assert!(entities.iter().any(|entity| entity.downcast_ref::<FallingBlockEntity>().is_some()));
+            let entities = world.get_entities_in_aabb(&WorldAabb::new(
+                f64::from(pos.x()),
+                71.0,
+                4.0,
+                f64::from(pos.x()) + 1.0,
+                74.0,
+                5.0,
+            ));
+            assert!(
+                entities
+                    .iter()
+                    .any(|entity| entity.downcast_ref::<FallingBlockEntity>().is_some())
+            );
         }
     }
 }

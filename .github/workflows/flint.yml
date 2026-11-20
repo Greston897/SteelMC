@@ -11,6 +11,9 @@ env:
   CARGO_TERM_COLOR: always
   FLINT_DIR: steel-flint
 
+permissions:
+  contents: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -22,6 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: FlintTestMC/FlintBenchmark
+          ref: caa22dbbbfff3d1b9766939834a308c335f7a989
           path: FlintBenchmark
 
       - name: Cache Rust dependencies
@@ -47,7 +51,15 @@ jobs:
           TEST_PATH: ${{ github.workspace }}/FlintBenchmark/tests
           FLINT_VIZ_URL: "https://flinttestmc.github.io/FlintViz"
           FLINT_IMPLEMENTED_ONLY: "true"
-        run: cargo test -p steel-flint --profile cicd --lib test_run_flint_selected -- --ignored --nocapture
+        run: |
+          set -o pipefail
+          cargo test -p steel-flint --profile cicd --lib test_run_flint_selected -- --ignored --nocapture 2>&1 | tee /tmp/flint-tests.log
+
+      - name: Publish Flint failures
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .ci/report.py "Flint selected — runtime diagnostics" /tmp/flint-tests.log
 
       - name: Dump implemented blocks and items
         id: implemented

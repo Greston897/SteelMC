@@ -305,10 +305,12 @@ pub fn nbt_to_json(tag: &NbtTag) -> JsonValue {
         NbtTag::Short(v) => JsonValue::Number((*v).into()),
         NbtTag::Int(v) => JsonValue::Number((*v).into()),
         NbtTag::Long(v) => JsonValue::Number((*v).into()),
-        NbtTag::Float(v) => JsonNumber::from_f64(f64::from(*v))
-            .map_or(JsonValue::Null, JsonValue::Number),
+        NbtTag::Float(v) => {
+            JsonNumber::from_f64(f64::from(*v)).map_or(JsonValue::Null, JsonValue::Number)
+        }
         NbtTag::Double(v) => JsonNumber::from_f64(*v).map_or(JsonValue::Null, JsonValue::Number),
-        NbtTag::ByteArray(bytes) => {
+        NbtTag::ByteArray(bytes) =>
+        {
             #[expect(
                 clippy::cast_possible_wrap,
                 reason = "NBT byte arrays store signed two's-complement bytes"

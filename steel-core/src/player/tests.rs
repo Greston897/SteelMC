@@ -2004,22 +2004,32 @@ fn combat_critical_requires_full_cooldown_and_does_not_multiply_enchantment_bonu
         attacker.set_on_ground(false);
         attacker.base().set_fall_distance(1.0);
         attacker.set_mob_effect_active(steel_registry::vanilla_mob_effects::BLINDNESS, blind);
-        attacker.attributes().lock().set_base_value(vanilla_attributes::ATTACK_DAMAGE, 10.0);
-        attacker.attributes().lock().set_base_value(vanilla_attributes::ATTACK_SPEED, 4.0);
+        attacker
+            .attributes()
+            .lock()
+            .set_base_value(vanilla_attributes::ATTACK_DAMAGE, 10.0);
+        attacker
+            .attributes()
+            .lock()
+            .set_base_value(vanilla_attributes::ATTACK_SPEED, 4.0);
         if enchanted {
             let mut weapon = ItemStack::new(&vanilla_items::STICK);
             weapon.set_enchantments(&[(vanilla_enchantments::SHARPNESS.key.clone(), 1)], false);
             attacker.inventory.lock().set_selected_item(weapon);
         }
         if charged {
-            for _ in 0..10 { attacker.tick_attack_strength(); }
+            for _ in 0..10 {
+                attacker.tick_attack_strength();
+            }
         }
         let health = victim.get_health();
         let target: SharedEntity = victim.clone();
         assert!(attacker.attack(&target));
         let dealt = health - victim.get_health();
-        assert!((dealt - expected).abs() < 0.001,
-            "charged={charged} enchanted={enchanted} blind={blind}: expected {expected}, got {dealt}");
+        assert!(
+            (dealt - expected).abs() < 0.001,
+            "charged={charged} enchanted={enchanted} blind={blind}: expected {expected}, got {dealt}"
+        );
     }
 }
 
@@ -2040,27 +2050,47 @@ fn combat_sweep_requires_grounded_charged_sword_and_uses_primary_target_box() {
         let attacker = test_player(Arc::clone(world));
         let primary = TestPlayerBuilder::new(Arc::clone(world), "Primary", 2).build();
         let secondary = TestPlayerBuilder::new(Arc::clone(world), "Secondary", 3).build();
-        attacker.base().set_position_local(DVec3::new(8.0, 64.0, 8.0));
-        primary.base().set_position_local(DVec3::new(8.0, 64.0, 10.0));
+        attacker
+            .base()
+            .set_position_local(DVec3::new(8.0, 64.0, 8.0));
+        primary
+            .base()
+            .set_position_local(DVec3::new(8.0, 64.0, 10.0));
         // Inside the primary target's expanded box and within 3 blocks of
         // attacker, but outside the old erroneous attacker-centred 1m radius.
-        secondary.base().set_position_local(DVec3::new(8.8, 64.0, 10.3));
+        secondary
+            .base()
+            .set_position_local(DVec3::new(8.8, 64.0, 10.3));
         for player in [&attacker, &primary, &secondary] {
             player.set_client_loaded(true);
             assert!(world.add_player(Arc::clone(player), ResetReason::InitialJoin));
         }
         attacker.set_on_ground(grounded);
         attacker.set_speed(0.1);
-        attacker.inventory.lock().set_selected_item(ItemStack::new(if sword {
-            &vanilla_items::DIAMOND_SWORD
-        } else { &vanilla_items::DIAMOND_AXE }));
-        attacker.attributes().lock().set_base_value(vanilla_attributes::SWEEPING_DAMAGE_RATIO, ratio);
-        if charged { for _ in 0..30 { attacker.tick_attack_strength(); } }
+        attacker
+            .inventory
+            .lock()
+            .set_selected_item(ItemStack::new(if sword {
+                &vanilla_items::DIAMOND_SWORD
+            } else {
+                &vanilla_items::DIAMOND_AXE
+            }));
+        attacker
+            .attributes()
+            .lock()
+            .set_base_value(vanilla_attributes::SWEEPING_DAMAGE_RATIO, ratio);
+        if charged {
+            for _ in 0..30 {
+                attacker.tick_attack_strength();
+            }
+        }
         let before = secondary.get_health();
         let target: SharedEntity = primary.clone();
         assert!(attacker.attack(&target));
-        assert!((before - secondary.get_health() - expected).abs() < 0.001,
-            "sword={sword} grounded={grounded} charged={charged} ratio={ratio}");
+        assert!(
+            (before - secondary.get_health() - expected).abs() < 0.001,
+            "sword={sword} grounded={grounded} charged={charged} ratio={ratio}"
+        );
         for player in [&attacker, &primary, &secondary] {
             world.remove_player_for_world_change(player);
         }
@@ -2075,9 +2105,15 @@ fn combat_melee_redirects_fireball_and_transfers_owner_without_destroying_it() {
     let fixture = fresh_test_world("combat_fireball_deflection");
     let attacker = test_player(Arc::clone(&fixture.world));
     attacker.set_rotation((90.0, 0.0));
-    for _ in 0..30 { attacker.tick_attack_strength(); }
-    let fireball = Arc::new(LargeFireballEntity::new(&vanilla_entities::FIREBALL,
-        2, DVec3::new(8.0, 64.0, 8.0), Arc::downgrade(&fixture.world)));
+    for _ in 0..30 {
+        attacker.tick_attack_strength();
+    }
+    let fireball = Arc::new(LargeFireballEntity::new(
+        &vanilla_entities::FIREBALL,
+        2,
+        DVec3::new(8.0, 64.0, 8.0),
+        Arc::downgrade(&fixture.world),
+    ));
     fireball.set_velocity(DVec3::new(0.0, 0.0, -1.0));
     let target: SharedEntity = fireball.clone();
     assert!(attacker.attack(&target));

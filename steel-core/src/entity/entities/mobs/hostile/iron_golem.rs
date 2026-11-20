@@ -24,8 +24,8 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
-    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal, MoveTowardsTargetGoal,
+    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, MoveTowardsTargetGoal,
+    NearestAttackableTargetGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{

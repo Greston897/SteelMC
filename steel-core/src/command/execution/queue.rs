@@ -504,12 +504,15 @@ where
             discard: FrameDiscard::AtOrAbove(depth),
         };
         for chain in chains {
-            self.context.queue_next(frame.clone(), BuildContextsAction {
-                chain,
-                original_source: Arc::clone(&source),
-                sources: vec![Arc::clone(&source)],
-                modifiers: ChainModifiers::default(),
-            });
+            self.context.queue_next(
+                frame.clone(),
+                BuildContextsAction {
+                    chain,
+                    original_source: Arc::clone(&source),
+                    sources: vec![Arc::clone(&source)],
+                    modifiers: ChainModifiers::default(),
+                },
+            );
         }
         self.context.queue_next(frame, FallthroughAction);
     }

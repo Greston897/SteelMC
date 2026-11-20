@@ -1,6 +1,6 @@
 use std::io::{self, Cursor, Write};
 
-use simdnbt::{owned::NbtTag, borrow::NbtTag as BorrowedNbtTag};
+use simdnbt::{borrow::NbtTag as BorrowedNbtTag, owned::NbtTag};
 
 use crate::{
     codec::VarInt,

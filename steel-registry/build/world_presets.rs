@@ -1,8 +1,3 @@
-#![expect(
-    clippy::unwrap_used,
-    reason = "build script must fail immediately on invalid extracted preset data"
-)]
-
 //! Build-time codegen for `minecraft:worldgen/flat_level_generator_preset`
 //! (9/9) and `minecraft:worldgen/world_preset` (7/7).
 
@@ -155,7 +150,11 @@ pub(crate) fn build_world() -> TokenStream {
             .iter()
             .map(|(stem_id, stem)| {
                 let stem_key = quote_id(&format!("minecraft:{}", strip_vanilla(stem_id)));
-                generate_stem(&format!("world preset {name} stem {stem_id}"), &stem_key, stem)
+                generate_stem(
+                    &format!("world preset {name} stem {stem_id}"),
+                    &stem_key,
+                    stem,
+                )
             });
         stream.extend(quote! {
             pub static #ident: LazyLock<WorldPreset> = LazyLock::new(|| WorldPreset {

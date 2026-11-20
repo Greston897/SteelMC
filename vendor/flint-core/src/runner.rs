@@ -58,7 +58,11 @@ impl<A: FlintAdapter> TestRunner<A> {
             }
         };
 
-        let config = spec.setup.as_ref().map(|setup| setup.world.clone()).unwrap_or_default();
+        let config = spec
+            .setup
+            .as_ref()
+            .map(|setup| setup.world.clone())
+            .unwrap_or_default();
         if let Err(error) = world.configure_world(&config) {
             return TestResult::new(&spec.name).with_failure_reason(error.to_string());
         }

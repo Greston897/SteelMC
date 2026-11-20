@@ -617,8 +617,12 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         if self.uuid() == other.uuid() {
             return true;
         }
-        let Some(team) = self.team_name() else { return false; };
-        other.team_name().is_some_and(|other_team| other_team == team)
+        let Some(team) = self.team_name() else {
+            return false;
+        };
+        other
+            .team_name()
+            .is_some_and(|other_team| other_team == team)
     }
 
     /// Returns whether this entity is a marker armor stand.

@@ -1,8 +1,3 @@
-#![expect(
-    clippy::unwrap_used,
-    reason = "build script must fail immediately on invalid extracted archetype data"
-)]
-
 //! Build-time codegen for the `minecraft:sulfur_cube_archetype` registry (12/12).
 
 use heck::ToShoutySnakeCase;
@@ -24,7 +19,7 @@ fn generate_item_set(items: &serde_json::Value) -> TokenStream {
     }
     let list = items
         .as_array()
-        . unwrap_or_else(|| panic!("sulfur items must be a string or list: {items}"));
+        .unwrap_or_else(|| panic!("sulfur items must be a string or list: {items}"));
     let ids = list.iter().map(|entry| {
         let id = entry
             .as_str()
@@ -130,15 +125,11 @@ fn generate_archetype_value(name: &str, json: &serde_json::Value) -> TokenStream
                         panic!("sulfur contact_damage in {name} is missing damage_type")
                     }),
             );
-            let amount: FloatProvider = serde_json::from_value(
-                value
-                    .get("amount")
-                    .cloned()
-                    .unwrap_or_else(|| {
-                        panic!("sulfur contact_damage in {name} is missing amount")
-                    }),
-            )
-            .unwrap_or_else(|e| panic!("sulfur contact_damage amount in {name}: {e}"));
+            let amount: FloatProvider =
+                serde_json::from_value(value.get("amount").cloned().unwrap_or_else(|| {
+                    panic!("sulfur contact_damage in {name} is missing amount")
+                }))
+                .unwrap_or_else(|e| panic!("sulfur contact_damage amount in {name}: {e}"));
             let amount = generate_float_provider(amount);
             let attribute_to_source = value
                 .get("attribute_to_source")

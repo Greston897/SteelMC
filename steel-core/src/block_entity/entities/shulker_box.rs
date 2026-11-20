@@ -471,8 +471,9 @@ impl Container for ShulkerBoxContainer {
     }
 
     fn can_place_item(&self, _slot: usize, stack: &ItemStack) -> bool {
-        !stack.item().block.is_some_and(|block|
-            block.has_tag(&steel_registry::vanilla_block_tags::BlockTag::SHULKER_BOXES))
+        !stack.item().block.is_some_and(|block| {
+            block.has_tag(&steel_registry::vanilla_block_tags::BlockTag::SHULKER_BOXES)
+        })
     }
 
     fn get_max_stack_size(&self) -> i32 {

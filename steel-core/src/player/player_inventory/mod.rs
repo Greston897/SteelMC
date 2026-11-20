@@ -189,6 +189,11 @@ impl Player {
         if state.dispatch.is_some() {
             return None;
         }
-        Some(state.menu.as_ref().is_some_and(|menu| menu.behavior().references_container(id)))
+        Some(
+            state
+                .menu
+                .as_ref()
+                .is_some_and(|menu| menu.behavior().references_container(id)),
+        )
     }
 }

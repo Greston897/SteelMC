@@ -45,7 +45,9 @@ impl BlockBehavior for BarrelBlock {
     fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
         if let Some(entity) = world.get_block_entity(pos) {
             if let Some(container) = entity.downcast_ref::<BarrelBlockEntity>() {
-                container.openers_counter().recheck_openers(world, pos, state, state.get_block());
+                container
+                    .openers_counter()
+                    .recheck_openers(world, pos, state, state.get_block());
             }
         }
     }
@@ -85,7 +87,6 @@ impl BlockBehavior for BarrelBlock {
             // Vanilla `BarrelBlock.useWithoutItem` unpacks the loot table before
             // the viewer count moves, so the opener sees the rolled contents.
             barrel.unpack_loot();
-
         }
 
         // Create a container reference from the block entity

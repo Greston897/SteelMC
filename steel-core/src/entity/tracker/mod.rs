@@ -207,8 +207,11 @@ impl EntityTracker {
                         player.send_packet(packet);
                     }
                     if let Some(entity) = &entity
-                        && entity.entity_type() == &vanilla_entities::WITHER {
-                        player.send_packet(steel_protocol::packets::game::CBossEvent::remove(entity.uuid()));
+                        && entity.entity_type() == &vanilla_entities::WITHER
+                    {
+                        player.send_packet(steel_protocol::packets::game::CBossEvent::remove(
+                            entity.uuid(),
+                        ));
                     }
                     player.send_packet(CRemoveEntities::single(entity_id));
                 }
@@ -731,15 +734,24 @@ impl EntityTracker {
         self.spawn_pairing(entity, player.id())
             .send_to(entity_id, player);
         use steel_utils::Downcast as _;
-        if let Some(wither) = entity.downcast_ref::<crate::entity::entities::mobs::bosses::WitherBossEntity>() {
+        if let Some(wither) =
+            entity.downcast_ref::<crate::entity::entities::mobs::bosses::WitherBossEntity>()
+        {
             player.send_packet(wither.boss_bar_packet());
         }
     }
 
     fn send_despawn_packets(&self, entity_id: i32, player: &Player) {
-        let boss = self.entities.read_sync(&entity_id, |_, tracked| {
-            tracked.entity.upgrade().filter(|entity| entity.entity_type() == &vanilla_entities::WITHER).map(|entity| entity.uuid())
-        }).flatten();
+        let boss = self
+            .entities
+            .read_sync(&entity_id, |_, tracked| {
+                tracked
+                    .entity
+                    .upgrade()
+                    .filter(|entity| entity.entity_type() == &vanilla_entities::WITHER)
+                    .map(|entity| entity.uuid())
+            })
+            .flatten();
         if let Some(uuid) = boss {
             player.send_packet(steel_protocol::packets::game::CBossEvent::remove(uuid));
         }

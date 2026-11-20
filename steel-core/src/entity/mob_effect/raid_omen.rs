@@ -115,14 +115,20 @@ mod tests {
 #[cfg(test)]
 mod dimension_tests {
     use super::*;
-    use crate::test_support::{TestPlayerBuilder, fresh_test_world_with_dimension_type};
     use crate::entity::next_entity_id;
+    use crate::test_support::{TestPlayerBuilder, fresh_test_world_with_dimension_type};
     use std::sync::Arc;
 
     #[test]
     fn dimensions_that_forbid_raids_consume_origin_without_starting_encounter() {
-        let fixture = fresh_test_world_with_dimension_type("raid", "nether_omen", &steel_registry::vanilla_dimension_types::THE_NETHER);
-        let player = TestPlayerBuilder::new(Arc::clone(&fixture.world), "NetherOmen", next_entity_id()).build();
+        let fixture = fresh_test_world_with_dimension_type(
+            "raid",
+            "nether_omen",
+            &steel_registry::vanilla_dimension_types::THE_NETHER,
+        );
+        let player =
+            TestPlayerBuilder::new(Arc::clone(&fixture.world), "NetherOmen", next_entity_id())
+                .build();
         *player.raid_omen_position.lock() = Some(steel_utils::BlockPos::new(0, 64, 0));
         assert!(!RaidOmenBehavior.apply_effect_tick(&fixture.world, player.as_ref(), 0));
         assert!(fixture.world.raids.raids().is_empty());

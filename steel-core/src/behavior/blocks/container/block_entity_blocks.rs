@@ -143,18 +143,34 @@ impl HopperBlock {
 }
 
 impl BlockBehavior for HopperBlock {
-    fn on_place(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos,
-        old_state: BlockStateId, _moved_by_piston: bool) {
+    fn on_place(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        old_state: BlockStateId,
+        _moved_by_piston: bool,
+    ) {
         if old_state.get_block() != state.get_block() {
             self.handle_neighbor_changed(state, world, pos, self.block, false);
         }
     }
 
-    fn handle_neighbor_changed(&self, state: BlockStateId, world: &Arc<World>,
-        pos: BlockPos, _source: BlockRef, _moved_by_piston: bool) {
+    fn handle_neighbor_changed(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _source: BlockRef,
+        _moved_by_piston: bool,
+    ) {
         let enabled = !world.has_neighbor_signal(pos);
         if state.get_value(&BlockStateProperties::ENABLED) != enabled {
-            world.set_block(pos, state.set_value(&BlockStateProperties::ENABLED, enabled), UpdateFlags::UPDATE_CLIENTS);
+            world.set_block(
+                pos,
+                state.set_value(&BlockStateProperties::ENABLED, enabled),
+                UpdateFlags::UPDATE_CLIENTS,
+            );
         }
     }
 
@@ -555,12 +571,22 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
     if item == &*vanilla_items::HONEYCOMB
         && let Some(waxed) = crate::behavior::waxables::get_waxed_from_normal_variant(target_block)
     {
-        let waxed_state = steel_registry::REGISTRY.blocks.copy_matching_properties(target_state, waxed);
+        let waxed_state = steel_registry::REGISTRY
+            .blocks
+            .copy_matching_properties(target_state, waxed);
         world.set_block(target_pos, waxed_state, UpdateFlags::UPDATE_ALL);
         let _ = container.lock().remove_item(slot, 1);
-        world.level_event(steel_registry::level_events::PARTICLES_WAX_ON, target_pos, 0, None);
-        world.game_event(&steel_registry::vanilla_game_events::BLOCK_CHANGE, target_pos,
-            &crate::world::game_event::GameEventContext::new(None, Some(waxed_state)));
+        world.level_event(
+            steel_registry::level_events::PARTICLES_WAX_ON,
+            target_pos,
+            0,
+            None,
+        );
+        world.game_event(
+            &steel_registry::vanilla_game_events::BLOCK_CHANGE,
+            target_pos,
+            &crate::world::game_event::GameEventContext::new(None, Some(waxed_state)),
+        );
         return true;
     }
 
@@ -571,31 +597,59 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
             || crate::behavior::items::BoneMealItem::grow_water_plant(world, target_pos, facing);
         if success {
             let _ = container.lock().remove_item(slot, 1);
-            world.level_event(steel_registry::level_events::PARTICLES_AND_SOUND_PLANT_GROWTH, target_pos, 15, None);
+            world.level_event(
+                steel_registry::level_events::PARTICLES_AND_SOUND_PLANT_GROWTH,
+                target_pos,
+                15,
+                None,
+            );
         }
-        let sound = if success { &sound_events::BLOCK_DISPENSER_DISPENSE } else { &sound_events::BLOCK_DISPENSER_FAIL };
+        let sound = if success {
+            &sound_events::BLOCK_DISPENSER_DISPENSE
+        } else {
+            &sound_events::BLOCK_DISPENSER_FAIL
+        };
         world.play_sound(sound, SoundSource::Blocks, pos, 1.0, 1.0, None);
         return success;
     }
 
     if item == &*vanilla_items::GLASS_BOTTLE {
-        use crate::fluid::FluidStateExt as _;
         use crate::block_entity::entities::BeehiveBlockEntity;
-        let filled = if target_state.try_get_value(&BlockStateProperties::LEVEL_HONEY).is_some_and(|level| level >= 5) {
+        use crate::fluid::FluidStateExt as _;
+        let filled = if target_state
+            .try_get_value(&BlockStateProperties::LEVEL_HONEY)
+            .is_some_and(|level| level >= 5)
+        {
             world.get_block_entity(target_pos).and_then(|entity| {
                 let hive = entity.downcast_ref::<BeehiveBlockEntity>()?;
                 hive.on_honey_harvested(target_state, world, target_pos, 0, true);
                 Some(ItemStack::new(&vanilla_items::HONEY_BOTTLE))
             })
         } else if target_state.get_fluid_state().is_water() {
-            Some(steel_registry::data_components::PotionContents::create_item_stack(&vanilla_items::POTION, &steel_registry::vanilla_potions::WATER))
+            Some(
+                steel_registry::data_components::PotionContents::create_item_stack(
+                    &vanilla_items::POTION,
+                    &steel_registry::vanilla_potions::WATER,
+                ),
+            )
         } else {
             None
         };
         if let Some(filled) = filled {
             replace_or_store_dispensed_result(world, pos, facing, &container, slot, filled);
-            world.game_event(&steel_registry::vanilla_game_events::FLUID_PICKUP, pos, &crate::world::game_event::GameEventContext::new(None, None));
-            world.play_sound(&sound_events::BLOCK_DISPENSER_DISPENSE, SoundSource::Blocks, pos, 1.0, 1.0, None);
+            world.game_event(
+                &steel_registry::vanilla_game_events::FLUID_PICKUP,
+                pos,
+                &crate::world::game_event::GameEventContext::new(None, None),
+            );
+            world.play_sound(
+                &sound_events::BLOCK_DISPENSER_DISPENSE,
+                SoundSource::Blocks,
+                pos,
+                1.0,
+                1.0,
+                None,
+            );
             return true;
         }
         // Invalid bottle targets use ordinary item ejection, not a no-op.
@@ -717,8 +771,11 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
                 crate::behavior::blocks::FireBlock::get_state(world.as_ref(), target_pos),
                 UpdateFlags::UPDATE_ALL,
             );
-            world.game_event(&steel_registry::vanilla_game_events::BLOCK_PLACE, target_pos,
-                &crate::world::game_event::GameEventContext::new(None, None));
+            world.game_event(
+                &steel_registry::vanilla_game_events::BLOCK_PLACE,
+                target_pos,
+                &crate::world::game_event::GameEventContext::new(None, None),
+            );
         } else if target_block == &vanilla_blocks::TNT {
             world.set_block(
                 target_pos,
@@ -729,8 +786,11 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
         } else if crate::behavior::items::FlintAndSteelItem::can_light(target_state) {
             let next = target_state.set_value(&BlockStateProperties::LIT, true);
             world.set_block(target_pos, next, UpdateFlags::UPDATE_ALL);
-            world.game_event(&steel_registry::vanilla_game_events::BLOCK_CHANGE, target_pos,
-                &crate::world::game_event::GameEventContext::new(None, Some(next)));
+            world.game_event(
+                &steel_registry::vanilla_game_events::BLOCK_CHANGE,
+                target_pos,
+                &crate::world::game_event::GameEventContext::new(None, Some(next)),
+            );
         }
         if ignited {
             let mut guard = container.lock();
@@ -766,17 +826,32 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
         use crate::entity::Projectile as _;
         let (x, y, z) = facing.offset();
         let direction = DVec3::new(f64::from(x), f64::from(y), f64::from(z));
-        let center = DVec3::new(f64::from(pos.x()) + 0.5, f64::from(pos.y()) + 0.5, f64::from(pos.z()) + 0.5);
-        let rocket = FireworkRocketEntity::launched(&vanilla_entities::FIREWORK_ROCKET,
-            next_entity_id(), center + direction * 0.500_009_999_999_747_4,
-            Arc::downgrade(world), snapshot.copy_with_count(1));
+        let center = DVec3::new(
+            f64::from(pos.x()) + 0.5,
+            f64::from(pos.y()) + 0.5,
+            f64::from(pos.z()) + 0.5,
+        );
+        let rocket = FireworkRocketEntity::launched(
+            &vanilla_entities::FIREWORK_ROCKET,
+            next_entity_id(),
+            center + direction * 0.500_009_999_999_747_4,
+            Arc::downgrade(world),
+            snapshot.copy_with_count(1),
+        );
         rocket.set_shot_at_angle(true);
         rocket.shoot(direction, 0.5, 1.0);
         let entity: SharedEntity = Arc::new(rocket);
-        if world.try_add_entity(entity).is_err() { return false; }
+        if world.try_add_entity(entity).is_err() {
+            return false;
+        }
         let _ = container.lock().remove_item(slot, 1);
         // Vanilla overrideDispenseEvent=1004 (firework shoot).
-        world.level_event(steel_registry::level_events::SOUND_FIREWORK_SHOOT, pos, 0, None);
+        world.level_event(
+            steel_registry::level_events::SOUND_FIREWORK_SHOOT,
+            pos,
+            0,
+            None,
+        );
         return true;
     }
 

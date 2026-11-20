@@ -46,9 +46,15 @@ impl BlockBehavior for LavaCauldronBlock {
         Some(self.block.default_state())
     }
 
-    fn use_item_on(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos,
-        player: &crate::player::Player, hand: steel_utils::types::InteractionHand,
-        _hit: &crate::behavior::BlockHitResult, inv: &mut crate::behavior::InventoryAccess,
+    fn use_item_on(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &crate::player::Player,
+        hand: steel_utils::types::InteractionHand,
+        _hit: &crate::behavior::BlockHitResult,
+        inv: &mut crate::behavior::InventoryAccess,
     ) -> crate::behavior::InteractionResult {
         super::cauldron_block::cauldron_item_interaction(state, world, pos, player, hand, inv)
     }

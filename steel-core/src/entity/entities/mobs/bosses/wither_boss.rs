@@ -22,8 +22,8 @@ use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
-    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, RangedAttackGoal, NearestAttackableTargetGoal,
-    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, NearestAttackableTargetGoal,
+    RandomLookAroundGoal, RangedAttackGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
@@ -41,7 +41,6 @@ pub const SPAWN_INVULNERABLE_TICKS: i32 = 220;
 
 /// Vanilla `WitherBoss` blast power when the spawn sequence finishes.
 pub const SPAWN_EXPLOSION_POWER: f32 = 7.0;
-
 
 /// Vanilla `heal(10.0F)` every 10 ticks while `DATA_ID_INV` counts down.
 const SPAWN_HEAL_PER_STEP: f32 = 10.0;
@@ -105,7 +104,10 @@ impl WitherBossEntity {
             target_selector.add_goal(
                 2,
                 NearestAttackableTargetGoal::new(true, |target, _| {
-                    !steel_registry::REGISTRY.entity_types.is_in_tag(target.entity_type(), &steel_registry::vanilla_entity_type_tags::EntityTypeTag::WITHER_FRIENDS)
+                    !steel_registry::REGISTRY.entity_types.is_in_tag(
+                        target.entity_type(),
+                        &steel_registry::vanilla_entity_type_tags::EntityTypeTag::WITHER_FRIENDS,
+                    )
                 }),
             );
         }
@@ -125,25 +127,47 @@ impl WitherBossEntity {
     /// Full bar pairing is sent only to players actually tracking this boss.
     pub(crate) fn boss_bar_packet(&self) -> steel_protocol::packets::game::CBossEvent {
         use steel_protocol::packets::game::{BossBarColor, BossBarOverlay, CBossEvent};
-        CBossEvent::add(self.uuid(), self.display_name(), self.bar_progress(), BossBarColor::Purple, BossBarOverlay::Progress, 1)
+        CBossEvent::add(
+            self.uuid(),
+            self.display_name(),
+            self.bar_progress(),
+            BossBarColor::Purple,
+            BossBarOverlay::Progress,
+            1,
+        )
     }
 
     fn bar_progress(&self) -> f32 {
         if self.invulnerable_ticks() > 0 {
             1.0 - self.invulnerable_ticks() as f32 / SPAWN_INVULNERABLE_TICKS as f32
-        } else { self.get_health() / self.get_max_health() }
+        } else {
+            self.get_health() / self.get_max_health()
+        }
     }
 
     fn sync_boss_bar(&self) {
-        let Some(world) = self.level() else { return; };
+        let Some(world) = self.level() else {
+            return;
+        };
         let progress = self.bar_progress().clamp(0.0, 1.0);
         let mut last = self.last_bar_progress.lock();
         if progress.to_bits() != last.to_bits() {
-            world.broadcast_to_entity_trackers(self.id(), steel_protocol::packets::game::CBossEvent::update_progress(self.uuid(), progress), None);
+            world.broadcast_to_entity_trackers(
+                self.id(),
+                steel_protocol::packets::game::CBossEvent::update_progress(self.uuid(), progress),
+                None,
+            );
             *last = progress;
         }
         if self.tick_count() % 20 == 0 {
-            world.broadcast_to_entity_trackers(self.id(), steel_protocol::packets::game::CBossEvent::update_name(self.uuid(), self.display_name()), None);
+            world.broadcast_to_entity_trackers(
+                self.id(),
+                steel_protocol::packets::game::CBossEvent::update_name(
+                    self.uuid(),
+                    self.display_name(),
+                ),
+                None,
+            );
         }
     }
 
@@ -157,82 +181,164 @@ impl WitherBossEntity {
     }
 
     fn fire_skull(&self, shooter: &SharedEntity, head: usize, target: DVec3, dangerous: bool) {
-        use crate::entity::{Projectile, next_entity_id};
         use crate::entity::entities::objects::projectiles::WitherSkullEntity;
-        let Some(world) = self.level() else { return; };
+        use crate::entity::{Projectile, next_entity_id};
+        let Some(world) = self.level() else {
+            return;
+        };
         let scale = f64::from(self.get_scale());
         let angle = (self.y_body_rot() + 180.0 * head.saturating_sub(1) as f32).to_radians();
-        let position = self.position() + if head == 0 { DVec3::new(0.0, 3.0 * scale, 0.0) }
-            else { DVec3::new(f64::from(steel_math::trig::cos(angle)) * 1.3 * scale, 2.2 * scale, f64::from(steel_math::trig::sin(angle)) * 1.3 * scale) };
-        let skull = Arc::new(WitherSkullEntity::new(&steel_registry::vanilla_entities::WITHER_SKULL, next_entity_id(), position, Arc::downgrade(&world)));
+        let position = self.position()
+            + if head == 0 {
+                DVec3::new(0.0, 3.0 * scale, 0.0)
+            } else {
+                DVec3::new(
+                    f64::from(steel_math::trig::cos(angle)) * 1.3 * scale,
+                    2.2 * scale,
+                    f64::from(steel_math::trig::sin(angle)) * 1.3 * scale,
+                )
+            };
+        let skull = Arc::new(WitherSkullEntity::new(
+            &steel_registry::vanilla_entities::WITHER_SKULL,
+            next_entity_id(),
+            position,
+            Arc::downgrade(&world),
+        ));
         skull.set_owner_entity(Some(shooter));
         skull.set_dangerous(dangerous);
         skull.set_no_gravity(true);
         skull.shoot(target - position, 0.1, 0.0);
         let projectile: SharedEntity = skull;
         if world.try_add_entity(projectile).is_ok() && !self.is_silent() {
-            world.level_event(level_events::SOUND_WITHER_BOSS_SHOOT, self.block_position(), 0, None);
+            world.level_event(
+                level_events::SOUND_WITHER_BOSS_SHOOT,
+                self.block_position(),
+                0,
+                None,
+            );
         }
     }
 
     fn tick_side_heads(&self, shooter: &SharedEntity) {
         use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
-        let Some(world) = self.level() else { return; };
+        let Some(world) = self.level() else {
+            return;
+        };
         self.set_head_target(0, self.target().map_or(0, |target| target.id()));
         let mut timers = self.head_timers.lock();
         for side in 0..2 {
-            if self.tick_count() < timers.0[side] { continue; }
+            if self.tick_count() < timers.0[side] {
+                continue;
+            }
             timers.0[side] = self.tick_count() + rand::random_range(10..20);
-            if matches!(world.difficulty(), steel_utils::types::Difficulty::Normal | steel_utils::types::Difficulty::Hard) {
+            if matches!(
+                world.difficulty(),
+                steel_utils::types::Difficulty::Normal | steel_utils::types::Difficulty::Hard
+            ) {
                 let previous = timers.1[side];
                 timers.1[side] += 1;
                 if previous > 15 {
-                    let destination = self.position() + DVec3::new(rand::random_range(-10.0..10.0), rand::random_range(-5.0..5.0), rand::random_range(-10.0..10.0));
+                    let destination = self.position()
+                        + DVec3::new(
+                            rand::random_range(-10.0..10.0),
+                            rand::random_range(-5.0..5.0),
+                            rand::random_range(-10.0..10.0),
+                        );
                     self.fire_skull(shooter, side + 2, destination, true);
                     timers.1[side] = 0;
                 }
             }
             let target_id = self.alternative_target(side + 1);
             let current = world.get_entity_by_id(target_id);
-            if let Some(target) = current.filter(|target| target.as_living_entity().is_some_and(|living| Mob::can_attack(self, living))
-                && !steel_registry::REGISTRY.entity_types.is_in_tag(target.entity_type(), &EntityTypeTag::WITHER_FRIENDS)
-                && target.position().distance_squared(self.position()) <= 900.0 && self.has_line_of_sight(target.as_ref())) {
-                self.fire_skull(shooter, side + 2, target.position() + DVec3::Y * (f64::from(target.get_eye_height()) * 0.5), false);
+            if let Some(target) = current.filter(|target| {
+                target
+                    .as_living_entity()
+                    .is_some_and(|living| Mob::can_attack(self, living))
+                    && !steel_registry::REGISTRY
+                        .entity_types
+                        .is_in_tag(target.entity_type(), &EntityTypeTag::WITHER_FRIENDS)
+                    && target.position().distance_squared(self.position()) <= 900.0
+                    && self.has_line_of_sight(target.as_ref())
+            }) {
+                self.fire_skull(
+                    shooter,
+                    side + 2,
+                    target.position() + DVec3::Y * (f64::from(target.get_eye_height()) * 0.5),
+                    false,
+                );
                 timers.0[side] = self.tick_count() + rand::random_range(40..60);
                 timers.1[side] = 0;
             } else {
                 self.set_head_target(side + 1, 0);
                 // Vanilla spends this update clearing a stale target; selection
                 // happens only at the next head deadline, not immediately.
-                if target_id > 0 { continue; }
-                let targets: Vec<_> = world.get_entities_in_aabb(&self.bounding_box().inflate_xyz(20.0, 8.0, 20.0)).into_iter()
-                    .filter(|target| target.id() != self.id() && target.as_living_entity().is_some_and(|living| Mob::can_attack(self, living))
-                        && !steel_registry::REGISTRY.entity_types.is_in_tag(target.entity_type(), &EntityTypeTag::WITHER_FRIENDS) && self.has_line_of_sight(target.as_ref())).collect();
+                if target_id > 0 {
+                    continue;
+                }
+                let targets: Vec<_> = world
+                    .get_entities_in_aabb(&self.bounding_box().inflate_xyz(20.0, 8.0, 20.0))
+                    .into_iter()
+                    .filter(|target| {
+                        target.id() != self.id()
+                            && target
+                                .as_living_entity()
+                                .is_some_and(|living| Mob::can_attack(self, living))
+                            && !steel_registry::REGISTRY
+                                .entity_types
+                                .is_in_tag(target.entity_type(), &EntityTypeTag::WITHER_FRIENDS)
+                            && self.has_line_of_sight(target.as_ref())
+                    })
+                    .collect();
                 if !targets.is_empty() {
-                    self.set_head_target(side + 1, targets[rand::random_range(0..targets.len())].id());
+                    self.set_head_target(
+                        side + 1,
+                        targets[rand::random_range(0..targets.len())].id(),
+                    );
                 }
             }
         }
-        if self.tick_count() % 20 == 0 { self.heal(1.0); }
+        if self.tick_count() % 20 == 0 {
+            self.heal(1.0);
+        }
         let destroy = {
             let mut countdown = self.destroy_blocks_tick.lock();
-            if *countdown > 0 { *countdown -= 1; *countdown == 0 } else { false }
+            if *countdown > 0 {
+                *countdown -= 1;
+                *countdown == 0
+            } else {
+                false
+            }
         };
         if destroy && world.get_game_rule(&steel_registry::vanilla_game_rules::MOB_GRIEFING) {
-            use steel_registry::blocks::block_state_ext::BlockStateExt as _;
             use crate::world::LevelReader as _;
+            use steel_registry::blocks::block_state_ext::BlockStateExt as _;
             let center = self.block_position();
             let width = (self.bounding_box().width() * 0.5 + 1.0).floor() as i32;
             let height = self.bounding_box().height().floor() as i32;
             let mut destroyed = false;
-            for x in -width..=width { for z in -width..=width { for y in 0..=height {
-                let pos = steel_utils::BlockPos::new(center.x() + x, center.y() + y, center.z() + z);
-                let state = world.get_block_state(pos);
-                if !state.is_air() && !steel_registry::REGISTRY.blocks.is_in_tag(state.get_block(), &steel_registry::vanilla_block_tags::BlockTag::WITHER_IMMUNE) {
-                    destroyed = world.destroy_block_by_entity(pos, true, self) || destroyed;
+            for x in -width..=width {
+                for z in -width..=width {
+                    for y in 0..=height {
+                        let pos = steel_utils::BlockPos::new(
+                            center.x() + x,
+                            center.y() + y,
+                            center.z() + z,
+                        );
+                        let state = world.get_block_state(pos);
+                        if !state.is_air()
+                            && !steel_registry::REGISTRY.blocks.is_in_tag(
+                                state.get_block(),
+                                &steel_registry::vanilla_block_tags::BlockTag::WITHER_IMMUNE,
+                            )
+                        {
+                            destroyed = world.destroy_block_by_entity(pos, true, self) || destroyed;
+                        }
+                    }
                 }
-            } } }
-            if destroyed { world.level_event(level_events::SOUND_WITHER_BLOCK_BREAK, center, 0, None); }
+            }
+            if destroyed {
+                world.level_event(level_events::SOUND_WITHER_BLOCK_BREAK, center, 0, None);
+            }
         }
     }
 
@@ -318,12 +424,17 @@ impl WitherBossEntity {
 impl DefaultEntityPush for WitherBossEntity {}
 
 impl Entity for WitherBossEntity {
-    fn can_use_portal(&self, _ignore_passenger: bool) -> bool { false }
+    fn can_use_portal(&self, _ignore_passenger: bool) -> bool {
+        false
+    }
 
     fn make_stuck_in_block(&self, _state: steel_utils::BlockStateId, _speed_multiplier: DVec3) {}
 
     fn check_despawn(&self) {
-        if self.level().is_some_and(|world| world.difficulty() == steel_utils::types::Difficulty::Peaceful) {
+        if self
+            .level()
+            .is_some_and(|world| world.difficulty() == steel_utils::types::Difficulty::Peaceful)
+        {
             self.set_removed(crate::entity::RemovalReason::Discarded);
         }
         self.set_no_action_time(0);
@@ -431,26 +542,48 @@ impl LivingEntity for WitherBossEntity {
             || crate::enchantment_helper::is_immune_to_damage(self, source)
             || source.is(&DamageTypeTag::WITHER_IMMUNE_TO)
             || (self.invulnerable_ticks() > 0 && !source.bypasses_invulnerability())
-            || source.causing_entity().is_some_and(|entity| steel_registry::REGISTRY.entity_types.is_in_tag(entity.entity_type(), &EntityTypeTag::WITHER_FRIENDS)
-                || entity.entity_type() == &steel_registry::vanilla_entities::WITHER)
-            || (self.get_health() <= self.get_max_health() * 0.5 && source.direct_entity().is_some_and(|entity|
-                entity.is_abstract_arrow() || entity.entity_type() == &steel_registry::vanilla_entities::WIND_CHARGE))
+            || source.causing_entity().is_some_and(|entity| {
+                steel_registry::REGISTRY
+                    .entity_types
+                    .is_in_tag(entity.entity_type(), &EntityTypeTag::WITHER_FRIENDS)
+                    || entity.entity_type() == &steel_registry::vanilla_entities::WITHER
+            })
+            || (self.get_health() <= self.get_max_health() * 0.5
+                && source.direct_entity().is_some_and(|entity| {
+                    entity.is_abstract_arrow()
+                        || entity.entity_type() == &steel_registry::vanilla_entities::WIND_CHARGE
+                }))
     }
 
     fn hurt_server(&self, world: &World, source: &DamageSource, amount: f32) -> bool {
-        if self.is_invulnerable_to(world, source) { return false; }
+        if self.is_invulnerable_to(world, source) {
+            return false;
+        }
         {
             let mut countdown = self.destroy_blocks_tick.lock();
-            if *countdown <= 0 { *countdown = 20; }
+            if *countdown <= 0 {
+                *countdown = 20;
+            }
         }
-        for idle in &mut self.head_timers.lock().1 { *idle += 3; }
+        for idle in &mut self.head_timers.lock().1 {
+            *idle += 3;
+        }
         self.default_hurt_server(world, source, amount)
     }
 
-    fn add_mob_effect_with_source(&self, _effect: crate::entity::MobEffectInstance, _source: Option<&dyn Entity>) -> bool { false }
+    fn add_mob_effect_with_source(
+        &self,
+        _effect: crate::entity::MobEffectInstance,
+        _source: Option<&dyn Entity>,
+    ) -> bool {
+        false
+    }
 
     fn drop_custom_death_loot(&self, _source: &DamageSource, _killed_by_player: bool) {
-        if let Some(star) = self.spawn_at_location(steel_registry::item_stack::ItemStack::new(&steel_registry::vanilla_items::NETHER_STAR), 0.0) {
+        if let Some(star) = self.spawn_at_location(
+            steel_registry::item_stack::ItemStack::new(&steel_registry::vanilla_items::NETHER_STAR),
+            0.0,
+        ) {
             star.set_age(-6000);
         }
     }
@@ -488,7 +621,8 @@ impl LivingEntity for WitherBossEntity {
         let mut velocity = self.velocity() * DVec3::new(1.0, 0.6, 1.0);
         if let Some(target) = self.target() {
             let delta = target.position() - self.position();
-            if delta.y > 0.0 || (self.get_health() > self.get_max_health() * 0.5 && delta.y > -5.0) {
+            if delta.y > 0.0 || (self.get_health() > self.get_max_health() * 0.5 && delta.y > -5.0)
+            {
                 velocity.y = velocity.y.max(0.0);
                 velocity.y += 0.3 - velocity.y * 0.6;
             }
@@ -517,7 +651,9 @@ impl Mob for WitherBossEntity {
         spawn_reason: EntitySpawnReason,
         group_data: Option<SpawnGroupData>,
     ) -> Option<SpawnGroupData> {
-        if spawn_reason == EntitySpawnReason::Event { self.begin_spawn_phase(); }
+        if spawn_reason == EntitySpawnReason::Event {
+            self.begin_spawn_phase();
+        }
         self.finalize_spawn_mob_base(world, spawn_reason, group_data)
     }
 
@@ -546,7 +682,12 @@ impl Monster for WitherBossEntity {}
 
 impl PathfinderMob for WitherBossEntity {
     fn perform_ranged_attack(&self, shooter: &SharedEntity, target: &SharedEntity, _power: f32) {
-        self.fire_skull(shooter, 0, target.position() + DVec3::Y * (f64::from(target.get_eye_height()) * 0.5), rand::random::<f32>() < 0.001);
+        self.fire_skull(
+            shooter,
+            0,
+            target.position() + DVec3::Y * (f64::from(target.get_eye_height()) * 0.5),
+            rand::random::<f32>() < 0.001,
+        );
     }
 }
 

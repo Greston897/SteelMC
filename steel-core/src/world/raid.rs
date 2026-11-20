@@ -162,19 +162,33 @@ fn bonus_spawns(kind: usize, wave: i32, difficulty: Difficulty, bonus: bool) -> 
 }
 
 pub(crate) fn is_raider_type(entity_type: steel_registry::entity_type::EntityTypeRef) -> bool {
-    entity_type == &vanilla_entities::PILLAGER || entity_type == &vanilla_entities::VINDICATOR
-        || entity_type == &vanilla_entities::EVOKER || entity_type == &vanilla_entities::WITCH
-        || entity_type == &vanilla_entities::RAVAGER || entity_type == &vanilla_entities::ILLUSIONER
+    entity_type == &vanilla_entities::PILLAGER
+        || entity_type == &vanilla_entities::VINDICATOR
+        || entity_type == &vanilla_entities::EVOKER
+        || entity_type == &vanilla_entities::WITCH
+        || entity_type == &vanilla_entities::RAVAGER
+        || entity_type == &vanilla_entities::ILLUSIONER
 }
 
 // TOML table keys are strings; encode integer wave keys as pairs instead.
 mod wave_leaders_save {
     use super::*;
-    pub fn serialize<S: serde::Serializer>(value: &BTreeMap<i32, Uuid>, serializer: S) -> Result<S::Ok, S::Error> {
-        value.iter().map(|(wave, uuid)| (*wave, *uuid)).collect::<Vec<_>>().serialize(serializer)
+    pub fn serialize<S: serde::Serializer>(
+        value: &BTreeMap<i32, Uuid>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        value
+            .iter()
+            .map(|(wave, uuid)| (*wave, *uuid))
+            .collect::<Vec<_>>()
+            .serialize(serializer)
     }
-    pub fn deserialize<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<BTreeMap<i32, Uuid>, D::Error> {
-        Ok(Vec::<(i32, Uuid)>::deserialize(deserializer)?.into_iter().collect())
+    pub fn deserialize<'de, D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<BTreeMap<i32, Uuid>, D::Error> {
+        Ok(Vec::<(i32, Uuid)>::deserialize(deserializer)?
+            .into_iter()
+            .collect())
     }
 }
 
@@ -205,18 +219,28 @@ impl RaidManager {
     /// Creates a manager over raids loaded from disk.
     #[must_use]
     pub fn from_raids(mut raids: Vec<Raid>) -> Self {
-        let mut used: std::collections::BTreeSet<i32> = raids.iter().map(|raid| raid.id).filter(|id| *id > 0).collect();
+        let mut used: std::collections::BTreeSet<i32> = raids
+            .iter()
+            .map(|raid| raid.id)
+            .filter(|id| *id > 0)
+            .collect();
         let mut seen = std::collections::BTreeSet::new();
         let mut next = 1;
         for raid in &mut raids {
             for member in &raid.raiders {
-                raid.member_waves.entry(*member).or_insert(raid.waves_spawned);
+                raid.member_waves
+                    .entry(*member)
+                    .or_insert(raid.waves_spawned);
             }
             if let Some(leader) = raid.leader {
-                raid.wave_leaders.entry(raid.waves_spawned).or_insert(leader);
+                raid.wave_leaders
+                    .entry(raid.waves_spawned)
+                    .or_insert(leader);
             }
             if raid.id <= 0 || !seen.insert(raid.id) {
-                while used.contains(&next) { next += 1; }
+                while used.contains(&next) {
+                    next += 1;
+                }
                 raid.id = next;
                 used.insert(next);
                 seen.insert(next);
@@ -238,7 +262,10 @@ impl RaidManager {
     }
 
     pub(crate) fn to_saved_data(&self) -> RaidSavedData {
-        RaidSavedData { raids: self.to_persistent(), next_id: *self.next_id.lock() }
+        RaidSavedData {
+            raids: self.to_persistent(),
+            next_id: *self.next_id.lock(),
+        }
     }
 
     /// Snapshot of the raids in the form persisted to disk.
@@ -302,22 +329,40 @@ impl RaidManager {
 
     /// Whether an ongoing encounter owns this raider, including unloaded members.
     pub fn contains_raider(&self, uuid: Uuid) -> bool {
-        self.raids.lock().iter().any(|raid| raid.status == RaidStatus::Ongoing && raid.raiders.contains(&uuid))
+        self.raids
+            .lock()
+            .iter()
+            .any(|raid| raid.status == RaidStatus::Ongoing && raid.raiders.contains(&uuid))
     }
 
     /// Vanilla Raider.aiStep: eligible nearby mobs join once, without respawning
     /// or replacing their equipment. The closest raid within 96 blocks owns them.
     pub fn try_join_raider(&self, entity: &crate::entity::SharedEntity) -> bool {
-        let Some(mob) = entity.as_mob() else { return false; };
-        if !is_raider_type(entity.entity_type()) || !entity.is_alive()
-            || !mob.can_join_raid() || mob.no_action_time() > 2_400 { return false; }
+        let Some(mob) = entity.as_mob() else {
+            return false;
+        };
+        if !is_raider_type(entity.entity_type())
+            || !entity.is_alive()
+            || !mob.can_join_raid()
+            || mob.no_action_time() > 2_400
+        {
+            return false;
+        }
         let mut raids = self.raids.lock();
         let uuid = entity.uuid();
-        if raids.iter().any(|raid| raid.raiders.contains(&uuid)) { return false; }
+        if raids.iter().any(|raid| raid.raiders.contains(&uuid)) {
+            return false;
+        }
         let pos = entity.block_position().0;
-        let Some(raid) = raids.iter_mut()
-            .filter(|raid| raid.status == RaidStatus::Ongoing && within_village_radius(raid.center, pos))
-            .min_by_key(|raid| (raid.center.as_i64vec3() - pos.as_i64vec3()).length_squared()) else { return false; };
+        let Some(raid) = raids
+            .iter_mut()
+            .filter(|raid| {
+                raid.status == RaidStatus::Ongoing && within_village_radius(raid.center, pos)
+            })
+            .min_by_key(|raid| (raid.center.as_i64vec3() - pos.as_i64vec3()).length_squared())
+        else {
+            return false;
+        };
         raid.raiders.push(uuid);
         raid.member_waves.insert(uuid, raid.waves_spawned);
         raid.total_health += mob.get_health().max(0.0).ceil() as i32;
@@ -326,33 +371,62 @@ impl RaidManager {
 
     /// Celebration is a loss-only AI state, not victory animation on any raid.
     pub fn is_loss_member(&self, uuid: Uuid) -> bool {
-        self.raids.lock().iter().any(|raid| raid.status == RaidStatus::Loss && raid.raiders.contains(&uuid))
+        self.raids
+            .lock()
+            .iter()
+            .any(|raid| raid.status == RaidStatus::Loss && raid.raiders.contains(&uuid))
     }
 
     /// Vanilla raider save fields, including legacy worlds whose entities did
     /// not yet carry RaidId. Membership already in the manager is authoritative.
     pub fn member_save_data(&self, uuid: Uuid) -> Option<(i32, i32, bool)> {
-        self.raids.lock().iter().find(|raid| raid.raiders.contains(&uuid))
+        self.raids
+            .lock()
+            .iter()
+            .find(|raid| raid.raiders.contains(&uuid))
             .map(|raid| {
                 let wave = *raid.member_waves.get(&uuid).unwrap_or(&raid.waves_spawned);
-                (raid.id, wave, raid.wave_leaders.get(&wave) == Some(&uuid) || raid.leader == Some(uuid))
+                (
+                    raid.id,
+                    wave,
+                    raid.wave_leaders.get(&wave) == Some(&uuid) || raid.leader == Some(uuid),
+                )
             })
     }
 
     /// Reconnects loaded entities by RaidId, never by proximity. Repeated loads
     /// must not add health twice or turn a saved captain into a second leader.
-    pub fn restore_raider(&self, entity: &crate::entity::SharedEntity, id: i32, wave: i32, leader: bool) {
-        if !is_raider_type(entity.entity_type()) || !entity.is_alive() { return; }
+    pub fn restore_raider(
+        &self,
+        entity: &crate::entity::SharedEntity,
+        id: i32,
+        wave: i32,
+        leader: bool,
+    ) {
+        if !is_raider_type(entity.entity_type()) || !entity.is_alive() {
+            return;
+        }
         let mut raids = self.raids.lock();
-        let Some(raid) = raids.iter_mut().find(|raid| raid.id == id && raid.status == RaidStatus::Ongoing) else { return; };
-        if wave < 0 || wave > raid.waves_spawned { return; }
+        let Some(raid) = raids
+            .iter_mut()
+            .find(|raid| raid.id == id && raid.status == RaidStatus::Ongoing)
+        else {
+            return;
+        };
+        if wave < 0 || wave > raid.waves_spawned {
+            return;
+        }
         if !raid.raiders.contains(&entity.uuid()) {
             raid.raiders.push(entity.uuid());
         }
         raid.member_waves.insert(entity.uuid(), wave);
-        if leader { raid.wave_leaders.entry(wave).or_insert(entity.uuid()); }
+        if leader {
+            raid.wave_leaders.entry(wave).or_insert(entity.uuid());
+        }
         let is_leader = raid.wave_leaders.get(&wave) == Some(&entity.uuid());
-        if wave == raid.waves_spawned && is_leader { raid.leader = Some(entity.uuid()); }
+        if wave == raid.waves_spawned && is_leader {
+            raid.leader = Some(entity.uuid());
+        }
         drop(raids);
         if is_leader && let Some(mob) = entity.as_mob() {
             let head = crate::inventory::equipment::EquipmentSlot::Head;
@@ -362,48 +436,91 @@ impl RaidManager {
     }
 
     /// Shared eligibility for the MOVE-controlled captain-banner goal.
-    pub(crate) fn can_pick_up_captain_banner(&self, mob: &dyn crate::entity::PathfinderMob) -> bool {
+    pub(crate) fn can_pick_up_captain_banner(
+        &self,
+        mob: &dyn crate::entity::PathfinderMob,
+    ) -> bool {
         use crate::inventory::equipment::EquipmentSlot;
         use steel_registry::item_stack::ItemStack;
-        if !crate::entity::LivingEntity::is_alive(mob) || !(mob.entity_type() == &vanilla_entities::PILLAGER
-            || mob.entity_type() == &vanilla_entities::VINDICATOR
-            || mob.entity_type() == &vanilla_entities::EVOKER
-            || mob.entity_type() == &vanilla_entities::ILLUSIONER) { return false; }
-        if ItemStack::matches(&mob.equipment_in_slot(EquipmentSlot::Head), &ominous_banner()) { return false; }
+        if !crate::entity::LivingEntity::is_alive(mob)
+            || !(mob.entity_type() == &vanilla_entities::PILLAGER
+                || mob.entity_type() == &vanilla_entities::VINDICATOR
+                || mob.entity_type() == &vanilla_entities::EVOKER
+                || mob.entity_type() == &vanilla_entities::ILLUSIONER)
+        {
+            return false;
+        }
+        if ItemStack::matches(
+            &mob.equipment_in_slot(EquipmentSlot::Head),
+            &ominous_banner(),
+        ) {
+            return false;
+        }
         self.raids.lock().iter().any(|raid| {
-            let wave = *raid.member_waves.get(&mob.uuid()).unwrap_or(&raid.waves_spawned);
-            raid.status == RaidStatus::Ongoing && raid.raiders.contains(&mob.uuid())
+            let wave = *raid
+                .member_waves
+                .get(&mob.uuid())
+                .unwrap_or(&raid.waves_spawned);
+            raid.status == RaidStatus::Ongoing
+                && raid.raiders.contains(&mob.uuid())
                 && !raid.wave_leaders.contains_key(&wave)
                 && !(wave == raid.waves_spawned && raid.leader.is_some())
         })
     }
 
     /// Atomically claim the pursued banner; competing goals cannot both promote.
-    pub(crate) fn claim_captain_banner(&self, entity: &crate::entity::SharedEntity,
-        item: &crate::entity::entities::objects::items::ItemEntity, world: &Arc<World>) {
+    pub(crate) fn claim_captain_banner(
+        &self,
+        entity: &crate::entity::SharedEntity,
+        item: &crate::entity::entities::objects::items::ItemEntity,
+        world: &Arc<World>,
+    ) {
         use crate::inventory::equipment::EquipmentSlot;
         use steel_registry::item_stack::ItemStack;
-        let Some(mob) = entity.as_pathfinder_mob() else { return; };
-        if !self.can_pick_up_captain_banner(mob) || item.has_pickup_delay()
+        let Some(mob) = entity.as_pathfinder_mob() else {
+            return;
+        };
+        if !self.can_pick_up_captain_banner(mob)
+            || item.has_pickup_delay()
             || !ItemStack::matches(&item.get_item(), &ominous_banner())
-            || entity.position().distance_squared(item.position()) >= 1.414_f64.powi(2) { return; }
+            || entity.position().distance_squared(item.position()) >= 1.414_f64.powi(2)
+        {
+            return;
+        }
         {
             let mut raids = self.raids.lock();
-            let Some(raid) = raids.iter_mut().find(|raid| raid.status == RaidStatus::Ongoing && raid.raiders.contains(&entity.uuid())) else { return; };
-            let wave = *raid.member_waves.get(&entity.uuid()).unwrap_or(&raid.waves_spawned);
-            if raid.wave_leaders.contains_key(&wave) || item.is_removed() { return; }
+            let Some(raid) = raids.iter_mut().find(|raid| {
+                raid.status == RaidStatus::Ongoing && raid.raiders.contains(&entity.uuid())
+            }) else {
+                return;
+            };
+            let wave = *raid
+                .member_waves
+                .get(&entity.uuid())
+                .unwrap_or(&raid.waves_spawned);
+            if raid.wave_leaders.contains_key(&wave) || item.is_removed() {
+                return;
+            }
             raid.wave_leaders.insert(wave, entity.uuid());
-            if wave == raid.waves_spawned { raid.leader = Some(entity.uuid()); }
+            if wave == raid.waves_spawned {
+                raid.leader = Some(entity.uuid());
+            }
             item.set_removed(crate::entity::RemovalReason::Discarded);
         }
         let old = mob.equipment_in_slot(EquipmentSlot::Head);
-        if !old.is_empty() && (rand::random::<f32>() - 0.1).max(0.0) < mob.equipment_drop_chance(EquipmentSlot::Head) {
+        if !old.is_empty()
+            && (rand::random::<f32>() - 0.1).max(0.0)
+                < mob.equipment_drop_chance(EquipmentSlot::Head)
+        {
             mob.spawn_at_location(old, 0.0);
         }
         mob.with_equipment_slot_mut(EquipmentSlot::Head, &mut |head| *head = ominous_banner());
         mob.set_equipment_drop_chance(EquipmentSlot::Head, 2.0);
-        world.broadcast_to_nearby(steel_utils::ChunkPos::from_entity_pos(item.position()),
-            steel_protocol::packets::game::CTakeItemEntity::new(item.id(), entity.id(), 1), None);
+        world.broadcast_to_nearby(
+            steel_utils::ChunkPos::from_entity_pos(item.position()),
+            steel_protocol::packets::game::CTakeItemEntity::new(item.id(), entity.id(), 1),
+            None,
+        );
     }
 
     /// Removal with no death (discard or dimension transfer) must not leave an
@@ -416,7 +533,9 @@ impl RaidManager {
                 raid.wave_leaders.retain(|_, leader| *leader != uuid);
                 raid.outside_raid_checks.remove(&uuid);
                 raid.total_health = (raid.total_health - health.max(0.0).ceil() as i32).max(0);
-                if raid.leader == Some(uuid) { raid.leader = None; }
+                if raid.leader == Some(uuid) {
+                    raid.leader = None;
+                }
             }
         }
     }
@@ -432,7 +551,9 @@ impl RaidManager {
                 raid.raiders.swap_remove(index);
                 raid.member_waves.remove(&raider);
                 raid.wave_leaders.retain(|_, leader| *leader != raider);
-                if raid.leader == Some(raider) { raid.leader = None; }
+                if raid.leader == Some(raider) {
+                    raid.leader = None;
+                }
                 if let Some(killer) = killer
                     && !raid.heroes.contains(&killer)
                 {
@@ -519,7 +640,9 @@ impl RaidManager {
             }
             let cached = raid.wave_spawn_pos.take().map(BlockPos);
             // Vanilla makes six independent 20-candidate attempts before stopping.
-            let position = cached.or_else(|| (0..6).find_map(|_| find_spawn_pos(world, raid.center, raid.cooldown, 20)));
+            let position = cached.or_else(|| {
+                (0..6).find_map(|_| find_spawn_pos(world, raid.center, raid.cooldown, 20))
+            });
             if let Some(pos) = position {
                 spawn_wave(world, raid, pos);
             } else {
@@ -638,20 +761,34 @@ impl RaidManager {
     }
 }
 
-fn wave_spawn_column(center: IVec3, cooldown: i32, start_angle: f32, attempt: i32, jitter_x: i32, jitter_z: i32) -> (i32, i32) {
+fn wave_spawn_column(
+    center: IVec3,
+    cooldown: i32,
+    start_angle: f32,
+    attempt: i32,
+    jitter_x: i32,
+    jitter_z: i32,
+) -> (i32, i32) {
     let how_far = 0.22_f32 * (cooldown / 20) as f32 - 0.24_f32;
     let angle = start_angle + std::f32::consts::PI * attempt as f32 / 8.0;
     let jitter_scale = how_far.floor() as i32;
     (
-        center.x + (steel_math::trig::cos(angle) * 32.0 * how_far).floor() as i32 + jitter_x * jitter_scale,
-        center.z + (steel_math::trig::sin(angle) * 32.0 * how_far).floor() as i32 + jitter_z * jitter_scale,
+        center.x
+            + (steel_math::trig::cos(angle) * 32.0 * how_far).floor() as i32
+            + jitter_x * jitter_scale,
+        center.z
+            + (steel_math::trig::sin(angle) * 32.0 * how_far).floor() as i32
+            + jitter_z * jitter_scale,
     )
 }
 
 fn update_wave_spawn_cache(world: &Arc<World>, raid: &mut Raid) {
-    let retry = raid.wave_spawn_pos.map_or(raid.cooldown % 5 == 0, |pos| {
-        !world.chunk_map.is_entity_ticking_full_chunk_loaded(steel_utils::ChunkPos::from_block_pos(BlockPos(pos)))
-    });
+    let retry =
+        raid.wave_spawn_pos.map_or(raid.cooldown % 5 == 0, |pos| {
+            !world.chunk_map.is_entity_ticking_full_chunk_loaded(
+                steel_utils::ChunkPos::from_block_pos(BlockPos(pos)),
+            )
+        });
     if retry {
         raid.wave_spawn_pos = find_spawn_pos(world, raid.center, raid.cooldown, 8).map(|pos| pos.0);
     }
@@ -660,12 +797,18 @@ fn update_wave_spawn_cache(world: &Arc<World>, raid: &mut Raid) {
 fn spawn_region_loaded(world: &Arc<World>, pos: BlockPos) -> bool {
     for x in (pos.x() - 10).div_euclid(16)..=(pos.x() + 10).div_euclid(16) {
         for z in (pos.z() - 10).div_euclid(16)..=(pos.z() + 10).div_euclid(16) {
-            if world.chunk_map.with_full_chunk(steel_utils::ChunkPos::new(x, z), |_| ()).is_none() {
+            if world
+                .chunk_map
+                .with_full_chunk(steel_utils::ChunkPos::new(x, z), |_| ())
+                .is_none()
+            {
                 return false;
             }
         }
     }
-    world.chunk_map.is_entity_ticking_full_chunk_loaded(steel_utils::ChunkPos::from_block_pos(pos))
+    world
+        .chunk_map
+        .is_entity_ticking_full_chunk_loaded(steel_utils::ChunkPos::from_block_pos(pos))
 }
 
 fn valid_empty_raid_spawn_block(world: &Arc<World>, pos: BlockPos) -> bool {
@@ -677,12 +820,20 @@ fn valid_empty_raid_spawn_block(world: &Arc<World>, pos: BlockPos) -> bool {
     let block = state.get_block();
     let behavior = BLOCK_BEHAVIORS.get_behavior(block);
     let dangerous = WalkPathEvaluator::is_burning_block(state)
-        || block == &vanilla_blocks::WITHER_ROSE || block == &vanilla_blocks::SWEET_BERRY_BUSH
-        || block == &vanilla_blocks::CACTUS || block == &vanilla_blocks::POWDER_SNOW;
-    !is_shape_full_block(behavior.get_collision_shape(state, world.as_ref(), pos, BlockCollisionContext::empty()))
-        && !behavior.is_signal_source(state, crate::world::SignalQueryContext::DEFAULT)
+        || block == &vanilla_blocks::WITHER_ROSE
+        || block == &vanilla_blocks::SWEET_BERRY_BUSH
+        || block == &vanilla_blocks::CACTUS
+        || block == &vanilla_blocks::POWDER_SNOW;
+    !is_shape_full_block(behavior.get_collision_shape(
+        state,
+        world.as_ref(),
+        pos,
+        BlockCollisionContext::empty(),
+    )) && !behavior.is_signal_source(state, crate::world::SignalQueryContext::DEFAULT)
         && state.get_fluid_state().fluid_id == &vanilla_fluids::EMPTY
-        && !block.has_tag(&steel_utils::Identifier::vanilla_static("prevent_mob_spawning_inside"))
+        && !block.has_tag(&steel_utils::Identifier::vanilla_static(
+            "prevent_mob_spawning_inside",
+        ))
         && !dangerous
 }
 
@@ -691,21 +842,43 @@ fn valid_raid_spawn_surface(world: &Arc<World>, pos: BlockPos) -> bool {
     let below = pos.below();
     let state = world.get_block_state(below);
     let on_ground = world.is_block_within_world_border(pos)
-        && BLOCK_BEHAVIORS.get_behavior(state.get_block()).is_valid_spawn(state, world.as_ref(), below, &vanilla_entities::RAVAGER)
+        && BLOCK_BEHAVIORS
+            .get_behavior(state.get_block())
+            .is_valid_spawn(state, world.as_ref(), below, &vanilla_entities::RAVAGER)
         && valid_empty_raid_spawn_block(world, pos)
         && valid_empty_raid_spawn_block(world, pos.above());
-    on_ground || (state.get_block() == &steel_registry::vanilla_blocks::SNOW && world.get_block_state(pos).is_air())
+    on_ground
+        || (state.get_block() == &steel_registry::vanilla_blocks::SNOW
+            && world.get_block_state(pos).is_air())
 }
 
 /// Vanilla 26.3 cooldown-dependent surface search, with loaded simulation gating.
-fn find_spawn_pos(world: &Arc<World>, center: IVec3, cooldown: i32, max_tries: i32) -> Option<BlockPos> {
+fn find_spawn_pos(
+    world: &Arc<World>,
+    center: IVec3,
+    cooldown: i32,
+    max_tries: i32,
+) -> Option<BlockPos> {
     let start_angle = rand::random::<f32>() * std::f32::consts::TAU;
     for attempt in 0..max_tries {
-        let (x, z) = wave_spawn_column(center, cooldown, start_angle, attempt, rand::random_range(0..3), rand::random_range(0..3));
-        let Some(y) = world.as_ref().height_at(HeightmapType::WorldSurface, x, z) else { continue; };
-        if (y - center.y).abs() > 96 { continue; }
+        let (x, z) = wave_spawn_column(
+            center,
+            cooldown,
+            start_angle,
+            attempt,
+            rand::random_range(0..3),
+            rand::random_range(0..3),
+        );
+        let Some(y) = world.as_ref().height_at(HeightmapType::WorldSurface, x, z) else {
+            continue;
+        };
+        if (y - center.y).abs() > 96 {
+            continue;
+        }
         let pos = BlockPos::new(x, y, z);
-        if cooldown / 20 > 7 && is_village(world, pos.0) { continue; }
+        if cooldown / 20 > 7 && is_village(world, pos.0) {
+            continue;
+        }
         if spawn_region_loaded(world, pos) && valid_raid_spawn_surface(world, pos) {
             return Some(pos);
         }
@@ -750,18 +923,46 @@ pub(crate) fn ominous_banner() -> steel_registry::item_stack::ItemStack {
 }
 
 // Vanilla Pillager/Vindicator.applyRaidBuffs selects extracted providers by wave.
-fn raid_weapon(kind: usize, wave: i32, omen: i32, roll: f32) -> Option<steel_registry::item_stack::ItemStack> {
-    use steel_registry::{vanilla_items, vanilla_enchantment_providers as providers};
+fn raid_weapon(
+    kind: usize,
+    wave: i32,
+    omen: i32,
+    roll: f32,
+) -> Option<steel_registry::item_stack::ItemStack> {
     use steel_registry::data_components::vanilla_components::{ENCHANTMENTS, ItemEnchantments};
-    let odds = match omen { 1 => 0.1, 2 => 0.25, 3 => 0.5, 4 => 0.75, _ => 0.0 };
+    use steel_registry::{vanilla_enchantment_providers as providers, vanilla_items};
+    let odds = match omen {
+        1 => 0.1,
+        2 => 0.25,
+        3 => 0.5,
+        4 => 0.75,
+        _ => 0.0,
+    };
     let (item, provider) = match kind {
-        0 => (&vanilla_items::IRON_AXE, Some(if wave > 5 { &*providers::RAID_VINDICATOR_POST_WAVE_5 } else { &*providers::RAID_VINDICATOR })),
-        2 => (&vanilla_items::CROSSBOW, if wave > 5 { Some(&*providers::RAID_PILLAGER_POST_WAVE_5) }
-            else if wave > 3 { Some(&*providers::RAID_PILLAGER_POST_WAVE_3) } else { None }),
+        0 => (
+            &vanilla_items::IRON_AXE,
+            Some(if wave > 5 {
+                &*providers::RAID_VINDICATOR_POST_WAVE_5
+            } else {
+                &*providers::RAID_VINDICATOR
+            }),
+        ),
+        2 => (
+            &vanilla_items::CROSSBOW,
+            if wave > 5 {
+                Some(&*providers::RAID_PILLAGER_POST_WAVE_5)
+            } else if wave > 3 {
+                Some(&*providers::RAID_PILLAGER_POST_WAVE_3)
+            } else {
+                None
+            },
+        ),
         _ => return None,
     };
     let mut stack = steel_registry::item_stack::ItemStack::new(item);
-    if roll <= odds && let Some(provider) = provider {
+    if roll <= odds
+        && let Some(provider) = provider
+    {
         let mut rng = steel_utils::random::legacy_random::LegacyRandom::from_seed(rand::random());
         let mut enchantments = ItemEnchantments::empty();
         for (enchantment, level) in provider.sample(0.0, &mut rng) {
@@ -774,23 +975,37 @@ fn raid_weapon(kind: usize, wave: i32, omen: i32, roll: f32) -> Option<steel_reg
 
 fn horn_position(listener: glam::DVec3, origin: glam::DVec3) -> glam::DVec3 {
     let delta = glam::DVec3::new(origin.x - listener.x, 0.0, origin.z - listener.z);
-    if delta.length_squared() == 0.0 { return listener; }
+    if delta.length_squared() == 0.0 {
+        return listener;
+    }
     listener + delta.normalize() * 13.0
 }
 
 fn play_raid_horn(world: &Arc<World>, raid: &Raid, pos: BlockPos) {
     use steel_protocol::packets::game::{CSound, SoundSource};
-    let Some(sound) = steel_registry::REGISTRY.sound_events.by_key(
-        &steel_utils::Identifier::vanilla_static("event.raid.horn"),
-    ) else { return; };
+    let Some(sound) = steel_registry::REGISTRY
+        .sound_events
+        .by_key(&steel_utils::Identifier::vanilla_static("event.raid.horn"))
+    else {
+        return;
+    };
     let origin = pos.0.as_dvec3() + glam::DVec3::splat(0.5);
     let seed = rand::random();
     world.players.iter_players(|_, player| {
         let position = player.position();
         let dx = origin.x - position.x;
         let dz = origin.z - position.z;
-        if dx * dx + dz * dz <= 64.0 * 64.0 || within_village_radius(raid.center, player.block_position().0) {
-            player.send_packet(CSound::new(sound, SoundSource::Neutral, horn_position(position, origin), 64.0, 1.0, seed));
+        if dx * dx + dz * dz <= 64.0 * 64.0
+            || within_village_radius(raid.center, player.block_position().0)
+        {
+            player.send_packet(CSound::new(
+                sound,
+                SoundSource::Neutral,
+                horn_position(position, origin),
+                64.0,
+                1.0,
+                seed,
+            ));
         }
         true
     });
@@ -881,7 +1096,13 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
                         if let Some(mob) = rider.as_mob() {
                             mob.set_persistence_required();
                         }
-                        let rider_kind = if entity_type == &vanilla_entities::VINDICATOR { 0 } else if entity_type == &vanilla_entities::PILLAGER { 2 } else { 1 };
+                        let rider_kind = if entity_type == &vanilla_entities::VINDICATOR {
+                            0
+                        } else if entity_type == &vanilla_entities::PILLAGER {
+                            2
+                        } else {
+                            1
+                        };
                         if let Some(living) = rider.as_living_entity()
                             && let Some(weapon) = raid_weapon(rider_kind, wave, raid.omen_level, rand::random())
                             && (rider_kind == 0 || weapon.get(steel_registry::data_components::vanilla_components::ENCHANTMENTS).is_some_and(|value| !value.levels.is_empty()))
@@ -912,29 +1133,48 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
 fn update_raiders(world: &Arc<World>, raid: &mut Raid) {
     let mut departed_health = 0;
     raid.raiders.retain(|id| {
-        let Some(entity) = world.get_entity_by_uuid(id) else { return true; };
+        let Some(entity) = world.get_entity_by_uuid(id) else {
+            return true;
+        };
         let delta = entity.block_position().0.as_i64vec3() - raid.center.as_i64vec3();
-        let different_world = entity.level().is_some_and(|level| !Arc::ptr_eq(&level, world));
+        let different_world = entity
+            .level()
+            .is_some_and(|level| !Arc::ptr_eq(&level, world));
         let outside_expired = if entity.tick_count() > 600 {
             let checks = raid.outside_raid_checks.entry(*id).or_default();
             if !is_village(world, entity.block_position().0)
-                && entity.as_living_entity().is_some_and(|living| living.no_action_time() > 2_400)
+                && entity
+                    .as_living_entity()
+                    .is_some_and(|living| living.no_action_time() > 2_400)
             {
                 *checks = checks.saturating_add(1);
             }
             *checks >= 30
-        } else { false };
-        let departed = entity.is_removed() || different_world || delta.length_squared() >= 12_544 || outside_expired;
+        } else {
+            false
+        };
+        let departed = entity.is_removed()
+            || different_world
+            || delta.length_squared() >= 12_544
+            || outside_expired;
         if departed {
-            departed_health += entity.as_living_entity().map_or(0, |living| living.get_health().max(0.0).ceil() as i32);
+            departed_health += entity
+                .as_living_entity()
+                .map_or(0, |living| living.get_health().max(0.0).ceil() as i32);
         }
         !departed
     });
-    raid.outside_raid_checks.retain(|id, _| raid.raiders.contains(id));
+    raid.outside_raid_checks
+        .retain(|id, _| raid.raiders.contains(id));
     raid.total_health = (raid.total_health - departed_health).max(0);
-    raid.wave_leaders.retain(|_, leader| raid.raiders.contains(leader));
-    raid.member_waves.retain(|member, _| raid.raiders.contains(member));
-    if raid.leader.is_some_and(|leader| !raid.raiders.contains(&leader)) {
+    raid.wave_leaders
+        .retain(|_, leader| raid.raiders.contains(leader));
+    raid.member_waves
+        .retain(|member, _| raid.raiders.contains(member));
+    if raid
+        .leader
+        .is_some_and(|leader| !raid.raiders.contains(&leader))
+    {
         raid.leader = None;
     }
 }
@@ -1031,7 +1271,10 @@ mod persistence_tests {
                 ..Raid::default()
             }],
         ] {
-            let data = RaidSavedData { raids, ..RaidSavedData::default() };
+            let data = RaidSavedData {
+                raids,
+                ..RaidSavedData::default()
+            };
             manager.save(names::RAIDS, &data).await.unwrap();
             let loaded: RaidSavedData = manager.load_or_default(names::RAIDS).await.unwrap();
             assert_eq!(loaded, data);
@@ -1120,8 +1363,13 @@ mod lifecycle_tests {
         // Normal difficulty independently adds 0..=1 pillagers AND 0..=1
         // vindicators, including on the first wave (Raid.getPotentialBonusSpawns).
         assert!((4..=6).contains(&raid.raiders.len()));
-        let members_of_type = |entity_type| raid.raiders.iter().filter_map(|id| world.get_entity_by_uuid(id))
-            .filter(|entity| entity.entity_type() == entity_type).count();
+        let members_of_type = |entity_type| {
+            raid.raiders
+                .iter()
+                .filter_map(|id| world.get_entity_by_uuid(id))
+                .filter(|entity| entity.entity_type() == entity_type)
+                .count()
+        };
         assert!((4..=5).contains(&members_of_type(&vanilla_entities::PILLAGER)));
         assert!(members_of_type(&vanilla_entities::VINDICATOR) <= 1);
         let captain = world
@@ -1276,9 +1524,12 @@ mod complete_wave_tests {
         steel_registry::init_vanilla_registry();
         crate::behavior::init_behaviors();
         for (difficulty, omen, waves) in [
-            (Difficulty::Easy, 0, 3), (Difficulty::Easy, 1, 4),
-            (Difficulty::Normal, 0, 5), (Difficulty::Normal, 1, 6),
-            (Difficulty::Hard, 0, 7), (Difficulty::Hard, 4, 8),
+            (Difficulty::Easy, 0, 3),
+            (Difficulty::Easy, 1, 4),
+            (Difficulty::Normal, 0, 5),
+            (Difficulty::Normal, 1, 6),
+            (Difficulty::Hard, 0, 7),
+            (Difficulty::Hard, 4, 8),
         ] {
             run_encounter(difficulty, omen, waves);
         }
@@ -1291,8 +1542,12 @@ mod complete_wave_tests {
         for x in -1..=1 {
             for z in -1..=1 {
                 let holder = insert_ready_full_chunk(world, ChunkPos::new(x, z));
-                holder.set_simulation_level(Some(crate::chunk::chunk_ticket_manager::ChunkTicketLevel::ENTITY_TICKING_CHUNK));
-                let _ = holder.transition_ticking_readiness(crate::chunk::chunk_holder::TickingReadiness::EntityTicking);
+                holder.set_simulation_level(Some(
+                    crate::chunk::chunk_ticket_manager::ChunkTicketLevel::ENTITY_TICKING_CHUNK,
+                ));
+                let _ = holder.transition_ticking_readiness(
+                    crate::chunk::chunk_holder::TickingReadiness::EntityTicking,
+                );
             }
         }
         for x in -16..32 {
@@ -1319,7 +1574,11 @@ mod complete_wave_tests {
             for _ in 0..wait - 1 {
                 world.raids.tick(world);
             }
-            assert_eq!(world.raids.raids()[0].waves_spawned, wave - 1, "wave must not spawn early");
+            assert_eq!(
+                world.raids.raids()[0].waves_spawned,
+                wave - 1,
+                "wave must not spawn early"
+            );
             world.raids.tick(world);
             let raid = world.raids.raids()[0].clone();
             assert_eq!(raid.waves_spawned, wave);
@@ -1417,21 +1676,57 @@ mod village_and_unload_tests {
 #[cfg(test)]
 mod raid_enchantment_tests {
     use super::*;
-    use steel_registry::{vanilla_enchantments, data_components::vanilla_components::ENCHANTMENTS};
+    use steel_registry::{data_components::vanilla_components::ENCHANTMENTS, vanilla_enchantments};
 
     #[test]
     fn extracted_raid_weapon_providers_follow_wave_thresholds_and_omen_probability() {
         steel_registry::init_vanilla_registry();
-        for (kind, wave, level) in [(0, 1, 1), (0, 5, 1), (0, 6, 2), (2, 3, 0), (2, 4, 1), (2, 5, 1), (2, 6, 2)] {
+        for (kind, wave, level) in [
+            (0, 1, 1),
+            (0, 5, 1),
+            (0, 6, 2),
+            (2, 3, 0),
+            (2, 4, 1),
+            (2, 5, 1),
+            (2, 6, 2),
+        ] {
             let weapon = raid_weapon(kind, wave, 4, 0.1).unwrap();
-            let enchantment = if kind == 0 { &vanilla_enchantments::SHARPNESS } else { &vanilla_enchantments::QUICK_CHARGE };
-            assert_eq!(weapon.get(ENCHANTMENTS).map_or(0, |value| value.get_level(&enchantment.key)), level);
+            let enchantment = if kind == 0 {
+                &vanilla_enchantments::SHARPNESS
+            } else {
+                &vanilla_enchantments::QUICK_CHARGE
+            };
+            assert_eq!(
+                weapon
+                    .get(ENCHANTMENTS)
+                    .map_or(0, |value| value.get_level(&enchantment.key)),
+                level
+            );
             let plain = raid_weapon(kind, wave, 0, 0.1).unwrap();
-            assert_eq!(plain.get(ENCHANTMENTS).map_or(0, |value| value.get_level(&enchantment.key)), 0);
+            assert_eq!(
+                plain
+                    .get(ENCHANTMENTS)
+                    .map_or(0, |value| value.get_level(&enchantment.key)),
+                0
+            );
         }
         for (omen, odds) in [(1, 0.1_f32), (2, 0.25), (3, 0.5), (4, 0.75)] {
-            assert_eq!(raid_weapon(0, 6, omen, odds).unwrap().get(ENCHANTMENTS).unwrap().get_level(&vanilla_enchantments::SHARPNESS.key), 2);
-            assert_eq!(raid_weapon(0, 6, omen, odds + 0.01).unwrap().get(ENCHANTMENTS).map_or(0, |value| value.get_level(&vanilla_enchantments::SHARPNESS.key)), 0);
+            assert_eq!(
+                raid_weapon(0, 6, omen, odds)
+                    .unwrap()
+                    .get(ENCHANTMENTS)
+                    .unwrap()
+                    .get_level(&vanilla_enchantments::SHARPNESS.key),
+                2
+            );
+            assert_eq!(
+                raid_weapon(0, 6, omen, odds + 0.01)
+                    .unwrap()
+                    .get(ENCHANTMENTS)
+                    .map_or(0, |value| value
+                        .get_level(&vanilla_enchantments::SHARPNESS.key)),
+                0
+            );
         }
     }
 }
@@ -1443,7 +1738,12 @@ mod horn_tests {
     #[test]
     fn horn_projects_toward_wave_thirteen_blocks_at_listener_height() {
         steel_registry::init_vanilla_registry();
-        assert!(steel_registry::REGISTRY.sound_events.by_key(&steel_utils::Identifier::vanilla_static("event.raid.horn")).is_some());
+        assert!(
+            steel_registry::REGISTRY
+                .sound_events
+                .by_key(&steel_utils::Identifier::vanilla_static("event.raid.horn"))
+                .is_some()
+        );
         let listener = glam::DVec3::new(1.0, 64.0, 2.0);
         let projected = horn_position(listener, glam::DVec3::new(31.0, 90.0, 42.0));
         assert!((projected.distance(listener) - 13.0).abs() < 1.0e-10);
@@ -1474,10 +1774,18 @@ mod spawn_search_tests {
     fn spawn_requires_loaded_ten_block_margin_and_entity_not_only_block_ticks() {
         let fixture = fresh_test_world("raid_spawn_simulation");
         let world = &fixture.world;
-        for x in -1..=1 { for z in -1..=1 { insert_ready_full_chunk(world, ChunkPos::new(x, z)); } }
+        for x in -1..=1 {
+            for z in -1..=1 {
+                insert_ready_full_chunk(world, ChunkPos::new(x, z));
+            }
+        }
         let pos = BlockPos::new(0, 64, 0);
         assert!(!spawn_region_loaded(world, pos));
-        let holder = world.chunk_map.chunks.read_sync(&ChunkPos::new(0, 0), |_, holder| Arc::clone(holder)).unwrap();
+        let holder = world
+            .chunk_map
+            .chunks
+            .read_sync(&ChunkPos::new(0, 0), |_, holder| Arc::clone(holder))
+            .unwrap();
         holder.set_simulation_level(Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK));
         let _ = holder.transition_ticking_readiness(TickingReadiness::EntityTicking);
         assert!(spawn_region_loaded(world, pos));
@@ -1492,7 +1800,11 @@ mod spawn_search_tests {
         holder.set_simulation_level(Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK));
         let _ = holder.transition_ticking_readiness(TickingReadiness::EntityTicking);
         let cached = IVec3::new(0, 64, 0);
-        let mut raid = Raid { cooldown: 121, wave_spawn_pos: Some(cached), ..Raid::default() };
+        let mut raid = Raid {
+            cooldown: 121,
+            wave_spawn_pos: Some(cached),
+            ..Raid::default()
+        };
         update_wave_spawn_cache(world, &mut raid);
         assert_eq!(raid.wave_spawn_pos, Some(cached));
         holder.set_simulation_level(Some(ChunkTicketLevel::BLOCK_TICKING_CHUNK));
@@ -1508,23 +1820,49 @@ mod spawn_search_tests {
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
         let pos = BlockPos::new(1, 64, 1);
-        world.set_block(pos.below(), vanilla_blocks::STONE.default_state(), UpdateFlags::UPDATE_NONE);
+        world.set_block(
+            pos.below(),
+            vanilla_blocks::STONE.default_state(),
+            UpdateFlags::UPDATE_NONE,
+        );
         for block in [&vanilla_blocks::AIR, &vanilla_blocks::SHORT_GRASS] {
             world.set_block(pos, block.default_state(), UpdateFlags::UPDATE_NONE);
             assert!(valid_raid_spawn_surface(world, pos), "{}", block.key);
         }
-        for block in [&vanilla_blocks::STONE, &vanilla_blocks::WATER, &vanilla_blocks::WITHER_ROSE, &vanilla_blocks::STONE_PRESSURE_PLATE] {
+        for block in [
+            &vanilla_blocks::STONE,
+            &vanilla_blocks::WATER,
+            &vanilla_blocks::WITHER_ROSE,
+            &vanilla_blocks::STONE_PRESSURE_PLATE,
+        ] {
             world.set_block(pos, block.default_state(), UpdateFlags::UPDATE_NONE);
             assert!(!valid_raid_spawn_surface(world, pos), "{}", block.key);
         }
-        world.set_block(pos, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_NONE);
-        world.set_block(pos.below(), vanilla_blocks::SNOW.default_state(), UpdateFlags::UPDATE_NONE);
-        assert!(valid_raid_spawn_surface(world, pos), "vanilla snow fallback");
+        world.set_block(
+            pos,
+            vanilla_blocks::AIR.default_state(),
+            UpdateFlags::UPDATE_NONE,
+        );
+        world.set_block(
+            pos.below(),
+            vanilla_blocks::SNOW.default_state(),
+            UpdateFlags::UPDATE_NONE,
+        );
+        assert!(
+            valid_raid_spawn_surface(world, pos),
+            "vanilla snow fallback"
+        );
     }
 
     #[test]
     fn spawn_position_cache_is_transient_like_vanilla() {
-        let data = RaidSavedData { raids: vec![Raid { wave_spawn_pos: Some(IVec3::new(50, 64, -60)), ..Raid::default() }], ..RaidSavedData::default() };
+        let data = RaidSavedData {
+            raids: vec![Raid {
+                wave_spawn_pos: Some(IVec3::new(50, 64, -60)),
+                ..Raid::default()
+            }],
+            ..RaidSavedData::default()
+        };
         let encoded = toml::to_string(&data).unwrap();
         let decoded: RaidSavedData = toml::from_str(&encoded).unwrap();
         assert!(decoded.raids[0].wave_spawn_pos.is_none());
@@ -1535,17 +1873,34 @@ mod spawn_search_tests {
 #[cfg(test)]
 mod joining_and_killer_tests {
     use super::*;
-    use crate::entity::{SharedEntity, next_entity_id};
     use crate::entity::damage::DamageSource;
+    use crate::entity::{SharedEntity, next_entity_id};
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
     use steel_registry::{entity_type::EntityTypeRef, vanilla_damage_types};
     use steel_utils::ChunkPos;
 
-    fn spawn(world: &Arc<World>, entity_type: EntityTypeRef, reason: EntitySpawnReason) -> SharedEntity {
-        spawn_entity(world, EntitySpawnRequest {
-            entity_type, placement: EntitySpawnPlacement::Block { pos: BlockPos::new(2, 64, 2), try_move_down: false, moved_up: false },
-            reason, finalize_spawn: true, play_ambient_sound: false, item_stack: None, user_is_operator: false,
-        }).unwrap()
+    fn spawn(
+        world: &Arc<World>,
+        entity_type: EntityTypeRef,
+        reason: EntitySpawnReason,
+    ) -> SharedEntity {
+        spawn_entity(
+            world,
+            EntitySpawnRequest {
+                entity_type,
+                placement: EntitySpawnPlacement::Block {
+                    pos: BlockPos::new(2, 64, 2),
+                    try_move_down: false,
+                    moved_up: false,
+                },
+                reason,
+                finalize_spawn: true,
+                play_ambient_sound: false,
+                item_stack: None,
+                user_is_operator: false,
+            },
+        )
+        .unwrap()
     }
 
     #[test]
@@ -1557,7 +1912,11 @@ mod joining_and_killer_tests {
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
         let center = IVec3::new(0, 64, 0);
         world.raids.raise_omen(center, 0);
-        let raider = spawn(world, &vanilla_entities::PILLAGER, EntitySpawnReason::Command);
+        let raider = spawn(
+            world,
+            &vanilla_entities::PILLAGER,
+            EntitySpawnReason::Command,
+        );
         let mob = raider.as_mob().unwrap();
         mob.mob_server_ai_step(&raider);
         assert!(world.raids.contains_raider(raider.uuid()));
@@ -1569,7 +1928,11 @@ mod joining_and_killer_tests {
         assert!(!world.raids.try_join_raider(&witch));
         let event_witch = spawn(world, &vanilla_entities::WITCH, EntitySpawnReason::Event);
         assert!(world.raids.try_join_raider(&event_witch));
-        let idle = spawn(world, &vanilla_entities::VINDICATOR, EntitySpawnReason::Command);
+        let idle = spawn(
+            world,
+            &vanilla_entities::VINDICATOR,
+            EntitySpawnReason::Command,
+        );
         idle.as_living_entity().unwrap().set_no_action_time(2_401);
         assert!(!world.raids.try_join_raider(&idle));
         idle.as_living_entity().unwrap().set_no_action_time(2_400);
@@ -1589,7 +1952,11 @@ mod joining_and_killer_tests {
         world.raids.raise_omen(IVec3::new(0, 64, 0), 0);
         let entity = spawn(world, &vanilla_entities::PILLAGER, EntitySpawnReason::Event);
         let mob = entity.as_mob().unwrap();
-        let golem = spawn(world, &vanilla_entities::IRON_GOLEM, EntitySpawnReason::Event);
+        let golem = spawn(
+            world,
+            &vanilla_entities::IRON_GOLEM,
+            EntitySpawnReason::Event,
+        );
         mob.mob_base().set_target(Some(&golem), |_| true);
         mob.set_no_action_time(100);
         mob.update_mob_no_action_time();
@@ -1615,7 +1982,11 @@ mod joining_and_killer_tests {
         let fixture = fresh_test_world("raid_eligibility_nbt");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
-        let raider = spawn(world, &vanilla_entities::PILLAGER, EntitySpawnReason::Command);
+        let raider = spawn(
+            world,
+            &vanilla_entities::PILLAGER,
+            EntitySpawnReason::Command,
+        );
         let mob = raider.as_mob().unwrap();
         for eligible in [false, true] {
             mob.set_can_join_raid(eligible);
@@ -1623,7 +1994,8 @@ mod joining_and_killer_tests {
             mob.save_mob(&mut nbt);
             let mut bytes = Vec::new();
             nbt.write(&mut bytes);
-            let borrowed = simdnbt::borrow::read_compound(&mut std::io::Cursor::new(&bytes)).unwrap();
+            let borrowed =
+                simdnbt::borrow::read_compound(&mut std::io::Cursor::new(&bytes)).unwrap();
             mob.set_can_join_raid(!eligible);
             mob.load_mob((&borrowed).into());
             assert_eq!(mob.can_join_raid(), eligible);
@@ -1658,7 +2030,13 @@ mod joining_and_killer_tests {
         world.raids.raids.lock()[0].leader = Some(second.uuid());
         second.as_living_entity().unwrap().set_health(0.0);
         let hero_entity: SharedEntity = hero.clone();
-        second.as_living_entity().unwrap().die(&DamageSource::direct(&vanilla_damage_types::PLAYER_ATTACK, hero_entity));
+        second
+            .as_living_entity()
+            .unwrap()
+            .die(&DamageSource::direct(
+                &vanilla_damage_types::PLAYER_ATTACK,
+                hero_entity,
+            ));
         let raid = &world.raids.raids()[0];
         assert_eq!(raid.heroes, vec![hero.uuid()]);
         assert!(raid.raiders.is_empty());
@@ -1677,16 +2055,32 @@ mod departure_tests {
         let fixture = fresh_test_world("raid_member_departure");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
-        let entity = spawn_entity(world, EntitySpawnRequest {
-            entity_type: &vanilla_entities::PILLAGER,
-            placement: EntitySpawnPlacement::Block { pos: BlockPos::new(2, 64, 2), try_move_down: false, moved_up: false },
-            reason: EntitySpawnReason::Event, finalize_spawn: true, play_ambient_sound: false,
-            item_stack: None, user_is_operator: false,
-        }).unwrap();
+        let entity = spawn_entity(
+            world,
+            EntitySpawnRequest {
+                entity_type: &vanilla_entities::PILLAGER,
+                placement: EntitySpawnPlacement::Block {
+                    pos: BlockPos::new(2, 64, 2),
+                    try_move_down: false,
+                    moved_up: false,
+                },
+                reason: EntitySpawnReason::Event,
+                finalize_spawn: true,
+                play_ambient_sound: false,
+                item_stack: None,
+                user_is_operator: false,
+            },
+        )
+        .unwrap();
         entity.as_living_entity().unwrap().set_health(13.0);
         let missing = Uuid::new_v4();
-        let mut raid = Raid { center: IVec3::new(114, 64, 2), total_health: 48,
-            raiders: vec![entity.uuid(), missing], leader: Some(entity.uuid()), ..Raid::default() };
+        let mut raid = Raid {
+            center: IVec3::new(114, 64, 2),
+            total_health: 48,
+            raiders: vec![entity.uuid(), missing],
+            leader: Some(entity.uuid()),
+            ..Raid::default()
+        };
         update_raiders(world, &mut raid);
         assert_eq!(raid.raiders, vec![missing]); // distance exactly 112 blocks
         assert_eq!(raid.total_health, 35); // current health, not max health
@@ -1704,23 +2098,44 @@ mod departure_tests {
         let fixture = fresh_test_world("raid_inactive_departure");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
-        let entity = spawn_entity(world, EntitySpawnRequest {
-            entity_type: &vanilla_entities::PILLAGER,
-            placement: EntitySpawnPlacement::Block { pos: BlockPos::new(2, 64, 2), try_move_down: false, moved_up: false },
-            reason: EntitySpawnReason::Event, finalize_spawn: true, play_ambient_sound: false,
-            item_stack: None, user_is_operator: false,
-        }).unwrap();
-        let mut raid = Raid { center: IVec3::new(2, 64, 2), total_health: 24,
-            raiders: vec![entity.uuid()], ..Raid::default() };
+        let entity = spawn_entity(
+            world,
+            EntitySpawnRequest {
+                entity_type: &vanilla_entities::PILLAGER,
+                placement: EntitySpawnPlacement::Block {
+                    pos: BlockPos::new(2, 64, 2),
+                    try_move_down: false,
+                    moved_up: false,
+                },
+                reason: EntitySpawnReason::Event,
+                finalize_spawn: true,
+                play_ambient_sound: false,
+                item_stack: None,
+                user_is_operator: false,
+            },
+        )
+        .unwrap();
+        let mut raid = Raid {
+            center: IVec3::new(2, 64, 2),
+            total_health: 24,
+            raiders: vec![entity.uuid()],
+            ..Raid::default()
+        };
         entity.as_living_entity().unwrap().set_no_action_time(2_401);
-        for _ in 0..35 { update_raiders(world, &mut raid); }
+        for _ in 0..35 {
+            update_raiders(world, &mut raid);
+        }
         assert_eq!(raid.raiders.len(), 1); // <=600 ticks old
-        for _ in 0..601 { entity.advance_tick_count(); }
+        for _ in 0..601 {
+            entity.advance_tick_count();
+        }
         entity.as_living_entity().unwrap().set_no_action_time(2_400);
         update_raiders(world, &mut raid);
         assert_eq!(raid.outside_raid_checks[&entity.uuid()], 0);
         entity.as_living_entity().unwrap().set_no_action_time(2_401);
-        for _ in 0..29 { update_raiders(world, &mut raid); }
+        for _ in 0..29 {
+            update_raiders(world, &mut raid);
+        }
         assert_eq!(raid.raiders.len(), 1);
         update_raiders(world, &mut raid);
         assert!(raid.raiders.is_empty());
@@ -1728,5 +2143,4 @@ mod departure_tests {
         assert!(raid.outside_raid_checks.is_empty());
         assert!(raid.heroes.is_empty());
     }
-
 }

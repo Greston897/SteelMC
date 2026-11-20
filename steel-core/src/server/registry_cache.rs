@@ -241,23 +241,32 @@ mod tests {
             registries: BTreeMap<String, BTreeMap<String, Vec<String>>>,
         }
 
-        let fixture: Fixture = serde_json::from_str(include_str!(
-            "../../test_assets/26_3_synced_tags.json"
-        ))
-        .expect("pinned vanilla tag fixture must parse");
+        let fixture: Fixture =
+            serde_json::from_str(include_str!("../../test_assets/26_3_synced_tags.json"))
+                .expect("pinned vanilla tag fixture must parse");
         assert_eq!(fixture.minecraft_version, "26.3");
-        assert_eq!(fixture.source_commit, "538b2b167248c648b2198f2c0d56eced10dfc0cf");
+        assert_eq!(
+            fixture.source_commit,
+            "538b2b167248c648b2198f2c0d56eced10dfc0cf"
+        );
         let mut actual = BTreeMap::new();
         let mut seen_registries = BTreeSet::new();
         let packet = RegistryCache::build_tags_packet(&REGISTRY);
         for (registry_key, tags) in packet.tags {
             let name = registry_key.to_string();
-            assert!(seen_registries.insert(name.clone()), "duplicate registry: {name}");
+            assert!(
+                seen_registries.insert(name.clone()),
+                "duplicate registry: {name}"
+            );
             let mut by_id: BTreeMap<i32, String> = BTreeMap::new();
             macro_rules! index_entries {
                 ($field:ident) => {
                     for (_, entry) in REGISTRY.$field.iter() {
-                        assert!(by_id.insert(VarInt::from(entry.id()).0, entry.key.to_string()).is_none());
+                        assert!(
+                            by_id
+                                .insert(VarInt::from(entry.id()).0, entry.key.to_string())
+                                .is_none()
+                        );
                     }
                 };
             }
@@ -280,7 +289,10 @@ mod tests {
                 _ => panic!("unexpected network tag registry: {name}"),
             }
             let mut actual_tags = BTreeMap::new();
-            assert!(!tags.is_empty(), "empty tag payload must not be sent: {name}");
+            assert!(
+                !tags.is_empty(),
+                "empty tag payload must not be sent: {name}"
+            );
             for (key, ids) in tags {
                 let mut entries = Vec::new();
                 let mut seen = BTreeSet::new();
@@ -297,12 +309,22 @@ mod tests {
             actual_tags.retain(|key, _| key.starts_with("minecraft:"));
             assert!(actual.insert(name, actual_tags).is_none());
         }
-        assert_eq!(actual.keys().collect::<Vec<_>>(), fixture.registries.keys().collect::<Vec<_>>());
+        assert_eq!(
+            actual.keys().collect::<Vec<_>>(),
+            fixture.registries.keys().collect::<Vec<_>>()
+        );
         for (registry, expected_tags) in fixture.registries {
             let actual_tags = &actual[&registry];
-            assert_eq!(actual_tags.keys().collect::<Vec<_>>(), expected_tags.keys().collect::<Vec<_>>(), "tag keys: {registry}");
+            assert_eq!(
+                actual_tags.keys().collect::<Vec<_>>(),
+                expected_tags.keys().collect::<Vec<_>>(),
+                "tag keys: {registry}"
+            );
             for (tag, expected) in expected_tags {
-                assert_eq!(actual_tags[&tag], expected, "vanilla tag mismatch: {registry}/{tag}");
+                assert_eq!(
+                    actual_tags[&tag], expected,
+                    "vanilla tag mismatch: {registry}/{tag}"
+                );
             }
         }
     }

@@ -16,16 +16,16 @@ use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::vanilla_damage_types;
-use steel_registry::vanilla_mob_effects;
 use steel_registry::vanilla_entity_data::WitherSkullEntityData;
+use steel_registry::vanilla_mob_effects;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::entity::damage::DamageSource;
 use crate::entity::{
-    Entity, EntityBase, EntityBaseLoad, EntitySyncedData, MobEffectInstance, Projectile, ProjectileBase,
-    ProjectileHit, RemovalReason, SharedEntity,
+    Entity, EntityBase, EntityBaseLoad, EntitySyncedData, MobEffectInstance, Projectile,
+    ProjectileBase, ProjectileHit, RemovalReason, SharedEntity,
 };
 use crate::world::World;
 use crate::world::explosion::{ExplosionInteraction, ExplosionOptions};
@@ -113,15 +113,21 @@ impl WitherSkullEntity {
         );
         options.source = Some(Arc::clone(self) as SharedEntity);
         options.damage_source = Some(self.impact_damage_source());
-        if self.is_dangerous() { options.damage_calculator = Some(&CHARGED_SKULL_CALCULATOR); }
+        if self.is_dangerous() {
+            options.damage_calculator = Some(&CHARGED_SKULL_CALCULATOR);
+        }
         world.explode(options);
     }
 }
 
 impl Entity for WitherSkullEntity {
-    fn synced_data(&self) -> Option<&dyn EntitySyncedData> { Some(&self.entity_data) }
+    fn synced_data(&self) -> Option<&dyn EntitySyncedData> {
+        Some(&self.entity_data)
+    }
 
-    fn get_default_gravity(&self) -> f64 { 0.0 }
+    fn get_default_gravity(&self) -> f64 {
+        0.0
+    }
 
     fn base(&self) -> &EntityBase {
         &self.base
@@ -136,24 +142,44 @@ impl Entity for WitherSkullEntity {
         self.base().set_old_rotation_to_current();
         let owner_removed = self.projectile_base.owner_was_removed();
         let movement = self.velocity();
-        let inertia = if self.is_in_water() { 0.8 } else if self.is_dangerous() { 0.73 } else { 0.95 };
-        if self.is_in_water() && let Some(world) = self.level() {
+        let inertia = if self.is_in_water() {
+            0.8
+        } else if self.is_dangerous() {
+            0.73
+        } else {
+            0.95
+        };
+        if self.is_in_water()
+            && let Some(world) = self.level()
+        {
             for _ in 0..4 {
-                world.send_particles(steel_registry::particle_type::ParticleData::simple(&steel_registry::vanilla_particle_types::BUBBLE),
-                    self.position() - movement * 0.25, 0, movement, 1.0);
+                world.send_particles(
+                    steel_registry::particle_type::ParticleData::simple(
+                        &steel_registry::vanilla_particle_types::BUBBLE,
+                    ),
+                    self.position() - movement * 0.25,
+                    0,
+                    movement,
+                    1.0,
+                );
             }
         }
-        self.set_velocity((movement + movement.normalize_or_zero() * *self.acceleration_power.lock()) * inertia);
-        let Some(world) = self.level() else { return; };
+        self.set_velocity(
+            (movement + movement.normalize_or_zero() * *self.acceleration_power.lock()) * inertia,
+        );
+        let Some(world) = self.level() else {
+            return;
+        };
         let chunk = steel_utils::ChunkPos::from_entity_pos(self.position());
-        if owner_removed
-            || world.chunk_map.with_full_chunk(chunk, |_| ()).is_none()
-        {
+        if owner_removed || world.chunk_map.with_full_chunk(chunk, |_| ()).is_none() {
             self.set_removed(RemovalReason::Discarded);
             return;
         }
         let hit = self.get_hit_result_on_move_vector();
-        let position = hit.as_ref().map_or_else(|| self.position() + self.velocity(), ProjectileHit::location);
+        let position = hit.as_ref().map_or_else(
+            || self.position() + self.velocity(),
+            ProjectileHit::location,
+        );
         self.update_rotation();
         if self.try_set_position(position).is_err() {
             self.set_removed(RemovalReason::Discarded);
@@ -161,11 +187,21 @@ impl Entity for WitherSkullEntity {
         }
         self.apply_effects_from_blocks();
         self.projectile_base_tick();
-        if let Some(hit) = hit && self.is_alive() && !self.is_world_change_pending() {
+        if let Some(hit) = hit
+            && self.is_alive()
+            && !self.is_world_change_pending()
+        {
             Arc::clone(&self).hit_target_or_deflect_self(&hit);
         }
-        world.send_particles(steel_registry::particle_type::ParticleData::simple(&steel_registry::vanilla_particle_types::SMOKE),
-            self.position() + DVec3::new(0.0, 0.5, 0.0), 0, DVec3::ZERO, 0.0);
+        world.send_particles(
+            steel_registry::particle_type::ParticleData::simple(
+                &steel_registry::vanilla_particle_types::SMOKE,
+            ),
+            self.position() + DVec3::new(0.0, 0.5, 0.0),
+            0,
+            DVec3::ZERO,
+            0.0,
+        );
     }
 
     fn sound_source(&self) -> SoundSource {
@@ -224,24 +260,51 @@ impl Projectile for WitherSkullEntity {
                 if let Some(world) = entity.level() {
                     let owner = self.get_owner();
                     let living_owner = owner.as_ref().and_then(|owner| owner.as_living_entity());
-                    let source = if living_owner.is_some() { self.impact_damage_source() }
-                        else { DamageSource::environment(&vanilla_damage_types::MAGIC) };
-                    let was_hurt = entity.hurt(&world, &source, if living_owner.is_some() { WITHER_SKULL_DAMAGE } else { 5.0 });
+                    let source = if living_owner.is_some() {
+                        self.impact_damage_source()
+                    } else {
+                        DamageSource::environment(&vanilla_damage_types::MAGIC)
+                    };
+                    let was_hurt = entity.hurt(
+                        &world,
+                        &source,
+                        if living_owner.is_some() {
+                            WITHER_SKULL_DAMAGE
+                        } else {
+                            5.0
+                        },
+                    );
                     if was_hurt {
                         if let Some(owner) = living_owner {
                             if entity.is_alive() {
-                                let context = crate::enchantment_helper::EnchantmentPostAttackContext::new(&hit.entity, &source);
+                                let context =
+                                    crate::enchantment_helper::EnchantmentPostAttackContext::new(
+                                        &hit.entity,
+                                        &source,
+                                    );
                                 crate::enchantment_helper::do_post_attack_effects_with_item_source(
-                                    &world, entity, &steel_registry::item_stack::ItemStack::empty(), &context);
-                            } else { owner.heal(5.0); }
+                                    &world,
+                                    entity,
+                                    &steel_registry::item_stack::ItemStack::empty(),
+                                    &context,
+                                );
+                            } else {
+                                owner.heal(5.0);
+                            }
                         }
                         let ticks = match world.difficulty() {
                             steel_utils::types::Difficulty::Normal => WITHER_SKULL_WITHER_TICKS,
                             steel_utils::types::Difficulty::Hard => 800,
                             _ => 0,
                         };
-                        if ticks > 0 && let Some(living) = entity.as_living_entity() {
-                            living.add_mob_effect(MobEffectInstance::simple(vanilla_mob_effects::WITHER, ticks, WITHER_SKULL_WITHER_AMPLIFIER));
+                        if ticks > 0
+                            && let Some(living) = entity.as_living_entity()
+                        {
+                            living.add_mob_effect(MobEffectInstance::simple(
+                                vanilla_mob_effects::WITHER,
+                                ticks,
+                                WITHER_SKULL_WITHER_AMPLIFIER,
+                            ));
                         }
                     }
                 }
@@ -250,7 +313,9 @@ impl Projectile for WitherSkullEntity {
             // that misses every entity still leaves a crater.
             ProjectileHit::Block { .. } => {}
         }
-        if let Some(world) = self.level() { self.explode(&world); }
+        if let Some(world) = self.level() {
+            self.explode(&world);
+        }
         self.set_removed(RemovalReason::Discarded);
     }
 }
@@ -259,14 +324,28 @@ struct ChargedSkullCalculator;
 static CHARGED_SKULL_CALCULATOR: ChargedSkullCalculator = ChargedSkullCalculator;
 
 impl crate::world::explosion::ExplosionDamageCalculator for ChargedSkullCalculator {
-    fn block_explosion_resistance(&self, explosion: &dyn crate::world::Explosion, world: &World,
-        pos: steel_utils::BlockPos, state: steel_utils::BlockStateId, fluid: steel_registry::fluid::FluidState) -> Option<f32> {
-        use steel_registry::{TaggedRegistryExt as _, blocks::block_state_ext::BlockStateExt as _};
+    fn block_explosion_resistance(
+        &self,
+        explosion: &dyn crate::world::Explosion,
+        world: &World,
+        pos: steel_utils::BlockPos,
+        state: steel_utils::BlockStateId,
+        fluid: steel_registry::fluid::FluidState,
+    ) -> Option<f32> {
         use crate::world::explosion::DefaultExplosionDamageCalculator;
-        let resistance = DefaultExplosionDamageCalculator.block_explosion_resistance(explosion, world, pos, state, fluid);
-        if !state.is_air() && !steel_registry::REGISTRY.blocks.is_in_tag(state.get_block(), &steel_registry::vanilla_block_tags::BlockTag::WITHER_IMMUNE) {
+        use steel_registry::{TaggedRegistryExt as _, blocks::block_state_ext::BlockStateExt as _};
+        let resistance = DefaultExplosionDamageCalculator
+            .block_explosion_resistance(explosion, world, pos, state, fluid);
+        if !state.is_air()
+            && !steel_registry::REGISTRY.blocks.is_in_tag(
+                state.get_block(),
+                &steel_registry::vanilla_block_tags::BlockTag::WITHER_IMMUNE,
+            )
+        {
             resistance.map(|value| value.min(0.8))
-        } else { resistance }
+        } else {
+            resistance
+        }
     }
 }
 

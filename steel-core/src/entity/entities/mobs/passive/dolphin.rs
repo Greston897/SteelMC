@@ -139,7 +139,12 @@ impl DolphinEntity {
             // Vanilla `Dolphin.registerGoals` starts with `BreathAirGoal`, which
             // lifts a dolphin that has been submerged too long to the surface.
             goal_selector.add_goal(0, BreathAirGoal::new());
-            goal_selector.add_goal(0, TryFindLiquidGoal::new(steel_utils::Identifier::vanilla_static("dolphin_tries_to_find")));
+            goal_selector.add_goal(
+                0,
+                TryFindLiquidGoal::new(steel_utils::Identifier::vanilla_static(
+                    "dolphin_tries_to_find",
+                )),
+            );
             goal_selector.add_goal(
                 1,
                 RandomSwimmingGoal::new(DOLPHIN_SWIM_SPEED, DOLPHIN_SWIM_INTERVAL),

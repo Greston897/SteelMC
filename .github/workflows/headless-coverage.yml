@@ -16,8 +16,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: headless-source-coverage-${{ github.ref }}
-  cancel-in-progress: true
+  group: headless-source-coverage-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   coverage:

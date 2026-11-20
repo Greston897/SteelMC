@@ -971,11 +971,18 @@ impl ChunkMap {
                             if rand::random_range(0..48) == 0 {
                                 let (x, _, z) = random_positions.next_local();
                                 let pos = tickable_chunk.pos;
-                                world.tick_precipitation_column(pos.0.x * 16 + x as i32, pos.0.y * 16 + z as i32);
+                                world.tick_precipitation_column(
+                                    pos.0.x * 16 + x as i32,
+                                    pos.0.y * 16 + z as i32,
+                                );
                             }
                         }
                         if !tickable_chunk.randomly_ticking_sections.is_empty() {
-                            chunk.tick_random_blocks(world, random_tick_speed, &mut random_positions);
+                            chunk.tick_random_blocks(
+                                world,
+                                random_tick_speed,
+                                &mut random_positions,
+                            );
                         }
                     }
                 }

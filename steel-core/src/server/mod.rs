@@ -1,8 +1,8 @@
 //! This module contains the `Server` struct, which is the main entry point for the server.
 pub mod bans;
-pub mod datapacks;
 pub mod boss_bars;
 pub(crate) mod broadcasting;
+pub mod datapacks;
 /// Tick-polled server jobs.
 pub mod jobs;
 mod packet_processor;
@@ -671,7 +671,9 @@ impl Server {
     pub async fn reload_data_driven_state(&self) -> Result<String, String> {
         let mut reloaded = Vec::new();
         let functions = self.function_packs.reload()?;
-        reloaded.push(format!("{functions} directory-pack function(s) and function tags"));
+        reloaded.push(format!(
+            "{functions} directory-pack function(s) and function tags"
+        ));
 
         // Vanilla's `Permissions` data pack is Steel's `groups.toml`: the file is
         // re-read from disk, validated, and only then swapped in, so a broken
@@ -1018,7 +1020,9 @@ impl Server {
             scoreboards,
             command_storage,
             schedules: Arc::new(schedule::ScheduleRegistry::new()),
-            function_packs: datapacks::FunctionPacks::from_root(resolved_worlds.save_path.join("datapacks"))?,
+            function_packs: datapacks::FunctionPacks::from_root(
+                resolved_worlds.save_path.join("datapacks"),
+            )?,
             whitelist: Arc::new(whitelist::Whitelist::new()),
             bans: Arc::new(bans::BanList::new()),
             boss_bars: Arc::new(boss_bars::BossBarRegistry::new()),
@@ -1245,7 +1249,10 @@ impl Server {
         &self,
         command: &str,
         source: &CommandSource,
-    ) -> Result<crate::command::execution::SteelContextChain<CommandSource>, crate::command::brigadier::CommandSyntaxError> {
+    ) -> Result<
+        crate::command::execution::SteelContextChain<CommandSource>,
+        crate::command::brigadier::CommandSyntaxError,
+    > {
         let dispatcher = self.command_dispatcher.read();
         dispatcher.context_chain(dispatcher.parse(command, source.clone()))
     }

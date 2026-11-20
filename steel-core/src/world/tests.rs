@@ -817,19 +817,42 @@ fn precipitation_cauldron_probability_and_matching_fluid_matrix() {
     insert_ready_full_chunk(world, ChunkPos::new(0, 0));
     let pos = BlockPos::new(8, 65, 8);
     for snow in [false, true] {
-        for block in [&vanilla_blocks::CAULDRON, &vanilla_blocks::WATER_CAULDRON,
-            &vanilla_blocks::POWDER_SNOW_CAULDRON, &vanilla_blocks::LAVA_CAULDRON] {
+        for block in [
+            &vanilla_blocks::CAULDRON,
+            &vanilla_blocks::WATER_CAULDRON,
+            &vanilla_blocks::POWDER_SNOW_CAULDRON,
+            &vanilla_blocks::LAVA_CAULDRON,
+        ] {
             for level in 1..=3 {
-                let layered = block == &vanilla_blocks::WATER_CAULDRON || block == &vanilla_blocks::POWDER_SNOW_CAULDRON;
-                let state = if layered { block.default_state().set_value(&BlockStateProperties::LEVEL_CAULDRON, level) } else { block.default_state() };
+                let layered = block == &vanilla_blocks::WATER_CAULDRON
+                    || block == &vanilla_blocks::POWDER_SNOW_CAULDRON;
+                let state = if layered {
+                    block
+                        .default_state()
+                        .set_value(&BlockStateProperties::LEVEL_CAULDRON, level)
+                } else {
+                    block.default_state()
+                };
                 world.set_block(pos, state, UpdateFlags::UPDATE_ALL);
-                world.try_fill_cauldron_from_precipitation(pos, snow, if snow { 0.1 } else { 0.05 });
+                world.try_fill_cauldron_from_precipitation(
+                    pos,
+                    snow,
+                    if snow { 0.1 } else { 0.05 },
+                );
                 assert_eq!(world.get_block_state(pos), state);
                 world.try_fill_cauldron_from_precipitation(pos, snow, 0.0);
-                let target = if snow { &vanilla_blocks::POWDER_SNOW_CAULDRON } else { &vanilla_blocks::WATER_CAULDRON };
-                let expected = if block == &vanilla_blocks::CAULDRON { target.default_state() }
-                    else if block == target && level < 3 { state.set_value(&BlockStateProperties::LEVEL_CAULDRON, level + 1) }
-                    else { state };
+                let target = if snow {
+                    &vanilla_blocks::POWDER_SNOW_CAULDRON
+                } else {
+                    &vanilla_blocks::WATER_CAULDRON
+                };
+                let expected = if block == &vanilla_blocks::CAULDRON {
+                    target.default_state()
+                } else if block == target && level < 3 {
+                    state.set_value(&BlockStateProperties::LEVEL_CAULDRON, level + 1)
+                } else {
+                    state
+                };
                 assert_eq!(world.get_block_state(pos), expected);
             }
         }
@@ -848,21 +871,55 @@ fn runtime_freezing_checks_temperature_water_edges_and_block_light_without_rain(
     for warm in [false, true] {
         for surrounded in [false, true] {
             for water in [false, true] {
-                let biome = if warm { &*vanilla_biomes::DESERT } else { &*vanilla_biomes::SNOWY_PLAINS };
+                let biome = if warm {
+                    &*vanilla_biomes::DESERT
+                } else {
+                    &*vanilla_biomes::SNOWY_PLAINS
+                };
                 for neighbor in [pos.west(), pos.east(), pos.north(), pos.south()] {
-                    world.set_block(neighbor, if surrounded { vanilla_blocks::WATER.default_state() } else { vanilla_blocks::STONE.default_state() }, UpdateFlags::UPDATE_NONE);
+                    world.set_block(
+                        neighbor,
+                        if surrounded {
+                            vanilla_blocks::WATER.default_state()
+                        } else {
+                            vanilla_blocks::STONE.default_state()
+                        },
+                        UpdateFlags::UPDATE_NONE,
+                    );
                 }
-                let original = if water { vanilla_blocks::WATER.default_state() } else { vanilla_blocks::STONE.default_state() };
+                let original = if water {
+                    vanilla_blocks::WATER.default_state()
+                } else {
+                    vanilla_blocks::STONE.default_state()
+                };
                 world.set_block(pos, original, UpdateFlags::UPDATE_NONE);
                 world.try_freeze_precipitation_water(pos, biome);
-                assert_eq!(world.get_block_state(pos), if water && !warm && !surrounded { vanilla_blocks::ICE.default_state() } else { original });
+                assert_eq!(
+                    world.get_block_state(pos),
+                    if water && !warm && !surrounded {
+                        vanilla_blocks::ICE.default_state()
+                    } else {
+                        original
+                    }
+                );
             }
         }
     }
-    world.set_block(pos, vanilla_blocks::WATER.default_state(), UpdateFlags::UPDATE_ALL);
-    world.set_block(pos.east(), vanilla_blocks::GLOWSTONE.default_state(), UpdateFlags::UPDATE_ALL);
+    world.set_block(
+        pos,
+        vanilla_blocks::WATER.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    world.set_block(
+        pos.east(),
+        vanilla_blocks::GLOWSTONE.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
     world.chunk_map.broadcast_changed_chunks();
     assert!(world.light_value_at(LightLayer::Block, pos) >= 10);
     world.try_freeze_precipitation_water(pos, &vanilla_biomes::SNOWY_PLAINS);
-    assert_eq!(world.get_block_state(pos).get_block(), &vanilla_blocks::WATER);
+    assert_eq!(
+        world.get_block_state(pos).get_block(),
+        &vanilla_blocks::WATER
+    );
 }

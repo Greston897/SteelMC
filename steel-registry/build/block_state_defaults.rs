@@ -26,7 +26,9 @@
     reason = "build script must fail immediately on invalid extracted block data"
 )]
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
+
+use rustc_hash::FxHashMap;
 use std::fs;
 use std::sync::OnceLock;
 
@@ -47,12 +49,12 @@ struct BlockEntry {
 /// Maps a `BlockStateProperties` constant (`HORIZONTAL_FACING`) to its
 /// serialized name (`facing`) by scraping the first constructor argument in
 /// `src/blocks/properties.rs`.
-fn load_property_names() -> HashMap<String, String> {
+fn load_property_names() -> FxHashMap<String, String> {
     println!("cargo:rerun-if-changed=src/blocks/properties.rs");
     let source = fs::read_to_string("src/blocks/properties.rs")
         .expect("block state defaults require src/blocks/properties.rs");
 
-    let mut names = HashMap::new();
+    let mut names = FxHashMap::default();
     let mut lines = source.lines();
     while let Some(line) = lines.next() {
         let trimmed = line.trim_start();
@@ -77,13 +79,13 @@ fn load_property_names() -> HashMap<String, String> {
                 let end = remainder
                     .find('"')
                     .unwrap_or_else(|| panic!("unterminated property name for `{name}`"));
-                names.insert(name.clone(), remainder[..end].to_owned());
+                names.insert(name, remainder[..end].to_owned());
                 break;
             }
-            text = lines
+            lines
                 .next()
                 .unwrap_or_else(|| panic!("missing property name for `{name}`"))
-                .to_owned();
+                .clone_into(&mut text);
         }
     }
     names
@@ -110,12 +112,12 @@ fn serialized_default(value: &str) -> &str {
     panic!("unknown block default value format `{value}`");
 }
 
-fn load_block_property_defaults() -> HashMap<String, BTreeMap<String, String>> {
+fn load_block_property_defaults() -> FxHashMap<String, BTreeMap<String, String>> {
     let file: BlocksFile =
         serde_json::from_str(&fs::read_to_string("build_assets/blocks.json").unwrap()).unwrap();
     let names = load_property_names();
 
-    let mut defaults = HashMap::with_capacity(file.blocks.len());
+    let mut defaults = FxHashMap::with_capacity_and_hasher(file.blocks.len(), Default::default());
     for block in &file.blocks {
         assert_eq!(
             block.properties.len(),
@@ -138,7 +140,7 @@ fn load_block_property_defaults() -> HashMap<String, BTreeMap<String, String>> {
 /// Vanilla default property values per block id (`minecraft:...`):
 /// serialized property name -> serialized default value, sorted by name like
 /// vanilla's `ImmutableSortedMap`.
-pub fn block_property_defaults() -> &'static HashMap<String, BTreeMap<String, String>> {
-    static CACHE: OnceLock<HashMap<String, BTreeMap<String, String>>> = OnceLock::new();
+pub fn block_property_defaults() -> &'static FxHashMap<String, BTreeMap<String, String>> {
+    static CACHE: OnceLock<FxHashMap<String, BTreeMap<String, String>>> = OnceLock::new();
     CACHE.get_or_init(load_block_property_defaults)
 }

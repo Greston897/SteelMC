@@ -12,7 +12,11 @@ pub(crate) struct RaidBreakDoorGoal {
 
 impl RaidBreakDoorGoal {
     pub(crate) const fn new() -> Self {
-        Self { door: DoorInteractGoal::new(), elapsed: 0, progress: -1 }
+        Self {
+            door: DoorInteractGoal::new(),
+            elapsed: 0,
+            progress: -1,
+        }
     }
 
     fn allowed(mob: &dyn PathfinderMob) -> bool {
@@ -25,17 +29,26 @@ impl RaidBreakDoorGoal {
 }
 
 impl Goal for RaidBreakDoorGoal {
-    fn controls(&self) -> GoalControls { GoalControls::MOVE }
+    fn controls(&self) -> GoalControls {
+        GoalControls::MOVE
+    }
 
     fn can_use(&mut self, mob: &dyn PathfinderMob) -> bool {
-        Self::allowed(mob) && rand::random_range(0..5) == 0
-            && self.door.can_use(mob) && !self.door.is_open(mob)
+        Self::allowed(mob)
+            && rand::random_range(0..5) == 0
+            && self.door.can_use(mob)
+            && !self.door.is_open(mob)
     }
 
     fn can_continue_to_use(&mut self, mob: &dyn PathfinderMob) -> bool {
-        Self::allowed(mob) && self.elapsed <= 240 && !self.door.is_open(mob)
+        Self::allowed(mob)
+            && self.elapsed <= 240
+            && !self.door.is_open(mob)
             && self.door.has_door()
-            && self.door.door_pos().closer_to_center_than(mob.position(), 2.0)
+            && self
+                .door
+                .door_pos()
+                .closer_to_center_than(mob.position(), 2.0)
     }
 
     fn start(&mut self, mob: &dyn PathfinderMob) {
@@ -51,10 +64,14 @@ impl Goal for RaidBreakDoorGoal {
         }
     }
 
-    fn requires_update_every_tick(&self) -> bool { true }
+    fn requires_update_every_tick(&self) -> bool {
+        true
+    }
 
     fn tick(&mut self, mob: &dyn PathfinderMob, _entity: &SharedEntity) {
-        let Some(world) = mob.level() else { return; };
+        let Some(world) = mob.level() else {
+            return;
+        };
         self.door.tick(mob);
         let pos = self.door.door_pos();
         if rand::random_range(0..20) == 0 {

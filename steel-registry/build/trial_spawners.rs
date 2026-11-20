@@ -1,8 +1,3 @@
-#![expect(
-    clippy::unwrap_used,
-    reason = "build script must fail immediately on invalid extracted spawner data"
-)]
-
 //! Build-time codegen for the `minecraft:trial_spawner` registry (28/28).
 //!
 //! Defaults mirror `TrialSpawnerConfig.Builder`: `spawn_range = 4`,
@@ -53,12 +48,13 @@ fn generate_potential(name: &str, json: &serde_json::Value) -> TokenStream {
             .and_then(serde_json::Value::as_str)
             .unwrap_or_else(|| panic!("trial_spawner {name} entity is missing id")),
     );
-    let extra_entity_tags = entity.iter().filter(|(key, _)| *key != "id").map(
-        |(key, value)| {
+    let extra_entity_tags = entity
+        .iter()
+        .filter(|(key, _)| *key != "id")
+        .map(|(key, value)| {
             let tag_value = generate_entity_tag_value(key, value);
             quote! { (#key.to_string(), #tag_value) }
-        },
-    );
+        });
     let equipment = match data.get("equipment") {
         None => quote! { None },
         Some(value) => {
@@ -129,12 +125,11 @@ fn generate_config(name: &str, json: &serde_json::Value, key: &TokenStream) -> T
     let spawn_potentials = json
         .get("spawn_potentials")
         .and_then(serde_json::Value::as_array)
-        .map(|list| {
+        .map_or_else(Vec::new, |list| {
             list.iter()
                 .map(|entry| generate_potential(name, entry))
                 .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
+        });
     let loot_tables_to_eject = match json.get("loot_tables_to_eject") {
         None => {
             let consumables =

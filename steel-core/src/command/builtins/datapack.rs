@@ -53,14 +53,22 @@ fn list(
 ) -> Result<i32, CommandSyntaxError> {
     let packs = context.source().server().function_packs.pack_names();
     let names = match listing {
-        Listing::Enabled => std::iter::once(BUILTIN_PACK.to_owned()).chain(packs).collect::<Vec<_>>(),
+        Listing::Enabled => std::iter::once(BUILTIN_PACK.to_owned())
+            .chain(packs)
+            .collect::<Vec<_>>(),
         Listing::Available => Vec::new(),
     };
     let count = names.len();
 
     let header = translated(
-        match listing { Listing::Enabled => "commands.datapack.list.enabled.success", Listing::Available => "commands.datapack.list.available.success" },
-        format!("{count} data pack(s): {}. Directory packs currently load functions and function tags only", names.join(", ")),
+        match listing {
+            Listing::Enabled => "commands.datapack.list.enabled.success",
+            Listing::Available => "commands.datapack.list.available.success",
+        },
+        format!(
+            "{count} data pack(s): {}. Directory packs currently load functions and function tags only",
+            names.join(", ")
+        ),
         vec![
             TextComponent::from(BUILTIN_PACK),
             TextComponent::from(count.to_string()),

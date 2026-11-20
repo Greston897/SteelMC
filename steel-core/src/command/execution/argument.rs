@@ -8,7 +8,8 @@ use super::{
     biome::{parse_biome_or_tag, suggest_biomes},
     block::{parse_block_input, parse_block_predicate, suggest_block_inputs, suggest_blocks},
     coordinates::{
-        parse_block_pos, parse_column_pos, parse_rotation, parse_vec2, parse_vec3, suggest_coordinates, suggest_vec2,
+        parse_block_pos, parse_column_pos, parse_rotation, parse_vec2, parse_vec3,
+        suggest_coordinates, suggest_vec2,
     },
     item::{parse_item_stack, suggest_item_stack},
     item_predicate::{parse_item_predicate, suggest_item_predicate},
@@ -736,10 +737,18 @@ struct ColumnPosParser;
 impl_downcast_type!(ColumnPosParser, "steel:command/parser/column_pos");
 impl SteelArgumentParser for ColumnPosParser {
     type Value = Coordinates;
-    fn parse(&self, reader: &mut StringReader<'_>, _source: &dyn CommandArgumentSource) -> Result<Self::Value, CommandSyntaxError> {
+    fn parse(
+        &self,
+        reader: &mut StringReader<'_>,
+        _source: &dyn CommandArgumentSource,
+    ) -> Result<Self::Value, CommandSyntaxError> {
         parse_column_pos(reader)
     }
-    fn list_suggestions(&self, _context: &dyn SteelArgumentSuggestionContext, builder: &mut SuggestionsBuilder<'_>) {
+    fn list_suggestions(
+        &self,
+        _context: &dyn SteelArgumentSuggestionContext,
+        builder: &mut SuggestionsBuilder<'_>,
+    ) {
         suggest_vec2(builder, parse_column_pos);
     }
     fn protocol_argument(&self) -> (ProtocolArgumentType, Option<ProtocolSuggestionType>) {
@@ -829,14 +838,16 @@ unit_argument_parser!(
     ItemSlotsParser,
     "steel:command/parser/item_slots",
     PrimitiveArgumentValue,
-    parse | reader, _source | {
+    parse | reader,
+    _source | {
         let token = reader.read_unquoted_token();
         if token.is_empty() {
             return Err(CommandSyntaxError::dynamic("Expected item slot selector"));
         }
         Ok(PrimitiveArgumentValue::String(token.into()))
     },
-    suggest | _context, _builder | {},
+    suggest | _context,
+    _builder | {},
     protocol(ProtocolArgumentType::ItemSlots, None)
 );
 

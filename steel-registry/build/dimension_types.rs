@@ -448,8 +448,7 @@ pub(crate) fn build() -> TokenStream {
         );
         let can_start_raid =
             generate_option(&dimension_type.attributes.can_start_raid, |v| quote! { #v });
-        let fast_lava =
-            generate_option(&dimension_type.attributes.fast_lava, |v| quote! { #v });
+        let fast_lava = generate_option(&dimension_type.attributes.fast_lava, |v| quote! { #v });
         let piglins_zombify = generate_option(
             &dimension_type.attributes.piglins_zombify,
             |v| quote! { #v },

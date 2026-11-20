@@ -168,7 +168,11 @@ pub struct ProjectileBase {
 impl ProjectileBase {
     /// Whether a still-cached owner was removed, before UUID resolution clears it.
     pub(crate) fn owner_was_removed(&self) -> bool {
-        self.state.lock().owner.as_ref().is_some_and(EntityReference::cached_entity_is_removed)
+        self.state
+            .lock()
+            .owner
+            .as_ref()
+            .is_some_and(EntityReference::cached_entity_is_removed)
     }
 
     /// Creates default projectile runtime state.

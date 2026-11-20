@@ -1,8 +1,3 @@
-#![expect(
-    clippy::unwrap_used,
-    reason = "build script must fail immediately on invalid extracted gametest data"
-)]
-
 //! Build-time codegen for `minecraft:test_environment` (1/1) and
 //! `minecraft:test_instance` (1/1).
 
@@ -12,10 +7,7 @@ use quote::quote;
 
 use crate::datapack::{quote_id, read_entries};
 
-fn generate_test_environment_definition(
-    name: &str,
-    json: &serde_json::Value,
-) -> TokenStream {
+fn generate_test_environment_definition(name: &str, json: &serde_json::Value) -> TokenStream {
     let kind = json
         .get("type")
         .and_then(serde_json::Value::as_str)
@@ -34,7 +26,9 @@ fn generate_test_environment_definition(
             let clock = quote_id(
                 json.get("clock")
                     .and_then(serde_json::Value::as_str)
-                    .unwrap_or_else(|| panic!("test_environment {name} clock_time is missing clock")),
+                    .unwrap_or_else(|| {
+                        panic!("test_environment {name} clock_time is missing clock")
+                    }),
             );
             let time = json
                 .get("time")
@@ -60,19 +54,17 @@ fn generate_test_environment_definition(
             quote! { TestEnvironmentDefinition::Difficulty { difficulty: #variant } }
         }
         "minecraft:function" => {
-            let setup = match json.get("setup").and_then(serde_json::Value::as_str) {
-                Some(id) => {
-                    let quoted = quote_id(id);
-                    quote! { Some(#quoted) }
-                }
-                None => quote! { None },
+            let setup = if let Some(id) = json.get("setup").and_then(serde_json::Value::as_str) {
+                let quoted = quote_id(id);
+                quote! { Some(#quoted) }
+            } else {
+                quote! { None }
             };
-            let teardown = match json.get("teardown").and_then(serde_json::Value::as_str) {
-                Some(id) => {
-                    let quoted = quote_id(id);
-                    quote! { Some(#quoted) }
-                }
-                None => quote! { None },
+            let teardown = if let Some(id) = json.get("teardown").and_then(serde_json::Value::as_str) {
+                let quoted = quote_id(id);
+                quote! { Some(#quoted) }
+            } else {
+                quote! { None }
             };
             quote! { TestEnvironmentDefinition::Function { setup: #setup, teardown: #teardown } }
         }
@@ -96,11 +88,9 @@ fn generate_test_environment_definition(
             quote! { TestEnvironmentDefinition::GameRules { rules: vec![#(#rules),*] } }
         }
         "minecraft:timeline_attributes" => {
-            let timelines = json
-                .get("timelines")
-                .unwrap_or_else(|| {
-                    panic!("test_environment {name} timeline_attributes is missing timelines")
-                });
+            let timelines = json.get("timelines").unwrap_or_else(|| {
+                panic!("test_environment {name} timeline_attributes is missing timelines")
+            });
             let ids: Vec<TokenStream> = if let Some(single) = timelines.as_str() {
                 vec![quote_id(single)]
             } else if let Some(list) = timelines.as_array() {

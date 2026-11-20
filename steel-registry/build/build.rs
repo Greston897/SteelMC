@@ -66,9 +66,9 @@ mod datapack;
 mod dimensions;
 mod enchantment_providers;
 mod frog_variants;
-mod gametests;
 mod game_events;
 mod game_rules;
+mod gametests;
 mod instruments;
 mod items;
 mod jukebox_songs;
@@ -314,19 +314,13 @@ pub fn main() {
         (gametests::build_instances(), TEST_INSTANCES),
         (predicates::build(), PREDICATES),
         (context_providers::build_int(), CONTEXT_INT_PROVIDERS),
-        (
-            context_providers::build_float(),
-            CONTEXT_FLOAT_PROVIDERS,
-        ),
+        (context_providers::build_float(), CONTEXT_FLOAT_PROVIDERS),
         (enchantment_providers::build(), ENCHANTMENT_PROVIDERS),
         (trial_spawners::build(), TRIAL_SPAWNERS),
         (villager_trades::build_trades(), VILLAGER_TRADES),
         (villager_trades::build_sets(), TRADE_SETS),
         (dimensions::build(), DIMENSION_STEMS),
-        (
-            world_presets::build_flat(),
-            FLAT_LEVEL_GENERATOR_PRESETS,
-        ),
+        (world_presets::build_flat(), FLAT_LEVEL_GENERATOR_PRESETS),
         (world_presets::build_world(), WORLD_PRESETS),
         (tags::game_event(), GAME_EVENT_TAGS),
         (tags::villager_trade(), VILLAGER_TRADE_TAGS),

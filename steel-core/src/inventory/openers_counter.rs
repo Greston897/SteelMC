@@ -14,9 +14,9 @@ use steel_registry::blocks::{BlockRef, block_state_ext::BlockStateExt};
 use steel_registry::sound_event::SoundEventRef;
 use steel_utils::{BlockPos, BlockStateId};
 
-use crate::world::World;
 use crate::entity::Entity as _;
 use crate::inventory::lock::ContainerRef;
+use crate::world::World;
 
 /// Sounds and state hook used when the viewer count changes.
 #[derive(Clone, Copy)]
@@ -64,7 +64,8 @@ impl ContainerOpenersCounter {
     /// Tracks the greatest active opener reach (vanilla uses reach + 4 for its scan).
     pub(crate) fn register_interaction_range(&self, range: f64) {
         if range.is_finite() && range >= 0.0 {
-            self.max_interaction_range.fetch_max(range.to_bits(), Ordering::AcqRel);
+            self.max_interaction_range
+                .fetch_max(range.to_bits(), Ordering::AcqRel);
         }
     }
 
@@ -88,8 +89,14 @@ impl ContainerOpenersCounter {
     }
 
     /// Opens with the originating player attached to the vibration context.
-    pub(crate) fn increment_openers_with_source(&self, world: &Arc<World>, pos: BlockPos,
-        state: BlockStateId, block: BlockRef, source: Option<&dyn crate::entity::Entity>) {
+    pub(crate) fn increment_openers_with_source(
+        &self,
+        world: &Arc<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+        block: BlockRef,
+        source: Option<&dyn crate::entity::Entity>,
+    ) {
         let openers = self.openers.fetch_add(1, Ordering::AcqRel) + 1;
         self.notify_signal_change(world, pos, block);
         if openers != 1 {
@@ -114,9 +121,20 @@ impl ContainerOpenersCounter {
     }
 
     /// Closes with the originating player attached to the vibration context.
-    pub(crate) fn decrement_openers_with_source(&self, world: &Arc<World>, pos: BlockPos,
-        state: BlockStateId, block: BlockRef, source: Option<&dyn crate::entity::Entity>) -> i32 {
-        let old = self.openers.try_update(Ordering::AcqRel, Ordering::Acquire, |value| Some((value - 1).max(0))).unwrap_or(0);
+    pub(crate) fn decrement_openers_with_source(
+        &self,
+        world: &Arc<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+        block: BlockRef,
+        source: Option<&dyn crate::entity::Entity>,
+    ) -> i32 {
+        let old = self
+            .openers
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |value| {
+                Some((value - 1).max(0))
+            })
+            .unwrap_or(0);
         let remaining = (old - 1).max(0);
         if old != remaining {
             self.notify_signal_change(world, pos, block);
@@ -140,15 +158,22 @@ impl ContainerOpenersCounter {
         state: BlockStateId,
         block: BlockRef,
     ) {
-        let Some(container) = world.get_block_entity(pos).and_then(ContainerRef::from_block_entity) else {
+        let Some(container) = world
+            .get_block_entity(pos)
+            .and_then(ContainerRef::from_block_entity)
+        else {
             return;
         };
         let mut actual = 0;
         let mut max_range: f64 = 0.0;
         let range = f64::from_bits(self.max_interaction_range.load(Ordering::Acquire)) + 4.0;
         let search = steel_utils::WorldAabb::new(
-            f64::from(pos.x()) - range, f64::from(pos.y()) - range, f64::from(pos.z()) - range,
-            f64::from(pos.x() + 1) + range, f64::from(pos.y() + 1) + range, f64::from(pos.z() + 1) + range,
+            f64::from(pos.x()) - range,
+            f64::from(pos.y()) - range,
+            f64::from(pos.z()) - range,
+            f64::from(pos.x() + 1) + range,
+            f64::from(pos.y() + 1) + range,
+            f64::from(pos.z() + 1) + range,
         );
         let mut unavailable = false;
         world.players.iter_players(|_, player| {
@@ -159,8 +184,8 @@ impl ContainerOpenersCounter {
                 Some(true) => {
                     actual += 1;
                     max_range = max_range.max(player.block_interaction_range());
-                },
-                Some(false) => {},
+                }
+                Some(false) => {}
                 None => unavailable = true,
             }
             true
@@ -169,7 +194,8 @@ impl ContainerOpenersCounter {
             world.schedule_block_tick_default(pos, block, 5);
             return;
         }
-        self.max_interaction_range.store(max_range.to_bits(), Ordering::Release);
+        self.max_interaction_range
+            .store(max_range.to_bits(), Ordering::Release);
         let old = self.openers.swap(actual, Ordering::AcqRel);
         if old != actual {
             self.notify_signal_change(world, pos, block);
@@ -189,11 +215,23 @@ impl ContainerOpenersCounter {
         }
     }
 
-    fn container_event(&self, world: &Arc<World>, pos: BlockPos, opening: bool,
-        source: Option<&dyn crate::entity::Entity>) {
-        let event = if opening { &steel_registry::vanilla_game_events::CONTAINER_OPEN }
-            else { &steel_registry::vanilla_game_events::CONTAINER_CLOSE };
-        world.game_event(event, pos, &crate::world::game_event::GameEventContext::new(source, None));
+    fn container_event(
+        &self,
+        world: &Arc<World>,
+        pos: BlockPos,
+        opening: bool,
+        source: Option<&dyn crate::entity::Entity>,
+    ) {
+        let event = if opening {
+            &steel_registry::vanilla_game_events::CONTAINER_OPEN
+        } else {
+            &steel_registry::vanilla_game_events::CONTAINER_CLOSE
+        };
+        world.game_event(
+            event,
+            pos,
+            &crate::world::game_event::GameEventContext::new(source, None),
+        );
     }
 
     fn notify_signal_change(&self, world: &Arc<World>, pos: BlockPos, block: BlockRef) {
@@ -260,12 +298,20 @@ mod tests {
 #[cfg(test)]
 mod integration_tests {
     use super::*;
-    use crate::{bootstrap::init_globals, block_entity::entities::{BarrelBlockEntity, ChestBlockEntity},
+    use crate::{
+        block_entity::entities::{BarrelBlockEntity, ChestBlockEntity},
+        bootstrap::init_globals,
         inventory::menu::kinds::{chest, double_chest},
-        test_support::{fresh_test_world, insert_ready_full_chunk, tick_test_world, TestPlayerBuilder}};
-    use steel_utils::{ChunkPos, Downcast as _, types::{GameType, UpdateFlags}};
-    use steel_registry::vanilla_blocks;
+        test_support::{
+            TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk, tick_test_world,
+        },
+    };
     use glam::DVec3;
+    use steel_registry::vanilla_blocks;
+    use steel_utils::{
+        ChunkPos, Downcast as _,
+        types::{GameType, UpdateFlags},
+    };
     use text_components::TextComponent;
 
     const POS: BlockPos = BlockPos::new(8, 64, 8);
@@ -276,7 +322,11 @@ mod integration_tests {
         let fixture = fresh_test_world("barrel_menu_viewers");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
-        world.set_block(POS, vanilla_blocks::BARREL.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(
+            POS,
+            vanilla_blocks::BARREL.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
         let entity = world.get_block_entity(POS).unwrap();
         let barrel = entity.downcast_ref::<BarrelBlockEntity>().unwrap();
         let first = TestPlayerBuilder::new(Arc::clone(world), "ViewerA", 1).build();
@@ -286,20 +336,44 @@ mod integration_tests {
             world.players.insert(Arc::clone(player));
             let container = entity.container_ref().unwrap();
             let inventory = Arc::clone(&player.inventory);
-            player.open_menu(TextComponent::plain("Barrel"), move |ctx| chest(inventory, ctx.container_id, container, 3));
+            player.open_menu(TextComponent::plain("Barrel"), move |ctx| {
+                chest(inventory, ctx.container_id, container, 3)
+            });
         }
         assert_eq!(barrel.openers_counter().openers(), 2);
-        assert!(world.get_block_state(POS).get_value(&BlockStateProperties::OPEN));
-        barrel.openers_counter().recheck_openers(world, POS, world.get_block_state(POS), &vanilla_blocks::BARREL);
+        assert!(
+            world
+                .get_block_state(POS)
+                .get_value(&BlockStateProperties::OPEN)
+        );
+        barrel.openers_counter().recheck_openers(
+            world,
+            POS,
+            world.get_block_state(POS),
+            &vanilla_blocks::BARREL,
+        );
         assert_eq!(barrel.openers_counter().openers(), 2);
         first.close_container();
         assert_eq!(barrel.openers_counter().openers(), 1);
-        assert!(world.get_block_state(POS).get_value(&BlockStateProperties::OPEN));
+        assert!(
+            world
+                .get_block_state(POS)
+                .get_value(&BlockStateProperties::OPEN)
+        );
         second.close_container();
         assert_eq!(barrel.openers_counter().openers(), 0);
-        assert!(!world.get_block_state(POS).get_value(&BlockStateProperties::OPEN));
+        assert!(
+            !world
+                .get_block_state(POS)
+                .get_value(&BlockStateProperties::OPEN)
+        );
         // A second cleanup after a scan must not underflow the count.
-        barrel.openers_counter().decrement_openers(world, POS, world.get_block_state(POS), &vanilla_blocks::BARREL);
+        barrel.openers_counter().decrement_openers(
+            world,
+            POS,
+            world.get_block_state(POS),
+            &vanilla_blocks::BARREL,
+        );
         assert_eq!(barrel.openers_counter().openers(), 0);
     }
 
@@ -309,20 +383,50 @@ mod integration_tests {
         let fixture = fresh_test_world("barrel_replaced_viewer_identity");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
-        world.set_block(POS, vanilla_blocks::BARREL.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(
+            POS,
+            vanilla_blocks::BARREL.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
         let player = TestPlayerBuilder::new(Arc::clone(world), "OldViewer", 1).build();
         player.base().set_position_local(DVec3::new(8.5, 64.0, 7.5));
-        let old = world.get_block_entity(POS).unwrap().container_ref().unwrap();
+        let old = world
+            .get_block_entity(POS)
+            .unwrap()
+            .container_ref()
+            .unwrap();
         let inventory = Arc::clone(&player.inventory);
-        player.open_menu(TextComponent::plain("Old barrel"), move |ctx| chest(inventory, ctx.container_id, old, 3));
-        world.set_block(POS, vanilla_blocks::AIR.default_state(), UpdateFlags::UPDATE_ALL);
-        world.set_block(POS, vanilla_blocks::BARREL.default_state(), UpdateFlags::UPDATE_ALL);
+        player.open_menu(TextComponent::plain("Old barrel"), move |ctx| {
+            chest(inventory, ctx.container_id, old, 3)
+        });
+        world.set_block(
+            POS,
+            vanilla_blocks::AIR.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
+        world.set_block(
+            POS,
+            vanilla_blocks::BARREL.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
         let replacement = world.get_block_entity(POS).unwrap();
-        let counter = replacement.downcast_ref::<BarrelBlockEntity>().unwrap().openers_counter();
-        counter.increment_openers(world, POS, world.get_block_state(POS), &vanilla_blocks::BARREL);
+        let counter = replacement
+            .downcast_ref::<BarrelBlockEntity>()
+            .unwrap()
+            .openers_counter();
+        counter.increment_openers(
+            world,
+            POS,
+            world.get_block_state(POS),
+            &vanilla_blocks::BARREL,
+        );
         player.close_container();
         assert_eq!(counter.openers(), 1);
-        assert!(world.get_block_state(POS).get_value(&BlockStateProperties::OPEN));
+        assert!(
+            world
+                .get_block_state(POS)
+                .get_value(&BlockStateProperties::OPEN)
+        );
     }
 
     #[test]
@@ -331,14 +435,29 @@ mod integration_tests {
         let fixture = fresh_test_world("barrel_stale_recheck");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
-        world.set_block(POS, vanilla_blocks::BARREL.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(
+            POS,
+            vanilla_blocks::BARREL.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
         let entity = world.get_block_entity(POS).unwrap();
         let barrel = entity.downcast_ref::<BarrelBlockEntity>().unwrap();
-        barrel.openers_counter().increment_openers(world, POS, world.get_block_state(POS), &vanilla_blocks::BARREL);
+        barrel.openers_counter().increment_openers(
+            world,
+            POS,
+            world.get_block_state(POS),
+            &vanilla_blocks::BARREL,
+        );
         assert_eq!(barrel.openers_counter().openers(), 1);
-        for tick in 0..6 { tick_test_world(world, tick, true); }
+        for tick in 0..6 {
+            tick_test_world(world, tick, true);
+        }
         assert_eq!(barrel.openers_counter().openers(), 0);
-        assert!(!world.get_block_state(POS).get_value(&BlockStateProperties::OPEN));
+        assert!(
+            !world
+                .get_block_state(POS)
+                .get_value(&BlockStateProperties::OPEN)
+        );
     }
 
     #[test]
@@ -349,40 +468,86 @@ mod integration_tests {
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
         let other_pos = POS.offset(1, 0, 0);
         for pos in [POS, other_pos] {
-            world.set_block(pos, vanilla_blocks::CHEST.default_state(), UpdateFlags::UPDATE_ALL);
+            world.set_block(
+                pos,
+                vanilla_blocks::CHEST.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
         }
         let a = world.get_block_entity(POS).unwrap();
         let b = world.get_block_entity(other_pos).unwrap();
-        let ca = a.downcast_ref::<ChestBlockEntity>().unwrap().openers_counter();
-        let cb = b.downcast_ref::<ChestBlockEntity>().unwrap().openers_counter();
+        let ca = a
+            .downcast_ref::<ChestBlockEntity>()
+            .unwrap()
+            .openers_counter();
+        let cb = b
+            .downcast_ref::<ChestBlockEntity>()
+            .unwrap()
+            .openers_counter();
         let player = TestPlayerBuilder::new(Arc::clone(world), "DoubleViewer", 1).build();
         player.base().set_position_local(DVec3::new(8.5, 64.0, 7.5));
         world.players.insert(Arc::clone(&player));
         let first = a.container_ref().unwrap();
         let second = b.container_ref().unwrap();
         let inventory = Arc::clone(&player.inventory);
-        player.open_menu(TextComponent::plain("Double"), move |ctx| double_chest(inventory, ctx.container_id, first, second));
+        player.open_menu(TextComponent::plain("Double"), move |ctx| {
+            double_chest(inventory, ctx.container_id, first, second)
+        });
         assert_eq!((ca.openers(), cb.openers()), (1, 1));
         for (pos, counter) in [(POS, ca), (other_pos, cb)] {
-            counter.recheck_openers(world, pos, world.get_block_state(pos), &vanilla_blocks::CHEST);
+            counter.recheck_openers(
+                world,
+                pos,
+                world.get_block_state(pos),
+                &vanilla_blocks::CHEST,
+            );
             assert_eq!(counter.openers(), 1);
         }
         // Vanilla 26.3 uses the maximum opener reach + 4, not a fixed radius 5.
-        player.base().set_position_local(DVec3::new(14.5, 64.0, 7.5));
-        ca.recheck_openers(world, POS, world.get_block_state(POS), &vanilla_blocks::CHEST);
+        player
+            .base()
+            .set_position_local(DVec3::new(14.5, 64.0, 7.5));
+        ca.recheck_openers(
+            world,
+            POS,
+            world.get_block_state(POS),
+            &vanilla_blocks::CHEST,
+        );
         assert_eq!(ca.openers(), 1);
         // Radius scan only counts nearby non-spectators with this inventory.
-        player.base().set_position_local(DVec3::new(40.0, 64.0, 7.5));
-        ca.recheck_openers(world, POS, world.get_block_state(POS), &vanilla_blocks::CHEST);
+        player
+            .base()
+            .set_position_local(DVec3::new(40.0, 64.0, 7.5));
+        ca.recheck_openers(
+            world,
+            POS,
+            world.get_block_state(POS),
+            &vanilla_blocks::CHEST,
+        );
         assert_eq!(ca.openers(), 0);
         player.base().set_position_local(DVec3::new(8.5, 64.0, 7.5));
-        ca.recheck_openers(world, POS, world.get_block_state(POS), &vanilla_blocks::CHEST);
+        ca.recheck_openers(
+            world,
+            POS,
+            world.get_block_state(POS),
+            &vanilla_blocks::CHEST,
+        );
         assert_eq!(ca.openers(), 1);
         player.set_game_mode(GameType::Spectator);
-        ca.recheck_openers(world, POS, world.get_block_state(POS), &vanilla_blocks::CHEST);
+        ca.recheck_openers(
+            world,
+            POS,
+            world.get_block_state(POS),
+            &vanilla_blocks::CHEST,
+        );
         assert_eq!(ca.openers(), 0);
         player.close_container();
-        cb.recheck_openers(world, other_pos, world.get_block_state(other_pos), &vanilla_blocks::CHEST);
+        cb.recheck_openers(
+            world,
+            other_pos,
+            world.get_block_state(other_pos),
+            &vanilla_blocks::CHEST,
+        );
         assert_eq!(cb.openers(), 0);
     }
 }
@@ -390,9 +555,13 @@ mod integration_tests {
 #[cfg(test)]
 mod signal_tests {
     use super::*;
-    use crate::{bootstrap::init_globals, behavior::BLOCK_BEHAVIORS,
+    use crate::{
+        behavior::BLOCK_BEHAVIORS,
         block_entity::entities::ChestBlockEntity,
-        test_support::{fresh_test_world, insert_ready_full_chunk}, world::SignalQueryContext};
+        bootstrap::init_globals,
+        test_support::{fresh_test_world, insert_ready_full_chunk},
+        world::SignalQueryContext,
+    };
     use steel_registry::vanilla_blocks;
     use steel_utils::{ChunkPos, Direction, Downcast as _, types::UpdateFlags};
 
@@ -404,10 +573,21 @@ mod signal_tests {
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
         let pos = BlockPos::new(8, 64, 8);
         let hopper = pos.offset(1, 0, 0);
-        world.set_block(pos, vanilla_blocks::TRAPPED_CHEST.default_state(), UpdateFlags::UPDATE_ALL);
-        world.set_block(hopper, vanilla_blocks::HOPPER.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(
+            pos,
+            vanilla_blocks::TRAPPED_CHEST.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
+        world.set_block(
+            hopper,
+            vanilla_blocks::HOPPER.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
         let entity = world.get_block_entity(pos).unwrap();
-        let counter = entity.downcast_ref::<ChestBlockEntity>().unwrap().openers_counter();
+        let counter = entity
+            .downcast_ref::<ChestBlockEntity>()
+            .unwrap()
+            .openers_counter();
         let behavior = BLOCK_BEHAVIORS.get_behavior(&vanilla_blocks::TRAPPED_CHEST);
         let state = world.get_block_state(pos);
         let ctx = SignalQueryContext::DEFAULT;
@@ -415,15 +595,40 @@ mod signal_tests {
         for count in 1..=16 {
             counter.increment_openers(world, pos, state, &vanilla_blocks::TRAPPED_CHEST);
             for direction in Direction::ALL {
-                assert_eq!(behavior.get_signal(state, world.as_ref(), pos, direction, ctx), count.min(15));
-                assert_eq!(behavior.get_direct_signal(state, world.as_ref(), pos, direction, ctx), if direction == Direction::Up { count.min(15) } else { 0 });
+                assert_eq!(
+                    behavior.get_signal(state, world.as_ref(), pos, direction, ctx),
+                    count.min(15)
+                );
+                assert_eq!(
+                    behavior.get_direct_signal(state, world.as_ref(), pos, direction, ctx),
+                    if direction == Direction::Up {
+                        count.min(15)
+                    } else {
+                        0
+                    }
+                );
             }
-            assert!(!world.get_block_state(hopper).get_value(&BlockStateProperties::ENABLED));
+            assert!(
+                !world
+                    .get_block_state(hopper)
+                    .get_value(&BlockStateProperties::ENABLED)
+            );
         }
         for remaining in (0..16).rev() {
-            assert_eq!(counter.decrement_openers(world, pos, state, &vanilla_blocks::TRAPPED_CHEST), remaining);
-            assert_eq!(behavior.get_own_signal(state, world.as_ref(), pos, ctx), remaining.min(15));
-            assert_eq!(world.get_block_state(hopper).get_value(&BlockStateProperties::ENABLED), remaining == 0);
+            assert_eq!(
+                counter.decrement_openers(world, pos, state, &vanilla_blocks::TRAPPED_CHEST),
+                remaining
+            );
+            assert_eq!(
+                behavior.get_own_signal(state, world.as_ref(), pos, ctx),
+                remaining.min(15)
+            );
+            assert_eq!(
+                world
+                    .get_block_state(hopper)
+                    .get_value(&BlockStateProperties::ENABLED),
+                remaining == 0
+            );
         }
     }
 }
@@ -431,21 +636,35 @@ mod signal_tests {
 #[cfg(test)]
 mod event_tests {
     use super::*;
+    use crate::{
+        block_entity::entities::BarrelBlockEntity,
+        bootstrap::init_globals,
+        test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk},
+        world::game_event::{GameEventContext, GameEventListener, SharedGameEventListener},
+    };
     use glam::DVec3;
     use steel_registry::{game_events::GameEventRef, vanilla_blocks, vanilla_game_events};
-    use steel_utils::{ChunkPos, SectionPos, Downcast as _, locks::SyncMutex, types::UpdateFlags};
-    use crate::{bootstrap::init_globals, block_entity::entities::BarrelBlockEntity,
-        test_support::{fresh_test_world, insert_ready_full_chunk, TestPlayerBuilder},
-        world::game_event::{GameEventContext, GameEventListener, SharedGameEventListener}};
+    use steel_utils::{ChunkPos, Downcast as _, SectionPos, locks::SyncMutex, types::UpdateFlags};
 
     type Recorded = Arc<SyncMutex<Vec<(GameEventRef, Option<i32>)>>>;
     struct Listener(Recorded);
     impl GameEventListener for Listener {
-        fn listener_pos(&self) -> Option<DVec3> { Some(DVec3::new(8.5, 64.5, 8.5)) }
-        fn listener_radius(&self) -> i32 { 16 }
-        fn handle_game_event(&self, _world: &Arc<World>, event: GameEventRef,
-            context: &GameEventContext<'_>, _pos: DVec3) -> bool {
-            self.0.lock().push((event, context.source_entity().map(|source| source.id())));
+        fn listener_pos(&self) -> Option<DVec3> {
+            Some(DVec3::new(8.5, 64.5, 8.5))
+        }
+        fn listener_radius(&self) -> i32 {
+            16
+        }
+        fn handle_game_event(
+            &self,
+            _world: &Arc<World>,
+            event: GameEventRef,
+            context: &GameEventContext<'_>,
+            _pos: DVec3,
+        ) -> bool {
+            self.0
+                .lock()
+                .push((event, context.source_entity().map(|source| source.id())));
             true
         }
     }
@@ -457,30 +676,77 @@ mod event_tests {
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
         let pos = BlockPos::new(8, 64, 8);
-        world.set_block(pos, vanilla_blocks::BARREL.default_state(), UpdateFlags::UPDATE_ALL);
+        world.set_block(
+            pos,
+            vanilla_blocks::BARREL.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
         let entity = world.get_block_entity(pos).unwrap();
-        let counter = entity.downcast_ref::<BarrelBlockEntity>().unwrap().openers_counter();
+        let counter = entity
+            .downcast_ref::<BarrelBlockEntity>()
+            .unwrap()
+            .openers_counter();
         let events: Recorded = Arc::new(SyncMutex::new(Vec::new()));
         let listener: SharedGameEventListener = Arc::new(Listener(Arc::clone(&events)));
         world.register_game_event_listener(SectionPos::from_block_pos(pos), listener);
         let player = TestPlayerBuilder::new(Arc::clone(world), "EventSource", 731).build();
         let state = world.get_block_state(pos);
-        for _ in 0..2 { counter.increment_openers_with_source(world, pos, state, &vanilla_blocks::BARREL, Some(player.as_ref())); }
-        assert_eq!(events.lock().as_slice(), &[(&vanilla_game_events::CONTAINER_OPEN, Some(731))]);
-        counter.decrement_openers_with_source(world, pos, state, &vanilla_blocks::BARREL, Some(player.as_ref()));
+        for _ in 0..2 {
+            counter.increment_openers_with_source(
+                world,
+                pos,
+                state,
+                &vanilla_blocks::BARREL,
+                Some(player.as_ref()),
+            );
+        }
+        assert_eq!(
+            events.lock().as_slice(),
+            &[(&vanilla_game_events::CONTAINER_OPEN, Some(731))]
+        );
+        counter.decrement_openers_with_source(
+            world,
+            pos,
+            state,
+            &vanilla_blocks::BARREL,
+            Some(player.as_ref()),
+        );
         assert_eq!(events.lock().len(), 1);
-        counter.decrement_openers_with_source(world, pos, state, &vanilla_blocks::BARREL, Some(player.as_ref()));
-        counter.decrement_openers_with_source(world, pos, state, &vanilla_blocks::BARREL, Some(player.as_ref()));
-        assert_eq!(events.lock().as_slice(), &[
-            (&vanilla_game_events::CONTAINER_OPEN, Some(731)),
-            (&vanilla_game_events::CONTAINER_CLOSE, Some(731)),
-        ]);
+        counter.decrement_openers_with_source(
+            world,
+            pos,
+            state,
+            &vanilla_blocks::BARREL,
+            Some(player.as_ref()),
+        );
+        counter.decrement_openers_with_source(
+            world,
+            pos,
+            state,
+            &vanilla_blocks::BARREL,
+            Some(player.as_ref()),
+        );
+        assert_eq!(
+            events.lock().as_slice(),
+            &[
+                (&vanilla_game_events::CONTAINER_OPEN, Some(731)),
+                (&vanilla_game_events::CONTAINER_CLOSE, Some(731)),
+            ]
+        );
         events.lock().clear();
         counter.increment_openers(world, pos, state, &vanilla_blocks::BARREL);
-        counter.recheck_openers(world, pos, world.get_block_state(pos), &vanilla_blocks::BARREL);
-        assert_eq!(events.lock().as_slice(), &[
-            (&vanilla_game_events::CONTAINER_OPEN, None),
-            (&vanilla_game_events::CONTAINER_CLOSE, None),
-        ]);
+        counter.recheck_openers(
+            world,
+            pos,
+            world.get_block_state(pos),
+            &vanilla_blocks::BARREL,
+        );
+        assert_eq!(
+            events.lock().as_slice(),
+            &[
+                (&vanilla_game_events::CONTAINER_OPEN, None),
+                (&vanilla_game_events::CONTAINER_CLOSE, None),
+            ]
+        );
     }
 }

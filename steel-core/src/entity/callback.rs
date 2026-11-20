@@ -280,10 +280,17 @@ impl EntityLevelCallback for EntityChunkCallback {
             .entity_manager()
             .remove_live_entity(self.entity_id, reason);
         if let Some(entity) = entity {
-            if matches!(reason, RemovalReason::Discarded | RemovalReason::ChangedWorld)
-                && crate::world::raid::is_raider_type(entity.entity_type())
+            if matches!(
+                reason,
+                RemovalReason::Discarded | RemovalReason::ChangedWorld
+            ) && crate::world::raid::is_raider_type(entity.entity_type())
             {
-                world.raids.raider_left_world(entity.uuid(), entity.as_living_entity().map_or(0.0, |living| living.get_health()));
+                world.raids.raider_left_world(
+                    entity.uuid(),
+                    entity
+                        .as_living_entity()
+                        .map_or(0.0, |living| living.get_health()),
+                );
             }
             world.mark_chunk_dirty(ChunkPos::from_entity_pos(entity.position()));
         }

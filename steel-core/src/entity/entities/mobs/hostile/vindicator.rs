@@ -26,7 +26,7 @@ use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
-    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal, RaidBreakDoorGoal, OpenDoorGoal,
+    OpenDoorGoal, RaidBreakDoorGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
@@ -98,11 +98,15 @@ impl VindicatorEntity {
                 2,
                 NearestAttackableTargetGoal::new_for_players(true, |_, _| true),
             );
-            target_selector.add_goal(3, NearestAttackableTargetGoal::new(true, |target, _| {
-                target.entity_type() == &steel_registry::vanilla_entities::VILLAGER
-                    || target.entity_type() == &steel_registry::vanilla_entities::WANDERING_TRADER
-                    || target.entity_type() == &steel_registry::vanilla_entities::IRON_GOLEM
-            }));
+            target_selector.add_goal(
+                3,
+                NearestAttackableTargetGoal::new(true, |target, _| {
+                    target.entity_type() == &steel_registry::vanilla_entities::VILLAGER
+                        || target.entity_type()
+                            == &steel_registry::vanilla_entities::WANDERING_TRADER
+                        || target.entity_type() == &steel_registry::vanilla_entities::IRON_GOLEM
+                }),
+            );
         }
 
         Self {
@@ -245,7 +249,11 @@ impl LivingEntity for VindicatorEntity {
 
 impl Mob for VindicatorEntity {
     fn set_raid_celebrating(&self, celebrating: bool) {
-        self.entity_data.lock().raider_mut().is_celebrating.set(celebrating);
+        self.entity_data
+            .lock()
+            .raider_mut()
+            .is_celebrating
+            .set(celebrating);
     }
 
     fn mob_base(&self) -> &MobBase {
@@ -253,8 +261,12 @@ impl Mob for VindicatorEntity {
     }
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {
-        let raided = self.level().is_some_and(|world| world.raids.raid_at(self.block_position().0)
-            .is_some_and(|raid| raid.status == crate::world::raid::RaidStatus::Ongoing));
+        let raided = self.level().is_some_and(|world| {
+            world
+                .raids
+                .raid_at(self.block_position().0)
+                .is_some_and(|raid| raid.status == crate::world::raid::RaidStatus::Ongoing)
+        });
         self.mob_base.navigation().lock().set_can_open_doors(raided);
         PathfinderMob::tick_pathfinder_goal_selectors(self, entity);
     }

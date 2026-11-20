@@ -1,8 +1,3 @@
-#![expect(
-    clippy::unwrap_used,
-    reason = "build script must fail immediately on invalid extracted datapack data"
-)]
-
 //! Shared helpers for datapack-registry codegen (`sulfur_cube_archetype`,
 //! `test_environment`, `predicate`, `context_*_provider`, `trial_spawner`,
 //! `villager_trade`, `dimension`, worldgen presets, ...).
@@ -36,7 +31,9 @@ pub fn read_entries(subdir: &str) -> Vec<(String, serde_json::Value)> {
                 let name = path
                     .with_extension("")
                     .strip_prefix(base)
-                    .unwrap_or_else(|_| panic!("{} is not under {}", path.display(), base.display()))
+                    .unwrap_or_else(|_| {
+                        panic!("{} is not under {}", path.display(), base.display())
+                    })
                     .to_str()
                     .unwrap_or_else(|| panic!("Invalid file name: {}", path.display()))
                     .replace('\\', "/");
@@ -58,8 +55,7 @@ pub fn read_entries(subdir: &str) -> Vec<(String, serde_json::Value)> {
 
 /// Reads one JSON file under `builtin_datapacks/minecraft/`.
 pub fn read_json_file(relative_path: &str) -> serde_json::Value {
-    let path =
-        format!("../steel-utils/build_assets/builtin_datapacks/minecraft/{relative_path}");
+    let path = format!("../steel-utils/build_assets/builtin_datapacks/minecraft/{relative_path}");
     println!("cargo:rerun-if-changed={path}");
     let content =
         fs::read_to_string(&path).unwrap_or_else(|e| panic!("Failed to read {path}: {e}"));

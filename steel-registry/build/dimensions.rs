@@ -1,8 +1,3 @@
-#![expect(
-    clippy::unwrap_used,
-    reason = "build script must fail immediately on invalid extracted dimension data"
-)]
-
 //! Build-time codegen for the `minecraft:dimension` registry (3/3).
 //!
 //! Also hosts the shared `LevelStem` generator parser reused by
@@ -29,12 +24,11 @@ fn generate_biome_source(owner: &str, json: &serde_json::Value) -> TokenStream {
             quote! { LevelStemBiomeSource::Fixed { biome: #biome } }
         }
         "minecraft:multi_noise" => {
-            let preset = match json.get("preset").and_then(serde_json::Value::as_str) {
-                Some(id) => {
-                    let quoted = quote_id(id);
-                    quote! { Some(#quoted) }
-                }
-                None => quote! { None },
+            let preset = if let Some(id) = json.get("preset").and_then(serde_json::Value::as_str) {
+                let quoted = quote_id(id);
+                quote! { Some(#quoted) }
+            } else {
+                quote! { None }
             };
             quote! { LevelStemBiomeSource::MultiNoise { preset: #preset } }
         }
@@ -144,9 +138,8 @@ fn generate_generator(owner: &str, json: &serde_json::Value) -> TokenStream {
             );
             let biome_source = generate_biome_source(
                 owner,
-                json.get("biome_source").unwrap_or_else(|| {
-                    panic!("{owner} noise generator is missing biome_source")
-                }),
+                json.get("biome_source")
+                    .unwrap_or_else(|| panic!("{owner} noise generator is missing biome_source")),
             );
             quote! {
                 LevelStemGenerator::Noise {
@@ -178,7 +171,11 @@ fn generate_generator(owner: &str, json: &serde_json::Value) -> TokenStream {
 
 /// Parses one inline `dimension` stem (`dimension/*.json` or a world-preset
 /// `dimensions` map value) into a `DimensionStem` literal.
-pub(crate) fn generate_stem(owner: &str, key: &TokenStream, json: &serde_json::Value) -> TokenStream {
+pub(crate) fn generate_stem(
+    owner: &str,
+    key: &TokenStream,
+    json: &serde_json::Value,
+) -> TokenStream {
     let dimension_type = quote_id(
         json.get("type")
             .and_then(serde_json::Value::as_str)

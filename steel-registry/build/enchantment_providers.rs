@@ -1,8 +1,3 @@
-#![expect(
-    clippy::unwrap_used,
-    reason = "build script must fail immediately on invalid extracted provider data"
-)]
-
 //! Build-time codegen for the `minecraft:enchantment_provider` registry (7/7).
 
 use heck::ToShoutySnakeCase;
@@ -53,54 +48,46 @@ fn generate_kind(name: &str, json: &serde_json::Value) -> TokenStream {
                         panic!("enchantment_provider {name} single is missing enchantment")
                     }),
             );
-            let level: IntProvider = serde_json::from_value(
-                json.get("level")
-                    .cloned()
-                    .unwrap_or_else(|| panic!("enchantment_provider {name} single is missing level")),
-            )
-            .unwrap_or_else(|e| panic!("enchantment_provider {name} level: {e}"));
+            let level: IntProvider =
+                serde_json::from_value(json.get("level").cloned().unwrap_or_else(|| {
+                    panic!("enchantment_provider {name} single is missing level")
+                }))
+                .unwrap_or_else(|e| panic!("enchantment_provider {name} level: {e}"));
             let level = generate_int_provider(&level);
             quote! {
                 EnchantmentProviderKind::Single { enchantment: #enchantment, level: #level }
             }
         }
         "minecraft:by_cost" => {
-            let enchantments = generate_enchantment_set(
-                json.get("enchantments").unwrap_or_else(|| {
+            let enchantments =
+                generate_enchantment_set(json.get("enchantments").unwrap_or_else(|| {
                     panic!("enchantment_provider {name} by_cost is missing enchantments")
-                }),
-            );
-            let cost: IntProvider = serde_json::from_value(
-                json.get("cost")
-                    .cloned()
-                    .unwrap_or_else(|| panic!("enchantment_provider {name} by_cost is missing cost")),
-            )
-            .unwrap_or_else(|e| panic!("enchantment_provider {name} cost: {e}"));
+                }));
+            let cost: IntProvider =
+                serde_json::from_value(json.get("cost").cloned().unwrap_or_else(|| {
+                    panic!("enchantment_provider {name} by_cost is missing cost")
+                }))
+                .unwrap_or_else(|e| panic!("enchantment_provider {name} cost: {e}"));
             let cost = generate_int_provider(&cost);
             quote! {
                 EnchantmentProviderKind::ByCost { enchantments: #enchantments, cost: #cost }
             }
         }
         "minecraft:by_cost_with_difficulty" => {
-            let enchantments = generate_enchantment_set(
-                json.get("enchantments").unwrap_or_else(|| {
+            let enchantments =
+                generate_enchantment_set(json.get("enchantments").unwrap_or_else(|| {
                     panic!("enchantment_provider {name} is missing enchantments")
-                }),
-            );
+                }));
             let min_cost = json
                 .get("min_cost")
                 .and_then(serde_json::Value::as_i64)
                 .and_then(|v| i32::try_from(v).ok())
-                .unwrap_or_else(|| {
-                    panic!("enchantment_provider {name} is missing min_cost")
-                });
+                .unwrap_or_else(|| panic!("enchantment_provider {name} is missing min_cost"));
             let max_cost_span = json
                 .get("max_cost_span")
                 .and_then(serde_json::Value::as_i64)
                 .and_then(|v| i32::try_from(v).ok())
-                .unwrap_or_else(|| {
-                    panic!("enchantment_provider {name} is missing max_cost_span")
-                });
+                .unwrap_or_else(|| panic!("enchantment_provider {name} is missing max_cost_span"));
             quote! {
                 EnchantmentProviderKind::ByCostWithDifficulty {
                     enchantments: #enchantments,

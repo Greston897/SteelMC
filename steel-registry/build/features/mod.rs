@@ -48,13 +48,13 @@ use structures::{
 use data::{
     AboveRootPlacement, BiomeHolderSet, BlobFoliagePlacer, BlockColumnLayer, BlockHolderSet,
     BlockPredicate, BlockStateData, ConfiguredFeatureKind, ConfiguredFeatureRef, DualNoiseProvider,
-    EndSpike, FeatureHeightmap, FeatureNoiseParameters, FeatureSize, FluidHolderSet, FluidStateData,
-    FoliagePlacer, FoliagePlacerBase, GeodeBlockSettings, GeodeCrackSettings, GeodeLayerSettings,
-    HugeMushroomConfiguration, MangroveRootPlacement, NoiseProvider, NoiseThresholdProvider,
-    OreTarget, PlacedFeatureData, PlacedFeatureRef, PlacementModifier, RootPlacer,
-    RuleBasedStateProviderRule, TemplateEntry, TreeDecorator, TrunkPlacer, TrunkPlacerBase,
-    VegetationPatchConfiguration, VerticalSurface, WeightedBlockState, WeightedPlacedFeature,
-    WeightedRandomPlacedFeature, WeightedTemplateEntry,
+    EndSpike, FeatureHeightmap, FeatureNoiseParameters, FeatureSize, FluidHolderSet,
+    FluidStateData, FoliagePlacer, FoliagePlacerBase, GeodeBlockSettings, GeodeCrackSettings,
+    GeodeLayerSettings, HugeMushroomConfiguration, MangroveRootPlacement, NoiseProvider,
+    NoiseThresholdProvider, OreTarget, PlacedFeatureData, PlacedFeatureRef, PlacementModifier,
+    RootPlacer, RuleBasedStateProviderRule, TemplateEntry, TreeDecorator, TrunkPlacer,
+    TrunkPlacerBase, VegetationPatchConfiguration, VerticalSurface, WeightedBlockState,
+    WeightedPlacedFeature, WeightedRandomPlacedFeature, WeightedTemplateEntry,
 };
 
 pub(crate) fn build_configured() -> TokenStream {

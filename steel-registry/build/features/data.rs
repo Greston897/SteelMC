@@ -752,9 +752,7 @@ pub struct NoiseThresholdProvider {
 /// `InclusiveRange.codec(INT, 1, 64)` for `DualNoiseProvider.variety`:
 /// a bare point, a `[min, max]` list, or a
 /// `{min_inclusive, max_inclusive}` object.
-fn deserialize_variety<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<[i32; 2], D::Error> {
+fn deserialize_variety<'de, D: Deserializer<'de>>(deserializer: D) -> Result<[i32; 2], D::Error> {
     #[derive(Deserialize)]
     #[serde(untagged)]
     enum Raw {
@@ -775,7 +773,9 @@ fn deserialize_variety<'de, D: Deserializer<'de>>(
         } => [min_inclusive, max_inclusive],
     };
     if min_inclusive < 1 || max_inclusive > 64 {
-        return Err(D::Error::custom("dual_noise variety must be within [1, 64]"));
+        return Err(D::Error::custom(
+            "dual_noise variety must be within [1, 64]",
+        ));
     }
     if min_inclusive > max_inclusive {
         return Err(D::Error::custom(

@@ -71,7 +71,9 @@ impl FireBlock {
             let mut state = vanilla_blocks::FIRE.default_state();
             let below = pos.below();
             let below_state = world.get_block_state(below);
-            if Self::can_burn(below_state) || world.is_face_sturdy(below_state, below, Direction::Up) {
+            if Self::can_burn(below_state)
+                || world.is_face_sturdy(below_state, below, Direction::Up)
+            {
                 return state;
             }
             for (direction, property) in [
@@ -81,7 +83,10 @@ impl FireBlock {
                 (Direction::West, &BlockStateProperties::WEST),
                 (Direction::Up, &BlockStateProperties::UP),
             ] {
-                state = state.set_value(property, Self::can_burn(world.get_block_state(pos.relative(direction))));
+                state = state.set_value(
+                    property,
+                    Self::can_burn(world.get_block_state(pos.relative(direction))),
+                );
             }
             state
         }
@@ -617,7 +622,18 @@ mod tests {
         let level = TestLevel::default();
         let state = vanilla_blocks::FIRE.default_state();
         let behavior = FireBlock::new(&vanilla_blocks::FIRE);
-        assert!(behavior.update_shape(state, &level, POS, Direction::West, POS.west(), vanilla_blocks::AIR.default_state()).is_air());
+        assert!(
+            behavior
+                .update_shape(
+                    state,
+                    &level,
+                    POS,
+                    Direction::West,
+                    POS.west(),
+                    vanilla_blocks::AIR.default_state()
+                )
+                .is_air()
+        );
     }
 
     #[test]
@@ -625,7 +641,14 @@ mod tests {
         init_vanilla_registry();
         let level = level_with_support(vanilla_blocks::SOUL_SAND.default_state());
         let behavior = FireBlock::new(&vanilla_blocks::FIRE);
-        let result = behavior.update_shape(vanilla_blocks::FIRE.default_state(), &level, POS, Direction::Down, POS.below(), vanilla_blocks::SOUL_SAND.default_state());
+        let result = behavior.update_shape(
+            vanilla_blocks::FIRE.default_state(),
+            &level,
+            POS,
+            Direction::Down,
+            POS.below(),
+            vanilla_blocks::SOUL_SAND.default_state(),
+        );
         assert_eq!(result.get_block(), &vanilla_blocks::SOUL_FIRE);
     }
 

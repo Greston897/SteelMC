@@ -10,10 +10,10 @@ use steel_registry::menu_type::MenuTypeRef;
 use steel_registry::vanilla_menu_types;
 use steel_utils::Downcast as _;
 
-use crate::block_entity::entities::{ChestBlockEntity, BarrelBlockEntity};
+use crate::block_entity::entities::{BarrelBlockEntity, ChestBlockEntity};
+use crate::entity::Entity as _;
 use crate::inventory::prelude::*;
 use crate::player::player_inventory::PlayerInventory;
-use crate::entity::Entity as _;
 
 /// Builds a chest-like menu with `rows` rows of 9 slots plus the player inventory.
 ///
@@ -111,7 +111,12 @@ unsafe impl steel_utils::DowncastType for DoubleChestKind {
 }
 
 impl MenuKind for DoubleChestKind {
-    fn on_open(&mut self, _behavior: &mut MenuBehavior, guard: &mut ContainerLockGuard, player: &Player) {
+    fn on_open(
+        &mut self,
+        _behavior: &mut MenuBehavior,
+        guard: &mut ContainerLockGuard,
+        player: &Player,
+    ) {
         guard.run_unlocked(|| {
             change_openers(&self.first, player, true);
             change_openers(&self.second, player, true);
@@ -160,7 +165,12 @@ unsafe impl steel_utils::DowncastType for ChestKind {
 }
 
 impl MenuKind for ChestKind {
-    fn on_open(&mut self, _behavior: &mut MenuBehavior, guard: &mut ContainerLockGuard, player: &Player) {
+    fn on_open(
+        &mut self,
+        _behavior: &mut MenuBehavior,
+        guard: &mut ContainerLockGuard,
+        player: &Player,
+    ) {
         guard.run_unlocked(|| {
             change_openers(&self.container, player, true);
         });
@@ -184,7 +194,9 @@ impl MenuKind for ChestKind {
 /// expose its counter, so the block entity is looked up through the world at the
 /// base's position instead.
 fn change_openers(container: &ContainerRef, player: &Player, opening: bool) {
-    if player.is_spectator() { return; }
+    if player.is_spectator() {
+        return;
+    }
     let Some(world) = container.level() else {
         return;
     };
@@ -196,14 +208,19 @@ fn change_openers(container: &ContainerRef, player: &Player, opening: bool) {
     };
     // A menu may outlive block replacement at the same position. Never alter
     // the new block entity's count when closing the old inventory's menu.
-    if !block_entity.container_ref().is_some_and(|current| current.container_id() == container.container_id()) {
+    if !block_entity
+        .container_ref()
+        .is_some_and(|current| current.container_id() == container.container_id())
+    {
         return;
     }
     let counter = if let Some(chest) = block_entity.downcast_ref::<ChestBlockEntity>() {
         chest.openers_counter()
     } else if let Some(barrel) = block_entity.downcast_ref::<BarrelBlockEntity>() {
         barrel.openers_counter()
-    } else { return; };
+    } else {
+        return;
+    };
     let state = world.get_block_state(pos);
     if opening {
         counter.register_interaction_range(player.block_interaction_range());

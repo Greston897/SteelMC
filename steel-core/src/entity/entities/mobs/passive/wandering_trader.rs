@@ -113,14 +113,22 @@ impl WanderingTraderEntity {
                 (&steel_registry::vanilla_entities::ILLUSIONER, 12.0),
                 (&steel_registry::vanilla_entities::ZOGLIN, 10.0),
             ] {
-                goal_selector.add_goal(1, AvoidEntityGoal::with_selector(distance, 0.5, 0.5,
-                    move |entity, _| entity.entity_type() == kind));
+                goal_selector.add_goal(
+                    1,
+                    AvoidEntityGoal::with_selector(distance, 0.5, 0.5, move |entity, _| {
+                        entity.entity_type() == kind
+                    }),
+                );
             }
             goal_selector.add_goal(1, PanicGoal::new(0.5));
             goal_selector.add_goal(8, WaterAvoidingRandomStrollGoal::new(0.35));
             goal_selector.add_goal(9, InteractGoal::new_player(3.0, 1.0));
-            goal_selector.add_goal(10, LookAtPlayerGoal::new_for_living_entities(8.0, 0.02,
-                |entity, _| entity.as_mob().is_some()));
+            goal_selector.add_goal(
+                10,
+                LookAtPlayerGoal::new_for_living_entities(8.0, 0.02, |entity, _| {
+                    entity.as_mob().is_some()
+                }),
+            );
         }
 
         let trades = Arc::new(SyncMutex::new(villager_trades::offers_for(

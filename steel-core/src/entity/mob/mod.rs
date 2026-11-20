@@ -533,7 +533,9 @@ pub trait Mob: LivingEntity + Leashable {
             && let Some(entity) = world.get_entity_by_uuid(&self.uuid())
         {
             let saved = self.mob_base().saved_raid.lock().take();
-            if let Some((id, wave, leader)) = saved { world.raids.restore_raider(&entity, id, wave, leader); }
+            if let Some((id, wave, leader)) = saved {
+                world.raids.restore_raider(&entity, id, wave, leader);
+            }
         }
         self.mob_base_tick();
     }
@@ -567,7 +569,10 @@ pub trait Mob: LivingEntity + Leashable {
         group_data: Option<SpawnGroupData>,
     ) -> Option<SpawnGroupData> {
         if crate::world::raid::is_raider_type(self.entity_type()) {
-            self.set_can_join_raid(self.entity_type() != &vanilla_entities::WITCH || _spawn_reason != EntitySpawnReason::Natural);
+            self.set_can_join_raid(
+                self.entity_type() != &vanilla_entities::WITCH
+                    || _spawn_reason != EntitySpawnReason::Natural,
+            );
         }
         let needs_random_spawn_bonus = !self
             .attributes()
@@ -773,7 +778,10 @@ pub trait Mob: LivingEntity + Leashable {
 
     fn remove_when_far_away(&self, dist_sqr: f64) -> bool {
         if crate::world::raid::is_raider_type(self.entity_type())
-            && self.level().is_some_and(|world| world.raids.contains_raider(self.uuid())) {
+            && self
+                .level()
+                .is_some_and(|world| world.raids.contains_raider(self.uuid()))
+        {
             return false;
         }
         self.as_animal()
@@ -1258,7 +1266,9 @@ pub trait Mob: LivingEntity + Leashable {
         self.save_equipment(nbt);
         if crate::world::raid::is_raider_type(self.entity_type()) {
             nbt.insert("CanJoinRaid", i8::from(self.can_join_raid()));
-            let membership = self.level().and_then(|world| world.raids.member_save_data(self.uuid()))
+            let membership = self
+                .level()
+                .and_then(|world| world.raids.member_save_data(self.uuid()))
                 .or(*self.mob_base().saved_raid.lock());
             if let Some((id, wave, leader)) = membership {
                 nbt.insert("RaidId", id);
@@ -1304,11 +1314,18 @@ pub trait Mob: LivingEntity + Leashable {
 
     fn load_mob(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_equipment(nbt);
-        self.set_can_join_raid(nbt.byte_value("CanJoinRaid").is_some_and(|value| value != 0));
-        *self.mob_base().saved_raid.lock() = nbt.int_value("RaidId").map(|id| (
-            id, nbt.int_value("Wave").unwrap_or(0),
-            nbt.byte_value("PatrolLeader").is_some_and(|value| value != 0),
-        ));
+        self.set_can_join_raid(
+            nbt.byte_value("CanJoinRaid")
+                .is_some_and(|value| value != 0),
+        );
+        *self.mob_base().saved_raid.lock() = nbt.int_value("RaidId").map(|id| {
+            (
+                id,
+                nbt.int_value("Wave").unwrap_or(0),
+                nbt.byte_value("PatrolLeader")
+                    .is_some_and(|value| value != 0),
+            )
+        });
         self.set_can_pick_up_loot(
             nbt.byte_value("CanPickUpLoot")
                 .is_some_and(|value| value != 0),
@@ -1761,10 +1778,15 @@ pub trait Mob: LivingEntity + Leashable {
     /// iron golem in an active raid resets inactivity before the increment.
     fn update_mob_no_action_time(&self) {
         let raider = crate::world::raid::is_raider_type(self.entity_type());
-        if raider && self.can_join_raid()
-            && self.target().is_some_and(|target| target.as_player().is_some()
-                || target.entity_type() == &vanilla_entities::IRON_GOLEM)
-            && self.level().is_some_and(|world| world.raids.contains_raider(self.uuid()))
+        if raider
+            && self.can_join_raid()
+            && self.target().is_some_and(|target| {
+                target.as_player().is_some()
+                    || target.entity_type() == &vanilla_entities::IRON_GOLEM
+            })
+            && self
+                .level()
+                .is_some_and(|world| world.raids.contains_raider(self.uuid()))
         {
             self.set_no_action_time(0);
         }
@@ -1784,7 +1806,8 @@ pub trait Mob: LivingEntity + Leashable {
         if crate::world::raid::is_raider_type(self.entity_type())
             && self.can_join_raid()
             && let Some(world) = self.level()
-            && world.game_time() % 20 == 0 {
+            && world.game_time() % 20 == 0
+        {
             world.raids.try_join_raider(entity);
         }
         self.update_mob_no_action_time();
