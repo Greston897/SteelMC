@@ -10,13 +10,13 @@ use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::{REGISTRY, RegistryExt as _, vanilla_blocks};
 use steel_utils::random::worldgen_random::WorldgenRandom;
 use steel_utils::types::UpdateFlags;
-use steel_utils::{BlockPos, BlockStateId, Identifier};
+use steel_utils::{BlockPos, BlockStateId, Direction, Identifier};
 use steel_worldgen::biomes::obfuscate_biome_seed;
 
 use crate::behavior::block::BlockBehavior;
 use crate::behavior::blocks::vegetation::bonemealable::Bonemealable;
 use crate::behavior::context::BlockPlaceContext;
-use crate::world::{LevelReader, World};
+use crate::world::{LevelReader, ScheduledTickAccess, World};
 use crate::worldgen::feature::FeatureDecorationRunner;
 use crate::worldgen::feature::no_nested_features;
 
@@ -264,6 +264,18 @@ impl SaplingBlock {
 }
 
 impl BlockBehavior for SaplingBlock {
+    fn update_shape(
+        &self,
+        state: BlockStateId,
+        world: &dyn ScheduledTickAccess,
+        pos: BlockPos,
+        _direction: Direction,
+        _neighbor_pos: BlockPos,
+        _neighbor_state: BlockStateId,
+    ) -> BlockStateId {
+        super::vegetation_block::survival_update_shape(self, state, world, pos)
+    }
+
     fn can_survive(&self, _state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
         survives_on_tag(world, pos, &BlockTag::SUPPORTS_VEGETATION)
     }
@@ -434,6 +446,27 @@ mod tests {
         assert!(!tree.grow_tree(world, origin, state, &mut StdRng::seed_from_u64(263)));
         for (pos, original) in positions.into_iter().zip(originals) {
             assert_eq!(world.get_block_state(pos), original);
+        }
+    }
+
+    #[test]
+    fn sapling_loses_support_on_neighbor_update() {
+        use crate::test_support::TestLevel;
+        crate::bootstrap::init_globals();
+        let tree = SaplingBlock::new(&vanilla_blocks::OAK_SAPLING, "oak", Some("oak"));
+        let state = vanilla_blocks::OAK_SAPLING.default_state();
+        for direction in [Direction::Down, Direction::Up, Direction::North] {
+            assert!(
+                tree.update_shape(
+                    state,
+                    &TestLevel::default(),
+                    BlockPos::ZERO,
+                    direction,
+                    BlockPos::ZERO.below(),
+                    vanilla_blocks::AIR.default_state()
+                )
+                .is_air()
+            );
         }
     }
 }
