@@ -194,15 +194,19 @@ impl WitherBossEntity {
                     timers.1[side] = 0;
                 }
             }
-            let current = world.get_entity_by_id(self.alternative_target(side + 1));
+            let target_id = self.alternative_target(side + 1);
+            let current = world.get_entity_by_id(target_id);
             if let Some(target) = current.filter(|target| target.as_living_entity().is_some_and(|living| Mob::can_attack(self, living))
                 && !steel_registry::REGISTRY.entity_types.is_in_tag(target.entity_type(), &EntityTypeTag::WITHER_FRIENDS)
                 && target.position().distance_squared(self.position()) <= 900.0 && self.has_line_of_sight(target.as_ref())) {
-                self.fire_skull(shooter, side + 2, target.position() + DVec3::Y * (target.bounding_box().height() * 0.5), false);
+                self.fire_skull(shooter, side + 2, target.position() + DVec3::Y * (f64::from(target.get_eye_height()) * 0.5), false);
                 timers.0[side] = self.tick_count() + rand::random_range(40..60);
                 timers.1[side] = 0;
             } else {
                 self.set_head_target(side + 1, 0);
+                // Vanilla spends this update clearing a stale target; selection
+                // happens only at the next head deadline, not immediately.
+                if target_id > 0 { continue; }
                 let targets: Vec<_> = world.get_entities_in_aabb(&self.bounding_box().inflate_xyz(20.0, 8.0, 20.0)).into_iter()
                     .filter(|target| target.id() != self.id() && target.as_living_entity().is_some_and(|living| Mob::can_attack(self, living))
                         && !steel_registry::REGISTRY.entity_types.is_in_tag(target.entity_type(), &EntityTypeTag::WITHER_FRIENDS) && self.has_line_of_sight(target.as_ref())).collect();
@@ -303,10 +307,7 @@ impl WitherBossEntity {
         self.set_invulnerable_ticks(next);
         // Vanilla uses entity tickCount, not the remaining invulnerability timer.
         if self.tick_count() % 10 == 0 {
-            let health = self.get_health();
-            if health > 0.0 && health < MAX_HEALTH {
-                self.set_health((health + SPAWN_HEAL_PER_STEP).min(MAX_HEALTH));
-            }
+            self.heal(SPAWN_HEAL_PER_STEP);
         }
         true
     }
@@ -320,6 +321,8 @@ impl DefaultEntityPush for WitherBossEntity {}
 
 impl Entity for WitherBossEntity {
     fn can_use_portal(&self, _ignore_passenger: bool) -> bool { false }
+
+    fn make_stuck_in_block(&self, _state: steel_utils::BlockStateId, _speed_multiplier: DVec3) {}
 
     fn check_despawn(&self) {
         if self.level().is_some_and(|world| world.difficulty() == steel_utils::types::Difficulty::Peaceful) {
@@ -508,9 +511,8 @@ impl Mob for WitherBossEntity {
         &self.mob_base
     }
 
-    /// Vanilla `WitherBoss` starts its spawn sequence from the constructor, so
-    /// every path that creates one (spawn egg, summon, skull pyramid, spawner)
-    /// begins the 220 protected ticks here.
+    /// Skull-pyramid event spawning starts the protected charge phase;
+    /// ordinary summons and reloads must not restart it.
     fn finalize_spawn(
         &self,
         world: &std::sync::Arc<World>,
@@ -546,7 +548,7 @@ impl Monster for WitherBossEntity {}
 
 impl PathfinderMob for WitherBossEntity {
     fn perform_ranged_attack(&self, shooter: &SharedEntity, target: &SharedEntity, _power: f32) {
-        self.fire_skull(shooter, 0, target.position() + DVec3::Y * (target.bounding_box().height() * 0.5), rand::random::<f32>() < 0.001);
+        self.fire_skull(shooter, 0, target.position() + DVec3::Y * (f64::from(target.get_eye_height()) * 0.5), rand::random::<f32>() < 0.001);
     }
 }
 
