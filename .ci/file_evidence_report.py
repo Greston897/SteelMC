@@ -107,6 +107,44 @@ def build(report, root, sha, run_url, paths=None):
             'tests': report['tests']}
 
 
+
+def attach_coverage(data, llvm_report, root):
+    records = {record['path']: record for record in data['files']}
+    matched = set()
+    for export in llvm_report.get('data', []):
+        for source in export.get('files', []):
+            path = Path(source['filename'])
+            try:
+                name = str(path.relative_to(root)) if path.is_absolute() else str(path)
+            except ValueError:
+                continue
+            if name not in records:
+                continue
+            if name in matched:
+                raise ValueError(f'Duplicate LLVM file summary: {name}')
+            matched.add(name)
+            summary = source['summary']
+            lines = summary['lines']
+            if not 0 <= lines['covered'] <= lines['count']:
+                raise ValueError(f'Invalid line counters: {name}')
+            records[name]['instrumented_lines'] = {'covered': lines['covered'], 'count': lines['count'],
+                'percent': round(100 * lines['covered'] / lines['count'], 2) if lines['count'] else None}
+    if not matched:
+        raise ValueError('No tracked source matched LLVM coverage; refusing an empty coverage report')
+    data['coverage_scope'] = 'Instrumented lines executed by headless workspace tests; not behavioral parity'
+    for record in records.values():
+        record.setdefault('instrumented_lines', None)
+    for row, (_, area_paths, _) in zip(data['rows'], AREAS):
+        files = [record for path, record in records.items() if any(path == p or path.startswith(p.rstrip('/') + '/') for p in area_paths)]
+        measured = [record['instrumented_lines'] for record in files if record['instrumented_lines'] is not None]
+        count = sum(item['count'] for item in measured)
+        covered = sum(item['covered'] for item in measured)
+        row['instrumented_lines'] = {'covered': covered, 'count': count,
+            'percent': round(100 * covered / count, 2) if count else None,
+            'files_measured': len(measured), 'files_not_in_llvm_export': len(files) - len(measured)}
+    return data
+
+
 def render(data):
     lines = ['# Подсистемы и каждый Rust-файл: фактические автоматические проверки', '',
              f"Код: `{data['sha']}`. Запуск: {data['run_url']}", '',
@@ -119,6 +157,15 @@ def render(data):
     for row in data['rows']:
         percent = '—' if row['successful_case_percent'] is None else f"{row['successful_case_percent']:.2f}%"
         lines.append(f"| {row['area']} | {row['files']} | {row['files_with_own_executed_tests']} | {row['passed']} | {row['failed']} | {row['ignored']} | {percent} |")
+    if 'coverage_scope' in data:
+        lines += ['', '## Измеренное исполнение инструментированных строк', '',
+                  'Покрытые строки / все инструментированные строки. Файл, отсутствующий в LLVM export, не получает вымышленный процент. '
+                  'Это измерение исполнения кода, а не доказательство правильности всех состояний.', '',
+                  '| Подсистема | Исполнено / инструментировано | % строк | Файлов в LLVM / вне LLVM |', '|---|---:|---:|---:|']
+        for row in data['rows']:
+            coverage = row['instrumented_lines']
+            percent = '—' if coverage['percent'] is None else f"{coverage['percent']:.2f}%"
+            lines.append(f"| {row['area']} | {coverage['covered']} / {coverage['count']} | {percent} | {coverage['files_measured']} / {coverage['files_not_in_llvm_export']} |")
     lines += ['', f"Все результаты: `{json.dumps(data['totals'])}`. Точная привязка к файлу не установлена для {len(data['unmatched_observations'])} наблюдений; они сохранены в JSON, не потеряны и не приписаны вымышленным файлам.", '',
               '## Каждый отслеживаемый Rust-файл', '',
               'Собственный исполненный тест подтверждает только этот тест, не весь файл. '
@@ -127,7 +174,9 @@ def render(data):
               '| Файл | SHA256 | PASS / FAIL / ignored | Наблюдаемое основание |', '|---|---|---|---|']
     for record in data['files']:
         counts = record['counts']
-        lines.append(f"| `{record['path']}` | `{record['sha256']}` | {counts['passed']} / {counts['failed']} / {counts['ignored']} | {record['evidence']} |")
+        coverage = record.get('instrumented_lines')
+        detail = '' if 'coverage_scope' not in data else (f"; LLVM lines {coverage['covered']}/{coverage['count']}" if coverage is not None else '; NOT_IN_LLVM_EXPORT')
+        lines.append(f"| `{record['path']}` | `{record['sha256']}` | {counts['passed']} / {counts['failed']} / {counts['ignored']} | {record['evidence']}{detail} |")
     return '\n'.join(lines) + '\n'
 
 
@@ -156,8 +205,11 @@ def main():
     parser.add_argument('--sha', required=True)
     parser.add_argument('--run-url', required=True)
     parser.add_argument('--publish', action='store_true')
+    parser.add_argument('--coverage', type=Path)
     args = parser.parse_args()
     data = build(json.loads(args.input.read_text()), ROOT, args.sha, args.run_url)
+    if args.coverage:
+        attach_coverage(data, json.loads(args.coverage.read_text()), ROOT)
     args.output.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n')
     args.output.with_suffix('.md').write_text(render(data))
     print('::notice title=File evidence subsystem outcomes::' + json.dumps(data['rows'], ensure_ascii=False))

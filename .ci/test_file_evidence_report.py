@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 import unittest
-from file_evidence_report import build, masked_code, render
+from file_evidence_report import attach_coverage, build, masked_code, render
 
 
 class FileEvidenceTests(unittest.TestCase):
@@ -57,6 +57,24 @@ class FileEvidenceTests(unittest.TestCase):
         self.assertIn('real', masked)
         data = self.fixture({'steel-core/src/lib.rs': source}, [])
         self.assertEqual([t['name'] for t in data['files'][0]['declared_tests']], ['real'])
+
+    def test_instrumented_line_counters_do_not_turn_missing_files_into_passes(self):
+        data = self.fixture({'steel-core/src/world/one.rs': 'pub fn one() {}',
+                             'steel-core/src/world/two.rs': 'pub fn two() {}'}, [])
+        llvm = {'data': [{'files': [{'filename': '/repo/steel-core/src/world/one.rs',
+                    'summary': {'lines': {'covered': 3, 'count': 4}}}]}]}
+        attach_coverage(data, llvm, Path('/repo'))
+        row = next(row for row in data['rows'] if row['area'] == 'Мир и тики')
+        self.assertEqual(row['instrumented_lines']['percent'], 75)
+        self.assertEqual(row['instrumented_lines']['files_not_in_llvm_export'], 1)
+        self.assertIsNone(data['files'][1]['instrumented_lines'])
+        self.assertIn('NOT_IN_LLVM_EXPORT', render(data))
+        self.assertEqual(data['files'][0]['evidence'], 'NO_OWN_EXECUTED_TEST_EVIDENCE')
+
+    def test_empty_coverage_export_is_not_a_green_zero_case_run(self):
+        data = self.fixture({'steel-core/src/lib.rs': ''}, [])
+        with self.assertRaises(ValueError):
+            attach_coverage(data, {'data': []}, Path('/repo'))
 
     def test_unknown_status_cannot_be_published(self):
         with self.assertRaises(ValueError):

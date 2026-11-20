@@ -1,0 +1,64 @@
+name: Headless Source Coverage
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '**/*.rs'
+      - '**/Cargo.toml'
+      - Cargo.lock
+      - rust-toolchain.toml
+      - .ci/file_evidence_report.py
+      - .ci/test_file_evidence_report.py
+      - .github/workflows/headless-coverage.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: headless-source-coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CARGO_TERM_COLOR: never
+      CARGO_BUILD_JOBS: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          toolchain: nightly-2026-10-14
+          components: llvm-tools-preview
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: headless-source-coverage
+      - name: Instrument and execute workspace tests without real clients
+        run: |
+          set -o pipefail
+          cargo llvm-cov --workspace --no-fail-fast --json --output-path /tmp/coverage.json 2>&1 | tee /tmp/coverage-tests.log
+      - name: Index exact test outcomes and instrumented source lines
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 .ci/summarize_rust_tests.py /tmp/coverage-tests.log /tmp/coverage-tests.json
+          python3 .ci/file_evidence_report.py /tmp/coverage-tests.json /tmp/coverage-evidence.json \
+            --coverage /tmp/coverage.json --sha "$GITHUB_SHA" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --publish
+          cat /tmp/coverage-evidence.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: headless-source-coverage
+          path: |
+            /tmp/coverage.json
+            /tmp/coverage-tests.log
+            /tmp/coverage-tests.json
+            /tmp/coverage-evidence.json
+            /tmp/coverage-evidence.md
+          if-no-files-found: error
