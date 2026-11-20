@@ -10,6 +10,11 @@ use std::sync::{Arc, Weak};
 use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
 use simdnbt::owned::{NbtCompound, NbtTag};
 use steel_registry::vanilla_block_entity_types;
+use steel_registry::blocks::properties::CreakingHeartState::Awake;
+use steel_registry::vanilla_damage_types::GENERIC_KILL;
+use steel_registry::vanilla_game_rules::SPAWN_MOBS;
+use steel_utils::types::Difficulty::Peaceful;
+use steel_utils::types::UpdateFlags;
 use steel_utils::{
     BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, locks::SyncMutex,
 };
@@ -22,6 +27,8 @@ use steel_utils::Direction;
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::{ENTITIES, Entity, next_entity_id};
 use crate::world::World;
+use crate::entity::damage::DamageSource;
+use crate::entity::entities::mobs::hostile::CreakingEntity;
 
 /// Vanilla distance within which a player keeps a heart active.
 const CREAKING_SPAWN_PLAYER_RANGE: f64 = 32.0;
@@ -82,16 +89,16 @@ impl CreakingHeartBlockEntity {
 
         let desired_state = Self::compute_heart_state(world, pos, state);
         if state.try_get_value(
-            &steel_registry::blocks::properties::BlockStateProperties::CREAKING_HEART_STATE,
+            &BlockStateProperties::CREAKING_HEART_STATE,
         ) != Some(desired_state)
         {
             world.set_block(
                 pos,
                 state.set_value(
-                    &steel_registry::blocks::properties::BlockStateProperties::CREAKING_HEART_STATE,
+                    &BlockStateProperties::CREAKING_HEART_STATE,
                     desired_state,
                 ),
-                steel_utils::types::UpdateFlags::UPDATE_ALL,
+                UpdateFlags::UPDATE_ALL,
             );
         }
 
@@ -104,11 +111,11 @@ impl CreakingHeartBlockEntity {
                 Some(entity) if !entity.is_alive() => self.set_creaking(None),
                 Some(entity)
                     if desired_state
-                        != steel_registry::blocks::properties::CreakingHeartState::Awake =>
+                        != Awake =>
                 {
                     self.set_creaking(None);
-                    let kill = crate::entity::damage::DamageSource::environment(
-                        &steel_registry::vanilla_damage_types::GENERIC_KILL,
+                    let kill = DamageSource::environment(
+                        &GENERIC_KILL,
                     );
                     entity.hurt(world, &kill, f32::MAX);
                     return;
@@ -120,9 +127,9 @@ impl CreakingHeartBlockEntity {
             }
         }
 
-        if desired_state != steel_registry::blocks::properties::CreakingHeartState::Awake
-            || world.difficulty() == steel_utils::types::Difficulty::Peaceful
-            || !world.get_game_rule(&steel_registry::vanilla_game_rules::SPAWN_MOBS)
+        if desired_state != Awake
+            || world.difficulty() == Peaceful
+            || !world.get_game_rule(&SPAWN_MOBS)
             || !Self::has_nearby_player(world, pos)
         {
             return;
@@ -142,7 +149,7 @@ impl CreakingHeartBlockEntity {
             return;
         };
         if let Some(creaking_entity) =
-            creaking.downcast_ref::<crate::entity::entities::mobs::hostile::CreakingEntity>()
+            creaking.downcast_ref::<CreakingEntity>()
         {
             creaking_entity.set_creaking_heart_pos(Some(pos));
         }
@@ -162,7 +169,7 @@ impl CreakingHeartBlockEntity {
         world: &World,
         pos: BlockPos,
         state: BlockStateId,
-    ) -> steel_registry::blocks::properties::CreakingHeartState {
+    ) -> CreakingHeartState {
         use steel_registry::blocks::properties::{Axis, BlockStateProperties, CreakingHeartState};
         let axis = state
             .try_get_value(&BlockStateProperties::AXIS)

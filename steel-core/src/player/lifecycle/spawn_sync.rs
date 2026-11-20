@@ -1,5 +1,6 @@
 use steel_protocol::packets::game::{CServerData, CommonPlayerSpawnInfo};
 use text_components::TextComponent;
+use crate::server::local_respawn_data_for_world;
 
 use super::{
     Arc, BlockBreakingManager, CContainerClose, CGameEvent, CRespawn, CSetChunkCacheRadius,
@@ -355,7 +356,7 @@ impl Player {
                 }
             }
         } else {
-            crate::server::local_respawn_data_for_world(world)
+            local_respawn_data_for_world(world)
         };
         self.send_packet(CSetDefaultSpawnPosition {
             global_pos: respawn_data.global_pos,

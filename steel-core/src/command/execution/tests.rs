@@ -5,6 +5,7 @@ use std::sync::{
 
 use steel_utils::locks::SyncMutex;
 use text_components::TextComponent;
+use tokio::sync::mpsc::unbounded_channel;
 
 use crate::command::PendingCommandExecutionQueue;
 use crate::command::brigadier::{
@@ -24,7 +25,7 @@ use super::{
 /// An RCON sink whose receiver is already dropped; the tests only need the
 /// sender side to satisfy the type.
 fn closed_rcon_output() -> RconOutput {
-    RconOutput::new(tokio::sync::mpsc::unbounded_channel().0)
+    RconOutput::new(unbounded_channel().0)
 }
 
 #[derive(Default)]

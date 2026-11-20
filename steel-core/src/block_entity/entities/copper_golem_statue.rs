@@ -17,6 +17,7 @@ use steel_registry::vanilla_block_entity_types;
 use steel_registry::vanilla_entities;
 use steel_utils::Direction;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
+use steel_registry::sound_events::ENTITY_COPPER_GOLEM_SPAWN;
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::{ENTITIES, Entity, SharedEntity, next_entity_id};
@@ -97,7 +98,7 @@ impl CopperGolemStatueBlockEntity {
             living.set_y_body_rot(y_rot);
         }
         golem.play_sound(
-            &steel_registry::sound_events::ENTITY_COPPER_GOLEM_SPAWN,
+            &ENTITY_COPPER_GOLEM_SPAWN,
             1.0,
             1.0,
         );

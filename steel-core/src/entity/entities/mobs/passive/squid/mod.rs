@@ -11,6 +11,7 @@ use glam::DVec3;
 use simdnbt::{borrow, owned};
 use steel_macros::entity_behavior;
 use steel_math::{angle::DEGREE_90, vector};
+use crate::entity::aabb_contains_any_liquid;
 use steel_registry::{
     entity_data::{EntityPose, ParticleData},
     entity_type::{EntityAttachments, EntityDimensions, EntityTypeRef},
@@ -501,7 +502,7 @@ impl Mob for SquidEntity {
     /// Vanilla `AgeableWaterCreature.checkSpawnObstruction` returns the inverse
     /// of the land-mob rule: an aquatic mob needs its box fully inside liquid.
     fn check_spawn_obstruction(&self, world: &Arc<World>) -> bool {
-        crate::entity::aabb_contains_any_liquid(world, self.bounding_box())
+        aabb_contains_any_liquid(world, self.bounding_box())
     }
 }
 

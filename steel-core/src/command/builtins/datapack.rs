@@ -2,6 +2,7 @@
 //! Enable/disable and other runtime data registries remain explicitly unsupported.
 
 use std::borrow::Cow;
+use std::iter::once;
 
 use steel_utils::Identifier;
 use text_components::TextComponent;
@@ -53,7 +54,7 @@ fn list(
 ) -> Result<i32, CommandSyntaxError> {
     let packs = context.source().server().function_packs.pack_names();
     let names = match listing {
-        Listing::Enabled => std::iter::once(BUILTIN_PACK.to_owned())
+        Listing::Enabled => once(BUILTIN_PACK.to_owned())
             .chain(packs)
             .collect::<Vec<_>>(),
         Listing::Available => Vec::new(),

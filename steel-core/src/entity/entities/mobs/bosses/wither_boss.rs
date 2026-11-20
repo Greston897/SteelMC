@@ -20,12 +20,27 @@ use steel_registry::{TaggedRegistryExt as _, level_events, sound_events, vanilla
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey};
+use steel_math::trig::cos;
+use steel_math::trig::sin;
+use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_block_tags::BlockTag;
+use steel_registry::vanilla_entities::WIND_CHARGE;
+use steel_registry::vanilla_entities::WITHER;
+use steel_registry::vanilla_entities::WITHER_SKULL;
+use steel_registry::vanilla_game_rules::MOB_GRIEFING;
+use steel_registry::vanilla_items::NETHER_STAR;
+use steel_utils::types::Difficulty::Hard;
+use steel_utils::types::Difficulty::Normal;
+use steel_utils::types::Difficulty::Peaceful;
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, RangedAttackGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::enchantment_helper::is_immune_to_damage;
+use crate::entity::MobEffectInstance;
+use crate::entity::RemovalReason::Discarded;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySpawnReason, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster,
@@ -106,7 +121,7 @@ impl WitherBossEntity {
                 NearestAttackableTargetGoal::new(true, |target, _| {
                     !steel_registry::REGISTRY.entity_types.is_in_tag(
                         target.entity_type(),
-                        &steel_registry::vanilla_entity_type_tags::EntityTypeTag::WITHER_FRIENDS,
+                        &EntityTypeTag::WITHER_FRIENDS,
                     )
                 }),
             );
@@ -125,7 +140,7 @@ impl WitherBossEntity {
     }
 
     /// Full bar pairing is sent only to players actually tracking this boss.
-    pub(crate) fn boss_bar_packet(&self) -> steel_protocol::packets::game::CBossEvent {
+    pub(crate) fn boss_bar_packet(&self) -> CBossEvent {
         use steel_protocol::packets::game::{BossBarColor, BossBarOverlay, CBossEvent};
         CBossEvent::add(
             self.uuid(),
@@ -154,7 +169,7 @@ impl WitherBossEntity {
         if progress.to_bits() != last.to_bits() {
             world.broadcast_to_entity_trackers(
                 self.id(),
-                steel_protocol::packets::game::CBossEvent::update_progress(self.uuid(), progress),
+                CBossEvent::update_progress(self.uuid(), progress),
                 None,
             );
             *last = progress;
@@ -162,7 +177,7 @@ impl WitherBossEntity {
         if self.tick_count() % 20 == 0 {
             world.broadcast_to_entity_trackers(
                 self.id(),
-                steel_protocol::packets::game::CBossEvent::update_name(
+                CBossEvent::update_name(
                     self.uuid(),
                     self.display_name(),
                 ),
@@ -193,13 +208,13 @@ impl WitherBossEntity {
                 DVec3::new(0.0, 3.0 * scale, 0.0)
             } else {
                 DVec3::new(
-                    f64::from(steel_math::trig::cos(angle)) * 1.3 * scale,
+                    f64::from(cos(angle)) * 1.3 * scale,
                     2.2 * scale,
-                    f64::from(steel_math::trig::sin(angle)) * 1.3 * scale,
+                    f64::from(sin(angle)) * 1.3 * scale,
                 )
             };
         let skull = Arc::new(WitherSkullEntity::new(
-            &steel_registry::vanilla_entities::WITHER_SKULL,
+            &WITHER_SKULL,
             next_entity_id(),
             position,
             Arc::downgrade(&world),
@@ -233,7 +248,7 @@ impl WitherBossEntity {
             timers.0[side] = self.tick_count() + rand::random_range(10..20);
             if matches!(
                 world.difficulty(),
-                steel_utils::types::Difficulty::Normal | steel_utils::types::Difficulty::Hard
+                Normal | Hard
             ) {
                 let previous = timers.1[side];
                 timers.1[side] += 1;
@@ -309,7 +324,7 @@ impl WitherBossEntity {
                 false
             }
         };
-        if destroy && world.get_game_rule(&steel_registry::vanilla_game_rules::MOB_GRIEFING) {
+        if destroy && world.get_game_rule(&MOB_GRIEFING) {
             use crate::world::LevelReader as _;
             use steel_registry::blocks::block_state_ext::BlockStateExt as _;
             let center = self.block_position();
@@ -328,7 +343,7 @@ impl WitherBossEntity {
                         if !state.is_air()
                             && !steel_registry::REGISTRY.blocks.is_in_tag(
                                 state.get_block(),
-                                &steel_registry::vanilla_block_tags::BlockTag::WITHER_IMMUNE,
+                                &BlockTag::WITHER_IMMUNE,
                             )
                         {
                             destroyed = world.destroy_block_by_entity(pos, true, self) || destroyed;
@@ -396,7 +411,7 @@ impl WitherBossEntity {
                     ExplosionInteraction::Mob,
                 );
                 options.center.y = self.get_eye_y();
-                options.source = Some(std::sync::Arc::clone(entity));
+                options.source = Some(Arc::clone(entity));
                 world.explode(options);
                 if !self.is_silent() {
                     world.global_level_event(
@@ -433,9 +448,9 @@ impl Entity for WitherBossEntity {
     fn check_despawn(&self) {
         if self
             .level()
-            .is_some_and(|world| world.difficulty() == steel_utils::types::Difficulty::Peaceful)
+            .is_some_and(|world| world.difficulty() == Peaceful)
         {
-            self.set_removed(crate::entity::RemovalReason::Discarded);
+            self.set_removed(Discarded);
         }
         self.set_no_action_time(0);
     }
@@ -539,19 +554,19 @@ impl LivingEntity for WitherBossEntity {
         use steel_registry::vanilla_damage_type_tags::DamageTypeTag;
         use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
         self.default_is_invulnerable_to(source)
-            || crate::enchantment_helper::is_immune_to_damage(self, source)
+            || is_immune_to_damage(self, source)
             || source.is(&DamageTypeTag::WITHER_IMMUNE_TO)
             || (self.invulnerable_ticks() > 0 && !source.bypasses_invulnerability())
             || source.causing_entity().is_some_and(|entity| {
                 steel_registry::REGISTRY
                     .entity_types
                     .is_in_tag(entity.entity_type(), &EntityTypeTag::WITHER_FRIENDS)
-                    || entity.entity_type() == &steel_registry::vanilla_entities::WITHER
+                    || entity.entity_type() == &WITHER
             })
             || (self.get_health() <= self.get_max_health() * 0.5
                 && source.direct_entity().is_some_and(|entity| {
                     entity.is_abstract_arrow()
-                        || entity.entity_type() == &steel_registry::vanilla_entities::WIND_CHARGE
+                        || entity.entity_type() == &WIND_CHARGE
                 }))
     }
 
@@ -573,7 +588,7 @@ impl LivingEntity for WitherBossEntity {
 
     fn add_mob_effect_with_source(
         &self,
-        _effect: crate::entity::MobEffectInstance,
+        _effect: MobEffectInstance,
         _source: Option<&dyn Entity>,
     ) -> bool {
         false
@@ -581,7 +596,7 @@ impl LivingEntity for WitherBossEntity {
 
     fn drop_custom_death_loot(&self, _source: &DamageSource, _killed_by_player: bool) {
         if let Some(star) = self.spawn_at_location(
-            steel_registry::item_stack::ItemStack::new(&steel_registry::vanilla_items::NETHER_STAR),
+            ItemStack::new(&NETHER_STAR),
             0.0,
         ) {
             star.set_age(-6000);
@@ -647,7 +662,7 @@ impl Mob for WitherBossEntity {
     /// ordinary summons and reloads must not restart it.
     fn finalize_spawn(
         &self,
-        world: &std::sync::Arc<World>,
+        world: &Arc<World>,
         spawn_reason: EntitySpawnReason,
         group_data: Option<SpawnGroupData>,
     ) -> Option<SpawnGroupData> {

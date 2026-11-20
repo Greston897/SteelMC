@@ -24,11 +24,13 @@ use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtNumeric as _;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey};
+use steel_registry::vanilla_criteria_triggers::KILLED_BY_ARROW;
 
 use crate::behavior::MOB_EFFECT_BEHAVIORS;
 use crate::entity::LivingEntity;
 use crate::entity::damage::DamageSource;
 use crate::entity::potion_contents::to_runtime_instance_icon_from_visibility;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, MobEffectInstance, Player, Projectile, ProjectileBase,
     RemovalReason, SharedEntity,
@@ -395,10 +397,10 @@ pub trait AbstractArrow: Projectile + Sized {
             } else {
                 &vanilla_items::BOW.key
             };
-            let context = crate::player::advancement::predicate::TriggerContext::item(weapon)
+            let context = TriggerContext::item(weapon)
                 .with_entity_type(&entity.entity_type().key);
             player.trigger_advancement_with_context(
-                &steel_registry::vanilla_criteria_triggers::KILLED_BY_ARROW,
+                &KILLED_BY_ARROW,
                 &context,
             );
         }

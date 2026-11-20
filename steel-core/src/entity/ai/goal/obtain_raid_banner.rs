@@ -7,6 +7,8 @@ use crate::entity::{Entity as _, PathfinderMob, SharedEntity};
 use std::collections::BTreeMap;
 use steel_registry::item_stack::ItemStack;
 use steel_utils::Downcast as _;
+use steel_registry::vanilla_attributes::FOLLOW_RANGE;
+use crate::world::raid::ominous_banner;
 
 pub(crate) struct ObtainRaidBannerGoal {
     unreachable_until: BTreeMap<uuid::Uuid, i64>,
@@ -41,7 +43,7 @@ impl Goal for ObtainRaidBannerGoal {
         let range = mob
             .attributes()
             .lock()
-            .required_value(steel_registry::vanilla_attributes::FOLLOW_RANGE);
+            .required_value(FOLLOW_RANGE);
         for candidate in
             world.get_entities_in_aabb(&mob.bounding_box().inflate_xyz(range, 8.0, range))
         {
@@ -50,7 +52,7 @@ impl Goal for ObtainRaidBannerGoal {
             };
             if item.is_removed()
                 || item.has_pickup_delay()
-                || !ItemStack::matches(&item.get_item(), &crate::world::raid::ominous_banner())
+                || !ItemStack::matches(&item.get_item(), &ominous_banner())
                 || self.unreachable_until.contains_key(&item.uuid())
             {
                 continue;

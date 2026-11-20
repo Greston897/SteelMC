@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 
 use steel_utils::locks::SyncMutex;
+use tokio::sync::oneshot::Sender;
 
 use crate::command::sender::{CommandExecutionOwner, CommandSuggestionKey};
 
@@ -29,7 +30,7 @@ pub(crate) enum CommandRequest {
     Background {
         owner: CommandExecutionOwner,
         command: String,
-        reply: tokio::sync::oneshot::Sender<BackgroundCommandResult>,
+        reply: Sender<BackgroundCommandResult>,
     },
 }
 

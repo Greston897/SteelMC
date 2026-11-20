@@ -1,6 +1,8 @@
 use steel_utils::translations;
 
 use super::scoreboard_sync;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 use super::{
     Arc, CPlayerInfoUpdate, CRemovePlayerInfo, CancellationToken, ClientPacket, ConnectionProtocol,
     DomainPlayerState, EncodedPacket, Entity, GlobalPlayerData, Instant, JoinSet,
@@ -380,8 +382,8 @@ impl Server {
         }
 
         // Keep the final capacity check and insertion atomic with respect to other joins.
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
             .map_or(0, |elapsed| {
                 i64::try_from(elapsed.as_secs()).unwrap_or(i64::MAX)
             });

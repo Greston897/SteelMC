@@ -17,6 +17,7 @@ use super::{
 };
 use crate::behavior::{InteractionResult, init_behaviors};
 use crate::chunk_saver::PersistentEntity;
+use crate::bootstrap::init_globals;
 use crate::entity::{
     DEFAULT_MAX_AIR_SUPPLY, Entity, EntitySyncedData, LivingEntity, SharedEntity,
     damage::DamageSource,
@@ -38,6 +39,10 @@ use crate::test_support::{
 use crate::world::World;
 use glam::DVec3;
 use steel_protocol::packet_traits::{CompressionInfo, EncodedPacket};
+use steel_registry::vanilla_attributes::ATTACK_DAMAGE;
+use steel_registry::vanilla_attributes::ATTACK_SPEED;
+use steel_registry::vanilla_attributes::MAX_HEALTH;
+use steel_registry::vanilla_mob_effects::BLINDNESS;
 use steel_protocol::packets::common::{
     ChatVisibility, HumanoidArm, ParticleStatus, SClientInformation,
 };
@@ -2003,7 +2008,7 @@ fn combat_critical_requires_full_cooldown_and_does_not_multiply_enchantment_bonu
         victim.set_client_loaded(true);
         attacker.set_on_ground(false);
         attacker.base().set_fall_distance(1.0);
-        attacker.set_mob_effect_active(steel_registry::vanilla_mob_effects::BLINDNESS, blind);
+        attacker.set_mob_effect_active(BLINDNESS, blind);
         attacker
             .attributes()
             .lock()
@@ -2125,7 +2130,7 @@ fn combat_melee_redirects_fireball_and_transfers_owner_without_destroying_it() {
 
 #[test]
 fn player_attack_dispatches_mace_smash_and_post_hit_fall_reset() {
-    crate::bootstrap::init_globals();
+    init_globals();
     init_behaviors();
     let fixture = fresh_test_world("mace_player_attack");
     let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
@@ -2139,15 +2144,15 @@ fn player_attack_dispatches_mace_smash_and_post_hit_fall_reset() {
     attacker
         .attributes()
         .lock()
-        .set_base_value(steel_registry::vanilla_attributes::ATTACK_DAMAGE, 6.0);
+        .set_base_value(ATTACK_DAMAGE, 6.0);
     attacker
         .attributes()
         .lock()
-        .set_base_value(steel_registry::vanilla_attributes::ATTACK_SPEED, 4.0);
+        .set_base_value(ATTACK_SPEED, 4.0);
     victim
         .attributes()
         .lock()
-        .set_base_value(steel_registry::vanilla_attributes::MAX_HEALTH, 100.0);
+        .set_base_value(MAX_HEALTH, 100.0);
     victim.set_health(100.0);
     attacker.set_on_ground(false);
     attacker.set_fall_distance(6.0);

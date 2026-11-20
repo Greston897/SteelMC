@@ -21,6 +21,11 @@ use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::CopperGolemEntityData;
+use steel_registry::blocks::properties::Pose::Running;
+use steel_registry::blocks::properties::Pose::Sitting;
+use steel_registry::blocks::properties::Pose::Standing;
+use steel_registry::blocks::properties::Pose::Star;
+use steel_registry::sound_events::ITEM_AXE_SCRAPE;
 use steel_registry::{
     level_events, sound_events, vanilla_attributes, vanilla_blocks, vanilla_game_rules,
     vanilla_items,
@@ -33,6 +38,8 @@ use steel_utils::{
 };
 
 use crate::behavior::InteractionResult;
+use crate::block_entity::entities::CopperGolemStatueBlockEntity;
+use crate::player::Player;
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
@@ -230,10 +237,10 @@ impl CopperGolemEntity {
     fn turn_to_statue(&self, world: &Arc<World>) {
         let pos = Entity::block_position(self);
         let pose = match rand::random_range(0..4) {
-            0 => steel_registry::blocks::properties::Pose::Standing,
-            1 => steel_registry::blocks::properties::Pose::Sitting,
-            2 => steel_registry::blocks::properties::Pose::Running,
-            _ => steel_registry::blocks::properties::Pose::Star,
+            0 => Standing,
+            1 => Sitting,
+            2 => Running,
+            _ => Star,
         };
         let state = vanilla_blocks::OXIDIZED_COPPER_GOLEM_STATUE
             .default_state()
@@ -247,7 +254,7 @@ impl CopperGolemEntity {
 
         if let Some(block_entity) = world.get_block_entity(pos)
             && let Some(statue) = block_entity
-                .downcast_ref::<crate::block_entity::entities::CopperGolemStatueBlockEntity>(
+                .downcast_ref::<CopperGolemStatueBlockEntity>(
             )
         {
             statue.create_statue(self);
@@ -269,7 +276,7 @@ impl CopperGolemEntity {
         sync_dirty_mob_effects(&self.living_base, &self.entity_data);
     }
     /// Vanilla `itemStack.hurtAndBreak(1, player, hand.asEquipmentSlot())`.
-    fn hurt_player_held_axe(player: &crate::player::Player, hand: InteractionHand) {
+    fn hurt_player_held_axe(player: &Player, hand: InteractionHand) {
         let mut inventory = player.inventory.lock();
         let stack = inventory.get_item_in_hand_mut(hand);
         if stack.is_empty() {
@@ -438,7 +445,7 @@ impl Mob for CopperGolemEntity {
     /// off an oxidized golem.
     fn mob_interact(
         &self,
-        player: &crate::player::Player,
+        player: &Player,
         hand: InteractionHand,
     ) -> InteractionResult {
         use steel_registry::vanilla_item_tags::ItemTag;
@@ -486,7 +493,7 @@ impl Mob for CopperGolemEntity {
                 // Scraping the wax off restarts weathering from "never scheduled".
                 if let Some(world) = Entity::level(self) {
                     world.play_sound(
-                        &steel_registry::sound_events::ITEM_AXE_SCRAPE,
+                        &ITEM_AXE_SCRAPE,
                         SoundSource::Neutral,
                         Entity::block_position(self),
                         1.0,
@@ -508,7 +515,7 @@ impl Mob for CopperGolemEntity {
             if self.weather_state() != WEATHERING_UNAFFECTED {
                 if let Some(world) = Entity::level(self) {
                     world.play_sound(
-                        &steel_registry::sound_events::ITEM_AXE_SCRAPE,
+                        &ITEM_AXE_SCRAPE,
                         SoundSource::Neutral,
                         Entity::block_position(self),
                         1.0,

@@ -22,6 +22,8 @@ use crate::entity::ai::goal::{
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::entity::ai::goal::ObtainRaidBannerGoal;
+use crate::entity::ai::goal::RaidCelebrationGoal;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
@@ -75,8 +77,8 @@ impl WitchEntity {
 
         {
             let mut goal_selector = mob_base.goal_selector().lock();
-            goal_selector.add_goal(1, crate::entity::ai::goal::ObtainRaidBannerGoal::new());
-            goal_selector.add_goal(5, crate::entity::ai::goal::RaidCelebrationGoal);
+            goal_selector.add_goal(1, ObtainRaidBannerGoal::new());
+            goal_selector.add_goal(5, RaidCelebrationGoal);
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
             goal_selector.add_goal(2, MeleeAttackGoal::new(1.0, false));
             goal_selector.add_goal(7, WaterAvoidingRandomStrollGoal::new(1.0));

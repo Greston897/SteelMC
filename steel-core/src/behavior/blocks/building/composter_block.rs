@@ -215,6 +215,7 @@ mod tests {
     use steel_registry::{init_vanilla_registry, vanilla_blocks};
 
     use super::*;
+use crate::player::game_mode::use_item_on;
     use crate::{
         behavior::{BLOCK_BEHAVIORS, init_behaviors},
         test_support::fresh_test_world,
@@ -415,7 +416,7 @@ mod tests {
             let fixture = fixture("composter_player_dispatch", 0);
             let world = &fixture.world;
             let player =
-                TestPlayerBuilder::new(std::sync::Arc::clone(world), "ComposterPlayer", 1).build();
+                TestPlayerBuilder::new(Arc::clone(world), "ComposterPlayer", 1).build();
             player.set_game_mode(mode);
             player.base().set_position_local(DVec3::new(8.5, 64.0, 6.5));
             player.inventory.lock().set_item_in_hand(
@@ -430,7 +431,7 @@ mod tests {
                 inside: false,
                 world_border_hit: false,
             };
-            let result = crate::player::game_mode::use_item_on(
+            let result = use_item_on(
                 &player,
                 world,
                 InteractionHand::MainHand,

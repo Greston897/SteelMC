@@ -23,12 +23,18 @@ use steel_registry::vanilla_entity_data::GuardianEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
+use steel_protocol::packets::game::CGameEvent;
+use steel_protocol::packets::game::GameEventType::GuardianElderEffect;
+use steel_registry::vanilla_mob_effects::MINING_FATIGUE;
+use steel_utils::types::GameType::Adventure;
+use steel_utils::types::GameType::Survival;
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::entity::MobEffectInstance;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySpawnReason, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster,
@@ -291,7 +297,7 @@ impl Mob for ElderGuardianEntity {
             let mode = player.game_mode();
             if !matches!(
                 mode,
-                steel_utils::types::GameType::Survival | steel_utils::types::GameType::Adventure
+                Survival | Adventure
             ) || !LivingEntity::is_alive(player.as_ref())
             {
                 return true;
@@ -300,17 +306,17 @@ impl Mob for ElderGuardianEntity {
                 return true;
             }
             let needs_curse = player
-                .mob_effect(steel_registry::vanilla_mob_effects::MINING_FATIGUE)
+                .mob_effect(MINING_FATIGUE)
                 .is_none_or(|active| {
                     active.amplifier() < CURSE_AMPLIFIER || active.duration() < CURSE_INTERVAL_TICKS
                 });
             if needs_curse {
-                player.send_packet(steel_protocol::packets::game::CGameEvent {
-                    event: steel_protocol::packets::game::GameEventType::GuardianElderEffect,
+                player.send_packet(CGameEvent {
+                    event: GuardianElderEffect,
                     data: 1.0,
                 });
-                player.add_mob_effect(crate::entity::MobEffectInstance::with_duration(
-                    steel_registry::vanilla_mob_effects::MINING_FATIGUE,
+                player.add_mob_effect(MobEffectInstance::with_duration(
+                    MINING_FATIGUE,
                     CURSE_DURATION_TICKS,
                     CURSE_AMPLIFIER,
                 ));

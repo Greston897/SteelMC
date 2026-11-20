@@ -2,6 +2,7 @@ use glam::DVec3;
 use simdnbt::owned::{NbtCompound, NbtTag};
 use std::ptr;
 use std::thread;
+use tokio::sync::mpsc::unbounded_channel;
 use std::{
     cell::Cell,
     env::temp_dir,
@@ -43,6 +44,7 @@ use tokio::{
 use uuid::Uuid;
 
 use crate::behavior::init_behaviors;
+use crate::command::sender::RconOutput;
 use crate::command::execution::{
     CommandArgumentSource, CommandExecutionContext, CommandPermissionSource, CommandResultCallback,
     CommandSource, ExecutionCommandSource, ExecutionStop, parse_entity_selector_text,
@@ -1583,8 +1585,8 @@ fn command_world_scope_survives_entity_transforms() {
         let console_source = CommandSource::new(CommandSender::Console, Arc::clone(&server));
         assert!(console_source.with_world(Arc::clone(beta)).is_ok());
         let rcon_source = CommandSource::new(
-            CommandSender::Rcon(crate::command::sender::RconOutput::new(
-                tokio::sync::mpsc::unbounded_channel().0,
+            CommandSender::Rcon(RconOutput::new(
+                unbounded_channel().0,
             )),
             Arc::clone(&server),
         );

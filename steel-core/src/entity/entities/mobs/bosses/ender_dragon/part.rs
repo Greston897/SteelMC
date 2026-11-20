@@ -26,6 +26,7 @@
 use glam::DVec3;
 use steel_registry::entity_type::EntityDimensions;
 use steel_utils::{WorldAabb, axis::Axis};
+use std::mem::swap;
 
 /// Index of the head part.
 pub const DRAGON_PART_HEAD: usize = 0;
@@ -286,7 +287,7 @@ pub fn segment_box_entry_distance(box_: WorldAabb, from: DVec3, to: DVec3) -> Op
         let mut t1 = (min - start) * inv;
         let mut t2 = (max - start) * inv;
         if t1 > t2 {
-            std::mem::swap(&mut t1, &mut t2);
+            swap(&mut t1, &mut t2);
         }
         entry = entry.max(t1);
         exit = exit.min(t2);

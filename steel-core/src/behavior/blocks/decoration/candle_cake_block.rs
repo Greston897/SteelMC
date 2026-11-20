@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use steel_macros::block_behavior;
+use crate::world::Explosion;
 use steel_registry::{
     blocks::{
         BlockRef,
@@ -142,7 +143,7 @@ impl BlockBehavior for CandleCakeBlock {
         state: BlockStateId,
         world: &Arc<World>,
         pos: BlockPos,
-        _explosion: &dyn crate::world::Explosion,
+        _explosion: &dyn Explosion,
         _on_hit: &mut dyn FnMut(ItemStack, BlockPos),
     ) {
         if state.get_value(LIT) {

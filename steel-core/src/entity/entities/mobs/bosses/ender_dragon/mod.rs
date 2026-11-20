@@ -28,6 +28,8 @@ pub mod phase_ticks;
 pub mod phases;
 
 use std::sync::{Arc, Weak};
+use std::cell::Cell;
+use std::f32::consts::PI;
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
@@ -38,6 +40,21 @@ use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::EnderDragonEntityData;
+use steel_math::trig::atan2;
+use steel_math::trig::cos;
+use steel_math::trig::sin;
+use steel_registry::blocks::BlockRef;
+use steel_registry::data_components::components::PotionContents;
+use steel_registry::mob_effect::instance::MobEffectInstance;
+use steel_registry::particle_type::ParticleData;
+use steel_registry::particle_type::ParticleTypeRef;
+use steel_registry::particle_type::PowerParticleOption;
+use steel_registry::sound_events::ENTITY_ENDER_DRAGON_AMBIENT;
+use steel_registry::sound_events::ENTITY_ENDER_DRAGON_DEATH;
+use steel_registry::sound_events::ENTITY_ENDER_DRAGON_HURT;
+use steel_registry::sound_events::ENTITY_ENDER_DRAGON_SHOOT;
+use steel_registry::vanilla_mob_effects::INSTANT_DAMAGE;
+use steel_registry::vanilla_particle_types::DRAGON_BREATH;
 use steel_registry::{
     vanilla_attributes, vanilla_blocks, vanilla_damage_type_tags, vanilla_damage_types,
     vanilla_entities, vanilla_game_events, vanilla_game_rules, vanilla_particle_types,
@@ -58,6 +75,9 @@ use crate::entity::damage::DamageSource;
 use crate::entity::entities::ExperienceOrbEntity;
 use crate::entity::entities::objects::effects::AreaEffectCloudEntity;
 use crate::entity::entities::objects::projectiles::DragonFireballEntity;
+use crate::chunk::heightmap::HeightmapType::MotionBlockingNoLeaves;
+use crate::entity::next_entity_id;
+use crate::world::dragon_fight::DragonFight;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
@@ -102,7 +122,7 @@ const PARTICLES_DRAGON_BLOCK_DESTROY: i32 = 2008;
 ///
 /// Steel's generated tag data has no `dragon_immune` tag yet, so the members are
 /// inlined. Keep in sync with `data/minecraft/tags/block/dragon_immune.json`.
-const DRAGON_IMMUNE_BLOCKS: &[steel_registry::blocks::BlockRef] = &[
+const DRAGON_IMMUNE_BLOCKS: &[BlockRef] = &[
     &vanilla_blocks::BARRIER,
     &vanilla_blocks::BEDROCK,
     &vanilla_blocks::END_PORTAL,
@@ -123,7 +143,7 @@ const DRAGON_IMMUNE_BLOCKS: &[steel_registry::blocks::BlockRef] = &[
 ];
 
 /// Vanilla `BlockTags.DRAGON_TRANSPARENT`: light plus the fire tag.
-const DRAGON_TRANSPARENT_BLOCKS: &[steel_registry::blocks::BlockRef] = &[
+const DRAGON_TRANSPARENT_BLOCKS: &[BlockRef] = &[
     &vanilla_blocks::LIGHT,
     &vanilla_blocks::FIRE,
     &vanilla_blocks::SOUL_FIRE,
@@ -240,8 +260,8 @@ impl EnderDragonEntity {
             return podium;
         }
         let podium = world.heightmap_pos(
-            crate::chunk::heightmap::HeightmapType::MotionBlockingNoLeaves,
-            crate::world::dragon_fight::DragonFight::podium_pos(),
+            MotionBlockingNoLeaves,
+            DragonFight::podium_pos(),
         );
         self.phases.lock().podium_location = Some(podium);
         podium
@@ -416,7 +436,7 @@ impl EnderDragonEntity {
             arena_player,
             random: self.random_f32(),
             roll_eighth: self.random_below(8) == 0,
-            random_state: std::cell::Cell::new(self.random_i64() as u64),
+            random_state: Cell::new(self.random_i64() as u64),
         }
     }
 
@@ -433,7 +453,7 @@ impl EnderDragonEntity {
                 PhaseAction::PlayShootSound => {
                     Entity::play_sound(
                         self,
-                        &steel_registry::sound_events::ENTITY_ENDER_DRAGON_SHOOT,
+                        &ENTITY_ENDER_DRAGON_SHOOT,
                         DRAGON_SOUND_VOLUME,
                         0.8 + self.random_f32() * 0.3,
                     );
@@ -474,7 +494,7 @@ impl EnderDragonEntity {
     fn spawn_dragon_fireball(&self, world: &Arc<World>, origin: DVec3, direction: DVec3) {
         let fireball = DragonFireballEntity::new(
             &vanilla_entities::DRAGON_FIREBALL,
-            crate::entity::next_entity_id(),
+            next_entity_id(),
             origin,
             Arc::downgrade(world),
         );
@@ -503,27 +523,27 @@ impl EnderDragonEntity {
         let y = Self::breath_cloud_origin(world, x, head_y, z)?;
         let cloud = Arc::new(AreaEffectCloudEntity::new(
             &vanilla_entities::AREA_EFFECT_CLOUD,
-            crate::entity::next_entity_id(),
+            next_entity_id(),
             DVec3::new(x, y, z),
             Arc::downgrade(world),
         ));
         cloud.set_owner(Some(shared));
         cloud.set_radius(SITTING_FLAME_RADIUS);
         cloud.set_duration(FLAME_DURATION);
-        cloud.set_particle(steel_registry::particle_type::ParticleData::new(
-            &steel_registry::vanilla_particle_types::DRAGON_BREATH,
-            steel_registry::particle_type::PowerParticleOption::new(1.0),
+        cloud.set_particle(ParticleData::new(
+            &DRAGON_BREATH,
+            PowerParticleOption::new(1.0),
         ));
         cloud.set_potion_duration_scale(0.25);
         // Vanilla `flame.addEffect(new MobEffectInstance(MobEffects.INSTANT_DAMAGE))`,
         // i.e. the 3-argument constructor: duration 0, amplifier 0.
         cloud.set_potion_contents(
-            steel_registry::data_components::components::PotionContents::new(
+            PotionContents::new(
                 None,
                 None,
                 vec![
-                    steel_registry::mob_effect::instance::MobEffectInstance::new(
-                        steel_registry::vanilla_mob_effects::INSTANT_DAMAGE,
+                    MobEffectInstance::new(
+                        INSTANT_DAMAGE,
                         0,
                         0,
                         false,
@@ -637,9 +657,9 @@ impl EnderDragonEntity {
         let aim = DVec3::new(xdd, ydd, zdd).normalize_or_zero();
         let yaw_rad = f64::from(yaw.to_radians());
         let dir = DVec3::new(
-            f64::from(steel_math::trig::sin(yaw_rad)),
+            f64::from(sin(yaw_rad)),
             velocity.y,
-            -f64::from(steel_math::trig::cos(yaw_rad)),
+            -f64::from(cos(yaw_rad)),
         )
         .normalize_or_zero();
         let dot = ((dir.dot(aim) + 0.5) / 1.5).max(0.0) as f32;
@@ -647,7 +667,7 @@ impl EnderDragonEntity {
         // Vanilla turns toward the target with `yRotA` damping; the turn rate is
         // the phase's own `getTurnSpeed`.
         if xdd.abs() > 1.0E-5 || zdd.abs() > 1.0E-5 {
-            let target_yaw = 180.0 - steel_math::trig::atan2(xdd, zdd) * 57.295_776;
+            let target_yaw = 180.0 - atan2(xdd, zdd) * 57.295_776;
             let y_rot_d =
                 steel_math::wrap_degrees((target_yaw - f64::from(yaw)) as f32).clamp(-50.0, 50.0);
             let turn = turn_speed(phase, self);
@@ -706,7 +726,7 @@ impl EnderDragonEntity {
         let (tilt, y_offset) = {
             let history = &guard.flight_history;
             let tilt =
-                ((history.get(5).y - history.get(10).y) * 10.0 * f64::from(std::f32::consts::PI)
+                ((history.get(5).y - history.get(10).y) * 10.0 * f64::from(PI)
                     / 180.0) as f32;
             let y_offset = if guard.current().is_sitting() {
                 -1.0
@@ -715,11 +735,11 @@ impl EnderDragonEntity {
             };
             (tilt, y_offset)
         };
-        let cc_tilt = steel_math::trig::cos(tilt);
-        let ss_tilt = steel_math::trig::sin(tilt);
+        let cc_tilt = cos(tilt);
+        let ss_tilt = sin(tilt);
 
-        let ss1 = steel_math::trig::sin(f64::from(rot1));
-        let cc1 = steel_math::trig::cos(f64::from(rot1));
+        let ss1 = sin(f64::from(rot1));
+        let cc1 = cos(f64::from(rot1));
 
         guard.parts.tick_part(
             DRAGON_PART_BODY,
@@ -739,8 +759,8 @@ impl EnderDragonEntity {
 
         // `y_rot_a` is a vanilla `f32` (DragonFlightHistory.yRotA), so widen it
         // before the f64 subtraction rather than narrowing the angle.
-        let ss2 = steel_math::trig::sin(f64::from(rot1) - f64::from(y_rot_a) * 0.01);
-        let cc2 = steel_math::trig::cos(f64::from(rot1) - f64::from(y_rot_a) * 0.01);
+        let ss2 = sin(f64::from(rot1) - f64::from(y_rot_a) * 0.01);
+        let cc2 = cos(f64::from(rot1) - f64::from(y_rot_a) * 0.01);
         guard.parts.tick_part(
             DRAGON_PART_HEAD,
             position,
@@ -769,8 +789,8 @@ impl EnderDragonEntity {
             let p0 = guard.flight_history.get(12 + index * 2);
             let rot = f32::to_radians(yaw)
                 + f32::to_radians(steel_math::wrap_degrees(p0.y_rot - p1.y_rot));
-            let ss = steel_math::trig::sin(f64::from(rot));
-            let cc = steel_math::trig::cos(f64::from(rot));
+            let ss = sin(f64::from(rot));
+            let cc = cos(f64::from(rot));
             let dd = (index as f32 + 1.0) * 2.0;
             guard.parts.tick_part(
                 part_index,
@@ -999,7 +1019,7 @@ impl EnderDragonEntity {
     fn send_dragon_particle(
         &self,
         world: &Arc<World>,
-        particle: steel_registry::particle_type::ParticleTypeRef,
+        particle: ParticleTypeRef,
     ) {
         let offset = DVec3::new(
             f64::from((self.random_f32() - 0.5) * 8.0),
@@ -1007,7 +1027,7 @@ impl EnderDragonEntity {
             f64::from((self.random_f32() - 0.5) * 8.0),
         );
         world.send_particles(
-            steel_registry::particle_type::ParticleData::simple(particle),
+            ParticleData::simple(particle),
             self.position() + offset,
             1,
             DVec3::ZERO,
@@ -1292,11 +1312,11 @@ impl LivingEntity for EnderDragonEntity {
     }
 
     fn hurt_sound(&self, _source: &DamageSource) -> Option<SoundEventRef> {
-        Some(&steel_registry::sound_events::ENTITY_ENDER_DRAGON_HURT)
+        Some(&ENTITY_ENDER_DRAGON_HURT)
     }
 
     fn death_sound(&self) -> Option<SoundEventRef> {
-        Some(&steel_registry::sound_events::ENTITY_ENDER_DRAGON_DEATH)
+        Some(&ENTITY_ENDER_DRAGON_DEATH)
     }
 
     fn sound_volume(&self) -> f32 {
@@ -1427,7 +1447,7 @@ impl Mob for EnderDragonEntity {
     fn tick_path_navigation(&self) {}
 
     fn ambient_sound(&self) -> Option<SoundEventRef> {
-        Some(&steel_registry::sound_events::ENTITY_ENDER_DRAGON_AMBIENT)
+        Some(&ENTITY_ENDER_DRAGON_AMBIENT)
     }
 
     fn mob_flags(&self) -> i8 {

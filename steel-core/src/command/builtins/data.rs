@@ -16,12 +16,14 @@
 use std::borrow::Cow;
 
 use simdnbt::owned::{NbtCompound, NbtTag};
+use steel_utils::translations::COMMANDS_DATA_BLOCK_INVALID;
 use steel_utils::{
     BlockPos, Identifier,
     nbt::{NbtPathMutationError, to_canonical_snbt},
 };
 use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
+use crate::command::storage::CommandStorage;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
@@ -326,7 +328,7 @@ fn read_root(
             }
             let Some(block_entity) = world.get_block_entity(position) else {
                 return Err(CommandSyntaxError::dynamic(TextComponent::from(
-                    &steel_utils::translations::COMMANDS_DATA_BLOCK_INVALID,
+                    &COMMANDS_DATA_BLOCK_INVALID,
                 )));
             };
             Ok(block_entity.save_with_full_metadata())
@@ -349,7 +351,7 @@ fn read_root(
 
 fn command_storage(
     context: &SteelCommandContext<CommandSource>,
-) -> Option<&crate::command::storage::CommandStorage> {
+) -> Option<&CommandStorage> {
     let source = context.source();
     source.server().command_storage.get(source.world().domain())
 }
@@ -378,6 +380,8 @@ fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> 
 #[cfg(test)]
 mod data_result_tests {
     use super::*;
+use simdnbt::owned::NbtList::Empty;
+use simdnbt::owned::NbtList::Int;
 
     #[test]
     fn data_get_returns_numeric_floor_not_constant_success() {
@@ -395,11 +399,11 @@ mod data_result_tests {
         assert_eq!(tag_result(&NbtTag::String("a😀".into())).unwrap(), 3);
         assert_eq!(tag_result(&NbtTag::IntArray(vec![1, 2, 3])).unwrap(), 3);
         assert_eq!(
-            tag_result(&NbtTag::List(simdnbt::owned::NbtList::Empty)).unwrap(),
+            tag_result(&NbtTag::List(Empty)).unwrap(),
             0
         );
         assert_eq!(
-            tag_result(&NbtTag::List(simdnbt::owned::NbtList::Int(vec![1, 2]))).unwrap(),
+            tag_result(&NbtTag::List(Int(vec![1, 2]))).unwrap(),
             2
         );
         let mut compound = NbtCompound::new();

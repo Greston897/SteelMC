@@ -16,6 +16,11 @@ use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::game_events::GameEventRef;
 use steel_registry::{level_events, vanilla_game_rules};
+use steel_registry::vanilla_block_tags::BlockTag;
+use steel_registry::vanilla_entities::PLAYER;
+use steel_registry::vanilla_game_events::ENTITY_DIE;
+use steel_registry::vanilla_game_events::SCULK_SENSOR_TENDRILS_CLICKING;
+use steel_registry::vanilla_game_events::SHRIEK;
 use steel_registry::{
     sound_events, vanilla_block_entity_types, vanilla_blocks, vanilla_entities, vanilla_mob_effects,
 };
@@ -28,6 +33,7 @@ use steel_utils::{
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::warden_spawn_tracker::MAX_WARNING_LEVEL;
+use crate::block_entity::entities::sculk_sensor::is_vibration_occluded;
 use crate::entity::{
     Entity, EntitySpawnReason, LivingEntity as _, MobEffectInstance, WardenSpawnTracker, spawn_util,
 };
@@ -85,7 +91,7 @@ impl GameEventListener for SculkCatalystListener {
         context: &GameEventContext<'_>,
         source_pos: glam::DVec3,
     ) -> bool {
-        if event.key != steel_registry::vanilla_game_events::ENTITY_DIE.key {
+        if event.key != ENTITY_DIE.key {
             return false;
         }
         // Only living entities (not inanimate drops/projectiles) feed a catalyst.
@@ -148,7 +154,7 @@ impl GameEventListener for SculkCatalystListener {
                     let current = world.get_block_state(target);
                     if current
                         .get_block()
-                        .has_tag(&steel_registry::vanilla_block_tags::BlockTag::SCULK_REPLACEABLE)
+                        .has_tag(&BlockTag::SCULK_REPLACEABLE)
                         && world.get_block_state(target.above()).is_air()
                     {
                         world.set_block(target, sculk_state, UpdateFlags::UPDATE_ALL);
@@ -281,7 +287,7 @@ impl SculkShriekerBlockEntity {
                     .into_iter()
                     .flatten()
                     .find_map(|owner| {
-                        (owner.entity_type() == &steel_registry::vanilla_entities::PLAYER)
+                        (owner.entity_type() == &PLAYER)
                             .then(|| owner.as_player().map(|player| player.base().uuid()))
                             .flatten()
                     })
@@ -358,7 +364,7 @@ impl SculkShriekerBlockEntity {
         // Vanilla `shriek` also emits the `SHRIEK` game event so sculk sensors
         // and catalysts react to it.
         world.game_event(
-            &steel_registry::vanilla_game_events::SHRIEK,
+            &SHRIEK,
             pos,
             &GameEventContext::new(None, None),
         );
@@ -435,7 +441,7 @@ fn players_near(
     world: &Arc<World>,
     center: glam::DVec3,
     radius: f64,
-) -> Vec<Arc<crate::player::Player>> {
+) -> Vec<Arc<Player>> {
     let reach = WorldAabb::new(
         center.x - radius,
         center.y - radius,
@@ -485,10 +491,10 @@ impl GameEventListener for SculkShriekerListener {
     ) -> bool {
         // Vanilla `GameEventTags.SHRIEKER_CAN_LISTEN`: a shrieker only listens to
         // `sculk_sensor_tendrils_clicking` emitted by an activated sculk sensor.
-        if event.key != steel_registry::vanilla_game_events::SCULK_SENSOR_TENDRILS_CLICKING.key {
+        if event.key != SCULK_SENSOR_TENDRILS_CLICKING.key {
             return false;
         }
-        if crate::block_entity::entities::sculk_sensor::is_vibration_occluded(
+        if is_vibration_occluded(
             world,
             source_pos,
             block_center(self.position),

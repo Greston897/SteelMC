@@ -9,6 +9,8 @@
 
 use std::borrow::Cow;
 use std::sync::Arc;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 
 use steel_utils::Identifier;
 use text_components::TextComponent;
@@ -81,8 +83,8 @@ fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> 
 
 /// The current wall-clock second, which is what ban expiry compares against.
 fn now() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
         .map_or(0, |elapsed| {
             i64::try_from(elapsed.as_secs()).unwrap_or(i64::MAX)
         })

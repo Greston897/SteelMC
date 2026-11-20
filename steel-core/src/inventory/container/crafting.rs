@@ -5,6 +5,7 @@ use steel_registry::{
     recipe::{CraftingInput, MapRecipeData, PositionedCraftingInput},
 };
 use steel_utils::{DowncastType, DowncastTypeKey};
+use steel_registry::vanilla_items::FILLED_MAP;
 
 use crate::inventory::container::Container;
 
@@ -63,7 +64,7 @@ impl CraftingContainer {
         // components instead: a filled map carries `minecraft:map_id`, and the
         // created map is never an exploration map, so it stays extendable.
         for (slot, stack) in self.items.iter().enumerate() {
-            if !stack.is(&steel_registry::vanilla_items::FILLED_MAP) {
+            if !stack.is(&FILLED_MAP) {
                 continue;
             }
             // A crafted map tree starts at scale 0 and is never an exploration

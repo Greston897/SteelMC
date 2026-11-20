@@ -15,6 +15,7 @@ use simdnbt::owned::NbtCompound;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, TrialSpawnerState as SpawnerPhase};
+use steel_registry::item_stack::ItemStack;
 use steel_registry::{
     REGISTRY, RegistryExt as _, sound_events, vanilla_block_entity_types, vanilla_game_rules,
     vanilla_items, vanilla_mob_effects,
@@ -28,6 +29,8 @@ use uuid::Uuid;
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::{ENTITIES, Entity as _, LivingEntity as _, MobEffectInstance, next_entity_id};
 use crate::world::World;
+use crate::behavior::block::drop_from_block_interact_loot_table;
+use crate::entity::LivingEntity::is_alive;
 
 const PLAYER_DETECT_RANGE: f64 = 14.0;
 const SPAWN_RANGE: i32 = 4;
@@ -112,7 +115,7 @@ impl TrialSpawnerBlockEntity {
             return 0;
         };
         let mut random = rand::rng();
-        let items = crate::behavior::block::drop_from_block_interact_loot_table(
+        let items = drop_from_block_interact_loot_table(
             table,
             state,
             None,
@@ -139,7 +142,7 @@ impl TrialSpawnerBlockEntity {
         world.players.iter_players(|_uuid, player| {
             if player.is_spectator()
                 || player.has_infinite_materials()
-                || !crate::entity::LivingEntity::is_alive(player.as_ref())
+                || !is_alive(player.as_ref())
                 || player.position().distance_squared(center) > max_sq
             {
                 return true;
@@ -403,7 +406,7 @@ impl BlockEntity for TrialSpawnerBlockEntity {
                         };
                         world.drop_item_stack(
                             pos.above(),
-                            steel_registry::item_stack::ItemStack::new(key_item),
+                            ItemStack::new(key_item),
                         );
                     } else {
                         let _ = Self::drop_loot_key(world, pos.above(), state, &loot_table);

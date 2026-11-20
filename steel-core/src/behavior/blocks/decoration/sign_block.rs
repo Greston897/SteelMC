@@ -907,6 +907,7 @@ mod tests {
     use super::*;
     use crate::behavior::init_behaviors;
     use crate::block_entity::entities::SignText;
+use crate::behavior::BLOCK_BEHAVIORS;
     use crate::test_support::{
         TestLevel, TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk,
     };
@@ -973,7 +974,7 @@ mod tests {
                 };
                 let context = BlockPlaceContext::new(world, source, &hit);
                 assert_eq!(context.place_pos(), pos);
-                let behavior = crate::behavior::BLOCK_BEHAVIORS.get_behavior(block);
+                let behavior = BLOCK_BEHAVIORS.get_behavior(block);
                 let placed = behavior
                     .get_state_for_placement(&context)
                     .expect("supported sign placement");

@@ -1,6 +1,9 @@
 use std::collections::BTreeSet;
 
 use super::*;
+use crate::behavior::InteractionResult;
+use crate::behavior::InteractionResult::Pass;
+use crate::scoreboard::ScoreHolder;
 use crate::entity::{
     entities::objects::vehicles::{AbstractBoat, AbstractMinecart},
     leash::Leashable,
@@ -11,6 +14,7 @@ use steel_math::DEGREE_90;
 use steel_registry::vanilla_criteria_triggers;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::nbt::{NbtNumeric, nbt_collection_values};
+use steel_registry::item_stack::ItemStack;
 
 /// Vanilla `Entity.refreshDimensions` small-entity limit: only entities at most
 /// this wide and tall (in blocks) get their position fudged after growing.
@@ -182,8 +186,8 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     /// no entity-owned menu yet, so the default passes; the hook exists so
     /// spectator interaction already routes through the same call vanilla uses
     /// and so the first entity menu only has to override this method.
-    fn open_menu_for(&self, _player: &Player) -> crate::behavior::InteractionResult {
-        crate::behavior::InteractionResult::Pass
+    fn open_menu_for(&self, _player: &Player) -> InteractionResult {
+        Pass
     }
 
     /// Gets the entity's unique network ID (session-local).
@@ -1187,7 +1191,7 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     /// through the world's server link, so worlds without a server report none.
     fn team_name(&self) -> Option<String> {
         let world = self.level()?;
-        let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+        let holder = ScoreHolder::new(self.scoreboard_name());
         world.with_scoreboard(|scoreboard| scoreboard.team_of(&holder))?
     }
 
@@ -1315,7 +1319,7 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     ///
     /// Vanilla `Entity.getPickResult`. Most entities yield nothing; minecarts,
     /// boats and similar vehicles override it with their own item.
-    fn pick_result(&self) -> Option<steel_registry::item_stack::ItemStack> {
+    fn pick_result(&self) -> Option<ItemStack> {
         None
     }
 

@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use steel_registry::{REGISTRY, world_clock::WorldClockRef};
 use steel_utils::Identifier;
 use thiserror::Error;
+use steel_registry::vanilla_world_clocks::OVERWORLD;
 
 /// Game-time synchronization interval, measured in simulation ticks.
 const GAME_TIME_SYNC_INTERVAL_TICKS: i64 = 20;
@@ -252,7 +253,7 @@ impl World {
         raining: bool,
         thundering: bool,
     ) -> Result<(), String> {
-        let clock = &steel_registry::vanilla_world_clocks::OVERWORLD;
+        let clock = &OVERWORLD;
         if let Ok(ticks) = time.parse::<i64>() {
             if ticks < 0 {
                 return Err(format!("negative test time: {time}"));

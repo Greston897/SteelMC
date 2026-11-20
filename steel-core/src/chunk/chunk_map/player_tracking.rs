@@ -2,6 +2,7 @@ use super::{CSetChunkCenter, ChunkMap, ChunkPos, Entity, Player, PlayerChunkView
 use crate::chunk::chunk_scheduler::PlayerTicketOperation;
 use steel_registry::vanilla_game_rules;
 use steel_utils::types::GameType;
+use std::sync::atomic::Ordering::Relaxed;
 
 impl ChunkMap {
     /// Vanilla `ChunkMap#skipPlayer`: a spectator holds no distance-manager
@@ -64,7 +65,7 @@ impl ChunkMap {
         let mut retired_center = None;
         if player
             .skip_player
-            .load(std::sync::atomic::Ordering::Relaxed)
+            .load(Relaxed)
             != skip_player
         {
             // Vanilla flags a player `skippedPlayer` and forces the next
@@ -74,7 +75,7 @@ impl ChunkMap {
             // never moves would otherwise keep its old ticket forever.
             player
                 .skip_player
-                .store(skip_player, std::sync::atomic::Ordering::Relaxed);
+                .store(skip_player, Relaxed);
             retired_center = last_view_guard.as_ref().map(|last_view| last_view.center);
             *last_view_guard = None;
         }
@@ -182,7 +183,7 @@ impl ChunkMap {
         // re-runs the full ticket path even if it was a skipped spectator.
         player
             .skip_player
-            .store(false, std::sync::atomic::Ordering::Relaxed);
+            .store(false, Relaxed);
         {
             let mut chunk_sender = player.chunk_sender().lock();
             let mut chunk_send_epoch = player.chunk_send_epoch.lock();

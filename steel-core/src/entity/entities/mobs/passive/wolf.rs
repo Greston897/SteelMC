@@ -22,6 +22,7 @@ use steel_registry::{sound_events, vanilla_attributes, vanilla_items};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
 use uuid::Uuid;
+use steel_registry::vanilla_criteria_triggers::TAME_ANIMAL;
 
 use crate::entity::ai::goal::{
     BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
@@ -30,6 +31,7 @@ use crate::entity::ai::goal::{
 
 use crate::behavior::InteractionResult;
 use crate::entity::damage::DamageSource;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityPose, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase,
@@ -181,7 +183,7 @@ impl WolfEntity {
 impl DefaultEntityPush for WolfEntity {}
 
 impl Entity for WolfEntity {
-    fn is_tame_owned_by(&self, owner: &dyn crate::entity::LivingEntity) -> bool {
+    fn is_tame_owned_by(&self, owner: &dyn LivingEntity) -> bool {
         self.is_owned_by(Some(owner.uuid()))
     }
 
@@ -353,8 +355,8 @@ impl Mob for WolfEntity {
                 self.set_tame(true, Some(player.base().uuid()));
                 self.set_health(self.get_max_health());
                 player.trigger_advancement_with_context(
-                    &steel_registry::vanilla_criteria_triggers::TAME_ANIMAL,
-                    &crate::player::advancement::predicate::TriggerContext::entity(
+                    &TAME_ANIMAL,
+                    &TriggerContext::entity(
                         &self.entity_type().key,
                     ),
                 );

@@ -24,6 +24,7 @@ use steel_registry::RegistryExt as _;
 use steel_registry::{REGISTRY, entity_type::EntityTypeRef, vanilla_game_rules};
 use steel_utils::Downcast as _;
 use steel_utils::{BlockPos, Identifier};
+use crate::entity::entities::WanderingTraderEntity;
 
 /// Vanilla `WanderingTraderSpawner.SPAWN_DELAY`: the counter is reset to this.
 pub const SPAWN_DELAY_TICKS: i32 = 24_000;
@@ -196,7 +197,7 @@ impl WanderingTraderSpawner {
                 // `DESPAWN_DELAY` ticks unless somebody is trading with it.
                 if let Some(trader) = entity
                     .as_ref()
-                    .downcast_ref::<crate::entity::entities::WanderingTraderEntity>()
+                    .downcast_ref::<WanderingTraderEntity>()
                 {
                     trader.set_despawn_delay(natural_despawn_delay());
                     // Vanilla `WanderingTraderSpawner.spawn`: `tryToSpawnLlamaFor`

@@ -3,6 +3,13 @@
 use std::sync::Arc;
 
 use steel_macros::block_behavior;
+use steel_protocol::packets::game::SoundSource::Blocks;
+use steel_registry::data_components::BannerPatternLayers;
+use steel_registry::data_components::PotionContents;
+use steel_registry::data_components::vanilla_components::POTION_CONTENTS;
+use steel_registry::stat::vanilla_stat_types::ITEM_USED;
+use steel_registry::vanilla_block_tags::BlockTag;
+use steel_utils::types::InteractionHand;
 use steel_registry::{
     blocks::{
         BlockRef,
@@ -12,6 +19,10 @@ use steel_registry::{
     level_events, vanilla_blocks, vanilla_fluids, vanilla_game_events,
 };
 use steel_utils::{BlockPos, BlockStateId, types::UpdateFlags};
+use crate::behavior::BlockHitResult;
+use crate::behavior::InventoryAccess;
+use crate::behavior::item_utils::create_filled_result_for_hand;
+use crate::player::Player;
 
 use crate::{
     behavior::{BlockBehavior, BlockPlaceContext, blocks::vegetation},
@@ -45,11 +56,11 @@ impl BlockBehavior for CauldronBlock {
         state: BlockStateId,
         world: &Arc<World>,
         pos: BlockPos,
-        player: &crate::player::Player,
-        hand: steel_utils::types::InteractionHand,
-        _hit: &crate::behavior::BlockHitResult,
-        inv: &mut crate::behavior::InventoryAccess,
-    ) -> crate::behavior::InteractionResult {
+        player: &Player,
+        hand: InteractionHand,
+        _hit: &BlockHitResult,
+        inv: &mut InventoryAccess,
+    ) -> InteractionResult {
         cauldron_item_interaction(state, world, pos, player, hand, inv)
     }
 
@@ -133,11 +144,11 @@ impl BlockBehavior for LayeredCauldronBlock {
         state: BlockStateId,
         world: &Arc<World>,
         pos: BlockPos,
-        player: &crate::player::Player,
-        hand: steel_utils::types::InteractionHand,
-        _hit: &crate::behavior::BlockHitResult,
-        inv: &mut crate::behavior::InventoryAccess,
-    ) -> crate::behavior::InteractionResult {
+        player: &Player,
+        hand: InteractionHand,
+        _hit: &BlockHitResult,
+        inv: &mut InventoryAccess,
+    ) -> InteractionResult {
         cauldron_item_interaction(state, world, pos, player, hand, inv)
     }
 
@@ -242,10 +253,10 @@ pub(super) fn cauldron_item_interaction(
     state: BlockStateId,
     world: &Arc<World>,
     pos: BlockPos,
-    player: &crate::player::Player,
-    hand: steel_utils::types::InteractionHand,
-    inv: &mut crate::behavior::InventoryAccess,
-) -> crate::behavior::InteractionResult {
+    player: &Player,
+    hand: InteractionHand,
+    inv: &mut InventoryAccess,
+) -> InteractionResult {
     use crate::{behavior::InteractionResult, fluid::FluidStateExt as _};
     use steel_registry::item_stack::ItemStack;
     use steel_registry::{
@@ -354,7 +365,7 @@ pub(super) fn cauldron_item_interaction(
         )
     } else if water && item == &*items::GLASS_BOTTLE {
         (
-            steel_registry::data_components::PotionContents::create_item_stack(
+            PotionContents::create_item_stack(
                 &items::POTION,
                 &vanilla_potions::WATER,
             ),
@@ -368,7 +379,7 @@ pub(super) fn cauldron_item_interaction(
     } else if (empty || water && level < 3)
         && item == &*items::POTION
         && held
-            .get(steel_registry::data_components::vanilla_components::POTION_CONTENTS)
+            .get(POTION_CONTENTS)
             .is_some_and(|potion| potion.is(&vanilla_potions::WATER))
     {
         (
@@ -394,7 +405,7 @@ pub(super) fn cauldron_item_interaction(
         let mut cleaned = held.copy_with_count(1);
         cleaned.set(
             BANNER_PATTERNS,
-            steel_registry::data_components::BannerPatternLayers::new(layers),
+            BannerPatternLayers::new(layers),
         );
         (
             cleaned,
@@ -408,7 +419,7 @@ pub(super) fn cauldron_item_interaction(
     } else if water
         && item != &*items::SHULKER_BOX
         && item.block.is_some_and(|block| {
-            block.has_tag(&steel_registry::vanilla_block_tags::BlockTag::SHULKER_BOXES)
+            block.has_tag(&BlockTag::SHULKER_BOXES)
         })
     {
         (
@@ -427,7 +438,7 @@ pub(super) fn cauldron_item_interaction(
     } else {
         return InteractionResult::TryEmptyHandInteraction;
     };
-    crate::behavior::item_utils::create_filled_result_for_hand(
+    create_filled_result_for_hand(
         player,
         inv,
         hand,
@@ -435,7 +446,7 @@ pub(super) fn cauldron_item_interaction(
         creative_limit,
     );
     if award_item {
-        player.award_stat(&steel_registry::stat::vanilla_stat_types::ITEM_USED, item);
+        player.award_stat(&ITEM_USED, item);
     }
     player.award_custom_stat(stat);
     world.set_block(pos, next, UpdateFlags::UPDATE_ALL);
@@ -451,7 +462,7 @@ pub(super) fn cauldron_item_interaction(
     if let Some(sound) = sound {
         world.play_sound(
             sound,
-            steel_protocol::packets::game::SoundSource::Blocks,
+            Blocks,
             pos,
             1.0,
             1.0,

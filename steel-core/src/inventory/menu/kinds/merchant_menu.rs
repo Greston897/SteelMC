@@ -320,6 +320,9 @@ impl MenuKind for MerchantKind {
 #[cfg(test)]
 mod tests {
     use super::*;
+use steel_registry::vanilla_items::STICK;
+use steel_registry::vanilla_items::WHEAT;
+use crate::entity::villager_trades::offers_for;
 
     #[test]
     fn the_merchant_menu_has_three_trade_slots_above_the_inventory() {
@@ -351,16 +354,16 @@ mod tests {
 
     #[test]
     fn an_offer_without_a_second_cost_ignores_the_second_slot() {
-        let trades = Arc::new(SyncMutex::new(crate::entity::villager_trades::offers_for(
+        let trades = Arc::new(SyncMutex::new(offers_for(
             "minecraft:farmer",
         )));
         let container: ContainerRef = SimpleContainer::new(TRADE_SLOTS).into_shared().into();
         let kind = MerchantKind::new(trades, container);
 
-        let wheat = ItemStack::with_count(&steel_registry::vanilla_items::WHEAT, 20);
+        let wheat = ItemStack::with_count(&WHEAT, 20);
         // The first farmer trade is 20 wheat for an emerald and takes no second
         // payment, so a filled second slot must not block it.
-        let bogus_second = ItemStack::with_count(&steel_registry::vanilla_items::STICK, 1);
+        let bogus_second = ItemStack::with_count(&STICK, 1);
         assert_eq!(kind.matching_offer(&wheat, &bogus_second), Some(0));
     }
 }

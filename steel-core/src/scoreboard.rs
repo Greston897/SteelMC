@@ -14,6 +14,7 @@ use std::{
 use serde::{Deserialize, Serialize};
 use steel_utils::locks::{AsyncMutex, SyncRwLock};
 use thiserror::Error;
+use steel_registry::stat::is_statistic_criterion;
 
 use crate::{server::worlds::WorldMap, world::World};
 use steel_utils::saved_data::names as saved_data_names;
@@ -141,7 +142,7 @@ pub fn criterion_is_read_only(criterion: &str) -> Option<bool> {
     if NON_STATISTIC_CRITERIA.contains(&criterion) {
         return Some(criterion != "dummy" && criterion != TRIGGER_CRITERION);
     }
-    if steel_registry::stat::is_statistic_criterion(criterion) {
+    if is_statistic_criterion(criterion) {
         return Some(true);
     }
     None

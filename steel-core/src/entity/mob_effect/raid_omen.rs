@@ -3,6 +3,10 @@
 use super::MobEffectBehavior;
 use crate::entity::{Entity as _, LivingEntity};
 use crate::world::World;
+use steel_registry::vanilla_criteria_triggers::VOLUNTARY_EXILE;
+use steel_registry::vanilla_game_rules::RAIDS;
+use crate::player::advancement::predicate::TriggerContext;
+use crate::world::raid::village_center_world;
 
 /// Raid omen mob effect behavior.
 ///
@@ -26,16 +30,16 @@ impl MobEffectBehavior for RaidOmenBehavior {
         let Some(pos) = player.raid_omen_position.lock().take() else {
             return true;
         };
-        if !world.get_game_rule(&steel_registry::vanilla_game_rules::RAIDS)
+        if !world.get_game_rule(&RAIDS)
             || world.dimension_type.can_start_raid == Some(false)
         {
             return false;
         }
-        let center = crate::world::raid::village_center_world(world, pos).unwrap_or(pos.0);
+        let center = village_center_world(world, pos).unwrap_or(pos.0);
         world.raids.raise_omen(center, amplifier);
         player.trigger_advancement_with_context(
-            &steel_registry::vanilla_criteria_triggers::VOLUNTARY_EXILE,
-            &crate::player::advancement::predicate::TriggerContext::at(
+            &VOLUNTARY_EXILE,
+            &TriggerContext::at(
                 &player.get_world(),
                 player.position(),
             ),
@@ -53,11 +57,12 @@ mod tests {
     use std::sync::Arc;
     use steel_registry::{REGISTRY, vanilla_mob_effects};
     use steel_utils::BlockPos;
+use crate::behavior::init_behaviors;
 
     #[test]
     fn bad_omen_converts_once_and_raid_uses_captured_not_current_position() {
         steel_registry::init_vanilla_registry();
-        crate::behavior::init_behaviors();
+        init_behaviors();
         let fixture = fresh_test_world("omen_origin");
         let world = &fixture.world;
         let origin = BlockPos::new(4, 64, 4);
@@ -118,13 +123,14 @@ mod dimension_tests {
     use crate::entity::next_entity_id;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world_with_dimension_type};
     use std::sync::Arc;
+use steel_registry::vanilla_dimension_types::THE_NETHER;
 
     #[test]
     fn dimensions_that_forbid_raids_consume_origin_without_starting_encounter() {
         let fixture = fresh_test_world_with_dimension_type(
             "raid",
             "nether_omen",
-            &steel_registry::vanilla_dimension_types::THE_NETHER,
+            &THE_NETHER,
         );
         let player =
             TestPlayerBuilder::new(Arc::clone(&fixture.world), "NetherOmen", next_entity_id())

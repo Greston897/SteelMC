@@ -15,6 +15,7 @@
 //! * galloping and breeding stats are not implemented.
 
 use std::sync::Weak;
+use std::sync::Arc;
 
 use glam::DVec3;
 use simdnbt::{borrow, owned};
@@ -34,6 +35,9 @@ use steel_utils::types::InteractionHand;
 use steel_utils::{DowncastType, DowncastTypeKey};
 
 use crate::behavior::InteractionResult;
+use crate::entity::mount::SharedMountInventory;
+use crate::entity::mount::open_mount_menu;
+use crate::entity::mount::shared_inventory;
 use crate::entity::ai::goal::{
     FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
     WaterAvoidingRandomStrollGoal,
@@ -67,7 +71,7 @@ pub struct HorseEntity {
     entity_data: SyncMutex<HorseEntityData>,
     /// Vanilla `AbstractHorse.inventory`: saddle, body armor and the storage the
     /// mount screen shows.
-    mount_inventory: crate::entity::mount::SharedMountInventory,
+    mount_inventory: SharedMountInventory,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `HorseEntity`.
@@ -127,7 +131,7 @@ impl HorseEntity {
             ageable_base,
             animal_base,
             entity_data: SyncMutex::new(entity_data),
-            mount_inventory: crate::entity::mount::shared_inventory(1),
+            mount_inventory: shared_inventory(1),
         }
     }
 
@@ -226,15 +230,15 @@ impl HorseEntity {
             return;
         }
         let inventory = self.mount_inventory.lock();
-        let container = std::sync::Arc::clone(inventory.container());
+        let container = Arc::clone(inventory.container());
         let columns = inventory.columns();
         drop(inventory);
-        crate::entity::mount::open_mount_menu(self, player, &container, columns);
+        open_mount_menu(self, player, &container, columns);
     }
 
     /// The mount's shared equipment container, for tests and persistence.
     #[must_use]
-    pub const fn mount_inventory(&self) -> &crate::entity::mount::SharedMountInventory {
+    pub const fn mount_inventory(&self) -> &SharedMountInventory {
         &self.mount_inventory
     }
 }
@@ -525,6 +529,7 @@ mod tests {
 
     use super::*;
     use crate::test_support::TestPlayerBuilder;
+use crate::test_support::fresh_test_world;
 
     #[test]
     fn horse_tame_and_saddle_bits_are_independent() {
@@ -545,7 +550,7 @@ mod tests {
     fn horse_ridden_speed_uses_movement_speed_attribute() {
         init_vanilla_registry();
 
-        let world_fixture = crate::test_support::fresh_test_world("horse_ridden_speed");
+        let world_fixture = fresh_test_world("horse_ridden_speed");
         let world = &world_fixture.world;
         let horse = HorseEntity::new(
             &vanilla_entities::HORSE,

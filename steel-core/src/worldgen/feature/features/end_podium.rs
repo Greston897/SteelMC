@@ -1,5 +1,6 @@
 use super::super::prelude::*;
 use super::super::runner::FeatureDecorationRunner;
+use crate::world::World;
 
 impl FeatureDecorationRunner {
     pub(in crate::worldgen::feature) fn place_end_podium_feature(
@@ -80,7 +81,7 @@ impl FeatureDecorationRunner {
 /// `active` flag, so it is executed here against the live world rather than
 /// rebuilt with a second block loop that could drift from worldgen.
 pub(crate) fn place_end_podium_in_world(
-    world: &Arc<crate::world::World>,
+    world: &Arc<World>,
     origin: BlockPos,
     active: bool,
 ) {

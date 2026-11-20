@@ -18,6 +18,7 @@ use steel_utils::{
 use steel_worldgen::density_functions::overworld::OverworldNoiseSettings;
 use toml::map::Map;
 use uuid::Uuid;
+use std::sync::OnceLock;
 
 const TEST_WORLD_SEED: i64 = 0;
 const TEST_VIEW_AND_SIMULATION_DISTANCE_CHUNKS: u8 = 2;
@@ -87,7 +88,7 @@ fn restored_portal_ticket_initializes_both_levels_in_the_first_source_phase() {
             &OVERWORLD,
             TEST_WORLD_SEED,
             WorldConfig {
-                server: std::sync::OnceLock::new(),
+                server: OnceLock::new(),
                 damage_history: Arc::clone(&damage_history),
                 game_time_source: GameTimeSource::Primary,
                 storage: WorldStorageConfig::RamOnly,

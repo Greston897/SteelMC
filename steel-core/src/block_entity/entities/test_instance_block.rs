@@ -15,6 +15,7 @@ use steel_registry::vanilla_block_entity_types;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
+use steel_utils::nbt::NbtNumeric::codec_i32;
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::world::World;
@@ -95,7 +96,7 @@ impl BlockEntity for TestInstanceBlockEntity {
             let tags = size.to_owned().as_nbt_tags();
             let mut axes = tags
                 .iter()
-                .filter_map(steel_utils::nbt::NbtNumeric::codec_i32);
+                .filter_map(codec_i32);
             if let (Some(x), Some(y), Some(z)) = (axes.next(), axes.next(), axes.next()) {
                 data_out.size = glam::IVec3 { x, y, z };
             }

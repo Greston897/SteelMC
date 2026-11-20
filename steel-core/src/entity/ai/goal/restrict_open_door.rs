@@ -13,6 +13,7 @@ use steel_utils::BlockPos;
 use super::door_interact::DoorInteractGoal;
 use super::selector::{Goal, GoalControls};
 use crate::entity::PathfinderMob;
+use crate::world::raid::village_center_world;
 
 /// Vanilla counts a position as still inside the village within this radius.
 const VILLAGE_RADIUS: f64 = 64.0;
@@ -81,7 +82,7 @@ fn is_in_village(mob: &dyn PathfinderMob) -> bool {
         return false;
     };
     let pos = mob.block_position();
-    crate::world::raid::village_center_world(&world, pos)
+    village_center_world(&world, pos)
         .is_some_and(|center| distance_sqr(center, pos) <= VILLAGE_RADIUS * VILLAGE_RADIUS)
 }
 

@@ -11,6 +11,14 @@ use steel_protocol::packets::game::{CDisguisedChat, ChatTypeBound};
 use steel_registry::RegistryEntry as _;
 use steel_registry::chat_type::{ChatStyle, ChatTypeDecoration, ChatTypeRef};
 use text_components::translation::TranslatedMessage;
+use steel_protocol::packets::game::CCodeOfConduct;
+use steel_protocol::packets::game::CCustomChatCompletions;
+use steel_protocol::packets::game::CCustomReportDetails;
+use steel_protocol::packets::game::CDeleteChat;
+use steel_protocol::packets::game::CustomChatCompletionAction;
+use steel_protocol::packets::game::PackedMessageSignature;
+use steel_protocol::packets::game::ReportDetail;
+use crate::scoreboard::ScoreHolder;
 
 impl Server {
     /// Logs and broadcasts a system chat message to online players.
@@ -117,7 +125,7 @@ impl Server {
                 .get(world.domain())
                 .is_none_or(|scoreboard| {
                     scoreboard.can_see_team_message(
-                        &crate::scoreboard::ScoreHolder::new(player.scoreboard_name()),
+                        &ScoreHolder::new(player.scoreboard_name()),
                         team,
                     )
                 });
@@ -329,9 +337,9 @@ impl Server {
 
     /// Builds a `CCodeOfConduct` packet if a non-empty code of conduct is active.
     #[must_use]
-    pub fn code_of_conduct_packet(&self) -> Option<steel_protocol::packets::game::CCodeOfConduct> {
+    pub fn code_of_conduct_packet(&self) -> Option<CCodeOfConduct> {
         self.code_of_conduct.lock().clone().map(|code_of_conduct| {
-            steel_protocol::packets::game::CCodeOfConduct { code_of_conduct }
+            CCodeOfConduct { code_of_conduct }
         })
     }
 
@@ -339,39 +347,39 @@ impl Server {
     /// (`ClientboundCustomReportDetailsPacket`) and pushes the update to online players.
     pub fn set_custom_report_details(
         &self,
-        details: Vec<steel_protocol::packets::game::ReportDetail>,
+        details: Vec<ReportDetail>,
     ) {
         self.custom_report_details.lock().clone_from(&details);
-        self.broadcast_to_online(steel_protocol::packets::game::CCustomReportDetails { details });
+        self.broadcast_to_online(CCustomReportDetails { details });
     }
 
     /// Builds a `CCustomReportDetails` packet if custom report details are registered.
     #[must_use]
     pub fn custom_report_details_packet(
         &self,
-    ) -> Option<steel_protocol::packets::game::CCustomReportDetails> {
+    ) -> Option<CCustomReportDetails> {
         let details = self.custom_report_details.lock().clone();
         (!details.is_empty())
-            .then_some(steel_protocol::packets::game::CCustomReportDetails { details })
+            .then_some(CCustomReportDetails { details })
     }
 
     /// Vanilla `PlayerList.deleteMessage`: instructs all connected clients to
     /// hide/delete a previously seen signed chat message (`ClientboundDeleteChatPacket`).
     pub fn delete_signed_chat(
         &self,
-        message_signature: steel_protocol::packets::game::PackedMessageSignature,
+        message_signature: PackedMessageSignature,
     ) {
-        self.broadcast_to_online(steel_protocol::packets::game::CDeleteChat { message_signature });
+        self.broadcast_to_online(CDeleteChat { message_signature });
     }
 
     /// Pushes custom chat tab-completion suggestions to all online players
     /// (`ClientboundCustomChatCompletionsPacket`).
     pub fn broadcast_custom_chat_completions(
         &self,
-        action: steel_protocol::packets::game::CustomChatCompletionAction,
+        action: CustomChatCompletionAction,
         entries: Vec<String>,
     ) {
-        self.broadcast_to_online(steel_protocol::packets::game::CCustomChatCompletions {
+        self.broadcast_to_online(CCustomChatCompletions {
             action,
             entries,
         });

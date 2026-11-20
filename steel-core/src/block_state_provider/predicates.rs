@@ -9,6 +9,7 @@ use steel_registry::{
     feature::{BiomeHolderSet, BlockHolderSet, BlockPredicate, FluidHolderSet},
 };
 use steel_utils::BlockPos;
+use std::ptr::eq;
 
 impl BlockStateProviderEvaluator {
     pub(crate) fn test_block_predicate(
@@ -57,7 +58,7 @@ impl BlockStateProviderEvaluator {
                     // Registry entries are unique statics, so identity
                     // comparison is exact.
                     BiomeHolderSet::Entries(entries) => {
-                        entries.iter().any(|entry| std::ptr::eq(*entry, biome))
+                        entries.iter().any(|entry| eq(*entry, biome))
                     }
                 }
             }

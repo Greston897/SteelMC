@@ -1,4 +1,6 @@
 use super::*;
+use steel_registry::feature::EndGatewayConfiguration;
+use crate::worldgen::feature::place_end_gateway_in_world;
 
 pub(super) fn portal_candidate_distance_sqr(candidate: BlockPos, center: BlockPos) -> i64 {
     let dx = i64::from(candidate.x()) - i64::from(center.x());
@@ -516,10 +518,10 @@ impl World {
         exit: BlockPos,
         exact: bool,
     ) -> bool {
-        crate::worldgen::feature::place_end_gateway_in_world(
+        place_end_gateway_in_world(
             self,
             origin,
-            &steel_registry::feature::EndGatewayConfiguration {
+            &EndGatewayConfiguration {
                 exit: Some(glam::IVec3::new(exit.x(), exit.y(), exit.z())),
                 exact,
             },

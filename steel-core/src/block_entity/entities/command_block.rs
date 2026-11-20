@@ -35,6 +35,11 @@ use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::{vanilla_block_entity_types, vanilla_blocks};
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
+use steel_registry::blocks::BlockRef;
+use steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK;
+use tokio::sync::oneshot::Receiver;
+use tokio::sync::oneshot::error::TryRecvError::Closed;
+use tokio::sync::oneshot::error::TryRecvError::Empty;
 
 use steel_utils::{
     BlockPos, BlockStateId, Direction, Downcast as _, DowncastType, DowncastTypeKey,
@@ -43,6 +48,7 @@ use text_components::TextComponent;
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::world::World;
+use crate::command::BackgroundCommandResult;
 
 /// Vanilla `BaseCommandBlock` clock prefix format: `HH:mm:ss`.
 const TIME_FORMAT: &str = "%H:%M:%S";
@@ -135,7 +141,7 @@ impl Default for CommandBlockState {
 
 /// Reply of one queued command plus the block it belongs to.
 struct PendingRun {
-    receiver: tokio::sync::oneshot::Receiver<crate::command::BackgroundCommandResult>,
+    receiver: Receiver<BackgroundCommandResult>,
     /// Game time at which the run was queued, for `lastExecution`.
     queued_at: i64,
 }
@@ -382,7 +388,7 @@ impl CommandBlockBlockEntity {
     /// The block this one reads its condition from (vanilla
     /// `worldPosition.relative(FACING.getOpposite())`).
     /// Vanilla `instanceof CommandBlock`: the three vanilla command blocks.
-    fn is_command_block(block: steel_registry::blocks::BlockRef) -> bool {
+    fn is_command_block(block: BlockRef) -> bool {
         block.key == vanilla_blocks::COMMAND_BLOCK.key
             || block.key == vanilla_blocks::REPEATING_COMMAND_BLOCK.key
             || block.key == vanilla_blocks::CHAIN_COMMAND_BLOCK.key
@@ -495,7 +501,7 @@ impl CommandBlockBlockEntity {
             // a disabled rule: the success count resets and the run is consumed.
             state.success_count = 0;
             let runnable = !state.command.trim().is_empty()
-                && world.get_game_rule(&steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK);
+                && world.get_game_rule(&COMMAND_BLOCKS_WORK);
             state.last_output = None;
             if state.update_last_execution {
                 state.last_execution = game_time;
@@ -538,8 +544,8 @@ impl CommandBlockBlockEntity {
                 // Vanilla `BaseCommandBlock.onUpdated` → `sendBlockUpdated`.
                 world.broadcast_block_entity_if_needed(self.get_block_pos());
             }
-            Err(tokio::sync::oneshot::error::TryRecvError::Empty) => {}
-            Err(tokio::sync::oneshot::error::TryRecvError::Closed) => {
+            Err(Empty) => {}
+            Err(Closed) => {
                 *pending = None;
             }
         }
@@ -549,7 +555,7 @@ impl CommandBlockBlockEntity {
     fn apply_result(
         &self,
         world: &Arc<World>,
-        result: crate::command::BackgroundCommandResult,
+        result: BackgroundCommandResult,
         _queued_at: i64,
     ) {
         let mut state = self.state.lock();

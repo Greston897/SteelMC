@@ -14,6 +14,7 @@ use steel_registry::REGISTRY;
 use steel_registry::loot_table::LootTableRef;
 use steel_utils::{BlockPos, Identifier};
 use text_components::TextComponent;
+use steel_registry::item_stack::ItemStack;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
@@ -24,6 +25,9 @@ use super::super::{
     registration::CommandRegistration,
 };
 use crate::player::Player;
+use crate::behavior::block::drop_from_block_interact_loot_table;
+use crate::player::player_inventory::Prediction::ServerOnly;
+use crate::world::World;
 
 type Builder = CommandNodeBuilder<CommandSource, SteelCommandRuntime>;
 
@@ -81,12 +85,12 @@ fn loot_table_of(
 
 fn roll(
     table: LootTableRef,
-    world: &Arc<crate::world::World>,
+    world: &Arc<World>,
     pos: BlockPos,
-) -> Vec<steel_registry::item_stack::ItemStack> {
+) -> Vec<ItemStack> {
     let state = world.get_block_state(pos);
     let mut random = rand::rng();
-    crate::behavior::block::drop_from_block_interact_loot_table(
+    drop_from_block_interact_loot_table(
         table,
         state,
         None,
@@ -139,10 +143,10 @@ fn insert_or_give(
     Ok(total)
 }
 
-fn give_to_player(player: &Player, item: steel_registry::item_stack::ItemStack) {
+fn give_to_player(player: &Player, item: ItemStack) {
     player.add_item_or_drop(
         item,
-        crate::player::player_inventory::Prediction::ServerOnly,
+        ServerOnly,
     );
 }
 

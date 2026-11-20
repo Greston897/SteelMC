@@ -16,6 +16,8 @@ use steel_utils::block_util::FoundRectangle;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtNumeric;
 use steel_utils::{BlockPos, BlockStateId};
+use steel_protocol::packets::game::CMoveMinecartAlongTrack;
+use steel_protocol::packets::game::MinecartStep;
 
 use super::minecart_behavior::MinecartBehavior;
 use super::vehicle_entity::VehicleEntity;
@@ -549,9 +551,9 @@ pub trait AbstractMinecart: VehicleEntity + AbstractMinecartEventSource {
     #[must_use]
     fn build_track_lerp_packet(
         &self,
-        steps: Vec<steel_protocol::packets::game::MinecartStep>,
-    ) -> steel_protocol::packets::game::CMoveMinecartAlongTrack {
-        steel_protocol::packets::game::CMoveMinecartAlongTrack {
+        steps: Vec<MinecartStep>,
+    ) -> CMoveMinecartAlongTrack {
+        CMoveMinecartAlongTrack {
             entity_id: self.id(),
             steps,
         }

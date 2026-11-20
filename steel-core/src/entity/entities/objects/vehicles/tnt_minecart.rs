@@ -17,10 +17,14 @@ use steel_utils::BlockStateId;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey};
+use steel_registry::vanilla_damage_types::IN_FIRE;
+use steel_registry::vanilla_damage_types::ON_FIRE;
+use steel_registry::vanilla_game_rules::TNT_EXPLODES;
 
 use super::abstract_minecart::{AbstractMinecart, AbstractMinecartBase};
 use crate::entity::damage::DamageSource;
 use crate::entity::{Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, SharedEntity};
+use crate::entity::RemovalReason::Killed;
 use crate::world::{
     DefaultExplosionDamageCalculator, ExplosionInteraction, ExplosionOptions, World,
 };
@@ -137,7 +141,7 @@ impl TntMinecartEntity {
 
     /// Vanilla `MinecartTNT.explode`: detonate with the current power.
     pub fn explode(&self, world: &Arc<World>) {
-        if !world.get_game_rule(&steel_registry::vanilla_game_rules::TNT_EXPLODES) {
+        if !world.get_game_rule(&TNT_EXPLODES) {
             return;
         }
         let power = self.explosion_power();
@@ -152,7 +156,7 @@ impl TntMinecartEntity {
         }
         options.immutable_block_calculator = Some(&DefaultExplosionDamageCalculator);
         world.explode(options);
-        self.set_removed(crate::entity::RemovalReason::Killed);
+        self.set_removed(Killed);
     }
 }
 
@@ -192,8 +196,8 @@ impl Entity for TntMinecartEntity {
     fn hurt(&self, world: &World, source: &DamageSource, amount: f32) -> bool {
         // Vanilla primes the fuse when the cart takes damage from a source
         // that is not fire, and only if the cart was not already primed.
-        let ignites = source.damage_type.key != steel_registry::vanilla_damage_types::IN_FIRE.key
-            && source.damage_type.key != steel_registry::vanilla_damage_types::ON_FIRE.key;
+        let ignites = source.damage_type.key != IN_FIRE.key
+            && source.damage_type.key != ON_FIRE.key;
         if ignites && !self.is_primed() {
             self.prime_fuse(true);
         }

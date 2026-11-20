@@ -704,6 +704,7 @@ mod tests {
     use steel_registry::{REGISTRY, init_vanilla_registry, vanilla_attributes, vanilla_entities};
 
     use super::*;
+use std::ptr::eq;
 
     #[test]
     fn attribute_supplier_is_cached_per_entity_type() {
@@ -712,11 +713,11 @@ mod tests {
         let first = AttributeSupplier::for_entity(&vanilla_entities::PLAYER);
         let second = AttributeSupplier::for_entity(&vanilla_entities::PLAYER);
         // The supplier is resolved once per type and reused by every spawn.
-        assert!(std::ptr::eq(first, second));
+        assert!(eq(first, second));
 
         // A different type gets its own supplier with its own base values.
         let zombie = AttributeSupplier::for_entity(&vanilla_entities::ZOMBIE);
-        assert!(!std::ptr::eq(first, zombie));
+        assert!(!eq(first, zombie));
 
         let map = first.instantiate();
         let expected = first

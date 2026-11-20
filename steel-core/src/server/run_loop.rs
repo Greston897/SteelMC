@@ -1,5 +1,7 @@
 use super::tick_overload::TickOverloadGuard;
 use super::world_tick_workers::{WorldTickWorkerError, WorldTickWorkers};
+use crate::command::BackgroundCommandResult;
+use crate::server::schedule::ScheduleMode::Append;
 use super::{
     Arc, CCommandSuggestions, CHUNK_SENDING_TPS, COMMAND_DATA_AUTOSAVE_INTERVAL,
     COMMAND_REQUESTS_PER_TICK, COMMAND_RESUMPTIONS_PER_TICK, CancellationToken, ChunkPos,
@@ -15,6 +17,10 @@ use super::{
 use steel_registry::vanilla_custom_stats;
 use steel_utils::threading::worker_threads_for_available;
 use steel_utils::translations;
+use steel_registry::vanilla_game_rules::COMMAND_BLOCK_OUTPUT;
+use tokio::sync::oneshot::Sender;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering::Relaxed;
 
 impl Server {
     pub(super) fn advance_server_tick(&self) -> (u64, bool) {
@@ -440,7 +446,7 @@ impl Server {
                     scheduled.key,
                     scheduled.command,
                     tick + 1,
-                    crate::server::schedule::ScheduleMode::Append,
+                    Append,
                 );
             }
         }
@@ -539,7 +545,7 @@ impl Server {
         self: &Arc<Self>,
         owner: CommandExecutionOwner,
         command: &str,
-        reply: tokio::sync::oneshot::Sender<crate::command::BackgroundCommandResult>,
+        reply: Sender<BackgroundCommandResult>,
     ) {
         let Some(output) = owner.sender().get_command_block_output().cloned() else {
             // A background request always carries a command block sender; a
@@ -561,7 +567,7 @@ impl Server {
             Ok(chain) => chain,
             Err(error) => {
                 let failure = error.message_component().to_string();
-                let _ = reply.send(crate::command::BackgroundCommandResult {
+                let _ = reply.send(BackgroundCommandResult {
                     success: false,
                     output: Some(failure),
                     output_allowed: true,
@@ -572,12 +578,12 @@ impl Server {
 
         let output_allowed = source
             .world()
-            .get_game_rule(&steel_registry::vanilla_game_rules::COMMAND_BLOCK_OUTPUT);
-        let success_flag = Arc::new(std::sync::atomic::AtomicBool::new(false));
+            .get_game_rule(&COMMAND_BLOCK_OUTPUT);
+        let success_flag = Arc::new(AtomicBool::new(false));
         let callback = CommandResultCallback::new({
             let success_flag = Arc::clone(&success_flag);
             move |command_success, _result| {
-                success_flag.store(command_success, std::sync::atomic::Ordering::Relaxed);
+                success_flag.store(command_success, Relaxed);
             }
         });
         let source = source.with_callback(callback.clone());
@@ -587,8 +593,8 @@ impl Server {
         if stopped == ExecutionStop::Suspended {
             execution.cancel();
         }
-        let _ = reply.send(crate::command::BackgroundCommandResult {
-            success: success_flag.load(std::sync::atomic::Ordering::Relaxed),
+        let _ = reply.send(BackgroundCommandResult {
+            success: success_flag.load(Relaxed),
             output: output.take(),
             output_allowed,
         });

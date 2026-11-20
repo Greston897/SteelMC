@@ -12,6 +12,7 @@ use std::{
 };
 
 use glam::DVec3;
+use steel_registry::vanilla_criteria_triggers::CONSTRUCT_BEACON;
 use simdnbt::borrow::{
     BaseNbtCompound as BorrowedNbtCompound, NbtCompound as BorrowedNbtCompoundView,
 };
@@ -40,6 +41,7 @@ use crate::chunk::light::MAX_LIGHT_LEVEL;
 use crate::entity::{Entity as _, LivingEntity as _, MobEffectInstance};
 use crate::player::Player;
 use crate::world::World;
+use crate::player::advancement::predicate::TriggerContext;
 
 const MAX_LEVELS: i32 = 4;
 
@@ -496,10 +498,10 @@ impl BlockEntity for BeaconBlockEntity {
             world.players.iter_players(|_uuid, player| {
                 if player.position().distance_squared(center) <= BEACON_TRIGGER_RADIUS_SQUARED {
                     let mut context =
-                        crate::player::advancement::predicate::TriggerContext::at(world, center);
+                        TriggerContext::at(world, center);
                     context.dimension_level = Some(levels);
                     player.trigger_advancement_with_context(
-                        &steel_registry::vanilla_criteria_triggers::CONSTRUCT_BEACON,
+                        &CONSTRUCT_BEACON,
                         &context,
                     );
                 }

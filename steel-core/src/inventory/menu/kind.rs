@@ -9,6 +9,9 @@ use crate::inventory::container::DEFAULT_DISTANCE_BUFFER;
 use crate::inventory::menu::behavior::MenuBehavior;
 use crate::world::World;
 use crate::{inventory::lock::ContainerLockGuard, player::Player};
+use crate::player::recipe_placement::PlacementRequest;
+use crate::player::recipe_placement::PostPlaceAction;
+use crate::player::recipe_placement::StackedItemContents;
 
 use crate::inventory::click::{Click, ClickOutcome, QuickCraft};
 
@@ -152,7 +155,7 @@ pub trait MenuKind: ErasedType + Send + Sync {
         &self,
         _behavior: &MenuBehavior,
         _guard: &ContainerLockGuard,
-        _contents: &mut crate::player::recipe_placement::StackedItemContents,
+        _contents: &mut StackedItemContents,
     ) -> bool {
         false
     }
@@ -167,8 +170,8 @@ pub trait MenuKind: ErasedType + Send + Sync {
         _behavior: &mut MenuBehavior,
         _guard: &mut ContainerLockGuard,
         _player: &Player,
-        _request: crate::player::recipe_placement::PlacementRequest<'_>,
-    ) -> Option<crate::player::recipe_placement::PostPlaceAction> {
+        _request: PlacementRequest<'_>,
+    ) -> Option<PostPlaceAction> {
         None
     }
 }

@@ -26,6 +26,11 @@ use glam::IVec3;
 use serde::{Deserialize, Serialize};
 use steel_utils::BlockPos;
 use steel_utils::locks::SyncMutex;
+use steel_math::trig::cos;
+use steel_math::trig::sin;
+use steel_registry::feature::EndSpike;
+use crate::worldgen::feature::FeatureDecorationRunner;
+use std::f64::consts::PI;
 
 /// Vanilla exit portal position in the End (`0, 0` column).
 pub const EXIT_PORTAL: IVec3 = IVec3::new(0, 0, 0);
@@ -511,9 +516,9 @@ impl DragonFight {
     /// `EndSpikeFeature.getSpikesForLevel(level)` directly; the fight needs the
     /// level seed to rebuild the same ring, so it is threaded in here.
     #[must_use]
-    pub fn spike(&self, index: i32) -> Option<steel_registry::feature::EndSpike> {
+    pub fn spike(&self, index: i32) -> Option<EndSpike> {
         let seed = (*self.level_seed.lock())?;
-        crate::worldgen::feature::FeatureDecorationRunner::end_spikes_for_level(seed)
+        FeatureDecorationRunner::end_spikes_for_level(seed)
             .get(usize::try_from(index).ok()?)
             .copied()
     }
@@ -775,7 +780,7 @@ pub enum DragonRespawnEffect {
         pos: BlockPos,
     },
     /// Clear and rebuild one arena spike with its crystal.
-    RebuildSpike(steel_registry::feature::EndSpike),
+    RebuildSpike(EndSpike),
     /// Vanilla `resetSpikeCrystals`: rebuild every spike's crystal.
     ResetSpikeCrystals,
     /// Blow up and discard the respawn crystals.
@@ -790,9 +795,9 @@ pub enum DragonRespawnEffect {
 /// gateway sits at radius [`GATEWAY_DISTANCE`] on y `75`.
 #[must_use]
 pub fn gateway_position(index: i32) -> IVec3 {
-    let theta = 2.0 * (-std::f64::consts::PI + 0.157_079_632_679_489_66 * f64::from(index));
-    let x = f64::from(GATEWAY_DISTANCE) * f64::from(steel_math::trig::cos(theta));
-    let z = f64::from(GATEWAY_DISTANCE) * f64::from(steel_math::trig::sin(theta));
+    let theta = 2.0 * (-PI + 0.157_079_632_679_489_66 * f64::from(index));
+    let x = f64::from(GATEWAY_DISTANCE) * f64::from(cos(theta));
+    let z = f64::from(GATEWAY_DISTANCE) * f64::from(sin(theta));
     IVec3::new(x.floor() as i32, 75, z.floor() as i32)
 }
 

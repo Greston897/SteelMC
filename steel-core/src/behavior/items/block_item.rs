@@ -1,6 +1,7 @@
 //! Block item behavior implementation.
 
 use steel_macros::item_behavior;
+use steel_registry::vanilla_criteria_triggers::PLACED_BLOCK;
 use steel_registry::{
     blocks::{BlockRef, block_state_ext::BlockStateExt, shapes::OffsetVoxelShape},
     sound_event::SoundEventRef,
@@ -12,6 +13,7 @@ use crate::behavior::{BLOCK_BEHAVIORS, BlockCollisionContext, ItemBehavior};
 use crate::entity::Entity;
 use crate::fluid::{FluidStateExt as _, get_fluid_state};
 use crate::world::game_event::GameEventContext;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::{
     behavior::context::{BlockPlaceContext, InteractionResult, UseOnContext},
     player::Player,
@@ -189,8 +191,8 @@ impl BlockItem {
                 let item_key = context.with_item(|stack| stack.item().key.clone());
                 if let Some(block_key) = block_key {
                     player.trigger_advancement_with_context(
-                        &steel_registry::vanilla_criteria_triggers::PLACED_BLOCK,
-                        &crate::player::advancement::predicate::TriggerContext::block(
+                        &PLACED_BLOCK,
+                        &TriggerContext::block(
                             &block_key,
                             Some(&item_key),
                         ),

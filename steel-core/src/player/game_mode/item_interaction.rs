@@ -5,6 +5,9 @@ use super::{
 };
 use steel_registry::data_components::vanilla_components::USE_REMAINDER;
 use steel_registry::stat::vanilla_stat_types;
+use steel_registry::vanilla_criteria_triggers::ANY_BLOCK_USE;
+use steel_registry::vanilla_criteria_triggers::DEFAULT_BLOCK_USE;
+use crate::player::advancement::predicate::TriggerContext;
 
 /// Handles using an item on a block.
 ///
@@ -111,17 +114,17 @@ pub fn use_item_on(
     // `default_block_use` (the main-hand fallthrough) before the item's own
     // `useOn` runs, with a context holding both the item and the clicked block.
     if let Some(block) = REGISTRY.blocks.by_state_id(state) {
-        let context = crate::player::advancement::predicate::TriggerContext::block(
+        let context = TriggerContext::block(
             &block.key,
             Some(&item_ref.key),
         );
         player.trigger_advancement_with_context(
-            &steel_registry::vanilla_criteria_triggers::ANY_BLOCK_USE,
+            &ANY_BLOCK_USE,
             &context,
         );
         if hand == InteractionHand::MainHand {
             player.trigger_advancement_with_context(
-                &steel_registry::vanilla_criteria_triggers::DEFAULT_BLOCK_USE,
+                &DEFAULT_BLOCK_USE,
                 &context,
             );
         }

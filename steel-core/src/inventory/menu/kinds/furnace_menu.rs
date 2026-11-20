@@ -2,6 +2,13 @@
 
 use crate::player::player_inventory::Prediction;
 use std::array::from_fn;
+use crate::player::player_inventory::Prediction::Predicted;
+use crate::player::recipe_placement::PlacementRequest;
+use crate::player::recipe_placement::PostPlaceAction;
+use crate::player::recipe_placement::StackedItemContents;
+use crate::player::recipe_placement::apply_inventory_take;
+use crate::player::recipe_placement::plan_placement;
+use crate::player::recipe_placement::single_item_matches;
 
 use steel_registry::recipe::SingleItemRecipeInput;
 use steel_registry::{REGISTRY, menu_type::MenuTypeRef, vanilla_menu_types};
@@ -111,7 +118,7 @@ impl MenuKind for FurnaceMenuKind {
         &self,
         _behavior: &MenuBehavior,
         guard: &ContainerLockGuard,
-        contents: &mut crate::player::recipe_placement::StackedItemContents,
+        contents: &mut StackedItemContents,
     ) -> bool {
         let Some(container) = guard.get(self.container.container_id()) else {
             return false;
@@ -127,14 +134,14 @@ impl MenuKind for FurnaceMenuKind {
         _behavior: &mut MenuBehavior,
         guard: &mut ContainerLockGuard,
         player: &Player,
-        request: crate::player::recipe_placement::PlacementRequest<'_>,
-    ) -> Option<crate::player::recipe_placement::PostPlaceAction> {
+        request: PlacementRequest<'_>,
+    ) -> Option<PostPlaceAction> {
         let container = guard.get(self.container.container_id())?;
         let grid = vec![container.get_item(0).clone()];
         // Vanilla `AbstractFurnaceMenu.handlePlacement` clears the input *and*
         // the fuel slot, so a placed recipe never sits on a running burn.
         let slots_to_clear = [container.get_item(0).clone(), container.get_item(2).clone()];
-        let matches = crate::player::recipe_placement::single_item_matches(
+        let matches = single_item_matches(
             container.get_item(0),
             request.placement,
         );
@@ -143,7 +150,7 @@ impl MenuKind for FurnaceMenuKind {
             .get_typed::<PlayerInventory>(inv_id)?
             .get_items()
             .to_vec();
-        let plan = crate::player::recipe_placement::plan_placement(
+        let plan = plan_placement(
             &inventory,
             1,
             1,
@@ -171,10 +178,10 @@ impl MenuKind for FurnaceMenuKind {
             player.add_item_or_drop_with_guard(
                 guard,
                 stack,
-                crate::player::player_inventory::Prediction::Predicted,
+                Predicted,
             );
         }
-        crate::player::recipe_placement::apply_inventory_take(guard, player, &plan.inventory_take);
+        apply_inventory_take(guard, player, &plan.inventory_take);
         if let Some(container) = guard.get_mut(self.container.container_id()) {
             container.set_item(0, plan.grid[0].clone());
             if plan.clear_applied {

@@ -399,8 +399,11 @@ impl AbstractMinecart for HopperMinecartEntity {
 mod tests {
     use steel_registry::init_vanilla_registry;
     use steel_registry::vanilla_entities;
+use simdnbt::borrow::read_compound;
+use steel_registry::vanilla_items::STONE;
 
     use super::*;
+use std::io::Cursor;
 
     fn cart() -> HopperMinecartEntity {
         HopperMinecartEntity::new(
@@ -424,7 +427,7 @@ mod tests {
     fn hoppers_accept_items_up_to_their_capacity() {
         init_vanilla_registry();
         let cart = cart();
-        let mut stack = ItemStack::new(&steel_registry::vanilla_items::STONE).copy_with_count(64);
+        let mut stack = ItemStack::new(&STONE).copy_with_count(64);
         assert!(cart.try_insert(&mut stack));
         assert!(cart.items().iter().any(|slot| !slot.is_empty()));
         assert!(stack.is_empty());
@@ -449,8 +452,8 @@ mod tests {
         cart.save_additional(&mut nbt);
         let mut bytes = Vec::new();
         nbt.write(&mut bytes);
-        let mut cursor = std::io::Cursor::new(bytes.as_slice());
-        let borrowed = simdnbt::borrow::read_compound(&mut cursor).expect("compound");
+        let mut cursor = Cursor::new(bytes.as_slice());
+        let borrowed = read_compound(&mut cursor).expect("compound");
         let view: simdnbt::borrow::NbtCompound<'_, '_> = (&borrowed).into();
         assert_eq!(view.int("TransferCooldown"), Some(5));
     }

@@ -17,6 +17,8 @@ use crate::entity::damage::DamageSource;
 use crate::entity::{Entity, LivingEntity, MobEffectInstance, SharedEntity};
 use crate::inventory::equipment::EquipmentSlot;
 use crate::world::World;
+use crate::entity::attribute::AttributeMap;
+use crate::entity::attribute::AttributeModifier;
 
 mod selection;
 
@@ -309,7 +311,7 @@ pub(crate) fn do_post_attack_effects_with_item_source(
 /// Each modifier uses the enchantment's declared id, so removing it later only
 /// needs that id. Returns whether any modifier changed.
 pub(crate) fn apply_attribute_effects(
-    attributes: &mut crate::entity::attribute::AttributeMap,
+    attributes: &mut AttributeMap,
     slot: EquipmentSlot,
     item: &ItemStack,
 ) -> bool {
@@ -337,7 +339,7 @@ pub(crate) fn apply_attribute_effects(
             }
             changed |= attributes.add_modifier(
                 effect.attribute,
-                crate::entity::attribute::AttributeModifier {
+                AttributeModifier {
                     id: effect.id.clone(),
                     amount,
                     operation: effect.operation,
@@ -352,7 +354,7 @@ pub(crate) fn apply_attribute_effects(
 /// Removes every attribute modifier installed by [`apply_attribute_effects`]
 /// for `item`. Mirrors the removal half of vanilla's location-changed hook.
 pub(crate) fn remove_attribute_effects(
-    attributes: &mut crate::entity::attribute::AttributeMap,
+    attributes: &mut AttributeMap,
     slot: EquipmentSlot,
     item: &ItemStack,
 ) -> bool {

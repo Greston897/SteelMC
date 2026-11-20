@@ -5,6 +5,7 @@ use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
 
 use crate::entity::Entity as _;
+use std::borrow::Cow::Borrowed;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
@@ -37,7 +38,7 @@ fn kick_default(context: &SteelCommandContext<CommandSource>) -> Result<i32, Com
     do_kick(
         context,
         TextComponent::translated(TranslatedMessage {
-            key: std::borrow::Cow::Borrowed("multiplayer.disconnect.kicked"),
+            key: Borrowed("multiplayer.disconnect.kicked"),
             fallback: None,
             args: None,
         }),

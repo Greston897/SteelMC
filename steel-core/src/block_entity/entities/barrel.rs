@@ -11,6 +11,8 @@ use std::{
 use simdnbt::ToNbtTag;
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
+use steel_registry::sound_events::BLOCK_BARREL_CLOSE;
+use steel_registry::sound_events::BLOCK_BARREL_OPEN;
 use steel_registry::data_components::{
     DataComponentMap, SeededContainerLoot, vanilla_components::CONTAINER_LOOT,
 };
@@ -76,8 +78,8 @@ impl BarrelBlockEntity {
             base,
             container,
             openers_counter: ContainerOpenersCounter::new(OpenerHooks {
-                open_sound: &steel_registry::sound_events::BLOCK_BARREL_OPEN,
-                close_sound: &steel_registry::sound_events::BLOCK_BARREL_CLOSE,
+                open_sound: &BLOCK_BARREL_OPEN,
+                close_sound: &BLOCK_BARREL_CLOSE,
                 sets_open_state: true,
             }),
             loot: SyncMutex::new(RandomizableContainer::none()),

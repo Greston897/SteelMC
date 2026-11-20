@@ -11,6 +11,7 @@ use steel_registry::vanilla_game_rules::MAX_BLOCK_MODIFICATIONS;
 use steel_utils::{BlockPos, BoundingBox, ChunkPos, Identifier};
 use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
+use std::sync::Arc;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
@@ -21,6 +22,7 @@ use super::super::{
     registration::CommandRegistration,
 };
 use super::execute::{ensure_region_chunks_block_ticking, loaded_block_position};
+use crate::world::World;
 
 type Builder = CommandNodeBuilder<CommandSource, SteelCommandRuntime>;
 
@@ -98,7 +100,7 @@ fn execute_fillbiome(
 /// sends `ClientboundChunksBiomesPacket.forChunk(...)` to the players tracking
 /// that chunk only. Sending to everyone in the world (as a single broadcast)
 /// would push biome palettes for chunks the client never loaded.
-fn send_changed_biomes(world: &std::sync::Arc<crate::world::World>, region: BoundingBox) {
+fn send_changed_biomes(world: &Arc<World>, region: BoundingBox) {
     let min_chunk_x = region.min_x() >> 4;
     let max_chunk_x = region.max_x() >> 4;
     let min_chunk_z = region.min_z() >> 4;
@@ -139,7 +141,7 @@ fn block_region_volume(region: BoundingBox) -> i64 {
 }
 
 /// Writes the biome id into the 4x4x4 cell containing `pos`.
-fn set_biome_at(world: &crate::world::World, pos: BlockPos, biome_id: u16) -> bool {
+fn set_biome_at(world: &World, pos: BlockPos, biome_id: u16) -> bool {
     let chunk_pos = ChunkPos::new(pos.x() >> 4, pos.z() >> 4);
     world
         .chunk_map

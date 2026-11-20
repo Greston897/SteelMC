@@ -9,6 +9,7 @@ use steel_registry::vanilla_game_rules;
 use steel_registry::{REGISTRY, vanilla_fluids};
 use steel_utils::BlockPos;
 use steel_utils::random::Random as _;
+use steel_utils::random::Random;
 
 use crate::chunk::{
     Chunk, chunk_generation_task::StaticCache2D, chunk_holder::ChunkHolder,
@@ -200,7 +201,7 @@ impl<'a> WeightedSpawns<'a> {
         self.entries.is_empty()
     }
 
-    fn pick(&mut self, random: &mut impl steel_utils::random::Random) -> Option<&'a SpawnerData> {
+    fn pick(&mut self, random: &mut impl Random) -> Option<&'a SpawnerData> {
         if self.total_weight == 0 {
             for entry in self.entries {
                 self.total_weight = self.total_weight.saturating_add(entry.weight.max(0));
@@ -254,6 +255,7 @@ fn build_generated_entity(
 #[cfg(test)]
 mod tests {
     use super::*;
+use steel_utils::random::xoroshiro::Xoroshiro;
 
     fn entry(
         entity_type: &'static str,
@@ -273,7 +275,7 @@ mod tests {
     fn a_zero_weight_list_picks_nothing() {
         let list = vec![entry("cow", 0, 1, 2)];
         let mut weighted = WeightedSpawns::new(&list);
-        let mut random = steel_utils::random::xoroshiro::Xoroshiro::from_seed(7);
+        let mut random = Xoroshiro::from_seed(7);
         assert!(weighted.pick(&mut random).is_none());
     }
 
@@ -281,7 +283,7 @@ mod tests {
     fn weights_are_respected() {
         let list = vec![entry("cow", 3, 1, 2), entry("sheep", 1, 1, 2)];
         let mut cows = 0;
-        let mut random = steel_utils::random::xoroshiro::Xoroshiro::from_seed(11);
+        let mut random = Xoroshiro::from_seed(11);
         for _ in 0..4000 {
             let mut weighted = WeightedSpawns::new(&list);
             if weighted.pick(&mut random).map(|e| &e.entity_type)

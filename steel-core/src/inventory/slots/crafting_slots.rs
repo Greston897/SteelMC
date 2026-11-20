@@ -3,6 +3,7 @@ use std::sync::Arc;
 use steel_registry::item_stack::ItemStack;
 use steel_utils::Identifier;
 use steel_utils::locks::{Shared, SyncMutex};
+use steel_registry::vanilla_game_rules::LIMITED_CRAFTING;
 
 use crate::inventory::container::{CraftingContainer, ResultContainer};
 use crate::inventory::{
@@ -218,7 +219,7 @@ impl ResultHandler for CraftingHandler {
         // recipe in their recipe book cannot take the result.
         if player
             .get_world()
-            .get_game_rule(&steel_registry::vanilla_game_rules::LIMITED_CRAFTING)
+            .get_game_rule(&LIMITED_CRAFTING)
             && let Some(key) = self.last_recipe.lock().clone()
             && !player.recipe_book.lock().contains(&key)
         {

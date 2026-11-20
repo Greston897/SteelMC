@@ -14,6 +14,8 @@ use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_blocks;
 use steel_registry::vanilla_entities;
 use steel_utils::{BlockPos, BlockStateId};
+use crate::entity::ENTITIES;
+use crate::entity::next_entity_id;
 
 /// Behavior for wither skull blocks.
 #[block_behavior]
@@ -86,9 +88,9 @@ fn spawn_wither(world: &Arc<World>, base: BlockPos) {
         f64::from(base.z()) + 0.5,
     );
 
-    let Some(entity) = crate::entity::ENTITIES.create(
+    let Some(entity) = ENTITIES.create(
         &vanilla_entities::WITHER,
-        crate::entity::next_entity_id(),
+        next_entity_id(),
         position,
         Arc::downgrade(world),
     ) else {

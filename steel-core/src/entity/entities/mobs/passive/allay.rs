@@ -23,12 +23,14 @@ use steel_registry::vanilla_entity_data::AllayEntityData;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_blocks, vanilla_entities};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, Downcast as _, DowncastType, DowncastTypeKey};
+use steel_registry::vanilla_criteria_triggers::ALLAY_DROP_ITEM_ON_BLOCK;
 
 use crate::entity::ai::goal::{
     FloatGoal, LookAtPlayerGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::objects::items::ItemEntity;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, RemovalReason,
@@ -477,8 +479,8 @@ impl AllayEntity {
             .find_map(|entity| world.players.get_by_entity_id(entity.id()))
         {
             player.trigger_advancement_with_context(
-                &steel_registry::vanilla_criteria_triggers::ALLAY_DROP_ITEM_ON_BLOCK,
-                &crate::player::advancement::predicate::TriggerContext::item(&stack.item().key),
+                &ALLAY_DROP_ITEM_ON_BLOCK,
+                &TriggerContext::item(&stack.item().key),
             );
         }
         true

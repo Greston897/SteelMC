@@ -8,6 +8,7 @@
 
 use steel_utils::Identifier;
 use text_components::TextComponent;
+use std::sync::Arc;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
@@ -49,7 +50,7 @@ fn save_all(context: &SteelCommandContext<CommandSource>) -> Result<i32, Command
     }
 
     let source = context.source().clone();
-    let task_server = std::sync::Arc::clone(server);
+    let task_server = Arc::clone(server);
     tokio::spawn(async move {
         let results = task_server.save_command_data().await;
         // Vanilla `SaveAllCommand` saves the chunks too; reporting "Saved the

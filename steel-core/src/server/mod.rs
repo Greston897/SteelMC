@@ -24,6 +24,10 @@ mod world_tick_workers;
 pub mod worlds;
 
 use crate::bootstrap::init_globals;
+use crate::command::BackgroundCommandResult;
+use crate::command::brigadier::CommandSyntaxError;
+use crate::command::execution::SteelContextChain;
+use crate::command::sender::CommandBlockOutput;
 use crate::chunk::{
     chunk_request::{ChunkRequest, ChunkRequestHandle, ChunkRequestState, ChunkTicketKind},
     status::ChunkStatus,
@@ -89,6 +93,12 @@ use glam::DVec3;
 use rayon::{ThreadPool, ThreadPoolBuilder};
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::sync::atomic::{AtomicBool, AtomicI32};
+use steel_protocol::packets::game::ReportDetail;
+use tokio::sync::oneshot::Receiver;
+use tokio::sync::oneshot::channel;
+use std::fs::read;
+use std::sync::OnceLock;
+use std::sync::atomic::Ordering::Relaxed;
 use std::{
     collections::BTreeSet,
     io, mem,
@@ -266,7 +276,7 @@ pub async fn test_server_with_worlds_and_config(
         config,
         permission_groups,
         cancel_token: CancellationToken::new(),
-        auto_save_enabled: std::sync::atomic::AtomicBool::new(true),
+        auto_save_enabled: AtomicBool::new(true),
         key_store: KeyStore::create(),
         registry_cache,
         worlds,
@@ -301,7 +311,7 @@ pub async fn test_server_with_worlds_and_config(
         pending_player_disconnects: PlayerDisconnectQueue::new(),
         pending_world_changes: SyncMutex::new(Vec::new()),
         pending_domain_switches: SyncMutex::new(Vec::new()),
-        favicon_cache: std::sync::OnceLock::new(),
+        favicon_cache: OnceLock::new(),
         code_of_conduct: SyncMutex::new(None),
         custom_report_details: SyncMutex::new(Vec::new()),
         player_idle_timeout: AtomicI32::new(0),
@@ -519,7 +529,7 @@ pub struct Server {
     pub cancel_token: CancellationToken,
     /// Whether periodic saves run. Vanilla `MinecraftServer.saveEverything`
     /// consults the same flag, toggled by `/save-off` and `/save-on`.
-    auto_save_enabled: std::sync::atomic::AtomicBool,
+    auto_save_enabled: AtomicBool,
     /// The key store for the server.
     pub key_store: KeyStore,
     /// The registry cache for the server.
@@ -592,11 +602,11 @@ pub struct Server {
     /// Queued domain switches to process after world ticks.
     pending_domain_switches: SyncMutex<Vec<DomainSwitchRequest>>,
     /// Cached raw PNG favicon bytes loaded once on first request.
-    favicon_cache: std::sync::OnceLock<Option<Arc<[u8]>>>,
+    favicon_cache: OnceLock<Option<Arc<[u8]>>>,
     /// Optional MC 26.3 server code of conduct presented during Configuration.
     code_of_conduct: SyncMutex<Option<String>>,
     /// Custom key/value pairs attached to client crash & chat reports.
-    custom_report_details: SyncMutex<Vec<steel_protocol::packets::game::ReportDetail>>,
+    custom_report_details: SyncMutex<Vec<ReportDetail>>,
 }
 
 struct GameTickTaskGuard {
@@ -639,7 +649,7 @@ impl Server {
                 if !self.config.use_favicon {
                     return None;
                 }
-                std::fs::read(&self.config.favicon)
+                read(&self.config.favicon)
                     .ok()
                     .filter(|png| !png.is_empty())
                     .map(Arc::from)
@@ -689,7 +699,7 @@ impl Server {
 
         // Vanilla re-reads the level's data too; game rules are the part of
         // `level.toml` that is safe to swap under live chunks.
-        let worlds: Vec<Arc<crate::world::World>> = self
+        let worlds: Vec<Arc<World>> = self
             .worlds
             .iter()
             .map(|(_, world)| Arc::clone(world))
@@ -924,7 +934,7 @@ impl Server {
                 generator_output.dimension_type,
                 world_seed,
                 WorldConfig {
-                    server: std::sync::OnceLock::new(),
+                    server: OnceLock::new(),
                     damage_history: Arc::clone(&damage_history),
                     game_time_source,
                     storage: storage_output.storage,
@@ -1005,7 +1015,7 @@ impl Server {
             config,
             permission_groups,
             cancel_token,
-            auto_save_enabled: std::sync::atomic::AtomicBool::new(true),
+            auto_save_enabled: AtomicBool::new(true),
             key_store: KeyStore::create(),
             worlds,
             online_players: PlayerMap::new(),
@@ -1043,7 +1053,7 @@ impl Server {
             pending_player_disconnects: PlayerDisconnectQueue::new(),
             pending_world_changes: SyncMutex::new(vec![]),
             pending_domain_switches: SyncMutex::new(vec![]),
-            favicon_cache: std::sync::OnceLock::new(),
+            favicon_cache: OnceLock::new(),
             code_of_conduct: SyncMutex::new(None),
             custom_report_details: SyncMutex::new(vec![]),
         });
@@ -1185,13 +1195,13 @@ impl Server {
     #[must_use]
     pub fn is_auto_save_enabled(&self) -> bool {
         self.auto_save_enabled
-            .load(std::sync::atomic::Ordering::Relaxed)
+            .load(Relaxed)
     }
 
     /// Enables or disables automatic saves, as `/save-on` and `/save-off` do.
     pub fn set_auto_save_enabled(&self, enabled: bool) {
         self.auto_save_enabled
-            .store(enabled, std::sync::atomic::Ordering::Relaxed);
+            .store(enabled, Relaxed);
     }
 
     /// Writes the whitelist through the overworld's saved data.
@@ -1250,8 +1260,8 @@ impl Server {
         command: &str,
         source: &CommandSource,
     ) -> Result<
-        crate::command::execution::SteelContextChain<CommandSource>,
-        crate::command::brigadier::CommandSyntaxError,
+        SteelContextChain<CommandSource>,
+        CommandSyntaxError,
     > {
         let dispatcher = self.command_dispatcher.read();
         dispatcher.context_chain(dispatcher.parse(command, source.clone()))
@@ -1278,14 +1288,14 @@ impl Server {
     /// comes back on the reply channel the caller polls.
     pub fn execute_command_for_block(
         &self,
-        world: Arc<crate::world::World>,
+        world: Arc<World>,
         command: String,
     ) -> Result<
-        tokio::sync::oneshot::Receiver<crate::command::BackgroundCommandResult>,
+        Receiver<BackgroundCommandResult>,
         CommandQueueFull,
     > {
-        let (reply, receiver) = tokio::sync::oneshot::channel();
-        let output = crate::command::sender::CommandBlockOutput::new(world);
+        let (reply, receiver) = channel();
+        let output = CommandBlockOutput::new(world);
         self.command_requests.submit(CommandRequest::Background {
             owner: CommandExecutionOwner::capture(CommandSender::CommandBlock(output), self),
             command,

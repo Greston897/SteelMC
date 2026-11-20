@@ -22,9 +22,11 @@ use super::{
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::vanilla_game_rules::MAX_SNOW_ACCUMULATION_HEIGHT;
+use steel_registry::vanilla_game_events::BLOCK_CHANGE;
 
 use crate::chunk::light::MAX_LIGHT_LEVEL;
 use steel_registry::fluid::FluidStateExt as _;
+use crate::fluid::state::get_fluid_state_from_block;
 
 /// Vanilla `Biome.Precipitation.SNOW` threshold: below this temperature
 /// precipitation falls as snow instead of rain.
@@ -376,7 +378,7 @@ impl World {
             return;
         }
         let is_water = |pos| {
-            crate::fluid::state::get_fluid_state_from_block(self.get_block_state(pos)).is_water()
+            get_fluid_state_from_block(self.get_block_state(pos)).is_water()
         };
         if is_water(pos.west())
             && is_water(pos.east())
@@ -421,7 +423,7 @@ impl World {
         };
         self.set_block(pos, next, UpdateFlags::UPDATE_ALL);
         self.game_event(
-            &steel_registry::vanilla_game_events::BLOCK_CHANGE,
+            &BLOCK_CHANGE,
             pos,
             &crate::world::game_event::GameEventContext::new(
                 None,

@@ -21,6 +21,13 @@ use steel_registry::vanilla_entity_data::WanderingTraderEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey};
+use steel_registry::vanilla_entities::EVOKER;
+use steel_registry::vanilla_entities::ILLUSIONER;
+use steel_registry::vanilla_entities::PILLAGER;
+use steel_registry::vanilla_entities::VEX;
+use steel_registry::vanilla_entities::VINDICATOR;
+use steel_registry::vanilla_entities::ZOGLIN;
+use steel_registry::vanilla_entities::ZOMBIE;
 
 use crate::entity::ai::goal::{
     AvoidEntityGoal, FloatGoal, InteractGoal, LookAtPlayerGoal, PanicGoal,
@@ -105,13 +112,13 @@ impl WanderingTraderEntity {
             let mut goal_selector = mob_base.goal_selector().lock();
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
             for (kind, distance) in [
-                (&steel_registry::vanilla_entities::ZOMBIE, 8.0),
-                (&steel_registry::vanilla_entities::EVOKER, 12.0),
-                (&steel_registry::vanilla_entities::VINDICATOR, 8.0),
-                (&steel_registry::vanilla_entities::VEX, 8.0),
-                (&steel_registry::vanilla_entities::PILLAGER, 15.0),
-                (&steel_registry::vanilla_entities::ILLUSIONER, 12.0),
-                (&steel_registry::vanilla_entities::ZOGLIN, 10.0),
+                (&ZOMBIE, 8.0),
+                (&EVOKER, 12.0),
+                (&VINDICATOR, 8.0),
+                (&VEX, 8.0),
+                (&PILLAGER, 15.0),
+                (&ILLUSIONER, 12.0),
+                (&ZOGLIN, 10.0),
             ] {
                 goal_selector.add_goal(
                     1,

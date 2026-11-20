@@ -3,6 +3,11 @@ use std::sync::Arc;
 use steel_macros::block_behavior;
 use steel_registry::blocks::{BlockRef, properties::Direction, shapes::VoxelShape};
 use steel_utils::{BlockLocalAabb, BlockPos, BlockStateId};
+use steel_utils::types::InteractionHand;
+use crate::behavior::BlockHitResult;
+use crate::behavior::InteractionResult;
+use crate::behavior::InventoryAccess;
+use crate::player::Player;
 
 use crate::{
     behavior::{BlockBehavior, BlockPlaceContext},
@@ -51,11 +56,11 @@ impl BlockBehavior for LavaCauldronBlock {
         state: BlockStateId,
         world: &Arc<World>,
         pos: BlockPos,
-        player: &crate::player::Player,
-        hand: steel_utils::types::InteractionHand,
-        _hit: &crate::behavior::BlockHitResult,
-        inv: &mut crate::behavior::InventoryAccess,
-    ) -> crate::behavior::InteractionResult {
+        player: &Player,
+        hand: InteractionHand,
+        _hit: &BlockHitResult,
+        inv: &mut InventoryAccess,
+    ) -> InteractionResult {
         super::cauldron_block::cauldron_item_interaction(state, world, pos, player, hand, inv)
     }
 

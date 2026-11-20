@@ -34,6 +34,7 @@ use steel_utils::{BlockPos, Direction, DowncastType, DowncastTypeKey};
 
 use crate::behavior::blocks::FireBlock;
 use crate::entity::damage::DamageSource;
+use crate::enchantment_helper::do_post_attack_effects_with_item_source;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntitySyncedData, Projectile, ProjectileBase,
     ProjectileHit, RemovalReason, SharedEntity, ThrowableItemProjectile, ThrowableProjectile,
@@ -197,10 +198,10 @@ impl Projectile for SmallFireballEntity {
                         &hit.entity,
                         &source,
                     );
-                    crate::enchantment_helper::do_post_attack_effects_with_item_source(
+                    do_post_attack_effects_with_item_source(
                         &world,
                         hit.entity.as_ref(),
-                        &steel_registry::item_stack::ItemStack::empty(),
+                        &ItemStack::empty(),
                         &context,
                     );
                 }

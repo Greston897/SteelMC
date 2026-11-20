@@ -9,6 +9,7 @@ use std::sync::Arc;
 use simdnbt::owned::NbtTag;
 use steel_registry::loot_table::{ScoreResolver, StorageResolver};
 use steel_utils::Identifier;
+use steel_utils::nbt::parse_nbt_path;
 
 use crate::scoreboard::ScoreHolder;
 use crate::server::Server;
@@ -54,7 +55,7 @@ impl StorageResolver for WorldStorageResolver<'_> {
         let contents = self.server.command_storage.get(self.domain)?.get(storage);
         // Vanilla evaluates the provider path as a full NBT path, so list
         // indices and filters behave like `/data get`.
-        let parsed = steel_utils::nbt::parse_nbt_path(path).ok()?;
+        let parsed = parse_nbt_path(path).ok()?;
         let tag = NbtTag::Compound(contents);
         // Vanilla only accepts a single numeric result; a path matching several
         // tags or none yields zero.

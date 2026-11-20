@@ -18,6 +18,7 @@ use std::sync::Weak;
 
 use glam::DVec3;
 use steel_registry::equipment::EquipmentSlot;
+use steel_protocol::packets::game::CMountScreenOpen;
 #[cfg(test)]
 use steel_registry::menu_type::MenuTypeRef;
 use steel_utils::{DowncastType, DowncastTypeKey};
@@ -172,7 +173,7 @@ fn position_within_range(owner: DVec3, player: DVec3, range: f64) -> bool {
 /// the mount screen packet instead, which carries the entity id and the storage
 /// columns and has no menu type at all.
 pub fn send_mount_screen(player: &Player, container_id: u8, entity_id: i32, columns: usize) {
-    player.send_packet(steel_protocol::packets::game::CMountScreenOpen {
+    player.send_packet(CMountScreenOpen {
         container_id: i32::from(container_id),
         inventory_columns: i32::try_from(columns).unwrap_or(9),
         entity_id,
@@ -192,8 +193,12 @@ pub const fn menu_type() -> Option<MenuTypeRef> {
 #[cfg(test)]
 mod tests {
     use steel_utils::locks::IntoShared as _;
+use steel_registry::vanilla_entities::ARROW;
 
     use super::*;
+use crate::entity::SharedEntity;
+use crate::test_support::TestEntity;
+use std::sync::Arc;
 
     #[test]
     fn mount_inventory_has_a_saddle_slot_an_armor_slot_and_three_rows() {
@@ -210,13 +215,13 @@ mod tests {
         // The owner weak handle is only read on interaction; a dangling one is
         // enough here, and `Weak::new` needs a sized type, so downgrade a
         // throwaway entity instead.
-        let entity: crate::entity::SharedEntity = crate::test_support::TestEntity::shared(
+        let entity: SharedEntity = TestEntity::shared(
             1,
             DVec3::ZERO,
             Weak::new(),
-            &steel_registry::vanilla_entities::ARROW,
+            &ARROW,
         );
-        let owner: Weak<dyn Entity> = std::sync::Arc::downgrade(&entity);
+        let owner: Weak<dyn Entity> = Arc::downgrade(&entity);
 
         let menu = mount(inventory, 3, container, columns, owner);
 

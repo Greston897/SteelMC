@@ -13,6 +13,7 @@ use std::fs;
 use std::io::{BufReader, Cursor, Read as IoRead};
 use std::mem;
 use std::sync::{Arc, Weak};
+use std::sync::OnceLock;
 
 use crate::chunk::Chunk;
 use crate::chunk::chunk_generation_task::StaticCache2D;
@@ -253,7 +254,7 @@ fn create_test_world(
             dim_type,
             seed as i64,
             WorldConfig {
-                server: std::sync::OnceLock::new(),
+                server: OnceLock::new(),
                 damage_history: Arc::clone(damage_history),
                 game_time_source: GameTimeSource::Primary,
                 storage: WorldStorageConfig::RamOnly,

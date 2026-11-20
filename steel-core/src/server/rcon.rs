@@ -11,9 +11,22 @@
 //! the command finishes; that is exactly what the reply channel here models.
 
 use std::sync::Arc;
+use std::error::Error;
+use std::fmt::Display;
+use std::fmt::Formatter;
+use std::fmt::Result;
+use std::io::Error;
+use std::io::ErrorKind::UnexpectedEof;
+use std::io::Result;
+use std::str::from_utf8;
+use std::time::Duration;
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
+use tokio::sync::mpsc::unbounded_channel;
+use tokio::time::sleep;
+use tokio::time::timeout;
+use tokio_util::sync::CancellationToken;
 
 use crate::command::sender::{CommandSender, RconOutput};
 use crate::config::RconConfig;
@@ -55,7 +68,7 @@ impl RconPacket {
     fn decode(id: i32, kind: i32, payload: &[u8]) -> Option<Self> {
         // Drop the payload terminator and the extra NUL.
         let body = payload.strip_suffix(&[0, 0]).unwrap_or(payload);
-        let body = std::str::from_utf8(body).ok()?;
+        let body = from_utf8(body).ok()?;
         Some(Self {
             id,
             kind,
@@ -68,18 +81,18 @@ impl RconPacket {
 #[derive(Debug)]
 pub enum RconError {
     /// The listener could not bind its port.
-    Bind(std::io::Error),
+    Bind(Error),
 }
 
-impl std::fmt::Display for RconError {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for RconError {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
         match self {
             Self::Bind(error) => write!(formatter, "failed to bind the RCON port: {error}"),
         }
     }
 }
 
-impl std::error::Error for RconError {}
+impl Error for RconError {}
 
 /// Runs the RCON listener until the server shuts down.
 ///
@@ -88,7 +101,7 @@ impl std::error::Error for RconError {}
 pub async fn run_rcon(
     server: Arc<Server>,
     config: RconConfig,
-    cancel_token: tokio_util::sync::CancellationToken,
+    cancel_token: CancellationToken,
 ) -> Result<(), RconError> {
     if config.password.is_empty() {
         return Ok(());
@@ -125,8 +138,8 @@ async fn serve_connection(
     server: Arc<Server>,
     password: String,
     mut stream: TcpStream,
-    cancel_token: tokio_util::sync::CancellationToken,
-) -> std::io::Result<()> {
+    cancel_token: CancellationToken,
+) -> Result<()> {
     let mut authenticated = false;
 
     loop {
@@ -183,7 +196,7 @@ async fn serve_connection(
 
 /// Runs one command and collects everything it sends to the RCON source.
 async fn execute_command(server: &Arc<Server>, command: String) -> String {
-    let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+    let (sender, mut receiver) = unbounded_channel();
     let output = RconOutput::new(sender);
     if server
         .submit_command(CommandSender::Rcon(output), command)
@@ -196,7 +209,7 @@ async fn execute_command(server: &Arc<Server>, command: String) -> String {
     // drain whatever the tick produced. A short settle window is enough
     // because the whole command is executed inside one tick.
     let mut lines = Vec::new();
-    let first = tokio::time::timeout(std::time::Duration::from_secs(2), receiver.recv()).await;
+    let first = timeout(Duration::from_secs(2), receiver.recv()).await;
     match first {
         Ok(Some(line)) => lines.push(line),
         Ok(None) => return String::new(),
@@ -207,7 +220,7 @@ async fn execute_command(server: &Arc<Server>, command: String) -> String {
             return String::new();
         }
     }
-    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    sleep(Duration::from_millis(50)).await;
     while let Ok(line) = receiver.try_recv() {
         lines.push(line);
     }
@@ -216,8 +229,8 @@ async fn execute_command(server: &Arc<Server>, command: String) -> String {
 
 async fn read_packet(
     stream: &mut TcpStream,
-    cancel_token: &tokio_util::sync::CancellationToken,
-) -> std::io::Result<Option<RconPacket>> {
+    cancel_token: &CancellationToken,
+) -> Result<Option<RconPacket>> {
     let mut length_bytes = [0u8; 4];
     let read = tokio::select! {
         read = stream.read_exact(&mut length_bytes) => read,
@@ -225,7 +238,7 @@ async fn read_packet(
     };
     match read {
         Ok(_) => {}
-        Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof => return Ok(None),
+        Err(error) if error.kind() == UnexpectedEof => return Ok(None),
         Err(error) => return Err(error),
     }
 
@@ -249,7 +262,7 @@ async fn read_packet(
     Ok(RconPacket::decode(id, kind, payload))
 }
 
-async fn write_packet(stream: &mut TcpStream, packet: &RconPacket) -> std::io::Result<()> {
+async fn write_packet(stream: &mut TcpStream, packet: &RconPacket) -> Result<()> {
     stream.write_all(&packet.encode()).await?;
     stream.flush().await
 }

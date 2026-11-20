@@ -25,6 +25,7 @@ use crate::world::{MAX_SIZE, clock::WorldClockManager};
 
 mod game_time;
 pub use game_time::{GameTime, GameTimeSource};
+use std::fs::read_to_string;
 
 /// Persistent world border data stored with Steel level data.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -606,7 +607,7 @@ impl LevelDataManager {
             return Ok(0);
         }
 
-        let content = std::fs::read_to_string(world_path)?;
+        let content = read_to_string(world_path)?;
         let table: toml::Table =
             toml::from_str(&content).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
         let loaded: LevelData = table

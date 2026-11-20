@@ -425,6 +425,7 @@ impl TextDisplayEntity {
 mod tests {
     use steel_registry::init_vanilla_registry;
     use steel_registry::vanilla_entities;
+use steel_registry::vanilla_items::STICK;
 
     use super::*;
 
@@ -453,7 +454,7 @@ mod tests {
         let display =
             ItemDisplayEntity::new(&vanilla_entities::ITEM_DISPLAY, 1, DVec3::ZERO, Weak::new());
         assert!(display.item_stack().is_empty());
-        display.set_item_stack(ItemStack::new(&steel_registry::vanilla_items::STICK));
+        display.set_item_stack(ItemStack::new(&STICK));
         assert_eq!(
             display.item_stack().item().key.to_string(),
             "minecraft:stick"

@@ -7,6 +7,7 @@
 //! existing items, which is what `AbstractHorse.createInventory` does.
 
 use std::sync::Weak;
+use std::sync::Arc;
 
 use simdnbt::ToNbtTag as _;
 use simdnbt::borrow::NbtCompound as NbtCompoundView;
@@ -20,6 +21,7 @@ use crate::inventory::container::{Container as _, SimpleContainer};
 use crate::inventory::menu::kinds::mount_menu;
 use crate::inventory::prelude::*;
 use crate::player::Player;
+use crate::inventory::container::load_all_items;
 
 /// The saddle and armor container of one mount.
 pub struct MountInventory {
@@ -112,7 +114,7 @@ impl MountInventory {
         let mut container = self.container.lock();
         let slots = container.items_mut();
         slots.fill(ItemStack::empty());
-        crate::inventory::container::load_all_items(nbt, slots);
+        load_all_items(nbt, slots);
     }
 
     /// Whether the mount carries a saddle.
@@ -165,14 +167,14 @@ pub fn open_mount_menu(
     let Some(shared) = world.get_entity_by_id(mount.id()) else {
         return;
     };
-    let owner: Weak<dyn Entity> = std::sync::Arc::downgrade(&shared);
+    let owner: Weak<dyn Entity> = Arc::downgrade(&shared);
     drop(shared);
 
     player.open_entity_menu(
         mount.display_name(),
         mount.id(),
         columns,
-        std::sync::Arc::clone(inventory),
+        Arc::clone(inventory),
         owner,
     );
 }
@@ -190,12 +192,12 @@ pub fn body_armor(inventory: &Shared<SimpleContainer>) -> Option<ItemStack> {
 
 /// Synchronized mount storage, since `AbstractHorse` is ticked and interacted
 /// with from several threads.
-pub type SharedMountInventory = std::sync::Arc<SyncMutex<MountInventory>>;
+pub type SharedMountInventory = Arc<SyncMutex<MountInventory>>;
 
 /// Creates the shared mount storage for an entity.
 #[must_use]
 pub fn shared_inventory(columns: usize) -> SharedMountInventory {
-    std::sync::Arc::new(SyncMutex::new(MountInventory::new(columns)))
+    Arc::new(SyncMutex::new(MountInventory::new(columns)))
 }
 
 #[cfg(test)]

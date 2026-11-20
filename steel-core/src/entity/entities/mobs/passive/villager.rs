@@ -21,6 +21,7 @@ use steel_registry::vanilla_entity_data::VillagerEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
+use steel_registry::entity_data::VillagerData;
 
 use crate::entity::ai::goal::{
     AvoidEntityGoal, BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal,
@@ -147,12 +148,12 @@ impl VillagerEntity {
 
     /// Vanilla `Villager.getVillagerData`.
     #[must_use]
-    pub fn villager_data(&self) -> steel_registry::entity_data::VillagerData {
+    pub fn villager_data(&self) -> VillagerData {
         *self.entity_data.lock().villager().villager_data.get()
     }
 
     /// Sets the vanilla villager data (profession, type, level).
-    pub fn set_villager_data(&self, data: steel_registry::entity_data::VillagerData) {
+    pub fn set_villager_data(&self, data: VillagerData) {
         self.entity_data
             .lock()
             .villager_mut()

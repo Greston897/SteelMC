@@ -12,6 +12,7 @@
 //!   `last_pose_change_tick` synced field is kept.
 
 use std::sync::Weak;
+use std::sync::Arc;
 
 use glam::DVec3;
 use simdnbt::{borrow, owned};
@@ -28,6 +29,9 @@ use steel_registry::vanilla_game_events;
 use steel_registry::vanilla_item_tags::ItemTag;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
+use steel_math::trig::cos;
+use steel_math::trig::sin;
+use steel_utils::types::InteractionHand;
 
 use crate::entity::ai::goal::{
     FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
@@ -35,6 +39,11 @@ use crate::entity::ai::goal::{
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::mount::{SharedMountInventory, open_mount_menu};
+use crate::behavior::InteractionResult;
+use crate::behavior::InteractionResult::Pass;
+use crate::behavior::InteractionResult::Success;
+use crate::entity::living_entity::player_jump_pending_scale;
+use crate::entity::mount::shared_inventory;
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityDimensions, EntityEventSource, EntityMovementEmission, EntitySyncedData,
@@ -125,7 +134,7 @@ impl CamelEntity {
             mob_base,
             ageable_base,
             animal_base,
-            mount_inventory: crate::entity::mount::shared_inventory(1),
+            mount_inventory: shared_inventory(1),
             entity_data: SyncMutex::new(entity_data),
             dash_cooldown: SyncMutex::new(0),
         }
@@ -138,7 +147,7 @@ impl CamelEntity {
             return;
         }
         let inventory = self.mount_inventory.lock();
-        let container = std::sync::Arc::clone(inventory.container());
+        let container = Arc::clone(inventory.container());
         let columns = inventory.columns();
         drop(inventory);
         open_mount_menu(self, player, &container, columns);
@@ -227,12 +236,12 @@ impl Entity for CamelEntity {
 
     /// Vanilla `AbstractHorse.openCustomInventoryScreen` reached through the
     /// spectator path.
-    fn open_menu_for(&self, player: &Player) -> crate::behavior::InteractionResult {
+    fn open_menu_for(&self, player: &Player) -> InteractionResult {
         if !self.is_tamed() {
-            return crate::behavior::InteractionResult::Pass;
+            return Pass;
         }
         self.open_mount_inventory(player);
-        crate::behavior::InteractionResult::Success
+        Success
     }
 
     fn is_hard_collision_relevant(&self) -> bool {
@@ -378,7 +387,7 @@ impl LivingEntity for CamelEntity {
         if self.is_saddled() && self.dash_cooldown() <= 0 && self.on_ground() {
             let amount = jump_amount.max(0);
             self.living_base().set_jump_pending_scale(
-                crate::entity::living_entity::player_jump_pending_scale(amount),
+                player_jump_pending_scale(amount),
             );
         }
     }
@@ -413,9 +422,9 @@ impl LivingEntity for CamelEntity {
         let jump_momentum = self.get_jump_power();
         let (yaw, _pitch) = self.rotation();
         let look = DVec3::new(
-            -f64::from(steel_math::trig::sin(yaw.to_radians())),
+            -f64::from(sin(yaw.to_radians())),
             0.0,
-            f64::from(steel_math::trig::cos(yaw.to_radians())),
+            f64::from(cos(yaw.to_radians())),
         )
         .normalize_or_zero();
         let horizontal = 22.2222_f32 * amount * movement_speed * self.block_speed_factor();
@@ -478,15 +487,15 @@ impl Mob for CamelEntity {
     fn mob_interact(
         &self,
         player: &Player,
-        hand: steel_utils::types::InteractionHand,
-    ) -> crate::behavior::InteractionResult {
+        hand: InteractionHand,
+    ) -> InteractionResult {
         if !Entity::is_vehicle(self)
             && !LivingEntity::is_baby(self)
             && self.is_tamed()
             && player.is_secondary_use_active()
         {
             self.open_mount_inventory(player);
-            return crate::behavior::InteractionResult::Success;
+            return Success;
         }
         Animal::mob_interact_animal(self, player, hand)
     }

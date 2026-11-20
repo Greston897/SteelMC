@@ -6,6 +6,8 @@
 
 use rustc_hash::{FxHashMap, FxHashSet};
 use serde::{Deserialize, Deserializer, de::Error as DeError};
+use steel_utils::threading::available_worker_threads;
+use steel_utils::threading::effective_cores;
 use std::{
     collections::BTreeMap,
     path::{Component, Path, PathBuf},
@@ -174,7 +176,7 @@ impl Default for RuntimeConfig {
             // embedders, `steel-flint`) must size its pools for the container's
             // real core budget, the same way the packaged `cores = 0` does. A
             // literal `1` silently pinned every derived pool to a single thread.
-            cores: steel_utils::threading::available_worker_threads(),
+            cores: available_worker_threads(),
             packet_workers: None,
             chunk_generation_threads: None,
             chunk_encoding_threads: None,
@@ -195,7 +197,7 @@ impl RuntimeConfig {
     /// keeps one place responsible for it instead of relying on each
     /// constructor to remember.
     pub fn clamp_cores_to_available(&mut self, available: usize) {
-        self.cores = steel_utils::threading::effective_cores(Some(self.cores), available);
+        self.cores = effective_cores(Some(self.cores), available);
     }
 
     /// Minimum view distance the server accepts from a client.
@@ -985,6 +987,7 @@ mod tests {
     use super::*;
     use std::env::temp_dir;
     use steel_registry::init_vanilla_registry;
+use steel_utils::threading::available_worker_threads;
 
     #[test]
     fn a_container_quota_caps_the_configured_core_count() {
@@ -1045,7 +1048,7 @@ mod tests {
     fn the_default_core_count_follows_detection() {
         assert_eq!(
             RuntimeConfig::default().cores,
-            steel_utils::threading::available_worker_threads().max(1)
+            available_worker_threads().max(1)
         );
     }
 

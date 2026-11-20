@@ -19,9 +19,14 @@ use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
 use text_components::TextComponent;
+use steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK;
+use tokio::sync::oneshot::Receiver;
+use tokio::sync::oneshot::error::TryRecvError::Closed;
+use tokio::sync::oneshot::error::TryRecvError::Empty;
 
 use super::abstract_minecart::{AbstractMinecart, AbstractMinecartBase};
 use crate::behavior::InteractionResult;
+use crate::command::BackgroundCommandResult;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntitySyncedData, SharedEntity,
 };
@@ -41,7 +46,7 @@ pub struct CommandBlockMinecartEntity {
     state: SyncMutex<CommandBlockMinecartState>,
     /// Reply channel of a command still queued on the server.
     pending:
-        SyncMutex<Option<tokio::sync::oneshot::Receiver<crate::command::BackgroundCommandResult>>>,
+        SyncMutex<Option<Receiver<BackgroundCommandResult>>>,
 }
 
 #[derive(Debug)]
@@ -169,7 +174,7 @@ impl CommandBlockMinecartEntity {
             self.set_last_output(TextComponent::plain("#itzlipofutzli"));
             return;
         }
-        if !world.get_game_rule(&steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK) {
+        if !world.get_game_rule(&COMMAND_BLOCKS_WORK) {
             return;
         }
         let Some(server) = world.server() else {
@@ -199,8 +204,8 @@ impl CommandBlockMinecartEntity {
                     self.set_last_output(TextComponent::plain(output));
                 }
             }
-            Err(tokio::sync::oneshot::error::TryRecvError::Empty) => {}
-            Err(tokio::sync::oneshot::error::TryRecvError::Closed) => {
+            Err(Empty) => {}
+            Err(Closed) => {
                 *pending = None;
             }
         }

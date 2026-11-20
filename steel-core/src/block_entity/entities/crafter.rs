@@ -5,6 +5,7 @@
 //! ticker that runs every game tick.
 
 use std::sync::{Arc, Weak};
+use std::mem::replace;
 
 use glam::DVec3;
 use simdnbt::ToNbtTag;
@@ -12,6 +13,7 @@ use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as Nbt
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_registry::REGISTRY;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
+use steel_registry::vanilla_criteria_triggers::CRAFTER_RECIPE_CRAFTED;
 use steel_registry::blocks::properties::{
     BlockStateProperties, BoolProperty, Direction, FrontAndTop,
 };
@@ -31,6 +33,7 @@ use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerRef, SharedContainer};
 use crate::inventory::recipe_manager;
 use crate::world::World;
+use crate::player::advancement::predicate::TriggerContext;
 
 /// Number of slots in the crafter grid.
 pub const CRAFTER_SLOTS: usize = 9;
@@ -147,7 +150,7 @@ impl BlockEntity for CrafterBlockEntity {
         self.unpack_loot();
         let items = {
             let mut container = self.container.lock();
-            std::mem::replace(
+            replace(
                 &mut container.items,
                 vec![ItemStack::empty(); CRAFTER_SLOTS],
             )
@@ -325,9 +328,9 @@ impl CrafterBlockEntity {
                 .and_then(|uuid| world.players.get_by_uuid(&uuid));
             if let Some(player) = starter {
                 let context =
-                    crate::player::advancement::predicate::TriggerContext::recipe(&recipe_key);
+                    TriggerContext::recipe(&recipe_key);
                 player.trigger_advancement_with_context(
-                    &steel_registry::vanilla_criteria_triggers::CRAFTER_RECIPE_CRAFTED,
+                    &CRAFTER_RECIPE_CRAFTED,
                     &context,
                 );
             }
@@ -477,6 +480,10 @@ impl Container for CrafterContainer {
 #[cfg(test)]
 mod tests {
     use steel_registry::{init_vanilla_registry, vanilla_blocks};
+use steel_registry::vanilla_items::FLINT;
+use steel_registry::vanilla_items::IRON_INGOT;
+use steel_registry::vanilla_items::OAK_PLANKS;
+use steel_registry::vanilla_items::STICK;
 
     use super::*;
 
@@ -508,7 +515,7 @@ mod tests {
         // nothing is consumed.
         crafter.container.lock().set_item(
             0,
-            ItemStack::with_count(&steel_registry::vanilla_items::STICK, 1),
+            ItemStack::with_count(&STICK, 1),
         );
         assert!(!crafter.has_matching_recipe());
         assert_eq!(crafter.container.lock().get_item(0).count(), 1);
@@ -523,11 +530,11 @@ mod tests {
             // Two planks stacked in the left column match the vanilla shaped `stick` recipe.
             container.set_item(
                 0,
-                ItemStack::with_count(&steel_registry::vanilla_items::OAK_PLANKS, 3),
+                ItemStack::with_count(&OAK_PLANKS, 3),
             );
             container.set_item(
                 3,
-                ItemStack::with_count(&steel_registry::vanilla_items::OAK_PLANKS, 3),
+                ItemStack::with_count(&OAK_PLANKS, 3),
             );
         }
         assert!(
@@ -546,11 +553,11 @@ mod tests {
             let mut container = crafter.container.lock();
             container.set_item(
                 0,
-                ItemStack::with_count(&steel_registry::vanilla_items::IRON_INGOT, 1),
+                ItemStack::with_count(&IRON_INGOT, 1),
             );
             container.set_item(
                 1,
-                ItemStack::with_count(&steel_registry::vanilla_items::FLINT, 1),
+                ItemStack::with_count(&FLINT, 1),
             );
         }
         assert!(crafter.has_matching_recipe());
@@ -572,11 +579,11 @@ mod tests {
             let mut container = crafter.container.lock();
             container.set_item(
                 0,
-                ItemStack::with_count(&steel_registry::vanilla_items::OAK_PLANKS, 1),
+                ItemStack::with_count(&OAK_PLANKS, 1),
             );
             container.set_item(
                 3,
-                ItemStack::with_count(&steel_registry::vanilla_items::OAK_PLANKS, 1),
+                ItemStack::with_count(&OAK_PLANKS, 1),
             );
         }
         assert!(crafter.begin_crafting());

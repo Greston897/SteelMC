@@ -13,10 +13,14 @@ use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::blocks::{BlockRef, block_state_ext::BlockStateExt};
 use steel_registry::sound_event::SoundEventRef;
 use steel_utils::{BlockPos, BlockStateId};
+use steel_registry::vanilla_blocks::TRAPPED_CHEST;
+use steel_registry::vanilla_game_events::CONTAINER_CLOSE;
+use steel_registry::vanilla_game_events::CONTAINER_OPEN;
 
 use crate::entity::Entity as _;
 use crate::inventory::lock::ContainerRef;
 use crate::world::World;
+use crate::entity::Entity;
 
 /// Sounds and state hook used when the viewer count changes.
 #[derive(Clone, Copy)]
@@ -95,7 +99,7 @@ impl ContainerOpenersCounter {
         pos: BlockPos,
         state: BlockStateId,
         block: BlockRef,
-        source: Option<&dyn crate::entity::Entity>,
+        source: Option<&dyn Entity>,
     ) {
         let openers = self.openers.fetch_add(1, Ordering::AcqRel) + 1;
         self.notify_signal_change(world, pos, block);
@@ -127,7 +131,7 @@ impl ContainerOpenersCounter {
         pos: BlockPos,
         state: BlockStateId,
         block: BlockRef,
-        source: Option<&dyn crate::entity::Entity>,
+        source: Option<&dyn Entity>,
     ) -> i32 {
         let old = self
             .openers
@@ -220,12 +224,12 @@ impl ContainerOpenersCounter {
         world: &Arc<World>,
         pos: BlockPos,
         opening: bool,
-        source: Option<&dyn crate::entity::Entity>,
+        source: Option<&dyn Entity>,
     ) {
         let event = if opening {
-            &steel_registry::vanilla_game_events::CONTAINER_OPEN
+            &CONTAINER_OPEN
         } else {
-            &steel_registry::vanilla_game_events::CONTAINER_CLOSE
+            &CONTAINER_CLOSE
         };
         world.game_event(
             event,
@@ -235,7 +239,7 @@ impl ContainerOpenersCounter {
     }
 
     fn notify_signal_change(&self, world: &Arc<World>, pos: BlockPos, block: BlockRef) {
-        if block == &steel_registry::vanilla_blocks::TRAPPED_CHEST {
+        if block == &TRAPPED_CHEST {
             world.update_neighbors_at(pos, block);
             world.update_neighbors_at(pos.below(), block);
         }
@@ -271,7 +275,7 @@ impl ContainerOpenersCounter {
             return;
         }
         let updated = current.set_value(&BlockStateProperties::OPEN, open);
-        world.set_block(pos, updated, steel_utils::types::UpdateFlags::UPDATE_ALL);
+        world.set_block(pos, updated, UpdateFlags::UPDATE_ALL);
         let _ = state;
     }
 }
@@ -279,12 +283,14 @@ impl ContainerOpenersCounter {
 #[cfg(test)]
 mod tests {
     use super::*;
+use steel_registry::sound_events::BLOCK_BARREL_CLOSE;
+use steel_registry::sound_events::BLOCK_BARREL_OPEN;
 
     #[test]
     fn counter_tracks_viewers() {
         let counter = ContainerOpenersCounter::new(OpenerHooks {
-            open_sound: &steel_registry::sound_events::BLOCK_BARREL_OPEN,
-            close_sound: &steel_registry::sound_events::BLOCK_BARREL_CLOSE,
+            open_sound: &BLOCK_BARREL_OPEN,
+            close_sound: &BLOCK_BARREL_CLOSE,
             sets_open_state: true,
         });
         assert_eq!(counter.openers(), 0);

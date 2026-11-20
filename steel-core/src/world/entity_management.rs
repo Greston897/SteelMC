@@ -10,10 +10,11 @@ use super::{
 use crate::entity::{EntityCollisionCandidates, ThrowableProjectile, selector::EntitySelector};
 
 use steel_protocol::packets::game::CProjectilePower;
+use steel_registry::entity_type::EntityTypeRef;
 
 /// Vanilla `AbstractHurtingProjectile` membership, read from the entity type's
 /// generated class hierarchy.
-const fn is_hurting_projectile(entity_type: steel_registry::entity_type::EntityTypeRef) -> bool {
+const fn is_hurting_projectile(entity_type: EntityTypeRef) -> bool {
     entity_type.is_abstract_hurting_projectile
 }
 

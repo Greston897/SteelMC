@@ -21,8 +21,19 @@ use steel_registry::vanilla_mob_effects;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{DowncastType, DowncastTypeKey};
+use steel_registry::fluid::FluidState;
+use steel_registry::item_stack::ItemStack;
+use steel_registry::particle_type::ParticleData;
+use steel_registry::vanilla_block_tags::BlockTag;
+use steel_registry::vanilla_particle_types::BUBBLE;
+use steel_registry::vanilla_particle_types::SMOKE;
+use steel_utils::types::Difficulty::Hard;
+use steel_utils::types::Difficulty::Normal;
 
 use crate::entity::damage::DamageSource;
+use crate::enchantment_helper::do_post_attack_effects_with_item_source;
+use crate::world::Explosion;
+use crate::world::explosion::ExplosionDamageCalculator;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntitySyncedData, MobEffectInstance, Projectile,
     ProjectileBase, ProjectileHit, RemovalReason, SharedEntity,
@@ -154,8 +165,8 @@ impl Entity for WitherSkullEntity {
         {
             for _ in 0..4 {
                 world.send_particles(
-                    steel_registry::particle_type::ParticleData::simple(
-                        &steel_registry::vanilla_particle_types::BUBBLE,
+                    ParticleData::simple(
+                        &BUBBLE,
                     ),
                     self.position() - movement * 0.25,
                     0,
@@ -194,8 +205,8 @@ impl Entity for WitherSkullEntity {
             Arc::clone(&self).hit_target_or_deflect_self(&hit);
         }
         world.send_particles(
-            steel_registry::particle_type::ParticleData::simple(
-                &steel_registry::vanilla_particle_types::SMOKE,
+            ParticleData::simple(
+                &SMOKE,
             ),
             self.position() + DVec3::new(0.0, 0.5, 0.0),
             0,
@@ -282,10 +293,10 @@ impl Projectile for WitherSkullEntity {
                                         &hit.entity,
                                         &source,
                                     );
-                                crate::enchantment_helper::do_post_attack_effects_with_item_source(
+                                do_post_attack_effects_with_item_source(
                                     &world,
                                     entity,
-                                    &steel_registry::item_stack::ItemStack::empty(),
+                                    &ItemStack::empty(),
                                     &context,
                                 );
                             } else {
@@ -293,8 +304,8 @@ impl Projectile for WitherSkullEntity {
                             }
                         }
                         let ticks = match world.difficulty() {
-                            steel_utils::types::Difficulty::Normal => WITHER_SKULL_WITHER_TICKS,
-                            steel_utils::types::Difficulty::Hard => 800,
+                            Normal => WITHER_SKULL_WITHER_TICKS,
+                            Hard => 800,
                             _ => 0,
                         };
                         if ticks > 0
@@ -323,14 +334,14 @@ impl Projectile for WitherSkullEntity {
 struct ChargedSkullCalculator;
 static CHARGED_SKULL_CALCULATOR: ChargedSkullCalculator = ChargedSkullCalculator;
 
-impl crate::world::explosion::ExplosionDamageCalculator for ChargedSkullCalculator {
+impl ExplosionDamageCalculator for ChargedSkullCalculator {
     fn block_explosion_resistance(
         &self,
-        explosion: &dyn crate::world::Explosion,
+        explosion: &dyn Explosion,
         world: &World,
         pos: steel_utils::BlockPos,
         state: steel_utils::BlockStateId,
-        fluid: steel_registry::fluid::FluidState,
+        fluid: FluidState,
     ) -> Option<f32> {
         use crate::world::explosion::DefaultExplosionDamageCalculator;
         use steel_registry::{TaggedRegistryExt as _, blocks::block_state_ext::BlockStateExt as _};
@@ -339,7 +350,7 @@ impl crate::world::explosion::ExplosionDamageCalculator for ChargedSkullCalculat
         if !state.is_air()
             && !steel_registry::REGISTRY.blocks.is_in_tag(
                 state.get_block(),
-                &steel_registry::vanilla_block_tags::BlockTag::WITHER_IMMUNE,
+                &BlockTag::WITHER_IMMUNE,
             )
         {
             resistance.map(|value| value.min(0.8))

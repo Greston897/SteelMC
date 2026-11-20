@@ -14,6 +14,11 @@ use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::loot::resolvers::{WorldScoreResolver, WorldStorageResolver};
 use steel_registry::sound_event::SoundEventHolder;
 use steel_registry::vanilla_particle_types::{BUBBLE, SPLASH};
+use steel_protocol::packets::game::CDebugBlockValue;
+use steel_protocol::packets::game::CDebugChunkValue;
+use steel_protocol::packets::game::CDebugEntityValue;
+use steel_protocol::packets::game::CDebugEvent;
+use steel_protocol::packets::game::DebugSubscriptionUpdate;
 
 pub(super) fn sound_is_within_range(
     sound: &SoundEventHolder,
@@ -735,9 +740,9 @@ impl World {
         subscription_id: i32,
         encoded_value: Option<Vec<u8>>,
     ) {
-        let packet = steel_protocol::packets::game::CDebugBlockValue {
+        let packet = CDebugBlockValue {
             block_pos,
-            update: steel_protocol::packets::game::DebugSubscriptionUpdate {
+            update: DebugSubscriptionUpdate {
                 subscription_id,
                 encoded_value,
             },
@@ -759,10 +764,10 @@ impl World {
         subscription_id: i32,
         encoded_value: Option<Vec<u8>>,
     ) {
-        let packet = steel_protocol::packets::game::CDebugChunkValue {
+        let packet = CDebugChunkValue {
             chunk_x,
             chunk_z,
-            update: steel_protocol::packets::game::DebugSubscriptionUpdate {
+            update: DebugSubscriptionUpdate {
                 subscription_id,
                 encoded_value,
             },
@@ -783,9 +788,9 @@ impl World {
         subscription_id: i32,
         encoded_value: Option<Vec<u8>>,
     ) {
-        let packet = steel_protocol::packets::game::CDebugEntityValue {
+        let packet = CDebugEntityValue {
             entity_id,
-            update: steel_protocol::packets::game::DebugSubscriptionUpdate {
+            update: DebugSubscriptionUpdate {
                 subscription_id,
                 encoded_value,
             },
@@ -801,7 +806,7 @@ impl World {
     /// Broadcasts a one-shot debug-subscription event (`ClientboundDebugEventPacket`)
     /// to every operator player in this world subscribed to `subscription_id`.
     pub fn broadcast_debug_event(&self, subscription_id: i32, encoded_value: Vec<u8>) {
-        let packet = steel_protocol::packets::game::CDebugEvent {
+        let packet = CDebugEvent {
             subscription_id,
             encoded_value,
         };

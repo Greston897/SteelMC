@@ -23,6 +23,11 @@ use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
+use steel_registry::vanilla_game_events::ENTITY_INTERACT;
+use steel_registry::vanilla_game_events::ENTITY_PLACE;
+use steel_registry::vanilla_items::ARMADILLO_SCUTE;
+use steel_registry::vanilla_items::BRUSH;
+use steel_utils::types::InteractionHand;
 
 use crate::entity::ai::goal::{
     BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
@@ -30,6 +35,9 @@ use crate::entity::ai::goal::{
 };
 
 use crate::entity::damage::DamageSource;
+use crate::behavior::InteractionResult;
+use crate::behavior::InteractionResult::SuccessServer;
+use crate::player::Player;
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityPose, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase,
@@ -356,11 +364,11 @@ impl Mob for ArmadilloEntity {
             };
             if should_shed {
                 let _ = self.spawn_at_location(
-                    ItemStack::new(&steel_registry::vanilla_items::ARMADILLO_SCUTE),
+                    ItemStack::new(&ARMADILLO_SCUTE),
                     0.0,
                 );
                 self.play_sound(&sound_events::ENTITY_ARMADILLO_SCUTE_DROP, 1.0, 1.0);
-                self.game_event(&steel_registry::vanilla_game_events::ENTITY_PLACE);
+                self.game_event(&ENTITY_PLACE);
             }
         }
     }
@@ -369,22 +377,22 @@ impl Mob for ArmadilloEntity {
     /// scute and damages the brush by 16 durability; food falls through to `Animal`.
     fn mob_interact(
         &self,
-        player: &crate::player::Player,
-        hand: steel_utils::types::InteractionHand,
-    ) -> crate::behavior::InteractionResult {
+        player: &Player,
+        hand: InteractionHand,
+    ) -> InteractionResult {
         let held = {
             let inv = player.inventory.lock();
             let stack = inv.get_item_in_hand(hand);
             stack.copy_with_count(stack.count())
         };
-        if held.is(&steel_registry::vanilla_items::BRUSH) && !AgeableMob::is_baby(self) {
+        if held.is(&BRUSH) && !AgeableMob::is_baby(self) {
             let _ = self.spawn_at_location(
-                ItemStack::new(&steel_registry::vanilla_items::ARMADILLO_SCUTE),
+                ItemStack::new(&ARMADILLO_SCUTE),
                 0.0,
             );
             self.play_sound(&sound_events::ENTITY_ARMADILLO_BRUSH, 1.0, 1.0);
             self.game_event_with_source_entity(
-                &steel_registry::vanilla_game_events::ENTITY_INTERACT,
+                &ENTITY_INTERACT,
                 Some(player),
             );
             player.inventory.lock().hurt_item_in_hand(
@@ -392,7 +400,7 @@ impl Mob for ArmadilloEntity {
                 BRUSH_DAMAGE_PER_SCUTE,
                 player.has_infinite_materials(),
             );
-            return crate::behavior::InteractionResult::SuccessServer;
+            return SuccessServer;
         }
         Animal::mob_interact_animal(self, player, hand)
     }

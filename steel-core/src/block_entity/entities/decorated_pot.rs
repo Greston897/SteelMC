@@ -5,6 +5,8 @@
 //! the pot is generated as structure loot.
 
 use std::sync::{Arc, Weak};
+use std::array::from_fn;
+use std::mem::replace;
 
 use simdnbt::ToNbtTag;
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
@@ -44,7 +46,7 @@ impl DecoratedPotBlockEntity {
                 pos,
                 state,
             )),
-            items: SyncMutex::new(std::array::from_fn(|_| ItemStack::empty())),
+            items: SyncMutex::new(from_fn(|_| ItemStack::empty())),
             loot_table: SyncMutex::new(None),
         }
     }
@@ -77,7 +79,7 @@ impl BlockEntity for DecoratedPotBlockEntity {
     fn pre_remove_side_effects(&self, pos: BlockPos, _state: BlockStateId) {
         let items = {
             let mut guard = self.items.lock();
-            std::mem::replace(&mut *guard, std::array::from_fn(|_| ItemStack::empty()))
+            replace(&mut *guard, from_fn(|_| ItemStack::empty()))
         };
         let Some(world) = self.get_level() else {
             return;
@@ -92,7 +94,7 @@ impl BlockEntity for DecoratedPotBlockEntity {
     fn load_additional(&self, nbt: &BorrowedNbtCompound<'_>) {
         let nbt_view: NbtCompoundView<'_, '_> = nbt.into();
         let mut items: [ItemStack; DECORATED_POT_SIDES] =
-            std::array::from_fn(|_| ItemStack::empty());
+            from_fn(|_| ItemStack::empty());
         // Vanilla persists the sherds as one compound keyed by side name.
         if let Some(sherds) = nbt_view.compound("sherds") {
             for (index, key) in ["back", "left", "right", "front"].into_iter().enumerate() {

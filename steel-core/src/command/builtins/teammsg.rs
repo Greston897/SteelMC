@@ -1,6 +1,7 @@
 //! Vanilla `/teammsg` (alias `/tm`) team chat command (`TeamMsgCommand`).
 
 use std::sync::Arc;
+use std::slice::from_ref;
 
 use steel_registry::vanilla_chat_types;
 use steel_utils::{Identifier, translations};
@@ -80,7 +81,7 @@ fn send_team_message(
         &message,
         sender_name,
         Some(team_display),
-        std::slice::from_ref(&sender),
+        from_ref(&sender),
     );
 
     Ok((recipients.len() + 1) as i32)

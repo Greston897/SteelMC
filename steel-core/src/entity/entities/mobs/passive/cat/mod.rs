@@ -325,7 +325,7 @@ pub fn is_cat_food(item_stack: &ItemStack) -> bool {
 impl DefaultEntityPush for CatEntity {}
 
 impl Entity for CatEntity {
-    fn is_tame_owned_by(&self, owner: &dyn crate::entity::LivingEntity) -> bool {
+    fn is_tame_owned_by(&self, owner: &dyn LivingEntity) -> bool {
         self.is_owned_by(Some(owner.uuid()))
     }
 

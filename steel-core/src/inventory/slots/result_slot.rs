@@ -170,6 +170,7 @@ impl Slot for ResultSlot {
 #[cfg(test)]
 mod tests {
     use steel_utils::locks::IntoShared;
+use steel_registry::vanilla_items::STONE;
 
     use super::*;
     use crate::inventory::container::SimpleContainer;
@@ -230,7 +231,7 @@ mod tests {
         Slot::set_item(
             &slot,
             &mut guard,
-            ItemStack::with_count(&steel_registry::vanilla_items::STONE, 8),
+            ItemStack::with_count(&STONE, 8),
         );
 
         let removed = Slot::remove(&slot, &mut guard, 3);

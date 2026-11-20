@@ -7,6 +7,7 @@
 
 use std::hash::{Hash as _, Hasher as _};
 use std::sync::LazyLock;
+use std::collections::hash_map::DefaultHasher;
 
 use rand::rngs::StdRng;
 use rand::{RngExt as _, SeedableRng as _};
@@ -101,7 +102,7 @@ fn reset_seed_tail(
 }
 
 fn sequence_rng(seed: i32, include_sequence_id: bool, id: &Identifier) -> StdRng {
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    let mut hasher = DefaultHasher::new();
     seed.hash(&mut hasher);
     if include_sequence_id {
         id.to_string().hash(&mut hasher);

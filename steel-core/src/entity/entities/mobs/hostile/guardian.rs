@@ -22,6 +22,7 @@ use steel_registry::vanilla_entity_data::GuardianEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
+use steel_registry::vanilla_damage_types::MAGIC;
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
@@ -278,7 +279,7 @@ impl Mob for GuardianEntity {
         // source needs an `Arc<dyn Entity>` for the attacker; the guardian is
         // reached through its target here, so the beam is credited to the world
         // rather than to a specific entity.
-        let damage = DamageSource::environment(&steel_registry::vanilla_damage_types::MAGIC);
+        let damage = DamageSource::environment(&MAGIC);
         target.hurt(&world, &damage, 2.0);
     }
 

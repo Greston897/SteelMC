@@ -16,9 +16,19 @@ use steel_registry::data_components::vanilla_components::MAX_STACK_SIZE;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::recipe::{Ingredient, PlacementInfo};
+use steel_registry::data_components::vanilla_components::CUSTOM_NAME;
+use steel_registry::slot_display::RecipeDisplay;
 
 use crate::inventory::container::Container as _;
 use crate::inventory::lock::ContainerLockGuard;
+use crate::inventory::container::CraftingContainer;
+use crate::inventory::lock::ContainerId;
+use crate::inventory::recipe_manager::find_recipe;
+use crate::inventory::slots::CraftingHandler;
+use crate::inventory::slots::ResultHandler::update_result;
+use crate::player::Player;
+use crate::player::player_inventory::Prediction::Predicted;
+use std::mem::take;
 
 /// Vanilla `ServerPlaceRecipe.ITEM_NOT_FOUND`.
 const ITEM_NOT_FOUND: i32 = -1;
@@ -204,7 +214,7 @@ impl StackedItemContents {
 pub fn is_usable_for_crafting(stack: &ItemStack) -> bool {
     !stack.is_damaged()
         && !stack.is_enchanted()
-        && !stack.has(steel_registry::data_components::vanilla_components::CUSTOM_NAME)
+        && !stack.has(CUSTOM_NAME)
 }
 
 /// Vanilla max stack size of an item type, used by `clampToMaxStackSize`.
@@ -520,7 +530,7 @@ pub struct PlacementOutcome {
     /// The action the menu reported.
     pub action: PostPlaceAction,
     /// The display of the recipe that was asked for.
-    pub display: steel_registry::slot_display::RecipeDisplay,
+    pub display: RecipeDisplay,
 }
 
 /// The pure half of vanilla `ServerPlaceRecipe.placeRecipe`.
@@ -754,7 +764,7 @@ fn move_item_to_grid(
     let taken = if count < inventory_item.count() {
         inventory_item.split(count)
     } else {
-        std::mem::take(inventory_item)
+        take(inventory_item)
     };
     let taken_count = taken.count();
     inventory_take.push((inventory_slot, taken.copy_with_count(taken_count)));
@@ -787,10 +797,10 @@ pub struct PlacementRequest<'a> {
 /// currently produces `recipe_key`.
 #[must_use]
 pub fn grid_produces(
-    crafting: &crate::inventory::container::CraftingContainer,
+    crafting: &CraftingContainer,
     recipe_key: &steel_utils::Identifier,
 ) -> bool {
-    crate::inventory::recipe_manager::find_recipe(crafting)
+    find_recipe(crafting)
         .is_some_and(|recipe| recipe.key() == recipe_key)
 }
 
@@ -802,13 +812,13 @@ pub fn grid_produces(
 /// item type is resolved again if the slot no longer matches.
 pub fn apply_inventory_take(
     guard: &mut ContainerLockGuard,
-    player: &crate::player::Player,
+    player: &Player,
     take: &[(usize, ItemStack)],
 ) {
     if take.is_empty() {
         return;
     }
-    let id = crate::inventory::lock::ContainerId::from_arc(&player.inventory);
+    let id = ContainerId::from_arc(&player.inventory);
     let Some(inventory) = guard.get_mut(id) else {
         return;
     };
@@ -850,22 +860,22 @@ pub fn apply_inventory_take(
 /// output application, shared by every crafting menu.
 pub fn apply_plan(
     guard: &mut ContainerLockGuard,
-    player: &crate::player::Player,
+    player: &Player,
     plan: PlacementPlan,
-    crafting: crate::inventory::lock::ContainerId,
-    handler: &crate::inventory::slots::CraftingHandler,
+    crafting: ContainerId,
+    handler: &CraftingHandler,
 ) -> PostPlaceAction {
     for stack in plan.inventory_give {
         player.add_item_or_drop_with_guard(
             guard,
             stack,
-            crate::player::player_inventory::Prediction::Predicted,
+            Predicted,
         );
     }
     apply_inventory_take(guard, player, &plan.inventory_take);
 
     if let Some(container) =
-        guard.get_typed_mut::<crate::inventory::container::CraftingContainer>(crafting)
+        guard.get_typed_mut::<CraftingContainer>(crafting)
     {
         for (index, stack) in plan.grid.into_iter().enumerate() {
             if index < container.get_container_size() {
@@ -875,7 +885,7 @@ pub fn apply_plan(
         container.set_changed();
     }
 
-    crate::inventory::slots::ResultHandler::update_result(handler, guard);
+    update_result(handler, guard);
     plan.action
 }
 
@@ -893,6 +903,8 @@ pub fn single_item_matches(input: &ItemStack, placement: &PlacementInfo) -> bool
 #[cfg(test)]
 mod tests {
     use super::*;
+use steel_registry::vanilla_items::DIRT;
+use steel_registry::vanilla_items::STONE;
 
     fn stack(item: ItemRef, count: i32) -> ItemStack {
         ItemStack::with_count(item, count)
@@ -903,7 +915,7 @@ mod tests {
     /// one free inventory slot.
     #[test]
     fn clear_grid_merges_equal_stacks_into_one_free_slot() {
-        let stone = &*steel_registry::vanilla_items::STONE;
+        let stone = &*STONE;
         let inventory = vec![stack(stone, 64), ItemStack::empty(), ItemStack::empty()];
         let grid = vec![stack(stone, 10), stack(stone, 10)];
 
@@ -917,8 +929,8 @@ mod tests {
     /// cannot be cleared, so vanilla returns early with `NOTHING`.
     #[test]
     fn clear_grid_fails_when_the_inventory_is_full() {
-        let stone = &*steel_registry::vanilla_items::STONE;
-        let dirt = &*steel_registry::vanilla_items::DIRT;
+        let stone = &*STONE;
+        let dirt = &*DIRT;
         let inventory = vec![stack(dirt, 64), stack(dirt, 64), stack(dirt, 64)];
         let grid = vec![stack(stone, 1)];
 
@@ -928,7 +940,7 @@ mod tests {
     /// A stack with remaining space absorbs everything, whatever the count.
     #[test]
     fn clear_grid_accepts_a_partially_filled_matching_slot() {
-        let stone = &*steel_registry::vanilla_items::STONE;
+        let stone = &*STONE;
         let inventory = vec![stack(stone, 60), stack(stone, 64)];
         let grid = vec![stack(stone, 4)];
 

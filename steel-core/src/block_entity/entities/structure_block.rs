@@ -15,11 +15,14 @@ use steel_registry::blocks::properties::{BlockStateProperties, StructureMode};
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
+use steel_registry::vanilla_blocks::STRUCTURE_BLOCK;
+use steel_utils::types::UpdateFlags;
 
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::world::World;
+use crate::player::Player;
 
 /// Vanilla `StructureBlockEntity.MAX_OFFSET_PER_AXIS`.
 pub const MAX_OFFSET_PER_AXIS: i32 = 48;
@@ -279,7 +282,7 @@ impl StructureBlockEntity {
         };
         let pos = self.base.pos();
         let state = world.get_block_state(pos);
-        if state.get_block().key != steel_registry::vanilla_blocks::STRUCTURE_BLOCK.key {
+        if state.get_block().key != STRUCTURE_BLOCK.key {
             return;
         }
         let mode = self.state.lock().mode;
@@ -288,7 +291,7 @@ impl StructureBlockEntity {
             world.set_block(
                 pos,
                 updated,
-                steel_utils::types::UpdateFlags::UPDATE_CLIENTS,
+                UpdateFlags::UPDATE_CLIENTS,
             );
         }
     }
@@ -297,7 +300,7 @@ impl StructureBlockEntity {
     /// editor. The menu itself is client-side, so `true` is the whole server
     /// response.
     #[must_use]
-    pub fn used_by(&self, player: &crate::player::Player) -> bool {
+    pub fn used_by(&self, player: &Player) -> bool {
         player.has_game_master_permissions()
     }
 }

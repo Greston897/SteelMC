@@ -2,6 +2,7 @@
 
 use steel_utils::Identifier;
 use text_components::TextComponent;
+use steel_registry::mob_effect::MobEffectRef;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
@@ -13,6 +14,7 @@ use super::super::{
 };
 use crate::entity::MobEffectInstance;
 use steel_registry::{REGISTRY, RegistryExt as _};
+use crate::entity::SharedEntity;
 
 /// Vanilla `MobEffectInstance.INFINITE_DURATION`.
 const INFINITE_DURATION: i32 = -1;
@@ -64,7 +66,7 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
 
 fn effect_of(
     context: &SteelCommandContext<CommandSource>,
-) -> Result<steel_registry::mob_effect::MobEffectRef, CommandSyntaxError> {
+) -> Result<MobEffectRef, CommandSyntaxError> {
     let key = context.identifier("effect")?;
     REGISTRY
         .mob_effects
@@ -79,7 +81,7 @@ fn give_default(context: &SteelCommandContext<CommandSource>) -> Result<i32, Com
 
 fn targets(
     context: &SteelCommandContext<CommandSource>,
-) -> Result<Vec<crate::entity::SharedEntity>, CommandSyntaxError> {
+) -> Result<Vec<SharedEntity>, CommandSyntaxError> {
     context.entities("targets")
 }
 
@@ -100,7 +102,7 @@ fn give_infinite(context: &SteelCommandContext<CommandSource>) -> Result<i32, Co
 
 fn apply(
     context: &SteelCommandContext<CommandSource>,
-    effect: steel_registry::mob_effect::MobEffectRef,
+    effect: MobEffectRef,
     duration: i32,
     amplifier: i32,
 ) -> Result<i32, CommandSyntaxError> {

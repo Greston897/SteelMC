@@ -29,6 +29,8 @@ use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::inventory::menu::kinds::{chest, double_chest};
 use crate::player::Player;
 use crate::world::{ScheduledTickAccess, World};
+use crate::world::LevelReader;
+use crate::world::SignalQueryContext;
 
 /// Behavior for the wooden chest family (plain and trapped).
 #[block_behavior]
@@ -296,7 +298,7 @@ impl BlockBehavior for TrappedChestBlock {
     fn is_signal_source(
         &self,
         _state: BlockStateId,
-        _context: crate::world::SignalQueryContext,
+        _context: SignalQueryContext,
     ) -> bool {
         true
     }
@@ -304,9 +306,9 @@ impl BlockBehavior for TrappedChestBlock {
     fn get_own_signal(
         &self,
         _state: BlockStateId,
-        world: &dyn crate::world::LevelReader,
+        world: &dyn LevelReader,
         pos: BlockPos,
-        _context: crate::world::SignalQueryContext,
+        _context: SignalQueryContext,
     ) -> i32 {
         world
             .get_block_entity(pos)
@@ -321,10 +323,10 @@ impl BlockBehavior for TrappedChestBlock {
     fn get_direct_signal(
         &self,
         state: BlockStateId,
-        world: &dyn crate::world::LevelReader,
+        world: &dyn LevelReader,
         pos: BlockPos,
         direction: Direction,
-        context: crate::world::SignalQueryContext,
+        context: SignalQueryContext,
     ) -> i32 {
         if direction == Direction::Up {
             self.get_own_signal(state, world, pos, context)
@@ -418,7 +420,7 @@ impl BlockBehavior for TrappedChestBlock {
 }
 
 /// Comparator signal from the block entity inventory at `pos`.
-fn container_signal(world: &dyn crate::world::LevelReader, pos: BlockPos) -> i32 {
+fn container_signal(world: &dyn LevelReader, pos: BlockPos) -> i32 {
     let Some(container_ref) = world
         .get_block_entity(pos)
         .and_then(ContainerRef::from_block_entity)

@@ -4,6 +4,8 @@ use crate::entity::Entity;
 use steel_registry::vanilla_chat_types;
 use steel_utils::Identifier;
 use text_components::TextComponent;
+use crate::server::broadcasting::decorated_chat_component;
+use std::slice::from_ref;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
@@ -47,7 +49,7 @@ fn send_message(context: &SteelCommandContext<CommandSource>) -> Result<i32, Com
             &body,
             sender_component.clone(),
             None,
-            std::slice::from_ref(target),
+            from_ref(target),
         );
     }
 
@@ -62,10 +64,10 @@ fn send_message(context: &SteelCommandContext<CommandSource>) -> Result<i32, Com
             &body,
             sender_component,
             outgoing_target,
-            std::slice::from_ref(player),
+            from_ref(player),
         ),
         None => source.send_success(
-            &crate::server::broadcasting::decorated_chat_component(
+            &decorated_chat_component(
                 &vanilla_chat_types::MSG_COMMAND_OUTGOING,
                 &sender_component,
                 outgoing_target.as_ref(),

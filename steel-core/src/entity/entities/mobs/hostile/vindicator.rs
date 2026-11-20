@@ -23,12 +23,18 @@ use steel_registry::vanilla_entity_data::VindicatorEntityData;
 use steel_registry::{sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
+use steel_registry::vanilla_entities::IRON_GOLEM;
+use steel_registry::vanilla_entities::VILLAGER;
+use steel_registry::vanilla_entities::WANDERING_TRADER;
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     OpenDoorGoal, RaidBreakDoorGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::entity::ai::goal::ObtainRaidBannerGoal;
+use crate::entity::ai::goal::RaidCelebrationGoal;
+use crate::world::raid::RaidStatus::Ongoing;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
@@ -82,8 +88,8 @@ impl VindicatorEntity {
 
         {
             let mut goal_selector = mob_base.goal_selector().lock();
-            goal_selector.add_goal(1, crate::entity::ai::goal::ObtainRaidBannerGoal::new());
-            goal_selector.add_goal(5, crate::entity::ai::goal::RaidCelebrationGoal);
+            goal_selector.add_goal(1, ObtainRaidBannerGoal::new());
+            goal_selector.add_goal(5, RaidCelebrationGoal);
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
             goal_selector.add_goal(2, RaidBreakDoorGoal::new());
             goal_selector.add_goal(3, OpenDoorGoal::for_raid());
@@ -101,10 +107,10 @@ impl VindicatorEntity {
             target_selector.add_goal(
                 3,
                 NearestAttackableTargetGoal::new(true, |target, _| {
-                    target.entity_type() == &steel_registry::vanilla_entities::VILLAGER
+                    target.entity_type() == &VILLAGER
                         || target.entity_type()
-                            == &steel_registry::vanilla_entities::WANDERING_TRADER
-                        || target.entity_type() == &steel_registry::vanilla_entities::IRON_GOLEM
+                            == &WANDERING_TRADER
+                        || target.entity_type() == &IRON_GOLEM
                 }),
             );
         }
@@ -265,7 +271,7 @@ impl Mob for VindicatorEntity {
             world
                 .raids
                 .raid_at(self.block_position().0)
-                .is_some_and(|raid| raid.status == crate::world::raid::RaidStatus::Ongoing)
+                .is_some_and(|raid| raid.status == Ongoing)
         });
         self.mob_base.navigation().lock().set_can_open_doors(raided);
         PathfinderMob::tick_pathfinder_goal_selectors(self, entity);

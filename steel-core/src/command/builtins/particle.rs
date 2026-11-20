@@ -7,6 +7,7 @@ use simdnbt::owned::NbtCompound;
 use steel_registry::particle_type::ParticleData;
 use steel_registry::{REGISTRY, RegistryExt as _};
 use steel_utils::Identifier;
+use crate::world::World;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
@@ -64,7 +65,7 @@ fn particle_for(key: &Identifier, payload: Option<&NbtCompound>) -> Option<Parti
 
 fn emit(
     context: &SteelCommandContext<CommandSource>,
-    _viewer: Option<&Arc<crate::world::World>>,
+    _viewer: Option<&Arc<World>>,
 ) -> Result<i32, CommandSyntaxError> {
     let name = context.identifier("name")?;
     let payload = context.compound("payload").ok();

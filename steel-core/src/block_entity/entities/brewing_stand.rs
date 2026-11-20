@@ -526,6 +526,8 @@ impl Container for BrewingStandContainer {
 #[cfg(test)]
 mod tests {
     use steel_registry::{init_vanilla_registry, vanilla_blocks, vanilla_items};
+use steel_registry::vanilla_items::NETHER_WART;
+use steel_registry::vanilla_items::POTION;
 
     use super::*;
 
@@ -652,12 +654,12 @@ mod tests {
 
         // Nether wart over a water bottle is a valid recipe, but without fuel the
         // ticker will not start a brew.
-        let mut water = ItemStack::new(&steel_registry::vanilla_items::POTION);
+        let mut water = ItemStack::new(&POTION);
         water.set_potion(&steel_utils::Identifier::new("minecraft", "water"));
         brewing_stand.container.lock().set_item(0, water);
         brewing_stand.container.lock().set_item(
             INGREDIENT_SLOT,
-            ItemStack::with_count(&steel_registry::vanilla_items::NETHER_WART, 1),
+            ItemStack::with_count(&NETHER_WART, 1),
         );
         assert!(brewing_stand.can_brew());
         assert_eq!(brewing_stand.fuel(), 0);

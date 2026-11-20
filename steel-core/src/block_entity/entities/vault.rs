@@ -27,6 +27,7 @@ use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::Entity as _;
 use crate::player::Player;
 use crate::world::World;
+use crate::behavior::block::drop_from_block_interact_loot_table;
 
 const DEFAULT_VAULT_LOOT_TABLE: &str = "minecraft:chests/trial_chambers/reward";
 const DEFAULT_OMINOUS_VAULT_LOOT_TABLE: &str = "minecraft:chests/trial_chambers/reward_ominous";
@@ -241,7 +242,7 @@ impl VaultBlockEntity {
             return 0;
         };
         let mut random = rand::rng();
-        let items = crate::behavior::block::drop_from_block_interact_loot_table(
+        let items = drop_from_block_interact_loot_table(
             table,
             block_state,
             None,

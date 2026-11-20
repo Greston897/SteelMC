@@ -59,8 +59,8 @@ fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> 
     })
 }
 
-fn whitelist_of(context: &SteelCommandContext<CommandSource>) -> std::sync::Arc<Whitelist> {
-    std::sync::Arc::clone(&context.source().server().whitelist)
+fn whitelist_of(context: &SteelCommandContext<CommandSource>) -> Arc<Whitelist> {
+    Arc::clone(&context.source().server().whitelist)
 }
 
 /// Which way to edit the list.

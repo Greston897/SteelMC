@@ -8,6 +8,7 @@ use steel_protocol::packets::game::CAwardStats;
 use steel_registry::RegistryExt;
 use steel_registry::stat::custom::CustomStatRef;
 use steel_registry::stat::{Stat, StatTypeRef, vanilla_stat_types};
+use crate::scoreboard::ScoreHolder;
 
 /// This enum is used to decide if a stat is dirty or not, and whether it should be serialized or not.
 ///
@@ -204,7 +205,7 @@ impl Player {
             return;
         };
         let criterion = stat.to_string();
-        let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+        let holder = ScoreHolder::new(self.scoreboard_name());
         for objective_name in scoreboard.objectives_with_criterion(&criterion) {
             let Some(objective) = scoreboard.objective(&objective_name) else {
                 continue;

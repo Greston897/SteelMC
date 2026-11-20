@@ -16,6 +16,8 @@ use super::super::{
 };
 use crate::scoreboard::{ScoreHolder, TeamState, TeamVisibility};
 use crate::server::scoreboard_sync;
+use crate::command::execution::ScoreHolderWildcard::Tracked;
+use crate::scoreboard::Scoreboard;
 
 pub(super) fn registration() -> CommandRegistration<CommandSource> {
     CommandRegistration::new(Identifier::vanilla_static("team"), |_| command())
@@ -206,7 +208,7 @@ fn join_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
     let name = context.string("team")?.to_owned();
     let holders = context.score_holders(
         "members",
-        crate::command::execution::ScoreHolderWildcard::Tracked,
+        Tracked,
     )?;
     let scoreboard = scoreboard(context)?;
 
@@ -244,7 +246,7 @@ fn join_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, Comman
 fn leave_team(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSyntaxError> {
     let holders = context.score_holders(
         "members",
-        crate::command::execution::ScoreHolderWildcard::Tracked,
+        Tracked,
     )?;
     let scoreboard = scoreboard(context)?;
 
@@ -348,7 +350,7 @@ fn domain_of(context: &SteelCommandContext<CommandSource>) -> String {
 
 fn scoreboard(
     context: &SteelCommandContext<CommandSource>,
-) -> Result<&crate::scoreboard::Scoreboard, CommandSyntaxError> {
+) -> Result<&Scoreboard, CommandSyntaxError> {
     let domain = context.source().world().domain();
     context
         .source()

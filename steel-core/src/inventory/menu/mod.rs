@@ -9,6 +9,8 @@ mod layout;
 
 use crate::player::player_inventory::Prediction;
 use std::sync::Arc;
+use crate::player::recipe_placement::PlacementRequest;
+use crate::player::recipe_placement::PostPlaceAction;
 
 use crate::inventory::container::Container as _;
 pub use behavior::MenuBehavior;
@@ -114,8 +116,8 @@ impl Menu {
         &mut self,
         guard: &mut ContainerLockGuard,
         player: &Player,
-        request: crate::player::recipe_placement::PlacementRequest<'_>,
-    ) -> Option<crate::player::recipe_placement::PostPlaceAction> {
+        request: PlacementRequest<'_>,
+    ) -> Option<PostPlaceAction> {
         self.kind
             .handle_placement(&mut self.behavior, guard, player, request)
     }

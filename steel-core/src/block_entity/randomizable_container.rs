@@ -19,6 +19,10 @@ use steel_registry::loot_table::LootRngSeed;
 use steel_registry::loot_table::LootTableRegistry;
 use steel_utils::Identifier;
 use steel_utils::locks::SyncMutex;
+use simdnbt::borrow::NbtCompound;
+use simdnbt::owned::NbtCompound;
+use steel_registry::loot_table::LootTableRef;
+use std::mem::take;
 
 /// Loot state of one container, mirroring vanilla `RandomizableContainer`.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -49,7 +53,7 @@ impl RandomizableContainer {
     ///
     /// Every container block entity reads the same two fields, so the parse
     /// lives here instead of being repeated per container.
-    pub fn load_from_nbt(nbt: simdnbt::borrow::NbtCompound<'_, '_>, loot: &SyncMutex<Self>) {
+    pub fn load_from_nbt(nbt: NbtCompound<'_, '_>, loot: &SyncMutex<Self>) {
         use std::str::FromStr as _;
         use steel_utils::nbt::NbtValueInput as _;
 
@@ -90,7 +94,7 @@ impl RandomizableContainer {
         let Some(key) = self.loot_table.take() else {
             return false;
         };
-        let seed = std::mem::take(&mut self.loot_table_seed);
+        let seed = take(&mut self.loot_table_seed);
 
         let registry: &LootTableRegistry = &REGISTRY.loot_tables;
         let Some(table) = registry.by_key(&key) else {
@@ -116,7 +120,7 @@ impl RandomizableContainer {
     ///
     /// An unpacked container writes nothing, and a zero seed is omitted, which
     /// is what vanilla does (a zero seed means "use the random sequence").
-    pub fn save_to_nbt(&self, nbt: &mut simdnbt::owned::NbtCompound) {
+    pub fn save_to_nbt(&self, nbt: &mut NbtCompound) {
         let Some(table) = self.loot_table.as_ref() else {
             return;
         };
@@ -130,7 +134,7 @@ impl RandomizableContainer {
 /// Rolls `table` with `rng` and places the result into `items`.
 fn roll_into<R: Rng>(
     items: &mut [ItemStack],
-    table: steel_registry::loot_table::LootTableRef,
+    table: LootTableRef,
     rng: &mut R,
 ) {
     let mut ctx = LootContext::new(rng);
@@ -202,6 +206,9 @@ mod tests {
     use steel_registry::init_vanilla_registry;
     use steel_registry::item_stack::ItemStack;
     use steel_utils::Identifier;
+use steel_registry::vanilla_items::DIRT;
+use steel_registry::vanilla_items::SAND;
+use steel_registry::vanilla_items::STONE;
 
     fn rng() -> StdRng {
         StdRng::seed_from_u64(7)
@@ -247,9 +254,9 @@ mod tests {
     fn filling_stops_when_the_container_is_full() {
         let mut slots = vec![ItemStack::empty(); 2];
         // `vanilla_items` entries are `LazyLock`s, hence the deref.
-        let stone = ItemStack::new(&steel_registry::vanilla_items::STONE);
-        let dirt = ItemStack::new(&steel_registry::vanilla_items::DIRT);
-        let sand = ItemStack::new(&steel_registry::vanilla_items::SAND);
+        let stone = ItemStack::new(&STONE);
+        let dirt = ItemStack::new(&DIRT);
+        let sand = ItemStack::new(&SAND);
         fill_from_loot(&mut slots, vec![stone, dirt, sand], &mut rng());
         // The third item has no free slot and is dropped, like vanilla's fill.
         assert!(!slots[0].is_empty());
@@ -261,11 +268,11 @@ mod tests {
         // Vanilla `getAvailableSlots` only offers empty slots, so a structure
         // chest that also carries items keeps them.
         let mut slots = vec![ItemStack::empty(); 3];
-        let dirt = ItemStack::new(&steel_registry::vanilla_items::DIRT);
+        let dirt = ItemStack::new(&DIRT);
         slots[1] = dirt.clone();
         fill_from_loot(
             &mut slots,
-            vec![ItemStack::new(&steel_registry::vanilla_items::STONE)],
+            vec![ItemStack::new(&STONE)],
             &mut rng(),
         );
         assert_eq!(slots[1], dirt, "the pre-placed item survives the fill");

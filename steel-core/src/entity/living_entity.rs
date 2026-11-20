@@ -12,6 +12,8 @@ use crate::behavior::{BLOCK_BEHAVIORS, InventoryTickContext, MOB_EFFECT_BEHAVIOR
 use crate::entity::consume_effect::apply_consume_effect;
 use crate::entity::damage::RecentDamageSource;
 use crate::entity::pushing::EntityPush;
+use crate::player::advancement::predicate::TriggerContext;
+use crate::world::LevelAccessor::set_block_state;
 
 const BED_SLEEP_POSITION_OFFSET: f64 = 0.125;
 
@@ -777,7 +779,7 @@ pub trait LivingEntity: Entity {
         {
             victim.trigger_advancement_with_context(
                 &vanilla_criteria_triggers::ENTITY_HURT_PLAYER,
-                &crate::player::advancement::predicate::TriggerContext::entity(
+                &TriggerContext::entity(
                     &attacker.entity_type().key,
                 ),
             );
@@ -1288,7 +1290,7 @@ pub trait LivingEntity: Entity {
             return;
         };
         for effect in effects {
-            crate::behavior::MOB_EFFECT_BEHAVIORS
+            MOB_EFFECT_BEHAVIORS
                 .get_behavior(effect.effect())
                 .on_mob_hurt(&world, mob, effect.amplifier());
         }
@@ -1309,7 +1311,7 @@ pub trait LivingEntity: Entity {
             return;
         };
         for effect in effects {
-            crate::behavior::MOB_EFFECT_BEHAVIORS
+            MOB_EFFECT_BEHAVIORS
                 .get_behavior(effect.effect())
                 .on_mob_removed(&world, mob);
         }
@@ -1618,7 +1620,7 @@ pub trait LivingEntity: Entity {
         // requires an active impulse (the explosion that launched the entity).
         if let Some(player) = self.as_player() {
             let had_impulse = self.living_base().current_impulse_impact_pos().is_some();
-            let mut context = crate::player::advancement::predicate::TriggerContext::nether_travel(
+            let mut context = TriggerContext::nether_travel(
                 effective_fall_distance,
             );
             context.position = Some({
@@ -3063,7 +3065,7 @@ pub trait LivingEntity: Entity {
         {
             player.trigger_advancement_with_context(
                 &vanilla_criteria_triggers::SLIDE_DOWN_BLOCK,
-                &crate::player::advancement::predicate::TriggerContext::block(
+                &TriggerContext::block(
                     &block_state.get_block().key,
                     None,
                 ),
@@ -3875,5 +3877,5 @@ pub fn create_wither_rose(dead: &dyn Entity, source: &DamageSource) {
     {
         return;
     }
-    crate::world::LevelAccessor::set_block_state(&world, pos, rose, UpdateFlags::UPDATE_ALL);
+    set_block_state(&world, pos, rose, UpdateFlags::UPDATE_ALL);
 }

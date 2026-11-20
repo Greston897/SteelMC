@@ -4,6 +4,13 @@ use steel_registry::RegistryEntry as _;
 use steel_registry::data_components::vanilla_components::{CUSTOM_NAME, REPAIR_COST};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_items;
+use simdnbt::borrow::read_compound;
+use crate::block_entity::BlockEntity::collect_components;
+use crate::block_entity::BlockEntity::save_without_metadata;
+use crate::block_entity::SharedBlockEntity;
+use crate::block_entity::entities::UnimplementedBlockEntity;
+use std::io::Cursor;
+use std::sync::Arc;
 
 fn test_persistent_end_crystal(pos: DVec3) -> PersistentEntity {
     PersistentEntity {
@@ -193,7 +200,7 @@ fn owned_block_entity_load_preserves_stored_components() {
     let mut fallback_nbt = NbtCompound::new();
     fallback_nbt.insert("components", fallback_components);
     fallback_nbt.insert("marker", 7_i32);
-    let fallback = crate::block_entity::entities::UnimplementedBlockEntity::with_data(
+    let fallback = UnimplementedBlockEntity::with_data(
         &vanilla_block_entity_types::LECTERN,
         Weak::new(),
         BlockPos::new(3, 4, 5),
@@ -202,10 +209,10 @@ fn owned_block_entity_load_preserves_stored_components() {
     )
     .expect("fallback block entity should load NBT");
     assert_eq!(
-        crate::block_entity::BlockEntity::collect_components(&fallback).get(REPAIR_COST),
+        collect_components(&fallback).get(REPAIR_COST),
         Some(3)
     );
-    let saved = crate::block_entity::BlockEntity::save_without_metadata(&fallback);
+    let saved = save_without_metadata(&fallback);
     assert_eq!(saved.int("marker"), Some(7));
 }
 
@@ -665,8 +672,8 @@ fn unimplemented_block_entities_preserve_nbt_through_proto_save_load() {
     // entity types now have typed factories, and verify unknown NBT keys (`LootTable`,
     // `LootTableSeed`) survive proto-chunk serialization, then verify the reloaded
     // banner preserves its stored components.
-    let entity: crate::block_entity::SharedBlockEntity = std::sync::Arc::new(
-        crate::block_entity::entities::UnimplementedBlockEntity::with_data(
+    let entity: SharedBlockEntity = Arc::new(
+        UnimplementedBlockEntity::with_data(
             &vanilla_block_entity_types::BANNER,
             proto.level_weak(),
             block_pos,
@@ -684,7 +691,7 @@ fn unimplemented_block_entities_preserve_nbt_through_proto_save_load() {
         panic!("dirty proto chunk should prepare for saving");
     };
     assert_eq!(prepared.persistent.block_entities.len(), 1);
-    let saved_be = simdnbt::borrow::read_compound(&mut std::io::Cursor::new(
+    let saved_be = read_compound(&mut Cursor::new(
         &prepared.persistent.block_entities[0].nbt_data,
     ))
     .expect("saved proto block entity should contain valid NBT");

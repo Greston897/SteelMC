@@ -244,7 +244,7 @@ impl BlockBehavior for TntBlock {
         let pickup_stack = projectile.pickup_item_stack();
         let can_break = || {
             pickup_stack.as_ref().is_some_and(|stack| {
-                crate::player::game_mode::can_break(stack, world, hit.block_pos)
+                can_break(stack, world, hit.block_pos)
             })
         };
 

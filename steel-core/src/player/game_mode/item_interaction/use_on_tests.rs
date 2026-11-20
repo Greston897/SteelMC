@@ -4,6 +4,8 @@ use glam::DVec3;
 use steel_registry::block_transformer::BlockTransformerComponent;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::data_components::UseRemainder;
+use steel_registry::data_components::vanilla_components::DAMAGE;
+use steel_utils::axis::Axis::X;
 use steel_registry::data_components::vanilla_components::{
     BLOCK_TRANSFORMER, USE_COOLDOWN, USE_REMAINDER, UseCooldown,
 };
@@ -24,6 +26,8 @@ use crate::block_entity::entities::{SignBlockEntity, SignText};
 use crate::entity::{Entity as _, entities::ItemEntity};
 use crate::inventory::container::Container as _;
 use crate::player::Player;
+use crate::world::ClipBlockShape::Outline;
+use crate::world::ClipFluid::None;
 use crate::test_support::{
     TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
 };
@@ -829,8 +833,8 @@ fn ray_use(interaction: &Interaction) -> InteractionResult {
     let hit = interaction.world_fixture.world.clip(
         start,
         end,
-        crate::world::ClipBlockShape::Outline,
-        crate::world::ClipFluid::None,
+        Outline,
+        None,
     );
     assert!(
         !hit.is_miss(),
@@ -891,7 +895,7 @@ fn survival_shovel_ray_extinguishes_campfire_preserving_properties() {
         assert_eq!(
             inventory
                 .get_item_in_hand(InteractionHand::MainHand)
-                .get(steel_registry::data_components::vanilla_components::DAMAGE),
+                .get(DAMAGE),
             Some(&1)
         );
     }
@@ -902,7 +906,7 @@ fn survival_shovel_ray_extinguishes_campfire_preserving_properties() {
     assert_eq!(
         inventory
             .get_item_in_hand(InteractionHand::MainHand)
-            .get(steel_registry::data_components::vanilla_components::DAMAGE),
+            .get(DAMAGE),
         Some(&1)
     );
 }
@@ -930,7 +934,7 @@ fn survival_hay_east_face_ray_places_x_axis_and_consumes_stack() {
             .get_block_state(interaction.pos.east()),
         vanilla_blocks::HAY_BLOCK
             .default_state()
-            .set_value(&P::AXIS, steel_utils::axis::Axis::X)
+            .set_value(&P::AXIS, X)
     );
     assert_eq!(interaction.count(&vanilla_items::HAY_BLOCK), 0);
 }
@@ -971,7 +975,7 @@ fn creative_soul_campfire_dousing_preserves_tool_durability() {
     assert_eq!(
         inventory
             .get_item_in_hand(InteractionHand::MainHand)
-            .get(steel_registry::data_components::vanilla_components::DAMAGE),
+            .get(DAMAGE),
         Some(&0)
     );
 }

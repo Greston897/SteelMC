@@ -12,6 +12,7 @@ use steel_utils::random::worldgen_random::WorldgenRandom;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, Direction, Identifier};
 use steel_worldgen::biomes::obfuscate_biome_seed;
+use steel_registry::feature::ConfiguredFeature;
 
 use crate::behavior::block::BlockBehavior;
 use crate::behavior::blocks::vegetation::bonemealable::Bonemealable;
@@ -19,6 +20,7 @@ use crate::behavior::context::BlockPlaceContext;
 use crate::world::{LevelReader, ScheduledTickAccess, World};
 use crate::worldgen::feature::FeatureDecorationRunner;
 use crate::worldgen::feature::no_nested_features;
+use crate::fluid::fluid_state_to_block;
 
 use super::{BlockRef, default_surviving_state, survives_on_tag};
 
@@ -162,7 +164,7 @@ impl SaplingBlock {
     /// Resolves a grower name to its `minecraft:<name>` configured feature.
     fn configured_feature(
         name: &str,
-    ) -> Option<&'static steel_registry::feature::ConfiguredFeature> {
+    ) -> Option<&'static ConfiguredFeature> {
         let key = Identifier::from_str(&format!("minecraft:{name}")).ok()?;
         REGISTRY.configured_features.by_key(&key)
     }
@@ -236,7 +238,7 @@ impl SaplingBlock {
             | UpdateFlags::UPDATE_SKIP_BLOCK_ENTITY_SIDEEFFECTS
             | UpdateFlags::UPDATE_SKIP_ON_PLACE;
         for &(pos, original) in saplings {
-            let replacement = crate::fluid::fluid_state_to_block(original.get_fluid_state());
+            let replacement = fluid_state_to_block(original.get_fluid_state());
             world.set_block(pos, replacement, remove_flags);
         }
         let mut worldgen_random = WorldgenRandom::from_seed(rng.random());
@@ -346,10 +348,11 @@ mod tests {
     use rand::{SeedableRng as _, rngs::StdRng};
     use steel_registry::vanilla_blocks;
     use steel_utils::ChunkPos;
+use crate::bootstrap::init_globals;
 
     #[test]
     fn bonemeal_advances_stage_and_scheduled_tick_does_not() {
-        crate::bootstrap::init_globals();
+        init_globals();
         let fixture = fresh_test_world("sapling_stage_parity");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
@@ -379,7 +382,7 @@ mod tests {
 
     #[test]
     fn primary_tree_lists_and_flower_variants_match_vanilla() {
-        crate::bootstrap::init_globals();
+        init_globals();
         let mut rng = StdRng::seed_from_u64(263);
         for (grower, expected) in [
             ("jungle", "jungle_tree_no_vine"),
@@ -410,7 +413,7 @@ mod tests {
 
     #[test]
     fn mega_only_target_requires_square_and_failed_growth_restores_each_stage() {
-        crate::bootstrap::init_globals();
+        init_globals();
         let fixture = fresh_test_world("mega_sapling_restore");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
@@ -454,7 +457,7 @@ mod tests {
     #[test]
     fn sapling_loses_support_on_neighbor_update() {
         use crate::test_support::TestLevel;
-        crate::bootstrap::init_globals();
+        init_globals();
         let tree = SaplingBlock::new(&vanilla_blocks::OAK_SAPLING, "oak", Some("oak"));
         let state = vanilla_blocks::OAK_SAPLING.default_state();
         for direction in [Direction::Down, Direction::Up, Direction::North] {

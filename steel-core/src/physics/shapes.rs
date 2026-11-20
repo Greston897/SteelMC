@@ -36,18 +36,19 @@ pub fn collide(
     shapes: &[WorldAabb],
     desired_movement: f64,
 ) -> f64 {
-    if desired_movement.abs() < COLLISION_EPSILON {
-        return 0.0;
-    }
-
     let mut movement = desired_movement;
 
+    // Vanilla `Shapes.collide` checks the *remaining* distance before every
+    // shape, so an empty shape list returns the requested distance unchanged.
+    // Rejecting a tiny nonzero distance up front would drop motion that
+    // vanilla keeps, because `Entity.move` only discards a squared length
+    // below its own threshold.
     for shape in shapes {
-        movement = collide_single(axis, entity_aabb, shape, movement);
-
         if movement.abs() < COLLISION_EPSILON {
             return 0.0;
         }
+
+        movement = collide_single(axis, entity_aabb, shape, movement);
     }
 
     movement
@@ -390,6 +391,27 @@ mod tests {
 
         let result = collide(Axis::X, &entity, &[obstacle], 5.0);
         assert_eq!(result, 1.0);
+    }
+
+    #[test]
+    fn collide_keeps_tiny_motion_without_shapes() {
+        // Vanilla `Shapes.collide` only rejects a tiny distance while a shape
+        // is left to test, so an empty shape list returns the distance as is.
+        let entity = WorldAabb::new(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+
+        let result = collide(Axis::X, &entity, &[], 5.0e-8);
+        assert_eq!(result, 5.0e-8);
+    }
+
+    #[test]
+    fn collide_rejects_tiny_motion_against_a_shape() {
+        // Vanilla `Shapes.collide` zeroes a distance below `1.0E-7` before it
+        // tests a shape.
+        let entity = WorldAabb::new(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
+        let obstacle = WorldAabb::new(2.0, 0.0, 0.0, 3.0, 1.0, 1.0);
+
+        let result = collide(Axis::X, &entity, &[obstacle], 5.0e-8);
+        assert_eq!(result, 0.0);
     }
 
     #[test]

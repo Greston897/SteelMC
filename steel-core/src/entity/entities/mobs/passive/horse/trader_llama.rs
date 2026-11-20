@@ -27,6 +27,8 @@ use crate::entity::ai::goal::{
     WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::entity::mount::SharedMountInventory;
+use crate::entity::mount::shared_inventory;
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityDimensions, EntityMovementEmission, EntitySyncedData, LivingEntity,
@@ -52,7 +54,7 @@ pub struct TraderLlamaEntity {
     ageable_base: AgeableMobBase,
     animal_base: AnimalBase,
     /// Vanilla `AbstractHorse.inventory`: saddle, body armor and storage.
-    mount_inventory: crate::entity::mount::SharedMountInventory,
+    mount_inventory: SharedMountInventory,
     entity_data: SyncMutex<LlamaEntityData>,
 }
 
@@ -112,7 +114,7 @@ impl TraderLlamaEntity {
             mob_base,
             ageable_base,
             animal_base,
-            mount_inventory: crate::entity::mount::shared_inventory(1),
+            mount_inventory: shared_inventory(1),
             entity_data: SyncMutex::new(entity_data),
         }
     }

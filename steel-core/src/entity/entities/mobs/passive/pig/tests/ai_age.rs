@@ -3,6 +3,10 @@ use crate::behavior::init_behaviors;
 use crate::test_support::insert_ready_full_chunk;
 use std::sync::Arc;
 use steel_utils::{ChunkPos, types::UpdateFlags};
+use steel_utils::types::Difficulty::Peaceful;
+use crate::entity::Entity::check_despawn;
+use crate::entity::Entity::is_removed;
+use crate::test_support::fresh_test_world_with_difficulty;
 
 #[test]
 fn pig_breeding_offspring_inherits_parent_variant() {
@@ -40,9 +44,9 @@ fn pig_breeding_offspring_inherits_parent_variant() {
 fn entity_check_despawn_discards_in_peaceful() {
     init_vanilla_registry();
 
-    let fixture = crate::test_support::fresh_test_world_with_difficulty(
+    let fixture = fresh_test_world_with_difficulty(
         "pig_despawn_peaceful",
-        steel_utils::types::Difficulty::Peaceful,
+        Peaceful,
     );
     let hostile = Arc::new(PigEntity::new(
         &vanilla_entities::ZOMBIE,
@@ -51,9 +55,9 @@ fn entity_check_despawn_discards_in_peaceful() {
         Arc::downgrade(&fixture.world),
     ));
 
-    assert!(!crate::entity::Entity::is_removed(hostile.as_ref()));
-    crate::entity::Entity::check_despawn(hostile.as_ref());
-    assert!(crate::entity::Entity::is_removed(hostile.as_ref()));
+    assert!(!is_removed(hostile.as_ref()));
+    check_despawn(hostile.as_ref());
+    assert!(is_removed(hostile.as_ref()));
 }
 
 #[test]

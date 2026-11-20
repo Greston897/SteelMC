@@ -111,10 +111,11 @@ mod tests {
     use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
     use steel_registry::vanilla_blocks;
     use steel_utils::{ChunkPos, types::UpdateFlags};
+use crate::bootstrap::init_globals;
 
     #[test]
     fn both_azaleas_register_bonemeal_and_reject_fluid_above_or_build_limit() {
-        crate::bootstrap::init_globals();
+        init_globals();
         let fixture = fresh_test_world("azalea_bonemeal_target");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
@@ -148,7 +149,7 @@ mod tests {
     #[test]
     fn azalea_bonemeal_places_configured_tree_and_rooted_dirt() {
         use rand::{SeedableRng as _, rngs::StdRng};
-        crate::bootstrap::init_globals();
+        init_globals();
         let fixture = fresh_test_world("azalea_bonemeal_tree");
         let world = &fixture.world;
         for x in -1..=1 {

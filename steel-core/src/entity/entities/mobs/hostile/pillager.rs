@@ -30,6 +30,9 @@ use crate::entity::ai::goal::{
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::ranged_attack;
+use crate::behavior::items::CrossbowItem;
+use crate::entity::ai::goal::ObtainRaidBannerGoal;
+use crate::entity::ai::goal::RaidCelebrationGoal;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
@@ -94,8 +97,8 @@ impl PillagerEntity {
 
         {
             let mut goal_selector = mob_base.goal_selector().lock();
-            goal_selector.add_goal(1, crate::entity::ai::goal::ObtainRaidBannerGoal::new());
-            goal_selector.add_goal(5, crate::entity::ai::goal::RaidCelebrationGoal);
+            goal_selector.add_goal(1, ObtainRaidBannerGoal::new());
+            goal_selector.add_goal(5, RaidCelebrationGoal);
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
             goal_selector.add_goal(2, PillagerCrossbowAttackGoal::new(Arc::clone(&entity_data)));
             goal_selector.add_goal(8, WaterAvoidingRandomStrollGoal::new(1.0));
@@ -161,7 +164,7 @@ impl PillagerCrossbowAttackGoal {
 }
 
 fn pillager_crossbow_charge_ticks(mob: &dyn PathfinderMob) -> i32 {
-    crate::behavior::items::CrossbowItem::charge_duration(
+    CrossbowItem::charge_duration(
         &mob.equipment_in_slot(EquipmentSlot::MainHand),
     )
 }
@@ -417,6 +420,9 @@ mod tests {
     use simdnbt::borrow::read_compound;
     use simdnbt::owned::NbtCompound;
     use steel_registry::{init_vanilla_registry, vanilla_entities};
+use steel_registry::data_components::vanilla_components::ENCHANTMENTS;
+use steel_registry::data_components::vanilla_components::ItemEnchantments;
+use steel_registry::vanilla_enchantments::QUICK_CHARGE;
 
     use super::{PillagerEntity, pillager_crossbow_charge_ticks};
     use crate::entity::{Entity, LivingEntity, Mob};
@@ -430,16 +436,16 @@ mod tests {
             PillagerEntity::new(&vanilla_entities::PILLAGER, 1, DVec3::ZERO, Weak::new());
         for (level, duration) in [(0, 25), (1, 20), (2, 15)] {
             let mut enchantments =
-                steel_registry::data_components::vanilla_components::ItemEnchantments::empty();
+                ItemEnchantments::empty();
             enchantments.set(
-                steel_registry::vanilla_enchantments::QUICK_CHARGE
+                QUICK_CHARGE
                     .key
                     .clone(),
                 level,
             );
             pillager.with_equipment_slot_mut(EquipmentSlot::MainHand, &mut |weapon| {
                 weapon.set(
-                    steel_registry::data_components::vanilla_components::ENCHANTMENTS,
+                    ENCHANTMENTS,
                     enchantments.clone(),
                 );
             });

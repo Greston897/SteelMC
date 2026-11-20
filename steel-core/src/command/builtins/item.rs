@@ -8,6 +8,7 @@ use std::sync::Arc;
 use steel_utils::Identifier;
 use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
+use steel_registry::item_stack::ItemStack;
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
@@ -20,6 +21,7 @@ use super::super::{
 use crate::inventory::prelude::*;
 use crate::player::Player;
 use crate::player::player_inventory::PlayerInventory;
+use crate::inventory::lock::ContainerRef;
 
 type Builder = CommandNodeBuilder<CommandSource, SteelCommandRuntime>;
 
@@ -89,7 +91,7 @@ fn replace_block(
         .world()
         .get_block_entity(pos)
         .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
-    let container = crate::inventory::lock::ContainerRef::from_block_entity(entity)
+    let container = ContainerRef::from_block_entity(entity)
         .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
     let mut guard = container.lock();
     if slot >= guard.get_container_size() {
@@ -175,7 +177,7 @@ fn replace(
 fn set_player_slot(
     player: &Arc<Player>,
     slot: usize,
-    stack: steel_registry::item_stack::ItemStack,
+    stack: ItemStack,
 ) -> bool {
     player.inventory.lock().set_item(slot, stack);
     true

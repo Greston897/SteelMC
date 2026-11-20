@@ -19,9 +19,11 @@ use steel_registry::vanilla_items;
 use steel_utils::BlockPos;
 use steel_utils::BlockStateId;
 use steel_utils::types::UpdateFlags;
+use steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER;
 
 use crate::entity::{Entity, InsideBlockEffectCollector, InsideBlockEffectType};
 use crate::fluid::{FlowingFluid, FluidBehavior, get_flow as flowing_fluid_flow};
+use crate::behavior::blocks::FireBlock;
 use crate::fluid::{
     FluidRef, FluidState, FluidStateExt, get_fluid_state, get_height, is_lava_fluid,
     is_water_fluid, lava_id, liquid_block_state,
@@ -97,7 +99,7 @@ impl FluidBehavior for LavaFluid {
         // nearby air block over a flammable neighbour catches fire on a 1-in-3
         // roll.
         if world
-            .get_game_rule(&steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER)
+            .get_game_rule(&FIRE_SPREAD_RADIUS_AROUND_PLAYER)
             < 0
         {
             return;
@@ -118,7 +120,7 @@ impl FluidBehavior for LavaFluid {
             }
             world.set_block(
                 target,
-                crate::behavior::blocks::FireBlock::get_state(world.as_ref(), target),
+                FireBlock::get_state(world.as_ref(), target),
                 UpdateFlags::UPDATE_ALL,
             );
         }

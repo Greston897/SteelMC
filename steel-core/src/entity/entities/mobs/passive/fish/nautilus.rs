@@ -25,6 +25,9 @@ use steel_utils::{DowncastType, DowncastTypeKey};
 use crate::entity::ai::goal::{PanicGoal, RandomSwimmingGoal};
 use crate::entity::ai::path::PathType;
 use crate::entity::registry::SpawnRule;
+use crate::entity::damage::DamageSource;
+use crate::entity::living_entity::player_jump_pending_scale;
+use crate::player::Player;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityDimensions, EntityEventSource,
     EntityMovementEmission, EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase,
@@ -319,7 +322,7 @@ impl LivingEntity for NautilusEntity {
         result
     }
 
-    fn hurt_sound(&self, _source: &crate::entity::damage::DamageSource) -> Option<SoundEventRef> {
+    fn hurt_sound(&self, _source: &DamageSource) -> Option<SoundEventRef> {
         Some(&sound_events::ENTITY_NAUTILUS_HURT)
     }
 
@@ -345,13 +348,13 @@ impl LivingEntity for NautilusEntity {
         }
         let amount = jump_amount.max(0);
         self.living_base().set_jump_pending_scale(
-            crate::entity::living_entity::player_jump_pending_scale(amount),
+            player_jump_pending_scale(amount),
         );
     }
 
     /// Vanilla `AbstractNautilus.tickRidden`: resolve a stored charge into
     /// `executeRidersJump` against the rider's look vector.
-    fn tick_ridden(&self, controller: &crate::player::Player, _ridden_input: DVec3) {
+    fn tick_ridden(&self, controller: &Player, _ridden_input: DVec3) {
         let pending = self.jump_pending_scale();
         if pending > 0.0 && !self.is_jumping() {
             let look = controller.look_angle();
@@ -598,7 +601,7 @@ impl LivingEntity for ZombieNautilusEntity {
         Mob::mob_ai_step(self, entity)
     }
 
-    fn hurt_sound(&self, _source: &crate::entity::damage::DamageSource) -> Option<SoundEventRef> {
+    fn hurt_sound(&self, _source: &DamageSource) -> Option<SoundEventRef> {
         Some(&sound_events::ENTITY_ZOMBIE_NAUTILUS_HURT)
     }
 
@@ -622,12 +625,12 @@ impl LivingEntity for ZombieNautilusEntity {
         }
         let amount = jump_amount.max(0);
         self.living_base().set_jump_pending_scale(
-            crate::entity::living_entity::player_jump_pending_scale(amount),
+            player_jump_pending_scale(amount),
         );
     }
 
     /// Vanilla `AbstractNautilus.tickRidden`, inherited by the zombie species.
-    fn tick_ridden(&self, controller: &crate::player::Player, _ridden_input: DVec3) {
+    fn tick_ridden(&self, controller: &Player, _ridden_input: DVec3) {
         let pending = self.jump_pending_scale();
         if pending > 0.0 && !self.is_jumping() {
             let look = controller.look_angle();

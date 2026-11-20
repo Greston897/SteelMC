@@ -3,6 +3,8 @@ use super::door_interact::DoorInteractGoal;
 use super::selector::{Goal, GoalControls};
 use crate::entity::{PathfinderMob, SharedEntity};
 use steel_utils::types::Difficulty;
+use steel_registry::vanilla_game_rules::MOB_GRIEFING;
+use steel_utils::types::InteractionHand::MainHand;
 
 pub(crate) struct RaidBreakDoorGoal {
     door: DoorInteractGoal,
@@ -22,7 +24,7 @@ impl RaidBreakDoorGoal {
     fn allowed(mob: &dyn PathfinderMob) -> bool {
         mob.level().is_some_and(|world| {
             matches!(world.difficulty(), Difficulty::Normal | Difficulty::Hard)
-                && world.get_game_rule(&steel_registry::vanilla_game_rules::MOB_GRIEFING)
+                && world.get_game_rule(&MOB_GRIEFING)
                 && world.raids.contains_raider(mob.uuid())
         })
     }
@@ -76,7 +78,7 @@ impl Goal for RaidBreakDoorGoal {
         let pos = self.door.door_pos();
         if rand::random_range(0..20) == 0 {
             world.level_event(1019, pos, 0, None);
-            mob.swing_for_attack(steel_utils::types::InteractionHand::MainHand);
+            mob.swing_for_attack(MainHand);
         }
         self.elapsed += 1;
         let progress = self.elapsed * 10 / 240;

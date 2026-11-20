@@ -8,6 +8,8 @@ use steel_registry::vanilla_entities;
 use super::super::prelude::*;
 use super::super::runner::FeatureDecorationRunner;
 use crate::entity::{Entity, entities::EndCrystalEntity, next_entity_id};
+use crate::entity::SharedEntity;
+use crate::world::World;
 
 const END_SPIKE_COUNT: usize = 10;
 const END_SPIKE_DISTANCE: f64 = 42.0;
@@ -215,7 +217,7 @@ impl FeatureDecorationRunner {
 
 /// Vanilla `EndSpikeFeature.placeSpike` for a live world: the column, the cleared
 /// space around it, the cage and the crystal.
-pub(crate) fn rebuild_spike_in_world(world: &Arc<crate::world::World>, spike: &EndSpike) {
+pub(crate) fn rebuild_spike_in_world(world: &Arc<World>, spike: &EndSpike) {
     let radius_squared_plus_one = spike.radius * spike.radius + 1;
     let obsidian = REGISTRY
         .blocks
@@ -244,7 +246,7 @@ pub(crate) fn rebuild_spike_in_world(world: &Arc<crate::world::World>, spike: &E
 }
 
 /// Vanilla `EndSpikeFeature.placeSpike`'s iron-bar cage for a live world.
-fn rebuild_spike_cage_in_world(world: &Arc<crate::world::World>, spike: &EndSpike) {
+fn rebuild_spike_cage_in_world(world: &Arc<World>, spike: &EndSpike) {
     for dx in -END_SPIKE_CAGE_RADIUS..=END_SPIKE_CAGE_RADIUS {
         for dz in -END_SPIKE_CAGE_RADIUS..=END_SPIKE_CAGE_RADIUS {
             for dy in 0..=END_SPIKE_CAGE_HEIGHT {
@@ -269,7 +271,7 @@ fn rebuild_spike_cage_in_world(world: &Arc<crate::world::World>, spike: &EndSpik
 }
 
 /// Vanilla `EndSpikeFeature.placeSpike`'s crystal for a live world.
-pub(crate) fn rebuild_spike_crystal_in_world(world: &Arc<crate::world::World>, spike: &EndSpike) {
+pub(crate) fn rebuild_spike_crystal_in_world(world: &Arc<World>, spike: &EndSpike) {
     let position = DVec3::new(
         f64::from(spike.center_x) + 0.5,
         f64::from(spike.height + 1),
@@ -282,7 +284,7 @@ pub(crate) fn rebuild_spike_crystal_in_world(world: &Arc<crate::world::World>, s
         Arc::downgrade(world),
     );
     crystal.set_show_bottom(true);
-    if let Err(error) = world.try_add_entity(Arc::new(crystal) as crate::entity::SharedEntity) {
+    if let Err(error) = world.try_add_entity(Arc::new(crystal) as SharedEntity) {
         log::debug!("world rejected an end spike crystal: {error}");
     }
 

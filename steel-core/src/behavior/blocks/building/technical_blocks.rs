@@ -12,6 +12,9 @@ use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{BlockStateProperties, FrontAndTop, StructureMode};
+use steel_registry::block_entity_type::BlockEntityTypeRef;
+use steel_registry::data_components::vanilla_components::BLOCK_ENTITY_DATA;
+use steel_utils::types::InteractionHand;
 use steel_registry::{
     vanilla_block_entity_types, vanilla_blocks, vanilla_damage_types, vanilla_game_rules,
 };
@@ -108,7 +111,7 @@ impl BlockBehavior for CommandBlock {
         &self,
         _world: &Arc<World>,
         _state: BlockStateId,
-        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+        block_entity_type: BlockEntityTypeRef,
     ) -> Option<BlockEntityTicker> {
         // Vanilla ticks command blocks from `CommandBlock.tick` (a scheduled
         // block tick), not from a block entity ticker; the ticker only finishes
@@ -124,7 +127,7 @@ impl BlockBehavior for CommandBlock {
         state: BlockStateId,
         world: &Arc<World>,
         pos: BlockPos,
-        source: &crate::behavior::PlacementSource<'_>,
+        source: &PlacementSource<'_>,
     ) {
         // Vanilla `CommandBlock.setPlacedBy`: a stack carrying block entity data
         // keeps that data untouched (the block entity was restored from it), so
@@ -138,7 +141,7 @@ impl BlockBehavior for CommandBlock {
         };
 
         let carries_block_entity_data = source.with_item(|item| {
-            item.get(steel_registry::data_components::vanilla_components::BLOCK_ENTITY_DATA)
+            item.get(BLOCK_ENTITY_DATA)
                 .is_some()
         });
         if !carries_block_entity_data {
@@ -549,7 +552,7 @@ impl BlockBehavior for CreakingHeartBlock {
         &self,
         _world: &Arc<World>,
         _state: BlockStateId,
-        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+        block_entity_type: BlockEntityTypeRef,
     ) -> Option<BlockEntityTicker> {
         BlockEntityTicker::for_matching_entity_tick(
             block_entity_type,
@@ -625,7 +628,7 @@ impl BlockBehavior for TrialSpawnerBlock {
         &self,
         _world: &Arc<World>,
         _state: BlockStateId,
-        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+        block_entity_type: BlockEntityTypeRef,
     ) -> Option<BlockEntityTicker> {
         BlockEntityTicker::for_matching_entity_tick(
             block_entity_type,
@@ -674,7 +677,7 @@ impl BlockBehavior for VaultBlock {
         &self,
         _world: &Arc<World>,
         _state: BlockStateId,
-        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+        block_entity_type: BlockEntityTypeRef,
     ) -> Option<BlockEntityTicker> {
         BlockEntityTicker::for_matching_entity_tick(
             block_entity_type,
@@ -688,7 +691,7 @@ impl BlockBehavior for VaultBlock {
         world: &Arc<World>,
         pos: BlockPos,
         player: &Player,
-        _hand: steel_utils::types::InteractionHand,
+        _hand: InteractionHand,
         _hit_result: &BlockHitResult,
         inv: &mut InventoryAccess,
     ) -> InteractionResult {
@@ -1069,7 +1072,7 @@ impl BlockBehavior for SculkShriekerBlock {
         &self,
         _world: &Arc<World>,
         _state: BlockStateId,
-        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+        block_entity_type: BlockEntityTypeRef,
     ) -> Option<BlockEntityTicker> {
         BlockEntityTicker::for_matching_entity_tick(
             block_entity_type,

@@ -18,6 +18,7 @@
 use std::sync::Arc;
 
 use glam::DVec3;
+use steel_utils::types::GameType::Spectator;
 
 use crate::entity::Entity as _;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
@@ -113,7 +114,7 @@ fn group_size(difficulty: Difficulty) -> usize {
 ///
 /// Mirrors vanilla `PhantomSpawner.tick`'s player loop.
 fn phantom_candidate(player: &Player, world: &Arc<World>) -> bool {
-    if player.game_mode() == steel_utils::types::GameType::Spectator {
+    if player.game_mode() == Spectator {
         return false;
     }
     // The overworld rule: enough sky darkening, above sea level, open sky.

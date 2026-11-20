@@ -6,6 +6,8 @@ use steel_macros::block_behavior;
 use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
+use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_criteria_triggers::BEE_NEST_DESTROYED;
 use steel_registry::blocks::properties::{
     BlockStateProperties, Direction, EnumProperty, IntProperty,
 };
@@ -26,6 +28,7 @@ use crate::player::Player;
 use crate::player::player_inventory::Prediction;
 use crate::world::World;
 use steel_utils::types::InteractionHand;
+use crate::player::advancement::predicate::TriggerContext;
 
 /// Behavior for beehive and bee nest blocks.
 ///
@@ -71,7 +74,7 @@ impl BeehiveBlock {
     }
 
     /// Vanilla `BeehiveBlock.releaseBees`: spawns every stored occupant.
-    fn release_bees(world: &std::sync::Arc<World>, pos: BlockPos) {
+    fn release_bees(world: &Arc<World>, pos: BlockPos) {
         let Some(block_entity) = world.get_block_entity(pos) else {
             return;
         };
@@ -82,7 +85,7 @@ impl BeehiveBlock {
     }
 
     /// Vanilla `BeehiveBlock.angerBees`: applies the anger effect to the player.
-    fn anger_bees(world: &std::sync::Arc<World>, pos: BlockPos, player: &Player) {
+    fn anger_bees(world: &Arc<World>, pos: BlockPos, player: &Player) {
         let Some(block_entity) = world.get_block_entity(pos) else {
             return;
         };
@@ -97,7 +100,7 @@ impl BeehiveBlock {
 
     /// Vanilla `BeehiveBlock.dropHoneycomb` side effects.
     fn drop_honeycomb(
-        world: &std::sync::Arc<World>,
+        world: &Arc<World>,
         pos: BlockPos,
         player: &Player,
         state: BlockStateId,
@@ -113,7 +116,7 @@ impl BeehiveBlock {
         // Vanilla drops one item entity containing three honeycombs.
         world.drop_item_stack(
             pos,
-            steel_registry::item_stack::ItemStack::with_count(&vanilla_items::HONEYCOMB, 3),
+            ItemStack::with_count(&vanilla_items::HONEYCOMB, 3),
         );
         hive.on_honey_harvested(state, world, pos, 0, false);
     }
@@ -121,7 +124,7 @@ impl BeehiveBlock {
     /// Vanilla `BeehiveBlock.useItemOn` for bottles, shears, and campfires.
     fn handle_use(
         state: BlockStateId,
-        world: &std::sync::Arc<World>,
+        world: &Arc<World>,
         pos: BlockPos,
         player: &Player,
         inv: &mut InventoryAccess,
@@ -162,7 +165,7 @@ impl BeehiveBlock {
                 });
                 // Vanilla gives the honey bottle to the player or drops it.
                 player.add_item_or_drop(
-                    steel_registry::item_stack::ItemStack::new(&vanilla_items::HONEY_BOTTLE),
+                    ItemStack::new(&vanilla_items::HONEY_BOTTLE),
                     Prediction::ServerOnly,
                 );
                 hive.on_honey_harvested(state, world, pos, 0, true);
@@ -232,7 +235,7 @@ impl BlockBehavior for BeehiveBlock {
     fn use_item_on(
         &self,
         state: BlockStateId,
-        world: &std::sync::Arc<World>,
+        world: &Arc<World>,
         pos: BlockPos,
         player: &Player,
         _hand: InteractionHand,
@@ -258,12 +261,12 @@ impl BlockBehavior for BeehiveBlock {
 
     fn player_destroy(
         &self,
-        world: &std::sync::Arc<World>,
+        world: &Arc<World>,
         player: &Player,
         pos: BlockPos,
         state: BlockStateId,
         _block_entity: Option<&SharedBlockEntity>,
-        _tool: &steel_registry::item_stack::ItemStack,
+        _tool: &ItemStack,
     ) {
         // Vanilla `BeehiveBlock.playerDestroy` releases every occupant, so
         // breaking a hive never deletes the bees inside it, and fires
@@ -279,18 +282,18 @@ impl BlockBehavior for BeehiveBlock {
             })
             .is_some_and(|occupants| occupants > 0);
         Self::release_bees(world, pos);
-        let mut context = crate::player::advancement::predicate::TriggerContext::block(
+        let mut context = TriggerContext::block(
             &state.get_block().key,
             None,
         );
         context.bees_inside = Some(bees_inside);
         player.trigger_advancement_with_context(
-            &steel_registry::vanilla_criteria_triggers::BEE_NEST_DESTROYED,
+            &BEE_NEST_DESTROYED,
             &context,
         );
     }
 
-    fn random_tick(&self, state: BlockStateId, world: &std::sync::Arc<World>, pos: BlockPos) {
+    fn random_tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
         // Vanilla `BeehiveBlock.randomTick` only runs when the hive is smoked:
         // smoke slowly drops the honey level. Everything else (bee insert/remove)
         // is driven by the bees themselves.
@@ -328,7 +331,7 @@ mod tests {
             .default_state()
             .set_value(LEVEL_HONEY, 5);
         world.set_block(pos, state, UpdateFlags::UPDATE_ALL);
-        let player = TestPlayerBuilder::new(std::sync::Arc::clone(world), "HiveShearer", 1).build();
+        let player = TestPlayerBuilder::new(Arc::clone(world), "HiveShearer", 1).build();
         let entity = world.get_block_entity(pos).expect("hive block entity");
         let hive = entity
             .downcast_ref::<BeehiveBlockEntity>()

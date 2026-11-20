@@ -17,6 +17,9 @@ use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use smallvec::SmallVec;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, Direction};
+use steel_registry::data_components::vanilla_components::COMPOSTABLE;
+use steel_registry::vanilla_blocks::COMPOSTER;
+use steel_registry::vanilla_items::BONE_MEAL;
 use steel_registry::data_components::{
     DataComponentMap, SeededContainerLoot, vanilla_components::CONTAINER_LOOT,
 };
@@ -34,6 +37,7 @@ use crate::entity::{Entity as _, RemovalReason};
 use crate::inventory::container::{Container, load_all_items};
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef, SharedContainer};
 use crate::world::World;
+use crate::behavior::blocks::ComposterBlock;
 
 /// Number of slots in a hopper.
 pub const HOPPER_SLOTS: usize = 5;
@@ -140,14 +144,14 @@ impl HopperBlockEntity {
         }
         let above = pos.above();
         let above_state = world.get_block_state(above);
-        if above_state.get_block() == &steel_registry::vanilla_blocks::COMPOSTER {
+        if above_state.get_block() == &COMPOSTER {
             if above_state.get_value(&BlockStateProperties::LEVEL_COMPOSTER) != 8 {
                 return false;
             }
             let Some(level) = self.get_level() else {
                 return false;
             };
-            let mut bone_meal = ItemStack::new(&steel_registry::vanilla_items::BONE_MEAL);
+            let mut bone_meal = ItemStack::new(&BONE_MEAL);
             let inserted = add_into_slots(
                 &mut *self.container.lock(),
                 &[0, 1, 2, 3, 4],
@@ -155,7 +159,7 @@ impl HopperBlockEntity {
                 &mut bone_meal,
             );
             if inserted {
-                crate::behavior::blocks::ComposterBlock::empty(&level, above);
+                ComposterBlock::empty(&level, above);
                 self.base.set_changed();
             }
             return inserted;
@@ -348,7 +352,7 @@ impl HopperBlockEntity {
         let facing = self.facing();
         let destination_pos = pos.relative(facing);
         if world.get_block_state(destination_pos).get_block()
-            == &steel_registry::vanilla_blocks::COMPOSTER
+            == &COMPOSTER
         {
             // Composter input containers expose only their top face.
             if facing != Direction::Down {
@@ -359,13 +363,13 @@ impl HopperBlockEntity {
             };
             let candidate = {
                 let hopper = self.container.lock();
-                hopper.items.iter().enumerate().find(|(_, item)| !item.is_empty() && item.get(steel_registry::data_components::vanilla_components::COMPOSTABLE).is_some())
+                hopper.items.iter().enumerate().find(|(_, item)| !item.is_empty() && item.get(COMPOSTABLE).is_some())
                     .map(|(slot, item)| (slot, item.copy_with_count(1)))
             };
             let Some((slot, item)) = candidate else {
                 return false;
             };
-            if !crate::behavior::blocks::ComposterBlock::insert(&level, destination_pos, &item) {
+            if !ComposterBlock::insert(&level, destination_pos, &item) {
                 return false;
             }
             // World callbacks must never run while the inventory mutex is held.
@@ -694,6 +698,7 @@ mod tests {
     use crate::inventory::container::SimpleContainer;
 
     use super::*;
+use std::io::Cursor;
 
     fn test_hopper() -> HopperBlockEntity {
         init_vanilla_registry();
@@ -720,13 +725,13 @@ mod tests {
                 vanilla_blocks::HOPPER
                     .default_state()
                     .set_value(&BlockStateProperties::FACING_HOPPER, facing),
-                steel_utils::types::UpdateFlags::UPDATE_ALL,
+                UpdateFlags::UPDATE_ALL,
             );
             let destination = pos.relative(facing);
             world.set_block(
                 destination,
                 vanilla_blocks::SHULKER_BOX.default_state(),
-                steel_utils::types::UpdateFlags::UPDATE_ALL,
+                UpdateFlags::UPDATE_ALL,
             );
             let entity = world.get_block_entity(pos).unwrap();
             let hopper = entity.downcast_ref::<HopperBlockEntity>().unwrap();
@@ -971,7 +976,7 @@ mod tests {
         let nbt = hopper.save_custom_only();
         let mut bytes = Vec::new();
         nbt.write(&mut bytes);
-        let mut cursor = std::io::Cursor::new(bytes.as_slice());
+        let mut cursor = Cursor::new(bytes.as_slice());
         let borrowed = read_compound(&mut cursor).expect("compound");
         let view: NbtCompoundView<'_, '_> = (&borrowed).into();
         assert_eq!(view.int("TransferCooldown"), Some(5));

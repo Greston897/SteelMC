@@ -270,6 +270,7 @@ impl ViolationBudget {
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
+use std::thread::sleep;
 
     use super::{
         Admission, DROP_THRESHOLD, MAX_CONNECTION_BYTES_PER_SECOND, MAX_PACKETS_PER_SECOND,
@@ -290,14 +291,14 @@ mod tests {
         let mut bucket = RateBucket::new(2, 1000);
         assert!(bucket.try_consume(2));
         assert!(!bucket.try_consume(1));
-        std::thread::sleep(Duration::from_millis(5));
+        sleep(Duration::from_millis(5));
         assert!(bucket.try_consume(1), "5ms at 1000/s yields tokens");
     }
 
     #[test]
     fn a_bucket_saturates_at_its_capacity() {
         let mut bucket = RateBucket::new(2, 1_000_000);
-        std::thread::sleep(Duration::from_millis(3));
+        sleep(Duration::from_millis(3));
         // A long idle period must not let one packet burst past capacity.
         assert!(bucket.try_consume(2));
         assert!(!bucket.try_consume(1));

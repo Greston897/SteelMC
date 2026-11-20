@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use glam::DVec3;
 use rustc_hash::FxHashSet;
+use steel_protocol::packets::game::CBossEvent;
 use steel_protocol::packets::game::{
     AttributeSnapshot, CAddEntity, CRemoveEntities, CSetEntityData, CSetEntityLink,
     CSetEntityMotion, CSetEquipment, CSetPassengers, CUpdateAttributes, EquipmentSlotItem,
@@ -20,6 +21,7 @@ use steel_utils::locks::{SyncMutex, SyncRwLock};
 
 use crate::chunk::player_chunk_view::PlayerChunkView;
 use crate::entity::leash::Leashable;
+use crate::entity::entities::mobs::bosses::WitherBossEntity;
 use crate::entity::{
     Entity, EntityMovementSyncPacket, MobEffectSyncPacket, ServerEntityMovementSyncState,
     ServerEntityMovementSyncUpdate, SharedEntity, WeakEntity,
@@ -209,7 +211,7 @@ impl EntityTracker {
                     if let Some(entity) = &entity
                         && entity.entity_type() == &vanilla_entities::WITHER
                     {
-                        player.send_packet(steel_protocol::packets::game::CBossEvent::remove(
+                        player.send_packet(CBossEvent::remove(
                             entity.uuid(),
                         ));
                     }
@@ -735,7 +737,7 @@ impl EntityTracker {
             .send_to(entity_id, player);
         use steel_utils::Downcast as _;
         if let Some(wither) =
-            entity.downcast_ref::<crate::entity::entities::mobs::bosses::WitherBossEntity>()
+            entity.downcast_ref::<WitherBossEntity>()
         {
             player.send_packet(wither.boss_bar_packet());
         }
@@ -753,7 +755,7 @@ impl EntityTracker {
             })
             .flatten();
         if let Some(uuid) = boss {
-            player.send_packet(steel_protocol::packets::game::CBossEvent::remove(uuid));
+            player.send_packet(CBossEvent::remove(uuid));
         }
         player.send_packet(CRemoveEntities::single(entity_id));
     }

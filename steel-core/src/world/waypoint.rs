@@ -10,6 +10,10 @@
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use std::f32::consts::PI;
+use std::f32::consts::TAU;
+use std::mem::discriminant;
+use std::mem::take;
 
 use glam::DVec3;
 use rustc_hash::FxHashSet;
@@ -18,6 +22,7 @@ use steel_registry::vanilla_attributes;
 use steel_utils::locks::SyncMutex;
 use steel_utils::types::GameType;
 use uuid::Uuid;
+use steel_registry::vanilla_game_rules::LOCATOR_BAR;
 
 use crate::entity::{Entity, LivingEntity as _};
 use crate::player::Player;
@@ -89,9 +94,9 @@ pub(super) fn needs_update(
     }
     match (prev_data, next_data) {
         (TrackedWaypointData::Azimuth { angle: a }, TrackedWaypointData::Azimuth { angle: b }) => {
-            let mut diff = (b - a).rem_euclid(std::f32::consts::TAU);
-            if diff > std::f32::consts::PI {
-                diff = std::f32::consts::TAU - diff;
+            let mut diff = (b - a).rem_euclid(TAU);
+            if diff > PI {
+                diff = TAU - diff;
             }
             diff > AZIMUTH_UPDATE_THRESHOLD
         }
@@ -170,7 +175,7 @@ impl WaypointManager {
     /// Returns snapshots of `(uuid, icon)` for players currently transmitting waypoints.
     #[must_use]
     pub fn active_transmitters(&self, world: &World) -> Vec<(Uuid, String, WaypointIcon)> {
-        if !world.get_game_rule(&steel_registry::vanilla_game_rules::LOCATOR_BAR) {
+        if !world.get_game_rule(&LOCATOR_BAR) {
             return Vec::new();
         }
         let icons = self.icons.lock();
@@ -197,14 +202,14 @@ impl WaypointManager {
 
     /// Refreshes the locator bar of every player in `world`.
     pub fn tick(&self, world: &Arc<World>) {
-        if !world.get_game_rule(&steel_registry::vanilla_game_rules::LOCATOR_BAR) {
+        if !world.get_game_rule(&LOCATOR_BAR) {
             // Untrack any previously visible waypoints when the rule is turned off.
             let drained: Vec<(Uuid, Vec<Uuid>)> = {
                 let mut sent = self.sent.lock();
                 if sent.is_empty() {
                     return;
                 }
-                std::mem::take(&mut *sent)
+                take(&mut *sent)
                     .into_iter()
                     .map(|(obs, map)| (obs, map.into_keys().collect()))
                     .collect()
@@ -312,7 +317,7 @@ impl WaypointManager {
                             // Switching representation type (Vec3i <-> Chunk <-> Azimuth)
                             // mirrors vanilla's connection transition cleanly via `Track`.
                             let same_kind =
-                                std::mem::discriminant(&prev.data) == std::mem::discriminant(&data);
+                                discriminant(&prev.data) == discriminant(&data);
                             let packet = if same_kind {
                                 CWaypoint::update_uuid(source.uuid, source.icon.clone(), data)
                             } else {

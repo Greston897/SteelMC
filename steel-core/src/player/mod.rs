@@ -55,6 +55,47 @@ use movement::{MovementState, TeleportState};
 use permissions::PlayerPermissionState;
 pub use post_effects::PlayerPostEffects;
 pub(crate) use profile::{GAME_PROFILE_CACHE_LIMIT, KnownPlayerNameLookup, lookup_online_profile};
+use steel_protocol::packets::game::CCookieRequest;
+use steel_protocol::packets::game::CCustomChatCompletions;
+use steel_protocol::packets::game::CGameTestHighlightPos;
+use steel_protocol::packets::game::CPing;
+use steel_protocol::packets::game::CStartConfiguration;
+use steel_protocol::packets::game::CStoreCookie;
+use steel_protocol::packets::game::CustomChatCompletionAction;
+use steel_protocol::packets::game::SCookieResponse;
+use steel_protocol::packets::game::SCustomClickAction;
+use steel_registry::recipe::display_for_recipe;
+use steel_registry::slot_display::RecipeDisplay::CraftingShaped;
+use steel_registry::slot_display::RecipeDisplay::CraftingShapeless;
+use steel_registry::slot_display::RecipeDisplay::Furnace;
+use steel_registry::stat::custom::CustomStatRef;
+use steel_registry::vanilla_criteria_triggers::KILL_MOB_NEAR_SCULK_CATALYST;
+use steel_registry::vanilla_criteria_triggers::LEVITATION;
+use steel_registry::vanilla_criteria_triggers::PLAYER_KILLED_ENTITY;
+use steel_registry::vanilla_criteria_triggers::RECIPE_CRAFTED;
+use steel_registry::vanilla_criteria_triggers::RECIPE_UNLOCKED;
+use steel_registry::vanilla_criteria_triggers::RIDE_ENTITY_IN_LAVA;
+use steel_registry::vanilla_criteria_triggers::USING_ITEM;
+use steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK;
+use steel_utils::geometry::WorldAabb;
+use steel_utils::serial::OptionalNbt;
+use steel_utils::serial::ReadFrom;
+use steel_utils::translations_registry::TRANSLATIONS;
+use steel_utils::types::UpdateFlags;
+use crate::block_entity::entities::CommandBlockBlockEntity;
+use crate::block_entity::entities::CommandBlockMode;
+use crate::block_entity::entities::CommandBlockMode::Auto;
+use crate::block_entity::entities::CommandBlockMode::Redstone;
+use crate::block_entity::entities::CommandBlockMode::Sequence;
+use crate::block_entity::entities::JigsawBlockEntity;
+use crate::block_entity::entities::StructureBlockEntity;
+use crate::block_entity::entities::TestBlockEntity;
+use crate::block_entity::entities::TestInstanceBlockEntity;
+use crate::block_entity::entities::WardenSpawnTracker;
+use crate::entity::create_wither_rose;
+use crate::entity::entities::CommandBlockMinecartEntity;
+use crate::player::advancement::predicate::TriggerContext;
+use crate::scoreboard::ScoreHolder;
 pub use profile::{
     GameProfile, KnownPlayer, KnownPlayers, ProfileLookupError, is_valid_player_name, offline_uuid,
 };
@@ -67,6 +108,8 @@ use std::sync::atomic::Ordering;
 use std::sync::{Arc, LazyLock, Weak};
 use std::time::{Duration, Instant};
 use steel_math::RAD_TO_DEG_F64;
+use std::io::Cursor;
+use std::sync::atomic::AtomicBool;
 use steel_protocol::packets::game::{
     CEntityEvent, CHurtAnimation, CPlaceGhostRecipe, CPlayerCombatEnd, CPlayerCombatEnter,
     CPlayerCombatKill, CPlayerLookAt, CPlayerRotation, CRespawn, CSetChunkCacheRadius,
@@ -229,7 +272,7 @@ pub struct Player {
     /// Vanilla `ChunkMap` keeps the per-player `skippedPlayer` flag; it is set
     /// by `spectatorsGenerateChunks` together with the spectator game mode and
     /// decides whether the player loads terrain around itself.
-    pub skip_player: std::sync::atomic::AtomicBool,
+    pub skip_player: AtomicBool,
     /// Entity the player's camera is attached to, if any.
     ///
     /// Vanilla `ServerPlayer.camera`/`setCamera`; a spectator's `set_camera`
@@ -314,7 +357,7 @@ pub struct Player {
 
     /// Whether the server has sent `CStartConfiguration` and is awaiting the
     /// client's `SConfigurationAcknowledged` packet.
-    awaiting_configuration_ack: std::sync::atomic::AtomicBool,
+    awaiting_configuration_ack: AtomicBool,
 
     /// Most recent ping transaction id echoed by the client via `SPong`.
     last_pong_id: SyncMutex<Option<i32>>,
@@ -350,7 +393,7 @@ pub struct Player {
     stats: SyncMutex<StatsCounter>,
     /// Vanilla `ServerPlayer.wardenSpawnTracker`: the per-player warning state
     /// the sculk shrieker climbs before a warden emerges.
-    warden_spawn_tracker: SyncMutex<crate::block_entity::entities::WardenSpawnTracker>,
+    warden_spawn_tracker: SyncMutex<WardenSpawnTracker>,
 
     /// The last action time of this player.
     last_action_time: SyncMutex<Instant>,
@@ -434,7 +477,7 @@ impl PlayerResidenceState {
 }
 
 /// Vanilla `TestBlockMode` wire ordinal (`ByIdMap` maps unknown ids to `START`).
-const fn test_mode_from_ordinal(ordinal: i32) -> steel_registry::blocks::properties::TestBlockMode {
+const fn test_mode_from_ordinal(ordinal: i32) -> TestBlockMode {
     use steel_registry::blocks::properties::TestBlockMode;
     match ordinal {
         1 => TestBlockMode::Log,
@@ -463,15 +506,15 @@ impl Player {
     /// Fires `recipe_unlocked`, mirroring vanilla `ServerPlayer.awardRecipes`.
     pub fn trigger_recipe_unlocked(&self, recipe: &Identifier) -> usize {
         self.trigger_advancement_with_context(
-            &steel_registry::vanilla_criteria_triggers::RECIPE_UNLOCKED,
-            &crate::player::advancement::predicate::TriggerContext::recipe(recipe),
+            &RECIPE_UNLOCKED,
+            &TriggerContext::recipe(recipe),
         )
     }
 
     /// Fires the `recipe_crafted` advancement criterion for `recipe`.
     pub fn trigger_recipe_crafted(&self, recipe: &Identifier) -> usize {
         let _ = recipe;
-        self.trigger_advancement(&steel_registry::vanilla_criteria_triggers::RECIPE_CRAFTED)
+        self.trigger_advancement(&RECIPE_CRAFTED)
     }
 
     /// Returns the entity this player's camera is attached to.
@@ -504,7 +547,7 @@ impl Player {
     pub fn trigger_advancement_with_context(
         &self,
         trigger: &Identifier,
-        context: &crate::player::advancement::predicate::TriggerContext,
+        context: &TriggerContext,
     ) -> usize {
         self.advancements
             .lock()
@@ -653,8 +696,8 @@ impl Player {
         // held in use, which is how `adventure/salvage_sherd`-style criteria see
         // sustained use.
         self.trigger_advancement_with_context(
-            &steel_registry::vanilla_criteria_triggers::USING_ITEM,
-            &crate::player::advancement::predicate::TriggerContext::item(&item.item().key),
+            &USING_ITEM,
+            &TriggerContext::item(&item.item().key),
         );
         behavior.on_use_tick(&world, user, &mut item, active.remaining_ticks());
 
@@ -754,7 +797,7 @@ impl Player {
         // the sweep also catches entities the player moved past this tick.
         let current = self.bounding_box();
         let previous = current.translate(self.old_position() - self.position());
-        let sweep = steel_utils::geometry::WorldAabb::encapsulating(&previous, &current);
+        let sweep = WorldAabb::encapsulating(&previous, &current);
 
         let mut swept = None;
         for target in self.get_world().get_entities_in_aabb(&sweep) {
@@ -921,7 +964,7 @@ impl Player {
             }),
             last_chunk_pos: SyncMutex::new(ChunkPos::new(0, 0)),
             last_tracking_view: SyncMutex::new(None),
-            skip_player: std::sync::atomic::AtomicBool::new(false),
+            skip_player: AtomicBool::new(false),
             camera_entity: SyncMutex::new(None),
             client_information: SyncMutex::new(client_information),
             game_modes: SyncMutex::new(PlayerGameModeState::new(GameType::Survival)),
@@ -951,7 +994,7 @@ impl Player {
                 rustc_hash::FxHashSet::default(),
                 rustc_hash::FxHashMap::default(),
             )),
-            awaiting_configuration_ack: std::sync::atomic::AtomicBool::new(false),
+            awaiting_configuration_ack: AtomicBool::new(false),
             last_pong_id: SyncMutex::new(None),
             last_custom_click_action: SyncMutex::new(None),
             seen_credits: SyncMutex::new(false),
@@ -963,7 +1006,7 @@ impl Player {
             fishing: SyncMutex::new(None),
             stats: SyncMutex::new(StatsCounter::new()),
             warden_spawn_tracker: SyncMutex::new(
-                crate::block_entity::entities::WardenSpawnTracker::new(),
+                WardenSpawnTracker::new(),
             ),
             last_action_time: SyncMutex::new(Instant::now()),
             advancements: SyncMutex::new(PlayerAdvancement::default()),
@@ -1051,7 +1094,7 @@ impl Player {
     ///
     /// Vanilla `ServerPlayer.getStats().getValue(Stats.CUSTOM.get(...))`.
     #[must_use]
-    pub fn custom_stat(&self, stat: steel_registry::stat::custom::CustomStatRef) -> i32 {
+    pub fn custom_stat(&self, stat: CustomStatRef) -> i32 {
         self.stats
             .lock()
             .stats
@@ -1105,14 +1148,14 @@ impl Player {
 
     /// Returns a copy of this player's current Warden warning tracker (`getWardenSpawnTracker`).
     #[must_use]
-    pub fn warden_spawn_tracker(&self) -> crate::block_entity::entities::WardenSpawnTracker {
+    pub fn warden_spawn_tracker(&self) -> WardenSpawnTracker {
         *self.warden_spawn_tracker.lock()
     }
 
     /// Replaces the player's tracker, as vanilla `copyData` does.
     pub fn set_warden_spawn_tracker(
         &self,
-        tracker: crate::block_entity::entities::WardenSpawnTracker,
+        tracker: WardenSpawnTracker,
     ) {
         *self.warden_spawn_tracker.lock() = tracker;
     }
@@ -1172,10 +1215,10 @@ impl Player {
         let duration = self.tick_count().saturating_sub(start_tick);
         drop(start);
         let mut context =
-            crate::player::advancement::predicate::TriggerContext::nether_travel(distance);
+            TriggerContext::nether_travel(distance);
         context.duration = Some(duration);
         self.trigger_advancement_with_context(
-            &steel_registry::vanilla_criteria_triggers::LEVITATION,
+            &LEVITATION,
             &context,
         );
     }
@@ -1190,8 +1233,8 @@ impl Player {
             return;
         };
         self.trigger_advancement_with_context(
-            &steel_registry::vanilla_criteria_triggers::RIDE_ENTITY_IN_LAVA,
-            &crate::player::advancement::predicate::TriggerContext::entity(
+            &RIDE_ENTITY_IN_LAVA,
+            &TriggerContext::entity(
                 &vehicle.entity_type().key,
             ),
         );
@@ -1252,8 +1295,8 @@ impl Player {
         let Some(other) = other.as_player() else {
             return false;
         };
-        let own = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
-        let theirs = crate::scoreboard::ScoreHolder::new(other.scoreboard_name());
+        let own = ScoreHolder::new(self.scoreboard_name());
+        let theirs = ScoreHolder::new(other.scoreboard_name());
         let own_team = scoreboard.holder_team_name(&own);
         let other_team = scoreboard.holder_team_name(&theirs);
         own_team.is_some() && own_team == other_team
@@ -1281,7 +1324,7 @@ impl Player {
         let Some(objective) = objective else {
             return;
         };
-        let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+        let holder = ScoreHolder::new(self.scoreboard_name());
         let current = scoreboard.score(&holder, &objective).unwrap_or(0);
         let _ = scoreboard.set_score(&holder, &objective, current.saturating_add(1));
     }
@@ -1290,8 +1333,8 @@ impl Player {
     #[expect(clippy::unused_self, reason = "player API method")]
     pub fn handle_custom_payload(&self, packet: SCustomPayload) {
         if packet.identifier == Identifier::vanilla_static("brand") {
-            let mut cursor = std::io::Cursor::new(packet.payload.0.as_slice());
-            if let Ok(brand) = <String as steel_utils::serial::ReadFrom>::read(&mut cursor)
+            let mut cursor = Cursor::new(packet.payload.0.as_slice());
+            if let Ok(brand) = <String as ReadFrom>::read(&mut cursor)
                 && brand.len() <= 128
             {
                 log::debug!("Player reported client brand: {brand}");
@@ -1359,7 +1402,7 @@ impl Player {
             return;
         };
         let Some(command_block) = block_entity
-            .downcast_ref::<crate::block_entity::entities::CommandBlockBlockEntity>()
+            .downcast_ref::<CommandBlockBlockEntity>()
             .cloned()
         else {
             return;
@@ -1371,15 +1414,15 @@ impl Player {
         let current_state = world.get_block_state(packet.pos);
         let facing: steel_utils::Direction = current_state.get_value(&BlockStateProperties::FACING);
         let new_mode =
-            crate::block_entity::entities::CommandBlockMode::from_packet_ordinal(packet.mode);
+            CommandBlockMode::from_packet_ordinal(packet.mode);
         let base_block = match new_mode {
-            crate::block_entity::entities::CommandBlockMode::Sequence => {
+            Sequence => {
                 &vanilla_blocks::CHAIN_COMMAND_BLOCK
             }
-            crate::block_entity::entities::CommandBlockMode::Auto => {
+            Auto => {
                 &vanilla_blocks::REPEATING_COMMAND_BLOCK
             }
-            crate::block_entity::entities::CommandBlockMode::Redstone => {
+            Redstone => {
                 &vanilla_blocks::COMMAND_BLOCK
             }
         };
@@ -1393,7 +1436,7 @@ impl Player {
             world.set_block(
                 packet.pos,
                 new_state,
-                steel_utils::types::UpdateFlags::UPDATE_CLIENTS,
+                UpdateFlags::UPDATE_CLIENTS,
             );
         }
 
@@ -1408,7 +1451,7 @@ impl Player {
         // command blocks are switched off) once the command is not empty.
         if !packet.command.trim().is_empty() {
             let works =
-                world.get_game_rule(&steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK);
+                world.get_game_rule(&COMMAND_BLOCKS_WORK);
             // `advMode.setCommand.success` / `.disabled`, both take the command.
             let message = if works {
                 translations::ADV_MODE_SET_COMMAND_SUCCESS.message([packet.command.clone()])
@@ -1441,7 +1484,7 @@ impl Player {
             return;
         };
         let Some(minecart) =
-            entity.downcast_ref::<crate::entity::entities::CommandBlockMinecartEntity>()
+            entity.downcast_ref::<CommandBlockMinecartEntity>()
         else {
             return;
         };
@@ -1452,7 +1495,7 @@ impl Player {
             minecart.set_last_output(TextComponent::plain(""));
         }
 
-        let enabled = world.get_game_rule(&steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK);
+        let enabled = world.get_game_rule(&COMMAND_BLOCKS_WORK);
         if !packet.command.trim().is_empty() {
             let message = if enabled {
                 translations::ADV_MODE_SET_COMMAND_SUCCESS.message([packet.command])
@@ -1484,7 +1527,7 @@ impl Player {
             return;
         };
         let Some(structure) =
-            block_entity.downcast_ref::<crate::block_entity::entities::StructureBlockEntity>()
+            block_entity.downcast_ref::<StructureBlockEntity>()
         else {
             return;
         };
@@ -1622,7 +1665,7 @@ impl Player {
     /// out of the open-menu slot.
     fn place_recipe_into(
         &self,
-        menu: &mut crate::inventory::menu::Menu,
+        menu: &mut Menu,
         packet: &SPlaceRecipe,
     ) -> Option<PlacementOutcome> {
         use crate::player::recipe_placement::PlacementRequest;
@@ -1642,18 +1685,18 @@ impl Player {
             return None;
         }
 
-        let display = steel_registry::recipe::display_for_recipe(recipe)?;
+        let display = display_for_recipe(recipe)?;
         let recipe_size = match &display {
-            steel_registry::slot_display::RecipeDisplay::CraftingShaped {
+            CraftingShaped {
                 width, height, ..
             } => (
                 usize::try_from(*width).unwrap_or(0),
                 usize::try_from(*height).unwrap_or(0),
             ),
-            steel_registry::slot_display::RecipeDisplay::CraftingShapeless {
+            CraftingShapeless {
                 ingredients, ..
             } => (ingredients.len(), 1),
-            steel_registry::slot_display::RecipeDisplay::Furnace { .. } => (1, 1),
+            Furnace { .. } => (1, 1),
             _ => return None,
         };
 
@@ -1693,7 +1736,7 @@ impl Player {
             return;
         };
         let Some(test_instance) =
-            block_entity.downcast_ref::<crate::block_entity::entities::TestInstanceBlockEntity>()
+            block_entity.downcast_ref::<TestInstanceBlockEntity>()
         else {
             return;
         };
@@ -1744,7 +1787,7 @@ impl Player {
             packet.action,
             TestInstanceBlockAction::Query | TestInstanceBlockAction::Run
         ) {
-            self.send_packet(steel_protocol::packets::game::CGameTestHighlightPos {
+            self.send_packet(CGameTestHighlightPos {
                 absolute_pos: packet.pos,
                 relative_pos: BlockPos::new(0, 0, 0),
             });
@@ -1786,20 +1829,20 @@ impl Player {
         if payload.len() > 5_120 {
             return false;
         }
-        self.send_packet(steel_protocol::packets::game::CStoreCookie { key, payload });
+        self.send_packet(CStoreCookie { key, payload });
         true
     }
 
     /// Requests a previously stored cookie from the client (`ClientboundCookieRequestPacket`).
     pub fn request_cookie(&self, key: Identifier) {
         self.cookie_state.lock().0.insert(key.clone());
-        self.send_packet(steel_protocol::packets::game::CCookieRequest { key });
+        self.send_packet(CCookieRequest { key });
     }
 
     /// Vanilla `ServerCommonPacketListenerImpl.handleCookieResponse`: accepts a cookie
     /// reply if and only if the server previously requested that key; disconnects on
     /// unsolicited responses.
-    pub fn handle_cookie_response(&self, packet: steel_protocol::packets::game::SCookieResponse) {
+    pub fn handle_cookie_response(&self, packet: SCookieResponse) {
         let accepted = {
             let mut state = self.cookie_state.lock();
             if state.0.remove(&packet.key) {
@@ -1824,7 +1867,7 @@ impl Player {
     pub fn start_configuration(&self) {
         self.awaiting_configuration_ack
             .store(true, Ordering::Release);
-        self.send_packet(steel_protocol::packets::game::CStartConfiguration {});
+        self.send_packet(CStartConfiguration {});
     }
 
     /// Returns `true` if `CStartConfiguration` was sent and not yet acknowledged.
@@ -1848,7 +1891,7 @@ impl Player {
 
     /// Sends a Play-state ping transaction (`ClientboundPingPacket`).
     pub fn send_ping(&self, id: i32) {
-        self.send_packet(steel_protocol::packets::game::CPing { id });
+        self.send_packet(CPing { id });
     }
 
     /// Records the client's `ServerboundPongPacket` transaction id.
@@ -1866,16 +1909,16 @@ impl Player {
     /// (`ClientboundCustomChatCompletionsPacket`).
     pub fn send_custom_chat_completions(
         &self,
-        action: steel_protocol::packets::game::CustomChatCompletionAction,
+        action: CustomChatCompletionAction,
         entries: Vec<String>,
     ) {
-        self.send_packet(steel_protocol::packets::game::CCustomChatCompletions { action, entries });
+        self.send_packet(CCustomChatCompletions { action, entries });
     }
 
     /// Handles `ServerboundCustomClickActionPacket` (vanilla `MinecraftServer.handleCustomClickAction`).
     pub fn handle_custom_click_action(
         &self,
-        packet: steel_protocol::packets::game::SCustomClickAction,
+        packet: SCustomClickAction,
     ) {
         log::debug!(
             "Player {} triggered custom click action {}",
@@ -1906,7 +1949,7 @@ impl Player {
             return;
         };
         let Some(jigsaw) =
-            block_entity.downcast_ref::<crate::block_entity::entities::JigsawBlockEntity>()
+            block_entity.downcast_ref::<JigsawBlockEntity>()
         else {
             return;
         };
@@ -1938,7 +1981,7 @@ impl Player {
             return;
         };
         if block_entity
-            .downcast_ref::<crate::block_entity::entities::JigsawBlockEntity>()
+            .downcast_ref::<JigsawBlockEntity>()
             .is_none()
         {
             return;
@@ -1967,7 +2010,7 @@ impl Player {
             return;
         };
         let Some(test_block) =
-            block_entity.downcast_ref::<crate::block_entity::entities::TestBlockEntity>()
+            block_entity.downcast_ref::<TestBlockEntity>()
         else {
             return;
         };
@@ -2016,7 +2059,7 @@ impl Player {
             .map(|block_entity| block_entity.save_without_metadata());
         self.send_packet(CTagQuery {
             transaction_id: packet.transaction_id,
-            tag: steel_utils::serial::OptionalNbt(tag),
+            tag: OptionalNbt(tag),
         });
     }
 
@@ -2037,7 +2080,7 @@ impl Player {
         });
         self.send_packet(CTagQuery {
             transaction_id: packet.transaction_id,
-            tag: steel_utils::serial::OptionalNbt(tag),
+            tag: OptionalNbt(tag),
         });
     }
 
@@ -2306,7 +2349,7 @@ impl Player {
         if show_death_messages && let Some(server) = self.try_server() {
             // Vanilla routes death messages through `PlayerTeam.sendMessage`, so a
             // team's `death_message_visibility` decides who receives them.
-            let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+            let holder = ScoreHolder::new(self.scoreboard_name());
             let team = server
                 .scoreboards
                 .get(world.domain())
@@ -2333,7 +2376,7 @@ impl Player {
         if let Some(killer) = get_kill_credit(self, &world) {
             self.award_stat(&vanilla_stat_types::ENTITY_KILLED_BY, killer.entity_type());
             killer.award_kill_score(self, source);
-            crate::entity::create_wither_rose(self, source);
+            create_wither_rose(self, source);
         }
 
         self.award_custom_stat(&vanilla_custom_stats::DEATHS);
@@ -3123,8 +3166,8 @@ impl Entity for Player {
             // `CriteriaTriggers.PLAYER_KILLED_ENTITY`, which the `kill_a_mob` and
             // `monster_hunter` advancements listen for.
             self.trigger_advancement_with_context(
-                &steel_registry::vanilla_criteria_triggers::PLAYER_KILLED_ENTITY,
-                &crate::player::advancement::predicate::TriggerContext::entity(
+                &PLAYER_KILLED_ENTITY,
+                &TriggerContext::entity(
                     &victim.entity_type().key,
                 ),
             );
@@ -3144,8 +3187,8 @@ impl Entity for Player {
                 });
                 if near_catalyst {
                     self.trigger_advancement_with_context(
-                        &steel_registry::vanilla_criteria_triggers::KILL_MOB_NEAR_SCULK_CATALYST,
-                        &crate::player::advancement::predicate::TriggerContext::entity(
+                        &KILL_MOB_NEAR_SCULK_CATALYST,
+                        &TriggerContext::entity(
                             &victim.entity_type().key,
                         ),
                     );
@@ -3288,7 +3331,7 @@ impl LivingEntity for Player {
             let location_context = {
                 let position = self.position();
                 let mut context =
-                    crate::player::advancement::predicate::TriggerContext::at(&world, position);
+                    TriggerContext::at(&world, position);
                 context.player_sneaking = Some(self.is_discrete());
                 context
             };
@@ -3661,7 +3704,7 @@ impl TextResolutor for Player {
         match resolvable {
             Resolvable::Entity { .. } => self.display_name(),
             Resolvable::Scoreboard { objective, .. } => {
-                let holder = crate::scoreboard::ScoreHolder::new(self.scoreboard_name());
+                let holder = ScoreHolder::new(self.scoreboard_name());
                 let world = self.get_world();
                 let score = self.try_server().and_then(|server| {
                     let scoreboard = server.scoreboards.get(world.domain())?;
@@ -3685,7 +3728,7 @@ impl TextResolutor for Player {
     /// Vanilla `TranslatableContents.resolve` for a server-side view: the
     /// English translation table.
     fn translate(&self, key: &str) -> Option<String> {
-        steel_utils::translations_registry::TRANSLATIONS
+        TRANSLATIONS
             .get(key)
             .map(|value| (*value).to_owned())
     }

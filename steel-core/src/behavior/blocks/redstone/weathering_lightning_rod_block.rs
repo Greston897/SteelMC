@@ -3,6 +3,7 @@ use std::sync::Arc;
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
 use steel_utils::{BlockPos, BlockStateId, Direction};
+use steel_utils::types::UpdateFlags;
 
 use crate::{
     behavior::{
@@ -80,7 +81,7 @@ impl BlockBehavior for WeatheringLightningRodBlock {
         // Vanilla `WeatheringLightningRodBlock.onLightningStrike` advances the
         // oxidation unconditionally, then runs the base rod so it also powers up.
         if let Some(next_state) = self.weathering.get_next_state(state, world, pos) {
-            world.set_block(pos, next_state, steel_utils::types::UpdateFlags::UPDATE_ALL);
+            world.set_block(pos, next_state, UpdateFlags::UPDATE_ALL);
         }
         // The rod lights up using the state actually present after oxidation.
         LightningRodBlock::strike(

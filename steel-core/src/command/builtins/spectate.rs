@@ -13,6 +13,7 @@ use std::borrow::Cow;
 use steel_utils::Identifier;
 use text_components::TextComponent;
 use text_components::translation::TranslatedMessage;
+use steel_protocol::packets::game::CSetCamera;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
@@ -25,6 +26,7 @@ use super::super::{
 use steel_utils::types::GameType;
 
 use crate::entity::Entity as _;
+use crate::entity::SharedEntity;
 
 const TARGET_ARGUMENT: &str = "target";
 const PLAYER_ARGUMENT: &str = "player";
@@ -61,7 +63,7 @@ fn translated(key: &'static str, fallback: String, args: Vec<TextComponent>) -> 
 
 fn spectate(
     context: &SteelCommandContext<CommandSource>,
-    target: Option<crate::entity::SharedEntity>,
+    target: Option<SharedEntity>,
 ) -> Result<i32, CommandSyntaxError> {
     // The camera belongs to the player the command runs as.
     let Some(viewer) = context.source().player().cloned() else {
@@ -79,7 +81,7 @@ fn spectate(
     if let Some(target) = target {
         let entity_id = target.id();
         viewer.set_camera_entity(Some(target));
-        viewer.send_packet(steel_protocol::packets::game::CSetCamera {
+        viewer.send_packet(CSetCamera {
             camera_id: entity_id,
         });
         let message = translated(
@@ -93,7 +95,7 @@ fn spectate(
         // Vanilla clears the camera when the target is omitted.
         viewer.set_camera_entity(None);
         if let Some(player) = context.source().player() {
-            viewer.send_packet(steel_protocol::packets::game::CSetCamera {
+            viewer.send_packet(CSetCamera {
                 camera_id: player.base().id(),
             });
         }

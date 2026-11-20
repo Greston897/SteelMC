@@ -10,6 +10,7 @@ use steel_utils::entity_events::EntityStatus;
 use steel_utils::{BlockLocalAabb, BlockPos, BlockStateId};
 
 use crate::entity::DEFAULT_AIR_DRAG;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::{
     behavior::{
         BlockBehavior, BlockCollisionContext, BlockPlaceContext, EntityFallDamage,
@@ -206,7 +207,7 @@ impl BlockBehavior for HoneyBlock {
             if let Some(player) = entity.as_player() {
                 player.trigger_advancement_with_context(
                     &vanilla_criteria_triggers::SLIDE_DOWN_BLOCK,
-                    &crate::player::advancement::predicate::TriggerContext::block(
+                    &TriggerContext::block(
                         &vanilla_blocks::HONEY_BLOCK.key,
                         None,
                     ),

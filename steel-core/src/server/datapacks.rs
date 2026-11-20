@@ -308,12 +308,14 @@ impl FunctionPacks {
 #[cfg(test)]
 mod tests {
     use super::*;
+use std::env::temp_dir;
+use std::error::Error;
 
     struct Fixture(PathBuf);
     impl Fixture {
-        fn new() -> Result<Self, Box<dyn std::error::Error>> {
+        fn new() -> Result<Self, Box<dyn Error>> {
             let root =
-                std::env::temp_dir().join(format!("steel-function-pack-{}", uuid::Uuid::new_v4()));
+                temp_dir().join(format!("steel-function-pack-{}", uuid::Uuid::new_v4()));
             fs::create_dir_all(root.join("test/data/example/function"))?;
             fs::create_dir_all(root.join("test/data/minecraft/tags/function"))?;
             fs::write(
@@ -331,7 +333,7 @@ mod tests {
 
     #[test]
     fn directory_functions_load_and_reload_without_leaking_failed_snapshots()
-    -> Result<(), Box<dyn std::error::Error>> {
+    -> Result<(), Box<dyn Error>> {
         steel_registry::init_vanilla_registry();
         let fixture = Fixture::new()?;
         let function = fixture
@@ -352,7 +354,7 @@ mod tests {
 
     #[test]
     fn load_tag_runs_once_tick_tag_repeats_and_successful_reload_rearms_load()
-    -> Result<(), Box<dyn std::error::Error>> {
+    -> Result<(), Box<dyn Error>> {
         steel_registry::init_vanilla_registry();
         let fixture = Fixture::new()?;
         fs::write(
@@ -380,7 +382,7 @@ mod tests {
 
     #[test]
     fn cyclic_and_missing_required_function_tags_reject_publication()
-    -> Result<(), Box<dyn std::error::Error>> {
+    -> Result<(), Box<dyn Error>> {
         steel_registry::init_vanilla_registry();
         let fixture = Fixture::new()?;
         let tag = fixture

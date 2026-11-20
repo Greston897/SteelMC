@@ -9,6 +9,7 @@
 //!   implemented.
 
 use std::sync::Weak;
+use std::sync::Arc;
 
 use glam::DVec3;
 use simdnbt::{borrow, owned};
@@ -22,6 +23,10 @@ use steel_registry::vanilla_attributes;
 use steel_registry::vanilla_entity_data::LlamaEntityData;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{DowncastType, DowncastTypeKey};
+use steel_protocol::packets::game::SoundSource::Neutral;
+use steel_registry::sound_events::ENTITY_DONKEY_CHEST;
+use steel_registry::vanilla_items::CHEST;
+use steel_utils::types::InteractionHand;
 
 use crate::entity::ai::goal::{
     FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
@@ -29,6 +34,10 @@ use crate::entity::ai::goal::{
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::mount::{SharedMountInventory, open_mount_menu};
+use crate::behavior::InteractionResult;
+use crate::behavior::InteractionResult::Pass;
+use crate::behavior::InteractionResult::Success;
+use crate::entity::mount::shared_inventory;
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityDimensions, EntityMovementEmission, EntitySyncedData, LivingEntity,
@@ -115,7 +124,7 @@ impl LlamaEntity {
             mob_base,
             ageable_base,
             animal_base,
-            mount_inventory: crate::entity::mount::shared_inventory(1),
+            mount_inventory: shared_inventory(1),
             entity_data: SyncMutex::new(entity_data),
         }
     }
@@ -127,7 +136,7 @@ impl LlamaEntity {
             return;
         }
         let inventory = self.mount_inventory.lock();
-        let container = std::sync::Arc::clone(inventory.container());
+        let container = Arc::clone(inventory.container());
         let columns = inventory.columns();
         drop(inventory);
         open_mount_menu(self, player, &container, columns);
@@ -238,12 +247,12 @@ impl Entity for LlamaEntity {
 
     /// Vanilla `AbstractHorse.openCustomInventoryScreen` reached through the
     /// spectator path.
-    fn open_menu_for(&self, player: &Player) -> crate::behavior::InteractionResult {
+    fn open_menu_for(&self, player: &Player) -> InteractionResult {
         if !self.is_tamed() {
-            return crate::behavior::InteractionResult::Pass;
+            return Pass;
         }
         self.open_mount_inventory(player);
-        crate::behavior::InteractionResult::Success
+        Success
     }
 
     fn is_hard_collision_relevant(&self) -> bool {
@@ -440,15 +449,15 @@ impl Mob for LlamaEntity {
     fn mob_interact(
         &self,
         player: &Player,
-        hand: steel_utils::types::InteractionHand,
-    ) -> crate::behavior::InteractionResult {
+        hand: InteractionHand,
+    ) -> InteractionResult {
         if !Entity::is_vehicle(self)
             && !LivingEntity::is_baby(self)
             && self.is_tamed()
             && player.is_secondary_use_active()
         {
             self.open_mount_inventory(player);
-            return crate::behavior::InteractionResult::Success;
+            return Success;
         }
 
         // Vanilla `AbstractChestedHorse.mobInteract`: a chest opens the llama's
@@ -458,20 +467,20 @@ impl Mob for LlamaEntity {
                 let inventory = player.inventory.lock();
                 inventory.get_item_in_hand(hand).clone()
             };
-            if held.is(&steel_registry::vanilla_items::CHEST) {
+            if held.is(&CHEST) {
                 self.set_chest(true);
                 player.inventory.lock().shrink_item_in_hand(hand, 1);
                 if let Some(world) = self.level() {
                     world.play_sound_at(
-                        &steel_registry::sound_events::ENTITY_DONKEY_CHEST,
-                        steel_protocol::packets::game::SoundSource::Neutral,
+                        &ENTITY_DONKEY_CHEST,
+                        Neutral,
                         self.position(),
                         1.0,
                         1.0,
                         None,
                     );
                 }
-                return crate::behavior::InteractionResult::Success;
+                return Success;
             }
         }
 

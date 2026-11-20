@@ -4,6 +4,7 @@ use glam::DVec3;
 use glam::Vec3Swizzles;
 use steel_math::{DEGREE_180, DEGREE_360, RAD_TO_DEG_F64, trig::atan2, wrap_degrees};
 use steel_registry::blocks::block_state_ext::BlockStateExt;
+use steel_registry::vanilla_game_rules::MAX_MINECART_SPEED;
 use steel_registry::blocks::properties::{
     BlockStateProperties, BoolProperty, EnumProperty, RailShape,
 };
@@ -111,7 +112,7 @@ impl MinecartBehavior {
     /// converted once here (`rule / 20`) to stay in the same units.
     pub(crate) fn max_speed(minecart: &dyn AbstractMinecart, world: &World) -> f64 {
         let vanilla_cap =
-            f64::from(world.get_game_rule(&steel_registry::vanilla_game_rules::MAX_MINECART_SPEED))
+            f64::from(world.get_game_rule(&MAX_MINECART_SPEED))
                 / 20.0;
         let base = if minecart.is_in_water() {
             MAX_SPEED_IN_WATER

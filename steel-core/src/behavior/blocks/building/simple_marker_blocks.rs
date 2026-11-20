@@ -8,6 +8,7 @@
 //! keeps the generated registry complete and makes the differences greppable.
 
 use std::sync::{Arc, Weak};
+use std::collections::BTreeMap;
 
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
@@ -15,6 +16,7 @@ use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::BlockStateProperties;
 use steel_registry::item_stack::ItemStack;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _};
+use steel_utils::types::UpdateFlags;
 
 use crate::behavior::block::BlockBehavior;
 use crate::behavior::block::BlockEntityCreation;
@@ -24,6 +26,7 @@ use crate::behavior::{BlockPlaceContext, InventoryAccess};
 use crate::block_entity::entities::{TestBlockEntity, TestInstanceBlockEntity};
 use crate::player::Player;
 use crate::world::{LevelReader, SignalGetter as _, SignalQueryContext, World};
+use crate::block_entity::SharedBlockEntity;
 
 /// Vanilla `AirBlock`: no collision, no block entity, never drops.
 #[block_behavior]
@@ -189,7 +192,7 @@ impl BlockBehavior for LightBlock {
         world.set_block(
             pos,
             state.set_value(&BlockStateProperties::LEVEL, level - 1),
-            steel_utils::types::UpdateFlags::UPDATE_ALL,
+            UpdateFlags::UPDATE_ALL,
         );
         InteractionResult::Success
     }
@@ -310,7 +313,7 @@ impl BlockBehavior for TestBlock {
             return;
         };
         let Some(test_block) =
-            block_entity.downcast_ref::<crate::block_entity::entities::TestBlockEntity>()
+            block_entity.downcast_ref::<TestBlockEntity>()
         else {
             return;
         };
@@ -331,7 +334,7 @@ impl BlockBehavior for TestBlock {
             return;
         };
         if let Some(test_block) =
-            block_entity.downcast_ref::<crate::block_entity::entities::TestBlockEntity>()
+            block_entity.downcast_ref::<TestBlockEntity>()
         {
             test_block.reset(world);
         }
@@ -343,7 +346,7 @@ impl BlockBehavior for TestBlock {
         &self,
         block: BlockRef,
         state: BlockStateId,
-        _block_entity: Option<crate::block_entity::SharedBlockEntity>,
+        _block_entity: Option<SharedBlockEntity>,
         _include_data: bool,
     ) -> Option<ItemStack> {
         use steel_registry::blocks::properties::PropertyEnum as _;
@@ -352,7 +355,7 @@ impl BlockBehavior for TestBlock {
 
         let mut stack = ItemStack::new(steel_registry::REGISTRY.items.by_block(block));
         let mode = state.get_value(&BlockStateProperties::TEST_BLOCK_MODE);
-        let mut properties = std::collections::BTreeMap::new();
+        let mut properties = BTreeMap::new();
         properties.insert("mode".to_owned(), mode.as_str().to_owned());
         stack.set(BLOCK_STATE, BlockItemStateProperties::new(properties));
         Some(stack)

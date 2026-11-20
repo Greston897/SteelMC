@@ -13,6 +13,26 @@ use std::{
 use crate::chunk::chunk_ticket_storage::ChunkTicketStorage;
 use crate::chunk::full_chunk::{FullChunkBlockSetResult, FullChunkRef};
 use crate::chunk::gameplay_chunk_lookup_cache::GameplayChunkLookupCacheScope;
+use crate::entity::damage::DamageSource;
+use crate::entity::entities::EndCrystalEntity;
+use crate::entity::entities::EnderDragonEntity;
+use crate::entity::entities::mobs::bosses::DragonPhase::HoldingPattern;
+use crate::entity::entities::mobs::bosses::ender_dragon::phase_ticks::on_crystal_destroyed;
+use crate::entity::natural_spawner::tick_natural_spawning;
+use crate::entity::next_entity_id;
+use crate::entity::patrol_spawner::PatrolSpawner;
+use crate::entity::phantom_spawner::PhantomSpawner;
+use crate::scoreboard::Scoreboard;
+use crate::server::Server;
+use crate::server::boss_bars::BossBar;
+use crate::server::boss_bars::DRAGON_BAR_ID;
+use crate::server::boss_bars::dragon_bar_uuid;
+use crate::world::explosion::ExplosionInteraction::None;
+use crate::worldgen::feature::FeatureDecorationRunner;
+use crate::worldgen::feature::place_end_gateway_in_world;
+use crate::worldgen::feature::place_end_podium_in_world;
+use crate::worldgen::feature::rebuild_spike_crystal_in_world;
+use crate::worldgen::feature::rebuild_spike_in_world;
 use crate::chunk::light::{
     LightLayer, LightSectionEmptinessChange, MAX_LIGHT_LEVEL, has_different_light_properties,
 };
@@ -26,6 +46,14 @@ use crate::world::game_event::{
 };
 use crate::{chunk::chunk_map::ChunkMapGameTickTimings, world::weather::Weather};
 use steel_utils::saved_data::{SavedDataManager, names as saved_data_names};
+use steel_registry::feature::EndGatewayConfiguration;
+use steel_registry::feature::EndSpike;
+use steel_registry::vanilla_entities::ENDER_DRAGON;
+use steel_registry::vanilla_entities::END_CRYSTAL;
+use steel_registry::vanilla_entities::WANDERING_TRADER;
+use text_components::translation::TranslatedMessage;
+use tokio::fs::create_dir_all;
+use tokio::fs::write;
 
 use glam::{DVec3, IVec3};
 use sha2::{Digest, Sha256};
@@ -179,6 +207,7 @@ pub use tick_scheduler::ScheduledTick;
 
 #[cfg(test)]
 use level_effects::sound_is_within_range;
+use std::sync::OnceLock;
 #[cfg(test)]
 use portals::{
     closest_portal_candidate, nether_portal_creation_scan_origin, nether_portal_frame_offset_pos,
@@ -226,7 +255,7 @@ pub enum ConditionalBlockSetResult {
 #[derive(Clone)]
 pub struct WorldConfig {
     /// Server this world belongs to, filled once during startup.
-    pub server: std::sync::OnceLock<std::sync::Weak<crate::server::Server>>,
+    pub server: OnceLock<Weak<Server>>,
     /// Server-owned history; the caller retains it while the world runs.
     pub damage_history: Arc<DamageHistory>,
     /// Domain game-time authority, bound during construction.
@@ -271,9 +300,9 @@ pub struct World {
     /// Vanilla `WanderingTraderSpawner` schedule and the one-trader guard.
     wandering_traders: SyncMutex<wandering_trader_spawner::WanderingTraderSpawner>,
     /// Vanilla `PhantomSpawner` countdown for the next insomnia attempt.
-    phantoms: SyncMutex<crate::entity::phantom_spawner::PhantomSpawner>,
+    phantoms: SyncMutex<PhantomSpawner>,
     /// Vanilla `PatrolSpawner` countdown for the next pillager patrol attempt.
-    patrols: SyncMutex<crate::entity::patrol_spawner::PatrolSpawner>,
+    patrols: SyncMutex<PatrolSpawner>,
     /// Vanilla `EnderDragonFight` state for this world (only meaningful in the End).
     pub dragon_fight: dragon_fight::DragonFight,
     /// Spatial index for player proximity queries.
@@ -282,7 +311,7 @@ pub struct World {
     ///
     /// A `OnceLock` keeps the world constructible before the server exists while
     /// still letting world-local code reach server-owned systems.
-    pub server: std::sync::OnceLock<std::sync::Weak<crate::server::Server>>,
+    pub server: OnceLock<Weak<Server>>,
     /// Loaded world identifier (`domain:world`).
     pub key: Identifier,
     /// Vanilla dimension type for this loaded world.
@@ -536,11 +565,11 @@ impl World {
                 waypoints: waypoint::WaypointManager::new(),
                 raids,
                 wandering_traders: SyncMutex::new(wandering_traders),
-                phantoms: SyncMutex::new(crate::entity::phantom_spawner::PhantomSpawner::new()),
-                patrols: SyncMutex::new(crate::entity::patrol_spawner::PatrolSpawner::new()),
+                phantoms: SyncMutex::new(PhantomSpawner::new()),
+                patrols: SyncMutex::new(PatrolSpawner::new()),
                 dragon_fight: dragon_fight_state,
                 player_area_map: PlayerAreaMap::new(),
-                server: std::sync::OnceLock::new(),
+                server: OnceLock::new(),
                 key,
                 dimension_type,
                 game_time: level_data.game_time_handle(),
@@ -604,9 +633,9 @@ impl World {
         if let Some((path, content)) = prepared {
             let written = async {
                 if let Some(parent) = path.parent() {
-                    tokio::fs::create_dir_all(parent).await?;
+                    create_dir_all(parent).await?;
                 }
-                tokio::fs::write(&path, content).await
+                write(&path, content).await
             }
             .await;
             match written {
@@ -692,14 +721,14 @@ impl World {
     ///
     /// Worlds are constructed before the server (they are fields of it), so the
     /// link is filled once during startup; callers must tolerate `None` in tests.
-    pub fn attach_server(&self, server: &Arc<crate::server::Server>) {
+    pub fn attach_server(&self, server: &Arc<Server>) {
         let _ = self.server.set(Arc::downgrade(server));
     }
 
     /// Returns the owning server, if this world has been attached to one.
     #[must_use]
-    pub fn server(&self) -> Option<Arc<crate::server::Server>> {
-        self.server.get().and_then(std::sync::Weak::upgrade)
+    pub fn server(&self) -> Option<Arc<Server>> {
+        self.server.get().and_then(Weak::upgrade)
     }
 
     /// Returns the scoreboard for this world's domain, if a server is attached.
@@ -709,7 +738,7 @@ impl World {
     #[must_use]
     pub fn with_scoreboard<R>(
         &self,
-        f: impl FnOnce(&crate::scoreboard::Scoreboard) -> R,
+        f: impl FnOnce(&Scoreboard) -> R,
     ) -> Option<R> {
         let server = self.server()?;
         server.scoreboards.get(self.domain()).map(f)
@@ -743,7 +772,7 @@ impl World {
     pub fn on_end_crystal_destroyed_by(
         self: &Arc<Self>,
         _pos: BlockPos,
-        source: Option<&crate::entity::damage::DamageSource>,
+        source: Option<&DamageSource>,
     ) {
         if !self.is_end_dimension_type() {
             return;
@@ -767,12 +796,12 @@ impl World {
         if let Some(entity) = dragon_entity
             && let Some(dragon) = entity
                 .as_ref()
-                .downcast_ref::<crate::entity::entities::EnderDragonEntity>()
+                .downcast_ref::<EnderDragonEntity>()
         {
             let player = source
-                .and_then(crate::entity::damage::DamageSource::causing_entity)
+                .and_then(DamageSource::causing_entity)
                 .cloned();
-            crate::entity::entities::mobs::bosses::ender_dragon::phase_ticks::on_crystal_destroyed(
+            on_crystal_destroyed(
                 dragon,
                 player.as_ref(),
             );
@@ -818,7 +847,7 @@ impl World {
                 f64::from(anchor.z() + 1),
             );
             let found = self.get_entities_in_aabb_matching(&box_, |entity| {
-                entity.entity_type() == &steel_registry::vanilla_entities::END_CRYSTAL
+                entity.entity_type() == &END_CRYSTAL
             });
             if found.is_empty() {
                 return;
@@ -999,7 +1028,7 @@ impl World {
         // Vanilla `getDragons()` = `getEntities(ENDER_DRAGON, LivingEntity::isAlive)`,
         // so a dragon that is already dying does not count as still alive.
         let dragons = self.get_entities_in_aabb_matching(&self.arena_box(), |entity| {
-            entity.entity_type() == &steel_registry::vanilla_entities::ENDER_DRAGON
+            entity.entity_type() == &ENDER_DRAGON
                 && Entity::is_alive(entity)
         });
 
@@ -1039,7 +1068,7 @@ impl World {
         // Vanilla `getDragons()` filters on `LivingEntity::isAlive`, so a dying
         // dragon is not adopted.
         let dragons = self.get_entities_in_aabb_matching(&self.arena_box(), |entity| {
-            entity.entity_type() == &steel_registry::vanilla_entities::ENDER_DRAGON
+            entity.entity_type() == &ENDER_DRAGON
                 && Entity::is_alive(entity)
         });
 
@@ -1113,7 +1142,7 @@ impl World {
                 f64::from(position.z) + 1.5,
             );
             found.extend(self.get_entities_in_aabb_matching(&search, |entity| {
-                entity.entity_type() == &steel_registry::vanilla_entities::END_CRYSTAL
+                entity.entity_type() == &END_CRYSTAL
             }));
         }
         found
@@ -1122,11 +1151,11 @@ impl World {
     /// Calls `f` on the crystal behind `entity`, if it is one.
     fn with_crystal<R>(
         entity: &SharedEntity,
-        f: impl FnOnce(&crate::entity::entities::EndCrystalEntity) -> R,
+        f: impl FnOnce(&EndCrystalEntity) -> R,
     ) -> Option<R> {
         let crystal = entity
             .as_ref()
-            .downcast_ref::<crate::entity::entities::EndCrystalEntity>()?;
+            .downcast_ref::<EndCrystalEntity>()?;
         Some(f(crystal))
     }
 
@@ -1134,16 +1163,16 @@ impl World {
     /// crystal.
     fn reset_end_spike_crystals(self: &Arc<Self>) {
         let spikes =
-            crate::worldgen::feature::FeatureDecorationRunner::end_spikes_for_level(self.seed());
+            FeatureDecorationRunner::end_spikes_for_level(self.seed());
         for spike in spikes {
-            crate::worldgen::feature::rebuild_spike_crystal_in_world(self, &spike);
+            rebuild_spike_crystal_in_world(self, &spike);
         }
     }
 
     /// Vanilla `DragonRespawnStage.SUMMONING_PILLARS`'s per-spike rebuild.
-    fn rebuild_end_spike(self: &Arc<Self>, spike: &steel_registry::feature::EndSpike) {
-        crate::worldgen::feature::rebuild_spike_in_world(self, spike);
-        crate::worldgen::feature::rebuild_spike_crystal_in_world(self, spike);
+    fn rebuild_end_spike(self: &Arc<Self>, spike: &EndSpike) {
+        rebuild_spike_in_world(self, spike);
+        rebuild_spike_crystal_in_world(self, spike);
     }
 
     /// Vanilla `DragonRespawnStage.SUMMONING_DRAGON`'s crystal detonation.
@@ -1154,7 +1183,7 @@ impl World {
             let mut options = crate::world::explosion::ExplosionOptions::new(
                 position,
                 6.0,
-                crate::world::explosion::ExplosionInteraction::None,
+                None,
             );
             options.source = None;
             self.explode(options);
@@ -1172,16 +1201,16 @@ impl World {
         self.chunk_map.force_load(ChunkPos::new(0, 0));
 
         let position = DVec3::new(0.0, f64::from(dragon_fight::DRAGON_SPAWN_Y), 0.0);
-        let dragon = Arc::new(crate::entity::entities::EnderDragonEntity::new(
-            &steel_registry::vanilla_entities::ENDER_DRAGON,
-            crate::entity::next_entity_id(),
+        let dragon = Arc::new(EnderDragonEntity::new(
+            &ENDER_DRAGON,
+            next_entity_id(),
             position,
             Arc::downgrade(self),
         ));
 
         // Vanilla `createNewDragon`: start in the holding pattern and snap to the
         // spawn point with a random yaw, so two dragons never fly in lockstep.
-        dragon.set_phase(crate::entity::entities::mobs::bosses::DragonPhase::HoldingPattern);
+        dragon.set_phase(HoldingPattern);
         let yaw = rand::random::<f32>() * 360.0;
         Entity::snap_to(dragon.as_ref(), position, yaw, 0.0);
 
@@ -1208,7 +1237,7 @@ impl World {
         }
 
         let spikes =
-            crate::worldgen::feature::FeatureDecorationRunner::end_spikes_for_level(self.seed());
+            FeatureDecorationRunner::end_spikes_for_level(self.seed());
         let mut alive = 0;
         for spike in spikes {
             let radius = f64::from(spike.radius);
@@ -1222,7 +1251,7 @@ impl World {
             );
             alive += self
                 .get_entities_in_aabb_matching(&search, |entity| {
-                    entity.entity_type() == &steel_registry::vanilla_entities::END_CRYSTAL
+                    entity.entity_type() == &END_CRYSTAL
                 })
                 .len() as i32;
         }
@@ -1253,10 +1282,10 @@ impl World {
         let Some(server) = self.server() else {
             return;
         };
-        let bar = crate::server::boss_bars::BossBar {
-            uuid: crate::server::boss_bars::dragon_bar_uuid(),
+        let bar = BossBar {
+            uuid: dragon_bar_uuid(),
             name: text_components::TextComponent::translated(
-                text_components::translation::TranslatedMessage {
+                TranslatedMessage {
                     key: "entity.minecraft.ender_dragon".into(),
                     fallback: None,
                     args: None,
@@ -1269,7 +1298,7 @@ impl World {
             visible: self.dragon_fight.bar_visible(),
         };
         let previous = server.boss_bars.insert(
-            crate::server::boss_bars::DRAGON_BAR_ID.to_owned(),
+            DRAGON_BAR_ID.to_owned(),
             bar.clone(),
         );
         let Some(previous) = previous else {
@@ -1318,10 +1347,10 @@ impl World {
     fn spawn_end_gateway(self: &Arc<Self>, position: IVec3) {
         let pos = BlockPos::new(position.x, position.y, position.z);
         self.global_level_event(dragon_fight::EVENT_GATEWAY_SPAWN, pos, 0);
-        crate::worldgen::feature::place_end_gateway_in_world(
+        place_end_gateway_in_world(
             self,
             pos,
-            &steel_registry::feature::EndGatewayConfiguration {
+            &EndGatewayConfiguration {
                 exit: None,
                 exact: false,
             },
@@ -1335,7 +1364,7 @@ impl World {
         };
         let Some(bar) = server
             .boss_bars
-            .remove(crate::server::boss_bars::DRAGON_BAR_ID)
+            .remove(DRAGON_BAR_ID)
         else {
             return;
         };
@@ -1360,7 +1389,7 @@ impl World {
                 location.z(),
             )));
         }
-        crate::worldgen::feature::place_end_podium_in_world(self, location, activated);
+        place_end_podium_in_world(self, location, activated);
     }
 
     /// Vanilla `EnderDragonFight.hasActiveExitPortal` / `findExitPortal`, reduced
@@ -1550,7 +1579,7 @@ impl World {
         if runs_normally {
             // Vanilla `ServerChunkCache.tickChunks` → `NaturalSpawner`.
             let _span = tracing::trace_span!("natural_spawning").entered();
-            crate::entity::natural_spawner::tick_natural_spawning(self, tick_count as usize);
+            tick_natural_spawning(self, tick_count as usize);
         }
 
         if runs_normally {
@@ -1741,7 +1770,7 @@ impl World {
     #[must_use]
     pub fn has_natural_wandering_trader(&self) -> bool {
         World::entity_manager(self).any_accessible_entity(|entity| {
-            entity.entity_type() == &steel_registry::vanilla_entities::WANDERING_TRADER
+            entity.entity_type() == &WANDERING_TRADER
         })
     }
 }

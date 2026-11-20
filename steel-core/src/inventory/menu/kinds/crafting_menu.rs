@@ -19,6 +19,9 @@ use steel_registry::vanilla_menu_types;
 use steel_utils::BlockPos;
 use steel_utils::locks::IntoShared;
 use steel_utils::locks::Shared;
+use crate::player::recipe_placement::PlacementRequest;
+use crate::player::recipe_placement::apply_plan;
+use crate::player::recipe_placement::grid_produces;
 
 /// Builds the crafting table menu with a 3x3 grid.
 #[must_use]
@@ -132,11 +135,11 @@ impl MenuKind for CraftingKind {
         _behavior: &mut MenuBehavior,
         guard: &mut ContainerLockGuard,
         player: &Player,
-        request: crate::player::recipe_placement::PlacementRequest<'_>,
+        request: PlacementRequest<'_>,
     ) -> Option<PostPlaceAction> {
         let crafting = guard.get_typed::<CraftingContainer>(self.handler.crafting_id())?;
         let grid = crafting.items().to_vec();
-        let matches = crate::player::recipe_placement::grid_produces(crafting, request.recipe_key);
+        let matches = grid_produces(crafting, request.recipe_key);
         let inv_id = ContainerId::from_arc(&player.inventory);
         let inventory: Vec<ItemStack> = guard
             .get_typed::<PlayerInventory>(inv_id)?
@@ -162,7 +165,7 @@ impl MenuKind for CraftingKind {
                 }
             },
         );
-        Some(crate::player::recipe_placement::apply_plan(
+        Some(apply_plan(
             guard,
             player,
             plan,

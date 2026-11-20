@@ -29,9 +29,13 @@
 
 use std::cmp::Ordering;
 use std::f32::consts::{FRAC_PI_4, FRAC_PI_8, PI};
+use std::array::from_fn;
+use std::mem::take;
 
 use glam::DVec3;
 use steel_utils::BlockPos;
+use steel_math::trig::cos;
+use steel_math::trig::sin;
 
 use super::EnderDragonEntity;
 use super::flight_history::DragonFlightHistory;
@@ -40,6 +44,7 @@ use crate::entity::ai::node::Node;
 use crate::entity::ai::path::Path;
 use crate::entity::{Entity, WeakEntity};
 use crate::world::World;
+use crate::chunk::heightmap::HeightmapType::MotionBlockingNoLeaves;
 
 /// Vanilla `EnderDragonPhase` ids, in registry order.
 ///
@@ -444,7 +449,7 @@ impl DragonPhaseManager {
 
     /// Takes the entities queued by [`Self::parts_end`].
     pub fn drain_phase_discards(&mut self) -> Vec<WeakEntity> {
-        std::mem::take(&mut self.pending_discards)
+        take(&mut self.pending_discards)
     }
 
     /// Adopts the synced `DATA_PHASE` if it disagrees with the current phase.
@@ -459,8 +464,8 @@ impl DragonPhaseManager {
     /// Returns whether the dragon's wings are mid-beat, mirroring `isFlapping`.
     #[must_use]
     pub fn is_flapping(&self) -> bool {
-        let flap = steel_math::trig::cos(self.flap_time * (PI * 2.0));
-        let old_flap = steel_math::trig::cos(self.old_flap_time * (PI * 2.0));
+        let flap = cos(self.flap_time * (PI * 2.0));
+        let old_flap = cos(self.old_flap_time * (PI * 2.0));
         old_flap <= -0.3 && flap >= -0.3
     }
 
@@ -479,10 +484,10 @@ impl DragonPhaseManager {
     /// Records the arena waypoints once, from the world's terrain heights.
     pub fn ensure_nodes(&mut self, world: &World) -> &[DVec3; NODE_COUNT] {
         self.nodes.get_or_insert_with(|| {
-            std::array::from_fn(|index| {
+            from_fn(|index| {
                 let (x, z, y_adjustment) = node_polar_position(index);
                 let height = world.level_height_at(
-                    crate::chunk::heightmap::HeightmapType::MotionBlockingNoLeaves,
+                    MotionBlockingNoLeaves,
                     x,
                     z,
                 );
@@ -563,7 +568,7 @@ impl DragonPhaseManager {
         // state can address it like any other node.
         // `Node` is `Clone` but not `Copy`, so the arena is cloned into the slots.
         let mut positions: [Node; SEARCH_SLOTS] =
-            std::array::from_fn(|slot| match arena.get(slot) {
+            from_fn(|slot| match arena.get(slot) {
                 Some(node) => node.clone(),
                 None => Node::new(0, 0, 0),
             });
@@ -807,8 +812,8 @@ pub fn node_polar_position(index: usize) -> (i32, i32, i32) {
     let ring = |radius: f32, step: f32, offset: f32| {
         let angle = 2.0 * (-PI + step * (multiplier - offset));
         (
-            steel_math::fast_floor(f64::from(radius * steel_math::trig::cos(angle))),
-            steel_math::fast_floor(f64::from(radius * steel_math::trig::sin(angle))),
+            steel_math::fast_floor(f64::from(radius * cos(angle))),
+            steel_math::fast_floor(f64::from(radius * sin(angle))),
         )
     };
 
@@ -867,6 +872,7 @@ pub fn find_path(
 #[cfg(test)]
 mod tests {
     use super::*;
+use std::array::from_fn;
 
     #[test]
     fn phase_ids_are_vanilla_registry_order() {
@@ -1005,7 +1011,7 @@ mod tests {
         end: usize,
         final_node: Option<DVec3>,
     ) -> Option<Path> {
-        let positions: [Node; SEARCH_SLOTS] = std::array::from_fn(|slot| match nodes.get(slot) {
+        let positions: [Node; SEARCH_SLOTS] = from_fn(|slot| match nodes.get(slot) {
             Some(node) => node_from_position(*node),
             None => match final_node {
                 Some(position) => node_from_position(position),
@@ -1074,7 +1080,7 @@ mod tests {
     /// A cheap stand-in arena: a straight line, so every hop is unambiguously
     /// shorter and the search cannot tie on cost.
     fn line_nodes(step: f64) -> [DVec3; NODE_COUNT] {
-        std::array::from_fn(|index| DVec3::new(index as f64 * step, 80.0, 0.0))
+        from_fn(|index| DVec3::new(index as f64 * step, 80.0, 0.0))
     }
 
     #[test]

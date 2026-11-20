@@ -8,6 +8,8 @@
 
 use std::iter::empty;
 use std::sync::Weak;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering::Relaxed;
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
@@ -22,12 +24,19 @@ use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
 use steel_registry::{REGISTRY, sound_events, vanilla_attributes};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
+use steel_registry::vanilla_damage_type_tags::DamageTypeTag;
+use steel_registry::vanilla_items::IRON_INGOT;
+use steel_utils::types::InteractionHand;
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, MoveTowardsTargetGoal,
     NearestAttackableTargetGoal, RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::behavior::InteractionResult;
+use crate::behavior::InteractionResult::Pass;
+use crate::behavior::InteractionResult::SuccessServer;
+use crate::player::Player;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity,
@@ -46,7 +55,7 @@ pub struct IronGolemEntity {
     living_base: LivingEntityBase,
     mob_base: MobBase,
     entity_data: SyncMutex<IronGolemEntityData>,
-    player_created: std::sync::atomic::AtomicBool,
+    player_created: AtomicBool,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `IronGolemEntity`.
@@ -109,7 +118,7 @@ impl IronGolemEntity {
             living_base,
             mob_base,
             entity_data: SyncMutex::new(entity_data),
-            player_created: std::sync::atomic::AtomicBool::new(false),
+            player_created: AtomicBool::new(false),
         }
     }
 
@@ -117,13 +126,13 @@ impl IronGolemEntity {
     #[must_use]
     pub fn is_player_created(&self) -> bool {
         self.player_created
-            .load(std::sync::atomic::Ordering::Relaxed)
+            .load(Relaxed)
     }
 
     /// Marks this iron golem as player-created (`PlayerCreated` NBT tag).
     pub fn set_player_created(&self, player_created: bool) {
         self.player_created
-            .store(player_created, std::sync::atomic::Ordering::Relaxed);
+            .store(player_created, Relaxed);
     }
 
     fn update_dirty_mob_effect_entity_data(&self) {
@@ -255,7 +264,7 @@ impl LivingEntity for IronGolemEntity {
 
     /// Vanilla `IronGolem.causeFallDamage`: iron golems are immune to fall damage.
     fn is_invulnerable_to(&self, _world: &World, source: &DamageSource) -> bool {
-        source.is(&steel_registry::vanilla_damage_type_tags::DamageTypeTag::IS_FALL)
+        source.is(&DamageTypeTag::IS_FALL)
     }
 }
 
@@ -267,27 +276,27 @@ impl Mob for IronGolemEntity {
     /// Vanilla `IronGolem.mobInteract`: using an iron ingot repairs 25 health.
     fn mob_interact(
         &self,
-        player: &crate::player::Player,
-        hand: steel_utils::types::InteractionHand,
-    ) -> crate::behavior::InteractionResult {
+        player: &Player,
+        hand: InteractionHand,
+    ) -> InteractionResult {
         let item_stack = {
             let inventory = player.inventory.lock();
             let held = inventory.get_item_in_hand(hand);
             held.copy_with_count(held.count())
         };
-        if !item_stack.is(&steel_registry::vanilla_items::IRON_INGOT) {
-            return crate::behavior::InteractionResult::Pass;
+        if !item_stack.is(&IRON_INGOT) {
+            return Pass;
         }
         let before = self.get_health();
         self.heal(25.0);
         if (self.get_health() - before).abs() < f32::EPSILON {
-            return crate::behavior::InteractionResult::Pass;
+            return Pass;
         }
         self.play_sound(&sound_events::ENTITY_IRON_GOLEM_REPAIR, 1.0, 1.0);
         if !player.has_infinite_materials() {
             player.inventory.lock().shrink_item_in_hand(hand, 1);
         }
-        crate::behavior::InteractionResult::SuccessServer
+        SuccessServer
     }
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {

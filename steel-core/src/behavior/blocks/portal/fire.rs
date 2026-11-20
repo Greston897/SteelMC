@@ -18,8 +18,16 @@ use steel_registry::vanilla_dimension_types;
 use steel_utils::axis::Axis;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, Direction};
+use steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER;
+use steel_utils::types::Difficulty::Easy;
+use steel_utils::types::Difficulty::Hard;
+use steel_utils::types::Difficulty::Normal;
+use steel_utils::types::Difficulty::Peaceful;
 
 use crate::behavior::block::BlockBehavior;
+use crate::behavior::blocks::TntBlock;
+use crate::behavior::flammable::burn_odds;
+use crate::behavior::flammable::ignite_odds;
 
 const AGE: &IntProperty = &BlockStateProperties::AGE_15;
 use crate::behavior::context::BlockPlaceContext;
@@ -136,7 +144,7 @@ impl FireBlock {
         if state.try_get_value(&BlockStateProperties::WATERLOGGED) == Some(true) {
             return 0;
         }
-        i32::try_from(crate::behavior::flammable::ignite_odds(state.get_block())).unwrap_or(0)
+        i32::try_from(ignite_odds(state.get_block())).unwrap_or(0)
     }
 
     /// Vanilla `FireBlock.canBurn`: `getIgniteOdds(state) > 0`.
@@ -149,7 +157,7 @@ impl FireBlock {
         if state.try_get_value(&BlockStateProperties::WATERLOGGED) == Some(true) {
             return 0;
         }
-        i32::try_from(crate::behavior::flammable::burn_odds(state.get_block())).unwrap_or(0)
+        i32::try_from(burn_odds(state.get_block())).unwrap_or(0)
     }
 
     /// Vanilla `FireBlock.isNearRain`.
@@ -195,7 +203,7 @@ impl FireBlock {
         }
 
         if state.get_block() == &vanilla_blocks::TNT {
-            crate::behavior::blocks::TntBlock::prime(world, pos);
+            TntBlock::prime(world, pos);
         }
     }
 
@@ -221,7 +229,7 @@ impl FireBlock {
     /// than the configured radius.
     fn can_spread_fire_around(world: &Arc<World>, pos: BlockPos) -> bool {
         let radius = world
-            .get_game_rule(&steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER);
+            .get_game_rule(&FIRE_SPREAD_RADIUS_AROUND_PLAYER);
         if radius == -1 {
             return true;
         }
@@ -376,10 +384,10 @@ impl BlockBehavior for FireBlock {
 
         // Spread fire into the vanilla 3x6x3 neighborhood.
         let difficulty_bonus = match world.difficulty() {
-            steel_utils::types::Difficulty::Peaceful => 0,
-            steel_utils::types::Difficulty::Easy => 7,
-            steel_utils::types::Difficulty::Normal => 14,
-            steel_utils::types::Difficulty::Hard => 21,
+            Peaceful => 0,
+            Easy => 7,
+            Normal => 14,
+            Hard => 21,
         };
         for dx in -1..=1 {
             for dz in -1..=1 {

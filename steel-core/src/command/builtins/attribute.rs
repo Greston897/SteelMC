@@ -30,6 +30,7 @@ use steel_registry::RegistryExt as _;
 use steel_registry::attribute::AttributeRef;
 
 use crate::entity::attribute::{AttributeModifier, AttributeModifierOperation};
+use crate::entity::SharedEntity;
 
 const TARGET_ARGUMENT: &str = "target";
 const ATTRIBUTE_ARGUMENT: &str = "attribute";
@@ -127,7 +128,7 @@ fn format_value(value: f64, scale: Option<f64>) -> String {
 }
 
 /// The attribute's current total, including modifiers.
-fn total_value(entity: &crate::entity::SharedEntity, attribute: AttributeRef) -> Option<f64> {
+fn total_value(entity: &SharedEntity, attribute: AttributeRef) -> Option<f64> {
     let living = entity.as_living_entity()?;
     living.attributes().lock().get_value(attribute)
 }
@@ -300,7 +301,7 @@ fn remove_modifier(
     Ok(1)
 }
 
-fn base_value(entity: &crate::entity::SharedEntity, attribute: AttributeRef) -> Option<f64> {
+fn base_value(entity: &SharedEntity, attribute: AttributeRef) -> Option<f64> {
     let living = entity.as_living_entity()?;
     living.attributes().lock().get_base_value(attribute)
 }
@@ -313,6 +314,6 @@ fn missing_attribute(attribute: AttributeRef) -> CommandSyntaxError {
     ))
 }
 
-fn entity_display(entity: &crate::entity::SharedEntity) -> String {
+fn entity_display(entity: &SharedEntity) -> String {
     format!("{:?}", entity.id())
 }

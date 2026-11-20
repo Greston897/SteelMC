@@ -1424,6 +1424,7 @@ mod tests {
     use super::*;
     use std::{task::Poll, time::Duration as TestDuration};
     use tokio::time::sleep as test_sleep;
+use std::sync::mpsc::channel;
 
     use crate::behavior::init_behaviors;
     use crate::chunk::Chunk;
@@ -1443,9 +1444,9 @@ mod tests {
             })
             .build()
             .unwrap();
-        let (started_tx, started_rx) = std::sync::mpsc::channel();
-        let (release_tx, release_rx) = std::sync::mpsc::channel();
-        let (done_tx, done_rx) = std::sync::mpsc::channel();
+        let (started_tx, started_rx) = channel();
+        let (release_tx, release_rx) = channel();
+        let (done_tx, done_rx) = channel();
         let waiter = rayon_spawn(&pool, move || {
             started_tx.send(()).unwrap();
             release_rx.recv().unwrap();

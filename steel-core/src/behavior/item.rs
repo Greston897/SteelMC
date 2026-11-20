@@ -2,11 +2,13 @@
 
 use crate::player::player_inventory::Prediction;
 use std::sync::Arc;
+use crate::player::advancement::predicate::TriggerContext;
 
 use std::borrow::Cow;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::data_components::Consumable;
 use steel_registry::data_components::components::OminousBottleAmplifier;
+use steel_registry::vanilla_criteria_triggers::CONSUME_ITEM;
 use steel_registry::data_components::vanilla_components::{
     BLOCKS_ATTACKS, CONSUMABLE, FOOD, KINETIC_WEAPON, OMINOUS_BOTTLE_AMPLIFIER,
     SUSPICIOUS_STEW_EFFECTS, USE_REMAINDER,
@@ -493,8 +495,8 @@ pub(crate) fn finish_consuming_stack(
         // Vanilla `ConsumableComponent#finishConsumption` fires
         // `CriteriaTriggers.CONSUME_ITEM` with the consumed stack.
         player.trigger_advancement_with_context(
-            &steel_registry::vanilla_criteria_triggers::CONSUME_ITEM,
-            &crate::player::advancement::predicate::TriggerContext::item(&stack.item().key),
+            &CONSUME_ITEM,
+            &TriggerContext::item(&stack.item().key),
         );
     }
     if let Some(consumable) = stack.get(CONSUMABLE)

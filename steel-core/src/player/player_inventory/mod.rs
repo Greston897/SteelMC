@@ -5,6 +5,7 @@ use std::sync::Arc;
 use text_components::TextComponent;
 
 use crate::{inventory::menu::Menu, player::Player, world::World};
+use crate::inventory::lock::ContainerId;
 
 mod container;
 mod core;
@@ -184,7 +185,7 @@ mod tests;
 impl Player {
     /// Returns None while a menu callback temporarily owns the active menu.
     /// Rechecks must retry instead of treating that interval as a closed menu.
-    pub(crate) fn views_container(&self, id: crate::inventory::lock::ContainerId) -> Option<bool> {
+    pub(crate) fn views_container(&self, id: ContainerId) -> Option<bool> {
         let state = self.open_menu.lock();
         if state.dispatch.is_some() {
             return None;

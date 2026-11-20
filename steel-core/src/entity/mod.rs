@@ -13,6 +13,8 @@ use rustc_hash::FxHashSet;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_math::{trig, wrap_degrees};
+use steel_registry::vanilla_criteria_triggers::ENTER_BLOCK;
+use steel_registry::vanilla_criteria_triggers::STARTED_RIDING;
 use steel_protocol::packets::game::{
     AttributeSnapshot, CDamageEvent, CEntityEvent, CSwingAnimation, CTeleportEntity,
     EquipmentSlotItem, RelativeMovement, SoundSource,
@@ -72,6 +74,7 @@ use crate::chunk_saver::ChunkStorage;
 use crate::entity::attribute::{AttributeMap, AttributeModifier, AttributeModifierOperation};
 use crate::fluid::{LavaFluid, get_fluid_state, get_height};
 use crate::inventory::equipment::EquipmentSlot;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::physics::{
     COLLISION_EPSILON, CollisionWorld, EntityPhysicsState, MoveResult, MoverType,
     WorldCollisionProvider, move_entity as resolve_entity_movement,
@@ -552,8 +555,8 @@ fn apply_block_effect_segment(
                 // `story/enter_the_end`-style data packs observe block occupancy.
                 if let Some(player) = entity.as_player() {
                     player.trigger_advancement_with_context(
-                        &steel_registry::vanilla_criteria_triggers::ENTER_BLOCK,
-                        &crate::player::advancement::predicate::TriggerContext::block(
+                        &ENTER_BLOCK,
+                        &TriggerContext::block(
                             &state.get_block().key,
                             None,
                         ),
@@ -989,8 +992,8 @@ pub(crate) fn start_riding_entities(
     // which gates `adventure/ride_a_boat_with_a_goat` and friends.
     if let Some(player) = passenger.as_player() {
         player.trigger_advancement_with_context(
-            &steel_registry::vanilla_criteria_triggers::STARTED_RIDING,
-            &crate::player::advancement::predicate::TriggerContext::entity(
+            &STARTED_RIDING,
+            &TriggerContext::entity(
                 &entity_to_ride.entity_type().key,
             ),
         );

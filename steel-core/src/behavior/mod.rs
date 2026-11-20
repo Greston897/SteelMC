@@ -101,6 +101,7 @@ use steel_registry::vanilla_mob_effects;
 use steel_utils::BlockStateId;
 
 use crate::entity::ai::path::PathComputationType;
+use crate::block_entity::init_block_entities;
 use crate::entity::consume_effect::{
     ApplyEffectsBehavior, ClearAllEffectsBehavior, ConsumeEffectBehavior, PlaySoundBehavior,
     RemoveEffectsBehavior, TeleportRandomlyBehavior,
@@ -218,7 +219,7 @@ pub static ITEM_BEHAVIORS: ItemBehaviorLock = ItemBehaviorLock(OnceLock::new());
 ///
 /// This should be called after the main registry is frozen. Repeated calls are a no-op.
 pub fn init_behaviors() {
-    crate::block_entity::init_block_entities();
+    init_block_entities();
     BLOCK_BEHAVIORS.0.get_or_init(|| {
         let mut block_behaviors = BlockBehaviorRegistry::new();
         register_block_behaviors(&mut block_behaviors);

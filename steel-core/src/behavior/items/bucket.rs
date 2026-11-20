@@ -1,6 +1,7 @@
 //! Bucket item behavior implementation.
 use crate::behavior::context::InteractionResult;
 use crate::behavior::item_utils::create_filled_result;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::behavior::{
     BLOCK_BEHAVIORS, BlockStateBehaviorExt, FLUID_BEHAVIORS, ItemBehavior, UseItemContext,
 };
@@ -21,6 +22,7 @@ use steel_registry::vanilla_game_events;
 use steel_registry::vanilla_items;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
+use steel_registry::vanilla_criteria_triggers::FILLED_BUCKET;
 
 use crate::world::game_event::GameEventContext;
 
@@ -122,8 +124,8 @@ fn use_empty_bucket(context: &mut UseItemContext) -> InteractionResult {
     // item, which `husbandry/tactical_fishing` and `husbandry/obtain_netherite_hoe`
     // chain off.
     context.player.trigger_advancement_with_context(
-        &steel_registry::vanilla_criteria_triggers::FILLED_BUCKET,
-        &crate::player::advancement::predicate::TriggerContext::item(
+        &FILLED_BUCKET,
+        &TriggerContext::item(
             &result.filled_bucket.item().key,
         ),
     );

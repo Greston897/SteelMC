@@ -12,6 +12,7 @@ use crate::behavior::blocks::vegetation::bonemealable::{BonemealAction, Bonemeal
 use crate::behavior::context::BlockPlaceContext;
 use crate::world::{LevelReader, ScheduledTickAccess, World};
 use std::sync::Arc;
+use crate::behavior::blocks::vegetation::bonemealable::has_spreadable_neighbor_pos;
 
 /// Behavior for grass blocks.
 #[block_behavior]
@@ -72,7 +73,7 @@ impl Bonemealable for GrassBlock {
         if world.get_block_state(pos.above()).get_light_dampening() != 0 {
             return false;
         }
-        crate::behavior::blocks::vegetation::bonemealable::has_spreadable_neighbor_pos(
+        has_spreadable_neighbor_pos(
             world,
             pos,
             self.block.default_state(),

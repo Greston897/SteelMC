@@ -232,10 +232,12 @@ mod tests {
     use crate::behavior::{ITEM_BEHAVIORS, init_behaviors};
     use crate::test_support::{TestPlayerBuilder, fresh_test_world};
     use steel_registry::vanilla_items;
+use steel_registry::vanilla_attributes::KNOCKBACK_RESISTANCE;
+use crate::bootstrap::init_globals;
 
     #[test]
     fn registered_mace_smash_threshold_and_fall_flying_gate_damage_source() {
-        crate::bootstrap::init_globals();
+        init_globals();
         init_behaviors();
         let fixture = fresh_test_world("mace_smash_source");
         let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
@@ -260,7 +262,7 @@ mod tests {
 
     #[test]
     fn registered_mace_damage_uses_all_three_vanilla_fall_distance_segments() {
-        crate::bootstrap::init_globals();
+        init_globals();
         init_behaviors();
         let fixture = fresh_test_world("mace_smash_bonus");
         let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
@@ -284,7 +286,7 @@ mod tests {
 
     #[test]
     fn registered_mace_hit_preserves_horizontal_motion_and_resets_fall_after_hit() {
-        crate::bootstrap::init_globals();
+        init_globals();
         init_behaviors();
         let fixture = fresh_test_world("mace_smash_motion");
         let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
@@ -314,12 +316,12 @@ mod tests {
 
     #[test]
     fn smash_knockback_uses_heavy_threshold_radius_and_resistance() {
-        crate::bootstrap::init_globals();
+        init_globals();
         let fixture = fresh_test_world("mace_radial_knockback");
         let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
         let nearby = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Nearby", 2).build();
         nearby.attributes().lock().set_base_value(
-            steel_registry::vanilla_attributes::KNOCKBACK_RESISTANCE,
+            KNOCKBACK_RESISTANCE,
             0.5,
         );
         for (fall, distance, expected) in [
@@ -338,7 +340,7 @@ mod tests {
             );
         }
         nearby.attributes().lock().set_base_value(
-            steel_registry::vanilla_attributes::KNOCKBACK_RESISTANCE,
+            KNOCKBACK_RESISTANCE,
             1.0,
         );
         assert_eq!(

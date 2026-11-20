@@ -7,6 +7,7 @@ use steel_utils::{ChunkPos, WorldAabb};
 
 use super::EntityMoveError;
 use crate::world::World;
+use crate::world::raid::is_raider_type;
 
 /// Reasons an entity can be removed from the world.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -283,7 +284,7 @@ impl EntityLevelCallback for EntityChunkCallback {
             if matches!(
                 reason,
                 RemovalReason::Discarded | RemovalReason::ChangedWorld
-            ) && crate::world::raid::is_raider_type(entity.entity_type())
+            ) && is_raider_type(entity.entity_type())
             {
                 world.raids.raider_left_world(
                     entity.uuid(),

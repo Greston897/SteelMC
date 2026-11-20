@@ -1,12 +1,16 @@
 //! Entity summoning command.
 
 use std::sync::Arc;
+use std::io::Cursor;
 
 use glam::DVec3;
 use simdnbt::owned::NbtCompound;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_utils::{BlockPos, Identifier, translations, types::Difficulty};
 use text_components::{TextComponent, translation::Translation};
+use simdnbt::borrow::read_compound;
+use steel_registry::vanilla_criteria_triggers::SUMMONED_ENTITY;
+use crate::player::advancement::predicate::TriggerContext;
 
 use super::super::{
     brigadier::{CommandNodeBuilder, CommandSyntaxError},
@@ -64,8 +68,8 @@ fn summon_entity_with_nbt(
     // compound once and hand the borrowed view to the entity.
     let mut bytes: Vec<u8> = Vec::new();
     nbt.write(&mut bytes);
-    let mut cursor = std::io::Cursor::new(bytes.as_slice());
-    let borrowed = simdnbt::borrow::read_compound(&mut cursor)
+    let mut cursor = Cursor::new(bytes.as_slice());
+    let borrowed = read_compound(&mut cursor)
         .map_err(|_| command_failed(&translations::COMMANDS_SUMMON_FAILED))?;
     entity.apply_spawn_data((&borrowed).into());
     let message = translations::COMMANDS_SUMMON_SUCCESS
@@ -124,8 +128,8 @@ pub(super) fn create_entity(
             // Vanilla `SummonCommand` fires `summoned_entity` on the source player.
             if let Some(player) = context.source().player() {
                 player.trigger_advancement_with_context(
-                    &steel_registry::vanilla_criteria_triggers::SUMMONED_ENTITY,
-                    &crate::player::advancement::predicate::TriggerContext::entity(
+                    &SUMMONED_ENTITY,
+                    &TriggerContext::entity(
                         &entity_type.key,
                     ),
                 );

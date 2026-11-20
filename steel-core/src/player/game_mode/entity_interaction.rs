@@ -14,6 +14,13 @@ use crate::player::food_data::food_constants;
 use std::ops::Add;
 use steel_math::trig;
 use steel_registry::particle_type::ParticleData;
+use steel_registry::vanilla_criteria_triggers::PLAYER_INTERACTED_WITH_ENTITY;
+use steel_registry::vanilla_criteria_triggers::SPEAR_MOBS;
+use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
+use steel_registry::vanilla_mob_effects::BLINDNESS;
+use crate::entity::EntityReference;
+use crate::entity::ProjectileDeflection::AimDeflect;
+use crate::player::advancement::predicate::TriggerContext;
 use steel_registry::{
     sound_events, vanilla_custom_stats, vanilla_game_rules, vanilla_item_tags,
     vanilla_particle_types,
@@ -455,13 +462,13 @@ impl Player {
             use steel_registry::TaggedRegistryExt as _;
             steel_registry::REGISTRY.entity_types.is_in_tag(
                 entity.entity_type(),
-                &steel_registry::vanilla_entity_type_tags::EntityTypeTag::REDIRECTABLE_PROJECTILE,
+                &EntityTypeTag::REDIRECTABLE_PROJECTILE,
             )
         } && let Some(projectile) = entity.as_projectile()
             && projectile.deflect(
-                crate::entity::ProjectileDeflection::AimDeflect,
+                AimDeflect,
                 Some(self.as_ref()),
-                Some(crate::entity::EntityReference::from_uuid(self.uuid())),
+                Some(EntityReference::from_uuid(self.uuid())),
                 true,
             )
         {
@@ -485,7 +492,7 @@ impl Player {
         // not climbing/liquid, no passenger, and not sprinting.
         let critical = full_strength_attack
             && entity.is_living_entity()
-            && !self.has_mob_effect(steel_registry::vanilla_mob_effects::BLINDNESS)
+            && !self.has_mob_effect(BLINDNESS)
             && self.fall_distance() > 0.0
             && !self.on_ground()
             && !self.on_climbable()
@@ -540,8 +547,8 @@ impl Player {
                 .has_tag(&vanilla_item_tags::ItemTag::SPEARS)
             {
                 self.trigger_advancement_with_context(
-                    &steel_registry::vanilla_criteria_triggers::SPEAR_MOBS,
-                    &crate::player::advancement::predicate::TriggerContext::entity(
+                    &SPEAR_MOBS,
+                    &TriggerContext::entity(
                         &entity.entity_type().key,
                     ),
                 );
@@ -889,10 +896,10 @@ impl Player {
         // for a successful interaction, carrying both the entity and the held item.
         if result.consumes_action() {
             let context =
-                crate::player::advancement::predicate::TriggerContext::entity(&target_type)
+                TriggerContext::entity(&target_type)
                     .with_item(&hand_item);
             self.trigger_advancement_with_context(
-                &steel_registry::vanilla_criteria_triggers::PLAYER_INTERACTED_WITH_ENTITY,
+                &PLAYER_INTERACTED_WITH_ENTITY,
                 &context,
             );
         }

@@ -4,6 +4,9 @@ use crate::bootstrap::init_globals;
 use crate::test_support::{TestWorld, fresh_test_world, insert_ready_full_chunk, tick_test_world};
 use steel_registry::vanilla_blocks;
 use steel_utils::ChunkPos;
+use steel_registry::vanilla_game_rules::TNT_EXPLODES;
+use crate::chunk::chunk_holder::TickingReadiness::EntityTicking;
+use crate::chunk::chunk_ticket_manager::ChunkTicketLevel;
 
 const SOURCE: BlockPos = BlockPos::new(8, 64, 8);
 const TARGET: BlockPos = BlockPos::new(9, 64, 8);
@@ -294,10 +297,10 @@ fn powered_dispenser_initializes_firework_lifetime_source_and_straight_angled_fl
         let chunk_pos = ChunkPos::from_block_pos(SOURCE);
         let holder = insert_ready_full_chunk(world, chunk_pos);
         holder.set_simulation_level(Some(
-            crate::chunk::chunk_ticket_manager::ChunkTicketLevel::ENTITY_TICKING_CHUNK,
+            ChunkTicketLevel::ENTITY_TICKING_CHUNK,
         ));
         holder.transition_ticking_readiness(
-            crate::chunk::chunk_holder::TickingReadiness::EntityTicking,
+            EntityTicking,
         );
         world.update_entity_chunk_visibility(chunk_pos, holder.entity_visibility());
         world.chunk_map.rebuild_ticking_chunk_snapshot();
@@ -558,11 +561,18 @@ fn dispenser_arrow_uses_the_default_vanilla_launch_config() {
 
     let velocity = arrow.velocity();
     let speed = velocity.length();
+    // Vanilla `Projectile.getMovementToShoot` adds a triangular deviation of
+    // `0.0172275 * uncertainty` to the normalized facing direction, so the
+    // launch speed and direction stay inside a known envelope around the
+    // default power instead of hitting an exact value.
+    let deviation = 0.0172275_f64 * 6.0_f64;
+    let lowest = 1.1 * (1.0 - deviation);
+    let highest = 1.1 * ((1.0 + deviation) * (1.0 + deviation) + 2.0 * deviation * deviation).sqrt();
     assert!(
-        (speed - 1.1).abs() < 0.05,
+        speed >= lowest && speed <= highest,
         "the arrow is shot with the default power of 1.1: {velocity:?}"
     );
-    assert!(velocity.x > 1.0, "the arrow flies east: {velocity:?}");
+    assert!(velocity.x >= lowest, "the arrow flies east: {velocity:?}");
 
     let item = arrow.pickup_item();
     assert_eq!(item.item(), &*vanilla_items::ARROW);
@@ -634,12 +644,14 @@ fn dispenser_flint_and_steel_keeps_the_tnt_when_priming_is_rejected() {
         vanilla_blocks::TNT.default_state(),
         UpdateFlags::UPDATE_ALL,
     );
-    world.set_game_rule(&steel_registry::vanilla_game_rules::TNT_EXPLODES, false);
+    world.set_game_rule(&TNT_EXPLODES, false);
 
     assert!(!dispense_from(world, SOURCE, world.get_block_state(SOURCE)));
     assert!(
         !world.get_block_state(TARGET).is_air(),
         "a rejected TNT prime keeps the block"
     );
-    assert_eq!(container.lock().get_item(0).get(DAMAGE), None);
+    // Vanilla only damages the tool when the behavior succeeded, so the stack
+    // keeps the `minecraft:damage` value of the vanilla item prototype.
+    assert_eq!(container.lock().get_item(0).get(DAMAGE), Some(&0));
 }

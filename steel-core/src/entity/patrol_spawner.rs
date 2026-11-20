@@ -22,6 +22,7 @@ use steel_registry::vanilla_entities;
 use steel_registry::vanilla_game_rules;
 use steel_utils::types::Difficulty;
 use steel_utils::{BlockPos, Identifier};
+use steel_utils::types::GameType::Spectator;
 
 use crate::chunk::heightmap::HeightmapType;
 use crate::chunk::light::LightLayer;
@@ -32,6 +33,8 @@ use crate::player::Player;
 use crate::poi::OccupationStatus;
 use crate::world::World;
 use steel_registry::RegistryExt as _;
+use crate::entity::SharedEntity;
+use crate::world::raid::ominous_banner;
 
 /// Vanilla `PatrolSpawner` first delay window in ticks.
 const FIRST_DELAY: i32 = 12_000;
@@ -115,7 +118,7 @@ fn next_delay() -> i32 {
 /// Vanilla `PatrolSpawner` player filter: alive, not a spectator, enough play
 /// time, and not inside a village.
 fn patrol_candidate(player: &Player) -> bool {
-    if player.game_mode() == steel_utils::types::GameType::Spectator || player.is_dead_or_dying() {
+    if player.game_mode() == Spectator || player.is_dead_or_dying() {
         return false;
     }
     // Vanilla gates on `canPillagerPatrolSpawn`: the world must have been
@@ -213,7 +216,7 @@ fn monster_spawn_allowed(world: &Arc<World>, pos: BlockPos) -> bool {
 }
 
 /// Spawns one pillager at `pos`, or `None` when the spawn was refused.
-fn spawn_pillager(world: &Arc<World>, pos: BlockPos) -> Option<crate::entity::SharedEntity> {
+fn spawn_pillager(world: &Arc<World>, pos: BlockPos) -> Option<SharedEntity> {
     let request = EntitySpawnRequest {
         entity_type: &vanilla_entities::PILLAGER,
         placement: EntitySpawnPlacement::Block {
@@ -236,7 +239,7 @@ fn spawn_pillager(world: &Arc<World>, pos: BlockPos) -> Option<crate::entity::Sh
 /// Steel has no `PatrolLeader` entity flag yet (the field is client-visible
 /// metadata, not behaviour the server reads), so the banner is what distinguishes
 /// the captain today; the flag is the remaining gap.
-fn mark_captain(entity: &crate::entity::SharedEntity) {
+fn mark_captain(entity: &SharedEntity) {
     // `with_equipment_slot_mut` is a `LivingEntity` method, so reach it through
     // the living view rather than the bare entity handle.
     let Some(living) = entity.as_living_entity() else {
@@ -244,7 +247,7 @@ fn mark_captain(entity: &crate::entity::SharedEntity) {
     };
     living.with_equipment_slot_mut(EquipmentSlot::Head, &mut |head| {
         if head.is_empty() {
-            *head = crate::world::raid::ominous_banner();
+            *head = ominous_banner();
         }
     });
 }

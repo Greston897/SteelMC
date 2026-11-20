@@ -20,12 +20,22 @@
 //! lock discipline Steel needs.
 
 use std::sync::Arc;
+use std::cell::Cell;
+use std::sync::Weak;
 
 use glam::DVec3;
 use steel_utils::BlockPos;
+use steel_math::trig::atan2;
+use steel_math::trig::cos;
+use steel_math::trig::sin;
+use steel_registry::vanilla_entities::WIND_CHARGE;
 
 use super::EnderDragonEntity;
 use super::part::{DRAGON_PART_HEAD, DRAGON_PART_HEAD_HEIGHT};
+use crate::chunk::heightmap::HeightmapType::MotionBlocking;
+use crate::entity::LivingEntity::has_line_of_sight;
+use crate::entity::SharedEntity;
+use crate::player::Player;
 use super::phases::{
     DragonPhase, DragonPhaseManager, find_closest_node_with_crystals, find_path, wrap_degrees,
 };
@@ -92,11 +102,11 @@ pub struct PhaseContext<'a> {
     /// Vanilla `verticalCollision`.
     pub vertical_collision: bool,
     /// The player the sitting-scanning phase found this tick, if any.
-    pub scanned_player: Option<Arc<crate::player::Player>>,
+    pub scanned_player: Option<Arc<Player>>,
     /// The player the sitting-scanning phase would charge at, if any.
-    pub charge_player: Option<Arc<crate::player::Player>>,
+    pub charge_player: Option<Arc<Player>>,
     /// The arena player the holding pattern and landing approach consider.
-    pub arena_player: Option<Arc<crate::player::Player>>,
+    pub arena_player: Option<Arc<Player>>,
     /// Vanilla `dragon.getRandom().nextFloat()` for this step.
     pub random: f32,
     /// Vanilla `dragon.getRandom().nextInt(8) == 0`.
@@ -109,7 +119,7 @@ pub struct PhaseContext<'a> {
     ///
     /// Visible to the parent module because the AI step builds the context there;
     /// nothing outside the dragon touches it.
-    pub(crate) random_state: std::cell::Cell<u64>,
+    pub(crate) random_state: Cell<u64>,
 }
 
 /// Vanilla `DragonHoldingPatternPhase.NEW_TARGET_TARGETING`: combat targeting
@@ -129,9 +139,9 @@ fn nearest_player_to(
     world: &World,
     conditions: &TargetingConditions,
     point: DVec3,
-) -> Option<Arc<crate::player::Player>> {
+) -> Option<Arc<Player>> {
     let targeter: &dyn LivingEntity = dragon;
-    let mut best: Option<(Arc<crate::player::Player>, f64)> = None;
+    let mut best: Option<(Arc<Player>, f64)> = None;
     world.players.iter_players(|_, player| {
         let candidate: &dyn LivingEntity = player.as_ref();
         if conditions.test(world, Some(targeter), candidate) {
@@ -157,7 +167,7 @@ pub fn arena_player(
     dragon: &EnderDragonEntity,
     world: &World,
     podium: BlockPos,
-) -> Option<Arc<crate::player::Player>> {
+) -> Option<Arc<Player>> {
     nearest_player_to(
         dragon,
         world,
@@ -177,7 +187,7 @@ pub fn scanning_player(
     dragon: &EnderDragonEntity,
     world: &World,
     position: DVec3,
-) -> Option<Arc<crate::player::Player>> {
+) -> Option<Arc<Player>> {
     let dragon_y = position.y;
     let conditions = TargetingConditions::for_combat()
         .range(SITTING_ATTACK_VIEW_RANGE)
@@ -194,7 +204,7 @@ pub fn charging_player(
     dragon: &EnderDragonEntity,
     world: &World,
     position: DVec3,
-) -> Option<Arc<crate::player::Player>> {
+) -> Option<Arc<Player>> {
     let conditions = TargetingConditions::for_combat().range(SITTING_CHARGE_VIEW_RANGE);
     nearest_player_to(dragon, world, &conditions, position)
 }
@@ -220,7 +230,7 @@ pub fn sitting_on_hurt(dragon: &EnderDragonEntity, source: &DamageSource, damage
     // so arrows, spectral arrows and thrown tridents all count.
     let entity_type = direct.entity_type();
     let is_arrow_or_charge = entity_type.is_abstract_arrow
-        || entity_type == &steel_registry::vanilla_entities::WIND_CHARGE;
+        || entity_type == &WIND_CHARGE;
 
     if !is_arrow_or_charge {
         return damage;
@@ -258,10 +268,10 @@ impl PhaseContext<'_> {
         };
         let pitch_rad = f64::from(pitch.to_radians());
         let yaw_rad = f64::from(-self.yaw.to_radians());
-        let yaw_cos = steel_math::trig::cos(yaw_rad);
-        let yaw_sin = steel_math::trig::sin(yaw_rad);
-        let pitch_cos = steel_math::trig::cos(pitch_rad);
-        let pitch_sin = steel_math::trig::sin(pitch_rad);
+        let yaw_cos = cos(yaw_rad);
+        let yaw_sin = sin(yaw_rad);
+        let pitch_cos = cos(pitch_rad);
+        let pitch_sin = sin(pitch_rad);
         DVec3::new(
             f64::from(yaw_sin * pitch_cos),
             f64::from(-pitch_sin),
@@ -275,9 +285,9 @@ impl PhaseContext<'_> {
     pub fn facing(&self) -> DVec3 {
         let yaw = f64::from(self.yaw.to_radians());
         DVec3::new(
-            f64::from(steel_math::trig::sin(yaw)),
+            f64::from(sin(yaw)),
             0.0,
-            -f64::from(steel_math::trig::cos(yaw)),
+            -f64::from(cos(yaw)),
         )
         .normalize_or_zero()
     }
@@ -397,7 +407,7 @@ fn find_new_holding_target(manager: &mut DragonPhaseManager, ctx: &PhaseContext<
             if random_below(ctx, dist_sqr as i32 + 2) == 0
                 || random_below(ctx, ctx.alive_crystals + 2) == 0
             {
-                strafe_player(manager, ctx, &(player as crate::entity::SharedEntity));
+                strafe_player(manager, ctx, &(player as SharedEntity));
                 return;
             }
         }
@@ -417,7 +427,7 @@ fn find_new_holding_target(manager: &mut DragonPhaseManager, ctx: &PhaseContext<
 fn strafe_player(
     manager: &mut DragonPhaseManager,
     ctx: &PhaseContext<'_>,
-    player: &crate::entity::SharedEntity,
+    player: &SharedEntity,
 ) {
     manager.set_phase(DragonPhase::StrafePlayer);
     set_strafe_target(manager, ctx, player);
@@ -427,7 +437,7 @@ fn strafe_player(
 fn set_strafe_target(
     manager: &mut DragonPhaseManager,
     ctx: &PhaseContext<'_>,
-    target: &crate::entity::SharedEntity,
+    target: &SharedEntity,
 ) {
     let target_position = Entity::position(target.as_ref());
     manager.state_for(DragonPhase::StrafePlayer).attack_target = Some(Arc::downgrade(target));
@@ -473,7 +483,7 @@ fn tick_strafe_player(
         .current_state()
         .attack_target
         .as_ref()
-        .and_then(std::sync::Weak::upgrade)
+        .and_then(Weak::upgrade)
     else {
         // Vanilla logs the missing target and falls back to the holding pattern.
         manager.set_phase(DragonPhase::HoldingPattern);
@@ -513,7 +523,7 @@ fn tick_strafe_player(
         decay_fireball_charge(manager);
         return;
     }
-    if !crate::entity::LivingEntity::has_line_of_sight(ctx.dragon, target.as_ref()) {
+    if !has_line_of_sight(ctx.dragon, target.as_ref()) {
         decay_fireball_charge(manager);
         return;
     }
@@ -879,7 +889,7 @@ fn tick_sitting_scanning(
                 .unwrap_or(ctx.position);
             let x_dist = target_position.x - head.x;
             let z_dist = target_position.z - head.z;
-            let target_yaw = 180.0 - steel_math::trig::atan2(x_dist, z_dist) * 57.295_776;
+            let target_yaw = 180.0 - atan2(x_dist, z_dist) * 57.295_776;
             let y_rot_delta =
                 wrap_degrees((target_yaw - f64::from(ctx.yaw)) as f32).clamp(-100.0, 100.0);
 
@@ -969,7 +979,7 @@ fn tick_dying(
     if manager.current_state().target_location.is_none() {
         // Vanilla uses `MOTION_BLOCKING` (leaves included) for the death dive.
         let egg = ctx.world.heightmap_pos(
-            crate::chunk::heightmap::HeightmapType::MotionBlocking,
+            MotionBlocking,
             ctx.podium_location,
         );
         manager.current_state_mut().target_location = Some(DVec3::new(
@@ -1037,7 +1047,7 @@ fn random_below(ctx: &PhaseContext<'_>, bound: i32) -> i32 {
 /// untouched.
 pub fn on_crystal_destroyed(
     dragon: &EnderDragonEntity,
-    player: Option<&crate::entity::SharedEntity>,
+    player: Option<&SharedEntity>,
 ) {
     // Vanilla `if (this.isDeadOrDying()) return;` -- a dying dragon ignores the
     // crystal, its phase is already `Dying` and must not be replaced.
@@ -1062,6 +1072,8 @@ pub fn on_crystal_destroyed(
 #[cfg(test)]
 mod tests {
     use super::*;
+use steel_math::trig::cos;
+use steel_math::trig::sin;
 
     #[test]
     fn the_podium_distance_is_the_largest_axis_delta() {
@@ -1112,9 +1124,9 @@ mod tests {
                 };
                 let yaw_rad = f64::from(-yaw.to_radians());
                 let vector = DVec3::new(
-                    f64::from(steel_math::trig::sin(yaw_rad) * steel_math::trig::cos(pitch_rad)),
-                    f64::from(-steel_math::trig::sin(pitch_rad)),
-                    f64::from(steel_math::trig::cos(yaw_rad) * steel_math::trig::cos(pitch_rad)),
+                    f64::from(sin(yaw_rad) * cos(pitch_rad)),
+                    f64::from(-sin(pitch_rad)),
+                    f64::from(cos(yaw_rad) * cos(pitch_rad)),
                 )
                 .normalize_or_zero();
                 assert!((vector.length() - 1.0).abs() < 1.0e-6, "{phase:?} {yaw}");

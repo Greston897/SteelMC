@@ -3,6 +3,8 @@
 use crate::player::player_inventory::Prediction;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::item::BlockHitResult;
+use steel_utils::types::InteractionHand;
+use crate::behavior::InventoryAccess;
 
 use crate::behavior::UseItemContext;
 use crate::inventory::lock::ContainerId;
@@ -45,8 +47,8 @@ pub(crate) fn create_filled_result(
 /// The same filled-result transaction for block interactions such as cauldrons.
 pub(crate) fn create_filled_result_for_hand(
     player: &Player,
-    inventory: &crate::behavior::InventoryAccess,
-    hand: steel_utils::types::InteractionHand,
+    inventory: &InventoryAccess,
+    hand: InteractionHand,
     result_stack: ItemStack,
     limit_creative_stack_size: bool,
 ) {

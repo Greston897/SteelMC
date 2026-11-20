@@ -4,6 +4,7 @@
 //! per shelf compartment, plus a `powered` flag mirrored from the block state.
 
 use std::sync::{Arc, Weak};
+use std::mem::replace;
 
 use simdnbt::ToNbtTag;
 use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
@@ -72,7 +73,7 @@ impl BlockEntity for ShelfBlockEntity {
     fn pre_remove_side_effects(&self, pos: BlockPos, _state: BlockStateId) {
         let items = {
             let mut container = self.container.lock();
-            std::mem::replace(&mut container.items, vec![ItemStack::empty(); SHELF_SLOTS])
+            replace(&mut container.items, vec![ItemStack::empty(); SHELF_SLOTS])
         };
         let Some(world) = self.get_level() else {
             return;

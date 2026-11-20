@@ -449,7 +449,7 @@ impl Sections {
     /// happen for a `Vec` writer.
     #[must_use]
     pub fn encode_biomes(&self) -> Vec<u8> {
-        let mut cursor = std::io::Cursor::new(Vec::new());
+        let mut cursor = Cursor::new(Vec::new());
         for section in &self.sections {
             section
                 .read()

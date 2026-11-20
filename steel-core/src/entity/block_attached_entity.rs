@@ -18,6 +18,7 @@ use steel_registry::vanilla_game_events;
 use steel_registry::vanilla_game_rules::MOB_GRIEFING;
 use steel_utils::BlockPos;
 use steel_utils::locks::SyncMutex;
+use crate::entity::Explosion;
 
 pub const VALID_READ_DISTANCE_SQR: f64 = 16.0 * 16.0;
 
@@ -239,7 +240,7 @@ pub trait BlockAttachedEntity: Entity {
     )]
     fn ignore_explosion_block_attached_entity(
         &self,
-        _explosion: &dyn crate::entity::Explosion,
+        _explosion: &dyn Explosion,
     ) -> bool {
         true
     }

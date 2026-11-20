@@ -19,6 +19,7 @@ use crate::entity::projectile::ThrowableItemProjectile;
 use crate::entity::{LivingEntity, ProjectileHit, RemovalReason, SharedEntity};
 use crate::world::ClipHitResult;
 use crate::world::World;
+use crate::entity::entities::AxolotlEntity;
 
 /// Squared distance within which a splash reaches an entity.
 pub const SPLASH_RANGE_SQ: f64 = 16.0;
@@ -124,7 +125,7 @@ pub trait AbstractThrownPotion: ThrowableItemProjectile {
                 && potion_pos.distance_squared(entity.position()) < SPLASH_RANGE_SQ
                 && let Some(axolotl) = entity
                     .as_entity_event_source()
-                    .downcast_ref::<crate::entity::entities::AxolotlEntity>()
+                    .downcast_ref::<AxolotlEntity>()
             {
                 axolotl.rehydrate();
             }

@@ -189,6 +189,7 @@ mod tests {
     use steel_registry::{init_vanilla_registry, vanilla_blocks};
 
     use super::*;
+use crate::bootstrap::init_globals;
 
     #[test]
     fn double_slabs_cannot_be_waterlogged() {
@@ -241,7 +242,7 @@ mod tests {
         };
         use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
 
-        crate::bootstrap::init_globals();
+        init_globals();
         let fixture = fresh_test_world("slab_merge_geometry");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));

@@ -2,8 +2,10 @@
 use std::{fmt, sync::Arc};
 use text_components::TextComponent;
 use uuid::Uuid;
+use tokio::sync::mpsc::UnboundedSender;
 
 use steel_utils::locks::SyncMutex;
+use crate::world::World;
 
 use crate::{
     player::{DomainResidenceToken, Player},
@@ -39,7 +41,7 @@ pub enum CommandSender {
 #[derive(Clone)]
 pub struct CommandBlockOutput {
     output: Arc<SyncMutex<Option<String>>>,
-    world: Arc<crate::world::World>,
+    world: Arc<World>,
 }
 
 impl CommandBlockOutput {
@@ -49,7 +51,7 @@ impl CommandBlockOutput {
     /// otherwise be rooted in the overworld and `~`/relative coordinates or
     /// `execute in` anchors would resolve against the wrong dimension.
     #[must_use]
-    pub fn new(world: Arc<crate::world::World>) -> Self {
+    pub fn new(world: Arc<World>) -> Self {
         Self {
             output: Arc::new(SyncMutex::new(None)),
             world,
@@ -58,7 +60,7 @@ impl CommandBlockOutput {
 
     /// Returns the world the command block lives in.
     #[must_use]
-    pub const fn world(&self) -> &Arc<crate::world::World> {
+    pub const fn world(&self) -> &Arc<World> {
         &self.world
     }
 
@@ -85,13 +87,13 @@ impl fmt::Debug for CommandBlockOutput {
 /// Sink for the text a command sends to an RCON client.
 #[derive(Clone)]
 pub struct RconOutput {
-    sender: tokio::sync::mpsc::UnboundedSender<String>,
+    sender: UnboundedSender<String>,
 }
 
 impl RconOutput {
     /// Creates an output sink backed by `sender`.
     #[must_use]
-    pub const fn new(sender: tokio::sync::mpsc::UnboundedSender<String>) -> Self {
+    pub const fn new(sender: UnboundedSender<String>) -> Self {
         Self { sender }
     }
 

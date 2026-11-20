@@ -2,6 +2,7 @@
 use super::selector::{Goal, GoalControls};
 use crate::entity::{PathfinderMob, SharedEntity};
 use steel_registry::{sound_events, vanilla_entities};
+use crate::entity::LivingEntity::is_alive;
 
 pub(crate) struct RaidCelebrationGoal;
 
@@ -11,7 +12,7 @@ impl Goal for RaidCelebrationGoal {
     }
 
     fn can_use(&mut self, mob: &dyn PathfinderMob) -> bool {
-        crate::entity::LivingEntity::is_alive(mob)
+        is_alive(mob)
             && mob.target().is_none()
             && mob
                 .level()

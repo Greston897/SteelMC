@@ -22,12 +22,14 @@ use steel_registry::vanilla_entity_data::CreakingEntityData;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_damage_types};
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey};
+use steel_registry::vanilla_items::CARVED_PUMPKIN;
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
 };
 use crate::entity::damage::DamageSource;
+use crate::block_entity::entities::CreakingHeartBlockEntity;
 use crate::entity::{
     DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityMovementEmission, EntityPose,
     EntitySyncedData, LivingEntity, LivingEntityBase, Mob, MobBase, Monster, PathfinderMob,
@@ -91,7 +93,7 @@ impl CreakingEntity {
                     .inventory
                     .lock()
                     .get_item(39)
-                    .is(&steel_registry::vanilla_items::CARVED_PUMPKIN)
+                    .is(&CARVED_PUMPKIN)
                 {
                     return false;
                 }
@@ -109,7 +111,7 @@ impl CreakingEntity {
         let pos = self.creaking_heart_pos()?;
         let block_entity = world.get_block_entity(pos)?;
         let heart = block_entity
-            .downcast_ref::<crate::block_entity::entities::CreakingHeartBlockEntity>()?;
+            .downcast_ref::<CreakingHeartBlockEntity>()?;
         (heart.creaking() == Some(self.uuid().as_u128())).then_some(pos)
     }
     /// Creates a new entity of this vanilla type.

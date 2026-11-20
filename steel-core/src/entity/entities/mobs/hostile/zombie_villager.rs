@@ -23,6 +23,8 @@ use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_entity_data::ZombieVillagerEntityData;
+use steel_registry::entity_data::VillagerData;
+use steel_registry::vanilla_criteria_triggers::CURED_ZOMBIE_VILLAGER;
 use steel_registry::{
     sound_events, vanilla_attributes, vanilla_entities, vanilla_items, vanilla_mob_effects,
 };
@@ -32,6 +34,9 @@ use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::behavior::InteractionResult;
+use crate::entity::conversion::ConversionParams;
+use crate::entity::conversion::convert_to;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
     RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
@@ -237,12 +242,12 @@ impl ZombieVillagerEntity {
 
     /// Vanilla `ZombieVillager.getVillagerData`.
     #[must_use]
-    pub fn villager_data(&self) -> steel_registry::entity_data::VillagerData {
+    pub fn villager_data(&self) -> VillagerData {
         *self.entity_data.lock().villager_data.get()
     }
 
     /// Sets the vanilla villager data (profession, type, level).
-    pub fn set_villager_data(&self, data: steel_registry::entity_data::VillagerData) {
+    pub fn set_villager_data(&self, data: VillagerData) {
         self.entity_data.lock().villager_data.set(data);
     }
 }
@@ -299,10 +304,10 @@ impl ZombieVillagerEntity {
                 villager.set_villager_data(villager_data);
             }
         };
-        let converted = crate::entity::conversion::convert_to(
+        let converted = convert_to(
             self,
             &vanilla_entities::VILLAGER,
-            crate::entity::conversion::ConversionParams::single(true, true),
+            ConversionParams::single(true, true),
             Some(&copy_villager_data),
         );
         *self.conversion.lock() = None;
@@ -312,8 +317,8 @@ impl ZombieVillagerEntity {
         // Vanilla fires `cured_zombie_villager` on whoever started the cure.
         if let Some(player) = starter {
             player.trigger_advancement_with_context(
-                &steel_registry::vanilla_criteria_triggers::CURED_ZOMBIE_VILLAGER,
-                &crate::player::advancement::predicate::TriggerContext::entity(
+                &CURED_ZOMBIE_VILLAGER,
+                &TriggerContext::entity(
                     &vanilla_entities::ZOMBIE_VILLAGER.key,
                 ),
             );

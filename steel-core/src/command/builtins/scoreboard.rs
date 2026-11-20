@@ -17,6 +17,7 @@ use super::super::{
 };
 use crate::scoreboard::{ScoreHolder, Scoreboard, ScoreboardObjective};
 use crate::server::scoreboard_sync;
+use crate::scoreboard::criterion_is_read_only;
 
 pub(super) fn registration() -> CommandRegistration<CommandSource> {
     CommandRegistration::new(Identifier::vanilla_static("scoreboard"), |_| command())
@@ -150,7 +151,7 @@ fn create_objective(
         Ok(criterion) => criterion.to_owned(),
         Err(_) => "dummy".to_owned(),
     };
-    if crate::scoreboard::criterion_is_read_only(&criterion).is_none() {
+    if criterion_is_read_only(&criterion).is_none() {
         return Err(CommandSyntaxError::dynamic(format!(
             "Unknown criterion '{criterion}'"
         )));

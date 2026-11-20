@@ -14,6 +14,8 @@ use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as Nbt
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use steel_registry::block_entity_type::BlockEntityTypeRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::sound_events::BLOCK_CHEST_CLOSE;
+use steel_registry::sound_events::BLOCK_CHEST_OPEN;
 use steel_registry::data_components::{
     DataComponentMap, SeededContainerLoot, vanilla_components::CONTAINER_LOOT,
 };
@@ -123,8 +125,8 @@ impl ChestBlockEntity {
             base,
             container,
             openers_counter: ContainerOpenersCounter::without_open_state(
-                &steel_registry::sound_events::BLOCK_CHEST_OPEN,
-                &steel_registry::sound_events::BLOCK_CHEST_CLOSE,
+                &BLOCK_CHEST_OPEN,
+                &BLOCK_CHEST_CLOSE,
             ),
             loot: SyncMutex::new(RandomizableContainer::none()),
             lid: SyncMutex::new(ChestLidController::default()),

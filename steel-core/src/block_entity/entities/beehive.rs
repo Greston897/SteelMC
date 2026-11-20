@@ -1,12 +1,16 @@
 //! Beehive block entity implementation.
 
 use std::sync::Weak;
+use std::mem::take;
 
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList};
 use steel_registry::{vanilla_block_entity_types, vanilla_entities};
 use steel_utils::nbt::NbtNumeric as _;
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
+use steel_registry::blocks::shapes::SupportType::Full;
+use steel_utils::geometry::WorldAabb;
+use steel_utils::types::UpdateFlags;
 
 use std::sync::Arc;
 
@@ -156,7 +160,7 @@ impl BeehiveBlockEntity {
     pub fn release_all_bees(&self, world: &Arc<World>, pos: BlockPos) {
         let released = {
             let mut guard = self.state.lock();
-            std::mem::take(&mut guard.stored)
+            take(&mut guard.stored)
         };
         if released.is_empty() {
             return;
@@ -197,7 +201,7 @@ impl BeehiveBlockEntity {
     pub fn anger_bees(&self, world: &Arc<World>, player: &SharedEntity) {
         let released = {
             let mut guard = self.state.lock();
-            std::mem::take(&mut guard.stored)
+            take(&mut guard.stored)
         };
         if released.is_empty() {
             // Vanilla still aggros bees that are already outside and bound here.
@@ -239,7 +243,7 @@ impl BeehiveBlockEntity {
     /// Vanilla `BeehiveBlockEntity.angerBees` fallback for bees already outside.
     fn anger_nearby_bees(&self, world: &Arc<World>, player: &SharedEntity) {
         let pos = self.get_block_pos();
-        let aabb = steel_utils::geometry::WorldAabb::new(
+        let aabb = WorldAabb::new(
             f64::from(pos.x()) - BEEHIVE_ANGER_RADIUS,
             f64::from(pos.y()) - BEEHIVE_ANGER_RADIUS,
             f64::from(pos.z()) - BEEHIVE_ANGER_RADIUS,
@@ -271,7 +275,7 @@ impl BeehiveBlockEntity {
             &BlockStateProperties::LEVEL_HONEY,
             u8::try_from(new_honey_level).unwrap_or(0),
         );
-        world.set_block(pos, state, steel_utils::types::UpdateFlags::UPDATE_ALL);
+        world.set_block(pos, state, UpdateFlags::UPDATE_ALL);
     }
 
     /// Reads the hive's facing from its current block state.
@@ -299,7 +303,7 @@ impl BeehiveBlockEntity {
                 exit_state,
                 exit_pos,
                 front.opposite(),
-                steel_registry::blocks::shapes::SupportType::Full,
+                Full,
             )
         };
 
@@ -316,7 +320,7 @@ impl BeehiveBlockEntity {
             }
 
             let mut remaining = Vec::with_capacity(guard.stored.len());
-            for mut occupant in std::mem::take(&mut guard.stored) {
+            for mut occupant in take(&mut guard.stored) {
                 occupant.ticks_in_hive += 1;
 
                 let ready = can_release
@@ -351,7 +355,7 @@ impl BeehiveBlockEntity {
             world.set_block(
                 pos,
                 updated,
-                steel_utils::types::UpdateFlags::UPDATE_CLIENTS,
+                UpdateFlags::UPDATE_CLIENTS,
             );
         }
     }

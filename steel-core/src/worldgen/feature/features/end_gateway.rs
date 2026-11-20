@@ -2,6 +2,8 @@ use steel_utils::Downcast as _;
 
 use super::super::prelude::*;
 use super::super::runner::FeatureDecorationRunner;
+use crate::block_entity::entities::EndGatewayBlockEntity;
+use crate::world::World;
 
 impl FeatureDecorationRunner {
     pub(in crate::worldgen::feature) fn place_end_gateway_feature(
@@ -56,7 +58,7 @@ impl FeatureDecorationRunner {
 /// entity is created the same way the worldgen path creates it, which is what
 /// gives the gateway its exit search on first teleport.
 pub(crate) fn place_end_gateway_in_world(
-    world: &Arc<crate::world::World>,
+    world: &Arc<World>,
     origin: BlockPos,
     config: &EndGatewayConfiguration,
 ) {
@@ -92,7 +94,7 @@ pub(crate) fn place_end_gateway_in_world(
                     && let Some(exit) = config.exit
                     && let Some(block_entity) = world.get_block_entity(pos)
                     && let Some(gateway) = block_entity
-                        .downcast_ref::<crate::block_entity::entities::EndGatewayBlockEntity>(
+                        .downcast_ref::<EndGatewayBlockEntity>(
                     )
                 {
                     let exit = BlockPos::new(exit[0], exit[1], exit[2]);

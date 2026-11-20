@@ -5,6 +5,10 @@ mod pathfinder;
 use crate::entity::leash::{LeashData, Leashable};
 pub use pathfinder::PathfinderMob;
 use pathfinder::tick_path_navigation_target;
+use steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_ENTITY;
+use steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_PLAYER;
+use crate::player::advancement::predicate::TriggerContext;
+use crate::world::raid::is_raider_type;
 #[cfg(test)]
 use pathfinder::{find_ground_path_target_surface, path_end_node_can_reach_target};
 
@@ -568,7 +572,7 @@ pub trait Mob: LivingEntity + Leashable {
         _spawn_reason: EntitySpawnReason,
         group_data: Option<SpawnGroupData>,
     ) -> Option<SpawnGroupData> {
-        if crate::world::raid::is_raider_type(self.entity_type()) {
+        if is_raider_type(self.entity_type()) {
             self.set_can_join_raid(
                 self.entity_type() != &vanilla_entities::WITCH
                     || _spawn_reason != EntitySpawnReason::Natural,
@@ -777,7 +781,7 @@ pub trait Mob: LivingEntity + Leashable {
     }
 
     fn remove_when_far_away(&self, dist_sqr: f64) -> bool {
-        if crate::world::raid::is_raider_type(self.entity_type())
+        if is_raider_type(self.entity_type())
             && self
                 .level()
                 .is_some_and(|world| world.raids.contains_raider(self.uuid()))
@@ -922,9 +926,9 @@ pub trait Mob: LivingEntity + Leashable {
         // which for a player is the advancement owner.
         if let Some(player) = self.as_player() {
             let context =
-                crate::player::advancement::predicate::TriggerContext::item(&equipped.item().key);
+                TriggerContext::item(&equipped.item().key);
             player.trigger_advancement_with_context(
-                &steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_ENTITY,
+                &THROWN_ITEM_PICKED_UP_BY_ENTITY,
                 &context,
             );
             // Vanilla `ItemEntity.playerTouch` additionally fires
@@ -936,7 +940,7 @@ pub trait Mob: LivingEntity + Leashable {
                 .is_some_and(|owner| owner == player.gameprofile.id())
             {
                 player.trigger_advancement_with_context(
-                    &steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_PLAYER,
+                    &THROWN_ITEM_PICKED_UP_BY_PLAYER,
                     &context,
                 );
             }
@@ -1264,7 +1268,7 @@ pub trait Mob: LivingEntity + Leashable {
 
     fn save_mob(&self, nbt: &mut NbtCompound) {
         self.save_equipment(nbt);
-        if crate::world::raid::is_raider_type(self.entity_type()) {
+        if is_raider_type(self.entity_type()) {
             nbt.insert("CanJoinRaid", i8::from(self.can_join_raid()));
             let membership = self
                 .level()
@@ -1777,7 +1781,7 @@ pub trait Mob: LivingEntity + Leashable {
     /// Raider.updateNoActionTime advances twice as fast; fighting a player or
     /// iron golem in an active raid resets inactivity before the increment.
     fn update_mob_no_action_time(&self) {
-        let raider = crate::world::raid::is_raider_type(self.entity_type());
+        let raider = is_raider_type(self.entity_type());
         if raider
             && self.can_join_raid()
             && self.target().is_some_and(|target| {
@@ -1803,7 +1807,7 @@ pub trait Mob: LivingEntity + Leashable {
         {
             world.raids.restore_raider(entity, id, wave, leader);
         }
-        if crate::world::raid::is_raider_type(self.entity_type())
+        if is_raider_type(self.entity_type())
             && self.can_join_raid()
             && let Some(world) = self.level()
             && world.game_time() % 20 == 0

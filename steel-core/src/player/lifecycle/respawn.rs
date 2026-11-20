@@ -3,6 +3,7 @@ use std::ptr;
 use super::*;
 use crate::entity::PendingWorldChangeToken;
 use crate::player::connection::NetworkConnection as _;
+use crate::server::Server;
 use crate::{
     behavior::{
         BlockStateBehaviorExt as _,
@@ -631,7 +632,7 @@ impl Player {
         };
         // Vanilla `PlayerList.respawn` assigns the forced game type *before* the
         // client is told to respawn, so the respawn packet already carries it.
-        crate::server::Server::apply_forced_game_mode(&replacement, target_world);
+        Server::apply_forced_game_mode(&replacement, target_world);
         replacement.prepare_respawn_replacement(reason);
         replacement.experience.lock().dirty = true;
         replacement.synchronize_respawn_replacement(spawn.position, spawn.rotation);

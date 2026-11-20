@@ -14,6 +14,7 @@
 
 use steel_registry::item_stack::ItemStack;
 use steel_registry::{RegistryExt as _, vanilla_items};
+use steel_registry::items::ItemRef;
 
 /// One trade a villager offers.
 #[derive(Clone, Debug)]
@@ -100,18 +101,18 @@ impl TradeOffer {
 
 /// A payment item and a result item, the shorthand the trade table uses.
 struct Trade {
-    cost_a: (steel_registry::items::ItemRef, i32),
-    cost_b: Option<(steel_registry::items::ItemRef, i32)>,
-    result: (steel_registry::items::ItemRef, i32),
+    cost_a: (ItemRef, i32),
+    cost_b: Option<(ItemRef, i32)>,
+    result: (ItemRef, i32),
     max_uses: i32,
     xp: i32,
 }
 
 impl Trade {
     const fn new(
-        cost_a: (steel_registry::items::ItemRef, i32),
-        cost_b: Option<(steel_registry::items::ItemRef, i32)>,
-        result: (steel_registry::items::ItemRef, i32),
+        cost_a: (ItemRef, i32),
+        cost_b: Option<(ItemRef, i32)>,
+        result: (ItemRef, i32),
         max_uses: i32,
         xp: i32,
     ) -> Self {
@@ -300,6 +301,7 @@ pub const PROFESSIONS: [&str; 14] = [
 #[cfg(test)]
 mod tests {
     use super::*;
+use steel_registry::vanilla_villager_professions::FARMER;
 
     #[test]
     fn every_profession_offers_at_least_one_trade() {
@@ -322,7 +324,7 @@ mod tests {
 
     #[test]
     fn a_farmer_gets_its_trades_from_the_registry_id() {
-        let farmer = &steel_registry::vanilla_villager_professions::FARMER;
+        let farmer = &FARMER;
         let id = steel_registry::REGISTRY
             .villager_professions
             .id_from_key(&farmer.key)

@@ -20,11 +20,15 @@ use steel_utils::BlockPos;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey, WorldAabb};
+use steel_registry::vanilla_criteria_triggers::CHANNELED_LIGHTNING;
+use steel_registry::vanilla_criteria_triggers::LIGHTNING_STRIKE;
 
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::mobs::passive::MushroomCowEntity;
 use crate::entity::{Entity, EntityBase, EntityBaseLoad, EntitySyncedData, RemovalReason};
 use crate::world::World;
+use crate::behavior::BLOCK_BEHAVIORS;
+use crate::player::advancement::predicate::TriggerContext;
 
 /// Vanilla `LightningBolt.LIFE`.
 const LIGHTNING_LIFE: i32 = 2;
@@ -129,7 +133,7 @@ impl LightningBoltEntity {
         // on the block it landed on, which is what powers lightning rods.
         let struck_pos = BlockPos::containing(pos.x, pos.y, pos.z);
         let struck_state = world.get_block_state(struck_pos);
-        crate::behavior::BLOCK_BEHAVIORS
+        BLOCK_BEHAVIORS
             .get_behavior(struck_state.get_block())
             .on_lightning_strike(struck_state, &world, struck_pos);
 
@@ -142,13 +146,13 @@ impl LightningBoltEntity {
             let Some(player) = entity.as_player() else {
                 continue;
             };
-            let context = crate::player::advancement::predicate::TriggerContext::at(&world, pos);
+            let context = TriggerContext::at(&world, pos);
             player.trigger_advancement_with_context(
-                &steel_registry::vanilla_criteria_triggers::LIGHTNING_STRIKE,
+                &LIGHTNING_STRIKE,
                 &context,
             );
             player.trigger_advancement_with_context(
-                &steel_registry::vanilla_criteria_triggers::CHANNELED_LIGHTNING,
+                &CHANNELED_LIGHTNING,
                 &context,
             );
         }
@@ -221,8 +225,10 @@ impl Entity for LightningBoltEntity {
 mod tests {
     use steel_registry::init_vanilla_registry;
     use steel_registry::vanilla_entities;
+use simdnbt::borrow::read_compound;
 
     use super::*;
+use std::io::Cursor;
 
     fn bolt() -> LightningBoltEntity {
         LightningBoltEntity::new(
@@ -254,7 +260,7 @@ mod tests {
         let loaded = bolt();
         let mut bytes = Vec::new();
         saved.write(&mut bytes);
-        let borrowed = simdnbt::borrow::read_compound(&mut std::io::Cursor::new(&bytes))
+        let borrowed = read_compound(&mut Cursor::new(&bytes))
             .unwrap_or_else(|error| panic!("reborrow failed: {error}"));
         loaded.load_additional((&borrowed).into());
         assert!(loaded.is_visual_only());

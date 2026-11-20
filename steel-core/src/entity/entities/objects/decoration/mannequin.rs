@@ -145,7 +145,7 @@ impl Entity for MannequinEntity {
         false
     }
 
-    fn tick(self: std::sync::Arc<Self>) {
+    fn tick(self: Arc<Self>) {
         let entity: SharedEntity = Arc::<Self>::clone(&self);
         self.tick_living_entity(&entity);
     }

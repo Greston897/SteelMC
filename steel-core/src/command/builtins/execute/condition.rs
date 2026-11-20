@@ -21,6 +21,7 @@ use super::super::super::{
 use super::{objective, source_command_storage, source_scoreboard};
 use crate::inventory::container::Container as _;
 use crate::{block_entity::SharedBlockEntity, command::missing_argument, world::World};
+use crate::inventory::lock::ContainerRef;
 
 type Builder = CommandNodeBuilder<CommandSource, SteelCommandRuntime>;
 
@@ -500,7 +501,7 @@ fn block_items_count(
         .world()
         .get_block_entity(pos)
         .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
-    let container = crate::inventory::lock::ContainerRef::from_block_entity(entity)
+    let container = ContainerRef::from_block_entity(entity)
         .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
     let slots = context.string("slots")?;
     let range = if slots == "container.*" {

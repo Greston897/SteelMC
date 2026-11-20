@@ -8,6 +8,8 @@
 use std::borrow::Cow;
 use std::net::IpAddr;
 use std::sync::Arc;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 
 use steel_utils::Identifier;
 use text_components::TextComponent;
@@ -19,6 +21,7 @@ use super::super::{
     registration::CommandRegistration,
 };
 use crate::server::bans::BanEntry;
+use crate::server::Server;
 
 const ADDRESS_ARGUMENT: &str = "address";
 const REASON_ARGUMENT: &str = "reason";
@@ -80,8 +83,8 @@ fn ban(
     let address = parse_address(context)?;
     let reason = reason.unwrap_or_else(|| "Banned by an operator.".to_owned());
     let by = context.source().source_name();
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
         .map_or(0, |elapsed| {
             i64::try_from(elapsed.as_secs()).unwrap_or(i64::MAX)
         });
@@ -136,8 +139,8 @@ fn pardon(context: &SteelCommandContext<CommandSource>) -> Result<i32, CommandSy
 ///
 /// `save_bans` is async because it touches the filesystem; the command itself
 /// runs on the tick thread, so it schedules the write and moves on.
-fn save_bans_in_background(server: &std::sync::Arc<crate::server::Server>) {
-    let server = std::sync::Arc::clone(server);
+fn save_bans_in_background(server: &Arc<Server>) {
+    let server = Arc::clone(server);
     tokio::spawn(async move {
         if let Err(error) = server.save_bans().await {
             log::error!("failed to save the ban list: {error}");

@@ -12,6 +12,7 @@ use steel_registry::{
 };
 use steel_utils::{BlockPos, BlockStateId, Direction, translations};
 use text_components::TextComponent;
+use crate::behavior::blocks::FallingBlock;
 
 use crate::{
     behavior::{BlockBehavior, BlockPlaceContext, Fallable, InteractionResult, InventoryAccess},
@@ -69,7 +70,7 @@ impl BlockBehavior for AnvilBlock {
         _old_state: BlockStateId,
         _moved_by_piston: bool,
     ) {
-        crate::behavior::blocks::FallingBlock::new(self.block).on_place(world, pos);
+        FallingBlock::new(self.block).on_place(world, pos);
     }
 
     fn update_shape(
@@ -81,11 +82,11 @@ impl BlockBehavior for AnvilBlock {
         _neighbor_pos: BlockPos,
         _neighbor_state: BlockStateId,
     ) -> BlockStateId {
-        crate::behavior::blocks::FallingBlock::new(self.block).update_shape(state, ticks, pos)
+        FallingBlock::new(self.block).update_shape(state, ticks, pos)
     }
 
     fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
-        if let Some(entity) = crate::behavior::blocks::FallingBlock::tick(state, world, pos) {
+        if let Some(entity) = FallingBlock::tick(state, world, pos) {
             entity.set_hurts_entities(2.0, 40);
         }
     }

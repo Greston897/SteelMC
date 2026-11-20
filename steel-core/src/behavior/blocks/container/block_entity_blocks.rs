@@ -12,6 +12,21 @@ use steel_macros::block_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
+use steel_registry::block_entity_type::BlockEntityTypeRef;
+use steel_registry::data_components::PotionContents;
+use steel_registry::items::ItemRef;
+use steel_registry::level_events::PARTICLES_AND_SOUND_PLANT_GROWTH;
+use steel_registry::level_events::PARTICLES_WAX_ON;
+use steel_registry::level_events::SOUND_BLAZE_FIREBALL;
+use steel_registry::level_events::SOUND_DISPENSER_PROJECTILE_LAUNCH;
+use steel_registry::level_events::SOUND_FIREWORK_SHOOT;
+use steel_registry::level_events::SOUND_WIND_CHARGE_SHOOT;
+use steel_registry::vanilla_game_events::BLOCK_CHANGE;
+use steel_registry::vanilla_game_events::BLOCK_PLACE;
+use steel_registry::vanilla_game_events::FLUID_PICKUP;
+use steel_registry::vanilla_potions::WATER;
+use steel_utils::axis::Axis::Y;
+use steel_utils::random::Random;
 use steel_registry::blocks::properties::{
     BlockStateProperties, Direction, EnumProperty, FrontAndTop,
 };
@@ -30,6 +45,12 @@ use crate::block_entity::BLOCK_ENTITIES;
 use crate::block_entity::BlockEntityTicker;
 use crate::block_entity::entities::CrafterBlockEntity;
 use crate::entity::entities::objects::projectiles::AbstractArrow as _;
+use crate::behavior::blocks::FireBlock;
+use crate::behavior::blocks::TntBlock;
+use crate::behavior::items::BoneMealItem;
+use crate::behavior::items::FlintAndSteelItem;
+use crate::behavior::waxables::get_waxed_from_normal_variant;
+use crate::world::LevelReader;
 use crate::entity::entities::{
     ArrowEntity, ExperienceBottleEntity, FireworkRocketEntity, ItemEntity, LingeringPotionEntity,
     SmallFireballEntity, SnowballEntity, SpectralArrowEntity, SplashPotionEntity, ThrownEggEntity,
@@ -281,7 +302,7 @@ impl BlockBehavior for HopperBlock {
         &self,
         _world: &Arc<World>,
         state: BlockStateId,
-        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+        block_entity_type: BlockEntityTypeRef,
     ) -> Option<BlockEntityTicker> {
         // Vanilla `HopperBlock.getTicker`:
         //
@@ -607,7 +628,7 @@ impl DispenseConfig {
     };
 
     /// Vanilla `ProjectileItem.DispenseConfig` for the dispensed item.
-    fn for_item(item: steel_registry::items::ItemRef) -> Self {
+    fn for_item(item: ItemRef) -> Self {
         if item == &*vanilla_items::FIRE_CHARGE || item == &*vanilla_items::WIND_CHARGE {
             // Vanilla `FireChargeItem.createDispenseConfig` and
             // `WindChargeItem.createDispenseConfig`.
@@ -619,9 +640,9 @@ impl DispenseConfig {
                 uncertainty: 6.666_666_5,
                 power: 1.0,
                 override_dispense_event: Some(if item == &*vanilla_items::FIRE_CHARGE {
-                    steel_registry::level_events::SOUND_BLAZE_FIREBALL
+                    SOUND_BLAZE_FIREBALL
                 } else {
-                    steel_registry::level_events::SOUND_WIND_CHARGE_SHOOT
+                    SOUND_WIND_CHARGE_SHOOT
                 }),
             };
         }
@@ -631,7 +652,7 @@ impl DispenseConfig {
                 position: DispensePosition::JustOutsideOfBlock,
                 uncertainty: 1.0,
                 power: 0.5,
-                override_dispense_event: Some(steel_registry::level_events::SOUND_FIREWORK_SHOOT),
+                override_dispense_event: Some(SOUND_FIREWORK_SHOOT),
             };
         }
         if item == &*vanilla_items::SPLASH_POTION
@@ -712,7 +733,7 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
 
     // Honeycomb consumes one item only when the facing block can be waxed.
     if item == &*vanilla_items::HONEYCOMB
-        && let Some(waxed) = crate::behavior::waxables::get_waxed_from_normal_variant(target_block)
+        && let Some(waxed) = get_waxed_from_normal_variant(target_block)
     {
         let waxed_state = steel_registry::REGISTRY
             .blocks
@@ -720,13 +741,13 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
         world.set_block(target_pos, waxed_state, UpdateFlags::UPDATE_ALL);
         let _ = container.lock().remove_item(slot, 1);
         world.level_event(
-            steel_registry::level_events::PARTICLES_WAX_ON,
+            PARTICLES_WAX_ON,
             target_pos,
             0,
             None,
         );
         world.game_event(
-            &steel_registry::vanilla_game_events::BLOCK_CHANGE,
+            &BLOCK_CHANGE,
             target_pos,
             &crate::world::game_event::GameEventContext::new(None, Some(waxed_state)),
         );
@@ -736,12 +757,12 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
     // Optional bone-meal dispensing keeps the item if neither a crop nor an
     // underwater growth target accepts it. Reuse the player-side growth logic.
     if item == &*vanilla_items::BONE_MEAL {
-        let success = crate::behavior::items::BoneMealItem::grow(world, target_pos)
-            || crate::behavior::items::BoneMealItem::grow_water_plant(world, target_pos, facing);
+        let success = BoneMealItem::grow(world, target_pos)
+            || BoneMealItem::grow_water_plant(world, target_pos, facing);
         if success {
             let _ = container.lock().remove_item(slot, 1);
             world.level_event(
-                steel_registry::level_events::PARTICLES_AND_SOUND_PLANT_GROWTH,
+                PARTICLES_AND_SOUND_PLANT_GROWTH,
                 target_pos,
                 15,
                 None,
@@ -770,9 +791,9 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
             })
         } else if target_state.get_fluid_state().is_water() {
             Some(
-                steel_registry::data_components::PotionContents::create_item_stack(
+                PotionContents::create_item_stack(
                     &vanilla_items::POTION,
-                    &steel_registry::vanilla_potions::WATER,
+                    &WATER,
                 ),
             )
         } else {
@@ -781,7 +802,7 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
         if let Some(filled) = filled {
             replace_or_store_dispensed_result(world, pos, facing, &container, slot, filled);
             world.game_event(
-                &steel_registry::vanilla_game_events::FLUID_PICKUP,
+                &FLUID_PICKUP,
                 pos,
                 &crate::world::game_event::GameEventContext::new(None, None),
             );
@@ -801,7 +822,7 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
     // 1. TNT: prime TNT in front if space allows.
     if item == &*vanilla_items::TNT && target_state.is_air() {
         let _ = container.lock().remove_item(slot, 1);
-        crate::behavior::blocks::TntBlock::prime(world, target_pos);
+        TntBlock::prime(world, target_pos);
         world.play_sound(
             &sound_events::BLOCK_DISPENSER_DISPENSE,
             SoundSource::Blocks,
@@ -910,29 +931,29 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
     // result to a failure.
     if item == &*vanilla_items::FLINT_AND_STEEL {
         let mut success = true;
-        if crate::behavior::blocks::FireBlock::can_be_placed_at(world, target_pos, facing) {
+        if FireBlock::can_be_placed_at(world, target_pos, facing) {
             world.set_block(
                 target_pos,
-                crate::behavior::blocks::FireBlock::get_state(world.as_ref(), target_pos),
+                FireBlock::get_state(world.as_ref(), target_pos),
                 UpdateFlags::UPDATE_ALL,
             );
             world.game_event(
-                &steel_registry::vanilla_game_events::BLOCK_PLACE,
+                &BLOCK_PLACE,
                 target_pos,
                 &crate::world::game_event::GameEventContext::new(None, None),
             );
-        } else if crate::behavior::items::FlintAndSteelItem::can_light(target_state) {
+        } else if FlintAndSteelItem::can_light(target_state) {
             let next = target_state.set_value(&BlockStateProperties::LIT, true);
             world.set_block(target_pos, next, UpdateFlags::UPDATE_ALL);
             world.game_event(
-                &steel_registry::vanilla_game_events::BLOCK_CHANGE,
+                &BLOCK_CHANGE,
                 target_pos,
                 &crate::world::game_event::GameEventContext::new(None, Some(next)),
             );
         } else if target_block == &vanilla_blocks::TNT {
             // Vanilla primes the TNT first and only removes the block when the
             // prime was accepted.
-            if crate::behavior::blocks::TntBlock::prime(world, target_pos) {
+            if TntBlock::prime(world, target_pos) {
                 world.set_block(
                     target_pos,
                     vanilla_blocks::AIR.default_state(),
@@ -996,7 +1017,7 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
         // dispense event, defaulting to the projectile-launch event.
         let event = config
             .override_dispense_event
-            .unwrap_or(steel_registry::level_events::SOUND_DISPENSER_PROJECTILE_LAUNCH);
+            .unwrap_or(SOUND_DISPENSER_PROJECTILE_LAUNCH);
         world.level_event(event, pos, 0, None);
         return true;
     } else {
@@ -1055,10 +1076,10 @@ fn drop_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool {
 fn default_item_launch(
     pos: BlockPos,
     facing: Direction,
-    random: &mut impl steel_utils::random::Random,
+    random: &mut impl Random,
 ) -> (DVec3, DVec3) {
     let mut spawn_pos = launch_point(pos, facing);
-    spawn_pos.y -= if facing.get_axis() == steel_utils::axis::Axis::Y {
+    spawn_pos.y -= if facing.get_axis() == Y {
         0.125
     } else {
         0.15625
@@ -1164,7 +1185,7 @@ impl BlockBehavior for BrewingStandBlock {
         &self,
         _world: &Arc<World>,
         _state: BlockStateId,
-        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+        block_entity_type: BlockEntityTypeRef,
     ) -> Option<BlockEntityTicker> {
         // Vanilla `BrewingStandBlock.getTicker`.
         BlockEntityTicker::for_matching_entity_tick(
@@ -1351,7 +1372,7 @@ impl BlockBehavior for CrafterBlock {
             world.set_block(
                 pos,
                 state.set_value(&BlockStateProperties::TRIGGERED, false),
-                steel_utils::types::UpdateFlags::UPDATE_CLIENTS,
+                UpdateFlags::UPDATE_CLIENTS,
             );
         }
     }
@@ -1387,7 +1408,7 @@ impl BlockBehavior for CrafterBlock {
         &self,
         _world: &Arc<World>,
         _state: BlockStateId,
-        block_entity_type: steel_registry::block_entity_type::BlockEntityTypeRef,
+        block_entity_type: BlockEntityTypeRef,
     ) -> Option<BlockEntityTicker> {
         // Vanilla `CrafterBlock.getTicker`.
         BlockEntityTicker::for_matching_entity_tick(
@@ -1511,7 +1532,7 @@ impl BlockBehavior for ShelfBlock {
 }
 
 /// Comparator signal from the block entity inventory at `pos`.
-fn container_signal(world: &dyn crate::world::LevelReader, pos: BlockPos) -> i32 {
+fn container_signal(world: &dyn LevelReader, pos: BlockPos) -> i32 {
     let Some(container_ref) = world
         .get_block_entity(pos)
         .and_then(ContainerRef::from_block_entity)

@@ -1,6 +1,9 @@
 use std::{f32::consts::TAU, mem, sync::Arc};
+use std::sync::Weak;
 
 use super::MountScreen;
+use crate::inventory::menu::kinds::mount;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::{
     entity::{Entity, LivingEntity as _, RemovalReason, entities::ItemEntity},
     inventory::{
@@ -18,6 +21,7 @@ use crate::{
 use glam::DVec3;
 use steel_math::trig;
 use steel_protocol::packets::game::SSeenAdvancement::Opened;
+use steel_registry::vanilla_criteria_triggers::INVENTORY_CHANGED;
 use steel_protocol::packets::game::{
     CContainerClose, CMountScreenOpen, COpenScreen, CSetPlayerInventory, ClickType,
     SContainerButtonClick, SContainerClick, SContainerClose, SContainerSlotStateChanged, SEditBook,
@@ -692,7 +696,7 @@ impl Player {
         entity_id: i32,
         columns: usize,
         inventory: Shared<SimpleContainer>,
-        owner: std::sync::Weak<dyn Entity>,
+        owner: Weak<dyn Entity>,
     ) {
         if !self.begin_menu_open_operation() {
             return;
@@ -700,7 +704,7 @@ impl Player {
         self.open_menu_inner(PendingMenuOpen {
             title: title.into(),
             create: Box::new(move |context| {
-                crate::inventory::menu::kinds::mount(
+                mount(
                     Arc::clone(&context.player.inventory),
                     context.container_id,
                     inventory,
@@ -1373,8 +1377,8 @@ impl Player {
     fn notify_inventory_changed(&self, acquired: &ItemStack, count: i32) {
         let _ = count;
         self.trigger_advancement_with_context(
-            &steel_registry::vanilla_criteria_triggers::INVENTORY_CHANGED,
-            &crate::player::advancement::predicate::TriggerContext::item(&acquired.item().key),
+            &INVENTORY_CHANGED,
+            &TriggerContext::item(&acquired.item().key),
         );
     }
 

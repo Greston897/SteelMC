@@ -22,6 +22,8 @@ use steel_registry::item_stack::ItemStack;
 use steel_registry::stat::vanilla_stat_types;
 use steel_registry::{sound_events, vanilla_enchantments, vanilla_entities};
 use steel_utils::types::GameType;
+use steel_math::trig::cos;
+use steel_math::trig::sin;
 
 use crate::behavior::ItemUseAnimation;
 use crate::behavior::context::{InteractionResult, UseItemContext};
@@ -30,6 +32,7 @@ use crate::entity::entities::{AbstractArrow as _, ArrowPickup, ThrownTridentEnti
 use crate::entity::{Entity, LivingEntity, next_entity_id, spawn_projectile_from_rotation};
 use crate::world::World;
 use glam::DVec3;
+use crate::player::Player;
 
 /// Vanilla `TridentItem.MAX_USE_DURATION`.
 pub const MAX_USE_TICKS: i32 = 72000;
@@ -61,7 +64,7 @@ impl TridentItem {
     /// `strength / length` and starts the spin attack. The upward hop only
     /// happens on the ground.
     fn launch_riptide(
-        player: &crate::player::Player,
+        player: &Player,
         user: &dyn LivingEntity,
         level: i32,
         strength: f32,
@@ -70,10 +73,10 @@ impl TridentItem {
         let (yaw, pitch) = Entity::rotation(user);
         let yaw_rad = yaw * steel_math::DEG_TO_RAD;
         let pitch_rad = pitch * steel_math::DEG_TO_RAD;
-        let sin_yaw = steel_math::trig::sin(f64::from(yaw_rad));
-        let cos_yaw = steel_math::trig::cos(f64::from(yaw_rad));
-        let sin_pitch = steel_math::trig::sin(f64::from(pitch_rad));
-        let cos_pitch = steel_math::trig::cos(f64::from(pitch_rad));
+        let sin_yaw = sin(f64::from(yaw_rad));
+        let cos_yaw = cos(f64::from(yaw_rad));
+        let sin_pitch = sin(f64::from(pitch_rad));
+        let cos_pitch = cos(f64::from(pitch_rad));
 
         let xd = -sin_yaw * cos_pitch;
         let yd = -sin_pitch;

@@ -1,11 +1,23 @@
 //! Persistent, entity-driven raid waves. Wave progress is never inferred from elapsed time.
 
 use std::{collections::BTreeMap, sync::Arc};
+use std::collections::BTreeSet;
+use std::f32::consts::PI;
+use std::f32::consts::TAU;
 
 use glam::IVec3;
 use steel_utils::locks::SyncMutex;
 use steel_utils::{BlockPos, types::Difficulty};
 use uuid::Uuid;
+use steel_math::trig::cos;
+use steel_math::trig::sin;
+use steel_protocol::packets::game::CTakeItemEntity;
+use steel_registry::entity_type::EntityTypeRef;
+use steel_registry::vanilla_blocks::SNOW;
+use steel_registry::vanilla_criteria_triggers::HERO_OF_THE_VILLAGE;
+use steel_registry::vanilla_game_rules::RAIDS;
+use steel_registry::vanilla_items::WHITE_BANNER;
+use steel_utils::random::legacy_random::LegacyRandom;
 
 use serde::{Deserialize, Serialize};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
@@ -19,6 +31,16 @@ use crate::entity::spawn_entity;
 use crate::entity::{Entity as _, LivingEntity as _, MobEffectInstance};
 use crate::poi::OccupationStatus;
 use crate::world::{LevelReader, World};
+use crate::entity::Entity::is_alive;
+use crate::entity::LivingEntity::is_alive;
+use crate::entity::PathfinderMob;
+use crate::entity::RemovalReason::Discarded;
+use crate::entity::SharedEntity;
+use crate::entity::entities::objects::items::ItemEntity;
+use crate::inventory::equipment::EquipmentSlot::Head;
+use crate::inventory::equipment::EquipmentSlot::MainHand;
+use crate::player::advancement::predicate::TriggerContext;
+use crate::world::SignalQueryContext;
 
 /// Maximum zero-based effect amplifier; the raid's internal level is amplifier + 1.
 pub const MAX_OMEN_LEVEL: i32 = 4;
@@ -161,7 +183,7 @@ fn bonus_spawns(kind: usize, wave: i32, difficulty: Difficulty, bonus: bool) -> 
     rand::random_range(0..=max)
 }
 
-pub(crate) fn is_raider_type(entity_type: steel_registry::entity_type::EntityTypeRef) -> bool {
+pub(crate) fn is_raider_type(entity_type: EntityTypeRef) -> bool {
     entity_type == &vanilla_entities::PILLAGER
         || entity_type == &vanilla_entities::VINDICATOR
         || entity_type == &vanilla_entities::EVOKER
@@ -219,12 +241,12 @@ impl RaidManager {
     /// Creates a manager over raids loaded from disk.
     #[must_use]
     pub fn from_raids(mut raids: Vec<Raid>) -> Self {
-        let mut used: std::collections::BTreeSet<i32> = raids
+        let mut used: BTreeSet<i32> = raids
             .iter()
             .map(|raid| raid.id)
             .filter(|id| *id > 0)
             .collect();
-        let mut seen = std::collections::BTreeSet::new();
+        let mut seen = BTreeSet::new();
         let mut next = 1;
         for raid in &mut raids {
             for member in &raid.raiders {
@@ -337,7 +359,7 @@ impl RaidManager {
 
     /// Vanilla Raider.aiStep: eligible nearby mobs join once, without respawning
     /// or replacing their equipment. The closest raid within 96 blocks owns them.
-    pub fn try_join_raider(&self, entity: &crate::entity::SharedEntity) -> bool {
+    pub fn try_join_raider(&self, entity: &SharedEntity) -> bool {
         let Some(mob) = entity.as_mob() else {
             return false;
         };
@@ -398,7 +420,7 @@ impl RaidManager {
     /// must not add health twice or turn a saved captain into a second leader.
     pub fn restore_raider(
         &self,
-        entity: &crate::entity::SharedEntity,
+        entity: &SharedEntity,
         id: i32,
         wave: i32,
         leader: bool,
@@ -429,7 +451,7 @@ impl RaidManager {
         }
         drop(raids);
         if is_leader && let Some(mob) = entity.as_mob() {
-            let head = crate::inventory::equipment::EquipmentSlot::Head;
+            let head = Head;
             mob.with_equipment_slot_mut(head, &mut |item| *item = ominous_banner());
             mob.set_equipment_drop_chance(head, 2.0);
         }
@@ -438,11 +460,11 @@ impl RaidManager {
     /// Shared eligibility for the MOVE-controlled captain-banner goal.
     pub(crate) fn can_pick_up_captain_banner(
         &self,
-        mob: &dyn crate::entity::PathfinderMob,
+        mob: &dyn PathfinderMob,
     ) -> bool {
         use crate::inventory::equipment::EquipmentSlot;
         use steel_registry::item_stack::ItemStack;
-        if !crate::entity::LivingEntity::is_alive(mob)
+        if !is_alive(mob)
             || !(mob.entity_type() == &vanilla_entities::PILLAGER
                 || mob.entity_type() == &vanilla_entities::VINDICATOR
                 || mob.entity_type() == &vanilla_entities::EVOKER
@@ -471,8 +493,8 @@ impl RaidManager {
     /// Atomically claim the pursued banner; competing goals cannot both promote.
     pub(crate) fn claim_captain_banner(
         &self,
-        entity: &crate::entity::SharedEntity,
-        item: &crate::entity::entities::objects::items::ItemEntity,
+        entity: &SharedEntity,
+        item: &ItemEntity,
         world: &Arc<World>,
     ) {
         use crate::inventory::equipment::EquipmentSlot;
@@ -505,7 +527,7 @@ impl RaidManager {
             if wave == raid.waves_spawned {
                 raid.leader = Some(entity.uuid());
             }
-            item.set_removed(crate::entity::RemovalReason::Discarded);
+            item.set_removed(Discarded);
         }
         let old = mob.equipment_in_slot(EquipmentSlot::Head);
         if !old.is_empty()
@@ -518,7 +540,7 @@ impl RaidManager {
         mob.set_equipment_drop_chance(EquipmentSlot::Head, 2.0);
         world.broadcast_to_nearby(
             steel_utils::ChunkPos::from_entity_pos(item.position()),
-            steel_protocol::packets::game::CTakeItemEntity::new(item.id(), entity.id(), 1),
+            CTakeItemEntity::new(item.id(), entity.id(), 1),
             None,
         );
     }
@@ -568,7 +590,7 @@ impl RaidManager {
     pub fn tick(&self, world: &Arc<World>) {
         let mut victories = Vec::new();
         self.raids.lock().retain_mut(|raid| {
-            if !world.get_game_rule(&steel_registry::vanilla_game_rules::RAIDS)
+            if !world.get_game_rule(&RAIDS)
                 || world.difficulty() == Difficulty::Peaceful
             {
                 return false;
@@ -739,7 +761,7 @@ impl RaidManager {
     fn award_hero_of_the_village(world: &Arc<World>, raid: &Raid) {
         world.players.iter_players(|uuid, player| {
             if !raid.heroes.contains(uuid)
-                || !crate::entity::Entity::is_alive(player.as_ref())
+                || !is_alive(player.as_ref())
                 || player.is_spectator()
             {
                 return true;
@@ -750,8 +772,8 @@ impl RaidManager {
                 raid.omen_level,
             ));
             player.trigger_advancement_with_context(
-                &steel_registry::vanilla_criteria_triggers::HERO_OF_THE_VILLAGE,
-                &crate::player::advancement::predicate::TriggerContext::at(
+                &HERO_OF_THE_VILLAGE,
+                &TriggerContext::at(
                     &player.get_world(),
                     player.position(),
                 ),
@@ -770,14 +792,14 @@ fn wave_spawn_column(
     jitter_z: i32,
 ) -> (i32, i32) {
     let how_far = 0.22_f32 * (cooldown / 20) as f32 - 0.24_f32;
-    let angle = start_angle + std::f32::consts::PI * attempt as f32 / 8.0;
+    let angle = start_angle + PI * attempt as f32 / 8.0;
     let jitter_scale = how_far.floor() as i32;
     (
         center.x
-            + (steel_math::trig::cos(angle) * 32.0 * how_far).floor() as i32
+            + (cos(angle) * 32.0 * how_far).floor() as i32
             + jitter_x * jitter_scale,
         center.z
-            + (steel_math::trig::sin(angle) * 32.0 * how_far).floor() as i32
+            + (sin(angle) * 32.0 * how_far).floor() as i32
             + jitter_z * jitter_scale,
     )
 }
@@ -829,7 +851,7 @@ fn valid_empty_raid_spawn_block(world: &Arc<World>, pos: BlockPos) -> bool {
         world.as_ref(),
         pos,
         BlockCollisionContext::empty(),
-    )) && !behavior.is_signal_source(state, crate::world::SignalQueryContext::DEFAULT)
+    )) && !behavior.is_signal_source(state, SignalQueryContext::DEFAULT)
         && state.get_fluid_state().fluid_id == &vanilla_fluids::EMPTY
         && !block.has_tag(&steel_utils::Identifier::vanilla_static(
             "prevent_mob_spawning_inside",
@@ -848,7 +870,7 @@ fn valid_raid_spawn_surface(world: &Arc<World>, pos: BlockPos) -> bool {
         && valid_empty_raid_spawn_block(world, pos)
         && valid_empty_raid_spawn_block(world, pos.above());
     on_ground
-        || (state.get_block() == &steel_registry::vanilla_blocks::SNOW
+        || (state.get_block() == &SNOW
             && world.get_block_state(pos).is_air())
 }
 
@@ -859,7 +881,7 @@ fn find_spawn_pos(
     cooldown: i32,
     max_tries: i32,
 ) -> Option<BlockPos> {
-    let start_angle = rand::random::<f32>() * std::f32::consts::TAU;
+    let start_angle = rand::random::<f32>() * TAU;
     for attempt in 0..max_tries {
         let (x, z) = wave_spawn_column(
             center,
@@ -887,7 +909,7 @@ fn find_spawn_pos(
 }
 
 /// Shared vanilla captain banner, including all eight ordered pattern layers.
-pub(crate) fn ominous_banner() -> steel_registry::item_stack::ItemStack {
+pub(crate) fn ominous_banner() -> ItemStack {
     use steel_registry::data_components::vanilla_components::{
         BANNER_PATTERNS, ITEM_NAME, RARITY, Rarity,
     };
@@ -908,7 +930,7 @@ pub(crate) fn ominous_banner() -> steel_registry::item_stack::ItemStack {
     .map(|(pattern, color)| BannerPatternLayer::new(RegistryHolder::reference(pattern), color))
     .collect();
     let mut banner =
-        steel_registry::item_stack::ItemStack::new(&steel_registry::vanilla_items::WHITE_BANNER);
+        ItemStack::new(&WHITE_BANNER);
     banner.set(BANNER_PATTERNS, BannerPatternLayers::new(layers));
     banner.set(
         ITEM_NAME,
@@ -928,7 +950,7 @@ fn raid_weapon(
     wave: i32,
     omen: i32,
     roll: f32,
-) -> Option<steel_registry::item_stack::ItemStack> {
+) -> Option<ItemStack> {
     use steel_registry::data_components::vanilla_components::{ENCHANTMENTS, ItemEnchantments};
     use steel_registry::{vanilla_enchantment_providers as providers, vanilla_items};
     let odds = match omen {
@@ -959,11 +981,11 @@ fn raid_weapon(
         ),
         _ => return None,
     };
-    let mut stack = steel_registry::item_stack::ItemStack::new(item);
+    let mut stack = ItemStack::new(item);
     if roll <= odds
         && let Some(provider) = provider
     {
-        let mut rng = steel_utils::random::legacy_random::LegacyRandom::from_seed(rand::random());
+        let mut rng = LegacyRandom::from_seed(rand::random());
         let mut enchantments = ItemEnchantments::empty();
         for (enchantment, level) in provider.sample(0.0, &mut rng) {
             enchantments.set(enchantment.key.clone(), level as u32);
@@ -1050,19 +1072,19 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
                     .map_or(0, |living| living.get_health().ceil() as i32);
                 if let Some(living) = entity.as_living_entity() {
                     if let Some(weapon) = raid_weapon(kind, wave, raid.omen_level, rand::random())
-                        && (kind == 0 || weapon.get(steel_registry::data_components::vanilla_components::ENCHANTMENTS).is_some_and(|value| !value.levels.is_empty()))
+                        && (kind == 0 || weapon.get(ENCHANTMENTS).is_some_and(|value| !value.levels.is_empty()))
                     {
-                        living.with_equipment_slot_mut(crate::inventory::equipment::EquipmentSlot::MainHand,
+                        living.with_equipment_slot_mut(MainHand,
                             &mut |item| *item = weapon.clone());
                     }
                     if raid.leader.is_none() && kind <= 2 {
                         living.with_equipment_slot_mut(
-                            crate::inventory::equipment::EquipmentSlot::Head,
+                            Head,
                             &mut |item| *item = ominous_banner(),
                         );
                         if let Some(mob) = entity.as_mob() {
                             mob.set_equipment_drop_chance(
-                                crate::inventory::equipment::EquipmentSlot::Head,
+                                Head,
                                 2.0,
                             );
                         }
@@ -1105,9 +1127,9 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
                         };
                         if let Some(living) = rider.as_living_entity()
                             && let Some(weapon) = raid_weapon(rider_kind, wave, raid.omen_level, rand::random())
-                            && (rider_kind == 0 || weapon.get(steel_registry::data_components::vanilla_components::ENCHANTMENTS).is_some_and(|value| !value.levels.is_empty()))
+                            && (rider_kind == 0 || weapon.get(ENCHANTMENTS).is_some_and(|value| !value.levels.is_empty()))
                         {
-                            living.with_equipment_slot_mut(crate::inventory::equipment::EquipmentSlot::MainHand,
+                            living.with_equipment_slot_mut(MainHand,
                                 &mut |item| *item = weapon.clone());
                         }
                         rider.start_riding(&entity);
@@ -1256,10 +1278,12 @@ pub fn village_center(world: &Arc<World>, pos: IVec3) -> Option<IVec3> {
 mod persistence_tests {
     use super::*;
     use steel_utils::saved_data::{SavedDataManager, names};
+use std::env::temp_dir;
+use std::fs::remove_dir_all;
     #[tokio::test]
     async fn empty_and_active_raids_round_trip_through_real_disk_toml() {
         let directory =
-            std::env::temp_dir().join(format!("steel-raid-save-{}", uuid::Uuid::new_v4()));
+            temp_dir().join(format!("steel-raid-save-{}", uuid::Uuid::new_v4()));
         let manager = SavedDataManager::new(Some(&directory));
         for raids in [
             Vec::new(),
@@ -1279,7 +1303,7 @@ mod persistence_tests {
             let loaded: RaidSavedData = manager.load_or_default(names::RAIDS).await.unwrap();
             assert_eq!(loaded, data);
         }
-        std::fs::remove_dir_all(directory).unwrap();
+        remove_dir_all(directory).unwrap();
     }
 }
 
@@ -1289,6 +1313,9 @@ mod lifecycle_tests {
     use crate::behavior::init_behaviors;
     use crate::test_support::{fresh_test_world_with_difficulty, insert_ready_full_chunk};
     use steel_utils::ChunkPos;
+use steel_registry::vanilla_damage_types::GENERIC;
+use crate::entity::damage::DamageSource;
+use crate::inventory::equipment::EquipmentSlot::Head;
 
     #[test]
     fn difficulty_not_omen_selects_base_groups_and_omen_adds_only_one_bonus() {
@@ -1381,11 +1408,11 @@ mod lifecycle_tests {
             .living_base()
             .equipment()
             .lock()
-            .get_ref(crate::inventory::equipment::EquipmentSlot::Head)
+            .get_ref(Head)
             .clone();
         assert_eq!(
             banner
-                .get(steel_registry::data_components::vanilla_components::BANNER_PATTERNS)
+                .get(BANNER_PATTERNS)
                 .unwrap()
                 .layers()
                 .len(),
@@ -1404,8 +1431,8 @@ mod lifecycle_tests {
             let entity = world.get_entity_by_uuid(&id).unwrap();
             let living = entity.as_living_entity().unwrap();
             living.set_health(0.0);
-            living.die(&crate::entity::damage::DamageSource::environment(
-                &steel_registry::vanilla_damage_types::GENERIC,
+            living.die(&DamageSource::environment(
+                &GENERIC,
             ));
         }
         world.raids.tick(world);
@@ -1439,11 +1466,12 @@ mod outcome_tests {
     use crate::entity::next_entity_id;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
     use steel_utils::ChunkPos;
+use crate::behavior::init_behaviors;
 
     #[test]
     fn victory_waits_forty_ticks_rewards_only_credited_hero_then_expires() {
         steel_registry::init_vanilla_registry();
-        crate::behavior::init_behaviors();
+        init_behaviors();
         let fixture = fresh_test_world("raid_victory");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
@@ -1518,11 +1546,16 @@ mod complete_wave_tests {
     use crate::test_support::{fresh_test_world_with_difficulty, insert_ready_full_chunk};
     use steel_registry::vanilla_blocks;
     use steel_utils::{ChunkPos, types::UpdateFlags};
+use steel_registry::vanilla_damage_types::GENERIC;
+use crate::behavior::init_behaviors;
+use crate::chunk::chunk_holder::TickingReadiness::EntityTicking;
+use crate::chunk::chunk_ticket_manager::ChunkTicketLevel;
+use crate::entity::damage::DamageSource;
 
     #[test]
     fn all_difficulties_and_bonus_waves_require_real_member_deaths() {
         steel_registry::init_vanilla_registry();
-        crate::behavior::init_behaviors();
+        init_behaviors();
         for (difficulty, omen, waves) in [
             (Difficulty::Easy, 0, 3),
             (Difficulty::Easy, 1, 4),
@@ -1543,10 +1576,10 @@ mod complete_wave_tests {
             for z in -1..=1 {
                 let holder = insert_ready_full_chunk(world, ChunkPos::new(x, z));
                 holder.set_simulation_level(Some(
-                    crate::chunk::chunk_ticket_manager::ChunkTicketLevel::ENTITY_TICKING_CHUNK,
+                    ChunkTicketLevel::ENTITY_TICKING_CHUNK,
                 ));
                 let _ = holder.transition_ticking_readiness(
-                    crate::chunk::chunk_holder::TickingReadiness::EntityTicking,
+                    EntityTicking,
                 );
             }
         }
@@ -1598,8 +1631,8 @@ mod complete_wave_tests {
                 let entity = world.get_entity_by_uuid(&id).unwrap();
                 let living = entity.as_living_entity().unwrap();
                 living.set_health(0.0);
-                living.die(&crate::entity::damage::DamageSource::environment(
-                    &steel_registry::vanilla_damage_types::GENERIC,
+                living.die(&DamageSource::environment(
+                    &GENERIC,
                 ));
             }
         }
@@ -1760,6 +1793,7 @@ mod spawn_search_tests {
     use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
     use steel_registry::vanilla_blocks;
     use steel_utils::{ChunkPos, types::UpdateFlags};
+use crate::behavior::init_behaviors;
 
     #[test]
     fn search_radius_uses_whole_countdown_seconds_and_signed_floor_jitter() {
@@ -1815,7 +1849,7 @@ mod spawn_search_tests {
     #[test]
     fn ground_placement_accepts_non_air_vegetation_and_rejects_hazards_and_signals() {
         steel_registry::init_vanilla_registry();
-        crate::behavior::init_behaviors();
+        init_behaviors();
         let fixture = fresh_test_world("raid_spawn_surface");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
@@ -1878,6 +1912,10 @@ mod joining_and_killer_tests {
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
     use steel_registry::{entity_type::EntityTypeRef, vanilla_damage_types};
     use steel_utils::ChunkPos;
+use simdnbt::borrow::read_compound;
+use simdnbt::owned::NbtCompound;
+use crate::behavior::init_behaviors;
+use std::io::Cursor;
 
     fn spawn(
         world: &Arc<World>,
@@ -1906,7 +1944,7 @@ mod joining_and_killer_tests {
     #[test]
     fn raider_ai_joins_once_blocks_despawning_and_respects_idle_and_witch_exclusions() {
         steel_registry::init_vanilla_registry();
-        crate::behavior::init_behaviors();
+        init_behaviors();
         let fixture = fresh_test_world("raid_external_join");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
@@ -1990,20 +2028,20 @@ mod joining_and_killer_tests {
         let mob = raider.as_mob().unwrap();
         for eligible in [false, true] {
             mob.set_can_join_raid(eligible);
-            let mut nbt = simdnbt::owned::NbtCompound::new();
+            let mut nbt = NbtCompound::new();
             mob.save_mob(&mut nbt);
             let mut bytes = Vec::new();
             nbt.write(&mut bytes);
             let borrowed =
-                simdnbt::borrow::read_compound(&mut std::io::Cursor::new(&bytes)).unwrap();
+                read_compound(&mut Cursor::new(&bytes)).unwrap();
             mob.set_can_join_raid(!eligible);
             mob.load_mob((&borrowed).into());
             assert_eq!(mob.can_join_raid(), eligible);
         }
-        let empty = simdnbt::owned::NbtCompound::new();
+        let empty = NbtCompound::new();
         let mut bytes = Vec::new();
         empty.write(&mut bytes);
-        let borrowed = simdnbt::borrow::read_compound(&mut std::io::Cursor::new(&bytes)).unwrap();
+        let borrowed = read_compound(&mut Cursor::new(&bytes)).unwrap();
         mob.load_mob((&borrowed).into());
         assert!(!mob.can_join_raid());
     }
@@ -2011,7 +2049,7 @@ mod joining_and_killer_tests {
     #[test]
     fn hero_credit_uses_killing_damage_source_not_remembered_previous_player_hit() {
         steel_registry::init_vanilla_registry();
-        crate::behavior::init_behaviors();
+        init_behaviors();
         let fixture = fresh_test_world("raid_killing_source");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));

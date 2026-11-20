@@ -2,6 +2,8 @@ use std::sync::{Arc, Weak};
 
 use steel_macros::block_behavior;
 use steel_registry::block_entity_type::BlockEntityTypeRef;
+use steel_registry::level_events::SOUND_EXTINGUISH_FIRE;
+use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::blocks::properties::{
     BlockStateProperties, BoolProperty, Direction, EnumProperty,
 };
@@ -20,6 +22,8 @@ use steel_utils::{
 
 use crate::behavior::block::schedule_water_tick_if_waterlogged;
 use crate::player::Player;
+use crate::inventory::equipment::EquipmentSlot::MainHand;
+use crate::inventory::equipment::EquipmentSlot::OffHand;
 use crate::{
     behavior::{
         BlockBehavior, BlockPlaceContext, InteractionResult, InventoryAccess,
@@ -153,11 +157,11 @@ impl BlockBehavior for CampfireBlock {
                 && inv.with_item(|stack| {
                     stack
                         .item()
-                        .has_tag(&steel_registry::vanilla_item_tags::ItemTag::DOUSES_CAMPFIRES)
+                        .has_tag(&ItemTag::DOUSES_CAMPFIRES)
                 })
             {
                 world.level_event(
-                    steel_registry::level_events::SOUND_EXTINGUISH_FIRE,
+                    SOUND_EXTINGUISH_FIRE,
                     pos,
                     0,
                     None,
@@ -173,10 +177,10 @@ impl BlockBehavior for CampfireBlock {
                 if let Some(item) = broken {
                     let slot = match hand {
                         InteractionHand::MainHand => {
-                            crate::inventory::equipment::EquipmentSlot::MainHand
+                            MainHand
                         }
                         InteractionHand::OffHand => {
-                            crate::inventory::equipment::EquipmentSlot::OffHand
+                            OffHand
                         }
                     };
                     player.on_equipped_item_broken(item, slot);

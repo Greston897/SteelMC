@@ -10,6 +10,12 @@
 
 use crate::player::player_inventory::Prediction;
 use std::sync::Arc;
+use crate::player::recipe_placement::PlacementRequest;
+use crate::player::recipe_placement::PostPlaceAction;
+use crate::player::recipe_placement::StackedItemContents;
+use crate::player::recipe_placement::apply_plan;
+use crate::player::recipe_placement::grid_produces;
+use crate::player::recipe_placement::plan_placement;
 
 use steel_registry::item_stack::ItemStack;
 use steel_utils::locks::{IntoShared, Shared};
@@ -175,7 +181,7 @@ impl MenuKind for InventoryKind {
         &self,
         _behavior: &MenuBehavior,
         guard: &ContainerLockGuard,
-        contents: &mut crate::player::recipe_placement::StackedItemContents,
+        contents: &mut StackedItemContents,
     ) -> bool {
         let Some(crafting) = guard.get_typed::<CraftingContainer>(self.handler.crafting_id())
         else {
@@ -196,17 +202,17 @@ impl MenuKind for InventoryKind {
         _behavior: &mut MenuBehavior,
         guard: &mut ContainerLockGuard,
         player: &Player,
-        request: crate::player::recipe_placement::PlacementRequest<'_>,
-    ) -> Option<crate::player::recipe_placement::PostPlaceAction> {
+        request: PlacementRequest<'_>,
+    ) -> Option<PostPlaceAction> {
         let crafting = guard.get_typed::<CraftingContainer>(self.handler.crafting_id())?;
         let grid = crafting.items().to_vec();
-        let matches = crate::player::recipe_placement::grid_produces(crafting, request.recipe_key);
+        let matches = grid_produces(crafting, request.recipe_key);
         let inv_id = ContainerId::from_arc(&player.inventory);
         let inventory: Vec<ItemStack> = guard
             .get_typed::<PlayerInventory>(inv_id)?
             .get_items()
             .to_vec();
-        let plan = crate::player::recipe_placement::plan_placement(
+        let plan = plan_placement(
             &inventory,
             2,
             2,
@@ -224,7 +230,7 @@ impl MenuKind for InventoryKind {
                 }
             },
         );
-        Some(crate::player::recipe_placement::apply_plan(
+        Some(apply_plan(
             guard,
             player,
             plan,

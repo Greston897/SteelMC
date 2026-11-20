@@ -14,6 +14,8 @@ use steel_registry::blocks::properties::{BlockStateProperties, TestBlockMode};
 use steel_registry::vanilla_block_entity_types;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtValueInput as _;
+use steel_registry::vanilla_blocks::TEST_BLOCK;
+use steel_utils::types::UpdateFlags;
 
 use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
@@ -117,7 +119,7 @@ impl TestBlockEntity {
         let pos = self.base.pos();
         let state = world.get_block_state(pos);
         // Vanilla `blockState.is(Blocks.TEST_BLOCK)`.
-        if state.get_block() != &steel_registry::vanilla_blocks::TEST_BLOCK {
+        if state.get_block() != &TEST_BLOCK {
             return;
         }
         let mode = self.state.lock().mode;
@@ -126,7 +128,7 @@ impl TestBlockEntity {
             world.set_block(
                 pos,
                 updated,
-                steel_utils::types::UpdateFlags::UPDATE_CLIENTS,
+                UpdateFlags::UPDATE_CLIENTS,
             );
         }
     }
