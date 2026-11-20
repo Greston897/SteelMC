@@ -129,7 +129,8 @@ impl SaplingBlock {
                 for z in -2..=2 {
                     if world
                         .get_block_state(pos.offset(x, y, z))
-                        .is_in_tag(&BlockTag::FLOWERS)
+                        .get_block()
+                        .has_tag(&BlockTag::FLOWERS)
                     {
                         return true;
                     }

@@ -1,0 +1,89 @@
+# Полный аудит SteelMC относительно vanilla 26.3 — фактический прогресс
+
+**Полный аудит НЕ завершён.** Этот файл не выдаёт перечень файлов, компиляцию или собственные тесты за доказательство полного соответствия.
+
+## Счётчики, которые можно подтвердить
+
+- База vanilla: 6922 Java-файла net/minecraft, pinned revision `74720c2890f22942b72d7d84958eff1b3f72b95b`, список с blob SHA: `.ci/vanilla-audit/source-files-26.3.tsv`. Это не 6922 механики и не 6922 проверенных файла.
+- Полностью закрытых по всем методам/ветвям Java-файлов в этой базе: **0**. Методные сравнения не повышают статус всего класса до PASS.
+- Конкретных правил с найденным расхождением и внесённым исправлением в текущей серии (азалии → chunk pacing): **25**. Из них с подтверждённым исполнением нового Rust-кода: **0 на момент снимка**. Источник: `.ci/vanilla-audit/rule-findings.json`. Не включает все исторические исправления репозитория; это не 25 полностью исправных механик.
+- 506 файлов вне LLVM в подтверждённом срезе 5a52baf; для 10 прочитан весь файл и разобрана ответственность: `.ci/vanilla-audit/outside-llvm-reviewed.md`. Это **не** 10 полностью проверенных реализаций механик. Остальные 496 не получают автоматически такую же классификацию.
+- Последний подтверждённый LLVM-срез 5a52baf: **4795 PASS / 0 FAIL / 7 ignored**, run 44664434286. Все 7 ignored headless, не исключены как player-only.
+- Отдельные реальные сравнения: chunk stages e273687 — 8/9 сочетаний измерение/стадия PASS, Overworld/features **7/2500 несовпадений**; Flint selected 5a52baf — **48 ошибок**. Это не один общий знаменатель.
+- Локальные CI Python tests: **29 PASS**. Математический алгоритм округления отдельно проверен на 100402 входах против битового алгоритма Java, не Java runtime и не Rust execution.
+
+## Регрессии собственной работы — не скрыты
+
+- Новые тесты азалий 2e8caa3 не компилировались из-за `&*Block`; исправлено e953c88.
+- После рефакторинга деревьев остался unused import; исправлено 4e5ce42.
+- Последующая диагностика 98c2e6e обнаружила несуществующий метод BlockStateId.is_in_tag в новом поиске цветов. Исправлен вызов на get_block().has_tag. До нового успешного прогона дерево не объявлено проверенным.
+- 4e5ce42 Test 44668738376 FAIL, Flint 44668738262 FAIL. Новый e3bd61b Test 44668916462 и Vanilla Evidence 44668916455 при снимке queued. Не засчитывать ожидающие прогоны как PASS.
+
+## Подсистемы: последний подтверждённый измеренный срез 5a52baf
+
+Проценты ниже — только исполнение инструментированных строк, включая тестовый код. Не процент реализации и не vanilla parity. Во всех строках полный методный/runtime-аудит остаётся открыт.
+
+| Подсистема | Строки исполнено/измерено | % строк | Вне LLVM |
+|---|---:|---:|---:|
+| Инфраструктура | 6525/11220 | 58.16% | 7 |
+| Мир и тики | 13114/16083 | 81.54% | 10 |
+| Чанки и свет | 14996/16748 | 89.54% | 15 |
+| Хранение и миграции | 3344/4067 | 82.22% | 8 |
+| Worldgen | 14861/43095 | 34.48% | 13 |
+| Блоки | 20690/34850 | 59.37% | 19 |
+| Предметы | 5177/7341 | 70.52% | 3 |
+| Block entities | 7189/11468 | 62.69% | 3 |
+| Сущности и AI | 42287/67508 | 62.64% | 81 |
+|   Мирные мобы (внутри AI) | 5323/11634 | 45.75% | 19 |
+|   Враждебные мобы (внутри AI) | 3953/8479 | 46.62% | 1 |
+|   Нейтральные мобы (внутри AI) | 105/223 | 47.09% | 1 |
+|   Боссы (внутри AI) | 843/2849 | 29.59% | 1 |
+|   Транспорт (внутри AI) | 1333/2997 | 44.48% | 6 |
+|   Снаряды (внутри AI) | 2238/4248 | 52.68% | 1 |
+|   Рейды (внутри мира) | 1521/1684 | 90.32% | 0 |
+| Игрок и соединение | 11272/17370 | 64.89% | 6 |
+| Инвентарь и меню | 6366/9094 | 70.00% | 10 |
+| Команды и права | 20422/30060 | 67.94% | 19 |
+| Физика, жидкости, порталы | 3385/4398 | 76.97% | 2 |
+| Loot и зачарования | 1110/1386 | 80.09% | 1 |
+| Протокол | 3756/4688 | 80.12% | 98 |
+| Реестры и кодеки | 23391/32293 | 72.43% | 124 |
+| Вход и сессии | 369/1384 | 26.66% | 4 |
+| Утилиты и математика | 8035/10161 | 79.08% | 11 |
+| Flint adapter | 403/980 | 41.12% | 0 |
+
+## Подтверждённые расхождения: внесено, ожидает исполнения
+
+| ID | Подсистема | Vanilla class.method | Изменение |
+|---|---|---|---|
+| AZ-01 | Блоки | AzaleaBlock.isValidBonemealTarget | Отсутствовало подключение Bonemealable у обеих азалий |
+| AZ-02 | Блоки | AzaleaBlock.isValidBonemealTarget | Жидкость над азалией должна запрещать костную муку |
+| AZ-03 | Блоки | AzaleaBlock.isValidBonemealTarget | Проверка min-height+2 относительно build height |
+| AZ-04 | Блоки | AzaleaBlock.isBonemealSuccess | Успех костной муки 45%, float расширяется до double |
+| SP-01 | Блоки | SaplingBlock.advanceTree | Первая стадия роста должна менять STAGE, не выращивать дерево |
+| SP-02 | Блоки | SaplingBlock.randomTick | Освещение проверяется над саженцем |
+| SP-03 | Блоки | SaplingBlock.isBonemealSuccess | Вместо безусловного успеха костной муки — 45% |
+| SP-04 | Блоки | SaplingBlock.isValidBonemealTarget | Учитывать минимальную высоту дерева и build height |
+| SP-05 | Блоки | SaplingBlock.advanceTree | Scheduled tick не должен повышать STAGE |
+| SP-06 | Блоки | VegetationBlock.updateShape | У саженца отсутствовал унаследованный survival updateShape |
+| TR-01 | Worldgen | TreeGrower.getConfiguredFeature | Весовой выбор primary деревьев вместо универсального float 10% |
+| TR-02 | Worldgen | TreeGrower.hasFlowers | Выбирать flower variants при цветах в области 5x3x5 |
+| TR-03 | Worldgen | TreeGrower.growTree | Выбор mega feature и поиск четырёх возможных квадратов 2x2 |
+| TR-04 | Worldgen | TreeGrower.canGrow | Mega-only дереву требуется 2x2 для bonemeal target |
+| TR-05 | Worldgen | TreeGrower.resetSaplings | Восстанавливать все исходные состояния при неудачной mega-генерации |
+| TR-06 | Worldgen | TreeGrower.removeSapling | При удалении саженца сохранять его fluid legacy block и vanilla flags |
+| MG-01 | Блоки | MangrovePropaguleBlock.updateShape | Проверка выживания не ограничивается направлением UP |
+| MG-02 | Блоки | MangrovePropaguleBlock.isBonemealSuccess | Сравнение расширенного float с double 0.45 |
+| PH-01 | Физика | Entity.move | Не отбрасывать малое ненулевое перемещение по per-axis cutoff |
+| PH-02 | Физика | Entity.limitPistonMovement | Порог остатка поршня: widened float 1e-5f, не double literal |
+| SY-01 | Синхронизация | ServerEntity.sendChanges | AbstractArrow всегда position+rotation на обработанном интервале |
+| SY-02 | Синхронизация | ServerEntity.sendChanges | Точный double-порог позиции 7.62939453125E-6 |
+| SY-03 | Синхронизация | ServerEntity.createMovePacket | Overflow fallback не сбрасывает teleportDelay |
+| PR-01 | Протокол | VecDeltaCodec.encode | Math.round: значение непосредственно ниже half tie не округлять вверх |
+| CH-01 | Чанки | PlayerChunkSender.onChunkBatchReceivedByClient | Ограничения ACK-rate vanilla 0.01..64 вместо 0.1..500 |
+
+## Что остаётся обязательным
+
+Все методы/ветви остальных классов vanilla, runtime call chains Steel и файлы вне LLVM. Из известных зон: RNG/feature runner, Overworld/features, Flint placement, syncPosition/stepped paths/minecart/projectile power, конкурентные pairing/visibility/chunk send/unload/dimension transitions, block/light/entity ordering, inventory state-id/ack, functions/reload, strict Clippy. Отсутствие нового расхождения при чтении не равно исполненному сравнению.
+
+При разборе chunk sender проверены lock boundaries: `run_loop.send_player_chunks` удерживает last_tracking_view во время commit/tracker refresh; `chunk_map.remove_player` получает view → sender → epoch. Только по наличию `drop(epoch)` дефект не установлен, поэтому существующая схема блокировок не изменена. Полная стресс-проверка ещё требуется.
