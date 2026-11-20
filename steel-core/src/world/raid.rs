@@ -1418,6 +1418,35 @@ mod joining_and_killer_tests {
     }
 
     #[test]
+    fn raider_activity_uses_double_increment_and_only_raid_player_or_golem_resets() {
+        let fixture = fresh_test_world("raid_activity_timer");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        world.raids.raise_omen(IVec3::new(0, 64, 0), 0);
+        let entity = spawn(world, &vanilla_entities::PILLAGER, EntitySpawnReason::Event);
+        let mob = entity.as_mob().unwrap();
+        let golem = spawn(world, &vanilla_entities::IRON_GOLEM, EntitySpawnReason::Event);
+        mob.mob_base().set_target(Some(&golem), |_| true);
+        mob.set_no_action_time(100);
+        mob.update_mob_no_action_time();
+        assert_eq!(mob.no_action_time(), 102); // not yet in a raid
+        assert!(world.raids.try_join_raider(&entity));
+        mob.update_mob_no_action_time();
+        assert_eq!(mob.no_action_time(), 2);
+        let pig = spawn(world, &vanilla_entities::PIG, EntitySpawnReason::Command);
+        mob.mob_base().set_target(Some(&pig), |_| true);
+        mob.set_no_action_time(100);
+        mob.update_mob_no_action_time();
+        assert_eq!(mob.no_action_time(), 102); // not a player or golem
+        mob.mob_base().set_target(None, |_| true);
+        mob.update_mob_no_action_time();
+        assert_eq!(mob.no_action_time(), 104);
+        pig.as_mob().unwrap().set_no_action_time(100);
+        pig.as_mob().unwrap().update_mob_no_action_time();
+        assert_eq!(pig.as_mob().unwrap().no_action_time(), 101);
+    }
+
+    #[test]
     fn eligibility_round_trips_and_missing_old_nbt_flag_defaults_to_false() {
         let fixture = fresh_test_world("raid_eligibility_nbt");
         let world = &fixture.world;

@@ -1732,6 +1732,23 @@ pub trait Mob: LivingEntity + Leashable {
         ));
     }
 
+    /// Raider.updateNoActionTime advances twice as fast; fighting a player or
+    /// iron golem in an active raid resets inactivity before the increment.
+    fn update_mob_no_action_time(&self) {
+        let raider = crate::world::raid::is_raider_type(self.entity_type());
+        if raider && self.can_join_raid()
+            && self.target().is_some_and(|target| target.as_player().is_some()
+                || target.entity_type() == &vanilla_entities::IRON_GOLEM)
+            && self.level().is_some_and(|world| world.raids.contains_raider(self.uuid()))
+        {
+            self.set_no_action_time(0);
+        }
+        self.increment_no_action_time();
+        if raider {
+            self.increment_no_action_time();
+        }
+    }
+
     fn mob_server_ai_step(&self, entity: &SharedEntity) {
         if crate::world::raid::is_raider_type(self.entity_type())
             && self.can_join_raid()
@@ -1739,7 +1756,7 @@ pub trait Mob: LivingEntity + Leashable {
             && world.game_time() % 20 == 0 {
             world.raids.try_join_raider(entity);
         }
-        self.increment_no_action_time();
+        self.update_mob_no_action_time();
         self.mob_base().sensing().lock().tick();
         if self.tick_count() % 5 == 0 {
             self.update_control_flags();
