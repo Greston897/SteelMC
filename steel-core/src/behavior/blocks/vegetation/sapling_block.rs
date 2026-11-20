@@ -5,7 +5,7 @@ use rand::{Rng, RngExt};
 use steel_macros::block_behavior;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::{BlockStateProperties, IntProperty};
-use steel_registry::feature::ConfiguredFeatureKind;
+use steel_registry::feature::{ConfiguredFeatureKind, TrunkPlacer};
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::{REGISTRY, RegistryExt as _, vanilla_blocks};
 use steel_utils::random::worldgen_random::WorldgenRandom;
@@ -88,9 +88,32 @@ impl SaplingBlock {
         REGISTRY.configured_features.by_key(&key)
     }
 
+    /// Vanilla `TreeGrower.getMinimumHeight`: base trunk height of the
+    /// shortest configured tree, or zero when no tree feature is registered.
+    pub(super) fn minimum_tree_height(name: &str) -> i32 {
+        let Some(feature) = Self::configured_feature(name) else {
+            return 0;
+        };
+        let ConfiguredFeatureKind::Tree(config) = &feature.kind else {
+            return 0;
+        };
+        match &config.trunk_placer {
+            TrunkPlacer::Straight(base)
+            | TrunkPlacer::Giant(base)
+            | TrunkPlacer::Fancy(base)
+            | TrunkPlacer::Forking(base)
+            | TrunkPlacer::DarkOak(base)
+            | TrunkPlacer::MegaJungle(base) => base.base_height,
+            TrunkPlacer::Bending(base) => base.base_height,
+            TrunkPlacer::UpwardsBranching(base) => base.base_height,
+            TrunkPlacer::Cherry(base) => base.base_height,
+            TrunkPlacer::Poplar(base) => base.base_height,
+        }
+    }
+
     /// Vanilla `SaplingBlock.advanceTree`: place the tree feature, replacing the
     /// sapling; restore it when the feature could not find room.
-    fn grow_tree(
+    pub(super) fn grow_tree(
         &self,
         world: &Arc<World>,
         pos: BlockPos,
