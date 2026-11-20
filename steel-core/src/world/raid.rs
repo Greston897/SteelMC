@@ -714,7 +714,7 @@ fn find_spawn_pos(world: &Arc<World>, center: IVec3, cooldown: i32, max_tries: i
 }
 
 /// Shared vanilla captain banner, including all eight ordered pattern layers.
-pub(crate) pub(crate) fn ominous_banner() -> steel_registry::item_stack::ItemStack {
+pub(crate) fn ominous_banner() -> steel_registry::item_stack::ItemStack {
     use steel_registry::data_components::vanilla_components::{
         BANNER_PATTERNS, ITEM_NAME, RARITY, Rarity,
     };
