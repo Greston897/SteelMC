@@ -26,7 +26,7 @@ use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey};
 
 use crate::entity::ai::goal::{
     FloatGoal, HurtByTargetGoal, LookAtPlayerGoal, MeleeAttackGoal, NearestAttackableTargetGoal,
-    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal,
+    RandomLookAroundGoal, WaterAvoidingRandomStrollGoal, RaidBreakDoorGoal, OpenDoorGoal,
 };
 use crate::entity::damage::DamageSource;
 use crate::entity::{
@@ -83,7 +83,9 @@ impl VindicatorEntity {
         {
             let mut goal_selector = mob_base.goal_selector().lock();
             goal_selector.add_goal(0, FloatGoal::new(&mob_base));
-            goal_selector.add_goal(2, MeleeAttackGoal::new(1.0, false));
+            goal_selector.add_goal(2, RaidBreakDoorGoal::new());
+            goal_selector.add_goal(3, OpenDoorGoal::for_raid());
+            goal_selector.add_goal(5, MeleeAttackGoal::new(1.0, false));
             goal_selector.add_goal(7, WaterAvoidingRandomStrollGoal::new(1.0));
             goal_selector.add_goal(8, LookAtPlayerGoal::new(8.0));
             goal_selector.add_goal(9, RandomLookAroundGoal::new());
@@ -94,6 +96,11 @@ impl VindicatorEntity {
                 2,
                 NearestAttackableTargetGoal::new_for_players(true, |_, _| true),
             );
+            target_selector.add_goal(3, NearestAttackableTargetGoal::new(true, |target, _| {
+                target.entity_type() == &steel_registry::vanilla_entities::VILLAGER
+                    || target.entity_type() == &steel_registry::vanilla_entities::WANDERING_TRADER
+                    || target.entity_type() == &steel_registry::vanilla_entities::IRON_GOLEM
+            }));
         }
 
         Self {
@@ -240,6 +247,9 @@ impl Mob for VindicatorEntity {
     }
 
     fn tick_goal_selectors(&self, entity: &SharedEntity) {
+        let raided = self.level().is_some_and(|world| world.raids.raid_at(self.block_position().0)
+            .is_some_and(|raid| raid.status == crate::world::raid::RaidStatus::Ongoing));
+        self.mob_base.navigation().lock().set_can_open_doors(raided);
         PathfinderMob::tick_pathfinder_goal_selectors(self, entity);
     }
 
