@@ -55,3 +55,16 @@ Static tests — найденные функции в исходниках. Runt
 ## Что эти результаты не закрывают
 
 См. [VANILLA-26.3-GAPS-RU.md](VANILLA-26.3-GAPS-RU.md), [SOURCE-LIMITATIONS-26.3-RU.md](SOURCE-LIMITATIONS-26.3-RU.md) и [MANUAL-MECHANICS-26.3-RU.md](MANUAL-MECHANICS-26.3-RU.md). Существование инструкции не равно PASS. Весь набор клиентских сценариев ещё NOT RUN.
+
+## Финальная перепроверка документов и кода (`6a4c76f`)
+
+- [Test 44645381789](https://github.com/Greston897/SteelMC/actions/runs/44645381789)
+  — success; те же **4802 passed / 0 failed / 7 ignored**.
+- [Live Server Smoke 44645382546](https://github.com/Greston897/SteelMC/actions/runs/44645382546)
+  — success: Steel, vanilla и compare. Этот run также запускает Python-проверки
+  стенда и нового каталога сценариев в Actions; это валидация инструкции,
+  а не исполнение 107 описанных игровых опытов.
+
+Таблица выше сохраняет исходный подтверждённый снимок `321f243`. После него
+Rust-поведение не менялось; дополнены отчётность и руководство. Полного
+vanilla-паритета эти повторные зелёные запуски не устанавливают.
