@@ -338,7 +338,7 @@ impl RaidManager {
         let eligible = self.raids.lock().iter().any(|raid| raid.status == RaidStatus::Ongoing
             && raid.leader.is_none() && raid.raiders.contains(&entity.uuid()));
         if !eligible { return; }
-        let range = mob.get_attribute_value(steel_registry::vanilla_attributes::FOLLOW_RANGE);
+        let range = mob.attributes().lock().required_value(steel_registry::vanilla_attributes::FOLLOW_RANGE);
         let mut items = world.get_entities_in_aabb(&entity.bounding_box().inflate_xyz(range, 8.0, range));
         items.sort_by(|a, b| a.position().distance_squared(entity.position())
             .total_cmp(&b.position().distance_squared(entity.position())));

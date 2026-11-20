@@ -154,7 +154,7 @@ impl WitherBossEntity {
         }
     }
 
-    fn fire_skull(&self, shooter: &SharedEntity, head: usize, target: DVec3) {
+    fn fire_skull(&self, shooter: &SharedEntity, head: usize, target: DVec3, dangerous: bool) {
         use crate::entity::{Projectile, next_entity_id};
         use crate::entity::entities::objects::projectiles::WitherSkullEntity;
         let Some(world) = self.level() else { return; };
@@ -164,8 +164,9 @@ impl WitherBossEntity {
             else { DVec3::new(f64::from(steel_math::trig::cos(angle)) * 1.3 * scale, 2.2 * scale, f64::from(steel_math::trig::sin(angle)) * 1.3 * scale) };
         let skull = Arc::new(WitherSkullEntity::new(&steel_registry::vanilla_entities::WITHER_SKULL, next_entity_id(), position, Arc::downgrade(&world)));
         skull.set_owner_entity(Some(shooter));
+        skull.set_dangerous(dangerous);
         skull.set_no_gravity(true);
-        skull.shoot(target - position, 1.0, 0.0);
+        skull.shoot(target - position, 0.1, 0.0);
         let projectile: SharedEntity = skull;
         if world.try_add_entity(projectile).is_ok() && !self.is_silent() {
             world.level_event(level_events::SOUND_WITHER_BOSS_SHOOT, self.block_position(), 0, None);
@@ -180,11 +181,20 @@ impl WitherBossEntity {
         for side in 0..2 {
             if self.tick_count() < timers.0[side] { continue; }
             timers.0[side] = self.tick_count() + rand::random_range(10..20);
+            if matches!(world.difficulty(), steel_utils::types::Difficulty::Normal | steel_utils::types::Difficulty::Hard) {
+                let previous = timers.1[side];
+                timers.1[side] += 1;
+                if previous > 15 {
+                    let destination = self.position() + DVec3::new(rand::random_range(-10.0..10.0), rand::random_range(-5.0..5.0), rand::random_range(-10.0..10.0));
+                    self.fire_skull(shooter, side + 2, destination, true);
+                    timers.1[side] = 0;
+                }
+            }
             let current = world.get_entity_by_id(self.alternative_target(side + 1));
             if let Some(target) = current.filter(|target| target.as_living_entity().is_some_and(|living| Mob::can_attack(self, living))
                 && !steel_registry::REGISTRY.entity_types.is_in_tag(target.entity_type(), &EntityTypeTag::WITHER_FRIENDS)
                 && target.position().distance_squared(self.position()) <= 900.0 && self.has_line_of_sight(target.as_ref())) {
-                self.fire_skull(shooter, side + 2, target.position() + DVec3::Y * (target.bounding_box().height() * 0.5));
+                self.fire_skull(shooter, side + 2, target.position() + DVec3::Y * (target.bounding_box().height() * 0.5), false);
                 timers.0[side] = self.tick_count() + rand::random_range(40..60);
                 timers.1[side] = 0;
             } else {
@@ -471,7 +481,7 @@ impl Monster for WitherBossEntity {}
 
 impl PathfinderMob for WitherBossEntity {
     fn perform_ranged_attack(&self, shooter: &SharedEntity, target: &SharedEntity, _power: f32) {
-        self.fire_skull(shooter, 0, target.position() + DVec3::Y * (target.bounding_box().height() * 0.5));
+        self.fire_skull(shooter, 0, target.position() + DVec3::Y * (target.bounding_box().height() * 0.5), rand::random::<f32>() < 0.001);
     }
 }
 
