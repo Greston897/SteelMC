@@ -280,6 +280,15 @@ mod tests {
     fn placement_scenarios() -> Vec<PlacementScenario> {
         vec![
             PlacementScenario {
+                name: "coral wall fan with unobstructed west face",
+                setup: vec![([8, 1, 4], FlintBlock::new("minecraft:stone"))],
+                player_pos: [6.5, 0.0, 4.5],
+                player_rot: [-90.0, 0.0],
+                item: "minecraft:brain_coral_fan",
+                target: [7, 1, 4],
+                expected: "minecraft:brain_coral_wall_fan",
+            },
+            PlacementScenario {
                 name: "bamboo below low ceiling",
                 setup: vec![
                     ([0, 1, 0], FlintBlock::new("minecraft:dirt")),
