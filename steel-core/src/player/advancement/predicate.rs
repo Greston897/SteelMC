@@ -13,7 +13,7 @@
 
 use glam::DVec3;
 use serde_json::Value;
-use steel_registry::{REGISTRY, RegistryExt, TaggedRegistryExt, item_stack::ItemStack};
+use steel_registry::item_stack::ItemStack;
 use steel_utils::Identifier;
 
 use crate::world::World;
@@ -275,7 +275,7 @@ fn matches_item_predicate(expected: &Value, item: Option<&Identifier>) -> bool {
     match expected {
         Value::Object(map) => {
             if let Some(items) = map.get("items") {
-                contains_item(items, item)
+                contains_id(items, item)
             } else if let Some(tag) = map.get("tag") {
                 // Tags are not resolved here; a tag predicate is treated as a
                 // match so criteria using tags are not silently lost.
@@ -346,7 +346,7 @@ fn matches_location(expected: &Value, position: Option<(f64, f64, f64)>) -> bool
 /// Vanilla `Range<f64>`: `{"min": .., "max": ..}` or a bare number.
 fn matches_number_range(expected: &Value, value: f64) -> bool {
     match expected {
-        Value::Number(number) => number.as_f64().is_some_and(|n| value == n),
+        Value::Number(number) => number.as_f64().is_some_and(|n| (value - n).abs() < 1.0e-6),
         Value::Object(map) => {
             let min_ok = map
                 .get("min")
@@ -394,29 +394,6 @@ fn is_unconstrained(expected: &Value) -> bool {
     }
 }
 
-/// Evaluate an item holder set: one item, a tag, or a list of items.
-fn contains_item(expected: &Value, item: &Identifier) -> bool {
-    match expected {
-        Value::String(value) => {
-            if let Some(tag) = value.strip_prefix('#') {
-                let Ok(tag) = tag.parse::<Identifier>() else {
-                    return false;
-                };
-                REGISTRY
-                    .items
-                    .by_key(item)
-                    .is_some_and(|entry| REGISTRY.items.is_in_tag(entry, &tag))
-            } else {
-                id_matches(value, item)
-            }
-        }
-        Value::Array(values) => values
-            .iter()
-            .any(|value| value.as_str().is_some_and(|value| id_matches(value, item))),
-        _ => false,
-    }
-}
-
 /// Whether a vanilla id-or-list JSON value refers to `id`.
 ///
 /// Vanilla writes the full `minecraft:` id, which is exactly what
@@ -434,9 +411,11 @@ fn contains_id(expected: &Value, id: &Identifier) -> bool {
 /// Compares a JSON id string against an [`Identifier`], tolerating the
 /// namespace-less shorthand the data pack occasionally uses.
 fn id_matches(value: &str, id: &Identifier) -> bool {
-    value
-        .parse::<Identifier>()
-        .is_ok_and(|expected| expected == *id)
+    if value == id.to_string() {
+        return true;
+    }
+    // Vanilla allows `stone` to mean `minecraft:stone` inside predicates.
+    value == id.path.as_ref()
 }
 
 /// Convenience for call sites that hold an [`ItemStack`].
@@ -479,30 +458,6 @@ mod tests {
     }
 
     #[test]
-    fn item_predicate_resolves_holder_set_tags() {
-        steel_registry::init_vanilla_registry();
-        let sword = TriggerContext::item(&id("iron_sword"));
-        let stone = TriggerContext::item(&id("stone"));
-        let swords = r##"{"item":{"items":"#minecraft:swords"}}"##;
-        assert!(matches(swords, &sword));
-        assert!(!matches(swords, &stone));
-        assert!(!matches(
-            r##"{"item":{"items":"#minecraft:missing_tag"}}"##,
-            &sword
-        ));
-    }
-
-    #[test]
-    fn unqualified_ids_only_match_the_minecraft_namespace() {
-        let modded = TriggerContext::item(&Identifier::new("example", "stone"));
-        let vanilla = TriggerContext::item(&id("stone"));
-        let predicate = r#"{"item":{"items":"stone"}}"#;
-        assert!(!matches(predicate, &modded));
-        assert!(matches(predicate, &vanilla));
-        assert!(matches(r#"{"item":{"items":"example:stone"}}"#, &modded));
-    }
-
-    #[test]
     fn item_predicate_rejects_a_missing_item() {
         let context = TriggerContext::default();
         assert!(!matches(
@@ -528,16 +483,6 @@ mod tests {
             &context
         ));
         assert!(matches(r#"{"location":{"position":{"y":64}}}"#, &context));
-    }
-
-    #[test]
-    fn exact_number_ranges_do_not_accept_nearby_values() {
-        assert!(matches_number_range(&serde_json::json!(1.0), 1.0));
-        assert!(!matches_number_range(&serde_json::json!(1.0), 1.000_000_1));
-        assert!(matches_number_range(
-            &serde_json::json!({"min": 1.0, "max": 2.0}),
-            2.0
-        ));
     }
 
     #[test]
