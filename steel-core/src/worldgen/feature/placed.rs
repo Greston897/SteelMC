@@ -588,7 +588,7 @@ impl FeatureDecorationRunner {
             &feature.data,
             BiomeFilterMode::Ignore,
             biome_zoom_seed,
-            &[],
+            &feature.data.placement,
         )
     }
 }
