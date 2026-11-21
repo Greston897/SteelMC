@@ -21,6 +21,7 @@ use steel_registry::vanilla_entity_data::WolfEntityData;
 use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_items};
 use steel_utils::locks::SyncMutex;
+use steel_utils::nbt::NbtValueInput;
 use steel_utils::{DowncastType, DowncastTypeKey, UuidExt};
 use uuid::Uuid;
 

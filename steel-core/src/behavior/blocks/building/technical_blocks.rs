@@ -20,7 +20,7 @@ use steel_registry::{
 use steel_utils::Downcast as _;
 use steel_utils::types::InteractionHand;
 use steel_utils::types::UpdateFlags;
-use steel_utils::{BlockPos, BlockStateId};
+use steel_utils::{BlockPos, BlockStateId, Direction};
 
 use crate::behavior::BLOCK_BEHAVIORS;
 use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
@@ -38,7 +38,7 @@ use crate::entity::Entity;
 use crate::entity::damage::DamageSource;
 use crate::player::Player;
 use crate::world::LevelReader;
-use crate::world::{SignalGetter as _, SignalQueryContext, World};
+use crate::world::{ScheduledTickAccess, SignalGetter as _, SignalQueryContext, World};
 
 /// Maps a clicked facing onto vanilla's `front_and_top_to_orientation` for a
 /// jigsaw placed against that face.
@@ -523,6 +523,32 @@ impl CreakingHeartBlock {
 }
 
 impl BlockBehavior for CreakingHeartBlock {
+    fn update_shape(
+        &self,
+        state: BlockStateId,
+        world: &dyn ScheduledTickAccess,
+        pos: BlockPos,
+        direction: Direction,
+        _neighbor_pos: BlockPos,
+        _neighbor_state: BlockStateId,
+    ) -> BlockStateId {
+        if state.get_value(&BlockStateProperties::AXIS) == direction.axis() {
+            world.schedule_block_tick_default(pos, self.block, 1);
+        }
+        state
+    }
+
+    fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        let desired = CreakingHeartBlockEntity::compute_heart_state(world, pos, state);
+        if state.get_value(&BlockStateProperties::CREAKING_HEART_STATE) != desired {
+            world.set_block(
+                pos,
+                state.set_value(&BlockStateProperties::CREAKING_HEART_STATE, desired),
+                UpdateFlags::UPDATE_ALL,
+            );
+        }
+    }
+
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         let state = self
             .block
@@ -1241,5 +1267,61 @@ impl BonemealableFeaturePlacerBlock {
         };
         let index = rng.random_range(0..choices.len());
         choices[index]
+    }
+}
+
+#[cfg(test)]
+mod creaking_heart_neighbor_tests {
+    use steel_registry::init_vanilla_registry;
+
+    use super::*;
+    use crate::behavior::init_behaviors;
+    use crate::test_support::{TestLevel, fresh_test_world, insert_ready_full_chunk};
+    use steel_registry::blocks::properties::CreakingHeartState;
+    use steel_utils::ChunkPos;
+
+    #[test]
+    fn axial_neighbors_schedule_heart_state_refresh() {
+        init_vanilla_registry();
+        init_behaviors();
+        let behavior = CreakingHeartBlock::new(&vanilla_blocks::CREAKING_HEART);
+        let level = TestLevel::default();
+        let pos = BlockPos::new(8, 64, 8);
+        let state = vanilla_blocks::CREAKING_HEART.default_state();
+        behavior.update_shape(state, &level, pos, Direction::East, pos.east(), state);
+        assert!(level.scheduled_block_ticks.borrow().is_empty());
+        behavior.update_shape(state, &level, pos, Direction::Up, pos.above(), state);
+        assert_eq!(level.scheduled_block_ticks.borrow().len(), 1);
+
+        let fixture = fresh_test_world("creaking_heart_neighbor_refresh");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        world.set_block(pos, state, UpdateFlags::UPDATE_ALL);
+        for neighbor in [pos.above(), pos.below()] {
+            world.set_block(
+                neighbor,
+                vanilla_blocks::PALE_OAK_WOOD.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
+        }
+        behavior.tick(world.get_block_state(pos), world, pos);
+        assert_eq!(
+            world
+                .get_block_state(pos)
+                .get_value(&BlockStateProperties::CREAKING_HEART_STATE),
+            CreakingHeartState::Dormant
+        );
+        world.set_block(
+            pos.above(),
+            vanilla_blocks::AIR.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
+        behavior.tick(world.get_block_state(pos), world, pos);
+        assert_eq!(
+            world
+                .get_block_state(pos)
+                .get_value(&BlockStateProperties::CREAKING_HEART_STATE),
+            CreakingHeartState::Uprooted
+        );
     }
 }
