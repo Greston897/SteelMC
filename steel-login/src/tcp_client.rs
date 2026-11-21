@@ -425,6 +425,7 @@ impl JavaTcpClient {
 
     /// Starts a task that will send packets to the client from the outgoing packet queue.
     /// This task will run until the client is closed or the cancellation token is cancelled.
+    #[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
     pub fn start_outgoing_packet_task(
         self: &Arc<Self>,
         mut sender_recv: UnboundedReceiver<OutboundPacket>,

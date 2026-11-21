@@ -33,7 +33,6 @@ use steel_core::entity::damage::DamageHistory;
 use steel_core::entity::{ENTITIES, Entity, SharedEntity, next_entity_id};
 use steel_core::level_data::{GameTimeSource, WorldGenerationSettings};
 use steel_core::permission::PermissionSubjectIndex;
-use steel_core::player::offline_uuid;
 use steel_core::server::{Server, test_server_with_worlds_and_config};
 use steel_core::world::{LevelReader, World, WorldConfig, WorldStorageConfig};
 use steel_core::worldgen::{ChunkGeneratorType, EmptyChunkGenerator};
@@ -490,13 +489,14 @@ impl FlintWorld for SteelTestWorld {
     }
 }
 
-fn daytime_from_ticks(ticks: i64) -> u64 {
+const fn daytime_from_ticks(ticks: i64) -> u64 {
     ticks.rem_euclid(24_000) as u64
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use steel_core::player::offline_uuid;
 
     #[test]
     fn daylight_detector_registered_ticker_corrects_stale_power_at_noon() {
