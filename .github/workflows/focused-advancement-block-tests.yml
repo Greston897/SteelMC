@@ -8,6 +8,7 @@ on:
       - 'steel-core/src/behavior/blocks/vegetation/cactus_block.rs'
       - 'steel-core/src/behavior/blocks/container/beehive_block.rs'
       - 'steel-core/src/behavior/items/item_frame.rs'
+      - 'steel-core/src/behavior/items/cushion.rs'
       - 'steel-registry/src/blocks/block_state_ext.rs'
   workflow_dispatch:
 
@@ -32,14 +33,15 @@ jobs:
             cargo test -p steel-core --lib behavior::blocks::vegetation::cactus_block::tests:: -- --nocapture &&
             cargo test -p steel-core --lib behavior::blocks::container::beehive_block::tests:: -- --nocapture &&
             cargo test -p steel-registry --lib blocks::block_state_ext::tests::legacy_solidity -- --nocapture &&
-            cargo test -p steel-core --lib behavior::items::item_frame::tests:: -- --nocapture
+            cargo test -p steel-core --lib behavior::items::item_frame::tests:: -- --nocapture &&
+            cargo test -p steel-core --lib behavior::items::cushion::tests:: -- --nocapture
           } 2>&1 | tee /tmp/focused-regressions.log
           python3 - <<'PY'
           import re
           from pathlib import Path
           text = Path('/tmp/focused-regressions.log').read_text()
           counts = [int(n) for n in re.findall(r'test result: ok\. (\d+) passed;', text)]
-          assert len(counts) == 5 and counts[0] >= 10 and counts[1] >= 1 and counts[2] >= 5 and counts[3] >= 1 and counts[4] >= 1, counts
+          assert len(counts) == 6 and counts[0] >= 10 and counts[1] >= 1 and counts[2] >= 5 and counts[3] >= 1 and counts[4] >= 1 and counts[5] >= 1, counts
           PY
       - name: Publish results
         if: always()

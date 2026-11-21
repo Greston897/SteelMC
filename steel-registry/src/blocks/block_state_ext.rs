@@ -347,7 +347,10 @@ mod tests {
         init_vanilla_registry();
 
         let slab = vanilla_blocks::STONE_SLAB.default_state();
-        assert!(slab.is_solid(), "a half slab's average dimension exceeds 35/48");
+        assert!(
+            slab.is_solid(),
+            "a half slab's average dimension exceeds 35/48"
+        );
         assert!(slab.blocks_motion());
         assert!(!vanilla_blocks::POWDER_SNOW.default_state().is_solid());
         assert!(!vanilla_blocks::SCAFFOLDING.default_state().is_solid());

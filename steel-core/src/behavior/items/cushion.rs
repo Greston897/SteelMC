@@ -273,10 +273,9 @@ mod tests {
             .lock()
             .set_selected_item(ItemStack::with_count(&vanilla_items::WHITE_CUSHION, 2));
 
-        // A slab does not count as vanilla `isSolid`.
         assert!(world.set_block(
             support,
-            vanilla_blocks::OAK_SLAB.default_state(),
+            vanilla_blocks::AIR.default_state(),
             UpdateFlags::UPDATE_ALL
         ));
 
