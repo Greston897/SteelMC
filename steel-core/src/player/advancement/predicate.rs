@@ -185,7 +185,7 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
         "blocks" => context
             .block
             .as_ref()
-            .is_some_and(|block| contains_holder_set(expected, block, &REGISTRY.blocks)),
+            .is_some_and(|block| contains_holder_set(expected, block, || &REGISTRY.blocks)),
         "entity" | "entity_type" => matches_entity_predicate(expected, context),
         // `location` and distance checks.
         "location" => matches_location(expected, context.position),
@@ -279,7 +279,7 @@ fn matches_item_predicate(expected: &Value, item: Option<&Identifier>) -> bool {
     match expected {
         Value::Object(map) => {
             if let Some(items) = map.get("items") {
-                contains_holder_set(items, item, &REGISTRY.items)
+                contains_holder_set(items, item, || &REGISTRY.items)
             } else if let Some(tag) = map.get("tag") {
                 // Tags are not resolved here; a tag predicate is treated as a
                 // match so criteria using tags are not silently lost.
@@ -301,7 +301,7 @@ fn matches_id_predicate(expected: &Value, id: Option<&Identifier>) -> bool {
     match expected {
         Value::Object(map) => map
             .get("blocks")
-            .is_none_or(|blocks| contains_holder_set(blocks, id, &REGISTRY.blocks)),
+            .is_none_or(|blocks| contains_holder_set(blocks, id, || &REGISTRY.blocks)),
         Value::String(value) => id_matches(value, id),
         _ => true,
     }
@@ -315,7 +315,7 @@ fn matches_entity_predicate(expected: &Value, context: &TriggerContext) -> bool 
     match expected {
         Value::Object(map) => map
             .get("type")
-            .is_none_or(|value| contains_holder_set(value, entity, &REGISTRY.entity_types)),
+            .is_none_or(|value| contains_holder_set(value, entity, || &REGISTRY.entity_types)),
         Value::String(value) => id_matches(value, entity),
         _ => true,
     }
@@ -400,10 +400,10 @@ fn is_unconstrained(expected: &Value) -> bool {
 }
 
 /// Evaluate a registry holder set: one entry, a tag, or a list of entries.
-fn contains_holder_set<R: TaggedRegistryExt>(
+fn contains_holder_set<R: TaggedRegistryExt + 'static>(
     expected: &Value,
     id: &Identifier,
-    registry: &R,
+    registry: impl FnOnce() -> &'static R,
 ) -> bool {
     match expected {
         Value::String(value) => {
@@ -411,6 +411,7 @@ fn contains_holder_set<R: TaggedRegistryExt>(
                 let Ok(tag) = tag.parse::<Identifier>() else {
                     return false;
                 };
+                let registry = registry();
                 registry
                     .by_key(id)
                     .is_some_and(|entry| registry.is_in_tag(entry, &tag))
@@ -489,6 +490,16 @@ mod tests {
         assert!(matches(
             r#"{"item":{"items":["minecraft:dirt","minecraft:stone"]}}"#,
             &context
+        ));
+    }
+
+    #[test]
+    fn direct_holder_sets_do_not_access_registry() {
+        let stone = id("stone");
+        assert!(contains_holder_set::<steel_registry::items::ItemRegistry>(
+            &serde_json::json!("minecraft:stone"),
+            &stone,
+            || panic!("direct holder set should not access the registry")
         ));
     }
 
