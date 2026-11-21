@@ -15,6 +15,9 @@ use steel_utils::random::{Random, RandomSource, legacy_random::LegacyRandom};
 use steel_utils::{BlockPos, BlockStateId, Direction};
 use steel_worldgen::noise::NormalNoise;
 
+#[cfg(test)]
+use std::env::var_os;
+
 pub(crate) trait NoiseScale: Copy {
     fn scale_coord(self, coord: i32) -> f64;
 }
@@ -258,14 +261,18 @@ impl BlockStateProviderEvaluator {
             Self::block_state_from_data(registry, &provider.default_state)
         };
         #[cfg(test)]
-        if (-6536443..=-6536430).contains(&pos.x())
+        if (-6_536_443..=-6_536_430).contains(&pos.x())
             && (72..=75).contains(&pos.y())
-            && (-7689105..=-7689090).contains(&pos.z())
-            && std::env::var_os("STEEL_FEATURE_NOISE_TRACE").is_some()
+            && (-7_689_105..=-7_689_090).contains(&pos.z())
+            && var_os("STEEL_FEATURE_NOISE_TRACE").is_some()
         {
             eprintln!(
                 "STEEL_FEATURE_NOISE {} {} {} noise={} threshold={} state={:?}",
-                pos.x(), pos.y(), pos.z(), noise_value, provider.threshold,
+                pos.x(),
+                pos.y(),
+                pos.z(),
+                noise_value,
+                provider.threshold,
                 registry.blocks.by_state_id(result).map(|block| &block.key)
             );
         }

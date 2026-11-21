@@ -188,7 +188,7 @@ impl BlockItem {
                     .blocks
                     .by_state_id(state)
                     .map(|block| block.key.clone());
-                let stack = context.with_item(|stack| stack.clone());
+                let stack = context.with_item(Clone::clone);
                 if let Some(block_key) = block_key {
                     player.trigger_advancement_with_context(
                         &PLACED_BLOCK,

@@ -11,11 +11,16 @@
 //! Unknown keys are ignored rather than treated as "no match", matching
 //! vanilla's lenient deserialization of predicates.
 
+use std::cmp::Ordering;
+
 use glam::DVec3;
 use serde_json::Value;
-use steel_registry::{REGISTRY, TaggedRegistryExt, item_stack::ItemStack};
-use steel_utils::{BlockStateId, Identifier};
+use steel_registry::{
+    REGISTRY, TaggedRegistryExt, item_predicate::ItemPredicate, item_stack::ItemStack,
+};
+use steel_utils::{BlockStateId, Identifier, nbt::json_to_nbt};
 
+use crate::command::execution::registered_item_stack_matches;
 use crate::world::World;
 
 /// What happened, described in the terms the vanilla predicates use.
@@ -263,17 +268,19 @@ fn matches_block_state(expected: &Value, state: BlockStateId) -> bool {
             return false;
         };
         if let Some(exact) = expected.as_str() {
-            return property.compare_value_names(actual, exact) == Some(std::cmp::Ordering::Equal);
+            return property.compare_value_names(actual, exact) == Some(Ordering::Equal);
         }
         let Some(range) = expected.as_object() else {
             return false;
         };
         range.get("min").is_none_or(|min| {
-            min.as_str().and_then(|min| property.compare_value_names(actual, min))
-                .is_some_and(|order| order != std::cmp::Ordering::Less)
+            min.as_str()
+                .and_then(|min| property.compare_value_names(actual, min))
+                .is_some_and(|order| order != Ordering::Less)
         }) && range.get("max").is_none_or(|max| {
-            max.as_str().and_then(|max| property.compare_value_names(actual, max))
-                .is_some_and(|order| order != std::cmp::Ordering::Greater)
+            max.as_str()
+                .and_then(|max| property.compare_value_names(actual, max))
+                .is_some_and(|order| order != Ordering::Greater)
         })
     })
 }
@@ -321,13 +328,17 @@ fn matches_item_predicate(expected: &Value, context: &TriggerContext) -> bool {
         return false;
     };
     if let Some(items) = map.get("items")
-        && !context.item.as_ref().is_some_and(|item| {
-            contains_holder_set(items, item, || &REGISTRY.items)
-        })
+        && !context
+            .item
+            .as_ref()
+            .is_some_and(|item| contains_holder_set(items, item, || &REGISTRY.items))
     {
         return false;
     }
-    if !map.contains_key("count") && !map.contains_key("components") && !map.contains_key("predicates") {
+    if !map.contains_key("count")
+        && !map.contains_key("components")
+        && !map.contains_key("predicates")
+    {
         return context.item.is_some() || is_unconstrained(expected);
     }
     let Some(stack) = context.item_stack.as_ref() else {
@@ -338,12 +349,11 @@ fn matches_item_predicate(expected: &Value, context: &TriggerContext) -> bool {
     // fields without re-resolving holder sets.
     let mut fields = map.clone();
     fields.remove("items");
-    let Ok(tag) = steel_utils::nbt::json_to_nbt(&Value::Object(fields)) else {
+    let Ok(tag) = json_to_nbt(&Value::Object(fields)) else {
         return false;
     };
-    steel_registry::item_predicate::ItemPredicate::from_owned_nbt(&tag).is_some_and(|predicate| {
-        crate::command::execution::registered_item_stack_matches(&predicate, stack)
-    })
+    ItemPredicate::from_owned_nbt(&tag)
+        .is_some_and(|predicate| registered_item_stack_matches(&predicate, stack))
 }
 
 /// Vanilla block predicate: `{"blocks": "minecraft:stone"}` or a plain string.
@@ -594,9 +604,18 @@ mod tests {
         let context = TriggerContext::block(&id("bee_nest"), None).with_block_state(state);
         assert!(matches(r#"{"state":{"honey_level":"3"}}"#, &context));
         assert!(!matches(r#"{"state":{"honey_level":"2"}}"#, &context));
-        assert!(matches(r#"{"state":{"honey_level":{"min":"2","max":"3"}}}"#, &context));
-        assert!(!matches(r#"{"state":{"honey_level":{"min":"4"}}}"#, &context));
-        assert!(!matches(r#"{"state":{"honey_level":{"max":"99"}}}"#, &context));
+        assert!(matches(
+            r#"{"state":{"honey_level":{"min":"2","max":"3"}}}"#,
+            &context
+        ));
+        assert!(!matches(
+            r#"{"state":{"honey_level":{"min":"4"}}}"#,
+            &context
+        ));
+        assert!(!matches(
+            r#"{"state":{"honey_level":{"max":"99"}}}"#,
+            &context
+        ));
         assert!(!matches(r#"{"state":{"missing":"3"}}"#, &context));
         assert!(!matches(r#"{"state":{"honey_level":3}}"#, &context));
         assert!(!matches(r#"{"state":{}}"#, &TriggerContext::default()));
@@ -643,12 +662,27 @@ mod tests {
         let mut stack = ItemStack::with_count(&vanilla_items::IRON_PICKAXE, 2);
         stack.set(DAMAGE, 5);
         let context = context_for_stack(&stack);
-        assert!(matches(r#"{"item":{"items":"minecraft:iron_pickaxe","count":{"min":2},"components":{"minecraft:damage":5}}}"#, &context));
+        assert!(matches(
+            r#"{"item":{"items":"minecraft:iron_pickaxe","count":{"min":2},"components":{"minecraft:damage":5}}}"#,
+            &context
+        ));
         assert!(!matches(r#"{"item":{"count":{"min":3}}}"#, &context));
-        assert!(!matches(r#"{"item":{"components":{"minecraft:damage":4}}}"#, &context));
-        assert!(matches(r#"{"item":{"predicates":{"minecraft:damage":{"damage":{"min":5}}}}}"#, &context));
-        assert!(!matches(r#"{"item":{"predicates":{"minecraft:damage":{"damage":{"max":4}}}}}"#, &context));
-        assert!(!matches(r#"{"item":{"count":2}}"#, &TriggerContext::item(&id("iron_pickaxe"))));
+        assert!(!matches(
+            r#"{"item":{"components":{"minecraft:damage":4}}}"#,
+            &context
+        ));
+        assert!(matches(
+            r#"{"item":{"predicates":{"minecraft:damage":{"damage":{"min":5}}}}}"#,
+            &context
+        ));
+        assert!(!matches(
+            r#"{"item":{"predicates":{"minecraft:damage":{"damage":{"max":4}}}}}"#,
+            &context
+        ));
+        assert!(!matches(
+            r#"{"item":{"count":2}}"#,
+            &TriggerContext::item(&id("iron_pickaxe"))
+        ));
     }
 
     #[test]
