@@ -386,6 +386,44 @@ mod tests {
     }
 
     #[test]
+    fn bottling_smoked_hive_keeps_its_occupants() {
+        init_globals();
+        let fixture = fresh_test_world("hive_smoked_bottle");
+        let world = &fixture.world;
+        let pos = BlockPos::new(8, 64, 8);
+        let _holder = insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+        let state = vanilla_blocks::BEEHIVE
+            .default_state()
+            .set_value(LEVEL_HONEY, 5);
+        world.set_block(pos, state, UpdateFlags::UPDATE_ALL);
+        world.set_block(
+            pos.below(),
+            vanilla_blocks::CAMPFIRE
+                .default_state()
+                .set_value(&BlockStateProperties::LIT, true),
+            UpdateFlags::UPDATE_CLIENTS,
+        );
+        let entity = world.get_block_entity(pos).expect("hive block entity");
+        let hive = entity
+            .downcast_ref::<BeehiveBlockEntity>()
+            .expect("typed hive");
+        hive.store_worldgen_bee(0);
+        let player = TestPlayerBuilder::new(Arc::clone(world), "HiveBottler", 1).build();
+        player
+            .inventory
+            .lock()
+            .set_selected_item(ItemStack::new(&vanilla_items::GLASS_BOTTLE));
+        let mut inventory =
+            InventoryAccess::new(Arc::clone(&player.inventory), InteractionHand::MainHand);
+        assert_eq!(
+            BeehiveBlock::handle_use(state, world, pos, &player, &mut inventory),
+            InteractionResult::Success
+        );
+        assert_eq!(hive.occupant_count(), 1);
+        assert_eq!(world.get_block_state(pos).get_value(LEVEL_HONEY), 0);
+    }
+
+    #[test]
     fn shearing_full_hive_resets_honey_and_drops_three_honeycombs() {
         init_globals();
         let fixture = fresh_test_world("hive_shear_resets_honey");
