@@ -147,13 +147,37 @@
     5,
     5
   ],
+  "black_carpet": [
+    60,
+    20
+  ],
+  "black_wool": [
+    30,
+    60
+  ],
+  "blue_carpet": [
+    60,
+    20
+  ],
   "blue_orchid": [
     60,
     100
   ],
+  "blue_wool": [
+    30,
+    60
+  ],
   "bookshelf": [
     30,
     20
+  ],
+  "brown_carpet": [
+    60,
+    20
+  ],
+  "brown_wool": [
+    30,
+    60
   ],
   "bush": [
     60,
@@ -222,6 +246,14 @@
   "cornflower": [
     60,
     100
+  ],
+  "cyan_carpet": [
+    60,
+    20
+  ],
+  "cyan_wool": [
+    30,
+    60
   ],
   "dandelion": [
     60,
@@ -295,6 +327,22 @@
     60,
     100
   ],
+  "gray_carpet": [
+    60,
+    20
+  ],
+  "gray_wool": [
+    30,
+    60
+  ],
+  "green_carpet": [
+    60,
+    20
+  ],
+  "green_wool": [
+    30,
+    60
+  ],
   "hanging_roots": [
     30,
     60
@@ -351,6 +399,22 @@
     30,
     20
   ],
+  "light_blue_carpet": [
+    60,
+    20
+  ],
+  "light_blue_wool": [
+    30,
+    60
+  ],
+  "light_gray_carpet": [
+    60,
+    20
+  ],
+  "light_gray_wool": [
+    30,
+    60
+  ],
   "lilac": [
     60,
     100
@@ -358,6 +422,22 @@
   "lily_of_the_valley": [
     60,
     100
+  ],
+  "lime_carpet": [
+    60,
+    20
+  ],
+  "lime_wool": [
+    30,
+    60
+  ],
+  "magenta_carpet": [
+    60,
+    20
+  ],
+  "magenta_wool": [
+    30,
+    60
   ],
   "mangrove_fence": [
     5,
@@ -439,6 +519,10 @@
     60,
     100
   ],
+  "orange_carpet": [
+    60,
+    20
+  ],
   "orange_poplar_leaves": [
     30,
     60
@@ -446,6 +530,10 @@
   "orange_tulip": [
     60,
     100
+  ],
+  "orange_wool": [
+    30,
+    60
   ],
   "oxeye_daisy": [
     60,
@@ -503,6 +591,10 @@
     60,
     100
   ],
+  "pink_carpet": [
+    60,
+    20
+  ],
   "pink_petals": [
     60,
     100
@@ -510,6 +602,10 @@
   "pink_tulip": [
     60,
     100
+  ],
+  "pink_wool": [
+    30,
+    60
   ],
   "pitcher_plant": [
     60,
@@ -551,6 +647,18 @@
     60,
     100
   ],
+  "purple_carpet": [
+    60,
+    20
+  ],
+  "purple_wool": [
+    30,
+    60
+  ],
+  "red_carpet": [
+    60,
+    20
+  ],
   "red_poplar_leaves": [
     30,
     60
@@ -562,6 +670,10 @@
   "red_tulip": [
     60,
     100
+  ],
+  "red_wool": [
+    30,
+    60
   ],
   "rose_bush": [
     60,
@@ -743,9 +855,17 @@
     15,
     100
   ],
+  "white_carpet": [
+    60,
+    20
+  ],
   "white_tulip": [
     60,
     100
+  ],
+  "white_wool": [
+    30,
+    60
   ],
   "wildflowers": [
     60,
@@ -755,7 +875,15 @@
     60,
     100
   ],
+  "yellow_carpet": [
+    60,
+    20
+  ],
   "yellow_poplar_leaves": [
+    30,
+    60
+  ],
+  "yellow_wool": [
     30,
     60
   ]

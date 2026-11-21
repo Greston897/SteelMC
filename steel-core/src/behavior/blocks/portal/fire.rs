@@ -614,6 +614,24 @@ mod tests {
     }
 
     #[test]
+    fn wool_and_carpet_have_vanilla_fire_odds() {
+        init_vanilla_registry();
+        for block in [&vanilla_blocks::WHITE_WOOL, &vanilla_blocks::BLACK_WOOL] {
+            let state = block.default_state();
+            assert_eq!(FireBlock::ignite_odds_of_state(state), 30);
+            assert_eq!(FireBlock::burn_odds(state), 60);
+        }
+        for block in [&vanilla_blocks::WHITE_CARPET, &vanilla_blocks::BLACK_CARPET] {
+            let state = block.default_state();
+            assert_eq!(FireBlock::ignite_odds_of_state(state), 60);
+            assert_eq!(FireBlock::burn_odds(state), 20);
+        }
+        assert!(!FireBlock::can_burn(
+            vanilla_blocks::CRIMSON_STEM.default_state()
+        ));
+    }
+
+    #[test]
     fn waterlogged_flammable_blocks_never_attach_fire_faces() {
         use steel_registry::blocks::properties::BlockStateProperties;
 

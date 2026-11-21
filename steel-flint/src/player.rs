@@ -212,7 +212,9 @@ impl FlintPlayer for SteelTestPlayer {
         self.player
             .try_set_position(DVec3::new(pos[0], pos[1], pos[2]))?;
         self.player.set_rotation((rot.unwrap_or([0.0, 0.0])).into());
-        self.player.update_pose();
+        // Teleportation does not tick the player. Preserve its existing pose
+        // for subsequent actions at this timeline instant; the next world
+        // tick updates the pose in the usual entity-tick order.
         Ok(())
     }
 
