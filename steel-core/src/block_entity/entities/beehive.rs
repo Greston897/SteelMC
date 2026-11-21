@@ -174,9 +174,9 @@ impl BeehiveBlockEntity {
         let changed = {
             let mut guard = self.state.lock();
             let before = guard.stored.len();
-            guard
-                .stored
-                .retain(|occupant| Self::spawn_released_bee(world, pos, facing, occupant, true).is_none());
+            guard.stored.retain(|occupant| {
+                Self::spawn_released_bee(world, pos, facing, occupant, true).is_none()
+            });
             guard.stored.len() != before
         };
         if changed {
@@ -197,7 +197,8 @@ impl BeehiveBlockEntity {
             let mut guard = self.state.lock();
             let before = guard.stored.len();
             guard.stored.retain(|occupant| {
-                let Some(entity) = Self::spawn_released_bee(world, pos, facing, occupant, true) else {
+                let Some(entity) = Self::spawn_released_bee(world, pos, facing, occupant, true)
+                else {
                     return true;
                 };
                 if entity.position().distance_squared(player.position()) <= 16.0 {
@@ -355,7 +356,12 @@ impl BeehiveBlockEntity {
         let exit_state = world.get_block_state(exit);
         let blocked = !BLOCK_BEHAVIORS
             .get_behavior(exit_state.get_block())
-            .get_collision_shape(exit_state, world.as_ref(), exit, BlockCollisionContext::empty())
+            .get_collision_shape(
+                exit_state,
+                world.as_ref(),
+                exit,
+                BlockCollisionContext::empty(),
+            )
             .is_empty();
         if blocked && !emergency {
             return None;
@@ -365,17 +371,40 @@ impl BeehiveBlockEntity {
         // Vanilla deliberately discards position, UUID, passengers and transient
         // state before reconstructing a hive occupant.
         for tag in [
-            "Air", "drop_chances", "equipment", "Brain", "CanPickUpLoot", "DeathTime",
-            "fall_distance", "FallFlying", "Fire", "HurtTime", "LeftHanded", "Motion",
-            "NoGravity", "OnGround", "PortalCooldown", "Pos", "Rotation", "sleeping_pos",
-            "CannotEnterHiveTicks", "TicksSincePollination", "CropsGrownSincePollination",
-            "hive_pos", "Passengers", "leash", "UUID",
+            "Air",
+            "drop_chances",
+            "equipment",
+            "Brain",
+            "CanPickUpLoot",
+            "DeathTime",
+            "fall_distance",
+            "FallFlying",
+            "Fire",
+            "HurtTime",
+            "LeftHanded",
+            "Motion",
+            "NoGravity",
+            "OnGround",
+            "PortalCooldown",
+            "Pos",
+            "Rotation",
+            "sleeping_pos",
+            "CannotEnterHiveTicks",
+            "TicksSincePollination",
+            "CropsGrownSincePollination",
+            "hive_pos",
+            "Passengers",
+            "leash",
+            "UUID",
         ] {
             while data.remove(tag).is_some() {}
         }
         let loaded = load_entity_recursive_owned(world, &data, EntitySpawnReason::Load, |_| {})?;
         let entity = &loaded.root;
-        if !entity.entity_type().has_tag(&EntityTypeTag::BEEHIVE_INHABITORS) {
+        if !entity
+            .entity_type()
+            .has_tag(&EntityTypeTag::BEEHIVE_INHABITORS)
+        {
             return None;
         }
         entity.set_no_gravity(true);
@@ -390,10 +419,19 @@ impl BeehiveBlockEntity {
                 };
                 animal.set_age(updated);
             }
-            animal.set_in_love_time(animal.in_love_time().saturating_sub(occupant.ticks_in_hive).max(0));
+            animal.set_in_love_time(
+                animal
+                    .in_love_time()
+                    .saturating_sub(occupant.ticks_in_hive)
+                    .max(0),
+            );
         }
         let dimensions = entity.base().dimensions();
-        let distance = if blocked { 0.0 } else { 0.55 + f64::from(dimensions.width / 2.0) };
+        let distance = if blocked {
+            0.0
+        } else {
+            0.55 + f64::from(dimensions.width / 2.0)
+        };
         let (dx, _, dz) = facing.offset();
         let position = glam::DVec3::new(
             f64::from(pos.x()) + 0.5 + distance * f64::from(dx),
@@ -470,10 +508,9 @@ mod tests {
         bee.entity_data.insert("InLove", 2000);
         bee.entity_data.insert("NoGravity", 0_i8);
 
-        let released = BeehiveBlockEntity::spawn_released_bee(
-            world, pos, Direction::North, &bee, false,
-        )
-        .expect("stored bee should load into the ready chunk");
+        let released =
+            BeehiveBlockEntity::spawn_released_bee(world, pos, Direction::North, &bee, false)
+                .expect("stored bee should load into the ready chunk");
         assert_eq!(released.custom_name(), Some(name));
         assert!(released.is_no_gravity());
         let animal = released.as_animal().expect("bee is an animal");
@@ -492,10 +529,10 @@ mod tests {
         let mut occupant = BeeOccupant::worldgen(0);
         while occupant.entity_data.remove("id").is_some() {}
         occupant.entity_data.insert("id", "minecraft:pig");
-        assert!(BeehiveBlockEntity::spawn_released_bee(
-            world, pos, Direction::North, &occupant, true
-        )
-        .is_none());
+        assert!(
+            BeehiveBlockEntity::spawn_released_bee(world, pos, Direction::North, &occupant, true)
+                .is_none()
+        );
     }
 
     #[test]
