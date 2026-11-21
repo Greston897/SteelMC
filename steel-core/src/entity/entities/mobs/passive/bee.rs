@@ -142,7 +142,8 @@ impl BeeEntity {
     fn set_bee_flag(&self, mask: i8, value: bool) {
         let mut data = self.entity_data.lock();
         let flags = *data.flags.get();
-        data.flags.set(if value { flags | mask } else { flags & !mask });
+        data.flags
+            .set(if value { flags | mask } else { flags & !mask });
     }
 
     fn update_dirty_mob_effect_entity_data(&self) {

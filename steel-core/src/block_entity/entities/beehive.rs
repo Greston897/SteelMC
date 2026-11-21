@@ -10,7 +10,9 @@ use steel_registry::{vanilla_block_entity_types, vanilla_entities};
 use steel_utils::geometry::WorldAabb;
 use steel_utils::nbt::NbtNumeric as _;
 use steel_utils::types::UpdateFlags;
-use steel_utils::{BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, locks::SyncMutex};
+use steel_utils::{
+    BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, locks::SyncMutex,
+};
 
 use std::sync::Arc;
 
@@ -411,7 +413,8 @@ impl BeehiveBlockEntity {
         entity.set_no_gravity(true);
         // Normal release after nectar delivery clears the bee's nectar. An
         // emergency release keeps it, just as vanilla does.
-        if !emergency && occupant.has_nectar()
+        if !emergency
+            && occupant.has_nectar()
             && let Some(bee) = entity.downcast_ref::<BeeEntity>()
         {
             bee.set_has_nectar(false);
@@ -539,10 +542,9 @@ mod tests {
         occupant.entity_data.insert("HasNectar", 1_i8);
         occupant.entity_data.insert("HasStung", 1_i8);
 
-        let emergency = BeehiveBlockEntity::spawn_released_bee(
-            world, pos, Direction::North, &occupant, true,
-        )
-        .expect("emergency bee should load");
+        let emergency =
+            BeehiveBlockEntity::spawn_released_bee(world, pos, Direction::North, &occupant, true)
+                .expect("emergency bee should load");
         let bee = emergency.downcast_ref::<BeeEntity>().expect("released bee");
         assert!(bee.has_nectar());
         assert!(bee.has_stung());
@@ -551,10 +553,9 @@ mod tests {
         assert_eq!(saved.byte("HasNectar"), Some(1));
         assert_eq!(saved.byte("HasStung"), Some(1));
 
-        let normal = BeehiveBlockEntity::spawn_released_bee(
-            world, pos, Direction::North, &occupant, false,
-        )
-        .expect("delivering bee should load");
+        let normal =
+            BeehiveBlockEntity::spawn_released_bee(world, pos, Direction::North, &occupant, false)
+                .expect("delivering bee should load");
         let bee = normal.downcast_ref::<BeeEntity>().expect("released bee");
         assert!(!bee.has_nectar());
         assert!(bee.has_stung());
