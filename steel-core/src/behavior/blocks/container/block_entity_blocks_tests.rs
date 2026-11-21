@@ -71,6 +71,38 @@ fn dispenser_keeps_brush_when_no_armadillo_is_present() {
 }
 
 #[test]
+fn dispenser_brushes_an_adult_armadillo() {
+    use crate::entity::entities::mobs::passive::ArmadilloEntity;
+    use crate::entity::next_entity_id;
+    use steel_registry::data_components::vanilla_components::DAMAGE;
+
+    let (fixture, container) = fixture(
+        "dispenser_brush_armadillo",
+        ItemStack::new(&vanilla_items::BRUSH),
+    );
+    let world = &fixture.world;
+    let armadillo = Arc::new(ArmadilloEntity::new(
+        &vanilla_entities::ARMADILLO,
+        next_entity_id(),
+        DVec3::new(9.5, 64.0, 8.5),
+        Arc::downgrade(world),
+    ));
+    world.try_add_entity(armadillo).expect("add armadillo");
+    // Exercise the dispenser directly so the mob cannot wander before the pulse.
+    assert!(dispense_from(world, SOURCE, world.get_block_state(SOURCE)));
+    assert_eq!(container.lock().get_item(0).get(DAMAGE).copied(), Some(16));
+    let drops = world.get_entities_in_aabb(&steel_utils::WorldAabb::new(
+        9.0, 63.0, 8.0, 10.0, 66.0, 9.0,
+    ));
+    assert!(drops.iter().any(|entity| {
+        entity
+            .as_ref()
+            .downcast_ref::<ItemEntity>()
+            .is_some_and(|item| item.get_item().item() == &*vanilla_items::ARMADILLO_SCUTE)
+    }));
+}
+
+#[test]
 fn powered_dispenser_grows_wheat_and_consumes_exactly_one_bone_meal() {
     let (fixture, container) = fixture(
         "dispenser_bonemeal_wheat",

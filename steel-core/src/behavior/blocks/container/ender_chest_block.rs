@@ -56,7 +56,7 @@ impl BlockBehavior for EnderChestBlock {
         _old_state: BlockStateId,
         _moved_by_piston: bool,
     ) {
-        schedule_water_tick_if_waterlogged(state, world.as_ref(), pos);
+        schedule_water_tick_if_waterlogged(state, world, pos);
     }
 
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
