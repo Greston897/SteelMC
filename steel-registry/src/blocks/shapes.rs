@@ -1407,7 +1407,10 @@ mod tests {
 
     #[test]
     fn zero_volume_boxes_are_empty() {
-        assert!(VoxelShape::from_boxes(ZERO_VOLUME_BOX).is_empty(), "zero-volume boxes are empty");
+        assert!(
+            VoxelShape::from_boxes(ZERO_VOLUME_BOX).is_empty(),
+            "zero-volume boxes are empty"
+        );
         assert!(!join_is_not_empty(
             VoxelShape::from_boxes(ZERO_VOLUME_BOX),
             VoxelShape::FULL_BLOCK,

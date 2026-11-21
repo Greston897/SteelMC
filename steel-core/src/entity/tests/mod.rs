@@ -400,7 +400,10 @@ fn kill_uses_vanilla_living_and_non_living_paths() {
         ),
         1
     );
-    assert!(source_listener.events.lock().is_empty(), "no game events are expected");
+    assert!(
+        source_listener.events.lock().is_empty(),
+        "no game events are expected"
+    );
 }
 
 fn matching_game_event_count(
@@ -498,7 +501,10 @@ fn water_entry_emits_splash_only_on_transition() {
 
     // The first tick clears `firstTick` without a splash.
     entity.base_tick();
-    assert!(listener.events.lock().is_empty(), "no game events are expected");
+    assert!(
+        listener.events.lock().is_empty(),
+        "no game events are expected"
+    );
 
     // Entering water emits exactly one splash.
     assert!(world.set_block(
@@ -569,7 +575,10 @@ fn experience_orb_water_entry_emits_no_splash() {
         UpdateFlags::UPDATE_NONE,
     ));
     orb.base_tick();
-    assert!(listener.events.lock().is_empty(), "no game events are expected");
+    assert!(
+        listener.events.lock().is_empty(),
+        "no game events are expected"
+    );
 }
 
 #[test]
