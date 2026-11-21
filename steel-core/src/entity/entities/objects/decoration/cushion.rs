@@ -24,15 +24,55 @@ use steel_registry::vanilla_entity_data::CushionEntityData;
 use steel_registry::{sound_events, vanilla_game_rules, vanilla_items};
 use steel_utils::locks::SyncMutex;
 use steel_utils::types::InteractionHand;
-use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
+use steel_utils::{BlockPos, DowncastType, DowncastTypeKey, WorldAabb};
 
 use crate::behavior::InteractionResult;
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     Entity, EntityBase, EntityBaseLoad, EntityBaseState, EntitySyncedData, RemovalReason,
 };
+use crate::physics::collision::{CollisionWorld, WorldCollisionProvider};
 use crate::player::Player;
 use crate::world::World;
+
+/// Subtracts one collider from a world-space box, retaining up to six slabs.
+fn subtract_box(source: WorldAabb, collider: WorldAabb, out: &mut Vec<WorldAabb>) {
+    if !source.intersects(collider) {
+        out.push(source);
+        return;
+    }
+    let x0 = source.min_x().max(collider.min_x());
+    let x1 = source.max_x().min(collider.max_x());
+    let y0 = source.min_y().max(collider.min_y());
+    let y1 = source.max_y().min(collider.max_y());
+    let z0 = source.min_z().max(collider.min_z());
+    let z1 = source.max_z().min(collider.max_z());
+    let mut push = |min_x, min_y, min_z, max_x, max_y, max_z| {
+        if min_x < max_x && min_y < max_y && min_z < max_z {
+            out.push(WorldAabb::new(min_x, min_y, min_z, max_x, max_y, max_z));
+        }
+    };
+    push(
+        source.min_x(),
+        source.min_y(),
+        source.min_z(),
+        x0,
+        source.max_y(),
+        source.max_z(),
+    );
+    push(
+        x1,
+        source.min_y(),
+        source.min_z(),
+        source.max_x(),
+        source.max_y(),
+        source.max_z(),
+    );
+    push(x0, source.min_y(), source.min_z(), x1, y0, source.max_z());
+    push(x0, y1, source.min_z(), x1, source.max_y(), source.max_z());
+    push(x0, y0, source.min_z(), x1, y1, z0);
+    push(x0, y0, z1, x1, y1, source.max_z());
+}
 
 /// Returns the vanilla cushion item that matches a wool colour.
 #[must_use]
@@ -150,10 +190,84 @@ impl CushionEntity {
         BlockPos::new(pos.x(), pos.y() - 1, pos.z())
     }
 
-    /// Whether the cushion still has a solid block underneath it.
+    /// Vanilla checks a thin anchor box against the bounds of nearby outline shapes.
+    fn has_anchor_below(world: &World, bounding_box: WorldAabb) -> bool {
+        let anchor = WorldAabb::new(
+            bounding_box.min_x(),
+            bounding_box.min_y() - 0.015625,
+            bounding_box.min_z(),
+            bounding_box.max_x().next_down(),
+            bounding_box.min_y(),
+            bounding_box.max_z().next_down(),
+        );
+        let search = anchor.expand_towards(DVec3::new(0.0, -0.125, 0.0));
+        for z in search.min_z().floor() as i32..=search.max_z().floor() as i32 {
+            for y in search.min_y().floor() as i32..=search.max_y().floor() as i32 {
+                for x in search.min_x().floor() as i32..=search.max_x().floor() as i32 {
+                    let pos = BlockPos::new(x, y, z);
+                    let shape = world.get_block_state(pos).get_outline_shape_at(pos);
+                    if shape
+                        .bounds()
+                        .is_some_and(|bounds| bounds.at_block(pos).intersects(anchor))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    /// Mirrors the vanilla support and suffocation checks, using extracted outline shapes.
     #[must_use]
-    pub fn has_solid_support(&self, world: &World) -> bool {
-        world.get_block_state(self.support_pos()).is_solid()
+    pub fn would_survive_at(world: &World, bounding_box: WorldAabb) -> bool {
+        if !Self::has_anchor_below(world, bounding_box) {
+            return false;
+        }
+        for z in bounding_box.min_z().next_up().floor() as i32
+            ..=bounding_box.max_z().next_down().floor() as i32
+        {
+            for y in bounding_box.min_y().next_up().floor() as i32
+                ..=bounding_box.max_y().next_down().floor() as i32
+            {
+                for x in bounding_box.min_x().next_up().floor() as i32
+                    ..=bounding_box.max_x().next_down().floor() as i32
+                {
+                    if !world.get_block_state(BlockPos::new(x, y, z)).is_suffocating() {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    /// Placement also requires at least part of the resting slice to be exposed.
+    #[must_use]
+    pub fn can_be_placed_at(world: &Arc<World>, bounding_box: WorldAabb) -> bool {
+        if !Self::would_survive_at(world, bounding_box) {
+            return false;
+        }
+        let slice = WorldAabb::new(
+            bounding_box.min_x().next_up(),
+            bounding_box.min_y().next_up(),
+            bounding_box.min_z().next_up(),
+            bounding_box.max_x().next_down(),
+            (bounding_box.min_y() + 0.015625).next_down(),
+            bounding_box.max_z().next_down(),
+        );
+        let mut exposed = vec![slice];
+        for collider in WorldCollisionProvider::new(world).get_block_collisions(&slice) {
+            let mut remaining = Vec::new();
+            for part in exposed {
+                subtract_box(part, collider, &mut remaining);
+            }
+            if remaining.is_empty() {
+                return false;
+            }
+            exposed = remaining;
+        }
+        true
     }
 
     /// The item stack this cushion drops, carrying its colour component.
@@ -217,7 +331,7 @@ impl Entity for CushionEntity {
         // BlockAttachedEntity checks on the 101st tick, then every 101 ticks.
         if self.ticks_since_check.fetch_add(1, Ordering::Relaxed) >= 100 {
             self.ticks_since_check.store(0, Ordering::Relaxed);
-            if !self.has_solid_support(&world) {
+            if !Self::would_survive_at(&world, self.bounding_box()) {
                 self.drop_and_remove(&world, false);
             }
         }
@@ -285,8 +399,8 @@ mod tests {
     use steel_utils::{BlockPos, ChunkPos, WorldAabb};
     use text_components::TextComponent;
 
-    use super::{CushionEntity, cushion_item_for_color};
-    use crate::behavior::InteractionResult;
+    use super::{CushionEntity, cushion_item_for_color, subtract_box};
+    use crate::behavior::{InteractionResult, init_behaviors};
     use crate::entity;
     use crate::entity::damage::DamageSource;
     use crate::entity::entities::ItemEntity;
@@ -306,6 +420,7 @@ mod tests {
     /// Builds a world containing a stone support block at `(0, 64, 0)`.
     fn support_fixture(name: &str) -> (TestWorld, BlockPos) {
         init_vanilla_registry();
+        init_behaviors();
 
         let world_fixture = fresh_test_world(name);
         let world = Arc::clone(&world_fixture.world);
@@ -345,11 +460,29 @@ mod tests {
     }
 
     #[test]
+    fn buried_slice_checks_the_union_of_colliders() {
+        let slice = WorldAabb::new(0.0, 0.0, 0.0, 1.0, 0.015625, 1.0);
+        let left = WorldAabb::new(0.0, 0.0, 0.0, 0.5, 1.0, 1.0);
+        let right = WorldAabb::new(0.5, 0.0, 0.0, 1.0, 1.0, 1.0);
+        let mut exposed = Vec::new();
+        subtract_box(slice, left, &mut exposed);
+        assert!(!exposed.is_empty());
+        let mut remaining = Vec::new();
+        for part in exposed {
+            subtract_box(part, right, &mut remaining);
+        }
+        assert!(remaining.is_empty());
+    }
+
+    #[test]
     fn cushion_stays_while_its_support_is_solid() {
         let (fixture, support) = support_fixture("cushion_support_ok");
         let cushion = spawn_cushion(&fixture.world, support);
 
-        assert!(cushion.has_solid_support(&fixture.world));
+        assert!(CushionEntity::would_survive_at(
+            &fixture.world,
+            cushion.bounding_box()
+        ));
         Arc::clone(&cushion).tick();
 
         assert!(!cushion.is_removed());

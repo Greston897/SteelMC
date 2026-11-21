@@ -2,15 +2,13 @@
 //!
 //! All 16 coloured cushions share one vanilla behaviour class: the wool colour
 //! travels in the stack's `minecraft:cushion/color` component and is copied to
-//! the spawned `Cushion` entity. Support and collision geometry are still
-//! approximations: vanilla uses the clicked height and shape-based anchor and
-//! burial checks, including a special collision-shape raycast for tagged blocks.
+//! the spawned `Cushion` entity. Vanilla's special collision-shape raycast for
+//! tagged blocks still needs to be applied before resolving the hit context.
 
 use std::sync::Arc;
 
 use steel_macros::item_behavior;
 use steel_protocol::packets::game::SoundSource;
-use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::data_components::vanilla_components::CUSHION_COLOR;
 use steel_registry::dye_color::DyeColor;
 use steel_registry::item_stack::ItemStack;
@@ -21,29 +19,14 @@ use crate::behavior::context::{InteractionResult, UseOnContext};
 use crate::behavior::item::ItemBehavior;
 use crate::entity::entities::CushionEntity;
 use crate::entity::{Entity, SharedEntity, next_entity_id};
-use crate::physics::collision::{WorldCollisionProvider, has_block_collision};
 use crate::world::World;
 use crate::world::game_event::GameEventContext;
-
-/// Vertical size of a vanilla cushion, in blocks.
-const CUSHION_HEIGHT: f64 = 0.25;
 
 /// Placement behaviour shared by all 16 cushion colours.
 #[item_behavior(class = "CushionItem")]
 pub struct CushionItem;
 
 impl CushionItem {
-    /// The centre position the cushion entity would occupy above `support`.
-    fn placement_position(support: BlockPos) -> glam::DVec3 {
-        CushionEntity::support_top(support)
-    }
-
-    /// The bounding box of the cushion as it would be placed above `support`.
-    fn placement_box(support: BlockPos) -> WorldAabb {
-        let position = Self::placement_position(support);
-        WorldAabb::entity_box(position.x, position.y, position.z, 0.5, CUSHION_HEIGHT)
-    }
-
     /// Vanilla placement preconditions for the block the cushion rests on.
     fn can_place_on(
         context: &UseOnContext<'_>,
@@ -57,14 +40,8 @@ impl CushionItem {
                 .can_place_on(context.world, target, side, stack)
     }
 
-    /// Whether the cushion volume is free of blocks and of other cushions.
-    fn space_is_free(world: &Arc<World>, support: BlockPos) -> bool {
-        let cushion_box = Self::placement_box(support);
-        let collision = WorldCollisionProvider::new(world);
-        if has_block_collision(&collision, cushion_box) {
-            return false;
-        }
-
+    /// Other cushions cannot overlap the placed cushion's bounding box.
+    fn space_is_free(world: &Arc<World>, cushion_box: WorldAabb) -> bool {
         !world.has_entity_in_aabb_matching(&cushion_box, |entity| {
             entity.entity_type() == &vanilla_entities::CUSHION
         })
@@ -77,9 +54,20 @@ impl ItemBehavior for CushionItem {
         if side != Direction::Up {
             return InteractionResult::Fail;
         }
-        let (dx, dy, dz) = side.offset();
-        let target = context.hit_result.block_pos.offset(dx, dy, dz);
-        let support = BlockPos::new(target.x(), target.y() - 1, target.z());
+        let target = context.build_place_context().place_pos();
+        let position = glam::DVec3::new(
+            f64::from(target.x()) + 0.5,
+            context.hit_result.location.y,
+            f64::from(target.z()) + 0.5,
+        );
+        let dimensions = vanilla_entities::CUSHION.dimensions;
+        let bounding_box = WorldAabb::entity_box(
+            position.x,
+            position.y,
+            position.z,
+            f64::from(dimensions.width) / 2.0,
+            f64::from(dimensions.height),
+        );
 
         let stack = context.inv.with_item(|stack: &mut ItemStack| stack.clone());
         let color = stack.get(CUSHION_COLOR).copied().unwrap_or(DyeColor::White);
@@ -88,23 +76,20 @@ impl ItemBehavior for CushionItem {
             return InteractionResult::Fail;
         }
 
-        // The cushion needs a solid block directly underneath it.
-        if !context.world.get_block_state(support).is_solid() {
+        if !CushionEntity::can_be_placed_at(context.world, bounding_box)
+            || !Self::space_is_free(context.world, bounding_box)
+        {
             return InteractionResult::Fail;
         }
 
-        // No blocks or other cushions may overlap the cushion's own volume.
-        if !Self::space_is_free(context.world, support) {
-            return InteractionResult::Fail;
-        }
-
-        let cushion = CushionEntity::new_on_support(
+        let cushion = CushionEntity::new(
             &vanilla_entities::CUSHION,
             next_entity_id(),
-            support,
-            color,
+            position,
             Arc::downgrade(context.world),
         );
+        cushion.set_color(color);
+        cushion.set_rotation((Direction::from_yaw(context.player.rotation().0).to_yaw(), 0.0));
 
         if let Some(custom_name) = stack.custom_name() {
             cushion.set_custom_name(Some(custom_name.into_owned()));
@@ -142,6 +127,8 @@ mod tests {
     use std::sync::Arc;
 
     use glam::DVec3;
+    use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+    use steel_registry::blocks::properties::{BlockStateProperties, SlabType};
     use steel_registry::data_components::vanilla_components::{CUSHION_COLOR, CUSTOM_NAME};
     use steel_registry::dye_color::DyeColor;
     use steel_registry::item_stack::ItemStack;
@@ -329,6 +316,47 @@ mod tests {
 
         assert_eq!(cushions_in_world(world).len(), 1);
         assert_eq!(held_stack(&player).count(), 1);
+    }
+
+    #[test]
+    fn bottom_slab_uses_the_actual_hit_height_and_remains_supported() {
+        let (fixture, player, support) = support_fixture("cushion_place_bottom_slab");
+        let world = &fixture.world;
+        let slab = vanilla_blocks::OAK_SLAB
+            .default_state()
+            .set_value(&BlockStateProperties::SLAB_TYPE, SlabType::Bottom);
+        assert!(world.set_block(support, slab, UpdateFlags::UPDATE_ALL));
+        player
+            .inventory
+            .lock()
+            .set_selected_item(ItemStack::new(&vanilla_items::WHITE_CUSHION));
+
+        let mut context = place_context(world, &player, support);
+        context.hit_result.location.y = 64.5;
+        assert_eq!(CushionItem.use_on(&mut context), InteractionResult::Success);
+        let cushions = cushions_in_world(world);
+        assert_eq!(cushions.len(), 1);
+        let cushion = as_cushion(&cushions[0]);
+        assert_eq!(cushion.position().y, 64.5);
+        assert!(CushionEntity::would_survive_at(world, cushion.bounding_box()));
+    }
+
+    #[test]
+    fn a_buried_anchor_is_refused_even_if_the_cover_is_not_suffocating() {
+        let (fixture, player, support) = support_fixture("cushion_place_buried");
+        let world = &fixture.world;
+        assert!(world.set_block(
+            support.offset(0, 1, 0),
+            vanilla_blocks::GLASS.default_state(),
+            UpdateFlags::UPDATE_ALL
+        ));
+        player
+            .inventory
+            .lock()
+            .set_selected_item(ItemStack::new(&vanilla_items::WHITE_CUSHION));
+        let mut context = place_context(world, &player, support);
+        assert_eq!(CushionItem.use_on(&mut context), InteractionResult::Fail);
+        assert!(cushions_in_world(world).is_empty());
     }
 
     #[test]
