@@ -23,7 +23,7 @@ jobs:
         env:
           RUSTFLAGS: -Dwarnings
         run: |
-          set -o pipefail
+          set -euo pipefail
           {
             cargo test -p steel-core --lib player::advancement::predicate::tests:: -- --nocapture &&
             cargo test -p steel-core --lib behavior::blocks::vegetation::cactus_block::tests:: -- --nocapture
