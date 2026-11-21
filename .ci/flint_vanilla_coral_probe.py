@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--server', type=Path, required=True)
     parser.add_argument('--client', type=Path, required=True)
     parser.add_argument('--fixture', type=Path, required=True)
+    parser.add_argument('--bamboo-fixture', type=Path, required=True)
     parser.add_argument('--workdir', type=Path, required=True)
     args = parser.parse_args()
     root = args.workdir.resolve()
@@ -44,7 +45,8 @@ def main():
     teleports = [entry for entry in adjusted['timeline'] if entry.get('do') == 'tp' and entry.get('at') == 6]
     assert len(teleports) == 1 and teleports[0]['pos'] == [8.5, 0, 4.5]
     teleports[0]['pos'] = [6.5, 0, 4.5]
-    for name, data in [('original', original), ('unobstructed', adjusted)]:
+    bamboo = json.loads(args.bamboo_fixture.resolve().read_text())
+    for name, data in [('original', original), ('unobstructed', adjusted), ('bamboo', bamboo)]:
         (root / f'{name}.json').write_text(json.dumps(data))
     rcon = None
     with (root / 'server.log').open('w') as log:
@@ -64,7 +66,7 @@ def main():
                     time.sleep(0.5)
             else:
                 raise TimeoutError('vanilla server did not start')
-            for name in ('original', 'unobstructed'):
+            for name in ('original', 'unobstructed', 'bamboo'):
                 print(f'=== Vanilla FlintCLI: {name} ===', flush=True)
                 try:
                     result = subprocess.run([str(client), str(root / f'{name}.json'), '-s', '127.0.0.1:25585', '-v'],

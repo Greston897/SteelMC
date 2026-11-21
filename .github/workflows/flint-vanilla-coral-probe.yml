@@ -49,6 +49,7 @@ jobs:
           python3 .ci/flint_vanilla_coral_probe.py \
             --server server.jar --client "$RUNNER_TEMP/flint-cli/target/debug/flintmc" \
             --fixture FlintBenchmark/tests/vegetation/corals/brain_coral_fan_placement.json \
+            --bamboo-fixture FlintBenchmark/tests/vegetation/bamboo/bamboo_stacking_on_sapling.json \
             --workdir "$RUNNER_TEMP/coral-probe" 2>&1 | tee /tmp/coral-probe.log
       - name: Publish diagnostic output
         if: always()
