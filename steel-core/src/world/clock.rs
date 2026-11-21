@@ -1,5 +1,6 @@
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "test-framework")]
 use steel_registry::vanilla_world_clocks::OVERWORLD;
 use steel_registry::{REGISTRY, world_clock::WorldClockRef};
 use steel_utils::Identifier;
