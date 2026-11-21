@@ -8,7 +8,10 @@ use steel_registry::blocks::BlockRef;
 use steel_registry::particle_type::ParticleData;
 use steel_registry::{
     REGISTRY, TaggedRegistryExt as _,
-    blocks::{block_state_ext::BlockStateExt, shapes::is_offset_shape_full_block},
+    blocks::{
+        block_state_ext::BlockStateExt, properties::BlockStateProperties,
+        shapes::is_offset_shape_full_block,
+    },
     data_components::vanilla_components::USE_EFFECTS,
     item_stack::ItemStack,
     level_events, vanilla_blocks, vanilla_game_events, vanilla_particle_types,
@@ -127,7 +130,7 @@ impl BoneMealItem {
                     if !candidates.is_empty() {
                         new_state = candidates[rng.random_range(0..candidates.len())]
                             .default_state()
-                            .set_value(&steel_registry::blocks::properties::BlockStateProperties::HORIZONTAL_FACING, clicked_face);
+                            .set_value(&BlockStateProperties::HORIZONTAL_FACING, clicked_face);
                     }
                 } else if rng.random_range(0..4) == 0 && !candidates.is_empty() {
                     new_state = candidates[rng.random_range(0..candidates.len())].default_state();

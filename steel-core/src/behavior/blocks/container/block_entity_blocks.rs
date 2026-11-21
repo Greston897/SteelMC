@@ -30,6 +30,7 @@ use steel_registry::vanilla_block_entity_types;
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_game_events::BLOCK_CHANGE;
 use steel_registry::vanilla_game_events::BLOCK_PLACE;
+use steel_registry::vanilla_game_events::ENTITY_INTERACT;
 use steel_registry::vanilla_game_events::FLUID_PICKUP;
 use steel_registry::vanilla_items;
 use steel_registry::vanilla_potions::WATER;
@@ -58,7 +59,7 @@ use crate::entity::entities::{
     WindChargeEntity,
 };
 use crate::entity::projectile::triangle_random;
-use crate::entity::{Entity as _, SharedEntity, ThrowableItemProjectile as _, next_entity_id};
+use crate::entity::{Entity, SharedEntity, ThrowableItemProjectile as _, next_entity_id};
 use crate::inventory::container::calculate_redstone_signal_from_container;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
 use crate::inventory::menu::kinds::{brewing_stand, chest, crafter, dispenser, hopper, lectern};
@@ -747,14 +748,13 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
             world.get_entities_in_aabb(&WorldAabb::new(x, y, z, x + 1.0, y + 1.0, z + 1.0));
         let armadillo = entities.iter().find_map(|entity| {
             let armadillo = entity.as_ref().downcast_ref::<ArmadilloEntity>()?;
-            (crate::entity::Entity::is_alive(armadillo) && !AgeableMob::is_baby(armadillo))
-                .then_some(armadillo)
+            (Entity::is_alive(armadillo) && !AgeableMob::is_baby(armadillo)).then_some(armadillo)
         });
         if let Some(armadillo) = armadillo {
             let _ =
                 armadillo.spawn_at_location(ItemStack::new(&vanilla_items::ARMADILLO_SCUTE), 0.0);
             armadillo.play_sound(&sound_events::ENTITY_ARMADILLO_BRUSH, 1.0, 1.0);
-            armadillo.game_event(&steel_registry::vanilla_game_events::ENTITY_INTERACT);
+            armadillo.game_event(&ENTITY_INTERACT);
             let mut guard = container.lock();
             if guard.get_item_mut(slot).hurt_and_break(16, false) {
                 guard.set_item(slot, ItemStack::empty());

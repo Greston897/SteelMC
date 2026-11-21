@@ -66,7 +66,7 @@ fn dispenser_keeps_brush_when_no_armadillo_is_present() {
     assert_eq!(guard.get_item(0).count(), 1);
     assert_eq!(
         fixture.world.get_block_state(TARGET).get_block(),
-        &*vanilla_blocks::SUSPICIOUS_SAND
+        &vanilla_blocks::SUSPICIOUS_SAND
     );
 }
 
