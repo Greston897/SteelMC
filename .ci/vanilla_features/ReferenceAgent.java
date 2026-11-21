@@ -30,26 +30,6 @@ public class ReferenceAgent {
         instrumentation.addTransformer(new ClassFileTransformer() {
             public byte[] transform(Module module, ClassLoader loader, String name, Class<?> type,
                                     ProtectionDomain domain, byte[] bytes) {
-                if (name.equals("net/minecraft/server/level/WorldGenRegion") && Boolean.getBoolean("steel.trace")) {
-                    ClassFile classFile = ClassFile.of();
-                    var region = classFile.parse(bytes);
-                    for (var method : region.methods()) {
-                        if (method.methodName().equalsString("setBlock")) {
-                            System.out.println("REFERENCE region method " + method.methodType().stringValue());
-                        }
-                    }
-                    return classFile.transformClass(region,
-                        ClassTransform.transformingMethodBodies(
-                            method -> method.methodName().equalsString("setBlock")
-                                   && method.methodType().equalsString("(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;II)Z"),
-                            new CodeTransform() {
-                                @Override public void atStart(CodeBuilder code) {
-                                    code.aload(1).aload(2).invokestatic(ClassDesc.of("ReferenceAgent"), "traceBlock",
-                                        MethodTypeDesc.of(CD_void, CD_Object, CD_Object));
-                                }
-                                @Override public void accept(CodeBuilder code, CodeElement element) { code.with(element); }
-                            }));
-                }
                 if (!name.equals("net/minecraft/server/MinecraftServer")) return null;
                 ClassFile classFile = ClassFile.of();
                 byte[] transformed = classFile.transformClass(classFile.parse(bytes),
@@ -98,44 +78,6 @@ public class ReferenceAgent {
                 System.exit(2);
             }
         }, "vanilla-reference-capture").start();
-    }
-
-    private static volatile Method posX, posY, posZ;
-    // Diagnostic positions from the seven verified hash mismatches; not generation inputs.
-    private static final int[][] TRACE_TARGETS = {
-        {-6536437,73,-7689101}, {-6536435,73,-7689101}, {-6536435,73,-7689100},
-        {-6536434,73,-7689098}, {-6536433,73,-7689097}, {-6536434,73,-7689096},
-        {-6536441,74,-7689102}, {85767,-32,-378042}, {85766,-32,-378038},
-        {2563814,63,646123}, {2563817,63,646124}, {2563832,-2,646078},
-        {3021886,4,-1809546}, {3021883,4,-1809543}, {4803953,68,948968},
-        {7086411,-38,1785593}, {7086414,-38,1785593}
-    };
-
-    public static void traceBlock(Object pos, Object state) {
-        try {
-            if (posX == null) {
-                Class<?> type = pos.getClass();
-                posY = type.getMethod("getY");
-                posZ = type.getMethod("getZ");
-                posX = type.getMethod("getX");
-            }
-            int x = (Integer) posX.invoke(pos);
-            int y = (Integer) posY.invoke(pos);
-            int z = (Integer) posZ.invoke(pos);
-            for (int[] target : TRACE_TARGETS) {
-                if (x == target[0] && y == target[1] && z == target[2]) {
-                    System.out.println("TRACE " + x + " " + y + " " + z + " " + state);
-                    for (StackTraceElement frame : Thread.currentThread().getStackTrace()) {
-                        if (frame.getClassName().startsWith("net.minecraft.world.level.levelgen")) {
-                            System.out.println("  " + frame);
-                        }
-                    }
-                    break;
-                }
-            }
-        } catch (ReflectiveOperationException error) {
-            throw new IllegalStateException("reference trace failed", error);
-        }
     }
 
     private static List<int[]> positions(String name) throws IOException {
