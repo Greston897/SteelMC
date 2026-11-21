@@ -245,8 +245,173 @@ impl FlintPlayer for SteelTestPlayer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use flint_core::test_spec::{GameMode as FlintGameMode, PlayerSlot as FlintPlayerSlot};
+    use flint_core::{Block as FlintBlock, FlintWorld as _};
     use steel_registry::data_components::vanilla_components::DAMAGE;
     use steel_registry::vanilla_items::STONE;
+
+    /// One Flint player-interaction placement scenario.
+    struct PlacementScenario {
+        /// Human readable scenario name used in the failure report.
+        name: &'static str,
+        /// Fixture blocks placed before the interaction.
+        setup: Vec<([i32; 3], FlintBlock)>,
+        /// Player position used for the teleport action.
+        player_pos: [f64; 3],
+        /// Player rotation (yaw, pitch) used for the teleport action.
+        player_rot: [f32; 2],
+        /// Item held in the first hotbar slot.
+        item: &'static str,
+        /// Position where the block is expected to appear.
+        target: [i32; 3],
+        /// Expected block identifier at the target position.
+        expected: &'static str,
+    }
+
+    /// The Flint placement scenarios that currently fail.
+    fn placement_scenarios() -> Vec<PlacementScenario> {
+        vec![
+            PlacementScenario {
+                name: "hay east",
+                setup: vec![([0, 1, 0], FlintBlock::new("minecraft:stone"))],
+                player_pos: [3.5, 0.0, 0.5],
+                player_rot: [90.0, 0.0],
+                item: "minecraft:hay_block",
+                target: [1, 1, 0],
+                expected: "minecraft:hay_block",
+            },
+            PlacementScenario {
+                name: "hay north",
+                setup: vec![([0, 1, 0], FlintBlock::new("minecraft:stone"))],
+                player_pos: [0.5, 0.0, -2.5],
+                player_rot: [0.0, 0.0],
+                item: "minecraft:hay_block",
+                target: [0, 1, -1],
+                expected: "minecraft:hay_block",
+            },
+            PlacementScenario {
+                name: "stained glass side",
+                setup: vec![([0, 1, 0], FlintBlock::new("minecraft:red_stained_glass"))],
+                player_pos: [0.5, 0.0, -3.5],
+                player_rot: [0.0, 0.0],
+                item: "minecraft:red_stained_glass",
+                target: [0, 1, -1],
+                expected: "minecraft:red_stained_glass",
+            },
+            PlacementScenario {
+                name: "grindstone wall",
+                setup: vec![([0, 1, 0], FlintBlock::new("minecraft:stone"))],
+                player_pos: [0.5, 0.0, -3.5],
+                player_rot: [0.0, 0.0],
+                item: "minecraft:grindstone",
+                target: [0, 1, -1],
+                expected: "minecraft:grindstone",
+            },
+            PlacementScenario {
+                name: "grindstone clicked face",
+                setup: vec![([0, 1, 0], FlintBlock::new("minecraft:stone"))],
+                player_pos: [0.5, 2.5, -2.5],
+                player_rot: [0.0, 36.0],
+                item: "minecraft:grindstone",
+                target: [0, 2, 0],
+                expected: "minecraft:grindstone",
+            },
+            PlacementScenario {
+                name: "hanging sign chain",
+                setup: vec![
+                    ([0, 5, 0], FlintBlock::new("minecraft:stone")),
+                    (
+                        [0, 4, 0],
+                        FlintBlock::with_properties(
+                            "minecraft:oak_hanging_sign",
+                            [
+                                ("rotation".to_owned(), "8".to_owned()),
+                                ("attached".to_owned(), "false".to_owned()),
+                            ]
+                            .into_iter()
+                            .collect(),
+                        ),
+                    ),
+                ],
+                player_pos: [0.5, 1.0, 0.5],
+                player_rot: [0.0, -90.0],
+                item: "minecraft:oak_hanging_sign",
+                target: [0, 3, 0],
+                expected: "minecraft:oak_hanging_sign",
+            },
+        ]
+    }
+
+    /// Runs one scenario and reports the ray, the clip result, the placed
+    /// block, and the held stack.
+    fn run_placement_scenario(scenario: &PlacementScenario) -> (String, String) {
+        let mut world = crate::world::SteelTestWorld::new();
+        for (pos, block) in &scenario.setup {
+            world.set_block(*pos, block).expect("fixture placement");
+        }
+
+        let mut player = world.create_player();
+        player
+            .set_slot(
+                FlintPlayerSlot::Hotbar1,
+                Some(&flint_core::Item::new(scenario.item)),
+            )
+            .expect("hotbar slot");
+        player.select_hotbar(1).expect("hotbar selection");
+        player
+            .set_game_mode(FlintGameMode::Survival)
+            .expect("game mode");
+
+        world.do_tick().expect("world tick");
+        player
+            .teleport(scenario.player_pos, Some(scenario.player_rot))
+            .expect("teleport");
+        player.interact().expect("interact");
+
+        let placed = world
+            .get_block(scenario.target, &[])
+            .expect("block read");
+        let slot = player
+            .get_slot(FlintPlayerSlot::Hotbar1, Vec::new())
+            .expect("slot read");
+        let concrete = player
+            .as_any_mut()
+            .downcast_mut::<SteelTestPlayer>()
+            .expect("steel player");
+        let (start, end) = concrete.player.get_ray_endpoints();
+        let clip = concrete
+            .player
+            .get_world()
+            .clip(start, end, ClipBlockShape::Outline, ClipFluid::None);
+        let position = concrete.player.position();
+        let rotation = concrete.player.rotation();
+
+        let report = format!(
+            "{}: position={position:?} rotation={rotation:?} ray={start:?}->{end:?} \
+             clip={clip:?} placed={placed:?} slot={slot:?}",
+            scenario.name,
+        );
+        (report, placed.id)
+    }
+
+    /// Reproduces the failing Flint player-interaction placement scenarios
+    /// through the real world, player, and interaction path used by the Flint
+    /// adapter.
+    #[test]
+    fn flint_player_placement_scenarios() {
+        crate::init();
+
+        let failures: Vec<String> = placement_scenarios()
+            .iter()
+            .filter_map(|scenario| {
+                let (report, placed_id) = run_placement_scenario(scenario);
+                let expected = scenario.expected;
+                (placed_id != expected).then(|| format!("{report} (expected {expected})"))
+            })
+            .collect();
+
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
+    }
 
     #[test]
     fn stack_conversion_reports_requested_plain_components() {
