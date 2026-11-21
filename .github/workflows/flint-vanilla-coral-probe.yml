@@ -31,9 +31,10 @@ jobs:
           distribution: temurin
           java-version: '25'
       - name: Build pinned FlintCLI
-        working-directory: FlintCLI
         run: |
           set -o pipefail
+          cp -a FlintCLI "$RUNNER_TEMP/flint-cli"
+          cd "$RUNNER_TEMP/flint-cli"
           cargo build --locked 2>&1 | tee /tmp/coral-build.log
       - name: Fetch verified vanilla 26.3
         run: python3 .ci/download_vanilla_server.py
@@ -41,7 +42,7 @@ jobs:
         run: |
           set -o pipefail
           python3 .ci/flint_vanilla_coral_probe.py \
-            --server server.jar --client FlintCLI/target/debug/flintmc \
+            --server server.jar --client "$RUNNER_TEMP/flint-cli/target/debug/flintmc" \
             --fixture FlintBenchmark/tests/vegetation/corals/brain_coral_fan_placement.json \
             --workdir "$RUNNER_TEMP/coral-probe" 2>&1 | tee /tmp/coral-probe.log
       - name: Publish diagnostic output
