@@ -58,6 +58,7 @@ jobs:
         env:
           STEEL_HASH_DEBUG_DIMENSION: minecraft:overworld
           STEEL_HASH_DEBUG_STAGE: minecraft:features
+          STEEL_FEATURE_NOISE_TRACE: '1'
         run: |
           set -o pipefail
           binary=$(cat /tmp/core-test-binary)
@@ -66,7 +67,10 @@ jobs:
         if: always()
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 .ci/report.py "Features diagnostic — vanilla blocks" /tmp/reference.log /tmp/feature-trace.log /tmp/features-diagnostic.log
+        run: |
+          grep 'STEEL_FEATURE_NOISE' /tmp/features-diagnostic.log > /tmp/steel-noise-trace.log || true
+          python3 .ci/report.py "Features diagnostic — Steel noise" /tmp/steel-noise-trace.log
+          python3 .ci/report.py "Features diagnostic — vanilla blocks" /tmp/reference.log /tmp/feature-trace.log /tmp/features-diagnostic.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:

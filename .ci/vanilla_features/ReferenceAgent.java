@@ -87,7 +87,23 @@ public class ReferenceAgent {
             int z = (Integer) featurePosZ.invoke(pos);
             if (x >= -6536443 && x <= -6536430 && y >= 72 && y <= 75
                 && z >= -7689105 && z <= -7689090) {
-                System.out.println("FEATURE_TRACE " + x + " " + y + " " + z + " " + feature);
+                String details = "";
+                if (feature.toString().contains("minecraft:flower_plain")) {
+                    Object holder = feature.getClass().getMethod("toPlace").invoke(feature);
+                    Class<?> holderClass = Class.forName("net.minecraft.core.Holder", true, pos.getClass().getClassLoader());
+                    Object provider = holderClass.getMethod("value").invoke(holder);
+                    Class<?> base = provider.getClass().getSuperclass();
+                    Field scale = base.getDeclaredField("scale");
+                    Field threshold = provider.getClass().getDeclaredField("threshold");
+                    Class<?> blockPos = Class.forName("net.minecraft.core.BlockPos", true, pos.getClass().getClassLoader());
+                    Method noiseValue = base.getDeclaredMethod("getNoiseValue", blockPos, double.class);
+                    scale.setAccessible(true);
+                    threshold.setAccessible(true);
+                    noiseValue.setAccessible(true);
+                    details = " noise=" + noiseValue.invoke(provider, pos, (double) scale.getFloat(provider))
+                        + " threshold=" + threshold.getFloat(provider);
+                }
+                System.out.println("FEATURE_TRACE " + x + " " + y + " " + z + details + " " + feature);
             }
         } catch (ReflectiveOperationException error) {
             System.err.println("FEATURE_TRACE_ERROR " + error);

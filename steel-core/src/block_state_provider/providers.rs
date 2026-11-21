@@ -250,13 +250,26 @@ impl BlockStateProviderEvaluator {
         let noise = NoiseCache::get(&provider.noise, provider.seed);
         let noise_value = Self::noise_value(&noise, pos, f64::from(provider.scale));
 
-        if noise_value < f64::from(provider.threshold) {
+        let result = if noise_value < f64::from(provider.threshold) {
             Self::random_block_state_from_data_list(registry, random, &provider.low_states)
         } else if random.next_f32() < provider.high_chance {
             Self::random_block_state_from_data_list(registry, random, &provider.high_states)
         } else {
             Self::block_state_from_data(registry, &provider.default_state)
+        };
+        #[cfg(test)]
+        if (-6536443..=-6536430).contains(&pos.x())
+            && (72..=75).contains(&pos.y())
+            && (-7689105..=-7689090).contains(&pos.z())
+            && std::env::var_os("STEEL_FEATURE_NOISE_TRACE").is_some()
+        {
+            eprintln!(
+                "STEEL_FEATURE_NOISE {} {} {} noise={} threshold={} state={:?}",
+                pos.x(), pos.y(), pos.z(), noise_value, provider.threshold,
+                registry.blocks.by_state_id(result).map(|block| &block.key)
+            );
         }
+        result
     }
 
     pub(crate) fn sample_dual_noise_provider(
