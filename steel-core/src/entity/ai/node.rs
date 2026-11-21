@@ -486,7 +486,7 @@ mod tests {
         assert_eq!(store.get(low).map(|node| node.heap_idx), Some(-1));
         assert_eq!(heap.pop(&mut store), Some(middle));
         assert_eq!(heap.pop(&mut store), Some(high));
-        assert!(heap.is_empty());
+        assert!(heap.is_empty(), "the heap must be drained");
     }
 
     #[test]

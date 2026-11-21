@@ -255,8 +255,8 @@ mod tests {
         let sand = ItemStack::new(&SAND);
         fill_from_loot(&mut slots, vec![stone, dirt, sand], &mut rng());
         // The third item has no free slot and is dropped, like vanilla's fill.
-        assert!(!slots[0].is_empty());
-        assert!(!slots[1].is_empty());
+        assert!(!slots[0].is_empty(), "the first slot must hold the rolled item");
+        assert!(!slots[1].is_empty(), "the second slot must hold the rolled item");
     }
 
     #[test]
@@ -310,6 +310,6 @@ mod tests {
     fn empty_loot_never_touches_the_slots() {
         let mut slots = vec![ItemStack::empty(); 1];
         fill_from_loot(&mut slots, vec![ItemStack::empty()], &mut rng());
-        assert!(slots[0].is_empty());
+        assert!(slots[0].is_empty(), "the slot must stay empty");
     }
 }

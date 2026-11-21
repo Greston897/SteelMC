@@ -348,7 +348,7 @@ mod tests {
         let mut covered = Vec::new();
         for index in 0..32 {
             let shard = shard_paths(paths.clone(), index, 32);
-            assert!(!shard.is_empty());
+            assert!(!shard.is_empty(), "every shard must cover at least one path");
             covered.extend(shard);
         }
         covered.sort();

@@ -1508,7 +1508,7 @@ mod outcome_tests {
             world.raids.tick(world);
         }
         assert_eq!(world.raids.raids(), [] as [Raid; 0]);
-        assert!(world.raids.viewers.lock().is_empty());
+        assert!(world.raids.viewers.lock().is_empty(), "no raid viewers are expected");
     }
 
     #[test]
