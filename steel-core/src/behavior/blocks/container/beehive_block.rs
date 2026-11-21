@@ -12,7 +12,10 @@ use steel_registry::blocks::properties::{
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_block_entity_types;
 use steel_registry::vanilla_criteria_triggers::BEE_NEST_DESTROYED;
-use steel_registry::{sound_events, vanilla_blocks, vanilla_items};
+use steel_registry::vanilla_enchantment_tags::EnchantmentTag;
+use steel_registry::{
+    REGISTRY, RegistryExt, TaggedRegistryExt, sound_events, vanilla_blocks, vanilla_items,
+};
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _};
 
@@ -71,17 +74,6 @@ impl BeehiveBlock {
             }
         }
         false
-    }
-
-    /// Vanilla `BeehiveBlock.releaseBees`: spawns every stored occupant.
-    fn release_bees(world: &Arc<World>, pos: BlockPos) {
-        let Some(block_entity) = world.get_block_entity(pos) else {
-            return;
-        };
-        let Some(beehive) = block_entity.downcast_ref::<BeehiveBlockEntity>() else {
-            return;
-        };
-        beehive.release_all_bees(world, pos);
     }
 
     /// Vanilla `BeehiveBlock.angerBees`: applies the anger effect to the player.
@@ -262,25 +254,29 @@ impl BlockBehavior for BeehiveBlock {
         player: &Player,
         pos: BlockPos,
         state: BlockStateId,
-        _block_entity: Option<&SharedBlockEntity>,
-        _tool: &ItemStack,
+        block_entity: Option<&SharedBlockEntity>,
+        tool: &ItemStack,
     ) {
-        // Vanilla `BeehiveBlock.playerDestroy` releases every occupant, so
-        // breaking a hive never deletes the bees inside it, and fires
-        // `bee_nest_destroyed` with the block and a bee-in-nest state.
-        // Vanilla reads `BeehiveBlockEntity.isFull()`/`isEmpty()` *before* the
-        // release, so the predicate sees the occupants the hive still held.
-        let bees_inside = world
-            .get_block_entity(pos)
-            .and_then(|block_entity| {
-                block_entity
-                    .downcast_ref::<BeehiveBlockEntity>()
-                    .map(BeehiveBlockEntity::occupant_count)
+        let Some(hive) = block_entity.and_then(|entity| entity.downcast_ref::<BeehiveBlockEntity>())
+        else {
+            return;
+        };
+        let prevents_release = tool.get_enchantments().is_some_and(|enchantments| {
+            enchantments.iter().any(|(key, _)| {
+                REGISTRY.enchantments.by_key(key).is_some_and(|enchantment| {
+                    REGISTRY.enchantments.is_in_tag(
+                        enchantment,
+                        &EnchantmentTag::PREVENTS_BEE_SPAWNS_WHEN_MINING,
+                    )
+                })
             })
-            .is_some_and(|occupants| occupants > 0);
-        Self::release_bees(world, pos);
-        let mut context = TriggerContext::block(&state.get_block().key, None);
-        context.bees_inside = Some(bees_inside);
+        });
+        if !prevents_release {
+            hive.release_all_bees(world, pos);
+        }
+        let item = (!tool.is_empty()).then_some(&tool.item().key);
+        let mut context = TriggerContext::block(&state.get_block().key, item);
+        context.bees_inside = Some(i32::try_from(hive.occupant_count()).unwrap_or(i32::MAX));
         player.trigger_advancement_with_context(&BEE_NEST_DESTROYED, &context);
     }
 
@@ -310,6 +306,43 @@ mod tests {
     };
     use glam::DVec3;
     use steel_utils::ChunkPos;
+
+    #[test]
+    fn breaking_removed_hive_respects_enchantment_and_releases_occupants() {
+        use steel_registry::vanilla_enchantments;
+
+        init_globals();
+        let fixture = fresh_test_world("hive_break_occupants");
+        let world = &fixture.world;
+        let pos = BlockPos::new(8, 64, 8);
+        let _holder = insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+        let player = TestPlayerBuilder::new(Arc::clone(world), "HiveBreaker", 1).build();
+        let behavior = BeehiveBlock::new(&vanilla_blocks::BEE_NEST);
+        let state = vanilla_blocks::BEE_NEST.default_state();
+
+        for silk_touch in [false, true] {
+            world.set_block(pos, state, UpdateFlags::UPDATE_ALL);
+            let entity = world.get_block_entity(pos).expect("hive block entity");
+            let hive = entity
+                .downcast_ref::<BeehiveBlockEntity>()
+                .expect("typed hive");
+            for _ in 0..3 {
+                hive.store_worldgen_bee(0);
+            }
+            world.set_block(
+                pos,
+                vanilla_blocks::AIR.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
+            assert!(world.get_block_entity(pos).is_none());
+            let mut tool = ItemStack::new(&vanilla_items::DIAMOND_PICKAXE);
+            if silk_touch {
+                tool.upgrade_enchantment(vanilla_enchantments::SILK_TOUCH.key.clone(), 1);
+            }
+            behavior.player_destroy(world, &player, pos, state, Some(&entity), &tool);
+            assert_eq!(hive.occupant_count(), if silk_touch { 3 } else { 0 });
+        }
+    }
 
     #[test]
     fn shearing_full_hive_resets_honey_and_drops_three_honeycombs() {

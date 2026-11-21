@@ -47,8 +47,8 @@ pub struct TriggerContext {
     pub duration: Option<i32>,
     /// Recipe key, for `recipe_unlocked`.
     pub recipe: Option<Identifier>,
-    /// Whether a destroyed nest still held occupants, for `bee_nest_destroyed`.
-    pub bees_inside: Option<bool>,
+    /// Number of occupants remaining after a nest is destroyed.
+    pub bees_inside: Option<i32>,
     /// Pyramid level of a constructed beacon, for `construct_beacon`.
     pub dimension_level: Option<i32>,
 }
@@ -197,10 +197,9 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
         "to" => matches_dimension(expected, context.to_dimension.as_ref()),
         // `nether_travel` and `levitation` measure how far the player moved.
         "distance" => matches_distance(expected, context.distance),
-        // `bee_nest_destroyed` reports whether bees were still inside.
-        "bee_count" | "has_bee" | "bees" => context
+        "num_bees_inside" => context
             .bees_inside
-            .is_none_or(|bees_inside| matches_bee_count(expected, bees_inside)),
+            .is_some_and(|count| matches_number_range(expected, f64::from(count))),
         // `construct_beacon` reports the pyramid level that was built.
         "level" => context
             .dimension_level
@@ -217,17 +216,6 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
         // Nested conditions (e.g. `effects_changed`), evaluated recursively, and
         // unknown predicates are ignored: vanilla deserialization is lenient and
         // an unrecognised key would be a data-pack field Steel does not model.
-        _ => true,
-    }
-}
-
-/// Vanilla `bee_count` predicate: either a range or `{"occupied": true}`.
-fn matches_bee_count(expected: &Value, bees_inside: bool) -> bool {
-    match expected {
-        Value::Object(map) => map
-            .get("occupied")
-            .and_then(Value::as_bool)
-            .is_none_or(|occupied| occupied == bees_inside),
         _ => true,
     }
 }
@@ -596,6 +584,21 @@ mod tests {
             &serde_json::json!({"min": 1.0, "max": 2.0}),
             2.0
         ));
+    }
+
+    #[test]
+    fn bee_nest_count_obeys_exact_and_bounded_ranges() {
+        let mut context = TriggerContext {
+            bees_inside: Some(3),
+            ..TriggerContext::default()
+        };
+        assert!(matches(r#"{"num_bees_inside":{"min":3}}"#, &context));
+        assert!(!matches(r#"{"num_bees_inside":2}"#, &context));
+        context.bees_inside = Some(0);
+        assert!(!matches(r#"{"num_bees_inside":{"min":3}}"#, &context));
+        assert!(matches(r#"{"num_bees_inside":{"max":0}}"#, &context));
+        context.bees_inside = None;
+        assert!(!matches(r#"{"num_bees_inside":0}"#, &context));
     }
 
     #[test]
