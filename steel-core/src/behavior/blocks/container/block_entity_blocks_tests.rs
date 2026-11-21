@@ -667,3 +667,45 @@ fn dispenser_flint_and_steel_keeps_the_tnt_when_priming_is_rejected() {
     // keeps the `minecraft:damage` value of the vanilla item prototype.
     assert_eq!(container.lock().get_item(0).get(DAMAGE), Some(&0));
 }
+
+#[test]
+fn dispenser_places_shulker_boxes_with_the_expected_facing_and_keeps_blocked_items() {
+    for (support, expected_facing) in [(true, Direction::Up), (false, Direction::East)] {
+        let (fixture, container) = fixture(
+            "dispenser_shulker_placement",
+            ItemStack::new(&vanilla_items::SHULKER_BOX),
+        );
+        let world = &fixture.world;
+        if support {
+            world.set_block(
+                TARGET.below(),
+                vanilla_blocks::STONE.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
+        }
+        pulse(world);
+        let state = world.get_block_state(TARGET);
+        assert_eq!(state.get_block(), &vanilla_blocks::SHULKER_BOX);
+        assert_eq!(
+            state.get_value(&BlockStateProperties::FACING),
+            expected_facing
+        );
+        assert!(container.lock().get_item(0).is_empty());
+    }
+
+    let (fixture, container) = fixture(
+        "dispenser_shulker_blocked",
+        ItemStack::new(&vanilla_items::SHULKER_BOX),
+    );
+    fixture.world.set_block(
+        TARGET,
+        vanilla_blocks::STONE.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    pulse(&fixture.world);
+    assert_eq!(
+        fixture.world.get_block_state(TARGET).get_block(),
+        &vanilla_blocks::STONE
+    );
+    assert_eq!(container.lock().get_item(0).count(), 1);
+}

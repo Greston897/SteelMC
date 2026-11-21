@@ -27,6 +27,7 @@ use steel_registry::level_events::SOUND_DISPENSER_PROJECTILE_LAUNCH;
 use steel_registry::level_events::SOUND_FIREWORK_SHOOT;
 use steel_registry::level_events::SOUND_WIND_CHARGE_SHOOT;
 use steel_registry::vanilla_block_entity_types;
+use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_game_events::BLOCK_CHANGE;
 use steel_registry::vanilla_game_events::BLOCK_PLACE;
 use steel_registry::vanilla_game_events::FLUID_PICKUP;
@@ -39,7 +40,6 @@ use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _};
 use text_components::TextComponent;
 
-use crate::behavior::InventoryAccess;
 use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
 use crate::behavior::blocks::FireBlock;
 use crate::behavior::blocks::TntBlock;
@@ -47,6 +47,7 @@ use crate::behavior::context::{BlockHitResult, BlockPlaceContext, InteractionRes
 use crate::behavior::items::BoneMealItem;
 use crate::behavior::items::FlintAndSteelItem;
 use crate::behavior::waxables::get_waxed_from_normal_variant;
+use crate::behavior::{BlockItem, InventoryAccess};
 use crate::block_entity::BLOCK_ENTITIES;
 use crate::block_entity::BlockEntityTicker;
 use crate::block_entity::entities::CrafterBlockEntity;
@@ -731,6 +732,32 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
     let target_state = world.get_block_state(target_pos);
     let target_block = target_state.get_block();
     let item = snapshot.item();
+
+    // Shulker boxes use a directional placement context, preserving item
+    // components and retaining the stack when placement is blocked.
+    if let Some(block) = item.block
+        && block.has_tag(&BlockTag::SHULKER_BOXES)
+    {
+        let clicked_face = if world.get_block_state(target_pos.below()).is_air() {
+            facing
+        } else {
+            Direction::Up
+        };
+        let mut stack = snapshot.clone();
+        let context =
+            BlockPlaceContext::directional(world, target_pos, facing, &mut stack, clicked_face);
+        let success = BlockItem::new(block).place(context).consumes_action();
+        if success {
+            container.lock().set_item(slot, stack);
+        }
+        let sound = if success {
+            &sound_events::BLOCK_DISPENSER_DISPENSE
+        } else {
+            &sound_events::BLOCK_DISPENSER_FAIL
+        };
+        world.play_sound(sound, SoundSource::Blocks, pos, 1.0, 1.0, None);
+        return success;
+    }
 
     // Honeycomb consumes one item only when the facing block can be waxed.
     if item == &*vanilla_items::HONEYCOMB
