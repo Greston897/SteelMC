@@ -5,7 +5,6 @@ use std::sync::Weak;
 
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList};
-use steel_registry::blocks::shapes::SupportType::Full;
 use steel_registry::{vanilla_block_entity_types, vanilla_entities};
 use steel_utils::geometry::WorldAabb;
 use steel_utils::nbt::NbtNumeric as _;
@@ -19,6 +18,7 @@ use steel_registry::blocks::properties::{
     BlockStateProperties, Direction, EnumProperty, IntProperty,
 };
 
+use crate::behavior::{BLOCK_BEHAVIORS, BlockCollisionContext};
 use crate::block_entity::{BlockEntity, BlockEntityBase};
 use crate::entity::{
     EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest, SharedEntity, spawn_entity,
@@ -75,6 +75,17 @@ impl BeeOccupant {
         }
     }
 
+    /// Vanilla checks the previous tick count using a strict greater-than.
+    fn tick_and_ready(&mut self) -> bool {
+        let ready = self.ticks_in_hive > self.min_ticks_in_hive;
+        self.ticks_in_hive = self.ticks_in_hive.wrapping_add(1);
+        ready
+    }
+
+    fn has_nectar(&self) -> bool {
+        self.entity_data.byte("HasNectar").is_some_and(|value| value != 0)
+    }
+
     fn save(&self) -> NbtCompound {
         let mut nbt = NbtCompound::new();
         nbt.insert("entity_data", self.entity_data.clone());
@@ -107,8 +118,9 @@ impl BeehiveState {
 
 /// Beehive and bee nest block entity.
 ///
-/// Currently stores and persists occupants for worldgen bee nests. Full vanilla
-/// occupant ticking/release is blocked on bee entity support.
+/// Stores and ticks occupants. Release remains incomplete: saved bee data,
+/// environmental attributes and several bee-specific behaviours are not yet
+/// fully restored or simulated.
 pub struct BeehiveBlockEntity {
     base: BlockEntityBase,
     state: SyncMutex<BeehiveState>,
@@ -274,7 +286,15 @@ impl BeehiveBlockEntity {
         let exit_blocked = {
             let exit_pos = pos.relative(front);
             let exit_state = world.get_block_state(exit_pos);
-            world.is_face_sturdy_for(exit_state, exit_pos, front.opposite(), Full)
+            !BLOCK_BEHAVIORS
+                .get_behavior(exit_state.get_block())
+                .get_collision_shape(
+                    exit_state,
+                    world.as_ref(),
+                    exit_pos,
+                    BlockCollisionContext::empty(),
+                )
+                .is_empty()
         };
 
         let can_release = world.is_day() && !world.is_raining();
@@ -291,21 +311,25 @@ impl BeehiveBlockEntity {
 
             let mut remaining = Vec::with_capacity(guard.stored.len());
             for mut occupant in take(&mut guard.stored) {
-                occupant.ticks_in_hive += 1;
-
-                let ready = can_release
-                    && !exit_blocked
-                    && occupant.ticks_in_hive >= occupant.min_ticks_in_hive;
+                let ready = occupant.tick_and_ready() && can_release && !exit_blocked;
                 if !ready {
                     remaining.push(occupant);
                     continue;
                 }
 
-                // Vanilla releases the bee and, when it carries nectar, raises the
-                // hive's honey level by one (capped at five).
+                // Only nectar-bearing occupants deliver honey. Vanilla gives
+                // a 1% chance of two levels, capped at five.
                 if Self::spawn_released_bee(world, pos, front) {
                     released_any = true;
-                    honey_gain += 1;
+                    if occupant.has_nectar()
+                        && honey_level.saturating_add(honey_gain) < MAX_HONEY_LEVEL
+                    {
+                        honey_gain += if rand::random_range(0..100) == 0 {
+                            2
+                        } else {
+                            1
+                        };
+                    }
                 } else {
                     // A failed spawn keeps the bee inside, as vanilla does.
                     remaining.push(occupant);
@@ -410,6 +434,10 @@ impl BlockEntity for BeehiveBlockEntity {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::bootstrap::init_globals;
+    use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
+    use steel_registry::vanilla_blocks;
+    use steel_utils::ChunkPos;
 
     #[test]
     fn release_offsets_match_vanilla_faces() {
@@ -444,9 +472,76 @@ mod tests {
     }
 
     #[test]
-    fn nectarless_bees_wait_six_hundred_ticks() {
-        // Vanilla keeps a nectar-less bee inside for 600 ticks (2400 with nectar).
-        assert_eq!(BEEHIVE_MIN_OCCUPATION_TICKS_NECTARLESS, 600);
-        assert_eq!(BeeOccupant::worldgen(0).min_ticks_in_hive, 600);
+    fn nectarless_bees_wait_until_after_the_minimum_tick_count() {
+        let mut bee = BeeOccupant::worldgen(0);
+        assert!(!bee.has_nectar());
+        for _ in 0..=600 {
+            assert!(!bee.tick_and_ready());
+        }
+        assert!(bee.tick_and_ready());
+        bee.entity_data.insert("HasNectar", 1_i8);
+        assert!(bee.has_nectar());
+    }
+
+    #[test]
+    fn releasing_a_nectarless_bee_does_not_create_honey() {
+        init_globals();
+        let fixture = fresh_test_world("hive_nectarless_release");
+        let world = &fixture.world;
+        let pos = BlockPos::new(8, 64, 8);
+        let _holder = insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+        let state = vanilla_blocks::BEE_NEST.default_state();
+        assert!(world.set_block(pos, state, UpdateFlags::UPDATE_ALL));
+        assert!(world.is_day());
+        assert!(!world.is_raining());
+        let hive = BeehiveBlockEntity::new(Arc::downgrade(world), pos, state);
+        hive.store_worldgen_bee(601);
+
+        hive.tick_occupants(world, pos);
+        assert_eq!(hive.occupant_count(), 0);
+        assert_eq!(world.get_block_state(pos).get_value(LEVEL_HONEY), 0);
+    }
+
+    #[test]
+    fn nectar_delivery_increases_honey_with_vanilla_bounds() {
+        init_globals();
+        let fixture = fresh_test_world("hive_nectar_delivery");
+        let world = &fixture.world;
+        let pos = BlockPos::new(8, 64, 8);
+        let _holder = insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+        let state = vanilla_blocks::BEE_NEST.default_state();
+        assert!(world.set_block(pos, state, UpdateFlags::UPDATE_ALL));
+        assert!(world.is_day());
+        assert!(!world.is_raining());
+        let hive = BeehiveBlockEntity::new(Arc::downgrade(world), pos, state);
+        let mut bee = BeeOccupant::worldgen(601);
+        bee.entity_data.insert("HasNectar", 1_i8);
+        assert!(hive.state.lock().push_occupant(bee));
+
+        hive.tick_occupants(world, pos);
+        assert_eq!(hive.occupant_count(), 0);
+        assert!((1..=2).contains(&world.get_block_state(pos).get_value(LEVEL_HONEY)));
+    }
+
+    #[test]
+    fn partial_collision_blocks_the_normal_hive_exit() {
+        init_globals();
+        let fixture = fresh_test_world("hive_partial_exit");
+        let world = &fixture.world;
+        let pos = BlockPos::new(8, 64, 8);
+        let _holder = insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+        let state = vanilla_blocks::BEE_NEST.default_state();
+        assert!(world.set_block(pos, state, UpdateFlags::UPDATE_ALL));
+        let exit = pos.relative(state.get_value(FACING));
+        assert!(world.set_block(
+            exit,
+            vanilla_blocks::OAK_SLAB.default_state(),
+            UpdateFlags::UPDATE_ALL
+        ));
+        let hive = BeehiveBlockEntity::new(Arc::downgrade(world), pos, state);
+        hive.store_worldgen_bee(601);
+
+        hive.tick_occupants(world, pos);
+        assert_eq!(hive.occupant_count(), 1);
     }
 }
