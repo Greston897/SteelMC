@@ -331,7 +331,11 @@ fn matches_item_predicate(expected: &Value, context: &TriggerContext) -> bool {
     matches_item_view(expected, context.item.as_ref(), context.item_stack.as_ref())
 }
 
-fn matches_item_view(expected: &Value, item: Option<&Identifier>, stack: Option<&ItemStack>) -> bool {
+fn matches_item_view(
+    expected: &Value,
+    item: Option<&Identifier>,
+    stack: Option<&ItemStack>,
+) -> bool {
     let Some(map) = expected.as_object() else {
         return false;
     };
@@ -372,13 +376,15 @@ fn matches_inventory_items(expected: &Value, context: &TriggerContext) -> bool {
     }
     if predicates.len() == 1 {
         return context.item_stack.as_ref().is_some_and(|stack| {
-            !stack.is_empty() && matches_item_view(&predicates[0], Some(&stack.item().key), Some(stack))
+            !stack.is_empty()
+                && matches_item_view(&predicates[0], Some(&stack.item().key), Some(stack))
         });
     }
     context.inventory.as_ref().is_some_and(|inventory| {
         predicates.iter().all(|predicate| {
             inventory.iter().any(|stack| {
-                !stack.is_empty() && matches_item_view(predicate, Some(&stack.item().key), Some(stack))
+                !stack.is_empty()
+                    && matches_item_view(predicate, Some(&stack.item().key), Some(stack))
             })
         })
     })
@@ -404,7 +410,8 @@ fn matches_inventory_slots(expected: &Value, inventory: Option<&[ItemStack]>) ->
         .into_iter()
         .all(|(key, count)| {
             bounds.get(key).is_none_or(|range| {
-                i32::try_from(count).is_ok_and(|count| matches_number_range(range, f64::from(count)))
+                i32::try_from(count)
+                    .is_ok_and(|count| matches_number_range(range, f64::from(count)))
             })
         })
 }
@@ -747,13 +754,31 @@ mod tests {
         let dirt = ItemStack::new(&vanilla_items::DIRT);
         let mut context = context_for_stack(&stone);
         context.inventory = Some(vec![stone.clone(), dirt, ItemStack::empty()]);
-        assert!(matches(r#"{"items":[{"items":"minecraft:stone"}]}"#, &context));
-        assert!(!matches(r#"{"items":[{"items":"minecraft:dirt"}]}"#, &context));
-        assert!(matches(r#"{"items":[{"items":"minecraft:stone"},{"items":"minecraft:dirt"}]}"#, &context));
-        assert!(!matches(r#"{"items":[{"items":"minecraft:stone"},{"items":"minecraft:diamond"}]}"#, &context));
-        assert!(matches(r#"{"slots":{"full":1,"occupied":2,"empty":1}}"#, &context));
+        assert!(matches(
+            r#"{"items":[{"items":"minecraft:stone"}]}"#,
+            &context
+        ));
+        assert!(!matches(
+            r#"{"items":[{"items":"minecraft:dirt"}]}"#,
+            &context
+        ));
+        assert!(matches(
+            r#"{"items":[{"items":"minecraft:stone"},{"items":"minecraft:dirt"}]}"#,
+            &context
+        ));
+        assert!(!matches(
+            r#"{"items":[{"items":"minecraft:stone"},{"items":"minecraft:diamond"}]}"#,
+            &context
+        ));
+        assert!(matches(
+            r#"{"slots":{"full":1,"occupied":2,"empty":1}}"#,
+            &context
+        ));
         assert!(!matches(r#"{"slots":{"full":2}}"#, &context));
-        assert!(!matches(r#"{"items":[{"items":"minecraft:stone"}]}"#, &TriggerContext::default()));
+        assert!(!matches(
+            r#"{"items":[{"items":"minecraft:stone"}]}"#,
+            &TriggerContext::default()
+        ));
     }
 
     #[test]

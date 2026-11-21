@@ -252,7 +252,7 @@ impl CrossbowItem {
 
         // Vanilla `CrossbowItem.fireProjectiles` fires `shot_crossbow` with the
         // crossbow stack, which `adventure/arbalistic` requires.
-        let crossbow = context.inv.with_item(Clone::clone);
+        let crossbow = context.inv.with_item(|stack| stack.copy_with_count(stack.count()));
         context.player.trigger_advancement_with_context(
             &SHOT_CROSSBOW,
             &TriggerContext::item(&crossbow.item().key).with_item_stack(&crossbow),

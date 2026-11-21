@@ -34,6 +34,7 @@ use steel_registry::data_components::vanilla_components::{
     SwingAnimation, WRITABLE_BOOK_CONTENT, WRITTEN_BOOK_CONTENT,
 };
 use steel_registry::item_stack::ItemStack;
+use steel_registry::items::ItemRef;
 use steel_registry::mob_effect::MobEffectRef;
 use steel_registry::sound_events;
 use steel_registry::stat::vanilla_stat_types;
@@ -1355,8 +1356,13 @@ impl Player {
 
         let (added, before, after) = {
             let mut inventory = self.inventory.lock();
+            // Inventory.add only inserts stacks or changes their count; it does
+            // not mutate the components of an existing stack.
             let before = (0..inventory.get_container_size())
-                .map(|slot| inventory.get_item(slot).clone())
+                .map(|slot| {
+                    let stack = inventory.get_item(slot);
+                    (stack.item(), stack.count())
+                })
                 .collect::<Vec<_>>();
             let added = inventory.add(&mut item);
             let after = (0..inventory.get_container_size())
@@ -1371,12 +1377,14 @@ impl Player {
     }
 
     /// Fires an inventory change for each changed slot using the post-add snapshot.
-    fn notify_inventory_changed(&self, before: &[ItemStack], after: Vec<ItemStack>) {
+    fn notify_inventory_changed(&self, before: &[(ItemRef, i32)], after: Vec<ItemStack>) {
         let changed = before
             .iter()
             .zip(&after)
             .enumerate()
-            .filter_map(|(slot, (old, new))| (old != new).then_some(slot))
+            .filter_map(|(slot, ((old_item, old_count), new))| {
+                (*old_item != new.item() || *old_count != new.count()).then_some(slot)
+            })
             .collect::<Vec<_>>();
         if changed.is_empty() {
             return;
@@ -1411,21 +1419,12 @@ impl Player {
         }
 
         let inv_id = ContainerId::from_arc(&self.inventory);
-        let (should_drop, changed) = if let Some(inv) = guard.get_mut(inv_id) {
-            let before = (0..inv.get_container_size())
-                .map(|slot| inv.get_item(slot).clone())
-                .collect::<Vec<_>>();
+        let should_drop = if let Some(inv) = guard.get_mut(inv_id) {
             let added = inv.add(&mut item);
-            let after = (0..inv.get_container_size())
-                .map(|slot| inv.get_item(slot).clone())
-                .collect::<Vec<_>>();
-            (!added || !item.is_empty(), Some((before, after)))
+            !added || !item.is_empty()
         } else {
-            (true, None)
+            true
         };
-        if let Some((before, after)) = changed {
-            guard.run_unlocked(|| self.notify_inventory_changed(&before, after));
-        }
         if should_drop {
             let _ = guard.run_unlocked(|| self.drop_item(item, false, prediction));
         }
