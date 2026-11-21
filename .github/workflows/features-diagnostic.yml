@@ -5,6 +5,7 @@ on:
     paths:
       - '.ci/vanilla_features/**'
       - '.github/workflows/features-diagnostic.yml'
+      - 'steel-core/src/worldgen/feature/features/monster_room.rs'
 permissions:
   contents: write
 jobs:

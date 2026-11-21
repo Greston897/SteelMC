@@ -6,6 +6,9 @@
 use super::super::prelude::*;
 use super::super::runner::FeatureDecorationRunner;
 use steel_registry::vanilla_block_entity_types;
+use steel_utils::Downcast as _;
+
+use crate::block_entity::entities::{ChestBlockEntity, SpawnerBlockEntity};
 
 const SIMPLE_DUNGEON: &str = "minecraft:chests/simple_dungeon";
 const MONSTER_ROOM_MOBS: [&str; 4] = [
@@ -118,7 +121,11 @@ impl FeatureDecorationRunner {
                             chest_pos,
                             vanilla_blocks::CHEST.default_state(),
                         );
-                        if Self::safe_set_feature_block(region, chest_pos, chest) {
+                        let _ = Self::safe_set_feature_block(region, chest_pos, chest);
+                        if region
+                            .block_entity(chest_pos)
+                            .is_some_and(|entity| entity.downcast_ref::<ChestBlockEntity>().is_some())
+                        {
                             Self::set_loot_table_block_entity(
                                 region,
                                 chest_pos,
@@ -127,15 +134,19 @@ impl FeatureDecorationRunner {
                                 SIMPLE_DUNGEON,
                                 random.next_i64(),
                             );
-                            break;
                         }
+                        break;
                     }
                 }
             }
         }
 
         let spawner = vanilla_blocks::SPAWNER.default_state();
-        if Self::safe_set_feature_block(region, origin, spawner) {
+        let _ = Self::safe_set_feature_block(region, origin, spawner);
+        if region
+            .block_entity(origin)
+            .is_some_and(|entity| entity.downcast_ref::<SpawnerBlockEntity>().is_some())
+        {
             let entity_id = MONSTER_ROOM_MOBS[random.next_i32_bounded(4) as usize];
             Self::set_spawner_entity(region, origin, spawner, entity_id);
         }
