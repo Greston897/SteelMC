@@ -212,9 +212,7 @@ impl FlintPlayer for SteelTestPlayer {
         self.player
             .try_set_position(DVec3::new(pos[0], pos[1], pos[2]))?;
         self.player.set_rotation((rot.unwrap_or([0.0, 0.0])).into());
-        // Teleportation does not tick the player. Preserve its existing pose
-        // for subsequent actions at this timeline instant; the next world
-        // tick updates the pose in the usual entity-tick order.
+        self.player.update_pose();
         Ok(())
     }
 
@@ -282,13 +280,17 @@ mod tests {
     fn placement_scenarios() -> Vec<PlacementScenario> {
         vec![
             PlacementScenario {
-                name: "coral fan from inside support",
-                setup: vec![([8, 1, 4], FlintBlock::new("minecraft:stone"))],
-                player_pos: [8.5, 0.0, 4.5],
-                player_rot: [-90.0, 0.0],
-                item: "minecraft:brain_coral_fan",
-                target: [7, 1, 4],
-                expected: "minecraft:brain_coral_wall_fan",
+                name: "bamboo below low ceiling",
+                setup: vec![
+                    ([0, 1, 0], FlintBlock::new("minecraft:dirt")),
+                    ([0, 2, 0], FlintBlock::new("minecraft:bamboo_sapling")),
+                    ([0, 5, 0], FlintBlock::new("minecraft:stone")),
+                ],
+                player_pos: [0.5, 4.0, 0.5],
+                player_rot: [0.0, 90.0],
+                item: "minecraft:bamboo",
+                target: [0, 3, 0],
+                expected: "minecraft:bamboo",
             },
             PlacementScenario {
                 name: "hay east",
