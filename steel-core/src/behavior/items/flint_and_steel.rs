@@ -1,32 +1,22 @@
 //! Flint and steel and fire charge item behavior.
 //!
-//! Vanilla `FireChargeItem` only implements `useOn`: right-clicking a block
-//! ignites it and only a dispenser launches the fireball. Steel intentionally
-//! deviates from vanilla by also allowing the fire charge to be used in the
-//! air: right-clicking with a fire charge in the air launches one owned small
-//! fireball along the player's look direction, uses the held fire charge stack
-//! as the projectile item and consumes exactly one charge.
-
-use std::sync::Arc;
+//! Vanilla `FireChargeItem` ignites blocks on use; only dispensers launch
+//! fireballs. Using the item in the air has no special effect.
 
 use crate::behavior::blocks::FireBlock;
-use crate::behavior::context::{InteractionResult, UseItemContext, UseOnContext};
+use crate::behavior::context::{InteractionResult, UseOnContext};
 use crate::behavior::item::ItemBehavior;
 use steel_macros::item_behavior;
-use steel_protocol::packets::game::SoundSource;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::sound_event::SoundEventRef;
-use steel_registry::stat::vanilla_stat_types;
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::{
     blocks::{block_state_ext::BlockStateExt, properties::BlockStateProperties},
-    sound_events, vanilla_entities, vanilla_game_events,
+    sound_events, vanilla_game_events,
 };
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
 
-use crate::entity::entities::SmallFireballEntity;
-use crate::entity::{Entity, next_entity_id, spawn_throwable_item_projectile};
 use crate::world::game_event::GameEventContext;
 
 /// Behavior for flint and steel items.
@@ -94,74 +84,11 @@ impl ItemBehavior for FlintAndSteelItem {
     }
 }
 
-/// Vertical offset (in degrees) applied to the player's pitch when the fire
-/// charge is launched. Vanilla `Projectile.spawnProjectileFromRotation` uses
-/// the same zero offset for hand-thrown projectiles.
-const FIRE_CHARGE_SHOOT_Y_OFFSET: f32 = 0.0;
-
-/// Speed of the launched small fireball.
-const FIRE_CHARGE_SHOOT_POWER: f32 = 1.5;
-
-/// Random spread applied to the launched small fireball.
-const FIRE_CHARGE_SHOOT_UNCERTAINTY: f32 = 1.0;
-
 /// Behavior for fire charge items.
 #[item_behavior]
 pub struct FireChargeItem;
 
 impl ItemBehavior for FireChargeItem {
-    /// Steel deviation from vanilla: a fire charge can also be used in the air.
-    ///
-    /// Vanilla `FireChargeItem` does not override `Item.use`, so
-    /// right-clicking with a fire charge in the air does nothing; only a
-    /// dispenser launches the fireball. Steel launches one owned small
-    /// fireball along the player's look direction, renders the held fire
-    /// charge stack on it and consumes exactly one charge. Like every other
-    /// thrown item the charge is kept in creative mode.
-    fn use_item(&self, context: &mut UseItemContext) -> InteractionResult {
-        let world = context.world;
-        let player = context.player;
-
-        let mut held_stack = context.inv.with_item(|item| item.clone());
-
-        let fireball = spawn_throwable_item_projectile(
-            world,
-            player,
-            &mut held_stack,
-            FIRE_CHARGE_SHOOT_Y_OFFSET,
-            FIRE_CHARGE_SHOOT_POWER,
-            FIRE_CHARGE_SHOOT_UNCERTAINTY,
-            |spawn_pos| {
-                SmallFireballEntity::new(
-                    &vanilla_entities::SMALL_FIREBALL,
-                    next_entity_id(),
-                    spawn_pos,
-                    Arc::downgrade(world),
-                )
-            },
-        );
-        if fireball.is_none() {
-            log::debug!("world rejected the thrown fireball; still consuming the stack");
-        }
-
-        world.play_sound_at(
-            &sound_events::ITEM_FIRECHARGE_USE,
-            SoundSource::Blocks,
-            player.position(),
-            1.0,
-            fire_charge_pitch(),
-            None,
-        );
-
-        player.award_stat(&vanilla_stat_types::ITEM_USED, held_stack.item);
-        let has_infinite_materials = player.has_infinite_materials();
-        context
-            .inv
-            .with_item(|item| item.consume_one(has_infinite_materials));
-
-        InteractionResult::Success
-    }
-
     fn use_on(&self, context: &mut UseOnContext) -> InteractionResult {
         let click_pos = context.hit_result.block_pos;
         let clicked_state = context.world.get_block_state(click_pos);
@@ -311,11 +238,8 @@ mod tests {
         assert!(!can_light(lit_candle_cake));
     }
 
-    /// Steel deviation from vanilla: using a fire charge in the air launches
-    /// one owned small fireball, renders the held fire charge stack on it and
-    /// consumes exactly one charge.
     #[test]
-    fn using_a_fire_charge_in_the_air_launches_an_owned_small_fireball() {
+    fn using_a_fire_charge_in_the_air_does_not_launch_or_consume_it() {
         use std::sync::Arc;
 
         use steel_registry::item_stack::ItemStack;
@@ -324,8 +248,8 @@ mod tests {
         use steel_utils::{ChunkPos, Downcast as _, WorldAabb};
 
         use crate::behavior::{ITEM_BEHAVIORS, InteractionResult, UseItemContext, init_behaviors};
+        use crate::entity::Entity as _;
         use crate::entity::entities::SmallFireballEntity;
-        use crate::entity::{Entity as _, Projectile as _, ThrowableItemProjectile as _};
         use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
 
         init_vanilla_registry();
@@ -333,109 +257,74 @@ mod tests {
         let fixture = fresh_test_world("fire_charge_use_air");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
-        let player = TestPlayerBuilder::new(Arc::clone(world), "Thrower", 1).build();
+        let player = TestPlayerBuilder::new(Arc::clone(world), "User", 1).build();
         player.set_client_loaded(true);
-        player.set_rotation((90.0, 10.0));
-
-        {
-            let mut inventory = player.inventory.lock();
-            inventory.set_item_in_hand(
-                InteractionHand::MainHand,
-                ItemStack::with_count(&vanilla_items::FIRE_CHARGE, 2),
-            );
-        }
-
-        let behavior = ITEM_BEHAVIORS.get_behavior(&vanilla_items::FIRE_CHARGE);
+        player.inventory.lock().set_item_in_hand(
+            InteractionHand::MainHand,
+            ItemStack::with_count(&vanilla_items::FIRE_CHARGE, 2),
+        );
         let inventory = Arc::clone(&player.inventory);
         let mut context = UseItemContext::new(&player, InteractionHand::MainHand, world, inventory);
-        let result = behavior.use_item(&mut context);
-
-        assert_eq!(result, InteractionResult::Success);
-
-        let remaining = {
-            let inventory = player.inventory.lock();
-            inventory
+        let result = ITEM_BEHAVIORS
+            .get_behavior(&vanilla_items::FIRE_CHARGE)
+            .use_item(&mut context);
+        assert_eq!(result, InteractionResult::Pass);
+        assert_eq!(
+            player
+                .inventory
+                .lock()
                 .get_item_in_hand(InteractionHand::MainHand)
-                .count()
-        };
-        assert_eq!(remaining, 1, "exactly one fire charge is consumed");
-
-        let origin = player.position();
-        let search = WorldAabb::new(
-            origin.x - 4.0,
-            origin.y - 4.0,
-            origin.z - 4.0,
-            origin.x + 4.0,
-            origin.y + 4.0,
-            origin.z + 4.0,
+                .count(),
+            2
         );
-        let entities = world.get_entities_in_aabb(&search);
-        let mut fireballs = Vec::new();
-        for entity in &entities {
-            if let Some(fireball) = entity.as_ref().downcast_ref::<SmallFireballEntity>() {
-                fireballs.push(fireball);
-            }
-        }
-
-        assert_eq!(fireballs.len(), 1, "one small fireball is launched");
-        let fireball = fireballs[0];
-
-        let owner = fireball.get_owner().expect("the fireball is owned");
-        assert_eq!(owner.uuid(), player.uuid());
-
-        let item = fireball.get_item();
-        assert_eq!(item.item(), &*vanilla_items::FIRE_CHARGE);
-        assert_eq!(item.count(), 1);
-
-        let look = player.look_angle().normalize();
-        let velocity = fireball.velocity().normalize();
-        assert!(
-            (look - velocity).length() < 0.05,
-            "the fireball flies along the look direction: {look:?} vs {velocity:?}"
+        let pos = player.position();
+        let area = WorldAabb::new(
+            pos.x - 4.0,
+            pos.y - 4.0,
+            pos.z - 4.0,
+            pos.x + 4.0,
+            pos.y + 4.0,
+            pos.z + 4.0,
         );
+        assert!(world.get_entities_in_aabb(&area).iter().all(|entity| {
+            entity
+                .as_ref()
+                .downcast_ref::<SmallFireballEntity>()
+                .is_none()
+        }));
     }
 
-    /// The right-click-air path consumes the action and leaves exactly one
-    /// fire charge in the player's hand.
     #[test]
-    fn right_clicking_the_air_with_a_fire_charge_consumes_one_charge() {
+    fn right_clicking_air_with_fire_charge_passes_without_consuming() {
+        use crate::behavior::init_behaviors;
+        use crate::player::game_mode;
+        use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
         use std::sync::Arc;
-
         use steel_registry::item_stack::ItemStack;
         use steel_registry::{init_vanilla_registry, vanilla_items};
         use steel_utils::ChunkPos;
         use steel_utils::types::InteractionHand;
-
-        use crate::behavior::init_behaviors;
-        use crate::player::game_mode;
-        use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
 
         init_vanilla_registry();
         init_behaviors();
         let fixture = fresh_test_world("fire_charge_use_air_dispatch");
         let world = &fixture.world;
         insert_ready_full_chunk(world, ChunkPos::new(0, 0));
-        let player = TestPlayerBuilder::new(Arc::clone(world), "Thrower", 1).build();
+        let player = TestPlayerBuilder::new(Arc::clone(world), "User", 1).build();
         player.set_client_loaded(true);
-
-        {
-            let mut inventory = player.inventory.lock();
-            inventory.set_item_in_hand(
-                InteractionHand::MainHand,
-                ItemStack::with_count(&vanilla_items::FIRE_CHARGE, 3),
-            );
-        }
-
+        player.inventory.lock().set_item_in_hand(
+            InteractionHand::MainHand,
+            ItemStack::with_count(&vanilla_items::FIRE_CHARGE, 3),
+        );
         let result = game_mode::use_item(&player, world, InteractionHand::MainHand);
-
-        assert!(result.consumes_action());
-
-        let remaining = {
-            let inventory = player.inventory.lock();
-            inventory
+        assert!(!result.consumes_action());
+        assert_eq!(
+            player
+                .inventory
+                .lock()
                 .get_item_in_hand(InteractionHand::MainHand)
-                .count()
-        };
-        assert_eq!(remaining, 2, "exactly one fire charge is consumed");
+                .count(),
+            3
+        );
     }
 }
