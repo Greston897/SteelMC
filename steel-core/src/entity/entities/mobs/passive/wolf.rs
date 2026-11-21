@@ -10,7 +10,7 @@ use std::sync::Weak;
 
 use glam::DVec3;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
-use simdnbt::owned::NbtCompound;
+use simdnbt::owned::{NbtCompound, NbtTag};
 use steel_macros::entity_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
@@ -21,7 +21,7 @@ use steel_registry::vanilla_entity_data::WolfEntityData;
 use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{sound_events, vanilla_attributes, vanilla_items};
 use steel_utils::locks::SyncMutex;
-use steel_utils::{DowncastType, DowncastTypeKey};
+use steel_utils::{DowncastType, DowncastTypeKey, UuidExt};
 use uuid::Uuid;
 
 use crate::entity::ai::goal::{
@@ -46,6 +46,7 @@ const DEFAULT_STEP_HEIGHT: f32 = 0.6;
 
 /// Vanilla `TamableAnimal` flag bit 2 marks a tamed animal.
 const TAME_FLAG: i8 = 0x04;
+const SITTING_FLAG: i8 = 0x01;
 
 /// Vanilla `Wolf.TAMING_CHANCE`: one bone in three tames a wolf.
 const TAMING_CHANCE: f32 = 1.0 / 3.0;
@@ -166,6 +167,24 @@ impl WolfEntity {
         data.tamable_animal_mut().flags.set(flags);
     }
 
+    /// Whether this wolf is ordered to sit.
+    #[must_use]
+    pub fn is_sitting(&self) -> bool {
+        *self.entity_data.lock().tamable_animal().flags.get() & SITTING_FLAG != 0
+    }
+
+    /// Sets the wolf's sitting flag.
+    pub fn set_sitting(&self, sitting: bool) {
+        let mut data = self.entity_data.lock();
+        let mut flags = *data.tamable_animal().flags.get();
+        if sitting {
+            flags |= SITTING_FLAG;
+        } else {
+            flags &= !SITTING_FLAG;
+        }
+        data.tamable_animal_mut().flags.set(flags);
+    }
+
     /// Vanilla `Wolf.isInterested`.
     #[must_use]
     pub fn is_interested(&self) -> bool {
@@ -239,12 +258,28 @@ impl Entity for WolfEntity {
         self.save_mob(nbt);
         self.save_ageable_mob(nbt);
         self.save_animal(nbt);
+        nbt.insert("CollarColor", self.collar_color() as i8);
+        nbt.insert("Sitting", i8::from(self.is_sitting()));
+        if let Some(owner) = self.owner_uuid() {
+            nbt.insert("Owner", NbtTag::IntArray(owner.to_int_array().to_vec()));
+        }
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_mob(nbt);
         self.load_ageable_mob(nbt);
         self.load_animal(nbt);
+        if let Some(color) = nbt.byte_value("CollarColor") {
+            self.set_collar_color(i32::from(color).clamp(0, 15));
+        }
+        if let Some(sitting) = nbt.byte_value("Sitting") {
+            self.set_sitting(sitting != 0);
+        }
+        if let Some(owner) = nbt.int_array("Owner")
+            && let Some(uuid) = Uuid::from_int_array(&owner)
+        {
+            self.set_tame(true, Some(uuid));
+        }
     }
 }
 
@@ -402,3 +437,37 @@ impl Mob for WolfEntity {
 }
 
 impl PathfinderMob for WolfEntity {}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Cursor;
+
+    use simdnbt::borrow::read_compound;
+    use steel_registry::{init_vanilla_registry, vanilla_entities};
+
+    use super::*;
+
+    #[test]
+    fn owner_collar_and_sitting_round_trip_through_nbt() {
+        init_vanilla_registry();
+        let original = WolfEntity::new(&vanilla_entities::WOLF, 1, DVec3::ZERO, Weak::new());
+        let owner = Uuid::from_u128(1234);
+        original.set_tame(true, Some(owner));
+        original.set_sitting(true);
+        original.set_collar_color(11);
+        let mut nbt = NbtCompound::new();
+        original.save_additional(&mut nbt);
+        assert_eq!(nbt.byte("CollarColor"), Some(11));
+        assert_eq!(nbt.byte("Sitting"), Some(1));
+
+        let mut bytes = Vec::new();
+        nbt.write(&mut bytes);
+        let borrowed = read_compound(&mut Cursor::new(bytes.as_slice())).expect("NBT decodes");
+        let restored = WolfEntity::new(&vanilla_entities::WOLF, 2, DVec3::ZERO, Weak::new());
+        restored.load_additional((&borrowed).into());
+        assert!(restored.is_tame());
+        assert_eq!(restored.owner_uuid(), Some(owner));
+        assert!(restored.is_sitting());
+        assert_eq!(restored.collar_color(), 11);
+    }
+}

@@ -238,10 +238,11 @@ pub fn execute_action(
                             .collect::<Vec<_>>();
                         let actual = world.get_block(pos, &requested_nbt)?;
 
-                        if !expected_blocks
-                            .iter()
-                            .any(|expected| block_matches(&actual, expected))
-                        {
+                        if !expected_blocks.iter().any(|expected| {
+                            block_matches_with(&actual, expected, |value| {
+                                world.canonicalize_snbt(value)
+                            })
+                        }) {
                             failures.push(AssertFailure::new_block(
                                 tick,
                                 expected_blocks,
@@ -371,6 +372,14 @@ fn check_id(actual: &str, expected: &str) -> bool {
 
 /// Check if actual block matches expected.
 pub fn block_matches(actual: &Block, expected: &Block) -> bool {
+    block_matches_with(actual, expected, |_| None)
+}
+
+fn block_matches_with(
+    actual: &Block,
+    expected: &Block,
+    canonicalize: impl Fn(&str) -> Option<String>,
+) -> bool {
     // Check block ID
     if !check_id(&actual.id, &expected.id) {
         return false;
@@ -400,7 +409,12 @@ pub fn block_matches(actual: &Block, expected: &Block) -> bool {
         .into_iter()
         .all(|(key, expected)| {
             actual_values.get(&key).is_some_and(|actual| {
-                normalize_entity_nbt_value(actual) == normalize_entity_nbt_value(&expected)
+                match (canonicalize(actual), canonicalize(&expected)) {
+                    (Some(actual), Some(expected)) => actual == expected,
+                    _ => {
+                        normalize_entity_nbt_value(actual) == normalize_entity_nbt_value(&expected)
+                    }
+                }
             })
         })
 }

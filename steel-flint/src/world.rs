@@ -42,7 +42,7 @@ use steel_registry::vanilla_world_clocks::OVERWORLD as OVERWORLD_CLOCK;
 use steel_registry::{REGISTRY, RegistryExt};
 use steel_utils::Identifier;
 use steel_utils::locks::SyncMutex;
-use steel_utils::nbt::{parse_nbt_path, parse_snbt_compound, to_canonical_snbt};
+use steel_utils::nbt::{parse_nbt_path, parse_snbt, parse_snbt_compound, to_canonical_snbt};
 use steel_utils::types::{Difficulty, GameType};
 use steel_utils::{BlockPos, ChunkPos, WorldAabb, types::UpdateFlags};
 use toml::Value;
@@ -342,6 +342,15 @@ impl FlintWorld for SteelTestWorld {
         Ok(block)
     }
 
+    fn canonicalize_snbt(&self, value: &str) -> Option<String> {
+        // Leave scalar values to Flint's existing normalization: specs may use
+        // unquoted text for string values and omit numeric suffixes.
+        if !value.trim_start().starts_with(['[', '{']) {
+            return None;
+        }
+        to_canonical_snbt(&parse_snbt(value).ok()?)
+    }
+
     fn set_block(&mut self, pos: FlintBlockPos, block: &Block) -> Result<(), anyhow::Error> {
         let Some(state_id) = flint_block_to_state_id(block) else {
             tracing::warn!("Unknown block: {} - skipping placement", block.id);
@@ -497,6 +506,23 @@ const fn daytime_from_ticks(ticks: i64) -> u64 {
 mod tests {
     use super::*;
     use steel_core::player::offline_uuid;
+
+    #[test]
+    fn structured_snbt_comparison_ignores_compound_key_order() {
+        crate::init();
+        let world = SteelTestWorld::new();
+        let left = r#"[{components:{"minecraft:damage":1},count:1,Slot:0b,id:"minecraft:flint_and_steel"}]"#;
+        let right = r#"[{Slot:0b,id:"minecraft:flint_and_steel",count:1,components:{"minecraft:damage":1}}]"#;
+        assert_eq!(
+            world.canonicalize_snbt(left),
+            world.canonicalize_snbt(right)
+        );
+        assert!(world.canonicalize_snbt(left).is_some());
+        assert_ne!(
+            world.canonicalize_snbt(left),
+            world.canonicalize_snbt(&right.replace("damage\":1", "damage\":2"))
+        );
+    }
 
     #[test]
     fn daylight_detector_registered_ticker_corrects_stale_power_at_noon() {

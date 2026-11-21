@@ -68,6 +68,11 @@ pub trait FlintWorld: Send + Sync {
     /// Get block at position
     fn get_block(&self, pos: BlockPos, requested_nbt: &[String]) -> Result<Block>;
 
+    /// Canonicalize a structured SNBT value for comparisons, if supported.
+    fn canonicalize_snbt(&self, _value: &str) -> Option<String> {
+        None
+    }
+
     /// Set block at position (with neighbor updates)
     fn set_block(&mut self, pos: BlockPos, block: &Block) -> Result<()>;
 
