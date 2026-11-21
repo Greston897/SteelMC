@@ -64,7 +64,10 @@ public class ReferenceAgent {
                     try {
                         extract(server);
                         System.out.println("REFERENCE capture completed");
-                        System.exit(0);
+                        // This callback runs on the server thread. System.exit waits
+                        // for a shutdown hook that joins that same thread.
+                        System.out.flush();
+                        Runtime.getRuntime().halt(0);
                     } catch (Throwable error) {
                         error.printStackTrace();
                         System.exit(2);
