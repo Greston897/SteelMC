@@ -14,17 +14,14 @@ use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_block_entity_types;
 use steel_registry::vanilla_criteria_triggers::BEE_NEST_DESTROYED;
 use steel_registry::vanilla_enchantment_tags::EnchantmentTag;
-use steel_registry::{
-    REGISTRY, RegistryExt, TaggedRegistryExt, sound_events, vanilla_blocks, vanilla_items,
-};
-use steel_utils::types::UpdateFlags;
+use steel_registry::{REGISTRY, RegistryExt, TaggedRegistryExt, sound_events, vanilla_items};
 use steel_utils::{BlockLocalAabb, BlockPos, BlockStateId, Downcast as _};
 
 use crate::behavior::block::{BlockBehavior, BlockCollisionContext, BlockEntityCreation};
 use crate::behavior::blocks::CampfireBlock;
-use crate::behavior::{BLOCK_BEHAVIORS, InteractionResult};
 use crate::behavior::context::InventoryAccess;
 use crate::behavior::context::{BlockHitResult, BlockPlaceContext};
+use crate::behavior::{BLOCK_BEHAVIORS, InteractionResult};
 use crate::block_entity::SharedBlockEntity;
 use crate::block_entity::entities::BeehiveBlockEntity;
 use crate::block_entity::{BLOCK_ENTITIES, BlockEntityTicker};
@@ -55,9 +52,8 @@ const LEVEL_HONEY: &IntProperty = &BlockStateProperties::LEVEL_HONEY;
 const MAX_HONEY_LEVEL: i32 = 5;
 /// Vanilla `BeehiveBlock` smoke search: a campfire up to this many blocks below.
 const SMOKE_SEARCH_DISTANCE: i32 = 5;
-const SMOKE_COLUMN: VoxelShape = VoxelShape::from_boxes(&[BlockLocalAabb::new(
-    0.375, 0.0, 0.375, 0.625, 1.0, 0.625,
-)]);
+const SMOKE_COLUMN: VoxelShape =
+    VoxelShape::from_boxes(&[BlockLocalAabb::new(0.375, 0.0, 0.375, 0.625, 1.0, 0.625)]);
 
 impl BeehiveBlock {
     /// Creates a new beehive block behavior.
@@ -302,7 +298,9 @@ mod tests {
         TestPlayerBuilder, dropped_items, fresh_test_world, insert_ready_full_chunk,
     };
     use glam::DVec3;
+    use steel_registry::vanilla_blocks;
     use steel_utils::ChunkPos;
+    use steel_utils::types::UpdateFlags;
 
     #[test]
     fn smoke_requires_lit_campfire_and_respects_collision_column() {
