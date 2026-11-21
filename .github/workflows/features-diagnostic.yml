@@ -39,6 +39,10 @@ jobs:
           grep -E 'TRACE |net\.minecraft\.world\.level\.levelgen\.' /tmp/vanilla-server.log > /tmp/feature-trace.log || true
           # Only a capture matching ALL existing failing-chunk goldens is trusted.
           cp reference.bin.gz "$GITHUB_WORKSPACE/steel-core/test_assets/chunk_stage_overworld_features_blocks.bin.gz"
+      - name: Publish vanilla trace before the Rust comparison
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .ci/report.py "Feature capture trace" /tmp/feature-trace.log /tmp/reference.log
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: vanilla-evidence-optimized-no-lto

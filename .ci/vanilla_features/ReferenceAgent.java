@@ -32,7 +32,13 @@ public class ReferenceAgent {
                                     ProtectionDomain domain, byte[] bytes) {
                 if (name.equals("net/minecraft/server/level/WorldGenRegion") && Boolean.getBoolean("steel.trace")) {
                     ClassFile classFile = ClassFile.of();
-                    return classFile.transformClass(classFile.parse(bytes),
+                    var region = classFile.parse(bytes);
+                    for (var method : region.methods()) {
+                        if (method.methodName().equalsString("setBlock")) {
+                            System.out.println("REFERENCE region method " + method.methodType().stringValue());
+                        }
+                    }
+                    return classFile.transformClass(region,
                         ClassTransform.transformingMethodBodies(
                             method -> method.methodName().equalsString("setBlock")
                                    && method.methodType().equalsString("(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;II)Z"),
