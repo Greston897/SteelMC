@@ -40,6 +40,11 @@ jobs:
         run: |
           set -o pipefail
           cargo llvm-cov --workspace --no-fail-fast --json --output-path /tmp/coverage.json 2>&1 | tee /tmp/coverage-tests.log
+      - name: Publish test failures when coverage cannot be produced
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .ci/report.py 'Headless coverage test failures' /tmp/coverage-tests.log
       - name: Index exact test outcomes and instrumented source lines
         if: always()
         env:

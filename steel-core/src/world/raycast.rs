@@ -1001,7 +1001,7 @@ impl World {
         }
     }
 
-    pub(super) fn clip_shape(
+    pub(crate) fn clip_shape(
         block_pos: BlockPos,
         from: DVec3,
         to: DVec3,

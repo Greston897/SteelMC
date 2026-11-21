@@ -2,20 +2,23 @@
 //!
 //! All 16 coloured cushions share one vanilla behaviour class: the wool colour
 //! travels in the stack's `minecraft:cushion/color` component and is copied to
-//! the spawned `Cushion` entity. Vanilla's special collision-shape raycast for
-//! tagged blocks still needs to be applied before resolving the hit context.
+//! the spawned `Cushion` entity. Placement uses the clicked height, support
+//! shape and vanilla's special collision-shape raycast for tagged blocks.
 
 use std::sync::Arc;
 
 use steel_macros::item_behavior;
 use steel_protocol::packets::game::SoundSource;
+use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::data_components::vanilla_components::CUSHION_COLOR;
 use steel_registry::dye_color::DyeColor;
 use steel_registry::item_stack::ItemStack;
+use steel_registry::items::item::BlockHitResult;
+use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::{sound_events, vanilla_entities, vanilla_game_events};
 use steel_utils::{BlockPos, Direction, WorldAabb};
 
-use crate::behavior::context::{InteractionResult, UseOnContext};
+use crate::behavior::context::{BlockPlaceContext, InteractionResult, PlacementSource, UseOnContext};
 use crate::behavior::item::ItemBehavior;
 use crate::entity::entities::CushionEntity;
 use crate::entity::{Entity, SharedEntity, next_entity_id};
@@ -27,6 +30,46 @@ use crate::world::game_event::GameEventContext;
 pub struct CushionItem;
 
 impl CushionItem {
+    /// Recast tagged container outlines against their collision shape, as vanilla does.
+    fn effective_hit(context: &UseOnContext<'_>) -> BlockHitResult {
+        let hit = &context.hit_result;
+        let state = context.world.get_block_state(hit.block_pos);
+        if !state
+            .get_block()
+            .has_tag(&BlockTag::CUSHION_USES_COLLISION_SHAPE)
+        {
+            return hit.clone();
+        }
+
+        let player_pos = context.player.position();
+        let eye = glam::DVec3::new(player_pos.x, context.player.get_eye_y(), player_pos.z);
+        let ray = hit.location - eye;
+        let length = ray.length();
+        let direction = if length < f64::from(1.0e-5_f32) {
+            glam::DVec3::ZERO
+        } else {
+            ray / length
+        };
+        let to = hit.location + direction * 0.001;
+        World::clip_shape(
+            hit.block_pos,
+            eye,
+            to,
+            state.get_collision_shape_at(hit.block_pos),
+        )
+        .map_or_else(
+            || hit.clone(),
+            |collision_hit| BlockHitResult {
+                location: collision_hit.location,
+                direction: collision_hit.direction,
+                block_pos: collision_hit.block_pos,
+                miss: collision_hit.miss,
+                inside: collision_hit.inside,
+                world_border_hit: collision_hit.world_border_hit,
+            },
+        )
+    }
+
     /// Vanilla placement preconditions for the block the cushion rests on.
     fn can_place_on(
         context: &UseOnContext<'_>,
@@ -50,14 +93,20 @@ impl CushionItem {
 
 impl ItemBehavior for CushionItem {
     fn use_on(&self, context: &mut UseOnContext) -> InteractionResult {
-        let side = context.hit_result.direction;
+        let hit = Self::effective_hit(context);
+        let side = hit.direction;
         if side != Direction::Up {
             return InteractionResult::Fail;
         }
-        let target = context.build_place_context().place_pos();
+        let target = BlockPlaceContext::new(
+            context.world,
+            PlacementSource::player_hand(context.player, &context.inv),
+            &hit,
+        )
+        .place_pos();
         let position = glam::DVec3::new(
             f64::from(target.x()) + 0.5,
-            context.hit_result.location.y,
+            hit.location.y,
             f64::from(target.z()) + 0.5,
         );
         let dimensions = vanilla_entities::CUSHION.dimensions;
@@ -319,6 +368,25 @@ mod tests {
 
         assert_eq!(cushions_in_world(world).len(), 1);
         assert_eq!(held_stack(&player).count(), 1);
+    }
+
+    #[test]
+    fn composter_hit_is_recast_against_its_collision_shape() {
+        let (fixture, player, support) = support_fixture("cushion_composter_raycast");
+        let world = &fixture.world;
+        let composter = vanilla_blocks::COMPOSTER
+            .default_state()
+            .set_value(&BlockStateProperties::LEVEL_COMPOSTER, 7);
+        assert!(world.set_block(support, composter, UpdateFlags::UPDATE_ALL));
+        player.base().set_position_local(DVec3::new(0.5, 66.0, 0.5));
+        let mut context = place_context(world, &player, support);
+        // The synthetic endpoint extends through the open centre. The collision
+        // shape is always the empty composter's 2/16-high floor, not the
+        // visible compost surface at level seven.
+        context.hit_result.location.y = 64.0;
+        let effective = CushionItem::effective_hit(&context);
+        assert_eq!(effective.direction, Direction::Up);
+        assert!((effective.location.y - 64.125).abs() < 1.0e-6);
     }
 
     #[test]
