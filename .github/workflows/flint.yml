@@ -51,6 +51,7 @@ jobs:
           TEST_PATH: ${{ github.workspace }}/FlintBenchmark/tests
           FLINT_VIZ_URL: "https://flinttestmc.github.io/FlintViz"
           FLINT_IMPLEMENTED_ONLY: "true"
+          FLINT_PARALLELISM: "2"
         run: |
           set -o pipefail
           cargo test -p steel-flint --profile cicd --lib test_run_flint_selected -- --ignored --nocapture 2>&1 | tee /tmp/flint-tests.log

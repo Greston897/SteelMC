@@ -316,6 +316,14 @@ mod tests {
     use crate::{TestLoader, TestRunner};
     use std::sync::Arc;
 
+    fn configured_parallelism() -> usize {
+        var("FLINT_PARALLELISM")
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(1)
+            .clamp(1, 8)
+    }
+
     fn shard_paths(mut paths: Vec<PathBuf>, index: usize, count: usize) -> Vec<PathBuf> {
         assert!(count > 0 && index < count, "invalid Flint shard");
         paths.sort();
@@ -338,6 +346,41 @@ mod tests {
             (Some(index), Some(count)) => shard_paths(paths, index, count),
             _ => panic!("both Flint shard variables must be specified"),
         }
+    }
+
+    #[test]
+    fn parallel_flint_worlds_are_isolated_and_results_keep_input_order() {
+        crate::init();
+        let specs: Vec<_> = ["stone", "dirt", "sand", "glass"]
+            .iter()
+            .enumerate()
+            .map(|(index, block)| {
+                let id = format!("minecraft:{block}");
+                let spec = serde_json::from_value(serde_json::json!({
+                    "name": format!("parallel-{index}"),
+                    "timeline": [
+                        {"at": 0, "do": "place", "pos": [0, -1, 0], "block": {"id": "minecraft:stone"}},
+                        {"at": 0, "do": "place", "pos": [0, 0, 0], "block": {"id": id}},
+                        {"at": 1, "do": "assert", "checks": [{"pos": [0, 0, 0], "is": {"id": id}}]}
+                    ]
+                }))
+                .expect("fixture spec");
+                flint_core::TestSpecLoadResult::Loaded(spec)
+            })
+            .collect();
+        let runner = TestRunner::new(Arc::new(SteelAdapter));
+        let sequential = runner.run_tests(&specs);
+        let parallel = runner.run_tests_parallel(&specs, 2);
+        assert_eq!(sequential.failed_tests, 0);
+        assert_eq!(parallel.failed_tests, 0);
+        let names = |summary: &TestSummary| {
+            summary
+                .results
+                .iter()
+                .map(|result| result.test_name.clone())
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(names(&sequential), names(&parallel));
     }
 
     #[test]
@@ -380,7 +423,7 @@ mod tests {
             "Flint must execute at least one vanilla fixture"
         );
         let runner = TestRunner::new(Arc::new(SteelAdapter));
-        let summary = runner.run_tests(&specs);
+        let summary = runner.run_tests_parallel(&specs, configured_parallelism());
         summary.print_concise_summary();
         save_summary(&summary).unwrap_or_else(|e| panic!("failed to save flint summary: {e}"));
         print_failure_urls(&specs, &paths, &summary, &cfg);
@@ -423,7 +466,7 @@ mod tests {
             "Flint must execute at least one vanilla fixture"
         );
         let runner = TestRunner::new(Arc::new(SteelAdapter));
-        let summary = runner.run_tests(&specs);
+        let summary = runner.run_tests_parallel(&specs, configured_parallelism());
         summary.print_concise_summary();
         save_summary(&summary).unwrap_or_else(|e| panic!("failed to save flint summary: {e}"));
         print_failure_urls(&specs, &paths, &summary, &cfg);

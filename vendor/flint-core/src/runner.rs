@@ -11,6 +11,7 @@ use crate::timeline::TimelineAggregate;
 use crate::traits::{EntityState, FlintAdapter, FlintPlayer, FlintWorld};
 use crate::{Block, TestSpec, TestSpecLoadResult};
 use anyhow::Result;
+use rayon::prelude::*;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -172,6 +173,34 @@ impl<A: FlintAdapter> TestRunner<A> {
                 }
             })
             .collect();
+        TestSummary::from_results(results)
+    }
+
+    /// Run independent test worlds on a bounded pool, preserving input order.
+    /// Falls back to sequential execution if the pool cannot be created.
+    pub fn run_tests_parallel(
+        &self,
+        specs: &[TestSpecLoadResult],
+        max_parallel_worlds: usize,
+    ) -> TestSummary {
+        let workers = max_parallel_worlds.max(1).min(specs.len().max(1));
+        if workers == 1 {
+            return self.run_tests(specs);
+        }
+        let Ok(pool) = rayon::ThreadPoolBuilder::new().num_threads(workers).build() else {
+            return self.run_tests(specs);
+        };
+        let results = pool.install(|| {
+            specs
+                .par_iter()
+                .map(|load_result| match load_result {
+                    TestSpecLoadResult::Loaded(spec) => self.run_test(spec),
+                    TestSpecLoadResult::Skipped { spec, reason } => {
+                        TestResult::skipped(&spec.name, reason)
+                    }
+                })
+                .collect()
+        });
         TestSummary::from_results(results)
     }
 }

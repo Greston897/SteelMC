@@ -116,6 +116,9 @@ impl SteelTestWorld {
 
         let generation_pool = Arc::new(
             rayon::ThreadPoolBuilder::new()
+                // The empty Flint generator has no expensive generation work;
+                // bound per-world threads so parallel fixtures do not oversubscribe.
+                .num_threads(1)
                 .build()
                 .expect("Failed to create rayon thread pool"),
         );
