@@ -68,7 +68,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          grep 'STEEL_FEATURE_NOISE' /tmp/features-diagnostic.log > /tmp/steel-noise-trace.log || true
+          grep -E 'STEEL_FEATURE_(NOISE|COUNT)' /tmp/features-diagnostic.log > /tmp/steel-noise-trace.log || true
           python3 .ci/report.py "Features diagnostic — Steel noise" /tmp/steel-noise-trace.log
           python3 .ci/report.py "Features diagnostic — vanilla blocks" /tmp/reference.log /tmp/feature-trace.log /tmp/features-diagnostic.log
       - uses: actions/upload-artifact@v4

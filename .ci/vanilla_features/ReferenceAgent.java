@@ -45,6 +45,21 @@ public class ReferenceAgent {
                                 @Override public void accept(CodeBuilder code, CodeElement element) { code.with(element); }
                             }));
                 }
+                if (name.equals("net/minecraft/world/level/levelgen/placement/NoiseThresholdCountPlacement")
+                    && Boolean.getBoolean("steel.featuretrace")) {
+                    ClassFile classFile = ClassFile.of();
+                    return classFile.transformClass(classFile.parse(bytes),
+                        ClassTransform.transformingMethodBodies(
+                            method -> method.methodName().equalsString("count")
+                                && method.methodType().equalsString("(Lnet/minecraft/util/RandomSource;Lnet/minecraft/core/BlockPos;)I"),
+                            new CodeTransform() {
+                                @Override public void atStart(CodeBuilder code) {
+                                    code.aload(0).aload(2).invokestatic(ClassDesc.of("ReferenceAgent"), "traceNoiseCount",
+                                        MethodTypeDesc.of(CD_void, CD_Object, CD_Object));
+                                }
+                                @Override public void accept(CodeBuilder code, CodeElement element) { code.with(element); }
+                            }));
+                }
                 if (!name.equals("net/minecraft/server/MinecraftServer")) return null;
                 ClassFile classFile = ClassFile.of();
                 byte[] transformed = classFile.transformClass(classFile.parse(bytes),
@@ -105,6 +120,25 @@ public class ReferenceAgent {
                 }
                 System.out.println("FEATURE_TRACE " + x + " " + y + " " + z + details + " " + feature);
             }
+        } catch (ReflectiveOperationException error) {
+            System.err.println("FEATURE_TRACE_ERROR " + error);
+        }
+    }
+
+    /** Re-sample only deterministic biome noise; do not touch the placement RNG. */
+    public static void traceNoiseCount(Object modifier, Object pos) {
+        try {
+            ClassLoader loader = pos.getClass().getClassLoader();
+            Class<?> blockPos = Class.forName("net.minecraft.core.BlockPos", true, loader);
+            int x = (Integer) blockPos.getMethod("getX").invoke(pos);
+            int z = (Integer) blockPos.getMethod("getZ").invoke(pos);
+            if (x < -6536496 || x > -6536400 || z < -7689152 || z > -7689056) return;
+            Class<?> biome = Class.forName("net.minecraft.world.level.biome.Biome", true, loader);
+            Class<?> noiseClass = Class.forName("net.minecraft.world.level.levelgen.synth.Noise", true, loader);
+            Object noise = biome.getField("BIOME_INFO_NOISE").get(null);
+            float value = (Float) noiseClass.getMethod("get", double.class, double.class)
+                .invoke(noise, x / 200.0, z / 200.0);
+            System.out.println("FEATURE_TRACE_COUNT " + x + " " + z + " noise=" + value + " " + modifier);
         } catch (ReflectiveOperationException error) {
             System.err.println("FEATURE_TRACE_ERROR " + error);
         }
