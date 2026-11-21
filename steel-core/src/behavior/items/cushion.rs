@@ -2,10 +2,9 @@
 //!
 //! All 16 coloured cushions share one vanilla behaviour class: the wool colour
 //! travels in the stack's `minecraft:cushion/color` component and is copied to
-//! the spawned `Cushion` entity. Placement follows the vanilla rules the wiki
-//! documents for 26.3: the cushion needs a solid support directly underneath,
-//! its own volume must be free of blocks and other cushions, and the placed
-//! entity keeps the colour of the consumed item.
+//! the spawned `Cushion` entity. Support and collision geometry are still
+//! approximations: vanilla uses the clicked height and shape-based anchor and
+//! burial checks, including a special collision-shape raycast for tagged blocks.
 
 use std::sync::Arc;
 
@@ -75,6 +74,9 @@ impl CushionItem {
 impl ItemBehavior for CushionItem {
     fn use_on(&self, context: &mut UseOnContext) -> InteractionResult {
         let side = context.hit_result.direction;
+        if side != Direction::Up {
+            return InteractionResult::Fail;
+        }
         let (dx, dy, dz) = side.offset();
         let target = context.hit_result.block_pos.offset(dx, dy, dz);
         let support = BlockPos::new(target.x(), target.y() - 1, target.z());
@@ -88,12 +90,12 @@ impl ItemBehavior for CushionItem {
 
         // The cushion needs a solid block directly underneath it.
         if !context.world.get_block_state(support).is_solid() {
-            return InteractionResult::Consume;
+            return InteractionResult::Fail;
         }
 
         // No blocks or other cushions may overlap the cushion's own volume.
         if !Self::space_is_free(context.world, support) {
-            return InteractionResult::Consume;
+            return InteractionResult::Fail;
         }
 
         let cushion = CushionEntity::new_on_support(
@@ -115,10 +117,10 @@ impl ItemBehavior for CushionItem {
 
         context.world.play_sound(
             &sound_events::ENTITY_CUSHION_PLACE,
-            SoundSource::Neutral,
+            SoundSource::Blocks,
             target,
-            1.0,
-            1.0,
+            0.75,
+            0.8,
             None,
         );
         context.world.game_event(
@@ -126,7 +128,10 @@ impl ItemBehavior for CushionItem {
             target,
             &GameEventContext::new(Some(&**context.player as &dyn Entity), None),
         );
-        context.inv.with_item(|stack| stack.consume_one(false));
+        let infinite_materials = context.player.has_infinite_materials();
+        context
+            .inv
+            .with_item(|stack| stack.consume_one(infinite_materials));
 
         InteractionResult::Success
     }
@@ -143,7 +148,7 @@ mod tests {
     use steel_registry::items::item::BlockHitResult;
     use steel_registry::{init_vanilla_registry, vanilla_blocks, vanilla_items};
     use steel_utils::Downcast as _;
-    use steel_utils::types::{InteractionHand, UpdateFlags};
+    use steel_utils::types::{GameType, InteractionHand, UpdateFlags};
     use steel_utils::{BlockPos, ChunkPos, Direction, WorldAabb};
     use text_components::TextComponent;
 
@@ -280,7 +285,7 @@ mod tests {
         ));
 
         let mut context = place_context(world, &player, support);
-        assert_eq!(CushionItem.use_on(&mut context), InteractionResult::Consume);
+        assert_eq!(CushionItem.use_on(&mut context), InteractionResult::Fail);
 
         assert!(cushions_in_world(world).is_empty());
         assert_eq!(held_stack(&player).count(), 2);
@@ -302,7 +307,7 @@ mod tests {
         ));
 
         let mut context = place_context(world, &player, support);
-        assert_eq!(CushionItem.use_on(&mut context), InteractionResult::Consume);
+        assert_eq!(CushionItem.use_on(&mut context), InteractionResult::Fail);
         assert!(cushions_in_world(world).is_empty());
         assert_eq!(held_stack(&player).count(), 1);
     }
@@ -320,10 +325,50 @@ mod tests {
         assert_eq!(CushionItem.use_on(&mut first), InteractionResult::Success);
 
         let mut second = place_context(world, &player, support);
-        assert_eq!(CushionItem.use_on(&mut second), InteractionResult::Consume);
+        assert_eq!(CushionItem.use_on(&mut second), InteractionResult::Fail);
 
         assert_eq!(cushions_in_world(world).len(), 1);
         assert_eq!(held_stack(&player).count(), 1);
+    }
+
+    #[test]
+    fn placement_rejects_non_upward_faces() {
+        let (fixture, player, support) = support_fixture("cushion_place_side");
+        let world = &fixture.world;
+        player
+            .inventory
+            .lock()
+            .set_selected_item(ItemStack::with_count(&vanilla_items::WHITE_CUSHION, 2));
+
+        for direction in [
+            Direction::Down,
+            Direction::North,
+            Direction::South,
+            Direction::East,
+            Direction::West,
+        ] {
+            let mut context = place_context(world, &player, support);
+            context.hit_result.direction = direction;
+            assert_eq!(CushionItem.use_on(&mut context), InteractionResult::Fail);
+        }
+        assert!(cushions_in_world(world).is_empty());
+        assert_eq!(held_stack(&player).count(), 2);
+    }
+
+    #[test]
+    fn creative_placement_does_not_consume_the_item() {
+        let (fixture, player, support) = support_fixture("cushion_place_creative");
+        let world = &fixture.world;
+        player.set_game_mode(GameType::Creative);
+        player
+            .inventory
+            .lock()
+            .set_selected_item(ItemStack::with_count(&vanilla_items::WHITE_CUSHION, 2));
+
+        let mut context = place_context(world, &player, support);
+        assert_eq!(CushionItem.use_on(&mut context), InteractionResult::Success);
+        assert_eq!(cushions_in_world(world).len(), 1);
+        assert_eq!(held_stack(&player).count(), 2);
     }
 
     #[test]
