@@ -6,7 +6,7 @@
 //! coloured item when the supporting block disappears or the cushion is
 //! attacked.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Weak};
 
 use glam::DVec3;
@@ -21,7 +21,7 @@ use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::vanilla_entity_data::CushionEntityData;
-use steel_registry::{sound_events, vanilla_items};
+use steel_registry::{sound_events, vanilla_game_rules, vanilla_items};
 use steel_utils::locks::SyncMutex;
 use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, DowncastType, DowncastTypeKey};
@@ -68,6 +68,8 @@ pub struct CushionEntity {
     dropped: AtomicBool,
     /// Whether someone rode the cushion last tick, used to play `get_up`.
     was_ridden: AtomicBool,
+    /// Vanilla block-attached entities recheck support every 101 ticks.
+    ticks_since_check: AtomicU32,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `CushionEntity`.
@@ -89,6 +91,7 @@ impl CushionEntity {
             entity_data: SyncMutex::new(CushionEntityData::new()),
             dropped: AtomicBool::new(false),
             was_ridden: AtomicBool::new(false),
+            ticks_since_check: AtomicU32::new(0),
         }
     }
 
@@ -115,6 +118,7 @@ impl CushionEntity {
             entity_data: SyncMutex::new(CushionEntityData::new()),
             dropped: AtomicBool::new(false),
             was_ridden: AtomicBool::new(false),
+            ticks_since_check: AtomicU32::new(0),
         }
     }
 
@@ -165,13 +169,15 @@ impl CushionEntity {
     }
 
     /// Drops the cushion item once and removes the entity.
-    fn drop_and_remove(&self, world: &Arc<World>) {
+    fn drop_and_remove(&self, world: &Arc<World>, creative_attacker: bool) {
         if self.dropped.swap(true, Ordering::AcqRel) {
             return;
         }
 
         self.play_sound(&sound_events::ENTITY_CUSHION_BREAK, 1.0, 1.0);
-        world.drop_item_stack(self.block_position(), self.as_item_stack());
+        if !creative_attacker && world.get_game_rule(&vanilla_game_rules::ENTITY_DROPS) {
+            world.drop_item_stack(self.block_position(), self.as_item_stack());
+        }
         self.set_removed(RemovalReason::Discarded);
     }
 }
@@ -208,9 +214,12 @@ impl Entity for CushionEntity {
             return;
         }
 
-        // The cushion pops off as an item when the block underneath is gone.
-        if !self.has_solid_support(&world) {
-            self.drop_and_remove(&world);
+        // BlockAttachedEntity checks on the 101st tick, then every 101 ticks.
+        if self.ticks_since_check.fetch_add(1, Ordering::Relaxed) >= 100 {
+            self.ticks_since_check.store(0, Ordering::Relaxed);
+            if !self.has_solid_support(&world) {
+                self.drop_and_remove(&world, false);
+            }
         }
     }
 
@@ -237,11 +246,15 @@ impl Entity for CushionEntity {
         InteractionResult::Success
     }
 
-    fn hurt(&self, _world: &World, _source: &DamageSource, _amount: f32) -> bool {
+    fn hurt(&self, _world: &World, source: &DamageSource, _amount: f32) -> bool {
         let Some(world) = self.base.level() else {
             return false;
         };
-        self.drop_and_remove(&world);
+        let creative_attacker = source
+            .causing_entity()
+            .and_then(|entity| entity.as_player())
+            .is_some_and(Player::has_infinite_materials);
+        self.drop_and_remove(&world, creative_attacker);
         true
     }
 
@@ -268,7 +281,7 @@ mod tests {
     use steel_registry::vanilla_entity_data::CushionEntityData;
     use steel_registry::{init_vanilla_registry, vanilla_blocks};
     use steel_utils::Downcast as _;
-    use steel_utils::types::{InteractionHand, UpdateFlags};
+    use steel_utils::types::{GameType, InteractionHand, UpdateFlags};
     use steel_utils::{BlockPos, ChunkPos, WorldAabb};
     use text_components::TextComponent;
 
@@ -355,6 +368,11 @@ mod tests {
             UpdateFlags::UPDATE_ALL
         ));
 
+        for _ in 0..100 {
+            Arc::clone(&cushion).tick();
+        }
+        assert!(!cushion.is_removed());
+        assert!(dropped_items(&fixture.world).is_empty());
         for _ in 0..3 {
             Arc::clone(&cushion).tick();
         }
@@ -380,6 +398,30 @@ mod tests {
         assert!(cushion.hurt(&fixture.world, &source, 1.0));
 
         assert_eq!(dropped_items(&fixture.world).len(), 1);
+    }
+
+    #[test]
+    fn cushion_drops_obey_the_game_rule_and_creative_attacker() {
+        for (entity_drops, creative, expected) in [
+            (false, false, 0),
+            (true, true, 0),
+            (true, false, 1),
+        ] {
+            let (fixture, support) = support_fixture("cushion_drop_rules");
+            assert!(fixture
+                .world
+                .set_game_rule(&steel_registry::vanilla_game_rules::ENTITY_DROPS, entity_drops));
+            let cushion = spawn_cushion(&fixture.world, support);
+            let player = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Attacker", 1).build();
+            if creative {
+                player.set_game_mode(GameType::Creative);
+            }
+            let source = DamageSource::environment(&vanilla_damage_types::PLAYER_ATTACK)
+                .with_causing_entity(player);
+            assert!(cushion.hurt(&fixture.world, &source, 1.0));
+            assert!(cushion.is_removed());
+            assert_eq!(dropped_items(&fixture.world).len(), expected);
+        }
     }
 
     #[test]
