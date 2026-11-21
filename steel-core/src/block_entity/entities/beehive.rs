@@ -497,6 +497,7 @@ impl BlockEntity for BeehiveBlockEntity {
 mod tests {
     use super::*;
     use crate::bootstrap::init_globals;
+    use crate::entity::Entity as _;
     use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
     use steel_registry::vanilla_blocks;
     use steel_utils::ChunkPos;
