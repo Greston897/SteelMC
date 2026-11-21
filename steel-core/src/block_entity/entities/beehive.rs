@@ -5,6 +5,7 @@ use std::sync::Weak;
 
 use simdnbt::borrow::{BaseNbtCompound as BorrowedNbtCompound, NbtCompound as NbtCompoundView};
 use simdnbt::owned::{NbtCompound, NbtList};
+use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
 use steel_registry::{vanilla_block_entity_types, vanilla_entities};
 use steel_utils::geometry::WorldAabb;
 use steel_utils::nbt::NbtNumeric as _;
@@ -20,9 +21,7 @@ use steel_registry::blocks::properties::{
 
 use crate::behavior::{BLOCK_BEHAVIORS, BlockCollisionContext};
 use crate::block_entity::{BlockEntity, BlockEntityBase};
-use crate::entity::{
-    EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest, SharedEntity, spawn_entity,
-};
+use crate::entity::{EntitySpawnReason, SharedEntity, load_entity_recursive_owned};
 use crate::world::{LevelReader as _, World};
 
 /// Maximum number of occupants in a vanilla beehive.
@@ -177,7 +176,7 @@ impl BeehiveBlockEntity {
             let before = guard.stored.len();
             guard
                 .stored
-                .retain(|_| Self::spawn_released_bee(world, pos, facing).is_none());
+                .retain(|occupant| Self::spawn_released_bee(world, pos, facing, occupant, true).is_none());
             guard.stored.len() != before
         };
         if changed {
@@ -197,8 +196,8 @@ impl BeehiveBlockEntity {
         let changed = {
             let mut guard = self.state.lock();
             let before = guard.stored.len();
-            guard.stored.retain(|_| {
-                let Some(entity) = Self::spawn_released_bee(world, pos, facing) else {
+            guard.stored.retain(|occupant| {
+                let Some(entity) = Self::spawn_released_bee(world, pos, facing, occupant, true) else {
                     return true;
                 };
                 if entity.position().distance_squared(player.position()) <= 16.0 {
@@ -313,7 +312,7 @@ impl BeehiveBlockEntity {
 
                 // Only nectar-bearing occupants deliver honey. Vanilla gives
                 // a 1% chance of two levels, capped at five.
-                if Self::spawn_released_bee(world, pos, front).is_some() {
+                if Self::spawn_released_bee(world, pos, front, &occupant, false).is_some() {
                     released_any = true;
                     if occupant.has_nectar()
                         && honey_level.saturating_add(honey_gain) < MAX_HONEY_LEVEL
@@ -344,46 +343,67 @@ impl BeehiveBlockEntity {
         }
     }
 
-    /// Vanilla `BeehiveBlockEntity.releaseOccupant`: spawns one bee nudged out
-    /// of the hive along its facing.
+    /// Load sanitized occupant data before publishing the entity to the world.
     fn spawn_released_bee(
         world: &Arc<World>,
         pos: BlockPos,
         facing: Direction,
+        occupant: &BeeOccupant,
+        emergency: bool,
     ) -> Option<SharedEntity> {
-        let request = EntitySpawnRequest {
-            entity_type: &vanilla_entities::BEE,
-            placement: EntitySpawnPlacement::Block {
-                pos,
-                try_move_down: false,
-                moved_up: false,
-            },
-            reason: EntitySpawnReason::Beehive,
-            finalize_spawn: true,
-            play_ambient_sound: false,
-            item_stack: None,
-            user_is_operator: false,
-        };
-        let entity = spawn_entity(world, request).ok()?;
-
-        let offset = Self::release_offset(facing);
-        let position = entity.position() + glam::DVec3::new(offset.0, offset.1, offset.2);
-        if let Err(error) = entity.base().try_set_position(position) {
-            log::warn!("Could not position bee released from hive at {pos:?}: {error}");
+        let exit = pos.relative(facing);
+        let exit_state = world.get_block_state(exit);
+        let blocked = !BLOCK_BEHAVIORS
+            .get_behavior(exit_state.get_block())
+            .get_collision_shape(exit_state, world.as_ref(), exit, BlockCollisionContext::empty())
+            .is_empty();
+        if blocked && !emergency {
+            return None;
         }
-        Some(entity)
-    }
 
-    /// Vanilla `BeehiveBlockEntity.releaseOccupant` exit offset, half a block
-    /// along the hive's front face.
-    const fn release_offset(facing: Direction) -> (f64, f64, f64) {
-        match facing {
-            Direction::North => (0.0, 0.0, -0.5),
-            Direction::South => (0.0, 0.0, 0.5),
-            Direction::West => (-0.5, 0.0, 0.0),
-            Direction::East => (0.5, 0.0, 0.0),
-            _ => (0.0, 0.0, 0.0),
+        let mut data = occupant.entity_data.clone();
+        // Vanilla deliberately discards position, UUID, passengers and transient
+        // state before reconstructing a hive occupant.
+        for tag in [
+            "Air", "drop_chances", "equipment", "Brain", "CanPickUpLoot", "DeathTime",
+            "fall_distance", "FallFlying", "Fire", "HurtTime", "LeftHanded", "Motion",
+            "NoGravity", "OnGround", "PortalCooldown", "Pos", "Rotation", "sleeping_pos",
+            "CannotEnterHiveTicks", "TicksSincePollination", "CropsGrownSincePollination",
+            "hive_pos", "Passengers", "leash", "UUID",
+        ] {
+            while data.remove(tag).is_some() {}
         }
+        let loaded = load_entity_recursive_owned(world, &data, EntitySpawnReason::Load, |_| {})?;
+        let entity = &loaded.root;
+        if !entity.entity_type().has_tag(&EntityTypeTag::BEEHIVE_INHABITORS) {
+            return None;
+        }
+        entity.set_no_gravity(true);
+        if let Some(animal) = entity.as_animal() {
+            if !animal.is_age_locked() {
+                let age = animal.get_age();
+                let ticks = occupant.ticks_in_hive;
+                let updated = if age < 0 {
+                    age.saturating_add(ticks).min(0)
+                } else {
+                    age.saturating_sub(ticks).max(0)
+                };
+                animal.set_age(updated);
+            }
+            animal.set_in_love_time(animal.in_love_time().saturating_sub(occupant.ticks_in_hive).max(0));
+        }
+        let dimensions = entity.base().dimensions();
+        let distance = if blocked { 0.0 } else { 0.55 + f64::from(dimensions.width / 2.0) };
+        let (dx, _, dz) = facing.offset();
+        let position = glam::DVec3::new(
+            f64::from(pos.x()) + 0.5 + distance * f64::from(dx),
+            f64::from(pos.y()) + 0.5 - f64::from(dimensions.height / 2.0),
+            f64::from(pos.z()) + 0.5 + distance * f64::from(dz),
+        );
+        let (yaw, pitch) = entity.rotation();
+        entity.snap_to(position, yaw, pitch);
+        world.try_add_entity(Arc::clone(entity)).ok()?;
+        Some(Arc::clone(entity))
     }
 }
 
@@ -434,26 +454,48 @@ mod tests {
     use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
     use steel_registry::vanilla_blocks;
     use steel_utils::ChunkPos;
+    use text_components::TextComponent;
 
     #[test]
-    fn release_offsets_match_vanilla_faces() {
-        // Vanilla pushes the bee half a block out through the front face.
-        assert_eq!(
-            BeehiveBlockEntity::release_offset(Direction::North),
-            (0.0, 0.0, -0.5)
-        );
-        assert_eq!(
-            BeehiveBlockEntity::release_offset(Direction::South),
-            (0.0, 0.0, 0.5)
-        );
-        assert_eq!(
-            BeehiveBlockEntity::release_offset(Direction::West),
-            (-0.5, 0.0, 0.0)
-        );
-        assert_eq!(
-            BeehiveBlockEntity::release_offset(Direction::East),
-            (0.5, 0.0, 0.0)
-        );
+    fn released_bee_restores_persistent_data_and_ages_in_the_hive() {
+        init_globals();
+        let fixture = fresh_test_world("hive_restored_bee");
+        let world = &fixture.world;
+        let pos = BlockPos::new(8, 64, 8);
+        let _holder = insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+        let mut bee = BeeOccupant::worldgen(100);
+        let name = TextComponent::plain("Pollinator");
+        bee.entity_data.insert("CustomName", name.to_codec_nbt());
+        bee.entity_data.insert("Age", -1000);
+        bee.entity_data.insert("InLove", 2000);
+        bee.entity_data.insert("NoGravity", 0_i8);
+
+        let released = BeehiveBlockEntity::spawn_released_bee(
+            world, pos, Direction::North, &bee, false,
+        )
+        .expect("stored bee should load into the ready chunk");
+        assert_eq!(released.custom_name(), Some(name));
+        assert!(released.is_no_gravity());
+        let animal = released.as_animal().expect("bee is an animal");
+        assert_eq!(animal.get_age(), -900);
+        assert_eq!(animal.in_love_time(), 1900);
+        assert!(released.position().z < f64::from(pos.z()));
+    }
+
+    #[test]
+    fn non_hive_entity_data_is_not_published() {
+        init_globals();
+        let fixture = fresh_test_world("hive_invalid_occupant");
+        let world = &fixture.world;
+        let pos = BlockPos::new(8, 64, 8);
+        let _holder = insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+        let mut occupant = BeeOccupant::worldgen(0);
+        while occupant.entity_data.remove("id").is_some() {}
+        occupant.entity_data.insert("id", "minecraft:pig");
+        assert!(BeehiveBlockEntity::spawn_released_bee(
+            world, pos, Direction::North, &occupant, true
+        )
+        .is_none());
     }
 
     #[test]
