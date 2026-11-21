@@ -34,6 +34,8 @@ pub struct TriggerContext {
     pub item: Option<Identifier>,
     /// The full event stack, when available, including count and components.
     pub item_stack: Option<ItemStack>,
+    /// Inventory snapshot for inventory-changed criteria, including empty slots.
+    pub inventory: Option<Vec<ItemStack>>,
     /// Block involved, when the predicate distinguishes it from the item.
     pub block: Option<Identifier>,
     /// Exact block state involved in a block criterion.
@@ -205,6 +207,8 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
         // Block/item identity, used by `placed_block`, `destroyed_block`,
         // `consume_item`, `using_item`, `item_used_on_block` and friends.
         "item" => matches_item_predicate(expected, context),
+        "items" => matches_inventory_items(expected, context),
+        "slots" => matches_inventory_slots(expected, context.inventory.as_deref()),
         "block" => matches_id_predicate(expected, context.block.as_ref()),
         // Enter-block, slide-down-block and bee-nest triggers use a holder set.
         "blocks" => context
@@ -324,14 +328,15 @@ fn matches_distance(expected: &Value, distance: Option<f64>) -> bool {
 
 /// Vanilla item identity, count and registered component matchers.
 fn matches_item_predicate(expected: &Value, context: &TriggerContext) -> bool {
+    matches_item_view(expected, context.item.as_ref(), context.item_stack.as_ref())
+}
+
+fn matches_item_view(expected: &Value, item: Option<&Identifier>, stack: Option<&ItemStack>) -> bool {
     let Some(map) = expected.as_object() else {
         return false;
     };
     if let Some(items) = map.get("items")
-        && !context
-            .item
-            .as_ref()
-            .is_some_and(|item| contains_holder_set(items, item, || &REGISTRY.items))
+        && !item.is_some_and(|item| contains_holder_set(items, item, || &REGISTRY.items))
     {
         return false;
     }
@@ -339,9 +344,9 @@ fn matches_item_predicate(expected: &Value, context: &TriggerContext) -> bool {
         && !map.contains_key("components")
         && !map.contains_key("predicates")
     {
-        return context.item.is_some() || is_unconstrained(expected);
+        return item.is_some() || is_unconstrained(expected);
     }
-    let Some(stack) = context.item_stack.as_ref() else {
+    let Some(stack) = stack else {
         return false;
     };
     // The shared command matcher implements the registered typed component
@@ -354,6 +359,54 @@ fn matches_item_predicate(expected: &Value, context: &TriggerContext) -> bool {
     };
     ItemPredicate::from_owned_nbt(&tag)
         .is_some_and(|predicate| registered_item_stack_matches(&predicate, stack))
+}
+
+/// Inventory predicates use the changed stack for a single condition; when
+/// there are several, every predicate must match at least one occupied slot.
+fn matches_inventory_items(expected: &Value, context: &TriggerContext) -> bool {
+    let Some(predicates) = expected.as_array() else {
+        return false;
+    };
+    if predicates.is_empty() {
+        return true;
+    }
+    if predicates.len() == 1 {
+        return context.item_stack.as_ref().is_some_and(|stack| {
+            !stack.is_empty() && matches_item_view(&predicates[0], Some(&stack.item().key), Some(stack))
+        });
+    }
+    context.inventory.as_ref().is_some_and(|inventory| {
+        predicates.iter().all(|predicate| {
+            inventory.iter().any(|stack| {
+                !stack.is_empty() && matches_item_view(predicate, Some(&stack.item().key), Some(stack))
+            })
+        })
+    })
+}
+
+fn matches_inventory_slots(expected: &Value, inventory: Option<&[ItemStack]>) -> bool {
+    let Some(bounds) = expected.as_object() else {
+        return false;
+    };
+    if bounds.is_empty() {
+        return true;
+    }
+    let Some(inventory) = inventory else {
+        return false;
+    };
+    let occupied = inventory.iter().filter(|stack| !stack.is_empty()).count();
+    let full = inventory
+        .iter()
+        .filter(|stack| !stack.is_empty() && stack.count() >= stack.max_stack_size())
+        .count();
+    let empty = inventory.len() - occupied;
+    [("occupied", occupied), ("full", full), ("empty", empty)]
+        .into_iter()
+        .all(|(key, count)| {
+            bounds.get(key).is_none_or(|range| {
+                i32::try_from(count).is_ok_and(|count| matches_number_range(range, f64::from(count)))
+            })
+        })
 }
 
 /// Vanilla block predicate: `{"blocks": "minecraft:stone"}` or a plain string.
@@ -683,6 +736,24 @@ mod tests {
             r#"{"item":{"count":2}}"#,
             &TriggerContext::item(&id("iron_pickaxe"))
         ));
+    }
+
+    #[test]
+    fn inventory_change_requires_changed_item_or_all_requested_slots() {
+        use steel_registry::vanilla_items;
+
+        steel_registry::init_vanilla_registry();
+        let stone = ItemStack::with_count(&vanilla_items::STONE, 64);
+        let dirt = ItemStack::new(&vanilla_items::DIRT);
+        let mut context = context_for_stack(&stone);
+        context.inventory = Some(vec![stone.clone(), dirt, ItemStack::empty()]);
+        assert!(matches(r#"{"items":[{"items":"minecraft:stone"}]}"#, &context));
+        assert!(!matches(r#"{"items":[{"items":"minecraft:dirt"}]}"#, &context));
+        assert!(matches(r#"{"items":[{"items":"minecraft:stone"},{"items":"minecraft:dirt"}]}"#, &context));
+        assert!(!matches(r#"{"items":[{"items":"minecraft:stone"},{"items":"minecraft:diamond"}]}"#, &context));
+        assert!(matches(r#"{"slots":{"full":1,"occupied":2,"empty":1}}"#, &context));
+        assert!(!matches(r#"{"slots":{"full":2}}"#, &context));
+        assert!(!matches(r#"{"items":[{"items":"minecraft:stone"}]}"#, &TriggerContext::default()));
     }
 
     #[test]

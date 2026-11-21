@@ -1353,33 +1353,46 @@ impl Player {
             return;
         }
 
-        let count_before = item.count();
-        let added = self.inventory.lock().add(&mut item);
-        let moved = count_before.saturating_sub(item.count());
-        if moved > 0 {
-            // Vanilla `Inventory.add` → `InventoryChangeTrigger`: the predicate
-            // sees the inventory slots and the items that changed, which is what
-            // every "obtain item" advancement keys off. Steel fires it with the
-            // acquired item, the shape the vanilla predicates actually use.
-            self.notify_inventory_changed(&item, moved);
-        }
+        let (added, before, after) = {
+            let mut inventory = self.inventory.lock();
+            let before = (0..inventory.get_container_size())
+                .map(|slot| inventory.get_item(slot).clone())
+                .collect::<Vec<_>>();
+            let added = inventory.add(&mut item);
+            let after = (0..inventory.get_container_size())
+                .map(|slot| inventory.get_item(slot).clone())
+                .collect::<Vec<_>>();
+            (added, before, after)
+        };
+        self.notify_inventory_changed(&before, after);
         if !added || !item.is_empty() {
             let _ = self.drop_item(item, false, prediction);
         }
     }
 
-    /// Fires `inventory_changed` for items that just entered the inventory.
-    ///
-    /// Vanilla `InventoryChangeTrigger#trigger` compares the inventory against
-    /// the predicate's `items`; passing the acquired stack lets
-    /// [`crate::player::advancement::predicate::matches`] decide which
-    /// advancements apply.
-    fn notify_inventory_changed(&self, acquired: &ItemStack, count: i32) {
-        let _ = count;
-        self.trigger_advancement_with_context(
-            &INVENTORY_CHANGED,
-            &TriggerContext::item(&acquired.item().key).with_item_stack(acquired),
-        );
+    /// Fires an inventory change for each changed slot using the post-add snapshot.
+    fn notify_inventory_changed(&self, before: &[ItemStack], after: Vec<ItemStack>) {
+        let changed = before
+            .iter()
+            .zip(&after)
+            .enumerate()
+            .filter_map(|(slot, (old, new))| (old != new).then_some(slot))
+            .collect::<Vec<_>>();
+        if changed.is_empty() {
+            return;
+        }
+        let mut context = TriggerContext {
+            inventory: Some(after),
+            ..TriggerContext::default()
+        };
+        for slot in changed {
+            let Some(stack) = context.inventory.as_ref().map(|inventory| &inventory[slot]) else {
+                return;
+            };
+            context.item = (!stack.is_empty()).then(|| stack.item().key.clone());
+            context.item_stack = Some(stack.clone());
+            self.trigger_advancement_with_context(&INVENTORY_CHANGED, &context);
+        }
     }
 
     /// Tries to add an item to the player's inventory using an existing lock guard,
@@ -1398,12 +1411,21 @@ impl Player {
         }
 
         let inv_id = ContainerId::from_arc(&self.inventory);
-        let should_drop = if let Some(inv) = guard.get_mut(inv_id) {
+        let (should_drop, changed) = if let Some(inv) = guard.get_mut(inv_id) {
+            let before = (0..inv.get_container_size())
+                .map(|slot| inv.get_item(slot).clone())
+                .collect::<Vec<_>>();
             let added = inv.add(&mut item);
-            !added || !item.is_empty()
+            let after = (0..inv.get_container_size())
+                .map(|slot| inv.get_item(slot).clone())
+                .collect::<Vec<_>>();
+            (!added || !item.is_empty(), Some((before, after)))
         } else {
-            true
+            (true, None)
         };
+        if let Some((before, after)) = changed {
+            guard.run_unlocked(|| self.notify_inventory_changed(&before, after));
+        }
         if should_drop {
             let _ = guard.run_unlocked(|| self.drop_item(item, false, prediction));
         }
