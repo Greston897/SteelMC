@@ -164,6 +164,11 @@ impl SteelTestWorld {
             (world, server)
         });
 
+        // Flint explicitly steps its test world even without a player. Keep
+        // the dimension active, as a force-loaded vanilla test area would be,
+        // so its daylight clock advances on those ticks as well.
+        world.chunk_map.force_load(ChunkPos::new(0, 0));
+
         Self {
             world,
             server,
@@ -556,6 +561,38 @@ mod tests {
             fixture.world.sun_angle_degrees(),
             fixture.world.get_block_entity(pos).is_some()
         );
+    }
+
+    #[test]
+    fn stepped_world_advances_daylight_without_players_only_when_enabled() {
+        crate::init();
+        let mut fixture = SteelTestWorld::new();
+        fixture
+            .configure_world(&FlintWorldConfig {
+                time: "0".to_owned(),
+                ..Default::default()
+            })
+            .unwrap();
+        fixture
+            .set_gamerule(
+                "minecraft:advance_time".to_owned(),
+                GameruleValue::Bool(true),
+            )
+            .unwrap();
+        for _ in 0..20 {
+            fixture.do_tick().unwrap();
+        }
+        assert_eq!(fixture.get_time().unwrap(), 20);
+        fixture
+            .set_gamerule(
+                "minecraft:advance_time".to_owned(),
+                GameruleValue::Bool(false),
+            )
+            .unwrap();
+        for _ in 0..20 {
+            fixture.do_tick().unwrap();
+        }
+        assert_eq!(fixture.get_time().unwrap(), 20);
     }
 
     #[test]
