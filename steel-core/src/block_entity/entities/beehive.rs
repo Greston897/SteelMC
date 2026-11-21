@@ -76,14 +76,16 @@ impl BeeOccupant {
     }
 
     /// Vanilla checks the previous tick count using a strict greater-than.
-    fn tick_and_ready(&mut self) -> bool {
+    const fn tick_and_ready(&mut self) -> bool {
         let ready = self.ticks_in_hive > self.min_ticks_in_hive;
         self.ticks_in_hive = self.ticks_in_hive.wrapping_add(1);
         ready
     }
 
     fn has_nectar(&self) -> bool {
-        self.entity_data.byte("HasNectar").is_some_and(|value| value != 0)
+        self.entity_data
+            .byte("HasNectar")
+            .is_some_and(|value| value != 0)
     }
 
     fn save(&self) -> NbtCompound {
@@ -175,7 +177,7 @@ impl BeehiveBlockEntity {
             let before = guard.stored.len();
             guard
                 .stored
-                .retain(|_| !Self::spawn_released_bee(world, pos, facing));
+                .retain(|_| Self::spawn_released_bee(world, pos, facing).is_none());
             guard.stored.len() != before
         };
         if changed {
@@ -186,36 +188,28 @@ impl BeehiveBlockEntity {
     /// Vanilla `BeehiveBlockEntity.angerBees`: every released bee targets the
     /// player that harvested without smoke.
     pub fn anger_bees(&self, world: &Arc<World>, player: &SharedEntity) {
-        let released = {
-            let mut guard = self.state.lock();
-            take(&mut guard.stored)
-        };
-        if released.is_empty() {
-            // Vanilla still aggros bees that are already outside and bound here.
+        let pos = self.get_block_pos();
+        let facing = self.state_facing();
+        let had_occupants = !self.is_empty();
+        if had_occupants {
             self.anger_nearby_bees(world, player);
-            return;
         }
-        BlockEntity::set_changed(self);
-
-        for _ in released {
-            let request = EntitySpawnRequest {
-                entity_type: &vanilla_entities::BEE,
-                placement: EntitySpawnPlacement::Block {
-                    pos: self.get_block_pos(),
-                    try_move_down: false,
-                    moved_up: false,
-                },
-                reason: EntitySpawnReason::Beehive,
-                finalize_spawn: true,
-                play_ambient_sound: false,
-                item_stack: None,
-                user_is_operator: false,
-            };
-            let Ok(entity) = spawn_entity(world, request) else {
-                continue;
-            };
-            // Vanilla marks the released bee angry at the harvester.
-            Self::anger_bee(&entity, player);
+        let changed = {
+            let mut guard = self.state.lock();
+            let before = guard.stored.len();
+            guard.stored.retain(|_| {
+                let Some(entity) = Self::spawn_released_bee(world, pos, facing) else {
+                    return true;
+                };
+                if entity.position().distance_squared(player.position()) <= 16.0 {
+                    Self::anger_bee(&entity, player);
+                }
+                false
+            });
+            guard.stored.len() != before
+        };
+        if changed {
+            BlockEntity::set_changed(self);
         }
     }
 
@@ -319,7 +313,7 @@ impl BeehiveBlockEntity {
 
                 // Only nectar-bearing occupants deliver honey. Vanilla gives
                 // a 1% chance of two levels, capped at five.
-                if Self::spawn_released_bee(world, pos, front) {
+                if Self::spawn_released_bee(world, pos, front).is_some() {
                     released_any = true;
                     if occupant.has_nectar()
                         && honey_level.saturating_add(honey_gain) < MAX_HONEY_LEVEL
@@ -352,7 +346,11 @@ impl BeehiveBlockEntity {
 
     /// Vanilla `BeehiveBlockEntity.releaseOccupant`: spawns one bee nudged out
     /// of the hive along its facing.
-    fn spawn_released_bee(world: &Arc<World>, pos: BlockPos, facing: Direction) -> bool {
+    fn spawn_released_bee(
+        world: &Arc<World>,
+        pos: BlockPos,
+        facing: Direction,
+    ) -> Option<SharedEntity> {
         let request = EntitySpawnRequest {
             entity_type: &vanilla_entities::BEE,
             placement: EntitySpawnPlacement::Block {
@@ -366,16 +364,14 @@ impl BeehiveBlockEntity {
             item_stack: None,
             user_is_operator: false,
         };
-        let Ok(entity) = spawn_entity(world, request) else {
-            return false;
-        };
+        let entity = spawn_entity(world, request).ok()?;
 
         let offset = Self::release_offset(facing);
         let position = entity.position() + glam::DVec3::new(offset.0, offset.1, offset.2);
         if let Err(error) = entity.base().try_set_position(position) {
             log::warn!("Could not position bee released from hive at {pos:?}: {error}");
         }
-        true
+        Some(entity)
     }
 
     /// Vanilla `BeehiveBlockEntity.releaseOccupant` exit offset, half a block

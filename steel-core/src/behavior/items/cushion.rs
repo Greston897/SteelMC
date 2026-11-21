@@ -18,7 +18,9 @@ use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::{sound_events, vanilla_entities, vanilla_game_events};
 use steel_utils::{BlockPos, Direction, WorldAabb};
 
-use crate::behavior::context::{BlockPlaceContext, InteractionResult, PlacementSource, UseOnContext};
+use crate::behavior::context::{
+    BlockPlaceContext, InteractionResult, PlacementSource, UseOnContext,
+};
 use crate::behavior::item::ItemBehavior;
 use crate::entity::entities::CushionEntity;
 use crate::entity::{Entity, SharedEntity, next_entity_id};

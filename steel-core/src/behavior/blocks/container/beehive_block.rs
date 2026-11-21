@@ -152,10 +152,8 @@ impl BeehiveBlock {
 
         match action {
             HoneyAction::Bottle => {
-                let infinite = player.has_infinite_materials();
-                inv.with_item(|stack| {
-                    stack.consume_one(infinite);
-                });
+                // Vanilla calls shrink directly here, including in creative mode.
+                inv.with_item(ItemStack::shrink_one);
                 // Vanilla gives the honey bottle to the player or drops it.
                 player.add_item_or_drop(
                     ItemStack::new(&vanilla_items::HONEY_BOTTLE),
@@ -169,6 +167,7 @@ impl BeehiveBlock {
             }
             HoneyAction::Shear => {
                 Self::drop_honeycomb(world, pos, player, state, hive);
+                inv.with_item(|stack| stack.hurt_and_break(1, player.has_infinite_materials()));
                 if !smoked {
                     Self::anger_bees(world, pos, player);
                 }
@@ -293,6 +292,7 @@ impl BlockBehavior for BeehiveBlock {
 mod tests {
     use super::*;
     use crate::bootstrap::init_globals;
+    use crate::entity::SharedEntity;
     use crate::entity::entities::ItemEntity;
     use crate::test_support::{
         TestPlayerBuilder, dropped_items, fresh_test_world, insert_ready_full_chunk,
@@ -300,7 +300,7 @@ mod tests {
     use glam::DVec3;
     use steel_registry::vanilla_blocks;
     use steel_utils::ChunkPos;
-    use steel_utils::types::UpdateFlags;
+    use steel_utils::types::{GameType, UpdateFlags};
 
     #[test]
     fn failed_release_keeps_bees_in_the_hive() {
@@ -315,6 +315,24 @@ mod tests {
         );
         hive.store_worldgen_bee(0);
         hive.release_all_bees(world, pos);
+        assert_eq!(hive.occupant_count(), 1);
+    }
+
+    #[test]
+    fn failed_angry_release_keeps_bees_in_the_hive() {
+        init_globals();
+        let fixture = fresh_test_world("hive_failed_angry_release");
+        let world = &fixture.world;
+        let pos = BlockPos::new(1000, 64, 1000);
+        let hive = BeehiveBlockEntity::new(
+            Arc::downgrade(world),
+            pos,
+            vanilla_blocks::BEE_NEST.default_state(),
+        );
+        hive.store_worldgen_bee(0);
+        let player = TestPlayerBuilder::new(Arc::clone(world), "Harvester", 1).build();
+        let player: SharedEntity = player;
+        hive.anger_bees(world, &player);
         assert_eq!(hive.occupant_count(), 1);
     }
 
@@ -421,6 +439,62 @@ mod tests {
         );
         assert_eq!(hive.occupant_count(), 1);
         assert_eq!(world.get_block_state(pos).get_value(LEVEL_HONEY), 0);
+    }
+
+    #[test]
+    fn creative_bottling_still_shrinks_the_glass_bottle_stack() {
+        init_globals();
+        let fixture = fresh_test_world("hive_creative_bottle");
+        let world = &fixture.world;
+        let pos = BlockPos::new(8, 64, 8);
+        let _holder = insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+        let state = vanilla_blocks::BEEHIVE
+            .default_state()
+            .set_value(LEVEL_HONEY, 5);
+        assert!(world.set_block(pos, state, UpdateFlags::UPDATE_ALL));
+        let player = TestPlayerBuilder::new(Arc::clone(world), "CreativeBottler", 1).build();
+        player.set_game_mode(GameType::Creative);
+        player.inventory.lock().set_selected_item(ItemStack::with_count(
+            &vanilla_items::GLASS_BOTTLE,
+            2,
+        ));
+        let mut inventory =
+            InventoryAccess::new(Arc::clone(&player.inventory), InteractionHand::MainHand);
+        assert_eq!(
+            BeehiveBlock::handle_use(state, world, pos, &player, &mut inventory),
+            InteractionResult::Success
+        );
+        let held = player.inventory.lock().get_selected_item().clone();
+        assert!(held.is(&vanilla_items::GLASS_BOTTLE));
+        assert_eq!(held.count(), 1);
+    }
+
+    #[test]
+    fn harvesting_with_shears_applies_durability_damage() {
+        init_globals();
+        let fixture = fresh_test_world("hive_shear_damage");
+        let world = &fixture.world;
+        let pos = BlockPos::new(8, 64, 8);
+        let _holder = insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+        let state = vanilla_blocks::BEEHIVE
+            .default_state()
+            .set_value(LEVEL_HONEY, 5);
+        assert!(world.set_block(pos, state, UpdateFlags::UPDATE_ALL));
+        let player = TestPlayerBuilder::new(Arc::clone(world), "HiveShearer", 1).build();
+        player
+            .inventory
+            .lock()
+            .set_selected_item(ItemStack::new(&vanilla_items::SHEARS));
+        let mut inventory =
+            InventoryAccess::new(Arc::clone(&player.inventory), InteractionHand::MainHand);
+        assert_eq!(
+            BeehiveBlock::handle_use(state, world, pos, &player, &mut inventory),
+            InteractionResult::Success
+        );
+        assert_eq!(
+            player.inventory.lock().get_selected_item().get_damage_value(),
+            1
+        );
     }
 
     #[test]

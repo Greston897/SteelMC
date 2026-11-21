@@ -565,7 +565,12 @@ mod tests {
     fn interacting_makes_the_player_sit_on_the_cushion() {
         let (fixture, support) = support_fixture("cushion_sit");
         let cushion = spawn_cushion(&fixture.world, support);
-        let player = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Sitter", 1).build();
+        let player = TestPlayerBuilder::new(
+            Arc::clone(&fixture.world),
+            "Sitter",
+            entity::next_entity_id(),
+        )
+        .build();
         player.set_client_loaded(true);
         // `Entity::start_riding` resolves the passenger through the entity manager.
         fixture
