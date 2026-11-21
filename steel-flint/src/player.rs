@@ -4,7 +4,10 @@
 //! interactions (like `use_item_on`) run without a network.
 
 use std::any::Any;
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 
 use flint_core::test_spec::{GameMode, PlayerSlot};
 use flint_core::{FlintPlayer, Item};
@@ -32,6 +35,11 @@ const TEST_PLAYER_NAME: &str = "flintmc_testbot";
 /// Test player implementation that wraps a real `Player`.
 pub struct SteelTestPlayer {
     player: Arc<Player>,
+    tick: Arc<AtomicU64>,
+    // A client's crosshair can still use the pre-teleport pose while the
+    // server has already refreshed its own dimensions. Retain it only until
+    // a synchronization point or the next simulation tick.
+    pending_client_eye: Option<(u64, f64)>,
 }
 
 impl SteelTestPlayer {
@@ -39,7 +47,7 @@ impl SteelTestPlayer {
     ///
     /// # Panics
     /// Panics if the test identity is invalid or already registered in this world.
-    pub fn new(world: Arc<World>, server: &Arc<Server>) -> Self {
+    pub fn new(world: Arc<World>, server: &Arc<Server>, tick: Arc<AtomicU64>) -> Self {
         // Same identity as the FlintCLI bot, so specs asserting an `Owner` UUID
         // stay portable between runners.
         let game_profile = GameProfile::new(
@@ -74,7 +82,24 @@ impl SteelTestPlayer {
             world.add_test_player(Arc::clone(&player)),
             "Flint player must be registered through the normal join path"
         );
-        Self { player }
+        Self {
+            player,
+            tick,
+            pending_client_eye: None,
+        }
+    }
+
+    /// Model the client's crosshair separately from the server-side pose.
+    fn client_ray_endpoints(&self) -> (DVec3, DVec3) {
+        let (mut start, mut end) = self.player.get_ray_endpoints();
+        if let Some((tick, eye_height)) = self.pending_client_eye
+            && tick == self.tick.load(Ordering::SeqCst)
+        {
+            let offset = self.player.position().y + eye_height - start.y;
+            start.y += offset;
+            end.y += offset;
+        }
+        (start, end)
     }
 }
 
@@ -180,6 +205,8 @@ impl FlintPlayer for SteelTestPlayer {
 
         let mut inv = self.player.inventory.lock();
         inv.set_item(index, stack);
+        // FlintCLI's inventory command waits for the server/client round trip.
+        self.pending_client_eye = None;
         Ok(())
     }
 
@@ -199,6 +226,7 @@ impl FlintPlayer for SteelTestPlayer {
         if (1..=9).contains(&slot) {
             // Flint uses 1-9, Steel uses 0-8
             self.player.inventory.lock().set_selected_slot(slot - 1);
+            self.pending_client_eye = None;
         }
         Ok(())
     }
@@ -209,16 +237,23 @@ impl FlintPlayer for SteelTestPlayer {
     }
 
     fn teleport(&mut self, pos: [f64; 3], rot: Option<[f32; 2]>) -> Result<(), anyhow::Error> {
+        let tick = self.tick.load(Ordering::SeqCst);
+        let eye_height = self
+            .pending_client_eye
+            .filter(|(previous_tick, _)| *previous_tick == tick)
+            .map_or_else(|| self.player.get_eye_height(), |(_, height)| height);
         self.player
             .try_set_position(DVec3::new(pos[0], pos[1], pos[2]))?;
         self.player.set_rotation((rot.unwrap_or([0.0, 0.0])).into());
         self.player.update_pose();
+        self.pending_client_eye = Some((tick, eye_height));
         Ok(())
     }
 
     fn interact(&mut self) -> Result<(), anyhow::Error> {
         let world = self.player.get_world();
-        let (start, end) = self.player.get_ray_endpoints();
+        let (start, end) = self.client_ray_endpoints();
+        self.pending_client_eye = None;
         let clip = world.clip(start, end, ClipBlockShape::Outline, ClipFluid::None);
 
         let hand = InteractionHand::MainHand;
@@ -396,6 +431,9 @@ mod tests {
         player
             .teleport(scenario.player_pos, Some(scenario.player_rot))
             .expect("teleport");
+        // A hotbar synchronization after teleport makes the updated pose
+        // available to the test client (as in an interact-with-item action).
+        player.select_hotbar(1).expect("post-teleport selection");
         player.interact().expect("interact");
 
         let placed = world.get_block(scenario.target, &[]).expect("block read");
@@ -423,11 +461,11 @@ mod tests {
         (report, placed.id)
     }
 
-    /// Documents the ambiguous upstream fixture independently of the valid
-    /// west-face placement scenario above. This does not claim what a real
-    /// vanilla client sends after its teleport acknowledgement.
+    /// The live 26.3 differential probe observes a standing client crosshair
+    /// immediately after this teleport, even though the server pose can be
+    /// swimming. The original upstream fixture must succeed without edits.
     #[test]
-    fn coral_fixture_teleports_player_under_its_target_block() {
+    fn coral_fixture_uses_client_pose_for_immediate_interaction() {
         use steel_registry::entity_data::EntityPose;
 
         crate::init();
@@ -437,6 +475,13 @@ mod tests {
             .expect("fixture placement");
         let mut player = world.create_player();
         player
+            .set_slot(
+                FlintPlayerSlot::Hotbar1,
+                Some(&flint_core::Item::new("minecraft:brain_coral_fan")),
+            )
+            .expect("item");
+        player.select_hotbar(1).expect("hotbar");
+        player
             .teleport([8.5, 0.0, 4.5], Some([-90.0, 0.0]))
             .expect("teleport");
         let concrete = player
@@ -444,15 +489,70 @@ mod tests {
             .downcast_mut::<SteelTestPlayer>()
             .expect("steel player");
         assert_eq!(concrete.player.pose(), EntityPose::Swimming);
-        let (start, end) = concrete.player.get_ray_endpoints();
-        assert!((start.y - 0.4).abs() < 0.001, "{start:?}");
-        assert!(
+        let (start, end) = concrete.client_ray_endpoints();
+        assert!((start.y - 1.62).abs() < 0.001, "{start:?}");
+        let clip =
             concrete
                 .player
                 .get_world()
-                .clip(start, end, ClipBlockShape::Outline, ClipFluid::None)
-                .is_miss()
+                .clip(start, end, ClipBlockShape::Outline, ClipFluid::None);
+        assert!(!clip.is_miss() && clip.inside, "{clip:?}");
+        player.interact().expect("interact");
+        assert_eq!(
+            world.get_block([7, 1, 4], &[]).expect("block read").id,
+            "minecraft:brain_coral_wall_fan"
         );
+        assert!(
+            player
+                .get_slot(FlintPlayerSlot::Hotbar1, vec![])
+                .unwrap()
+                .is_none()
+        );
+    }
+
+    /// An inventory command is a client/server synchronization point, unlike
+    /// the immediate use after teleport in the coral fixture.
+    #[test]
+    fn inventory_sync_refreshes_client_pose_after_teleport() {
+        crate::init();
+        let mut world = SteelTestWorld::new();
+        world
+            .set_block([0, 5, 0], &FlintBlock::new("minecraft:stone"))
+            .unwrap();
+        let mut player = world.create_player();
+        player.teleport([0.5, 4.0, 0.5], Some([0.0, 90.0])).unwrap();
+        player
+            .set_slot(
+                FlintPlayerSlot::Hotbar1,
+                Some(&flint_core::Item::new("minecraft:bamboo")),
+            )
+            .unwrap();
+        let concrete = player
+            .as_any_mut()
+            .downcast_mut::<SteelTestPlayer>()
+            .unwrap();
+        let (start, _) = concrete.client_ray_endpoints();
+        assert!((start.y - 4.4).abs() < 0.001, "{start:?}");
+    }
+
+    /// A later world tick must not reuse an earlier pre-teleport client pose.
+    #[test]
+    fn client_pose_snapshot_expires_after_a_world_tick() {
+        crate::init();
+        let mut world = SteelTestWorld::new();
+        world
+            .set_block([0, 5, 0], &FlintBlock::new("minecraft:stone"))
+            .unwrap();
+        let mut player = world.create_player();
+        player.teleport([0.5, 4.0, 0.5], Some([0.0, 90.0])).unwrap();
+        world.do_tick().unwrap();
+        let concrete = player
+            .as_any_mut()
+            .downcast_mut::<SteelTestPlayer>()
+            .unwrap();
+        let (client_start, _) = concrete.client_ray_endpoints();
+        let (server_start, _) = concrete.player.get_ray_endpoints();
+        assert_eq!(client_start, server_start);
     }
 
     /// Reproduces the failing Flint player-interaction placement scenarios

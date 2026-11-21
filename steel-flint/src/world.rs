@@ -64,7 +64,7 @@ pub struct SteelTestWorld {
     /// Owner of the damage history; the world only holds a weak reference.
     _damage_history: Arc<DamageHistory>,
     /// Current tick count (for `FlintWorld` trait).
-    tick: AtomicU64,
+    tick: Arc<AtomicU64>,
     /// Active chunk requests, keyed by chunk position.
     ///
     /// Each handle owns the chunk's tickets; retaining it for the world's
@@ -176,7 +176,7 @@ impl SteelTestWorld {
             world,
             server,
             _damage_history: damage_history,
-            tick: AtomicU64::new(0),
+            tick: Arc::new(AtomicU64::new(0)),
             chunk_requests: SyncMutex::new(FxHashMap::default()),
             entities: FxHashMap::default(),
         }
@@ -502,7 +502,11 @@ impl FlintWorld for SteelTestWorld {
     }
 
     fn create_player(&mut self) -> Box<dyn FlintPlayer> {
-        Box::new(SteelTestPlayer::new(self.world.clone(), &self.server))
+        Box::new(SteelTestPlayer::new(
+            self.world.clone(),
+            &self.server,
+            Arc::clone(&self.tick),
+        ))
     }
 }
 
