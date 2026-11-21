@@ -470,6 +470,7 @@ pub fn context_for_stack(stack: &ItemStack) -> TriggerContext {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use steel_registry::items::ItemRegistry;
 
     fn id(path: &str) -> Identifier {
         Identifier::vanilla(path.to_owned())
@@ -496,7 +497,7 @@ mod tests {
     #[test]
     fn direct_holder_sets_do_not_access_registry() {
         let stone = id("stone");
-        assert!(contains_holder_set::<steel_registry::items::ItemRegistry>(
+        assert!(contains_holder_set::<ItemRegistry>(
             &serde_json::json!("minecraft:stone"),
             &stone,
             || panic!("direct holder set should not access the registry")
