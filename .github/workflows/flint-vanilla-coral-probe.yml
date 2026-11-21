@@ -1,0 +1,56 @@
+name: Flint vanilla coral differential probe
+
+on:
+  push:
+    paths:
+      - '.ci/flint_vanilla_coral_probe.py'
+      - '.github/workflows/flint-vanilla-coral-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: FlintTestMC/FlintCLI
+          ref: 8b5a3f30692472c23674e18d5ae1041299b939d7
+          path: FlintCLI
+      - uses: actions/checkout@v4
+        with:
+          repository: FlintTestMC/FlintBenchmark
+          ref: caa22dbbbfff3d1b9766939834a308c335f7a989
+          path: FlintBenchmark
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Build pinned FlintCLI
+        run: cargo build --manifest-path FlintCLI/Cargo.toml --locked
+      - name: Fetch verified vanilla 26.3
+        run: python3 .ci/download_vanilla_server.py
+      - name: Probe original and unobstructed fixture
+        run: |
+          set -o pipefail
+          python3 .ci/flint_vanilla_coral_probe.py \
+            --server server.jar --client FlintCLI/target/debug/flintmc \
+            --fixture FlintBenchmark/tests/vegetation/corals/brain_coral_fan_placement.json \
+            --workdir "$RUNNER_TEMP/coral-probe" 2>&1 | tee /tmp/coral-probe.log
+      - name: Publish diagnostic output
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 .ci/report.py 'Flint vanilla coral differential' /tmp/coral-probe.log "$RUNNER_TEMP/coral-probe/server.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flint-vanilla-coral-probe
+          path: |
+            /tmp/coral-probe.log
+            ${{ runner.temp }}/coral-probe/server.log
