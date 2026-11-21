@@ -183,18 +183,22 @@ impl CushionEntity {
         self.entity_data.lock().color.set(color);
     }
 
-    /// The block this cushion rests on.
+    /// Block containing the centre of the thin anchor slice below the cushion.
     #[must_use]
     pub fn support_pos(&self) -> BlockPos {
-        let pos = self.block_position();
-        BlockPos::new(pos.x(), pos.y() - 1, pos.z())
+        let pos = self.position();
+        BlockPos::new(
+            pos.x.floor() as i32,
+            (pos.y - 0.015_625).floor() as i32,
+            pos.z.floor() as i32,
+        )
     }
 
     /// Vanilla checks a thin anchor box against the bounds of nearby outline shapes.
     fn has_anchor_below(world: &World, bounding_box: WorldAabb) -> bool {
         let anchor = WorldAabb::new(
             bounding_box.min_x(),
-            bounding_box.min_y() - 0.015625,
+            bounding_box.min_y() - 0.015_625,
             bounding_box.min_z(),
             bounding_box.max_x().next_down(),
             bounding_box.min_y(),
@@ -233,7 +237,10 @@ impl CushionEntity {
                 for x in bounding_box.min_x().next_up().floor() as i32
                     ..=bounding_box.max_x().next_down().floor() as i32
                 {
-                    if !world.get_block_state(BlockPos::new(x, y, z)).is_suffocating() {
+                    if !world
+                        .get_block_state(BlockPos::new(x, y, z))
+                        .is_suffocating()
+                    {
                         return true;
                     }
                 }
@@ -253,7 +260,7 @@ impl CushionEntity {
             bounding_box.min_y().next_up(),
             bounding_box.min_z().next_up(),
             bounding_box.max_x().next_down(),
-            (bounding_box.min_y() + 0.015625).next_down(),
+            (bounding_box.min_y() + 0.015_625).next_down(),
             bounding_box.max_z().next_down(),
         );
         let mut exposed = vec![slice];
@@ -412,6 +419,7 @@ mod tests {
     use std::sync::Weak;
     use steel_registry::vanilla_damage_types;
     use steel_registry::vanilla_entities;
+    use steel_registry::vanilla_game_rules::ENTITY_DROPS;
 
     fn cushion_area() -> WorldAabb {
         WorldAabb::new(-2.0, 62.0, -2.0, 2.0, 68.0, 2.0)
@@ -461,17 +469,17 @@ mod tests {
 
     #[test]
     fn buried_slice_checks_the_union_of_colliders() {
-        let slice = WorldAabb::new(0.0, 0.0, 0.0, 1.0, 0.015625, 1.0);
+        let slice = WorldAabb::new(0.0, 0.0, 0.0, 1.0, 0.015_625, 1.0);
         let left = WorldAabb::new(0.0, 0.0, 0.0, 0.5, 1.0, 1.0);
         let right = WorldAabb::new(0.5, 0.0, 0.0, 1.0, 1.0, 1.0);
         let mut exposed = Vec::new();
         subtract_box(slice, left, &mut exposed);
-        assert!(!exposed.is_empty());
+        assert_ne!(exposed, [] as [WorldAabb; 0]);
         let mut remaining = Vec::new();
         for part in exposed {
             subtract_box(part, right, &mut remaining);
         }
-        assert!(remaining.is_empty());
+        assert_eq!(remaining, [] as [WorldAabb; 0]);
     }
 
     #[test]
@@ -505,7 +513,7 @@ mod tests {
             Arc::clone(&cushion).tick();
         }
         assert!(!cushion.is_removed());
-        assert!(dropped_items(&fixture.world).is_empty());
+        assert_eq!(dropped_items(&fixture.world), [] as [ItemStack; 0]);
         for _ in 0..3 {
             Arc::clone(&cushion).tick();
         }
@@ -535,15 +543,11 @@ mod tests {
 
     #[test]
     fn cushion_drops_obey_the_game_rule_and_creative_attacker() {
-        for (entity_drops, creative, expected) in [
-            (false, false, 0),
-            (true, true, 0),
-            (true, false, 1),
-        ] {
+        for (entity_drops, creative, expected) in
+            [(false, false, 0), (true, true, 0), (true, false, 1)]
+        {
             let (fixture, support) = support_fixture("cushion_drop_rules");
-            assert!(fixture
-                .world
-                .set_game_rule(&steel_registry::vanilla_game_rules::ENTITY_DROPS, entity_drops));
+            assert!(fixture.world.set_game_rule(&ENTITY_DROPS, entity_drops));
             let cushion = spawn_cushion(&fixture.world, support);
             let player = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Attacker", 1).build();
             if creative {

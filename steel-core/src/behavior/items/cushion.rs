@@ -89,7 +89,10 @@ impl ItemBehavior for CushionItem {
             Arc::downgrade(context.world),
         );
         cushion.set_color(color);
-        cushion.set_rotation((Direction::from_yaw(context.player.rotation().0).to_yaw(), 0.0));
+        cushion.set_rotation((
+            Direction::from_yaw(context.player.rotation().0).to_yaw(),
+            0.0,
+        ));
 
         if let Some(custom_name) = stack.custom_name() {
             cushion.set_custom_name(Some(custom_name.into_owned()));
@@ -338,7 +341,10 @@ mod tests {
         assert_eq!(cushions.len(), 1);
         let cushion = as_cushion(&cushions[0]);
         assert_eq!(cushion.position().y, 64.5);
-        assert!(CushionEntity::would_survive_at(world, cushion.bounding_box()));
+        assert!(CushionEntity::would_survive_at(
+            world,
+            cushion.bounding_box()
+        ));
     }
 
     #[test]
