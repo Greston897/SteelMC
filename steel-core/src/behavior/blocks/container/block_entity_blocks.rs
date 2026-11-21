@@ -733,6 +733,42 @@ fn dispense_from(world: &Arc<World>, pos: BlockPos, state: BlockStateId) -> bool
     let target_block = target_state.get_block();
     let item = snapshot.item();
 
+    // A dispenser uses a brush only on an adult armadillo in the target
+    // block; without one it retains the brush rather than ejecting it.
+    if item == &*vanilla_items::BRUSH {
+        use crate::entity::AgeableMob;
+        use crate::entity::entities::mobs::passive::ArmadilloEntity;
+        use steel_utils::WorldAabb;
+
+        let x = f64::from(target_pos.x());
+        let y = f64::from(target_pos.y());
+        let z = f64::from(target_pos.z());
+        let entities =
+            world.get_entities_in_aabb(&WorldAabb::new(x, y, z, x + 1.0, y + 1.0, z + 1.0));
+        let armadillo = entities.iter().find_map(|entity| {
+            let armadillo = entity.as_ref().downcast_ref::<ArmadilloEntity>()?;
+            (crate::entity::Entity::is_alive(armadillo) && !AgeableMob::is_baby(armadillo))
+                .then_some(armadillo)
+        });
+        if let Some(armadillo) = armadillo {
+            let _ =
+                armadillo.spawn_at_location(ItemStack::new(&vanilla_items::ARMADILLO_SCUTE), 0.0);
+            armadillo.play_sound(&sound_events::ENTITY_ARMADILLO_BRUSH, 1.0, 1.0);
+            armadillo.game_event(&steel_registry::vanilla_game_events::ENTITY_INTERACT);
+            let mut guard = container.lock();
+            if guard.get_item_mut(slot).hurt_and_break(16, false) {
+                guard.set_item(slot, ItemStack::empty());
+            }
+        }
+        let sound = if armadillo.is_some() {
+            &sound_events::BLOCK_DISPENSER_DISPENSE
+        } else {
+            &sound_events::BLOCK_DISPENSER_FAIL
+        };
+        world.play_sound(sound, SoundSource::Blocks, pos, 1.0, 1.0, None);
+        return armadillo.is_some();
+    }
+
     // Shulker boxes use a directional placement context, preserving item
     // components and retaining the stack when placement is blocked.
     if let Some(block) = item.block

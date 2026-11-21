@@ -45,6 +45,32 @@ fn pulse(world: &Arc<World>) {
 }
 
 #[test]
+fn dispenser_keeps_brush_when_no_armadillo_is_present() {
+    let (fixture, container) = fixture(
+        "dispenser_brush_without_armadillo",
+        ItemStack::new(&vanilla_items::BRUSH),
+    );
+    fixture.world.set_block(
+        TARGET.below(),
+        vanilla_blocks::STONE.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    fixture.world.set_block(
+        TARGET,
+        vanilla_blocks::SUSPICIOUS_SAND.default_state(),
+        UpdateFlags::UPDATE_ALL,
+    );
+    pulse(&fixture.world);
+    let guard = container.lock();
+    assert_eq!(guard.get_item(0).item(), &*vanilla_items::BRUSH);
+    assert_eq!(guard.get_item(0).count(), 1);
+    assert_eq!(
+        fixture.world.get_block_state(TARGET).get_block(),
+        &*vanilla_blocks::SUSPICIOUS_SAND
+    );
+}
+
+#[test]
 fn powered_dispenser_grows_wheat_and_consumes_exactly_one_bone_meal() {
     let (fixture, container) = fixture(
         "dispenser_bonemeal_wheat",
