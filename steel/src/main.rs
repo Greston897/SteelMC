@@ -145,10 +145,6 @@ fn main() {
 /// If we only used one runtime this would lead to the tick task being blocked by the chunk tasks.
 ///
 /// We have to create the runtimes at this level cause tokio panics if you drop a runtime in a context where blocking is not allowed.
-#[expect(
-    clippy::unwrap_used,
-    reason = "runtime build failures are fatal and unrecoverable at startup"
-)]
 fn steel_main() {
     #[cfg(feature = "dhat-heap")]
     let _profiler = dhat::Profiler::new_heap();
