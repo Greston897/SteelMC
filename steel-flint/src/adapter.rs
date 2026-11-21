@@ -315,6 +315,7 @@ mod tests {
     use super::*;
     use crate::{TestLoader, TestRunner};
     use std::sync::Arc;
+    use std::time::Instant;
 
     fn configured_parallelism() -> usize {
         var("FLINT_PARALLELISM")
@@ -423,7 +424,13 @@ mod tests {
             "Flint must execute at least one vanilla fixture"
         );
         let runner = TestRunner::new(Arc::new(SteelAdapter));
-        let summary = runner.run_tests_parallel(&specs, configured_parallelism());
+        let workers = configured_parallelism();
+        let started = Instant::now();
+        let summary = runner.run_tests_parallel(&specs, workers);
+        println!(
+            "Flint wall time with {workers} worker(s): {:.3}s",
+            started.elapsed().as_secs_f64()
+        );
         summary.print_concise_summary();
         save_summary(&summary).unwrap_or_else(|e| panic!("failed to save flint summary: {e}"));
         print_failure_urls(&specs, &paths, &summary, &cfg);
@@ -466,7 +473,13 @@ mod tests {
             "Flint must execute at least one vanilla fixture"
         );
         let runner = TestRunner::new(Arc::new(SteelAdapter));
-        let summary = runner.run_tests_parallel(&specs, configured_parallelism());
+        let workers = configured_parallelism();
+        let started = Instant::now();
+        let summary = runner.run_tests_parallel(&specs, workers);
+        println!(
+            "Flint wall time with {workers} worker(s): {:.3}s",
+            started.elapsed().as_secs_f64()
+        );
         summary.print_concise_summary();
         save_summary(&summary).unwrap_or_else(|e| panic!("failed to save flint summary: {e}"));
         print_failure_urls(&specs, &paths, &summary, &cfg);
