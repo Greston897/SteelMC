@@ -753,7 +753,7 @@ mod tests {
         let stone = ItemStack::with_count(&vanilla_items::STONE, 64);
         let dirt = ItemStack::new(&vanilla_items::DIRT);
         let mut context = context_for_stack(&stone);
-        context.inventory = Some(vec![stone.clone(), dirt, ItemStack::empty()]);
+        context.inventory = Some(vec![stone, dirt, ItemStack::empty()]);
         assert!(matches(
             r#"{"items":[{"items":"minecraft:stone"}]}"#,
             &context
