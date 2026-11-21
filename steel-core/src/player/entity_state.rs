@@ -186,7 +186,7 @@ impl Player {
     }
 
     /// Updates the player's pose in entity data based on current state.
-    pub(super) fn update_pose(&self) {
+    pub fn update_pose(&self) {
         if !self.can_player_fit_within_blocks_and_entities_when(EntityPose::Swimming) {
             return;
         }

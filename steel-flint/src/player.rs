@@ -61,6 +61,12 @@ impl SteelTestPlayer {
             -1, // Negative entity ID for test players
             ClientInformation::default(),
         );
+        // The real Flint bot joins away from the test fixture. Starting at the
+        // origin can put it inside a block before the first scripted teleport,
+        // changing its pose or generating unintended vibrations.
+        player
+            .try_set_position(DVec3::new(0.5, 100.0, 0.5))
+            .expect("test player spawn position");
         // Mark as loaded so interactions work
         player.set_client_loaded(true);
         let player = Arc::new(player);
@@ -206,6 +212,7 @@ impl FlintPlayer for SteelTestPlayer {
         self.player
             .try_set_position(DVec3::new(pos[0], pos[1], pos[2]))?;
         self.player.set_rotation((rot.unwrap_or([0.0, 0.0])).into());
+        self.player.update_pose();
         Ok(())
     }
 
@@ -245,6 +252,7 @@ impl FlintPlayer for SteelTestPlayer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::world::SteelTestWorld;
     use flint_core::test_spec::{GameMode as FlintGameMode, PlayerSlot as FlintPlayerSlot};
     use flint_core::{Block as FlintBlock, FlintWorld as _};
     use steel_registry::data_components::vanilla_components::DAMAGE;
@@ -345,7 +353,7 @@ mod tests {
     /// Runs one scenario and reports the ray, the clip result, the placed
     /// block, and the held stack.
     fn run_placement_scenario(scenario: &PlacementScenario) -> (String, String) {
-        let mut world = crate::world::SteelTestWorld::new();
+        let mut world = SteelTestWorld::new();
         for (pos, block) in &scenario.setup {
             world.set_block(*pos, block).expect("fixture placement");
         }
@@ -368,9 +376,7 @@ mod tests {
             .expect("teleport");
         player.interact().expect("interact");
 
-        let placed = world
-            .get_block(scenario.target, &[])
-            .expect("block read");
+        let placed = world.get_block(scenario.target, &[]).expect("block read");
         let slot = player
             .get_slot(FlintPlayerSlot::Hotbar1, Vec::new())
             .expect("slot read");
@@ -379,10 +385,11 @@ mod tests {
             .downcast_mut::<SteelTestPlayer>()
             .expect("steel player");
         let (start, end) = concrete.player.get_ray_endpoints();
-        let clip = concrete
-            .player
-            .get_world()
-            .clip(start, end, ClipBlockShape::Outline, ClipFluid::None);
+        let clip =
+            concrete
+                .player
+                .get_world()
+                .clip(start, end, ClipBlockShape::Outline, ClipFluid::None);
         let position = concrete.player.position();
         let rotation = concrete.player.rotation();
 

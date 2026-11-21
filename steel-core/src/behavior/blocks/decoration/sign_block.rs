@@ -149,7 +149,9 @@ fn can_wall_sign_survive(
 fn can_ceiling_hanging_sign_survive(world: &(impl LevelReader + ?Sized), pos: BlockPos) -> bool {
     let above_pos = BlockPos::new(pos.x(), pos.y() + 1, pos.z());
     let above_state = world.get_block_state(above_pos);
-    world.is_face_sturdy_for(above_state, above_pos, Direction::Down, SupportType::Center)
+    let path = &above_state.get_block().key.path;
+    (path.ends_with("_hanging_sign") && !path.ends_with("_wall_hanging_sign"))
+        || world.is_face_sturdy_for(above_state, above_pos, Direction::Down, SupportType::Center)
 }
 
 /// Checks if a wall hanging sign can attach to a neighboring block.
@@ -717,9 +719,16 @@ impl BlockBehavior for CeilingHangingSignBlock {
         pos: BlockPos,
         player: &Player,
         _hand: InteractionHand,
-        _hit_result: &BlockHitResult,
+        hit_result: &BlockHitResult,
         inv: &mut InventoryAccess,
     ) -> InteractionResult {
+        // A hanging sign item used on the underside must reach the item
+        // placement path instead of opening the existing sign's editor.
+        if hit_result.direction == Direction::Down
+            && inv.with_item(|stack| stack.item().key.path.ends_with("_hanging_sign"))
+        {
+            return InteractionResult::Pass;
+        }
         try_apply_sign_item(state, world, pos, player, inv)
     }
 
@@ -783,20 +792,12 @@ impl BlockBehavior for WallHangingSignBlock {
         state: BlockStateId,
         world: &dyn ScheduledTickAccess,
         pos: BlockPos,
-        direction: Direction,
+        _direction: Direction,
         _neighbor_pos: BlockPos,
         _neighbor_state: BlockStateId,
     ) -> BlockStateId {
-        // Wall hanging signs break when blocks on the perpendicular axis are removed
-        // and they can no longer survive
-        if let Some(facing) = state.try_get_value(HORIZONTAL_FACING) {
-            // Check if the change is on the perpendicular axis (clockwise/counterclockwise)
-            if direction.axis() == facing.rotate_y_clockwise().axis()
-                && !can_wall_hanging_sign_survive(world, pos, facing)
-            {
-                return REGISTRY.blocks.get_default_state_id(&vanilla_blocks::AIR);
-            }
-        }
+        // Side support is required when placing the sign, but vanilla wall
+        // hanging signs do not break when that support is subsequently removed.
         schedule_water_tick_if_waterlogged(state, world, pos);
         state
     }
@@ -986,6 +987,31 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn wall_hanging_sign_survives_losing_side_support() {
+        init_vanilla_registry();
+        let pos = BlockPos::new(0, 64, 0);
+        let sign = WallHangingSignBlock::new(&vanilla_blocks::OAK_WALL_HANGING_SIGN);
+        let state = vanilla_blocks::OAK_WALL_HANGING_SIGN
+            .default_state()
+            .set_value(HORIZONTAL_FACING, Direction::North)
+            .set_value(WATERLOGGED, true);
+        let level = TestLevel::default();
+
+        assert_eq!(
+            sign.update_shape(
+                state,
+                &level,
+                pos,
+                Direction::East,
+                pos.relative(Direction::East),
+                vanilla_blocks::AIR.default_state(),
+            ),
+            state
+        );
+        assert!(level.scheduled_water_tick());
     }
 
     #[test]

@@ -404,6 +404,10 @@ impl Entity for ArmorStandEntity {
         self.is_marker()
     }
 
+    fn is_ignoring_block_triggers(&self) -> bool {
+        self.is_marker()
+    }
+
     fn is_hard_collision_relevant(&self) -> bool {
         false
     }
@@ -654,9 +658,11 @@ mod tests {
         let stand = stand();
         assert!(Entity::is_pickable(&stand));
         assert!(!stand.is_marker_armor_stand());
+        assert!(!stand.is_ignoring_block_triggers());
 
         stand.set_marker(true);
         assert!(!Entity::is_pickable(&stand));
         assert!(stand.is_marker_armor_stand());
+        assert!(stand.is_ignoring_block_triggers());
     }
 }

@@ -5,6 +5,7 @@
 use std::sync::Arc;
 
 use crate::behavior::block::{BlockBehavior, schedule_water_tick_if_waterlogged};
+use crate::behavior::blocks::utils::is_excluded_for_connection;
 use crate::behavior::context::BlockPlaceContext;
 use crate::behavior::items::LeadItem;
 use crate::behavior::{InteractionResult, InventoryAccess};
@@ -53,6 +54,7 @@ impl FenceBlock {
 
     /// Checks if this fence should connect to the given neighbor state.
     fn connects_to(
+        &self,
         world: &dyn LevelReader,
         neighbor_state: BlockStateId,
         neighbor_pos: BlockPos,
@@ -60,9 +62,11 @@ impl FenceBlock {
     ) -> bool {
         let neighbor_block = neighbor_state.get_block();
 
-        // Check if it's a fence (same tag)
+        // Wooden fences connect to other wooden fences; nether brick fences
+        // connect only to non-wooden fences.
         if neighbor_block.has_tag(&BlockTag::FENCES) {
-            return true;
+            return neighbor_block.has_tag(&BlockTag::WOODEN_FENCES)
+                == self.block.has_tag(&BlockTag::WOODEN_FENCES);
         }
 
         // Check if it's a fence gate facing the right direction
@@ -96,7 +100,8 @@ impl FenceBlock {
             Direction::Up => Direction::Down,
             Direction::Down => Direction::Up,
         };
-        world.is_face_sturdy(neighbor_state, neighbor_pos, opposite)
+        !is_excluded_for_connection(neighbor_block)
+            && world.is_face_sturdy(neighbor_state, neighbor_pos, opposite)
     }
 
     /// Gets the connection state for a position by checking all 4 horizontal neighbors.
@@ -106,25 +111,25 @@ impl FenceBlock {
         // Check north
         let north_pos = Direction::North.relative(pos);
         let north_state = world.get_block_state(north_pos);
-        let connects_north = Self::connects_to(world, north_state, north_pos, Direction::North);
+        let connects_north = self.connects_to(world, north_state, north_pos, Direction::North);
         state = state.set_value(NORTH, connects_north);
 
         // Check east
         let east_pos = Direction::East.relative(pos);
         let east_state = world.get_block_state(east_pos);
-        let connects_east = Self::connects_to(world, east_state, east_pos, Direction::East);
+        let connects_east = self.connects_to(world, east_state, east_pos, Direction::East);
         state = state.set_value(EAST, connects_east);
 
         // Check south
         let south_pos = Direction::South.relative(pos);
         let south_state = world.get_block_state(south_pos);
-        let connects_south = Self::connects_to(world, south_state, south_pos, Direction::South);
+        let connects_south = self.connects_to(world, south_state, south_pos, Direction::South);
         state = state.set_value(SOUTH, connects_south);
 
         // Check west
         let west_pos = Direction::West.relative(pos);
         let west_state = world.get_block_state(west_pos);
-        let connects_west = Self::connects_to(world, west_state, west_pos, Direction::West);
+        let connects_west = self.connects_to(world, west_state, west_pos, Direction::West);
         state = state.set_value(WEST, connects_west);
 
         state
@@ -159,22 +164,22 @@ impl BlockBehavior for FenceBlock {
         match direction {
             Direction::North => {
                 let connects =
-                    Self::connects_to(world, neighbor_state, neighbor_pos, Direction::North);
+                    self.connects_to(world, neighbor_state, neighbor_pos, Direction::North);
                 state.set_value(NORTH, connects)
             }
             Direction::East => {
                 let connects =
-                    Self::connects_to(world, neighbor_state, neighbor_pos, Direction::East);
+                    self.connects_to(world, neighbor_state, neighbor_pos, Direction::East);
                 state.set_value(EAST, connects)
             }
             Direction::South => {
                 let connects =
-                    Self::connects_to(world, neighbor_state, neighbor_pos, Direction::South);
+                    self.connects_to(world, neighbor_state, neighbor_pos, Direction::South);
                 state.set_value(SOUTH, connects)
             }
             Direction::West => {
                 let connects =
-                    Self::connects_to(world, neighbor_state, neighbor_pos, Direction::West);
+                    self.connects_to(world, neighbor_state, neighbor_pos, Direction::West);
                 state.set_value(WEST, connects)
             }
             // Vertical directions don't affect fence connections
@@ -203,6 +208,33 @@ mod tests {
     use crate::test_support::TestLevel;
 
     use super::*;
+
+    #[test]
+    fn fence_connections_respect_material_and_excluded_blocks() {
+        init_vanilla_registry();
+        let level = TestLevel::default();
+        let pos = BlockPos::ZERO;
+        let oak = FenceBlock::new(&vanilla_blocks::OAK_FENCE);
+        let nether = FenceBlock::new(&vanilla_blocks::NETHER_BRICK_FENCE);
+        let connects = |fence: &FenceBlock, block: BlockRef| {
+            fence.connects_to(&level, block.default_state(), pos, Direction::East)
+        };
+
+        assert!(connects(&oak, &vanilla_blocks::BIRCH_FENCE));
+        assert!(connects(&nether, &vanilla_blocks::NETHER_BRICK_FENCE));
+        assert!(!connects(&oak, &vanilla_blocks::NETHER_BRICK_FENCE));
+        assert!(!connects(&nether, &vanilla_blocks::OAK_FENCE));
+        for block in [
+            &vanilla_blocks::PUMPKIN,
+            &vanilla_blocks::CARVED_PUMPKIN,
+            &vanilla_blocks::JACK_O_LANTERN,
+            &vanilla_blocks::MELON,
+        ] {
+            assert!(!connects(&oak, block));
+            assert!(!connects(&nether, block));
+        }
+        assert!(connects(&oak, &vanilla_blocks::STONE));
+    }
 
     #[test]
     fn waterlogged_fence_update_shape_schedules_water_tick() {
