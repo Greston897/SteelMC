@@ -192,7 +192,9 @@ impl BeehiveBlockEntity {
             // Vanilla `BeehiveBlockEntity.releaseOccupant` nudges the bee out of
             // the hive block along the hive's facing.
             let position = entity.position() + glam::DVec3::new(offset.0, offset.1, offset.2);
-            entity.base().set_position_local(position);
+            if let Err(error) = entity.base().try_set_position(position) {
+                log::warn!("Could not position bee released from hive at {pos:?}: {error}");
+            }
         }
     }
 
@@ -373,7 +375,9 @@ impl BeehiveBlockEntity {
 
         let offset = Self::release_offset(facing);
         let position = entity.position() + glam::DVec3::new(offset.0, offset.1, offset.2);
-        entity.base().set_position_local(position);
+        if let Err(error) = entity.base().try_set_position(position) {
+            log::warn!("Could not position bee released from hive at {pos:?}: {error}");
+        }
         true
     }
 

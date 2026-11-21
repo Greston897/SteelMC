@@ -9,6 +9,7 @@ use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{
     BlockStateProperties, Direction, EnumProperty, IntProperty,
 };
+use steel_registry::blocks::shapes::{BooleanOp, VoxelShape, join_is_not_empty};
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_block_entity_types;
 use steel_registry::vanilla_criteria_triggers::BEE_NEST_DESTROYED;
@@ -17,10 +18,11 @@ use steel_registry::{
     REGISTRY, RegistryExt, TaggedRegistryExt, sound_events, vanilla_blocks, vanilla_items,
 };
 use steel_utils::types::UpdateFlags;
-use steel_utils::{BlockPos, BlockStateId, Downcast as _};
+use steel_utils::{BlockLocalAabb, BlockPos, BlockStateId, Downcast as _};
 
-use crate::behavior::InteractionResult;
-use crate::behavior::block::{BlockBehavior, BlockEntityCreation};
+use crate::behavior::block::{BlockBehavior, BlockCollisionContext, BlockEntityCreation};
+use crate::behavior::blocks::CampfireBlock;
+use crate::behavior::{BLOCK_BEHAVIORS, InteractionResult};
 use crate::behavior::context::InventoryAccess;
 use crate::behavior::context::{BlockHitResult, BlockPlaceContext};
 use crate::block_entity::SharedBlockEntity;
@@ -53,6 +55,9 @@ const LEVEL_HONEY: &IntProperty = &BlockStateProperties::LEVEL_HONEY;
 const MAX_HONEY_LEVEL: i32 = 5;
 /// Vanilla `BeehiveBlock` smoke search: a campfire up to this many blocks below.
 const SMOKE_SEARCH_DISTANCE: i32 = 5;
+const SMOKE_COLUMN: VoxelShape = VoxelShape::from_boxes(&[BlockLocalAabb::new(
+    0.375, 0.0, 0.375, 0.625, 1.0, 0.625,
+)]);
 
 impl BeehiveBlock {
     /// Creates a new beehive block behavior.
@@ -61,16 +66,19 @@ impl BeehiveBlock {
         Self { block }
     }
 
-    /// Vanilla `BeehiveBlock.isSmoked`: a campfire or soul campfire underneath.
     fn is_smoked(world: &World, pos: BlockPos) -> bool {
         let mut below = pos;
         for _ in 0..SMOKE_SEARCH_DISTANCE {
             below = below.below();
             let state = world.get_block_state(below);
-            if state.get_block() == &vanilla_blocks::CAMPFIRE
-                || state.get_block() == &vanilla_blocks::SOUL_CAMPFIRE
-            {
+            if CampfireBlock::is_lit_campfire(state) {
                 return true;
+            }
+            let shape = BLOCK_BEHAVIORS
+                .get_behavior(state.get_block())
+                .get_collision_shape(state, world, pos, BlockCollisionContext::empty());
+            if join_is_not_empty(SMOKE_COLUMN, shape, BooleanOp::And) {
+                return CampfireBlock::is_lit_campfire(world.get_block_state(below.below()));
             }
         }
         false
@@ -157,7 +165,7 @@ impl BeehiveBlock {
                     ItemStack::new(&vanilla_items::HONEY_BOTTLE),
                     Prediction::ServerOnly,
                 );
-                hive.on_honey_harvested(state, world, pos, 0, true);
+                hive.on_honey_harvested(state, world, pos, 0, false);
                 if !smoked {
                     Self::anger_bees(world, pos, player);
                 }
@@ -257,18 +265,22 @@ impl BlockBehavior for BeehiveBlock {
         block_entity: Option<&SharedBlockEntity>,
         tool: &ItemStack,
     ) {
-        let Some(hive) = block_entity.and_then(|entity| entity.downcast_ref::<BeehiveBlockEntity>())
+        let Some(hive) =
+            block_entity.and_then(|entity| entity.downcast_ref::<BeehiveBlockEntity>())
         else {
             return;
         };
         let prevents_release = tool.get_enchantments().is_some_and(|enchantments| {
             enchantments.iter().any(|(key, _)| {
-                REGISTRY.enchantments.by_key(key).is_some_and(|enchantment| {
-                    REGISTRY.enchantments.is_in_tag(
-                        enchantment,
-                        &EnchantmentTag::PREVENTS_BEE_SPAWNS_WHEN_MINING,
-                    )
-                })
+                REGISTRY
+                    .enchantments
+                    .by_key(key)
+                    .is_some_and(|enchantment| {
+                        REGISTRY.enchantments.is_in_tag(
+                            enchantment,
+                            &EnchantmentTag::PREVENTS_BEE_SPAWNS_WHEN_MINING,
+                        )
+                    })
             })
         });
         if !prevents_release {
@@ -278,21 +290,6 @@ impl BlockBehavior for BeehiveBlock {
         let mut context = TriggerContext::block(&state.get_block().key, item);
         context.bees_inside = Some(i32::try_from(hive.occupant_count()).unwrap_or(i32::MAX));
         player.trigger_advancement_with_context(&BEE_NEST_DESTROYED, &context);
-    }
-
-    fn random_tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
-        // Vanilla `BeehiveBlock.randomTick` only runs when the hive is smoked:
-        // smoke slowly drops the honey level. Everything else (bee insert/remove)
-        // is driven by the bees themselves.
-        let honey_level = state.get_value(LEVEL_HONEY);
-        if honey_level == 0 || !Self::is_smoked(world, pos) {
-            return;
-        }
-        world.set_block(
-            pos,
-            state.set_value(LEVEL_HONEY, honey_level - 1),
-            UpdateFlags::UPDATE_ALL,
-        );
     }
 }
 
@@ -306,6 +303,36 @@ mod tests {
     };
     use glam::DVec3;
     use steel_utils::ChunkPos;
+
+    #[test]
+    fn smoke_requires_lit_campfire_and_respects_collision_column() {
+        init_globals();
+        let fixture = fresh_test_world("hive_smoke_obstruction");
+        let world = &fixture.world;
+        let pos = BlockPos::new(8, 64, 8);
+        let _holder = insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+        let fire_pos = pos.below().below().below();
+        let lit = vanilla_blocks::CAMPFIRE
+            .default_state()
+            .set_value(&BlockStateProperties::LIT, true);
+        world.set_block(fire_pos, lit, UpdateFlags::UPDATE_CLIENTS);
+        assert!(BeehiveBlock::is_smoked(world, pos));
+        world.set_block(
+            fire_pos,
+            lit.set_value(&BlockStateProperties::LIT, false),
+            UpdateFlags::UPDATE_CLIENTS,
+        );
+        assert!(!BeehiveBlock::is_smoked(world, pos));
+        world.set_block(fire_pos, lit, UpdateFlags::UPDATE_CLIENTS);
+        world.set_block(
+            pos.below(),
+            vanilla_blocks::STONE.default_state(),
+            UpdateFlags::UPDATE_CLIENTS,
+        );
+        assert!(!BeehiveBlock::is_smoked(world, pos));
+        world.set_block(pos.below().below(), lit, UpdateFlags::UPDATE_CLIENTS);
+        assert!(BeehiveBlock::is_smoked(world, pos));
+    }
 
     #[test]
     fn breaking_removed_hive_respects_enchantment_and_releases_occupants() {
