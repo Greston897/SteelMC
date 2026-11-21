@@ -15,7 +15,7 @@ use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
-use steel_registry::data_components::vanilla_components::CUSHION_COLOR;
+use steel_registry::data_components::vanilla_components::{CUSHION_COLOR, CUSTOM_NAME};
 use steel_registry::dye_color::DyeColor;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
@@ -158,6 +158,9 @@ impl CushionEntity {
         let color = self.color();
         let mut stack = ItemStack::new(cushion_item_for_color(color));
         stack.set(CUSHION_COLOR, color);
+        if let Some(name) = self.custom_name() {
+            stack.set(CUSTOM_NAME, name);
+        }
         stack
     }
 
@@ -259,7 +262,7 @@ mod tests {
 
     use glam::DVec3;
     use simdnbt::owned::NbtCompound;
-    use steel_registry::data_components::vanilla_components::CUSHION_COLOR;
+    use steel_registry::data_components::vanilla_components::{CUSHION_COLOR, CUSTOM_NAME};
     use steel_registry::dye_color::DyeColor;
     use steel_registry::item_stack::ItemStack;
     use steel_registry::vanilla_entity_data::CushionEntityData;
@@ -267,6 +270,7 @@ mod tests {
     use steel_utils::Downcast as _;
     use steel_utils::types::{InteractionHand, UpdateFlags};
     use steel_utils::{BlockPos, ChunkPos, WorldAabb};
+    use text_components::TextComponent;
 
     use super::{CushionEntity, cushion_item_for_color};
     use crate::behavior::InteractionResult;
@@ -343,6 +347,7 @@ mod tests {
     fn removing_the_support_drops_the_coloured_item_once() {
         let (fixture, support) = support_fixture("cushion_support_gone");
         let cushion = spawn_cushion(&fixture.world, support);
+        cushion.set_custom_name(Some(TextComponent::plain("Reading Nook")));
 
         assert!(fixture.world.set_block(
             support,
@@ -359,6 +364,10 @@ mod tests {
         assert_eq!(drops.len(), 1, "a cushion must drop exactly one item");
         assert!(drops[0].is(cushion_item_for_color(DyeColor::Red)));
         assert_eq!(drops[0].get(CUSHION_COLOR), Some(&DyeColor::Red));
+        assert_eq!(
+            drops[0].get(CUSTOM_NAME),
+            Some(&TextComponent::plain("Reading Nook"))
+        );
     }
 
     #[test]
