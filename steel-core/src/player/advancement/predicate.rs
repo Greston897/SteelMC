@@ -442,9 +442,15 @@ fn contains_id(expected: &Value, id: &Identifier) -> bool {
 /// Compares a JSON id string against an [`Identifier`], tolerating the
 /// namespace-less shorthand the data pack occasionally uses.
 fn id_matches(value: &str, id: &Identifier) -> bool {
-    value
-        .parse::<Identifier>()
-        .is_ok_and(|expected| expected == *id)
+    let (namespace, path) = value
+        .split_once(':')
+        .unwrap_or((Identifier::VANILLA_NAMESPACE, value));
+    let namespace = if namespace.is_empty() {
+        Identifier::VANILLA_NAMESPACE
+    } else {
+        namespace
+    };
+    id.namespace == namespace && id.path == path && Identifier::validate(namespace, path)
 }
 
 /// Convenience for call sites that hold an [`ItemStack`].
@@ -535,6 +541,11 @@ mod tests {
         assert!(!matches(predicate, &modded));
         assert!(matches(predicate, &vanilla));
         assert!(matches(r#"{"item":{"items":"example:stone"}}"#, &modded));
+        assert!(matches(r#"{"item":{"items":":stone"}}"#, &vanilla));
+        assert!(!matches(
+            r#"{"item":{"items":"example:stone:bad"}}"#,
+            &modded
+        ));
     }
 
     #[test]
