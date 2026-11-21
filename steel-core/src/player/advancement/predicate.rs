@@ -410,11 +410,9 @@ fn contains_item(expected: &Value, item: &Identifier) -> bool {
                 id_matches(value, item)
             }
         }
-        Value::Array(values) => values.iter().any(|value| {
-            value
-                .as_str()
-                .is_some_and(|value| id_matches(value, item))
-        }),
+        Value::Array(values) => values
+            .iter()
+            .any(|value| value.as_str().is_some_and(|value| id_matches(value, item))),
         _ => false,
     }
 }
@@ -436,7 +434,9 @@ fn contains_id(expected: &Value, id: &Identifier) -> bool {
 /// Compares a JSON id string against an [`Identifier`], tolerating the
 /// namespace-less shorthand the data pack occasionally uses.
 fn id_matches(value: &str, id: &Identifier) -> bool {
-    value.parse::<Identifier>().is_ok_and(|expected| expected == *id)
+    value
+        .parse::<Identifier>()
+        .is_ok_and(|expected| expected == *id)
 }
 
 /// Convenience for call sites that hold an [`ItemStack`].
@@ -483,11 +483,11 @@ mod tests {
         steel_registry::init_vanilla_registry();
         let sword = TriggerContext::item(&id("iron_sword"));
         let stone = TriggerContext::item(&id("stone"));
-        let swords = r#"{"item":{"items":"#minecraft:swords"}}"#;
+        let swords = r##"{"item":{"items":"#minecraft:swords"}}"##;
         assert!(matches(swords, &sword));
         assert!(!matches(swords, &stone));
         assert!(!matches(
-            r#"{"item":{"items":"#minecraft:missing_tag"}}"#,
+            r##"{"item":{"items":"#minecraft:missing_tag"}}"##,
             &sword
         ));
     }
@@ -499,10 +499,7 @@ mod tests {
         let predicate = r#"{"item":{"items":"stone"}}"#;
         assert!(!matches(predicate, &modded));
         assert!(matches(predicate, &vanilla));
-        assert!(matches(
-            r#"{"item":{"items":"example:stone"}}"#,
-            &modded
-        ));
+        assert!(matches(r#"{"item":{"items":"example:stone"}}"#, &modded));
     }
 
     #[test]
