@@ -556,7 +556,8 @@ fn apply_block_effect_segment(
                 if let Some(player) = entity.as_player() {
                     player.trigger_advancement_with_context(
                         &ENTER_BLOCK,
-                        &TriggerContext::block(&state.get_block().key, None),
+                        &TriggerContext::block(&state.get_block().key, None)
+                            .with_block_state(state),
                     );
                 }
                 let moved_far = from.distance_squared(to) > 0.999_990_000_000_252_6_f64.powi(2);

@@ -192,7 +192,8 @@ impl BlockItem {
                 if let Some(block_key) = block_key {
                     player.trigger_advancement_with_context(
                         &PLACED_BLOCK,
-                        &TriggerContext::block(&block_key, Some(&item_key)),
+                        &TriggerContext::block(&block_key, Some(&item_key))
+                            .with_block_state(state),
                     );
                 }
             }

@@ -3061,7 +3061,8 @@ pub trait LivingEntity: Entity {
         {
             player.trigger_advancement_with_context(
                 &vanilla_criteria_triggers::SLIDE_DOWN_BLOCK,
-                &TriggerContext::block(&block_state.get_block().key, None),
+                &TriggerContext::block(&block_state.get_block().key, None)
+                    .with_block_state(block_state),
             );
         }
 

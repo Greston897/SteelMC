@@ -14,7 +14,7 @@
 use glam::DVec3;
 use serde_json::Value;
 use steel_registry::{REGISTRY, TaggedRegistryExt, item_stack::ItemStack};
-use steel_utils::Identifier;
+use steel_utils::{BlockStateId, Identifier};
 
 use crate::world::World;
 
@@ -29,6 +29,8 @@ pub struct TriggerContext {
     pub item: Option<Identifier>,
     /// Block involved, when the predicate distinguishes it from the item.
     pub block: Option<Identifier>,
+    /// Exact block state involved in a block criterion.
+    pub block_state: Option<BlockStateId>,
     /// Entity type involved, as a `minecraft:` identifier.
     pub entity_type: Option<Identifier>,
     /// Block position, for `location` and distance predicates.
@@ -71,6 +73,13 @@ impl TriggerContext {
             item: item.cloned(),
             ..Self::default()
         }
+    }
+
+    /// Adds the exact state for block property predicates.
+    #[must_use]
+    pub const fn with_block_state(mut self, state: BlockStateId) -> Self {
+        self.block_state = Some(state);
+        self
     }
 
     /// A context for an entity event, carrying the entity type.
@@ -186,6 +195,9 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
             .block
             .as_ref()
             .is_some_and(|block| contains_holder_set(expected, block, || &REGISTRY.blocks)),
+        "state" => context
+            .block_state
+            .is_some_and(|state| matches_block_state(expected, state)),
         "entity" | "entity_type" => matches_entity_predicate(expected, context),
         // `location` and distance checks.
         "location" => matches_location(expected, context.position),
@@ -218,6 +230,41 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
         // an unrecognised key would be a data-pack field Steel does not model.
         _ => true,
     }
+}
+
+/// Matches vanilla's exact and inclusive ranged state property predicates.
+fn matches_block_state(expected: &Value, state: BlockStateId) -> bool {
+    let Some(predicates) = expected.as_object() else {
+        return false;
+    };
+    let Some(block) = REGISTRY.blocks.by_state_id(state) else {
+        return false;
+    };
+    predicates.iter().all(|(name, expected)| {
+        let Some(property) = block
+            .properties
+            .iter()
+            .find(|property| property.get_name() == name.as_str())
+        else {
+            return false;
+        };
+        let Some(actual) = REGISTRY.blocks.get_property_str(state, name) else {
+            return false;
+        };
+        if let Some(exact) = expected.as_str() {
+            return property.compare_value_names(actual, exact) == Some(std::cmp::Ordering::Equal);
+        }
+        let Some(range) = expected.as_object() else {
+            return false;
+        };
+        range.get("min").is_none_or(|min| {
+            min.as_str().and_then(|min| property.compare_value_names(actual, min))
+                .is_some_and(|order| order != std::cmp::Ordering::Less)
+        }) && range.get("max").is_none_or(|max| {
+            max.as_str().and_then(|max| property.compare_value_names(actual, max))
+                .is_some_and(|order| order != std::cmp::Ordering::Greater)
+        })
+    })
 }
 
 /// Vanilla dimension predicate: a plain key or `{"dimension": "..."}`.
@@ -521,6 +568,34 @@ mod tests {
         ));
         assert!(!matches(r#"{"blocks":"minecraft:stone"}"#, &log));
         assert!(matches(r##"{"block":{"blocks":"#minecraft:logs"}}"##, &log));
+    }
+
+    #[test]
+    fn block_state_properties_require_exact_or_typed_range_matches() {
+        use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+        use steel_registry::blocks::properties::BlockStateProperties;
+        use steel_registry::vanilla_blocks;
+
+        steel_registry::init_vanilla_registry();
+        let state = vanilla_blocks::BEE_NEST
+            .default_state()
+            .set_value(&BlockStateProperties::LEVEL_HONEY, 3);
+        let context = TriggerContext::block(&id("bee_nest"), None).with_block_state(state);
+        assert!(matches(r#"{"state":{"honey_level":"3"}}"#, &context));
+        assert!(!matches(r#"{"state":{"honey_level":"2"}}"#, &context));
+        assert!(matches(r#"{"state":{"honey_level":{"min":"2","max":"3"}}}"#, &context));
+        assert!(!matches(r#"{"state":{"honey_level":{"min":"4"}}}"#, &context));
+        assert!(!matches(r#"{"state":{"honey_level":{"max":"99"}}}"#, &context));
+        assert!(!matches(r#"{"state":{"missing":"3"}}"#, &context));
+        assert!(!matches(r#"{"state":{"honey_level":3}}"#, &context));
+        assert!(!matches(r#"{"state":{}}"#, &TriggerContext::default()));
+
+        let campfire = vanilla_blocks::CAMPFIRE
+            .default_state()
+            .set_value(&BlockStateProperties::LIT, true);
+        let context = TriggerContext::block(&id("campfire"), None).with_block_state(campfire);
+        assert!(matches(r#"{"state":{"lit":{"min":"false"}}}"#, &context));
+        assert!(!matches(r#"{"state":{"lit":{"max":"false"}}}"#, &context));
     }
 
     #[test]
