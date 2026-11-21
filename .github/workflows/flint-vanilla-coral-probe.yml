@@ -31,7 +31,8 @@ jobs:
           distribution: temurin
           java-version: '25'
       - name: Build pinned FlintCLI
-        run: cargo build --manifest-path FlintCLI/Cargo.toml --locked
+        working-directory: FlintCLI
+        run: cargo build --locked
       - name: Fetch verified vanilla 26.3
         run: python3 .ci/download_vanilla_server.py
       - name: Probe original and unobstructed fixture
