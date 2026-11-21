@@ -3,6 +3,8 @@
 
 Diagnostic only: the original input is never replaced in the Steel Flint suite.
 The server and bot are real processes; outputs and exit statuses are preserved.
+The workflow pins an experimental Azalea 26.3 port because FlintCLI's normal
+pinned client only supports 26.2; this is not the official graphical client.
 """
 import argparse
 import hashlib
@@ -70,8 +72,10 @@ def main():
                                             text=True, timeout=240, check=False)
                     print(result.stdout, flush=True)
                     print(f'{name}: FlintCLI exit {result.returncode}', flush=True)
+                    if result.returncode not in (0, 1) or 'tests run:' not in result.stdout:
+                        raise RuntimeError(f'{name}: client did not complete a test; probe is inconclusive')
                 except subprocess.TimeoutExpired as error:
-                    print(f'{name}: TIMEOUT; output={error.stdout!r}', flush=True)
+                    raise RuntimeError(f'{name}: client timed out; probe is inconclusive') from error
                 # Avoid a frozen test world leaking into the next independent case.
                 rcon.command('tick unfreeze')
         finally:

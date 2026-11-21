@@ -35,7 +35,10 @@ jobs:
           set -o pipefail
           cp -a FlintCLI "$RUNNER_TEMP/flint-cli"
           cd "$RUNNER_TEMP/flint-cli"
-          cargo build --locked 2>&1 | tee /tmp/coral-build.log
+          # FlintCLI's pinned Azalea speaks 26.2, not 26.3. Test the same CLI
+          # against an explicitly pinned upstream 26.3 port; do not modify Steel.
+          sed -i 's/rev = "a8959f62"/rev = "8041a14706fbdb2b8c481d2e8960d7411e850796"/' Cargo.toml
+          cargo build 2>&1 | tee /tmp/coral-build.log
       - name: Fetch verified vanilla 26.3
         run: python3 .ci/download_vanilla_server.py
       - name: Probe original and unobstructed fixture
