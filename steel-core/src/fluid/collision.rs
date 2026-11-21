@@ -66,6 +66,7 @@ pub fn can_hold_any_fluid_state(state: BlockStateId) -> bool {
 /// Returns true if a block is in the vanilla fluid exclusion list.
 fn is_fluid_excluded_block(block: BlockRef) -> bool {
     block == &vanilla_blocks::LADDER
+        || block == &vanilla_blocks::CACTUS
         || block == &vanilla_blocks::SUGAR_CANE
         || block == &vanilla_blocks::BUBBLE_COLUMN
         || block == &vanilla_blocks::NETHER_PORTAL
@@ -141,6 +142,17 @@ mod tests {
         assert!(!can_pass_horizontally_internal(
             waterlogged,
             &vanilla_fluids::WATER
+        ));
+    }
+
+    #[test]
+    fn cactus_blocks_fluid_until_its_survival_tick_removes_it() {
+        init_vanilla_registry();
+        assert!(!can_hold_any_fluid_state(
+            vanilla_blocks::CACTUS.default_state()
+        ));
+        assert!(can_hold_any_fluid_state(
+            vanilla_blocks::AIR.default_state()
         ));
     }
 

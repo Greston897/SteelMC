@@ -96,7 +96,7 @@ impl BoneMealItem {
     pub(crate) fn grow_water_plant(
         world: &Arc<World>,
         pos: BlockPos,
-        _clicked_face: Direction,
+        clicked_face: Direction,
     ) -> bool {
         let state = world.get_block_state(pos);
         if state.get_block() != &vanilla_blocks::WATER || !state.get_fluid_state().is_full() {
@@ -110,21 +110,29 @@ impl BoneMealItem {
             return false;
         };
 
-        // Vanilla `BoneMealItem.growWaterPlant` picks a random block from the
-        // `minecraft:underwater_bonemeals` block tag, falling back to seagrass.
-        // The tag holds every coral kind plus seagrass, kelp, and sea pickles, so
-        // bonemeal grows a mixed patch instead of only seagrass.
         let candidates = Self::underwater_bonemeal_blocks();
         let mut rng = rand::rng();
+        let coral_biome = steel_utils::Identifier::vanilla_static("produces_corals_from_bonemeal");
+        let wall_corals = steel_utils::Identifier::vanilla_static("wall_corals");
+        let produces_corals = world
+            .biome_at(pos)
+            .is_some_and(|biome| biome.has_tag(&coral_biome));
 
         'outer: for i in 0..128 {
             let mut new_pos = pos;
-            let new_block = if candidates.is_empty() {
-                &vanilla_blocks::SEAGRASS
-            } else {
-                candidates[rng.random_range(0..candidates.len())]
-            };
-            let new_state = new_block.default_state();
+            let mut new_state = vanilla_blocks::SEAGRASS.default_state();
+            if produces_corals {
+                if i == 0 && clicked_face.is_horizontal() && rng.random_range(0..4) == 0 {
+                    let candidates: Vec<_> = REGISTRY.blocks.iter_tag(&wall_corals).collect();
+                    if !candidates.is_empty() {
+                        new_state = candidates[rng.random_range(0..candidates.len())]
+                            .default_state()
+                            .set_value(&steel_registry::blocks::properties::BlockStateProperties::HORIZONTAL_FACING, clicked_face);
+                    }
+                } else if rng.random_range(0..4) == 0 && !candidates.is_empty() {
+                    new_state = candidates[rng.random_range(0..candidates.len())].default_state();
+                }
+            }
 
             for _ in 0..(i / 16) {
                 new_pos = new_pos.offset(

@@ -112,6 +112,10 @@ impl LightningBoltEntity {
         self.state.lock().visual_only = visual_only;
     }
 
+    fn struck_block_pos(pos: DVec3) -> BlockPos {
+        BlockPos::containing(pos.x, pos.y - 1.0e-6, pos.z)
+    }
+
     /// Vanilla `LightningBolt.tick`'s damage pass.
     fn hit_entities(self: &Arc<Self>) {
         if self.is_visual_only() {
@@ -131,7 +135,9 @@ impl LightningBoltEntity {
         );
         // Vanilla `LightningBolt.tick` first calls `BlockState.onLightningStrike`
         // on the block it landed on, which is what powers lightning rods.
-        let struck_pos = BlockPos::containing(pos.x, pos.y, pos.z);
+        // Vanilla treats a bolt exactly on a block boundary as striking the
+        // block below it, not the air block containing its feet.
+        let struck_pos = Self::struck_block_pos(pos);
         let struck_state = world.get_block_state(struck_pos);
         BLOCK_BEHAVIORS
             .get_behavior(struck_state.get_block())
@@ -258,6 +264,18 @@ mod tests {
             .unwrap_or_else(|error| panic!("reborrow failed: {error}"));
         loaded.load_additional((&borrowed).into());
         assert!(loaded.is_visual_only());
+    }
+
+    #[test]
+    fn strike_position_uses_block_below_exact_y_boundary() {
+        assert_eq!(
+            LightningBoltEntity::struck_block_pos(DVec3::new(0.5, 1.0, 0.5)),
+            BlockPos::new(0, 0, 0)
+        );
+        assert_eq!(
+            LightningBoltEntity::struck_block_pos(DVec3::new(-0.5, 1.5, -0.5)),
+            BlockPos::new(-1, 1, -1)
+        );
     }
 
     #[test]
