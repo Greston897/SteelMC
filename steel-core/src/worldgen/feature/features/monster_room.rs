@@ -122,10 +122,9 @@ impl FeatureDecorationRunner {
                             vanilla_blocks::CHEST.default_state(),
                         );
                         let _ = Self::safe_set_feature_block(region, chest_pos, chest);
-                        if region
-                            .block_entity(chest_pos)
-                            .is_some_and(|entity| entity.downcast_ref::<ChestBlockEntity>().is_some())
-                        {
+                        if region.block_entity(chest_pos).is_some_and(|entity| {
+                            entity.downcast_ref::<ChestBlockEntity>().is_some()
+                        }) {
                             Self::set_loot_table_block_entity(
                                 region,
                                 chest_pos,
