@@ -580,6 +580,9 @@ impl FeatureDecorationRunner {
             panic!("template pool references unknown placed feature {feature_key}");
         };
 
+        // FeaturePoolElement invokes PlacedFeature.place, not its configured
+        // feature directly. Village flowers, for example, rely on the count,
+        // offset and air-filter modifiers before the configured feature runs.
         Self::place_placed_feature_from_modifier(
             region,
             registry,
