@@ -423,6 +423,38 @@ mod tests {
         (report, placed.id)
     }
 
+    /// Documents the ambiguous upstream fixture independently of the valid
+    /// west-face placement scenario above. This does not claim what a real
+    /// vanilla client sends after its teleport acknowledgement.
+    #[test]
+    fn coral_fixture_teleports_player_under_its_target_block() {
+        use steel_registry::entity_data::EntityPose;
+
+        crate::init();
+        let mut world = SteelTestWorld::new();
+        world
+            .set_block([8, 1, 4], &FlintBlock::new("minecraft:stone"))
+            .expect("fixture placement");
+        let mut player = world.create_player();
+        player
+            .teleport([8.5, 0.0, 4.5], Some([-90.0, 0.0]))
+            .expect("teleport");
+        let concrete = player
+            .as_any_mut()
+            .downcast_mut::<SteelTestPlayer>()
+            .expect("steel player");
+        assert_eq!(concrete.player.pose(), EntityPose::Swimming);
+        let (start, end) = concrete.player.get_ray_endpoints();
+        assert!((start.y - 0.4).abs() < 0.001, "{start:?}");
+        assert!(
+            concrete
+                .player
+                .get_world()
+                .clip(start, end, ClipBlockShape::Outline, ClipFluid::None)
+                .is_miss()
+        );
+    }
+
     /// Reproduces the failing Flint player-interaction placement scenarios
     /// through the real world, player, and interaction path used by the Flint
     /// adapter.
