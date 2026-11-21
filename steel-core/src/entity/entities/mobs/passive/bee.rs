@@ -41,6 +41,8 @@ use crate::physics::MoveResult;
 use crate::world::World;
 
 const DEFAULT_STEP_HEIGHT: f32 = 0.6;
+const HAS_STUNG_FLAG: i8 = 4;
+const HAS_NECTAR_FLAG: i8 = 8;
 
 #[entity_behavior(class = "Bee", spawn_rule)]
 /// Vanilla bee entity.
@@ -115,6 +117,34 @@ impl BeeEntity {
         }
     }
 
+    /// Whether this bee carries nectar, synchronized to clients in vanilla's flag byte.
+    #[must_use]
+    pub fn has_nectar(&self) -> bool {
+        *self.entity_data.lock().flags.get() & HAS_NECTAR_FLAG != 0
+    }
+
+    /// Sets the synchronized nectar flag.
+    pub fn set_has_nectar(&self, value: bool) {
+        self.set_bee_flag(HAS_NECTAR_FLAG, value);
+    }
+
+    /// Whether this bee has used its sting.
+    #[must_use]
+    pub fn has_stung(&self) -> bool {
+        *self.entity_data.lock().flags.get() & HAS_STUNG_FLAG != 0
+    }
+
+    /// Sets the synchronized sting flag.
+    pub fn set_has_stung(&self, value: bool) {
+        self.set_bee_flag(HAS_STUNG_FLAG, value);
+    }
+
+    fn set_bee_flag(&self, mask: i8, value: bool) {
+        let mut data = self.entity_data.lock();
+        let flags = *data.flags.get();
+        data.flags.set(if value { flags | mask } else { flags & !mask });
+    }
+
     fn update_dirty_mob_effect_entity_data(&self) {
         if let Some(display) = sync_dirty_mob_effects(&self.living_base, &self.entity_data) {
             self.entity_data
@@ -178,12 +208,16 @@ impl Entity for BeeEntity {
         self.save_mob(nbt);
         self.save_ageable_mob(nbt);
         self.save_animal(nbt);
+        nbt.insert("HasNectar", i8::from(self.has_nectar()));
+        nbt.insert("HasStung", i8::from(self.has_stung()));
     }
 
     fn load_additional(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_mob(nbt);
         self.load_ageable_mob(nbt);
         self.load_animal(nbt);
+        self.set_has_nectar(nbt.byte("HasNectar").is_some_and(|value| value != 0));
+        self.set_has_stung(nbt.byte("HasStung").is_some_and(|value| value != 0));
     }
 }
 

@@ -10,7 +10,7 @@ use steel_registry::{vanilla_block_entity_types, vanilla_entities};
 use steel_utils::geometry::WorldAabb;
 use steel_utils::nbt::NbtNumeric as _;
 use steel_utils::types::UpdateFlags;
-use steel_utils::{BlockPos, BlockStateId, DowncastType, DowncastTypeKey, locks::SyncMutex};
+use steel_utils::{BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey, locks::SyncMutex};
 
 use std::sync::Arc;
 
@@ -21,6 +21,7 @@ use steel_registry::blocks::properties::{
 
 use crate::behavior::{BLOCK_BEHAVIORS, BlockCollisionContext};
 use crate::block_entity::{BlockEntity, BlockEntityBase};
+use crate::entity::entities::BeeEntity;
 use crate::entity::{EntitySpawnReason, SharedEntity, load_entity_recursive_owned};
 use crate::world::{LevelReader as _, World};
 
@@ -408,6 +409,13 @@ impl BeehiveBlockEntity {
             return None;
         }
         entity.set_no_gravity(true);
+        // Normal release after nectar delivery clears the bee's nectar. An
+        // emergency release keeps it, just as vanilla does.
+        if !emergency && occupant.has_nectar()
+            && let Some(bee) = entity.downcast_ref::<BeeEntity>()
+        {
+            bee.set_has_nectar(false);
+        }
         if let Some(animal) = entity.as_animal() {
             if !animal.is_age_locked() {
                 let age = animal.get_age();
@@ -517,6 +525,38 @@ mod tests {
         assert_eq!(animal.get_age(), -900);
         assert_eq!(animal.in_love_time(), 1900);
         assert!(released.position().z < f64::from(pos.z()));
+    }
+
+    #[test]
+    fn nectar_and_sting_flags_survive_emergency_but_delivery_clears_nectar() {
+        init_globals();
+        let fixture = fresh_test_world("hive_bee_flags");
+        let world = &fixture.world;
+        let pos = BlockPos::new(8, 64, 8);
+        let _holder = insert_ready_full_chunk(world, ChunkPos::from_block_pos(pos));
+        let mut occupant = BeeOccupant::worldgen(0);
+        occupant.entity_data.insert("HasNectar", 1_i8);
+        occupant.entity_data.insert("HasStung", 1_i8);
+
+        let emergency = BeehiveBlockEntity::spawn_released_bee(
+            world, pos, Direction::North, &occupant, true,
+        )
+        .expect("emergency bee should load");
+        let bee = emergency.downcast_ref::<BeeEntity>().expect("released bee");
+        assert!(bee.has_nectar());
+        assert!(bee.has_stung());
+        let mut saved = NbtCompound::new();
+        bee.save_additional(&mut saved);
+        assert_eq!(saved.byte("HasNectar"), Some(1));
+        assert_eq!(saved.byte("HasStung"), Some(1));
+
+        let normal = BeehiveBlockEntity::spawn_released_bee(
+            world, pos, Direction::North, &occupant, false,
+        )
+        .expect("delivering bee should load");
+        let bee = normal.downcast_ref::<BeeEntity>().expect("released bee");
+        assert!(!bee.has_nectar());
+        assert!(bee.has_stung());
     }
 
     #[test]
