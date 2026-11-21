@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use steel_macros::block_behavior;
 use steel_registry::blocks::BlockRef;
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId, Direction};
 
@@ -84,12 +85,8 @@ impl BlockBehavior for WeatheringLightningRodBlock {
             world.set_block(pos, next_state, UpdateFlags::UPDATE_ALL);
         }
         // The rod lights up using the state actually present after oxidation.
-        LightningRodBlock::strike(
-            self.lightning_rod.block_ref(),
-            world.get_block_state(pos),
-            world,
-            pos,
-        );
+        let struck_state = world.get_block_state(pos);
+        LightningRodBlock::strike(struck_state.get_block(), struck_state, world, pos);
     }
 
     fn tick(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {

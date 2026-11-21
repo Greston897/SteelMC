@@ -65,6 +65,10 @@ impl LightningRodBlock {
 }
 
 impl BlockBehavior for LightningRodBlock {
+    fn on_lightning_strike(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        Self::strike(self.block, state, world, pos);
+    }
+
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(
             self.block
@@ -165,4 +169,33 @@ impl BlockBehavior for LightningRodBlock {
     }
 
     // `animateTick` emits client-local particles only.
+}
+
+#[cfg(test)]
+mod tests {
+    use steel_registry::{init_vanilla_registry, vanilla_blocks};
+    use steel_utils::ChunkPos;
+
+    use super::*;
+    use crate::behavior::init_behaviors;
+    use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
+
+    #[test]
+    fn waxed_rod_strike_powers_and_then_unpowers_the_rod() {
+        init_vanilla_registry();
+        init_behaviors();
+        let fixture = fresh_test_world("waxed_rod_strike");
+        let world = &fixture.world;
+        let pos = BlockPos::new(8, 64, 8);
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let state = vanilla_blocks::WAXED_LIGHTNING_ROD.default_state();
+        assert!(world.set_block(pos, state, UpdateFlags::UPDATE_ALL));
+        let behavior = LightningRodBlock::new(&vanilla_blocks::WAXED_LIGHTNING_ROD);
+        behavior.on_lightning_strike(state, world, pos);
+        let powered = world.get_block_state(pos);
+        assert!(powered.get_value(POWERED));
+        assert!(world.has_scheduled_block_tick(pos, &vanilla_blocks::WAXED_LIGHTNING_ROD));
+        behavior.tick(powered, world, pos);
+        assert!(!world.get_block_state(pos).get_value(POWERED));
+    }
 }
