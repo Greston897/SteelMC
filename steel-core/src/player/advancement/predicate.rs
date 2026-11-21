@@ -13,7 +13,7 @@
 
 use glam::DVec3;
 use serde_json::Value;
-use steel_registry::{REGISTRY, RegistryExt, TaggedRegistryExt, item_stack::ItemStack};
+use steel_registry::{REGISTRY, TaggedRegistryExt, item_stack::ItemStack};
 use steel_utils::Identifier;
 
 use crate::world::World;
@@ -181,7 +181,11 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
         // `consume_item`, `using_item`, `item_used_on_block` and friends.
         "item" => matches_item_predicate(expected, context.item.as_ref()),
         "block" => matches_id_predicate(expected, context.block.as_ref()),
-        // `bee_nest_destroyed` and similar carry the block as `block`.
+        // Enter-block, slide-down-block and bee-nest triggers use a holder set.
+        "blocks" => context
+            .block
+            .as_ref()
+            .is_some_and(|block| contains_holder_set(expected, block, &REGISTRY.blocks)),
         "entity" | "entity_type" => matches_entity_predicate(expected, context),
         // `location` and distance checks.
         "location" => matches_location(expected, context.position),
@@ -275,7 +279,7 @@ fn matches_item_predicate(expected: &Value, item: Option<&Identifier>) -> bool {
     match expected {
         Value::Object(map) => {
             if let Some(items) = map.get("items") {
-                contains_item(items, item)
+                contains_holder_set(items, item, &REGISTRY.items)
             } else if let Some(tag) = map.get("tag") {
                 // Tags are not resolved here; a tag predicate is treated as a
                 // match so criteria using tags are not silently lost.
@@ -297,7 +301,7 @@ fn matches_id_predicate(expected: &Value, id: Option<&Identifier>) -> bool {
     match expected {
         Value::Object(map) => map
             .get("blocks")
-            .is_none_or(|blocks| contains_id(blocks, id)),
+            .is_none_or(|blocks| contains_holder_set(blocks, id, &REGISTRY.blocks)),
         Value::String(value) => id_matches(value, id),
         _ => true,
     }
@@ -311,7 +315,7 @@ fn matches_entity_predicate(expected: &Value, context: &TriggerContext) -> bool 
     match expected {
         Value::Object(map) => map
             .get("type")
-            .is_none_or(|value| contains_id(value, entity)),
+            .is_none_or(|value| contains_holder_set(value, entity, &REGISTRY.entity_types)),
         Value::String(value) => id_matches(value, entity),
         _ => true,
     }
@@ -395,25 +399,28 @@ fn is_unconstrained(expected: &Value) -> bool {
     }
 }
 
-/// Evaluate an item holder set: one item, a tag, or a list of items.
-fn contains_item(expected: &Value, item: &Identifier) -> bool {
+/// Evaluate a registry holder set: one entry, a tag, or a list of entries.
+fn contains_holder_set<R: TaggedRegistryExt>(
+    expected: &Value,
+    id: &Identifier,
+    registry: &R,
+) -> bool {
     match expected {
         Value::String(value) => {
             if let Some(tag) = value.strip_prefix('#') {
                 let Ok(tag) = tag.parse::<Identifier>() else {
                     return false;
                 };
-                REGISTRY
-                    .items
-                    .by_key(item)
-                    .is_some_and(|entry| REGISTRY.items.is_in_tag(entry, &tag))
+                registry
+                    .by_key(id)
+                    .is_some_and(|entry| registry.is_in_tag(entry, &tag))
             } else {
-                id_matches(value, item)
+                id_matches(value, id)
             }
         }
         Value::Array(values) => values
             .iter()
-            .any(|value| value.as_str().is_some_and(|value| id_matches(value, item))),
+            .any(|value| value.as_str().is_some_and(|value| id_matches(value, id))),
         _ => false,
     }
 }
@@ -491,6 +498,33 @@ mod tests {
             r##"{"item":{"items":"#minecraft:missing_tag"}}"##,
             &sword
         ));
+    }
+
+    #[test]
+    fn block_holder_sets_match_actual_block_not_just_any_event() {
+        steel_registry::init_vanilla_registry();
+        let log = TriggerContext::block(&id("oak_log"), None);
+        let stone = TriggerContext::block(&id("stone"), None);
+        let tag = r##"{"blocks":"#minecraft:logs"}"##;
+        assert!(matches(tag, &log));
+        assert!(!matches(tag, &stone));
+        assert!(!matches(tag, &TriggerContext::default()));
+        assert!(matches(
+            r#"{"blocks":["minecraft:stone","minecraft:oak_log"]}"#,
+            &log
+        ));
+        assert!(!matches(r#"{"blocks":"minecraft:stone"}"#, &log));
+        assert!(matches(r##"{"block":{"blocks":"#minecraft:logs"}}"##, &log));
+    }
+
+    #[test]
+    fn entity_type_holder_set_resolves_tags() {
+        steel_registry::init_vanilla_registry();
+        let bee = TriggerContext::entity(&id("bee"));
+        let cow = TriggerContext::entity(&id("cow"));
+        let arthropods = r##"{"entity":{"type":"#minecraft:arthropod"}}"##;
+        assert!(matches(arthropods, &bee));
+        assert!(!matches(arthropods, &cow));
     }
 
     #[test]
