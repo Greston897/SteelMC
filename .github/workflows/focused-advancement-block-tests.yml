@@ -35,7 +35,7 @@ jobs:
           from pathlib import Path
           text = Path('/tmp/focused-regressions.log').read_text()
           counts = [int(n) for n in re.findall(r'test result: ok\. (\d+) passed;', text)]
-          assert len(counts) == 3 and counts[0] >= 10 and counts[1] >= 1 and counts[2] >= 3, counts
+          assert len(counts) == 3 and counts[0] >= 10 and counts[1] >= 1 and counts[2] >= 4, counts
           PY
       - name: Publish results
         if: always()

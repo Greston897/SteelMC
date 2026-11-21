@@ -155,46 +155,19 @@ impl BeehiveBlockEntity {
         self.state.lock().stored.is_empty()
     }
 
-    /// Vanilla `BeehiveBlockEntity.releaseAllOccupants`: spawns every stored bee
-    /// just outside the hive and clears it.
+    /// Releases stored bees, retaining occupants that could not be spawned.
     pub fn release_all_bees(&self, world: &Arc<World>, pos: BlockPos) {
-        let released = {
-            let mut guard = self.state.lock();
-            take(&mut guard.stored)
-        };
-        if released.is_empty() {
-            return;
-        }
-        BlockEntity::set_changed(self);
-
-        // Vanilla `BeehiveBlockEntity.releaseOccupant` offsets each bee by the
-        // hive's facing direction so they do not all spawn inside the block.
         let facing = self.state_facing();
-        let offset = Self::release_offset(facing);
-
-        for _ in released {
-            let request = EntitySpawnRequest {
-                entity_type: &vanilla_entities::BEE,
-                placement: EntitySpawnPlacement::Block {
-                    pos,
-                    try_move_down: false,
-                    moved_up: false,
-                },
-                reason: EntitySpawnReason::Beehive,
-                finalize_spawn: true,
-                play_ambient_sound: false,
-                item_stack: None,
-                user_is_operator: false,
-            };
-            let Ok(entity) = spawn_entity(world, request) else {
-                continue;
-            };
-            // Vanilla `BeehiveBlockEntity.releaseOccupant` nudges the bee out of
-            // the hive block along the hive's facing.
-            let position = entity.position() + glam::DVec3::new(offset.0, offset.1, offset.2);
-            if let Err(error) = entity.base().try_set_position(position) {
-                log::warn!("Could not position bee released from hive at {pos:?}: {error}");
-            }
+        let changed = {
+            let mut guard = self.state.lock();
+            let before = guard.stored.len();
+            guard
+                .stored
+                .retain(|_| !Self::spawn_released_bee(world, pos, facing));
+            guard.stored.len() != before
+        };
+        if changed {
+            BlockEntity::set_changed(self);
         }
     }
 

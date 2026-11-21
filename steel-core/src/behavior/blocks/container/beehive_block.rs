@@ -303,6 +303,22 @@ mod tests {
     use steel_utils::types::UpdateFlags;
 
     #[test]
+    fn failed_release_keeps_bees_in_the_hive() {
+        init_globals();
+        let fixture = fresh_test_world("hive_failed_release");
+        let world = &fixture.world;
+        let pos = BlockPos::new(1000, 64, 1000);
+        let hive = BeehiveBlockEntity::new(
+            Arc::downgrade(world),
+            pos,
+            vanilla_blocks::BEE_NEST.default_state(),
+        );
+        hive.store_worldgen_bee(0);
+        hive.release_all_bees(world, pos);
+        assert_eq!(hive.occupant_count(), 1);
+    }
+
+    #[test]
     fn smoke_requires_lit_campfire_and_respects_collision_column() {
         init_globals();
         let fixture = fresh_test_world("hive_smoke_obstruction");
