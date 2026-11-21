@@ -454,10 +454,10 @@ mod tests {
         assert!(world.set_block(pos, state, UpdateFlags::UPDATE_ALL));
         let player = TestPlayerBuilder::new(Arc::clone(world), "CreativeBottler", 1).build();
         player.set_game_mode(GameType::Creative);
-        player.inventory.lock().set_selected_item(ItemStack::with_count(
-            &vanilla_items::GLASS_BOTTLE,
-            2,
-        ));
+        player
+            .inventory
+            .lock()
+            .set_selected_item(ItemStack::with_count(&vanilla_items::GLASS_BOTTLE, 2));
         let mut inventory =
             InventoryAccess::new(Arc::clone(&player.inventory), InteractionHand::MainHand);
         assert_eq!(
@@ -492,7 +492,11 @@ mod tests {
             InteractionResult::Success
         );
         assert_eq!(
-            player.inventory.lock().get_selected_item().get_damage_value(),
+            player
+                .inventory
+                .lock()
+                .get_selected_item()
+                .get_damage_value(),
             1
         );
     }
