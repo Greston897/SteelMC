@@ -104,6 +104,7 @@ use steel_protocol::packets::game::{
 };
 use steel_protocol::packets::game::{CLevelEvent, CSetEntityData, CSetExperience};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::blocks::properties::TestBlockMode;
 use steel_registry::entity_data::{EntityPose, HumanoidArm, ParticleList};
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::game_rules::GameRuleRef;
@@ -491,7 +492,6 @@ impl PlayerResidenceState {
 
 /// Vanilla `TestBlockMode` wire ordinal (`ByIdMap` maps unknown ids to `START`).
 const fn test_mode_from_ordinal(ordinal: i32) -> TestBlockMode {
-    use steel_registry::blocks::properties::TestBlockMode;
     match ordinal {
         1 => TestBlockMode::Log,
         2 => TestBlockMode::Fail,

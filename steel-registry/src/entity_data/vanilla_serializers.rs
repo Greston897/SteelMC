@@ -3,14 +3,6 @@
 //! This module registers all vanilla entity data serializers in the exact order
 //! they appear in vanilla's `EntityDataSerializers.java`. The registration order
 //! determines the serializer ID used in the network protocol.
-#![cfg_attr(
-    test,
-    expect(
-        clippy::unwrap_used,
-        reason = "vanilla entity data serializer tests unwrap generated registry invariants"
-    )
-)]
-
 use std::io;
 
 use steel_utils::{

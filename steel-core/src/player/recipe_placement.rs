@@ -25,7 +25,7 @@ use crate::inventory::lock::ContainerId;
 use crate::inventory::lock::ContainerLockGuard;
 use crate::inventory::recipe_manager::find_recipe;
 use crate::inventory::slots::CraftingHandler;
-use crate::inventory::slots::ResultHandler::update_result;
+use crate::inventory::slots::ResultHandler as _;
 use crate::player::Player;
 use crate::player::player_inventory::Prediction::Predicted;
 use std::mem::take;
@@ -878,7 +878,7 @@ pub fn apply_plan(
         container.set_changed();
     }
 
-    update_result(handler, guard);
+    handler.update_result(guard);
     plan.action
 }
 

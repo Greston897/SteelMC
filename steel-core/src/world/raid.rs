@@ -9,7 +9,9 @@ use glam::IVec3;
 use steel_math::trig::cos;
 use steel_math::trig::sin;
 use steel_protocol::packets::game::CTakeItemEntity;
+use steel_registry::data_components::vanilla_components::ENCHANTMENTS;
 use steel_registry::entity_type::EntityTypeRef;
+use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_blocks::SNOW;
 use steel_registry::vanilla_criteria_triggers::HERO_OF_THE_VILLAGE;
 use steel_registry::vanilla_game_rules::RAIDS;
@@ -26,15 +28,15 @@ use steel_registry::{
 };
 
 use crate::chunk::heightmap::HeightmapType;
-use crate::entity::Entity::is_alive;
-use crate::entity::LivingEntity::is_alive;
+use crate::entity::Entity;
+use crate::entity::LivingEntity;
+use crate::entity::MobEffectInstance;
 use crate::entity::PathfinderMob;
 use crate::entity::RemovalReason::Discarded;
 use crate::entity::SharedEntity;
 use crate::entity::entities::objects::items::ItemEntity;
 use crate::entity::spawn::{EntitySpawnPlacement, EntitySpawnReason, EntitySpawnRequest};
 use crate::entity::spawn_entity;
-use crate::entity::{Entity as _, LivingEntity as _, MobEffectInstance};
 use crate::inventory::equipment::EquipmentSlot::Head;
 use crate::inventory::equipment::EquipmentSlot::MainHand;
 use crate::player::advancement::predicate::TriggerContext;
@@ -461,8 +463,7 @@ impl RaidManager {
     /// Shared eligibility for the MOVE-controlled captain-banner goal.
     pub(crate) fn can_pick_up_captain_banner(&self, mob: &dyn PathfinderMob) -> bool {
         use crate::inventory::equipment::EquipmentSlot;
-        use steel_registry::item_stack::ItemStack;
-        if !is_alive(mob)
+        if !LivingEntity::is_alive(mob)
             || !(mob.entity_type() == &vanilla_entities::PILLAGER
                 || mob.entity_type() == &vanilla_entities::VINDICATOR
                 || mob.entity_type() == &vanilla_entities::EVOKER
@@ -496,7 +497,6 @@ impl RaidManager {
         world: &Arc<World>,
     ) {
         use crate::inventory::equipment::EquipmentSlot;
-        use steel_registry::item_stack::ItemStack;
         let Some(mob) = entity.as_pathfinder_mob() else {
             return;
         };
@@ -756,7 +756,10 @@ impl RaidManager {
 
     fn award_hero_of_the_village(world: &Arc<World>, raid: &Raid) {
         world.players.iter_players(|uuid, player| {
-            if !raid.heroes.contains(uuid) || !is_alive(player.as_ref()) || player.is_spectator() {
+            if !raid.heroes.contains(uuid)
+                || !Entity::is_alive(player.as_ref())
+                || player.is_spectator()
+            {
                 return true;
             }
             player.add_mob_effect(MobEffectInstance::with_duration(
@@ -929,7 +932,7 @@ pub(crate) fn ominous_banner() -> ItemStack {
 
 // Vanilla Pillager/Vindicator.applyRaidBuffs selects extracted providers by wave.
 fn raid_weapon(kind: usize, wave: i32, omen: i32, roll: f32) -> Option<ItemStack> {
-    use steel_registry::data_components::vanilla_components::{ENCHANTMENTS, ItemEnchantments};
+    use steel_registry::data_components::vanilla_components::ItemEnchantments;
     use steel_registry::{vanilla_enchantment_providers as providers, vanilla_items};
     let odds = match omen {
         1 => 0.1,
@@ -1300,6 +1303,7 @@ mod lifecycle_tests {
     use crate::entity::damage::DamageSource;
     use crate::inventory::equipment::EquipmentSlot::Head;
     use crate::test_support::{fresh_test_world_with_difficulty, insert_ready_full_chunk};
+    use steel_registry::data_components::vanilla_components::BANNER_PATTERNS;
     use steel_registry::vanilla_damage_types::GENERIC;
     use steel_utils::ChunkPos;
 

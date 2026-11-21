@@ -12,7 +12,7 @@
 //! table in `unpackLootTable`, which is what this module mirrors.
 
 use rand::{Rng, RngExt as _};
-use simdnbt::borrow::NbtCompound;
+use simdnbt::borrow::NbtCompound as BorrowedNbtCompound;
 use simdnbt::owned::NbtCompound;
 use std::mem::take;
 use steel_registry::REGISTRY;
@@ -53,7 +53,7 @@ impl RandomizableContainer {
     ///
     /// Every container block entity reads the same two fields, so the parse
     /// lives here instead of being repeated per container.
-    pub fn load_from_nbt(nbt: NbtCompound<'_, '_>, loot: &SyncMutex<Self>) {
+    pub fn load_from_nbt(nbt: BorrowedNbtCompound<'_, '_>, loot: &SyncMutex<Self>) {
         use std::str::FromStr as _;
         use steel_utils::nbt::NbtValueInput as _;
 

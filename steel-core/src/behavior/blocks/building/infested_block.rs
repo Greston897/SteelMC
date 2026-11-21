@@ -15,8 +15,8 @@ use steel_protocol::packets::game::SoundSource::Blocks;
 use steel_registry::REGISTRY;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
-use steel_registry::blocks::properties::PropertyEnum::as_str;
-use steel_registry::blocks::properties::{BlockStateProperties, Direction};
+use steel_registry::blocks::properties::PropertyEnum;
+use steel_registry::blocks::properties::{BlockStateProperties, Direction, Pose};
 use steel_registry::sound_events::BLOCK_DRIED_GHAST_TRANSITION;
 use steel_registry::sound_events::BLOCK_FROGSPAWN_HATCH;
 use steel_registry::sound_events::ENTITY_COPPER_GOLEM_BECOME_STATUE;
@@ -721,7 +721,10 @@ impl BlockBehavior for CopperGolemStatueBlock {
 
         let pose = state.get_value(&BlockStateProperties::COPPER_GOLEM_POSE);
         let mut properties = BTreeMap::new();
-        properties.insert("copper_golem_pose".to_owned(), as_str(&pose).to_owned());
+        properties.insert(
+            "copper_golem_pose".to_owned(),
+            PropertyEnum::as_str(&pose).to_owned(),
+        );
         stack.set(BLOCK_STATE, BlockItemStateProperties::new(properties));
         Some(stack)
     }
@@ -740,8 +743,6 @@ impl BlockBehavior for CopperGolemStatueBlock {
         _pos: BlockPos,
         _direction: steel_utils::Direction,
     ) -> i32 {
-        use steel_registry::blocks::properties::Pose;
-
         match state.get_value(&BlockStateProperties::COPPER_GOLEM_POSE) {
             Pose::Standing => 1,
             Pose::Sitting => 2,
@@ -754,8 +755,6 @@ impl BlockBehavior for CopperGolemStatueBlock {
 /// Vanilla `CopperGolemStatueBlock.Pose.getNextPose`: `ByIdMap.continuous`
 /// wraps past the last pose instead of clamping.
 const fn next_statue_pose(pose: Pose) -> Pose {
-    use steel_registry::blocks::properties::Pose;
-
     match pose {
         Pose::Standing => Pose::Sitting,
         Pose::Sitting => Pose::Running,

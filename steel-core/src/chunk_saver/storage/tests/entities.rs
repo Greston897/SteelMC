@@ -1,6 +1,5 @@
 use super::*;
-use crate::block_entity::BlockEntity::collect_components;
-use crate::block_entity::BlockEntity::save_without_metadata;
+use crate::block_entity::BlockEntity as BlockEntityTrait;
 use crate::block_entity::SharedBlockEntity;
 use crate::block_entity::entities::UnimplementedBlockEntity;
 use crate::entity::{ENTITY_LOAD_MAX_HORIZONTAL_POSITION, ENTITY_LOAD_MAX_VERTICAL_POSITION};
@@ -209,8 +208,11 @@ fn owned_block_entity_load_preserves_stored_components() {
         fallback_nbt,
     )
     .expect("fallback block entity should load NBT");
-    assert_eq!(collect_components(&fallback).get(REPAIR_COST), Some(3));
-    let saved = save_without_metadata(&fallback);
+    assert_eq!(
+        BlockEntityTrait::collect_components(&fallback).get(REPAIR_COST),
+        Some(3)
+    );
+    let saved = BlockEntityTrait::save_without_metadata(&fallback);
     assert_eq!(saved.int("marker"), Some(7));
 }
 

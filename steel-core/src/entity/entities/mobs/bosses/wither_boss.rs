@@ -14,6 +14,7 @@ use simdnbt::owned::NbtCompound;
 use steel_macros::entity_behavior;
 use steel_math::trig::cos;
 use steel_math::trig::sin;
+use steel_protocol::packets::game::CBossEvent;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::item_stack::ItemStack;
@@ -23,6 +24,7 @@ use steel_registry::vanilla_entities::WIND_CHARGE;
 use steel_registry::vanilla_entities::WITHER;
 use steel_registry::vanilla_entities::WITHER_SKULL;
 use steel_registry::vanilla_entity_data::WitherEntityData;
+use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
 use steel_registry::vanilla_game_rules::MOB_GRIEFING;
 use steel_registry::vanilla_items::NETHER_STAR;
 use steel_registry::{TaggedRegistryExt as _, level_events, sound_events, vanilla_attributes};
@@ -140,7 +142,7 @@ impl WitherBossEntity {
 
     /// Full bar pairing is sent only to players actually tracking this boss.
     pub(crate) fn boss_bar_packet(&self) -> CBossEvent {
-        use steel_protocol::packets::game::{BossBarColor, BossBarOverlay, CBossEvent};
+        use steel_protocol::packets::game::{BossBarColor, BossBarOverlay};
         CBossEvent::add(
             self.uuid(),
             self.display_name(),
@@ -232,7 +234,6 @@ impl WitherBossEntity {
 
     #[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
     fn tick_side_heads(&self, shooter: &SharedEntity) {
-        use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
         let Some(world) = self.level() else {
             return;
         };
@@ -545,7 +546,6 @@ impl LivingEntity for WitherBossEntity {
 
     fn is_invulnerable_to(&self, _world: &World, source: &DamageSource) -> bool {
         use steel_registry::vanilla_damage_type_tags::DamageTypeTag;
-        use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
         self.default_is_invulnerable_to(source)
             || is_immune_to_damage(self, source)
             || source.is(&DamageTypeTag::WITHER_IMMUNE_TO)

@@ -16,6 +16,7 @@ use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_blocks::TRAPPED_CHEST;
 use steel_registry::vanilla_game_events::CONTAINER_CLOSE;
 use steel_registry::vanilla_game_events::CONTAINER_OPEN;
+use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
 
 use crate::entity::Entity as _;

@@ -10,11 +10,11 @@
 //! Vanilla's `RconConsoleSource` collects output into a buffer and sends it once
 //! the command finishes; that is exactly what the reply channel here models.
 
-use std::error::Error;
+use std::error::Error as StdError;
 use std::fmt::Display;
 use std::fmt::Formatter;
-use std::fmt::Result;
-use std::io::Error;
+use std::fmt::Result as FmtResult;
+use std::io::Error as IoError;
 use std::io::ErrorKind::UnexpectedEof;
 use std::io::Result;
 use std::str::from_utf8;
@@ -81,18 +81,18 @@ impl RconPacket {
 #[derive(Debug)]
 pub enum RconError {
     /// The listener could not bind its port.
-    Bind(Error),
+    Bind(IoError),
 }
 
 impl Display for RconError {
-    fn fmt(&self, formatter: &mut Formatter<'_>) -> Result {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> FmtResult {
         match self {
             Self::Bind(error) => write!(formatter, "failed to bind the RCON port: {error}"),
         }
     }
 }
 
-impl Error for RconError {}
+impl StdError for RconError {}
 
 /// Runs the RCON listener until the server shuts down.
 ///

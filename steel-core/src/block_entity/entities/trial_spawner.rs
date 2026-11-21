@@ -29,8 +29,7 @@ use uuid::Uuid;
 
 use crate::behavior::block::drop_from_block_interact_loot_table;
 use crate::block_entity::{BlockEntity, BlockEntityBase};
-use crate::entity::LivingEntity::is_alive;
-use crate::entity::{ENTITIES, Entity as _, LivingEntity as _, MobEffectInstance, next_entity_id};
+use crate::entity::{ENTITIES, Entity as _, LivingEntity, MobEffectInstance, next_entity_id};
 use crate::world::World;
 
 const PLAYER_DETECT_RANGE: f64 = 14.0;
@@ -137,7 +136,7 @@ impl TrialSpawnerBlockEntity {
         world.players.iter_players(|_uuid, player| {
             if player.is_spectator()
                 || player.has_infinite_materials()
-                || !is_alive(player.as_ref())
+                || !LivingEntity::is_alive(player.as_ref())
                 || player.position().distance_squared(center) > max_sq
             {
                 return true;

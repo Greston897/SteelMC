@@ -10,7 +10,9 @@ use std::sync::{Arc, Weak};
 use simdnbt::borrow::BaseNbtCompound as BorrowedNbtCompound;
 use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use simdnbt::owned::{NbtCompound, NbtTag};
-use steel_registry::blocks::properties::CreakingHeartState::Awake;
+use steel_registry::blocks::properties::{
+    Axis, BlockStateProperties, CreakingHeartState, CreakingHeartState::Awake,
+};
 use steel_registry::vanilla_block_entity_types;
 use steel_registry::vanilla_damage_types::GENERIC_KILL;
 use steel_registry::vanilla_game_rules::SPAWN_MOBS;
@@ -158,7 +160,6 @@ impl CreakingHeartBlockEntity {
         pos: BlockPos,
         state: BlockStateId,
     ) -> CreakingHeartState {
-        use steel_registry::blocks::properties::{Axis, BlockStateProperties, CreakingHeartState};
         let axis = state
             .try_get_value(&BlockStateProperties::AXIS)
             .unwrap_or(Axis::Y);

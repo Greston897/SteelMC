@@ -13,7 +13,7 @@ use crate::entity::consume_effect::apply_consume_effect;
 use crate::entity::damage::RecentDamageSource;
 use crate::entity::pushing::EntityPush;
 use crate::player::advancement::predicate::TriggerContext;
-use crate::world::LevelAccessor::set_block_state;
+use crate::world::LevelAccessor;
 
 const BED_SLEEP_POSITION_OFFSET: f64 = 0.125;
 
@@ -3853,7 +3853,7 @@ pub fn create_wither_rose(dead: &dyn Entity, source: &DamageSource) {
     {
         return;
     }
-    set_block_state(&world, pos, rose, UpdateFlags::UPDATE_ALL);
+    world.set_block_state(pos, rose, UpdateFlags::UPDATE_ALL);
 }
 
 #[cfg(test)]

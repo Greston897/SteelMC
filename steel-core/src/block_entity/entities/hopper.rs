@@ -696,6 +696,7 @@ impl Container for HopperContainer {
 mod tests {
     use simdnbt::borrow::read_compound;
     use steel_registry::{init_vanilla_registry, vanilla_blocks, vanilla_items};
+    use steel_utils::types::UpdateFlags;
 
     use crate::inventory::container::SimpleContainer;
 
@@ -768,7 +769,6 @@ mod tests {
         use crate::bootstrap::init_globals;
         use crate::test_support::{fresh_test_world, insert_ready_full_chunk};
         use steel_utils::ChunkPos;
-        use steel_utils::types::UpdateFlags;
         init_globals();
         for facing in [Direction::Down, Direction::North, Direction::East] {
             let fixture = fresh_test_world("jukebox_hopper_pipeline");

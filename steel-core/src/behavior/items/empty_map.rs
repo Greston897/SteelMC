@@ -4,7 +4,6 @@
 //! plays `ui.cartography_table.take_result`, awards `minecraft:used` and turns
 //! the consumed slot into a fresh scale-0 filled map centred on the player.
 
-use crate::behavior::UseItemContext;
 use steel_macros::item_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::item_stack::ItemStack;
@@ -85,6 +84,7 @@ mod tests {
     use super::EmptyMapItem;
     use crate::behavior::InteractionResult;
     use crate::behavior::ItemBehavior as _;
+    use crate::behavior::UseItemContext;
     use crate::behavior::init_behaviors;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
     use steel_registry::item_stack::ItemStack;

@@ -1,11 +1,3 @@
-#![cfg_attr(
-    test,
-    expect(
-        clippy::unwrap_used,
-        reason = "block registry tests assert required vanilla properties are present"
-    )
-)]
-
 pub mod behavior;
 pub mod block_state_ext;
 pub mod block_state_nbt;

@@ -1,7 +1,6 @@
 use super::*;
 use crate::behavior::init_behaviors;
-use crate::entity::Entity::check_despawn;
-use crate::entity::Entity::is_removed;
+use crate::entity::Entity as EntityTrait;
 use crate::test_support::fresh_test_world_with_difficulty;
 use crate::test_support::insert_ready_full_chunk;
 use std::sync::Arc;
@@ -52,9 +51,9 @@ fn entity_check_despawn_discards_in_peaceful() {
         Arc::downgrade(&fixture.world),
     ));
 
-    assert!(!is_removed(hostile.as_ref()));
-    check_despawn(hostile.as_ref());
-    assert!(is_removed(hostile.as_ref()));
+    assert!(!EntityTrait::is_removed(hostile.as_ref()));
+    EntityTrait::check_despawn(hostile.as_ref());
+    assert!(EntityTrait::is_removed(hostile.as_ref()));
 }
 
 #[test]

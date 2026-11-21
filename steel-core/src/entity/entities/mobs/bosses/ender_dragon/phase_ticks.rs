@@ -38,7 +38,6 @@ use super::phases::{
 use crate::chunk::heightmap::HeightmapType::MotionBlocking;
 use crate::entity::Entity;
 use crate::entity::LivingEntity;
-use crate::entity::LivingEntity::has_line_of_sight;
 use crate::entity::SharedEntity;
 use crate::entity::ai::path::Path;
 use crate::entity::ai::targeting::TargetingConditions;
@@ -513,7 +512,7 @@ fn tick_strafe_player(
         decay_fireball_charge(manager);
         return;
     }
-    if !has_line_of_sight(ctx.dragon, target.as_ref()) {
+    if !LivingEntity::has_line_of_sight(ctx.dragon, target.as_ref()) {
         decay_fireball_charge(manager);
         return;
     }

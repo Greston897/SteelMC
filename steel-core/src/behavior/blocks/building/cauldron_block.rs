@@ -25,7 +25,7 @@ use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, BlockStateId, types::UpdateFlags};
 
 use crate::{
-    behavior::{BlockBehavior, BlockPlaceContext, blocks::vegetation},
+    behavior::{BlockBehavior, BlockPlaceContext, InteractionResult, blocks::vegetation},
     entity::ai::path::PathComputationType,
     world::{World, game_event::GameEventContext},
 };
@@ -210,9 +210,8 @@ pub(super) fn cauldron_item_interaction(
     hand: InteractionHand,
     inv: &mut InventoryAccess,
 ) -> InteractionResult {
-    use crate::{behavior::InteractionResult, fluid::FluidStateExt as _};
+    use crate::fluid::FluidStateExt as _;
     use steel_registry::data_components::vanilla_components::{BANNER_PATTERNS, DYED_COLOR};
-    use steel_registry::item_stack::ItemStack;
     use steel_registry::item_stack::ItemStack;
     use steel_registry::vanilla_item_tags::ItemTag;
     use steel_registry::{
