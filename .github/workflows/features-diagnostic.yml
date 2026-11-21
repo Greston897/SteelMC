@@ -6,6 +6,7 @@ on:
       - '.ci/vanilla_features/**'
       - '.github/workflows/features-diagnostic.yml'
       - 'steel-core/src/worldgen/feature/features/monster_room.rs'
+      - 'steel-registry/src/blocks/block_state_ext.rs'
 permissions:
   contents: write
 jobs:

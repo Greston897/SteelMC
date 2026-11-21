@@ -65,10 +65,7 @@ pub trait BlockStateExt {
         direction: Direction,
         support_type: SupportType,
     ) -> bool;
-    /// Checks if this block state is solid (has a full cube collision shape).
-    ///
-    /// This matches vanilla's `BlockState.isSolid()` which is used by standing signs
-    /// to check if they can be placed on a block.
+    /// Checks vanilla's cached legacy solidity, including forced and dynamic shapes.
     fn is_solid(&self) -> bool;
     /// Checks if this block state blocks motion.
     ///
@@ -240,17 +237,17 @@ impl BlockStateExt for BlockStateId {
             return false;
         }
 
-        // Vanilla's calculateSolid: check collision shape bounding box.
-        // A block is solid if its average dimension size >= 35/48 (~0.7292)
-        // or its Y size >= 1.0. This catches partial blocks like cactus
+        // Dynamic shapes have no cached collision shape in vanilla.
+        if block.config.dynamic_shape {
+            return false;
+        }
         let shape = self.get_static_collision_shape();
         if shape.is_empty() {
             return false;
         }
         let bounds = blocks::shapes::bounding_box(shape);
-        // Vanilla `calculateSolid`: the *volume* of the collision box must reach
-        // 35/48, or the box must be a full block tall.
-        bounds.width() * bounds.height() * bounds.depth() >= 0.729_166_7 || bounds.height() >= 1.0
+        (bounds.width() + bounds.height() + bounds.depth()) / 3.0 >= 0.729_166_666_666_666_6
+            || bounds.height() >= 1.0
     }
 
     fn blocks_motion(&self) -> bool {
@@ -343,6 +340,18 @@ mod tests {
             crate::blocks::properties::Axis::X,
         );
         assert_eq!(sideways.map_color(), 34, "bark color for a sideways log");
+    }
+
+    #[test]
+    fn legacy_solidity_uses_average_dimensions_and_dynamic_shapes() {
+        init_vanilla_registry();
+
+        let slab = vanilla_blocks::STONE_SLAB.default_state();
+        assert!(slab.is_solid(), "a half slab's average dimension exceeds 35/48");
+        assert!(slab.blocks_motion());
+        assert!(!vanilla_blocks::POWDER_SNOW.default_state().is_solid());
+        assert!(!vanilla_blocks::SCAFFOLDING.default_state().is_solid());
+        assert!(!vanilla_blocks::AIR.default_state().is_solid());
     }
 
     #[test]

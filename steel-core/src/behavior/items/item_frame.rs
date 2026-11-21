@@ -255,10 +255,9 @@ mod tests {
             .lock()
             .set_selected_item(ItemStack::with_count(&vanilla_items::ITEM_FRAME, 2));
 
-        // Vanilla `BlockState#isSolid` needs a full cube; a slab is not solid.
         assert!(world.set_block(
             wall,
-            vanilla_blocks::OAK_SLAB.default_state(),
+            vanilla_blocks::AIR.default_state(),
             UpdateFlags::UPDATE_ALL
         ));
 
@@ -270,6 +269,27 @@ mod tests {
 
         assert_eq!(frames_in_world(world), 0);
         assert_eq!(held_stack(&player).count(), 2);
+    }
+
+    #[test]
+    fn frame_can_use_a_slab_as_legacy_solid_support() {
+        let (fixture, player, wall) = wall_fixture("frame_place_slab_support");
+        let world = &fixture.world;
+        player
+            .inventory
+            .lock()
+            .set_selected_item(ItemStack::new(&vanilla_items::ITEM_FRAME));
+        assert!(world.set_block(
+            wall,
+            vanilla_blocks::OAK_SLAB.default_state(),
+            UpdateFlags::UPDATE_ALL
+        ));
+        let mut context = place_context(world, &player, wall, Direction::Up);
+        assert_eq!(
+            ItemFrameItem.use_on(&mut context),
+            InteractionResult::Success
+        );
+        assert_eq!(frames_in_world(world), 1);
     }
 
     #[test]
