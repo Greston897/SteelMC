@@ -1113,7 +1113,7 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
                                     .is_some_and(|value| !value.levels.is_empty()))
                         {
                             living.with_equipment_slot_mut(MainHand, &mut |item| {
-                                *item = weapon.clone()
+                                *item = weapon.clone();
                             });
                         }
                         rider.start_riding(&entity);
@@ -1902,6 +1902,7 @@ mod joining_and_killer_tests {
     use crate::behavior::init_behaviors;
     use crate::entity::damage::DamageSource;
     use crate::entity::{SharedEntity, next_entity_id};
+    use crate::player::Player;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
     use simdnbt::borrow::read_compound;
     use simdnbt::owned::NbtCompound;
@@ -2084,7 +2085,7 @@ mod joining_and_killer_tests {
             .as_living_entity()
             .expect("the entity should be a living entity")
             .set_health(0.0);
-        let hero_entity: SharedEntity = Arc::clone(&hero);
+        let hero_entity: SharedEntity = Arc::<Player>::clone(&hero);
         second
             .as_living_entity()
             .expect("the entity should be a living entity")

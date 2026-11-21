@@ -98,7 +98,7 @@ impl BlockEntity for TestInstanceBlockEntity {
         // i.e. a list of three ints — not a compound with `x`/`y`/`z` keys.
         if let Some(size) = data.list("size") {
             let tags = size.to_owned().as_nbt_tags();
-            let mut axes = tags.iter().filter_map(|tag| tag.codec_i32());
+            let mut axes = tags.iter().filter_map(NbtNumeric::codec_i32);
             if let (Some(x), Some(y), Some(z)) = (axes.next(), axes.next(), axes.next()) {
                 data_out.size = glam::IVec3 { x, y, z };
             }
