@@ -50,6 +50,9 @@ rustc-ice-*
 .vscode/settings.json
 .idea
 
+# Local CI helper scripts
+/.tools
+
 .DS_STORE
 .gitcraft-tmp/
 /.vs

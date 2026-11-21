@@ -11,7 +11,7 @@ use std::env;
 use std::hint::black_box;
 use std::io::Cursor;
 use std::sync::{
-    Arc, LazyLock, Weak,
+    Arc, LazyLock, OnceLock, Weak,
     atomic::{AtomicU64, Ordering},
 };
 use std::time::{Duration, Instant};
@@ -576,7 +576,7 @@ fn build_feature_fixture_at(
     );
     let damage_history = Arc::new(DamageHistory::default());
     let world_config = WorldConfig {
-        server: std::sync::OnceLock::new(),
+        server: OnceLock::new(),
         damage_history: Arc::clone(&damage_history),
         game_time_source: GameTimeSource::Primary,
         storage: WorldStorageConfig::RamOnly,
@@ -850,7 +850,7 @@ fn build_concurrent_feature_fixture(
     );
     let damage_history = Arc::new(DamageHistory::default());
     let world_config = WorldConfig {
-        server: std::sync::OnceLock::new(),
+        server: OnceLock::new(),
         damage_history: Arc::clone(&damage_history),
         game_time_source: GameTimeSource::Primary,
         storage: WorldStorageConfig::RamOnly,
@@ -945,7 +945,7 @@ fn build_concurrent_full_pipeline_fixture(
     );
     let damage_history = Arc::new(DamageHistory::default());
     let world_config = WorldConfig {
-        server: std::sync::OnceLock::new(),
+        server: OnceLock::new(),
         damage_history: Arc::clone(&damage_history),
         game_time_source: GameTimeSource::Primary,
         storage: WorldStorageConfig::RamOnly,
@@ -1044,7 +1044,7 @@ fn build_concurrent_light_fixture(
     );
     let damage_history = Arc::new(DamageHistory::default());
     let world_config = WorldConfig {
-        server: std::sync::OnceLock::new(),
+        server: OnceLock::new(),
         damage_history: Arc::clone(&damage_history),
         game_time_source: GameTimeSource::Primary,
         storage: WorldStorageConfig::RamOnly,
