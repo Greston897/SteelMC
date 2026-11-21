@@ -36,8 +36,11 @@ jobs:
           jar cfm reference-agent.jar MANIFEST.MF ./*.class
           printf 'eula=true\n' > eula.txt
           printf 'level-seed=13579\nonline-mode=false\nview-distance=2\nsimulation-distance=2\nspawn-protection=0\n' > server.properties
-          timeout --kill-after=30s 1800 java -Xmx4G -javaagent:reference-agent.jar=/tmp/feature-reference/reference-agent.jar -jar server.jar nogui 2>&1 | tee /tmp/vanilla-server.log
+          timeout --kill-after=30s 1800 java -Xmx4G -Dsteel.featuretrace=true -javaagent:reference-agent.jar=/tmp/feature-reference/reference-agent.jar -jar server.jar nogui 2>&1 | tee /tmp/vanilla-server.log
           python3 validate.py
+          grep 'FEATURE_TRACE' /tmp/vanilla-server.log > /tmp/feature-trace.log || true
+          grep -q 'FEATURE_TRACE_HOOK_OK' /tmp/feature-trace.log
+          ! grep -q 'FEATURE_TRACE_ERROR' /tmp/feature-trace.log
           # Only a capture matching ALL existing failing-chunk goldens is trusted.
           cp reference.bin.gz "$GITHUB_WORKSPACE/steel-core/test_assets/chunk_stage_overworld_features_blocks.bin.gz"
       - uses: Swatinem/rust-cache@v2
@@ -59,7 +62,7 @@ jobs:
         if: always()
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 .ci/report.py "Features diagnostic — vanilla blocks" /tmp/reference.log /tmp/features-diagnostic.log
+        run: python3 .ci/report.py "Features diagnostic — vanilla blocks" /tmp/reference.log /tmp/feature-trace.log /tmp/features-diagnostic.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:

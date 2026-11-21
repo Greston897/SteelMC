@@ -30,6 +30,21 @@ public class ReferenceAgent {
         instrumentation.addTransformer(new ClassFileTransformer() {
             public byte[] transform(Module module, ClassLoader loader, String name, Class<?> type,
                                     ProtectionDomain domain, byte[] bytes) {
+                if (name.equals("net/minecraft/world/level/levelgen/feature/SimpleBlockFeature")
+                    && Boolean.getBoolean("steel.featuretrace")) {
+                    ClassFile classFile = ClassFile.of();
+                    return classFile.transformClass(classFile.parse(bytes),
+                        ClassTransform.transformingMethodBodies(
+                            method -> method.methodName().equalsString("place")
+                                && method.methodType().equalsString("(Lnet/minecraft/world/level/WorldGenLevel;Lnet/minecraft/world/level/chunk/ChunkGenerator;Lnet/minecraft/util/RandomSource;Lnet/minecraft/core/BlockPos;)Z"),
+                            new CodeTransform() {
+                                @Override public void atStart(CodeBuilder code) {
+                                    code.aload(0).aload(1).aload(4).invokestatic(ClassDesc.of("ReferenceAgent"), "traceFeature",
+                                        MethodTypeDesc.of(CD_void, CD_Object, CD_Object, CD_Object));
+                                }
+                                @Override public void accept(CodeBuilder code, CodeElement element) { code.with(element); }
+                            }));
+                }
                 if (!name.equals("net/minecraft/server/MinecraftServer")) return null;
                 ClassFile classFile = ClassFile.of();
                 byte[] transformed = classFile.transformClass(classFile.parse(bytes),
@@ -49,6 +64,34 @@ public class ReferenceAgent {
                 return transformed;
             }
         });
+    }
+
+    private static final java.util.concurrent.atomic.AtomicBoolean featureHookConfirmed =
+        new java.util.concurrent.atomic.AtomicBoolean();
+    private static volatile Method featurePosX, featurePosY, featurePosZ;
+
+    /** Optional CI diagnostic; never changes random state or generated blocks. */
+    public static void traceFeature(Object feature, Object level, Object pos) {
+        try {
+            if (featureHookConfirmed.compareAndSet(false, true)) {
+                System.out.println("FEATURE_TRACE_HOOK_OK");
+            }
+            if (featurePosX == null) {
+                Class<?> blockPos = Class.forName("net.minecraft.core.BlockPos", true, pos.getClass().getClassLoader());
+                featurePosY = blockPos.getMethod("getY");
+                featurePosZ = blockPos.getMethod("getZ");
+                featurePosX = blockPos.getMethod("getX");
+            }
+            int x = (Integer) featurePosX.invoke(pos);
+            int y = (Integer) featurePosY.invoke(pos);
+            int z = (Integer) featurePosZ.invoke(pos);
+            if (x >= -6536443 && x <= -6536430 && y >= 72 && y <= 75
+                && z >= -7689105 && z <= -7689090) {
+                System.out.println("FEATURE_TRACE " + x + " " + y + " " + z + " " + feature);
+            }
+        } catch (ReflectiveOperationException error) {
+            System.err.println("FEATURE_TRACE_ERROR " + error);
+        }
     }
 
     public static void capture(Object server) {
