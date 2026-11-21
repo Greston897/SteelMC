@@ -314,7 +314,7 @@ impl MenuKind for MerchantKind {
             player.award_custom_stat(&vanilla_custom_stats::TRADED_WITH_VILLAGER);
             player.trigger_advancement_with_context(
                 &vanilla_criteria_triggers::VILLAGER_TRADE,
-                &TriggerContext::item(&result.item().key),
+                &TriggerContext::item(&result.item().key).with_item_stack(&result),
             );
         });
         ClickOutcome::Consume

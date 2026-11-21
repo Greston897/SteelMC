@@ -125,7 +125,8 @@ fn use_empty_bucket(context: &mut UseItemContext) -> InteractionResult {
     // chain off.
     context.player.trigger_advancement_with_context(
         &FILLED_BUCKET,
-        &TriggerContext::item(&result.filled_bucket.item().key),
+        &TriggerContext::item(&result.filled_bucket.item().key)
+            .with_item_stack(&result.filled_bucket),
     );
     create_filled_result(context, result.filled_bucket, true);
     context.world.game_event(

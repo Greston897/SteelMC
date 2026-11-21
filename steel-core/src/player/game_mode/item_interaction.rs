@@ -116,7 +116,9 @@ pub fn use_item_on(
     // `default_block_use` (the main-hand fallthrough) before the item's own
     // `useOn` runs, with a context holding both the item and the clicked block.
     if let Some(block) = REGISTRY.blocks.by_state_id(state) {
-        let context = TriggerContext::block(&block.key, Some(&item_ref.key));
+        let context = TriggerContext::block(&block.key, Some(&item_ref.key))
+            .with_block_state(state)
+            .with_item_stack(&stack_before_use);
         player.trigger_advancement_with_context(&ANY_BLOCK_USE, &context);
         if hand == InteractionHand::MainHand {
             player.trigger_advancement_with_context(&DEFAULT_BLOCK_USE, &context);

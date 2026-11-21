@@ -27,6 +27,8 @@ use crate::world::World;
 pub struct TriggerContext {
     /// Item involved (placed block, destroyed block's item, consumed item, …).
     pub item: Option<Identifier>,
+    /// The full event stack, when available, including count and components.
+    pub item_stack: Option<ItemStack>,
     /// Block involved, when the predicate distinguishes it from the item.
     pub block: Option<Identifier>,
     /// Exact block state involved in a block criterion.
@@ -117,6 +119,15 @@ impl TriggerContext {
     #[must_use]
     pub fn with_item(mut self, item: &Identifier) -> Self {
         self.item = Some(item.clone());
+        self.item_stack = None;
+        self
+    }
+
+    /// Adds the actual stack for count and component predicates.
+    #[must_use]
+    pub fn with_item_stack(mut self, stack: &ItemStack) -> Self {
+        self.item = (!stack.is_empty()).then(|| stack.item().key.clone());
+        self.item_stack = Some(stack.clone());
         self
     }
 
@@ -188,7 +199,7 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
     match key {
         // Block/item identity, used by `placed_block`, `destroyed_block`,
         // `consume_item`, `using_item`, `item_used_on_block` and friends.
-        "item" => matches_item_predicate(expected, context.item.as_ref()),
+        "item" => matches_item_predicate(expected, context),
         "block" => matches_id_predicate(expected, context.block.as_ref()),
         // Enter-block, slide-down-block and bee-nest triggers use a holder set.
         "blocks" => context
@@ -304,28 +315,35 @@ fn matches_distance(expected: &Value, distance: Option<f64>) -> bool {
     }
 }
 
-/// Vanilla `ItemPredicate`: `{"items": "minecraft:stone"}` or `{"items": [...]}`.
-fn matches_item_predicate(expected: &Value, item: Option<&Identifier>) -> bool {
-    let Some(item) = item else {
-        // A predicate that constrains the item cannot match an item-less event,
-        // except when it constrains nothing.
-        return is_unconstrained(expected);
+/// Vanilla item identity, count and registered component matchers.
+fn matches_item_predicate(expected: &Value, context: &TriggerContext) -> bool {
+    let Some(map) = expected.as_object() else {
+        return false;
     };
-    match expected {
-        Value::Object(map) => {
-            if let Some(items) = map.get("items") {
-                contains_holder_set(items, item, || &REGISTRY.items)
-            } else if let Some(tag) = map.get("tag") {
-                // Tags are not resolved here; a tag predicate is treated as a
-                // match so criteria using tags are not silently lost.
-                let _ = tag;
-                true
-            } else {
-                true
-            }
-        }
-        _ => true,
+    if let Some(items) = map.get("items")
+        && !context.item.as_ref().is_some_and(|item| {
+            contains_holder_set(items, item, || &REGISTRY.items)
+        })
+    {
+        return false;
     }
+    if !map.contains_key("count") && !map.contains_key("components") && !map.contains_key("predicates") {
+        return context.item.is_some() || is_unconstrained(expected);
+    }
+    let Some(stack) = context.item_stack.as_ref() else {
+        return false;
+    };
+    // The shared command matcher implements the registered typed component
+    // predicates. Identity is already checked above, so decode the remaining
+    // fields without re-resolving holder sets.
+    let mut fields = map.clone();
+    fields.remove("items");
+    let Ok(tag) = steel_utils::nbt::json_to_nbt(&Value::Object(fields)) else {
+        return false;
+    };
+    steel_registry::item_predicate::ItemPredicate::from_owned_nbt(&tag).is_some_and(|predicate| {
+        crate::command::execution::registered_item_stack_matches(&predicate, stack)
+    })
 }
 
 /// Vanilla block predicate: `{"blocks": "minecraft:stone"}` or a plain string.
@@ -492,14 +510,7 @@ fn id_matches(value: &str, id: &Identifier) -> bool {
 /// Convenience for call sites that hold an [`ItemStack`].
 #[must_use]
 pub fn context_for_stack(stack: &ItemStack) -> TriggerContext {
-    if stack.is_empty() {
-        TriggerContext::default()
-    } else {
-        TriggerContext {
-            item: Some(stack.item().key.clone()),
-            ..TriggerContext::default()
-        }
-    }
+    TriggerContext::default().with_item_stack(stack)
 }
 
 #[cfg(test)]
@@ -621,6 +632,23 @@ mod tests {
             r#"{"item":{"items":"example:stone:bad"}}"#,
             &modded
         ));
+    }
+
+    #[test]
+    fn item_predicates_use_live_stack_count_and_components() {
+        use steel_registry::data_components::vanilla_components::DAMAGE;
+        use steel_registry::vanilla_items;
+
+        steel_registry::init_vanilla_registry();
+        let mut stack = ItemStack::with_count(&vanilla_items::IRON_PICKAXE, 2);
+        stack.set(DAMAGE, 5);
+        let context = context_for_stack(&stack);
+        assert!(matches(r#"{"item":{"items":"minecraft:iron_pickaxe","count":{"min":2},"components":{"minecraft:damage":5}}}"#, &context));
+        assert!(!matches(r#"{"item":{"count":{"min":3}}}"#, &context));
+        assert!(!matches(r#"{"item":{"components":{"minecraft:damage":4}}}"#, &context));
+        assert!(matches(r#"{"item":{"predicates":{"minecraft:damage":{"damage":{"min":5}}}}}"#, &context));
+        assert!(!matches(r#"{"item":{"predicates":{"minecraft:damage":{"damage":{"max":4}}}}}"#, &context));
+        assert!(!matches(r#"{"item":{"count":2}}"#, &TriggerContext::item(&id("iron_pickaxe"))));
     }
 
     #[test]

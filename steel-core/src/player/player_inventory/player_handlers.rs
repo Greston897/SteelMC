@@ -1378,7 +1378,7 @@ impl Player {
         let _ = count;
         self.trigger_advancement_with_context(
             &INVENTORY_CHANGED,
-            &TriggerContext::item(&acquired.item().key),
+            &TriggerContext::item(&acquired.item().key).with_item_stack(acquired),
         );
     }
 

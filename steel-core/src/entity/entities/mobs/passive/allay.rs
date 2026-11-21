@@ -480,7 +480,7 @@ impl AllayEntity {
         {
             player.trigger_advancement_with_context(
                 &ALLAY_DROP_ITEM_ON_BLOCK,
-                &TriggerContext::item(&stack.item().key),
+                &TriggerContext::item(&stack.item().key).with_item_stack(stack),
             );
         }
         true

@@ -282,7 +282,9 @@ impl BlockBehavior for BeehiveBlock {
             hive.release_all_bees(world, pos);
         }
         let item = (!tool.is_empty()).then_some(&tool.item().key);
-        let mut context = TriggerContext::block(&state.get_block().key, item).with_block_state(state);
+        let mut context = TriggerContext::block(&state.get_block().key, item)
+            .with_block_state(state)
+            .with_item_stack(tool);
         context.bees_inside = Some(i32::try_from(hive.occupant_count()).unwrap_or(i32::MAX));
         player.trigger_advancement_with_context(&BEE_NEST_DESTROYED, &context);
     }

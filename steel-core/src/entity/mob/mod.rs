@@ -925,7 +925,7 @@ pub trait Mob: LivingEntity + Leashable {
         // the `thrown_item_picked_up_by_entity` criterion on the picking entity,
         // which for a player is the advancement owner.
         if let Some(player) = self.as_player() {
-            let context = TriggerContext::item(&equipped.item().key);
+            let context = TriggerContext::item(&equipped.item().key).with_item_stack(&equipped);
             player.trigger_advancement_with_context(&THROWN_ITEM_PICKED_UP_BY_ENTITY, &context);
             // Vanilla `ItemEntity.playerTouch` additionally fires
             // `thrown_item_picked_up_by_player` when the thrown item's owner is

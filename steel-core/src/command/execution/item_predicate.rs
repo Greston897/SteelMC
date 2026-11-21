@@ -353,9 +353,18 @@ fn collection_matches<'a, P, T: 'a>(
     })
 }
 
-fn registered_item_predicate_matches(
+/// Evaluates the shared persistent item predicate against a live stack.
+#[must_use]
+pub(crate) fn registered_item_stack_matches(
     predicate: &RegisteredItemPredicate,
-    template: &steel_registry::ItemStackTemplate,
+    stack: &ItemStack,
+) -> bool {
+    registered_item_predicate_matches(predicate, stack)
+}
+
+fn registered_item_predicate_matches<S: ItemInstanceView + ?Sized>(
+    predicate: &RegisteredItemPredicate,
+    template: &S,
 ) -> bool {
     predicate
         .items()

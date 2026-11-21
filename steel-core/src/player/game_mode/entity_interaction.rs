@@ -886,7 +886,7 @@ impl Player {
 
         let hand_item = {
             let inventory = self.inventory.lock();
-            inventory.get_item_in_hand(packet.hand).item().key.clone()
+            inventory.get_item_in_hand(packet.hand).clone()
         };
         let target_type = target.entity_type().key.clone();
         let animation = self.interact_animation(packet.hand);
@@ -894,7 +894,7 @@ impl Player {
         // Vanilla `ServerPlayerGameMode.interact` fires `player_interacted_with_entity`
         // for a successful interaction, carrying both the entity and the held item.
         if result.consumes_action() {
-            let context = TriggerContext::entity(&target_type).with_item(&hand_item);
+            let context = TriggerContext::entity(&target_type).with_item_stack(&hand_item);
             self.trigger_advancement_with_context(&PLAYER_INTERACTED_WITH_ENTITY, &context);
         }
         self.swing_after_interaction(packet.hand, animation, result);

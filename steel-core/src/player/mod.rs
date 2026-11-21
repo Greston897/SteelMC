@@ -705,7 +705,10 @@ impl Player {
         // Vanilla `Item.use` fires `using_item` once per tick while the item is
         // held in use, which is how `adventure/salvage_sherd`-style criteria see
         // sustained use.
-        self.trigger_advancement_with_context(&USING_ITEM, &TriggerContext::item(&item.item().key));
+        self.trigger_advancement_with_context(
+            &USING_ITEM,
+            &TriggerContext::item(&item.item().key).with_item_stack(&item),
+        );
         behavior.on_use_tick(&world, user, &mut item, active.remaining_ticks());
 
         if self.active_item_use_hand() != Some(hand) {

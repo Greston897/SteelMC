@@ -496,7 +496,7 @@ pub(crate) fn finish_consuming_stack(
         // `CriteriaTriggers.CONSUME_ITEM` with the consumed stack.
         player.trigger_advancement_with_context(
             &CONSUME_ITEM,
-            &TriggerContext::item(&stack.item().key),
+            &TriggerContext::item(&stack.item().key).with_item_stack(stack),
         );
     }
     if let Some(consumable) = stack.get(CONSUMABLE)
