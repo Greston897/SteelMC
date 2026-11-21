@@ -16,7 +16,7 @@ use std::fmt::Formatter;
 use std::fmt::Result as FmtResult;
 use std::io::Error as IoError;
 use std::io::ErrorKind::UnexpectedEof;
-use std::io::Result;
+use std::io::Result as IoResult;
 use std::str::from_utf8;
 use std::sync::Arc;
 use std::time::Duration;
@@ -139,7 +139,7 @@ async fn serve_connection(
     password: String,
     mut stream: TcpStream,
     cancel_token: CancellationToken,
-) -> Result<()> {
+) -> IoResult<()> {
     let mut authenticated = false;
 
     loop {
@@ -230,7 +230,7 @@ async fn execute_command(server: &Arc<Server>, command: String) -> String {
 async fn read_packet(
     stream: &mut TcpStream,
     cancel_token: &CancellationToken,
-) -> Result<Option<RconPacket>> {
+) -> IoResult<Option<RconPacket>> {
     let mut length_bytes = [0u8; 4];
     let read = tokio::select! {
         read = stream.read_exact(&mut length_bytes) => read,
@@ -262,7 +262,7 @@ async fn read_packet(
     Ok(RconPacket::decode(id, kind, payload))
 }
 
-async fn write_packet(stream: &mut TcpStream, packet: &RconPacket) -> Result<()> {
+async fn write_packet(stream: &mut TcpStream, packet: &RconPacket) -> IoResult<()> {
     stream.write_all(&packet.encode()).await?;
     stream.flush().await
 }

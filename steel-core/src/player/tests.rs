@@ -2028,7 +2028,7 @@ fn combat_critical_requires_full_cooldown_and_does_not_multiply_enchantment_bonu
             }
         }
         let health = victim.get_health();
-        let target: SharedEntity = Arc::clone(&victim);
+        let target: SharedEntity = Arc::<Player>::clone(&victim);
         assert!(attacker.attack(&target));
         let dealt = health - victim.get_health();
         assert!(
@@ -2090,7 +2090,7 @@ fn combat_sweep_requires_grounded_charged_sword_and_uses_primary_target_box() {
             }
         }
         let before = secondary.get_health();
-        let target: SharedEntity = Arc::clone(&primary);
+        let target: SharedEntity = Arc::<Player>::clone(&primary);
         assert!(attacker.attack(&target));
         assert!(
             (before - secondary.get_health() - expected).abs() < 0.001,
@@ -2120,7 +2120,7 @@ fn combat_melee_redirects_fireball_and_transfers_owner_without_destroying_it() {
         Arc::downgrade(&fixture.world),
     ));
     fireball.set_velocity(DVec3::new(0.0, 0.0, -1.0));
-    let target: SharedEntity = Arc::clone(&fireball);
+    let target: SharedEntity = Arc::<LargeFireballEntity>::clone(&fireball);
     assert!(attacker.attack(&target));
     assert_eq!(fireball.owner_uuid(), Some(attacker.uuid()));
     assert!(fireball.velocity().distance(attacker.look_angle()) < 1.0e-6);
@@ -2157,7 +2157,7 @@ fn player_attack_dispatches_mace_smash_and_post_hit_fall_reset() {
     for _ in 0..30 {
         attacker.tick_attack_strength();
     }
-    let target: SharedEntity = Arc::clone(&victim);
+    let target: SharedEntity = Arc::<Player>::clone(&victim);
     assert!(attacker.attack(&target));
     // Vanilla: (base 6 + six-block smash bonus 18) * critical 1.5.
     assert_eq!(victim.get_health(), 64.0);

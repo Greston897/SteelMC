@@ -30,7 +30,7 @@ use crate::test_support::{
     TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
 };
 use crate::world::ClipBlockShape::Outline;
-use crate::world::ClipFluid::None;
+use crate::world::ClipFluid;
 
 use super::use_item_on;
 
@@ -836,7 +836,7 @@ fn ray_use(interaction: &Interaction) -> InteractionResult {
     let hit = interaction
         .world_fixture
         .world
-        .clip(start, end, Outline, None);
+        .clip(start, end, Outline, ClipFluid::None);
     assert!(
         !hit.is_miss(),
         "ray {start:?} -> {end:?} must hit the fixture"

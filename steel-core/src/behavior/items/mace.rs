@@ -231,6 +231,7 @@ mod tests {
     use super::*;
     use crate::behavior::{ITEM_BEHAVIORS, init_behaviors};
     use crate::bootstrap::init_globals;
+    use crate::player::Player;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world};
     use steel_registry::vanilla_attributes::KNOCKBACK_RESISTANCE;
     use steel_registry::vanilla_items;
@@ -241,7 +242,7 @@ mod tests {
         init_behaviors();
         let fixture = fresh_test_world("mace_smash_source");
         let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
-        let shared: SharedEntity = Arc::clone(&attacker);
+        let shared: SharedEntity = Arc::<Player>::clone(&attacker);
         let behavior = ITEM_BEHAVIORS.get_behavior(&vanilla_items::MACE);
         for (fall, flying, smash) in [
             (0.0, false, false),
@@ -272,7 +273,8 @@ mod tests {
         let fixture = fresh_test_world("mace_smash_bonus");
         let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
         let victim = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Target", 2).build();
-        let source = DamageSource::direct(&vanilla_damage_types::MACE_SMASH, Arc::clone(&attacker));
+        let attacker_entity: SharedEntity = Arc::<Player>::clone(&attacker);
+        let source = DamageSource::direct(&vanilla_damage_types::MACE_SMASH, attacker_entity);
         let behavior = ITEM_BEHAVIORS.get_behavior(&vanilla_items::MACE);
         for (fall, expected) in [
             (1.5, 0.0),

@@ -429,7 +429,7 @@ mod tests {
             );
             world.set_block(
                 *pos,
-                state.set_value(STAGE, i32::from(index != 0)),
+                state.set_value(STAGE, u8::from(index != 0)),
                 UpdateFlags::UPDATE_NONE,
             );
             world.set_block(

@@ -19,7 +19,6 @@ use steel_registry::vanilla_game_events::CONTAINER_OPEN;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
 
-use crate::entity::Entity as _;
 use crate::entity::Entity;
 use crate::inventory::lock::ContainerRef;
 use crate::world::World;

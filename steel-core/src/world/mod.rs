@@ -34,7 +34,6 @@ use crate::server::Server;
 use crate::server::boss_bars::BossBar;
 use crate::server::boss_bars::DRAGON_BAR_ID;
 use crate::server::boss_bars::dragon_bar_uuid;
-use crate::world::explosion::ExplosionInteraction::None;
 use crate::world::game_event::{
     GameEventContext, GameEventDispatcher, GameEventListenerCount, GameEventListenerStorage,
     SharedGameEventListener,
@@ -1162,7 +1161,7 @@ impl World {
         for crystal in self.respawn_crystals() {
             Self::with_crystal(&crystal, |crystal| crystal.set_beam_target(None));
             let position = Entity::position(crystal.as_ref());
-            let mut options = ExplosionOptions::new(position, 6.0, None);
+            let mut options = ExplosionOptions::new(position, 6.0, ExplosionInteraction::None);
             options.source = None;
             self.explode(options);
             crystal.set_removed(RemovalReason::Killed);

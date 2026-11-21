@@ -8,7 +8,6 @@ use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_game_rules;
 use steel_registry::{REGISTRY, vanilla_fluids};
 use steel_utils::BlockPos;
-use steel_utils::random::Random as _;
 use steel_utils::random::Random;
 
 use crate::chunk::{

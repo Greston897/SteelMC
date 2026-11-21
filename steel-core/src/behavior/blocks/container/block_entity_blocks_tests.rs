@@ -576,7 +576,7 @@ fn dispenser_arrow_uses_the_default_vanilla_launch_config() {
     // `0.0172275 * uncertainty` to the normalized facing direction, so the
     // launch speed and direction stay inside a known envelope around the
     // default power instead of hitting an exact value.
-    let deviation = 0.0172275_f64 * 6.0_f64;
+    let deviation = 0.017_227_5_f64 * 6.0_f64;
     let lowest = 1.1 * (1.0 - deviation);
     let highest =
         1.1 * ((1.0 + deviation) * (1.0 + deviation) + 2.0 * deviation * deviation).sqrt();
