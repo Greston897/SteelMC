@@ -188,11 +188,11 @@ impl TriggerContext {
     }
 }
 
-/// Conservative matcher for the currently enabled item-used-on-block trigger.
+/// Conservative matcher for block-use and block-placement location triggers.
 /// Player loot predicates and named condition references are not yet supported;
 /// do not award irreversible progress when their result is unknown.
 #[must_use]
-pub fn matches_item_used_on_block(instance: &str, context: &TriggerContext) -> bool {
+pub fn matches_block_location(instance: &str, context: &TriggerContext) -> bool {
     let Ok(value) = serde_json::from_str::<Value>(instance) else {
         return false;
     };
@@ -996,12 +996,20 @@ mod tests {
             &context
         ));
         assert!(!matches(condition, &TriggerContext::default()));
-        assert!(matches_item_used_on_block(condition, &context));
-        assert!(!matches_item_used_on_block(
+        assert!(matches_block_location(condition, &context));
+        assert!(matches_block_location(
+            r#"{"location":{"type":"minecraft:any_of","terms":[{"type":"minecraft:match_block","blocks":"minecraft:stone"},{"type":"minecraft:match_block","blocks":"minecraft:copper_block"}]}}"#,
+            &context
+        ));
+        assert!(!matches_block_location(
+            r#"{"location":{"type":"minecraft:match_block","blocks":"minecraft:stone"}}"#,
+            &context
+        ));
+        assert!(!matches_block_location(
             r#"{"player":{"type":"minecraft:entity_properties"}}"#,
             &context
         ));
-        assert!(!matches_item_used_on_block(
+        assert!(!matches_block_location(
             r#"{"location":"minecraft:external_predicate"}"#,
             &context
         ));

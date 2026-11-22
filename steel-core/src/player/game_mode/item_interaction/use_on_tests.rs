@@ -410,13 +410,46 @@ fn wax_on_advancement_requires_honeycomb_and_unwaxed_copper() {
     let context = TriggerContext::block_at(&interaction.world_fixture.world, interaction.pos)
         .with_item_stack(&ItemStack::new(&vanilla_items::HONEYCOMB));
     assert!(
-        predicate::matches_item_used_on_block(instance, &context),
+        predicate::matches_block_location(instance, &context),
         "wax_on criterion did not match: {instance}"
     );
     assert!(
         interaction
             .use_on(InteractionHand::MainHand)
             .consumes_action()
+    );
+    assert!(completed());
+}
+
+#[test]
+fn plant_seed_advancement_matches_the_placed_crop() {
+    use steel_registry::REGISTRY;
+    use steel_utils::Identifier;
+
+    let interaction = Interaction::new("plant_seed_advancement");
+    let advancement = REGISTRY
+        .advancements
+        .value_by_key(&Identifier::vanilla_static("husbandry/plant_seed"))
+        .expect("plant_seed advancement");
+    let completed = || {
+        interaction
+            .player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(advancement)
+            .is_some_and(AdvancementProgress::is_done)
+    };
+    interaction.block(vanilla_blocks::FARMLAND.default_state());
+    interaction.hold(
+        InteractionHand::MainHand,
+        ItemStack::new(&vanilla_items::WHEAT_SEEDS),
+    );
+    assert!(!completed());
+    assert!(interaction.use_on(InteractionHand::MainHand).consumes_action());
+    assert_eq!(
+        interaction.world_fixture.world.get_block_state(interaction.pos.above()).get_block(),
+        &*vanilla_blocks::WHEAT
     );
     assert!(completed());
 }

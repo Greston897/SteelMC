@@ -133,9 +133,11 @@ impl PlayerAdvancement {
         // Most trigger contexts and predicate codecs are still incomplete. Keep
         // them disabled rather than permanently granting incorrect progress now
         // that generated criteria preserve their real trigger identifiers.
-        // Item-used-on-block has an independently checked event snapshot and
-        // supports the location-loot conditions used by wax-on.
-        if trigger != &vanilla_criteria_triggers::ITEM_USED_ON_BLOCK {
+        // Block-use and placement snapshots support the shared location-loot
+        // conditions used by wax-on and plant-seed.
+        if trigger != &vanilla_criteria_triggers::ITEM_USED_ON_BLOCK
+            && trigger != &vanilla_criteria_triggers::PLACED_BLOCK
+        {
             return 0;
         }
         let mut granted = 0;
@@ -150,7 +152,7 @@ impl PlayerAdvancement {
                         .is_some_and(|criterion| {
                             &criterion.id() == trigger
                                 && criterion.instance().is_none_or(|instance| {
-                                    predicate::matches_item_used_on_block(instance, context)
+                                    predicate::matches_block_location(instance, context)
                                 })
                         })
                 })
