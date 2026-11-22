@@ -188,6 +188,31 @@ impl TriggerContext {
     }
 }
 
+/// Matches dimension keys, rejecting player predicates until their loot context is supported.
+#[must_use]
+pub fn matches_changed_dimension(instance: &str, context: &TriggerContext) -> bool {
+    let (Some(from), Some(to)) = (&context.from_dimension, &context.to_dimension) else {
+        return false;
+    };
+    let Ok(value) = serde_json::from_str::<Value>(instance) else {
+        return false;
+    };
+    let Some(conditions) = value.get("conditions").unwrap_or(&value).as_object() else {
+        return false;
+    };
+    if conditions.keys().any(|key| key != "from" && key != "to") {
+        return false;
+    }
+    [("from", from), ("to", to)].into_iter().all(|(key, actual)| {
+        conditions.get(key).is_none_or(|expected| {
+            expected
+                .as_str()
+                .and_then(|id| id.parse::<Identifier>().ok())
+                .is_some_and(|id| id == *actual)
+        })
+    })
+}
+
 /// Conservative matcher for block-use and block-placement location triggers.
 /// Player loot predicates and named condition references are not yet supported;
 /// do not award irreversible progress when their result is unknown.
@@ -788,6 +813,22 @@ mod tests {
 
     fn id(path: &str) -> Identifier {
         Identifier::vanilla(path.to_owned())
+    }
+
+    #[test]
+    fn dimension_change_requires_matching_keys_and_rejects_unknown_player_predicates() {
+        let context = TriggerContext::dimension(&id("overworld"), &id("the_nether"));
+        assert!(matches_changed_dimension("{}", &context));
+        assert!(matches_changed_dimension(
+            r#"{"from":"minecraft:overworld","to":"the_nether"}"#,
+            &context
+        ));
+        assert!(!matches_changed_dimension(r#"{"to":"minecraft:the_end"}"#, &context));
+        assert!(!matches_changed_dimension(r#"{"from":"minecraft:the_end"}"#, &context));
+        assert!(!matches_changed_dimension(r#"{"to":5}"#, &context));
+        assert!(!matches_changed_dimension(r#"{"player":{}}"#, &context));
+        assert!(!matches_changed_dimension("{}", &TriggerContext::default()));
+        assert!(!matches_changed_dimension("invalid", &context));
     }
 
     #[test]

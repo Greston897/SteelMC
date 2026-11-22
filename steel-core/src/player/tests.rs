@@ -872,6 +872,102 @@ fn admitted_world_change_prevents_end_credits_detach() {
 }
 
 #[test]
+fn dimension_advancements_only_follow_a_successful_cross_world_transition() {
+    use crate::player::advancement::progress::AdvancementProgress;
+    use crate::portal::{TeleportPostTransition, TeleportTransition};
+    use steel_protocol::packets::game::RelativeMovement;
+    use steel_registry::REGISTRY;
+    use steel_utils::Identifier;
+
+    init_vanilla_registry();
+    let source_fixture = fresh_test_world("overworld");
+    let target_fixture = fresh_test_world("the_nether");
+    let end_fixture = fresh_test_world("the_end");
+    let source = &source_fixture.world;
+    let target = &target_fixture.world;
+    let end = &end_fixture.world;
+    insert_ready_full_chunk(source, ChunkPos::new(0, 0));
+    insert_ready_full_chunk(target, ChunkPos::new(0, 0));
+    insert_ready_full_chunk(end, ChunkPos::new(0, 0));
+    let player = test_player(Arc::clone(source));
+    assert!(source.add_player(Arc::clone(&player), ResetReason::InitialJoin));
+    let advancement = REGISTRY
+        .advancements
+        .value_by_key(&Identifier::vanilla_static("story/enter_the_nether"))
+        .expect("nether advancement");
+    let complete = || {
+        player.advancements.lock().progress.get_progress(advancement)
+            .is_some_and(AdvancementProgress::is_done)
+    };
+    let transition = |target_world| TeleportTransition {
+        target_world,
+        position: DVec3::new(1.5, 64.0, 1.5),
+        rotation: (0.0, 0.0),
+        velocity: DVec3::ZERO,
+        relatives: RelativeMovement::NONE,
+        portal_cooldown: 0,
+        as_passenger: false,
+        post_transition: TeleportPostTransition::do_nothing(),
+    };
+    assert!(player.change_world_within_domain(&transition(Arc::clone(source))));
+    assert!(!complete(), "a same-world teleport is not a dimension change");
+    assert!(player.change_world_within_domain(&transition(Arc::clone(target))));
+    assert!(complete());
+    let root = REGISTRY
+        .advancements
+        .value_by_key(&Identifier::vanilla_static("nether/root"))
+        .expect("nether root");
+    assert!(player.advancements.lock().progress.get_progress(root)
+        .is_some_and(AdvancementProgress::is_done));
+    let end_advancement = REGISTRY
+        .advancements
+        .value_by_key(&Identifier::vanilla_static("story/enter_the_end"))
+        .expect("end advancement");
+    assert!(player.advancements.lock().progress.get_progress(end_advancement).is_none());
+    assert!(player.change_world_within_domain(&transition(Arc::clone(end))));
+    assert!(player.advancements.lock().progress.get_progress(end_advancement)
+        .is_some_and(AdvancementProgress::is_done));
+}
+
+#[test]
+fn failed_dimension_admission_does_not_grant_advancements() {
+    use crate::portal::{TeleportPostTransition, TeleportTransition};
+    use steel_protocol::packets::game::RelativeMovement;
+    use steel_registry::REGISTRY;
+    use steel_utils::Identifier;
+
+    init_vanilla_registry();
+    let source_fixture = fresh_test_world("overworld");
+    let target_fixture = fresh_test_world("the_nether");
+    let source = &source_fixture.world;
+    let target = &target_fixture.world;
+    insert_ready_full_chunk(source, ChunkPos::new(0, 0));
+    insert_ready_full_chunk(target, ChunkPos::new(0, 0));
+    let player = test_player(Arc::clone(source));
+    let blocker = TestPlayerBuilder::new(Arc::clone(target), "Blocker", 2)
+        .uuid(player.gameprofile.id())
+        .build();
+    assert!(source.add_player(Arc::clone(&player), ResetReason::InitialJoin));
+    assert!(target.add_player(Arc::clone(&blocker), ResetReason::InitialJoin));
+    let transition = TeleportTransition {
+        target_world: Arc::clone(target),
+        position: DVec3::new(1.5, 64.0, 1.5),
+        rotation: (0.0, 0.0),
+        velocity: DVec3::ZERO,
+        relatives: RelativeMovement::NONE,
+        portal_cooldown: 0,
+        as_passenger: false,
+        post_transition: TeleportPostTransition::do_nothing(),
+    };
+    assert!(!player.change_world_within_domain(&transition));
+    let advancement = REGISTRY
+        .advancements
+        .value_by_key(&Identifier::vanilla_static("story/enter_the_nether"))
+        .expect("nether advancement");
+    assert!(player.advancements.lock().progress.get_progress(advancement).is_none());
+}
+
+#[test]
 fn duplicate_exact_player_admission_cleans_existing_membership() {
     init_vanilla_registry();
     let world_fixture = fresh_test_world("duplicate_player_admission");

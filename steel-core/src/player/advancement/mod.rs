@@ -116,8 +116,8 @@ impl PlayerAdvancement {
     /// Fires `trigger` with an event description, honouring each criterion's
     /// predicate.
     ///
-    /// Only block-use, block-placement and consume-item triggers are enabled,
-    /// using conservative subsets of their predicate languages.
+    /// Block-use, block-placement, consume-item and dimension-change triggers
+    /// are enabled using conservative subsets of their predicate languages.
     pub fn trigger_with_context(
         &mut self,
         player: &Player,
@@ -132,7 +132,11 @@ impl PlayerAdvancement {
         let block_location = trigger == &vanilla_criteria_triggers::ITEM_USED_ON_BLOCK
             || trigger == &vanilla_criteria_triggers::PLACED_BLOCK;
         let used_item = trigger == &vanilla_criteria_triggers::CONSUME_ITEM;
-        if !block_location && !used_item {
+        let changed_dimension = trigger == &vanilla_criteria_triggers::CHANGED_DIMENSION;
+        if !block_location && !used_item && !changed_dimension {
+            return 0;
+        }
+        if changed_dimension && (context.from_dimension.is_none() || context.to_dimension.is_none()) {
             return 0;
         }
         let mut granted = 0;
@@ -149,8 +153,10 @@ impl PlayerAdvancement {
                                 && criterion.instance().is_none_or(|instance| {
                                     if block_location {
                                         predicate::matches_block_location(instance, context)
-                                    } else {
+                                    } else if used_item {
                                         predicate::matches_used_item(instance, context)
+                                    } else {
+                                        predicate::matches_changed_dimension(instance, context)
                                     }
                                 })
                         })

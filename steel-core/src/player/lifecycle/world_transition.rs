@@ -72,23 +72,7 @@ impl Player {
             }
             self.reset_flying_ticks();
         } else {
-            // Vanilla `ServerPlayer.changeDimension` fires `changed_dimension` with the
-            // source and target dimension keys, and `nether_travel` when one side of
-            // the trip is the Nether (used by `nether/fast_travel` and the
-            // `nether/return_to_sender` distances).
-            let source_dimension = current_world.key.clone();
-            let target_dimension = new_world.key.clone();
-            self.trigger_advancement_with_context(
-                &CHANGED_DIMENSION,
-                &TriggerContext::dimension(&source_dimension, &target_dimension),
-            );
-            if is_nether_dimension(&source_dimension) || is_nether_dimension(&target_dimension) {
-                self.trigger_advancement_with_context(
-                    &NETHER_TRAVEL,
-                    &TriggerContext::nether_travel(position.distance(current_position)),
-                );
-            }
-            self.reset(new_world, ResetReason::WorldChange);
+            self.reset(Arc::clone(&new_world), ResetReason::WorldChange);
             if !self.spawn_with_velocity_packet(
                 position,
                 rotation,
@@ -100,6 +84,22 @@ impl Player {
                 teleport_transition.relatives,
             ) {
                 return false;
+            }
+            // Advancement rewards and player predicates must observe the destination
+            // world; a failed admission must not grant a dimension criterion.
+            let source_dimension = &current_world.key;
+            let target_dimension = &new_world.key;
+            self.trigger_advancement_with_context(
+                &CHANGED_DIMENSION,
+                &TriggerContext::dimension(source_dimension, target_dimension),
+            );
+            // Nether travel is currently disabled in the advancement dispatcher;
+            // its entry-position tracking and distance context are not implemented.
+            if is_nether_dimension(source_dimension) || is_nether_dimension(target_dimension) {
+                self.trigger_advancement_with_context(
+                    &NETHER_TRAVEL,
+                    &TriggerContext::nether_travel(position.distance(current_position)),
+                );
             }
             // Vanilla: PlayerList.sendAllPlayerInfo -> inventoryMenu.sendAllDataToRemote
             self.send_inventory_to_remote();
