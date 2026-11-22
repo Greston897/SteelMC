@@ -90,10 +90,12 @@ pub fn use_item_on(
         );
 
         if block_result.consumes_action() {
-            player.trigger_advancement_with_context(
-                &ITEM_USED_ON_BLOCK,
-                &TriggerContext::block_at(world, pos).with_item_stack(&stack_before_use),
-            );
+            if block_result != InteractionResult::Fail {
+                player.trigger_advancement_with_context(
+                    &ITEM_USED_ON_BLOCK,
+                    &TriggerContext::block_at(world, pos).with_item_stack(&stack_before_use),
+                );
+            }
             return block_result;
         }
 
@@ -110,10 +112,12 @@ pub fn use_item_on(
             );
 
             if empty_result.consumes_action() {
-                player.trigger_advancement_with_context(
-                    &DEFAULT_BLOCK_USE,
-                    &TriggerContext::block_at(world, pos),
-                );
+                if empty_result != InteractionResult::Fail {
+                    player.trigger_advancement_with_context(
+                        &DEFAULT_BLOCK_USE,
+                        &TriggerContext::block_at(world, pos),
+                    );
+                }
                 return empty_result;
             }
         }
@@ -165,7 +169,7 @@ pub fn use_item_on(
             context.inv.with_item(|item| item.count = original_count);
         }
 
-        if result.consumes_action() {
+        if result.consumes_action() && result != InteractionResult::Fail {
             player.trigger_advancement_with_context(
                 &ITEM_USED_ON_BLOCK,
                 &TriggerContext::block_at(world, pos).with_item_stack(&stack_before_use),

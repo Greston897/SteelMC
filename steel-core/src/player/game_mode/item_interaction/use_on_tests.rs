@@ -446,10 +446,18 @@ fn plant_seed_advancement_matches_the_placed_crop() {
         ItemStack::new(&vanilla_items::WHEAT_SEEDS),
     );
     assert!(!completed());
-    assert!(interaction.use_on(InteractionHand::MainHand).consumes_action());
+    assert!(
+        interaction
+            .use_on(InteractionHand::MainHand)
+            .consumes_action()
+    );
     assert_eq!(
-        interaction.world_fixture.world.get_block_state(interaction.pos.above()).get_block(),
-        &*vanilla_blocks::WHEAT
+        interaction
+            .world_fixture
+            .world
+            .get_block_state(interaction.pos.above())
+            .get_block(),
+        &vanilla_blocks::WHEAT
     );
     assert!(completed());
 }

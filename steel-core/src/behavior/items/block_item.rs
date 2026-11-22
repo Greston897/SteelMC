@@ -137,6 +137,14 @@ impl BlockItem {
             Self::update_block_entity_components(&context, place_pos);
             let placed_behavior = BLOCK_BEHAVIORS.get_behavior(placed_state.get_block());
             placed_behavior.set_placed_by(placed_state, context.world, place_pos, context.source());
+            // Vanilla evaluates the current state after setPlacedBy, before consuming the item.
+            if let Some(player) = context.player() {
+                let stack = context.with_item(Clone::clone);
+                player.trigger_advancement_with_context(
+                    &PLACED_BLOCK,
+                    &TriggerContext::block_at(context.world, place_pos).with_item_stack(&stack),
+                );
+            }
         }
 
         // Play place sound (exclude the placing player, they hear it client-side)
@@ -178,20 +186,9 @@ impl BlockItem {
     }
 
     pub(super) fn place_block(context: &BlockPlaceContext<'_>, state: BlockStateId) -> bool {
-        let pos = context.place_pos();
-        let placed = context.world.set_block(pos, state, Self::PLACE_BLOCK_FLAGS);
-        if placed {
-            // Vanilla `BlockItem#place` → `CriteriaTriggers.PLACED_BLOCK`: the
-            // predicate carries the placed block and its item form.
-            if let Some(player) = context.player() {
-                let stack = context.with_item(Clone::clone);
-                player.trigger_advancement_with_context(
-                    &PLACED_BLOCK,
-                    &TriggerContext::block_at(context.world, pos).with_item_stack(&stack),
-                );
-            }
-        }
-        placed
+        context
+            .world
+            .set_block(context.place_pos(), state, Self::PLACE_BLOCK_FLAGS)
     }
 
     pub(super) fn get_state_for_placement(

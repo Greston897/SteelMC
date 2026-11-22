@@ -81,7 +81,7 @@ impl Player {
 
         let animation = self.interact_animation(packet.hand);
         let result = use_item_on(self, &world, packet.hand, &packet.block_hit);
-        if result.consumes_action() {
+        if result.consumes_action() && result != InteractionResult::Fail {
             let stack = self.inventory.lock().get_item_in_hand(packet.hand).clone();
             self.trigger_advancement_with_context(
                 &ANY_BLOCK_USE,
