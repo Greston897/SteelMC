@@ -945,6 +945,7 @@ fn dimension_advancements_only_follow_a_successful_cross_world_transition() {
             .is_none()
     );
     assert!(player.change_world_within_domain(&transition(Arc::clone(end))));
+    assert!(player.entered_nether_position.lock().is_none());
     assert!(
         player
             .advancements
@@ -959,6 +960,7 @@ fn dimension_advancements_only_follow_a_successful_cross_world_transition() {
 fn nether_travel_uses_saved_overworld_entry_and_horizontal_distance() {
     use crate::player::advancement::progress::AdvancementProgress;
     use crate::portal::{TeleportPostTransition, TeleportTransition};
+    use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
     use steel_protocol::packets::game::RelativeMovement;
     use steel_registry::REGISTRY;
     use steel_utils::Identifier;
@@ -1004,6 +1006,12 @@ fn nether_travel_uses_saved_overworld_entry_and_horizontal_distance() {
     );
     let saved = PersistentPlayerData::from_player(&player);
     assert_eq!(saved.entered_nether_position, Some([0.0, 64.0, 0.0]));
+    let mut command_nbt = NbtCompound::new();
+    player.save_command_nbt(&mut command_nbt);
+    assert_eq!(
+        command_nbt.get("entered_nether_pos"),
+        Some(&NbtTag::List(NbtList::Double(vec![0.0, 64.0, 0.0])))
+    );
     *player.entered_nether_position.lock() = None;
     saved.apply_to_player_without_location(&player);
     assert!(player.change_world_within_domain(&transition(
