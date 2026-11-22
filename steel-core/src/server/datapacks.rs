@@ -75,7 +75,8 @@ fn read_resource(path: &Path) -> Result<String, String> {
             path.display()
         ));
     }
-    fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))
+    let file = fs::File::open(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    read_bounded_text(file, &path.display().to_string())
 }
 
 fn entries(path: &Path) -> Result<Vec<fs::DirEntry>, String> {
@@ -175,7 +176,7 @@ fn load_resource(
     Ok(())
 }
 
-fn read_zip_text(reader: impl Read, source: &str) -> Result<String, String> {
+fn read_bounded_text(reader: impl Read, source: &str) -> Result<String, String> {
     let mut bytes = Vec::new();
     reader
         .take(MAX_RESOURCE_BYTES + 1)
@@ -212,7 +213,7 @@ fn load_zip(state: &mut FunctionPackState, path: &Path) -> Result<bool, String> 
     let file = fs::File::open(path).map_err(|error| format!("{source}: {error}"))?;
     let mut archive = ZipArchive::new(file).map_err(|error| format!("{source}: {error}"))?;
     let metadata = match archive.by_name("pack.mcmeta") {
-        Ok(file) => read_zip_text(file, &format!("{source}!pack.mcmeta"))?,
+        Ok(file) => read_bounded_text(file, &format!("{source}!pack.mcmeta"))?,
         Err(ZipError::FileNotFound) => return Ok(false),
         Err(error) => return Err(format!("{source}: {error}")),
     };
@@ -268,7 +269,7 @@ fn load_zip(state: &mut FunctionPackState, path: &Path) -> Result<bool, String> 
             .by_index(index)
             .map_err(|error| format!("{source}!{name}: {error}"))?;
         let label = format!("{source}!{name}");
-        let text = read_zip_text(entry, &label)?;
+        let text = read_bounded_text(entry, &label)?;
         load_resource(state, key, &text, &label, tags)?;
     }
     Ok(true)
@@ -293,11 +294,10 @@ impl FunctionPackState {
                 TagEntry::Name(id) => (id, true),
                 TagEntry::Object { id, required } => (id, *required),
             };
-            let is_tag = id.starts_with('#');
-            let id: Identifier = id
-                .trim_start_matches('#')
-                .parse()
-                .map_err(|error| format!("{key}: {error}"))?;
+            let (is_tag, raw_id) = id
+                .strip_prefix('#')
+                .map_or((false, id.as_str()), |name| (true, name));
+            let id: Identifier = raw_id.parse().map_err(|error| format!("{key}: {error}"))?;
             if is_tag {
                 if required || self.tags.contains_key(&id) {
                     self.expand_tag(&id, visiting, result)?;
@@ -779,6 +779,50 @@ mod tests {
             1
         );
         assert!(results.iter().all(|result| result.contains(&tick)));
+        Ok(())
+    }
+
+    #[test]
+    fn malformed_nested_tag_does_not_replace_live_snapshot() -> Result<(), Box<dyn Error>> {
+        steel_registry::init_vanilla_registry();
+        let fixture = Fixture::new()?;
+        let function = fixture
+            .0
+            .join("test/data/example/function/hello.mcfunction");
+        let tag = fixture
+            .0
+            .join("test/data/minecraft/tags/function/tick.json");
+        fs::write(&function, "return 1")?;
+        fs::write(&tag, r#"{"values":["example:hello"]}"#)?;
+        let packs = FunctionPacks::from_root(fixture.0.clone())?;
+        let key = "example:hello".parse::<Identifier>()?;
+        for invalid in [
+            r###"{"values":["##minecraft:tick"]}"###,
+            r###"{"values":[{"id":"##minecraft:missing","required":false}]}"###,
+        ] {
+            fs::write(&function, "return 2")?;
+            fs::write(&tag, invalid)?;
+            assert!(packs.reload().is_err());
+            assert_eq!(
+                packs.commands(&key).as_deref(),
+                Some(&["return 1".to_owned()][..])
+            );
+            assert_eq!(packs.tick_functions(), vec![key.clone()]);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn resource_reader_enforces_size_limit_during_read() -> Result<(), Box<dyn Error>> {
+        let accepted = vec![b'a'; MAX_RESOURCE_BYTES as usize];
+        assert_eq!(
+            read_bounded_text(accepted.as_slice(), "resource")?.len(),
+            accepted.len()
+        );
+        let mut too_large = accepted;
+        too_large.push(b'b');
+        assert!(read_bounded_text(too_large.as_slice(), "resource").is_err());
+        assert!(read_bounded_text([0xff].as_slice(), "resource").is_err());
         Ok(())
     }
 
