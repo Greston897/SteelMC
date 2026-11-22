@@ -974,27 +974,58 @@ fn nether_travel_uses_saved_overworld_entry_and_horizontal_distance() {
     let player = test_player(Arc::clone(source));
     player.base.set_position_local(DVec3::new(0.0, 64.0, 0.0));
     assert!(source.add_player(Arc::clone(&player), ResetReason::InitialJoin));
-    let advancement = REGISTRY.advancements
+    let advancement = REGISTRY
+        .advancements
         .value_by_key(&Identifier::vanilla_static("nether/fast_travel"))
         .expect("fast travel advancement");
-    let completed = || player.advancements.lock().progress.get_progress(advancement)
-        .is_some_and(AdvancementProgress::is_done);
+    let completed = || {
+        player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(advancement)
+            .is_some_and(AdvancementProgress::is_done)
+    };
     let transition = |target_world, position| TeleportTransition {
-        target_world, position, rotation: (0.0, 0.0), velocity: DVec3::ZERO,
-        relatives: RelativeMovement::NONE, portal_cooldown: 0, as_passenger: false,
+        target_world,
+        position,
+        rotation: (0.0, 0.0),
+        velocity: DVec3::ZERO,
+        relatives: RelativeMovement::NONE,
+        portal_cooldown: 0,
+        as_passenger: false,
         post_transition: TeleportPostTransition::do_nothing(),
     };
-    assert!(player.change_world_within_domain(&transition(Arc::clone(nether), DVec3::new(0.0, 64.0, 0.0))));
+    assert!(
+        player.change_world_within_domain(&transition(
+            Arc::clone(nether),
+            DVec3::new(0.0, 64.0, 0.0)
+        ))
+    );
     let saved = PersistentPlayerData::from_player(&player);
     assert_eq!(saved.entered_nether_position, Some([0.0, 64.0, 0.0]));
     *player.entered_nether_position.lock() = None;
-    saved.apply_to_player(&player);
-    assert!(player.change_world_within_domain(&transition(Arc::clone(source), DVec3::new(0.0, 7064.0, 0.0))));
-    assert!(!completed(), "vertical displacement must not satisfy horizontal distance");
+    saved.apply_to_player_without_location(&player);
+    assert!(player.change_world_within_domain(&transition(
+        Arc::clone(source),
+        DVec3::new(0.0, 7064.0, 0.0)
+    )));
+    assert!(
+        !completed(),
+        "vertical displacement must not satisfy horizontal distance"
+    );
     assert!(player.entered_nether_position.lock().is_none());
 
-    assert!(player.change_world_within_domain(&transition(Arc::clone(nether), DVec3::new(0.0, 64.0, 0.0))));
-    assert!(player.change_world_within_domain(&transition(Arc::clone(source), DVec3::new(7000.0, 7064.0, 0.0))));
+    assert!(
+        player.change_world_within_domain(&transition(
+            Arc::clone(nether),
+            DVec3::new(0.0, 64.0, 0.0)
+        ))
+    );
+    assert!(player.change_world_within_domain(&transition(
+        Arc::clone(source),
+        DVec3::new(7000.0, 7064.0, 0.0)
+    )));
     assert!(completed(), "the inclusive horizontal threshold must match");
     assert!(player.entered_nether_position.lock().is_none());
 }

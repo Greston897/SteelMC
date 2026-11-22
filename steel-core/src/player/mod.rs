@@ -2607,8 +2607,12 @@ impl Player {
             NbtTag::Byte(i8::from(self.has_seen_credits())),
         );
         nbt.insert("Dimension", self.get_world().key.to_string());
-        if let Some(position) = *self.entered_nether_position.lock() {
-            nbt.insert("entered_nether_pos", NbtList::Double(position.to_array().to_vec()));
+        let entered_nether_position = *self.entered_nether_position.lock();
+        if let Some(position) = entered_nether_position {
+            nbt.insert(
+                "entered_nether_pos",
+                NbtList::Double(position.to_array().to_vec()),
+            );
         }
 
         if let Some(vehicle) = self.vehicle()

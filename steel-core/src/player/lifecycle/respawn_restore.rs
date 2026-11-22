@@ -383,7 +383,10 @@ mod tests {
         assert_eq!(replacement.permissions.lock().groups, ["builders"]);
         assert_eq!(replacement.permissions.lock().version, 7);
         assert!(*replacement.seen_credits.lock());
-        assert_eq!(*replacement.entered_nether_position.lock(), Some(DVec3::new(-25.5, 70.0, 93.0)));
+        assert_eq!(
+            *replacement.entered_nether_position.lock(),
+            Some(DVec3::new(-25.5, 70.0, 93.0))
+        );
         assert_eq!(replacement.respawn_config(), Some(respawn_config));
         assert_eq!(replacement.tags(), ["credits-return"]);
         assert_eq!(replacement.position(), DVec3::ZERO);

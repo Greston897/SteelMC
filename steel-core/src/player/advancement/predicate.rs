@@ -261,7 +261,10 @@ pub fn matches_nether_route(instance: &str, context: &TriggerContext) -> bool {
     let Some(fields) = distance.as_object() else {
         return false;
     };
-    if fields.keys().any(|key| !matches!(key.as_str(), "x" | "y" | "z" | "horizontal" | "absolute")) {
+    if fields
+        .keys()
+        .any(|key| !matches!(key.as_str(), "x" | "y" | "z" | "horizontal" | "absolute"))
+    {
         return false;
     }
     // Vanilla casts each coordinate delta to float before evaluating distances.
@@ -277,7 +280,9 @@ pub fn matches_nether_route(instance: &str, context: &TriggerContext) -> bool {
     ]
     .into_iter()
     .all(|(key, value, squared)| {
-        fields.get(key).is_none_or(|range| matches_distance_bounds(range, value, squared))
+        fields
+            .get(key)
+            .is_none_or(|range| matches_distance_bounds(range, value, squared))
     })
 }
 
@@ -311,8 +316,7 @@ fn matches_distance_bounds(range: &Value, value: f64, squared: bool) -> bool {
         return false;
     }
     let transform = |bound: f64| if squared { bound * bound } else { bound };
-    min.is_none_or(|min| value >= transform(min))
-        && max.is_none_or(|max| value <= transform(max))
+    min.is_none_or(|min| value >= transform(min)) && max.is_none_or(|max| value <= transform(max))
 }
 
 /// Conservative matcher for block-use and block-placement location triggers.
@@ -919,13 +923,32 @@ mod tests {
 
     #[test]
     fn nether_route_uses_horizontal_vertical_and_absolute_components() {
-        let context = TriggerContext::nether_route(DVec3::new(0.0, 0.0, 0.0), DVec3::new(3.0, 12.0, 4.0));
-        assert!(matches_nether_route(r#"{"distance":{"horizontal":5,"absolute":13,"x":3,"y":12,"z":4}}"#, &context));
-        assert!(!matches_nether_route(r#"{"distance":{"horizontal":{"min":6}}}"#, &context));
-        assert!(!matches_nether_route(r#"{"distance":{"absolute":{"max":12}}}"#, &context));
-        assert!(!matches_nether_route(r#"{"distance":{"y":{"min":13}}}"#, &context));
-        assert!(!matches_nether_route(r#"{"distance":{"horizontal":{"min":9,"max":2}}}"#, &context));
-        assert!(!matches_nether_route(r#"{"distance":{"horizontal":{"min":"bad"}}}"#, &context));
+        let context =
+            TriggerContext::nether_route(DVec3::new(0.0, 0.0, 0.0), DVec3::new(3.0, 12.0, 4.0));
+        assert!(matches_nether_route(
+            r#"{"distance":{"horizontal":5,"absolute":13,"x":3,"y":12,"z":4}}"#,
+            &context
+        ));
+        assert!(!matches_nether_route(
+            r#"{"distance":{"horizontal":{"min":6}}}"#,
+            &context
+        ));
+        assert!(!matches_nether_route(
+            r#"{"distance":{"absolute":{"max":12}}}"#,
+            &context
+        ));
+        assert!(!matches_nether_route(
+            r#"{"distance":{"y":{"min":13}}}"#,
+            &context
+        ));
+        assert!(!matches_nether_route(
+            r#"{"distance":{"horizontal":{"min":9,"max":2}}}"#,
+            &context
+        ));
+        assert!(!matches_nether_route(
+            r#"{"distance":{"horizontal":{"min":"bad"}}}"#,
+            &context
+        ));
         assert!(!matches_nether_route(r#"{"start_position":{}}"#, &context));
         assert!(!matches_nether_route(r#"{"player":{}}"#, &context));
         assert!(!matches_nether_route("{}", &TriggerContext::default()));

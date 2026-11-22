@@ -334,7 +334,10 @@ impl PersistentPlayerData {
             },
             post_effects,
             raid_omen_position: player.raid_omen_position.lock().map(|pos| pos.0.to_array()),
-            entered_nether_position: player.entered_nether_position.lock().map(|pos| pos.to_array()),
+            entered_nether_position: player
+                .entered_nether_position
+                .lock()
+                .map(|pos| pos.to_array()),
         }
     }
 
@@ -576,7 +579,8 @@ impl PersistentPlayerData {
         *player.raid_omen_position.lock() = self
             .raid_omen_position
             .map(|pos| steel_utils::BlockPos(glam::IVec3::from_array(pos)));
-        *player.entered_nether_position.lock() = self.entered_nether_position.map(DVec3::from_array);
+        *player.entered_nether_position.lock() =
+            self.entered_nether_position.map(DVec3::from_array);
 
         // Statistics
         {
