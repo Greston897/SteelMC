@@ -684,13 +684,13 @@ mod tests {
         let packs = FunctionPacks::from_root(fixture.0.clone())?;
         let load = "example:load".parse::<Identifier>()?;
         let tick = "example:tick".parse::<Identifier>()?;
-        assert!(packs.tick_functions(false).is_empty());
-        assert!(packs.tick_functions(false).is_empty());
+        assert_eq!(packs.tick_functions(false), [] as [Identifier; 0]);
+        assert_eq!(packs.tick_functions(false), [] as [Identifier; 0]);
         assert_eq!(packs.tick_functions(true), vec![load.clone(), tick.clone()]);
-        assert!(packs.tick_functions(false).is_empty());
+        assert_eq!(packs.tick_functions(false), [] as [Identifier; 0]);
         assert_eq!(packs.tick_functions(true), vec![tick.clone()]);
         packs.reload()?;
-        assert!(packs.tick_functions(false).is_empty());
+        assert_eq!(packs.tick_functions(false), [] as [Identifier; 0]);
         assert_eq!(packs.tick_functions(true), vec![load, tick]);
         Ok(())
     }
