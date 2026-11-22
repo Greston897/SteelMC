@@ -257,7 +257,7 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
         "entity" | "entity_type" => matches_entity_predicate(expected, context),
         // `location` and distance checks.
         "location" => {
-            if expected.get("condition").is_some() {
+            if expected.get("type").is_some() || expected.get("condition").is_some() {
                 matches_location_loot_condition(expected, context, 0) == Some(true)
             } else {
                 matches_location(expected, context.position)
@@ -524,7 +524,7 @@ fn matches_location_loot_condition(
         return None;
     }
     let map = expected.as_object()?;
-    let name = map.get("condition")?.as_str()?;
+    let name = map.get("type").or_else(|| map.get("condition"))?.as_str()?;
     let name = name.strip_prefix("minecraft:").unwrap_or(name);
     match name {
         "all_of" | "any_of" => {
@@ -972,7 +972,7 @@ mod tests {
             position: Some((8.5, 64.5, 8.5)),
             ..context_for_stack(&stack)
         };
-        let condition = r#"{"location":{"condition":"minecraft:all_of","terms":[{"condition":"minecraft:location_check","predicate":{"block":{"blocks":"minecraft:copper_block"},"position":{"y":{"min":64}}}},{"condition":"minecraft:match_tool","predicate":{"items":"minecraft:honeycomb"}}]}}"#;
+        let condition = r#"{"location":{"type":"minecraft:all_of","terms":[{"type":"minecraft:location_check","predicate":{"block":{"blocks":"minecraft:copper_block"},"position":{"y":{"min":64}}}},{"type":"minecraft:match_tool","predicate":{"items":"minecraft:honeycomb"}}]}}"#;
         assert!(matches(condition, &context));
         let wrong_tool = context
             .clone()
@@ -984,21 +984,21 @@ mod tests {
         };
         assert!(!matches(condition, &wrong_block));
         assert!(matches(
-            r#"{"location":{"condition":"minecraft:location_check","offsetY":1,"predicate":{"position":{"y":65.5}}}}"#,
+            r#"{"location":{"type":"minecraft:location_check","offsetY":1,"predicate":{"position":{"y":65.5}}}}"#,
             &context
         ));
         assert!(!matches(
-            r#"{"location":{"condition":"minecraft:location_check","offsetY":1,"predicate":{"block":{"blocks":"minecraft:copper_block"}}}}"#,
+            r#"{"location":{"type":"minecraft:location_check","offsetY":1,"predicate":{"block":{"blocks":"minecraft:copper_block"}}}}"#,
             &context
         ));
         assert!(!matches(
-            r#"{"location":{"condition":"minecraft:inverted","term":{"condition":"minecraft:weather_check"}}}"#,
+            r#"{"location":{"type":"minecraft:inverted","term":{"type":"minecraft:weather_check"}}}"#,
             &context
         ));
         assert!(!matches(condition, &TriggerContext::default()));
         assert!(matches_item_used_on_block(condition, &context));
         assert!(!matches_item_used_on_block(
-            r#"{"player":{"condition":"minecraft:entity_properties"}}"#,
+            r#"{"player":{"type":"minecraft:entity_properties"}}"#,
             &context
         ));
         assert!(!matches_item_used_on_block(
