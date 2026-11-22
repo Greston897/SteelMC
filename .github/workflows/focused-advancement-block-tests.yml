@@ -7,6 +7,7 @@ on:
       - 'steel-core/src/player/advancement/predicate.rs'
       - 'steel-core/src/player/advancement/mod.rs'
       - 'steel-core/src/player/lifecycle/world_transition.rs'
+      - 'steel-core/src/player/sleep.rs'
       - 'steel-core/src/player/tests.rs'
       - 'steel-core/src/player/game_mode/item_interaction.rs'
       - 'steel-core/src/player/game_mode/item_interaction/use_on_tests.rs'
@@ -45,6 +46,7 @@ jobs:
             cargo test -p steel-core --lib player::advancement::predicate::tests:: -- --nocapture &&
             cargo test -p steel-core --lib player::tests::dimension_advancements_only_follow_a_successful_cross_world_transition -- --nocapture &&
             cargo test -p steel-core --lib player::tests::failed_dimension_admission_does_not_grant_advancements -- --nocapture &&
+            cargo test -p steel-core --lib player::tests::sleep_advancement_requires_successful_sleep_and_permission_to_set_spawn -- --nocapture &&
             cargo test -p steel-core --lib behavior::item::tests:: -- --nocapture &&
             cargo test -p steel-core --lib player::game_mode::item_interaction::use_on_tests:: -- --nocapture &&
             cargo test -p steel-core --lib behavior::blocks::vegetation::cactus_block::tests:: -- --nocapture &&
@@ -60,7 +62,7 @@ jobs:
           from pathlib import Path
           text = Path('/tmp/focused-regressions.log').read_text()
           counts = [int(n) for n in re.findall(r'test result: ok\. (\d+) passed;', text)]
-          minimums = [10, 1, 1, 1, 1, 1, 5, 6, 1, 1, 1, 1]
+          minimums = [10, 1, 1, 1, 1, 1, 1, 5, 6, 1, 1, 1, 1]
           assert len(counts) == len(minimums) and all(actual >= minimum for actual, minimum in zip(counts, minimums)), counts
           PY
       - name: Publish results

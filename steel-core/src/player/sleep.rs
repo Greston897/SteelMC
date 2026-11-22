@@ -231,8 +231,9 @@ impl Player {
         self.sync_entity_data();
         self.award_custom_stat(slept_in_stat);
 
-        // Vanilla `ServerPlayer.startSleepInBed` fires `slept_in_bed`.
-        self.trigger_advancement(&vanilla_criteria_triggers::SLEPT_IN_BED);
+        if can_set_spawn {
+            self.trigger_advancement(&vanilla_criteria_triggers::SLEPT_IN_BED);
+        }
         if !world.can_sleep_through_nights() {
             self.send_overlay_message(
                 &TranslatedMessage {

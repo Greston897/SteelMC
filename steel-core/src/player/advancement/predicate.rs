@@ -188,6 +188,15 @@ impl TriggerContext {
     }
 }
 
+/// Matches a player-only trigger without a player predicate.
+#[must_use]
+pub fn matches_unconditional_player_trigger(instance: &str) -> bool {
+    let Ok(value) = serde_json::from_str::<Value>(instance) else {
+        return false;
+    };
+    value.get("conditions").unwrap_or(&value).as_object().is_some_and(serde_json::Map::is_empty)
+}
+
 /// Matches dimension keys, rejecting player predicates until their loot context is supported.
 #[must_use]
 pub fn matches_changed_dimension(instance: &str, context: &TriggerContext) -> bool {
@@ -815,6 +824,16 @@ mod tests {
 
     fn id(path: &str) -> Identifier {
         Identifier::vanilla(path.to_owned())
+    }
+
+    #[test]
+    fn unconditional_player_trigger_rejects_unevaluated_predicates() {
+        assert!(matches_unconditional_player_trigger("{}"));
+        assert!(matches_unconditional_player_trigger(r#"{"conditions":{}}"#));
+        assert!(!matches_unconditional_player_trigger(r#"{"player":{}}"#));
+        assert!(!matches_unconditional_player_trigger(r#"{"unexpected":true}"#));
+        assert!(!matches_unconditional_player_trigger("[]"));
+        assert!(!matches_unconditional_player_trigger("invalid"));
     }
 
     #[test]
