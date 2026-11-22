@@ -410,7 +410,7 @@ fn wax_on_advancement_requires_honeycomb_and_unwaxed_copper() {
     let context = TriggerContext::block_at(&interaction.world_fixture.world, interaction.pos)
         .with_item_stack(&ItemStack::new(&vanilla_items::HONEYCOMB));
     assert!(
-        predicate::matches(instance, &context),
+        predicate::matches_item_used_on_block(instance, &context),
         "wax_on criterion did not match: {instance}"
     );
     assert!(

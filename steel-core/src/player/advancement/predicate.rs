@@ -202,9 +202,9 @@ pub fn matches_item_used_on_block(instance: &str, context: &TriggerContext) -> b
     if conditions.keys().any(|key| key != "location") {
         return false;
     }
-    conditions.get("location").is_none_or(|location| {
-        matches_location_loot_condition(location, context, 0) == Some(true)
-    })
+    conditions
+        .get("location")
+        .is_none_or(|location| matches_location_loot_condition(location, context, 0) == Some(true))
 }
 
 /// Returns whether `criterion_instance` accepts `context`.
