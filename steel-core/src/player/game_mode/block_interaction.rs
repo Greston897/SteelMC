@@ -1,4 +1,6 @@
 use super::{block_breaking::BlockBreakAction, *};
+use crate::player::advancement::predicate::TriggerContext;
+use steel_registry::vanilla_criteria_triggers::ANY_BLOCK_USE;
 
 impl Player {
     /// Sends block update packets for a position and its neighbor.
@@ -82,9 +84,8 @@ impl Player {
         if result.consumes_action() {
             let stack = self.inventory.lock().get_item_in_hand(packet.hand).clone();
             self.trigger_advancement_with_context(
-                &steel_registry::vanilla_criteria_triggers::ANY_BLOCK_USE,
-                &crate::player::advancement::predicate::TriggerContext::block_at(&world, pos)
-                    .with_item_stack(&stack),
+                &ANY_BLOCK_USE,
+                &TriggerContext::block_at(&world, pos).with_item_stack(&stack),
             );
         }
         self.swing_after_interaction(packet.hand, animation, result);

@@ -117,7 +117,10 @@ impl TriggerContext {
     #[must_use]
     pub fn block_at(world: &World, pos: BlockPos) -> Self {
         let state = world.get_block_state(pos);
-        let block = REGISTRY.blocks.by_state_id(state).map(|block| block.key.clone());
+        let block = REGISTRY
+            .blocks
+            .by_state_id(state)
+            .map(|block| block.key.clone());
         let (x, y, z) = pos.get_center();
         Self {
             block,
@@ -515,21 +518,33 @@ fn matches_location_loot_condition(
                     None => unknown = true,
                 }
             }
-            if unknown { None } else { Some(name == "all_of") }
+            if unknown {
+                None
+            } else {
+                Some(name == "all_of")
+            }
         }
         "inverted" => matches_location_loot_condition(map.get("term")?, context, depth + 1)
             .map(|result| !result),
         "match_tool" => {
             let stack = context.item_stack.as_ref()?;
             Some(map.get("predicate").is_none_or(|predicate| {
-                matches_item_view(predicate, (!stack.is_empty()).then_some(&stack.item().key), Some(stack))
+                matches_item_view(
+                    predicate,
+                    (!stack.is_empty()).then_some(&stack.item().key),
+                    Some(stack),
+                )
             }))
         }
         "match_block" => matches_event_block(expected, context),
         "location_check" => {
             let (mut x, mut y, mut z) = context.position?;
             let mut has_offset = false;
-            for (key, value) in [("offsetX", &mut x), ("offsetY", &mut y), ("offsetZ", &mut z)] {
+            for (key, value) in [
+                ("offsetX", &mut x),
+                ("offsetY", &mut y),
+                ("offsetZ", &mut z),
+            ] {
                 if let Some(offset) = map.get(key) {
                     let offset = i32::try_from(offset.as_i64()?).ok()?;
                     has_offset |= offset != 0;
@@ -540,13 +555,19 @@ fn matches_location_loot_condition(
                 return Some(true);
             };
             let predicate = predicate.as_object()?;
-            if predicate.keys().any(|key| key != "position" && key != "block") {
+            if predicate
+                .keys()
+                .any(|key| key != "position" && key != "block")
+            {
                 return None;
             }
             if let Some(position) = predicate.get("position") {
                 let bounds = position.as_object()?;
                 for (axis, value) in [("x", x), ("y", y), ("z", z)] {
-                    if bounds.get(axis).is_some_and(|range| !matches_number_range(range, value)) {
+                    if bounds
+                        .get(axis)
+                        .is_some_and(|range| !matches_number_range(range, value))
+                    {
                         return Some(false);
                     }
                 }
@@ -576,7 +597,10 @@ fn matches_event_block(expected: &Value, context: &TriggerContext) -> Option<boo
             return Some(false);
         }
     }
-    Some(map.get("state").is_none_or(|value| matches_block_state(value, state)))
+    Some(
+        map.get("state")
+            .is_none_or(|value| matches_block_state(value, state)),
+    )
 }
 
 /// Vanilla `Range<f64>`: `{"min": .., "max": ..}` or a bare number.
@@ -931,7 +955,9 @@ mod tests {
         };
         let condition = r#"{"location":{"condition":"minecraft:all_of","terms":[{"condition":"minecraft:location_check","predicate":{"block":{"blocks":"minecraft:copper_block"},"position":{"y":{"min":64}}}},{"condition":"minecraft:match_tool","predicate":{"items":"minecraft:honeycomb"}}]}}"#;
         assert!(matches(condition, &context));
-        let wrong_tool = context.clone().with_item_stack(&ItemStack::new(&vanilla_items::STICK));
+        let wrong_tool = context
+            .clone()
+            .with_item_stack(&ItemStack::new(&vanilla_items::STICK));
         assert!(!matches(condition, &wrong_tool));
         let wrong_block = TriggerContext {
             block_state: Some(vanilla_blocks::STONE.default_state()),

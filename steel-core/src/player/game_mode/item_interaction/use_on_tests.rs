@@ -26,6 +26,7 @@ use crate::block_entity::entities::{SignBlockEntity, SignText};
 use crate::entity::{Entity as _, entities::ItemEntity};
 use crate::inventory::container::Container as _;
 use crate::player::Player;
+use crate::player::advancement::{predicate, predicate::TriggerContext, progress::AdvancementProgress};
 use crate::test_support::{
     TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
 };
@@ -384,15 +385,40 @@ fn wax_on_advancement_requires_honeycomb_and_unwaxed_copper() {
             .lock()
             .progress
             .get_progress(advancement)
-            .is_some_and(|progress| progress.is_done())
+            .is_some_and(AdvancementProgress::is_done)
     };
     interaction.block(vanilla_blocks::STONE.default_state());
-    interaction.hold(InteractionHand::MainHand, ItemStack::new(&vanilla_items::HONEYCOMB));
-    assert!(!interaction.use_on(InteractionHand::MainHand).consumes_action());
+    interaction.hold(
+        InteractionHand::MainHand,
+        ItemStack::new(&vanilla_items::HONEYCOMB),
+    );
+    assert!(
+        !interaction
+            .use_on(InteractionHand::MainHand)
+            .consumes_action()
+    );
     assert!(!completed());
 
     interaction.block(vanilla_blocks::COPPER_BLOCK.default_state());
-    assert!(interaction.use_on(InteractionHand::MainHand).consumes_action());
+    let instance = advancement
+        .get_criterion("wax_on")
+        .expect("wax_on criterion")
+        .instance()
+        .expect("criterion conditions");
+    let context = TriggerContext::block_at(
+        &interaction.world_fixture.world,
+        interaction.pos,
+    )
+    .with_item_stack(&ItemStack::new(&vanilla_items::HONEYCOMB));
+    assert!(
+        predicate::matches(instance, &context),
+        "wax_on criterion did not match: {instance}"
+    );
+    assert!(
+        interaction
+            .use_on(InteractionHand::MainHand)
+            .consumes_action()
+    );
     assert!(completed());
 }
 
