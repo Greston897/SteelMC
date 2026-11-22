@@ -207,6 +207,44 @@ pub fn matches_block_location(instance: &str, context: &TriggerContext) -> bool 
         .is_none_or(|location| matches_location_loot_condition(location, context, 0) == Some(true))
 }
 
+/// Conservative matcher for triggers whose only event-specific field is `item`.
+/// Player loot predicates remain unsupported and cannot grant progress.
+#[must_use]
+pub fn matches_used_item(instance: &str, context: &TriggerContext) -> bool {
+    let Ok(value) = serde_json::from_str::<Value>(instance) else {
+        return false;
+    };
+    let Some(conditions) = value.get("conditions").unwrap_or(&value).as_object() else {
+        return false;
+    };
+    if conditions.keys().any(|key| key != "item") || context.item_stack.is_none() {
+        return false;
+    }
+    conditions.get("item").is_none_or(|item| {
+        let Some(fields) = item.as_object() else {
+            return false;
+        };
+        // Nested component codecs are not yet fully strict; limit irreversible
+        // grants to holder sets and well-formed integer count bounds for now.
+        if fields.keys().any(|key| key != "items" && key != "count") {
+            return false;
+        }
+        if let Some(count) = fields.get("count") {
+            let valid_integer = |v: &Value| v.as_i64().is_some_and(|n| i32::try_from(n).is_ok());
+            let valid = valid_integer(count)
+                || count.as_object().is_some_and(|bounds| {
+                    bounds
+                        .iter()
+                        .all(|(key, value)| (key == "min" || key == "max") && valid_integer(value))
+                });
+            if !valid {
+                return false;
+            }
+        }
+        matches_item_predicate(item, context)
+    })
+}
+
 /// Returns whether `criterion_instance` accepts `context`.
 ///
 /// `instance` is the JSON text stored by the generator; an empty object matches
@@ -381,6 +419,12 @@ fn matches_item_view(
     let Some(map) = expected.as_object() else {
         return false;
     };
+    if map
+        .keys()
+        .any(|key| !matches!(key.as_str(), "items" | "count" | "components" | "predicates"))
+    {
+        return false;
+    }
     if let Some(items) = map.get("items")
         && !item.is_some_and(|item| contains_holder_set(items, item, || &REGISTRY.items))
     {
@@ -895,6 +939,32 @@ mod tests {
             r#"{"item":{"count":2}}"#,
             &TriggerContext::item(&id("iron_pickaxe"))
         ));
+    }
+
+    #[test]
+    fn used_item_conditions_require_stack_and_reject_unsupported_player_predicates() {
+        use steel_registry::vanilla_items;
+
+        steel_registry::init_vanilla_registry();
+        let apple = context_for_stack(&ItemStack::with_count(&vanilla_items::APPLE, 2));
+        assert!(matches_used_item("{}", &apple));
+        assert!(matches_used_item(
+            r#"{"item":{"items":"minecraft:apple","count":{"min":2}}}"#,
+            &apple
+        ));
+        assert!(!matches_used_item(
+            r#"{"item":{"items":"minecraft:carrot"}}"#,
+            &apple
+        ));
+        assert!(!matches_used_item(
+            r#"{"player":{"type":"minecraft:entity_properties"}}"#,
+            &apple
+        ));
+        assert!(!matches_used_item(
+            r#"{"item":{"items":"minecraft:apple","unknown":true}}"#,
+            &apple
+        ));
+        assert!(!matches_used_item("{}", &TriggerContext::default()));
     }
 
     #[test]

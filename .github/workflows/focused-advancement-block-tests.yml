@@ -9,6 +9,7 @@ on:
       - 'steel-core/src/player/game_mode/item_interaction/use_on_tests.rs'
       - 'steel-core/src/player/game_mode/block_interaction.rs'
       - 'steel-core/src/behavior/items/honeycomb.rs'
+      - 'steel-core/src/behavior/item.rs'
       - 'steel-core/src/behavior/items/shears.rs'
       - 'steel-core/src/behavior/items/block_transformer.rs'
       - 'steel-core/src/behavior/items/block_item.rs'
@@ -39,6 +40,7 @@ jobs:
           set -euo pipefail
           {
             cargo test -p steel-core --lib player::advancement::predicate::tests:: -- --nocapture &&
+            cargo test -p steel-core --lib behavior::item::tests:: -- --nocapture &&
             cargo test -p steel-core --lib player::game_mode::item_interaction::use_on_tests:: -- --nocapture &&
             cargo test -p steel-core --lib behavior::blocks::vegetation::cactus_block::tests:: -- --nocapture &&
             cargo test -p steel-core --lib behavior::blocks::container::beehive_block::tests:: -- --nocapture &&
@@ -53,7 +55,7 @@ jobs:
           from pathlib import Path
           text = Path('/tmp/focused-regressions.log').read_text()
           counts = [int(n) for n in re.findall(r'test result: ok\. (\d+) passed;', text)]
-          assert len(counts) == 9 and counts[0] >= 10 and counts[1] >= 1 and counts[2] >= 1 and counts[3] >= 5 and counts[4] >= 6 and counts[5] >= 1 and counts[6] >= 1 and counts[7] >= 1 and counts[8] >= 1, counts
+          assert len(counts) == 10 and counts[0] >= 10 and counts[1] >= 1 and counts[2] >= 1 and counts[3] >= 1 and counts[4] >= 5 and counts[5] >= 6 and counts[6] >= 1 and counts[7] >= 1 and counts[8] >= 1 and counts[9] >= 1, counts
           PY
       - name: Publish results
         if: always()

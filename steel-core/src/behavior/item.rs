@@ -449,6 +449,15 @@ pub(crate) fn finish_consuming_stack(
 
     emit_consume_particles_and_sounds(consumable, user, stack);
 
+    // Vanilla fires before component listeners, status effects and consumption.
+    if let Some(player) = user.as_player() {
+        player.award_stat(&vanilla_stat_types::ITEM_USED, stack.item());
+        player.trigger_advancement_with_context(
+            &CONSUME_ITEM,
+            &TriggerContext::item(&stack.item().key).with_item_stack(stack),
+        );
+    }
+
     if let Some(food) = stack.get(FOOD) {
         if let Some(sound) = consumable.sound().registry_ref() {
             world.play_sound_at(
@@ -490,15 +499,6 @@ pub(crate) fn finish_consuming_stack(
         &vanilla_game_events::EAT
     };
     user.game_event(event);
-    if let Some(player) = user.as_player() {
-        player.award_stat(&vanilla_stat_types::ITEM_USED, stack.item());
-        // Vanilla `ConsumableComponent#finishConsumption` fires
-        // `CriteriaTriggers.CONSUME_ITEM` with the consumed stack.
-        player.trigger_advancement_with_context(
-            &CONSUME_ITEM,
-            &TriggerContext::item(&stack.item().key).with_item_stack(stack),
-        );
-    }
     if let Some(consumable) = stack.get(CONSUMABLE)
         && consumable.has_consume_particles()
         && let Some(world) = user.level()
@@ -636,6 +636,42 @@ mod tests {
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
 
     #[test]
+    fn consuming_apple_grants_root_and_only_its_balanced_diet_criterion() {
+        use crate::player::advancement::progress::AdvancementProgress;
+        use steel_registry::REGISTRY;
+        use steel_utils::Identifier;
+
+        init_vanilla_registry();
+        init_behaviors();
+        let fixture = fresh_test_world("consume_apple_advancement");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let player = TestPlayerBuilder::new(Arc::clone(world), "Test", 1).build();
+        let root = REGISTRY
+            .advancements
+            .value_by_key(&Identifier::vanilla_static("husbandry/root"))
+            .expect("husbandry root");
+        let diet = REGISTRY
+            .advancements
+            .value_by_key(&Identifier::vanilla_static("husbandry/balanced_diet"))
+            .expect("balanced diet");
+
+        let stack = ItemStack::new(&vanilla_items::APPLE);
+        let _ = finish_consuming_stack(&stack, world, player.as_ref());
+        let advancements = player.advancements.lock();
+        assert!(
+            advancements
+                .progress
+                .get_progress(root)
+                .is_some_and(AdvancementProgress::is_done)
+        );
+        let progress = advancements.progress.get_progress(diet).expect("diet progress");
+        assert!(progress.get_completed_criteria().any(|criterion| criterion == "apple"));
+        assert!(!progress.get_completed_criteria().any(|criterion| criterion == "carrot"));
+        assert!(!progress.is_done());
+    }
+
+    #[test]
     fn potion_items_default_to_their_vanilla_base_potion() {
         init_vanilla_registry();
         init_behaviors();
@@ -759,6 +795,18 @@ mod tests {
         let result = behavior.use_item(&mut context);
 
         assert_eq!(result, InteractionResult::Consume);
+        let root = steel_registry::REGISTRY
+            .advancements
+            .value_by_key(&steel_utils::Identifier::vanilla_static("husbandry/root"))
+            .expect("husbandry root");
+        assert!(
+            player
+                .advancements
+                .lock()
+                .progress
+                .get_progress(root)
+                .is_some_and(crate::player::advancement::progress::AdvancementProgress::is_done)
+        );
         let remaining = {
             let inventory = player.inventory.lock();
             inventory

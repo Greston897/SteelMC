@@ -116,8 +116,8 @@ impl PlayerAdvancement {
     /// Fires `trigger` with an event description, honouring each criterion's
     /// predicate.
     ///
-    /// Only block-use and block-placement triggers are enabled, using a
-    /// conservative subset of the location-loot predicate language.
+    /// Only block-use, block-placement and consume-item triggers are enabled,
+    /// using conservative subsets of their predicate languages.
     pub fn trigger_with_context(
         &mut self,
         player: &Player,
@@ -127,11 +127,12 @@ impl PlayerAdvancement {
         // Most trigger contexts and predicate codecs are still incomplete. Keep
         // them disabled rather than permanently granting incorrect progress now
         // that generated criteria preserve their real trigger identifiers.
-        // Block-use and placement snapshots support the shared location-loot
-        // conditions used by wax-on and plant-seed.
-        if trigger != &vanilla_criteria_triggers::ITEM_USED_ON_BLOCK
-            && trigger != &vanilla_criteria_triggers::PLACED_BLOCK
-        {
+        // Block and item events have complete snapshots for their supported
+        // predicates. Unsupported player and location tests fail closed.
+        let block_location = trigger == &vanilla_criteria_triggers::ITEM_USED_ON_BLOCK
+            || trigger == &vanilla_criteria_triggers::PLACED_BLOCK;
+        let used_item = trigger == &vanilla_criteria_triggers::CONSUME_ITEM;
+        if !block_location && !used_item {
             return 0;
         }
         let mut granted = 0;
@@ -146,7 +147,11 @@ impl PlayerAdvancement {
                         .is_some_and(|criterion| {
                             &criterion.id() == trigger
                                 && criterion.instance().is_none_or(|instance| {
-                                    predicate::matches_block_location(instance, context)
+                                    if block_location {
+                                        predicate::matches_block_location(instance, context)
+                                    } else {
+                                        predicate::matches_used_item(instance, context)
+                                    }
                                 })
                         })
                 })
