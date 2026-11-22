@@ -726,9 +726,8 @@ impl Server {
             Ok(false) => reloaded.push("permission groups (no store)".to_owned()),
             Err(error) => return Err(format!("permission groups: {error}")),
         }
-        let functions = prepared_functions
-            .map(|snapshot| self.function_packs.publish(snapshot))
-            .unwrap_or(0);
+        let functions =
+            prepared_functions.map_or(0, |snapshot| self.function_packs.publish(snapshot));
         reloaded.push(format!(
             "{functions} directory-pack function(s) and function tags"
         ));

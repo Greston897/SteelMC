@@ -452,7 +452,9 @@ mod tests {
         let nested = tags.join("nested.json");
         fs::write(&nested, r#"{"values":["example:one","example:two"]}"#)?;
         fs::write(
-            fixture.0.join("test/data/minecraft/tags/function/tick.json"),
+            fixture
+                .0
+                .join("test/data/minecraft/tags/function/tick.json"),
             r##"{"values":["#example:nested","example:one"]}"##,
         )?;
         let packs = FunctionPacks::from_root(fixture.0.clone())?;
