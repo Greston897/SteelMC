@@ -934,12 +934,22 @@ mod tests {
         item.set_velocity(DVec3::ZERO);
 
         item.update_no_physics_from_current_collision();
-        assert!(!item.no_physics(), "an item inside scaffolding is not above its top");
+        assert!(
+            !item.no_physics(),
+            "an item inside scaffolding is not above its top"
+        );
         assert_eq!(item.velocity(), DVec3::ZERO);
 
-        assert!(world.set_block(pos, vanilla_blocks::STONE.default_state(), UpdateFlags::UPDATE_NONE));
+        assert!(world.set_block(
+            pos,
+            vanilla_blocks::STONE.default_state(),
+            UpdateFlags::UPDATE_NONE
+        ));
         item.update_no_physics_from_current_collision();
-        assert!(item.no_physics(), "an item embedded in stone still needs to escape");
+        assert!(
+            item.no_physics(),
+            "an item embedded in stone still needs to escape"
+        );
     }
 
     #[test]
