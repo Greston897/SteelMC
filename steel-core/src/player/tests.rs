@@ -1995,15 +1995,30 @@ fn sleep_advancement_requires_successful_sleep_and_permission_to_set_spawn() {
     insert_ready_full_chunk(world, ChunkPos::new(0, 0));
     world.set_clock_total_ticks(&vanilla_world_clocks::OVERWORLD, NIGHT_TIME);
     let bed = BlockPos::new(8, 65, 8);
-    assert!(world.set_block(bed, vanilla_blocks::WHITE_BED.default_state(), UpdateFlags::UPDATE_ALL));
+    assert!(world.set_block(
+        bed,
+        vanilla_blocks::WHITE_BED.default_state(),
+        UpdateFlags::UPDATE_ALL
+    ));
     let player = test_player(Arc::clone(world));
-    let advancement = REGISTRY.advancements
+    let advancement = REGISTRY
+        .advancements
         .value_by_key(&Identifier::vanilla_static("adventure/sleep_in_bed"))
         .expect("sleep advancement");
-    let complete = || player.advancements.lock().progress.get_progress(advancement)
-        .is_some_and(AdvancementProgress::is_done);
+    let complete = || {
+        player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(advancement)
+            .is_some_and(AdvancementProgress::is_done)
+    };
     let stat = &vanilla_custom_stats::SLEEP_IN_BED;
-    assert!(player.start_sleep_in_bed(bed, &world.dimension_type.bed_rule, stat).is_err());
+    assert!(
+        player
+            .start_sleep_in_bed(bed, &world.dimension_type.bed_rule, stat)
+            .is_err()
+    );
     assert!(!complete());
     player.base.set_position_local(DVec3::new(8.5, 65.0, 8.5));
     let no_spawn_rule = BedRule {
@@ -2017,7 +2032,11 @@ fn sleep_advancement_requires_successful_sleep_and_permission_to_set_spawn() {
     assert!(player.start_sleep_in_bed(bed, &no_spawn_rule, stat).is_ok());
     assert!(!complete());
     player.stop_sleep_in_bed(false, false);
-    assert!(player.start_sleep_in_bed(bed, &world.dimension_type.bed_rule, stat).is_ok());
+    assert!(
+        player
+            .start_sleep_in_bed(bed, &world.dimension_type.bed_rule, stat)
+            .is_ok()
+    );
     assert!(complete());
 }
 
