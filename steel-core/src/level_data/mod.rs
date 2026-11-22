@@ -396,6 +396,12 @@ impl LevelData {
     }
 }
 
+/// Parsed game rules ready to apply under the level-data lock.
+pub(crate) struct PreparedGameRules {
+    serialized: FxHashMap<String, serde_json::Value>,
+    values: GameRuleValues,
+}
+
 /// Manages level data persistence for a world.
 pub struct LevelDataManager {
     /// Path to the level.toml file.
@@ -586,42 +592,40 @@ impl LevelDataManager {
         Ok(())
     }
 
-    /// Re-reads `level.toml` and applies its game rules to the runtime store.
-    ///
-    /// Vanilla `/reload` re-reads the world's data pack state, and game rules are
-    /// the part of `level.toml` that is safe to swap while the world runs. The
-    /// seed, generation settings, and clocks are *not* re-read: changing them
-    /// under live chunks would desynchronise the world.
-    ///
-    /// Returns the number of rules that changed value, so `/reload` can report it.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error when the file cannot be read or parsed; the runtime rules
-    /// are left untouched in that case.
-    pub fn reload_game_rules(&mut self) -> io::Result<usize> {
-        let Some(world_path) = &self.path else {
-            return Ok(0);
-        };
-        if !world_path.exists() {
-            return Ok(0);
-        }
+    /// Returns the persistent file path for preparing a game-rule reload.
+    pub(crate) fn game_rules_path(&self) -> Option<&Path> {
+        self.path.as_deref()
+    }
 
-        let content = read_to_string(world_path)?;
+    /// Reads and prepares game rules without holding a world lock.
+    pub(crate) fn prepare_game_rules(path: &Path) -> io::Result<Option<PreparedGameRules>> {
+        let content = match read_to_string(path) {
+            Ok(content) => content,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+            Err(error) => return Err(error),
+        };
         let table: toml::Table =
             toml::from_str(&content).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-        let loaded: LevelData = table
+        let mut loaded: LevelData = table
             .try_into()
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        loaded.load_game_rules();
+        Ok(Some(PreparedGameRules {
+            serialized: loaded.game_rules,
+            values: loaded.game_rules_values,
+        }))
+    }
 
-        let changed = loaded
-            .game_rules
+    /// Applies prepared rules and returns the number of changed serialized values.
+    pub(crate) fn apply_game_rules(&mut self, rules: PreparedGameRules) -> usize {
+        let changed = rules
+            .serialized
             .iter()
             .filter(|(name, value)| self.data.game_rules.get(*name) != Some(value))
             .count();
-        self.data.game_rules = loaded.game_rules;
-        self.data.load_game_rules();
-        Ok(changed)
+        self.data.game_rules = rules.serialized;
+        self.data.game_rules_values = rules.values;
+        changed
     }
 
     /// Gets the seed.
@@ -922,6 +926,38 @@ mod tests {
             panic!("overworld clock update should exist");
         };
         assert_eq!(update.3, 3.5);
+    }
+
+    #[test]
+    fn prepared_game_rules_do_not_mutate_live_data_until_applied() {
+        init_vanilla_registry();
+        let dir = temp_level_data_dir("prepared-game-rules");
+        let path = dir.join("level.toml");
+        let mut disk = LevelData::new_with_seed(9);
+        assert!(disk.game_rules_values.set(&KEEP_INVENTORY, true, &REGISTRY.game_rules));
+        disk.save_game_rules();
+        std_fs::write(&path, toml::to_string(&disk).expect("serialize level data"))
+            .expect("write level data");
+        let mut live = LevelData::new_with_seed(1);
+        live.save_game_rules();
+        let mut manager = LevelDataManager {
+            path: Some(path.clone()),
+            data: live,
+            dirty: false,
+            primary_game_time: None,
+            game_time: Arc::new(GameTime::new(0)),
+        };
+        let rules = LevelDataManager::prepare_game_rules(&path)
+            .expect("parse game rules")
+            .expect("existing file");
+        assert!(!manager.data.game_rules_values.get(&KEEP_INVENTORY, &REGISTRY.game_rules));
+        std_fs::write(&path, "not valid toml = [").expect("write malformed data");
+        assert!(LevelDataManager::prepare_game_rules(&path).is_err());
+        assert!(!manager.data.game_rules_values.get(&KEEP_INVENTORY, &REGISTRY.game_rules));
+        assert_eq!(manager.apply_game_rules(rules), 1);
+        assert!(manager.data.game_rules_values.get(&KEEP_INVENTORY, &REGISTRY.game_rules));
+        assert_eq!(manager.seed(), 1);
+        let _ = std_fs::remove_dir_all(&dir);
     }
 
     #[test]

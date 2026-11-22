@@ -14,6 +14,7 @@ use std::{
     },
 };
 use steel_utils::Identifier;
+use tokio::task::spawn_blocking;
 
 const MAX_RESOURCE_BYTES: u64 = 8 * 1024 * 1024;
 
@@ -232,7 +233,7 @@ impl FunctionPacks {
             return Ok(0);
         };
         let root = root.clone();
-        let next = tokio::task::spawn_blocking(move || Self::prepare(&root))
+        let next = spawn_blocking(move || Self::prepare(&root))
             .await
             .map_err(|error| format!("function-pack loading task: {error}"))??;
         Ok(self.publish(next))
@@ -339,9 +340,8 @@ impl FunctionPacks {
     pub fn tick_functions(&self) -> Vec<Identifier> {
         let state = self.state.load();
         if state.load_pending.swap(false, Ordering::AcqRel) {
-            let mut functions = Vec::with_capacity(
-                state.load_functions.len() + state.tick_functions.len(),
-            );
+            let mut functions =
+                Vec::with_capacity(state.load_functions.len() + state.tick_functions.len());
             functions.extend_from_slice(&state.load_functions);
             functions.extend_from_slice(&state.tick_functions);
             functions
@@ -387,13 +387,22 @@ mod tests {
         fs::write(&function, "# comment\n\nreturn 7\n")?;
         let packs = FunctionPacks::from_root(fixture.0.clone())?;
         let key = "example:hello".parse::<Identifier>()?;
-        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 7".to_owned()][..]));
+        assert_eq!(
+            packs.commands(&key).as_deref(),
+            Some(&["return 7".to_owned()][..])
+        );
         fs::write(&function, "/return 9")?;
         assert!(packs.reload().is_err());
-        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 7".to_owned()][..]));
+        assert_eq!(
+            packs.commands(&key).as_deref(),
+            Some(&["return 7".to_owned()][..])
+        );
         fs::write(&function, "return 9")?;
         assert_eq!(packs.reload()?, 1);
-        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 9".to_owned()][..]));
+        assert_eq!(
+            packs.commands(&key).as_deref(),
+            Some(&["return 9".to_owned()][..])
+        );
         Ok(())
     }
 
@@ -443,35 +452,48 @@ mod tests {
 
         fs::write(&function, "return 2")?;
         assert_eq!(packs.reload_async().await?, 1);
-        assert_eq!(old.functions.get(&key).map(AsRef::as_ref), Some(&["return 1".to_owned()][..]));
+        assert_eq!(
+            old.functions.get(&key).map(AsRef::as_ref),
+            Some(&["return 1".to_owned()][..])
+        );
         assert_eq!(&*old_body, &["return 1".to_owned()]);
-        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 2".to_owned()][..]));
+        assert_eq!(
+            packs.commands(&key).as_deref(),
+            Some(&["return 2".to_owned()][..])
+        );
 
         fs::write(&function, "/return 3")?;
         assert!(packs.reload_async().await.is_err());
-        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 2".to_owned()][..]));
+        assert_eq!(
+            packs.commands(&key).as_deref(),
+            Some(&["return 2".to_owned()][..])
+        );
         Ok(())
     }
 
     #[test]
     fn concurrent_ticks_claim_each_generation_load_once() -> Result<(), Box<dyn Error>> {
-        use std::sync::Barrier;
+        use std::{sync::Barrier, thread};
 
         steel_registry::init_vanilla_registry();
         let fixture = Fixture::new()?;
         for name in ["load", "tick"] {
             fs::write(
-                fixture.0.join(format!("test/data/example/function/{name}.mcfunction")),
+                fixture
+                    .0
+                    .join(format!("test/data/example/function/{name}.mcfunction")),
                 "return 1",
             )?;
             fs::write(
-                fixture.0.join(format!("test/data/minecraft/tags/function/{name}.json")),
+                fixture
+                    .0
+                    .join(format!("test/data/minecraft/tags/function/{name}.json")),
                 format!(r#"{{"values":["example:{name}"]}}"#),
             )?;
         }
         let packs = FunctionPacks::from_root(fixture.0.clone())?;
         let barrier = Barrier::new(8);
-        let results = std::thread::scope(|scope| {
+        let results = thread::scope(|scope| {
             let mut threads = Vec::new();
             for _ in 0..8 {
                 threads.push(scope.spawn(|| {
@@ -486,7 +508,13 @@ mod tests {
         });
         let load = "example:load".parse::<Identifier>()?;
         let tick = "example:tick".parse::<Identifier>()?;
-        assert_eq!(results.iter().filter(|result| result.contains(&load)).count(), 1);
+        assert_eq!(
+            results
+                .iter()
+                .filter(|result| result.contains(&load))
+                .count(),
+            1
+        );
         assert!(results.iter().all(|result| result.contains(&tick)));
         Ok(())
     }

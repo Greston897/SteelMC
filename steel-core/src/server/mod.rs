@@ -99,6 +99,7 @@ use std::sync::atomic::{AtomicBool, AtomicI32};
 use std::{
     collections::BTreeSet,
     io, mem,
+    path::Path,
     sync::{Arc, mpsc},
     time::{Duration, Instant},
 };
@@ -694,21 +695,44 @@ impl Server {
             Err(error) => return Err(format!("permission groups: {error}")),
         }
 
-        // Vanilla re-reads the level's data too; game rules are the part of
-        // `level.toml` that is safe to swap under live chunks.
+        // Steel also reloads level.toml game rules. Copy paths briefly under
+        // the level-data locks, then perform all I/O and parsing off-thread.
         let worlds: Vec<Arc<World>> = self
             .worlds
             .iter()
             .map(|(_, world)| Arc::clone(world))
             .collect();
+        let paths: Vec<_> = worlds
+            .iter()
+            .map(|world| {
+                let path = world
+                    .level_data
+                    .read()
+                    .game_rules_path()
+                    .map(Path::to_path_buf);
+                (Arc::clone(world), path)
+            })
+            .collect();
+        let prepared = spawn_blocking(move || {
+            paths
+                .into_iter()
+                .map(|(world, path)| {
+                    let rules = path
+                        .as_deref()
+                        .map(LevelDataManager::prepare_game_rules)
+                        .transpose()
+                        .map_err(|error| format!("game rules for {}: {error}", world.key))?
+                        .flatten();
+                    Ok((world, rules))
+                })
+                .collect::<Result<Vec<_>, String>>()
+        })
+        .await
+        .map_err(|error| format!("game-rule loading task: {error}"))??;
         let mut changed_rules = 0_usize;
-        for world in &worlds {
-            // `LevelDataManager` lives behind a synchronous lock; the reload does
-            // a blocking file read, so the guard is held only for that read.
-            let changed = world.level_data.write().reload_game_rules();
-            match changed {
-                Ok(changed) => changed_rules += changed,
-                Err(error) => return Err(format!("game rules for {}: {error}", world.key)),
+        for (world, rules) in prepared {
+            if let Some(rules) = rules {
+                changed_rules += world.level_data.write().apply_game_rules(rules);
             }
         }
         reloaded.push(format!(
