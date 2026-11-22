@@ -15,9 +15,6 @@ use steel_utils::random::{Random, RandomSource, legacy_random::LegacyRandom};
 use steel_utils::{BlockPos, BlockStateId, Direction};
 use steel_worldgen::noise::NormalNoise;
 
-#[cfg(test)]
-use std::env::var_os;
-
 pub(crate) trait NoiseScale: Copy {
     fn scale_coord(self, coord: i32) -> f64;
 }
@@ -253,30 +250,13 @@ impl BlockStateProviderEvaluator {
         let noise = NoiseCache::get(&provider.noise, provider.seed);
         let noise_value = Self::noise_value(&noise, pos, f64::from(provider.scale));
 
-        let result = if noise_value < f64::from(provider.threshold) {
+        if noise_value < f64::from(provider.threshold) {
             Self::random_block_state_from_data_list(registry, random, &provider.low_states)
         } else if random.next_f32() < provider.high_chance {
             Self::random_block_state_from_data_list(registry, random, &provider.high_states)
         } else {
             Self::block_state_from_data(registry, &provider.default_state)
-        };
-        #[cfg(test)]
-        if (-6_536_443..=-6_536_430).contains(&pos.x())
-            && (72..=75).contains(&pos.y())
-            && (-7_689_105..=-7_689_090).contains(&pos.z())
-            && var_os("STEEL_FEATURE_NOISE_TRACE").is_some()
-        {
-            eprintln!(
-                "STEEL_FEATURE_NOISE {} {} {} noise={} threshold={} state={:?}",
-                pos.x(),
-                pos.y(),
-                pos.z(),
-                noise_value,
-                provider.threshold,
-                registry.blocks.by_state_id(result).map(|block| &block.key)
-            );
         }
-        result
     }
 
     pub(crate) fn sample_dual_noise_provider(

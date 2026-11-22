@@ -3,9 +3,6 @@
     reason = "placed feature modifier chaining mirrors vanilla placement flow"
 )]
 
-#[cfg(test)]
-use std::env::var_os;
-
 use super::prelude::*;
 use super::runner::FeatureDecorationRunner;
 
@@ -320,20 +317,6 @@ impl FeatureDecorationRunner {
                 } else {
                     *above_noise
                 };
-                #[cfg(test)]
-                if (-6_536_496..=-6_536_400).contains(&origin.x())
-                    && (-7_689_152..=-7_689_056).contains(&origin.z())
-                    && var_os("STEEL_FEATURE_NOISE_TRACE").is_some()
-                {
-                    eprintln!(
-                        "STEEL_FEATURE_COUNT {} {} noise={} threshold={} count={}",
-                        origin.x(),
-                        origin.z(),
-                        noise,
-                        noise_level,
-                        count
-                    );
-                }
                 if let Ok(count) = usize::try_from(count) {
                     for _ in 0..count {
                         if Self::place_placed_feature_from_modifier(
