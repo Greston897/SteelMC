@@ -449,7 +449,11 @@ impl FunctionPacks {
     }
 
     /// Resolve load once per successful publication, followed by tick functions.
-    pub fn tick_functions(&self) -> Vec<Identifier> {
+    /// Paused game ticks neither execute functions nor consume the pending load.
+    pub fn tick_functions(&self, runs_normally: bool) -> Vec<Identifier> {
+        if !runs_normally {
+            return Vec::new();
+        }
         let state = self.state.load();
         if state.load_pending.swap(false, Ordering::AcqRel) {
             let mut functions =
@@ -564,7 +568,7 @@ mod tests {
             packs.commands(&key).as_deref(),
             Some(&["return 2".to_owned()][..])
         );
-        assert_eq!(packs.tick_functions(), vec![key.clone()]);
+        assert_eq!(packs.tick_functions(true), vec![key.clone()]);
         write_zip(
             &zip,
             &[
@@ -577,7 +581,7 @@ mod tests {
             packs.commands(&key).as_deref(),
             Some(&["return 2".to_owned()][..])
         );
-        assert_eq!(packs.tick_functions(), vec![key]);
+        assert_eq!(packs.tick_functions(true), vec![key]);
         Ok(())
     }
 
@@ -652,10 +656,42 @@ mod tests {
         }
         let packs = FunctionPacks::from_root(fixture.0.clone())?;
         let key = "example:hello".parse::<Identifier>()?;
-        assert_eq!(packs.tick_functions(), vec![key.clone(), key.clone()]);
-        assert_eq!(packs.tick_functions(), vec![key.clone()]);
+        assert_eq!(packs.tick_functions(true), vec![key.clone(), key.clone()]);
+        assert_eq!(packs.tick_functions(true), vec![key.clone()]);
         packs.reload()?;
-        assert_eq!(packs.tick_functions(), vec![key.clone(), key]);
+        assert_eq!(packs.tick_functions(true), vec![key.clone(), key]);
+        Ok(())
+    }
+
+    #[test]
+    fn paused_ticks_preserve_pending_load_until_game_resumes() -> Result<(), Box<dyn Error>> {
+        steel_registry::init_vanilla_registry();
+        let fixture = Fixture::new()?;
+        for name in ["load", "tick"] {
+            fs::write(
+                fixture
+                    .0
+                    .join(format!("test/data/example/function/{name}.mcfunction")),
+                "return 1",
+            )?;
+            fs::write(
+                fixture
+                    .0
+                    .join(format!("test/data/minecraft/tags/function/{name}.json")),
+                format!(r#"{{"values":["example:{name}"]}}"#),
+            )?;
+        }
+        let packs = FunctionPacks::from_root(fixture.0.clone())?;
+        let load = "example:load".parse::<Identifier>()?;
+        let tick = "example:tick".parse::<Identifier>()?;
+        assert!(packs.tick_functions(false).is_empty());
+        assert!(packs.tick_functions(false).is_empty());
+        assert_eq!(packs.tick_functions(true), vec![load.clone(), tick.clone()]);
+        assert!(packs.tick_functions(false).is_empty());
+        assert_eq!(packs.tick_functions(true), vec![tick.clone()]);
+        packs.reload()?;
+        assert!(packs.tick_functions(false).is_empty());
+        assert_eq!(packs.tick_functions(true), vec![load, tick]);
         Ok(())
     }
 
@@ -684,11 +720,11 @@ mod tests {
         let packs = FunctionPacks::from_root(fixture.0.clone())?;
         let one = "example:one".parse::<Identifier>()?;
         let two = "example:two".parse::<Identifier>()?;
-        assert_eq!(packs.tick_functions(), vec![one.clone(), two.clone()]);
-        assert_eq!(packs.tick_functions(), vec![one.clone(), two]);
+        assert_eq!(packs.tick_functions(true), vec![one.clone(), two.clone()]);
+        assert_eq!(packs.tick_functions(true), vec![one.clone(), two]);
         fs::write(&nested, r#"{"values":["example:one"]}"#)?;
         packs.reload()?;
-        assert_eq!(packs.tick_functions(), vec![one]);
+        assert_eq!(packs.tick_functions(true), vec![one]);
         Ok(())
     }
 
@@ -761,7 +797,7 @@ mod tests {
             for _ in 0..8 {
                 threads.push(scope.spawn(|| {
                     barrier.wait();
-                    packs.tick_functions()
+                    packs.tick_functions(true)
                 }));
             }
             threads
@@ -807,7 +843,7 @@ mod tests {
                 packs.commands(&key).as_deref(),
                 Some(&["return 1".to_owned()][..])
             );
-            assert_eq!(packs.tick_functions(), vec![key.clone()]);
+            assert_eq!(packs.tick_functions(true), vec![key.clone()]);
         }
         Ok(())
     }

@@ -5,6 +5,9 @@ on:
     paths:
       - 'steel-core/src/server/datapacks.rs'
       - 'steel-core/src/server/mod.rs'
+      - 'steel-core/src/server/run_loop.rs'
+      - 'steel-core/src/command/builtins/datapack.rs'
+      - 'steel-core/src/command/builtins/reload.rs'
       - 'steel-core/src/level_data/mod.rs'
       - 'steel-core/src/command/builtins/function.rs'
       - '.github/workflows/focused-datapack-tests.yml'

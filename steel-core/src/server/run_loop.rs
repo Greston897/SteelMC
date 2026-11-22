@@ -259,7 +259,7 @@ impl Server {
             let (tick_count, runs_normally) = self.advance_server_tick();
 
             self.tick_pending_command_executions(&mut pending_command_executions);
-            for function in self.function_packs.tick_functions() {
+            for function in self.function_packs.tick_functions(runs_normally) {
                 if let Err(error) =
                     self.submit_command(CommandSender::Console, format!("function {function}"))
                 {
