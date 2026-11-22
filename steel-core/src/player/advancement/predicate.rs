@@ -188,6 +188,25 @@ impl TriggerContext {
     }
 }
 
+/// Conservative matcher for the currently enabled item-used-on-block trigger.
+/// Player loot predicates and named condition references are not yet supported;
+/// do not award irreversible progress when their result is unknown.
+#[must_use]
+pub fn matches_item_used_on_block(instance: &str, context: &TriggerContext) -> bool {
+    let Ok(value) = serde_json::from_str::<Value>(instance) else {
+        return false;
+    };
+    let Some(conditions) = value.get("conditions").unwrap_or(&value).as_object() else {
+        return false;
+    };
+    if conditions.keys().any(|key| key != "location") {
+        return false;
+    }
+    conditions.get("location").is_none_or(|location| {
+        matches_location_loot_condition(location, context, 0) == Some(true)
+    })
+}
+
 /// Returns whether `criterion_instance` accepts `context`.
 ///
 /// `instance` is the JSON text stored by the generator; an empty object matches
@@ -977,6 +996,15 @@ mod tests {
             &context
         ));
         assert!(!matches(condition, &TriggerContext::default()));
+        assert!(matches_item_used_on_block(condition, &context));
+        assert!(!matches_item_used_on_block(
+            r#"{"player":{"condition":"minecraft:entity_properties"}}"#,
+            &context
+        ));
+        assert!(!matches_item_used_on_block(
+            r#"{"location":"minecraft:external_predicate"}"#,
+            &context
+        ));
     }
 
     #[test]

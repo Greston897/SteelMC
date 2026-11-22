@@ -26,7 +26,9 @@ use crate::block_entity::entities::{SignBlockEntity, SignText};
 use crate::entity::{Entity as _, entities::ItemEntity};
 use crate::inventory::container::Container as _;
 use crate::player::Player;
-use crate::player::advancement::{predicate, predicate::TriggerContext, progress::AdvancementProgress};
+use crate::player::advancement::{
+    predicate, predicate::TriggerContext, progress::AdvancementProgress,
+};
 use crate::test_support::{
     TestPlayerBuilder, TestWorld, fresh_test_world, insert_ready_full_chunk,
 };
@@ -369,7 +371,7 @@ fn glow_ink_rejections_do_not_consume_or_change_the_sign() {
 
 #[test]
 fn wax_on_advancement_requires_honeycomb_and_unwaxed_copper() {
-    use steel_registry::REGISTRY;
+    use steel_registry::{REGISTRY, vanilla_criteria_triggers::ITEM_USED_ON_BLOCK};
     use steel_utils::Identifier;
 
     let interaction = Interaction::new("wax_on_advancement");
@@ -400,16 +402,13 @@ fn wax_on_advancement_requires_honeycomb_and_unwaxed_copper() {
     assert!(!completed());
 
     interaction.block(vanilla_blocks::COPPER_BLOCK.default_state());
-    let instance = advancement
+    let criterion = advancement
         .get_criterion("wax_on")
-        .expect("wax_on criterion")
-        .instance()
-        .expect("criterion conditions");
-    let context = TriggerContext::block_at(
-        &interaction.world_fixture.world,
-        interaction.pos,
-    )
-    .with_item_stack(&ItemStack::new(&vanilla_items::HONEYCOMB));
+        .expect("wax_on criterion");
+    assert_eq!(criterion.id(), ITEM_USED_ON_BLOCK);
+    let instance = criterion.instance().expect("criterion conditions");
+    let context = TriggerContext::block_at(&interaction.world_fixture.world, interaction.pos)
+        .with_item_stack(&ItemStack::new(&vanilla_items::HONEYCOMB));
     assert!(
         predicate::matches(instance, &context),
         "wax_on criterion did not match: {instance}"

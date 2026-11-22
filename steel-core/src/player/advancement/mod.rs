@@ -56,8 +56,10 @@ impl Default for PlayerAdvancement {
             visible: FxHashSet::default(),
             progress_changed: FxHashSet::default(),
             last_selected_tab: Option::default(),
-            location_listeners: collect_listeners(&vanilla_criteria_triggers::LOCATION),
-            tick_listeners: collect_listeners(&vanilla_criteria_triggers::TICK),
+            // Tick and location predicates are not yet evaluated completely;
+            // avoid granting irreversible progress until their contexts are ready.
+            location_listeners: Vec::new(),
+            tick_listeners: Vec::new(),
         }
     }
 }
@@ -128,6 +130,14 @@ impl PlayerAdvancement {
         trigger: &Identifier,
         context: &TriggerContext,
     ) -> usize {
+        // Most trigger contexts and predicate codecs are still incomplete. Keep
+        // them disabled rather than permanently granting incorrect progress now
+        // that generated criteria preserve their real trigger identifiers.
+        // Item-used-on-block has an independently checked event snapshot and
+        // supports the location-loot conditions used by wax-on.
+        if trigger != &vanilla_criteria_triggers::ITEM_USED_ON_BLOCK {
+            return 0;
+        }
         let mut granted = 0;
         for advancement in REGISTRY.advancements.advancements() {
             // Collect first: `award` mutates `self`.
@@ -141,7 +151,9 @@ impl PlayerAdvancement {
                             &criterion.id() == trigger
                                 && criterion
                                     .instance()
-                                    .is_none_or(|instance| predicate::matches(instance, context))
+                                    .is_none_or(|instance| {
+                                        predicate::matches_item_used_on_block(instance, context)
+                                    })
                         })
                 })
                 .map(str::to_owned)
@@ -373,34 +385,6 @@ impl PlayerAdvancement {
             self.mark_for_visibility_update(advancement);
         }
     }
-}
-
-/// Collects the criteria of `trigger` that carry a predicate, the way vanilla's
-/// `PlayerAdvancements.registerListeners` does on advancement load.
-fn collect_listeners(trigger: &Identifier) -> Vec<(AdvancementRef, String)> {
-    let mut listeners = Vec::new();
-    for advancement in REGISTRY.advancements.advancements() {
-        let advancement = *advancement;
-        for criterion_id in advancement.criteria_ids() {
-            let Some(criterion) = advancement.get_criterion(criterion_id) else {
-                continue;
-            };
-            if &criterion.id() != trigger {
-                continue;
-            }
-            let Some(instance) = criterion.instance() else {
-                continue;
-            };
-            // Vanilla registers a listener only for the typed instance (a
-            // `LocationPredicate` for `location`); a bare trigger would re-check
-            // the same predicate every tick for no reason.
-            if !instance.contains("\"conditions\"") && !instance.contains("\"location\"") {
-                continue;
-            }
-            listeners.push((advancement, criterion_id.to_owned()));
-        }
-    }
-    listeners
 }
 
 #[cfg(test)]
