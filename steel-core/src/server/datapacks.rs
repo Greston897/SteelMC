@@ -187,18 +187,9 @@ fn read_zip_text(reader: impl Read, source: &str) -> Result<String, String> {
     String::from_utf8(bytes).map_err(|error| format!("{source}: {error}"))
 }
 
-/// Loads function resources from an archive without extracting its paths.
-fn load_zip(state: &mut FunctionPackState, path: &Path) -> Result<bool, String> {
-    let source = path.display();
-    let file = fs::File::open(path).map_err(|error| format!("{source}: {error}"))?;
-    let mut archive = ZipArchive::new(file).map_err(|error| format!("{source}: {error}"))?;
-    let metadata = match archive.by_name("pack.mcmeta") {
-        Ok(file) => read_zip_text(file, &format!("{source}!pack.mcmeta"))?,
-        Err(ZipError::FileNotFound) => return Ok(false),
-        Err(error) => return Err(format!("{source}: {error}")),
-    };
-    let metadata: serde_json::Value = serde_json::from_str(&metadata)
-        .map_err(|error| format!("{source}!pack.mcmeta: {error}"))?;
+fn validate_metadata(text: &str, source: &str) -> Result<(), String> {
+    let metadata: serde_json::Value =
+        serde_json::from_str(text).map_err(|error| format!("{source}: {error}"))?;
     if !metadata
         .get("pack")
         .is_some_and(serde_json::Value::is_object)
@@ -212,6 +203,20 @@ fn load_zip(state: &mut FunctionPackState, path: &Path) -> Result<bool, String> 
             "{source}: pack overlays and filters are not supported"
         ));
     }
+    Ok(())
+}
+
+/// Loads function resources from an archive without extracting its paths.
+fn load_zip(state: &mut FunctionPackState, path: &Path) -> Result<bool, String> {
+    let source = path.display();
+    let file = fs::File::open(path).map_err(|error| format!("{source}: {error}"))?;
+    let mut archive = ZipArchive::new(file).map_err(|error| format!("{source}: {error}"))?;
+    let metadata = match archive.by_name("pack.mcmeta") {
+        Ok(file) => read_zip_text(file, &format!("{source}!pack.mcmeta"))?,
+        Err(ZipError::FileNotFound) => return Ok(false),
+        Err(error) => return Err(format!("{source}: {error}")),
+    };
+    validate_metadata(&metadata, &format!("{source}!pack.mcmeta"))?;
 
     let mut resources = Vec::new();
     for index in 0..archive.len() {
@@ -364,15 +369,8 @@ impl FunctionPacks {
             if !pack.join("pack.mcmeta").is_file() {
                 continue;
             }
-            let metadata: serde_json::Value =
-                serde_json::from_str(&read_resource(&pack.join("pack.mcmeta"))?)
-                    .map_err(|error| format!("{}: {error}", pack.display()))?;
-            if !metadata
-                .get("pack")
-                .is_some_and(serde_json::Value::is_object)
-            {
-                return Err(format!("{}: missing pack metadata", pack.display()));
-            }
+            let metadata_path = pack.join("pack.mcmeta");
+            validate_metadata(&read_resource(&metadata_path)?, &metadata_path.display().to_string())?;
             for namespace in entries(&pack.join("data"))? {
                 if !namespace
                     .file_type()
@@ -577,6 +575,26 @@ mod tests {
             Some(&["return 2".to_owned()][..])
         );
         assert_eq!(packs.tick_functions(), vec![key]);
+        Ok(())
+    }
+
+    #[test]
+    fn directory_overlays_and_filters_fail_without_publishing() -> Result<(), Box<dyn Error>> {
+        steel_registry::init_vanilla_registry();
+        let fixture = Fixture::new()?;
+        let function = fixture.0.join("test/data/example/function/hello.mcfunction");
+        fs::write(&function, "return 1")?;
+        let packs = FunctionPacks::from_root(fixture.0.clone())?;
+        let key = "example:hello".parse::<Identifier>()?;
+        for metadata in [
+            r#"{"pack":{},"overlays":{"entries":[]}}"#,
+            r#"{"pack":{},"filter":{"block":[]}}"#,
+        ] {
+            fs::write(&function, "return 2")?;
+            fs::write(fixture.0.join("test/pack.mcmeta"), metadata)?;
+            assert!(packs.reload().is_err());
+            assert_eq!(packs.commands(&key).as_deref(), Some(&["return 1".to_owned()][..]));
+        }
         Ok(())
     }
 
