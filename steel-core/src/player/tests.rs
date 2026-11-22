@@ -956,6 +956,50 @@ fn dimension_advancements_only_follow_a_successful_cross_world_transition() {
 }
 
 #[test]
+fn nether_travel_uses_saved_overworld_entry_and_horizontal_distance() {
+    use crate::player::advancement::progress::AdvancementProgress;
+    use crate::portal::{TeleportPostTransition, TeleportTransition};
+    use steel_protocol::packets::game::RelativeMovement;
+    use steel_registry::REGISTRY;
+    use steel_utils::Identifier;
+
+    init_vanilla_registry();
+    let source_fixture = fresh_test_world("overworld");
+    let nether_fixture = fresh_test_world("the_nether");
+    let source = &source_fixture.world;
+    let nether = &nether_fixture.world;
+    insert_ready_full_chunk(source, ChunkPos::new(0, 0));
+    insert_ready_full_chunk(source, ChunkPos::new(437, 0));
+    insert_ready_full_chunk(nether, ChunkPos::new(0, 0));
+    let player = test_player(Arc::clone(source));
+    player.base.set_position_local(DVec3::new(0.0, 64.0, 0.0));
+    assert!(source.add_player(Arc::clone(&player), ResetReason::InitialJoin));
+    let advancement = REGISTRY.advancements
+        .value_by_key(&Identifier::vanilla_static("nether/fast_travel"))
+        .expect("fast travel advancement");
+    let completed = || player.advancements.lock().progress.get_progress(advancement)
+        .is_some_and(AdvancementProgress::is_done);
+    let transition = |target_world, position| TeleportTransition {
+        target_world, position, rotation: (0.0, 0.0), velocity: DVec3::ZERO,
+        relatives: RelativeMovement::NONE, portal_cooldown: 0, as_passenger: false,
+        post_transition: TeleportPostTransition::do_nothing(),
+    };
+    assert!(player.change_world_within_domain(&transition(Arc::clone(nether), DVec3::new(0.0, 64.0, 0.0))));
+    let saved = PersistentPlayerData::from_player(&player);
+    assert_eq!(saved.entered_nether_position, Some([0.0, 64.0, 0.0]));
+    *player.entered_nether_position.lock() = None;
+    saved.apply_to_player(&player);
+    assert!(player.change_world_within_domain(&transition(Arc::clone(source), DVec3::new(0.0, 7064.0, 0.0))));
+    assert!(!completed(), "vertical displacement must not satisfy horizontal distance");
+    assert!(player.entered_nether_position.lock().is_none());
+
+    assert!(player.change_world_within_domain(&transition(Arc::clone(nether), DVec3::new(0.0, 64.0, 0.0))));
+    assert!(player.change_world_within_domain(&transition(Arc::clone(source), DVec3::new(7000.0, 7064.0, 0.0))));
+    assert!(completed(), "the inclusive horizontal threshold must match");
+    assert!(player.entered_nether_position.lock().is_none());
+}
+
+#[test]
 fn failed_dimension_admission_does_not_grant_advancements() {
     use crate::portal::{TeleportPostTransition, TeleportTransition};
     use steel_protocol::packets::game::RelativeMovement;
@@ -986,6 +1030,7 @@ fn failed_dimension_admission_does_not_grant_advancements() {
         post_transition: TeleportPostTransition::do_nothing(),
     };
     assert!(!player.change_world_within_domain(&transition));
+    assert!(player.entered_nether_position.lock().is_none());
     let advancement = REGISTRY
         .advancements
         .value_by_key(&Identifier::vanilla_static("story/enter_the_nether"))

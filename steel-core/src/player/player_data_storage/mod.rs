@@ -40,7 +40,7 @@ use steel_utils::{BlockPos, Identifier};
 const PLAYER_MAGIC: [u8; 4] = *b"STLP";
 const GLOBAL_MAGIC: [u8; 4] = *b"STLG";
 /// Current on-disk layout version of a player data file.
-const PLAYER_STORAGE_VERSION: u16 = 13;
+const PLAYER_STORAGE_VERSION: u16 = 14;
 /// Oldest on-disk layout this build can still read.
 ///
 /// Version 10 lacked the vanilla `warden_spawn_tracker` block that version 11
@@ -107,6 +107,22 @@ struct PlayerDataFile {
     /// Vanilla `post_effects` ids; empty for every save older than version 12.
     post_effects: Vec<String>,
     raid_omen_position: Option<[i32; 3]>,
+    entered_nether_position: Option<[f64; 3]>,
+}
+
+/// Version 13 consists of the version 12 fields followed by the raid origin.
+#[derive(SchemaWrite, SchemaRead)]
+struct PlayerDataFileV13 {
+    base: PlayerDataFileV12,
+    raid_omen_position: Option<[i32; 3]>,
+}
+
+impl PlayerDataFileV13 {
+    fn into_current(self) -> PlayerDataFile {
+        let mut current = self.base.into_current();
+        current.raid_omen_position = self.raid_omen_position;
+        current
+    }
 }
 
 /// Version 12 layout, before the pending raid origin was appended.
@@ -187,6 +203,7 @@ impl PlayerDataFileV12 {
             warden_spawn_tracker: self.warden_spawn_tracker,
             post_effects: self.post_effects,
             raid_omen_position: None,
+            entered_nether_position: None,
         }
     }
 }
@@ -487,6 +504,7 @@ impl PlayerDataFileV10 {
             // Vanilla default: no screen effect was ever added.
             post_effects: Vec::new(),
             raid_omen_position: None,
+            entered_nether_position: None,
         }
     }
 }
@@ -568,6 +586,7 @@ impl PlayerDataFileV11 {
             warden_spawn_tracker: self.warden_spawn_tracker,
             post_effects: Vec::new(),
             raid_omen_position: None,
+            entered_nether_position: None,
         }
     }
 }
@@ -653,6 +672,7 @@ impl PlayerDataFile {
             },
             post_effects: data.post_effects.iter().map(ToString::to_string).collect(),
             raid_omen_position: data.raid_omen_position,
+            entered_nether_position: data.entered_nether_position,
         })
     }
 
@@ -751,6 +771,7 @@ impl PlayerDataFile {
                 cooldown_ticks: self.warden_spawn_tracker.cooldown_ticks,
             },
             raid_omen_position: self.raid_omen_position,
+            entered_nether_position: self.entered_nether_position,
             post_effects: self
                 .post_effects
                 .iter()
@@ -829,6 +850,12 @@ fn decode_player_file(bytes: &[u8]) -> io::Result<PlayerDataFile> {
             let payload = decode_file(PLAYER_MAGIC, PLAYER_STORAGE_VERSION, bytes)?;
             wincode::deserialize(&payload)
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))
+        }
+        13 => {
+            let payload = decode_file(PLAYER_MAGIC, 13, bytes)?;
+            let old: PlayerDataFileV13 = wincode::deserialize(&payload)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))?;
+            Ok(old.into_current())
         }
         12 => {
             let payload = decode_file(PLAYER_MAGIC, 12, bytes)?;

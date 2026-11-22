@@ -52,8 +52,10 @@ pub struct TriggerContext {
     pub from_dimension: Option<Identifier>,
     /// Dimension the player entered, for `changed_dimension`.
     pub to_dimension: Option<Identifier>,
-    /// Distance traveled, for `nether_travel` and `levitation` distances.
+    /// Distance traveled, for legacy distance-trigger contexts.
     pub distance: Option<f64>,
+    /// Start and end positions for the Nether travel distance predicate.
+    pub nether_route: Option<(DVec3, DVec3)>,
     /// Duration in ticks, for `levitation`.
     pub duration: Option<i32>,
     /// Recipe key, for `recipe_unlocked`.
@@ -168,7 +170,16 @@ impl TriggerContext {
         }
     }
 
-    /// A context for `nether_travel`, carrying the traveled distance.
+    /// A context for Nether travel, measured between positions in the Overworld.
+    #[must_use]
+    pub fn nether_route(start: DVec3, end: DVec3) -> Self {
+        Self {
+            nether_route: Some((start, end)),
+            ..Self::default()
+        }
+    }
+
+    /// A context for legacy scalar distance events.
     #[must_use]
     pub fn nether_travel(distance_traveled: f64) -> Self {
         Self {
@@ -226,6 +237,82 @@ pub fn matches_changed_dimension(instance: &str, context: &TriggerContext) -> bo
                     .is_some_and(|id| id == *actual)
             })
         })
+}
+
+/// Matches the supported distance-only Nether travel conditions.
+/// Player and start-position predicates remain unsupported and fail closed.
+#[must_use]
+pub fn matches_nether_route(instance: &str, context: &TriggerContext) -> bool {
+    let Some((start, end)) = context.nether_route else {
+        return false;
+    };
+    let Ok(value) = serde_json::from_str::<Value>(instance) else {
+        return false;
+    };
+    let Some(conditions) = value.get("conditions").unwrap_or(&value).as_object() else {
+        return false;
+    };
+    if conditions.keys().any(|key| key != "distance") {
+        return false;
+    }
+    let Some(distance) = conditions.get("distance") else {
+        return true;
+    };
+    let Some(fields) = distance.as_object() else {
+        return false;
+    };
+    if fields.keys().any(|key| !matches!(key.as_str(), "x" | "y" | "z" | "horizontal" | "absolute")) {
+        return false;
+    }
+    // Vanilla casts each coordinate delta to float before evaluating distances.
+    let x = (start.x - end.x) as f32;
+    let y = (start.y - end.y) as f32;
+    let z = (start.z - end.z) as f32;
+    [
+        ("x", f64::from(x.abs()), false),
+        ("y", f64::from(y.abs()), false),
+        ("z", f64::from(z.abs()), false),
+        ("horizontal", f64::from(x * x + z * z), true),
+        ("absolute", f64::from(x * x + y * y + z * z), true),
+    ]
+    .into_iter()
+    .all(|(key, value, squared)| {
+        fields.get(key).is_none_or(|range| matches_distance_bounds(range, value, squared))
+    })
+}
+
+fn matches_distance_bounds(range: &Value, value: f64, squared: bool) -> bool {
+    let parse = |number: &Value| number.as_f64().filter(|value| value.is_finite());
+    let (min, max) = if let Some(number) = parse(range) {
+        (Some(number), Some(number))
+    } else if let Some(bounds) = range.as_object() {
+        if bounds.keys().any(|key| key != "min" && key != "max") {
+            return false;
+        }
+        let min = match bounds.get("min") {
+            Some(value) => match parse(value) {
+                Some(value) => Some(value),
+                None => return false,
+            },
+            None => None,
+        };
+        let max = match bounds.get("max") {
+            Some(value) => match parse(value) {
+                Some(value) => Some(value),
+                None => return false,
+            },
+            None => None,
+        };
+        (min, max)
+    } else {
+        return false;
+    };
+    if min.zip(max).is_some_and(|(min, max)| min > max) {
+        return false;
+    }
+    let transform = |bound: f64| if squared { bound * bound } else { bound };
+    min.is_none_or(|min| value >= transform(min))
+        && max.is_none_or(|max| value <= transform(max))
 }
 
 /// Conservative matcher for block-use and block-placement location triggers.
@@ -828,6 +915,20 @@ mod tests {
 
     fn id(path: &str) -> Identifier {
         Identifier::vanilla(path.to_owned())
+    }
+
+    #[test]
+    fn nether_route_uses_horizontal_vertical_and_absolute_components() {
+        let context = TriggerContext::nether_route(DVec3::new(0.0, 0.0, 0.0), DVec3::new(3.0, 12.0, 4.0));
+        assert!(matches_nether_route(r#"{"distance":{"horizontal":5,"absolute":13,"x":3,"y":12,"z":4}}"#, &context));
+        assert!(!matches_nether_route(r#"{"distance":{"horizontal":{"min":6}}}"#, &context));
+        assert!(!matches_nether_route(r#"{"distance":{"absolute":{"max":12}}}"#, &context));
+        assert!(!matches_nether_route(r#"{"distance":{"y":{"min":13}}}"#, &context));
+        assert!(!matches_nether_route(r#"{"distance":{"horizontal":{"min":9,"max":2}}}"#, &context));
+        assert!(!matches_nether_route(r#"{"distance":{"horizontal":{"min":"bad"}}}"#, &context));
+        assert!(!matches_nether_route(r#"{"start_position":{}}"#, &context));
+        assert!(!matches_nether_route(r#"{"player":{}}"#, &context));
+        assert!(!matches_nether_route("{}", &TriggerContext::default()));
     }
 
     #[test]

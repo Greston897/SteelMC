@@ -85,20 +85,35 @@ impl Player {
             ) {
                 return false;
             }
-            // Advancement rewards and player predicates must observe the destination
-            // world; a failed admission must not grant a dimension criterion.
+            // Advancement rewards must observe the destination, and failed
+            // admission must neither save an entry point nor grant a criterion.
             let source_dimension = &current_world.key;
             let target_dimension = &new_world.key;
+            let overworld = Identifier::vanilla_static("overworld");
+            let nether = Identifier::vanilla_static("the_nether");
+            let entry_position = {
+                let mut entered = self.entered_nether_position.lock();
+                if source_dimension == &overworld && target_dimension == &nether {
+                    *entered = Some(current_position);
+                }
+                let route = if source_dimension == &nether && target_dimension == &overworld {
+                    *entered
+                } else {
+                    None
+                };
+                if target_dimension != &nether {
+                    *entered = None;
+                }
+                route
+            };
             self.trigger_advancement_with_context(
                 &CHANGED_DIMENSION,
                 &TriggerContext::dimension(source_dimension, target_dimension),
             );
-            // Nether travel is currently disabled in the advancement dispatcher;
-            // its entry-position tracking and distance context are not implemented.
-            if is_nether_dimension(source_dimension) || is_nether_dimension(target_dimension) {
+            if let Some(entry_position) = entry_position {
                 self.trigger_advancement_with_context(
                     &NETHER_TRAVEL,
-                    &TriggerContext::nether_travel(position.distance(current_position)),
+                    &TriggerContext::nether_route(entry_position, position),
                 );
             }
             // Vanilla: PlayerList.sendAllPlayerInfo -> inventoryMenu.sendAllDataToRemote
@@ -107,9 +122,4 @@ impl Player {
         self.apply_post_teleport_transition(&teleport_transition.post_transition);
         true
     }
-}
-
-/// Whether a dimension key names the Nether, as vanilla's `Level.NETHER` check does.
-fn is_nether_dimension(dimension: &Identifier) -> bool {
-    dimension.namespace == "minecraft" && dimension.path.as_ref() == "the_nether"
 }

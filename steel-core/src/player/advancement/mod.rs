@@ -116,8 +116,8 @@ impl PlayerAdvancement {
     /// Fires `trigger` with an event description, honouring each criterion's
     /// predicate.
     ///
-    /// Block-use, block-placement, consume-item, dimension-change and sleep
-    /// triggers use conservative subsets of their predicate languages.
+    /// Supported block, item, dimension, Nether travel and sleep triggers use
+    /// conservative subsets of their predicate languages.
     pub fn trigger_with_context(
         &mut self,
         player: &Player,
@@ -134,7 +134,11 @@ impl PlayerAdvancement {
         let used_item = trigger == &vanilla_criteria_triggers::CONSUME_ITEM;
         let changed_dimension = trigger == &vanilla_criteria_triggers::CHANGED_DIMENSION;
         let slept_in_bed = trigger == &vanilla_criteria_triggers::SLEPT_IN_BED;
-        if !block_location && !used_item && !changed_dimension && !slept_in_bed {
+        let nether_travel = trigger == &vanilla_criteria_triggers::NETHER_TRAVEL;
+        if !block_location && !used_item && !changed_dimension && !slept_in_bed && !nether_travel {
+            return 0;
+        }
+        if nether_travel && context.nether_route.is_none() {
             return 0;
         }
         if changed_dimension && (context.from_dimension.is_none() || context.to_dimension.is_none())
@@ -159,6 +163,8 @@ impl PlayerAdvancement {
                                         predicate::matches_used_item(instance, context)
                                     } else if changed_dimension {
                                         predicate::matches_changed_dimension(instance, context)
+                                    } else if nether_travel {
+                                        predicate::matches_nether_route(instance, context)
                                     } else {
                                         predicate::matches_unconditional_player_trigger(instance)
                                     }

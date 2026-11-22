@@ -257,6 +257,8 @@ pub struct Player {
     lifecycle: SyncMutex<PlayerLifecycleState>,
     /// Position captured when bad omen becomes raid omen.
     pub(crate) raid_omen_position: SyncMutex<Option<BlockPos>>,
+    /// Overworld position at the last successful entry to the Nether.
+    pub(crate) entered_nether_position: SyncMutex<Option<DVec3>>,
 
     /// Movement tracking state
     pub(crate) movement: SyncMutex<MovementState>,
@@ -969,6 +971,7 @@ impl Player {
             ),
             lifecycle: SyncMutex::new(PlayerLifecycleState::default()),
             raid_omen_position: SyncMutex::new(None),
+            entered_nether_position: SyncMutex::new(None),
             movement: SyncMutex::new(MovementState::new()),
             entity_data: SyncMutex::new({
                 let mut data = PlayerEntityData::new();
@@ -2604,6 +2607,9 @@ impl Player {
             NbtTag::Byte(i8::from(self.has_seen_credits())),
         );
         nbt.insert("Dimension", self.get_world().key.to_string());
+        if let Some(position) = *self.entered_nether_position.lock() {
+            nbt.insert("entered_nether_pos", NbtList::Double(position.to_array().to_vec()));
+        }
 
         if let Some(vehicle) = self.vehicle()
             && let Some(root_vehicle) = self.root_vehicle()

@@ -80,6 +80,7 @@ fn sample_player_file(data_version: i32) -> PlayerDataFile {
         },
         post_effects: vec!["minecraft:invert".to_owned(), "minecraft:blur".to_owned()],
         raid_omen_position: Some([-31, 64, 128]),
+        entered_nether_position: Some([-1024.25, 72.0, 391.5]),
     }
 }
 
@@ -594,6 +595,7 @@ fn player_file_roundtrip_preserves_domain_world_data() {
         PLAYER_STORAGE_VERSION
     );
     assert_eq!(decoded.raid_omen_position, Some([-31, 64, 128]));
+    assert_eq!(decoded.entered_nether_position, Some([-1024.25, 72.0, 391.5]));
     assert_eq!(decoded.world, "lobby:void");
     assert_eq!(decoded.game_mode, 2);
     assert_eq!(decoded.selected_slot, 4);
@@ -614,6 +616,7 @@ fn player_file_roundtrip_preserves_domain_world_data() {
         .into_persistent()
         .expect("player file should convert to persistent data");
     assert_eq!(persistent.raid_omen_position, Some([-31, 64, 128]));
+    assert_eq!(persistent.entered_nether_position, Some([-1024.25, 72.0, 391.5]));
     assert_eq!(
         persistent.post_effects,
         [
@@ -1050,7 +1053,7 @@ async fn in_memory_permission_subjects_round_trip() {
 
 #[test]
 fn version_12_player_save_migrates_without_inventing_raid_origin() {
-    let current = sample_player_file(PLAYER_DATA_VERSION);
+    let current = sample_player_file(10);
     let old = PlayerDataFileV12 {
         data_version: current.data_version,
         pos: current.pos,
@@ -1091,5 +1094,23 @@ fn version_12_player_save_migrates_without_inventing_raid_origin() {
         .expect("the player data should serialize");
     let decoded = decode_player_file(&bytes).expect("the player file should decode");
     assert!(decoded.raid_omen_position.is_none());
+    assert!(decoded.entered_nether_position.is_none());
+    assert_eq!(decoded.post_effects.len(), 2);
+
+    let old_v13 = PlayerDataFileV13 {
+        base: old,
+        raid_omen_position: Some([-31, 64, 128]),
+    };
+    let old_payload = wincode::serialize(&old_v13).expect("version 13 payload");
+    let mut new_without_entry = sample_player_file(10);
+    new_without_entry.entered_nether_position = None;
+    let mut expected_current = old_payload;
+    expected_current.extend(wincode::serialize(&None::<[f64; 3]>).expect("absent entry"));
+    assert_eq!(wincode::serialize(&new_without_entry).expect("current payload"), expected_current);
+    let bytes = encode_file(PLAYER_MAGIC, 13, wincode::serialize(&old_v13))
+        .expect("version 13 player data should serialize");
+    let decoded = decode_player_file(&bytes).expect("version 13 player data should decode");
+    assert_eq!(decoded.raid_omen_position, Some([-31, 64, 128]));
+    assert!(decoded.entered_nether_position.is_none());
     assert_eq!(decoded.post_effects.len(), 2);
 }

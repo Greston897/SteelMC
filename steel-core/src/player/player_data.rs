@@ -28,11 +28,9 @@ use crate::{
 /// Current data version for player saves.
 /// Increment when making breaking changes to the format.
 ///
-/// Version 8 added the vanilla `warden_spawn_tracker` (warning level, cooldown
-/// and quiet ticks), version 9 the vanilla `post_effects` list. Older saves
-/// start with the defaults, which is exactly vanilla's behaviour for a player
-/// that never triggered a shrieker and never had a screen effect applied.
-pub const PLAYER_DATA_VERSION: i32 = 10;
+/// Older payloads default missing player state to its initial value. Version 11
+/// adds the saved Overworld entry point for Nether travel.
+pub const PLAYER_DATA_VERSION: i32 = 11;
 
 /// Persistent player data saved by Steel's storage backend.
 ///
@@ -150,6 +148,8 @@ pub struct PersistentPlayerData {
     pub post_effects: Vec<Identifier>,
     /// Vanilla pending raid origin, independent of subsequent player movement.
     pub raid_omen_position: Option<[i32; 3]>,
+    /// Overworld position captured when entering the Nether.
+    pub entered_nether_position: Option<[f64; 3]>,
 }
 
 /// Vanilla `WardenSpawnTracker` saved with the player.
@@ -334,6 +334,7 @@ impl PersistentPlayerData {
             },
             post_effects,
             raid_omen_position: player.raid_omen_position.lock().map(|pos| pos.0.to_array()),
+            entered_nether_position: player.entered_nether_position.lock().map(|pos| pos.to_array()),
         }
     }
 
@@ -413,6 +414,7 @@ impl Player {
         // vanilla default and still has to reach the client.
         self.replace_post_effects(Vec::new());
         *self.raid_omen_position.lock() = None;
+        *self.entered_nether_position.lock() = None;
     }
 }
 
@@ -574,6 +576,7 @@ impl PersistentPlayerData {
         *player.raid_omen_position.lock() = self
             .raid_omen_position
             .map(|pos| steel_utils::BlockPos(glam::IVec3::from_array(pos)));
+        *player.entered_nether_position.lock() = self.entered_nether_position.map(DVec3::from_array);
 
         // Statistics
         {
