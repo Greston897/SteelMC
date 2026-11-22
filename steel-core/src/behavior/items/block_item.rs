@@ -184,19 +184,11 @@ impl BlockItem {
             // Vanilla `BlockItem#place` → `CriteriaTriggers.PLACED_BLOCK`: the
             // predicate carries the placed block and its item form.
             if let Some(player) = context.player() {
-                let block_key = steel_registry::REGISTRY
-                    .blocks
-                    .by_state_id(state)
-                    .map(|block| block.key.clone());
                 let stack = context.with_item(Clone::clone);
-                if let Some(block_key) = block_key {
-                    player.trigger_advancement_with_context(
-                        &PLACED_BLOCK,
-                        &TriggerContext::block(&block_key, Some(&stack.item().key))
-                            .with_block_state(state)
-                            .with_item_stack(&stack),
-                    );
-                }
+                player.trigger_advancement_with_context(
+                    &PLACED_BLOCK,
+                    &TriggerContext::block_at(context.world, pos).with_item_stack(&stack),
+                );
             }
         }
         placed

@@ -7,8 +7,7 @@ use crate::behavior::UseItemContext;
 use crate::player::advancement::predicate::TriggerContext;
 use steel_registry::data_components::vanilla_components::USE_REMAINDER;
 use steel_registry::stat::vanilla_stat_types;
-use steel_registry::vanilla_criteria_triggers::ANY_BLOCK_USE;
-use steel_registry::vanilla_criteria_triggers::DEFAULT_BLOCK_USE;
+use steel_registry::vanilla_criteria_triggers::{DEFAULT_BLOCK_USE, ITEM_USED_ON_BLOCK};
 
 /// Handles using an item on a block.
 ///
@@ -61,6 +60,10 @@ pub fn use_item_on(
     };
 
     let suppress_block_use = player.is_secondary_use_active() && have_something;
+    // ServerPlayerGameMode keeps a copy from before block or item interaction.
+    let inventory_access = InventoryAccess::new(Arc::clone(&player.inventory), hand);
+    let (is_empty, original_count, item_ref, stack_before_use) =
+        inventory_access.with_item(|item| (item.is_empty(), item.count, item.item, item.clone()));
 
     // Get behavior registries
     let block_behaviors = &*BLOCK_BEHAVIORS;
@@ -87,6 +90,10 @@ pub fn use_item_on(
         );
 
         if block_result.consumes_action() {
+            player.trigger_advancement_with_context(
+                &ITEM_USED_ON_BLOCK,
+                &TriggerContext::block_at(world, pos).with_item_stack(&stack_before_use),
+            );
             return block_result;
         }
 
@@ -103,25 +110,12 @@ pub fn use_item_on(
             );
 
             if empty_result.consumes_action() {
+                player.trigger_advancement_with_context(
+                    &DEFAULT_BLOCK_USE,
+                    &TriggerContext::block_at(world, pos),
+                );
                 return empty_result;
             }
-        }
-    }
-
-    let inventory_access = InventoryAccess::new(Arc::clone(&player.inventory), hand);
-    let (is_empty, original_count, item_ref, stack_before_use) =
-        inventory_access.with_item(|item| (item.is_empty(), item.count, item.item, item.clone()));
-
-    // Vanilla `ServerPlayerGameMode.useItemOn` fires `any_block_use` (any hand) and
-    // `default_block_use` (the main-hand fallthrough) before the item's own
-    // `useOn` runs, with a context holding both the item and the clicked block.
-    if let Some(block) = REGISTRY.blocks.by_state_id(state) {
-        let context = TriggerContext::block(&block.key, Some(&item_ref.key))
-            .with_block_state(state)
-            .with_item_stack(&stack_before_use);
-        player.trigger_advancement_with_context(&ANY_BLOCK_USE, &context);
-        if hand == InteractionHand::MainHand {
-            player.trigger_advancement_with_context(&DEFAULT_BLOCK_USE, &context);
         }
     }
 
@@ -171,6 +165,12 @@ pub fn use_item_on(
             context.inv.with_item(|item| item.count = original_count);
         }
 
+        if result.consumes_action() {
+            player.trigger_advancement_with_context(
+                &ITEM_USED_ON_BLOCK,
+                &TriggerContext::block_at(world, pos).with_item_stack(&stack_before_use),
+            );
+        }
         return result;
     }
 

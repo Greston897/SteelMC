@@ -13,6 +13,7 @@ use steel_utils::{BlockPos, BlockStateId, types::UpdateFlags};
 use crate::behavior::blocks::vegetation::GrowingPlantHeadBehavior;
 use crate::behavior::{BLOCK_BEHAVIORS, InteractionResult, ItemBehavior, UseOnContext};
 use crate::entity::Entity;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::world::game_event::GameEventContext;
 
 /// Behavior for shears.
@@ -53,9 +54,11 @@ impl ItemBehavior for ShearsItem {
 
         // Vanilla `ShearsItem.useOnBlock` runs the `item_used_on_block` trigger
         // after a successful interaction.
-        context
-            .player
-            .trigger_advancement(&vanilla_criteria_triggers::ITEM_USED_ON_BLOCK);
+        let stack = context.inv.with_item(|item| item.clone());
+        context.player.trigger_advancement_with_context(
+            &vanilla_criteria_triggers::ITEM_USED_ON_BLOCK,
+            &TriggerContext::block_at(context.world, pos).with_item_stack(&stack),
+        );
         context.world.play_block_sound(
             &sound_events::BLOCK_GROWING_PLANT_CROP,
             pos,

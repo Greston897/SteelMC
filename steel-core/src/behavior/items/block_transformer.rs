@@ -18,7 +18,7 @@ use crate::behavior::{InteractionResult, UseOnContext};
 use crate::block_state_provider::BlockStateProviderEvaluator;
 use crate::entity::{Entity as _, LivingEntity as _};
 use crate::inventory::equipment::EquipmentSlot;
-use crate::player::Player;
+use crate::player::{Player, advancement::predicate::TriggerContext};
 use crate::world::game_event::GameEventContext;
 
 use super::copper_chest_events::emit_connected_chest_block_change;
@@ -64,10 +64,12 @@ pub(crate) fn use_on(context: &mut UseOnContext) -> InteractionResult {
             new_state
         };
 
-        // Vanilla `Item.itemUsedOnBlock` fires this trigger after the block changed.
-        context
-            .player
-            .trigger_advancement(&vanilla_criteria_triggers::ITEM_USED_ON_BLOCK);
+        // Vanilla fires before changing the block or consuming the item.
+        let stack = context.inv.with_item(|item| item.clone());
+        context.player.trigger_advancement_with_context(
+            &vanilla_criteria_triggers::ITEM_USED_ON_BLOCK,
+            &TriggerContext::block_at(context.world, pos).with_item_stack(&stack),
+        );
         let old_state = context.world.get_block_state(pos);
         drop_loot(transform, context, old_state);
         let broken_item = context.inv.with_item(|item| {

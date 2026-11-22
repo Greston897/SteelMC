@@ -367,6 +367,36 @@ fn glow_ink_rejections_do_not_consume_or_change_the_sign() {
 }
 
 #[test]
+fn wax_on_advancement_requires_honeycomb_and_unwaxed_copper() {
+    use steel_registry::REGISTRY;
+    use steel_utils::Identifier;
+
+    let interaction = Interaction::new("wax_on_advancement");
+    let advancement = REGISTRY
+        .advancements
+        .by_key(&Identifier::vanilla_static("husbandry/wax_on"))
+        .expect("wax_on advancement")
+        .value();
+    let completed = || {
+        interaction
+            .player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(advancement)
+            .is_some_and(|progress| progress.is_done())
+    };
+    interaction.block(vanilla_blocks::STONE.default_state());
+    interaction.hold(InteractionHand::MainHand, ItemStack::new(&vanilla_items::HONEYCOMB));
+    assert!(!interaction.use_on(InteractionHand::MainHand).consumes_action());
+    assert!(!completed());
+
+    interaction.block(vanilla_blocks::COPPER_BLOCK.default_state());
+    assert!(interaction.use_on(InteractionHand::MainHand).consumes_action());
+    assert!(completed());
+}
+
+#[test]
 fn honeycomb_can_wax_blank_signs_without_consuming_in_creative() {
     let interaction = Interaction::new("creative_blank_sign_waxing");
     let entity = interaction.sign(vanilla_blocks::OAK_SIGN.default_state(), false, false);

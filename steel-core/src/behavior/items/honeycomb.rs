@@ -18,7 +18,7 @@ use crate::{
         entities::{SignBlockEntity, SignText},
     },
     entity::Entity,
-    player::Player,
+    player::{Player, advancement::predicate::TriggerContext},
     world::{World, game_event::GameEventContext},
 };
 
@@ -35,11 +35,13 @@ impl ItemBehavior for HoneycombItem {
         // Try block waxing first
         let old_block_state = context.world.get_block_state(pos);
         if let Some(waxed_block) = get_waxed_from_normal_variant(old_block_state.get_block()) {
+            // Vanilla fires before consuming the honeycomb or changing the block.
+            let stack = context.inv.with_item(|item| item.clone());
+            context.player.trigger_advancement_with_context(
+                &vanilla_criteria_triggers::ITEM_USED_ON_BLOCK,
+                &TriggerContext::block_at(context.world, pos).with_item_stack(&stack),
+            );
             context.inv.with_item(ItemStack::shrink_one);
-            // Vanilla `HoneycombItem`: waxing counts as using the item on a block.
-            context
-                .player
-                .trigger_advancement(&vanilla_criteria_triggers::ITEM_USED_ON_BLOCK);
             let waxed_state = REGISTRY
                 .blocks
                 .copy_matching_properties(old_block_state, waxed_block);

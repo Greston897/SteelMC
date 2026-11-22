@@ -79,6 +79,14 @@ impl Player {
 
         let animation = self.interact_animation(packet.hand);
         let result = use_item_on(self, &world, packet.hand, &packet.block_hit);
+        if result.consumes_action() {
+            let stack = self.inventory.lock().get_item_in_hand(packet.hand).clone();
+            self.trigger_advancement_with_context(
+                &steel_registry::vanilla_criteria_triggers::ANY_BLOCK_USE,
+                &crate::player::advancement::predicate::TriggerContext::block_at(&world, pos)
+                    .with_item_stack(&stack),
+            );
+        }
         self.swing_after_interaction(packet.hand, animation, result);
 
         self.send_block_updates(pos, direction);

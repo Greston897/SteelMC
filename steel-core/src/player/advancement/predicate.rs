@@ -18,7 +18,7 @@ use serde_json::Value;
 use steel_registry::{
     REGISTRY, TaggedRegistryExt, item_predicate::ItemPredicate, item_stack::ItemStack,
 };
-use steel_utils::{BlockStateId, Identifier, nbt::json_to_nbt};
+use steel_utils::{BlockPos, BlockStateId, Identifier, nbt::json_to_nbt};
 
 use crate::command::execution::registered_item_stack_matches;
 use crate::world::World;
@@ -111,6 +111,20 @@ impl TriggerContext {
     pub fn with_entity_type(mut self, entity_type: &Identifier) -> Self {
         self.entity_type = Some(entity_type.clone());
         self
+    }
+
+    /// Captures a block event's current state and vanilla block-center origin.
+    #[must_use]
+    pub fn block_at(world: &World, pos: BlockPos) -> Self {
+        let state = world.get_block_state(pos);
+        let block = REGISTRY.blocks.by_state_id(state).map(|block| block.key.clone());
+        let (x, y, z) = pos.get_center();
+        Self {
+            block,
+            block_state: Some(state),
+            position: Some((x, y, z)),
+            ..Self::default()
+        }
     }
 
     /// A context for `recipe_unlocked`.
@@ -220,7 +234,13 @@ fn matches_key(key: &str, expected: &Value, context: &TriggerContext) -> bool {
             .is_some_and(|state| matches_block_state(expected, state)),
         "entity" | "entity_type" => matches_entity_predicate(expected, context),
         // `location` and distance checks.
-        "location" => matches_location(expected, context.position),
+        "location" => {
+            if expected.get("condition").is_some() {
+                matches_location_loot_condition(expected, context, 0) == Some(true)
+            } else {
+                matches_location(expected, context.position)
+            }
+        }
         // `player` sub-predicate: Steel models sneaking, the only flag the
         // vanilla advancement data in 26.3 relies on for these triggers.
         "player" => matches_player(expected, context.player_sneaking),
@@ -468,6 +488,95 @@ fn matches_location(expected: &Value, position: Option<(f64, f64, f64)>) -> bool
         }
     }
     true
+}
+
+/// Evaluates the supported location-loot conditions with the captured event data.
+/// `None` means unsupported or unavailable context; keeping it distinct from
+/// false prevents an inverted unknown predicate from granting an advancement.
+fn matches_location_loot_condition(
+    expected: &Value,
+    context: &TriggerContext,
+    depth: usize,
+) -> Option<bool> {
+    if depth >= 64 {
+        return None;
+    }
+    let map = expected.as_object()?;
+    let name = map.get("condition")?.as_str()?;
+    let name = name.strip_prefix("minecraft:").unwrap_or(name);
+    match name {
+        "all_of" | "any_of" => {
+            let terms = map.get("terms")?.as_array()?;
+            let mut unknown = false;
+            for term in terms {
+                match matches_location_loot_condition(term, context, depth + 1) {
+                    Some(value) if value == (name == "any_of") => return Some(value),
+                    Some(_) => {}
+                    None => unknown = true,
+                }
+            }
+            if unknown { None } else { Some(name == "all_of") }
+        }
+        "inverted" => matches_location_loot_condition(map.get("term")?, context, depth + 1)
+            .map(|result| !result),
+        "match_tool" => {
+            let stack = context.item_stack.as_ref()?;
+            Some(map.get("predicate").is_none_or(|predicate| {
+                matches_item_view(predicate, (!stack.is_empty()).then_some(&stack.item().key), Some(stack))
+            }))
+        }
+        "match_block" => matches_event_block(expected, context),
+        "location_check" => {
+            let (mut x, mut y, mut z) = context.position?;
+            let mut has_offset = false;
+            for (key, value) in [("offsetX", &mut x), ("offsetY", &mut y), ("offsetZ", &mut z)] {
+                if let Some(offset) = map.get(key) {
+                    let offset = i32::try_from(offset.as_i64()?).ok()?;
+                    has_offset |= offset != 0;
+                    *value += f64::from(offset);
+                }
+            }
+            let Some(predicate) = map.get("predicate") else {
+                return Some(true);
+            };
+            let predicate = predicate.as_object()?;
+            if predicate.keys().any(|key| key != "position" && key != "block") {
+                return None;
+            }
+            if let Some(position) = predicate.get("position") {
+                let bounds = position.as_object()?;
+                for (axis, value) in [("x", x), ("y", y), ("z", z)] {
+                    if bounds.get(axis).is_some_and(|range| !matches_number_range(range, value)) {
+                        return Some(false);
+                    }
+                }
+            }
+            if let Some(block) = predicate.get("block") {
+                // Only the event block was captured; other offsets need a world lookup.
+                if has_offset {
+                    return None;
+                }
+                return matches_event_block(block, context);
+            }
+            Some(true)
+        }
+        _ => None,
+    }
+}
+
+fn matches_event_block(expected: &Value, context: &TriggerContext) -> Option<bool> {
+    let map = expected.as_object()?;
+    let state = context.block_state?;
+    if map.contains_key("nbt") || map.contains_key("components") || map.contains_key("predicates") {
+        return None;
+    }
+    if let Some(blocks) = map.get("blocks") {
+        let block = REGISTRY.blocks.by_state_id(state)?;
+        if !contains_holder_set(blocks, &block.key, || &REGISTRY.blocks) {
+            return Some(false);
+        }
+    }
+    Some(map.get("state").is_none_or(|value| matches_block_state(value, state)))
 }
 
 /// Vanilla `Range<f64>`: `{"min": .., "max": ..}` or a bare number.
@@ -807,6 +916,41 @@ mod tests {
             &context
         ));
         assert!(matches(r#"{"location":{"position":{"y":64}}}"#, &context));
+    }
+
+    #[test]
+    fn location_loot_conditions_check_block_tool_and_offsets() {
+        use steel_registry::{vanilla_blocks, vanilla_items};
+
+        steel_registry::init_vanilla_registry();
+        let stack = ItemStack::new(&vanilla_items::HONEYCOMB);
+        let context = TriggerContext {
+            block_state: Some(vanilla_blocks::COPPER_BLOCK.default_state()),
+            position: Some((8.5, 64.5, 8.5)),
+            ..context_for_stack(&stack)
+        };
+        let condition = r#"{"location":{"condition":"minecraft:all_of","terms":[{"condition":"minecraft:location_check","predicate":{"block":{"blocks":"minecraft:copper_block"},"position":{"y":{"min":64}}}},{"condition":"minecraft:match_tool","predicate":{"items":"minecraft:honeycomb"}}]}}"#;
+        assert!(matches(condition, &context));
+        let wrong_tool = context.clone().with_item_stack(&ItemStack::new(&vanilla_items::STICK));
+        assert!(!matches(condition, &wrong_tool));
+        let wrong_block = TriggerContext {
+            block_state: Some(vanilla_blocks::STONE.default_state()),
+            ..context.clone()
+        };
+        assert!(!matches(condition, &wrong_block));
+        assert!(matches(
+            r#"{"location":{"condition":"minecraft:location_check","offsetY":1,"predicate":{"position":{"y":65.5}}}}"#,
+            &context
+        ));
+        assert!(!matches(
+            r#"{"location":{"condition":"minecraft:location_check","offsetY":1,"predicate":{"block":{"blocks":"minecraft:copper_block"}}}}"#,
+            &context
+        ));
+        assert!(!matches(
+            r#"{"location":{"condition":"minecraft:inverted","term":{"condition":"minecraft:weather_check"}}}"#,
+            &context
+        ));
+        assert!(!matches(condition, &TriggerContext::default()));
     }
 
     #[test]
