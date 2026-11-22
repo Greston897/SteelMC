@@ -1,4 +1,4 @@
-//! Runtime directory data packs: function bodies and function tags.
+//! Runtime directory and ZIP data packs: function bodies and function tags.
 //!
 //! Other data registries are still baked. This module does not claim to reload
 //! recipes, worldgen, loot, or advancements merely because their pack is visible.
@@ -7,6 +7,7 @@ use serde::Deserialize;
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
+    io::Read,
     path::{Path, PathBuf},
     sync::{
         Arc,
@@ -15,6 +16,7 @@ use std::{
 };
 use steel_utils::Identifier;
 use tokio::task::spawn_blocking;
+use zip::{ZipArchive, result::ZipError};
 
 const MAX_RESOURCE_BYTES: u64 = 8 * 1024 * 1024;
 
@@ -133,34 +135,123 @@ fn load_tree(
         .parse()
         .map_err(|error| format!("{}: {error}", path.display()))?;
         let text = read_resource(&path)?;
-        if tags {
-            let tag: FunctionTag = serde_json::from_str(&text)
-                .map_err(|error| format!("{}: {error}", path.display()))?;
-            let values = state.tags.entry(key).or_default();
-            if tag.replace {
-                values.clear();
-            }
-            values.extend(tag.values);
-        } else {
-            let mut commands = Vec::new();
-            for (line, command) in text.lines().enumerate() {
-                let command = command.trim();
-                if command.is_empty() || command.starts_with('#') {
-                    continue;
-                }
-                if command.starts_with('/') || command.starts_with('$') {
-                    return Err(format!(
-                        "{}:{}: slash-prefixed commands and function macros are not supported",
-                        path.display(),
-                        line + 1
-                    ));
-                }
-                commands.push(command.to_owned());
-            }
-            state.functions.insert(key, commands);
-        }
+        load_resource(state, key, &text, &path.display().to_string(), tags)?;
     }
     Ok(())
+}
+
+fn load_resource(
+    state: &mut FunctionPackState,
+    key: Identifier,
+    text: &str,
+    source: &str,
+    tags: bool,
+) -> Result<(), String> {
+    if tags {
+        let tag: FunctionTag =
+            serde_json::from_str(text).map_err(|error| format!("{source}: {error}"))?;
+        let values = state.tags.entry(key).or_default();
+        if tag.replace {
+            values.clear();
+        }
+        values.extend(tag.values);
+    } else {
+        let mut commands = Vec::new();
+        for (line, command) in text.lines().enumerate() {
+            let command = command.trim();
+            if command.is_empty() || command.starts_with('#') {
+                continue;
+            }
+            if command.starts_with('/') || command.starts_with('$') {
+                return Err(format!(
+                    "{source}:{}: slash-prefixed commands and function macros are not supported",
+                    line + 1
+                ));
+            }
+            commands.push(command.to_owned());
+        }
+        state.functions.insert(key, commands);
+    }
+    Ok(())
+}
+
+fn read_zip_text(reader: impl Read, source: &str) -> Result<String, String> {
+    let mut bytes = Vec::new();
+    reader
+        .take(MAX_RESOURCE_BYTES + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|error| format!("{source}: {error}"))?;
+    if bytes.len() as u64 > MAX_RESOURCE_BYTES {
+        return Err(format!("{source}: resource exceeds 8 MiB"));
+    }
+    String::from_utf8(bytes).map_err(|error| format!("{source}: {error}"))
+}
+
+/// Loads function resources from an archive without extracting its paths.
+fn load_zip(state: &mut FunctionPackState, path: &Path) -> Result<bool, String> {
+    let source = path.display();
+    let file = fs::File::open(path).map_err(|error| format!("{source}: {error}"))?;
+    let mut archive = ZipArchive::new(file).map_err(|error| format!("{source}: {error}"))?;
+    let metadata = match archive.by_name("pack.mcmeta") {
+        Ok(file) => read_zip_text(file, &format!("{source}!pack.mcmeta"))?,
+        Err(ZipError::FileNotFound) => return Ok(false),
+        Err(error) => return Err(format!("{source}: {error}")),
+    };
+    let metadata: serde_json::Value = serde_json::from_str(&metadata)
+        .map_err(|error| format!("{source}!pack.mcmeta: {error}"))?;
+    if !metadata.get("pack").is_some_and(serde_json::Value::is_object) {
+        return Err(format!("{source}: missing pack metadata"));
+    }
+    // Overlay and filter sections change resource resolution. Until those are
+    // implemented, fail rather than execute the wrong function set.
+    if metadata.get("overlays").is_some() || metadata.get("filter").is_some() {
+        return Err(format!("{source}: pack overlays and filters are not supported"));
+    }
+
+    let mut resources = Vec::new();
+    for index in 0..archive.len() {
+        let entry = archive.by_index(index).map_err(|error| format!("{source}: {error}"))?;
+        if !entry.is_dir() {
+            let name = entry.name().map_err(|error| format!("{source}: {error}"))?;
+            resources.push((name.into_owned(), index));
+        }
+    }
+    resources.sort_unstable();
+    if resources.windows(2).any(|pair| pair[0].0 == pair[1].0) {
+        return Err(format!("{source}: duplicate ZIP entry names are not supported"));
+    }
+    for (name, index) in resources {
+        let Some((namespace, resource)) = name.strip_prefix("data/").and_then(|s| s.split_once('/')) else {
+            continue;
+        };
+        if !Identifier::validate_namespace(namespace) || namespace.is_empty() {
+            continue;
+        }
+        let (relative, tags) = if let Some(relative) = resource.strip_prefix("function/") {
+            (relative.strip_suffix(".mcfunction"), false)
+        } else if let Some(relative) = resource.strip_prefix("tags/function/") {
+            (relative.strip_suffix(".json"), true)
+        } else {
+            continue;
+        };
+        let Some(relative) = relative else {
+            continue;
+        };
+        if relative.is_empty()
+            || relative.split('/').any(|part| part.is_empty() || part == "." || part == "..")
+            || !Identifier::validate_path(relative)
+        {
+            continue;
+        }
+        let key: Identifier = format!("{namespace}:{relative}")
+            .parse()
+            .map_err(|error| format!("{source}!{name}: {error}"))?;
+        let entry = archive.by_index(index).map_err(|error| format!("{source}!{name}: {error}"))?;
+        let label = format!("{source}!{name}");
+        let text = read_zip_text(entry, &label)?;
+        load_resource(state, key, &text, &label, tags)?;
+    }
+    Ok(true)
 }
 
 impl FunctionPackState {
@@ -243,14 +334,18 @@ impl FunctionPacks {
     fn prepare(root: &Path) -> Result<FunctionPackSnapshot, String> {
         let mut next = FunctionPackState::default();
         for entry in entries(root)? {
-            if !entry
-                .file_type()
-                .map_err(|error| error.to_string())?
-                .is_dir()
-            {
+            let file_type = entry.file_type().map_err(|error| error.to_string())?;
+            let pack = entry.path();
+            if file_type.is_file() && pack.extension().is_some_and(|extension| extension == "zip") {
+                if load_zip(&mut next, &pack)? {
+                    next.packs
+                        .push(format!("file/{}", entry.file_name().to_string_lossy()));
+                }
                 continue;
             }
-            let pack = entry.path();
+            if !file_type.is_dir() {
+                continue;
+            }
             if !pack.join("pack.mcmeta").is_file() {
                 continue;
             }
@@ -332,7 +427,7 @@ impl FunctionPacks {
         })
     }
 
-    /// Names of directory packs whose function resources were loaded.
+    /// Names of directory and ZIP packs whose function resources were loaded.
     pub fn pack_names(&self) -> Vec<String> {
         self.state.load().packs.clone()
     }
@@ -357,6 +452,21 @@ mod tests {
     use super::*;
     use std::env::temp_dir;
     use std::error::Error;
+    use std::io::Write;
+    use zip::{CompressionMethod, ZipWriter, write::SimpleFileOptions};
+
+    fn write_zip(path: &Path, files: &[(&str, &str)]) -> Result<(), Box<dyn Error>> {
+        let mut archive = ZipWriter::new(fs::File::create(path)?);
+        for (name, text) in files {
+            archive.start_file(
+                *name,
+                SimpleFileOptions::default().compression_method(CompressionMethod::Deflated),
+            )?;
+            archive.write_all(text.as_bytes())?;
+        }
+        archive.finish()?;
+        Ok(())
+    }
 
     struct Fixture(PathBuf);
     impl Fixture {
@@ -404,6 +514,48 @@ mod tests {
             packs.commands(&key).as_deref(),
             Some(&["return 9".to_owned()][..])
         );
+        Ok(())
+    }
+
+    #[test]
+    fn zip_functions_override_earlier_directory_and_reload_transactionally()
+    -> Result<(), Box<dyn Error>> {
+        steel_registry::init_vanilla_registry();
+        let fixture = Fixture::new()?;
+        fs::write(fixture.0.join("test/data/example/function/hello.mcfunction"), "return 1")?;
+        let zip = fixture.0.join("z.zip");
+        let metadata = r#"{"pack":{"description":"test","pack_format":1}}"#;
+        write_zip(&zip, &[
+            ("pack.mcmeta", metadata),
+            ("data/example/function/hello.mcfunction", "return 2"),
+            ("data/minecraft/tags/function/tick.json", r#"{"values":["example:hello"]}"#),
+        ])?;
+        let packs = FunctionPacks::from_root(fixture.0.clone())?;
+        let key = "example:hello".parse::<Identifier>()?;
+        assert_eq!(packs.pack_names(), vec!["file/test", "file/z.zip"]);
+        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 2".to_owned()][..]));
+        assert_eq!(packs.tick_functions(), vec![key.clone()]);
+        write_zip(&zip, &[
+            ("pack.mcmeta", metadata),
+            ("data/example/function/hello.mcfunction", "/return 3"),
+        ])?;
+        assert!(packs.reload().is_err());
+        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 2".to_owned()][..]));
+        assert_eq!(packs.tick_functions(), vec![key]);
+        Ok(())
+    }
+
+    #[test]
+    fn unsupported_zip_overlays_fail_without_publishing() -> Result<(), Box<dyn Error>> {
+        steel_registry::init_vanilla_registry();
+        let fixture = Fixture::new()?;
+        fs::write(fixture.0.join("test/data/example/function/hello.mcfunction"), "return 1")?;
+        let packs = FunctionPacks::from_root(fixture.0.clone())?;
+        write_zip(&fixture.0.join("z.zip"), &[("pack.mcmeta", r#"{"pack":{},"overlays":{}}"#)])?;
+        assert!(packs.reload().is_err());
+        assert_eq!(packs.pack_names(), vec!["file/test"]);
+        let key = "example:hello".parse::<Identifier>()?;
+        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 1".to_owned()][..]));
         Ok(())
     }
 

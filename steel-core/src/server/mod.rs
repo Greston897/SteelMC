@@ -295,6 +295,7 @@ pub async fn test_server_with_worlds_and_config(
         command_requests: CommandRequestQueue::new(),
         schedules: Arc::new(schedule::ScheduleRegistry::new()),
         function_packs: datapacks::FunctionPacks::default(),
+        data_reload_lock: AsyncMutex::new(()),
         whitelist: Arc::new(whitelist::Whitelist::new()),
         bans: Arc::new(bans::BanList::new()),
         boss_bars: Arc::new(boss_bars::BossBarRegistry::new()),
@@ -566,8 +567,10 @@ pub struct Server {
     command_requests: CommandRequestQueue,
     /// Commands waiting for their tick, backing `/schedule`.
     pub schedules: Arc<schedule::ScheduleRegistry>,
-    /// Runtime directory-pack function resources.
+    /// Runtime directory- and ZIP-pack function resources.
     pub function_packs: datapacks::FunctionPacks,
+    /// Serializes preparation and publication across concurrent server reloads.
+    data_reload_lock: AsyncMutex<()>,
     /// Login whitelist, backing `/whitelist`.
     pub whitelist: Arc<whitelist::Whitelist>,
     /// Player and address bans, backing `/ban`, `/banip`, `/pardon` and `/banlist`.
@@ -668,7 +671,7 @@ impl Server {
     ///
     /// Vanilla `/reload` rebuilds its reloadable registry layer and updates
     /// tags, functions and connected players. Steel currently reloads only
-    /// directory-pack functions, permission groups and game rules; the returned
+    /// directory- and ZIP-pack functions, permission groups and game rules; the returned
     /// summary identifies the unsupported data-pack resources.
     ///
     /// # Errors
@@ -678,6 +681,7 @@ impl Server {
     /// permission groups and per-world rules are separate reload participants;
     /// this is not yet vanilla's transactional reload of all data registries.
     pub async fn reload_data_driven_state(&self) -> Result<String, String> {
+        let _reload = self.data_reload_lock.lock().await;
         let mut reloaded = Vec::new();
         let prepared_functions = self.function_packs.prepare_reload().await?;
 
@@ -729,7 +733,7 @@ impl Server {
         let functions =
             prepared_functions.map_or(0, |snapshot| self.function_packs.publish(snapshot));
         reloaded.push(format!(
-            "{functions} directory-pack function(s) and function tags"
+            "{functions} data-pack function(s) and function tags"
         ));
         let mut changed_rules = 0_usize;
         for (world, rules) in prepared {
@@ -1056,6 +1060,7 @@ impl Server {
             function_packs: datapacks::FunctionPacks::from_root(
                 resolved_worlds.save_path.join("datapacks"),
             )?,
+            data_reload_lock: AsyncMutex::new(()),
             whitelist: Arc::new(whitelist::Whitelist::new()),
             bans: Arc::new(bans::BanList::new()),
             boss_bars: Arc::new(boss_bars::BossBarRegistry::new()),

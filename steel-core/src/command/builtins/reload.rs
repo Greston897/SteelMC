@@ -4,7 +4,7 @@
 //! connected players. Steel keeps its registries immutable after startup, so
 //! this command only reloads the parts that can currently be re-read:
 //!
-//! * directory-pack functions and function tags;
+//! * directory- and ZIP-pack functions and function tags;
 //! * `groups.toml` — Steel permission groups and their metadata, re-read and
 //!   validated before being swapped in.
 //! * each world's `level.toml` game rules, so an operator's edit is picked up
