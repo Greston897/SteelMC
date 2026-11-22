@@ -370,7 +370,10 @@ impl FunctionPacks {
                 continue;
             }
             let metadata_path = pack.join("pack.mcmeta");
-            validate_metadata(&read_resource(&metadata_path)?, &metadata_path.display().to_string())?;
+            validate_metadata(
+                &read_resource(&metadata_path)?,
+                &metadata_path.display().to_string(),
+            )?;
             for namespace in entries(&pack.join("data"))? {
                 if !namespace
                     .file_type()
@@ -582,7 +585,9 @@ mod tests {
     fn directory_overlays_and_filters_fail_without_publishing() -> Result<(), Box<dyn Error>> {
         steel_registry::init_vanilla_registry();
         let fixture = Fixture::new()?;
-        let function = fixture.0.join("test/data/example/function/hello.mcfunction");
+        let function = fixture
+            .0
+            .join("test/data/example/function/hello.mcfunction");
         fs::write(&function, "return 1")?;
         let packs = FunctionPacks::from_root(fixture.0.clone())?;
         let key = "example:hello".parse::<Identifier>()?;
@@ -593,7 +598,10 @@ mod tests {
             fs::write(&function, "return 2")?;
             fs::write(fixture.0.join("test/pack.mcmeta"), metadata)?;
             assert!(packs.reload().is_err());
-            assert_eq!(packs.commands(&key).as_deref(), Some(&["return 1".to_owned()][..]));
+            assert_eq!(
+                packs.commands(&key).as_deref(),
+                Some(&["return 1".to_owned()][..])
+            );
         }
         Ok(())
     }
