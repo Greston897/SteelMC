@@ -34,6 +34,10 @@
 
 **Завершено 0 из 3.** Точечные тесты функций не доказывают эти три возможности целиком.
 
+На `d8810e6` функции из тегов `load` и `tick` не запускаются при остановленных игровых тиках, а отложенный `load` сохраняется до возобновления; поведение сверено с `ServerFunctionManager.tick`. [Точечный CI](https://github.com/Greston897/SteelMC/actions/runs/45082985112) прошёл: 12 тестов function packs и один тест game rules; [Lint](https://github.com/Greston897/SteelMC/actions/runs/45082985186) и [Test](https://github.com/Greston897/SteelMC/actions/runs/45082985106) также прошли. Это не интеграционный тест подключённого клиента и не полная реализация datapack.
+
+Для `44c1e0f` Vanilla Evidence завершился с ошибкой на `flint-all`, Full Conformance был отменён; причину ошибки Flint установить не удалось, поскольку логи и артефакт недоступны из окружения. Отдельный Flint CI на этом коммите прошёл. На `d8810e6` остальные проверки ещё выполнялись на момент записи.
+
 ## Подтверждённые проблемы и блокеры
 
 - `steel-core/src/command/builtins/datapack.rs`: enable/disable сейчас явно отклоняются; `steel-core/src/server/datapacks.rs` загружает только функции и function tags. Это не полноценная поддержка datapack.
