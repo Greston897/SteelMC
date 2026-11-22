@@ -934,7 +934,10 @@ mod tests {
         let dir = temp_level_data_dir("prepared-game-rules");
         let path = dir.join("level.toml");
         let mut disk = LevelData::new_with_seed(9);
-        assert!(disk.game_rules_values.set(&KEEP_INVENTORY, true, &REGISTRY.game_rules));
+        assert!(
+            disk.game_rules_values
+                .set(&KEEP_INVENTORY, true, &REGISTRY.game_rules)
+        );
         disk.save_game_rules();
         std_fs::write(&path, toml::to_string(&disk).expect("serialize level data"))
             .expect("write level data");
@@ -950,12 +953,27 @@ mod tests {
         let rules = LevelDataManager::prepare_game_rules(&path)
             .expect("parse game rules")
             .expect("existing file");
-        assert!(!manager.data.game_rules_values.get(&KEEP_INVENTORY, &REGISTRY.game_rules));
+        assert!(
+            !manager
+                .data
+                .game_rules_values
+                .get(&KEEP_INVENTORY, &REGISTRY.game_rules)
+        );
         std_fs::write(&path, "not valid toml = [").expect("write malformed data");
         assert!(LevelDataManager::prepare_game_rules(&path).is_err());
-        assert!(!manager.data.game_rules_values.get(&KEEP_INVENTORY, &REGISTRY.game_rules));
+        assert!(
+            !manager
+                .data
+                .game_rules_values
+                .get(&KEEP_INVENTORY, &REGISTRY.game_rules)
+        );
         assert_eq!(manager.apply_game_rules(rules), 1);
-        assert!(manager.data.game_rules_values.get(&KEEP_INVENTORY, &REGISTRY.game_rules));
+        assert!(
+            manager
+                .data
+                .game_rules_values
+                .get(&KEEP_INVENTORY, &REGISTRY.game_rules)
+        );
         assert_eq!(manager.seed(), 1);
         let _ = std_fs::remove_dir_all(&dir);
     }

@@ -35,7 +35,7 @@ struct FunctionPackState {
 /// Immutable function resources; readers retain their generation while a reload
 /// publishes the next one. Tag expansion happens before publication, not on ticks.
 #[derive(Debug, Default)]
-struct FunctionPackSnapshot {
+pub(crate) struct FunctionPackSnapshot {
     packs: Vec<String>,
     functions: BTreeMap<Identifier, Arc<[String]>>,
     load_functions: Vec<Identifier>,
@@ -226,17 +226,18 @@ impl FunctionPacks {
         Ok(self.publish(next))
     }
 
-    /// Reads and validates resources off the async executor. Cancellation may
-    /// leave the blocking read running, but cannot publish its result.
-    pub(crate) async fn reload_async(&self) -> Result<usize, String> {
+    /// Prepares resources off the async executor without publishing them.
+    /// Cancelling the caller may leave the blocking read running, but cannot
+    /// apply its result.
+    pub(crate) async fn prepare_reload(&self) -> Result<Option<FunctionPackSnapshot>, String> {
         let Some(root) = &self.root else {
-            return Ok(0);
+            return Ok(None);
         };
         let root = root.clone();
         let next = spawn_blocking(move || Self::prepare(&root))
             .await
             .map_err(|error| format!("function-pack loading task: {error}"))??;
-        Ok(self.publish(next))
+        Ok(Some(next))
     }
 
     fn prepare(root: &Path) -> Result<FunctionPackSnapshot, String> {
@@ -308,7 +309,7 @@ impl FunctionPacks {
         })
     }
 
-    fn publish(&self, next: FunctionPackSnapshot) -> usize {
+    pub(crate) fn publish(&self, next: FunctionPackSnapshot) -> usize {
         let count = next.functions.len();
         self.state.store(Arc::new(next));
         count
@@ -434,6 +435,37 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn tick_tag_expands_nested_tags_and_refreshes_after_reload() -> Result<(), Box<dyn Error>> {
+        steel_registry::init_vanilla_registry();
+        let fixture = Fixture::new()?;
+        let tags = fixture.0.join("test/data/example/tags/function");
+        fs::create_dir_all(&tags)?;
+        for name in ["one", "two"] {
+            fs::write(
+                fixture
+                    .0
+                    .join(format!("test/data/example/function/{name}.mcfunction")),
+                "return 1",
+            )?;
+        }
+        let nested = tags.join("nested.json");
+        fs::write(&nested, r#"{"values":["example:one","example:two"]}"#)?;
+        fs::write(
+            fixture.0.join("test/data/minecraft/tags/function/tick.json"),
+            r##"{"values":["#example:nested","example:one"]}"##,
+        )?;
+        let packs = FunctionPacks::from_root(fixture.0.clone())?;
+        let one = "example:one".parse::<Identifier>()?;
+        let two = "example:two".parse::<Identifier>()?;
+        assert_eq!(packs.tick_functions(), vec![one.clone(), two.clone()]);
+        assert_eq!(packs.tick_functions(), vec![one.clone(), two]);
+        fs::write(&nested, r#"{"values":["example:one"]}"#)?;
+        packs.reload()?;
+        assert_eq!(packs.tick_functions(), vec![one]);
+        Ok(())
+    }
+
     #[tokio::test]
     async fn async_reload_preserves_old_snapshot_and_rejects_invalid_resources()
     -> Result<(), Box<dyn Error>> {
@@ -451,7 +483,12 @@ mod tests {
         assert!(Arc::ptr_eq(&old_body, &same_body));
 
         fs::write(&function, "return 2")?;
-        assert_eq!(packs.reload_async().await?, 1);
+        let prepared = packs.prepare_reload().await?.expect("pack root");
+        assert_eq!(
+            packs.commands(&key).as_deref(),
+            Some(&["return 1".to_owned()][..])
+        );
+        assert_eq!(packs.publish(prepared), 1);
         assert_eq!(
             old.functions.get(&key).map(AsRef::as_ref),
             Some(&["return 1".to_owned()][..])
@@ -463,7 +500,7 @@ mod tests {
         );
 
         fs::write(&function, "/return 3")?;
-        assert!(packs.reload_async().await.is_err());
+        assert!(packs.prepare_reload().await.is_err());
         assert_eq!(
             packs.commands(&key).as_deref(),
             Some(&["return 2".to_owned()][..])

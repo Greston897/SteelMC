@@ -679,21 +679,7 @@ impl Server {
     /// this is not yet vanilla's transactional reload of all data registries.
     pub async fn reload_data_driven_state(&self) -> Result<String, String> {
         let mut reloaded = Vec::new();
-        let functions = self.function_packs.reload_async().await?;
-        reloaded.push(format!(
-            "{functions} directory-pack function(s) and function tags"
-        ));
-
-        // Steel permission groups are re-read and validated before swapping;
-        // this is separate from vanilla's data-pack reload.
-        match self.permission_groups.reload_from_store().await {
-            Ok(true) => reloaded.push(format!(
-                "{} permission group(s)",
-                self.permission_groups.group_names().len()
-            )),
-            Ok(false) => reloaded.push("permission groups (no store)".to_owned()),
-            Err(error) => return Err(format!("permission groups: {error}")),
-        }
+        let prepared_functions = self.function_packs.prepare_reload().await?;
 
         // Steel also reloads level.toml game rules. Copy paths briefly under
         // the level-data locks, then perform all I/O and parsing off-thread.
@@ -729,6 +715,23 @@ impl Server {
         })
         .await
         .map_err(|error| format!("game-rule loading task: {error}"))??;
+
+        // This Steel-specific participant validates and swaps itself; no
+        // function or game-rule changes are applied if it fails.
+        match self.permission_groups.reload_from_store().await {
+            Ok(true) => reloaded.push(format!(
+                "{} permission group(s)",
+                self.permission_groups.group_names().len()
+            )),
+            Ok(false) => reloaded.push("permission groups (no store)".to_owned()),
+            Err(error) => return Err(format!("permission groups: {error}")),
+        }
+        let functions = prepared_functions
+            .map(|snapshot| self.function_packs.publish(snapshot))
+            .unwrap_or(0);
+        reloaded.push(format!(
+            "{functions} directory-pack function(s) and function tags"
+        ));
         let mut changed_rules = 0_usize;
         for (world, rules) in prepared {
             if let Some(rules) = rules {
