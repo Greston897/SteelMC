@@ -1,18 +1,17 @@
 //! Vanilla `/reload`.
 //!
-//! Vanilla's `/reload` re-runs the data pack reloader: every data-driven file is
-//! re-read from disk and the live server is rebuilt from it. Steel keeps its
-//! registries immutable after startup, so this command reloads the parts that
-//! are genuinely re-readable at runtime and reports everything it touched:
+//! Vanilla's `/reload` rebuilds its reloadable resource layer and updates
+//! connected players. Steel keeps its registries immutable after startup, so
+//! this command only reloads the parts that can currently be re-read:
 //!
-//! * `groups.toml` — permission groups and their metadata (vanilla's
-//!   `Permissions` data pack), re-read and validated before being swapped in.
+//! * directory-pack functions and function tags;
+//! * `groups.toml` — Steel permission groups and their metadata, re-read and
+//!   validated before being swapped in.
 //! * each world's `level.toml` game rules, so an operator's edit is picked up
 //!   without restarting while seeds, clocks, and generation stay untouched.
 //!
-//! Registries that would require regenerating the whole world (biomes, blocks)
-//! are *not* reloaded, and the command says so through its return value rather
-//! than silently pretending a full reload happened.
+//! Recipes, loot, advancements and registry tags are not reloaded. The command
+//! reports this limitation to the operator instead of claiming a full reload.
 //!
 //! The reload is `async`, so it runs on a Tokio task and the command resumes
 //! through [`ReloadSuspension`] instead of blocking the tick-owned queue.
@@ -20,6 +19,7 @@
 use std::sync::Arc;
 
 use steel_utils::{Identifier, translations};
+use text_components::TextComponent;
 use tokio::{sync::oneshot, task::JoinHandle};
 
 use crate::permission::{PermissionExpr, PermissionKey};
@@ -103,9 +103,8 @@ const SELF_RESULT: i32 = 0;
 
 /// Starts the data-driven reload and reports success/failure to the source.
 ///
-/// Vanilla answers `/reload` with `commands.reload.success` on success and
-/// `commands.reload.failure` when the reloader throws; it always reports result
-/// `0` and never fails the command itself.
+/// The result remains `0`, but the operator is told that Steel's reload is
+/// incomplete and may have applied some changes even when a later step fails.
 #[expect(
     clippy::unnecessary_wraps,
     reason = "command executors return the command result type"
@@ -129,16 +128,17 @@ fn start_reload(
     let (sender, receiver) = oneshot::channel();
     let task = tokio::spawn(async move {
         let result = server.reload_data_driven_state().await;
-        let success = result.is_ok();
         match &result {
-            Ok(summary) => log::info!("{summary}"),
-            Err(error) => log::warn!("resource reload failed: {error}"),
-        }
-        if success {
-            let message = translations::COMMANDS_RELOAD_SUCCESS.msg().component();
-            reply_source.send_success(&message, true);
-        } else {
-            reply_source.send_failure(translations::COMMANDS_RELOAD_FAILURE.msg().component());
+            Ok(summary) => {
+                log::info!("{summary}");
+                reply_source.send_success(&TextComponent::plain(summary.clone()), true);
+            }
+            Err(error) => {
+                log::warn!("resource reload failed: {error}");
+                reply_source.send_failure(TextComponent::plain(format!(
+                    "Reload failed: {error}. Some earlier reload steps may already have applied."
+                )));
+            }
         }
         let _ = sender.send(result);
     });

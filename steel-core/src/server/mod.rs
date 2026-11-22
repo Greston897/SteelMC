@@ -665,12 +665,10 @@ impl Server {
 
     /// Reloads the data-driven server state that can change at runtime.
     ///
-    /// Vanilla `/reload` re-runs the data pack reloader and rebuilds every
-    /// data-driven registry from disk. Steel builds its block, item, and biome
-    /// registries once at startup because they are baked into generated code, so
-    /// this reloads what is genuinely re-readable and reports exactly what it
-    /// touched. Anything that needs a restart is named in the returned summary
-    /// instead of being silently skipped.
+    /// Vanilla `/reload` rebuilds its reloadable registry layer and updates
+    /// tags, functions and connected players. Steel currently reloads only
+    /// directory-pack functions, permission groups and game rules; the returned
+    /// summary identifies the unsupported data-pack resources.
     ///
     /// # Errors
     ///
@@ -685,9 +683,8 @@ impl Server {
             "{functions} directory-pack function(s) and function tags"
         ));
 
-        // Vanilla's `Permissions` data pack is Steel's `groups.toml`: the file is
-        // re-read from disk, validated, and only then swapped in, so a broken
-        // file leaves the running groups untouched.
+        // Steel permission groups are re-read and validated before swapping;
+        // this is separate from vanilla's data-pack reload.
         match self.permission_groups.reload_from_store().await {
             Ok(true) => reloaded.push(format!(
                 "{} permission group(s)",
@@ -720,7 +717,7 @@ impl Server {
         ));
 
         Ok(format!(
-            "Reloaded {}; block, item, and biome registries are baked at startup and need a restart",
+            "Partial reload: {}; data-pack recipes, loot, advancements and registry tags were not reloaded",
             reloaded.join(", ")
         ))
     }
