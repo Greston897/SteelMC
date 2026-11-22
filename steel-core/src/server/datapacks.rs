@@ -199,18 +199,25 @@ fn load_zip(state: &mut FunctionPackState, path: &Path) -> Result<bool, String> 
     };
     let metadata: serde_json::Value = serde_json::from_str(&metadata)
         .map_err(|error| format!("{source}!pack.mcmeta: {error}"))?;
-    if !metadata.get("pack").is_some_and(serde_json::Value::is_object) {
+    if !metadata
+        .get("pack")
+        .is_some_and(serde_json::Value::is_object)
+    {
         return Err(format!("{source}: missing pack metadata"));
     }
     // Overlay and filter sections change resource resolution. Until those are
     // implemented, fail rather than execute the wrong function set.
     if metadata.get("overlays").is_some() || metadata.get("filter").is_some() {
-        return Err(format!("{source}: pack overlays and filters are not supported"));
+        return Err(format!(
+            "{source}: pack overlays and filters are not supported"
+        ));
     }
 
     let mut resources = Vec::new();
     for index in 0..archive.len() {
-        let entry = archive.by_index(index).map_err(|error| format!("{source}: {error}"))?;
+        let entry = archive
+            .by_index(index)
+            .map_err(|error| format!("{source}: {error}"))?;
         if !entry.is_dir() {
             let name = entry.name().map_err(|error| format!("{source}: {error}"))?;
             resources.push((name.into_owned(), index));
@@ -218,10 +225,14 @@ fn load_zip(state: &mut FunctionPackState, path: &Path) -> Result<bool, String> 
     }
     resources.sort_unstable();
     if resources.windows(2).any(|pair| pair[0].0 == pair[1].0) {
-        return Err(format!("{source}: duplicate ZIP entry names are not supported"));
+        return Err(format!(
+            "{source}: duplicate ZIP entry names are not supported"
+        ));
     }
     for (name, index) in resources {
-        let Some((namespace, resource)) = name.strip_prefix("data/").and_then(|s| s.split_once('/')) else {
+        let Some((namespace, resource)) =
+            name.strip_prefix("data/").and_then(|s| s.split_once('/'))
+        else {
             continue;
         };
         if !Identifier::validate_namespace(namespace) || namespace.is_empty() {
@@ -238,7 +249,9 @@ fn load_zip(state: &mut FunctionPackState, path: &Path) -> Result<bool, String> 
             continue;
         };
         if relative.is_empty()
-            || relative.split('/').any(|part| part.is_empty() || part == "." || part == "..")
+            || relative
+                .split('/')
+                .any(|part| part.is_empty() || part == "." || part == "..")
             || !Identifier::validate_path(relative)
         {
             continue;
@@ -246,7 +259,9 @@ fn load_zip(state: &mut FunctionPackState, path: &Path) -> Result<bool, String> 
         let key: Identifier = format!("{namespace}:{relative}")
             .parse()
             .map_err(|error| format!("{source}!{name}: {error}"))?;
-        let entry = archive.by_index(index).map_err(|error| format!("{source}!{name}: {error}"))?;
+        let entry = archive
+            .by_index(index)
+            .map_err(|error| format!("{source}!{name}: {error}"))?;
         let label = format!("{source}!{name}");
         let text = read_zip_text(entry, &label)?;
         load_resource(state, key, &text, &label, tags)?;
@@ -522,25 +537,45 @@ mod tests {
     -> Result<(), Box<dyn Error>> {
         steel_registry::init_vanilla_registry();
         let fixture = Fixture::new()?;
-        fs::write(fixture.0.join("test/data/example/function/hello.mcfunction"), "return 1")?;
+        fs::write(
+            fixture
+                .0
+                .join("test/data/example/function/hello.mcfunction"),
+            "return 1",
+        )?;
         let zip = fixture.0.join("z.zip");
         let metadata = r#"{"pack":{"description":"test","pack_format":1}}"#;
-        write_zip(&zip, &[
-            ("pack.mcmeta", metadata),
-            ("data/example/function/hello.mcfunction", "return 2"),
-            ("data/minecraft/tags/function/tick.json", r#"{"values":["example:hello"]}"#),
-        ])?;
+        write_zip(
+            &zip,
+            &[
+                ("pack.mcmeta", metadata),
+                ("data/example/function/hello.mcfunction", "return 2"),
+                (
+                    "data/minecraft/tags/function/tick.json",
+                    r#"{"values":["example:hello"]}"#,
+                ),
+            ],
+        )?;
         let packs = FunctionPacks::from_root(fixture.0.clone())?;
         let key = "example:hello".parse::<Identifier>()?;
         assert_eq!(packs.pack_names(), vec!["file/test", "file/z.zip"]);
-        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 2".to_owned()][..]));
+        assert_eq!(
+            packs.commands(&key).as_deref(),
+            Some(&["return 2".to_owned()][..])
+        );
         assert_eq!(packs.tick_functions(), vec![key.clone()]);
-        write_zip(&zip, &[
-            ("pack.mcmeta", metadata),
-            ("data/example/function/hello.mcfunction", "/return 3"),
-        ])?;
+        write_zip(
+            &zip,
+            &[
+                ("pack.mcmeta", metadata),
+                ("data/example/function/hello.mcfunction", "/return 3"),
+            ],
+        )?;
         assert!(packs.reload().is_err());
-        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 2".to_owned()][..]));
+        assert_eq!(
+            packs.commands(&key).as_deref(),
+            Some(&["return 2".to_owned()][..])
+        );
         assert_eq!(packs.tick_functions(), vec![key]);
         Ok(())
     }
@@ -549,13 +584,24 @@ mod tests {
     fn unsupported_zip_overlays_fail_without_publishing() -> Result<(), Box<dyn Error>> {
         steel_registry::init_vanilla_registry();
         let fixture = Fixture::new()?;
-        fs::write(fixture.0.join("test/data/example/function/hello.mcfunction"), "return 1")?;
+        fs::write(
+            fixture
+                .0
+                .join("test/data/example/function/hello.mcfunction"),
+            "return 1",
+        )?;
         let packs = FunctionPacks::from_root(fixture.0.clone())?;
-        write_zip(&fixture.0.join("z.zip"), &[("pack.mcmeta", r#"{"pack":{},"overlays":{}}"#)])?;
+        write_zip(
+            &fixture.0.join("z.zip"),
+            &[("pack.mcmeta", r#"{"pack":{},"overlays":{}}"#)],
+        )?;
         assert!(packs.reload().is_err());
         assert_eq!(packs.pack_names(), vec!["file/test"]);
         let key = "example:hello".parse::<Identifier>()?;
-        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 1".to_owned()][..]));
+        assert_eq!(
+            packs.commands(&key).as_deref(),
+            Some(&["return 1".to_owned()][..])
+        );
         Ok(())
     }
 
