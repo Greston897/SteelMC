@@ -39,11 +39,9 @@ pub struct PlayerAdvancement {
     progress_changed: FxHashSet<AdvancementRef>,
     /// represent the las selected advancement tab
     pub last_selected_tab: Option<AdvancementRef>,
-    /// Vanilla `PlayerAdvancements` keeps a `PlayerListeners` entry for
-    /// `location`. Vanilla registers all of them, so `location` is special-cased
-    /// here to the criteria that actually carry a location predicate.
+    /// Reserved for location listeners once their predicates are supported.
     location_listeners: Vec<(AdvancementRef, String)>,
-    /// Same idea for the `tick` trigger.
+    /// Reserved for tick listeners once their predicates are supported.
     tick_listeners: Vec<(AdvancementRef, String)>,
 }
 
@@ -77,9 +75,8 @@ impl PlayerAdvancement {
         let progress = self.progress.get_mut_or_start_progress(advancement);
         let was_done = progress.is_done();
         if progress.grant_progress(criterion) {
-            // Vanilla registers a listener per advancement at this point. Steel
-            // instead walks the registry in `trigger`, so there is nothing to
-            // register here — a data pack reload needs no listener bookkeeping.
+            // Enabled trigger dispatch currently walks the baked registry.
+            // Runtime advancement reload and listener rebuilding are not implemented.
             self.progress_changed.insert(advancement);
             result = true;
             if !was_done && progress.is_done() {
@@ -107,13 +104,11 @@ impl PlayerAdvancement {
         result
     }
 
-    /// Vanilla `PlayerAdvancements.awardRecipes`/trigger dispatch: grants every
-    /// criterion whose trigger id matches `trigger` across all advancements.
+    /// Dispatches a supported trigger across the baked advancement registry.
+    /// Unsupported triggers currently grant nothing; runtime reload and vanilla's
+    /// per-trigger listener registration remain unimplemented.
     ///
-    /// Returns the number of criteria that were newly granted. Vanilla keeps a
-    /// listener per advancement and per trigger; Steel walks the registry instead,
-    /// which is equivalent and avoids a second index that would have to be
-    /// invalidated whenever a data pack reloads.
+    /// Returns the number of criteria that were newly granted.
     pub fn trigger(&mut self, player: &Player, trigger: &Identifier) -> usize {
         self.trigger_with_context(player, trigger, &TriggerContext::default())
     }
@@ -121,9 +116,8 @@ impl PlayerAdvancement {
     /// Fires `trigger` with an event description, honouring each criterion's
     /// predicate.
     ///
-    /// Vanilla evaluates the criterion's stored `conditions` against the event;
-    /// [`predicate::matches`] does the same for the subset of the predicate
-    /// language the vanilla advancement data uses.
+    /// Only block-use and block-placement triggers are enabled, using a
+    /// conservative subset of the location-loot predicate language.
     pub fn trigger_with_context(
         &mut self,
         player: &Player,
@@ -167,19 +161,12 @@ impl PlayerAdvancement {
         granted
     }
 
-    /// Vanilla `TickTrigger`: re-evaluated every player tick.
-    ///
-    /// Like `location`, vanilla registers a listener per criterion; here the list
-    /// is built once from the `tick` criteria that carry a predicate.
+    /// Re-evaluates tick listeners; currently no listeners are registered.
     pub fn trigger_tick(&mut self, player: &Player, context: &TriggerContext) -> usize {
         self.trigger_listeners(player, &self.tick_listeners.clone(), context)
     }
 
-    /// Vanilla `LocationTrigger`: re-evaluated every player tick.
-    ///
-    /// Vanilla registers a listener only for criteria whose instance carries a
-    /// location predicate, which keeps the per-tick work bounded. The listener
-    /// list is built once, mirroring vanilla's registration on advancement load.
+    /// Re-evaluates location listeners; currently no listeners are registered.
     pub fn trigger_location(&mut self, player: &Player, context: &TriggerContext) -> usize {
         self.trigger_listeners(player, &self.location_listeners.clone(), context)
     }
