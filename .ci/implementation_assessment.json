@@ -467,6 +467,84 @@
         "steel-core/src/player/player_inventory/mod.rs"
       ],
       "limit": "Пять новых интеграционных тестов: lifecycle двух игроков, устаревший счётчик через world tick, две половины/дистанция/spectator, замена block entity, 16 уровней сигнала с соседней воронкой. CONTAINER_OPEN/CLOSE game events и непользовательские ContainerUser не покрыты этой реализацией; полная vanilla-эквивалентность не заявляется."
+    },
+    {
+      "area": "Генерация мира",
+      "capability": "Размещение features в jigsaw pool и выборка 2500 хешей Overworld/features",
+      "commit": "e111f03",
+      "workflow": "Features diagnostic",
+      "run": 44961229469,
+      "result": "success",
+      "sources": [
+        "steel-core/src/worldgen/feature",
+        "steel-core/src/worldgen/chunk_stage_hashes.rs"
+      ],
+      "limit": "Сверена конкретная выборка 2500 чанков; не все features и конфигурации."
+    },
+    {
+      "area": "Игрок / переходы",
+      "capability": "Changed dimension после успешного допуска в другой мир",
+      "commit": "e4047e6",
+      "workflow": "Focused advancement and block regressions",
+      "run": 45054431710,
+      "result": "success",
+      "sources": [
+        "steel-core/src/player/lifecycle/world_transition.rs",
+        "steel-core/src/player/advancement/predicate.rs"
+      ],
+      "limit": "Условия from/to; player-предикат и остальные переходы не покрыты."
+    },
+    {
+      "area": "Игрок / блоки",
+      "capability": "Slept in bed после успешного сна с разрешением точки возрождения",
+      "commit": "44afede",
+      "workflow": "Focused advancement and block regressions",
+      "run": 45055392740,
+      "result": "success",
+      "sources": [
+        "steel-core/src/player/sleep.rs",
+        "steel-core/src/player/advancement/predicate.rs"
+      ],
+      "limit": "Только критерии без player-предикатов; не полный аудит сна."
+    },
+    {
+      "area": "Игрок / переходы / сохранения",
+      "capability": "Nether travel: позиция входа, миграция и горизонтальная дистанция",
+      "commit": "cfee077",
+      "workflow": "Focused advancement and block regressions",
+      "run": 45060059840,
+      "result": "success",
+      "sources": [
+        "steel-core/src/player/lifecycle/world_transition.rs",
+        "steel-core/src/player/player_data_storage/mod.rs",
+        "steel-core/src/player/advancement/predicate.rs"
+      ],
+      "limit": "Player и остальные location-предикаты не покрыты; не весь lifecycle."
+    },
+    {
+      "area": "Инфраструктура / datapack",
+      "capability": "Отказ от overlays и filters до публикации function snapshot",
+      "commit": "972cc78",
+      "workflow": "Focused datapack regressions",
+      "run": 45056243903,
+      "result": "success",
+      "sources": [
+        "steel-core/src/server/datapacks.rs"
+      ],
+      "limit": "Без поддержки overlays, filters, других ресурсов и полной транзакционности."
+    },
+    {
+      "area": "Физика / предметы",
+      "capability": "Контекст сущности при определении застревания предмета",
+      "commit": "7370216",
+      "workflow": "Focused advancement and block regressions",
+      "run": 45074909000,
+      "result": "success",
+      "sources": [
+        "steel-core/src/entity/entity/mod.rs",
+        "steel-core/src/entity/entities/objects/items/item_entity.rs"
+      ],
+      "limit": "Проверены леса и камень; не все динамические формы и не причина сбоя cactus."
     }
   ]
 }

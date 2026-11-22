@@ -239,8 +239,8 @@ pub fn matches_changed_dimension(instance: &str, context: &TriggerContext) -> bo
         })
 }
 
-/// Matches the supported distance-only Nether travel conditions.
-/// Player and start-position predicates remain unsupported and fail closed.
+/// Matches Nether travel distance and start-position coordinate conditions.
+/// Player and other location predicates remain unsupported and fail closed.
 #[must_use]
 pub fn matches_nether_route(instance: &str, context: &TriggerContext) -> bool {
     let Some((start, end)) = context.nether_route else {
@@ -252,8 +252,37 @@ pub fn matches_nether_route(instance: &str, context: &TriggerContext) -> bool {
     let Some(conditions) = value.get("conditions").unwrap_or(&value).as_object() else {
         return false;
     };
-    if conditions.keys().any(|key| key != "distance") {
+    if conditions
+        .keys()
+        .any(|key| key != "distance" && key != "start_position")
+    {
         return false;
+    }
+    if let Some(location) = conditions.get("start_position") {
+        let Some(location) = location.as_object() else {
+            return false;
+        };
+        if location.keys().any(|key| key != "position") {
+            return false;
+        }
+        if let Some(position) = location.get("position") {
+            let Some(bounds) = position.as_object() else {
+                return false;
+            };
+            if bounds
+                .keys()
+                .any(|axis| !matches!(axis.as_str(), "x" | "y" | "z"))
+                || [("x", start.x), ("y", start.y), ("z", start.z)]
+                    .into_iter()
+                    .any(|(axis, value)| {
+                        bounds
+                            .get(axis)
+                            .is_some_and(|range| !matches_distance_bounds(range, value, false))
+                    })
+            {
+                return false;
+            }
+        }
     }
     let Some(distance) = conditions.get("distance") else {
         return true;
@@ -949,9 +978,45 @@ mod tests {
             r#"{"distance":{"horizontal":{"min":"bad"}}}"#,
             &context
         ));
-        assert!(!matches_nether_route(r#"{"start_position":{}}"#, &context));
+        assert!(matches_nether_route(r#"{"start_position":{}}"#, &context));
         assert!(!matches_nether_route(r#"{"player":{}}"#, &context));
         assert!(!matches_nether_route("{}", &TriggerContext::default()));
+    }
+
+    #[test]
+    fn nether_route_start_position_checks_coordinates_and_rejects_unknown_conditions() {
+        let context = TriggerContext::nether_route(
+            DVec3::new(-12.5, 64.0, 8.0),
+            DVec3::new(7000.0, 5.0, -8.0),
+        );
+        assert!(matches_nether_route(
+            r#"{"start_position":{"position":{"x":{"min":-12.5,"max":-12.5},"y":64,"z":{"max":8}}},"distance":{"horizontal":{"min":7000}}}"#,
+            &context,
+        ));
+        assert!(!matches_nether_route(
+            r#"{"start_position":{"position":{"x":{"min":-12}}}}"#,
+            &context,
+        ));
+        assert!(!matches_nether_route(
+            r#"{"start_position":{"position":{"y":5}}}"#,
+            &context,
+        ));
+        assert!(!matches_nether_route(
+            r#"{"start_position":{"position":{"x":{"min":"bad"}}}}"#,
+            &context,
+        ));
+        assert!(!matches_nether_route(
+            r#"{"start_position":{"position":{"other":0}}}"#,
+            &context,
+        ));
+        assert!(!matches_nether_route(
+            r#"{"start_position":{"dimension":"minecraft:overworld"}}"#,
+            &context,
+        ));
+        assert!(!matches_nether_route(
+            r#"{"start_position":null}"#,
+            &context
+        ));
     }
 
     #[test]

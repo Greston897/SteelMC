@@ -25,6 +25,9 @@ class AssessmentTests(unittest.TestCase):
         with contextlib.redirect_stdout(output):
             assessment.main()
         self.assertIn('82.5%', output.getvalue())
+        self.assertIn('2500 чанков', output.getvalue())
+        self.assertNotIn('полный Flint остаётся красным', output.getvalue())
+        self.assertNotIn('известное расхождение хешей не исправлено', output.getvalue())
         for update in self.data['verified_updates']:
             self.assertIn(str(update['run']), output.getvalue())
             self.assertIn(update['limit'], output.getvalue())
