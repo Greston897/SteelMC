@@ -678,7 +678,7 @@ impl Server {
     /// this is not yet vanilla's transactional reload of all data registries.
     pub async fn reload_data_driven_state(&self) -> Result<String, String> {
         let mut reloaded = Vec::new();
-        let functions = self.function_packs.reload()?;
+        let functions = self.function_packs.reload_async().await?;
         reloaded.push(format!(
             "{functions} directory-pack function(s) and function tags"
         ));
@@ -1245,7 +1245,7 @@ impl Server {
     }
 
     /// Resolve runtime function overrides before the generated vanilla registry.
-    pub(crate) fn function_commands(&self, id: &steel_utils::Identifier) -> Option<Vec<String>> {
+    pub(crate) fn function_commands(&self, id: &steel_utils::Identifier) -> Option<Arc<[String]>> {
         self.function_packs.commands(id)
     }
 

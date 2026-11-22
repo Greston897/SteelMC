@@ -1,0 +1,40 @@
+name: Focused datapack regressions
+
+on:
+  push:
+    paths:
+      - 'steel-core/src/server/datapacks.rs'
+      - 'steel-core/src/server/mod.rs'
+      - 'steel-core/src/command/builtins/function.rs'
+      - '.github/workflows/focused-datapack-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - name: Test function snapshot and reload behavior
+        shell: bash
+        env:
+          RUSTFLAGS: -Dwarnings
+        run: |
+          set -o pipefail
+          cargo test -p steel-core --lib server::datapacks::tests:: -- --nocapture 2>&1 | tee /tmp/datapack-tests.log
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('/tmp/datapack-tests.log').read_text()
+          counts = [int(n) for n in re.findall(r'test result: ok\. (\d+) passed;', text)]
+          assert len(counts) == 1 and counts[0] >= 5, counts
+          PY
+      - name: Publish results
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .ci/report.py 'Focused datapack regressions' /tmp/datapack-tests.log

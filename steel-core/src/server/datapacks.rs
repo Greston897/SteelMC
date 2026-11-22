@@ -2,13 +2,18 @@
 //!
 //! Other data registries are still baked. This module does not claim to reload
 //! recipes, worldgen, loot, or advancements merely because their pack is visible.
+use arc_swap::ArcSwap;
 use serde::Deserialize;
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
     path::{Path, PathBuf},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
 };
-use steel_utils::{Identifier, locks::SyncRwLock};
+use steel_utils::Identifier;
 
 const MAX_RESOURCE_BYTES: u64 = 8 * 1024 * 1024;
 
@@ -16,7 +21,7 @@ const MAX_RESOURCE_BYTES: u64 = 8 * 1024 * 1024;
 #[derive(Debug, Default)]
 pub struct FunctionPacks {
     root: Option<PathBuf>,
-    state: SyncRwLock<FunctionPackState>,
+    state: ArcSwap<FunctionPackSnapshot>,
 }
 
 #[derive(Debug, Default)]
@@ -24,7 +29,17 @@ struct FunctionPackState {
     packs: Vec<String>,
     functions: BTreeMap<Identifier, Vec<String>>,
     tags: BTreeMap<Identifier, Vec<TagEntry>>,
-    load_pending: bool,
+}
+
+/// Immutable function resources; readers retain their generation while a reload
+/// publishes the next one. Tag expansion happens before publication, not on ticks.
+#[derive(Debug, Default)]
+struct FunctionPackSnapshot {
+    packs: Vec<String>,
+    functions: BTreeMap<Identifier, Arc<[String]>>,
+    load_functions: Vec<Identifier>,
+    tick_functions: Vec<Identifier>,
+    load_pending: AtomicBool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -195,7 +210,7 @@ impl FunctionPacks {
     pub fn from_root(root: PathBuf) -> Result<Self, String> {
         let packs = Self {
             root: Some(root),
-            state: SyncRwLock::new(FunctionPackState::default()),
+            state: ArcSwap::default(),
         };
         packs.reload()?;
         Ok(packs)
@@ -206,6 +221,24 @@ impl FunctionPacks {
         let Some(root) = &self.root else {
             return Ok(0);
         };
+        let next = Self::prepare(root)?;
+        Ok(self.publish(next))
+    }
+
+    /// Reads and validates resources off the async executor. Cancellation may
+    /// leave the blocking read running, but cannot publish its result.
+    pub(crate) async fn reload_async(&self) -> Result<usize, String> {
+        let Some(root) = &self.root else {
+            return Ok(0);
+        };
+        let root = root.clone();
+        let next = tokio::task::spawn_blocking(move || Self::prepare(&root))
+            .await
+            .map_err(|error| format!("function-pack loading task: {error}"))??;
+        Ok(self.publish(next))
+    }
+
+    fn prepare(root: &Path) -> Result<FunctionPackSnapshot, String> {
         let mut next = FunctionPackState::default();
         for entry in entries(root)? {
             if !entry
@@ -251,15 +284,38 @@ impl FunctionPacks {
         for key in next.tags.keys() {
             next.expand_tag(key, &mut BTreeSet::new(), &mut Vec::new())?;
         }
+        let expand = |name| -> Result<Vec<Identifier>, String> {
+            let key = Identifier::vanilla_static(name);
+            let mut result = Vec::new();
+            if next.tags.contains_key(&key) {
+                next.expand_tag(&key, &mut BTreeSet::new(), &mut result)?;
+            }
+            Ok(result)
+        };
+        let load_functions = expand("load")?;
+        let tick_functions = expand("tick")?;
+        Ok(FunctionPackSnapshot {
+            packs: next.packs,
+            functions: next
+                .functions
+                .into_iter()
+                .map(|(key, commands)| (key, commands.into()))
+                .collect(),
+            load_functions,
+            tick_functions,
+            load_pending: AtomicBool::new(true),
+        })
+    }
+
+    fn publish(&self, next: FunctionPackSnapshot) -> usize {
         let count = next.functions.len();
-        next.load_pending = true;
-        *self.state.write() = next;
-        Ok(count)
+        self.state.store(Arc::new(next));
+        count
     }
 
     /// Resolve an override first, then the baked vanilla function.
-    pub fn commands(&self, key: &Identifier) -> Option<Vec<String>> {
-        self.state.read().functions.get(key).cloned().or_else(|| {
+    pub fn commands(&self, key: &Identifier) -> Option<Arc<[String]>> {
+        self.state.load().functions.get(key).cloned().or_else(|| {
             steel_registry::REGISTRY
                 .functions
                 .by_key(key)
@@ -268,40 +324,30 @@ impl FunctionPacks {
                         .commands
                         .iter()
                         .map(|line| (*line).to_owned())
-                        .collect()
+                        .collect::<Vec<_>>()
+                        .into()
                 })
         })
     }
 
     /// Names of directory packs whose function resources were loaded.
     pub fn pack_names(&self) -> Vec<String> {
-        self.state.read().packs.clone()
+        self.state.load().packs.clone()
     }
 
     /// Resolve load once per successful publication, followed by tick functions.
     pub fn tick_functions(&self) -> Vec<Identifier> {
-        let mut state = self.state.write();
-        let mut functions = Vec::new();
-        if state.load_pending {
-            state.load_pending = false;
-            if state.tags.contains_key(&Identifier::vanilla_static("load")) {
-                let _ = state.expand_tag(
-                    &Identifier::vanilla_static("load"),
-                    &mut BTreeSet::new(),
-                    &mut functions,
-                );
-            }
-        }
-        if state.tags.contains_key(&Identifier::vanilla_static("tick")) {
-            let mut tick = Vec::new();
-            let _ = state.expand_tag(
-                &Identifier::vanilla_static("tick"),
-                &mut BTreeSet::new(),
-                &mut tick,
+        let state = self.state.load();
+        if state.load_pending.swap(false, Ordering::AcqRel) {
+            let mut functions = Vec::with_capacity(
+                state.load_functions.len() + state.tick_functions.len(),
             );
-            functions.extend(tick);
+            functions.extend_from_slice(&state.load_functions);
+            functions.extend_from_slice(&state.tick_functions);
+            functions
+        } else {
+            state.tick_functions.clone()
         }
-        functions
     }
 }
 
@@ -341,13 +387,13 @@ mod tests {
         fs::write(&function, "# comment\n\nreturn 7\n")?;
         let packs = FunctionPacks::from_root(fixture.0.clone())?;
         let key = "example:hello".parse::<Identifier>()?;
-        assert_eq!(packs.commands(&key), Some(vec!["return 7".to_owned()]));
+        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 7".to_owned()][..]));
         fs::write(&function, "/return 9")?;
         assert!(packs.reload().is_err());
-        assert_eq!(packs.commands(&key), Some(vec!["return 7".to_owned()]));
+        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 7".to_owned()][..]));
         fs::write(&function, "return 9")?;
         assert_eq!(packs.reload()?, 1);
-        assert_eq!(packs.commands(&key), Some(vec!["return 9".to_owned()]));
+        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 9".to_owned()][..]));
         Ok(())
     }
 
@@ -376,6 +422,72 @@ mod tests {
         assert_eq!(packs.tick_functions(), vec![key.clone()]);
         packs.reload()?;
         assert_eq!(packs.tick_functions(), vec![key.clone(), key]);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn async_reload_preserves_old_snapshot_and_rejects_invalid_resources()
+    -> Result<(), Box<dyn Error>> {
+        steel_registry::init_vanilla_registry();
+        let fixture = Fixture::new()?;
+        let function = fixture
+            .0
+            .join("test/data/example/function/hello.mcfunction");
+        fs::write(&function, "return 1")?;
+        let packs = FunctionPacks::from_root(fixture.0.clone())?;
+        let key = "example:hello".parse::<Identifier>()?;
+        let old = packs.state.load_full();
+        let old_body = packs.commands(&key).expect("function exists");
+        let same_body = packs.commands(&key).expect("function exists");
+        assert!(Arc::ptr_eq(&old_body, &same_body));
+
+        fs::write(&function, "return 2")?;
+        assert_eq!(packs.reload_async().await?, 1);
+        assert_eq!(old.functions.get(&key).map(AsRef::as_ref), Some(&["return 1".to_owned()][..]));
+        assert_eq!(&*old_body, &["return 1".to_owned()]);
+        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 2".to_owned()][..]));
+
+        fs::write(&function, "/return 3")?;
+        assert!(packs.reload_async().await.is_err());
+        assert_eq!(packs.commands(&key).as_deref(), Some(&["return 2".to_owned()][..]));
+        Ok(())
+    }
+
+    #[test]
+    fn concurrent_ticks_claim_each_generation_load_once() -> Result<(), Box<dyn Error>> {
+        use std::sync::Barrier;
+
+        steel_registry::init_vanilla_registry();
+        let fixture = Fixture::new()?;
+        for name in ["load", "tick"] {
+            fs::write(
+                fixture.0.join(format!("test/data/example/function/{name}.mcfunction")),
+                "return 1",
+            )?;
+            fs::write(
+                fixture.0.join(format!("test/data/minecraft/tags/function/{name}.json")),
+                format!(r#"{{"values":["example:{name}"]}}"#),
+            )?;
+        }
+        let packs = FunctionPacks::from_root(fixture.0.clone())?;
+        let barrier = Barrier::new(8);
+        let results = std::thread::scope(|scope| {
+            let mut threads = Vec::new();
+            for _ in 0..8 {
+                threads.push(scope.spawn(|| {
+                    barrier.wait();
+                    packs.tick_functions()
+                }));
+            }
+            threads
+                .into_iter()
+                .map(|thread| thread.join().expect("tick thread"))
+                .collect::<Vec<_>>()
+        });
+        let load = "example:load".parse::<Identifier>()?;
+        let tick = "example:tick".parse::<Identifier>()?;
+        assert_eq!(results.iter().filter(|result| result.contains(&load)).count(), 1);
+        assert!(results.iter().all(|result| result.contains(&tick)));
         Ok(())
     }
 
