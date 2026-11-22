@@ -203,14 +203,16 @@ pub fn matches_changed_dimension(instance: &str, context: &TriggerContext) -> bo
     if conditions.keys().any(|key| key != "from" && key != "to") {
         return false;
     }
-    [("from", from), ("to", to)].into_iter().all(|(key, actual)| {
-        conditions.get(key).is_none_or(|expected| {
-            expected
-                .as_str()
-                .and_then(|id| id.parse::<Identifier>().ok())
-                .is_some_and(|id| id == *actual)
+    [("from", from), ("to", to)]
+        .into_iter()
+        .all(|(key, actual)| {
+            conditions.get(key).is_none_or(|expected| {
+                expected
+                    .as_str()
+                    .and_then(|id| id.parse::<Identifier>().ok())
+                    .is_some_and(|id| id == *actual)
+            })
         })
-    })
 }
 
 /// Conservative matcher for block-use and block-placement location triggers.
@@ -823,8 +825,14 @@ mod tests {
             r#"{"from":"minecraft:overworld","to":"the_nether"}"#,
             &context
         ));
-        assert!(!matches_changed_dimension(r#"{"to":"minecraft:the_end"}"#, &context));
-        assert!(!matches_changed_dimension(r#"{"from":"minecraft:the_end"}"#, &context));
+        assert!(!matches_changed_dimension(
+            r#"{"to":"minecraft:the_end"}"#,
+            &context
+        ));
+        assert!(!matches_changed_dimension(
+            r#"{"from":"minecraft:the_end"}"#,
+            &context
+        ));
         assert!(!matches_changed_dimension(r#"{"to":5}"#, &context));
         assert!(!matches_changed_dimension(r#"{"player":{}}"#, &context));
         assert!(!matches_changed_dimension("{}", &TriggerContext::default()));

@@ -896,7 +896,11 @@ fn dimension_advancements_only_follow_a_successful_cross_world_transition() {
         .value_by_key(&Identifier::vanilla_static("story/enter_the_nether"))
         .expect("nether advancement");
     let complete = || {
-        player.advancements.lock().progress.get_progress(advancement)
+        player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(advancement)
             .is_some_and(AdvancementProgress::is_done)
     };
     let transition = |target_world| TeleportTransition {
@@ -910,23 +914,45 @@ fn dimension_advancements_only_follow_a_successful_cross_world_transition() {
         post_transition: TeleportPostTransition::do_nothing(),
     };
     assert!(player.change_world_within_domain(&transition(Arc::clone(source))));
-    assert!(!complete(), "a same-world teleport is not a dimension change");
+    assert!(
+        !complete(),
+        "a same-world teleport is not a dimension change"
+    );
     assert!(player.change_world_within_domain(&transition(Arc::clone(target))));
     assert!(complete());
     let root = REGISTRY
         .advancements
         .value_by_key(&Identifier::vanilla_static("nether/root"))
         .expect("nether root");
-    assert!(player.advancements.lock().progress.get_progress(root)
-        .is_some_and(AdvancementProgress::is_done));
+    assert!(
+        player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(root)
+            .is_some_and(AdvancementProgress::is_done)
+    );
     let end_advancement = REGISTRY
         .advancements
         .value_by_key(&Identifier::vanilla_static("story/enter_the_end"))
         .expect("end advancement");
-    assert!(player.advancements.lock().progress.get_progress(end_advancement).is_none());
+    assert!(
+        player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(end_advancement)
+            .is_none()
+    );
     assert!(player.change_world_within_domain(&transition(Arc::clone(end))));
-    assert!(player.advancements.lock().progress.get_progress(end_advancement)
-        .is_some_and(AdvancementProgress::is_done));
+    assert!(
+        player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(end_advancement)
+            .is_some_and(AdvancementProgress::is_done)
+    );
 }
 
 #[test]
@@ -964,7 +990,14 @@ fn failed_dimension_admission_does_not_grant_advancements() {
         .advancements
         .value_by_key(&Identifier::vanilla_static("story/enter_the_nether"))
         .expect("nether advancement");
-    assert!(player.advancements.lock().progress.get_progress(advancement).is_none());
+    assert!(
+        player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(advancement)
+            .is_none()
+    );
 }
 
 #[test]

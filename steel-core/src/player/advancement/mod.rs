@@ -136,7 +136,8 @@ impl PlayerAdvancement {
         if !block_location && !used_item && !changed_dimension {
             return 0;
         }
-        if changed_dimension && (context.from_dimension.is_none() || context.to_dimension.is_none()) {
+        if changed_dimension && (context.from_dimension.is_none() || context.to_dimension.is_none())
+        {
             return 0;
         }
         let mut granted = 0;
