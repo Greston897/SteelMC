@@ -909,6 +909,40 @@ mod tests {
     }
 
     #[test]
+    fn item_stuck_check_uses_its_entity_collision_context() {
+        use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+        use steel_registry::blocks::properties::BlockStateProperties;
+
+        init_vanilla_registry();
+        init_behaviors();
+        let fixture = fresh_test_world("item_stuck_collision_context");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let pos = BlockPos::new(8, 64, 8);
+        let scaffolding = vanilla_blocks::SCAFFOLDING
+            .default_state()
+            .set_value(&BlockStateProperties::STABILITY_DISTANCE, 0)
+            .set_value(&BlockStateProperties::BOTTOM, false);
+        assert!(world.set_block(pos, scaffolding, UpdateFlags::UPDATE_NONE));
+        let item = ItemEntity::with_item(
+            &vanilla_entities::ITEM,
+            1,
+            DVec3::new(8.5, 64.85, 8.5),
+            ItemStack::new(&vanilla_items::STONE),
+            Arc::downgrade(world),
+        );
+        item.set_velocity(DVec3::ZERO);
+
+        item.update_no_physics_from_current_collision();
+        assert!(!item.no_physics(), "an item inside scaffolding is not above its top");
+        assert_eq!(item.velocity(), DVec3::ZERO);
+
+        assert!(world.set_block(pos, vanilla_blocks::STONE.default_state(), UpdateFlags::UPDATE_NONE));
+        item.update_no_physics_from_current_collision();
+        assert!(item.no_physics(), "an item embedded in stone still needs to escape");
+    }
+
+    #[test]
     fn fake_item_is_never_pickable_and_expires_on_its_next_tick() {
         let item = ItemEntity::with_item(
             &vanilla_entities::ITEM,

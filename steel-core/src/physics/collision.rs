@@ -404,7 +404,7 @@ impl<'a> WorldCollisionProvider<'a> {
         })
     }
 
-    fn entity_collision_context(
+    pub(crate) fn entity_collision_context(
         &self,
         entity_bottom: f64,
         descending: bool,

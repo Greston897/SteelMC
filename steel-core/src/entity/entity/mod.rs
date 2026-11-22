@@ -2612,7 +2612,7 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
             WorldCollisionProvider::for_entity(&world, self.as_entity_event_source());
         let colliding = collision_world.has_collision_with_context(
             &self.bounding_box().deflate(NO_PHYSICS_COLLISION_EPSILON),
-            BlockCollisionContext::empty(),
+            collision_world.entity_collision_context(self.position().y, self.is_descending(), false),
         );
         self.set_no_physics(colliding);
         if colliding {

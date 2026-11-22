@@ -27,6 +27,9 @@ on:
       - 'steel-core/src/behavior/items/item_frame.rs'
       - 'steel-core/src/behavior/items/cushion.rs'
       - 'steel-core/src/entity/entities/objects/decoration/cushion.rs'
+      - 'steel-core/src/entity/entities/objects/items/item_entity.rs'
+      - 'steel-core/src/entity/entity/mod.rs'
+      - 'steel-core/src/physics/collision.rs'
       - 'steel-registry/src/blocks/block_state_ext.rs'
   workflow_dispatch:
 
@@ -62,14 +65,15 @@ jobs:
             cargo test -p steel-registry --lib blocks::block_state_ext::tests::legacy_solidity -- --nocapture &&
             cargo test -p steel-core --lib behavior::items::item_frame::tests:: -- --nocapture &&
             cargo test -p steel-core --lib behavior::items::cushion::tests:: -- --nocapture &&
-            cargo test -p steel-core --lib entity::entities::objects::decoration::cushion::tests:: -- --nocapture
+            cargo test -p steel-core --lib entity::entities::objects::decoration::cushion::tests:: -- --nocapture &&
+            cargo test -p steel-core --lib entity::entities::objects::items::item_entity::tests::item_stuck_check_uses_its_entity_collision_context -- --nocapture
           } 2>&1 | tee /tmp/focused-regressions.log
           python3 - <<'PY'
           import re
           from pathlib import Path
           text = Path('/tmp/focused-regressions.log').read_text()
           counts = [int(n) for n in re.findall(r'test result: ok\. (\d+) passed;', text)]
-          minimums = [10, 1, 1, 1, 1, 1, 1, 1, 1, 1, 5, 6, 1, 1, 1, 1]
+          minimums = [10, 1, 1, 1, 1, 1, 1, 1, 1, 1, 5, 6, 1, 1, 1, 1, 1]
           assert len(counts) == len(minimums) and all(actual >= minimum for actual, minimum in zip(counts, minimums)), counts
           PY
       - name: Publish results
