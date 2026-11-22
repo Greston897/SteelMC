@@ -419,10 +419,12 @@ fn matches_item_view(
     let Some(map) = expected.as_object() else {
         return false;
     };
-    if map
-        .keys()
-        .any(|key| !matches!(key.as_str(), "items" | "count" | "components" | "predicates"))
-    {
+    if map.keys().any(|key| {
+        !matches!(
+            key.as_str(),
+            "items" | "count" | "components" | "predicates"
+        )
+    }) {
         return false;
     }
     if let Some(items) = map.get("items")

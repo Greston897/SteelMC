@@ -633,11 +633,11 @@ mod tests {
     use crate::entity::LivingEntity as _;
     use crate::entity::entities::ItemEntity;
     use crate::inventory::container::Container as _;
+    use crate::player::advancement::progress::AdvancementProgress;
     use crate::test_support::{TestPlayerBuilder, fresh_test_world, insert_ready_full_chunk};
 
     #[test]
     fn consuming_apple_grants_root_and_only_its_balanced_diet_criterion() {
-        use crate::player::advancement::progress::AdvancementProgress;
         use steel_registry::REGISTRY;
         use steel_utils::Identifier;
 
@@ -665,9 +665,20 @@ mod tests {
                 .get_progress(root)
                 .is_some_and(AdvancementProgress::is_done)
         );
-        let progress = advancements.progress.get_progress(diet).expect("diet progress");
-        assert!(progress.get_completed_criteria().any(|criterion| criterion == "apple"));
-        assert!(!progress.get_completed_criteria().any(|criterion| criterion == "carrot"));
+        let progress = advancements
+            .progress
+            .get_progress(diet)
+            .expect("diet progress");
+        assert!(
+            progress
+                .get_completed_criteria()
+                .any(|criterion| criterion == "apple")
+        );
+        assert!(
+            !progress
+                .get_completed_criteria()
+                .any(|criterion| criterion == "carrot")
+        );
         assert!(!progress.is_done());
     }
 
@@ -805,7 +816,7 @@ mod tests {
                 .lock()
                 .progress
                 .get_progress(root)
-                .is_some_and(crate::player::advancement::progress::AdvancementProgress::is_done)
+                .is_some_and(AdvancementProgress::is_done)
         );
         let remaining = {
             let inventory = player.inventory.lock();
