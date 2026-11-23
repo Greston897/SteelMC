@@ -1,0 +1,94 @@
+name: Datapack live comparison
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  engine:
+    name: datapack (${{ matrix.engine }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [steel, vanilla]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate probe accounting
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s .ci -p 'test_datapack_live_probe.py' -v
+      - uses: Swatinem/rust-cache@v2
+        if: matrix.engine == 'steel'
+        with:
+          shared-key: vanilla-evidence-optimized-no-lto
+      - uses: actions/setup-java@v4
+        if: matrix.engine == 'vanilla'
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Fetch official vanilla 26.3
+        if: matrix.engine == 'vanilla'
+        run: python3 .ci/download_vanilla_server.py
+      - name: Build Steel server
+        if: matrix.engine == 'steel'
+        run: cargo build -p steel --profile evidence
+      - name: Exercise real directory datapack lifecycle
+        shell: bash
+        timeout-minutes: 12
+        run: |
+          set -o pipefail
+          if [ "${{ matrix.engine }}" = vanilla ]; then
+            ENGINE_ARGS=(--vanilla-jar "$GITHUB_WORKSPACE/server.jar")
+          else
+            ENGINE_ARGS=(--binary "$GITHUB_WORKSPACE/target/evidence/steel")
+          fi
+          python3 .ci/datapack_live_probe.py "${ENGINE_ARGS[@]}" \
+            --workdir "$RUNNER_TEMP/datapack-live-world" \
+            --output "$RUNNER_TEMP/datapack-live-evidence" 2>&1 | tee /tmp/datapack-live.log
+      - name: Publish diagnostic evidence
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 .ci/report.py "Datapack live ${{ matrix.engine }}" \
+            "$RUNNER_TEMP/datapack-live-evidence/results.json" \
+            "$RUNNER_TEMP/datapack-live-evidence/commands.json" /tmp/datapack-live.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: datapack-live-${{ matrix.engine }}
+          path: ${{ runner.temp }}/datapack-live-evidence
+          if-no-files-found: warn
+
+  compare:
+    needs: engine
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: datapack-live-steel
+          path: /tmp/datapack-steel
+      - uses: actions/download-artifact@v4
+        with:
+          name: datapack-live-vanilla
+          path: /tmp/datapack-vanilla
+      - name: Compare every case; blocked and failures are not passes
+        run: |
+          python3 .ci/compare_datapack_probe.py \
+            /tmp/datapack-steel/results.json /tmp/datapack-vanilla/results.json \
+            --output /tmp/datapack-comparison.json
+      - name: Publish comparison
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .ci/report.py 'Datapack live comparison' /tmp/datapack-comparison.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: datapack-live-comparison
+          path: /tmp/datapack-comparison.json
+          if-no-files-found: warn
