@@ -4,7 +4,7 @@
   "global_readiness_percent": null,
   "global_reason": "No complete, non-overlapping inventory of vanilla server behavior exists here.",
   "revision": {
-    "head": "fa900f09efed15cf3362482ffea11a3d7f33f3e4",
+    "head": "ba05896e9be39d886c73777df1e653b65de772e0",
     "dirty": true
   },
   "smoke": {
@@ -1341,5 +1341,86 @@
     "vanilla_source_sha256": "df23e839c3d458cb89a6e8a7c2cc4ad35357f898c2d59928145b8ad7c8d2bf82",
     "source_run": "https://github.com/Greston897/SteelMC/actions/runs/44926675892",
     "steel_source_sha256": "532b8b05439339351ffa971c1c1397f85e183139704f9c6349c162728db722fd"
+  },
+  "datapack_live": {
+    "scope": "directory function packs via RCON; no game client",
+    "total": 5,
+    "counts": {
+      "matched_assertions": 2,
+      "steel_failed": 1,
+      "invalid_reference": 0,
+      "blocked_reference": 0,
+      "blocked_steel": 2
+    },
+    "cases": [
+      {
+        "name": "startup_directory_function",
+        "result": "matched_assertions",
+        "steel": {
+          "name": "startup_directory_function",
+          "status": "passed"
+        },
+        "vanilla": {
+          "name": "startup_directory_function",
+          "status": "passed"
+        }
+      },
+      {
+        "name": "reload_modified_function",
+        "result": "matched_assertions",
+        "steel": {
+          "name": "reload_modified_function",
+          "status": "passed"
+        },
+        "vanilla": {
+          "name": "reload_modified_function",
+          "status": "passed"
+        }
+      },
+      {
+        "name": "disable_stops_function",
+        "result": "steel_failed",
+        "steel": {
+          "name": "disable_stops_function",
+          "status": "failed",
+          "reason": "disabled pack function continued running; last score='probe has 202 [ci]'"
+        },
+        "vanilla": {
+          "name": "disable_stops_function",
+          "status": "passed"
+        }
+      },
+      {
+        "name": "enable_restores_function",
+        "result": "blocked_steel",
+        "steel": {
+          "name": "enable_restores_function",
+          "status": "blocked",
+          "reason": "prerequisite not passed"
+        },
+        "vanilla": {
+          "name": "enable_restores_function",
+          "status": "passed"
+        }
+      },
+      {
+        "name": "disabled_selection_survives_restart",
+        "result": "blocked_steel",
+        "steel": {
+          "name": "disabled_selection_survives_restart",
+          "status": "blocked",
+          "reason": "prerequisite not passed"
+        },
+        "vanilla": {
+          "name": "disabled_selection_survives_restart",
+          "status": "passed"
+        }
+      }
+    ],
+    "evidence_commit": "ba05896e9be39d886c73777df1e653b65de772e0",
+    "run_url": "https://github.com/Greston897/SteelMC/actions/runs/45090490433",
+    "run_conclusion": "failure",
+    "ci_verification": "metadata_verified",
+    "same_clean_revision": false
   }
 }

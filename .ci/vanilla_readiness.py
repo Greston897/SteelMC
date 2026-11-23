@@ -176,6 +176,35 @@ def trigger_inventory(path, rust_path, vanilla_source=None):
             'steel_source_sha256': hashlib.sha256(Path(rust_path).read_bytes()).hexdigest()}
 
 
+def datapack_results(evidence, revision, ci_verification):
+    if evidence.get('schema') != 1 or not FULL_SHA.fullmatch(evidence.get('steel_commit', '')):
+        raise ValueError('invalid datapack evidence provenance')
+    if not RUN_URL.fullmatch(evidence.get('run_url', '')):
+        raise ValueError('invalid datapack evidence run')
+    if evidence.get('run_conclusion') not in ('success', 'failure', 'cancelled'):
+        raise ValueError('invalid datapack run conclusion')
+    for key, filename in [('probe_sha256', 'datapack_live_probe.py'),
+                          ('comparator_sha256', 'compare_datapack_probe.py')]:
+        digest = hashlib.sha256((ROOT / '.ci' / filename).read_bytes()).hexdigest()
+        if evidence.get(key) != digest:
+            raise ValueError(f'datapack evidence does not match {filename}')
+    spec = importlib.util.spec_from_file_location('datapack_compare', ROOT / '.ci/compare_datapack_probe.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    paired = evidence['reports']
+    comparison = module.compare(paired['steel'], paired['vanilla-26.3'])
+    cases = comparison['results']
+    counter = collections.Counter(case['result'] for case in cases)
+    return {'scope': comparison['scope'], 'total': len(cases),
+            'counts': {key: counter[key] for key in ('matched_assertions', 'steel_failed',
+                                                      'invalid_reference', 'blocked_reference', 'blocked_steel')},
+            'cases': cases, 'evidence_commit': evidence['steel_commit'],
+            'run_url': evidence['run_url'], 'run_conclusion': evidence['run_conclusion'],
+            'ci_verification': ci_verification,
+            'same_clean_revision': ci_verification == 'metadata_verified'
+                and revision.get('dirty') is False and revision.get('head') == evidence['steel_commit']}
+
+
 def percent(n, d):
     return round(100 * n / d, 2) if d else None
 
@@ -261,6 +290,19 @@ def render(report):
             lines += ['', '| Сценарий | Результат |', '|---|---|']
             lines.extend(f"| `{row['id']}` | {row['status']} |" for row in item['cases'])
         lines.append('')
+    if 'datapack_live' in report:
+        d = report['datapack_live']
+        c = d['counts']
+        lines += ['## Парный datapack-прогон', '',
+                  f"Сценариев: **{d['total']}**; совпали условия: **{c['matched_assertions']}**; "
+                  f"не прошли на Steel: **{c['steel_failed']}**; заблокированы на Steel: **{c['blocked_steel']}**; "
+                  f"невалидный/заблокированный эталон: **{c['invalid_reference'] + c['blocked_reference']}**.",
+                  f"[{d['evidence_commit']}]({d['run_url']}): общий результат CI `{d['run_conclusion']}`, "
+                  f"метаданные CI `{d['ci_verification']}`, чистый checkout этого SHA: `{d['same_clean_revision']}`.",
+                  'Каталожные функции через RCON, без подключённых клиентов; не полный datapack.', '',
+                  '| Сценарий | Результат |', '|---|---|']
+        lines.extend(f"| `{case['name']}` | {case['result']} |" for case in d['cases'])
+        lines.append('')
     t = report['advancement_source_inventory']
     lines += ['## Инвентаризация advancement triggers', '',
               f"Vanilla зарегистрировала **{t['total']}** типов; "
@@ -285,6 +327,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--smoke-evidence', type=Path, default=DATA / 'smoke-d8810e6.json')
     parser.add_argument('--manual-evidence', type=Path)
+    parser.add_argument('--datapack-evidence', type=Path, default=DATA / 'datapack-live-ba05896.json')
     parser.add_argument('--vanilla-source', type=Path, help='Pinned CriteriaTriggers.java to verify the saved inventory')
     parser.add_argument('--verify-ci', action='store_true', help='Query GitHub to check run SHA and conclusion')
     parser.add_argument('--markdown', type=Path, help='Write human-readable report')
@@ -305,10 +348,14 @@ def main():
     manual_evidence = load_json(args.manual_evidence) if args.manual_evidence else None
     smoke_ci = verify_ci(smoke) if args.verify_ci else 'not_checked'
     manual_ci = verify_ci(manual_evidence) if args.verify_ci and manual_evidence else 'not_checked'
-    report = build_report(inventory, smoke, manual, state(), triggers,
+    revision = state()
+    report = build_report(inventory, smoke, manual, revision, triggers,
                           hashlib.sha256(inventory_path.read_bytes()).hexdigest(),
                           hashlib.sha256(manual_path.read_bytes()).hexdigest(),
                           manual_evidence, smoke_ci, manual_ci)
+    datapack = load_json(args.datapack_evidence)
+    datapack_ci = verify_ci(datapack) if args.verify_ci else 'not_checked'
+    report['datapack_live'] = datapack_results(datapack, revision, datapack_ci)
     text = render(report)
     if args.markdown:
         args.markdown.write_text(text, encoding='utf-8')

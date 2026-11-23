@@ -127,6 +127,22 @@ class ReadinessTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     readiness.manual_inventory(path)
 
+    def test_datapack_evidence_preserves_failure_and_blocked_results(self):
+        data = readiness.load_json(readiness.DATA / 'datapack-live-ba05896.json')
+        result = readiness.datapack_results(data, {'head': None, 'dirty': None}, 'not_checked')
+        self.assertEqual(result['total'], 5)
+        self.assertEqual(result['counts']['matched_assertions'], 2)
+        self.assertEqual(result['counts']['steel_failed'], 1)
+        self.assertEqual(result['counts']['blocked_steel'], 2)
+        invalid = copy.deepcopy(data)
+        invalid['probe_sha256'] = '0' * 64
+        with self.assertRaises(ValueError):
+            readiness.datapack_results(invalid, {'head': None, 'dirty': None}, 'not_checked')
+        invalid = copy.deepcopy(data)
+        invalid['reports']['steel']['results'][0]['status'] = 'invented'
+        with self.assertRaises(ValueError):
+            readiness.datapack_results(invalid, {'head': None, 'dirty': None}, 'not_checked')
+
     def test_real_saved_inputs_have_matching_inventory_and_explicit_unknown_manual(self):
         import hashlib
         inventory_path = readiness.DATA / 'smoke-inventory.json'

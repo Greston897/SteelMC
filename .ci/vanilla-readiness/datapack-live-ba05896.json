@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "steel_commit": "ba05896e9be39d886c73777df1e653b65de772e0",
+  "run_url": "https://github.com/Greston897/SteelMC/actions/runs/45090490433",
+  "run_conclusion": "failure",
+  "origin": "Actual real-server paired RCON reports and comparison, published in GitHub commit comments",
+  "reports": {
+    "steel": {
+      "schema": 1,
+      "engine": "steel",
+      "scope": "directory function packs, RCON, no connected game clients",
+      "results": [
+        {
+          "name": "startup_directory_function",
+          "status": "passed"
+        },
+        {
+          "name": "reload_modified_function",
+          "status": "passed"
+        },
+        {
+          "name": "disable_stops_function",
+          "status": "failed",
+          "reason": "disabled pack function continued running; last score='probe has 202 [ci]'"
+        },
+        {
+          "name": "enable_restores_function",
+          "status": "blocked",
+          "reason": "prerequisite not passed"
+        },
+        {
+          "name": "disabled_selection_survives_restart",
+          "status": "blocked",
+          "reason": "prerequisite not passed"
+        }
+      ]
+    },
+    "vanilla-26.3": {
+      "schema": 1,
+      "engine": "vanilla-26.3",
+      "scope": "directory function packs, RCON, no connected game clients",
+      "results": [
+        {
+          "name": "startup_directory_function",
+          "status": "passed"
+        },
+        {
+          "name": "reload_modified_function",
+          "status": "passed"
+        },
+        {
+          "name": "disable_stops_function",
+          "status": "passed"
+        },
+        {
+          "name": "enable_restores_function",
+          "status": "passed"
+        },
+        {
+          "name": "disabled_selection_survives_restart",
+          "status": "passed"
+        }
+      ]
+    }
+  },
+  "probe_sha256": "f07d7d10c45e771e9c9811a5f69fe6ab22406b11f825a6d28d82082f747b0e47",
+  "comparator_sha256": "cf40aa51acc315fc993479f19ea871262b49835850e8b751e71eccfbf9f883f1",
+  "source_links": [
+    "https://github.com/Greston897/SteelMC/commit/ba05896e9be39d886c73777df1e653b65de772e0#commitcomment-211341882",
+    "https://github.com/Greston897/SteelMC/commit/ba05896e9be39d886c73777df1e653b65de772e0#commitcomment-211342503",
+    "https://github.com/Greston897/SteelMC/commit/ba05896e9be39d886c73777df1e653b65de772e0#commitcomment-211342579"
+  ]
+}

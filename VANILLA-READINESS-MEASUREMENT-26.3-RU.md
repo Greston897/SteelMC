@@ -2,7 +2,7 @@
 
 **Общий процент готовности всего vanilla-ядра: неизвестен.** Полного независимого перечня поведения и исчерпывающих проверок нет.
 
-Рабочий HEAD: `fa900f09efed15cf3362482ffea11a3d7f33f3e4`; незакоммиченные изменения: `True`. Изменённый checkout не равен проверенному CI коммиту.
+Рабочий HEAD: `ba05896e9be39d886c73777df1e653b65de772e0`; незакоммиченные изменения: `True`. Изменённый checkout не равен проверенному CI коммиту.
 
 ## Парные проверки серверов
 
@@ -188,6 +188,20 @@
 | `MOB22` | AI: Camel husk и undead horses | unknown |
 | `MOB23` | AI: Blaze, breeze и snow/iron golems | unknown |
 | `MOB24` | AI: Vex, evoker и illusioner | unknown |
+
+## Парный datapack-прогон
+
+Сценариев: **5**; совпали условия: **2**; не прошли на Steel: **1**; заблокированы на Steel: **2**; невалидный/заблокированный эталон: **0**.
+[ba05896e9be39d886c73777df1e653b65de772e0](https://github.com/Greston897/SteelMC/actions/runs/45090490433): общий результат CI `failure`, метаданные CI `metadata_verified`, чистый checkout этого SHA: `False`.
+Каталожные функции через RCON, без подключённых клиентов; не полный datapack.
+
+| Сценарий | Результат |
+|---|---|
+| `startup_directory_function` | matched_assertions |
+| `reload_modified_function` | matched_assertions |
+| `disable_stops_function` | steel_failed |
+| `enable_restores_function` | blocked_steel |
+| `disabled_selection_survives_restart` | blocked_steel |
 
 ## Инвентаризация advancement triggers
 
