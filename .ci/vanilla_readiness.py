@@ -325,7 +325,7 @@ def render(report):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--smoke-evidence', type=Path, default=DATA / 'smoke-d8810e6.json')
+    parser.add_argument('--smoke-evidence', type=Path, default=DATA / 'smoke-812c597.json')
     parser.add_argument('--manual-evidence', type=Path)
     parser.add_argument('--datapack-evidence', type=Path, default=DATA / 'datapack-live-ba05896.json')
     parser.add_argument('--vanilla-source', type=Path, help='Pinned CriteriaTriggers.java to verify the saved inventory')

@@ -147,7 +147,7 @@ class ReadinessTests(unittest.TestCase):
         import hashlib
         inventory_path = readiness.DATA / 'smoke-inventory.json'
         inventory = readiness.load_json(inventory_path)
-        smoke = readiness.load_json(readiness.DATA / 'smoke-d8810e6.json')
+        smoke = readiness.load_json(readiness.DATA / 'smoke-812c597.json')
         manual_path = readiness.ROOT / '.ci/manual_mechanics_cases.tsv'
         manual = readiness.manual_inventory(manual_path)
         triggers = {'total': 0, 'gate_enabled': [], 'gate_not_enabled': []}

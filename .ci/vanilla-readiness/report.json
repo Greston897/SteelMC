@@ -4,14 +4,14 @@
   "global_readiness_percent": null,
   "global_reason": "No complete, non-overlapping inventory of vanilla server behavior exists here.",
   "revision": {
-    "head": "ba05896e9be39d886c73777df1e653b65de772e0",
+    "head": "812c59707e8fe260fec1bc0ea9deb947e3f5522e",
     "dirty": true
   },
   "smoke": {
     "scope": "38 выбранных проверок запуска, RCON, мира и рестарта; без реальных клиентов; это не перечень всех возможностей vanilla",
     "source_commit": "d8810e66bc078e2d78df043ab802a64cac878d77",
-    "evidence_commit": "d8810e66bc078e2d78df043ab802a64cac878d77",
-    "run_url": "https://github.com/Greston897/SteelMC/actions/runs/45082985134",
+    "evidence_commit": "812c59707e8fe260fec1bc0ea9deb947e3f5522e",
+    "run_url": "https://github.com/Greston897/SteelMC/actions/runs/45093319882",
     "run_conclusion": "success",
     "ci_verification": "metadata_verified",
     "current": false,
