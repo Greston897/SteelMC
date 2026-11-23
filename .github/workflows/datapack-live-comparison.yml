@@ -2,6 +2,12 @@ name: Datapack live comparison
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/datapack-live-comparison.yml'
+      - '.ci/datapack_live_probe.py'
+      - '.ci/compare_datapack_probe.py'
+      - '.ci/test_datapack_live_probe.py'
 
 permissions:
   contents: write
