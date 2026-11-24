@@ -611,8 +611,15 @@ impl RaidManager {
                 if raid.waves_spawned == 0 {
                     return false;
                 }
-                raid.status = RaidStatus::Loss;
-                return true;
+                // Vanilla shifts the raid center to the nearest village section
+                // instead of immediately failing. Only mark Loss if no village
+                // can be found within range.
+                if let Some(new_center) = find_nearest_village_center(world, raid.center) {
+                    raid.center = new_center;
+                } else {
+                    raid.status = RaidStatus::Loss;
+                    return true;
+                }
             }
             if raid.waves_spawned == 0 {
                 raid.num_groups = difficulty_groups(world.difficulty());
@@ -1294,6 +1301,36 @@ pub fn village_center_world(world: &World, pos: BlockPos) -> Option<IVec3> {
 #[must_use]
 pub fn village_center(world: &Arc<World>, pos: IVec3) -> Option<IVec3> {
     village_center_world(world, BlockPos(pos))
+}
+
+/// Finds the nearest occupied village section center to `from`, used when
+/// the current raid center loses its village. Returns the section-aligned
+/// position of the nearest occupied village POI, or None if none is found
+/// within village radius.
+#[must_use]
+pub fn find_nearest_village_center(world: &Arc<World>, from: IVec3) -> Option<IVec3> {
+    let matches = world
+        .poi_storage
+        .lock()
+        .get_in_horizontal_square(&village_poi, BlockPos(from), 32, OccupationStatus::Occupied);
+
+    let mut best: Option<(IVec3, i64)> = None;
+    for (poi, _) in matches {
+        let poi_pos = poi.0.as_i64vec3();
+        let delta = poi_pos - from.as_i64vec3();
+        let dist_sq = delta.length_squared();
+        let is_better = best.map_or(true, |(_, best_dist)| dist_sq < best_dist);
+        if is_better {
+            // Section-align the POI position (vanilla uses section centers).
+            let section_center = IVec3::new(
+                ((poi.0 >> 4_i32).x << 4_i32) + 8,
+                from.y,
+                ((poi.0 >> 4_i32).z << 4_i32) + 8,
+            );
+            best = Some((section_center, dist_sq));
+        }
+    }
+    best.map(|(center, _)| center)
 }
 
 #[cfg(test)]
