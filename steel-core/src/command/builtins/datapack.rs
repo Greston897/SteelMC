@@ -10,8 +10,8 @@
 
 use std::{borrow::Cow, sync::Arc};
 
-use PERMISSIONS_REQUIRES_PLAYER;
 use steel_utils::Identifier;
+use steel_utils::translations::PERMISSIONS_REQUIRES_PLAYER;
 use text_components::{
     Modifier, TextComponent, format::Color, interactivity::HoverEvent,
     translation::TranslatedMessage,

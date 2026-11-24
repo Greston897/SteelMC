@@ -143,7 +143,8 @@ impl TickOverloadGuard {
         // Warn periodically about persistent overload, but not every tick.
         if is_overloaded {
             let should_warn = self
-                    .last_warning.is_none_or(|last| now.duration_since(last) >= OVERLOAD_WARNING_INTERVAL);
+                .last_warning
+                .is_none_or(|last| now.duration_since(last) >= OVERLOAD_WARNING_INTERVAL);
 
             if should_warn {
                 log::warn!(

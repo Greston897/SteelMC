@@ -8,7 +8,7 @@
 use std::{collections::BTreeMap, error::Error, fmt, iter::FusedIterator, mem, slice, sync::Arc};
 
 use glam::DVec3;
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet};
 use smallvec::SmallVec;
 use steel_registry::entity_type::MobCategory;
 use steel_registry::vanilla_entities;
@@ -905,7 +905,8 @@ impl WorldEntityManager {
         }
 
         let mut retained = Vec::with_capacity(root_ids.len());
-        let mut visited = FxHashSet::with_capacity_and_hasher(root_ids.len(), FxBuildHasher::default());
+        let mut visited =
+            FxHashSet::with_capacity_and_hasher(root_ids.len(), FxBuildHasher::default());
         for entity_id in root_ids {
             Self::retain_unloading_entity_tree(
                 &mut state,

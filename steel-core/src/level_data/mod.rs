@@ -1073,6 +1073,7 @@ mod tests {
 /// Each migration step handles a single version boundary. Steps are applied
 /// in order until the data reaches `DATA_VERSION`. Unknown version gaps are
 /// rejected rather than guessed at.
+#[expect(clippy::unnecessary_trailing_comma, reason = "fmt")]
 fn migrate_level_data(data: &mut LevelData, from_version: u32) -> io::Result<()> {
     let mut version = from_version;
     while version < DATA_VERSION {
@@ -1081,7 +1082,7 @@ fn migrate_level_data(data: &mut LevelData, from_version: u32) -> io::Result<()>
             _ => {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    format!("no migration path from data version {version} to {DATA_VERSION}",)
+                    format!("no migration path from data version {version} to {DATA_VERSION}",),
                 ));
             }
         }

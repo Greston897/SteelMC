@@ -21,7 +21,6 @@ use steel_registry::vanilla_custom_stats;
 use steel_registry::vanilla_game_rules::COMMAND_BLOCK_OUTPUT;
 use steel_utils::threading::worker_threads_for_available;
 use steel_utils::translations;
-use spawn_blocking;
 use tokio::sync::oneshot::Sender;
 
 impl Server {
@@ -332,7 +331,7 @@ impl Server {
                     // Offload heavy deferred work to background: spawn_blocking
                     // so tick thread stays free for critical gameplay.
                     let count = heavy.len();
-                    tokio::task::spawn_blocking(move || {
+                    spawn_blocking(move || {
                         // Future: dispatch heavy work (chunk relight, spawning)
                         // to background pool. For now we just drop with log.
                         tracing::debug!(count, "Offloaded heavy deferred work to background");

@@ -181,15 +181,11 @@ impl WorldBlockEntityTickers {
             self.tick_phase(false, |_| {});
             return;
         }
-        let is_overloaded = world
-            .server
-            .get()
-            .and_then(Weak::upgrade)
-            .is_some_and(|s| {
-                use std::sync::Weak;
-use std::sync::atomic::Ordering::Relaxed;
-                s.is_overloaded.load(Relaxed) && s.overload_tick_count.load(Relaxed) > 3
-            });
+                let is_overloaded = world.server.get().and_then(Weak::upgrade).is_some_and(|s| {
+            use std::sync::Weak;
+            use std::sync::atomic::Ordering::Relaxed;
+            s.is_overloaded.load(Relaxed) && s.overload_tick_count.load(Relaxed) > 3
+        });
         let border = world.world_border_snapshot();
         if is_overloaded {
             // Lightest + most important first: defer idle block entities.

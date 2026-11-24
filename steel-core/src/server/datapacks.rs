@@ -594,10 +594,7 @@ fn load_resource(
             Err(error) => log::warn!("Couldn't read function tag {source}: {error}"),
         }
     } else if text.trim_start().starts_with('#')
-        && text
-            .lines()
-            .next()
-            .is_some_and(|l| l.starts_with("#macro"))
+        && text.lines().next().is_some_and(|l| l.starts_with("#macro"))
     {
         // Vanilla `FunctionBuilder.addMacro`: a function whose first line is
         // `#macro <name> <args...>` defines a `$`-macro rather than a runnable

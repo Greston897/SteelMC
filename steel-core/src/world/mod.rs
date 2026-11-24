@@ -210,7 +210,6 @@ use level_effects::sound_is_within_range;
 use portals::{
     closest_portal_candidate, nether_portal_creation_scan_origin, nether_portal_frame_offset_pos,
 };
-use std::sync::Weak;
 use std::sync::OnceLock;
 
 const fn initialize_border_packet(snapshot: WorldBorderSnapshot) -> CInitializeBorder {
