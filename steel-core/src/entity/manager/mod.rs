@@ -1948,7 +1948,7 @@ impl WorldEntityManager {
                     let is_heavy_idle = key.contains("item")
                         || key.contains("experience_orb")
                         || key.contains("area_effect_cloud");
-                    let defer_bit = if is_heavy_idle { 1 } else { 0 };
+                    let defer_bit = i64::from(is_heavy_idle);
                     if (i64::from(entity.id()) + tick_count as i64 + defer_bit) % 2 == 0 {
                         continue;
                     }
