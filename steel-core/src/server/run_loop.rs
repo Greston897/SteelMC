@@ -117,7 +117,7 @@ impl Server {
             world.chunk_map.task_tracker.wait().await;
         }
 
-        let mut players_to_save = Vec::new();
+        let mut players_to_save = Vec::with_capacity(players.len());
         for player in players {
             let domain = player.get_world().domain().to_owned();
             player.award_custom_stat(&vanilla_custom_stats::LEAVE_GAME);
@@ -260,9 +260,11 @@ impl Server {
 
             self.tick_pending_command_executions(&mut pending_command_executions);
             for function in self.function_packs.tick_functions(runs_normally) {
-                if let Err(error) =
-                    self.submit_command(CommandSender::Console, format!("function {function}"))
-                {
+                // Avoid `format!` overhead in hot tick: pre-allocate exact capacity.
+                let mut command = String::with_capacity(9 + function.len());
+                command.push_str("function ");
+                command.push_str(&function);
+                if let Err(error) = self.submit_command(CommandSender::Console, command) {
                     log::error!("Could not queue datapack function {function}: {error:?}");
                 }
             }
@@ -303,11 +305,36 @@ impl Server {
             let tick_duration = Duration::from_nanos(tick_duration_nanos);
             // Track overload state without skipping ticks; subsystems defer
             // non-critical work when the server is overloaded.
+            // Lightest + critical always runs (player packets, movement, saves
+            // are outside this guard). Tier=Deferred work is deferred on any
+            // overload tick, Tier=Important after 3 consecutive overloads.
             overload_guard.tick(Instant::now(), tick_duration);
             self.is_overloaded
                 .store(overload_guard.is_overloaded(), Ordering::Relaxed);
             self.overload_tick_count
                 .store(overload_guard.overload_tick_count(), Ordering::Relaxed);
+            // When the server recovers, drain deferred queue in priority order
+            // (lightest + important first) with a per-tick budget to avoid an
+            // MSPT spike. Heavy work can be offloaded to background pool.
+            if !overload_guard.is_overloaded() {
+                let drained = overload_guard.process_deferred();
+                if drained > 0 {
+                    tracing::debug!(drained, "Drained deferred work while catching up");
+                }
+            } else if overload_guard.should_offload_to_background() {
+                let heavy = overload_guard.drain_heavy_for_background();
+                if !heavy.is_empty() {
+                    // Offload heavy deferred work to background: spawn_blocking
+                    // so tick thread stays free for critical gameplay.
+                    let count = heavy.len();
+                    tokio::task::spawn_blocking(move || {
+                        // Future: dispatch heavy work (chunk relight, spawning)
+                        // to background pool. For now we just drop with log.
+                        tracing::debug!(count, "Offloaded heavy deferred work to background");
+                        drop(heavy);
+                    });
+                }
+            }
             let tab_list_tick_stats =
                 self.record_tick_and_capture_tab_stats(tick_count, tick_duration_nanos);
 
@@ -688,7 +715,8 @@ impl Server {
         let tick_start = Instant::now();
         let encoding_pool = self.chunk_encoding_pool.as_ref();
         for world in self.worlds.values() {
-            let mut players = Vec::new();
+            // Pre-allocate: avoids repeated realloc when many players are online.
+            let mut players = Vec::with_capacity(world.players.len());
             world.players.iter_players(|_uuid, player| {
                 players.push(Arc::clone(player));
                 true

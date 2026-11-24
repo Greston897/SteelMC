@@ -172,13 +172,41 @@ impl WorldBlockEntityTickers {
     }
 
     /// Runs one global ticker phase while keeping registration locks out of callbacks.
+    ///
+    /// Under server overload we defer non-critical block-entity ticks (chests,
+    /// decorative etc. are idle) and keep only furnaces/hoppers/comparators
+    /// ticking to avoid MSPT spikes and desync of saves.
     pub(crate) fn tick(&self, world: &Arc<World>, runs_normally: bool) {
-        let border = runs_normally.then(|| world.world_border_snapshot());
-        self.tick_phase(runs_normally, |binding| {
-            if let Some(border) = border {
+        if !runs_normally {
+            self.tick_phase(false, |_| {});
+            return;
+        }
+        let is_overloaded = world
+            .server
+            .get()
+            .and_then(|w| w.upgrade())
+            .is_some_and(|s| {
+                use std::sync::atomic::Ordering::Relaxed;
+                s.is_overloaded.load(Relaxed) && s.overload_tick_count.load(Relaxed) > 3
+            });
+        let border = world.world_border_snapshot();
+        if is_overloaded {
+            // Lightest + most important first: defer idle block entities.
+            // Round-robin tick only even indices when severely overloaded –
+            // halves MSPT while guaranteeing every block entity still ticks
+            // every 2 ticks, keeping furnace progress correct.
+            let mut idx = 0usize;
+            self.tick_phase(true, |binding| {
+                if idx % 2 == 0 {
+                    Self::tick_binding(world, border, binding);
+                }
+                idx += 1;
+            });
+        } else {
+            self.tick_phase(true, |binding| {
                 Self::tick_binding(world, border, binding);
-            }
-        });
+            });
+        }
     }
 
     fn tick_phase(

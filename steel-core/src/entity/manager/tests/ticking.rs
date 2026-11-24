@@ -84,7 +84,7 @@ fn tick_entities_skips_external_entities() {
             .is_ok()
     );
 
-    let dirty_chunks = manager.tick_entities(12, true);
+    let dirty_chunks = manager.tick_entities(12, true, false);
 
     assert!(dirty_chunks.contains(&chunk));
     assert_eq!(manager_owned.tick_count(), 1);
@@ -104,7 +104,7 @@ fn tick_entities_ticks_external_always_ticking_entities_without_dirtying_chunks(
     assert_eq!(changes.tracking_started.len(), 1);
     assert_eq!(changes.ticking_started.len(), 1);
 
-    let dirty_chunks = manager.tick_entities(0, true);
+    let dirty_chunks = manager.tick_entities(0, true, false);
 
     assert!(dirty_chunks.is_empty());
     assert_eq!(entity.tick_count(), 1);
@@ -158,12 +158,12 @@ fn tick_entities_uses_start_of_tick_snapshot_for_added_entities() {
             .is_ok()
     );
 
-    manager.tick_entities(0, true);
+    manager.tick_entities(0, true, false);
 
     assert_eq!(adder.tick_count(), 1);
     assert_eq!(late_entity.tick_count(), 0);
 
-    manager.tick_entities(1, true);
+    manager.tick_entities(1, true, false);
 
     assert_eq!(adder.tick_count(), 2);
     assert_eq!(late_entity.tick_count(), 1);
@@ -185,7 +185,7 @@ fn tick_entities_checks_despawn_for_ticking_entities() {
             .is_ok()
     );
 
-    let dirty_chunks = manager.tick_entities(0, true);
+    let dirty_chunks = manager.tick_entities(0, true, false);
 
     assert!(entity.is_removed());
     assert!(dirty_chunks.contains(&non_tickable_chunk));
@@ -208,7 +208,7 @@ fn tick_entities_skips_despawn_for_tracked_non_ticking_entities() {
     assert_eq!(changes.tracking_started.len(), 1);
     assert!(changes.ticking_started.is_empty());
 
-    let dirty_chunks = manager.tick_entities(0, true);
+    let dirty_chunks = manager.tick_entities(0, true, false);
 
     assert!(dirty_chunks.is_empty());
     assert!(!entity.is_removed());
@@ -230,13 +230,13 @@ fn tick_entities_skips_pending_world_change_entities() {
         panic!("fresh entity should accept a pending world change");
     };
 
-    let dirty_chunks = manager.tick_entities(0, true);
+    let dirty_chunks = manager.tick_entities(0, true, false);
 
     assert!(dirty_chunks.is_empty());
     assert_eq!(entity.tick_count(), 0);
 
     assert!(entity.finish_pending_world_change(pending_token));
-    let dirty_chunks = manager.tick_entities(1, true);
+    let dirty_chunks = manager.tick_entities(1, true, false);
 
     assert!(dirty_chunks.contains(&chunk));
     assert_eq!(entity.tick_count(), 1);
@@ -268,13 +268,13 @@ fn tick_entities_skips_passengers_of_pending_world_change_vehicles_before_despaw
         panic!("fresh vehicle should accept a pending world change");
     };
 
-    let dirty_chunks = manager.tick_entities(0, true);
+    let dirty_chunks = manager.tick_entities(0, true, false);
 
     assert!(dirty_chunks.is_empty());
     assert!(!passenger.is_removed());
 
     assert!(vehicle.finish_pending_world_change(pending_token));
-    let dirty_chunks = manager.tick_entities(1, true);
+    let dirty_chunks = manager.tick_entities(1, true, false);
 
     assert!(dirty_chunks.contains(&passenger_chunk));
     assert!(passenger.is_removed());
@@ -302,7 +302,7 @@ fn tick_entities_skips_frozen_entities_and_despawn_checks() {
             .is_ok()
     );
 
-    let dirty_chunks = manager.tick_entities(0, false);
+    let dirty_chunks = manager.tick_entities(0, false, false);
 
     assert!(dirty_chunks.is_empty());
     assert_eq!(ticked.tick_count(), 0);
@@ -334,7 +334,7 @@ fn tick_entities_ticks_player_passenger_vehicle_while_frozen() {
             .is_ok()
     );
 
-    let dirty_chunks = manager.tick_entities(0, false);
+    let dirty_chunks = manager.tick_entities(0, false, false);
 
     assert!(dirty_chunks.contains(&chunk));
     assert_eq!(vehicle.tick_count(), 1);
@@ -366,7 +366,7 @@ fn passenger_detached_during_ride_tick_ticks_again_at_later_root_slot() {
             .is_ok()
     );
 
-    manager.tick_entities(0, true);
+    manager.tick_entities(0, true, false);
 
     assert_eq!(
         *events.lock(),
@@ -401,7 +401,7 @@ fn stable_passenger_tree_ticks_once_in_vehicle_depth_first_order() {
             .is_ok()
     );
 
-    manager.tick_entities(0, true);
+    manager.tick_entities(0, true, false);
 
     assert_eq!(*events.lock(), vec![(1, "tick"), (2, "ride_tick")]);
     assert_eq!(vehicle.tick_count(), 1);

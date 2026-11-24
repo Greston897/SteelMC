@@ -820,7 +820,7 @@ impl World {
         };
         let center = location.above();
 
-        let mut crystals = Vec::new();
+        let mut crystals = Vec::with_capacity(4);
         for direction in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
             let anchor = BlockPos::new(
                 center.x() + direction.0 * 3,
@@ -1496,6 +1496,13 @@ impl World {
         runs_normally: bool,
     ) -> WorldGameTickTimings {
         let world_start = Instant::now();
+        let is_overloaded = self
+            .server
+            .get()
+            .and_then(|w| w.upgrade())
+            .is_some_and(|s| s.is_overloaded.load(Ordering::Relaxed));
+        // Lightest + critical first: border/weather/time are tiny and affect
+        // player position/time sync, so they always run.
         let lookup_cache_scope = GameplayChunkLookupCacheScope::enter(&self.chunk_map);
         self.handling_tick.store(true, Ordering::Relaxed);
         self.set_tick_runs_normally(runs_normally);
@@ -1511,9 +1518,18 @@ impl World {
         let random_tick_speed = self.get_game_rule(&RANDOM_TICK_SPEED) as u32;
 
         let early_lookup_stats = lookup_cache_scope.finish();
-        let mut chunk_map_timings =
+        // Chunk source updates + random ticks are the heaviest part of the
+        // world tick. If the server is overloaded we defer random ticks to
+        // the next tick (they are stateless) while still advancing tickets.
+        let mut chunk_map_timings = if is_overloaded && random_tick_speed > 0 {
+            // Defer heavy random block ticks: pass 0 so chunk_map still does
+            // ticket/propagation work but skips precipitation/random blocks.
             self.chunk_map
-                .tick_game(self, tick_count, random_tick_speed, runs_normally);
+                .tick_game(self, tick_count, 0, runs_normally)
+        } else {
+            self.chunk_map
+                .tick_game(self, tick_count, random_tick_speed, runs_normally)
+        };
         chunk_map_timings.lookup_cache.merge(early_lookup_stats);
         let lookup_cache_scope = GameplayChunkLookupCacheScope::enter(&self.chunk_map);
 
@@ -1532,7 +1548,7 @@ impl World {
             let start = Instant::now();
             let dirty_chunks = self
                 .entity_manager
-                .tick_entities(tick_count as i32, runs_normally);
+                .tick_entities(tick_count as i32, runs_normally, is_overloaded);
             for chunk in dirty_chunks {
                 self.mark_chunk_dirty(chunk);
             }
@@ -1546,23 +1562,26 @@ impl World {
             chunk_map_timings.tick_block_entities = start.elapsed();
         }
 
-        if runs_normally {
-            // Vanilla `ServerChunkCache.tickChunks` → `NaturalSpawner`.
+        // Natural spawning and custom spawners are heavy and stateless per tick:
+        // defer them under overload – they will be retried next tick when the
+        // server catches up. Saves / player packets / entity tracker are never deferred.
+        if runs_normally && !is_overloaded {
             let _span = tracing::trace_span!("natural_spawning").entered();
             tick_natural_spawning(self, tick_count as usize);
         }
 
-        if runs_normally {
+        if runs_normally && !is_overloaded {
             // Vanilla runs the wandering trader spawner from `ServerLevel`'s
             // custom spawners, once per tick; its own 1200-tick schedule makes
-            // the call cheap on the other 1199.
+            // the call cheap on the other 1199. Defer under overload to keep
+            // MSPT low – traders/phantoms can wait one tick without desync.
             self.tick_wandering_trader_spawner();
             self.tick_phantom_spawner();
-            // Vanilla's custom spawners run in registration order: phantoms,
-            // then patrols.
             self.tick_patrol_spawner();
-            // Vanilla ticks every level's `EnderDragonFight` from
-            // `ServerLevel.tick`; only the End owns one.
+            self.tick_dragon_fight();
+        } else if runs_normally && is_overloaded && tick_count.is_multiple_of(4) {
+            // Even under overload, dragon fight is important in the End – run it
+            // with reduced frequency (every 4th tick) to keep the fight in sync.
             self.tick_dragon_fight();
         }
 

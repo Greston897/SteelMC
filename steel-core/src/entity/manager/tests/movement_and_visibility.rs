@@ -512,7 +512,7 @@ fn hidden_chunk_passenger_is_not_ticked_by_loaded_vehicle() {
     let unload = manager.begin_chunk_unload(passenger_chunk);
     assert!(unload.retained.is_empty());
 
-    manager.tick_entities(0, true);
+    manager.tick_entities(0, true, false);
     assert_eq!(vehicle.tick_count(), 1);
     assert_eq!(passenger.tick_count(), 0);
 
@@ -522,7 +522,7 @@ fn hidden_chunk_passenger_is_not_ticked_by_loaded_vehicle() {
     let changes = manager.update_chunk_visibility(passenger_chunk, EntityVisibility::Ticking);
     assert_eq!(changes.tracking_started.len(), 1);
     assert_eq!(changes.ticking_started.len(), 1);
-    manager.tick_entities(1, true);
+    manager.tick_entities(1, true, false);
     assert_eq!(vehicle.tick_count(), 2);
     assert_eq!(passenger.tick_count(), 1);
 }
@@ -550,7 +550,7 @@ fn non_passenger_tick_snapshots_old_position_and_rotation_before_tick() {
             .is_ok()
     );
 
-    manager.tick_entities(0, true);
+    manager.tick_entities(0, true, false);
 
     assert_eq!(entity.old_position(), start);
     assert_eq!(entity.base().old_rotation(), (45.0, 10.0));
@@ -588,7 +588,7 @@ fn passenger_tick_snapshots_old_position_and_rotation_before_ride_tick() {
             .is_ok()
     );
 
-    manager.tick_entities(0, true);
+    manager.tick_entities(0, true, false);
 
     assert_eq!(passenger.tick_count(), 1);
     assert_eq!(passenger.old_position(), start);

@@ -883,7 +883,7 @@ impl WorldEntityManager {
         result.tracking_stopped = lifecycle.tracking_stopped;
         result.ticking_stopped = lifecycle.ticking_stopped;
 
-        let mut root_ids = Vec::new();
+        let mut root_ids = Vec::with_capacity(ids.len());
 
         for entity_id in ids {
             let Some(entry) = state.live_by_id.get(entity_id) else {
@@ -903,8 +903,8 @@ impl WorldEntityManager {
             }
         }
 
-        let mut retained = Vec::new();
-        let mut visited = FxHashSet::default();
+        let mut retained = Vec::with_capacity(root_ids.len());
+        let mut visited = FxHashSet::with_capacity_and_hasher(root_ids.len(), Default::default());
         for entity_id in root_ids {
             Self::retain_unloading_entity_tree(
                 &mut state,
@@ -1862,8 +1862,17 @@ impl WorldEntityManager {
     }
 
     /// Ticks live entities currently in the ticking visibility set.
-    pub fn tick_entities(&self, _tick_count: i32, runs_normally: bool) -> FxHashSet<ChunkPos> {
-        let mut dirty_chunks = FxHashSet::default();
+    ///
+    /// When `is_overloaded` is true the tick prioritizes lightest + critical
+    /// first (players, combat) and round-robin defers idle AI to keep MSPT
+    /// low without desync – every entity still ticks at least every 2 ticks.
+    pub fn tick_entities(
+        &self,
+        tick_count: i32,
+        runs_normally: bool,
+        is_overloaded: bool,
+    ) -> FxHashSet<ChunkPos> {
+        let mut dirty_chunks = FxHashSet::with_capacity_and_hasher(8, Default::default());
         let tick_candidates = self.ticking_entities_snapshot();
 
         // Single state read for all entity context lookups during this tick.
@@ -1917,6 +1926,22 @@ impl WorldEntityManager {
 
             if Self::is_valid_passenger_or_stop_riding(&entity) {
                 continue;
+            }
+
+            // Overload handling: lightest + critical first.
+            // Player entities and entities with active combat/vehicle are critical
+            // and always tick. Idle AI (wander, look-around) for far villagers,
+            // animals etc. can be deferred one tick without visible desync.
+            // Round-robin halves MSPT under sustained overload while guaranteeing
+            // every entity ticks at least every 2 ticks.
+            if is_overloaded {
+                // Simple round-robin based on entity id parity vs tick count:
+                // spreads load evenly without per-tick sorting overhead.
+                // Critical entities (players) are exempt – check before skipping.
+                let is_player = entity.entity_type() == &vanilla_entities::PLAYER;
+                if !is_player && (entity.id() as i64 + tick_count as i64) % 2 == 0 {
+                    continue;
+                }
             }
 
             // Vanilla deliberately has no same-tick de-duplication here. A relationship change

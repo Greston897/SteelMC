@@ -18,8 +18,8 @@ Raid-подсистема в `steel-core/src/world/raid.rs` полностью �
 | Победа | Задержка 40 тиков после последней волны, атрибуция Hero of the Village, исключение зрителей | `post_raid_ticks > 40` → Victory, `award_hero_of_the_village` с усилением omen_level, пропуск зрителей | ✅ |
 | Поражение | Timeout, потеря всех кроватей, статус Loss | Timeout → удаление рейда (vanilla STOPPED), 파괴 деревни → Loss | ✅ |
 | Boss bar | CBossEvent пакеты для игроков в радиусе деревни | `sync_boss_bars()` отправляет add/update/remove для игроков в радиусе | ✅ |
-| Звук спавна волны | `SoundEvents.RAID_SPAWN` при спавне группы | `play_raid_spawn_sound()` вызывается в `spawn_wave()` перед рогом | ✅ | (отсутствует звуковой сопровождение спавна волны) | ⚠️ косметический |
-| Статистика RAID_WIN | `Stats.RAID_WIN` + критерий триггер при победе | `award_hero_of_the_village` триггерит `RAID_WIN` критерий + `award_custom_stat(&vanilla_custom_stats::RAID_WIN)` | ✅ |
+| Звук спавна волны | `SoundEvents.RAID_SPAWN` при спавне группы | `play_raid_spawn_sound()` вызывается в `spawn_wave()` перед рогом | ✅ |
+| Статистика RAID_WIN | `Stats.RAID_WIN` + критерий триггер при победе | `award_hero_of_the_village` триггерит `RAID_WIN` критерий + `award_custom_stat(&vanilla_custom_stats::RAID_WIN)` (`minecraft:raid_win` в `custom_stats.json` id 73) | ✅ |
 | Сдвиг центра рейда | Поиск ближайшей секции деревни при несовпадении центра | `find_nearest_village_center()` ищет ближайший занятый village POI и сдвигает центр рейда; Loss только если деревня не найдена в радиусе | ✅ |
 
 ## Что реализовано (все в `steel-core/src/world/raid.rs`)
