@@ -1522,9 +1522,13 @@ impl World {
         // world tick. If the server is overloaded we defer random ticks to
         // the next tick (they are stateless) while still advancing tickets.
         let mut chunk_map_timings = if is_overloaded && random_tick_speed > 0 {
-            // Defer heavy random block ticks: pass 0 so chunk_map still does
-            // ticket/propagation work but skips precipitation/random blocks.
-            self.chunk_map.tick_game(self, tick_count, 0, runs_normally)
+            // Defer heavy random block ticks but keep precipitation and a reduced
+            // budget of random ticks so the world does not desync. Ticket and
+            // propagation work always runs. Lightest+important first: we keep
+            // precipitation (player-visible) and do half the random ticks.
+            let reduced_speed = (random_tick_speed / 2).max(1);
+            self.chunk_map
+                .tick_game(self, tick_count, reduced_speed, runs_normally)
         } else {
             self.chunk_map
                 .tick_game(self, tick_count, random_tick_speed, runs_normally)
@@ -1562,26 +1566,29 @@ impl World {
         }
 
         // Natural spawning and custom spawners are heavy and stateless per tick:
-        // defer them under overload – they will be retried next tick when the
-        // server catches up. Saves / player packets / entity tracker are never deferred.
-        if runs_normally && !is_overloaded {
+        // lightest+important first: when overloaded we run them with reduced
+        // frequency (every 2nd tick) instead of skipping entirely, so the
+        // world does not desync and the queue is drained next tick.
+        let should_spawn = !is_overloaded || tick_count.is_multiple_of(2);
+        if runs_normally && should_spawn {
             let _span = tracing::trace_span!("natural_spawning").entered();
             tick_natural_spawning(self, tick_count as usize);
         }
 
-        if runs_normally && !is_overloaded {
+        if runs_normally && should_spawn {
             // Vanilla runs the wandering trader spawner from `ServerLevel`'s
             // custom spawners, once per tick; its own 1200-tick schedule makes
-            // the call cheap on the other 1199. Defer under overload to keep
-            // MSPT low – traders/phantoms can wait one tick without desync.
+            // the call cheap on the other 1199. Lightest+important first.
             self.tick_wandering_trader_spawner();
             self.tick_phantom_spawner();
             self.tick_patrol_spawner();
             self.tick_dragon_fight();
-        } else if runs_normally && is_overloaded && tick_count.is_multiple_of(4) {
+        } else if runs_normally && is_overloaded {
             // Even under overload, dragon fight is important in the End – run it
             // with reduced frequency (every 4th tick) to keep the fight in sync.
-            self.tick_dragon_fight();
+            if tick_count.is_multiple_of(4) {
+                self.tick_dragon_fight();
+            }
         }
 
         {

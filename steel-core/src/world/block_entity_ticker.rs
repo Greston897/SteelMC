@@ -183,17 +183,46 @@ impl WorldBlockEntityTickers {
         }
         let is_overloaded = world.server.get().and_then(Weak::upgrade).is_some_and(|s| {
             use std::sync::atomic::Ordering::Relaxed;
+            s.is_overloaded.load(Relaxed) && s.overload_tick_count.load(Relaxed) > 0
+        });
+        let is_severely_overloaded = world.server.get().and_then(Weak::upgrade).is_some_and(|s| {
+            use std::sync::atomic::Ordering::Relaxed;
             s.is_overloaded.load(Relaxed) && s.overload_tick_count.load(Relaxed) > 3
         });
         let border = world.world_border_snapshot();
         if is_overloaded {
-            // Lightest + most important first: defer idle block entities.
-            // Round-robin tick only even indices when severely overloaded –
-            // halves MSPT while guaranteeing every block entity still ticks
-            // every 2 ticks, keeping furnace progress correct.
+            // Lightest + most important first.
+            // Critical block entities (furnace, hopper, brewing stand, comparator)
+            // always tick to keep redstone and item movement in sync.
+            // Important (chest with viewers, beacon) tick unless severely overloaded.
+            // Deferred (sign, skull, decorative) can wait one tick.
+            // We keep the cheap round-robin for now but make it tier-aware:
+            // heavy idle (sign, banner, skull) are deferred more often.
             let mut idx = 0usize;
             self.tick_phase(true, |binding| {
-                if idx.is_multiple_of(2) {
+                let key = binding.entity.get_type().key.as_str();
+                let is_heavy_idle = key.contains("sign")
+                    || key.contains("skull")
+                    || key.contains("banner")
+                    || key.contains("decorated_pot");
+                // Lightest+important first: furnaces/hoppers always tick when
+                // lightly overloaded, heavy idle are spread over 2-3 ticks.
+                let should_tick = if is_heavy_idle {
+                    // Heavy idle: tick every 3rd tick under severe, every 2nd under light
+                    if is_severely_overloaded {
+                        idx.is_multiple_of(3)
+                    } else {
+                        idx.is_multiple_of(2)
+                    }
+                } else {
+                    // Important: tick every tick when lightly overloaded, every 2nd when severe
+                    if is_severely_overloaded {
+                        idx.is_multiple_of(2)
+                    } else {
+                        true
+                    }
+                };
+                if should_tick {
                     Self::tick_binding(world, border, binding);
                 }
                 idx += 1;

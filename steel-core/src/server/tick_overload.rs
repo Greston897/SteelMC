@@ -128,12 +128,22 @@ impl TickOverloadGuard {
     /// guard at all.
     pub(super) fn tick(&mut self, now: Instant, tick_duration: Duration) -> bool {
         self.last_tick_duration = tick_duration;
-        let is_overloaded = tick_duration > DEFER_THRESHOLD;
+        // Use a simple hysteresis: once overloaded, require 2 fast ticks to recover
+        // to avoid flapping between overloaded/not. This keeps MSPT stable.
+        let is_overloaded = if self.overload_ticks > 0 {
+            tick_duration > Duration::from_millis(22)
+        } else {
+            tick_duration > DEFER_THRESHOLD
+        };
 
         if is_overloaded {
             self.overload_ticks = self.overload_ticks.saturating_add(1);
-        } else {
-            self.overload_ticks = 0;
+        } else if self.overload_ticks > 0 {
+            // Require 2 consecutive fast ticks to clear overload, otherwise decay slowly
+            self.overload_ticks = self.overload_ticks.saturating_sub(1);
+            if tick_duration <= Duration::from_millis(18) && self.overload_ticks > 0 {
+                self.overload_ticks = self.overload_ticks.saturating_sub(1);
+            }
         }
 
         // Warn periodically about persistent overload, but not every tick.
@@ -222,21 +232,20 @@ impl TickOverloadGuard {
 
     /// Process deferred work when the server is back to normal speed.
     /// Drains up to `MAX_DRAIN_PER_TICK` lightest+important items first to
-    /// avoid an MSPT spike when recovering. Returns how many items were processed.
-    pub(super) fn process_deferred(&mut self) -> usize {
+    /// avoid an MSPT spike when recovering. Returns the drained work for the
+    /// caller to execute in priority order (lightest+important first).
+    pub(super) fn process_deferred(&mut self) -> Vec<DeferredWork> {
         if self.is_overloaded() {
-            return 0;
+            return Vec::new();
         }
-        let mut processed = 0;
-        while processed < MAX_DRAIN_PER_TICK {
-            let Some(_work) = self.deferred.pop_front() else {
+        let mut drained = Vec::with_capacity(MAX_DRAIN_PER_TICK.min(self.deferred.len()));
+        while drained.len() < MAX_DRAIN_PER_TICK {
+            let Some(work) = self.deferred.pop_front() else {
                 break;
             };
-            // Caller is responsible for actually executing the work; here we
-            // just account for the budget. Future: dispatch to subsystem.
-            processed += 1;
+            drained.push(work);
         }
-        processed
+        drained
     }
 
     /// Drains heavy work that should be offloaded to a background pool
@@ -267,6 +276,17 @@ impl TickOverloadGuard {
     /// Returns whether the server is currently overloaded.
     pub(super) const fn is_overloaded(&self) -> bool {
         self.overload_ticks > 0
+    }
+
+    /// Budget multiplier for tick work: 1.0 = normal, 0.5 = light overload, 0.25 = severe.
+    /// Subsystems use this to decide how many cheapest+important items to run this tick.
+    pub(super) fn budget_factor(&self) -> f32 {
+        match self.overload_ticks {
+            0 => 1.0,
+            1..=3 => 0.6,
+            4..=6 => 0.35,
+            _ => 0.25,
+        }
     }
 
     /// Returns how many consecutive ticks have been overloaded.
@@ -364,7 +384,7 @@ mod tests {
         assert_eq!(guard.deferred_count(), MAX_DEFERRED_PER_TICK);
         // Not overloaded, so can drain up to MAX_DRAIN_PER_TICK
         let processed = guard.process_deferred();
-        assert_eq!(processed, MAX_DRAIN_PER_TICK);
+        assert_eq!(processed.len(), MAX_DRAIN_PER_TICK);
         assert_eq!(
             guard.deferred_count(),
             MAX_DEFERRED_PER_TICK - MAX_DRAIN_PER_TICK

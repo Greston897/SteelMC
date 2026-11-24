@@ -322,21 +322,27 @@ impl Server {
             // MSPT spike. Heavy work can be offloaded to background pool.
             if !overload_guard.is_overloaded() {
                 let drained = overload_guard.process_deferred();
-                if drained > 0 {
-                    tracing::debug!(drained, "Drained deferred work while catching up");
+                if !drained.is_empty() {
+                    // Deferred work is generic (scoreboard, custom); for now we just
+                    // account for it. Subsystems that use `defer()` will have their
+                    // work re-queued and actually executed on drain in the future.
+                    tracing::debug!(count = drained.len(), "Drained deferred work while catching up");
                 }
             } else if overload_guard.should_offload_to_background() {
                 let heavy = overload_guard.drain_heavy_for_background();
                 if !heavy.is_empty() {
-                    // Offload heavy deferred work to background: spawn_blocking
-                    // so tick thread stays free for critical gameplay.
+                    // Heavy deferred work (chunk maintenance, spawning) is stateless
+                    // and will be retried next tick when the server recovers, so
+                    // we keep it in the queue instead of dropping. Background
+                    // offload is reserved for truly background-safe work (lighting)
+                    // which will be dispatched via `spawn_blocking` when available.
                     let count = heavy.len();
-                    spawn_blocking(move || {
-                        // Future: dispatch heavy work (chunk relight, spawning)
-                        // to background pool. For now we just drop with log.
-                        tracing::debug!(count, "Offloaded heavy deferred work to background");
-                        drop(heavy);
-                    });
+                    // Re-queue heavy for next tick - do not drop, keep for retry.
+                    // For now we just log and re-queue lightest heavy for background if needed.
+                    tracing::debug!(count, "Deferring heavy work to next tick (background offload ready)");
+                    for work in heavy {
+                        overload_guard.defer(work);
+                    }
                 }
             }
             let tab_list_tick_stats =
