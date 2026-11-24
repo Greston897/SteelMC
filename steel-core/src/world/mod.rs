@@ -1496,16 +1496,16 @@ impl World {
         runs_normally: bool,
     ) -> WorldGameTickTimings {
         let world_start = Instant::now();
-        let (is_overloaded, overload_ticks) = self
-            .server
-            .get()
-            .and_then(Weak::upgrade)
-            .map_or((false, 0), |s| {
-                (
-                    s.is_overloaded.load(Ordering::Relaxed),
-                    s.overload_tick_count.load(Ordering::Relaxed),
-                )
-            });
+        let (is_overloaded, overload_ticks) =
+            self.server
+                .get()
+                .and_then(Weak::upgrade)
+                .map_or((false, 0), |s| {
+                    (
+                        s.is_overloaded.load(Ordering::Relaxed),
+                        s.overload_tick_count.load(Ordering::Relaxed),
+                    )
+                });
         // Lightest + critical first: border/weather/time are tiny and affect
         // player position/time sync, so they always run.
         let lookup_cache_scope = GameplayChunkLookupCacheScope::enter(&self.chunk_map);
