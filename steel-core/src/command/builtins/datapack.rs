@@ -8,22 +8,14 @@
 //! game rules, permission groups); recipes, loot tables, advancements and
 //! registry tags are not yet reloaded at runtime.
 
-use std::borrow::Cow;
+use std::{borrow::Cow, sync::Arc};
 
 use steel_utils::Identifier;
 use text_components::{
     Modifier, TextComponent, format::Color, interactivity::HoverEvent,
     translation::TranslatedMessage,
 };
-
-use std::sync::Arc;
 use tokio::{sync::oneshot, task::JoinHandle};
-
-use steel_utils::Identifier;
-use text_components::{
-    Modifier, TextComponent, format::Color, interactivity::HoverEvent,
-    translation::TranslatedMessage,
-};
 
 use super::super::{
     brigadier::{ArgumentType, CommandNodeBuilder, CommandSyntaxError},
