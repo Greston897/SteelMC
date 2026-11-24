@@ -21,8 +21,8 @@ const MAX_DRAIN_PER_TICK: usize = 8;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum Tier {
     /// Never deferred: movement, combat, player packets, saves.
-    #[allow(clippy::allow_attributes)]
-    #[allow(dead_code)]
+    #[allow(clippy::allow_attributes, reason = "Tier::Critical is API, not constructed in this crate")]
+    #[allow(dead_code, reason = "Tier::Critical is API, not constructed in this crate")]
     Critical = 0,
     /// Important but can be delayed 1 tick under light overload.
     Important = 1,
@@ -176,8 +176,8 @@ impl TickOverloadGuard {
     /// `Important` work only after 3 consecutive overloaded ticks to avoid
     /// flapping, so lightest+important runs first.
     #[inline]
-    #[allow(clippy::allow_attributes)]
-    #[allow(dead_code)]
+    #[allow(clippy::allow_attributes, reason = "should_defer used in tests")]
+    #[allow(dead_code, reason = "should_defer used in tests")]
     pub(super) const fn should_defer(&self, work: DeferredWork) -> bool {
         if self.overload_ticks == 0 {
             return false;
@@ -191,8 +191,8 @@ impl TickOverloadGuard {
 
     /// Tier-aware check without constructing an enum – for hot paths.
     #[inline]
-    #[allow(clippy::allow_attributes)]
-    #[allow(dead_code)]
+    #[allow(clippy::allow_attributes, reason = "should_defer_tier used in tests")]
+    #[allow(dead_code, reason = "should_defer_tier used in tests")]
     pub(super) const fn should_defer_tier(&self, tier: Tier) -> bool {
         if self.overload_ticks == 0 {
             return false;
@@ -275,8 +275,8 @@ impl TickOverloadGuard {
     }
 
     /// Returns the number of deferred items pending (for metrics / TPS bar).
-    #[allow(clippy::allow_attributes)]
-    #[allow(dead_code)]
+    #[allow(clippy::allow_attributes, reason = "deferred_count is metrics API")]
+    #[allow(dead_code, reason = "deferred_count is metrics API")]
     pub(super) fn deferred_count(&self) -> usize {
         self.deferred.len()
     }
@@ -288,7 +288,6 @@ impl TickOverloadGuard {
 
     /// Budget multiplier for tick work: 1.0 = normal, 0.5 = light overload, 0.25 = severe.
     /// Subsystems use this to decide how many cheapest+important items to run this tick.
-    #[expect(dead_code, reason = "budget for future subsystems")]
     pub(super) const fn budget_factor(&self) -> f32 {
         match self.overload_ticks {
             0 => 1.0,
@@ -484,7 +483,10 @@ mod tests {
         // MSPT bound: drain max 8 per tick
         let drained = guard.process_deferred();
         assert_eq!(drained.len(), MAX_DRAIN_PER_TICK);
-        assert_eq!(guard.deferred_count(), MAX_DEFERRED_PER_TICK - MAX_DRAIN_PER_TICK);
+        assert_eq!(
+            guard.deferred_count(),
+            MAX_DEFERRED_PER_TICK - MAX_DRAIN_PER_TICK
+        );
         // Next tick drains rest
         let drained2 = guard.process_deferred();
         assert_eq!(drained2.len(), MAX_DRAIN_PER_TICK);
