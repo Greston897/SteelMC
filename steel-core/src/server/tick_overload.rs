@@ -13,12 +13,14 @@ const BACKGROUND_OFFLOAD_THRESHOLD: Duration = Duration::from_millis(45);
 /// How long before we warn about persistent overload (avoid log spam).
 const OVERLOAD_WARNING_INTERVAL: Duration = Duration::from_secs(10);
 /// Maximum number of deferrals tracked per tick – bounds RAM.
+#[allow(dead_code, reason = "deferred queue capacity")]
 const MAX_DEFERRED_PER_TICK: usize = 16;
 /// Maximum deferred items drained per recovery tick – bounds MSPT spike when catching up.
 const MAX_DRAIN_PER_TICK: usize = 8;
 
 /// Priority tier – lower = more important / lighter, executed first.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[allow(dead_code, reason = "tiered overload")]
 pub(super) enum Tier {
     /// Never deferred: movement, combat, player packets, saves.
     Critical = 0,
@@ -35,6 +37,7 @@ pub(super) enum Tier {
 /// lightest + most important first so the world stays in sync and player
 /// experience is preserved.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[allow(dead_code, reason = "deferred work types")]
 pub enum DeferredWork {
     /// Non-critical chunk updates (lighting, decoration, minor block changes).
     ChunkMaintenance,
@@ -53,6 +56,7 @@ pub enum DeferredWork {
 impl DeferredWork {
     /// Tier decides *whether* we defer under a given overload level.
     #[inline]
+    #[allow(dead_code, reason = "tier not yet used in all paths")]
     pub(super) const fn tier(&self) -> Tier {
         match self {
             DeferredWork::ChunkMaintenance => Tier::Deferred,
@@ -66,6 +70,7 @@ impl DeferredWork {
 
     /// Cost decides *order* when draining – lightest first.
     #[inline]
+    #[allow(dead_code, reason = "cost not yet used")]
     pub(super) const fn cost(&self) -> u8 {
         match self {
             DeferredWork::ScoreboardMaintenance => 1,
@@ -166,6 +171,7 @@ impl TickOverloadGuard {
     /// `Important` work only after 3 consecutive overloaded ticks to avoid
     /// flapping, so lightest+important runs first.
     #[inline]
+    #[allow(dead_code, reason = "overload queue")]
     pub(super) fn should_defer(&self, work: DeferredWork) -> bool {
         if self.overload_ticks == 0 {
             return false;
@@ -179,7 +185,7 @@ impl TickOverloadGuard {
 
     /// Tier-aware check without constructing an enum – for hot paths.
     #[inline]
-    pub(super) fn should_defer_tier(&self, tier: Tier) -> bool {
+    pub(super) const fn should_defer_tier(&self, tier: Tier) -> bool {
         if self.overload_ticks == 0 {
             return false;
         }
@@ -200,6 +206,7 @@ impl TickOverloadGuard {
     /// Enqueue work to be processed later when the server catches up.
     /// Sorted insertion: lightest + most important first, so drain order is optimal.
     /// Bounded – excess is dropped with a warning to cap RAM.
+    #[allow(dead_code, reason = "overload queue")]
     pub(super) fn defer(&mut self, work: DeferredWork) {
         if self.deferred.len() >= MAX_DEFERRED_PER_TICK {
             log::warn!(
@@ -262,23 +269,24 @@ impl TickOverloadGuard {
     }
 
     /// Returns the number of deferred items pending (for metrics / TPS bar).
+    #[allow(dead_code, reason = "overload queue")]
     pub(super) fn deferred_count(&self) -> usize {
         self.deferred.len()
     }
 
     /// Returns whether the server is currently overloaded.
-    pub(super) fn is_overloaded(&self) -> bool {
+    pub(super) const fn is_overloaded(&self) -> bool {
         self.overload_ticks > 0
     }
 
     /// Returns how many consecutive ticks have been overloaded.
-    pub(super) fn overload_tick_count(&self) -> u32 {
+    pub(super) const fn overload_tick_count(&self) -> u32 {
         self.overload_ticks
     }
 
     /// Exposes last tick duration for diagnostics.
     #[expect(dead_code, reason = "diagnostics only")]
-    pub(super) fn last_tick_duration(&self) -> Duration {
+    pub(super) const fn last_tick_duration(&self) -> Duration {
         self.last_tick_duration
     }
 }

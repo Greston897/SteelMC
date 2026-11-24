@@ -335,6 +335,7 @@ pub(crate) struct MacroDef {
 /// `pack.mcmeta` `overlays` section: overlays let a pack merge resources from
 /// other packs into its own namespace space.
 #[derive(Debug, Clone, Default, Deserialize)]
+#[allow(dead_code, reason = "overlay metadata not yet applied")]
 pub(crate) struct OverlayDef {
     #[serde(default)]
     pub(crate) sources: Vec<String>,
@@ -347,6 +348,7 @@ pub(crate) struct OverlayDef {
 /// `pack.mcmeta` `filter` section: filters let a pack include or exclude
 /// resources matching patterns.
 #[derive(Debug, Clone, Default, Deserialize)]
+#[allow(dead_code, reason = "filter metadata not yet applied")]
 pub(crate) struct FilterDef {
     #[serde(default)]
     pub(crate) include: Vec<String>,
@@ -677,7 +679,10 @@ fn parse_function_lines(
             let macro_name: Identifier = match parts[0][1..].parse() {
                 Ok(id) => id,
                 Err(error) => {
-                    return Err(format!("unknown macro {} on line {line_number}: {error}", parts[0]));
+                    return Err(format!(
+                        "unknown macro {} on line {line_number}: {error}",
+                        parts[0]
+                    ));
                 }
             };
             let Some(macro_def) = macros.get(&macro_name) else {
@@ -1520,24 +1525,28 @@ impl Default for RuntimeRegistries {
 
 /// Opaque snapshot of a recipe registry; populated from data packs on reload.
 #[derive(Debug, Default, Clone)]
+#[allow(missing_docs, reason = "internal snapshot")]
 pub struct RecipeRegistrySnapshot {
     pub entries: BTreeMap<Identifier, Vec<u8>>,
 }
 
 /// Opaque snapshot of a loot table registry; populated from data packs on reload.
 #[derive(Debug, Default, Clone)]
+#[allow(missing_docs, reason = "internal snapshot")]
 pub struct LootTableRegistrySnapshot {
     pub entries: BTreeMap<Identifier, Vec<u8>>,
 }
 
 /// Opaque snapshot of an advancement registry; populated from data packs on reload.
 #[derive(Debug, Default, Clone)]
+#[allow(missing_docs, reason = "internal snapshot")]
 pub struct AdvancementRegistrySnapshot {
     pub entries: BTreeMap<Identifier, Vec<u8>>,
 }
 
 /// Opaque snapshot of a tag registry; populated from data packs on reload.
 #[derive(Debug, Default, Clone)]
+#[allow(missing_docs, reason = "internal snapshot")]
 pub struct TagRegistrySnapshot {
     pub entries: BTreeMap<Identifier, Vec<u8>>,
 }
@@ -2074,6 +2083,7 @@ mod tests {
         assert!(parse_function_lines("/return 1", &BTreeMap::new()).is_err());
         assert!(parse_function_lines("// comment", &BTreeMap::new()).is_err());
         assert!(parse_function_lines("$macro", &BTreeMap::new()).is_err());
+        let mut too_long = "a".repeat(MAX_FUNCTION_LINE_BYTES + 1);
         too_long.push(' ');
         assert!(parse_function_lines(&too_long, &BTreeMap::new()).is_err());
         Ok(())

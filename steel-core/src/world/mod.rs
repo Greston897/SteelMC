@@ -1499,7 +1499,7 @@ impl World {
         let is_overloaded = self
             .server
             .get()
-            .and_then(|w| w.upgrade())
+            .and_then(std::sync::Weak::upgrade)
             .is_some_and(|s| s.is_overloaded.load(Ordering::Relaxed));
         // Lightest + critical first: border/weather/time are tiny and affect
         // player position/time sync, so they always run.

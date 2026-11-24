@@ -1321,7 +1321,7 @@ pub fn find_nearest_village_center(world: &Arc<World>, from: IVec3) -> Option<IV
         let poi_pos = poi.0.as_i64vec3();
         let delta = poi_pos - from.as_i64vec3();
         let dist_sq = delta.length_squared();
-        let is_better = best.map_or(true, |(_, best_dist)| dist_sq < best_dist);
+        let is_better = best.is_none_or(|(_, best_dist)| dist_sq < best_dist);
         if is_better {
             // Section-align the POI position (vanilla uses section centers).
             let section_center = IVec3::new(

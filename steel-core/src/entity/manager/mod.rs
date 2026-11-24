@@ -469,6 +469,7 @@ struct EntityEntry {
 }
 
 /// Pre-tick manager state resolved under one state lock.
+#[allow(dead_code, reason = "tick context")]
 struct TickContext {
     manager_chunk: Option<ChunkPos>,
 }
@@ -1898,7 +1899,7 @@ impl WorldEntityManager {
         drop(state);
 
         for entity in tick_candidates {
-            let Some((entity_chunk, in_tick_list, ownership)) = entity_ctx.get(&entity.id()) else {
+            let Some((entity_chunk, _in_tick_list, _ownership)) = entity_ctx.get(&entity.id()) else {
                 continue;
             };
 

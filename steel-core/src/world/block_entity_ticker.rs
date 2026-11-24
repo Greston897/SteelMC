@@ -184,7 +184,7 @@ impl WorldBlockEntityTickers {
         let is_overloaded = world
             .server
             .get()
-            .and_then(|w| w.upgrade())
+            .and_then(std::sync::Weak::upgrade)
             .is_some_and(|s| {
                 use std::sync::atomic::Ordering::Relaxed;
                 s.is_overloaded.load(Relaxed) && s.overload_tick_count.load(Relaxed) > 3
@@ -197,7 +197,7 @@ impl WorldBlockEntityTickers {
             // every 2 ticks, keeping furnace progress correct.
             let mut idx = 0usize;
             self.tick_phase(true, |binding| {
-                if idx % 2 == 0 {
+                if idx.is_multiple_of(2) {
                     Self::tick_binding(world, border, binding);
                 }
                 idx += 1;
