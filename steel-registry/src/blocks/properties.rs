@@ -318,54 +318,6 @@ impl PropertyEnum for Direction {
 }
 
 // Additional enum types for properties
-
-/// Vanilla `Mirror` enum for block state rotation/mirroring operations.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum Mirror {
-    #[default]
-    None,
-    LeftRight,
-    FrontBack,
-}
-
-impl Mirror {
-    /// Applies this mirror to a direction, returning the mirrored direction.
-    #[must_use]
-    pub fn apply(self, direction: Direction) -> Direction {
-        match self {
-            Mirror::None => direction,
-            Mirror::LeftRight => match direction {
-                Direction::East => Direction::West,
-                Direction::West => Direction::East,
-                _ => direction,
-            },
-            Mirror::FrontBack => match direction {
-                Direction::North => Direction::South,
-                Direction::South => Direction::North,
-                _ => direction,
-            },
-        }
-    }
-
-    /// Applies this mirror to a rotation axis, returning the mirrored axis.
-    #[must_use]
-    pub fn apply_axis(self, axis: Axis) -> Axis {
-        match self {
-            Mirror::None => axis,
-            Mirror::LeftRight => match axis {
-                Axis::X => Axis::Z,
-                Axis::Z => Axis::X,
-                _ => axis,
-            },
-            Mirror::FrontBack => match axis {
-                Axis::X => Axis::Z,
-                Axis::Z => Axis::X,
-                _ => axis,
-            },
-        }
-    }
-}
-
 #[derive(Clone, Copy, Debug)]
 #[derive_const(PartialEq, Eq)]
 pub enum FrontAndTop {
