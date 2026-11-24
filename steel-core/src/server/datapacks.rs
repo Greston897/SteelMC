@@ -262,34 +262,6 @@ impl PackInfo {
     }
 }
 
-/// Function resources of one available pack.
-#[derive(Debug, Default)]
-struct PackResources {
-    functions: BTreeMap<Identifier, Vec<String>>,
-    tags: BTreeMap<Identifier, PackTag>,
-}
-
-/// One available pack and its resources.
-#[derive(Debug)]
-struct AvailablePack {
-    info: PackInfo,
-    resources: PackResources,
-}
-
-impl AvailablePack {
-    fn new(id: String, title: String, description: String, source_label: &'static str) -> Self {
-        Self {
-            info: PackInfo {
-                id,
-                title,
-                description,
-                source_label,
-            },
-            resources: PackResources::default(),
-        }
-    }
-}
-
 /// Every pack discovered under the pack root, sorted by id.
 #[derive(Debug, Default)]
 struct FunctionPackIndex {
@@ -579,7 +551,7 @@ fn load_tree(
         let Some(text) = read_resource(&path) else {
             continue;
         };
-        load_resource(state, key, &text, &path.display().to_string(), tags);
+        load_resource(state, namespace, key, &text, &path.display().to_string(), tags);
     }
 }
 
@@ -590,6 +562,7 @@ fn load_tree(
 /// without failing the reload.
 fn load_resource(
     state: &mut PackResources,
+    namespace: &str,
     key: Identifier,
     text: &str,
     source: &str,
@@ -636,77 +609,6 @@ fn load_resource(
 ///
 /// Individual unreadable or malformed resources are logged and skipped, the
 /// way vanilla's reload listeners do.
-fn load_tree(state: &mut PackResources, namespace: &str, base: &Path, path: &Path, tags: bool) {
-    for entry in entries(path) {
-        let Ok(file_type) = entry.file_type() else {
-            continue;
-        };
-        if file_type.is_symlink() {
-            log::warn!(
-                "Ignoring symbolic data pack resource {}",
-                entry.path().display()
-            );
-            continue;
-        }
-        if file_type.is_dir() {
-            load_tree(state, namespace, base, &entry.path(), tags);
-            continue;
-        }
-        let path = entry.path();
-        let extension = if tags { "json" } else { "mcfunction" };
-        if path.extension().and_then(|value| value.to_str()) != Some(extension) {
-            continue;
-        }
-        let relative = match path.strip_prefix(base) {
-            Ok(relative) => relative.with_extension(""),
-            Err(_) => continue,
-        };
-        let key: Identifier = match format!(
-            "{namespace}:{}",
-            relative.to_string_lossy().replace('\\', "/")
-        )
-        .parse()
-        {
-            Ok(key) => key,
-            Err(error) => {
-                log::warn!("Ignoring data pack resource {}: {error}", path.display());
-                continue;
-            }
-        };
-        let Some(text) = read_resource(&path) else {
-            continue;
-        };
-        load_resource(state, key, &text, &path.display().to_string(), tags);
-    }
-}
-
-/// Inserts one function or function-tag resource.
-///
-/// Malformed resources are logged and skipped. Vanilla parses functions at
-/// reload time and drops the ones that fail, and drops unparseable tag files,
-/// without failing the reload.
-fn load_resource(state: &mut PackResources, key: Identifier, text: &str, source: &str, tags: bool) {
-    if tags {
-        match serde_json::from_str::<PackTag>(text) {
-            Ok(tag) => {
-                state.tags.insert(key, tag);
-            }
-            Err(error) => log::warn!("Couldn't read function tag {source}: {error}"),
-        }
-    } else {
-        match parse_function_lines(text) {
-            Ok(commands) => {
-                state.functions.insert(key, commands);
-            }
-            Err(error) => log::warn!("Couldn't load function {source}: {error}"),
-        }
-    }
-}
-
-/// Vanilla `CommandFunction.fromLines`: trims each line, joins trailing
-/// backslash continuations, skips blanks and `#` comments, and rejects
-/// slash-prefixed commands. `$` macro invocations are expanded using the pack's
-/// macro definitions (vanilla `FunctionBuilder.addMacro` substitution).
 fn parse_function_lines(
     text: &str,
     macros: &BTreeMap<Identifier, MacroDef>,
@@ -824,12 +726,10 @@ fn pack_metadata(
         .map(|v| v as u32);
     let overlays = value
         .get("overlays")
-        .and_then(|o| serde_json::from_value::<OverlayDef>(o.clone()).ok())
-        .flatten();
+        .and_then(|o| serde_json::from_value::<OverlayDef>(o.clone()).ok());
     let filter = value
         .get("filter")
-        .and_then(|f| serde_json::from_value::<FilterDef>(f.clone()).ok())
-        .flatten();
+        .and_then(|f| serde_json::from_value::<FilterDef>(f.clone()).ok());
     let description = pack
         .get("description")
         .and_then(|description| {
@@ -885,7 +785,7 @@ fn load_zip(
             return None;
         }
     };
-    let (is_pack, description, pack_format, _overlays, _filter) =
+    let (is_pack, description, pack_format, overlays, filter) =
         pack_metadata(&metadata, &metadata_label);
     if !is_pack {
         return None;
@@ -893,6 +793,8 @@ fn load_zip(
     let incompatible = pack_format.map_or(false, |pf| pf > PACK_FORMAT_CURRENT);
 
     let mut resources = PackResources::default();
+    resources.overlays = overlays.unwrap_or_default();
+    resources.filter = filter;
     let mut entries = Vec::new();
     for index in 0..archive.len() {
         let Ok(entry) = archive.by_index(index) else {
@@ -952,7 +854,7 @@ fn load_zip(
         let Ok(text) = read_bounded_text(entry, &label) else {
             continue;
         };
-        load_resource(&mut resources, key, &text, &label, tags);
+        load_resource(&mut resources, namespace, key, &text, &label, tags);
     }
     Some((resources, description, pack_format, incompatible))
 }
@@ -2125,20 +2027,18 @@ mod tests {
     #[test]
     fn parse_function_lines_matches_vanilla_line_rules() -> Result<(), Box<dyn Error>> {
         assert_eq!(
-            parse_function_lines("# comment\n\n  return 1  \n").map_err(|e| io::Error::other(e))?,
+            parse_function_lines("# comment\n\n  return 1  \n", &BTreeMap::new()).map_err(|e| io::Error::other(e))?,
             vec!["return 1".to_owned()]
         );
         assert_eq!(
-            parse_function_lines("say hello \\\n  world").map_err(|e| io::Error::other(e))?,
-            vec!["say hello world".to_owned()]
+            parse_function_lines("say hello \\\n  world", &BTreeMap::new()).map_err(|e| io::Error::other(e))?,
         );
-        assert!(parse_function_lines("say hi \\").is_err());
-        assert!(parse_function_lines("/return 1").is_err());
-        assert!(parse_function_lines("// comment").is_err());
-        assert!(parse_function_lines("$macro").is_err());
-        let mut too_long = "a".repeat(MAX_FUNCTION_LINE_BYTES + 1);
+        assert!(parse_function_lines("say hi \\", &BTreeMap::new()).is_err());
+        assert!(parse_function_lines("/return 1", &BTreeMap::new()).is_err());
+        assert!(parse_function_lines("// comment", &BTreeMap::new()).is_err());
+        assert!(parse_function_lines("$macro", &BTreeMap::new()).is_err());
         too_long.push(' ');
-        assert!(parse_function_lines(&too_long).is_err());
+        assert!(parse_function_lines(&too_long, &BTreeMap::new()).is_err());
         Ok(())
     }
 
