@@ -359,6 +359,7 @@ pub(crate) struct FilterDef {
 /// Function resources of one available pack, now including macros, overlays,
 /// and filter definitions extracted from `pack.mcmeta`.
 #[derive(Debug, Default)]
+#[expect(dead_code, reason = "pack resources overlaid")]
 struct PackResources {
     functions: BTreeMap<Identifier, Vec<String>>,
     macros: BTreeMap<Identifier, MacroDef>,

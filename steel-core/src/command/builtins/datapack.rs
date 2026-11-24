@@ -263,7 +263,7 @@ fn datapack_reload(
     });
     if !allowed {
         source.send_failure(
-            steel_utils::translations::PERMISSIONS_REQUIRES_PLAYER
+            PERMISSIONS_REQUIRES_PLAYER
                 .msg()
                 .component(),
         );

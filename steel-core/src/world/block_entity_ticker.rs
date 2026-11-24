@@ -181,8 +181,7 @@ impl WorldBlockEntityTickers {
             self.tick_phase(false, |_| {});
             return;
         }
-                let is_overloaded = world.server.get().and_then(Weak::upgrade).is_some_and(|s| {
-            use std::sync::Weak;
+        let is_overloaded = world.server.get().and_then(Weak::upgrade).is_some_and(|s| {
             use std::sync::atomic::Ordering::Relaxed;
             s.is_overloaded.load(Relaxed) && s.overload_tick_count.load(Relaxed) > 3
         });

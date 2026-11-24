@@ -906,7 +906,7 @@ impl WorldEntityManager {
 
         let mut retained = Vec::with_capacity(root_ids.len());
         let mut visited =
-            FxHashSet::with_capacity_and_hasher(root_ids.len(), FxBuildHasher::default());
+            FxHashSet::with_capacity_and_hasher(root_ids.len(), FxBuildHasher);
         for entity_id in root_ids {
             Self::retain_unloading_entity_tree(
                 &mut state,
@@ -1875,14 +1875,14 @@ impl WorldEntityManager {
         runs_normally: bool,
         is_overloaded: bool,
     ) -> FxHashSet<ChunkPos> {
-        let mut dirty_chunks = FxHashSet::with_capacity_and_hasher(8, FxBuildHasher::default());
+        let mut dirty_chunks = FxHashSet::with_capacity_and_hasher(8, FxBuildHasher);
         let tick_candidates = self.ticking_entities_snapshot();
 
         // Single state read for all entity context lookups during this tick.
         // Avoids N separate read-lock acquisitions (one per entity) on the hot path.
         let state = self.state.read();
         let mut entity_ctx: FxHashMap<i32, (Option<ChunkPos>, bool, EntityOwnership)> =
-            FxHashMap::with_capacity_and_hasher(tick_candidates.len(), FxBuildHasher::default());
+            FxHashMap::with_capacity_and_hasher(tick_candidates.len(), FxBuildHasher);
         for entity in &tick_candidates {
             if let Some(entry) = state.live_by_id.get(entity.id()) {
                 if Self::has_pending_world_change_in_vehicle_chain(&entry.entity) {
