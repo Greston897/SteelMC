@@ -1865,8 +1865,36 @@ impl WorldEntityManager {
     pub fn tick_entities(&self, _tick_count: i32, runs_normally: bool) -> FxHashSet<ChunkPos> {
         let mut dirty_chunks = FxHashSet::default();
         let tick_candidates = self.ticking_entities_snapshot();
+
+        // Single state read for all entity context lookups during this tick.
+        // Avoids N separate read-lock acquisitions (one per entity) on the hot path.
+        let state = self.state.read();
+        let mut entity_ctx: FxHashMap<
+            i32,
+            (Option<ChunkPos>, bool, EntityOwnership),
+        > = FxHashMap::with_capacity(tick_candidates.len());
+        for entity in &tick_candidates {
+            if let Some(entry) = state.live_by_id.get(entity.id()) {
+                if Self::has_pending_world_change_in_vehicle_chain(&entry.entity) {
+                    continue;
+                }
+                entity_ctx.insert(
+                    entity.id(),
+                    (
+                        (entry.ownership == EntityOwnership::ManagerOwned)
+                            .then_some(entry.chunk),
+                        state.tick_list.contains(entity.id()),
+                        entry.ownership,
+                    ),
+                );
+            }
+        }
+        drop(state);
+
         for entity in tick_candidates {
-            let Some(tick_context) = self.tick_context(entity.id()) else {
+            let Some((entity_chunk, in_tick_list, ownership)) =
+                entity_ctx.get(&entity.id())
+            else {
                 continue;
             };
 
@@ -1878,7 +1906,7 @@ impl WorldEntityManager {
                 continue;
             }
 
-            let entity_chunk = tick_context.manager_chunk;
+            let entity_chunk = *entity_chunk;
             entity.check_despawn();
             if entity.is_removed() {
                 if let Some(chunk) = entity_chunk {
