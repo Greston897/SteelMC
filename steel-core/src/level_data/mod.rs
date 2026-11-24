@@ -1082,7 +1082,7 @@ fn migrate_level_data(data: &mut LevelData, from_version: u32) -> io::Result<()>
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
                     format!("no migration path from data version {version} to {DATA_VERSION}",),
-                )));
+                ));
             }
         }
         version += 1;
