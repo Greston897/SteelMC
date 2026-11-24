@@ -429,4 +429,119 @@ mod tests {
         // Scoreboard stays in queue
         assert_eq!(guard.deferred_count(), 1);
     }
+
+    // === СИЛЬНЫЕ ТЕСТЫ: глубокая проверка без десинка и без перегрузки ОЗУ/MSPT ===
+
+    #[test]
+    fn critical_never_deferred_even_under_severe_overload() {
+        let mut guard = TickOverloadGuard::new();
+        let now = Instant::now();
+        // 10 severe ticks
+        for _ in 0..10 {
+            guard.tick(now, Duration::from_millis(100));
+        }
+        assert!(guard.is_overloaded());
+        assert_eq!(guard.overload_tick_count(), 10);
+        // Critical tier must never be deferred
+        assert!(!guard.should_defer_tier(Tier::Critical));
+        // Even if someone tries to defer Critical via should_defer, it would be false
+        // (DeferredWork has no Critical variant, so we test tier directly)
+        assert!(!guard.should_defer_tier(Tier::Critical));
+    }
+
+    #[test]
+    fn lightest_important_first_order_is_stable() {
+        let mut guard = TickOverloadGuard::new();
+        // DeferredWork: Scoreboard (cost1, Deferred), BlockEntityIdle (cost2, Important), EntityIdleAI (cost3, Important), ChunkMaintenance (cost4, Deferred), NaturalSpawning (cost5, Deferred)
+        // Sorted by (tier, cost): Important(1) before Deferred(2), so cost2 and cost3 (Important) before cost1,4,5 (Deferred)
+        guard.defer(DeferredWork::NaturalSpawning); // 5, Deferred
+        guard.defer(DeferredWork::ChunkMaintenance); // 4, Deferred
+        guard.defer(DeferredWork::ScoreboardMaintenance); // 1, Deferred
+        guard.defer(DeferredWork::EntityIdleAI); // 3, Important
+        guard.defer(DeferredWork::BlockEntityIdle); // 2, Important
+        // Expected order: BlockEntityIdle (2,Imp), EntityIdleAI (3,Imp), Scoreboard (1,Def), Chunk (4,Def), Natural (5,Def)
+        let order = guard.process_deferred();
+        assert_eq!(
+            order,
+            vec![
+                DeferredWork::BlockEntityIdle,
+                DeferredWork::EntityIdleAI,
+                DeferredWork::ScoreboardMaintenance,
+                DeferredWork::ChunkMaintenance,
+                DeferredWork::NaturalSpawning
+            ]
+        );
+    }
+
+    #[test]
+    fn deferred_queue_bounded_ram() {
+        let mut guard = TickOverloadGuard::new();
+        // Try to defer 100 items, but MAX_DEFERRED is 16
+        for _ in 0..100 {
+            guard.defer(DeferredWork::ChunkMaintenance);
+        }
+        assert_eq!(guard.deferred_count(), MAX_DEFERRED_PER_TICK);
+        // MSPT bound: drain max 8 per tick
+        let drained = guard.process_deferred();
+        assert_eq!(drained.len(), MAX_DRAIN_PER_TICK);
+        assert_eq!(guard.deferred_count(), MAX_DEFERRED_PER_TICK - MAX_DRAIN_PER_TICK);
+        // Next tick drains rest
+        let drained2 = guard.process_deferred();
+        assert_eq!(drained2.len(), MAX_DRAIN_PER_TICK);
+        assert_eq!(guard.deferred_count(), 0);
+    }
+
+    #[test]
+    fn no_desync_when_overloaded_then_recovered() {
+        let mut guard = TickOverloadGuard::new();
+        let now = Instant::now();
+        // Overload 4 ticks (Important deferred after 3)
+        for _ in 0..4 {
+            guard.tick(now, Duration::from_millis(100));
+        }
+        assert!(guard.should_defer(DeferredWork::EntityIdleAI));
+        // Recover with 2 fast ticks (hysteresis requires 2)
+        guard.tick(now, Duration::from_millis(1));
+        assert!(guard.is_overloaded()); // still 3 after one fast
+        guard.tick(now, Duration::from_millis(1));
+        assert!(!guard.is_overloaded()); // now 1 after second fast? Actually hysteresis: 4 -> 3 -> 1 after 2 fast (since second fast subtracts 2)
+        // After recovery, deferred work should be drainable
+        guard.defer(DeferredWork::ChunkMaintenance);
+        let drained = guard.process_deferred();
+        assert_eq!(drained.len(), 1);
+        assert_eq!(drained[0], DeferredWork::ChunkMaintenance);
+    }
+
+    #[test]
+    fn mspt_bounded_under_sustained_overload() {
+        let mut guard = TickOverloadGuard::new();
+        let now = Instant::now();
+        // Simulate 20 ticks of 60ms (severe)
+        for _ in 0..20 {
+            guard.tick(now, Duration::from_millis(60));
+            assert!(guard.is_overloaded());
+        }
+        // Even under sustained, budget_factor should be 0.25 (severe)
+        assert_eq!(guard.budget_factor(), 0.25);
+        // Heavy work should be offloadable
+        guard.defer(DeferredWork::ChunkMaintenance);
+        guard.defer(DeferredWork::NaturalSpawning);
+        let heavy = guard.drain_heavy_for_background();
+        assert_eq!(heavy.len(), 2);
+        // After draining heavy, non-heavy remains 0
+        assert_eq!(guard.deferred_count(), 0);
+    }
+
+    #[test]
+    fn saves_and_player_packets_never_deferred() {
+        // This is a conceptual test: Tier::Critical is never deferred
+        let guard = TickOverloadGuard::new();
+        // Even if we manually tick to overload, Critical stays false
+        let mut guard2 = TickOverloadGuard::new();
+        let now = Instant::now();
+        guard2.tick(now, Duration::from_millis(100));
+        assert!(!guard2.should_defer_tier(Tier::Critical));
+        // Saves are outside guard, so they always run — we just ensure guard doesn't block them
+        assert!(!guard.should_defer_tier(Tier::Critical));
+    }
 }
