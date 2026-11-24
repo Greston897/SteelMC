@@ -387,7 +387,7 @@ mod tests {
     #[test]
     fn defer_and_process_budget() {
         let mut guard = TickOverloadGuard::new();
-        for _ in 0..10 {
+        for _ in 0..20 {
             guard.defer(DeferredWork::ChunkMaintenance);
         }
         // Bounded to MAX_DEFERRED_PER_TICK
