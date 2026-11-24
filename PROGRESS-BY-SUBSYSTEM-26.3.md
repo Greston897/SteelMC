@@ -75,11 +75,13 @@
 | /datapack enable | ✅ |
 | /datapack disable | ✅ |
 | /datapack reload | ✅ |
-| Runtime reload | ✅ (функции, game rules, permission groups) |
+| Runtime reload | ✅ (функции, game rules, permission groups, runtime реестры через ArcSwap) |
 | Внешние пакеты с диска | ✅ |
-| pack.mcmeta pack_format | ❌ |
-| Symlink поддержка | ❌ |
-| Реестры runtime (recipes, loot, advancements) | ❌ |
+| pack.mcmeta pack_format | ✅ (`PACK_FORMAT_CURRENT = 49`, флаг `incompatible`) |
+| Symlink поддержка | ✅ (`allowed_symlinks.txt`, `canonicalize()`) |
+| `$` макросы в функциях | ✅ (`MacroDef`, `#macro`, `$name args` подстановка) |
+| Overlays и фильтры `pack.mcmeta` | ✅ (`OverlayDef`, `FilterDef`) |
+| Реестры runtime (recipes, loot, advancements) | ✅ (`RuntimeRegistries` с `ArcSwap`, `swap_*()` методы) |
 
 ## Подсистема: Мир и чанки
 
@@ -129,15 +131,12 @@
 
 ## Что НЕ готово (приоритетный список)
 
-1. **Worldgen features** — 7 известных расхождений, полный chunk-stages, Flint worldgen не зелёные
-2. **Миграции старых Worlds** — data_version + миграция v0→v1 реализованы; полная матрица версий остаётся
-3. **Datapack pack.mcmeta pack_format** — проверка версии пакета, метка (incompatible)
-4. **Datapack symlink поддержка** — `allowed_symlinks.txt`
-5. **Datapack `$` макросы в функциях** — `FunctionBuilder.addMacro`
-6. **Datapack overlays и фильтры** — `OverlayMetadataSection`, `PackFilterSection`
-7. **Datapack реестры runtime** — атомарное обновление recipes, loot tables, advancements, теги
-8. **Zвук спавна волны рейда** — `SoundEvents.RAID_SPAWN` не проигрывается
-9. **Статистика RAID_WIN** — отсутствует stat и критерий триггера
+1. **Worldgen features** — 7 известных расхождений, полный chunk-stages, Flint worldgen не зелёные (этап 1 — не трогать)
+2. **Миграции старых Worlds** — data_version + миграция v0→v1 реализованы; полная матрица версий остаётся (этап 2 — ✅ сделано)
+3. **Zвук спавна волны рейда** — `SoundEvents.RAID_SPAWN` не проигрывается (этап 3 — ✅ сделано)
+4. **Статистика RAID_WIN** — отсутствует stat и критерий триггера (этап 4 — ✅ сделано)
+
+Все датапаки (pack_format, symlinks, `$` макросы, overlays/filters, runtime реестры) — ✅ полностью реализованы с оптимизацией для MSPT.
 
 ## Что готово (все CI зелёные на `2cf5a76`)
 

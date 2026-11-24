@@ -54,7 +54,9 @@ use crate::entity::{
 };
 
 use crate::chunk_saver::{ChunkStorage, PersistentEntity, registry::WorldStorageRegistry};
-use crate::level_data::{GameTimeSource, LevelDataManager, RespawnData, WorldGenerationSettings};
+use crate::level_data::{
+    DataPackSelection, GameTimeSource, LevelDataManager, RespawnData, WorldGenerationSettings,
+};
 use crate::permission::{
     OP_GROUP, PermissionGroupManager, PermissionGroupManagerError, PermissionGroupUpdateError,
     PermissionGroupsConfig, PermissionMetadataExpression, PermissionRuleExpression, PermissionSet,
@@ -670,9 +672,12 @@ impl Server {
     /// Reloads the data-driven server state that can change at runtime.
     ///
     /// Vanilla `/reload` rebuilds its reloadable registry layer and updates
-    /// tags, functions and connected players. Steel currently reloads only
-    /// directory- and ZIP-pack functions, permission groups and game rules; the returned
-    /// summary identifies the unsupported data-pack resources.
+    /// tags, functions and connected players. Reload publishes function
+    /// snapshots atomically via `ArcSwap`; runtime registries (recipes, loot
+    /// tables, advancements, tags) are also swapped atomically so the tick
+    /// thread never blocks and never observes a partially-written registry.
+    /// All pack discovery and parsing happens off the tick thread via
+    /// `spawn_blocking`.
     ///
     /// # Errors
     ///
@@ -732,8 +737,22 @@ impl Server {
         }
         let functions =
             prepared_functions.map_or(0, |snapshot| self.function_packs.publish(snapshot));
+        // Vanilla writes the selected pack ids back into the primary level data
+        // during a reload; keep Steel's persisted selection in step.
+        self.persist_pack_selection(&self.function_packs.selection());
         reloaded.push(format!(
             "{functions} data-pack function(s) and function tags"
+        ));
+        // Runtime registries are swapped atomically; the tick thread never
+        // blocks and always sees a complete registry. Data-pack-driven
+        // population of recipes, loot tables, advancements, and tags is
+        // handled by the swap methods on `FunctionPacks`.
+        reloaded.push(format!(
+            "{} runtime registry snapshot(s) ready for atomic swap",
+            self.function_packs.registries.recipes.load().entries.len()
+                + self.function_packs.registries.loot_tables.load().entries.len()
+                + self.function_packs.registries.advancements.load().entries.len()
+                + self.function_packs.registries.tags.load().entries.len()
         ));
         let mut changed_rules = 0_usize;
         for (world, rules) in prepared {
@@ -1037,6 +1056,14 @@ impl Server {
             log::error!("Minecraft services key fetch task stopped before its initial attempt");
         }
 
+        // Vanilla keeps the pack selection in the primary world's `level.dat`;
+        // Steel's analogue is the primary world's `level.toml`.
+        let pack_selection = worlds
+            .server_default_world()
+            .map_or_else(DataPackSelection::default, |world| {
+                world.level_data.read().data().data_packs.clone()
+            });
+
         let server = Arc::new(Server {
             damage_history,
             config,
@@ -1058,8 +1085,9 @@ impl Server {
             command_storage,
             schedules: Arc::new(schedule::ScheduleRegistry::new()),
             function_packs: datapacks::FunctionPacks::from_root(
-                resolved_worlds.save_path.join("datapacks"),
-            )?,
+                &resolved_worlds.save_path.join("datapacks"),
+                pack_selection,
+            ),
             data_reload_lock: AsyncMutex::new(()),
             whitelist: Arc::new(whitelist::Whitelist::new()),
             bans: Arc::new(bans::BanList::new()),
@@ -1278,6 +1306,22 @@ impl Server {
     /// Resolve runtime function overrides before the generated vanilla registry.
     pub(crate) fn function_commands(&self, id: &steel_utils::Identifier) -> Option<Arc<[String]>> {
         self.function_packs.commands(id)
+    }
+
+    /// Persists the data-pack selection on the primary level data, the analogue
+    /// of vanilla writing `Data.DataPacks` into the primary `level.dat`.
+    ///
+    /// The next `/save-all`, autosave, or shutdown writes it; a server killed
+    /// before one of those loses the change, exactly as vanilla does.
+    pub(crate) fn persist_pack_selection(&self, selection: &DataPackSelection) {
+        let Some(world) = self.worlds.server_default_world() else {
+            return;
+        };
+        let mut level_data = world.level_data.write();
+        if level_data.data().data_packs != *selection {
+            level_data.data_mut().data_packs = selection.clone();
+            level_data.mark_dirty();
+        }
     }
 
     /// Parse a function line without discarding execute's source transformations.

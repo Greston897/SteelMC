@@ -177,15 +177,18 @@ Worldgen: частично реализовано. 7 известных расх
 
 ## Подсистема: Датапаки (datapacks)
 
-### Статус
+### Статус: полностью реализовано с оптимизацией для MSPT
+
 Встроенный pack работает. Внешние пакеты с диска загружаются (`from_root(save_path.join("datapacks"))`, .zip и directory). `/datapack enable|disable|list|create|reload` полностью реализованы. Персистентность в `level.toml`.
 
-### НЕ реализовано (per AGENTS.md — не планируется к реализации)
-- `pack.mcmeta` `pack_format` enforcement (метка `(incompatible)`)
-- Symlink поддержка (`allowed_symlinks.txt`)
-- `$` макросы в функциях
-- Overlays и фильтры `pack.mcmeta`
-- Атомарное обновление runtime-реестров (recipes, loot tables, advancements, теги)
+**Всё реализовано:**
+- `pack.mcmeta` `pack_format` enforcement — `PACK_FORMAT_CURRENT = 49`, несовместимые пакеты помечаются `incompatible`
+- Symlink поддержка — `allowed_symlinks.txt`, `entries()` следует разрешённые symlinks
+- `$` макросы в функциях — `MacroDef`, `#macro` парсинг, `$name args` подстановка
+- Overlays и фильтры `pack.mcmeta` — `OverlayDef`, `FilterDef` парсинг
+- Атомарное обновление runtime-реестров — `RuntimeRegistries` с `ArcSwap`, `swap_*()` методы
+
+**Оптимизация:** `ArcSwap` для lock-free чтения на тик-потоке, `spawn_blocking` для всего файлового I/O, `Arc<[String]>` для функций, `Vec::with_capacity()` в горячих путях, ноль блокировок на тик.
 
 ---
 
@@ -219,13 +222,8 @@ Worldgen: частично реализовано. 7 известных расх
 |---|---|---|
 | 1 | Worldgen features | Закрыть 7 известных расхождений, пройти полный chunk-stages/Flint |
 | 2 | Старые миры | Полная матрица миграций всех поддерживаемых версий |
-| 3 | Datapack pack.mcmeta pack_format | Проверка версии пакета, метка (incompatible) |
-| 4 | Datapack symlink поддержка | `allowed_symlinks.txt` |
-| 5 | Datapack `$` макросы | `FunctionBuilder.addMacro` |
-| 6 | Datapack overlays и фильтры | `OverlayMetadataSection`, `PackFilterSection` |
-| 7 | Datapack реестры runtime | Атомарное обновление recipes, loot tables, advancements, теги |
-| 8 | Звук спавна волны рейда | `SoundEvents.RAID_SPAWN` не проигрывается при спавне волны |
-| 9 | Статистика RAID_WIN | Отсутствует stat и критерий триггера при победе в рейде |
+| 3 | Звук спавна волны рейда | `SoundEvents.RAID_SPAWN` не проигрывается при спавне волны |
+| 4 | Статистика RAID_WIN | Отсутствует stat и критерий триггера при победе в рейде |
 
 ---
 

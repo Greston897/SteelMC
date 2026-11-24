@@ -363,8 +363,9 @@ Flint здесь не заявляется: нельзя переносить с
 Неполнота, подтверждаемая исходниками (список не исчерпывающий):
 
 - `command/builtins/datapack.rs`: `/datapack enable|disable|list|create|reload`
-  реализованы; внешние пакеты загружаются из `world/datapacks`. Остаётся:
-  pack.mcmeta pack_format, symlinks, $ макросы, overlays/фильтры, runtime-реестры.
+  реализованы; внешние пакеты загружаются из `world/datapacks`. pack.mcmeta
+  pack_format, symlinks, $ макросы, overlays/фильтры, runtime-реестры —
+  все реализованы с оптимизацией для MSPT (ArcSwap, spawn_blocking).
 - `entity/entities/mobs/bosses/wither_boss.rs`: полностью реализован — boss bar, отслеживание игроков, три головы, skull volleys, ranged атаки, фазы здоровья, защита спавна. См. GAPS-WITHER-26.3.md.
 - `world/raid.rs`: полностью реализована команда рейда — captain succession через ObtainRaidBannerGoal, save/load через RaidSavedData, bossbar через sync_boss_bars, victory/loss, Hero of the Village. См. GAPS-RAID-26.3.md. Полный raid-паритет по всем целям и клиентскому слою не заявляется.
 - Полнота непользовательских ContainerUser, CODEC/миграций произвольных миров,

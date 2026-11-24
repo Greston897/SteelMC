@@ -533,6 +533,13 @@ impl Entity for ItemEntity {
         false
     }
 
+    /// Items inside blocks (e.g. cactus) must still receive block-contact
+    /// effects even when `no_physics` is set from being stuck in a block.
+    /// Vanilla items take cactus/lava damage while inside those blocks.
+    fn is_affected_by_blocks(&self) -> bool {
+        !self.is_removed()
+    }
+
     fn as_default_entity_push(&self) -> Option<&dyn DefaultEntityPush> {
         Some(self)
     }

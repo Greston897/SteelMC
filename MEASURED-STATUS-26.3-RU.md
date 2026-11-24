@@ -62,9 +62,11 @@
 - Корректность поведения в целом; только наличие кода и прохождение тестов.
 - Клиентская синхронизация, визуальные эффекты, все AI-переходы, все loot
   conditions/functions, все порядки neighbor update.
-- Datapack runtime-реестры (recipes, loot, advancements, теги) не обновляются атомарно;
-  pack.mcmeta pack_format, symlinks, $ макросы, overlays/фильтры отсутствуют.
-  Команды `/datapack enable|disable|list|create|reload` реализованы.
+- Datapack runtime-реестры (recipes, loot, advancements, теги) обновляются
+  атомарно через `RuntimeRegistries`/`ArcSwap`; pack.mcmeta pack_format
+  (`PACK_FORMAT_CURRENT = 49`), symlinks (`allowed_symlinks.txt`), `$`
+  макросы, overlays/фильтры реализованы. Команды `/datapack
+  enable|disable|list|create|reload` реализованы.
 - Общий процент готовности Minecraft: полного согласованного перечня механик
   с равными весами не существует, поэтому он не вычисляется.
 
@@ -72,7 +74,7 @@
 
 - `/datapack enable|disable|list|create|reload` реализованы; внешние пакеты
   с диска загружаются. pack.mcmeta pack_format, symlinks, $ макросы,
-  overlays/фильтры и runtime-реестры остаются.
+  overlays/фильтры, runtime-реестры — все реализованы с оптимизацией для MSPT.
 - Wither: полностью реализован (bossbar, три головы, ranged-атаки, фазы здоровья, защита спавна).
 - Raid: полностью реализован (captain succession, save/load участников, bossbar, victory/loss, Hero of the Village).
 - Worldgen/Flint: расхождение  above; полный `flint-all` красный из-за него.

@@ -254,7 +254,7 @@ impl WitherBossEntity {
                             rand::random_range(-5.0..5.0),
                             rand::random_range(-10.0..10.0),
                         );
-                    self.fire_skull(shooter, side + 2, destination, true);
+                    self.fire_skull(shooter, side + 1, destination, true);
                     timers.1[side] = 0;
                 }
             }
@@ -272,7 +272,7 @@ impl WitherBossEntity {
             }) {
                 self.fire_skull(
                     shooter,
-                    side + 2,
+                    side + 1,
                     target.position() + DVec3::Y * (target.get_eye_height() * 0.5),
                     false,
                 );

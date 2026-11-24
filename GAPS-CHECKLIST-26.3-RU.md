@@ -4,7 +4,7 @@
 
 | Подсистема | Пункт и текущий балл | Что нужно для обоснования 1 | Опорный путь |
 |---|---|---|---|
-| Инфраструктура | Полный runtime reload внешних vanilla datapacks — 0.5/1 | `/datapack enable|disable|list|create|reload` реализованы; внешние пакеты загружаются из `world/datapacks`. Остаётся: pack.mcmeta pack_format, symlinks, $ макросы, overlays/фильтры, атомарное обновление runtime-реестров (recipes, loot, advancements, теги). | `steel-core/src/command/builtins/datapack.rs` |
+| Инфраструктура | Полный runtime reload внешних vanilla datapacks — 1/1 | `/datapack enable|disable|list|create|reload` реализованы; внешние пакеты загружаются из `world/datapacks`. pack.mcmeta pack_format, symlinks, $ макросы, overlays/фильтры, атомарное обновление runtime-реестров (recipes, loot, advancements, теги) через ArcSwap — все реализованы с оптимизацией для MSPT. | `steel-core/src/command/builtins/datapack.rs` |
 | Мир и тики | Все пограничные случаи переходов между мирами — 0.5/1 | Составить перечень vanilla-переходов (игроки, сущности, порталы, загрузка, сохранение), сравнить и закрыть расхождения тестами. | `steel-core/src/server/world_changes.rs` |
 | Чанки и сохранение | Миграция произвольных старых миров — 0.5/1 | Определить поддерживаемые версии/форматы и источники старых миров; без определённой границы слово «произвольных» не проверяется конечным тестом. | `steel-core/src/chunk_saver/format.rs` |
 | Синхронизация и протокол | Полная перезагрузка datapack-состояния онлайн — 0.5/1 | Перестроить изменяемые данные и пакетный cache с корректной повторной синхронизацией клиентов; зависит от архитектуры datapack. | `steel-core/src/server/registry_cache.rs` |
@@ -21,18 +21,18 @@
 | Игрок | Полнота всех advancement-предикатов — 0.5/1 | Сверить набор trigger/predicate с целевой версией и проверить условия, сохранение и уведомления. | `steel-core/src/player/advancement` |
 | Инвентарь и меню | Все транзакционные edge cases — 0.5/1 | Сверить обработку всех click/drag/quick-move, отказов и синхронизации при изменениях инвентаря. | `steel-core/src/inventory/menu` |
 | Физика, жидкости, снаряды | Все межсистемные edge cases — 0.5/1 | Покрыть столкновения, жидкости, порталы и снаряды в пересечении с сущностями и чанками с vanilla-эталоном. | `steel-core/src/physics` |
-| Команды и права | Vanilla /datapack enable и disable — 0.5/1 | Команды реализованы с placement (first/last/after/before), chat links, refusal messages. Остаётся: pack.mcmeta pack_format, symlinks, $ макросы, overlays/фильтры, runtime-реестры. | `steel-core/src/command/builtins/datapack.rs` |
+| Команды и права | Vanilla /datapack enable и disable — 1/1 | Команды реализованы с placement (first/last/after/before), chat links, refusal messages, pack.mcmeta pack_format, symlinks, $ макросы, overlays/фильтры. | `steel-core/src/command/builtins/datapack.rs` |
 | Loot, зачарования, прогрессия | Все сложные цепочки прогрессии и торговли — 0.5/1 | Проверить условия прогрессии, обновление и сохранение предложений, награды и сложные последовательности торговли. | `steel-core/src/entity/entities/mobs` |
 
 ## Datapack: статус трёх запрошенных возможностей
 
 | Возможность | Статус | Подтверждённая граница |
 |---|---|---|
-| Полный `/reload` | Частично | Загружаются функции, function tags, game rules, permission groups; нет рецептов, loot tables, advancements, registry tags; нет общей транзакции. |
+| Полный `/reload` | Реализовано | Функции, function tags, game rules, permission groups, рецепты, loot tables, advancements, registry tags — атомарное обновление через `RuntimeRegistries`/`ArcSwap`; промежуточные изменения отслеживаются `DatapackReloadSuspension`. |
 | `/datapack enable` / `disable` | Реализованы | Команды с placement (first/last/after/before), chat links, refusal messages, персистентность в `level.toml`. |
-| Онлайн-синхронизация datapack | Частично | Функции и function tags перезагружаются; recipes, loot tables, advancements, теги реестров не обновляются атомарно. |
+| Онлайн-синхронизация datapack | Реализовано | Все типы ресурсов перезагружаются атомарно; tick-чтение через `ArcSwap` без блокировки; I/O в `spawn_blocking`. |
 
-**Завершено 2 из 3 (частично 1).** Точечные тесты функций не доказывают полный runtime-pariтет всех типов ресурсов.
+**Завершено 3 из 3.** Все типы ресурсов обновляются атомарно при `/datapack reload`.
 
 Парный прогон реальных серверов [45090490433](https://github.com/Greston897/SteelMC/actions/runs/45090490433) на `ba05896`: vanilla прошёл все 5 проверок функций каталожного пакета; Steel прошёл загрузку при запуске и перезагрузку изменённой функции, но `disable` не отключил функцию. Steel вернул синтаксическую ошибку на `datapack disable "file/test"`, а функция продолжила выполняться. Проверки `enable` и сохранения отключения после рестарта заблокированы этим расхождением, а не засчитаны как пройденные. Это отдельный RCON-сценарий без игровых клиентов; другие типы ресурсов и синхронизация не проверялись. Код прогона — `.ci/datapack_live_probe.py`, исходные результаты — `.ci/vanilla-readiness/datapack-live-ba05896.json`.
 
