@@ -21,7 +21,8 @@ const MAX_DRAIN_PER_TICK: usize = 8;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum Tier {
     /// Never deferred: movement, combat, player packets, saves.
-    #[expect(dead_code, reason = "critical tier for API completeness")]
+    #[allow(clippy::allow_attributes)]
+    #[allow(dead_code)]
     Critical = 0,
     /// Important but can be delayed 1 tick under light overload.
     Important = 1,
@@ -175,7 +176,8 @@ impl TickOverloadGuard {
     /// `Important` work only after 3 consecutive overloaded ticks to avoid
     /// flapping, so lightest+important runs first.
     #[inline]
-    #[expect(dead_code, reason = "overload API")]
+    #[allow(clippy::allow_attributes)]
+    #[allow(dead_code)]
     pub(super) const fn should_defer(&self, work: DeferredWork) -> bool {
         if self.overload_ticks == 0 {
             return false;
@@ -189,7 +191,8 @@ impl TickOverloadGuard {
 
     /// Tier-aware check without constructing an enum – for hot paths.
     #[inline]
-    #[expect(dead_code, reason = "overload API")]
+    #[allow(clippy::allow_attributes)]
+    #[allow(dead_code)]
     pub(super) const fn should_defer_tier(&self, tier: Tier) -> bool {
         if self.overload_ticks == 0 {
             return false;
@@ -272,7 +275,8 @@ impl TickOverloadGuard {
     }
 
     /// Returns the number of deferred items pending (for metrics / TPS bar).
-    #[expect(dead_code, reason = "metrics")]
+    #[allow(clippy::allow_attributes)]
+    #[allow(dead_code)]
     pub(super) fn deferred_count(&self) -> usize {
         self.deferred.len()
     }
