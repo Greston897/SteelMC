@@ -1944,10 +1944,9 @@ impl WorldEntityManager {
                     // in a deterministic way that preserves fairness. Heavy idle
                     // entities (items, XP) are slightly more likely to be deferred
                     // by checking an extra bit.
-                    let key = entity.entity_type().key.to_string();
-                    let is_heavy_idle = key.contains("item")
-                        || key.contains("experience_orb")
-                        || key.contains("area_effect_cloud");
+                    let is_heavy_idle = entity.entity_type().key.path.contains("item")
+                        || entity.entity_type().key.path.contains("experience_orb")
+                        || entity.entity_type().key.path.contains("area_effect_cloud");
                     let defer_bit = i64::from(is_heavy_idle);
                     if (i64::from(entity.id()) + tick_count as i64 + defer_bit) % 2 == 0 {
                         continue;

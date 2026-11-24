@@ -200,11 +200,10 @@ impl WorldBlockEntityTickers {
             // heavy idle (sign, banner, skull) are deferred more often.
             let mut idx = 0usize;
             self.tick_phase(true, |binding| {
-                let key = binding.entity.get_type().key.to_string();
-                let is_heavy_idle = key.contains("sign")
-                    || key.contains("skull")
-                    || key.contains("banner")
-                    || key.contains("decorated_pot");
+                let is_heavy_idle = binding.entity.get_type().key.path.contains("sign")
+                    || binding.entity.get_type().key.path.contains("skull")
+                    || binding.entity.get_type().key.path.contains("banner")
+                    || binding.entity.get_type().key.path.contains("decorated_pot");
                 // Lightest+important first: furnaces/hoppers always tick when
                 // lightly overloaded, heavy idle are spread over 2-3 ticks.
                 let should_tick = if is_heavy_idle {
