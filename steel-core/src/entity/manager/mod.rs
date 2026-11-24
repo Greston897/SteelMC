@@ -905,8 +905,7 @@ impl WorldEntityManager {
         }
 
         let mut retained = Vec::with_capacity(root_ids.len());
-        let mut visited =
-            FxHashSet::with_capacity_and_hasher(root_ids.len(), FxBuildHasher);
+        let mut visited = FxHashSet::with_capacity_and_hasher(root_ids.len(), FxBuildHasher);
         for entity_id in root_ids {
             Self::retain_unloading_entity_tree(
                 &mut state,

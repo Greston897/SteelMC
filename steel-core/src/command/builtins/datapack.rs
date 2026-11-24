@@ -262,11 +262,7 @@ fn datapack_reload(
         CommandPermissionSource::has_permission(source, &PermissionExpr::key(key))
     });
     if !allowed {
-        source.send_failure(
-            PERMISSIONS_REQUIRES_PLAYER
-                .msg()
-                .component(),
-        );
+        source.send_failure(PERMISSIONS_REQUIRES_PLAYER.msg().component());
         return Ok(DatapackReloadSuspension::finished());
     }
 

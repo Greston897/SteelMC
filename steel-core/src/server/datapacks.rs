@@ -34,6 +34,7 @@
 //!   loading and snapshot publication.
 use arc_swap::ArcSwap;
 use serde::Deserialize;
+use std::borrow::ToOwned;
 use std::{
     collections::{BTreeMap, BTreeSet},
     error::Error,
@@ -616,7 +617,7 @@ fn load_resource(
                 }
             };
             let args: Vec<String> = parts[2..].iter().map(|s| (*s).to_owned()).collect();
-            let body: Vec<String> = lines.map(std::borrow::ToOwned::to_owned).collect();
+            let body: Vec<String> = lines.map(ToOwned::to_owned).collect();
             state.macros.insert(macro_name, MacroDef { args, body });
         }
     } else {
