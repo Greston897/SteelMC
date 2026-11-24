@@ -1,5 +1,5 @@
 [files]
-extend-exclude = ["**/build_assets/**", "*.json", "**/*-RU.md"]
+extend-exclude = ["**/build_assets/**", "*.json", "**/*-RU.md", "FULL_AUDIT_ALL_CRATES_2144.md", "FULL-AUDIT-*.md"]
 
 [type.locale]
 extend-glob = ["**/locale.rs"]
@@ -69,6 +69,9 @@ undescore = "undescore"
 convertable = "convertable"
 # Vanilla block name: OCHRE_FROGLIGHT.
 OCHRE = "OCHRE"
+# Commit hash prefix ba05896 referenced in audits — not a typo for "be"/"by".
+ba = "ba"
+ba05896 = "ba05896"
 
 [default.extend-identifiers]
 player_mode_customisation = "player_mode_customisation"
