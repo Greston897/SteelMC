@@ -200,7 +200,7 @@ impl WorldBlockEntityTickers {
             // heavy idle (sign, banner, skull) are deferred more often.
             let mut idx = 0usize;
             self.tick_phase(true, |binding| {
-                let key = binding.entity.get_type().key.as_str();
+                let key = binding.entity.get_type().key.to_string();
                 let is_heavy_idle = key.contains("sign")
                     || key.contains("skull")
                     || key.contains("banner")

@@ -1944,7 +1944,7 @@ impl WorldEntityManager {
                     // in a deterministic way that preserves fairness. Heavy idle
                     // entities (items, XP) are slightly more likely to be deferred
                     // by checking an extra bit.
-                    let key = entity.entity_type().key.as_str();
+                    let key = entity.entity_type().key.to_string();
                     let is_heavy_idle = key.contains("item")
                         || key.contains("experience_orb")
                         || key.contains("area_effect_cloud");

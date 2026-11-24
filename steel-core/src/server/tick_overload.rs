@@ -280,6 +280,7 @@ impl TickOverloadGuard {
 
     /// Budget multiplier for tick work: 1.0 = normal, 0.5 = light overload, 0.25 = severe.
     /// Subsystems use this to decide how many cheapest+important items to run this tick.
+    #[expect(dead_code, reason = "budget for future subsystems")]
     pub(super) fn budget_factor(&self) -> f32 {
         match self.overload_ticks {
             0 => 1.0,

@@ -326,7 +326,10 @@ impl Server {
                     // Deferred work is generic (scoreboard, custom); for now we just
                     // account for it. Subsystems that use `defer()` will have their
                     // work re-queued and actually executed on drain in the future.
-                    tracing::debug!(count = drained.len(), "Drained deferred work while catching up");
+                    tracing::debug!(
+                        count = drained.len(),
+                        "Drained deferred work while catching up"
+                    );
                 }
             } else if overload_guard.should_offload_to_background() {
                 let heavy = overload_guard.drain_heavy_for_background();
@@ -339,7 +342,10 @@ impl Server {
                     let count = heavy.len();
                     // Re-queue heavy for next tick - do not drop, keep for retry.
                     // For now we just log and re-queue lightest heavy for background if needed.
-                    tracing::debug!(count, "Deferring heavy work to next tick (background offload ready)");
+                    tracing::debug!(
+                        count,
+                        "Deferring heavy work to next tick (background offload ready)"
+                    );
                     for work in heavy {
                         overload_guard.defer(work);
                     }
