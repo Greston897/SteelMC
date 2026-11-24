@@ -362,16 +362,11 @@ Flint здесь не заявляется: нельзя переносить с
 
 Неполнота, подтверждаемая исходниками (список не исчерпывающий):
 
-- `command/builtins/datapack.rs`: runtime-загрузка внешних пакетов, enable/disable
-  всё ещё не реализованы.
-- `entity/entities/mobs/bosses/wither_boss.rs`: boss bar и полноценные
-  трёхголовые ranged attacks отсутствуют; есть неэквивалентный melee-путь.
-- `world/raid.rs`: фиктивные таймерные волны заменены настоящими и проверены
-  полные столкновения всех сложностей. Это ещё не доказывает весь raid AI:
-  поиск/кэш spawn-позиции и присоединение внешних рейдеров теперь реализованы
-  с отдельными headless-регрессиями. Все captain/door-breaking/celebration goals,
-  восстановление полной связи участников после загрузки и клиентский вид boss bar
-  ещё требуют реализации/проверки. Полный raid-паритет не заявляется.
+- `command/builtins/datapack.rs`: `/datapack enable|disable|list|create|reload`
+  реализованы; внешние пакеты загружаются из `world/datapacks`. Остаётся:
+  pack.mcmeta pack_format, symlinks, $ макросы, overlays/фильтры, runtime-реестры.
+- `entity/entities/mobs/bosses/wither_boss.rs`: полностью реализован — boss bar, отслеживание игроков, три головы, skull volleys, ranged атаки, фазы здоровья, защита спавна. См. GAPS-WITHER-26.3.md.
+- `world/raid.rs`: полностью реализована команда рейда — captain succession через ObtainRaidBannerGoal, save/load через RaidSavedData, bossbar через sync_boss_bars, victory/loss, Hero of the Village. См. GAPS-RAID-26.3.md. Полный raid-паритет по всем целям и клиентскому слою не заявляется.
 - Полнота непользовательских ContainerUser, CODEC/миграций произвольных миров,
   всех видов AI и всех межсистемных исключений не доказана.
 - Расхождения worldgen/полного Flint остаются блокерами заявления о vanilla-паритете.

@@ -1,5 +1,11 @@
 # Где смотреть состояние и как проверять
 
+0. **Замеренный аудит реализации и реальные запуски на SHA:**
+   [MEASURED-STATUS-26.3-RU.md](MEASURED-STATUS-26.3-RU.md) и
+   [VANILLA-PARITY-MEASURED-26.3.md](VANILLA-PARITY-MEASURED-26.3.md).
+   Инструмент `.ci/vanilla_parity_audit.py` пересчитывает покрытие по
+   `steel-core/build/classes.json` и исходникам `minecraft-src/`; самопроверки —
+   `.ci/test_vanilla_parity_audit.py`. Неизвестное остаётся неизвестным.
 1. **Что реально прошло в Actions:**
    [SUBSYSTEMS-26.3-ACTIONS.md](SUBSYSTEMS-26.3-ACTIONS.md).
    Таблица всех зон, 4802 passed / 0 failed / 7 ignored, SHA и ссылки на run.
