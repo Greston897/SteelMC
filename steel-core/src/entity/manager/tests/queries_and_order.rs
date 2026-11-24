@@ -347,21 +347,21 @@ fn visibility_transitions_separate_tracking_and_ticking() {
     assert_eq!(changes.tracking_started.len(), 1);
     assert!(Arc::ptr_eq(&changes.tracking_started[0], &entity));
     assert!(changes.ticking_started.is_empty());
-    manager.tick_entities(0, true, false);
+    manager.tick_entities(0, true, false, 0);
     assert_eq!(entity.tick_count(), 0);
 
     let changes = manager.update_chunk_visibility(chunk, EntityVisibility::Ticking);
     assert!(changes.tracking_started.is_empty());
     assert_eq!(changes.ticking_started.len(), 1);
     assert!(Arc::ptr_eq(&changes.ticking_started[0], &entity));
-    manager.tick_entities(1, true, false);
+    manager.tick_entities(1, true, false, 0);
     assert_eq!(entity.tick_count(), 1);
 
     let changes = manager.update_chunk_visibility(chunk, EntityVisibility::Tracked);
     assert!(changes.tracking_stopped.is_empty());
     assert_eq!(changes.ticking_stopped.len(), 1);
     assert!(Arc::ptr_eq(&changes.ticking_stopped[0], &entity));
-    manager.tick_entities(2, true, false);
+    manager.tick_entities(2, true, false, 0);
     assert_eq!(entity.tick_count(), 1);
 
     let changes = manager.update_chunk_visibility(chunk, EntityVisibility::Hidden);

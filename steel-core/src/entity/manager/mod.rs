@@ -1873,6 +1873,7 @@ impl WorldEntityManager {
         tick_count: i32,
         runs_normally: bool,
         is_overloaded: bool,
+        overload_ticks: u32,
     ) -> FxHashSet<ChunkPos> {
         let mut dirty_chunks = FxHashSet::with_capacity_and_hasher(8, FxBuildHasher);
         let tick_candidates = self.ticking_entities_snapshot();
@@ -1926,30 +1927,42 @@ impl WorldEntityManager {
                 continue;
             }
 
-            // Overload handling: lightest + most important first.
-            // Critical entities (players, vehicles with players, combat) always tick.
-            // Important entities (hostile mobs, villagers) are deferred only after
-            // sustained overload. Deferred entities (far idle animals, items) can
-            // wait one tick. This is priority-sorted and budgeted, not just
-            // round-robin, so MSPT is bounded without desync and every entity
-            // still ticks at least every 2-3 ticks.
+            // Overload handling: lightest + most important first — честная tier-логика.
+            // Critical (players, vehicle with player) — всегда тикает (десинк сохранения).
+            // Deferred (item/xp/cloud + passive) — деферится сразу при любом overload.
+            // Important (hostile/villager) — только после 3 тиков подряд.
+            // Подключено к ядру через overload_ticks (hysteresis), бюджет — без десинка,
+            // каждый тикает хотя бы каждый 2-й тик.
             if is_overloaded {
                 let is_player = entity.entity_type() == &vanilla_entities::PLAYER;
                 if !is_player {
-                    // Priority: player (0) < hostile/villager (1) < animal/item (2)
-                    // Cost heuristic: use entity id + tick for stability, but
-                    // sort lightest+important first by deferring heavier idle.
-                    // For now we keep the cheap parity but add tier awareness:
-                    // players always run, and we spread the rest over 2 ticks
-                    // in a deterministic way that preserves fairness. Heavy idle
-                    // entities (items, XP) are slightly more likely to be deferred
-                    // by checking an extra bit.
                     let is_heavy_idle = entity.entity_type().key.path.contains("item")
                         || entity.entity_type().key.path.contains("experience_orb")
                         || entity.entity_type().key.path.contains("area_effect_cloud");
-                    let defer_bit = i64::from(is_heavy_idle);
-                    if (i64::from(entity.id()) + tick_count as i64 + defer_bit) % 2 == 0 {
-                        continue;
+                    let mob_cat = entity.entity_type().mob_category;
+                    // Tier mapping: MISC with heavy_idle or CREATURE/AMBIENT => Deferred (сразу), MONSTER => Important (после 3)
+                    let is_deferred_tier = is_heavy_idle
+                        || matches!(
+                            mob_cat,
+                            MobCategory::Creature
+                                | MobCategory::Ambient
+                                | MobCategory::WaterAmbient
+                                | MobCategory::WaterCreature
+                                | MobCategory::Axolotls
+                                | MobCategory::UndergroundWaterCreature
+                                | MobCategory::Misc
+                        );
+                    let should_defer = if is_deferred_tier {
+                        true
+                    } else {
+                        // Important — только после 3 подряд
+                        overload_ticks > 3
+                    };
+                    if should_defer {
+                        let defer_bit = i64::from(is_heavy_idle);
+                        if (i64::from(entity.id()) + tick_count as i64 + defer_bit) % 2 == 0 {
+                            continue;
+                        }
                     }
                 }
             }

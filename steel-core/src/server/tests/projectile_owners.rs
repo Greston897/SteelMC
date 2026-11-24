@@ -100,8 +100,8 @@ fn assert_pearl_impact(owner_in_nether: bool, pearl_in_nether: bool, cached: boo
             .expect("register pearl");
         packets.lock().clear();
         // Tick the entity managers serially, isolating lookup from world scheduling (#729).
-        overworld.entity_manager().tick_entities(1, true, false);
-        nether.entity_manager().tick_entities(1, true, false);
+        overworld.entity_manager().tick_entities(1, true, false, 0);
+        nether.entity_manager().tick_entities(1, true, false, 0);
         assert!(pearl.is_removed());
         assert!(Arc::ptr_eq(&player.get_world(), pearl_world));
         assert_eq!(player.position(), DVec3::new(0.5, 65.25, 0.5));

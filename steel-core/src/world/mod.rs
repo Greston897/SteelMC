@@ -1496,11 +1496,17 @@ impl World {
         runs_normally: bool,
     ) -> WorldGameTickTimings {
         let world_start = Instant::now();
-        let is_overloaded = self
+        let (is_overloaded, overload_ticks) = self
             .server
             .get()
             .and_then(Weak::upgrade)
-            .is_some_and(|s| s.is_overloaded.load(Ordering::Relaxed));
+            .map(|s| {
+                (
+                    s.is_overloaded.load(Ordering::Relaxed),
+                    s.overload_tick_count.load(Ordering::Relaxed),
+                )
+            })
+            .unwrap_or((false, 0));
         // Lightest + critical first: border/weather/time are tiny and affect
         // player position/time sync, so they always run.
         let lookup_cache_scope = GameplayChunkLookupCacheScope::enter(&self.chunk_map);
@@ -1549,9 +1555,12 @@ impl World {
         let entity_tick = {
             let _span = tracing::trace_span!("entity_tick").entered();
             let start = Instant::now();
-            let dirty_chunks =
-                self.entity_manager
-                    .tick_entities(tick_count as i32, runs_normally, is_overloaded);
+            let dirty_chunks = self.entity_manager.tick_entities(
+                tick_count as i32,
+                runs_normally,
+                is_overloaded,
+                overload_ticks,
+            );
             for chunk in dirty_chunks {
                 self.mark_chunk_dirty(chunk);
             }
