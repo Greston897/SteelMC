@@ -97,7 +97,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use std::fs::read;
 use std::sync::OnceLock;
 use std::sync::atomic::Ordering::Relaxed;
-use std::sync::atomic::{AtomicBool, AtomicI32};
+use std::sync::atomic::{AtomicBool, AtomicI32, AtomicU32};
 use std::{
     collections::BTreeSet,
     io, mem,
@@ -288,6 +288,8 @@ pub async fn test_server_with_worlds_and_config(
         player_admission_changed: Notify::new(),
         server_tick_changed: Notify::new(),
         tick_rate_manager: SyncRwLock::new(TickRateManager::new()),
+        is_overloaded: AtomicBool::new(false),
+        overload_tick_count: AtomicU32::new(0),
         tps_bar_enabled: AtomicBool::new(false),
         tps_bar_shown: SyncMutex::new(FxHashSet::default()),
         scoreboards,
@@ -550,6 +552,11 @@ pub struct Server {
     server_tick_changed: Notify,
     /// The tick rate manager for the server.
     pub tick_rate_manager: SyncRwLock<TickRateManager>,
+    /// Whether the server is currently overloaded (non-critical work should be deferred).
+    /// Set each tick by the run loop; subsystems read this lock-free.
+    pub is_overloaded: AtomicBool,
+    /// How many consecutive ticks have been overloaded.
+    pub overload_tick_count: AtomicU32,
     /// Whether the `/tpsbar` boss bar is enabled server-wide.
     pub tps_bar_enabled: AtomicBool,
     /// Players that already received the `add` action of the `/tpsbar` bar.
@@ -1078,6 +1085,8 @@ impl Server {
             server_tick_changed: Notify::new(),
             registry_cache,
             tick_rate_manager: SyncRwLock::new(TickRateManager::new()),
+            is_overloaded: AtomicBool::new(false),
+            overload_tick_count: AtomicU32::new(0),
             tps_bar_enabled: AtomicBool::new(false),
             tps_bar_shown: SyncMutex::new(FxHashSet::default()),
             player_idle_timeout: AtomicI32::new(0),

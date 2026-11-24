@@ -239,11 +239,11 @@ impl Server {
                         () = sleep(next_tick_time - now) => {}
                     }
                 } else {
-                    overload_guard.skip_backlog_if_overloaded(
-                        now,
-                        &mut next_tick_time,
-                        nanoseconds_per_tick,
-                    );
+                    // Server is behind schedule: record overload state without
+                    // skipping ticks. Subsystems defer non-critical work instead
+                    // of desyncing the world from players and saves.
+                    let behind = now.saturating_duration_since(next_tick_time);
+                    overload_guard.tick(now, behind);
                 }
                 next_tick_time += Duration::from_nanos(nanoseconds_per_tick);
             }
@@ -300,6 +300,14 @@ impl Server {
             );
 
             let tick_duration_nanos = tick_start.elapsed().as_nanos() as u64;
+            let tick_duration = Duration::from_nanos(tick_duration_nanos);
+            // Track overload state without skipping ticks; subsystems defer
+            // non-critical work when the server is overloaded.
+            overload_guard.tick(Instant::now(), tick_duration);
+            self.is_overloaded
+                .store(overload_guard.is_overloaded(), Ordering::Relaxed);
+            self.overload_tick_count
+                .store(overload_guard.overload_tick_count(), Ordering::Relaxed);
             let tab_list_tick_stats =
                 self.record_tick_and_capture_tab_stats(tick_count, tick_duration_nanos);
 

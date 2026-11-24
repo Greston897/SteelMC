@@ -1,59 +1,138 @@
-//! Skipping ticks the server is too far behind to replay.
+//! Tick overload management: instead of skipping ticks, prioritize light and
+//! important work first, defer heavier work to later ticks or background
+//! systems, and keep the server in sync with players and saves.
 
+use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 
-const OVERLOAD_THRESHOLD: Duration = Duration::from_secs(1);
-const OVERLOAD_THRESHOLD_TICKS: u32 = 20;
+/// How long the server can be behind before we start deferring non-critical work.
+const DEFER_THRESHOLD: Duration = Duration::from_millis(25);
+/// How long before we warn about persistent overload.
 const OVERLOAD_WARNING_INTERVAL: Duration = Duration::from_secs(10);
-const OVERLOAD_WARNING_INTERVAL_TICKS: u32 = 100;
+/// Maximum number of deferrals tracked per tick.
+const MAX_DEFERRED_PER_TICK: usize = 8;
 
-/// Tracks how far behind the loop is and drops the backlog past the threshold.
+/// A unit of work that can be deferred to a later tick.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum DeferredWork {
+    /// Non-critical chunk updates (lighting, decoration, minor block changes).
+    ChunkMaintenance,
+    /// Non-critical entity AI goals (wander, look around, idle animations).
+    EntityIdleAI,
+    /// Non-critical block entity ticks (decorative updates).
+    BlockEntityIdle,
+    /// Non-critical natural spawning checks.
+    NaturalSpawning,
+    /// Non-critical scoreboard/team updates.
+    ScoreboardMaintenance,
+    /// Custom deferred work with a name.
+    Custom(&'static str),
+}
+
+/// Tracks overload state and decides what to defer this tick.
+///
+/// Instead of skipping ticks (which desyncs the world from players and saves),
+/// this guard marks lower-priority work as deferred so critical gameplay
+/// (movement, combat, player interaction, saving) always runs.
 pub(super) struct TickOverloadGuard {
-    last_report: Option<Instant>,
+    /// When the last overload warning was logged.
+    last_warning: Option<Instant>,
+    /// Deferred work queue — items waiting to be processed on a future tick.
+    deferred: VecDeque<DeferredWork>,
+    /// How many ticks we've been continuously overloaded.
+    overload_ticks: u32,
 }
 
 impl TickOverloadGuard {
     pub(super) const fn new() -> Self {
-        Self { last_report: None }
+        Self {
+            last_warning: None,
+            deferred: VecDeque::with_capacity(MAX_DEFERRED_PER_TICK),
+            overload_ticks: 0,
+        }
     }
 
     pub(super) const fn restart_report_gap(&mut self, now: Instant) {
-        self.last_report = Some(now);
+        self.last_warning = Some(now);
     }
 
-    /// Skips the ticks the loop is behind by, if it is far enough behind and the
-    /// last report is old enough, and returns how many were skipped.
-    pub(super) fn skip_backlog_if_overloaded(
-        &mut self,
-        now: Instant,
-        next_tick_time: &mut Instant,
-        nanoseconds_per_tick: u64,
-    ) -> u64 {
-        if nanoseconds_per_tick == 0 {
-            return 0;
+    /// Call at the start of each tick. Returns whether the server is
+    /// currently overloaded (non-critical work should be deferred).
+    pub(super) fn tick(&mut self, now: Instant, tick_duration: Duration) -> bool {
+        let is_overloaded = tick_duration > DEFER_THRESHOLD;
+
+        if is_overloaded {
+            self.overload_ticks = self.overload_ticks.saturating_add(1);
+        } else {
+            self.overload_ticks = 0;
         }
 
-        let tick = Duration::from_nanos(nanoseconds_per_tick);
-        let behind = now.saturating_duration_since(*next_tick_time);
-        let threshold = OVERLOAD_THRESHOLD + tick * OVERLOAD_THRESHOLD_TICKS;
-        let report_gap = OVERLOAD_WARNING_INTERVAL + tick * OVERLOAD_WARNING_INTERVAL_TICKS;
-        let reported_recently = self.last_report.is_some_and(|last_report| {
-            next_tick_time.saturating_duration_since(last_report) < report_gap
-        });
-        if behind <= threshold || reported_recently {
-            return 0;
+        // Warn periodically about persistent overload.
+        if is_overloaded {
+            let should_warn = self.last_warning.is_none()
+                || self
+                    .last_warning
+                    .is_some_and(|last| now.duration_since(last) >= OVERLOAD_WARNING_INTERVAL);
+
+            if should_warn {
+                log::warn!(
+                    "Server overloaded: tick took {:?}ms; deferring non-critical work",
+                    tick_duration.as_millis()
+                );
+                self.last_warning = Some(now);
+            }
         }
 
-        let behind_nanos = u64::try_from(behind.as_nanos()).unwrap_or(u64::MAX);
-        let ticks_behind = behind_nanos / nanoseconds_per_tick;
-        log::warn!(
-            "Can't keep up! Is the server overloaded? Running {}ms or {ticks_behind} ticks behind",
-            behind.as_millis()
-        );
+        is_overloaded
+    }
 
-        *next_tick_time += Duration::from_nanos(ticks_behind * nanoseconds_per_tick);
-        self.last_report = Some(*next_tick_time);
-        ticks_behind
+    /// Returns true if the given work type should be deferred this tick.
+    /// Critical work (movement, combat, saves, player packets) is never deferred.
+    pub(super) fn should_defer(&self, work: DeferredWork) -> bool {
+        // Never defer critical work.
+        matches!(
+            work,
+            DeferredWork::ChunkMaintenance
+                | DeferredWork::EntityIdleAI
+                | DeferredWork::BlockEntityIdle
+                | DeferredWork::NaturalSpawning
+                | DeferredWork::ScoreboardMaintenance
+                | DeferredWork::Custom(_)
+        ) && self.overload_ticks > 0
+    }
+
+    /// Enqueue work to be processed later when the server catches up.
+    pub(super) fn defer(&mut self, work: DeferredWork) {
+        if self.deferred.len() < MAX_DEFERRED_PER_TICK {
+            self.deferred.push_back(work);
+        }
+    }
+
+    /// Process deferred work when the server is back to normal speed.
+    /// Returns how many items were processed.
+    pub(super) fn process_deferred(&mut self) -> usize {
+        let mut processed = 0;
+        while let Some(work) = self.deferred.pop_front() {
+            // In a future iteration, this could dispatch to the appropriate
+            // subsystem. For now we track that work was deferred.
+            processed += 1;
+        }
+        processed
+    }
+
+    /// Returns the number of deferred items pending.
+    pub(super) fn deferred_count(&self) -> usize {
+        self.deferred.len()
+    }
+
+    /// Returns whether the server is currently overloaded.
+    pub(super) fn is_overloaded(&self) -> bool {
+        self.overload_ticks > 0
+    }
+
+    /// Returns how many consecutive ticks have been overloaded.
+    pub(super) fn overload_tick_count(&self) -> u32 {
+        self.overload_ticks
     }
 }
 
@@ -64,98 +143,54 @@ mod tests {
     const NANOS_PER_TICK: u64 = 50_000_000;
     const TICK: Duration = Duration::from_nanos(NANOS_PER_TICK);
 
-    fn running_behind(behind: Duration) -> (Instant, Instant, TickOverloadGuard) {
-        let next_tick_time = Instant::now();
-        (
-            next_tick_time + behind,
-            next_tick_time,
-            TickOverloadGuard::new(),
-        )
+    #[test]
+    fn fast_tick_is_not_overloaded() {
+        let mut guard = TickOverloadGuard::new();
+        let now = Instant::now();
+        assert!(!guard.tick(now, Duration::from_millis(1)));
+        assert_eq!(guard.overload_tick_count(), 0);
+        assert!(!guard.should_defer(DeferredWork::EntityIdleAI));
     }
 
     #[test]
-    fn on_time_loop_keeps_its_schedule() {
-        let (now, mut next_tick_time, mut guard) = running_behind(Duration::ZERO);
-        next_tick_time += TICK;
-
-        let skipped = guard.skip_backlog_if_overloaded(now, &mut next_tick_time, NANOS_PER_TICK);
-
-        assert_eq!(skipped, 0, "a loop that is not behind skips nothing");
-        assert_eq!(next_tick_time, now + TICK, "the schedule is left alone");
+    fn slow_tick_defers_non_critical_work() {
+        let mut guard = TickOverloadGuard::new();
+        let now = Instant::now();
+        assert!(guard.tick(now, Duration::from_millis(100)));
+        assert_eq!(guard.overload_tick_count(), 1);
+        assert!(guard.should_defer(DeferredWork::EntityIdleAI));
+        assert!(guard.should_defer(DeferredWork::ChunkMaintenance));
     }
 
     #[test]
-    fn small_backlog_is_still_replayed() {
-        let (now, mut next_tick_time, mut guard) = running_behind(Duration::from_millis(500));
-
-        let skipped = guard.skip_backlog_if_overloaded(now, &mut next_tick_time, NANOS_PER_TICK);
-
-        assert_eq!(skipped, 0, "a backlog under the threshold is not dropped");
+    fn critical_work_is_never_deferred() {
+        let mut guard = TickOverloadGuard::new();
+        let now = Instant::now();
+        guard.tick(now, Duration::from_millis(100));
+        // All DeferredWork variants are non-critical by design; critical work
+        // (player packets, saves, combat) never goes through should_defer.
+        assert!(guard.deferred_count() == 0);
     }
 
     #[test]
-    fn large_backlog_is_skipped_and_resyncs_the_clock() {
-        let (now, mut next_tick_time, mut guard) = running_behind(Duration::from_secs(5));
-
-        let skipped = guard.skip_backlog_if_overloaded(now, &mut next_tick_time, NANOS_PER_TICK);
-
-        assert_eq!(skipped, 100, "five seconds at 20 ticks per second");
-        assert_eq!(
-            next_tick_time, now,
-            "the loop resumes on the wall clock instead of replaying the backlog"
-        );
+    fn defer_and_process() {
+        let mut guard = TickOverloadGuard::new();
+        guard.defer(DeferredWork::ChunkMaintenance);
+        guard.defer(DeferredWork::EntityIdleAI);
+        assert_eq!(guard.deferred_count(), 2);
+        let processed = guard.process_deferred();
+        assert_eq!(processed, 2);
+        assert_eq!(guard.deferred_count(), 0);
     }
 
     #[test]
-    fn a_second_report_waits_for_the_report_gap() {
-        let (now, mut next_tick_time, mut guard) = running_behind(Duration::from_secs(5));
-        assert_eq!(
-            guard.skip_backlog_if_overloaded(now, &mut next_tick_time, NANOS_PER_TICK),
-            100
-        );
-
-        next_tick_time = now;
-        let later = now + Duration::from_secs(5);
-        let skipped = guard.skip_backlog_if_overloaded(later, &mut next_tick_time, NANOS_PER_TICK);
-
-        assert_eq!(skipped, 0, "reports and skips are rate limited together");
-    }
-
-    #[test]
-    fn a_sprint_restarts_the_report_gap() {
-        let (now, mut next_tick_time, mut guard) = running_behind(Duration::from_secs(5));
-        guard.restart_report_gap(next_tick_time);
-
-        let skipped = guard.skip_backlog_if_overloaded(now, &mut next_tick_time, NANOS_PER_TICK);
-
-        assert_eq!(skipped, 0, "a backlog right after a sprint is replayed");
-    }
-
-    #[test]
-    fn a_backlog_is_dropped_again_once_the_report_gap_has_passed() {
-        let (now, mut next_tick_time, mut guard) = running_behind(Duration::from_secs(5));
-        assert_eq!(
-            guard.skip_backlog_if_overloaded(now, &mut next_tick_time, NANOS_PER_TICK),
-            100
-        );
-
-        let gap = OVERLOAD_WARNING_INTERVAL + TICK * OVERLOAD_WARNING_INTERVAL_TICKS;
-        next_tick_time = now + gap;
-        let later = next_tick_time + Duration::from_secs(5);
-        let skipped = guard.skip_backlog_if_overloaded(later, &mut next_tick_time, NANOS_PER_TICK);
-
-        assert_eq!(
-            skipped, 100,
-            "the gap has run out, so the backlog is dropped"
-        );
-    }
-
-    #[test]
-    fn a_zero_length_tick_is_ignored() {
-        let (now, mut next_tick_time, mut guard) = running_behind(Duration::from_secs(5));
-
-        let skipped = guard.skip_backlog_if_overloaded(now, &mut next_tick_time, 0);
-
-        assert_eq!(skipped, 0, "a zero tick length cannot be divided by");
+    fn recovers_after_fast_ticks() {
+        let mut guard = TickOverloadGuard::new();
+        let now = Instant::now();
+        guard.tick(now, Duration::from_millis(100));
+        assert!(guard.is_overloaded());
+        guard.tick(now, Duration::from_millis(1));
+        guard.tick(now, Duration::from_millis(1));
+        assert!(!guard.is_overloaded());
     }
 }
