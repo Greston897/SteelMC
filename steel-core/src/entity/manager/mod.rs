@@ -469,7 +469,7 @@ struct EntityEntry {
 }
 
 /// Pre-tick manager state resolved under one state lock.
-#[allow(dead_code, reason = "tick context")]
+#[expect(dead_code, reason = "tick context")]
 struct TickContext {
     manager_chunk: Option<ChunkPos>,
 }
@@ -905,7 +905,7 @@ impl WorldEntityManager {
         }
 
         let mut retained = Vec::with_capacity(root_ids.len());
-        let mut visited = FxHashSet::with_capacity_and_hasher(root_ids.len(), Default::default());
+        let mut visited = FxHashSet::with_capacity_and_hasher(root_ids.len(), FxBuildHasher::default());
         for entity_id in root_ids {
             Self::retain_unloading_entity_tree(
                 &mut state,
@@ -1867,20 +1867,21 @@ impl WorldEntityManager {
     /// When `is_overloaded` is true the tick prioritizes lightest + critical
     /// first (players, combat) and round-robin defers idle AI to keep MSPT
     /// low without desync – every entity still ticks at least every 2 ticks.
+    #[expect(clippy::cast_lossless, reason = "u64 to i64")]
     pub fn tick_entities(
         &self,
         tick_count: i32,
         runs_normally: bool,
         is_overloaded: bool,
     ) -> FxHashSet<ChunkPos> {
-        let mut dirty_chunks = FxHashSet::with_capacity_and_hasher(8, Default::default());
+        let mut dirty_chunks = FxHashSet::with_capacity_and_hasher(8, FxBuildHasher::default());
         let tick_candidates = self.ticking_entities_snapshot();
 
         // Single state read for all entity context lookups during this tick.
         // Avoids N separate read-lock acquisitions (one per entity) on the hot path.
         let state = self.state.read();
         let mut entity_ctx: FxHashMap<i32, (Option<ChunkPos>, bool, EntityOwnership)> =
-            FxHashMap::with_capacity_and_hasher(tick_candidates.len(), Default::default());
+            FxHashMap::with_capacity_and_hasher(tick_candidates.len(), FxBuildHasher::default());
         for entity in &tick_candidates {
             if let Some(entry) = state.live_by_id.get(entity.id()) {
                 if Self::has_pending_world_change_in_vehicle_chain(&entry.entity) {
@@ -1899,7 +1900,8 @@ impl WorldEntityManager {
         drop(state);
 
         for entity in tick_candidates {
-            let Some((entity_chunk, _in_tick_list, _ownership)) = entity_ctx.get(&entity.id()) else {
+            let Some((entity_chunk, _in_tick_list, _ownership)) = entity_ctx.get(&entity.id())
+            else {
                 continue;
             };
 
@@ -1935,7 +1937,7 @@ impl WorldEntityManager {
                 // spreads load evenly without per-tick sorting overhead.
                 // Critical entities (players) are exempt – check before skipping.
                 let is_player = entity.entity_type() == &vanilla_entities::PLAYER;
-                if !is_player && (entity.id() as i64 + tick_count as i64) % 2 == 0 {
+                if !is_player && (i64::from(entity.id()) + tick_count as i64) % 2 == 0 {
                     continue;
                 }
             }

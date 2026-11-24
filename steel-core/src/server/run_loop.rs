@@ -21,6 +21,7 @@ use steel_registry::vanilla_custom_stats;
 use steel_registry::vanilla_game_rules::COMMAND_BLOCK_OUTPUT;
 use steel_utils::threading::worker_threads_for_available;
 use steel_utils::translations;
+use spawn_blocking;
 use tokio::sync::oneshot::Sender;
 
 impl Server {

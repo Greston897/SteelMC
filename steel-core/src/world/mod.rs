@@ -210,6 +210,7 @@ use level_effects::sound_is_within_range;
 use portals::{
     closest_portal_candidate, nether_portal_creation_scan_origin, nether_portal_frame_offset_pos,
 };
+use std::sync::Weak;
 use std::sync::OnceLock;
 
 const fn initialize_border_packet(snapshot: WorldBorderSnapshot) -> CInitializeBorder {
@@ -1499,7 +1500,7 @@ impl World {
         let is_overloaded = self
             .server
             .get()
-            .and_then(std::sync::Weak::upgrade)
+            .and_then(Weak::upgrade)
             .is_some_and(|s| s.is_overloaded.load(Ordering::Relaxed));
         // Lightest + critical first: border/weather/time are tiny and affect
         // player position/time sync, so they always run.

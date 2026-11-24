@@ -1081,7 +1081,7 @@ fn migrate_level_data(data: &mut LevelData, from_version: u32) -> io::Result<()>
             _ => {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    format!("no migration path from data version {version} to {DATA_VERSION}",),
+                    format!("no migration path from data version {version} to {DATA_VERSION}",)
                 ));
             }
         }
@@ -1095,6 +1095,8 @@ fn migrate_level_data(data: &mut LevelData, from_version: u32) -> io::Result<()>
 ///
 /// Version 0 worlds have no `data_version` field at all (it deserializes to
 /// 0 via `#[serde(default)]`). This step marks them as migrated to version 1.
+#[expect(clippy::missing_const_for_fn, reason = "io Result not const")]
+#[expect(clippy::unnecessary_wraps, reason = "migration api")]
 fn migrate_v0_to_v1(_data: &mut LevelData) -> io::Result<()> {
     // Version 1 is the initial data format; no field changes required.
     // Future migrations would transform fields here.

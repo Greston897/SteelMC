@@ -10,6 +10,7 @@
 
 use std::{borrow::Cow, sync::Arc};
 
+use PERMISSIONS_REQUIRES_PLAYER;
 use steel_utils::Identifier;
 use text_components::{
     Modifier, TextComponent, format::Color, interactivity::HoverEvent,

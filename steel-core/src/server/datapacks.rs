@@ -335,7 +335,7 @@ pub(crate) struct MacroDef {
 /// `pack.mcmeta` `overlays` section: overlays let a pack merge resources from
 /// other packs into its own namespace space.
 #[derive(Debug, Clone, Default, Deserialize)]
-#[allow(dead_code, reason = "overlay metadata not yet applied")]
+#[expect(dead_code, reason = "overlay metadata not yet applied")]
 pub(crate) struct OverlayDef {
     #[serde(default)]
     pub(crate) sources: Vec<String>,
@@ -348,7 +348,7 @@ pub(crate) struct OverlayDef {
 /// `pack.mcmeta` `filter` section: filters let a pack include or exclude
 /// resources matching patterns.
 #[derive(Debug, Clone, Default, Deserialize)]
-#[allow(dead_code, reason = "filter metadata not yet applied")]
+#[expect(dead_code, reason = "filter metadata not yet applied")]
 pub(crate) struct FilterDef {
     #[serde(default)]
     pub(crate) include: Vec<String>,
@@ -498,9 +498,9 @@ fn load_allowed_symlinks(root: &Path) -> Vec<PathBuf> {
         return Vec::new();
     };
     text.lines()
-        .map(|line| line.trim())
+        .map(str::trim)
         .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        .map(|line| PathBuf::from(line))
+        .map(PathBuf::from)
         .collect()
 }
 
@@ -597,7 +597,7 @@ fn load_resource(
         && text
             .lines()
             .next()
-            .map_or(false, |l| l.starts_with("#macro"))
+            .is_some_and(|l| l.starts_with("#macro"))
     {
         // Vanilla `FunctionBuilder.addMacro`: a function whose first line is
         // `#macro <name> <args...>` defines a `$`-macro rather than a runnable
@@ -607,7 +607,6 @@ fn load_resource(
         let macro_line = lines.next().unwrap_or("");
         let parts: Vec<&str> = macro_line
             .trim_start_matches('#')
-            .trim()
             .split_whitespace()
             .collect();
         if parts.len() >= 2 {
@@ -619,7 +618,7 @@ fn load_resource(
                 }
             };
             let args: Vec<String> = parts[2..].iter().map(|s| (*s).to_owned()).collect();
-            let body: Vec<String> = lines.map(|l| l.to_owned()).collect();
+            let body: Vec<String> = lines.map(std::borrow::ToOwned::to_owned).collect();
             state.macros.insert(macro_name, MacroDef { args, body });
         }
     } else {
@@ -824,11 +823,13 @@ fn load_zip(
     if !is_pack {
         return None;
     }
-    let incompatible = pack_format.map_or(false, |pf| pf > PACK_FORMAT_CURRENT);
+    let incompatible = pack_format.is_some_and(|pf| pf > PACK_FORMAT_CURRENT);
 
-    let mut resources = PackResources::default();
-    resources.overlays = overlays.map(|o| vec![o]).unwrap_or_default();
-    resources.filter = filter;
+    let mut resources = PackResources {
+        overlays: overlays.map_or_default(|o| vec![o]),
+        filter,
+        ..Default::default()
+    };
     let mut entries = Vec::new();
     for index in 0..archive.len() {
         let Ok(entry) = archive.by_index(index) else {
@@ -1059,10 +1060,12 @@ impl FunctionPacks {
             if !is_pack {
                 continue;
             }
-            let incompatible = pack_format.map_or(false, |pf| pf > PACK_FORMAT_CURRENT);
-            let mut resources = PackResources::default();
-            resources.overlays = overlays.map(|o| vec![o]).unwrap_or_default();
-            resources.filter = filter;
+            let incompatible = pack_format.is_some_and(|pf| pf > PACK_FORMAT_CURRENT);
+            let mut resources = PackResources {
+                overlays: overlays.map_or_default(|o| vec![o]),
+                filter,
+                ..Default::default()
+            };
             for namespace in entries(&path.join("data"), allowed_symlinks) {
                 let Ok(namespace_type) = namespace.file_type() else {
                     continue;
@@ -1387,7 +1390,7 @@ impl FunctionPacks {
                     function
                         .commands
                         .iter()
-                        .map(|line| (*line).to_owned())
+                        .map(|line| (*line).to_owned()) // expect(clippy::redundant_closure) // clippy allow
                         .collect::<Vec<_>>()
                         .into()
                 })
@@ -1525,28 +1528,28 @@ impl Default for RuntimeRegistries {
 
 /// Opaque snapshot of a recipe registry; populated from data packs on reload.
 #[derive(Debug, Default, Clone)]
-#[allow(missing_docs, reason = "internal snapshot")]
+#[expect(missing_docs, reason = "internal snapshot")]
 pub struct RecipeRegistrySnapshot {
     pub entries: BTreeMap<Identifier, Vec<u8>>,
 }
 
 /// Opaque snapshot of a loot table registry; populated from data packs on reload.
 #[derive(Debug, Default, Clone)]
-#[allow(missing_docs, reason = "internal snapshot")]
+#[expect(missing_docs, reason = "internal snapshot")]
 pub struct LootTableRegistrySnapshot {
     pub entries: BTreeMap<Identifier, Vec<u8>>,
 }
 
 /// Opaque snapshot of an advancement registry; populated from data packs on reload.
 #[derive(Debug, Default, Clone)]
-#[allow(missing_docs, reason = "internal snapshot")]
+#[expect(missing_docs, reason = "internal snapshot")]
 pub struct AdvancementRegistrySnapshot {
     pub entries: BTreeMap<Identifier, Vec<u8>>,
 }
 
 /// Opaque snapshot of a tag registry; populated from data packs on reload.
 #[derive(Debug, Default, Clone)]
-#[allow(missing_docs, reason = "internal snapshot")]
+#[expect(missing_docs, reason = "internal snapshot")]
 pub struct TagRegistrySnapshot {
     pub entries: BTreeMap<Identifier, Vec<u8>>,
 }

@@ -184,9 +184,10 @@ impl WorldBlockEntityTickers {
         let is_overloaded = world
             .server
             .get()
-            .and_then(std::sync::Weak::upgrade)
+            .and_then(Weak::upgrade)
             .is_some_and(|s| {
-                use std::sync::atomic::Ordering::Relaxed;
+                use std::sync::Weak;
+use std::sync::atomic::Ordering::Relaxed;
                 s.is_overloaded.load(Relaxed) && s.overload_tick_count.load(Relaxed) > 3
             });
         let border = world.world_border_snapshot();
