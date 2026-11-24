@@ -99,6 +99,8 @@ pub const RECIPE_CRAFTED: Identifier = trigger("recipe_crafted");
 pub const RECIPE_UNLOCKED: Identifier = trigger("recipe_unlocked");
 /// `minecraft:ride_entity_in_lava`
 pub const RIDE_ENTITY_IN_LAVA: Identifier = trigger("ride_entity_in_lava");
+/// `minecraft:raid_win`
+pub const RAID_WIN: Identifier = trigger("raid_win");
 /// `minecraft:shot_crossbow`
 pub const SHOT_CROSSBOW: Identifier = trigger("shot_crossbow");
 /// `minecraft:slept_in_bed`
@@ -176,6 +178,7 @@ pub static ALL: &[&Identifier] = &[
     &RECIPE_CRAFTED,
     &RECIPE_UNLOCKED,
     &RIDE_ENTITY_IN_LAVA,
+    &RAID_WIN,
     &SHOT_CROSSBOW,
     &SLEPT_IN_BED,
     &SLIDE_DOWN_BLOCK,
@@ -241,6 +244,7 @@ pub const VANILLA_26_3: &[&str] = &[
     "player_killed_entity",
     "player_sheared_equipment",
     "recipe_crafted",
+    "raid_win",
     "recipe_unlocked",
     "ride_entity_in_lava",
     "shot_crossbow",

@@ -13,7 +13,8 @@ use steel_registry::data_components::vanilla_components::ENCHANTMENTS;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_blocks::SNOW;
-use steel_registry::vanilla_criteria_triggers::HERO_OF_THE_VILLAGE;
+use steel_registry::vanilla_criteria_triggers::{HERO_OF_THE_VILLAGE, RAID_WIN};
+use steel_registry::vanilla_custom_stats;
 use steel_registry::vanilla_game_rules::RAIDS;
 use steel_registry::vanilla_items::WHITE_BANNER;
 use steel_utils::locks::SyncMutex;
@@ -771,6 +772,11 @@ impl RaidManager {
                 &HERO_OF_THE_VILLAGE,
                 &TriggerContext::at(&player.get_world(), player.position()),
             );
+            player.trigger_advancement_with_context(
+                &RAID_WIN,
+                &TriggerContext::at(&player.get_world(), player.position()),
+            );
+            player.award_custom_stat(&vanilla_custom_stats::RAID_WIN);
             true
         });
     }
@@ -1014,6 +1020,37 @@ fn play_raid_horn(world: &Arc<World>, raid: &Raid, pos: BlockPos) {
     });
 }
 
+/// Vanilla `SoundEvents.RAID_SPAWN`: played when a wave of raiders spawns.
+fn play_raid_spawn_sound(world: &Arc<World>, raid: &Raid, pos: BlockPos) {
+    use steel_protocol::packets::game::{CSound, SoundSource};
+    let Some(sound) = steel_registry::REGISTRY
+        .sound_events
+        .by_key(&steel_utils::Identifier::vanilla_static("event.raid.spawn"))
+    else {
+        return;
+    };
+    let origin = pos.0.as_dvec3() + glam::DVec3::splat(0.5);
+    let seed = rand::random();
+    world.players.iter_players(|_, player| {
+        let position = player.position();
+        let dx = origin.x - position.x;
+        let dz = origin.z - position.z;
+        if dx * dx + dz * dz <= 64.0 * 64.0
+            || within_village_radius(raid.center, player.block_position().0)
+        {
+            player.send_packet(CSound::new(
+                sound,
+                SoundSource::Hostile,
+                origin,
+                64.0,
+                1.0,
+                seed,
+            ));
+        }
+        true
+    });
+}
+
 #[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
 fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
     let wave = raid.waves_spawned + 1;
@@ -1130,6 +1167,7 @@ fn spawn_wave(world: &Arc<World>, raid: &mut Raid, pos: BlockPos) {
     // Failure to create mobs must never manufacture progress.
     if !raid.raiders.is_empty() {
         raid.waves_spawned = wave;
+        play_raid_spawn_sound(world, raid, pos);
         play_raid_horn(world, raid, pos);
     }
 }
