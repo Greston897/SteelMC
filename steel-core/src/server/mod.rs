@@ -757,8 +757,20 @@ impl Server {
         reloaded.push(format!(
             "{} runtime registry snapshot(s) ready for atomic swap",
             self.function_packs.registries.recipes.load().entries.len()
-                + self.function_packs.registries.loot_tables.load().entries.len()
-                + self.function_packs.registries.advancements.load().entries.len()
+                + self
+                    .function_packs
+                    .registries
+                    .loot_tables
+                    .load()
+                    .entries
+                    .len()
+                + self
+                    .function_packs
+                    .registries
+                    .advancements
+                    .load()
+                    .entries
+                    .len()
                 + self.function_packs.registries.tags.load().entries.len()
         ));
         let mut changed_rules = 0_usize;

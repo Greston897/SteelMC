@@ -15,6 +15,7 @@ use crate::command::BackgroundCommandResult;
 use crate::server::schedule::ScheduleMode::Append;
 
 use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
 use std::sync::atomic::Ordering::Relaxed;
 use steel_registry::vanilla_custom_stats;
 use steel_registry::vanilla_game_rules::COMMAND_BLOCK_OUTPUT;
@@ -261,9 +262,12 @@ impl Server {
             self.tick_pending_command_executions(&mut pending_command_executions);
             for function in self.function_packs.tick_functions(runs_normally) {
                 // Avoid `format!` overhead in hot tick: pre-allocate exact capacity.
-                let mut command = String::with_capacity(9 + function.len());
+                let mut command =
+                    String::with_capacity(9 + function.namespace.len() + 1 + function.path.len());
                 command.push_str("function ");
-                command.push_str(&function);
+                command.push_str(&function.namespace);
+                command.push(':');
+                command.push_str(&function.path);
                 if let Err(error) = self.submit_command(CommandSender::Console, command) {
                     log::error!("Could not queue datapack function {function}: {error:?}");
                 }

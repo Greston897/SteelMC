@@ -44,7 +44,6 @@ use std::{
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
-        RwLock,
     },
 };
 use steel_utils::Identifier;
@@ -335,7 +334,7 @@ pub(crate) struct MacroDef {
 
 /// `pack.mcmeta` `overlays` section: overlays let a pack merge resources from
 /// other packs into its own namespace space.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 pub(crate) struct OverlayDef {
     #[serde(default)]
     pub(crate) sources: Vec<String>,
@@ -347,7 +346,7 @@ pub(crate) struct OverlayDef {
 
 /// `pack.mcmeta` `filter` section: filters let a pack include or exclude
 /// resources matching patterns.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 pub(crate) struct FilterDef {
     #[serde(default)]
     pub(crate) include: Vec<String>,
@@ -451,7 +450,10 @@ fn entries(path: &Path, allowed_symlinks: &[PathBuf]) -> Vec<fs::DirEntry> {
                 return Vec::new();
             }
         };
-        if !allowed_symlinks.iter().any(|allowed| target.starts_with(allowed)) {
+        if !allowed_symlinks
+            .iter()
+            .any(|allowed| target.starts_with(allowed))
+        {
             log::warn!(
                 "Ignoring symbolic data pack directory {}: target {} not in allowed_symlinks.txt",
                 path.display(),
@@ -524,7 +526,14 @@ fn load_tree(
             continue;
         }
         if file_type.is_dir() {
-            load_tree(state, namespace, base, &entry.path(), tags, allowed_symlinks);
+            load_tree(
+                state,
+                namespace,
+                base,
+                &entry.path(),
+                tags,
+                allowed_symlinks,
+            );
             continue;
         }
         let path = entry.path();
@@ -551,7 +560,14 @@ fn load_tree(
         let Some(text) = read_resource(&path) else {
             continue;
         };
-        load_resource(state, namespace, key, &text, &path.display().to_string(), tags);
+        load_resource(
+            state,
+            namespace,
+            key,
+            &text,
+            &path.display().to_string(),
+            tags,
+        );
     }
 }
 
@@ -575,14 +591,23 @@ fn load_resource(
             }
             Err(error) => log::warn!("Couldn't read function tag {source}: {error}"),
         }
-    } else if text.trim_start().starts_with('#') && text.lines().next().map_or(false, |l| l.starts_with("#macro")) {
+    } else if text.trim_start().starts_with('#')
+        && text
+            .lines()
+            .next()
+            .map_or(false, |l| l.starts_with("#macro"))
+    {
         // Vanilla `FunctionBuilder.addMacro`: a function whose first line is
         // `#macro <name> <args...>` defines a `$`-macro rather than a runnable
         // function. The macro name and args come from the comment; the body is
         // the remaining lines.
         let mut lines = text.lines();
         let macro_line = lines.next().unwrap_or("");
-        let parts: Vec<&str> = macro_line.trim_start_matches('#').trim().split_whitespace().collect();
+        let parts: Vec<&str> = macro_line
+            .trim_start_matches('#')
+            .trim()
+            .split_whitespace()
+            .collect();
         if parts.len() >= 2 {
             let macro_name: Identifier = match format!("{namespace}:{}", parts[1]).parse() {
                 Ok(id) => id,
@@ -591,7 +616,7 @@ fn load_resource(
                     return;
                 }
             };
-            let args: Vec<String> = parts[2..].iter().map(|s| s.to_owned()).collect();
+            let args: Vec<String> = parts[2..].iter().map(|s| (*s).to_owned()).collect();
             let body: Vec<String> = lines.map(|l| l.to_owned()).collect();
             state.macros.insert(macro_name, MacroDef { args, body });
         }
@@ -652,9 +677,7 @@ fn parse_function_lines(
             let macro_name: Identifier = match parts[0][1..].parse() {
                 Ok(id) => id,
                 Err(error) => {
-                    return Err(format!(
-                        "unknown macro {} on line {line_number}: {error}"
-                    ))
+                    return Err(format!("unknown macro {} on line {line_number}: {error}", parts[0]));
                 }
             };
             let Some(macro_def) = macros.get(&macro_name) else {
@@ -709,7 +732,13 @@ fn read_bounded_text(reader: impl Read, source: &str) -> Result<String, String> 
 fn pack_metadata(
     metadata: &str,
     source: &str,
-) -> (bool, String, Option<u32>, Option<OverlayDef>, Option<FilterDef>) {
+) -> (
+    bool,
+    String,
+    Option<u32>,
+    Option<OverlayDef>,
+    Option<FilterDef>,
+) {
     let value: serde_json::Value = match serde_json::from_str(metadata) {
         Ok(value) => value,
         Err(error) => {
@@ -754,7 +783,7 @@ fn pack_metadata(
 }
 
 /// Reads a resource file as UTF-8 text.
-
+///
 /// Loads function resources from an archive without extracting its paths.
 /// Returns `None` when the entry is not a readable data pack, matching
 /// vanilla's `Pack.readMetaAndCreate` returning null for a non-pack entry.
@@ -793,7 +822,7 @@ fn load_zip(
     let incompatible = pack_format.map_or(false, |pf| pf > PACK_FORMAT_CURRENT);
 
     let mut resources = PackResources::default();
-    resources.overlays = overlays.unwrap_or_default();
+    resources.overlays = overlays.map(|o| vec![o]).unwrap_or_default();
     resources.filter = filter;
     let mut entries = Vec::new();
     for index in 0..archive.len() {
@@ -925,6 +954,7 @@ impl FunctionPacks {
             index: ArcSwap::default(),
             state: ArcSwap::default(),
             selection: SyncMutex::new(config.clone()),
+            registries: RuntimeRegistries::default(),
         };
         let index = Self::prepare_index(root, &allowed);
         let selected = Self::initial_selection(&index, &config);
@@ -984,10 +1014,7 @@ impl FunctionPacks {
     ///
     /// Unreadable entries are logged and skipped rather than failing discovery,
     /// so one broken pack cannot stop the server from starting.
-    fn prepare_index(
-        root: &Path,
-        allowed_symlinks: &[PathBuf],
-    ) -> FunctionPackIndex {
+    fn prepare_index(root: &Path, allowed_symlinks: &[PathBuf]) -> FunctionPackIndex {
         let mut packs = Vec::new();
         for entry in entries(root, allowed_symlinks) {
             let Ok(file_type) = entry.file_type() else {
@@ -1027,10 +1054,9 @@ impl FunctionPacks {
             if !is_pack {
                 continue;
             }
-            let incompatible = pack_format
-                .map_or(false, |pf| pf > PACK_FORMAT_CURRENT);
+            let incompatible = pack_format.map_or(false, |pf| pf > PACK_FORMAT_CURRENT);
             let mut resources = PackResources::default();
-            resources.overlays = overlays.unwrap_or_default();
+            resources.overlays = overlays.map(|o| vec![o]).unwrap_or_default();
             resources.filter = filter;
             for namespace in entries(&path.join("data"), allowed_symlinks) {
                 let Ok(namespace_type) = namespace.file_type() else {
@@ -1054,7 +1080,14 @@ impl FunctionPacks {
                     allowed_symlinks,
                 );
                 let tags = namespace.path().join("tags/function");
-                load_tree(&mut resources, &namespace_name, &tags, &tags, true, allowed_symlinks);
+                load_tree(
+                    &mut resources,
+                    &namespace_name,
+                    &tags,
+                    &tags,
+                    true,
+                    allowed_symlinks,
+                );
             }
             packs.push(AvailablePack {
                 info: PackInfo {
@@ -1462,6 +1495,7 @@ enum PlaceError {
 /// data packs. Steel's baked registries are immutable at startup; this struct
 /// provides the atomic swap target for a future data-pack-driven reload
 /// without requiring `parking_lot` mutexes on the tick path.
+#[derive(Debug)]
 pub struct RuntimeRegistries {
     /// Recipes (`data/*/recipes/*.json`), swapped atomically on reload.
     pub recipes: ArcSwap<Arc<RecipeRegistrySnapshot>>,
@@ -2027,11 +2061,14 @@ mod tests {
     #[test]
     fn parse_function_lines_matches_vanilla_line_rules() -> Result<(), Box<dyn Error>> {
         assert_eq!(
-            parse_function_lines("# comment\n\n  return 1  \n", &BTreeMap::new()).map_err(|e| io::Error::other(e))?,
+            parse_function_lines("# comment\n\n  return 1  \n", &BTreeMap::new())
+                .map_err(|e| io::Error::other(e))?,
             vec!["return 1".to_owned()]
         );
         assert_eq!(
-            parse_function_lines("say hello \\\n  world", &BTreeMap::new()).map_err(|e| io::Error::other(e))?,
+            parse_function_lines("say hello \\\n  world", &BTreeMap::new())
+                .map_err(|e| io::Error::other(e))?,
+            vec!["say hello world".to_owned()]
         );
         assert!(parse_function_lines("say hi \\", &BTreeMap::new()).is_err());
         assert!(parse_function_lines("/return 1", &BTreeMap::new()).is_err());

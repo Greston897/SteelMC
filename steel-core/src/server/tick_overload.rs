@@ -202,7 +202,11 @@ impl TickOverloadGuard {
     /// Bounded – excess is dropped with a warning to cap RAM.
     pub(super) fn defer(&mut self, work: DeferredWork) {
         if self.deferred.len() >= MAX_DEFERRED_PER_TICK {
-            log::warn!("Deferred queue full ({}), dropping {:?}", self.deferred.len(), work);
+            log::warn!(
+                "Deferred queue full ({}), dropping {:?}",
+                self.deferred.len(),
+                work
+            );
             return;
         }
         // Keep queue sorted by (tier, cost) so lightest+important is at front.
@@ -273,7 +277,7 @@ impl TickOverloadGuard {
     }
 
     /// Exposes last tick duration for diagnostics.
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "diagnostics only")]
     pub(super) fn last_tick_duration(&self) -> Duration {
         self.last_tick_duration
     }
@@ -361,7 +365,10 @@ mod tests {
         // Not overloaded, so can drain up to MAX_DRAIN_PER_TICK
         let processed = guard.process_deferred();
         assert_eq!(processed, MAX_DRAIN_PER_TICK);
-        assert_eq!(guard.deferred_count(), MAX_DEFERRED_PER_TICK - MAX_DRAIN_PER_TICK);
+        assert_eq!(
+            guard.deferred_count(),
+            MAX_DEFERRED_PER_TICK - MAX_DRAIN_PER_TICK
+        );
     }
 
     #[test]

@@ -1524,8 +1524,7 @@ impl World {
         let mut chunk_map_timings = if is_overloaded && random_tick_speed > 0 {
             // Defer heavy random block ticks: pass 0 so chunk_map still does
             // ticket/propagation work but skips precipitation/random blocks.
-            self.chunk_map
-                .tick_game(self, tick_count, 0, runs_normally)
+            self.chunk_map.tick_game(self, tick_count, 0, runs_normally)
         } else {
             self.chunk_map
                 .tick_game(self, tick_count, random_tick_speed, runs_normally)
@@ -1546,9 +1545,9 @@ impl World {
         let entity_tick = {
             let _span = tracing::trace_span!("entity_tick").entered();
             let start = Instant::now();
-            let dirty_chunks = self
-                .entity_manager
-                .tick_entities(tick_count as i32, runs_normally, is_overloaded);
+            let dirty_chunks =
+                self.entity_manager
+                    .tick_entities(tick_count as i32, runs_normally, is_overloaded);
             for chunk in dirty_chunks {
                 self.mark_chunk_dirty(chunk);
             }

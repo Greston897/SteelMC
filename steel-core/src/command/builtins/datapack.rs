@@ -22,7 +22,7 @@ use super::super::{
     execution::{
         CommandPermissionSource, CommandResultSuspension, CommandResultSuspensionPoll,
         CommandSource, CommandSuspensionOrder, SteelCommandContext, SteelCommandRuntime, argument,
-        executes_suspended, literal,
+        literal,
     },
     registration::CommandRegistration,
 };
@@ -40,7 +40,7 @@ fn command() -> CommandNodeBuilder<CommandSource, SteelCommandRuntime> {
         .then(literal("enable").then(enable_target()))
         .then(literal("disable").then(argument("name", ArgumentType::string()).executes(disable)))
         .then(literal("create").then(argument("name", ArgumentType::string()).executes(create)))
-        .then(literal("reload").executes(datapack_reload))
+        .then(literal("reload").executes_suspended(datapack_reload))
         .then(
             literal("list")
                 .executes(|context| list(context, Listing::All))
@@ -100,6 +100,8 @@ fn pack_info(infos: &[PackInfo], id: &str) -> PackInfo {
             title: id.to_owned(),
             description: String::new(),
             source_label: "world",
+            pack_format: None,
+            incompatible: false,
         })
 }
 
@@ -227,9 +229,7 @@ impl CommandResultSuspension for DatapackReloadSuspension {
                 self.task = None;
                 CommandResultSuspensionPoll::Ready(Ok(SELF_RESULT))
             }
-            Err(oneshot::error::TryRecvError::Empty) => {
-                CommandResultSuspensionPoll::Pending
-            }
+            Err(oneshot::error::TryRecvError::Empty) => CommandResultSuspensionPoll::Pending,
             Err(oneshot::error::TryRecvError::Closed) => {
                 self.task = None;
                 log::warn!("datapack reload was cancelled");
@@ -261,7 +261,11 @@ fn datapack_reload(
         CommandPermissionSource::has_permission(source, &PermissionExpr::key(key))
     });
     if !allowed {
-        source.send_failure(steel_utils::translations::PERMISSIONS_REQUIRES_PLAYER.msg().component());
+        source.send_failure(
+            steel_utils::translations::PERMISSIONS_REQUIRES_PLAYER
+                .msg()
+                .component(),
+        );
         return Ok(DatapackReloadSuspension::finished());
     }
 

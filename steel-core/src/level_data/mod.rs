@@ -497,7 +497,8 @@ impl LevelDataManager {
                 // Run old-world migrations when the saved data predates the
                 // current data format version.
                 if loaded.data_version < DATA_VERSION {
-                    migrate_level_data(&mut loaded, loaded.data_version)?;
+                    let version = loaded.data_version;
+                    migrate_level_data(&mut loaded, version)?;
                 }
                 if matches!(&source, GameTimeSource::Primary) && loaded.game_time.is_none() {
                     return Err(io::Error::new(
@@ -1080,9 +1081,7 @@ fn migrate_level_data(data: &mut LevelData, from_version: u32) -> io::Result<()>
             _ => {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    format!(
-                        "no migration path from data version {version} to {DATA_VERSION}",
-                    ),
+                    format!("no migration path from data version {version} to {DATA_VERSION}",),
                 ))
             }
         }

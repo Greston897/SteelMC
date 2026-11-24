@@ -1309,10 +1309,12 @@ pub fn village_center(world: &Arc<World>, pos: IVec3) -> Option<IVec3> {
 /// within village radius.
 #[must_use]
 pub fn find_nearest_village_center(world: &Arc<World>, from: IVec3) -> Option<IVec3> {
-    let matches = world
-        .poi_storage
-        .lock()
-        .get_in_horizontal_square(&village_poi, BlockPos(from), 32, OccupationStatus::Occupied);
+    let matches = world.poi_storage.lock().get_in_horizontal_square(
+        &village_poi,
+        BlockPos(from),
+        32,
+        OccupationStatus::Occupied,
+    );
 
     let mut best: Option<(IVec3, i64)> = None;
     for (poi, _) in matches {

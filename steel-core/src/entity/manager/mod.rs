@@ -1878,10 +1878,8 @@ impl WorldEntityManager {
         // Single state read for all entity context lookups during this tick.
         // Avoids N separate read-lock acquisitions (one per entity) on the hot path.
         let state = self.state.read();
-        let mut entity_ctx: FxHashMap<
-            i32,
-            (Option<ChunkPos>, bool, EntityOwnership),
-        > = FxHashMap::with_capacity(tick_candidates.len());
+        let mut entity_ctx: FxHashMap<i32, (Option<ChunkPos>, bool, EntityOwnership)> =
+            FxHashMap::with_capacity_and_hasher(tick_candidates.len(), Default::default());
         for entity in &tick_candidates {
             if let Some(entry) = state.live_by_id.get(entity.id()) {
                 if Self::has_pending_world_change_in_vehicle_chain(&entry.entity) {
@@ -1890,8 +1888,7 @@ impl WorldEntityManager {
                 entity_ctx.insert(
                     entity.id(),
                     (
-                        (entry.ownership == EntityOwnership::ManagerOwned)
-                            .then_some(entry.chunk),
+                        (entry.ownership == EntityOwnership::ManagerOwned).then_some(entry.chunk),
                         state.tick_list.contains(entity.id()),
                         entry.ownership,
                     ),
@@ -1901,9 +1898,7 @@ impl WorldEntityManager {
         drop(state);
 
         for entity in tick_candidates {
-            let Some((entity_chunk, in_tick_list, ownership)) =
-                entity_ctx.get(&entity.id())
-            else {
+            let Some((entity_chunk, in_tick_list, ownership)) = entity_ctx.get(&entity.id()) else {
                 continue;
             };
 
