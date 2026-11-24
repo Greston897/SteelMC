@@ -21,8 +21,8 @@ const MAX_DRAIN_PER_TICK: usize = 8;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum Tier {
     /// Never deferred: movement, combat, player packets, saves.
-    #[allow(clippy::allow_attributes, reason = "Tier::Critical is API, not constructed in this crate")]
-    #[allow(dead_code, reason = "Tier::Critical is API, not constructed in this crate")]
+    #[allow(clippy::allow_attributes, reason = "critical tier API")]
+    #[allow(dead_code, reason = "critical tier API")]
     Critical = 0,
     /// Important but can be delayed 1 tick under light overload.
     Important = 1,
@@ -288,6 +288,7 @@ impl TickOverloadGuard {
 
     /// Budget multiplier for tick work: 1.0 = normal, 0.5 = light overload, 0.25 = severe.
     /// Subsystems use this to decide how many cheapest+important items to run this tick.
+    #[allow(dead_code, reason = "budget for future subsystems")]
     pub(super) const fn budget_factor(&self) -> f32 {
         match self.overload_ticks {
             0 => 1.0,
