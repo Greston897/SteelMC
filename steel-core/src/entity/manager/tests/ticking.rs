@@ -430,8 +430,16 @@ fn tick_entities_overload_tier_respects_count() {
         DVec3::new(2.0, 64.0, 1.0),
         &vanilla_entities::ZOMBIE,
     );
-    assert!(manager.add_live_entity(Arc::clone(&item), EntityOwnership::ManagerOwned).is_ok());
-    assert!(manager.add_live_entity(Arc::clone(&zombie), EntityOwnership::ManagerOwned).is_ok());
+    assert!(
+        manager
+            .add_live_entity(Arc::clone(&item), EntityOwnership::ManagerOwned)
+            .is_ok()
+    );
+    assert!(
+        manager
+            .add_live_entity(Arc::clone(&zombie), EntityOwnership::ManagerOwned)
+            .is_ok()
+    );
 
     // Лёгкая перегрузка 1..3 — только Deferred должен пропускать каждый 2-й тик
     // tick 0: item (1+0+1)%2==0 -> skip, zombie -> tick
@@ -439,8 +447,16 @@ fn tick_entities_overload_tier_respects_count() {
     // Итого за 2 тика: item 1, zombie 2
     manager.tick_entities(0, true, true, 1);
     manager.tick_entities(1, true, true, 2);
-    assert_eq!(item.tick_count(), 1, "item Deferred должен дефериться уже при 1");
-    assert_eq!(zombie.tick_count(), 2, "zombie Important не должен дефериться при 1..3");
+    assert_eq!(
+        item.tick_count(),
+        1,
+        "item Deferred должен дефериться уже при 1"
+    );
+    assert_eq!(
+        zombie.tick_count(),
+        2,
+        "zombie Important не должен дефериться при 1..3"
+    );
 
     // Сброс для чистоты — новая пара менеджеров проще, но проверим severe:
     let manager2 = WorldEntityManager::new();
@@ -457,8 +473,16 @@ fn tick_entities_overload_tier_respects_count() {
         DVec3::new(2.0, 64.0, 1.0),
         &vanilla_entities::ZOMBIE,
     );
-    assert!(manager2.add_live_entity(Arc::clone(&item2), EntityOwnership::ManagerOwned).is_ok());
-    assert!(manager2.add_live_entity(Arc::clone(&zombie2), EntityOwnership::ManagerOwned).is_ok());
+    assert!(
+        manager2
+            .add_live_entity(Arc::clone(&item2), EntityOwnership::ManagerOwned)
+            .is_ok()
+    );
+    assert!(
+        manager2
+            .add_live_entity(Arc::clone(&zombie2), EntityOwnership::ManagerOwned)
+            .is_ok()
+    );
     // Тяжёлая перегрузка >3 — и Important тоже деферится
     // tick 0: item skip (1+0+1==0), zombie skip (2+0==0) -> оба skip
     // tick 1: item tick (1+1+1==1), zombie tick (2+1==1) -> оба tick
@@ -466,6 +490,9 @@ fn tick_entities_overload_tier_respects_count() {
     manager2.tick_entities(0, true, true, 4);
     manager2.tick_entities(1, true, true, 4);
     assert_eq!(item2.tick_count(), 1, "item и при severe 1");
-    assert_eq!(zombie2.tick_count(), 1, "zombie при severe должен дефериться");
+    assert_eq!(
+        zombie2.tick_count(),
+        1,
+        "zombie при severe должен дефериться"
+    );
 }
-

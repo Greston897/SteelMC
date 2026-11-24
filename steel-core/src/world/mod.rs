@@ -1500,13 +1500,12 @@ impl World {
             .server
             .get()
             .and_then(Weak::upgrade)
-            .map(|s| {
+            .map_or((false, 0), |s| {
                 (
                     s.is_overloaded.load(Ordering::Relaxed),
                     s.overload_tick_count.load(Ordering::Relaxed),
                 )
-            })
-            .unwrap_or((false, 0));
+            });
         // Lightest + critical first: border/weather/time are tiny and affect
         // player position/time sync, so they always run.
         let lookup_cache_scope = GameplayChunkLookupCacheScope::enter(&self.chunk_map);
