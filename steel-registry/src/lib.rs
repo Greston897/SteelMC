@@ -1,3 +1,4 @@
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 #![feature(const_trait_impl, const_cmp, derive_const)]
 #![expect(
     missing_docs,

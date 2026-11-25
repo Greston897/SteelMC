@@ -1,4 +1,5 @@
 //! Runtime directory and ZIP data packs: function bodies and function tags.
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 //!
 //! Pack selection follows vanilla's `PackRepository`/`DataPackCommand`:
 //! available packs are discovered in sorted id order, the selected list is

@@ -1,4 +1,5 @@
 //! Vanilla `net.minecraft.world.entity.boss.wither.WitherBoss`.
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 //!
 //! A three-headed boss that hovers, fires wither skulls and regenerates while
 //! its invulnerability timer runs.

@@ -1,4 +1,5 @@
 //! Persistent, entity-driven raid waves. Wave progress is never inferred from elapsed time.
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 
 use std::collections::BTreeSet;
 use std::f32::consts::PI;

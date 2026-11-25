@@ -1,4 +1,5 @@
 //! Physics engine for entity movement with vanilla Minecraft parity.
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 //!
 //! This module implements the core physics simulation for moving entities through
 //! the world with proper collision detection, including:

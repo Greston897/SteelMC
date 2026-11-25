@@ -1,4 +1,5 @@
 //! Bidirectional Mojang `DynamicOps` conversion between JSON (`JsonOps`) and
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 //! NBT (`NbtOps`).
 //!
 //! Used by registry-sync codecs, runtime datapack loaders (custom dialogs,

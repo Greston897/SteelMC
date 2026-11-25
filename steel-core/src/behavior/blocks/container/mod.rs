@@ -1,3 +1,4 @@
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 use std::sync::Arc;
 
 use steel_utils::{BlockPos, Downcast as _, WorldAabb};

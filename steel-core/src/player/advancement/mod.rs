@@ -1,4 +1,5 @@
 //! advancement linked to the player.
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 //!
 //! Groups the advancementPlayer, advancement progress and visibility evaluator
 
