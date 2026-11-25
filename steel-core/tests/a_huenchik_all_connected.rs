@@ -7,7 +7,6 @@
 #![allow(clippy::allow_attributes, reason = "test helper")]
 #![allow(clippy::allow_attributes_without_reason, reason = "test helper")]
 
-
 use std::path::Path;
 
 fn workspace_file(path: &str) -> String {
@@ -106,14 +105,12 @@ fn mspt_ram_is_low() {
         data.contains("with_capacity_and_hasher"),
         "map должен быть with_capacity_and_hasher"
     );
-    let reader =
-        workspace_file("steel-core/src/command/brigadier/reader.rs");
+    let reader = workspace_file("steel-core/src/command/brigadier/reader.rs");
     assert!(
         reader.contains("'/'") && reader.contains("':'"),
         "reader должен позволять / : для file/test"
     );
-    let datapack =
-        workspace_file("steel-core/src/server/datapacks.rs");
+    let datapack = workspace_file("steel-core/src/server/datapacks.rs");
     assert!(
         datapack.contains("normalize_pack_id"),
         "datapack должен нормализовать file:test"
