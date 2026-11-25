@@ -1,0 +1,38 @@
+# Pterodactyl-compatible Dockerfile for SteelMC
+# Используется в Pterodactyl Panel (yolks:debian совместимость)
+# Отличается от основного scratch-образа наличием shell, пользователя container и /home/container
+
+FROM rustlang/rust:nightly-bookworm AS builder
+LABEL authors="junkydeveloper"
+
+WORKDIR /steel
+COPY . .
+# stand-alone = минимальные зависимости, без jaeger/dhat, с mimalloc
+# locked = воспроизводимая сборка по Cargo.lock
+RUN cargo build --release --locked --features stand-alone
+
+FROM debian:bookworm-slim
+LABEL authors="junkydeveloper"
+LABEL org.opencontainers.image.description="SteelMC - Rust Minecraft server for Pterodactyl"
+
+# CA сертификаты для online_mode + Mojang auth, curl для healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        tini \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd -m -d /home/container container
+
+# Копируем бинарь как /home/container/steel (Pterodactyl ожидает /home/container как workdir)
+COPY --chmod=755 --from=builder /steel/target/release/steel /home/container/steel
+# Дефолтные конфиги (если volume пустой, скопируются)
+COPY --chown=container:container package-content /home/container/package-content
+
+WORKDIR /home/container
+USER container
+
+# Pterodactyl пробрасывает порт через SERVER_PORT env, но steel читает config.toml
+# Поэтому стартуем через tini для корректного SIGTERM
+EXPOSE 25565 25575
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/home/container/steel"]

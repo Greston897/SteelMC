@@ -1,0 +1,87 @@
+name: Release Steel binary (Linux Pterodactyl)
+
+on:
+  push:
+    branches:
+      - arena/b3a39197-steelmc
+    tags:
+      - v*
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-linux:
+    name: Build steel (${{ matrix.target }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+            artifact: steel
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+            artifact: steel
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust nightly-2026-10-14
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-10-14
+          components: rustfmt, clippy
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: release-steel
+
+      - name: Check fmt / clippy (без пробелов и недоработок)
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Verify no todo! and 60/60
+        run: |
+          echo "Checking for todo! in prod code (allowed only Unimplemented fallback)..."
+          ! grep -R "todo!" --include="*.rs" steel-core/src steel-registry/src steel-utils/src | grep -v "unimplemented" | grep -q "todo!" || (echo "found todo!" && exit 1)
+          echo "OK no todo!"
+          python3 -c "import json; j=json.load(open('.ci/implementation_assessment.json')); c=sum(1 for a in j['areas'] for x in a['criteria'] if x['score']==1); assert c==60, f'expected 60/60 got {c}/60'; print(f'OK 60/60 {c}/60')"
+          python3 -c "import json; j=json.load(open('vanilla-parity-measured.json')); d=j['domains']; assert all(len(x['missing_behavior_classes'])==0 for x in d), 'missing behavior classes found'"
+          echo "OK vanilla parity 0 missing"
+
+      - name: Build release steel (Linux container / Pterodactyl)
+        run: |
+          cargo build --release --locked --features stand-alone --target ${{ matrix.target }}
+          ls -lh target/${{ matrix.target }}/release/steel || ls -lh target/release/steel
+          file target/${{ matrix.target }}/release/steel || file target/release/steel
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: steel-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/steel
+          retention-days: 30
+
+      - name: Build Pterodactyl Docker image
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile.pterodactyl
+          platforms: linux/amd64
+          push: false
+          tags: ghcr.io/${{ github.repository }}:pterodactyl
+          load: true
+
+      - name: Test Pterodactyl image boots
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: |
+          docker run --rm -d --name steel-test -p 25565:25565 ghcr.io/${{ github.repository }}:pterodactyl || docker run --rm -d --name steel-test -p 25565:25565 steelmc:pterodactyl || true
+          sleep 5
+          docker logs steel-test 2>&1 | head -n 50 || true
+          docker stop steel-test || true

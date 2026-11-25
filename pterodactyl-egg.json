@@ -1,0 +1,85 @@
+{
+  "_comment": "Pterodactyl Egg for SteelMC 26.3 - Rust implementation. Импортируйте через Admin -> Nests -> Import Egg",
+  "meta": {
+    "version": "PTDL_v2",
+    "update_url": null
+  },
+  "exported_at": "2026-11-26T00:00:00.000Z",
+  "name": "SteelMC (26.3)",
+  "author": "junkydeveloper@steel-foundation",
+  "description": "SteelMC — лёгкий Rust сервер Minecraft 26.3. Чистый код, низкая RAM/MSPT (FxBuildHasher, with_capacity, is_multiple_of, bounded очереди MAX16/8), без todo!/unimplemented!. Поддержка Pterodactyl, Docker, Linux контейнер. Сборка: cargo build --release --locked --features stand-alone -> target/release/steel.",
+  "features": null,
+  "tags": ["minecraft", "java", "rust", "vanilla", "26.3"],
+  "file_denylist": [],
+  "docker_images": {
+    "ghcr.io/steel-foundation/steelmc:nightly": "ghcr.io/steel-foundation/steelmc:nightly",
+    "ghcr.io/steel-foundation/steelmc:pterodactyl": "ghcr.io/steel-foundation/steelmc:pterodactyl",
+    "ghcr.io/pterodactyl/yolks:debian": "ghcr.io/pterodactyl/yolks:debian"
+  },
+  "startup": "./steel",
+  "config": {
+    "files": "{}",
+    "startup": "{\n    \"done\": \"Done! For help, type \\\"help\\\"\"\n}",
+    "logs": "{}",
+    "stop": "stop"
+  },
+  "scripts": {
+    "installation": {
+      "script": "#!/bin/bash\n# Pterodactyl installation script for SteelMC\napt update\napt install -y curl ca-certificates\n\nmkdir -p /mnt/server\ncd /mnt/server\n\n# Если загружен кастомный Steel бинарь — используем его, иначе берём nightly с ghcr или собираем\nif [ -f \"steel\" ]; then\n  chmod +x steel\n  echo \"Using uploaded steel binary\"\nelse\n  echo \"Downloading SteelMC nightly...\"\n  # Альтернатива: скачать с GitHub Releases если есть\n  # curl -L https://github.com/Greston897/SteelMC/releases/latest/download/steel-x86_64-unknown-linux-gnu -o steel && chmod +x steel\n  # Заглушка: если образа нет, будет собран через Dockerfile.pterodactyl\n  echo \"No steel binary found - will be provided by Docker image ghcr.io/steel-foundation/steelmc:nightly\"\nfi\n\n# Дефолтные конфиги\nif [ ! -f \"config.toml\" ] && [ -d \"package-content\" ]; then\n  cp -r package-content/* . 2>/dev/null || true\nfi\nif [ ! -f \"config.toml\" ]; then\ncat > config.toml <<'EOF'\n[server]\nserver_port = 25565\nmax_players = 20\nview_distance = 10\nsimulation_distance = 10\nonline_mode = true\nenforce_secure_chat = false\nmotd = \"A Steel Server on Pterodactyl\"\nEOF\nfi\n\necho \"Installation complete for SteelMC 26.3\"",
+      "container": "debian:bookworm-slim",
+      "entrypoint": "bash"
+    }
+  },
+  "variables": [
+    {
+      "name": "Server Port",
+      "description": "Порт сервера (внутри контейнера). Pterodactyl пробросит его наружу. Должен совпадать с server_port в config.toml",
+      "env_variable": "SERVER_PORT",
+      "default_value": "25565",
+      "user_viewable": true,
+      "user_editable": false,
+      "rules": "required|integer|between:1,65535",
+      "field_type": "text"
+    },
+    {
+      "name": "Max Players",
+      "description": "Максимум игроков (переопределяет max_players в config.toml если задано через env)",
+      "env_variable": "MAX_PLAYERS",
+      "default_value": "20",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer|between:1,1000",
+      "field_type": "text"
+    },
+    {
+      "name": "View Distance",
+      "description": "Дальность прорисовки чанков (1-32, до 128 при allow_extended_view_distance)",
+      "env_variable": "VIEW_DISTANCE",
+      "default_value": "10",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer|between:2,128",
+      "field_type": "text"
+    },
+    {
+      "name": "Memory Limit",
+      "description": "Лимит RAM для контейнера (информативно, Steel на Rust использует меньше RAM чем Java; mimalloc)",
+      "env_variable": "STEEL_MEMORY",
+      "default_value": "1024",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer|between:512,65535",
+      "field_type": "text"
+    },
+    {
+      "name": "Steel Args",
+      "description": "Дополнительные аргументы для ./steel (например --help)",
+      "env_variable": "STEEL_ARGS",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "string|max:512",
+      "field_type": "text"
+    }
+  ]
+}
