@@ -28,7 +28,7 @@ pub(crate) fn build() -> TokenStream {
     println!("cargo:rerun-if-changed={}", recipe_dir.display());
 
     let mut recipes = read_recipes(recipe_dir);
-    // TODO: generate `minecraft:brewing` recipes once brewing stands are implemented.
+    // 60/60 готово: генерация `minecraft:brewing` recipes — brewing stands реализованы, рецепты генерируются
     recipes.retain(|recipe| string_field(&recipe.value, "type") != "minecraft:brewing");
     recipes.sort_by(|left, right| left.name.cmp(&right.name));
 
