@@ -1527,11 +1527,15 @@ impl World {
         // world tick. If the server is overloaded we defer random ticks to
         // the next tick (they are stateless) while still advancing tickets.
         let mut chunk_map_timings = if is_overloaded && random_tick_speed > 0 {
-            // Defer heavy random block ticks but keep precipitation and a reduced
-            // budget of random ticks so the world does not desync. Ticket and
-            // propagation work always runs. Lightest+important first: we keep
-            // precipitation (player-visible) and do half the random ticks.
-            let reduced_speed = (random_tick_speed / 2).max(1);
+            // Подключено к ядру идеал: budget_factor из TickOverloadGuard (0.6/0.35/0.25) без аллока,
+            // лёгкие+важные сначала — сохраняем precipitation, срезаем randomTick по бюджету MSPT.
+            let budget = match overload_ticks {
+                0 => 1.0,
+                1..=3 => 0.6,
+                4..=6 => 0.35,
+                _ => 0.25,
+            };
+            let reduced_speed = ((random_tick_speed as f32 * budget) as u32).max(1);
             self.chunk_map
                 .tick_game(self, tick_count, reduced_speed, runs_normally)
         } else {

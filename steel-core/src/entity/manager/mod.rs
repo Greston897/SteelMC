@@ -1936,9 +1936,12 @@ impl WorldEntityManager {
             if is_overloaded {
                 let is_player = entity.entity_type() == &vanilla_entities::PLAYER;
                 if !is_player {
-                    let is_heavy_idle = entity.entity_type().key.path.contains("item")
-                        || entity.entity_type().key.path.contains("experience_orb")
-                        || entity.entity_type().key.path.contains("area_effect_cloud");
+                    // Оптимизация без хуйни: прямые указательные сравнения вместо 3× path.contains (аллокации/сравнение строк на каждом тике).
+                    // Подключено к ядру идеал: ITEM / EXPERIENCE_ORB / AREA_EFFECT_CLOUD — самые лёгкие Deferred, деферятся сразу.
+                    let entity_type = entity.entity_type();
+                    let is_heavy_idle = entity_type == &vanilla_entities::ITEM
+                        || entity_type == &vanilla_entities::EXPERIENCE_ORB
+                        || entity_type == &vanilla_entities::AREA_EFFECT_CLOUD;
                     let mob_cat = entity.entity_type().mob_category;
                     // Tier mapping: MISC with heavy_idle or CREATURE/AMBIENT => Deferred (сразу), MONSTER => Important (после 3)
                     let is_deferred_tier = is_heavy_idle

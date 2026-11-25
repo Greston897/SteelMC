@@ -11,6 +11,7 @@ use std::{
 use arc_swap::ArcSwapOption;
 use rustc_hash::FxHashMap;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::vanilla_block_entity_types;
 use steel_utils::{BlockPos, locks::SyncMutex};
 
 use crate::{
@@ -200,10 +201,14 @@ impl WorldBlockEntityTickers {
             // heavy idle (sign, banner, skull) are deferred more often.
             let mut idx = 0usize;
             self.tick_phase(true, |binding| {
-                let is_heavy_idle = binding.entity.get_type().key.path.contains("sign")
-                    || binding.entity.get_type().key.path.contains("skull")
-                    || binding.entity.get_type().key.path.contains("banner")
-                    || binding.entity.get_type().key.path.contains("decorated_pot");
+                // Оптимизация идеал: прямые сравнения типов вместо 4× path.contains (без аллока, без строк).
+                // Подключено к ядру: SIGN/HANGING_SIGN/SKULL/BANNER/DECORATED_POT — Deferred, деферятся сразу.
+                let be_type = binding.entity.get_type();
+                let is_heavy_idle = be_type == &vanilla_block_entity_types::SIGN
+                    || be_type == &vanilla_block_entity_types::HANGING_SIGN
+                    || be_type == &vanilla_block_entity_types::SKULL
+                    || be_type == &vanilla_block_entity_types::BANNER
+                    || be_type == &vanilla_block_entity_types::DECORATED_POT;
                 // Lightest+important first: furnaces/hoppers always tick when
                 // lightly overloaded, heavy idle are spread over 2-3 ticks.
                 let should_tick = if is_heavy_idle {
