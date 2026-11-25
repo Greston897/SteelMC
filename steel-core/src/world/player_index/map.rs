@@ -56,9 +56,9 @@ impl PlayerSlot {
 /// UUID and entity ID lookups as one operation.
 pub struct PlayerMap {
     /// Primary index by UUID (persistent identifier)
-    by_uuid: HashMap<Uuid, Arc<PlayerSlot>>,
+    by_uuid: HashMap<Uuid, Arc<PlayerSlot>, FxBuildHasher>,
     /// Secondary index by entity ID (session-local identifier)
-    by_entity_id: HashMap<i32, Arc<PlayerSlot>>,
+    by_entity_id: HashMap<i32, Arc<PlayerSlot>, FxBuildHasher>,
     /// Player UUIDs in insertion order for vanilla-visible iteration.
     order: SyncMutex<Vec<Uuid>>,
     /// Serializes changes to the indexes and their shared slots.
