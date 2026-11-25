@@ -31,6 +31,7 @@ fn assert_not_contains(path: &str, needle: &str, msg: &str) {
         panic!("{msg}: {path} не должен содержать `{needle}`");
     }
 }
+#[allow(dead_code)]
 fn count_contains(path: &str, needle: &str) -> usize {
     fs::read_to_string(path)
         .unwrap_or_default()
