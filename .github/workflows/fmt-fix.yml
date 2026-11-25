@@ -1,6 +1,9 @@
 name: fmt-fix
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - arena/b3a39197-steelmc
 permissions:
   contents: write
 jobs:
