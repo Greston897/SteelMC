@@ -5,22 +5,45 @@
 
 #![allow(clippy::print_stdout, reason = "integration test diagnostics")]
 #![allow(clippy::absolute_paths, reason = "test uses absolute path")]
+#![allow(clippy::items_after_statements, reason = "test helper")]
 #![allow(dead_code, reason = "helper for future use")]
 #![allow(clippy::allow_attributes, reason = "test helper")]
 #![allow(clippy::allow_attributes_without_reason, reason = "test helper")]
 
-use std::fs;
+use std::{fs, path::Path};
 
 // ---------- helpers ----------
+fn workspace_file(path: &str) -> String {
+    let manifest = env!("CARGO_MANIFEST_DIR");
+    let candidates = [
+        Path::new(path).to_path_buf(),
+        Path::new(manifest).join(path),
+        Path::new(manifest).parent().unwrap().join(path),
+        Path::new(manifest).join(path.trim_start_matches("steel-core/")),
+        Path::new(manifest).join(path.trim_start_matches("steel-registry/")),
+        Path::new(manifest).join(path.trim_start_matches("steel-utils/")),
+    ];
+    for p in &candidates {
+        if let Ok(data) = fs::read_to_string(p) {
+            return data;
+        }
+    }
+    // also try workspace root for .ci and .md
+    let ws = Path::new(manifest).parent().unwrap();
+    if let Ok(data) = fs::read_to_string(ws.join(path)) {
+        return data;
+    }
+    panic!("{path} read fail: not found in any candidate");
+}
 fn assert_contains(path: &str, needle: &str, msg: &str) {
-    let data = fs::read_to_string(path).unwrap_or_else(|e| panic!("{path} read fail {e}"));
+    let data = workspace_file(path);
     assert!(
         data.contains(needle),
         "{msg}: {path} должен содержать `{needle}`"
     );
 }
 fn assert_not_contains(path: &str, needle: &str, msg: &str) {
-    let data = fs::read_to_string(path).unwrap_or_default();
+    let data = workspace_file(path);
     // игнорируем комментарии тестов — считаем только прод код, но для имба требуем 0 в проде
     // простой чек: если есть needle в файле, проверяем что это не только в тесте
     // для крупности — требуем отсутствие в принципе, кроме наших тестов
@@ -39,10 +62,7 @@ fn assert_not_contains(path: &str, needle: &str, msg: &str) {
 }
 #[allow(dead_code, reason = "helper for future use")]
 fn count_contains(path: &str, needle: &str) -> usize {
-    fs::read_to_string(path)
-        .unwrap_or_default()
-        .matches(needle)
-        .count()
+    workspace_file(path).matches(needle).count()
 }
 
 // ---------- 1: общие дыры todo/60_60 ----------
@@ -77,7 +97,7 @@ fn large_no_todo_and_60_60_everywhere() {
         );
     }
     // assessment 60/60
-    let assessment = fs::read_to_string(".ci/implementation_assessment.json").expect("assessment");
+    let assessment = workspace_file(".ci/implementation_assessment.json");
     assert!(!assessment.contains("\"score\": 0,"), "не должно быть 0");
     assert!(!assessment.contains("\"score\": 0.5"), "не должно быть 0.5");
     let c = assessment.matches("\"score\": 1").count() + assessment.matches("\"score\":1").count();
@@ -97,7 +117,7 @@ fn large_hot_tick_no_alloc_without_capacity() {
         "steel-core/src/world/player_index/area.rs",
     ];
     for file in hot_files {
-        let data = fs::read_to_string(file).unwrap_or_default();
+        let data = workspace_file(file);
         // после имба патчей не должно быть голого default в проде (кроме тестов)
         // проверяем что есть with_capacity в каждом горячем файле
         assert!(
@@ -122,7 +142,7 @@ fn large_hot_tick_no_alloc_without_capacity() {
         "ChunkMap chunks 2048",
     );
     // encode_cache 64 — проверяем наличие with_capacity_and_hasher и FxBuildHasher (многострочно)
-    let run_loop = std::fs::read_to_string("steel-core/src/server/run_loop.rs").unwrap();
+    let run_loop = workspace_file("steel-core/src/server/run_loop.rs");
     assert!(
         run_loop.contains("encode_cache") && run_loop.contains("with_capacity_and_hasher"),
         "encode_cache 64: run_loop должен иметь with_capacity_and_hasher для encode_cache"
@@ -160,7 +180,7 @@ fn large_scc_capacity() {
 #[test]
 fn large_entity_tracker_vec_reserves() {
     // дыра 4: entity tracker аллоцирует Vec каждый тик per player = 300 alloc/тик на 100 онлайн
-    let d = fs::read_to_string("steel-core/src/entity/tracker/mod.rs").unwrap();
+    let d = workspace_file("steel-core/src/entity/tracker/mod.rs");
     assert!(
         d.contains("Vec::with_capacity(8)"),
         "tracker должен иметь with_capacity 8"
@@ -179,7 +199,7 @@ fn large_entity_tracker_vec_reserves() {
 #[test]
 fn large_tick_overload_bounded_no_desync() {
     // дыра 5: overload скипал тики → десинк сейвов/пакетов, unbounded RAM
-    let d = fs::read_to_string("steel-core/src/server/tick_overload.rs").unwrap();
+    let d = workspace_file("steel-core/src/server/tick_overload.rs");
     assert!(
         d.contains("MAX_DEFERRED_PER_TICK"),
         "должен быть bounded 16"
@@ -222,7 +242,7 @@ fn large_generation_readiness_capacity() {
 #[test]
 fn large_chunk_tracker_capacity() {
     // дыра 7: ChunkTracker 4 мапы без резерва = 4 realloc на движении
-    let d = fs::read_to_string("steel-core/src/chunk/chunk_tracker/mod.rs").unwrap();
+    let d = workspace_file("steel-core/src/chunk/chunk_tracker/mod.rs");
     assert!(d.contains("with_capacity_and_hasher(64"), "ChunkTracker 64");
     assert!(d.contains("Vec::with_capacity(64)"), "changes 64");
     assert!(
@@ -235,7 +255,7 @@ fn large_chunk_tracker_capacity() {
 #[test]
 fn large_world_block_entity_ticker_direct_equals() {
     // дыра 8: path.contains на тике = аллока строк + MSPT
-    let d = fs::read_to_string("steel-core/src/world/block_entity_ticker.rs").unwrap();
+    let d = workspace_file("steel-core/src/world/block_entity_ticker.rs");
     assert!(
         d.contains("vanilla_block_entity_types::SIGN"),
         "должен быть direct =="
@@ -256,7 +276,7 @@ fn large_world_block_entity_ticker_direct_equals() {
 #[test]
 fn large_entity_manager_no_realloc() {
     // дыра 9: entity manager realloc на каждом add/save
-    let d = fs::read_to_string("steel-core/src/entity/manager/mod.rs").unwrap();
+    let d = workspace_file("steel-core/src/entity/manager/mod.rs");
     assert!(
         d.contains("with_capacity_and_hasher(live_len"),
         "compacted_node_by_id live_len"
@@ -286,7 +306,7 @@ fn large_packet_and_scheduler_bounded() {
         "with_capacity_and_hasher(64",
         "tick scheduler 64",
     );
-    let overload = fs::read_to_string("steel-core/src/server/packet_processor.rs").unwrap();
+    let overload = workspace_file("steel-core/src/server/packet_processor.rs");
     assert!(
         overload.contains("MAX_OUTSTANDING_PACKETS_PER_PLAYER"),
         "packet limit"
@@ -300,11 +320,11 @@ fn large_packet_and_scheduler_bounded() {
 
 #[test]
 fn large_mechanics_still_work_like_vanilla() {
+    use steel_registry::data_components::vanilla_components::BANNER_PATTERNS;
     // дыра 11: оптимизация сломала механики — проверяем что всё как было
     steel_registry::init_vanilla_registry();
     // raid banner 8 слоёв
     let banner = steel_core::world::raid::ominous_banner();
-    use steel_registry::data_components::vanilla_components::BANNER_PATTERNS;
     let layers = banner.get(BANNER_PATTERNS).unwrap().layers().len();
     assert_eq!(
         layers, 8,
@@ -320,18 +340,18 @@ fn large_mechanics_still_work_like_vanilla() {
         7.0
     );
     // player_index map использует FxBuildHasher
-    let map_data = fs::read_to_string("steel-core/src/world/player_index/map.rs").unwrap();
+    let map_data = workspace_file("steel-core/src/world/player_index/map.rs");
     assert!(
         map_data.contains("FxBuildHasher"),
         "map должен быть FxBuildHasher"
     );
     // reader / : поддерживает file/test
-    let reader = fs::read_to_string("steel-core/src/command/brigadier/reader.rs").unwrap();
+    let reader = workspace_file("steel-core/src/command/brigadier/reader.rs");
     assert!(
         reader.contains("'/'") && reader.contains("':'"),
         "reader / :"
     );
-    let datapack = fs::read_to_string("steel-core/src/server/datapacks.rs").unwrap();
+    let datapack = workspace_file("steel-core/src/server/datapacks.rs");
     assert!(datapack.contains("normalize_pack_id"), "datapack normalize");
     println!("large_mechanics работают как работали имба — raid/wither/reader/datapack ок");
 }
@@ -369,7 +389,7 @@ fn large_mspt_ram_optimizations_present_everywhere() {
         );
     }
     // проверяем что нет format! на горячем тике (heavy clone)
-    let be_ticker = fs::read_to_string("steel-core/src/world/block_entity_ticker.rs").unwrap();
+    let be_ticker = workspace_file("steel-core/src/world/block_entity_ticker.rs");
     // format! разрешён в warn, но не в tick_binding hot loop — проверим что tick_binding не содержит format!
     let tick_binding_section = be_ticker.split("fn tick_binding").nth(1).unwrap_or("");
     assert!(
@@ -404,7 +424,7 @@ fn large_19_subsystems_60_60_still() {
         "steel-core/src/world/block_entity_ticker.rs",
     ];
     for file in files {
-        let data = fs::read_to_string(file).unwrap_or_else(|_| panic!("{file} missing"));
+        let data = workspace_file(file);
         assert!(
             data.contains("60/60"),
             "после оптимизаций потерян маркер 60/60 в {file} — дыра!"

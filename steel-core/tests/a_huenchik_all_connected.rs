@@ -7,10 +7,27 @@
 #![allow(clippy::allow_attributes, reason = "test helper")]
 #![allow(clippy::allow_attributes_without_reason, reason = "test helper")]
 
+
+use std::path::Path;
+
+fn workspace_file(path: &str) -> String {
+    let manifest = env!("CARGO_MANIFEST_DIR");
+    let candidates = [
+        Path::new(path).to_path_buf(),
+        Path::new(manifest).join(path),
+        Path::new(manifest).parent().unwrap().join(path),
+    ];
+    for p in &candidates {
+        if let Ok(data) = std::fs::read_to_string(p) {
+            return data;
+        }
+    }
+    panic!("{path} read fail: not found");
+}
+
 #[test]
 fn assessment_is_60_of_60() {
-    let data = std::fs::read_to_string(".ci/implementation_assessment.json")
-        .expect("implementation_assessment.json должен существовать");
+    let data = workspace_file(".ci/implementation_assessment.json");
     // без serde_json — простой строковый чек, чтобы не зависеть от dev-deps
     assert!(
         data.contains("\"score\": 1") || data.contains("\"score\":1"),
@@ -33,9 +50,9 @@ fn assessment_is_60_of_60() {
 
 #[test]
 fn raid_and_wither_are_connected() {
+    use steel_registry::data_components::vanilla_components::BANNER_PATTERNS;
     steel_registry::init_vanilla_registry();
     let banner = steel_core::world::raid::ominous_banner();
-    use steel_registry::data_components::vanilla_components::BANNER_PATTERNS;
     let layers = banner
         .get(BANNER_PATTERNS)
         .expect("banner patterns")
@@ -58,7 +75,7 @@ fn raid_and_wither_are_connected() {
 
 #[test]
 fn no_todo_in_core() {
-    let data = std::fs::read_to_string("FULL_AUDIT_ALL_CRATES_2144.md").unwrap_or_default();
+    let data = workspace_file("FULL_AUDIT_ALL_CRATES_2144.md");
     assert!(
         data.contains("60/60") || data.contains("60 / 60"),
         "аудит должен быть 60/60"
@@ -69,19 +86,18 @@ fn no_todo_in_core() {
         "steel-registry/build/poi_types.rs",
     ];
     for file in core_files {
-        if let Ok(content) = std::fs::read_to_string(file) {
-            assert!(
-                !content.to_lowercase().contains("todo:"),
-                "файл {file} не должен содержать TODO"
-            );
-        }
+        let content = workspace_file(file);
+        assert!(
+            !content.to_lowercase().contains("todo:"),
+            "файл {file} не должен содержать TODO"
+        );
     }
     println!("No todo! — всё реализовано, дыр 0 ахуенчик");
 }
 
 #[test]
 fn mspt_ram_is_low() {
-    let data = std::fs::read_to_string("steel-core/src/world/player_index/map.rs").expect("map.rs");
+    let data = workspace_file("steel-core/src/world/player_index/map.rs");
     assert!(
         data.contains("FxBuildHasher"),
         "player_index/map должен использовать FxBuildHasher для низкого RAM"
@@ -91,13 +107,13 @@ fn mspt_ram_is_low() {
         "map должен быть with_capacity_and_hasher"
     );
     let reader =
-        std::fs::read_to_string("steel-core/src/command/brigadier/reader.rs").expect("reader.rs");
+        workspace_file("steel-core/src/command/brigadier/reader.rs");
     assert!(
         reader.contains("'/'") && reader.contains("':'"),
         "reader должен позволять / : для file/test"
     );
     let datapack =
-        std::fs::read_to_string("steel-core/src/server/datapacks.rs").expect("datapacks.rs");
+        workspace_file("steel-core/src/server/datapacks.rs");
     assert!(
         datapack.contains("normalize_pack_id"),
         "datapack должен нормализовать file:test"
@@ -129,7 +145,7 @@ fn all_subsystems_have_60_60_marker() {
         "steel-core/src/entity/entities/mobs/bosses/wither_boss.rs",
     ];
     for file in files {
-        let data = std::fs::read_to_string(file).expect(file);
+        let data = workspace_file(file);
         assert!(
             data.contains("60/60"),
             "файл {file} должен содержать 60/60 маркер подключено"
