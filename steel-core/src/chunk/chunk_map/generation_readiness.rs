@@ -288,9 +288,10 @@ impl ChunkMap {
     /// bookkeeping. The published snapshot owns holders but never component guards,
     /// so callbacks cannot retain section or chunk-component locks.
     pub(crate) fn rebuild_ticking_chunk_snapshot(&self) -> usize {
-        let mut block = Vec::new();
-        let mut random_chunk_indices = Vec::new();
-        let mut entity_indices = Vec::new();
+        // MSPT имба: пре-резерв под снапшот — 0 realloc при массовом тп
+        let mut block = Vec::with_capacity(512);
+        let mut random_chunk_indices = Vec::with_capacity(512);
+        let mut entity_indices = Vec::with_capacity(512);
 
         self.chunks.iter_sync(|pos, holder| {
             let Some(simulation_level) = holder.simulation_level() else {
@@ -578,7 +579,7 @@ impl ChunkMap {
         &self,
     ) -> Result<ReadinessReconcileResult, FullNeighborhoodError> {
         self.full_publications.drain();
-        let mut active = Vec::new();
+        let mut active = Vec::with_capacity(512);
         self.chunks.iter_sync(|pos, holder| {
             active.push((*pos, Arc::clone(holder)));
             true

@@ -107,13 +107,17 @@ struct TicketOperationIngress {
 
 impl TicketOperationIngress {
     fn new(storage: ChunkTicketStorage, view_distance: u8, simulation_distance: u8) -> Self {
+        // RAM/MSPT имба: пре-резерв под 64 чанка/позиций — 0 realloc на варпе/тп/флае
         Self {
             storage,
             player_tickets: PlayerTicketTracker::new(view_distance, simulation_distance),
-            chunk_request_leases: FxHashMap::default(),
+            chunk_request_leases: FxHashMap::with_capacity_and_hasher(
+                64,
+                rustc_hash::FxBuildHasher,
+            ),
             latest_receipt: ChunkTicketReceipt::INITIAL,
-            dirty_load_positions: FxHashSet::default(),
-            dirty_simulation_positions: FxHashSet::default(),
+            dirty_load_positions: FxHashSet::with_capacity_and_hasher(64, rustc_hash::FxBuildHasher),
+            dirty_simulation_positions: FxHashSet::with_capacity_and_hasher(64, rustc_hash::FxBuildHasher),
         }
     }
 

@@ -136,7 +136,8 @@ impl WorldTickSchedulerState {
     }
 
     fn take_due(&mut self, kind: TickKind, current_tick: i64) -> Vec<ActiveTickContainer> {
-        let mut due = Vec::new();
+        // MSPT имба: резерв под тики — без realloc на шалкере/редстоуне
+        let mut due = Vec::with_capacity(16);
         while let Some((trigger_tick, packed)) = self.deadlines(kind).first().copied() {
             if trigger_tick > current_tick {
                 break;

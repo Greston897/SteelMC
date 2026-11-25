@@ -233,7 +233,7 @@ impl ChunkMap {
 
         // Collect all chunks from both maps
         let all_chunks: Vec<Arc<ChunkHolder>> = {
-            let mut chunks = Vec::new();
+            let mut chunks = Vec::with_capacity(self.chunks.len());
             self.chunks.iter_sync(|_, holder| {
                 chunks.push(Arc::clone(holder));
                 true

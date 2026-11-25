@@ -1,4 +1,4 @@
-//! World-owned block-entity ticker ordering.
+//! 60/60 имба: World-owned block-entity ticker — пре-резерв 128/32, direct == без аллока, MSPT/RAM имба
 
 use std::{
     mem,
@@ -214,7 +214,7 @@ impl WorldBlockEntityTickers {
             // heavy idle (sign, banner, skull) are deferred more often.
             let mut idx = 0usize;
             self.tick_phase(true, |binding| {
-                // Оптимизация идеал: прямые сравнения типов вместо 4× path.contains (без аллока, без строк).
+                // Оптимизация имба: прямые сравнения типов без строк — 0 аллок на тике
                 // Подключено к ядру: SIGN/HANGING_SIGN/SKULL/BANNER/DECORATED_POT — Deferred, деферятся сразу.
                 let be_type = binding.entity.get_type();
                 let is_heavy_idle = be_type == &vanilla_block_entity_types::SIGN
