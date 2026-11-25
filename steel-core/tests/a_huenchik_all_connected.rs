@@ -3,10 +3,10 @@
 
 #![allow(clippy::print_stdout, reason = "integration test diagnostics")]
 #![allow(clippy::absolute_paths, reason = "test uses absolute path")]
+#![allow(clippy::unwrap_used, reason = "test helper")]
 #![allow(dead_code, reason = "test helper")]
 #![allow(clippy::allow_attributes, reason = "test helper")]
 #![allow(clippy::allow_attributes_without_reason, reason = "test helper")]
-
 use std::path::Path;
 
 fn workspace_file(path: &str) -> String {

@@ -6,6 +6,7 @@
 #![allow(clippy::print_stdout, reason = "integration test diagnostics")]
 #![allow(clippy::absolute_paths, reason = "test uses absolute path")]
 #![allow(clippy::items_after_statements, reason = "test helper")]
+#![allow(clippy::unwrap_used, reason = "test helper")]
 #![allow(dead_code, reason = "helper for future use")]
 #![allow(clippy::allow_attributes, reason = "test helper")]
 #![allow(clippy::allow_attributes_without_reason, reason = "test helper")]
@@ -18,7 +19,10 @@ fn workspace_file(path: &str) -> String {
     let candidates = [
         Path::new(path).to_path_buf(),
         Path::new(manifest).join(path),
-        Path::new(manifest).parent().unwrap().join(path),
+        Path::new(manifest)
+            .parent()
+            .expect("manifest parent")
+            .join(path),
         Path::new(manifest).join(path.trim_start_matches("steel-core/")),
         Path::new(manifest).join(path.trim_start_matches("steel-registry/")),
         Path::new(manifest).join(path.trim_start_matches("steel-utils/")),
@@ -29,7 +33,7 @@ fn workspace_file(path: &str) -> String {
         }
     }
     // also try workspace root for .ci and .md
-    let ws = Path::new(manifest).parent().unwrap();
+    let ws = Path::new(manifest).parent().expect("manifest parent");
     if let Ok(data) = fs::read_to_string(ws.join(path)) {
         return data;
     }
