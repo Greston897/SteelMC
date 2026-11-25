@@ -373,9 +373,10 @@ impl ChunkMap {
         let full_publications = Arc::new(FullPublicationQueue::default());
 
         Self {
-            chunks: scc::HashMap::default(),
-            unloading_chunks: scc::HashMap::default(),
-            pending_generation_tasks: SyncMutex::new(Vec::new()),
+            // RAM/MSPT имба: пре-резерв chunks 2048/unloading 256 — нулевые ре-хеши при варпе/тп/флае.
+            chunks: scc::HashMap::with_capacity(2048),
+            unloading_chunks: scc::HashMap::with_capacity(256),
+            pending_generation_tasks: SyncMutex::new(Vec::with_capacity(32)),
             task_tracker: TaskTracker::new(),
             scheduling: ChunkSchedulingCoordinator::new(
                 ticket_storage,

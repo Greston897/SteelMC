@@ -41,11 +41,14 @@ impl Default for PlayerAreaMap {
 
 impl PlayerAreaMap {
     /// Creates a new player area map.
+    ///
+    /// RAM/MSPT имба: пре-резерв под 1024 чанков / 64 игрока — без ре-хешей на пиковом онлайне,
+    /// `FxHashSet` в каждом чанке лениво но мапа сразу готова.
     #[must_use]
     pub fn new() -> Self {
         Self {
-            chunks: scc::HashMap::new(),
-            player_chunks: scc::HashMap::new(),
+            chunks: scc::HashMap::with_capacity(1024),
+            player_chunks: scc::HashMap::with_capacity(64),
         }
     }
 

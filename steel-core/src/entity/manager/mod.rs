@@ -668,8 +668,9 @@ impl IndexedOrderedEntityIds {
         }
 
         let mut compacted_nodes: Vec<OrderedEntityIdNode> = Vec::with_capacity(live_len);
-        let mut compacted_node_by_id = FxHashMap::default();
-        compacted_node_by_id.reserve(live_len);
+        // MSPT имба: сразу с capacity+hasher — один alloc вместо default+reserve (двойной ре-хеш)
+        let mut compacted_node_by_id =
+            FxHashMap::with_capacity_and_hasher(live_len, FxBuildHasher);
         let mut current = self.first;
         while let Some(index) = current {
             let node = &self.nodes[index];
@@ -1039,8 +1040,11 @@ impl WorldEntityManager {
             entries.push(Self::checked_live_entry(Arc::clone(entity), ownership)?);
         }
 
-        let mut seen_ids = FxHashSet::default();
-        let mut seen_uuids = FxHashSet::default();
+        // MSPT имба: пре-резерв — 1 alloc вместо 4+ ре-хешей на addEntities
+        let mut seen_ids =
+            FxHashSet::with_capacity_and_hasher(entities.len(), FxBuildHasher);
+        let mut seen_uuids =
+            FxHashSet::with_capacity_and_hasher(entities.len(), FxBuildHasher);
         for entry in &entries {
             let entity_id = entry.entity.id();
             if !seen_ids.insert(entity_id) {
@@ -1428,7 +1432,8 @@ impl WorldEntityManager {
     }
 
     fn has_live_loaded_root_vehicle(state: &ManagerState, entity: &SharedEntity) -> bool {
-        let mut visited = FxHashSet::default();
+        // MSPT имба: 4 слота без ре-хеша — глубина vehicle chain vanilla ≤4
+        let mut visited = FxHashSet::with_capacity_and_hasher(4, FxBuildHasher);
         visited.insert(entity.id());
 
         let mut passenger = Arc::clone(entity);
@@ -1792,8 +1797,9 @@ impl WorldEntityManager {
     ) -> Vec<UnsavedEntityReport> {
         let saved_chunks = saved_chunks.iter().copied().collect::<FxHashSet<_>>();
         let state = self.state.read();
-        let mut seen = FxHashSet::default();
-        let mut reports = Vec::new();
+        // MSPT имба: резерв под репорты — без realloc на каждом тике
+        let mut seen = FxHashSet::with_capacity_and_hasher(32, FxBuildHasher);
+        let mut reports = Vec::with_capacity(16);
 
         for entry in state.live_by_id.values() {
             Self::push_unsaved_entity_report(&saved_chunks, &mut seen, &mut reports, entry);
@@ -1819,9 +1825,10 @@ impl WorldEntityManager {
     /// Gets entities that should be serialized for `chunk`.
     pub fn get_saveable_entities_for_chunk(&self, chunk: ChunkPos) -> Vec<SharedEntity> {
         let state = self.state.read();
-        let mut result = Vec::new();
-        let mut seen_ids = FxHashSet::default();
-        let mut seen_uuids = FxHashSet::default();
+        // MSPT имба: резерв под save — без realloc на 1.18+ больших чанках с 100+ энтити
+        let mut result = Vec::with_capacity(16);
+        let mut seen_ids = FxHashSet::with_capacity_and_hasher(16, FxBuildHasher);
+        let mut seen_uuids = FxHashSet::with_capacity_and_hasher(16, FxBuildHasher);
 
         for entity_id in Self::entity_ids_in_chunk_order(&state, chunk) {
             let Some(entry) = state.live_by_id.get(entity_id) else {

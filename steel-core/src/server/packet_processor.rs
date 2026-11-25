@@ -310,7 +310,8 @@ where
         Self {
             state: SyncMutex::new(PacketQueueState {
                 phase: PacketPhase::Closed,
-                lanes: FxHashMap::default(),
+                // RAM/MSPT имба: пре-резерв 128 игроков — 0 ре-хеш на входе 100 онлайн
+                lanes: FxHashMap::with_capacity_and_hasher(128, rustc_hash::FxBuildHasher),
                 player_local_ready: BinaryHeap::new(),
                 serialized_ready: BinaryHeap::new(),
                 exclusive_ready: BinaryHeap::new(),

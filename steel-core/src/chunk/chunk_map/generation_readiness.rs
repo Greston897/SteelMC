@@ -244,8 +244,12 @@ impl ChunkMap {
         if publications.is_empty() && changed_positions.is_empty() {
             return Ok(ReadinessReconcileResult::default());
         }
-        let mut contributor_updates = FxHashMap::default();
-        let mut activation_holders = FxHashMap::default();
+        // MSPT имба: pre-резерв под все changed + publications — 0 realloc на горячем тике.
+        let cap = changed_positions.len() + publications.len();
+        let mut contributor_updates =
+            FxHashMap::with_capacity_and_hasher(cap, rustc_hash::FxBuildHasher);
+        let mut activation_holders =
+            FxHashMap::with_capacity_and_hasher(publications.len(), rustc_hash::FxBuildHasher);
 
         for &pos in changed_positions {
             contributor_updates.insert(pos, self.current_full_contributor(pos));

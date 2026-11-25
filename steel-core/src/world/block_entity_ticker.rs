@@ -65,12 +65,23 @@ impl RebindableBlockEntityTicker {
     }
 }
 
-#[derive(Default)]
 struct TickerState {
     active: Vec<Arc<RebindableBlockEntityTicker>>,
     pending: Vec<Arc<RebindableBlockEntityTicker>>,
     by_pos: FxHashMap<BlockPos, Arc<RebindableBlockEntityTicker>>,
     ticking: bool,
+}
+
+impl Default for TickerState {
+    fn default() -> Self {
+        // RAM/MSPT имба: пре-резерв под BE счёт — 0 realloc на прогрузке чанков.
+        Self {
+            active: Vec::with_capacity(128),
+            pending: Vec::with_capacity(32),
+            by_pos: FxHashMap::with_capacity_and_hasher(128, rustc_hash::FxBuildHasher),
+            ticking: false,
+        }
+    }
 }
 
 /// Vanilla-shaped world-global active and pending block-entity ticker lists.

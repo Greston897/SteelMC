@@ -113,10 +113,12 @@ impl Default for EntityTracker {
 
 impl EntityTracker {
     /// Creates a new empty entity tracker.
+    ///
+    /// RAM имба: пре-резерв 1024 энтити — без ре-аллока на каждом спавне мобов/итемов.
     #[must_use]
     pub fn new() -> Self {
         Self {
-            entities: scc::HashMap::new(),
+            entities: scc::HashMap::with_capacity(1024),
         }
     }
 
