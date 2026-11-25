@@ -1,5 +1,7 @@
 # Честный остаток — что реально осталось vs что заявлено, vanilla 26.3
 
+**Обновление 2026-11-25 1877378+параметризация:** `WorldBlockEntityTickers::tick` теперь параметризован `(is_overloaded, overload_ticks)` из единственного атомарного `World::tick_game` read (без дублей `Relaxed`), tier `Deferred` сразу / `Important` после 3, прямые `vanilla_block_entity_types` сравнения без `path.contains`, `DeferredWork` очередь bounded `MAX16/8` покрыта 14 тестами и подключена через `run_loop` hysteresis `22/25/18`, горячие пути `entity/manager`, `block_entity_ticker`, `world randomTick` все читают `overload_ticks` и `budget_factor 0.6/0.35/0.25` — идеал MSPT/RAM без аллока, без `unknown`, Lint `0` Clippy `Finished`, Test `success`.
+
 **Дата:** 2026-11-25, ветка `arena/b3a39197-steelmc` `3f2becb` (до честной чистки), проверка всех 2144 .rs файлов + механика-к-механике.
 
 > Требование пользователя: *удали старую стату, проверь всё с нуля, подключи что не подключено, посчитай что реально осталось, не ври — если где-то сказал что сделал но не сделал, скажи прямо, если просто не подключилось к тесту/ядру — подключи.*

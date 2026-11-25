@@ -177,21 +177,23 @@ impl WorldBlockEntityTickers {
     /// Under server overload we defer non-critical block-entity ticks (chests,
     /// decorative etc. are idle) and keep only furnaces/hoppers/comparators
     /// ticking to avoid MSPT spikes and desync of saves.
-    pub(crate) fn tick(&self, world: &Arc<World>, runs_normally: bool) {
+    pub(crate) fn tick(
+        &self,
+        world: &Arc<World>,
+        runs_normally: bool,
+        is_overloaded: bool,
+        overload_ticks: u32,
+    ) {
         if !runs_normally {
             self.tick_phase(false, |_| {});
             return;
         }
-        let is_overloaded = world.server.get().and_then(Weak::upgrade).is_some_and(|s| {
-            use std::sync::atomic::Ordering::Relaxed;
-            s.is_overloaded.load(Relaxed) && s.overload_tick_count.load(Relaxed) > 0
-        });
-        let is_severely_overloaded = world.server.get().and_then(Weak::upgrade).is_some_and(|s| {
-            use std::sync::atomic::Ordering::Relaxed;
-            s.is_overloaded.load(Relaxed) && s.overload_tick_count.load(Relaxed) > 3
-        });
+        // Параметризовано ядром идеал: один атомарный read в World::tick_game, без дублей Relaxed на каждой строке.
+        // Подключено к TickOverloadGuard hysteresis: Deferred сразу (>0), Important после 3 (>3).
+        let overloaded = is_overloaded && overload_ticks > 0;
+        let severely = overloaded && overload_ticks > 3;
         let border = world.world_border_snapshot();
-        if is_overloaded {
+        if overloaded {
             // Lightest + most important first.
             // Critical block entities (furnace, hopper, brewing stand, comparator)
             // always tick to keep redstone and item movement in sync.
@@ -213,14 +215,14 @@ impl WorldBlockEntityTickers {
                 // lightly overloaded, heavy idle are spread over 2-3 ticks.
                 let should_tick = if is_heavy_idle {
                     // Heavy idle: tick every 3rd tick under severe, every 2nd under light
-                    if is_severely_overloaded {
+                    if severely {
                         idx.is_multiple_of(3)
                     } else {
                         idx.is_multiple_of(2)
                     }
                 } else {
                     // Important: tick every tick when lightly overloaded, every 2nd when severe
-                    if is_severely_overloaded {
+                    if severely {
                         idx.is_multiple_of(2)
                     } else {
                         true

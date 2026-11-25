@@ -1573,7 +1573,8 @@ impl World {
         {
             let _span = tracing::trace_span!("block_entities").entered();
             let start = Instant::now();
-            self.block_entity_tickers.tick(self, runs_normally);
+            self.block_entity_tickers
+                .tick(self, runs_normally, is_overloaded, overload_ticks);
             chunk_map_timings.tick_block_entities = start.elapsed();
         }
 
