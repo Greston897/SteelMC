@@ -6,7 +6,7 @@ use std::sync::{
 };
 
 use parking_lot::{RwLockReadGuard, RwLockWriteGuard};
-use rustc_hash::{FxBuildHasher, FxHashMap};
+use rustc_hash::FxHashMap;
 use steel_registry::{
     REGISTRY,
     blocks::{BlockRef, block_state_ext::BlockStateExt},
@@ -136,8 +136,14 @@ impl Chunk {
             block_entities: BlockEntityStorage::new(),
             entities: EntityStorage::new(),
             // MSPT имба: резерв 4 структуры на чанк — 0 realloc на генерации
-            structure_starts: SyncRwLock::new(FxHashMap::with_capacity_and_hasher(4, rustc_hash::FxBuildHasher)),
-            structure_references: SyncRwLock::new(FxHashMap::with_capacity_and_hasher(4, rustc_hash::FxBuildHasher)),
+            structure_starts: SyncRwLock::new(FxHashMap::with_capacity_and_hasher(
+                4,
+                rustc_hash::FxBuildHasher,
+            )),
+            structure_references: SyncRwLock::new(FxHashMap::with_capacity_and_hasher(
+                4,
+                rustc_hash::FxBuildHasher,
+            )),
             postprocessing: SyncMutex::new(empty_postprocessing(height)),
             scheduled_ticks: Arc::new(ChunkTickContainer::new_proto(ChunkTickLists::new(
                 BlockTickList::new_pending(),

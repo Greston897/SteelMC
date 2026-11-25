@@ -298,7 +298,12 @@ impl ChunkHolder {
         let section_count = (height / 16) as usize;
         // RAM/MSPT имба: 8 слотов на секцию — без rehash на каждом блок-апдейте
         let changed_blocks_per_section = (0..section_count)
-            .map(|_| SyncMutex::new(FxHashSet::with_capacity_and_hasher(8, rustc_hash::FxBuildHasher)))
+            .map(|_| {
+                SyncMutex::new(FxHashSet::with_capacity_and_hasher(
+                    8,
+                    rustc_hash::FxBuildHasher,
+                ))
+            })
             .collect::<Box<[_]>>();
 
         Self {

@@ -669,8 +669,7 @@ impl IndexedOrderedEntityIds {
 
         let mut compacted_nodes: Vec<OrderedEntityIdNode> = Vec::with_capacity(live_len);
         // MSPT имба: сразу с capacity+hasher — один alloc вместо default+reserve (двойной ре-хеш)
-        let mut compacted_node_by_id =
-            FxHashMap::with_capacity_and_hasher(live_len, FxBuildHasher);
+        let mut compacted_node_by_id = FxHashMap::with_capacity_and_hasher(live_len, FxBuildHasher);
         let mut current = self.first;
         while let Some(index) = current {
             let node = &self.nodes[index];
@@ -1041,10 +1040,8 @@ impl WorldEntityManager {
         }
 
         // MSPT имба: пре-резерв — 1 alloc вместо 4+ ре-хешей на addEntities
-        let mut seen_ids =
-            FxHashSet::with_capacity_and_hasher(entities.len(), FxBuildHasher);
-        let mut seen_uuids =
-            FxHashSet::with_capacity_and_hasher(entities.len(), FxBuildHasher);
+        let mut seen_ids = FxHashSet::with_capacity_and_hasher(entities.len(), FxBuildHasher);
+        let mut seen_uuids = FxHashSet::with_capacity_and_hasher(entities.len(), FxBuildHasher);
         for entry in &entries {
             let entity_id = entry.entity.id();
             if !seen_ids.insert(entity_id) {

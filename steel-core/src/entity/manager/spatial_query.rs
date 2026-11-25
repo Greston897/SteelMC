@@ -2,7 +2,7 @@
 
 use std::{slice, vec::IntoIter};
 
-use rustc_hash::{FxBuildHasher, FxHashSet};
+use rustc_hash::FxHashSet;
 use smallvec::SmallVec;
 use steel_utils::WorldAabb;
 

@@ -26,7 +26,10 @@ impl NavigatingMobTracker {
     pub(super) fn new() -> Self {
         // RAM имба: резерв 32 моба — без realloc на ферме/рейде
         Self {
-            ids: SyncMutex::new(FxHashSet::with_capacity_and_hasher(32, rustc_hash::FxBuildHasher)),
+            ids: SyncMutex::new(FxHashSet::with_capacity_and_hasher(
+                32,
+                rustc_hash::FxBuildHasher,
+            )),
         }
     }
 
@@ -186,7 +189,8 @@ impl World {
             let root_pos = root.position();
             let root_chunk = ChunkPos::from_entity_pos(root_pos);
             // MSPT имба: резерв под dirty — без ре-хеша на загрузке чанка с экипажем
-            let mut dirty_chunks = FxHashSet::with_capacity_and_hasher(4, rustc_hash::FxBuildHasher);
+            let mut dirty_chunks =
+                FxHashSet::with_capacity_and_hasher(4, rustc_hash::FxBuildHasher);
             for entity in &tree {
                 let entity_chunk = ChunkPos::from_entity_pos(entity.position());
                 if entity_chunk != source_chunk {
@@ -222,7 +226,8 @@ impl World {
 
     pub(super) fn loaded_entity_trees(entities: Vec<SharedEntity>) -> Vec<Vec<SharedEntity>> {
         // MSPT имба: резерв под все энтити чанка — 1 alloc
-        let mut seen = FxHashSet::with_capacity_and_hasher(entities.len(), rustc_hash::FxBuildHasher);
+        let mut seen =
+            FxHashSet::with_capacity_and_hasher(entities.len(), rustc_hash::FxBuildHasher);
         let mut trees = Vec::with_capacity(4);
 
         for entity in &entities {
@@ -301,7 +306,8 @@ impl World {
         let mut seen_ids = FxHashSet::with_capacity_and_hasher(4, rustc_hash::FxBuildHasher);
         Self::collect_fresh_entity_tree(&root, &mut seen_ids, &mut entities)?;
 
-        let mut dirty_chunks = FxHashSet::with_capacity_and_hasher(entities.len(), rustc_hash::FxBuildHasher);
+        let mut dirty_chunks =
+            FxHashSet::with_capacity_and_hasher(entities.len(), rustc_hash::FxBuildHasher);
         for entity in &entities {
             let chunk = ChunkPos::from_entity_pos(entity.position());
             if !self.entity_manager.is_chunk_loaded(chunk) {

@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
+use rustc_hash::FxBuildHasher;
 use scc::HashMap;
 use steel_utils::locks::SyncMutex;
 use uuid::Uuid;

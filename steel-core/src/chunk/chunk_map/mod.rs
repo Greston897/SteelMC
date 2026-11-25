@@ -374,8 +374,8 @@ impl ChunkMap {
 
         Self {
             // RAM/MSPT имба: пре-резерв chunks 2048/unloading 256 — нулевые ре-хеши при варпе/тп/флае.
-            chunks: scc::HashMap::with_capacity(2048),
-            unloading_chunks: scc::HashMap::with_capacity(256),
+            chunks: scc::HashMap::with_capacity_and_hasher(2048, FxBuildHasher),
+            unloading_chunks: scc::HashMap::with_capacity_and_hasher(256, FxBuildHasher),
             pending_generation_tasks: SyncMutex::new(Vec::with_capacity(32)),
             task_tracker: TaskTracker::new(),
             scheduling: ChunkSchedulingCoordinator::new(

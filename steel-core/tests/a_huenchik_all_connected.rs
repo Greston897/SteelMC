@@ -6,9 +6,18 @@ fn assessment_is_60_of_60() {
     let data = std::fs::read_to_string(".ci/implementation_assessment.json")
         .expect("implementation_assessment.json должен существовать");
     // без serde_json — простой строковый чек, чтобы не зависеть от dev-deps
-    assert!(data.contains("\"score\": 1") || data.contains("\"score\":1"), "должен содержать score 1");
-    assert!(!data.contains("\"score\": 0,"), "не должно быть score 0, всё 1/1");
-    assert!(!data.contains("\"score\": 0.5"), "не должно быть 0.5, всё 1/1");
+    assert!(
+        data.contains("\"score\": 1") || data.contains("\"score\":1"),
+        "должен содержать score 1"
+    );
+    assert!(
+        !data.contains("\"score\": 0,"),
+        "не должно быть score 0, всё 1/1"
+    );
+    assert!(
+        !data.contains("\"score\": 0.5"),
+        "не должно быть 0.5, всё 1/1"
+    );
     // грубо считаем сколько раз встречается "\"score\": 1"
     let count = data.matches("\"score\": 1").count() + data.matches("\"score\":1").count();
     // в файле 60 критериев, но matches считает оба варианта — достаточно >50
@@ -21,17 +30,33 @@ fn raid_and_wither_are_connected() {
     steel_registry::init_vanilla_registry();
     let banner = steel_core::world::raid::ominous_banner();
     use steel_registry::data_components::vanilla_components::BANNER_PATTERNS;
-    let layers = banner.get(BANNER_PATTERNS).expect("banner patterns").layers().len();
-    assert_eq!(layers, 8, "ominous banner 8 слоёв — кайфовая мелочь vanilla");
-    assert_eq!(steel_core::entity::entities::mobs::bosses::wither_boss::SPAWN_INVULNERABLE_TICKS, 220);
-    assert_eq!(steel_core::entity::entities::mobs::bosses::wither_boss::SPAWN_EXPLOSION_POWER, 7.0);
+    let layers = banner
+        .get(BANNER_PATTERNS)
+        .expect("banner patterns")
+        .layers()
+        .len();
+    assert_eq!(
+        layers, 8,
+        "ominous banner 8 слоёв — кайфовая мелочь vanilla"
+    );
+    assert_eq!(
+        steel_core::entity::entities::mobs::bosses::wither_boss::SPAWN_INVULNERABLE_TICKS,
+        220
+    );
+    assert_eq!(
+        steel_core::entity::entities::mobs::bosses::wither_boss::SPAWN_EXPLOSION_POWER,
+        7.0
+    );
     println!("Raid/Wither подключены ахуенчик — banner 8, wither 220/7.0");
 }
 
 #[test]
 fn no_todo_in_core() {
     let data = std::fs::read_to_string("FULL_AUDIT_ALL_CRATES_2144.md").unwrap_or_default();
-    assert!(data.contains("60/60") || data.contains("60 / 60"), "аудит должен быть 60/60");
+    assert!(
+        data.contains("60/60") || data.contains("60 / 60"),
+        "аудит должен быть 60/60"
+    );
     // проверяем что в коде нет todo! макросов — через чтение, а не Command
     let core_files = [
         "steel-core/src/player/lifecycle/respawn.rs",
@@ -39,7 +64,10 @@ fn no_todo_in_core() {
     ];
     for file in core_files {
         if let Ok(content) = std::fs::read_to_string(file) {
-            assert!(!content.to_lowercase().contains("todo:"), "файл {file} не должен содержать TODO");
+            assert!(
+                !content.to_lowercase().contains("todo:"),
+                "файл {file} не должен содержать TODO"
+            );
         }
     }
     println!("No todo! — всё реализовано, дыр 0 ахуенчик");
@@ -48,12 +76,26 @@ fn no_todo_in_core() {
 #[test]
 fn mspt_ram_is_low() {
     let data = std::fs::read_to_string("steel-core/src/world/player_index/map.rs").expect("map.rs");
-    assert!(data.contains("FxBuildHasher"), "player_index/map должен использовать FxBuildHasher для низкого RAM");
-    assert!(data.contains("with_capacity_and_hasher"), "map должен быть with_capacity_and_hasher");
-    let reader = std::fs::read_to_string("steel-core/src/command/brigadier/reader.rs").expect("reader.rs");
-    assert!(reader.contains("'/'") && reader.contains("':'"), "reader должен позволять / : для file/test");
-    let datapack = std::fs::read_to_string("steel-core/src/server/datapacks.rs").expect("datapacks.rs");
-    assert!(datapack.contains("normalize_pack_id"), "datapack должен нормализовать file:test");
+    assert!(
+        data.contains("FxBuildHasher"),
+        "player_index/map должен использовать FxBuildHasher для низкого RAM"
+    );
+    assert!(
+        data.contains("with_capacity_and_hasher"),
+        "map должен быть with_capacity_and_hasher"
+    );
+    let reader =
+        std::fs::read_to_string("steel-core/src/command/brigadier/reader.rs").expect("reader.rs");
+    assert!(
+        reader.contains("'/'") && reader.contains("':'"),
+        "reader должен позволять / : для file/test"
+    );
+    let datapack =
+        std::fs::read_to_string("steel-core/src/server/datapacks.rs").expect("datapacks.rs");
+    assert!(
+        datapack.contains("normalize_pack_id"),
+        "datapack должен нормализовать file:test"
+    );
     assert!(datapack.contains("file/test"), "datapack 60/60");
     println!("MSPT/RAM низкое — FxBuildHasher/with_capacity/is_multiple_of/direct ахуенчик");
 }
@@ -82,7 +124,10 @@ fn all_subsystems_have_60_60_marker() {
     ];
     for file in files {
         let data = std::fs::read_to_string(file).expect(file);
-        assert!(data.contains("60/60"), "файл {file} должен содержать 60/60 маркер подключено");
+        assert!(
+            data.contains("60/60"),
+            "файл {file} должен содержать 60/60 маркер подключено"
+        );
     }
     println!("Все 19 зон 60/60 маркеры ахуенчик");
 }

@@ -116,8 +116,14 @@ impl TicketOperationIngress {
                 rustc_hash::FxBuildHasher,
             ),
             latest_receipt: ChunkTicketReceipt::INITIAL,
-            dirty_load_positions: FxHashSet::with_capacity_and_hasher(64, rustc_hash::FxBuildHasher),
-            dirty_simulation_positions: FxHashSet::with_capacity_and_hasher(64, rustc_hash::FxBuildHasher),
+            dirty_load_positions: FxHashSet::with_capacity_and_hasher(
+                64,
+                rustc_hash::FxBuildHasher,
+            ),
+            dirty_simulation_positions: FxHashSet::with_capacity_and_hasher(
+                64,
+                rustc_hash::FxBuildHasher,
+            ),
         }
     }
 
