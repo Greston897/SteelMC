@@ -142,7 +142,7 @@ fn large_hot_tick_no_alloc_without_capacity() {
     );
     assert_contains(
         "steel-core/src/chunk/chunk_map/mod.rs",
-        "with_capacity(2048)",
+        "with_capacity_and_hasher(2048",
         "ChunkMap chunks 2048",
     );
     // encode_cache 64 — проверяем наличие with_capacity_and_hasher и FxBuildHasher (многострочно)
@@ -175,7 +175,7 @@ fn large_scc_capacity() {
     );
     assert_contains(
         "steel-core/src/chunk/chunk_map/mod.rs",
-        "scc::HashMap::with_capacity(2048)",
+        "scc::HashMap::with_capacity_and_hasher(2048",
         "chunk map scc 2048",
     );
     println!("large_scc capacity имба");
@@ -250,7 +250,7 @@ fn large_chunk_tracker_capacity() {
     assert!(d.contains("with_capacity_and_hasher(64"), "ChunkTracker 64");
     assert!(d.contains("Vec::with_capacity(64)"), "changes 64");
     assert!(
-        d.contains("with_capacity_and_hasher(source_changes.len()"),
+        d.contains("source_changes.len() * 2"),
         "original_levels 2*len"
     );
     println!("large_chunk_tracker имба");
@@ -381,7 +381,7 @@ fn large_mspt_ram_optimizations_present_everywhere() {
         ),
         (
             "steel-core/src/chunk/chunk_map/mod.rs",
-            "with_capacity(2048)",
+            "with_capacity_and_hasher(2048",
         ),
         ("OPTIMIZATION-RAM-IMBA-26.3.md", "MSPT имба"),
     ];

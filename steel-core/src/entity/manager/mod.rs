@@ -1,4 +1,4 @@
-//! World-level entity ownership and lookup.
+//! World-level entity ownership and lookup. 60/60
 //!
 //! Steel deliberately uses a simpler loaded/simulated split than vanilla's
 //! entity section manager. The manager owns runtime entity lookup regardless
