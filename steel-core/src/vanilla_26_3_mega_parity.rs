@@ -2443,7 +2443,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
         &vanilla_blocks::MOVING_PISTON
     );
     for _ in 0..3 {
-        world.block_entity_tickers().tick(&world, true);
+        world.block_entity_tickers().tick(&world, true, false, 0);
     }
     assert_eq!(
         world.get_block_state(pushed_from).get_block(),
@@ -2457,7 +2457,7 @@ fn vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite() {
     world.remove_block(piston_pwr, false);
     world.run_block_events();
     for _ in 0..3 {
-        world.block_entity_tickers().tick(&world, true);
+        world.block_entity_tickers().tick(&world, true, false, 0);
     }
     assert!(
         !world

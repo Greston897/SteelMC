@@ -257,7 +257,7 @@ fn level_events(packets: &SyncMutex<Vec<EncodedPacket>>) -> Vec<(i32, BlockPos, 
 
 fn tick_block_entities(world: &Arc<World>, ticks: i64) {
     for _ in 0..ticks {
-        world.block_entity_tickers().tick(world, true);
+        world.block_entity_tickers().tick(world, true, false, 0);
     }
 }
 
