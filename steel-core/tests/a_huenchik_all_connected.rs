@@ -1,6 +1,12 @@
 //! Интеграционный тест — всё подключено и ахуенчик (60/60, без unknown, MSPT/RAM идеал)
 //! Проверяет до конца: каждый модуль чекнут, каждая мелочь vanilla имеет смысл и подключена.
 
+#![allow(clippy::print_stdout, reason = "integration test diagnostics")]
+#![allow(clippy::absolute_paths, reason = "test uses absolute path")]
+#![allow(dead_code, reason = "test helper")]
+#![allow(clippy::allow_attributes, reason = "test helper")]
+#![allow(clippy::allow_attributes_without_reason, reason = "test helper")]
+
 #[test]
 fn assessment_is_60_of_60() {
     let data = std::fs::read_to_string(".ci/implementation_assessment.json")

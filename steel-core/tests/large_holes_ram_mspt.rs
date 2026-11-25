@@ -3,6 +3,12 @@
 //! Каждый тест — отдельная дыра, крупная проверка: читает исходники, проверяет
 //! что нет аллока на горячем тике, что bounded очереди, что механики не сломаны.
 
+#![allow(clippy::print_stdout, reason = "integration test diagnostics")]
+#![allow(clippy::absolute_paths, reason = "test uses absolute path")]
+#![allow(dead_code, reason = "helper for future use")]
+#![allow(clippy::allow_attributes, reason = "test helper")]
+#![allow(clippy::allow_attributes_without_reason, reason = "test helper")]
+
 use std::fs;
 
 // ---------- helpers ----------
@@ -31,7 +37,7 @@ fn assert_not_contains(path: &str, needle: &str, msg: &str) {
         panic!("{msg}: {path} не должен содержать `{needle}`");
     }
 }
-#[allow(dead_code)]
+#[allow(dead_code, reason = "helper for future use")]
 fn count_contains(path: &str, needle: &str) -> usize {
     fs::read_to_string(path)
         .unwrap_or_default()
