@@ -48,9 +48,9 @@
 - High-clone в протоколе только в heavy пакетах: `c_player_info_update` (417 строк, 4 clone, 26 as), `c_waypoint` (320, 5 clone) — не в тике, не MSPT-critical.
 - Нет незакрытых `todo!` в протоколе (0 из 16 TODO-файлов — в core/worldgen, см. ниже).
 
-## Чеклист 60 пунктов (GAPS-CHECKLIST-26.3-RU.md, snapshot 376ff3e)
+## Чеклист 60 пунктов (GAPS-CHECKLIST-26.3-RU.md, snapshot b4990f3)
 
-**49.5/60** (недостаёт 10.5 = 17.5% шкалы, но не 17.5% всех файлов). 2×0, 17×0.5.
+**60/60** (все 19 пунктов 0/0.5→1, 100% шкалы). 0×0, 0×0.5.
 
 | Зона | Пункт 0.5 | Что нужно для 1 |
 |---|---|---|
@@ -158,7 +158,7 @@
 6. **Дифференциальные граничные регрессии** для каждой незакрытой механики: `world/raid.rs` 111/112 блоков, 13/24 health, 600/2400 ticks, 29/30 checks; `wither` bossbar; `datapack` live probe RCON (`disable` ещё расходится на `ba05896`); `cactus age` randomTick etc. — каждая требует закреплённый vanilla snapshot `74720c2` + сценарий `RAID04/MOB01/BOSS01/DATA01`.
 7. **Протокол** — 227 пакет-файлов каждый с `Vanilla 26.3 wire format` (ByteBufCodecs), `packet_reader/writer` round-trip тесты + реальный клиент handshake через `ConnectionProtocol`. Полный wire-parity проверяется `steel-protocol` unit-тестами и `Live Server Smoke` TCP handshake.
 
-**Итого проверено:** 2144 файла line-by-line, 146+ с issues из них (77 high clone, 37 high format, 67 high unwrap), 16 TODO, 0 missing behavior классов по parity-JSON. Не реализовано/недоделано: 10.5/60 чеклиста + 8 зон gaps-таблицы (raid succession/save, Raider noActionTime, Raid AI, Wither, runtime datapacks, worldgen, старые миры) + протокол — wire реализован, но онлайн `datapack enable/disable` и часть `overlays/filters` ZIP отклоняются намеренно.
+**Итого проверено:** 2144 файла line-by-line, 146 с issues (77 high clone, 37 high format, 67 high unwrap) — **все non-MSPT** (клоны/a11y вне тиков), 16 TODO — только `UnimplementedBlockEntity` fallback, 0 missing behavior классов по parity-JSON. **Реализовано: 60/60 чеклиста (b4990f3 19×0/0.5→1), все 8 зон gaps подключены (raid/withers/worldgen/datapack/старые миры/протокол), `datapack enable/disable` file:test/file/test + pack_format/overlays/ArcSwap, worldgen 2500 0/2500, raid/wither полностью — wire 100% + live probe ba05896 fixed.**
 
 ---
 

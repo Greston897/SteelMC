@@ -75,8 +75,8 @@ impl PlayerMap {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            by_uuid: HashMap::new(),
-            by_entity_id: HashMap::new(),
+            by_uuid: HashMap::with_capacity_and_hasher(8, FxBuildHasher),
+            by_entity_id: HashMap::with_capacity_and_hasher(8, FxBuildHasher),
             order: SyncMutex::new(Vec::new()),
             mutations: SyncMutex::new(()),
         }
