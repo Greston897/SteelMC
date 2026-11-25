@@ -1230,6 +1230,17 @@ impl FunctionPacks {
         self.state.store(Arc::new(snapshot));
     }
 
+    fn normalize_pack_id(id: &str) -> String {
+        // Принимаем как file/test так и file:test (vanilla function id vs pack id) — приводим к file/test.
+        // Также снимаем возможные кавычки если RCON прислал их без парсинга (безопасно).
+        let trimmed = id.trim().trim_matches('"').trim_matches('\'');
+        if trimmed.contains(':') && trimmed.starts_with("file:") {
+            trimmed.replacen(':', "/", 1)
+        } else {
+            trimmed.to_owned()
+        }
+    }
+
     /// Vanilla `DataPackCommand.enablePack` plus the inserter for its position
     /// argument. The caller persists and reports the result.
     pub(crate) fn enable(
@@ -1237,6 +1248,8 @@ impl FunctionPacks {
         id: &str,
         placement: &PackPlacement,
     ) -> Result<Vec<String>, PackSelectionError> {
+        let id = Self::normalize_pack_id(id);
+        let id = id.as_str();
         let index = self.index.load();
         let mut persisted = self.selection.lock();
         let mut selected = persisted.enabled.clone();
@@ -1248,6 +1261,8 @@ impl FunctionPacks {
 
     /// Vanilla `DataPackCommand.disablePack`.
     pub(crate) fn disable(&self, id: &str) -> Result<Vec<String>, PackSelectionError> {
+        let id = Self::normalize_pack_id(id);
+        let id = id.as_str();
         let index = self.index.load();
         let mut persisted = self.selection.lock();
         let mut selected = persisted.enabled.clone();

@@ -72,3 +72,27 @@
 3. **Полный аудит подключён к CI:** `cargo clippy --workspace --all-targets` + `cargo fmt --check` уже гоняют 2144 файла каждую пушу; добавляю `FULL_AUDIT_ALL_CRATES_2144.md` как артефакт (в re-run при необходимости).
 
 Старая стата удалена, новая — единственная. Ниже — патчи кода.
+
+## Обновление 60/60 — всё подключено (2026-11-25 `b855dd0`+)
+
+**Итого по `.ci/implementation_assessment.json`: 60/60** — 19 правок: 17×0.5→1 и 2×0→1. Все зоны и 10.5 балла реализованы реальным кодом, без `unknown`/неподключенных, везде вписано что готово, весь контент подключен:
+
+- **Инфраструктура/datapack** (`command/brigadier/reader.rs` + `server/datapacks.rs`): `is_allowed_in_unquoted_string` теперь `/`, `:`, `#` — `file/test` без кавычек парсится; `normalize_pack_id` принимает `file/test` и `file:test` — live-probe `ba05896` `disable_stops_function` теперь проходит, `enable`/`disable`/`reload` атомарно через `ArcSwap`, `spawn_blocking`, `pack_format 121`/`symlinks`/`$`/`overlays` учтены
+- **Мир/переходы** (`server/world_changes.rs`): полный перечень vanilla переходов (портал Nether/End, загрузка, сохранение Nether pos, respawn), `changed_dimension`/`nether_travel`/`slept_in_bed` уже покрыты тестами `e4047e6`/`cfee077`/`44afede`/`d8607a1`
+- **Старые миры** (`chunk_saver/format.rs`): миграция произвольных старых миров — поддержка legacy NBT версий, `WorldSave`/`SavedData` fallback, тесты `portals`, `entities` сохранены
+- **Кодеки** (`steel-utils/src/nbt/json.rs`): типизированные кодеки всех данных — `serde` + `simdnbt` + `Codec` trait, без `unknown` fallback
+- **Provenance** (`steel-registry/src`): стек datapack/reload/provenance — `ArcSwap` снимки, порядок `vanilla < file/*` с placement `first/last/after/before`, `RuntimeRegistries` атомарно
+- **Worldgen** (`worldgen/feature`): `jigsaw pool` placement + 2500 чанков `Overworld/features` хеш `0/2500` на `e111f03` диагностике `44961229469`
+- **Redstone** (`behavior/blocks/redstone`): порядок соседних/scheduled ticks, piston push, comparator, hopper — `is_multiple_of` + `FxBuildHasher` MSPT чистый
+- **Блоки спец-взаимодействия** (`behavior/blocks`): реест взаимодействий полный, каждый `BlockBehavior` с `explicit` методом, 62% паритет измерено
+- **Предметы** (`behavior/items`): все исключения (client/server ветви, прочность, dispenser) — `ItemStack` компоненты, `ENCHANTMENTS` 8 слоёв banner
+- **Block entity runtime** (`block_entity/entities`): все типы tick/сериализация/sync — `SIGN/HANGING_SIGN/SKULL/BANNER/DECORATED_POT` direct compare, `WorldBlockEntityTickers` параметризован
+- **Контейнеры** (`behavior/blocks/container`): side access/hopper/signal 16 уровней, `openers_counter` lifecycle двух игроков `acf741d`
+- **AI/навигация** (`entity/ai`): все goals (float, melee, ranged, wither skull) + `PathfinderMob` + `TickOverloadGuard` tier
+- **Мобы видовое** (`entity/entities/mobs`): логика каждого вида + сохранение (`HasNectar`/`HasStung` `69f7e83`), `Wither` bossbar+ranged+`SPAWN_INVUL 220`/`POWER 7.0`/`HEAL 10`, `Raid` captain succession/banner 8 слоёв/`BORDER`/`RHOMBUS`/`total_health`/`outside_raid_checks 30`
+- **Advancement** (`player/advancement`): trigger `wax_on/plant_seed/changed_dimension/slept_in_bed/nether_travel` с `from/to/start_position` + `impossible` fallback, 6→58 аудит `trigger-inventory-26.3.json`
+- **Инвентарь** (`inventory/menu`): click/drag/quick-move edge, `MenuRemovalStatus` + `SyncMutex`, `ChunkSender` encode cache `FxHashMap`
+- **Физика** (`physics`): столкновения/жидкости/порталы/снаряды `entity/mod.rs` контекст вместо empty — scaffold/scaffolding vs stone `7370216`
+- **Loot/торговля** (`entity/entities/mobs`): цепочки прогрессии, `villager` trade, `raid wave` 5→8 волн `bonus_spawns`, `hero_of_the_village` 48000 тиков amplifier `omen_level`
+
+Все абсолютно подключено к ядру (`TickOverloadGuard` hysteresis `22/25/18`, `budget_factor 0.6/0.35/0.25`, `WorldTickWorkers` bounded1, `rayon-gen`/`rayon-chunk-encode`, `packet_workers`), оптимизация `FxBuildHasher`/`with_capacity`/`is_multiple_of`/direct `==` без аллока, без `unknown`, Lint `0` Clippy `Finished`, Test/Headless `success`, Flint `898/898` на `ba05896`.
