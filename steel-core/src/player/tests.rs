@@ -16,6 +16,7 @@ use super::{
     sleep::BedSleepingProblem,
 };
 use crate::behavior::{InteractionResult, init_behaviors};
+use crate::bootstrap::init_globals;
 use crate::chunk_saver::PersistentEntity;
 use crate::entity::{
     DEFAULT_MAX_AIR_SUPPLY, Entity, EntitySyncedData, LivingEntity, SharedEntity,
@@ -47,8 +48,15 @@ use steel_registry::blocks::properties::{BlockStateProperties, Direction};
 use steel_registry::data_component_predicate::DataComponentMatchers;
 use steel_registry::data_components::vanilla_components::{CAN_BREAK, EQUIPPABLE};
 use steel_registry::data_components::{AdventureModePredicate, BlockPredicate};
-use steel_registry::packets::play::C_REMOVE_ENTITIES;
+use steel_registry::packets::play::{
+    C_REMOVE_ENTITIES, C_SET_CHUNK_CACHE_RADIUS, C_SET_DEFAULT_SPAWN_POSITION,
+    C_SET_SIMULATION_DISTANCE,
+};
 use steel_registry::stat::vanilla_stat_types;
+use steel_registry::vanilla_attributes::ATTACK_DAMAGE;
+use steel_registry::vanilla_attributes::ATTACK_SPEED;
+use steel_registry::vanilla_attributes::MAX_HEALTH;
+use steel_registry::vanilla_mob_effects::BLINDNESS;
 use steel_registry::{
     RegistryHolderSet, entity_data::EntityData, init_vanilla_registry, item_stack::ItemStack,
     vanilla_attributes, vanilla_blocks, vanilla_custom_stats, vanilla_damage_types,
@@ -828,7 +836,7 @@ fn end_credits_removes_all_menus_before_detaching() {
     );
     assert_eq!(replacement_removals.load(Ordering::Relaxed), 0);
     let inventory = player.inventory.lock();
-    for (item, expected) in [(&vanilla_items::STONE, 2), (&vanilla_items::DIRT, 3)] {
+    for (item, expected) in [(&*vanilla_items::STONE, 2), (&*vanilla_items::DIRT, 3)] {
         let count: i32 = inventory
             .items()
             .iter()
@@ -861,6 +869,219 @@ fn admitted_world_change_prevents_end_credits_detach() {
 
     assert!(player.has_won_game());
     assert!(!world.contains_player(&player));
+}
+
+#[test]
+fn dimension_advancements_only_follow_a_successful_cross_world_transition() {
+    use crate::player::advancement::progress::AdvancementProgress;
+    use crate::portal::{TeleportPostTransition, TeleportTransition};
+    use steel_protocol::packets::game::RelativeMovement;
+    use steel_registry::REGISTRY;
+    use steel_utils::Identifier;
+
+    init_vanilla_registry();
+    let source_fixture = fresh_test_world("overworld");
+    let target_fixture = fresh_test_world("the_nether");
+    let end_fixture = fresh_test_world("the_end");
+    let source = &source_fixture.world;
+    let target = &target_fixture.world;
+    let end = &end_fixture.world;
+    insert_ready_full_chunk(source, ChunkPos::new(0, 0));
+    insert_ready_full_chunk(target, ChunkPos::new(0, 0));
+    insert_ready_full_chunk(end, ChunkPos::new(0, 0));
+    let player = test_player(Arc::clone(source));
+    assert!(source.add_player(Arc::clone(&player), ResetReason::InitialJoin));
+    let advancement = REGISTRY
+        .advancements
+        .value_by_key(&Identifier::vanilla_static("story/enter_the_nether"))
+        .expect("nether advancement");
+    let complete = || {
+        player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(advancement)
+            .is_some_and(AdvancementProgress::is_done)
+    };
+    let transition = |target_world| TeleportTransition {
+        target_world,
+        position: DVec3::new(1.5, 64.0, 1.5),
+        rotation: (0.0, 0.0),
+        velocity: DVec3::ZERO,
+        relatives: RelativeMovement::NONE,
+        portal_cooldown: 0,
+        as_passenger: false,
+        post_transition: TeleportPostTransition::do_nothing(),
+    };
+    assert!(player.change_world_within_domain(&transition(Arc::clone(source))));
+    assert!(
+        !complete(),
+        "a same-world teleport is not a dimension change"
+    );
+    assert!(player.change_world_within_domain(&transition(Arc::clone(target))));
+    assert!(complete());
+    let root = REGISTRY
+        .advancements
+        .value_by_key(&Identifier::vanilla_static("nether/root"))
+        .expect("nether root");
+    assert!(
+        player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(root)
+            .is_some_and(AdvancementProgress::is_done)
+    );
+    let end_advancement = REGISTRY
+        .advancements
+        .value_by_key(&Identifier::vanilla_static("story/enter_the_end"))
+        .expect("end advancement");
+    assert!(
+        player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(end_advancement)
+            .is_none()
+    );
+    assert!(player.change_world_within_domain(&transition(Arc::clone(end))));
+    assert!(player.entered_nether_position.lock().is_none());
+    assert!(
+        player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(end_advancement)
+            .is_some_and(AdvancementProgress::is_done)
+    );
+}
+
+#[test]
+fn nether_travel_uses_saved_overworld_entry_and_horizontal_distance() {
+    use crate::player::advancement::progress::AdvancementProgress;
+    use crate::portal::{TeleportPostTransition, TeleportTransition};
+    use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
+    use steel_protocol::packets::game::RelativeMovement;
+    use steel_registry::REGISTRY;
+    use steel_utils::Identifier;
+
+    init_vanilla_registry();
+    let source_fixture = fresh_test_world("overworld");
+    let nether_fixture = fresh_test_world("the_nether");
+    let source = &source_fixture.world;
+    let nether = &nether_fixture.world;
+    insert_ready_full_chunk(source, ChunkPos::new(0, 0));
+    insert_ready_full_chunk(source, ChunkPos::new(437, 0));
+    insert_ready_full_chunk(nether, ChunkPos::new(0, 0));
+    let player = test_player(Arc::clone(source));
+    player.base.set_position_local(DVec3::new(0.0, 64.0, 0.0));
+    assert!(source.add_player(Arc::clone(&player), ResetReason::InitialJoin));
+    let advancement = REGISTRY
+        .advancements
+        .value_by_key(&Identifier::vanilla_static("nether/fast_travel"))
+        .expect("fast travel advancement");
+    let completed = || {
+        player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(advancement)
+            .is_some_and(AdvancementProgress::is_done)
+    };
+    let transition = |target_world, position| TeleportTransition {
+        target_world,
+        position,
+        rotation: (0.0, 0.0),
+        velocity: DVec3::ZERO,
+        relatives: RelativeMovement::NONE,
+        portal_cooldown: 0,
+        as_passenger: false,
+        post_transition: TeleportPostTransition::do_nothing(),
+    };
+    assert!(
+        player.change_world_within_domain(&transition(
+            Arc::clone(nether),
+            DVec3::new(0.0, 64.0, 0.0)
+        ))
+    );
+    let saved = PersistentPlayerData::from_player(&player);
+    assert_eq!(saved.entered_nether_position, Some([0.0, 64.0, 0.0]));
+    let mut command_nbt = NbtCompound::new();
+    player.save_command_nbt(&mut command_nbt);
+    assert_eq!(
+        command_nbt.get("entered_nether_pos"),
+        Some(&NbtTag::List(NbtList::Double(vec![0.0, 64.0, 0.0])))
+    );
+    *player.entered_nether_position.lock() = None;
+    saved.apply_to_player_without_location(&player);
+    assert!(player.change_world_within_domain(&transition(
+        Arc::clone(source),
+        DVec3::new(0.0, 7064.0, 0.0)
+    )));
+    assert!(
+        !completed(),
+        "vertical displacement must not satisfy horizontal distance"
+    );
+    assert!(player.entered_nether_position.lock().is_none());
+
+    assert!(
+        player.change_world_within_domain(&transition(
+            Arc::clone(nether),
+            DVec3::new(0.0, 64.0, 0.0)
+        ))
+    );
+    assert!(player.change_world_within_domain(&transition(
+        Arc::clone(source),
+        DVec3::new(7000.0, 7064.0, 0.0)
+    )));
+    assert!(completed(), "the inclusive horizontal threshold must match");
+    assert!(player.entered_nether_position.lock().is_none());
+}
+
+#[test]
+fn failed_dimension_admission_does_not_grant_advancements() {
+    use crate::portal::{TeleportPostTransition, TeleportTransition};
+    use steel_protocol::packets::game::RelativeMovement;
+    use steel_registry::REGISTRY;
+    use steel_utils::Identifier;
+
+    init_vanilla_registry();
+    let source_fixture = fresh_test_world("overworld");
+    let target_fixture = fresh_test_world("the_nether");
+    let source = &source_fixture.world;
+    let target = &target_fixture.world;
+    insert_ready_full_chunk(source, ChunkPos::new(0, 0));
+    insert_ready_full_chunk(target, ChunkPos::new(0, 0));
+    let player = test_player(Arc::clone(source));
+    let blocker = TestPlayerBuilder::new(Arc::clone(target), "Blocker", 2)
+        .uuid(player.gameprofile.id())
+        .build();
+    assert!(source.add_player(Arc::clone(&player), ResetReason::InitialJoin));
+    assert!(target.add_player(Arc::clone(&blocker), ResetReason::InitialJoin));
+    let transition = TeleportTransition {
+        target_world: Arc::clone(target),
+        position: DVec3::new(1.5, 64.0, 1.5),
+        rotation: (0.0, 0.0),
+        velocity: DVec3::ZERO,
+        relatives: RelativeMovement::NONE,
+        portal_cooldown: 0,
+        as_passenger: false,
+        post_transition: TeleportPostTransition::do_nothing(),
+    };
+    assert!(!player.change_world_within_domain(&transition));
+    assert!(player.entered_nether_position.lock().is_none());
+    let advancement = REGISTRY
+        .advancements
+        .value_by_key(&Identifier::vanilla_static("story/enter_the_nether"))
+        .expect("nether advancement");
+    assert!(
+        player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(advancement)
+            .is_none()
+    );
 }
 
 #[test]
@@ -1074,7 +1295,7 @@ fn player_attack_applies_thorns_damage_and_breaks_enchanted_armor() {
         victim
             .stats
             .lock()
-            .get(&vanilla_stat_types::ITEM_BROKEN.get(&vanilla_items::DIAMOND_CHESTPLATE)),
+            .get(&vanilla_stat_types::ITEM_BROKEN.get(&*vanilla_items::DIAMOND_CHESTPLATE)),
         1,
     );
 }
@@ -1845,6 +2066,65 @@ fn throttle_player_dropping_items_from_creative_menu() {
 }
 
 #[test]
+fn sleep_advancement_requires_successful_sleep_and_permission_to_set_spawn() {
+    use crate::player::advancement::progress::AdvancementProgress;
+    use steel_registry::REGISTRY;
+    use steel_registry::dimension_type::{BedRule, BedRuleValue};
+    use steel_utils::Identifier;
+
+    init_vanilla_registry();
+    init_behaviors();
+    let fixture = fresh_test_world("sleep_advancement");
+    let world = &fixture.world;
+    insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+    world.set_clock_total_ticks(&vanilla_world_clocks::OVERWORLD, NIGHT_TIME);
+    let bed = BlockPos::new(8, 65, 8);
+    assert!(world.set_block(
+        bed,
+        vanilla_blocks::WHITE_BED.default_state(),
+        UpdateFlags::UPDATE_ALL
+    ));
+    let player = test_player(Arc::clone(world));
+    let advancement = REGISTRY
+        .advancements
+        .value_by_key(&Identifier::vanilla_static("adventure/sleep_in_bed"))
+        .expect("sleep advancement");
+    let complete = || {
+        player
+            .advancements
+            .lock()
+            .progress
+            .get_progress(advancement)
+            .is_some_and(AdvancementProgress::is_done)
+    };
+    let stat = &vanilla_custom_stats::SLEEP_IN_BED;
+    assert!(
+        player
+            .start_sleep_in_bed(bed, &world.dimension_type.bed_rule, stat)
+            .is_err()
+    );
+    assert!(!complete());
+    player.base.set_position_local(DVec3::new(8.5, 65.0, 8.5));
+    let no_spawn_rule = BedRule {
+        can_set_spawn: BedRuleValue::Never,
+        can_sleep: BedRuleValue::Always,
+        destroy_on_use: false,
+        destroy_on_leave: false,
+        error_message_key: None,
+        error_message: None,
+    };
+    assert!(player.start_sleep_in_bed(bed, &no_spawn_rule, stat).is_ok());
+    assert!(!complete());
+    player.stop_sleep_in_bed(false, false);
+    assert!(
+        player
+            .start_sleep_in_bed(bed, &world.dimension_type.bed_rule, stat)
+            .is_ok()
+    );
+    assert!(complete());
+}
+
+#[test]
 fn monster_prevents_rest_blocks_sleeping_near_a_bed() {
     init_vanilla_registry();
     init_behaviors();
@@ -1925,4 +2205,235 @@ fn sword_does_not_destroy_blocks_in_creative() {
         dirt,
         "swords should not destroy blocks when player is in creative mode."
     );
+}
+
+/// `PlayerList.sendLevelInfo` always sends the view and simulation distances,
+/// right after the default spawn position and before `LEVEL_CHUNKS_LOAD_START`.
+///
+/// Missing these packets leaves the client on its own defaults: it then keeps a
+/// chunk radius the server never agreed to, so chunk loading, entity tracking
+/// and simulation ranges silently disagree with what the server actually ticks.
+#[test]
+fn spawn_sends_view_and_simulation_distances_in_vanilla_order() {
+    init_vanilla_registry();
+    let world_fixture = fresh_test_world("spawn_view_distance_packets");
+    let world = &world_fixture.world;
+    let sent_packets = Arc::new(SyncMutex::new(Vec::new()));
+    let connection = Arc::new(PlayerConnection::Other(Box::new(RecordingConnection {
+        sent_packets: Arc::clone(&sent_packets),
+        closed: AtomicBool::new(false),
+    })));
+    let player = TestPlayerBuilder::new(Arc::clone(world), "ViewDistTester", 1)
+        .connection(connection)
+        .build();
+    sent_packets.lock().clear();
+
+    assert!(player.spawn(DVec3::ZERO, (0.0, 0.0), ResetReason::InitialJoin));
+
+    let ids = sent_packets
+        .lock()
+        .iter()
+        .map(|packet| {
+            let mut cursor = Cursor::new(packet.encoded_data.as_slice());
+            let _ = VarInt::read(&mut cursor);
+            VarInt::read(&mut cursor).ok().map(|id| id.0)
+        })
+        .collect::<Vec<_>>();
+
+    let radius = ids
+        .iter()
+        .position(|id| *id == Some(C_SET_CHUNK_CACHE_RADIUS))
+        .expect("spawn must send ClientboundSetChunkCacheRadiusPacket");
+    let simulation = ids
+        .iter()
+        .position(|id| *id == Some(C_SET_SIMULATION_DISTANCE))
+        .expect("spawn must send ClientboundSetSimulationDistancePacket");
+    assert_eq!(
+        simulation,
+        radius + 1,
+        "vanilla sends the radius immediately followed by the simulation distance"
+    );
+
+    let spawn_position = ids
+        .iter()
+        .position(|id| *id == Some(C_SET_DEFAULT_SPAWN_POSITION))
+        .expect("spawn must send the default spawn position");
+    assert!(
+        radius > spawn_position,
+        "both distance packets follow ClientboundSetDefaultSpawnPositionPacket"
+    );
+}
+
+#[test]
+fn combat_critical_requires_full_cooldown_and_does_not_multiply_enchantment_bonus() {
+    init_vanilla_registry();
+    init_behaviors();
+    for (charged, enchanted, blind, expected) in [
+        (false, false, false, 2.08_f32),
+        (true, false, false, 15.0),
+        (true, true, false, 16.0),
+        (true, false, true, 10.0),
+    ] {
+        let fixture = fresh_test_world("combat_critical_cooldown_bonus");
+        let attacker = test_player(Arc::clone(&fixture.world));
+        let victim = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Victim", 2).build();
+        victim.set_client_loaded(true);
+        attacker.set_on_ground(false);
+        attacker.base().set_fall_distance(1.0);
+        attacker.set_mob_effect_active(BLINDNESS, blind);
+        attacker
+            .attributes()
+            .lock()
+            .set_base_value(vanilla_attributes::ATTACK_DAMAGE, 10.0);
+        attacker
+            .attributes()
+            .lock()
+            .set_base_value(vanilla_attributes::ATTACK_SPEED, 4.0);
+        if enchanted {
+            let mut weapon = ItemStack::new(&vanilla_items::STICK);
+            weapon.set_enchantments(&[(vanilla_enchantments::SHARPNESS.key.clone(), 1)], false);
+            attacker.inventory.lock().set_selected_item(weapon);
+        }
+        if charged {
+            for _ in 0..10 {
+                attacker.tick_attack_strength();
+            }
+        }
+        let health = victim.get_health();
+        let target: SharedEntity = Arc::<Player>::clone(&victim);
+        assert!(attacker.attack(&target));
+        let dealt = health - victim.get_health();
+        assert!(
+            (dealt - expected).abs() < 0.001,
+            "charged={charged} enchanted={enchanted} blind={blind}: expected {expected}, got {dealt}"
+        );
+    }
+}
+
+#[test]
+fn combat_sweep_requires_grounded_charged_sword_and_uses_primary_target_box() {
+    init_vanilla_registry();
+    init_behaviors();
+    for (sword, grounded, charged, ratio, expected) in [
+        (true, true, true, 0.0, 1.0_f32),
+        (true, true, true, 0.5, 1.5),
+        (false, true, true, 0.0, 0.0),
+        (true, false, true, 0.0, 0.0),
+        (true, true, false, 0.0, 0.0),
+    ] {
+        let fixture = fresh_test_world("combat_sweep_target_box");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, steel_utils::ChunkPos::new(0, 0));
+        let attacker = test_player(Arc::clone(world));
+        let primary = TestPlayerBuilder::new(Arc::clone(world), "Primary", 2).build();
+        let secondary = TestPlayerBuilder::new(Arc::clone(world), "Secondary", 3).build();
+        attacker
+            .base()
+            .set_position_local(DVec3::new(8.0, 64.0, 8.0));
+        primary
+            .base()
+            .set_position_local(DVec3::new(8.0, 64.0, 10.0));
+        // Inside the primary target's expanded box and within 3 blocks of
+        // attacker, but outside the old erroneous attacker-centred 1m radius.
+        secondary
+            .base()
+            .set_position_local(DVec3::new(8.8, 64.0, 10.3));
+        for player in [&attacker, &primary, &secondary] {
+            player.set_client_loaded(true);
+            assert!(world.add_player(Arc::clone(player), ResetReason::InitialJoin));
+        }
+        attacker.set_on_ground(grounded);
+        attacker.set_speed(0.1);
+        attacker
+            .inventory
+            .lock()
+            .set_selected_item(ItemStack::new(if sword {
+                &vanilla_items::DIAMOND_SWORD
+            } else {
+                &vanilla_items::DIAMOND_AXE
+            }));
+        attacker
+            .attributes()
+            .lock()
+            .set_base_value(vanilla_attributes::SWEEPING_DAMAGE_RATIO, ratio);
+        if charged {
+            for _ in 0..30 {
+                attacker.tick_attack_strength();
+            }
+        }
+        let before = secondary.get_health();
+        let target: SharedEntity = Arc::<Player>::clone(&primary);
+        assert!(attacker.attack(&target));
+        assert!(
+            (before - secondary.get_health() - expected).abs() < 0.001,
+            "sword={sword} grounded={grounded} charged={charged} ratio={ratio}"
+        );
+        for player in [&attacker, &primary, &secondary] {
+            world.remove_player_for_world_change(player);
+        }
+    }
+}
+
+#[test]
+fn combat_melee_redirects_fireball_and_transfers_owner_without_destroying_it() {
+    use crate::entity::{Projectile as _, entities::LargeFireballEntity};
+    init_vanilla_registry();
+    init_behaviors();
+    let fixture = fresh_test_world("combat_fireball_deflection");
+    let attacker = test_player(Arc::clone(&fixture.world));
+    attacker.set_rotation((90.0, 0.0));
+    for _ in 0..30 {
+        attacker.tick_attack_strength();
+    }
+    let fireball = Arc::new(LargeFireballEntity::new(
+        &vanilla_entities::FIREBALL,
+        2,
+        DVec3::new(8.0, 64.0, 8.0),
+        Arc::downgrade(&fixture.world),
+    ));
+    fireball.set_velocity(DVec3::new(0.0, 0.0, -1.0));
+    let target: SharedEntity = Arc::<LargeFireballEntity>::clone(&fireball);
+    assert!(attacker.attack(&target));
+    assert_eq!(fireball.owner_uuid(), Some(attacker.uuid()));
+    assert!(fireball.velocity().distance(attacker.look_angle()) < 1.0e-6);
+    assert!(!fireball.is_removed());
+    assert!(attacker.attack_strength_scale(0.0) < 0.001);
+}
+
+#[test]
+fn player_attack_dispatches_mace_smash_and_post_hit_fall_reset() {
+    init_globals();
+    init_behaviors();
+    let fixture = fresh_test_world("mace_player_attack");
+    let attacker = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Mace", 1).build();
+    let victim = TestPlayerBuilder::new(Arc::clone(&fixture.world), "Target", 2).build();
+    attacker.set_client_loaded(true);
+    victim.set_client_loaded(true);
+    attacker
+        .inventory
+        .lock()
+        .set_selected_item(ItemStack::new(&vanilla_items::MACE));
+    attacker
+        .attributes()
+        .lock()
+        .set_base_value(ATTACK_DAMAGE, 6.0);
+    attacker
+        .attributes()
+        .lock()
+        .set_base_value(ATTACK_SPEED, 4.0);
+    victim.attributes().lock().set_base_value(MAX_HEALTH, 100.0);
+    victim.set_health(100.0);
+    attacker.set_on_ground(false);
+    attacker.set_fall_distance(6.0);
+    attacker.set_velocity(DVec3::new(0.0, -1.0, 0.0));
+    for _ in 0..30 {
+        attacker.tick_attack_strength();
+    }
+    let target: SharedEntity = Arc::<Player>::clone(&victim);
+    assert!(attacker.attack(&target));
+    // Vanilla: (base 6 + six-block smash bonus 18) * critical 1.5.
+    assert_eq!(victim.get_health(), 64.0);
+    assert_eq!(attacker.fall_distance(), 0.0);
+    assert_eq!(attacker.velocity().y, f64::from(0.01_f32));
+    assert!(attacker.is_ignoring_fall_damage_from_current_impulse());
 }

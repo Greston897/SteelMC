@@ -144,9 +144,14 @@ impl Skull {
     }
 
     /// Creates a player head from the profile of a player
-    /// ```ignore
-    /// # use steel_core::behavior::blocks::Skull;
-    /// let skull = Skull::of(player.gameprofile.clone());
+    /// ```rust
+    /// use steel_core::behavior::blocks::Skull;
+    /// use steel_core::player::{GameProfile, offline_uuid};
+    /// use steel_registry::{init_vanilla_registry, vanilla_items};
+    /// init_vanilla_registry();
+    /// let profile = GameProfile::new(offline_uuid("Alex"), "Alex".to_owned(), vec![]).unwrap();
+    /// let skull = Skull::of(profile);
+    /// assert_eq!(skull.to_item().item().key, vanilla_items::PLAYER_HEAD.key);
     /// ```
     #[must_use]
     pub fn of(player: impl Into<ResolvableProfile>) -> Self {

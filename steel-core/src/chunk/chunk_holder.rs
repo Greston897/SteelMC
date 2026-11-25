@@ -296,8 +296,14 @@ impl ChunkHolder {
             generation_status(Some(load_level)).map_or(STATUS_NONE, |s| s.get_index() as u8);
 
         let section_count = (height / 16) as usize;
+        // RAM/MSPT имба: 8 слотов на секцию — без rehash на каждом блок-апдейте
         let changed_blocks_per_section = (0..section_count)
-            .map(|_| SyncMutex::new(FxHashSet::default()))
+            .map(|_| {
+                SyncMutex::new(FxHashSet::with_capacity_and_hasher(
+                    8,
+                    rustc_hash::FxBuildHasher,
+                ))
+            })
             .collect::<Box<[_]>>();
 
         Self {
@@ -865,11 +871,15 @@ impl ChunkHolder {
 
         let cache = Arc::clone(cache);
         let context = Arc::clone(&chunk_map.world_gen_context);
+        // A producer can outlive its request/world owner. Pin the world for
+        // this producer without introducing a permanent World -> context cycle.
+        let world = context.weak_world().upgrade()?;
         let self_clone = Arc::clone(self);
         let storage = Arc::clone(&chunk_map.storage);
         let save_dependency = self.add_save_dependency();
 
         let future = chunk_map.task_tracker.spawn(async move {
+            let _world = world;
             // Keep the claim alive for the producer task so Drop can roll back abandoned work.
             let _status_claim = status_claim;
             let _save_dependency = save_dependency;
@@ -1114,7 +1124,13 @@ impl ChunkHolder {
         holder: Arc<Self>,
     ) {
         let task = step.task;
+        let Some(world) = context.weak_world().upgrade() else {
+            return;
+        };
         rayon_spawn(&thread_pool, move || {
+            // Dropping the async waiter does not cancel a queued Rayon closure.
+            // The closure must itself retain the world until generation ends.
+            let _world = world;
             task(context, step, &cache, holder);
         })
         .await;
@@ -1402,7 +1418,9 @@ where
 {
     let (sender, receiver) = oneshot::channel();
     thread_pool.spawn(move || {
-        sender.send(func()).expect("Failed to send result");
+        // Cancellation of an async waiter is normal during world teardown.
+        // It must not panic on the Rayon worker and abort the entire server.
+        let _ = sender.send(func());
     });
     async move { receiver.await.expect("Failed to receive rayon task result") }
 }
@@ -1410,6 +1428,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::mpsc::channel;
     use std::{task::Poll, time::Duration as TestDuration};
     use tokio::time::sleep as test_sleep;
 
@@ -1419,6 +1438,46 @@ mod tests {
     use crate::test_support::fresh_test_world;
     use crate::world::tick_scheduler::TickPriority;
     use steel_registry::{init_vanilla_registry, vanilla_blocks, vanilla_fluids};
+
+    #[test]
+    fn dropping_rayon_waiter_does_not_panic_on_generation_worker() {
+        let panics = Arc::new(AtomicUsize::new(0));
+        let reported_panics = Arc::clone(&panics);
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(1)
+            .panic_handler(move |_| {
+                reported_panics.fetch_add(1, Ordering::SeqCst);
+            })
+            .build()
+            .expect("the thread pool should build");
+        let (started_tx, started_rx) = channel();
+        let (release_tx, release_rx) = channel();
+        let (done_tx, done_rx) = channel();
+        let waiter = rayon_spawn(&pool, move || {
+            started_tx
+                .send(())
+                .expect("the channel should accept the message");
+            release_rx
+                .recv()
+                .expect("the channel should deliver the message");
+            done_tx
+                .send(())
+                .expect("the channel should accept the message");
+            42
+        });
+        started_rx
+            .recv_timeout(TestDuration::from_secs(5))
+            .expect("the channel should deliver the message");
+        drop(waiter);
+        release_tx
+            .send(())
+            .expect("the channel should accept the message");
+        done_rx
+            .recv_timeout(TestDuration::from_secs(5))
+            .expect("the channel should deliver the message");
+        pool.install(|| ());
+        assert_eq!(panics.load(Ordering::SeqCst), 0);
+    }
 
     fn init_chunk_test_registry() {
         init_vanilla_registry();

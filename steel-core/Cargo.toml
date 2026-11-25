@@ -71,6 +71,7 @@ md5.workspace = true
 # Compression
 zstd.workspace = true
 flate2.workspace = true
+zip = { version = "9.4.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
 # Utilities
 enum_dispatch.workspace = true

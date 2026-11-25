@@ -90,6 +90,17 @@ impl BlockBehavior for ShulkerBoxBlock {
         )
     }
 
+    fn allows_spectator_menu(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+    ) -> bool {
+        // Vanilla `allowsSpectatorMenu` for container blocks.
+        let _ = (state, world, pos);
+        true
+    }
+
     fn use_without_item(
         &self,
         state: BlockStateId,
@@ -104,6 +115,9 @@ impl BlockBehavior for ShulkerBoxBlock {
             && let Some(container_ref) = block_entity.container_ref()
             && block_entity.can_open(state, world, pos)
         {
+            // Vanilla `BaseContainerBlockEntity` reads its contents through
+            // `RandomizableContainerBlockEntity.getItem`, which unpacks first.
+            block_entity.unpack_loot();
             let inventory = Arc::clone(&player.inventory);
             player.open_menu(
                 TextComponent::translated(translations::CONTAINER_SHULKER_BOX.msg()),
@@ -111,7 +125,8 @@ impl BlockBehavior for ShulkerBoxBlock {
             );
 
             player.award_custom_stat(&vanilla_custom_stats::OPEN_SHULKER_BOX);
-            // TODO: Anger nearby piglins (PiglinAi.angerNearbyPiglins)
+            // Vanilla angers nearby piglins when a player opens a shulker box.
+            super::anger_nearby_piglins(world, pos, player);
         }
         InteractionResult::Success
     }
@@ -132,11 +147,12 @@ impl BlockBehavior for ShulkerBoxBlock {
             return state;
         };
 
+        // Vanilla `ShulkerBoxBlock.playerWillDestroy` unpacks a pending table
+        // first; a structure-placed box would otherwise drop an empty item.
+        shulker_box_block_entity.unpack_loot();
         if player.prevents_block_drops() && !shulker_box_block_entity.is_empty() {
             let item = shulker_box_block_entity.shulker_box_as_item(state);
             world.pop_resource(pos, item);
-        } else {
-            // TODO: maybe? shulkerBoxBlockEntity.unpackLootTable(player);
         }
 
         state

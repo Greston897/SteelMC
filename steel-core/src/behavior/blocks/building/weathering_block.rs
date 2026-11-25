@@ -42,8 +42,12 @@ const BASE_CHANCE: f32 = 0.056_888_89;
 ///
 /// Add this as a field to block implementations that should support weathering.
 ///
-/// In `YourBlock::random_tick` call [`WeatheringCopper::change_over_time`]
-// TODO: Add weathering support for lanterns, chests, golem statues, and lightning rods.
+/// In `YourBlock::random_tick` call [`WeatheringCopper::change_over_time`].
+///
+/// Consumers: the copper family (`weathering_block`), bars, chains, doors, slabs,
+/// stairs, trapdoors, gratings, infested blocks, copper chests
+/// (`WeatheringCopperChestBlock`), copper lanterns (`weathering_lantern_block`)
+/// and lightning rods (`weathering_lightning_rod_block`).
 pub struct WeatheringCopper {
     weather_state: WeatherState,
 }
@@ -53,6 +57,12 @@ impl WeatheringCopper {
     #[must_use]
     pub const fn new(weather_state: WeatherState) -> Self {
         Self { weather_state }
+    }
+
+    /// Returns this block's oxidation stage.
+    #[must_use]
+    pub const fn weather_state(&self) -> WeatherState {
+        self.weather_state
     }
 
     /// Advances the weathering state and replaces the block, with a 5.7% chance.
@@ -76,7 +86,10 @@ impl WeatheringCopper {
     /// 4. On success, advance to next oxidation stage preserving block properties
     ///
     /// Vanilla: `ChangeOverTimeBlock.getNextState`
-    fn get_next_state(
+    /// Returns the next oxidation state for `state`, if neighbouring copper
+    /// pushes it further along the weathering chain.
+    #[must_use]
+    pub fn get_next_state(
         &self,
         state: BlockStateId,
         world: &Arc<World>,

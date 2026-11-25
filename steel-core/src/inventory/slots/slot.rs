@@ -6,6 +6,8 @@ use steel_utils::ErasedType;
 
 use crate::inventory::lock::{ContainerId, ContainerLockGuard, ContainerRef};
 use crate::player::Player;
+use std::sync::atomic::AtomicI32;
+use std::sync::atomic::Ordering::Relaxed;
 
 /// Physical storage and auxiliary container dependencies used by a [`Slot`].
 ///
@@ -15,6 +17,8 @@ use crate::player::Player;
 pub struct SlotStorage {
     physical: Option<(ContainerRef, usize)>,
     dependencies: Vec<ContainerRef>,
+    /// Vanilla `Slot.selectedBundleItemIndex` (`-1` when nothing is selected).
+    selected_bundle_item_index: AtomicI32,
 }
 
 impl SlotStorage {
@@ -24,6 +28,7 @@ impl SlotStorage {
         Self {
             physical: Some((container.into(), index)),
             dependencies: Vec::new(),
+            selected_bundle_item_index: AtomicI32::new(-1),
         }
     }
 
@@ -33,6 +38,7 @@ impl SlotStorage {
         Self {
             physical: None,
             dependencies: dependencies.into_iter().map(Into::into).collect(),
+            selected_bundle_item_index: AtomicI32::new(-1),
         }
     }
 
@@ -80,6 +86,18 @@ pub trait Slot: ErasedType + Send + Sync {
     /// Returns this slot's physical storage and auxiliary dependencies.
     fn storage(&self) -> &SlotStorage;
 
+    /// Vanilla `Slot.getSelectedBundleItemIndex` (`-1` when unset).
+    fn selected_bundle_item_index(&self) -> i32 {
+        self.storage().selected_bundle_item_index.load(Relaxed)
+    }
+
+    /// Vanilla `Slot.setSelectedBundleItemIndex`.
+    fn set_selected_bundle_item_index(&self, index: i32) {
+        self.storage()
+            .selected_bundle_item_index
+            .store(index, Relaxed);
+    }
+
     /// Returns a reference to the item in this slot.
     fn get_item<'a>(&self, guard: &'a ContainerLockGuard) -> &'a ItemStack;
 
@@ -126,6 +144,18 @@ pub trait Slot: ErasedType + Send + Sync {
     fn get_max_stack_size_for_item(&self, guard: &ContainerLockGuard, stack: &ItemStack) -> i32 {
         self.get_max_stack_size(guard).min(stack.max_stack_size())
     }
+
+    /// Called after a shift-click moved items out of this slot.
+    ///
+    /// Vanilla `Slot.onQuickCraft`; only the furnace result slot uses it, to
+    /// count the crafted items for `ITEM_CRAFTED`.
+    fn on_quick_craft(&self, _stack: &ItemStack, _player: &Player) {}
+
+    /// Called when a hotbar swap took items out of this slot.
+    ///
+    /// Vanilla `Slot.onSwapCraft`; the furnace result slot uses it to count the
+    /// crafted items for `ITEM_CRAFTED`.
+    fn on_swap_craft(&self, _count: i32) {}
 
     /// Removes up to `amount` items from this slot and returns them.
     fn remove(&self, guard: &mut ContainerLockGuard, amount: i32) -> ItemStack {

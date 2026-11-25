@@ -1,0 +1,65 @@
+name: Retrieve generated vanilla evidence
+
+on:
+  push:
+    paths:
+      - '.github/workflows/retrieve-vanilla-evidence.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: minecraft-src-26.3
+          run-id: 44926675892
+          github-token: ${{ github.token }}
+          path: /tmp/generated
+      - uses: actions/download-artifact@v4
+        with:
+          name: features-block-reference
+          run-id: 44926701914
+          github-token: ${{ github.token }}
+          path: /tmp/features
+      - name: Prepare source and verified reference for API retrieval
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum /tmp/generated/minecraft-src.tar.gz | cut -d ' ' -f1)" = 39e9c9f373eeb8f9eb074a537585a9fd64058d12ab5a8270dba0228bec989067
+          mkdir -p /tmp/extracted
+          tar -xzf /tmp/generated/minecraft-src.tar.gz -C /tmp/extracted minecraft-src/minecraft/src/net/minecraft
+          tar -czf /tmp/vanilla-java-source.tar.gz -C /tmp/extracted minecraft-src
+          find /tmp/features -type f -name reference.bin.gz -print -quit | xargs -r -I{} cp '{}' /tmp/feature-reference.bin.gz
+          test -s /tmp/feature-reference.bin.gz
+      - name: Publish unreferenced blobs for restricted clients
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64, hashlib, json, os, urllib.request
+          from pathlib import Path
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          headers = {'Authorization': f'Bearer {token}', 'Accept': 'application/vnd.github+json'}
+          result = []
+          for filename in ['/tmp/vanilla-java-source.tar.gz', '/tmp/feature-reference.bin.gz']:
+              data = Path(filename).read_bytes()
+              body = json.dumps({'content': base64.b64encode(data).decode(), 'encoding': 'base64'}).encode()
+              request = urllib.request.Request(f'https://api.github.com/repos/{repo}/git/blobs', data=body, headers=headers, method='POST')
+              with urllib.request.urlopen(request) as response:
+                  sha = json.load(response)['sha']
+              result.append(f'{Path(filename).name}: git_blob={sha} sha256={hashlib.sha256(data).hexdigest()} bytes={len(data)}')
+          message = '## Generated vanilla evidence transfer\n\n' + '\n'.join(result)
+          request = urllib.request.Request(f'https://api.github.com/repos/{repo}/commits/{os.environ["GITHUB_SHA"]}/comments', data=json.dumps({'body': message}).encode(), headers=headers, method='POST')
+          with urllib.request.urlopen(request) as response:
+              print(message, response.status)
+          PY

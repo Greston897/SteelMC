@@ -44,6 +44,8 @@ pub enum EntitySpawnReason {
     TrialSpawner,
     Load,
     DimensionTravel,
+    /// A bee leaving or being released from a beehive.
+    Beehive,
 }
 
 impl EntitySpawnReason {
@@ -580,7 +582,7 @@ mod tests {
                 .is_none()
         );
 
-        let unimplemented = entity_nbt("minecraft:blaze");
+        let unimplemented = entity_nbt("minecraft:player");
         assert!(
             load_entity_recursive_owned(world, &unimplemented, EntitySpawnReason::Spawner, |_| {},)
                 .is_none()
@@ -599,7 +601,7 @@ mod tests {
             "Passengers",
             NbtList::Compound(vec![
                 entity_nbt("minecraft:not_an_entity"),
-                entity_nbt("minecraft:blaze"),
+                entity_nbt("minecraft:player"),
                 entity_nbt("minecraft:chicken"),
                 entity_nbt("minecraft:pig"),
             ]),

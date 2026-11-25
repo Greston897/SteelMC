@@ -81,7 +81,7 @@ impl Node {
         let xd = (to.x - self.x) as f32;
         let yd = (to.y - self.y) as f32;
         let zd = (to.z - self.z) as f32;
-        xd.mul_add(xd, yd.mul_add(yd, zd * zd)).sqrt()
+        (xd * xd + yd * yd + zd * zd).sqrt()
     }
 
     #[must_use]
@@ -89,7 +89,7 @@ impl Node {
         let xd = (pos.x() - self.x) as f32;
         let yd = (pos.y() - self.y) as f32;
         let zd = (pos.z() - self.z) as f32;
-        xd.mul_add(xd, yd.mul_add(yd, zd * zd)).sqrt()
+        (xd * xd + yd * yd + zd * zd).sqrt()
     }
 
     #[must_use]
@@ -104,7 +104,7 @@ impl Node {
         let xd = (to.x - self.x) as f32;
         let yd = (to.y - self.y) as f32;
         let zd = (to.z - self.z) as f32;
-        xd.mul_add(xd, yd.mul_add(yd, zd * zd))
+        xd * xd + yd * yd + zd * zd
     }
 
     #[must_use]
@@ -486,7 +486,7 @@ mod tests {
         assert_eq!(store.get(low).map(|node| node.heap_idx), Some(-1));
         assert_eq!(heap.pop(&mut store), Some(middle));
         assert_eq!(heap.pop(&mut store), Some(high));
-        assert!(heap.is_empty());
+        assert!(heap.is_empty(), "the heap must be drained");
     }
 
     #[test]

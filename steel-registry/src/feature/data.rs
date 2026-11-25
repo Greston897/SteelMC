@@ -6,6 +6,7 @@
 //! known at build time.
 
 use super::{ConfiguredFeatureEntryRef, PlacedFeatureEntryRef};
+use crate::biome::BiomeRef;
 use crate::blocks::BlockRef;
 use crate::fluid::FluidRef;
 use glam::IVec3;
@@ -130,19 +131,25 @@ pub enum ConfiguredFeatureKind {
     WeepingVines,
 }
 
-/// Block refs decoded from vanilla's single-or-list codec shape at build time.
-#[derive(Debug, Clone)]
-pub struct BlockRefList(pub Vec<BlockRef>);
-
-/// Fluid refs decoded from vanilla's single-or-list codec shape at build time.
-#[derive(Debug, Clone)]
-pub struct FluidRefList(pub Vec<FluidRef>);
-
 /// Block holder set decoded from vanilla's holder-set codec shape at build time.
 #[derive(Debug, Clone)]
 pub enum BlockHolderSet {
     Tag(Identifier),
     Entries(Vec<BlockRef>),
+}
+
+/// Fluid holder set decoded from vanilla's holder-set codec shape at build time.
+#[derive(Debug, Clone)]
+pub enum FluidHolderSet {
+    Tag(Identifier),
+    Entries(Vec<FluidRef>),
+}
+
+/// Biome holder set decoded from vanilla's holder-set codec shape at build time.
+#[derive(Debug, Clone)]
+pub enum BiomeHolderSet {
+    Tag(Identifier),
+    Entries(Vec<BiomeRef>),
 }
 
 /// Block state data emitted by the feature generator without baking a state id.
@@ -184,12 +191,15 @@ pub enum BlockPredicate {
         offset: Offset,
     },
     MatchingBlocks {
-        blocks: BlockRefList,
+        blocks: BlockHolderSet,
         offset: Offset,
     },
     MatchingFluids {
-        fluids: FluidRefList,
+        fluids: FluidHolderSet,
         offset: Offset,
+    },
+    MatchingBiomes {
+        biomes: BiomeHolderSet,
     },
     Solid {
         offset: Offset,
@@ -206,6 +216,9 @@ pub enum BlockPredicate {
         offset: Offset,
     },
     InsideWorldBounds {
+        offset: Offset,
+    },
+    Unobstructed {
         offset: Offset,
     },
     HeightRange {
@@ -571,7 +584,7 @@ pub struct EndSpikeConfiguration {
     pub crystal_beam_target: Option<Offset>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EndSpike {
     pub center_x: i32,
     pub center_z: i32,

@@ -10,8 +10,8 @@ use steel_registry::data_components::vanilla_components::{
 };
 use steel_registry::recipe::{
     BookCloningRecipe, CraftingInput, CraftingRecipe, DyeRecipe, FireworkRocketRecipe,
-    FireworkStarFadeRecipe, FireworkStarRecipe, PositionedCraftingInput, ShieldDecorationRecipe,
-    TypedRecipeRef, vanilla_recipe_types,
+    FireworkStarFadeRecipe, FireworkStarRecipe, PositionedCraftingInput, RecipeInput as _,
+    ShieldDecorationRecipe, TypedRecipeRef, vanilla_recipe_types,
 };
 use steel_registry::{
     DyeColor, ItemStackTemplate, REGISTRY, RegistryExt as _, TaggedRegistryExt as _,
@@ -40,6 +40,22 @@ pub fn find_recipe(crafting: &CraftingContainer) -> Option<CraftingRecipeRef> {
     REGISTRY
         .recipes
         .find_match(&vanilla_recipe_types::CRAFTING, &positioned.input)
+}
+
+/// Returns every crafting recipe matching the current grid, in registry order.
+///
+/// Mirrors the recipe list vanilla hands to `ServerPlayer.awardRecipes`, which
+/// unlocks all newly available recipes after a craft.
+#[must_use]
+pub fn matching_recipes_for(crafting: &CraftingContainer) -> Vec<CraftingRecipeRef> {
+    let positioned = crafting.as_positioned_input();
+    if positioned.input.is_empty() {
+        return Vec::new();
+    }
+    REGISTRY
+        .recipes
+        .matching(&vanilla_recipe_types::CRAFTING, &positioned.input)
+        .collect()
 }
 
 /// Finds and interprets the output for the current crafting container.

@@ -147,7 +147,7 @@ impl BlockRandomPositionGenerator {
         Self { value }
     }
 
-    const fn next_local(&mut self) -> (usize, usize, usize) {
+    pub(crate) const fn next_local(&mut self) -> (usize, usize, usize) {
         self.value = self.value.wrapping_mul(3).wrapping_add(1_013_904_223);
         let value = self.value >> 2;
         (
@@ -1556,6 +1556,27 @@ impl FullChunkRef<'_> {
         }
     }
 
+    /// Writes `biome_id` into the 4x4x4 biome cell that contains `pos`.
+    ///
+    /// Vanilla `LevelChunk.setBiome(BlockPos, Holder<Biome>)` writes the quart
+    /// cell, so a `/fillbiome` over a partial cell still covers the whole cell.
+    /// Returns whether the stored value actually changed.
+    #[must_use]
+    pub fn set_biome_cell(&self, pos: BlockPos, biome_id: u16) -> bool {
+        let section_index = usize::try_from((pos.y() - self.min_y()) >> 4)
+            .ok()
+            .filter(|index| *index < self.chunk.sections.sections.len());
+        let Some(section_index) = section_index else {
+            return false;
+        };
+        let local_x = (pos.x() & 15) as usize >> 2;
+        let local_y = (pos.y() & 15) as usize >> 2;
+        let local_z = (pos.z() & 15) as usize >> 2;
+        let mut section = self.chunk.sections.sections[section_index].write();
+        let previous = section.biomes.set(local_x, local_y, local_z, biome_id);
+        previous != biome_id
+    }
+
     pub(crate) fn set_block_state_if_unchanged(
         &self,
         pos: BlockPos,
@@ -1886,6 +1907,16 @@ impl FullChunkRef<'_> {
             data: cursor.into_inner(),
             block_entities,
         }
+    }
+
+    /// Extracts only the biome palettes for the `chunks_biomes` packet.
+    ///
+    /// Vanilla `ChunkSerializer.writeChunkBiomes`; used after `/fillbiome` and
+    /// any other biome-only change, where re-sending the whole chunk would be
+    /// wasteful.
+    #[must_use]
+    pub fn extract_biome_data(&self) -> Vec<u8> {
+        self.chunk.sections.encode_biomes()
     }
 
     /// Extracts the light data for sending to the client.

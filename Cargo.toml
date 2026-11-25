@@ -1,5 +1,6 @@
 [workspace]
 resolver = "2"
+exclude = ["vendor/flint-core"]
 members = [
     "steel",
     "steel-login",
@@ -84,7 +85,7 @@ phf = { version = "0.14.0", features = ["macros"] }
 chrono = "0.4.45"
 
 # UUID
-uuid = { version = "1.29.0", features = ["serde", "v4"] }
+uuid = { version = "1.29.0", features = ["serde", "v3", "v4", "v5"] }
 
 # Logging
 log = "0.4.34"
@@ -149,6 +150,14 @@ criterion = "0.8.2"
 lto = true
 codegen-units = 1
 panic = "abort"
+
+# Optimized behavioral evidence without whole-workspace LTO. Full LTO makes
+# giant test/doctest binaries unnecessarily expensive on hosted runners.
+[profile.evidence]
+inherits = "release"
+lto = false
+codegen-units = 16
+panic = "unwind"
 
 [profile.profiling]
 inherits = "release"

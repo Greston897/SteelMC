@@ -175,7 +175,7 @@ fn exact_suggestions_are_omitted() {
 
     let suggestions = suggestions(&dispatcher, "parent child", true);
 
-    assert!(suggestions.is_empty());
+    assert!(suggestions.is_empty(), "no suggestions are expected");
     assert_eq!(suggestions.range(), StringRange::at(0));
 }
 

@@ -375,11 +375,11 @@ mod tests {
     fn bookshelf_book_tag_and_slot_capacity_control_container_capability() {
         let bookshelf = test_bookshelf();
         let valid_items = [
-            &vanilla_items::BOOK,
-            &vanilla_items::WRITABLE_BOOK,
-            &vanilla_items::WRITTEN_BOOK,
-            &vanilla_items::KNOWLEDGE_BOOK,
-            &vanilla_items::ENCHANTED_BOOK,
+            &*vanilla_items::BOOK,
+            &*vanilla_items::WRITABLE_BOOK,
+            &*vanilla_items::WRITTEN_BOOK,
+            &*vanilla_items::KNOWLEDGE_BOOK,
+            &*vanilla_items::ENCHANTED_BOOK,
         ];
 
         for (slot, item) in valid_items.into_iter().enumerate() {

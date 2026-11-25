@@ -14,15 +14,17 @@
 //! - [`DataComponentRegistry`] - Registry of component types with serialization
 //!
 //! # Example
-//! ```ignore
-//! use steel_registry::data_components::vanilla_components::DAMAGE;
-//!
-//! // Type-safe access (compile-time checked)
-//! let damage: Option<&i32> = components.get(DAMAGE);
+//! ```rust
+//! use steel_registry::data_components::{DataComponentMap, vanilla_components::DAMAGE};
+//! use steel_utils::Identifier;
+//! let mut components = DataComponentMap::new();
+//! assert_eq!(components.get(DAMAGE), None);
 //! components.set(DAMAGE, Some(10));
-//!
-//! // Raw access for plugins
-//! let data = components.get_raw(&key)?;
+//! assert_eq!(components.get(DAMAGE), Some(10));
+//! assert_eq!(components.get_ref(DAMAGE), Some(&10));
+//! assert!(components.get_raw(&Identifier::vanilla_static("damage")).is_some());
+//! components.set(DAMAGE, None);
+//! assert_eq!(components.get(DAMAGE), None);
 //! ```
 
 mod component_data;
@@ -40,7 +42,7 @@ pub use components::{
     InvalidEnchantableValue, ItemContainerContents, JukeboxPlayable, MapDecorationEntry,
     MapDecorations, MapId, MapItemColor, OminousBottleAmplifier, PaintingVariantComponent,
     PotDecorations, PotionContents, ProvidesBannerPatterns, ProvidesTrimMaterial, Recipes,
-    SulfurCubeContent, Tool, ToolRule, ToolRuleBlocks, UseRemainder,
+    SeededContainerLoot, SulfurCubeContent, Tool, ToolRule, ToolRuleBlocks, UseRemainder,
 };
 pub use registry::{
     ComponentEntry,

@@ -1,12 +1,18 @@
-//! State-driven cauldron behavior needed by comparators.
-//!
-//! Cauldron item interactions and drip filling remain separate block mechanics;
-//! this module implements the complete vanilla analog-output contract shared by
-//! empty, water, and powder-snow cauldrons.
+//! Cauldron analog output, drip filling and shared vanilla item interactions.
 
 use std::sync::Arc;
 
+use crate::behavior::BlockHitResult;
+use crate::behavior::InventoryAccess;
+use crate::behavior::item_utils::create_filled_result_for_hand;
+use crate::player::Player;
 use steel_macros::block_behavior;
+use steel_protocol::packets::game::SoundSource::Blocks;
+use steel_registry::data_components::BannerPatternLayers;
+use steel_registry::data_components::PotionContents;
+use steel_registry::data_components::vanilla_components::POTION_CONTENTS;
+use steel_registry::stat::vanilla_stat_types::ITEM_USED;
+use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::{
     blocks::{
         BlockRef,
@@ -15,10 +21,11 @@ use steel_registry::{
     },
     level_events, vanilla_blocks, vanilla_fluids, vanilla_game_events,
 };
+use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, BlockStateId, types::UpdateFlags};
 
 use crate::{
-    behavior::{BlockBehavior, BlockPlaceContext, blocks::vegetation},
+    behavior::{BlockBehavior, BlockPlaceContext, InteractionResult, blocks::vegetation},
     entity::ai::path::PathComputationType,
     world::{World, game_event::GameEventContext},
 };
@@ -42,6 +49,19 @@ impl CauldronBlock {
 impl BlockBehavior for CauldronBlock {
     fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(self.block.default_state())
+    }
+
+    fn use_item_on(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+        hand: InteractionHand,
+        _hit: &BlockHitResult,
+        inv: &mut InventoryAccess,
+    ) -> InteractionResult {
+        cauldron_item_interaction(state, world, pos, player, hand, inv)
     }
 
     fn has_analog_output_signal(&self, _state: BlockStateId) -> bool {
@@ -119,6 +139,19 @@ impl BlockBehavior for LayeredCauldronBlock {
         Some(self.block.default_state())
     }
 
+    fn use_item_on(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+        hand: InteractionHand,
+        _hit: &BlockHitResult,
+        inv: &mut InventoryAccess,
+    ) -> InteractionResult {
+        cauldron_item_interaction(state, world, pos, player, hand, inv)
+    }
+
     fn has_analog_output_signal(&self, _state: BlockStateId) -> bool {
         true
     }
@@ -165,6 +198,221 @@ impl BlockBehavior for LayeredCauldronBlock {
             }
         }
     }
+}
+
+/// Vanilla 26.3 `CauldronInteractions` dispatch, shared by all cauldron types.
+#[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
+pub(super) fn cauldron_item_interaction(
+    state: BlockStateId,
+    world: &Arc<World>,
+    pos: BlockPos,
+    player: &Player,
+    hand: InteractionHand,
+    inv: &mut InventoryAccess,
+) -> InteractionResult {
+    use crate::fluid::FluidStateExt as _;
+    use steel_registry::data_components::vanilla_components::{BANNER_PATTERNS, DYED_COLOR};
+    use steel_registry::item_stack::ItemStack;
+    use steel_registry::vanilla_item_tags::ItemTag;
+    use steel_registry::{
+        sound_events as sounds, vanilla_custom_stats as stats, vanilla_items as items,
+        vanilla_potions,
+    };
+    let held = inv.with_item(|item| item.clone());
+    let item = held.item();
+    let water = state.get_block() == &vanilla_blocks::WATER_CAULDRON;
+    let snow = state.get_block() == &vanilla_blocks::POWDER_SNOW_CAULDRON;
+    let empty = state.get_block() == &vanilla_blocks::CAULDRON;
+    let level = if water || snow {
+        state.get_value(LEVEL_CAULDRON)
+    } else {
+        0
+    };
+    let lower = || {
+        if level <= 1 {
+            vanilla_blocks::CAULDRON.default_state()
+        } else {
+            state.set_value(LEVEL_CAULDRON, level - 1)
+        }
+    };
+    // The tagged equipment path mutates the held item, rather than exchanging
+    // one item. Creative players also lose the dye, without duplicating armor.
+    if water && item.has_tag(&ItemTag::CAULDRON_CAN_REMOVE_DYE) {
+        if held.get(DYED_COLOR).is_none() {
+            return InteractionResult::TryEmptyHandInteraction;
+        }
+        inv.with_item(|item| item.remove(DYED_COLOR));
+        player.award_custom_stat(&stats::CLEAN_ARMOR);
+        let next = lower();
+        world.set_block(pos, next, UpdateFlags::UPDATE_ALL);
+        world.game_event(
+            &vanilla_game_events::BLOCK_CHANGE,
+            pos,
+            &GameEventContext::new(None, Some(next)),
+        );
+        return InteractionResult::Success;
+    }
+    let (result, next, sound, placing, stat, award_item, creative_limit) = if item
+        == &*items::WATER_BUCKET
+        || item == &*items::LAVA_BUCKET
+        || item == &*items::POWDER_SNOW_BUCKET
+    {
+        if item != &*items::WATER_BUCKET
+            && world
+                .get_block_state(pos.above())
+                .get_fluid_state()
+                .is_water()
+        {
+            return InteractionResult::Consume;
+        }
+        let (next, sound) = if item == &*items::WATER_BUCKET {
+            (
+                vanilla_blocks::WATER_CAULDRON
+                    .default_state()
+                    .set_value(LEVEL_CAULDRON, 3),
+                &sounds::ITEM_BUCKET_EMPTY,
+            )
+        } else if item == &*items::LAVA_BUCKET {
+            (
+                vanilla_blocks::LAVA_CAULDRON.default_state(),
+                &sounds::ITEM_BUCKET_EMPTY_LAVA,
+            )
+        } else {
+            (
+                vanilla_blocks::POWDER_SNOW_CAULDRON
+                    .default_state()
+                    .set_value(LEVEL_CAULDRON, 3),
+                &sounds::ITEM_BUCKET_EMPTY_POWDER_SNOW,
+            )
+        };
+        (
+            ItemStack::new(&items::BUCKET),
+            next,
+            Some(sound),
+            true,
+            &stats::FILL_CAULDRON,
+            true,
+            true,
+        )
+    } else if item == &*items::BUCKET
+        && ((water || snow) && level == 3 || state.get_block() == &vanilla_blocks::LAVA_CAULDRON)
+    {
+        let (filled, sound) = if water {
+            (&items::WATER_BUCKET, &sounds::ITEM_BUCKET_FILL)
+        } else if snow {
+            (
+                &items::POWDER_SNOW_BUCKET,
+                &sounds::ITEM_BUCKET_FILL_POWDER_SNOW,
+            )
+        } else {
+            (&items::LAVA_BUCKET, &sounds::ITEM_BUCKET_FILL_LAVA)
+        };
+        (
+            ItemStack::new(filled),
+            vanilla_blocks::CAULDRON.default_state(),
+            Some(sound),
+            false,
+            &stats::USE_CAULDRON,
+            true,
+            true,
+        )
+    } else if water && item == &*items::GLASS_BOTTLE {
+        (
+            PotionContents::create_item_stack(&items::POTION, &vanilla_potions::WATER),
+            lower(),
+            Some(&sounds::ITEM_BOTTLE_FILL),
+            false,
+            &stats::USE_CAULDRON,
+            true,
+            true,
+        )
+    } else if (empty || water && level < 3)
+        && item == &*items::POTION
+        && held
+            .get(POTION_CONTENTS)
+            .is_some_and(|potion| potion.is(&vanilla_potions::WATER))
+    {
+        (
+            ItemStack::new(&items::GLASS_BOTTLE),
+            vanilla_blocks::WATER_CAULDRON
+                .default_state()
+                .set_value(LEVEL_CAULDRON, level + 1),
+            Some(&sounds::ITEM_BOTTLE_EMPTY),
+            true,
+            &stats::USE_CAULDRON,
+            true,
+            true,
+        )
+    } else if water && item.has_tag(&ItemTag::BANNERS) {
+        let Some(patterns) = held
+            .get(BANNER_PATTERNS)
+            .filter(|patterns| !patterns.layers().is_empty())
+        else {
+            return InteractionResult::TryEmptyHandInteraction;
+        };
+        let mut layers = patterns.layers().to_vec();
+        layers.pop();
+        let mut cleaned = held.copy_with_count(1);
+        cleaned.set(BANNER_PATTERNS, BannerPatternLayers::new(layers));
+        (
+            cleaned,
+            lower(),
+            None,
+            false,
+            &stats::CLEAN_BANNER,
+            false,
+            false,
+        )
+    } else if water
+        && item != &*items::SHULKER_BOX
+        && item
+            .block
+            .is_some_and(|block| block.has_tag(&BlockTag::SHULKER_BOXES))
+    {
+        (
+            ItemStack::with_count_and_patch(
+                &items::SHULKER_BOX,
+                1,
+                held.components_patch().clone(),
+            ),
+            lower(),
+            None,
+            false,
+            &stats::CLEAN_SHULKER_BOX,
+            false,
+            false,
+        )
+    } else {
+        return InteractionResult::TryEmptyHandInteraction;
+    };
+    create_filled_result_for_hand(player, inv, hand, result, creative_limit);
+    if award_item {
+        player.award_stat(&ITEM_USED, item);
+    }
+    player.award_custom_stat(stat);
+    world.set_block(pos, next, UpdateFlags::UPDATE_ALL);
+    // LayeredCauldronBlock.lowerFillLevel emits BLOCK_CHANGE, in addition
+    // to a bottle's FLUID_PICKUP. Washing uses only this level-change event.
+    if water && (item == &*items::GLASS_BOTTLE || !award_item) {
+        world.game_event(
+            &vanilla_game_events::BLOCK_CHANGE,
+            pos,
+            &GameEventContext::new(None, Some(next)),
+        );
+    }
+    if let Some(sound) = sound {
+        world.play_sound(sound, Blocks, pos, 1.0, 1.0, None);
+        world.game_event(
+            if placing {
+                &vanilla_game_events::FLUID_PLACE
+            } else {
+                &vanilla_game_events::FLUID_PICKUP
+            },
+            pos,
+            &GameEventContext::new(None, None),
+        );
+    }
+    InteractionResult::Success
 }
 
 #[cfg(test)]

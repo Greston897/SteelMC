@@ -5,22 +5,24 @@ use steel_utils::BlockPos;
 
 use super::selector::{Goal, GoalControls};
 use crate::entity::PathfinderMob;
-use crate::fluid::FluidStateExt as _;
+use steel_utils::Identifier;
 
 const WATER_SEARCH_HORIZONTAL_RADIUS: f64 = 2.0;
 const WATER_SEARCH_VERTICAL_BELOW: f64 = 2.0;
 const WATER_MOVE_SPEED_MODIFIER: f64 = 1.0;
 
-pub struct TryFindWaterGoal;
+pub struct TryFindLiquidGoal {
+    fluid_tag: Identifier,
+}
 
-impl TryFindWaterGoal {
+impl TryFindLiquidGoal {
     #[must_use]
-    pub(crate) const fn new() -> Self {
-        Self
+    pub(crate) const fn new(fluid_tag: Identifier) -> Self {
+        Self { fluid_tag }
     }
 }
 
-impl Goal for TryFindWaterGoal {
+impl Goal for TryFindLiquidGoal {
     fn controls(&self) -> GoalControls {
         GoalControls::EMPTY
     }
@@ -36,7 +38,8 @@ impl Goal for TryFindWaterGoal {
         !world
             .get_block_state(mob.block_position())
             .get_fluid_state()
-            .is_water()
+            .fluid_id
+            .has_tag(&self.fluid_tag)
     }
 
     fn start(&mut self, mob: &dyn PathfinderMob) {
@@ -46,7 +49,11 @@ impl Goal for TryFindWaterGoal {
 
         let (min, max) = water_search_bounds(mob.position());
         let Some(water_pos) = first_matching_pos_in_closed_box(min, max, |pos| {
-            world.get_block_state(pos).get_fluid_state().is_water()
+            world
+                .get_block_state(pos)
+                .get_fluid_state()
+                .fluid_id
+                .has_tag(&self.fluid_tag)
         }) else {
             return;
         };
@@ -112,7 +119,7 @@ mod tests {
 
     #[test]
     fn try_find_water_goal_claims_no_controls_like_vanilla() {
-        let goal = TryFindWaterGoal::new();
+        let goal = TryFindLiquidGoal::new(Identifier::vanilla_static("water"));
 
         assert_eq!(goal.controls(), GoalControls::EMPTY);
     }
@@ -120,7 +127,7 @@ mod tests {
     #[test]
     fn try_find_water_goal_requires_on_ground() {
         init_vanilla_registry();
-        let mut goal = TryFindWaterGoal::new();
+        let mut goal = TryFindLiquidGoal::new(Identifier::vanilla_static("water"));
         let mob = PigEntity::new(&vanilla_entities::PIG, 1, DVec3::ZERO, Weak::new());
 
         assert!(!goal.can_use(&mob));
@@ -129,7 +136,7 @@ mod tests {
     #[test]
     fn try_find_water_goal_requires_world_after_on_ground_check() {
         init_vanilla_registry();
-        let mut goal = TryFindWaterGoal::new();
+        let mut goal = TryFindLiquidGoal::new(Identifier::vanilla_static("water"));
         let mob = PigEntity::new(&vanilla_entities::PIG, 1, DVec3::ZERO, Weak::new());
         mob.set_on_ground(true);
 

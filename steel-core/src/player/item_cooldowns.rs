@@ -43,10 +43,18 @@ impl ItemCooldowns {
     pub(super) fn add_from_stack(&mut self, stack: &ItemStack) -> Option<(Identifier, i32)> {
         let cooldown = stack.get(USE_COOLDOWN)?;
         let duration = cooldown.ticks();
+        self.set(cooldown_group(stack), duration)
+    }
+
+    /// Starts a cooldown of `duration` ticks on `group`.
+    ///
+    /// Mirrors vanilla `ItemCooldownManager.set(stack, ticks)`, which is used by
+    /// items that start their cooldown manually (e.g. the goat horn) instead of
+    /// carrying a `minecraft:use_cooldown` component.
+    pub(super) fn set(&mut self, group: Identifier, duration: i32) -> Option<(Identifier, i32)> {
         if duration <= 0 {
             return None;
         }
-        let group = cooldown_group(stack);
         self.cooldowns.insert(
             group.clone(),
             CooldownInstance {
@@ -73,6 +81,22 @@ impl Player {
     /// Starts the stack's vanilla `use_cooldown`, if it has one.
     pub fn apply_item_use_cooldown(&self, stack: &ItemStack) {
         let cooldown = self.item_cooldowns.lock().add_from_stack(stack);
+        if let Some((cooldown_group, duration)) = cooldown {
+            self.send_packet(CCooldown {
+                cooldown_group,
+                duration,
+            });
+        }
+    }
+
+    /// Starts a manual cooldown of `duration` ticks on `group`.
+    ///
+    /// Mirrors vanilla `ItemCooldownManager.set(stack, ticks)` as used by
+    /// `GoatHornItem.use`: the cooldown group of a stack without a
+    /// `minecraft:use_cooldown` component is the item itself, which is why the
+    /// group is passed in directly instead of the stack.
+    pub fn set_item_cooldown(&self, group: Identifier, duration: i32) {
+        let cooldown = self.item_cooldowns.lock().set(group, duration);
         if let Some((cooldown_group, duration)) = cooldown {
             self.send_packet(CCooldown {
                 cooldown_group,

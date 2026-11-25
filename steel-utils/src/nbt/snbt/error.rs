@@ -78,6 +78,8 @@ pub enum SnbtErrorKind {
         /// Number of supplied arguments.
         argument_count: usize,
     },
+    /// The value nested deeper than the supported maximum depth.
+    TooDeep,
     /// A number was required at the cursor.
     ExpectedNumber,
     /// A binary numeral was required at the cursor.
@@ -218,7 +220,11 @@ impl SnbtErrorKind {
             Self::ExpectedNonNegativeNumber => {
                 TextComponent::from(&translations::SNBT_PARSER_EXPECTED_NON_NEGATIVE_NUMBER)
             }
-            Self::InvalidFloatingPoint
+            // Depth is a structural failure rather than a numeric one, but both
+            // report through the same generic parse-failure text, which quotes
+            // the `Display` form of the specific reason.
+            Self::TooDeep
+            | Self::InvalidFloatingPoint
             | Self::InvalidInteger
             | Self::IntegerTooLarge
             | Self::NumberOutOfRange { .. }
@@ -282,6 +288,7 @@ impl fmt::Display for SnbtErrorKind {
             Self::ExpectedNonNegativeNumber => {
                 formatter.write_str("unsigned integer literal cannot be negative")
             }
+            Self::TooDeep => formatter.write_str("value nests deeper than the supported maximum"),
             Self::IntegerTooLarge => formatter.write_str("integer literal is too large"),
             Self::NumberOutOfRange {
                 number_type,

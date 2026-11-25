@@ -110,6 +110,8 @@ fn test_pig_loot_drops_raw_porkchop_when_not_on_fire() {
         sheep_color: None,
         sheep_sheared: None,
         chicken_variant: None,
+        holder_name: None,
+        profile: None,
     };
 
     let mut ctx = LootContext::new(&mut rng).with_this_entity(pig);
@@ -216,6 +218,8 @@ fn chicken_lay_drops_the_egg_matching_the_chicken_variant() {
             sheep_color: None,
             sheep_sheared: None,
             chicken_variant: Some(variant),
+            holder_name: None,
+            profile: None,
         };
 
         let mut ctx = LootContext::new(&mut rng).with_this_entity(chicken);
@@ -247,6 +251,8 @@ fn sheared_predicate_rejects_non_sheep_entities() {
         sheep_color: None,
         sheep_sheared: None,
         chicken_variant: None,
+        holder_name: None,
+        profile: None,
     };
     let mut ctx = LootContext::new(&mut rng).with_this_entity(pig);
 
@@ -283,6 +289,8 @@ fn test_pig_loot_smelt_condition_uses_entity_fire_flag() {
         sheep_color: None,
         sheep_sheared: None,
         chicken_variant: None,
+        holder_name: None,
+        profile: None,
     };
 
     let mut ctx = LootContext::new(&mut rng).with_this_entity(pig);
@@ -322,6 +330,8 @@ fn living_entity_ref<'a>(
         sheep_color: None,
         sheep_sheared: None,
         chicken_variant: None,
+        holder_name: None,
+        profile: None,
     }
 }
 
@@ -343,9 +353,9 @@ fn roll_killed_by_player(
             let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
             let mut ctx = LootContext::new(&mut rng)
                 .with_killed_by_player(true)
-                .with_this_entity(victim)
-                .with_killer_entity(player)
-                .with_direct_killer_entity(player);
+                .with_this_entity(victim.clone())
+                .with_killer_entity(player.clone())
+                .with_direct_killer_entity(player.clone());
             table.get_random_items(&mut ctx)
         })
         .collect()

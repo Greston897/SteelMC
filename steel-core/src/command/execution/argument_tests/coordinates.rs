@@ -147,3 +147,26 @@ fn coordinate_suggestions_include_vanilla_partial_prefixes() {
         .collect::<Vec<_>>();
     assert_eq!(suggestions, ["^ ^", "^ ^ ^"]);
 }
+
+#[test]
+fn column_positions_parse_two_coordinates_and_advertise_column_wire_type() {
+    let parser = SteelArgumentType::column_pos();
+    assert!(matches!(
+        parser.protocol_argument().0,
+        ProtocolArgumentType::ColumnPos
+    ));
+    let dispatcher = coordinate_dispatcher(parser);
+    assert_eq!(
+        parsed_coordinates(&dispatcher, "coordinates 0 15"),
+        Ok(Coordinates::World(WorldCoordinates::new(
+            WorldCoordinate::new(false, 0.0),
+            WorldCoordinate::new(true, 0.0),
+            WorldCoordinate::new(false, 15.0)
+        )))
+    );
+    assert!(parsed_coordinates(&dispatcher, "coordinates ~ ~-3").is_ok());
+    assert!(parsed_coordinates(&dispatcher, "coordinates ^ ^").is_err());
+    assert!(parsed_coordinates(&dispatcher, "coordinates 1.5 2").is_err());
+    assert!(parsed_coordinates(&dispatcher, "coordinates 1").is_err());
+    assert!(parsed_coordinates(&dispatcher, "coordinates 1 2 3").is_err());
+}

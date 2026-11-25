@@ -1,11 +1,18 @@
 use std::collections::BTreeSet;
 
 use super::*;
+use crate::behavior::InteractionResult;
+use crate::behavior::InteractionResult::Pass;
 use crate::entity::{
-    entities::objects::vehicles::AbstractMinecart, leash::Leashable, pushing::EntityPush,
+    entities::objects::vehicles::{AbstractBoat, AbstractMinecart},
+    leash::Leashable,
+    pushing::EntityPush,
 };
+use crate::scoreboard::ScoreHolder;
 use rand::{RngExt, rng};
 use steel_math::DEGREE_90;
+use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_criteria_triggers;
 use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::nbt::{NbtNumeric, nbt_collection_values};
 
@@ -144,7 +151,7 @@ impl<T: Entity> EntityEventSource for T {
 /// Entities expose [`EntityBase`] to get default implementations for common
 /// methods like `id()`, `uuid()`, `position()`, etc.
 ///
-/// ```ignore
+/// ```text
 /// impl Entity for MyEntity {
 ///     fn base(&self) -> &EntityBase { &self.base }
 ///     fn entity_type(&self) -> EntityTypeRef { vanilla_entities::MY_ENTITY }
@@ -170,6 +177,17 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     /// broadcastable; players override this for spectator visibility rules.
     fn broadcast_to_player(&self, _player: &Player) -> bool {
         true
+    }
+
+    /// Opens this entity's menu for `player`, if it provides one.
+    ///
+    /// Mirrors vanilla `Entity.openMenu` / `MenuProvider.createMenu`, which is
+    /// how villagers, horses, donkeys and llamas expose a container. Steel has
+    /// no entity-owned menu yet, so the default passes; the hook exists so
+    /// spectator interaction already routes through the same call vanilla uses
+    /// and so the first entity menu only has to override this method.
+    fn open_menu_for(&self, _player: &Player) -> InteractionResult {
+        Pass
     }
 
     /// Gets the entity's unique network ID (session-local).
@@ -599,8 +617,16 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     }
 
     /// Returns whether this entity is allied to `other`.
-    fn is_allied_to(&self, _other: &dyn Entity) -> bool {
-        false
+    fn is_allied_to(&self, other: &dyn Entity) -> bool {
+        if self.uuid() == other.uuid() {
+            return true;
+        }
+        let Some(team) = self.team_name() else {
+            return false;
+        };
+        other
+            .team_name()
+            .is_some_and(|other_team| other_team == team)
     }
 
     /// Returns whether this entity is a marker armor stand.
@@ -687,7 +713,13 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
 
     /// Stops riding the current vehicle, if any.
     fn stop_riding(&self) {
+        let was_riding = self.is_passenger();
         self.base().stop_riding();
+        // Vanilla `Entity.stopRiding` dispatches `GameEvent.ENTITY_DISMOUNT`
+        // from the passenger that left.
+        if was_riding {
+            self.game_event(&vanilla_game_events::ENTITY_DISMOUNT);
+        }
     }
 
     /// Dismounts every passenger from this entity.
@@ -1153,6 +1185,33 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         self.base().level()
     }
 
+    /// Returns the scoreboard team this entity belongs to, if any.
+    ///
+    /// Vanilla `Entity.getTeam` reads the server scoreboard; Steel reaches it
+    /// through the world's server link, so worlds without a server report none.
+    fn team_name(&self) -> Option<String> {
+        let world = self.level()?;
+        let holder = ScoreHolder::new(self.scoreboard_name());
+        world.with_scoreboard(|scoreboard| scoreboard.team_of(&holder))?
+    }
+
+    /// Vanilla `Team.canCollideWith` for this entity's own team.
+    ///
+    /// Returns `true` when no team is set, because vanilla only constrains
+    /// collisions between members of the same team.
+    fn team_allows_friendly_fire(&self) -> bool {
+        let Some(team) = self.team_name() else {
+            return true;
+        };
+        let Some(world) = self.level() else {
+            return true;
+        };
+        world
+            .with_scoreboard(|scoreboard| scoreboard.team_state(&team))
+            .flatten()
+            .is_none_or(|state| state.allow_friendly_fire)
+    }
+
     /// Packs dirty entity data for network synchronization.
     ///
     /// Returns `Some(values)` if there are dirty values to sync, `None` otherwise.
@@ -1254,6 +1313,14 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     /// Returns why this entity was removed, if it has been removed.
     fn removal_reason(&self) -> Option<RemovalReason> {
         self.base().removal_reason()
+    }
+
+    /// Returns the item produced by picking this entity in creative mode.
+    ///
+    /// Vanilla `Entity.getPickResult`. Most entities yield nothing; minecarts,
+    /// boats and similar vehicles override it with their own item.
+    fn pick_result(&self) -> Option<ItemStack> {
+        None
     }
 
     /// Marks the entity as removed with the given reason.
@@ -1453,7 +1520,9 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
                 .attachments
                 .get_average(EntityAttachment::Passenger, dimensions);
             let _ = self.spawn_at_location_with_offset(item_stack, spawn_offset);
-            // TODO: Trigger PLAYER_SHEARED_EQUIPMENT once advancement criteria exist.
+            // Vanilla `LivingEntity.shear` fires `player_sheared_equipment` for the
+            // shearer when an equipment slot was actually emptied.
+            player.trigger_advancement(&vanilla_criteria_triggers::PLAYER_SHEARED_EQUIPMENT);
             return true;
         }
 
@@ -1586,6 +1655,12 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         try_as_dyn::<Self, dyn Projectile>(self)
     }
 
+    /// Returns this entity as a throwable projectile, i.e. one with the shared
+    /// `ThrowableProjectile` tick.
+    fn as_throwable_projectile(&self) -> Option<&dyn ThrowableProjectile> {
+        try_as_dyn::<Self, dyn ThrowableProjectile>(self)
+    }
+
     /// Returns this entity as a living entity when it has living behavior.
     fn as_living_entity(&self) -> Option<&dyn LivingEntity> {
         try_as_dyn::<Self, dyn LivingEntity>(self)
@@ -1638,6 +1713,11 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     /// Returns this entity as an `AbstractMinecart` if it has `AbstractMinecart` behavior.
     fn as_abstract_minecart(&self) -> Option<&dyn AbstractMinecart> {
         try_as_dyn::<Self, dyn AbstractMinecart>(self)
+    }
+
+    /// Returns this entity as an `AbstractBoat` if it has `AbstractBoat` behavior.
+    fn as_abstract_boat(&self) -> Option<&dyn AbstractBoat> {
+        try_as_dyn::<Self, dyn AbstractBoat>(self)
     }
 
     /// Returns true for entities that implement vanilla animal behavior.
@@ -1877,6 +1957,33 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     /// Sets the entity's rotation as (yaw, pitch) in degrees.
     fn set_rotation(&self, rotation: (f32, f32)) {
         self.base().set_rotation(rotation);
+    }
+
+    /// Vanilla `Entity.forceSetRotation`: applies a rotation that may be
+    /// relative, snaps the old rotation and mirrors the yaw into the head yaw.
+    ///
+    /// Used by `/rotate`, which resolves the argument against the command source
+    /// and hands the client an offset when the argument was relative.
+    fn force_set_rotation(&self, yaw: f32, relative_yaw: bool, pitch: f32, relative_pitch: bool) {
+        self.default_force_set_rotation(yaw, relative_yaw, pitch, relative_pitch);
+    }
+
+    /// Vanilla `Entity.forceSetRotation` without the player packet, shared by
+    /// entities whose subclasses add their own notification.
+    fn default_force_set_rotation(
+        &self,
+        yaw: f32,
+        relative_yaw: bool,
+        pitch: f32,
+        relative_pitch: bool,
+    ) {
+        let rotation = forced_rotation(self.rotation(), yaw, relative_yaw, pitch, relative_pitch);
+        self.set_rotation(rotation);
+        let rotation = self.rotation();
+        if let Some(living) = self.as_living_entity() {
+            living.set_y_head_rot(rotation.0);
+        }
+        self.base().set_old_rotation_to_current();
     }
 
     /// Gets the nearest horizontal direction to the entity's yaw (horizontal rotation).
@@ -2505,7 +2612,11 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
             WorldCollisionProvider::for_entity(&world, self.as_entity_event_source());
         let colliding = collision_world.has_collision_with_context(
             &self.bounding_box().deflate(NO_PHYSICS_COLLISION_EPSILON),
-            BlockCollisionContext::empty(),
+            collision_world.entity_collision_context(
+                self.position().y,
+                self.is_descending(),
+                false,
+            ),
         );
         self.set_no_physics(colliding);
         if colliding {
@@ -2686,11 +2797,18 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     }
 
     /// Moves this entity to `pos`, keeping its current rotation.
-    // TODO: Recursively reposition this entity's passengers (vanilla
-    // `Entity.teleportPassengers`, via `getSelfAndPassengers`)
+    ///
+    /// Vanilla `Entity.teleportTo` follows the move with `teleportPassengers`,
+    /// which re-runs `positionRider` for every passenger so the whole stack
+    /// lands together.
     #[must_use = "movement commits can fail when world entity state rejects the update"]
     fn teleport_to(&self, pos: DVec3) -> Result<(), EntityMoveError> {
-        self.try_set_position(pos)
+        self.try_set_position(pos)?;
+        for passenger in self.passengers() {
+            passenger.set_old_position_to_current();
+            self.position_rider(passenger.as_ref());
+        }
+        Ok(())
     }
 
     /// Sets the vanilla movement-trace old position to the current position.
@@ -3142,14 +3260,55 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
         }
 
         if let Some(world) = self.level() {
-            world.play_sound_at(
-                sound,
+            // Vanilla `Entity.playSound` -> `Level.playSeededSound(... this ...)`
+            // sends `sound_entity`, which carries the entity id so the client can
+            // follow the entity and restart the sound when it moves.
+            let holder = SoundEventHolder::registry(sound);
+            world.play_entity_sound(
+                &holder,
                 self.sound_source(),
+                self.id(),
                 self.position(),
                 volume,
                 pitch,
                 None,
             );
+        }
+    }
+
+    /// Plays a sound holder (registry or direct) at the entity's position.
+    ///
+    /// Vanilla entity sounds are `Holder<SoundEvent>`, which may be a direct
+    /// sound id rather than a registry entry.
+    fn play_sound_holder(&self, sound: &SoundEventHolder, volume: f32, pitch: f32) {
+        if self.is_silent() {
+            return;
+        }
+
+        if let Some(world) = self.level() {
+            // Same entity-bound path as `play_sound`. `sound_entity` only carries
+            // a registry holder id, so an inline (direct) sound has to fall back
+            // to the positional packet to stay audible.
+            if sound.registry_ref().is_some() {
+                world.play_entity_sound(
+                    sound,
+                    self.sound_source(),
+                    self.id(),
+                    self.position(),
+                    volume,
+                    pitch,
+                    None,
+                );
+            } else {
+                world.play_sound_holder_at(
+                    sound,
+                    self.sound_source(),
+                    self.position(),
+                    volume,
+                    pitch,
+                    None,
+                );
+            }
         }
     }
 
@@ -4105,8 +4264,14 @@ pub trait Entity: EntityEventSource + ErasedType + Send + Sync + 'static {
     }
 
     /// Runs when this entity kills another entity.
-    fn award_kill_score(&self, _victim: &dyn Entity, _killing_blow: &DamageSource) {
-        // TODO: Trigger advancement criterion ENTITY_KILLED_PLAYER if the victim is a player.
+    fn award_kill_score(&self, victim: &dyn Entity, _killing_blow: &DamageSource) {
+        // Vanilla `LivingEntity.awardKillScore` fires `entity_killed_player` on
+        // the killer when the victim is a player.
+        if victim.as_player().is_some()
+            && let Some(killer) = self.as_player()
+        {
+            killer.trigger_advancement(&vanilla_criteria_triggers::ENTITY_KILLED_PLAYER);
+        }
     }
 }
 
@@ -4144,9 +4309,27 @@ pub(crate) fn apply_entity_look_at(entity: &dyn Entity, from_anchor: EntityAncho
     entity.base().set_old_rotation_to_current();
 }
 
+/// Vanilla `PositionMoveRotation.calculateAbsolute` for a rotation-only change.
+fn forced_rotation(
+    current: (f32, f32),
+    yaw: f32,
+    relative_yaw: bool,
+    pitch: f32,
+    relative_pitch: bool,
+) -> (f32, f32) {
+    (
+        wrap_degrees(if relative_yaw { current.0 + yaw } else { yaw }),
+        wrap_degrees(if relative_pitch {
+            current.1 + pitch
+        } else {
+            pitch
+        }),
+    )
+}
+
 fn look_at_rotation(from: DVec3, target: DVec3) -> (f32, f32) {
     let delta = target - from;
-    let horizontal = delta.x.hypot(delta.z);
+    let horizontal = (delta.x * delta.x + delta.z * delta.z).sqrt();
     let pitch = wrap_degrees(-delta.y.atan2(horizontal).to_degrees() as f32);
     let yaw = wrap_degrees(delta.z.atan2(delta.x).to_degrees() as f32 - DEGREE_90);
     (yaw, pitch)

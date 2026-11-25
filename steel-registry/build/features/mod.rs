@@ -20,9 +20,9 @@ mod providers;
 mod structures;
 
 use common::{
-    generate_block_holder_set, generate_block_ref, generate_block_ref_list,
+    generate_biome_holder_set, generate_block_holder_set, generate_block_ref,
     generate_block_state_data, generate_block_state_provider_entry_ref, generate_box,
-    generate_configured_feature_entry_ref, generate_direction, generate_fluid_ref_list,
+    generate_configured_feature_entry_ref, generate_direction, generate_fluid_holder_set,
     generate_fluid_state_data, generate_identifier, generate_offset, generate_option,
     generate_placed_feature_entry_ref, generate_rotation, generate_vec, generate_vertical_anchor,
     resource_name, sorted_json_files,
@@ -34,10 +34,8 @@ use placement::{
     generate_block_predicate, generate_placed_feature_data, generate_placed_feature_ref,
 };
 pub(crate) use providers::generate_block_state_provider;
-use providers::{
-    generate_float_provider, generate_height_provider, generate_int_provider,
-    generate_uniform_int_provider,
-};
+pub(crate) use providers::{generate_float_provider, generate_int_provider};
+use providers::{generate_height_provider, generate_uniform_int_provider};
 use structures::{
     generate_block_column_layer, generate_end_spike, generate_feature_size,
     generate_foliage_placer, generate_geode_block_settings, generate_geode_crack_settings,
@@ -48,11 +46,11 @@ use structures::{
 };
 
 use data::{
-    AboveRootPlacement, BlobFoliagePlacer, BlockColumnLayer, BlockHolderSet, BlockPredicate,
-    BlockStateData, ConfiguredFeatureKind, ConfiguredFeatureRef, DualNoiseProvider, EndSpike,
-    FeatureHeightmap, FeatureNoiseParameters, FeatureSize, FluidStateData, FoliagePlacer,
-    FoliagePlacerBase, GeodeBlockSettings, GeodeCrackSettings, GeodeLayerSettings,
-    HugeMushroomConfiguration, IdentifierList, MangroveRootPlacement, NoiseProvider,
+    AboveRootPlacement, BiomeHolderSet, BlobFoliagePlacer, BlockColumnLayer, BlockHolderSet,
+    BlockPredicate, BlockStateData, ConfiguredFeatureKind, ConfiguredFeatureRef, DualNoiseProvider,
+    EndSpike, FeatureHeightmap, FeatureNoiseParameters, FeatureSize, FluidHolderSet,
+    FluidStateData, FoliagePlacer, FoliagePlacerBase, GeodeBlockSettings, GeodeCrackSettings,
+    GeodeLayerSettings, HugeMushroomConfiguration, MangroveRootPlacement, NoiseProvider,
     NoiseThresholdProvider, OreTarget, PlacedFeatureData, PlacedFeatureRef, PlacementModifier,
     RootPlacer, RuleBasedStateProviderRule, TemplateEntry, TreeDecorator, TrunkPlacer,
     TrunkPlacerBase, VegetationPatchConfiguration, VerticalSurface, WeightedBlockState,

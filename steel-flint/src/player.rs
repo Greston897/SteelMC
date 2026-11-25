@@ -4,7 +4,10 @@
 //! interactions (like `use_item_on`) run without a network.
 
 use std::any::Any;
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicU64, Ordering},
+};
 
 use flint_core::test_spec::{GameMode, PlayerSlot};
 use flint_core::{FlintPlayer, Item};
@@ -32,14 +35,19 @@ const TEST_PLAYER_NAME: &str = "flintmc_testbot";
 /// Test player implementation that wraps a real `Player`.
 pub struct SteelTestPlayer {
     player: Arc<Player>,
+    tick: Arc<AtomicU64>,
+    // A client's crosshair can still use the pre-teleport pose while the
+    // server has already refreshed its own dimensions. Retain it only until
+    // a synchronization point or the next simulation tick.
+    pending_client_eye: Option<(u64, f64)>,
 }
 
 impl SteelTestPlayer {
     /// Creates a new test player in the given world.
     ///
     /// # Panics
-    /// Never in practice: the fixed test player name always passes validation.
-    pub fn new(world: Arc<World>, server: &Arc<Server>) -> Self {
+    /// Panics if the test identity is invalid or already registered in this world.
+    pub fn new(world: Arc<World>, server: &Arc<Server>, tick: Arc<AtomicU64>) -> Self {
         // Same identity as the FlintCLI bot, so specs asserting an `Owner` UUID
         // stay portable between runners.
         let game_profile = GameProfile::new(
@@ -55,17 +63,50 @@ impl SteelTestPlayer {
             game_profile,
             player_connection,
             Arc::new(PlayerSession::new(10, 10)),
-            world,
+            Arc::clone(&world),
             Arc::downgrade(server),
             server.config.clone(),
             -1, // Negative entity ID for test players
             ClientInformation::default(),
         );
+        // The real Flint bot joins away from the test fixture. Starting at the
+        // origin can put it inside a block before the first scripted teleport,
+        // changing its pose or generating unintended vibrations.
+        player
+            .try_set_position(DVec3::new(0.5, 100.0, 0.5))
+            .expect("test player spawn position");
         // Mark as loaded so interactions work
         player.set_client_loaded(true);
+        let player = Arc::new(player);
+        assert!(
+            world.add_test_player(Arc::clone(&player)),
+            "Flint player must be registered through the normal join path"
+        );
         Self {
-            player: Arc::new(player),
+            player,
+            tick,
+            pending_client_eye: None,
         }
+    }
+
+    /// Model the client's crosshair separately from the server-side pose.
+    fn client_ray_endpoints(&self) -> (DVec3, DVec3) {
+        let (mut start, mut end) = self.player.get_ray_endpoints();
+        if let Some((tick, eye_height)) = self.pending_client_eye
+            && tick == self.tick.load(Ordering::SeqCst)
+        {
+            let offset = self.player.position().y + eye_height - start.y;
+            start.y += offset;
+            end.y += offset;
+        }
+        (start, end)
+    }
+}
+
+impl Drop for SteelTestPlayer {
+    fn drop(&mut self) {
+        let world = self.player.world.load_full();
+        world.remove_test_player(&self.player);
     }
 }
 
@@ -124,18 +165,27 @@ fn stack_to_flint_item(stack: &ItemStack, requested_data: Vec<String>) -> Option
     let id = format!("minecraft:{}", stack.item.key.path);
     let mut map: FxHashMap<String, String> = FxHashMap::default();
     for key in requested_data {
-        if let Some(data) = stack.get_effective_value_raw(&Identifier::vanilla(key.clone())) {
-            if data.downcast_ref::<()>().is_some() {
-                map.insert(key, String::new());
-            } else if let Some(b) = data.downcast_ref::<bool>() {
-                map.insert(key, b.to_string());
-            } else if let Some(i) = data.downcast_ref::<i32>() {
-                map.insert(key, i.to_string());
-            } else if let Some(f) = data.downcast_ref::<f32>() {
-                map.insert(key, f.to_string());
-            }
-            // TODO: handle other data types then needed
-        }
+        let Some(data) = stack.get_effective_value_raw(&Identifier::vanilla(key.clone())) else {
+            continue;
+        };
+        // Flint only compares strings, so leaf values use their plain textual
+        // form and structured components fall back to their `Debug` rendering.
+        // Both are stable for a given Steel build, which is what a test
+        // assertion needs; nothing here is part of the wire protocol.
+        let value = if data.downcast_ref::<()>().is_some() {
+            String::new()
+        } else if let Some(b) = data.downcast_ref::<bool>() {
+            b.to_string()
+        } else if let Some(i) = data.downcast_ref::<i32>() {
+            i.to_string()
+        } else if let Some(f) = data.downcast_ref::<f32>() {
+            f.to_string()
+        } else if let Some(id) = data.downcast_ref::<Identifier>() {
+            id.to_string()
+        } else {
+            format!("{data:?}")
+        };
+        map.insert(key, value);
     }
     Some(Item {
         id,
@@ -155,6 +205,8 @@ impl FlintPlayer for SteelTestPlayer {
 
         let mut inv = self.player.inventory.lock();
         inv.set_item(index, stack);
+        // FlintCLI's inventory command waits for the server/client round trip.
+        self.pending_client_eye = None;
         Ok(())
     }
 
@@ -174,6 +226,7 @@ impl FlintPlayer for SteelTestPlayer {
         if (1..=9).contains(&slot) {
             // Flint uses 1-9, Steel uses 0-8
             self.player.inventory.lock().set_selected_slot(slot - 1);
+            self.pending_client_eye = None;
         }
         Ok(())
     }
@@ -184,15 +237,23 @@ impl FlintPlayer for SteelTestPlayer {
     }
 
     fn teleport(&mut self, pos: [f64; 3], rot: Option<[f32; 2]>) -> Result<(), anyhow::Error> {
+        let tick = self.tick.load(Ordering::SeqCst);
+        let eye_height = self
+            .pending_client_eye
+            .filter(|(previous_tick, _)| *previous_tick == tick)
+            .map_or_else(|| self.player.get_eye_height(), |(_, height)| height);
         self.player
             .try_set_position(DVec3::new(pos[0], pos[1], pos[2]))?;
         self.player.set_rotation((rot.unwrap_or([0.0, 0.0])).into());
+        self.player.update_pose();
+        self.pending_client_eye = Some((tick, eye_height));
         Ok(())
     }
 
     fn interact(&mut self) -> Result<(), anyhow::Error> {
         let world = self.player.get_world();
-        let (start, end) = self.player.get_ray_endpoints();
+        let (start, end) = self.client_ray_endpoints();
+        self.pending_client_eye = None;
         let clip = world.clip(start, end, ClipBlockShape::Outline, ClipFluid::None);
 
         let hand = InteractionHand::MainHand;
@@ -220,5 +281,313 @@ impl FlintPlayer for SteelTestPlayer {
             GameMode::Spectator => GameType::Spectator,
         });
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::world::SteelTestWorld;
+    use flint_core::test_spec::{GameMode as FlintGameMode, PlayerSlot as FlintPlayerSlot};
+    use flint_core::{Block as FlintBlock, FlintWorld as _};
+    use steel_registry::data_components::vanilla_components::DAMAGE;
+    use steel_registry::vanilla_items::STONE;
+
+    /// One Flint player-interaction placement scenario.
+    struct PlacementScenario {
+        /// Human readable scenario name used in the failure report.
+        name: &'static str,
+        /// Fixture blocks placed before the interaction.
+        setup: Vec<([i32; 3], FlintBlock)>,
+        /// Player position used for the teleport action.
+        player_pos: [f64; 3],
+        /// Player rotation (yaw, pitch) used for the teleport action.
+        player_rot: [f32; 2],
+        /// Item held in the first hotbar slot.
+        item: &'static str,
+        /// Position where the block is expected to appear.
+        target: [i32; 3],
+        /// Expected block identifier at the target position.
+        expected: &'static str,
+    }
+
+    /// The Flint placement scenarios that currently fail.
+    fn placement_scenarios() -> Vec<PlacementScenario> {
+        vec![
+            PlacementScenario {
+                name: "coral wall fan with unobstructed west face",
+                setup: vec![([8, 1, 4], FlintBlock::new("minecraft:stone"))],
+                player_pos: [6.5, 0.0, 4.5],
+                player_rot: [-90.0, 0.0],
+                item: "minecraft:brain_coral_fan",
+                target: [7, 1, 4],
+                expected: "minecraft:brain_coral_wall_fan",
+            },
+            PlacementScenario {
+                name: "bamboo below low ceiling",
+                setup: vec![
+                    ([0, 1, 0], FlintBlock::new("minecraft:dirt")),
+                    ([0, 2, 0], FlintBlock::new("minecraft:bamboo_sapling")),
+                    ([0, 5, 0], FlintBlock::new("minecraft:stone")),
+                ],
+                player_pos: [0.5, 4.0, 0.5],
+                player_rot: [0.0, 90.0],
+                item: "minecraft:bamboo",
+                target: [0, 3, 0],
+                expected: "minecraft:bamboo",
+            },
+            PlacementScenario {
+                name: "hay east",
+                setup: vec![([0, 1, 0], FlintBlock::new("minecraft:stone"))],
+                player_pos: [3.5, 0.0, 0.5],
+                player_rot: [90.0, 0.0],
+                item: "minecraft:hay_block",
+                target: [1, 1, 0],
+                expected: "minecraft:hay_block",
+            },
+            PlacementScenario {
+                name: "hay north",
+                setup: vec![([0, 1, 0], FlintBlock::new("minecraft:stone"))],
+                player_pos: [0.5, 0.0, -2.5],
+                player_rot: [0.0, 0.0],
+                item: "minecraft:hay_block",
+                target: [0, 1, -1],
+                expected: "minecraft:hay_block",
+            },
+            PlacementScenario {
+                name: "stained glass side",
+                setup: vec![([0, 1, 0], FlintBlock::new("minecraft:red_stained_glass"))],
+                player_pos: [0.5, 0.0, -3.5],
+                player_rot: [0.0, 0.0],
+                item: "minecraft:red_stained_glass",
+                target: [0, 1, -1],
+                expected: "minecraft:red_stained_glass",
+            },
+            PlacementScenario {
+                name: "grindstone wall",
+                setup: vec![([0, 1, 0], FlintBlock::new("minecraft:stone"))],
+                player_pos: [0.5, 0.0, -3.5],
+                player_rot: [0.0, 0.0],
+                item: "minecraft:grindstone",
+                target: [0, 1, -1],
+                expected: "minecraft:grindstone",
+            },
+            PlacementScenario {
+                name: "grindstone clicked face",
+                setup: vec![([0, 1, 0], FlintBlock::new("minecraft:stone"))],
+                player_pos: [0.5, 2.5, -2.5],
+                player_rot: [0.0, 36.0],
+                item: "minecraft:grindstone",
+                target: [0, 2, 0],
+                expected: "minecraft:grindstone",
+            },
+            PlacementScenario {
+                name: "hanging sign chain",
+                setup: vec![
+                    ([0, 5, 0], FlintBlock::new("minecraft:stone")),
+                    (
+                        [0, 4, 0],
+                        FlintBlock::with_properties(
+                            "minecraft:oak_hanging_sign",
+                            [
+                                ("rotation".to_owned(), "8".to_owned()),
+                                ("attached".to_owned(), "false".to_owned()),
+                            ]
+                            .into_iter()
+                            .collect(),
+                        ),
+                    ),
+                ],
+                player_pos: [0.5, 1.0, 0.5],
+                player_rot: [0.0, -90.0],
+                item: "minecraft:oak_hanging_sign",
+                target: [0, 3, 0],
+                expected: "minecraft:oak_hanging_sign",
+            },
+        ]
+    }
+
+    /// Runs one scenario and reports the ray, the clip result, the placed
+    /// block, and the held stack.
+    fn run_placement_scenario(scenario: &PlacementScenario) -> (String, String) {
+        let mut world = SteelTestWorld::new();
+        for (pos, block) in &scenario.setup {
+            world.set_block(*pos, block).expect("fixture placement");
+        }
+
+        let mut player = world.create_player();
+        player
+            .set_slot(
+                FlintPlayerSlot::Hotbar1,
+                Some(&flint_core::Item::new(scenario.item)),
+            )
+            .expect("hotbar slot");
+        player.select_hotbar(1).expect("hotbar selection");
+        player
+            .set_game_mode(FlintGameMode::Survival)
+            .expect("game mode");
+
+        world.do_tick().expect("world tick");
+        player
+            .teleport(scenario.player_pos, Some(scenario.player_rot))
+            .expect("teleport");
+        // A hotbar synchronization after teleport makes the updated pose
+        // available to the test client (as in an interact-with-item action).
+        player.select_hotbar(1).expect("post-teleport selection");
+        player.interact().expect("interact");
+
+        let placed = world.get_block(scenario.target, &[]).expect("block read");
+        let slot = player
+            .get_slot(FlintPlayerSlot::Hotbar1, Vec::new())
+            .expect("slot read");
+        let concrete = player
+            .as_any_mut()
+            .downcast_mut::<SteelTestPlayer>()
+            .expect("steel player");
+        let (start, end) = concrete.player.get_ray_endpoints();
+        let clip =
+            concrete
+                .player
+                .get_world()
+                .clip(start, end, ClipBlockShape::Outline, ClipFluid::None);
+        let position = concrete.player.position();
+        let rotation = concrete.player.rotation();
+
+        let report = format!(
+            "{}: position={position:?} rotation={rotation:?} ray={start:?}->{end:?} \
+             clip={clip:?} placed={placed:?} slot={slot:?}",
+            scenario.name,
+        );
+        (report, placed.id)
+    }
+
+    /// The live 26.3 differential probe observes a standing client crosshair
+    /// immediately after this teleport, even though the server pose can be
+    /// swimming. The original upstream fixture must succeed without edits.
+    #[test]
+    fn coral_fixture_uses_client_pose_for_immediate_interaction() {
+        use steel_registry::entity_data::EntityPose;
+
+        crate::init();
+        let mut world = SteelTestWorld::new();
+        world
+            .set_block([8, 1, 4], &FlintBlock::new("minecraft:stone"))
+            .expect("fixture placement");
+        let mut player = world.create_player();
+        player
+            .set_slot(
+                FlintPlayerSlot::Hotbar1,
+                Some(&flint_core::Item::new("minecraft:brain_coral_fan")),
+            )
+            .expect("item");
+        player.select_hotbar(1).expect("hotbar");
+        player
+            .teleport([8.5, 0.0, 4.5], Some([-90.0, 0.0]))
+            .expect("teleport");
+        let concrete = player
+            .as_any_mut()
+            .downcast_mut::<SteelTestPlayer>()
+            .expect("steel player");
+        assert_eq!(concrete.player.pose(), EntityPose::Swimming);
+        let (start, end) = concrete.client_ray_endpoints();
+        assert!((start.y - 1.62).abs() < 0.001, "{start:?}");
+        let clip =
+            concrete
+                .player
+                .get_world()
+                .clip(start, end, ClipBlockShape::Outline, ClipFluid::None);
+        assert!(!clip.is_miss() && clip.inside, "{clip:?}");
+        player.interact().expect("interact");
+        assert_eq!(
+            world.get_block([7, 1, 4], &[]).expect("block read").id,
+            "minecraft:brain_coral_wall_fan"
+        );
+        assert!(
+            player
+                .get_slot(FlintPlayerSlot::Hotbar1, vec![])
+                .unwrap()
+                .is_none()
+        );
+    }
+
+    /// An inventory command is a client/server synchronization point, unlike
+    /// the immediate use after teleport in the coral fixture.
+    #[test]
+    fn inventory_sync_refreshes_client_pose_after_teleport() {
+        crate::init();
+        let mut world = SteelTestWorld::new();
+        world
+            .set_block([0, 5, 0], &FlintBlock::new("minecraft:stone"))
+            .unwrap();
+        let mut player = world.create_player();
+        player.teleport([0.5, 4.0, 0.5], Some([0.0, 90.0])).unwrap();
+        player
+            .set_slot(
+                FlintPlayerSlot::Hotbar1,
+                Some(&flint_core::Item::new("minecraft:bamboo")),
+            )
+            .unwrap();
+        let concrete = player
+            .as_any_mut()
+            .downcast_mut::<SteelTestPlayer>()
+            .unwrap();
+        let (start, _) = concrete.client_ray_endpoints();
+        assert!((start.y - 4.4).abs() < 0.001, "{start:?}");
+    }
+
+    /// A later world tick must not reuse an earlier pre-teleport client pose.
+    #[test]
+    fn client_pose_snapshot_expires_after_a_world_tick() {
+        crate::init();
+        let mut world = SteelTestWorld::new();
+        world
+            .set_block([0, 5, 0], &FlintBlock::new("minecraft:stone"))
+            .unwrap();
+        let mut player = world.create_player();
+        player.teleport([0.5, 4.0, 0.5], Some([0.0, 90.0])).unwrap();
+        world.do_tick().unwrap();
+        let concrete = player
+            .as_any_mut()
+            .downcast_mut::<SteelTestPlayer>()
+            .unwrap();
+        let (client_start, _) = concrete.client_ray_endpoints();
+        let (server_start, _) = concrete.player.get_ray_endpoints();
+        assert_eq!(client_start, server_start);
+    }
+
+    /// Reproduces the failing Flint player-interaction placement scenarios
+    /// through the real world, player, and interaction path used by the Flint
+    /// adapter.
+    #[test]
+    fn flint_player_placement_scenarios() {
+        crate::init();
+
+        let failures: Vec<String> = placement_scenarios()
+            .iter()
+            .filter_map(|scenario| {
+                let (report, placed_id) = run_placement_scenario(scenario);
+                let expected = scenario.expected;
+                (placed_id != expected).then(|| format!("{report} (expected {expected})"))
+            })
+            .collect();
+
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
+    }
+
+    #[test]
+    fn stack_conversion_reports_requested_plain_components() {
+        crate::init();
+        let mut stack = ItemStack::new(&STONE);
+        stack.set(DAMAGE, 7);
+
+        let item = stack_to_flint_item(&stack, vec!["damage".to_owned()])
+            .expect("non-empty stack converts");
+        assert_eq!(item.id, "minecraft:stone");
+        assert_eq!(item.data.get("damage").map(String::as_str), Some("7"));
+
+        // Components that were not asked for stay out of the map.
+        let unrequested =
+            stack_to_flint_item(&stack, Vec::new()).expect("non-empty stack converts");
+        assert!(unrequested.data.is_empty());
     }
 }

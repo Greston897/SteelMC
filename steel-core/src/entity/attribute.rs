@@ -1,6 +1,7 @@
 //! Runtime entity attribute system.
 //!
 use core::iter;
+use std::sync::OnceLock;
 
 use simdnbt::owned::{NbtCompound, NbtList};
 use steel_protocol::packets::game::{AttributeModifierData, AttributeSnapshot};
@@ -262,6 +263,103 @@ impl AttributeInstance {
     }
 }
 
+/// Resolved default attributes for one entity type.
+///
+/// Vanilla builds an `AttributeSupplier` per `EntityType` and hands it to every
+/// constructed entity, so the registry lookups and per-type base values are
+/// resolved once instead of on every spawn. Steel keeps the same split: the
+/// supplier is cached per entity type and [`Self::instantiate`] copies its
+/// defaults into a fresh [`AttributeMap`].
+#[derive(Debug)]
+pub struct AttributeSupplier {
+    defaults: Box<[(AttributeRef, f64)]>,
+}
+
+impl AttributeSupplier {
+    /// Builds the supplier for `entity_type`, resolving every default attribute.
+    ///
+    /// # Panics
+    /// Panics if a default attribute is not registered in the vanilla registry.
+    fn build(entity_type: EntityTypeRef) -> Self {
+        let mut defaults = Vec::with_capacity(entity_type.default_attributes.len());
+        for &(attr_name, base_value) in entity_type.default_attributes {
+            let key = Identifier::vanilla_static(attr_name);
+            let Some(id) = REGISTRY.attributes.id_from_key(&key) else {
+                panic!(
+                    "default attributes for entity type {} reference unregistered attribute {key}",
+                    entity_type.key
+                );
+            };
+            let Some(attr) = REGISTRY.attributes.by_id(id) else {
+                panic!("attribute registry id {id} for default attribute {key} is not registered");
+            };
+            defaults.push((attr, base_value));
+        }
+        Self {
+            defaults: defaults.into_boxed_slice(),
+        }
+    }
+
+    /// Returns the cached supplier for an entity type, building it on first use.
+    ///
+    /// The cache is keyed by the entity type's registered id, so it stays a
+    /// dense lock-free `OnceLock` slice and never locks or hashes on spawn.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `entity_type` has not been registered in `REGISTRY.entity_types`.
+    #[must_use]
+    pub fn for_entity(entity_type: EntityTypeRef) -> &'static Self {
+        static SUPPLIERS: OnceLock<Box<[OnceLock<AttributeSupplier>]>> = OnceLock::new();
+        let suppliers = SUPPLIERS.get_or_init(|| {
+            let count = REGISTRY.entity_types.len();
+            iter::repeat_with(OnceLock::new)
+                .take(count)
+                .collect::<Vec<_>>()
+                .into_boxed_slice()
+        });
+
+        let id = entity_type
+            .try_id()
+            .expect("entity type must be registered before its attributes are built");
+        suppliers[id].get_or_init(|| Self::build(entity_type))
+    }
+
+    /// Creates a fresh `AttributeMap` holding this supplier's defaults.
+    ///
+    /// # Panics
+    ///
+    /// Panics if any attribute in `self.defaults` is not registered in `REGISTRY.attributes`.
+    #[must_use]
+    pub fn instantiate(&self) -> AttributeMap {
+        let attr_count = REGISTRY.attributes.len();
+        let mut instances = Vec::with_capacity(attr_count);
+        instances.resize_with(attr_count, || None);
+
+        for &(attribute, base_value) in &*self.defaults {
+            let id = attribute
+                .try_id()
+                .expect("supplier attribute must stay registered");
+            instances[id] = Some(AttributeInstance::new(attribute, base_value));
+        }
+
+        AttributeMap {
+            instances,
+            to_update: DirtySet::new(),
+            to_sync: DirtySet::new(),
+        }
+    }
+
+    /// Returns the default base value of `attribute`, if the type has it.
+    #[must_use]
+    pub fn base_value(&self, attribute: AttributeRef) -> Option<f64> {
+        self.defaults
+            .iter()
+            .find(|(candidate, _)| *candidate == attribute)
+            .map(|(_, value)| *value)
+    }
+}
+
 /// Per-entity container for attribute instances with dirty tracking
 ///
 /// Indexed by attribute registry ID. Two dirty sets match vanilla's design:
@@ -274,37 +372,17 @@ pub struct AttributeMap {
 }
 
 impl AttributeMap {
-    /// Creates an `AttributeMap` from an entity type's default attributes
+    /// Creates an `AttributeMap` from an entity type's default attributes.
+    ///
+    /// The per-type defaults are resolved once through [`AttributeSupplier`] and
+    /// then cloned, which is what vanilla does for every `Mob` constructor.
     ///
     /// # Panics
     /// Panics if generated entity default attributes reference an attribute
     /// that is missing from the generated vanilla registry.
-    // TODO: Add AttributeSupplier for lazy instantiation when mob entities are implemented
     #[must_use]
     pub fn new_for_entity(entity_type: EntityTypeRef) -> Self {
-        let attr_count = REGISTRY.attributes.len();
-        let mut instances = Vec::with_capacity(attr_count);
-        instances.resize_with(attr_count, || None);
-
-        for &(attr_name, base_value) in entity_type.default_attributes {
-            let key = Identifier::vanilla_static(attr_name);
-            let Some(id) = REGISTRY.attributes.id_from_key(&key) else {
-                panic!(
-                    "default attributes for entity type {} reference unregistered attribute {key}",
-                    entity_type.key
-                );
-            };
-            let Some(attr) = REGISTRY.attributes.by_id(id) else {
-                panic!("attribute registry id {id} for default attribute {key} is not registered");
-            };
-            instances[id] = Some(AttributeInstance::new(attr, base_value));
-        }
-
-        Self {
-            instances,
-            to_update: DirtySet::new(),
-            to_sync: DirtySet::new(),
-        }
+        AttributeSupplier::for_entity(entity_type).instantiate()
     }
 
     /// Returns `true` if the entity has this attribute registered
@@ -626,6 +704,30 @@ mod tests {
     use steel_registry::{REGISTRY, init_vanilla_registry, vanilla_attributes, vanilla_entities};
 
     use super::*;
+    use std::ptr::eq;
+
+    #[test]
+    fn attribute_supplier_is_cached_per_entity_type() {
+        init_vanilla_registry();
+
+        let first = AttributeSupplier::for_entity(&vanilla_entities::PLAYER);
+        let second = AttributeSupplier::for_entity(&vanilla_entities::PLAYER);
+        // The supplier is resolved once per type and reused by every spawn.
+        assert!(eq(first, second));
+
+        // A different type gets its own supplier with its own base values.
+        let zombie = AttributeSupplier::for_entity(&vanilla_entities::ZOMBIE);
+        assert!(!eq(first, zombie));
+
+        let map = first.instantiate();
+        let expected = first
+            .base_value(vanilla_attributes::MAX_HEALTH)
+            .expect("players have max health");
+        assert_eq!(
+            map.get_value(vanilla_attributes::MAX_HEALTH),
+            Some(expected)
+        );
+    }
 
     #[test]
     fn all_generated_entity_default_attributes_resolve() {

@@ -1,3 +1,4 @@
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 use super::{
     Arc, BlockPos, DomainSwitchJob, DomainSwitchRequest, EndGatewayTeleportJob,
     EndPortalTeleportJob, Entity, MenuRemovalStatus, NetherPortalTeleportJob, NetworkConnection,

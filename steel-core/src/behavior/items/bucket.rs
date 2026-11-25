@@ -3,10 +3,10 @@ use crate::behavior::context::InteractionResult;
 use crate::behavior::item_utils::create_filled_result;
 use crate::behavior::{
     BLOCK_BEHAVIORS, BlockStateBehaviorExt, FLUID_BEHAVIORS, ItemBehavior, UseItemContext,
-    pickup_waterlogged_block,
 };
 use crate::entity::Entity;
 use crate::fluid::{fluid_state_to_block, is_lava_fluid, is_water_fluid};
+use crate::player::advancement::predicate::TriggerContext;
 use crate::world::RaytraceAction;
 use steel_macros::item_behavior;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
@@ -17,6 +17,7 @@ use steel_registry::level_events;
 use steel_registry::sound_events;
 use steel_registry::stat::vanilla_stat_types;
 use steel_registry::vanilla_blocks;
+use steel_registry::vanilla_criteria_triggers::FILLED_BUCKET;
 use steel_registry::vanilla_fluids;
 use steel_registry::vanilla_game_events;
 use steel_registry::vanilla_items;
@@ -62,6 +63,12 @@ fn filled_bucket_success_stack(context: &UseItemContext) -> ItemStack {
 fn use_empty_bucket(context: &mut UseItemContext) -> InteractionResult {
     let (start, end) = context.player.get_ray_endpoints();
 
+    // Vanilla `BucketItem.tryBucket`: an empty bucket first tries to scoop up a
+    // `Bucketable` mob along the player's view ray.
+    if let Some(result) = try_catch_bucketable_entity(context, start, end) {
+        return result;
+    }
+
     // Raytrace: stop on source fluids
     let (hit_block, hit_direction) = context.world.raytrace(start, end, |pos, world| {
         let state = world.get_block_state(pos);
@@ -95,18 +102,10 @@ fn use_empty_bucket(context: &mut UseItemContext) -> InteractionResult {
     let hit_state = context.world.get_block_state(hit_pos);
     let block_behavior = BLOCK_BEHAVIORS.get_behavior(hit_state.get_block());
 
-    // TODO: Remove fallback once all waterloggable blocks implement pickup_block.
-    let picked = block_behavior
-        .pickup_block(context.world, hit_pos, hit_state, Some(context.player))
-        .or_else(|| {
-            pickup_waterlogged_block(
-                block_behavior,
-                context.world,
-                hit_pos,
-                hit_state,
-                Some(context.player),
-            )
-        });
+    // `BlockBehavior::pickup_block`'s default already drains waterloggable
+    // blocks, so blocks with custom pickup logic only override it.
+    let picked =
+        block_behavior.pickup_block(context.world, hit_pos, hit_state, Some(context.player));
     // Fail, not pass, so the client knows no item changed.
     let Some(result) = picked else {
         return InteractionResult::Fail;
@@ -121,6 +120,14 @@ fn use_empty_bucket(context: &mut UseItemContext) -> InteractionResult {
         context.player.play_sound(sound, 1.0, 1.0);
     }
 
+    // Vanilla `BucketItem.use` fires `filled_bucket` with the resulting bucket
+    // item, which `husbandry/tactical_fishing` and `husbandry/obtain_netherite_hoe`
+    // chain off.
+    context.player.trigger_advancement_with_context(
+        &FILLED_BUCKET,
+        &TriggerContext::item(&result.filled_bucket.item().key)
+            .with_item_stack(&result.filled_bucket),
+    );
     create_filled_result(context, result.filled_bucket, true);
     context.world.game_event(
         &vanilla_game_events::FLUID_PICKUP,
@@ -187,8 +194,15 @@ fn use_filled_bucket(fluid: FluidRef, context: &mut UseItemContext) -> Interacti
         }
 
         // Water-tagged fluids fizz out where water evaporates (e.g. the Nether).
-        // TODO: Read the per-position WATER_EVAPORATES attribute once Steel has environment attributes.
-        if is_water_fluid(fluid) && context.world.dimension_type.water_evaporates {
+        // Vanilla reads `gameplay/water_evaporates` from the position's
+        // environment attributes; the dimension type supplies the same value
+        // until a datapack overrides it per biome.
+        let water_evaporates = context
+            .world
+            .dimension_type
+            .gameplay_attribute_bool("minecraft:gameplay/water_evaporates")
+            .unwrap_or(false);
+        if is_water_fluid(fluid) && water_evaporates {
             context
                 .world
                 .level_event(level_events::PARTICLES_WATER_EVAPORATING, pos, 0, None);
@@ -293,6 +307,30 @@ fn filled_bucket_primary_pos(
     } else {
         direction.relative(clicked_pos)
     }
+}
+
+/// Vanilla `ProjectileUtil.getEntityHitResult` pass from `BucketItem.use`:
+/// the nearest alive, not-yet-bucketed `Bucketable` mob within reach.
+fn try_catch_bucketable_entity(
+    context: &UseItemContext,
+    start: glam::DVec3,
+    end: glam::DVec3,
+) -> Option<InteractionResult> {
+    use crate::entity::bucketable::{is_bucketable, try_bucket_entity};
+    use crate::entity::projectile::get_entity_hit_result;
+
+    let look = end - start;
+    let search_box = context
+        .player
+        .bounding_box()
+        .expand_towards(look)
+        .inflate(1.0);
+
+    let hit = get_entity_hit_result(context.world, start, end, search_box, 0.0, |entity| {
+        entity.is_alive() && is_bucketable(entity)
+    })?;
+
+    try_bucket_entity(context.player, context.hand, hit.entity.as_ref())
 }
 
 #[cfg(test)]

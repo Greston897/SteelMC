@@ -74,6 +74,10 @@ impl Player {
         }
         *self.advancements.lock() = old_player.advancements.lock().clone();
         *self.seen_credits.lock() = *old_player.seen_credits.lock();
+        *self.entered_nether_position.lock() = *old_player.entered_nether_position.lock();
+        // Vanilla `ServerPlayer.restoreFrom` copies the post-effect list, and the
+        // replacement player starts dirty so the client re-applies the pipeline.
+        self.replace_post_effects(old_player.post_effects());
         let residence = old_player.residence.lock().clone();
         *self.residence.lock() = residence;
 
@@ -324,6 +328,7 @@ mod tests {
             .push("builders".to_owned());
         old_player.permissions.lock().version = 7;
         *old_player.seen_credits.lock() = true;
+        *old_player.entered_nether_position.lock() = Some(DVec3::new(-25.5, 70.0, 93.0));
         *old_player.won_game.lock() = true;
         old_player.base.add_tag("credits-return".to_owned());
         let respawn_config = PlayerRespawnConfig::new(
@@ -378,6 +383,10 @@ mod tests {
         assert_eq!(replacement.permissions.lock().groups, ["builders"]);
         assert_eq!(replacement.permissions.lock().version, 7);
         assert!(*replacement.seen_credits.lock());
+        assert_eq!(
+            *replacement.entered_nether_position.lock(),
+            Some(DVec3::new(-25.5, 70.0, 93.0))
+        );
         assert_eq!(replacement.respawn_config(), Some(respawn_config));
         assert_eq!(replacement.tags(), ["credits-return"]);
         assert_eq!(replacement.position(), DVec3::ZERO);

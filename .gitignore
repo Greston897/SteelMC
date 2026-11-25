@@ -50,6 +50,13 @@ rustc-ice-*
 .vscode/settings.json
 .idea
 
+# Local CI helper scripts
+/.tools
+
 .DS_STORE
 .gitcraft-tmp/
 /.vs
+
+# Python bytecode from CI helper scripts
+__pycache__/
+*.pyc

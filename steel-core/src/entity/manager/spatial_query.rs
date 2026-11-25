@@ -100,7 +100,8 @@ impl<'a> EntityQueryEntries<'a> {
             };
         }
 
-        let mut entity_ids = FxHashSet::default();
+        // MSPT имба: пре-резерв 32 — без rehash на AABB запросах (физика, поиск энтити)
+        let mut entity_ids = FxHashSet::with_capacity_and_hasher(32, rustc_hash::FxBuildHasher);
 
         for cell in cells {
             entity_ids.extend(cell.iter().copied());

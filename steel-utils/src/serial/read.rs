@@ -127,6 +127,14 @@ impl ReadFrom for Uuid {
     }
 }
 
+impl ReadFrom for String {
+    /// Reads a `VarInt`-length-prefixed UTF-8 string, vanilla's
+    /// `FriendlyByteBuf.readUtf`.
+    fn read(data: &mut Cursor<&[u8]>) -> Result<Self> {
+        String::read_prefixed::<VarInt>(data)
+    }
+}
+
 impl ReadFrom for Identifier {
     fn read(data: &mut Cursor<&[u8]>) -> Result<Self> {
         Identifier::from_str(&String::read_prefixed::<VarInt>(data)?).map_err(Error::other)

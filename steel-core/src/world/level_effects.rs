@@ -2,14 +2,21 @@ use std::ptr;
 
 use super::{
     Arc, BLOCK_BEHAVIORS, BlockLootContext, BlockPos, BlockStateExt, BlockStateId, CLevelEvent,
-    CLevelParticles, CSound, ChunkPos, ConnectionProtocol, DVec3, EncodedPacket, Entity,
-    GLOBAL_SOUND_EVENTS, GameEventContext, ItemStack, LevelReader, LootContext, NetworkConnection,
-    ParticleData, Player, REGISTRY, RandomizationType, RegistryExt, SectionPos, SoundEventRef,
-    SoundSource, UpdateFlags, World, WorldEntityManager, entity_loot_ref, fluid_state_to_block,
-    level_events, vanilla_blocks, vanilla_game_events,
+    CLevelParticles, CSound, CSoundEntity, ChunkPos, ConnectionProtocol, DVec3, EncodedPacket,
+    Entity, GLOBAL_SOUND_EVENTS, GameEventContext, ItemStack, LevelReader, LootContext,
+    NetworkConnection, ParticleData, Player, REGISTRY, RandomizationType, SectionPos,
+    SoundEventRef, SoundSource, UpdateFlags, World, WorldEntityManager, entity_loot_ref,
+    fluid_state_to_block, level_events, vanilla_blocks, vanilla_game_events,
 };
+use crate::block_entity::BlockEntity;
 use crate::entity::loot_equipment;
 use crate::inventory::lock::{ContainerLockGuard, ContainerRef};
+use crate::loot::resolvers::{WorldScoreResolver, WorldStorageResolver};
+use steel_protocol::packets::game::CDebugBlockValue;
+use steel_protocol::packets::game::CDebugChunkValue;
+use steel_protocol::packets::game::CDebugEntityValue;
+use steel_protocol::packets::game::CDebugEvent;
+use steel_protocol::packets::game::DebugSubscriptionUpdate;
 use steel_registry::sound_event::SoundEventHolder;
 use steel_registry::vanilla_particle_types::{BUBBLE, SPLASH};
 
@@ -337,22 +344,26 @@ impl World {
         }
 
         if drop_items {
-            self.drop_resources_with_entity(state, pos, entity);
-            // TODO: This only covers the `drop_items` path. In vanilla, container
-            // content dropping runs unconditionally on any block-entity removal
-            // (BlockEntity.preRemoveSideEffects via LevelChunk.setBlockState) —
-            // independent of drop_items — so explosions, pistons, etc. still need
-            // a similar hook once Steel's block-update pipeline has one.
-            if let Some(block_entity) = self.get_block_entity(pos)
-                && let Some(container_ref) = ContainerRef::from_block_entity(block_entity)
-            {
-                let mut guard = ContainerLockGuard::lock_all(&[&container_ref]);
-                if let Some(container) = guard.get_mut(container_ref.container_id()) {
-                    for slot in 0..container.get_container_size() {
-                        let item = container.remove_item_no_update(slot);
-                        if !item.is_empty() {
-                            self.pop_resource(pos, item);
-                        }
+            let block_entity = if state.has_block_entity() {
+                self.get_block_entity(pos)
+            } else {
+                None
+            };
+            self.drop_resources_with_entity(state, pos, entity, block_entity.as_deref());
+        }
+
+        // Vanilla `BlockEntity.preRemoveSideEffects` drops container contents on
+        // *any* removal, independent of the `drop_items` loot flag: a container
+        // destroyed by a piston or explosion still spills its items.
+        if let Some(block_entity) = self.get_block_entity(pos)
+            && let Some(container_ref) = ContainerRef::from_block_entity(block_entity)
+        {
+            let mut guard = ContainerLockGuard::lock_all(&[&container_ref]);
+            if let Some(container) = guard.get_mut(container_ref.container_id()) {
+                for slot in 0..container.get_container_size() {
+                    let item = container.remove_item_no_update(slot);
+                    if !item.is_empty() {
+                        self.pop_resource(pos, item);
                     }
                 }
             }
@@ -378,9 +389,19 @@ impl World {
     /// This is the no-tool/no-entity overload. Player block breaking uses
     /// `block_breaking::drop_block_loot` which includes tool context for
     /// fortune/silk touch.
-    // TODO: block entity and entity drops
     pub fn drop_resources(self: &Arc<Self>, state: BlockStateId, pos: BlockPos) {
-        self.drop_resources_with_entity(state, pos, None);
+        self.drop_resources_with_entity(state, pos, None, None);
+    }
+
+    /// Drops the loot for a block that had a block entity, so loot functions
+    /// such as `copy_name` and `copy_custom_data` can read it.
+    pub(crate) fn drop_resources_with_block_entity(
+        self: &Arc<Self>,
+        state: BlockStateId,
+        pos: BlockPos,
+        block_entity: Option<&dyn BlockEntity>,
+    ) {
+        self.drop_resources_with_entity(state, pos, None, block_entity);
     }
 
     pub(super) fn drop_resources_with_entity(
@@ -388,8 +409,11 @@ impl World {
         state: BlockStateId,
         pos: BlockPos,
         entity: Option<&dyn Entity>,
+        block_entity: Option<&dyn BlockEntity>,
     ) {
-        let context = BlockLootContext::new(self, pos).with_entity(entity);
+        let context = BlockLootContext::new(self, pos)
+            .with_entity(entity)
+            .with_block_entity(block_entity);
         for item in context.get_drops(state) {
             if !item.is_empty() {
                 self.pop_resource(pos, item);
@@ -425,6 +449,7 @@ impl World {
             loot_table
         };
 
+        let world = context.world();
         let mut rng = rand::rng();
         let mut ctx = LootContext::new(&mut rng)
             .with_luck(context.luck())
@@ -443,6 +468,18 @@ impl World {
         }
         if let Some(radius) = context.explosion_radius() {
             ctx = ctx.with_explosion(radius);
+        }
+
+        // Vanilla binds the scoreboard and command storage to the loot params;
+        // both live on the server, so install the adapters here.
+        if let Some(server) = world.server() {
+            let domain = world.domain();
+            let score_resolver = WorldScoreResolver::new(&server, domain);
+            let storage_resolver = WorldStorageResolver::new(&server, domain);
+            ctx = ctx
+                .with_score_resolver(&score_resolver)
+                .with_storage_resolver(&storage_resolver);
+            return loot_table.get_random_items(&mut ctx);
         }
 
         loot_table.get_random_items(&mut ctx)
@@ -549,6 +586,79 @@ impl World {
         }
     }
 
+    /// Vanilla `Level.playSeededSound` for a sound emitted by an entity.
+    ///
+    /// The client needs the *entity* id, not a fixed position: `sound_entity`
+    /// makes the sound follow the entity and lets the client restart it when the
+    /// entity moves. Sending `sound` (positional) instead — which is what the
+    /// plain `play_sound_at` path does — pins every mob sound to the spot where
+    /// it was emitted, so a walking cow's moo comes from where it used to stand.
+    ///
+    /// Returns `false` when no player could hear the sound, matching vanilla's
+    /// "sound was a no-op" contract.
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "the vanilla sound packet carries these fields"
+    )]
+    pub fn play_entity_sound(
+        &self,
+        sound: &SoundEventHolder,
+        source: SoundSource,
+        entity_id: i32,
+        pos: DVec3,
+        volume: f32,
+        pitch: f32,
+        exclude: Option<i32>,
+    ) -> bool {
+        // Vanilla skips the packet entirely for a silent sound source.
+        if volume <= 0.0 {
+            return false;
+        }
+        let chunk = ChunkPos::new(
+            SectionPos::block_to_section_coord(pos.x.floor() as i32),
+            SectionPos::block_to_section_coord(pos.z.floor() as i32),
+        );
+        // `sound_entity` carries the registry holder id only; an inline sound
+        // definition has no id, so it cannot be bound to an entity.
+        let Some(registry_sound) = sound.registry_ref() else {
+            return false;
+        };
+        let seed = rand::random::<i64>();
+        let packet = CSoundEntity {
+            sound_id: registry_sound.packet_holder_id(),
+            source: source.as_varint(),
+            entity_id,
+            volume,
+            pitch,
+            seed,
+        };
+        let Ok(encoded) =
+            EncodedPacket::from_bare(packet, self.compression, ConnectionProtocol::Play)
+        else {
+            log::warn!("Failed to encode entity sound packet");
+            return false;
+        };
+
+        let mut audible = false;
+        for player_id in self.player_area_map.get_tracking_players(chunk) {
+            if exclude == Some(player_id) {
+                continue;
+            }
+            let Some(player) = self.players.get_by_entity_id(player_id) else {
+                continue;
+            };
+            let player_pos = player.position();
+            let dx = player_pos.x - pos.x;
+            let dy = player_pos.y - pos.y;
+            let dz = player_pos.z - pos.z;
+            if sound_is_within_range(sound, volume, dx * dx + dy * dy + dz * dz) {
+                player.connection.send_encoded(encoded.clone());
+                audible = true;
+            }
+        }
+        audible
+    }
+
     /// Plays a sound for explicit player targets using vanilla's range fallback.
     ///
     /// Returns the players that received a packet, in target order.
@@ -624,6 +734,92 @@ impl World {
     #[must_use]
     pub(crate) const fn entity_manager(&self) -> &WorldEntityManager {
         &self.entity_manager
+    }
+
+    /// Broadcasts a block debug-subscription update (`ClientboundDebugBlockValuePacket`)
+    /// to every operator player in this world subscribed to `subscription_id`.
+    pub fn broadcast_debug_block_value(
+        &self,
+        block_pos: BlockPos,
+        subscription_id: i32,
+        encoded_value: Option<Vec<u8>>,
+    ) {
+        let packet = CDebugBlockValue {
+            block_pos,
+            update: DebugSubscriptionUpdate {
+                subscription_id,
+                encoded_value,
+            },
+        };
+        self.players.iter_players(|_, player| {
+            if player.has_debug_subscription(subscription_id) {
+                player.send_packet(packet.clone());
+            }
+            true
+        });
+    }
+
+    /// Broadcasts a chunk debug-subscription update (`ClientboundDebugChunkValuePacket`)
+    /// to every operator player in this world subscribed to `subscription_id`.
+    pub fn broadcast_debug_chunk_value(
+        &self,
+        chunk_x: i32,
+        chunk_z: i32,
+        subscription_id: i32,
+        encoded_value: Option<Vec<u8>>,
+    ) {
+        let packet = CDebugChunkValue {
+            chunk_x,
+            chunk_z,
+            update: DebugSubscriptionUpdate {
+                subscription_id,
+                encoded_value,
+            },
+        };
+        self.players.iter_players(|_, player| {
+            if player.has_debug_subscription(subscription_id) {
+                player.send_packet(packet.clone());
+            }
+            true
+        });
+    }
+
+    /// Broadcasts an entity debug-subscription update (`ClientboundDebugEntityValuePacket`)
+    /// to every operator player in this world subscribed to `subscription_id`.
+    pub fn broadcast_debug_entity_value(
+        &self,
+        entity_id: i32,
+        subscription_id: i32,
+        encoded_value: Option<Vec<u8>>,
+    ) {
+        let packet = CDebugEntityValue {
+            entity_id,
+            update: DebugSubscriptionUpdate {
+                subscription_id,
+                encoded_value,
+            },
+        };
+        self.players.iter_players(|_, player| {
+            if player.has_debug_subscription(subscription_id) {
+                player.send_packet(packet.clone());
+            }
+            true
+        });
+    }
+
+    /// Broadcasts a one-shot debug-subscription event (`ClientboundDebugEventPacket`)
+    /// to every operator player in this world subscribed to `subscription_id`.
+    pub fn broadcast_debug_event(&self, subscription_id: i32, encoded_value: Vec<u8>) {
+        let packet = CDebugEvent {
+            subscription_id,
+            encoded_value,
+        };
+        self.players.iter_players(|_, player| {
+            if player.has_debug_subscription(subscription_id) {
+                player.send_packet(packet.clone());
+            }
+            true
+        });
     }
 }
 

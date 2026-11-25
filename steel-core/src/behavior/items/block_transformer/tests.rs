@@ -190,17 +190,17 @@ fn copper_chest_transforms_both_halves_and_preserves_independent_properties() {
             (
                 &vanilla_blocks::WEATHERED_COPPER_CHEST,
                 &vanilla_blocks::EXPOSED_COPPER_CHEST,
-                &vanilla_items::WOODEN_AXE,
+                &*vanilla_items::WOODEN_AXE,
             ),
             (
                 &vanilla_blocks::WAXED_WEATHERED_COPPER_CHEST,
                 &vanilla_blocks::WEATHERED_COPPER_CHEST,
-                &vanilla_items::WOODEN_AXE,
+                &*vanilla_items::WOODEN_AXE,
             ),
             (
                 &vanilla_blocks::WEATHERED_COPPER_CHEST,
                 &vanilla_blocks::WAXED_WEATHERED_COPPER_CHEST,
-                &vanilla_items::HONEYCOMB,
+                &*vanilla_items::HONEYCOMB,
             ),
         ] {
             for direction in Direction::HORIZONTAL {

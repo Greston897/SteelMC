@@ -52,3 +52,7 @@ mod void_start_platform;
 mod weeping_vines;
 
 pub(crate) use tree::no_nested_features;
+
+pub(crate) use end_gateway::place_end_gateway_in_world;
+pub(crate) use end_podium::place_end_podium_in_world;
+pub(crate) use end_spike::{rebuild_spike_crystal_in_world, rebuild_spike_in_world};

@@ -12,13 +12,15 @@ use steel_utils::{
 use text_components::TextComponent;
 
 use super::super::super::{
-    brigadier::{CommandNodeBuilder, CommandRedirectTarget, CommandSyntaxError},
+    brigadier::{ArgumentType, CommandNodeBuilder, CommandRedirectTarget, CommandSyntaxError},
     execution::{
         CommandSource, SteelArgumentType, SteelCommandContext, SteelCommandRuntime, argument,
         literal,
     },
 };
 use super::{objective, source_command_storage, source_scoreboard};
+use crate::inventory::container::Container as _;
+use crate::inventory::lock::ContainerRef;
 use crate::{block_entity::SharedBlockEntity, command::missing_argument, world::World};
 
 type Builder = CommandNodeBuilder<CommandSource, SteelCommandRuntime>;
@@ -27,10 +29,10 @@ const EXECUTE_ROOT: CommandRedirectTarget = CommandRedirectTarget::CommandRoot;
 const MAX_BLOCKS_REGION: i64 = 32_768;
 
 pub(super) fn conditionals(name: &'static str, expected: bool) -> Builder {
-    // TODO: Add items after every vanilla command-slot provider and container inventory is
-    // modeled, including deferred loot-table unpacking.
-    // TODO: Add predicate and function after their runtime registries are ported.
-    // TODO: Restore Steel stopwatch conditions with the stopwatch command system.
+    // Vanilla also has `predicate` and `function` conditions; their runtime
+    // registries are not ported yet.
+    // `items` covers the entity slot provider below; block containers and
+    // deferred loot-table unpacking still need the block-entity slot API.
     literal(name)
         .then(biome_condition(expected))
         .then(block_condition(expected))
@@ -38,8 +40,40 @@ pub(super) fn conditionals(name: &'static str, expected: bool) -> Builder {
         .then(data_condition(expected))
         .then(dimension_condition(expected))
         .then(entity_condition(expected))
+        .then(items_condition(expected))
         .then(loaded_condition(expected))
         .then(score_condition(expected))
+        .then(stopwatch_condition(expected))
+}
+
+/// `/execute if stopwatch <name>`: matches while the named stopwatch exists.
+///
+/// Vanilla `StopwatchCondition` resolves the name against the scoreboard's
+/// stopwatch map and matches when that stopwatch has been created, which is
+/// also the only state `/stopwatch` can produce.
+fn stopwatch_condition(expected: bool) -> Builder {
+    literal("stopwatch").then(
+        argument("name", ArgumentType::word()).executes(move |context| {
+            let name = context.string("name")?;
+            let running = scoreboard_stopwatch_running(context.source(), name)?;
+            execute_boolean_condition(context, expected, running)
+        }),
+    )
+}
+
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "command executors return the command result type"
+)]
+fn scoreboard_stopwatch_running(
+    source: &CommandSource,
+    name: &str,
+) -> Result<bool, CommandSyntaxError> {
+    let domain = source.world().domain().to_owned();
+    let Some(scoreboard) = source.server().scoreboards.get(&domain) else {
+        return Ok(false);
+    };
+    Ok(scoreboard.stopwatch_ticks(name).is_some())
 }
 
 fn data_condition(expected: bool) -> Builder {
@@ -411,6 +445,162 @@ fn unloaded_position() -> CommandSyntaxError {
     CommandSyntaxError::dynamic(TextComponent::from(&translations::ARGUMENT_POS_UNLOADED))
 }
 
+/// Item predicates for block containers and entity inventory providers.
+fn items_condition(expected: bool) -> Builder {
+    literal("items")
+        .then(
+            literal("block").then(
+                argument("pos", SteelArgumentType::block_pos()).then(
+                    argument("slots", SteelArgumentType::item_slots()).then(
+                        argument("item_predicate", SteelArgumentType::item_predicate())
+                            .forks(EXECUTE_ROOT, move |context| {
+                                Ok(conditional_sources(
+                                    context.source(),
+                                    expected,
+                                    block_items_count(context)? > 0,
+                                ))
+                            })
+                            .executes(move |context| {
+                                execute_numeric_condition(
+                                    context,
+                                    expected,
+                                    block_items_count(context)?,
+                                )
+                            }),
+                    ),
+                ),
+            ),
+        )
+        .then(
+            literal("entity").then(
+                argument("targets", SteelArgumentType::entities()).then(
+                    argument("slots", SteelArgumentType::item_slots()).then(
+                        argument("item_predicate", SteelArgumentType::item_predicate())
+                            .forks(EXECUTE_ROOT, move |context| {
+                                Ok(conditional_sources(
+                                    context.source(),
+                                    expected,
+                                    entity_items_count(context)? > 0,
+                                ))
+                            })
+                            .executes(move |context| {
+                                execute_numeric_condition(
+                                    context,
+                                    expected,
+                                    entity_items_count(context)?,
+                                )
+                            }),
+                    ),
+                ),
+            ),
+        )
+}
+
+fn block_items_count(
+    context: &SteelCommandContext<CommandSource>,
+) -> Result<i32, CommandSyntaxError> {
+    let pos = context.coordinates("pos")?.block_pos(context.source());
+    let entity = context
+        .source()
+        .world()
+        .get_block_entity(pos)
+        .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
+    let container = ContainerRef::from_block_entity(entity)
+        .ok_or_else(|| CommandSyntaxError::dynamic("Target is not a container"))?;
+    let slots = context.string("slots")?;
+    let range = if slots == "container.*" {
+        None
+    } else {
+        Some(parse_container_slot_range(slots)?)
+    };
+    let predicate = context.item_predicate("item_predicate")?;
+    let container = container.lock();
+    let mut count = 0_i32;
+    for (index, stack) in container.items().iter().enumerate() {
+        if range.is_some_and(|(min, max)| (index as i32) < min || (index as i32) > max) {
+            continue;
+        }
+        if !stack.is_empty() && predicate.matches(stack) {
+            count = count.saturating_add(stack.count());
+        }
+    }
+    Ok(count)
+}
+
+/// Vanilla counts matching items, not matching slots, and has no trailing
+/// count argument. A zero count fails `if` and passes `unless`.
+fn entity_items_count(
+    context: &SteelCommandContext<CommandSource>,
+) -> Result<i32, CommandSyntaxError> {
+    let predicate = context.item_predicate("item_predicate")?;
+    let slots = context.string("slots")?;
+    let mut counted = 0_i32;
+    for entity in context.optional_entities("targets")? {
+        let Some(player) = entity.as_player() else {
+            continue;
+        };
+        let inventory = player.inventory.lock();
+        for slot in player_item_slots(slots, inventory.get_selected_slot() as usize)? {
+            let Some(stack) = inventory.items().get(slot) else {
+                continue;
+            };
+            if !stack.is_empty() && predicate.matches(stack) {
+                counted = counted.saturating_add(stack.count());
+            }
+        }
+    }
+    Ok(counted)
+}
+
+fn player_item_slots(name: &str, selected: usize) -> Result<Vec<usize>, CommandSyntaxError> {
+    use crate::player::player_inventory::PlayerInventory as Inv;
+    let unknown = || CommandSyntaxError::dynamic(format!("Unknown item slot '{name}'"));
+    match name {
+        "container.*" => return Ok((0..36).collect()),
+        "hotbar.*" => return Ok((0..9).collect()),
+        "inventory.*" => return Ok((9..36).collect()),
+        "weapon" | "weapon.mainhand" => return Ok(vec![selected]),
+        "weapon.offhand" => return Ok(vec![Inv::SLOT_OFFHAND]),
+        "weapon.*" => return Ok(vec![selected, Inv::SLOT_OFFHAND]),
+        "armor.head" => return Ok(vec![39]),
+        "armor.chest" => return Ok(vec![38]),
+        "armor.legs" => return Ok(vec![37]),
+        "armor.feet" => return Ok(vec![36]),
+        "armor.*" => return Ok(Inv::ARMOR_TOP_DOWN.to_vec()),
+        _ => {}
+    }
+    for (prefix, size, offset) in [
+        ("container.", 54, 0),
+        ("hotbar.", 9, 0),
+        ("inventory.", 27, 9),
+    ] {
+        if let Some(index) = name.strip_prefix(prefix) {
+            let index: usize = index.parse().map_err(|_| unknown())?;
+            if index >= size {
+                return Err(unknown());
+            }
+            // Player exposes only main-inventory slots through container.N.
+            return Ok(if prefix == "container." && index >= 36 {
+                vec![]
+            } else {
+                vec![index + offset]
+            });
+        }
+    }
+    Err(unknown())
+}
+
+/// Literal vanilla container selectors are container.0 through container.53.
+/// Arbitrary numeric intervals are not vanilla slot-range names.
+fn parse_container_slot_range(slots: &str) -> Result<(i32, i32), CommandSyntaxError> {
+    let index = slots
+        .strip_prefix("container.")
+        .and_then(|s| s.parse::<i32>().ok())
+        .filter(|&index| (0..54).contains(&index))
+        .ok_or_else(|| CommandSyntaxError::dynamic(format!("Unknown container slot '{slots}'")))?;
+    Ok((index, index))
+}
+
 fn entity_condition(expected: bool) -> Builder {
     literal("entity").then(
         argument("entities", SteelArgumentType::entities())
@@ -655,6 +845,51 @@ mod tests {
             )
             .expect("fallback block entity should load owned NBT"),
         )
+    }
+
+    #[test]
+    fn item_slot_selection_preserves_vanilla_inventory_offsets() {
+        assert_eq!(
+            player_item_slots("inventory.0", 4).expect("the slot selector should resolve"),
+            vec![9]
+        );
+        assert_eq!(
+            player_item_slots("inventory.26", 4).expect("the slot selector should resolve"),
+            vec![35]
+        );
+        assert_eq!(
+            player_item_slots("weapon.*", 4).expect("the slot selector should resolve"),
+            vec![4, 40]
+        );
+        assert_eq!(
+            player_item_slots("armor.*", 4).expect("the slot selector should resolve"),
+            vec![39, 38, 37, 36]
+        );
+        assert_eq!(
+            player_item_slots("container.*", 4)
+                .expect("the slot selector should resolve")
+                .len(),
+            36
+        );
+        assert!(player_item_slots("hotbar.9", 0).is_err());
+        assert!(player_item_slots("inventory.27", 0).is_err());
+    }
+
+    #[test]
+    fn container_slots_reject_nonvanilla_intervals_and_bounds() {
+        assert_eq!(
+            parse_container_slot_range("container.53").expect("the slot range should parse"),
+            (53, 53)
+        );
+        for invalid in [
+            "container.-1",
+            "container.54",
+            "container.0..3",
+            "*",
+            "container.no",
+        ] {
+            assert!(parse_container_slot_range(invalid).is_err(), "{invalid}");
+        }
     }
 
     #[test]

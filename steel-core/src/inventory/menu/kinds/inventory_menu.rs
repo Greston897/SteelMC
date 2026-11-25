@@ -9,6 +9,12 @@
 //! - Slot 45: Offhand
 
 use crate::player::player_inventory::Prediction;
+use crate::player::recipe_placement::PlacementRequest;
+use crate::player::recipe_placement::PostPlaceAction;
+use crate::player::recipe_placement::StackedItemContents;
+use crate::player::recipe_placement::apply_plan;
+use crate::player::recipe_placement::grid_produces;
+use crate::player::recipe_placement::plan_placement;
 use std::sync::Arc;
 
 use steel_registry::item_stack::ItemStack;
@@ -42,7 +48,8 @@ pub fn inventory_menu(inventory: Shared<PlayerInventory>) -> Menu {
 
     let mut builder = MenuBuilder::new(None, INVENTORY_MENU_CONTAINER_ID);
 
-    let result = builder.result_slot(handler.clone());
+    // Vanilla `InventoryMenu` uses `ResultSlot`, which awards `ITEM_CRAFTED`.
+    let result = builder.crafting_result_slot(handler.clone());
     let grid = builder.section_all(crafting_container);
     let armor = builder.section_at(
         &inventory,
@@ -168,6 +175,70 @@ impl InventoryKind {
 }
 
 impl MenuKind for InventoryKind {
+    /// Vanilla `InventoryMenu.fillCraftSlotsStackedContents`: the player's own
+    /// 2x2 grid feeds the availability snapshot.
+    fn fill_craft_slots_stacked_contents(
+        &self,
+        _behavior: &MenuBehavior,
+        guard: &ContainerLockGuard,
+        contents: &mut StackedItemContents,
+    ) -> bool {
+        let Some(crafting) = guard.get_typed::<CraftingContainer>(self.handler.crafting_id())
+        else {
+            return false;
+        };
+        for stack in crafting.items() {
+            // Vanilla `TransientCraftingContainer.fillStackedContents` calls
+            // `accountSimpleStack`, which skips damaged/uncraftable stacks.
+            contents.account_simple_stack(stack);
+        }
+        true
+    }
+
+    /// Vanilla `InventoryMenu.handlePlacement`: the same placement as a crafting
+    /// table, but on the player's 2x2 grid.
+    fn handle_placement(
+        &mut self,
+        _behavior: &mut MenuBehavior,
+        guard: &mut ContainerLockGuard,
+        player: &Player,
+        request: PlacementRequest<'_>,
+    ) -> Option<PostPlaceAction> {
+        let crafting = guard.get_typed::<CraftingContainer>(self.handler.crafting_id())?;
+        let grid = crafting.items().to_vec();
+        let matches = grid_produces(crafting, request.recipe_key);
+        let inv_id = ContainerId::from_arc(&player.inventory);
+        let inventory: Vec<ItemStack> = guard
+            .get_typed::<PlayerInventory>(inv_id)?
+            .get_items()
+            .to_vec();
+        let plan = plan_placement(
+            &inventory,
+            2,
+            2,
+            &grid,
+            request.placement,
+            request.recipe_size,
+            matches,
+            request.use_max_items,
+            request.allow_dropping_items_to_clear,
+            &[],
+            |contents| {
+                // Vanilla `InventoryMenu.fillCraftSlotsStackedContents`.
+                for stack in &grid {
+                    contents.account_simple_stack(stack);
+                }
+            },
+        );
+        Some(apply_plan(
+            guard,
+            player,
+            plan,
+            self.handler.crafting_id(),
+            &self.handler,
+        ))
+    }
+
     /// Handles shift-click for a slot, including armor/offhand auto-equip.
     ///
     /// Always returns `Some`: the item originally in the slot, or empty if

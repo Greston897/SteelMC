@@ -20,6 +20,15 @@ pub struct EntityReference {
 }
 
 impl EntityReference {
+    /// Observe removal before normal resolution drops a stale cache entry.
+    pub(crate) fn cached_entity_is_removed(&self) -> bool {
+        self.cached
+            .lock()
+            .as_ref()
+            .and_then(Weak::upgrade)
+            .is_some_and(|entity| entity.is_removed())
+    }
+
     /// Creates an unresolved reference from a persisted UUID.
     #[must_use]
     pub fn from_uuid(uuid: Uuid) -> Self {

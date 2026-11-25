@@ -1335,3 +1335,16 @@ fn stuck_speed_multiplier_can_be_consumed_without_applying_for_pistons() {
     );
     assert_vec3_close(base.velocity(), DVec3::ZERO);
 }
+
+#[test]
+fn piston_cutoff_uses_widened_float_not_double_literal() {
+    let mut piston_movement = EntityPistonMovement::new();
+    assert_eq!(
+        piston_movement.limit_movement(DVec3::new(0.5, 0.0, 0.0), 10),
+        DVec3::new(0.5, 0.0, 0.0)
+    );
+    let amount = f64::from(1.0e-5_f32) + 1.0e-13;
+    assert!(amount < 1.0e-5);
+    let applied = piston_movement.limit_movement(DVec3::new(amount, 0.0, 0.0), 10);
+    assert!(applied.x > f64::from(1.0e-5_f32));
+}

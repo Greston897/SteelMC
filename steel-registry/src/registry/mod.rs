@@ -11,11 +11,23 @@ pub use reference::{RegistryReference, RegistryReferenceEntry};
 pub use tags::RegistryTags;
 
 use crate::advancement::registry::AdvancementRegistry;
+use crate::context_provider::{
+    ContextFloatProviderRegistry, ContextIntProviderRegistry, LootPredicateRegistry,
+};
+use crate::enchantment_provider::EnchantmentProviderRegistry;
+use crate::environment_attribute::EnvironmentAttributeRegistry;
 use crate::game_events::GameEventRegistry;
+use crate::gametest::{TestEnvironmentRegistry, TestInstanceRegistry};
 use crate::stat::custom::CustomStatRegistry;
 use crate::stat::{StatTypeRegistry, vanilla_stat_types};
+use crate::sulfur_cube_archetype::SulfurCubeArchetypeRegistry;
 use crate::ticket_type::TicketTypeRegistry;
+use crate::trial_spawner::TrialSpawnerConfigRegistry;
+use crate::villager_trade::{TradeSetRegistry, VillagerTradeRegistry};
 use crate::world_clock::WorldClockRegistry;
+use crate::world_preset::{
+    DimensionStemRegistry, FlatLevelGeneratorPresetRegistry, WorldPresetRegistry,
+};
 use crate::{
     attribute::AttributeRegistry,
     banner_pattern::BannerPatternRegistry,
@@ -79,22 +91,28 @@ use crate::{
     vanilla_block_tags, vanilla_block_transformers, vanilla_blocks, vanilla_cat_sound_variants,
     vanilla_cat_variants, vanilla_chat_types, vanilla_chicken_sound_variants,
     vanilla_chicken_variants, vanilla_configured_carvers, vanilla_configured_features,
-    vanilla_cow_sound_variants, vanilla_cow_variants, vanilla_custom_stats,
-    vanilla_damage_type_tags, vanilla_damage_types, vanilla_decorated_pot_patterns,
-    vanilla_dialog_tags, vanilla_dialogs, vanilla_dimension_types, vanilla_enchantment_tags,
-    vanilla_enchantments, vanilla_entities, vanilla_entity_type_tags, vanilla_fluid_tags,
-    vanilla_fluids, vanilla_frog_variants, vanilla_game_events, vanilla_game_rules,
-    vanilla_instrument_tags, vanilla_instruments, vanilla_item_tags, vanilla_items,
-    vanilla_jukebox_songs, vanilla_loot_tables, vanilla_map_decoration_types, vanilla_menu_types,
-    vanilla_mob_effects, vanilla_painting_variant_tags, vanilla_painting_variants,
-    vanilla_particle_types, vanilla_pig_sound_variants, vanilla_pig_variants,
-    vanilla_placed_features, vanilla_poi_type_tags, vanilla_poi_types,
-    vanilla_position_source_types, vanilla_potion_tags, vanilla_potions, vanilla_recipes,
-    vanilla_structure_processors, vanilla_structure_tags, vanilla_structures,
-    vanilla_template_pools, vanilla_ticket_types, vanilla_timeline_tags, vanilla_timelines,
-    vanilla_trim_materials, vanilla_trim_patterns, vanilla_villager_professions,
+    vanilla_context_float_providers, vanilla_context_int_providers, vanilla_cow_sound_variants,
+    vanilla_cow_variants, vanilla_custom_stats, vanilla_damage_type_tags, vanilla_damage_types,
+    vanilla_decorated_pot_patterns, vanilla_dialog_tags, vanilla_dialogs, vanilla_dimension_types,
+    vanilla_dimensions, vanilla_enchantment_providers, vanilla_enchantment_tags,
+    vanilla_enchantments, vanilla_entities, vanilla_entity_type_tags, vanilla_feature_tags,
+    vanilla_flat_level_generator_preset_tags, vanilla_flat_level_generator_presets,
+    vanilla_fluid_tags, vanilla_fluids, vanilla_frog_variants, vanilla_game_event_tags,
+    vanilla_game_events, vanilla_game_rules, vanilla_instrument_tags, vanilla_instruments,
+    vanilla_item_tags, vanilla_items, vanilla_jukebox_songs, vanilla_loot_tables,
+    vanilla_map_decoration_types, vanilla_menu_types, vanilla_mob_effects,
+    vanilla_painting_variant_tags, vanilla_painting_variants, vanilla_particle_types,
+    vanilla_pig_sound_variants, vanilla_pig_variants, vanilla_placed_features,
+    vanilla_poi_type_tags, vanilla_poi_types, vanilla_position_source_types, vanilla_potion_tags,
+    vanilla_potions, vanilla_predicates, vanilla_recipes, vanilla_structure_processors,
+    vanilla_structure_tags, vanilla_structures, vanilla_sulfur_cube_archetypes,
+    vanilla_template_pools, vanilla_test_environments, vanilla_test_instances,
+    vanilla_ticket_types, vanilla_timeline_tags, vanilla_timelines, vanilla_trade_sets,
+    vanilla_trial_spawners, vanilla_trim_materials, vanilla_trim_patterns,
+    vanilla_villager_professions, vanilla_villager_trade_tags, vanilla_villager_trades,
     vanilla_villager_types, vanilla_wolf_sound_variants, vanilla_wolf_variants,
-    vanilla_world_clocks, vanilla_zombie_nautilus_variants,
+    vanilla_world_clocks, vanilla_world_preset_tags, vanilla_world_presets,
+    vanilla_zombie_nautilus_variants,
     villager_profession::VillagerProfessionRegistry,
     villager_type::VillagerTypeRegistry,
     wolf_sound_variant::WolfSoundVariantRegistry,
@@ -227,10 +245,8 @@ pub const ENTITY_TYPE_REGISTRY: Identifier = Identifier::vanilla_static("entity_
 pub const SOUND_EVENT_REGISTRY: Identifier = Identifier::vanilla_static("sound_event");
 pub const POI_TYPE_REGISTRY: Identifier = Identifier::vanilla_static("point_of_interest_type");
 pub const WORLD_CLOCK_REGISTRY: Identifier = Identifier::vanilla_static("world_clock");
-pub const CONFIGURED_CARVER_REGISTRY: Identifier =
-    Identifier::vanilla_static("worldgen/configured_carver");
-pub const CONFIGURED_FEATURE_REGISTRY: Identifier =
-    Identifier::vanilla_static("worldgen/configured_feature");
+pub const CARVER_REGISTRY: Identifier = Identifier::vanilla_static("worldgen/carver");
+pub const FEATURE_REGISTRY: Identifier = Identifier::vanilla_static("worldgen/feature");
 pub const PLACED_FEATURE_REGISTRY: Identifier =
     Identifier::vanilla_static("worldgen/placed_feature");
 pub const BLOCK_STATE_PROVIDER_REGISTRY: Identifier =
@@ -242,6 +258,28 @@ pub const STRUCTURE_PROCESSOR_LIST_REGISTRY: Identifier =
 pub const CUSTOM_STAT_REGISTRY: Identifier = Identifier::vanilla_static("custom_stat");
 pub const STAT_TYPE_REGISTRY: Identifier = Identifier::vanilla_static("stat_type");
 pub const TICKET_TYPE_REGISTRY: Identifier = Identifier::vanilla_static("ticket_type");
+pub const SULFUR_CUBE_ARCHETYPE_REGISTRY: Identifier =
+    Identifier::vanilla_static("sulfur_cube_archetype");
+pub const TEST_ENVIRONMENT_REGISTRY: Identifier = Identifier::vanilla_static("test_environment");
+pub const TEST_INSTANCE_REGISTRY: Identifier = Identifier::vanilla_static("test_instance");
+pub const GAME_EVENT_REGISTRY: Identifier = Identifier::vanilla_static("game_event");
+pub const POTION_REGISTRY: Identifier = Identifier::vanilla_static("potion");
+pub const VILLAGER_TRADE_REGISTRY: Identifier = Identifier::vanilla_static("villager_trade");
+pub const TRADE_SET_REGISTRY: Identifier = Identifier::vanilla_static("trade_set");
+pub const DIMENSION_REGISTRY: Identifier = Identifier::vanilla_static("dimension");
+pub const FLAT_LEVEL_GENERATOR_PRESET_REGISTRY: Identifier =
+    Identifier::vanilla_static("worldgen/flat_level_generator_preset");
+pub const WORLD_PRESET_REGISTRY: Identifier = Identifier::vanilla_static("worldgen/world_preset");
+pub const PREDICATE_REGISTRY: Identifier = Identifier::vanilla_static("predicate");
+pub const CONTEXT_INT_PROVIDER_REGISTRY: Identifier =
+    Identifier::vanilla_static("context_int_provider");
+pub const CONTEXT_FLOAT_PROVIDER_REGISTRY: Identifier =
+    Identifier::vanilla_static("context_float_provider");
+pub const ENCHANTMENT_PROVIDER_REGISTRY: Identifier =
+    Identifier::vanilla_static("enchantment_provider");
+pub const TRIAL_SPAWNER_REGISTRY: Identifier = Identifier::vanilla_static("trial_spawner");
+pub const ENVIRONMENT_ATTRIBUTE_REGISTRY: Identifier =
+    Identifier::vanilla_static("environment_attribute");
 
 pub struct Registry {
     pub attributes: AttributeRegistry,
@@ -288,6 +326,8 @@ pub struct Registry {
     pub recipe_types: RecipeTypeRegistry,
     pub recipe_book_categories: RecipeBookCategoryRegistry,
     pub recipes: RecipeRegistry,
+    /// Every function in the built-in datapack, backing `/function`.
+    pub functions: crate::function::FunctionRegistry,
     pub entity_types: EntityTypeRegistry,
     pub loot_tables: LootTableRegistry,
     pub block_entity_types: BlockEntityTypeRegistry,
@@ -308,6 +348,20 @@ pub struct Registry {
     pub stat_types: StatTypeRegistry,
     pub ticket_types: TicketTypeRegistry,
     pub advancements: AdvancementRegistry,
+    pub environment_attributes: EnvironmentAttributeRegistry,
+    pub sulfur_cube_archetypes: SulfurCubeArchetypeRegistry,
+    pub test_environments: TestEnvironmentRegistry,
+    pub test_instances: TestInstanceRegistry,
+    pub predicates: LootPredicateRegistry,
+    pub context_int_providers: ContextIntProviderRegistry,
+    pub context_float_providers: ContextFloatProviderRegistry,
+    pub enchantment_providers: EnchantmentProviderRegistry,
+    pub trial_spawners: TrialSpawnerConfigRegistry,
+    pub villager_trades: VillagerTradeRegistry,
+    pub trade_sets: TradeSetRegistry,
+    pub dimensions: DimensionStemRegistry,
+    pub flat_level_generator_presets: FlatLevelGeneratorPresetRegistry,
+    pub world_presets: WorldPresetRegistry,
 }
 
 impl Debug for Registry {
@@ -408,6 +462,9 @@ impl Registry {
         vanilla_recipe_types::register(&mut registry.recipe_types);
         vanilla_recipe_book_categories::register(&mut registry.recipe_book_categories);
         vanilla_recipes::register_recipes(&mut registry.recipes);
+        for function in crate::functions::FUNCTIONS {
+            registry.functions.register(function);
+        }
         vanilla_entities::register_entity_types(&mut registry.entity_types);
         vanilla_entity_type_tags::EntityTypeTag::register_entity_type_tags(
             &mut registry.entity_types,
@@ -416,6 +473,7 @@ impl Registry {
         vanilla_block_entity_types::register_block_entity_types(&mut registry.block_entity_types);
         vanilla_game_rules::register_game_rules(&mut registry.game_rules);
         vanilla_game_events::register_game_events(&mut registry.game_events);
+        vanilla_game_event_tags::GameEventTag::register_game_event_tags(&mut registry.game_events);
         sound_events::register_sound_events(&mut registry.sound_events);
 
         vanilla_fluids::register_fluids(&mut registry.fluids);
@@ -445,6 +503,7 @@ impl Registry {
         vanilla_configured_features::register_configured_features(
             &mut registry.configured_features,
         );
+        vanilla_feature_tags::FeatureTag::register_feature_tags(&mut registry.configured_features);
         vanilla_placed_features::register_placed_features(&mut registry.placed_features);
 
         vanilla_custom_stats::register_custom_stats(&mut registry.custom_stats);
@@ -452,6 +511,43 @@ impl Registry {
 
         vanilla_ticket_types::register_vanilla_ticket_types(&mut registry.ticket_types);
         steel_ticket_types::register_steel_ticket_types(&mut registry.ticket_types);
+
+        crate::environment_attribute::register_environment_attributes(
+            &mut registry.environment_attributes,
+        );
+
+        vanilla_sulfur_cube_archetypes::register_sulfur_cube_archetypes(
+            &mut registry.sulfur_cube_archetypes,
+        );
+        vanilla_test_environments::register_test_environments(&mut registry.test_environments);
+        vanilla_test_instances::register_test_instances(&mut registry.test_instances);
+        vanilla_predicates::register_predicates(&mut registry.predicates);
+        vanilla_context_int_providers::register_context_int_providers(
+            &mut registry.context_int_providers,
+        );
+        vanilla_context_float_providers::register_context_float_providers(
+            &mut registry.context_float_providers,
+        );
+        vanilla_enchantment_providers::register_enchantment_providers(
+            &mut registry.enchantment_providers,
+        );
+        vanilla_trial_spawners::register_trial_spawners(&mut registry.trial_spawners);
+        vanilla_villager_trades::register_villager_trades(&mut registry.villager_trades);
+        vanilla_villager_trade_tags::VillagerTradeTag::register_villager_trade_tags(
+            &mut registry.villager_trades,
+        );
+        vanilla_trade_sets::register_trade_sets(&mut registry.trade_sets);
+        vanilla_dimensions::register_dimensions(&mut registry.dimensions);
+        vanilla_flat_level_generator_presets::register_flat_level_generator_presets(
+            &mut registry.flat_level_generator_presets,
+        );
+        vanilla_flat_level_generator_preset_tags::FlatLevelGeneratorPresetTag::register_flat_level_generator_preset_tags(
+            &mut registry.flat_level_generator_presets,
+        );
+        vanilla_world_presets::register_world_presets(&mut registry.world_presets);
+        vanilla_world_preset_tags::WorldPresetTag::register_world_preset_tags(
+            &mut registry.world_presets,
+        );
 
         registry
     }
@@ -503,6 +599,7 @@ impl Registry {
         self.recipe_types.freeze();
         self.recipe_book_categories.freeze();
         self.recipes.freeze(&self.recipe_types);
+        self.functions.freeze();
         self.entity_types.freeze();
         self.loot_tables.freeze();
         self.block_entity_types.freeze();
@@ -522,6 +619,20 @@ impl Registry {
         self.custom_stats.freeze();
         self.stat_types.freeze();
         self.ticket_types.freeze();
+        self.environment_attributes.freeze();
+        self.sulfur_cube_archetypes.freeze();
+        self.test_environments.freeze();
+        self.test_instances.freeze();
+        self.predicates.freeze();
+        self.context_int_providers.freeze();
+        self.context_float_providers.freeze();
+        self.enchantment_providers.freeze();
+        self.trial_spawners.freeze();
+        self.villager_trades.freeze();
+        self.trade_sets.freeze();
+        self.dimensions.freeze();
+        self.flat_level_generator_presets.freeze();
+        self.world_presets.freeze();
         self.advancements.update_tree();
     }
 
@@ -768,6 +879,7 @@ impl Registry {
             recipe_types: RecipeTypeRegistry::new(),
             recipe_book_categories: RecipeBookCategoryRegistry::new(),
             recipes: RecipeRegistry::new(),
+            functions: crate::function::FunctionRegistry::new(),
             entity_types: EntityTypeRegistry::new(),
             loot_tables: LootTableRegistry::new(),
             block_entity_types: BlockEntityTypeRegistry::new(),
@@ -788,6 +900,20 @@ impl Registry {
             stat_types: StatTypeRegistry::new(),
             ticket_types: TicketTypeRegistry::new(),
             advancements: AdvancementRegistry::new(),
+            environment_attributes: EnvironmentAttributeRegistry::new(),
+            sulfur_cube_archetypes: SulfurCubeArchetypeRegistry::new(),
+            test_environments: TestEnvironmentRegistry::new(),
+            test_instances: TestInstanceRegistry::new(),
+            predicates: LootPredicateRegistry::new(),
+            context_int_providers: ContextIntProviderRegistry::new(),
+            context_float_providers: ContextFloatProviderRegistry::new(),
+            enchantment_providers: EnchantmentProviderRegistry::new(),
+            trial_spawners: TrialSpawnerConfigRegistry::new(),
+            villager_trades: VillagerTradeRegistry::new(),
+            trade_sets: TradeSetRegistry::new(),
+            dimensions: DimensionStemRegistry::new(),
+            flat_level_generator_presets: FlatLevelGeneratorPresetRegistry::new(),
+            world_presets: WorldPresetRegistry::new(),
         }
     }
 }
@@ -830,6 +956,7 @@ mod tests {
             spawn_costs: FxHashMap::default(),
             carvers,
             features,
+            network_attributes_json: "{}",
             id: OnceLock::new(),
         }))
     }

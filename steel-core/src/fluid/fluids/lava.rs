@@ -5,6 +5,7 @@
 use std::sync::Arc;
 
 use glam::DVec3;
+use rand::RngExt as _;
 use steel_registry::REGISTRY;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::Direction;
@@ -13,12 +14,14 @@ use steel_registry::level_events;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::sound_events;
 use steel_registry::vanilla_blocks;
+use steel_registry::vanilla_game_rules::FIRE_SPREAD_RADIUS_AROUND_PLAYER;
 use steel_registry::vanilla_game_rules::LAVA_SOURCE_CONVERSION;
 use steel_registry::vanilla_items;
 use steel_utils::BlockPos;
 use steel_utils::BlockStateId;
 use steel_utils::types::UpdateFlags;
 
+use crate::behavior::blocks::FireBlock;
 use crate::entity::{Entity, InsideBlockEffectCollector, InsideBlockEffectType};
 use crate::fluid::{FlowingFluid, FluidBehavior, get_flow as flowing_fluid_flow};
 use crate::fluid::{
@@ -37,9 +40,22 @@ const FAST_LAVA_ENTITY_FLOW_SCALE: f64 = 0.007;
 pub struct LavaFluid;
 
 impl LavaFluid {
+    /// Vanilla `LavaFluid.isFlammable`: whether any face of `pos` touches a
+    /// solid, non-liquid block that can act as fuel.
+    fn has_flammable_neighbour(world: &Arc<World>, pos: BlockPos) -> bool {
+        Direction::ALL.iter().any(|direction| {
+            let neighbour = direction.relative(pos);
+            let state = world.get_block_state(neighbour);
+            let block = state.get_block();
+            // Vanilla checks `FlammableBlockRegistry`: a block is fuel when it
+            // carries `#infinite_burn` or is solid and non-liquid.
+            state.is_solid() && !block.config.liquid
+        })
+    }
+
     /// Returns true if this world uses fast lava (nether-like).
     fn is_fast_lava(world: &Arc<World>) -> bool {
-        world.dimension_type.fast_lava
+        world.dimension_type.fast_lava.unwrap_or(false)
     }
 
     /// Returns the lava current scale for entity fluid pushing.
@@ -75,6 +91,36 @@ impl FluidBehavior for LavaFluid {
 
     fn tick_delay(&self, world: &Arc<World>) -> i32 {
         if Self::is_fast_lava(world) { 10 } else { 30 }
+    }
+
+    fn random_tick(&self, world: &Arc<World>, pos: BlockPos) {
+        // Vanilla `LavaFluid.randomTick`: fire never spreads when
+        // `fire_spread_radius_around_player` is negative, otherwise a random
+        // nearby air block over a flammable neighbour catches fire on a 1-in-3
+        // roll.
+        if world.get_game_rule(&FIRE_SPREAD_RADIUS_AROUND_PLAYER) < 0 {
+            return;
+        }
+
+        let mut rng = rand::rng();
+        for _ in 0..3 {
+            let target = pos.offset(
+                rng.random_range(-1i32..2),
+                rng.random_range(0i32..2),
+                rng.random_range(-1i32..2),
+            );
+            if world.get_block_state(target).get_block() != &vanilla_blocks::AIR {
+                continue;
+            }
+            if !Self::has_flammable_neighbour(world, target) {
+                continue;
+            }
+            world.set_block(
+                target,
+                FireBlock::get_state(world.as_ref(), target),
+                UpdateFlags::UPDATE_ALL,
+            );
+        }
     }
 
     fn drop_off(&self, world: &Arc<World>) -> u8 {

@@ -9,14 +9,6 @@
     clippy::unreadable_literal,
     reason = "packet definitions keep explicit protocol-oriented code and existing test/build invariants"
 )]
-#![cfg_attr(
-    test,
-    expect(
-        clippy::unwrap_used,
-        reason = "packet round-trip tests unwrap known-good buffers"
-    )
-)]
-
 pub mod packet_reader;
 pub mod packet_traits;
 pub mod packet_writer;

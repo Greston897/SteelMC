@@ -17,7 +17,7 @@
 //!
 //!     let items = b.grid(3, |g| {
 //!         let items = g.place(Rect::cols(3..6).rows(1), storage).section();
-//!         g.paint_all(&vanilla_items::GRAY_STAINED_GLASS_PANE);
+//!         g.paint_all(&*vanilla_items::GRAY_STAINED_GLASS_PANE);
 //!         items
 //!     });
 //!
@@ -536,7 +536,19 @@ impl PlacementBuilder<'_, '_> {
     /// If the rect is not a single cell, or the placement container differs
     /// from [`ResultHandler::result_container`].
     pub fn result(self, handler: impl ResultHandler + 'static) -> Section {
-        let slot = ResultSlot::new(handler);
+        self.push_result(ResultSlot::new(handler))
+    }
+
+    /// Commits a single crafting result slot that awards `ITEM_CRAFTED` when taken.
+    ///
+    /// # Panics
+    /// If the rect is not a single cell, or the placement container differs
+    /// from [`ResultHandler::result_container`].
+    pub fn crafting_result(self, handler: impl ResultHandler + 'static) -> Section {
+        self.push_result(ResultSlot::crafting(handler))
+    }
+
+    fn push_result(self, slot: ResultSlot) -> Section {
         let result_container = slot.result_container().clone();
         assert_eq!(
             self.container.container_id(),

@@ -14,17 +14,17 @@
 //!
 //! # Usage
 //!
-//! ```ignore
-//! use steel_core::behavior::{init_behaviors, BLOCK_BEHAVIORS, ITEM_BEHAVIORS};
-//!
-//! // After registry is frozen, call once at startup:
+//! ```rust
+//! use steel_core::behavior::{init_behaviors, BLOCK_BEHAVIORS};
+//! use steel_registry::{init_vanilla_registry, vanilla_blocks};
+//! init_vanilla_registry();
 //! init_behaviors();
-//!
-//! // Then access behaviors via the global registries:
-//! let behavior = BLOCK_BEHAVIORS.get_behavior(block);
+//! let behavior = BLOCK_BEHAVIORS.get_behavior(&vanilla_blocks::STONE);
+//! let by_state = BLOCK_BEHAVIORS.get_behavior_for_state(vanilla_blocks::STONE.default_state()).unwrap();
+//! assert!(std::ptr::eq(behavior, by_state));
 //! ```
 
-mod block;
+pub mod block;
 pub mod blocks;
 mod consume_effect;
 mod context;
@@ -44,7 +44,7 @@ pub mod block_behaviors;
 #[path = "generated/candle_cakes.rs"]
 pub mod candle_cakes;
 
-#[allow(warnings)]
+#[allow(warnings, reason = "generated code may contain warnings")]
 #[rustfmt::skip]
 #[path = "generated/items.rs"]
 pub mod item_behaviors;
@@ -53,6 +53,11 @@ pub mod item_behaviors;
 #[rustfmt::skip]
 #[path = "generated/waxables.rs"]
 pub mod waxables;
+
+#[expect(warnings)]
+#[rustfmt::skip]
+#[path = "generated/flammable.rs"]
+pub mod flammable;
 
 #[expect(warnings)]
 #[rustfmt::skip]
@@ -73,8 +78,8 @@ pub(crate) use block::{pickup_waterlogged_block, try_drop_experience};
 use block_behaviors::register_block_behaviors;
 pub use consume_effect::{CONSUME_EFFECT_BEHAVIORS, ConsumeEffectBehaviorRegistry};
 pub use context::{
-    BlockHitResult, BlockPlaceContext, InteractionResult, InventoryAccess, InventoryTickContext,
-    PlacementOrientation, PlacementSource, UseItemContext, UseOnContext,
+    BlockHitResult, BlockPlaceContext, CanMineContext, InteractionResult, InventoryAccess,
+    InventoryTickContext, PlacementOrientation, PlacementSource, UseItemContext, UseOnContext,
 };
 pub use fluid::{FLUID_BEHAVIORS, FluidBehaviorRegistry};
 pub(crate) use item::apply_use_remainder;
@@ -95,6 +100,7 @@ use steel_registry::vanilla_fluids;
 use steel_registry::vanilla_mob_effects;
 use steel_utils::BlockStateId;
 
+use crate::block_entity::init_block_entities;
 use crate::entity::ai::path::PathComputationType;
 use crate::entity::consume_effect::{
     ApplyEffectsBehavior, ClearAllEffectsBehavior, ConsumeEffectBehavior, PlaySoundBehavior,
@@ -213,6 +219,7 @@ pub static ITEM_BEHAVIORS: ItemBehaviorLock = ItemBehaviorLock(OnceLock::new());
 ///
 /// This should be called after the main registry is frozen. Repeated calls are a no-op.
 pub fn init_behaviors() {
+    init_block_entities();
     BLOCK_BEHAVIORS.0.get_or_init(|| {
         let mut block_behaviors = BlockBehaviorRegistry::new();
         register_block_behaviors(&mut block_behaviors);

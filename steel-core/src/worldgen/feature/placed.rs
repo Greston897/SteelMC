@@ -54,7 +54,7 @@ impl FeatureDecorationRunner {
             feature,
             BiomeFilterMode::Check(biome_filter),
             biome_zoom_seed,
-            0,
+            &feature.placement,
         )
     }
 
@@ -70,9 +70,13 @@ impl FeatureDecorationRunner {
         feature: &PlacedFeatureData,
         biome_filter: BiomeFilterMode<'_>,
         biome_zoom_seed: i64,
-        modifier_index: usize,
+        modifiers: &[PlacementModifier],
     ) -> bool {
-        let Some(modifier) = feature.placement.get(modifier_index) else {
+        // Vanilla walks the placement list with a `Consumer<BlockPos>` chain: each
+        // modifier may emit any number of positions, and the *rest of the list*
+        // continues from there. Steel models the "rest of the list" as the slice
+        // tail, so a nested selector can hand its chosen modifier the same tail.
+        let Some((modifier, rest)) = modifiers.split_first() else {
             return Self::place_configured_feature(
                 region,
                 registry,
@@ -107,7 +111,7 @@ impl FeatureDecorationRunner {
                         feature,
                         biome_filter,
                         biome_zoom_seed,
-                        modifier_index + 1,
+                        rest,
                     );
                 }
             }
@@ -123,7 +127,7 @@ impl FeatureDecorationRunner {
                         feature,
                         biome_filter,
                         biome_zoom_seed,
-                        modifier_index + 1,
+                        rest,
                     );
                 }
             }
@@ -138,7 +142,7 @@ impl FeatureDecorationRunner {
                             feature,
                             biome_filter,
                             biome_zoom_seed,
-                            modifier_index + 1,
+                            rest,
                         ) {
                             placed = true;
                         }
@@ -156,7 +160,7 @@ impl FeatureDecorationRunner {
                         feature,
                         biome_filter,
                         biome_zoom_seed,
-                        modifier_index + 1,
+                        rest,
                     ) {
                         placed = true;
                     }
@@ -185,7 +189,7 @@ impl FeatureDecorationRunner {
                         feature,
                         biome_filter,
                         biome_zoom_seed,
-                        modifier_index + 1,
+                        rest,
                     );
                 }
             }
@@ -207,7 +211,7 @@ impl FeatureDecorationRunner {
                         feature,
                         biome_filter,
                         biome_zoom_seed,
-                        modifier_index + 1,
+                        rest,
                     ) {
                         placed = true;
                     }
@@ -232,7 +236,7 @@ impl FeatureDecorationRunner {
                     feature,
                     biome_filter,
                     biome_zoom_seed,
-                    modifier_index + 1,
+                    rest,
                 );
             }
             PlacementModifier::Heightmap { heightmap } => {
@@ -250,7 +254,7 @@ impl FeatureDecorationRunner {
                         feature,
                         biome_filter,
                         biome_zoom_seed,
-                        modifier_index + 1,
+                        rest,
                     );
                 }
             }
@@ -268,7 +272,7 @@ impl FeatureDecorationRunner {
                     feature,
                     biome_filter,
                     biome_zoom_seed,
-                    modifier_index + 1,
+                    rest,
                 );
             }
             PlacementModifier::NoiseBasedCount {
@@ -292,7 +296,7 @@ impl FeatureDecorationRunner {
                             feature,
                             biome_filter,
                             biome_zoom_seed,
-                            modifier_index + 1,
+                            rest,
                         ) {
                             placed = true;
                         }
@@ -323,7 +327,7 @@ impl FeatureDecorationRunner {
                             feature,
                             biome_filter,
                             biome_zoom_seed,
-                            modifier_index + 1,
+                            rest,
                         ) {
                             placed = true;
                         }
@@ -347,7 +351,7 @@ impl FeatureDecorationRunner {
                     feature,
                     biome_filter,
                     biome_zoom_seed,
-                    modifier_index + 1,
+                    rest,
                 );
             }
             PlacementModifier::RarityFilter { chance } => {
@@ -364,7 +368,7 @@ impl FeatureDecorationRunner {
                         feature,
                         biome_filter,
                         biome_zoom_seed,
-                        modifier_index + 1,
+                        rest,
                     );
                 }
             }
@@ -390,7 +394,7 @@ impl FeatureDecorationRunner {
                         feature,
                         biome_filter,
                         biome_zoom_seed,
-                        modifier_index + 1,
+                        rest,
                     );
                 }
             }
@@ -407,7 +411,7 @@ impl FeatureDecorationRunner {
                         feature,
                         biome_filter,
                         biome_zoom_seed,
-                        modifier_index + 1,
+                        rest,
                     );
                 }
             }
@@ -425,7 +429,7 @@ impl FeatureDecorationRunner {
                     feature,
                     biome_filter,
                     biome_zoom_seed,
-                    modifier_index + 1,
+                    rest,
                 );
             }
             PlacementModifier::RandomChance { chance } => {
@@ -438,37 +442,37 @@ impl FeatureDecorationRunner {
                         feature,
                         biome_filter,
                         biome_zoom_seed,
-                        modifier_index + 1,
+                        rest,
                     );
                 }
             }
             PlacementModifier::RandomlySelected { placements } => {
+                // Vanilla `RandomlySelectedPlacement.modify` picks one modifier with
+                // `Util.getRandom` and calls *that modifier's* `modify`, so any
+                // modifier type may be nested and it continues the same output
+                // chain. Steel does the equivalent: run the chosen modifier with
+                // the tail spliced in after it.
                 let Ok(count) = i32::try_from(placements.len()) else {
-                    panic!("vanilla randomly selected placement count exceeds i32")
+                    return false;
                 };
+                if count <= 0 {
+                    return false;
+                }
 
                 let index = random.next_i32_bounded(count) as usize;
-                let modifier = &placements[index];
-                match modifier {
-                    PlacementModifier::Offset { x, y, z } => {
-                        let position = BlockPos::new(
-                            origin.x() + x.sample(random),
-                            origin.y() + y.sample(random),
-                            origin.z() + z.sample(random),
-                        );
-                        placed = Self::place_placed_feature_from_modifier(
-                            region,
-                            registry,
-                            random,
-                            position,
-                            feature,
-                            biome_filter,
-                            biome_zoom_seed,
-                            modifier_index + 1,
-                        );
-                    }
-                    _ => panic!("unsupported nested vanilla placement modifier: {modifier:?}"),
-                }
+                let mut chain = Vec::with_capacity(1_usize.saturating_add(rest.len()));
+                chain.push(placements[index].clone());
+                chain.extend_from_slice(rest);
+                placed = Self::place_placed_feature_from_modifier(
+                    region,
+                    registry,
+                    random,
+                    origin,
+                    feature,
+                    biome_filter,
+                    biome_zoom_seed,
+                    &chain,
+                );
             }
             PlacementModifier::Cuboid {
                 xz_size,
@@ -510,7 +514,7 @@ impl FeatureDecorationRunner {
                                 feature,
                                 biome_filter,
                                 biome_zoom_seed,
-                                modifier_index + 1,
+                                rest,
                             ) {
                                 placed = true;
                             }
@@ -559,6 +563,9 @@ impl FeatureDecorationRunner {
             panic!("template pool references unknown placed feature {feature_key}");
         };
 
+        // FeaturePoolElement invokes PlacedFeature.place, not its configured
+        // feature directly. Village flowers, for example, rely on the count,
+        // offset and air-filter modifiers before the configured feature runs.
         Self::place_placed_feature_from_modifier(
             region,
             registry,
@@ -567,7 +574,7 @@ impl FeatureDecorationRunner {
             &feature.data,
             BiomeFilterMode::Ignore,
             biome_zoom_seed,
-            0,
+            &feature.data.placement,
         )
     }
 }

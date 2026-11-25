@@ -1,7 +1,12 @@
 use std::sync::Arc;
 
+use crate::behavior::BlockHitResult;
+use crate::behavior::InteractionResult;
+use crate::behavior::InventoryAccess;
+use crate::player::Player;
 use steel_macros::block_behavior;
 use steel_registry::blocks::{BlockRef, properties::Direction, shapes::VoxelShape};
+use steel_utils::types::InteractionHand;
 use steel_utils::{BlockLocalAabb, BlockPos, BlockStateId};
 
 use crate::{
@@ -44,6 +49,19 @@ impl LavaCauldronBlock {
 impl BlockBehavior for LavaCauldronBlock {
     fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(self.block.default_state())
+    }
+
+    fn use_item_on(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        player: &Player,
+        hand: InteractionHand,
+        _hit: &BlockHitResult,
+        inv: &mut InventoryAccess,
+    ) -> InteractionResult {
+        super::cauldron_block::cauldron_item_interaction(state, world, pos, player, hand, inv)
     }
 
     fn get_entity_inside_collision_shape(

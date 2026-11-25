@@ -11,7 +11,7 @@ use std::env;
 use std::hint::black_box;
 use std::io::Cursor;
 use std::sync::{
-    Arc, LazyLock, Weak,
+    Arc, LazyLock, OnceLock, Weak,
     atomic::{AtomicU64, Ordering},
 };
 use std::time::{Duration, Instant};
@@ -576,6 +576,7 @@ fn build_feature_fixture_at(
     );
     let damage_history = Arc::new(DamageHistory::default());
     let world_config = WorldConfig {
+        server: OnceLock::new(),
         damage_history: Arc::clone(&damage_history),
         game_time_source: GameTimeSource::Primary,
         storage: WorldStorageConfig::RamOnly,
@@ -849,6 +850,7 @@ fn build_concurrent_feature_fixture(
     );
     let damage_history = Arc::new(DamageHistory::default());
     let world_config = WorldConfig {
+        server: OnceLock::new(),
         damage_history: Arc::clone(&damage_history),
         game_time_source: GameTimeSource::Primary,
         storage: WorldStorageConfig::RamOnly,
@@ -943,6 +945,7 @@ fn build_concurrent_full_pipeline_fixture(
     );
     let damage_history = Arc::new(DamageHistory::default());
     let world_config = WorldConfig {
+        server: OnceLock::new(),
         damage_history: Arc::clone(&damage_history),
         game_time_source: GameTimeSource::Primary,
         storage: WorldStorageConfig::RamOnly,
@@ -1041,6 +1044,7 @@ fn build_concurrent_light_fixture(
     );
     let damage_history = Arc::new(DamageHistory::default());
     let world_config = WorldConfig {
+        server: OnceLock::new(),
         damage_history: Arc::clone(&damage_history),
         game_time_source: GameTimeSource::Primary,
         storage: WorldStorageConfig::RamOnly,
@@ -1818,7 +1822,7 @@ fn bench_end_full(c: &mut Criterion) {
     });
 }
 
-/// Isolated `ImprovedNoise::sample_and_lerp` kernel throughput at 4-wide vs
+/// Isolated `ImprovedNoise::noise_with_y_scale_simd` kernel throughput at 4-wide vs
 /// 8-wide SIMD. Measures whether widening to AVX-512 (`f64x8`) pays off given
 /// the kernel's heavy scalar permutation-gather floor. Each variant computes
 /// the same 8 Y samples per column across a fixed set of columns.

@@ -36,7 +36,7 @@ impl BlockBehavior for WetSpongeBlock {
         _old_state: BlockStateId,
         _moved_by_piston: bool,
     ) {
-        if !world.dimension_type.water_evaporates {
+        if !world.dimension_type.water_evaporates.unwrap_or(false) {
             return;
         }
 

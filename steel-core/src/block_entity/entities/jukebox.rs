@@ -173,6 +173,31 @@ impl JukeboxBlockEntity {
         }
     }
 
+    /// One-slot automation view. Playback is not an extraction restriction in
+    /// 26.3: JukeboxBlockEntity.canTakeItem only requires an empty receiver slot.
+    pub(crate) fn automation_item(&self) -> ItemStack {
+        self.state.lock().item.clone()
+    }
+
+    /// Accept one playable item into an empty jukebox, starting its song through
+    /// the same state/event path as player insertion. Caller consumes its item.
+    pub(crate) fn insert_from_hopper(&self, item: &ItemStack) -> bool {
+        if item.is_empty()
+            || item.get(JUKEBOX_PLAYABLE).is_none()
+            || !self.state.lock().item.is_empty()
+        {
+            return false;
+        }
+        self.set_the_item(item.copy_with_count(1));
+        true
+    }
+
+    /// Complete a successful automation extraction without spawning a dropped
+    /// duplicate. Also stops playback and updates `HAS_RECORD`/comparators.
+    pub(crate) fn finish_hopper_extraction(&self) {
+        self.set_the_item(ItemStack::empty());
+    }
+
     /// Ejects the stored item with Vanilla's position, velocity, and pickup delay.
     pub fn pop_out_the_item(&self) {
         let Some(world) = self.get_level() else {

@@ -4,12 +4,16 @@
 //! connections (`JavaConnection`) and test connections (`FlintConnection`).
 
 mod java;
+mod packet_budget;
 
 pub use java::{
     BundleBuilder, JavaConnection, JavaNetworkReader, JavaNetworkWriter, JavaTransportRead,
     JavaTransportWrite, OutboundPacket,
 };
 pub(crate) use java::{ScheduledPacketExecution, ScheduledPlayPacket};
+pub use packet_budget::{
+    Admission, MAX_PACKETS_PER_SECOND, PacketBudget, RejectionCause, ViolationBudget,
+};
 
 use enum_dispatch::enum_dispatch;
 use steel_protocol::packet_traits::{ClientPacket, CompressionInfo, EncodedPacket};
@@ -206,19 +210,18 @@ impl Player {
         self.connection.close();
     }
 
+    /// Lowest view distance the server accepts from a client.
+    ///
     /// Handles client information updates during play phase.
     pub fn handle_client_information(&self, packet: SClientInformation) {
         let old_view_distance = self.view_distance();
         let was_hat_shown = self.shows_hat();
 
-        // TODO: Centralize the minimum with config validation when zero view distance is supported.
         let info = ClientInformation {
             language: packet.language,
-            view_distance: packet
-                .view_distance
-                .max(2)
-                .cast_unsigned()
-                .min(self.config.view_distance.max(2)),
+            view_distance: self
+                .config
+                .clamp_view_distance(packet.view_distance.cast_unsigned()),
             chat_visibility: packet.chat_visibility,
             chat_colors: packet.chat_colors,
             model_customization: packet.model_customization,
@@ -230,12 +233,13 @@ impl Player {
         self.set_client_information(info);
 
         let show_hat = self.shows_hat();
-        if show_hat != was_hat_shown {
-            self.server()
-                .broadcast_to_online(CPlayerInfoUpdate::update_hat(
-                    self.gameprofile.id(),
-                    show_hat,
-                ));
+        if show_hat != was_hat_shown
+            && let Some(server) = self.try_server()
+        {
+            server.broadcast_to_online(CPlayerInfoUpdate::update_hat(
+                self.gameprofile.id(),
+                show_hat,
+            ));
         }
 
         // Vanilla does not echo CSetChunkCacheRadius here; it is only broadcast

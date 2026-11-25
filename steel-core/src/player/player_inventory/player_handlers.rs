@@ -1,10 +1,14 @@
+use std::sync::Weak;
 use std::{f32::consts::TAU, mem, sync::Arc};
 
+use super::MountScreen;
+use crate::inventory::menu::kinds::mount;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::{
     entity::{Entity, LivingEntity as _, RemovalReason, entities::ItemEntity},
     inventory::{
         click::Click,
-        container::{Container, CraftingContainer, clear_or_count_matching_stack},
+        container::{Container, CraftingContainer, SimpleContainer, clear_or_count_matching_stack},
         lock::{ContainerId, ContainerLockGuard},
         menu::{
             Menu,
@@ -18,17 +22,25 @@ use glam::DVec3;
 use steel_math::trig;
 use steel_protocol::packets::game::SSeenAdvancement::Opened;
 use steel_protocol::packets::game::{
-    CContainerClose, COpenScreen, CSetPlayerInventory, ClickType, SContainerButtonClick,
-    SContainerClick, SContainerClose, SContainerSlotStateChanged, SRenameItem, SSeenAdvancement,
-    SSetBeacon, SSetCarriedItem, SSetCreativeModeSlot, SoundSource,
+    CContainerClose, CMountScreenOpen, COpenScreen, CSetPlayerInventory, ClickType,
+    SContainerButtonClick, SContainerClick, SContainerClose, SContainerSlotStateChanged, SEditBook,
+    SRenameItem, SSeenAdvancement, SSelectTrade, SSetBeacon, SSetCarriedItem, SSetCreativeModeSlot,
+    SoundSource,
 };
-use steel_registry::data_components::vanilla_components::SwingAnimation;
+use steel_registry::data_components::components::{
+    Filterable, WritableBookContent, WrittenBookContent,
+};
+use steel_registry::data_components::vanilla_components::{
+    SwingAnimation, WRITABLE_BOOK_CONTENT, WRITTEN_BOOK_CONTENT,
+};
 use steel_registry::item_stack::ItemStack;
+use steel_registry::items::ItemRef;
 use steel_registry::mob_effect::MobEffectRef;
 use steel_registry::sound_events;
 use steel_registry::stat::vanilla_stat_types;
-use steel_registry::vanilla_custom_stats;
+use steel_registry::vanilla_criteria_triggers::INVENTORY_CHANGED;
 use steel_registry::{REGISTRY, RegistryExt};
+use steel_registry::{vanilla_custom_stats, vanilla_items};
 use steel_utils::{
     Downcast as _,
     locks::Shared,
@@ -42,6 +54,9 @@ use super::{
     OpenMenuUnavailable, PendingMenuOpen, PlayerInventory, Prediction, PreparedMenu,
     TerminalMenuRemoval,
 };
+
+/// Offhand inventory index, matching vanilla `PlayerInventory.OFF_HAND_SLOT`.
+const OFFHAND_INVENTORY_SLOT: i32 = 40;
 
 impl Player {
     fn take_open_menu_for_callback(
@@ -128,8 +143,8 @@ impl Player {
                     self.execute_menu_open(*prepared);
                 }
                 DeferredMenuAction::Install(prepared) => {
-                    let PreparedMenu { title, menu } = *prepared;
-                    self.open_prepared_menu(title, menu);
+                    let PreparedMenu { title, menu, mount } = *prepared;
+                    self.open_prepared_menu_with(title, menu, mount);
                 }
             }
         }
@@ -263,6 +278,25 @@ impl Player {
             }
             Err(OpenMenuUnavailable::Unavailable) => {}
         }
+    }
+
+    /// Handles a trade selection from the merchant screen.
+    ///
+    /// Vanilla `ServerboundSelectTradePacket`: only a merchant menu accepts it,
+    /// and an out-of-range index is dropped without disturbing the screen.
+    pub fn handle_select_trade(&self, packet: SSelectTrade) {
+        self.reset_last_action_time();
+        let Ok(mut menu) = self.take_open_menu_for_callback(None) else {
+            log::debug!("select trade without an open menu");
+            return;
+        };
+        if self.game_mode() != GameType::Spectator
+            && menu.still_valid(self)
+            && menu.select_trade(packet.item, self)
+        {
+            menu.behavior_mut().broadcast_changes(&self.connection);
+        }
+        self.finish_open_menu_callback(menu);
     }
 
     /// Handles a container click packet (slot interaction).
@@ -443,8 +477,33 @@ impl Player {
             packet.new_state,
             packet.container_id
         );
-        // TODO: Implement slot state change handling
-        // This is used for the crafter block to enable/disable slots
+        self.reset_last_action_time();
+        match self.take_open_menu_for_callback(Some(packet.container_id)) {
+            Ok(mut menu) => {
+                if self.game_mode() != GameType::Spectator
+                    && menu.still_valid(self)
+                    && i32::from(menu.behavior().container_id()) == packet.container_id
+                {
+                    let Ok(slot) = usize::try_from(packet.slot_id) else {
+                        self.finish_open_menu_callback(menu);
+                        return;
+                    };
+                    // Vanilla only honours the toggle from the crafter menu; any
+                    // other menu ignores the packet.
+                    if menu.set_crafter_slot_state(slot, packet.new_state) {
+                        menu.behavior_mut().broadcast_changes(&self.connection);
+                    }
+                }
+                self.finish_open_menu_callback(menu);
+            }
+            Err(OpenMenuUnavailable::Closed) => {
+                log::debug!(
+                    "Player {} sent a slot state change without an open menu",
+                    self.gameprofile.name()
+                );
+            }
+            Err(OpenMenuUnavailable::Unavailable) => {}
+        }
     }
 
     /// Handles a creative mode slot set packet.
@@ -485,6 +544,72 @@ impl Player {
             }
             let _ = self.drop_item(item_stack, true, Prediction::Predicted);
         }
+    }
+
+    /// Handles a `play:edit_book` packet.
+    ///
+    /// Mirrors vanilla `ServerPlayNetworkHandler.onBookUpdate`: the edited
+    /// pages are stored on the writable book, and a packet carrying a title
+    /// signs the book into a written book authored by the player. Only hotbar
+    /// slots and the offhand slot may be edited, exactly like vanilla.
+    pub fn handle_edit_book(&self, packet: SEditBook) {
+        let slot = packet.slot;
+        if !((0..=8).contains(&slot) || slot == OFFHAND_INVENTORY_SLOT) {
+            return;
+        }
+        let slot_index = slot as usize;
+
+        let stack = {
+            let inventory = self.inventory.lock();
+            inventory.get_item(slot_index).clone()
+        };
+        if !stack.has(WRITABLE_BOOK_CONTENT) {
+            return;
+        }
+
+        // Vanilla filters the incoming texts through the chat filter first;
+        // Steel has no chat filtering, so every page stays pass-through.
+        let updated = if let Some(title) = packet.title {
+            let Ok(content) = WrittenBookContent::new(
+                Filterable::pass_through(title),
+                self.gameprofile.name().to_owned(),
+                0,
+                packet
+                    .pages
+                    .into_iter()
+                    .map(|page| Filterable::pass_through(TextComponent::plain(page)))
+                    .collect(),
+                true,
+            ) else {
+                return;
+            };
+
+            let mut written = stack.copy_with_count(stack.count());
+            written.set_item(&vanilla_items::WRITTEN_BOOK.key);
+            written.remove::<WritableBookContent>(WRITABLE_BOOK_CONTENT);
+            written.set(WRITTEN_BOOK_CONTENT, content);
+            written
+        } else {
+            let Ok(content) = WritableBookContent::new(
+                packet
+                    .pages
+                    .into_iter()
+                    .map(Filterable::pass_through)
+                    .collect(),
+            ) else {
+                return;
+            };
+
+            let mut editable = stack;
+            editable.set(WRITABLE_BOOK_CONTENT, content);
+            editable
+        };
+
+        self.inventory.lock().set_item(slot_index, updated);
+        // Vanilla writes straight into the inventory and then calls
+        // `sendContentUpdates`, which is what `broadcast_changes` mirrors.
+        let mut menu = self.inventory_menu.lock();
+        menu.behavior_mut().broadcast_changes(&self.connection);
     }
 
     /// Sets selected slot
@@ -555,6 +680,40 @@ impl Player {
         self.open_menu_inner(PendingMenuOpen {
             title: title.into(),
             create: Box::new(create),
+            mount: None,
+        });
+        self.finish_menu_open_operation();
+    }
+
+    /// Opens an entity-backed menu whose packet is not `COpenScreen`.
+    ///
+    /// Vanilla mounts use `ClientboundMountScreenOpenPacket`, which replaces the
+    /// open-screen packet and carries the entity id and the storage columns.
+    /// Everything else — the container id allocation, the slot sync and the
+    /// close path — is shared with [`Self::open_menu`].
+    pub fn open_entity_menu(
+        &self,
+        title: impl Into<TextComponent>,
+        entity_id: i32,
+        columns: usize,
+        inventory: Shared<SimpleContainer>,
+        owner: Weak<dyn Entity>,
+    ) {
+        if !self.begin_menu_open_operation() {
+            return;
+        }
+        self.open_menu_inner(PendingMenuOpen {
+            title: title.into(),
+            create: Box::new(move |context| {
+                mount(
+                    Arc::clone(&context.player.inventory),
+                    context.container_id,
+                    inventory,
+                    columns,
+                    owner,
+                )
+            }),
+            mount: Some(MountScreen { entity_id, columns }),
         });
         self.finish_menu_open_operation();
     }
@@ -591,7 +750,11 @@ impl Player {
             }
         }
 
-        let PendingMenuOpen { title, create } = pending;
+        let PendingMenuOpen {
+            title,
+            create,
+            mount,
+        } = pending;
         let container_id = self.next_container_counter();
         let world = self.get_world();
         let menu = create(MenuOpenContext {
@@ -606,10 +769,15 @@ impl Player {
             menu.container_id(),
             container_id,
         );
-        self.open_prepared_menu(title, menu);
+        self.open_prepared_menu_with(title, menu, mount);
     }
 
-    fn open_prepared_menu(&self, title: TextComponent, mut menu: Menu) {
+    fn open_prepared_menu_with(
+        &self,
+        title: TextComponent,
+        mut menu: Menu,
+        mount: Option<MountScreen>,
+    ) {
         loop {
             {
                 let mut open_menu = self.open_menu.lock();
@@ -634,6 +802,7 @@ impl Player {
                     .push(DeferredMenuAction::Install(Box::new(PreparedMenu {
                         title,
                         menu,
+                        mount,
                     })));
                 return;
             }
@@ -648,13 +817,24 @@ impl Player {
             break;
         }
 
-        self.send_packet(COpenScreen {
-            container_id: i32::from(menu.container_id()),
-            menu_type: menu
-                .menu_type()
-                .expect("a menu opened via open_menu must declare a menu type"),
-            title,
-        });
+        if let Some(screen) = mount {
+            // Vanilla `ServerPlayer.openHorseInventory`: mounts are opened with a
+            // mount screen packet, which carries the entity and column count and
+            // has no menu type at all.
+            self.send_packet(CMountScreenOpen {
+                container_id: i32::from(menu.container_id()),
+                inventory_columns: i32::try_from(screen.columns).unwrap_or(9),
+                entity_id: screen.entity_id,
+            });
+        } else {
+            self.send_packet(COpenScreen {
+                container_id: i32::from(menu.container_id()),
+                menu_type: menu
+                    .menu_type()
+                    .expect("a menu opened via open_menu must declare a menu type"),
+                title,
+            });
+        }
 
         // Fire on_open before the full sync so anything the menu populates here
         // is included in the first render sent below.
@@ -1108,8 +1288,8 @@ impl Player {
     /// Returns false if the player is dead, removed, or has a flag preventing item drops.
     #[must_use]
     pub fn can_drop_items(&self) -> bool {
-        !self.is_removed()
-        // TODO: Check if player is alive (health > 0)
+        // Vanilla `Player.canDropItems`: `!isRemoved() && getHealth() > 0`.
+        !self.is_removed() && self.get_health() > 0.0
     }
 
     /// Returns whether items from a closing menu (crafting grid, anvil inputs,
@@ -1174,9 +1354,52 @@ impl Player {
             return;
         }
 
-        let added = self.inventory.lock().add(&mut item);
+        let (added, before, after) = {
+            let mut inventory = self.inventory.lock();
+            // Inventory.add only inserts stacks or changes their count; it does
+            // not mutate the components of an existing stack.
+            let before = (0..inventory.get_container_size())
+                .map(|slot| {
+                    let stack = inventory.get_item(slot);
+                    (stack.item(), stack.count())
+                })
+                .collect::<Vec<_>>();
+            let added = inventory.add(&mut item);
+            let after = (0..inventory.get_container_size())
+                .map(|slot| inventory.get_item(slot).clone())
+                .collect::<Vec<_>>();
+            (added, before, after)
+        };
+        self.notify_inventory_changed(&before, after);
         if !added || !item.is_empty() {
             let _ = self.drop_item(item, false, prediction);
+        }
+    }
+
+    /// Fires an inventory change for each changed slot using the post-add snapshot.
+    fn notify_inventory_changed(&self, before: &[(ItemRef, i32)], after: Vec<ItemStack>) {
+        let changed = before
+            .iter()
+            .zip(&after)
+            .enumerate()
+            .filter_map(|(slot, ((old_item, old_count), new))| {
+                (*old_item != new.item() || *old_count != new.count()).then_some(slot)
+            })
+            .collect::<Vec<_>>();
+        if changed.is_empty() {
+            return;
+        }
+        let mut context = TriggerContext {
+            inventory: Some(after),
+            ..TriggerContext::default()
+        };
+        for slot in changed {
+            let Some(stack) = context.inventory.as_ref().map(|inventory| &inventory[slot]) else {
+                return;
+            };
+            context.item = (!stack.is_empty()).then(|| stack.item().key.clone());
+            context.item_stack = Some(stack.clone());
+            self.trigger_advancement_with_context(&INVENTORY_CHANGED, &context);
         }
     }
 

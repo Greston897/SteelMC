@@ -10,6 +10,7 @@ pub mod equipment;
 pub mod fuel_values;
 pub mod lock;
 pub mod menu;
+pub mod openers_counter;
 pub mod prelude;
 pub mod recipe_manager;
 pub mod slots;

@@ -10,6 +10,8 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
+use steel_core::server::attach_server_to_worlds;
+use steel_core::server::rcon::run_rcon;
 use steel_core::{
     GIT_HASH_SHORT, command::CommandRegistry, permission::PermissionGroupManager, server::Server,
 };
@@ -92,6 +94,16 @@ impl SteelServer {
     ) -> Result<Self, SteelServerError> {
         log::info!("Starting Steel Server ({GIT_HASH_SHORT})");
 
+        // Vanilla itself never reports a simulation distance below 4; values
+        // below it are accepted but despawn and freeze behaviour outside the
+        // player's own chunks, so say so once instead of surprising the operator.
+        if steel_config.server.simulation_distance < 4 {
+            tracing::warn!(
+                simulation_distance = steel_config.server.simulation_distance,
+                "Simulation distance below 4 can cause incorrect or alternate behavior"
+            );
+        }
+
         let permission_group_store = steel_config.permission_group_store();
         let server_port = steel_config.server.server_port;
         let worlds_config = steel_config.worlds;
@@ -119,6 +131,12 @@ impl SteelServer {
             .player_idle_timeout
             .store(player_idle_timeout, Ordering::Relaxed);
 
+        // Worlds are built before the server, so hand each one the server handle
+        // now that the `Arc` exists. Scoreboards and other server-owned state are
+        // reached from world-scoped code through this link.
+        let server = Arc::new(server);
+        attach_server_to_worlds(&server);
+
         let tcp_listener = TcpListener::bind(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, server_port))
             .await
             .map_err(|source| SteelServerError::Bind {
@@ -130,7 +148,7 @@ impl SteelServer {
             tcp_listener,
             cancel_token,
             client_id: 0,
-            server: Arc::new(server),
+            server,
             connection_session: Arc::new(ServerConnectionSession::default()),
         })
     }
@@ -144,6 +162,19 @@ impl SteelServer {
         let server_handle = tokio::spawn(async move {
             server.run(token).await;
         });
+
+        // RCON runs on its own task; an empty password disables it entirely, so
+        // a failure to bind is reported but does not take the server down.
+        {
+            let rcon_server = Arc::clone(&self.server);
+            let rcon_config = self.server.config.rcon.clone();
+            let rcon_token = self.cancel_token.clone();
+            tokio::spawn(async move {
+                if let Err(error) = run_rcon(rcon_server, rcon_config, rcon_token).await {
+                    log::error!("RCON stopped: {error}");
+                }
+            });
+        }
 
         loop {
             select! {

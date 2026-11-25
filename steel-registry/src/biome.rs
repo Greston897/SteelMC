@@ -22,6 +22,9 @@ pub struct Biome {
     pub spawn_costs: FxHashMap<Identifier, SpawnCost>,
     pub carvers: Vec<Identifier>,
     pub features: Vec<Vec<Identifier>>,
+    /// Syncable-only `attributes` map (JSON object string, filtered at build
+    /// time to `.syncable()` environment attributes) for `Biome.NETWORK_CODEC`.
+    pub network_attributes_json: &'static str,
     /// Cached registry ID, set during registration for O(1) lookup on hot paths.
     pub id: OnceLock<usize>,
 }
@@ -117,8 +120,69 @@ pub struct ParticleOptions {
     pub particle_type: Identifier,
 }
 
-impl ToNbtTag for &Biome {
-    fn to_nbt_tag(self) -> NbtTag {
+impl Biome {
+    /// Vanilla MC 26.3 `Biome.NETWORK_CODEC`:
+    /// `{has_precipitation, temperature, temperature_modifier?, downfall,
+    /// effects: {water_color, foliage_color?, dry_foliage_color?,
+    /// grass_color?, grass_color_modifier?}, attributes?}`.
+    ///
+    /// Spawners, spawn costs, carvers, features, and non-synced effect fields
+    /// (`fog_color`, `sky_color`, music, sounds, particles, ...) are
+    /// server-only and never sent — a vanilla 26.3 client rejects them.
+    #[must_use]
+    pub fn to_network_nbt(&self) -> NbtTag {
+        use simdnbt::owned::NbtCompound;
+        let mut compound = NbtCompound::new();
+        compound.insert("has_precipitation", self.has_precipitation);
+        compound.insert("temperature", self.temperature);
+        if matches!(self.temperature_modifier, TemperatureModifier::Frozen) {
+            compound.insert("temperature_modifier", "frozen");
+        }
+        compound.insert("downfall", self.downfall);
+
+        // Effects (network subset only)
+        let mut effects = NbtCompound::new();
+        effects.insert("water_color", self.effects.water_color);
+        if let Some(fc) = self.effects.foliage_color {
+            effects.insert("foliage_color", fc);
+        }
+        if let Some(dfc) = self.effects.dry_foliage_color {
+            effects.insert("dry_foliage_color", dfc);
+        }
+        if let Some(gc) = self.effects.grass_color {
+            effects.insert("grass_color", gc);
+        }
+        match self.effects.grass_color_modifier {
+            GrassColorModifier::None => {}
+            GrassColorModifier::DarkForest => {
+                effects.insert("grass_color_modifier", "dark_forest");
+            }
+            GrassColorModifier::Swamp => {
+                effects.insert("grass_color_modifier", "swamp");
+            }
+        }
+        compound.insert("effects", NbtTag::Compound(effects));
+
+        // Syncable environment attributes (pre-filtered JSON from the build script).
+        if !self.network_attributes_json.is_empty()
+            && self.network_attributes_json != "{}"
+            && let Ok(value) =
+                serde_json::from_str::<serde_json::Value>(self.network_attributes_json)
+            && let Ok(NbtTag::Compound(attributes)) = steel_utils::nbt::json_to_nbt(&value)
+            && !attributes.is_empty()
+        {
+            compound.insert("attributes", NbtTag::Compound(attributes));
+        }
+
+        NbtTag::Compound(compound)
+    }
+
+    /// Full direct codec including all server-only fields (`temperature_modifier`
+    /// when `none`, full `effects`, `creature_spawn_probability`, `spawners`,
+    /// `spawn_costs`, `carvers`, `features`). Used for persistence and datapack
+    /// round-trips — never sent on the wire.
+    #[must_use]
+    pub fn to_direct_nbt_tag(&self) -> NbtTag {
         use simdnbt::owned::{NbtCompound, NbtList};
         let mut compound = NbtCompound::new();
         compound.insert("has_precipitation", self.has_precipitation);
@@ -136,7 +200,7 @@ impl ToNbtTag for &Biome {
             self.creature_spawn_probability,
         );
 
-        // Effects
+        // Effects (full direct form)
         let mut effects = NbtCompound::new();
         effects.insert("fog_color", self.effects.fog_color);
         effects.insert("sky_color", self.effects.sky_color);
@@ -265,6 +329,12 @@ impl ToNbtTag for &Biome {
         compound.insert("features", NbtTag::List(NbtList::List(features_nbt)));
 
         NbtTag::Compound(compound)
+    }
+}
+
+impl ToNbtTag for &Biome {
+    fn to_nbt_tag(self) -> NbtTag {
+        self.to_network_nbt()
     }
 }
 

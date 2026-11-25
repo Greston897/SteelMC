@@ -592,3 +592,18 @@ fn chunk_distance_squared_saturates_for_invalid_i32_extremes() {
 
     assert_eq!(distance, u64::MAX);
 }
+
+#[test]
+fn feedback_limits_match_vanilla_literals_not_local_constants() {
+    for (feedback, expected) in [
+        (f32::NAN, 0.01_f32),
+        (0.001, 0.01),
+        (100.0, 64.0),
+        (f32::INFINITY, 64.0),
+    ] {
+        let mut pacing = pacing_with_outstanding_batches(2);
+        assert!(pacing.record_feedback(feedback));
+        pacing.drain_feedback();
+        assert_eq!(pacing.desired_chunks_per_tick.to_bits(), expected.to_bits());
+    }
+}

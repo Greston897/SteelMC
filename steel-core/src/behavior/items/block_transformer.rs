@@ -8,7 +8,7 @@ use steel_registry::data_components::vanilla_components::{BLOCK_TRANSFORMER, BLO
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::vanilla_block_tags::BlockTag;
-use steel_registry::{REGISTRY, RegistryExt as _, level_events, vanilla_game_events};
+use steel_registry::{REGISTRY, level_events, vanilla_criteria_triggers, vanilla_game_events};
 use steel_utils::BlockStateId;
 use steel_utils::random::legacy_random::LegacyRandom;
 use steel_utils::types::{InteractionHand, UpdateFlags};
@@ -18,7 +18,7 @@ use crate::behavior::{InteractionResult, UseOnContext};
 use crate::block_state_provider::BlockStateProviderEvaluator;
 use crate::entity::{Entity as _, LivingEntity as _};
 use crate::inventory::equipment::EquipmentSlot;
-use crate::player::Player;
+use crate::player::{Player, advancement::predicate::TriggerContext};
 use crate::world::game_event::GameEventContext;
 
 use super::copper_chest_events::emit_connected_chest_block_change;
@@ -64,7 +64,12 @@ pub(crate) fn use_on(context: &mut UseOnContext) -> InteractionResult {
             new_state
         };
 
-        // TODO: Trigger ITEM_USED_ON_BLOCK advancements here
+        // Vanilla fires before changing the block or consuming the item.
+        let stack = context.inv.with_item(|item| item.clone());
+        context.player.trigger_advancement_with_context(
+            &vanilla_criteria_triggers::ITEM_USED_ON_BLOCK,
+            &TriggerContext::block_at(context.world, pos).with_item_stack(&stack),
+        );
         let old_state = context.world.get_block_state(pos);
         drop_loot(transform, context, old_state);
         let broken_item = context.inv.with_item(|item| {

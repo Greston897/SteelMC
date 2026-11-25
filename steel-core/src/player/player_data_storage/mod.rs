@@ -9,6 +9,7 @@ mod stats;
 #[cfg(test)]
 mod tests;
 
+use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
 use std::{io::Cursor, path::PathBuf};
 
 use simdnbt::{ToNbtTag, borrow::read_compound as read_borrowed_compound, owned::NbtTag};
@@ -38,7 +39,16 @@ use steel_utils::{BlockPos, Identifier};
 
 const PLAYER_MAGIC: [u8; 4] = *b"STLP";
 const GLOBAL_MAGIC: [u8; 4] = *b"STLG";
-const PLAYER_STORAGE_VERSION: u16 = 10;
+/// Current on-disk layout version of a player data file.
+const PLAYER_STORAGE_VERSION: u16 = 14;
+/// Oldest on-disk layout this build can still read.
+///
+/// Version 10 lacked the vanilla `warden_spawn_tracker` block that version 11
+/// appended, and version 12 appended `post_effects`. Instead of rejecting every
+/// save written by an earlier build, the reader decodes the older layouts and
+/// fills the missing fields with vanilla defaults. Bump this only together with
+/// a reader.
+const OLDEST_READABLE_PLAYER_STORAGE_VERSION: u16 = 10;
 const GLOBAL_STORAGE_VERSION: u16 = 1;
 const GLOBAL_PLAYER_DATA_VERSION: i32 = 1;
 
@@ -59,7 +69,7 @@ enum PlayerDataStorageBackend {
     Memory(MemoryPlayerDataStorage),
 }
 
-#[derive(SchemaWrite, SchemaRead)]
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct PlayerDataFile {
     data_version: i32,
     pos: [f64; 3],
@@ -93,15 +103,126 @@ struct PlayerDataFile {
     respawn_config: Option<RespawnConfigFile>,
     ender_pearls: Vec<EnderPearlFile>,
     ender_items: Vec<SlotFile>,
+    warden_spawn_tracker: WardenSpawnTrackerFile,
+    /// Vanilla `post_effects` ids; empty for every save older than version 12.
+    post_effects: Vec<String>,
+    raid_omen_position: Option<[i32; 3]>,
+    entered_nether_position: Option<[f64; 3]>,
 }
 
+/// Version 13 consists of the version 12 fields followed by the raid origin.
 #[derive(SchemaWrite, SchemaRead)]
+struct PlayerDataFileV13 {
+    base: PlayerDataFileV12,
+    raid_omen_position: Option<[i32; 3]>,
+}
+
+impl PlayerDataFileV13 {
+    fn into_current(self) -> PlayerDataFile {
+        let mut current = self.base.into_current();
+        current.raid_omen_position = self.raid_omen_position;
+        current
+    }
+}
+
+/// Version 12 layout, before the pending raid origin was appended.
+#[derive(SchemaWrite, SchemaRead)]
+struct PlayerDataFileV12 {
+    data_version: i32,
+    pos: [f64; 3],
+    motion: [f64; 3],
+    rotation: [f32; 2],
+    on_ground: bool,
+    fall_flying: bool,
+    remaining_fire_ticks: i32,
+    ticks_frozen: i32,
+    is_in_powder_snow: bool,
+    was_in_powder_snow: bool,
+    has_visual_fire: bool,
+    health: f32,
+    game_mode: i32,
+    prev_game_mode: Option<i32>,
+    abilities: AbilitiesFile,
+    inventory: Vec<SlotFile>,
+    selected_slot: i32,
+    world: String,
+    food_level: i32,
+    food_saturation_level: f32,
+    food_exhaustion_level: f32,
+    food_tick_timer: i32,
+    experience_level: i32,
+    experience_progress: f32,
+    experience_total: i32,
+    enchantment_seed: i32,
+    score: i32,
+    seen_credits: bool,
+    root_vehicle: Option<RootVehicleFile>,
+    respawn_config: Option<RespawnConfigFile>,
+    ender_pearls: Vec<EnderPearlFile>,
+    ender_items: Vec<SlotFile>,
+    warden_spawn_tracker: WardenSpawnTrackerFile,
+    /// Vanilla `post_effects` ids; empty for every save older than version 12.
+    post_effects: Vec<String>,
+}
+
+impl PlayerDataFileV12 {
+    fn into_current(self) -> PlayerDataFile {
+        PlayerDataFile {
+            data_version: self.data_version,
+            pos: self.pos,
+            motion: self.motion,
+            rotation: self.rotation,
+            on_ground: self.on_ground,
+            fall_flying: self.fall_flying,
+            remaining_fire_ticks: self.remaining_fire_ticks,
+            ticks_frozen: self.ticks_frozen,
+            is_in_powder_snow: self.is_in_powder_snow,
+            was_in_powder_snow: self.was_in_powder_snow,
+            has_visual_fire: self.has_visual_fire,
+            health: self.health,
+            game_mode: self.game_mode,
+            prev_game_mode: self.prev_game_mode,
+            abilities: self.abilities,
+            inventory: self.inventory,
+            selected_slot: self.selected_slot,
+            world: self.world,
+            food_level: self.food_level,
+            food_saturation_level: self.food_saturation_level,
+            food_exhaustion_level: self.food_exhaustion_level,
+            food_tick_timer: self.food_tick_timer,
+            experience_level: self.experience_level,
+            experience_progress: self.experience_progress,
+            experience_total: self.experience_total,
+            enchantment_seed: self.enchantment_seed,
+            score: self.score,
+            seen_credits: self.seen_credits,
+            root_vehicle: self.root_vehicle,
+            respawn_config: self.respawn_config,
+            ender_pearls: self.ender_pearls,
+            ender_items: self.ender_items,
+            warden_spawn_tracker: self.warden_spawn_tracker,
+            post_effects: self.post_effects,
+            raid_omen_position: None,
+            entered_nether_position: None,
+        }
+    }
+}
+
+/// Vanilla `warden_spawn_tracker` in the player save.
+#[derive(Debug, SchemaWrite, SchemaRead)]
+struct WardenSpawnTrackerFile {
+    ticks_since_last_warning: i32,
+    warning_level: i32,
+    cooldown_ticks: i32,
+}
+
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct RootVehicleFile {
     attach: [u8; 16],
     entity: PersistentEntity,
 }
 
-#[derive(SchemaWrite, SchemaRead)]
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct RespawnConfigFile {
     dimension: String,
     pos: [i32; 3],
@@ -110,13 +231,13 @@ struct RespawnConfigFile {
     forced: bool,
 }
 
-#[derive(SchemaWrite, SchemaRead)]
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct EnderPearlFile {
     world: String,
     entity: PersistentEntity,
 }
 
-#[derive(SchemaWrite, SchemaRead)]
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct AbilitiesFile {
     invulnerable: bool,
     flying: bool,
@@ -127,13 +248,13 @@ struct AbilitiesFile {
     walking_speed: f32,
 }
 
-#[derive(SchemaWrite, SchemaRead)]
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct SlotFile {
     slot: i8,
     item_nbt: Vec<u8>,
 }
 
-#[derive(SchemaWrite, SchemaRead)]
+#[derive(Debug, SchemaWrite, SchemaRead)]
 struct GlobalPlayerDataFile {
     data_version: i32,
     last_active_domain: String,
@@ -297,6 +418,179 @@ impl PlayerDataStorage {
     }
 }
 
+/// Player data layout written by builds before the warden spawn tracker.
+///
+/// Identical to [`PlayerDataFile`] minus the trailing `warden_spawn_tracker`
+/// field, which is what makes version 10 decodable from the same byte stream
+/// prefix.
+#[derive(SchemaWrite, SchemaRead)]
+struct PlayerDataFileV10 {
+    data_version: i32,
+    pos: [f64; 3],
+    motion: [f64; 3],
+    rotation: [f32; 2],
+    on_ground: bool,
+    fall_flying: bool,
+    remaining_fire_ticks: i32,
+    ticks_frozen: i32,
+    is_in_powder_snow: bool,
+    was_in_powder_snow: bool,
+    has_visual_fire: bool,
+    health: f32,
+    game_mode: i32,
+    prev_game_mode: Option<i32>,
+    abilities: AbilitiesFile,
+    inventory: Vec<SlotFile>,
+    selected_slot: i32,
+    world: String,
+    food_level: i32,
+    food_saturation_level: f32,
+    food_exhaustion_level: f32,
+    food_tick_timer: i32,
+    experience_level: i32,
+    experience_progress: f32,
+    experience_total: i32,
+    enchantment_seed: i32,
+    score: i32,
+    seen_credits: bool,
+    root_vehicle: Option<RootVehicleFile>,
+    respawn_config: Option<RespawnConfigFile>,
+    ender_pearls: Vec<EnderPearlFile>,
+    ender_items: Vec<SlotFile>,
+}
+
+impl PlayerDataFileV10 {
+    /// Fills in the fields added in version 11.
+    fn into_current(self) -> PlayerDataFile {
+        PlayerDataFile {
+            data_version: self.data_version,
+            pos: self.pos,
+            motion: self.motion,
+            rotation: self.rotation,
+            on_ground: self.on_ground,
+            fall_flying: self.fall_flying,
+            remaining_fire_ticks: self.remaining_fire_ticks,
+            ticks_frozen: self.ticks_frozen,
+            is_in_powder_snow: self.is_in_powder_snow,
+            was_in_powder_snow: self.was_in_powder_snow,
+            has_visual_fire: self.has_visual_fire,
+            health: self.health,
+            game_mode: self.game_mode,
+            prev_game_mode: self.prev_game_mode,
+            abilities: self.abilities,
+            inventory: self.inventory,
+            selected_slot: self.selected_slot,
+            world: self.world,
+            food_level: self.food_level,
+            food_saturation_level: self.food_saturation_level,
+            food_exhaustion_level: self.food_exhaustion_level,
+            food_tick_timer: self.food_tick_timer,
+            experience_level: self.experience_level,
+            experience_progress: self.experience_progress,
+            experience_total: self.experience_total,
+            enchantment_seed: self.enchantment_seed,
+            score: self.score,
+            seen_credits: self.seen_credits,
+            root_vehicle: self.root_vehicle,
+            respawn_config: self.respawn_config,
+            ender_pearls: self.ender_pearls,
+            ender_items: self.ender_items,
+            // Vanilla defaults: a player that never woke a shrieker.
+            warden_spawn_tracker: WardenSpawnTrackerFile {
+                ticks_since_last_warning: 0,
+                warning_level: 0,
+                cooldown_ticks: 0,
+            },
+            // Vanilla default: no screen effect was ever added.
+            post_effects: Vec::new(),
+            raid_omen_position: None,
+            entered_nether_position: None,
+        }
+    }
+}
+
+/// Player data layout written before version 12 appended `post_effects`.
+#[derive(SchemaWrite, SchemaRead)]
+struct PlayerDataFileV11 {
+    data_version: i32,
+    pos: [f64; 3],
+    motion: [f64; 3],
+    rotation: [f32; 2],
+    on_ground: bool,
+    fall_flying: bool,
+    remaining_fire_ticks: i32,
+    ticks_frozen: i32,
+    is_in_powder_snow: bool,
+    was_in_powder_snow: bool,
+    has_visual_fire: bool,
+    health: f32,
+    game_mode: i32,
+    prev_game_mode: Option<i32>,
+    abilities: AbilitiesFile,
+    inventory: Vec<SlotFile>,
+    selected_slot: i32,
+    world: String,
+    food_level: i32,
+    food_saturation_level: f32,
+    food_exhaustion_level: f32,
+    food_tick_timer: i32,
+    experience_level: i32,
+    experience_progress: f32,
+    experience_total: i32,
+    enchantment_seed: i32,
+    score: i32,
+    seen_credits: bool,
+    root_vehicle: Option<RootVehicleFile>,
+    respawn_config: Option<RespawnConfigFile>,
+    ender_pearls: Vec<EnderPearlFile>,
+    ender_items: Vec<SlotFile>,
+    warden_spawn_tracker: WardenSpawnTrackerFile,
+}
+
+impl PlayerDataFileV11 {
+    /// Fills in the field added in version 12.
+    fn into_current(self) -> PlayerDataFile {
+        PlayerDataFile {
+            data_version: self.data_version,
+            pos: self.pos,
+            motion: self.motion,
+            rotation: self.rotation,
+            on_ground: self.on_ground,
+            fall_flying: self.fall_flying,
+            remaining_fire_ticks: self.remaining_fire_ticks,
+            ticks_frozen: self.ticks_frozen,
+            is_in_powder_snow: self.is_in_powder_snow,
+            was_in_powder_snow: self.was_in_powder_snow,
+            has_visual_fire: self.has_visual_fire,
+            health: self.health,
+            game_mode: self.game_mode,
+            prev_game_mode: self.prev_game_mode,
+            abilities: self.abilities,
+            inventory: self.inventory,
+            selected_slot: self.selected_slot,
+            world: self.world,
+            food_level: self.food_level,
+            food_saturation_level: self.food_saturation_level,
+            food_exhaustion_level: self.food_exhaustion_level,
+            food_tick_timer: self.food_tick_timer,
+            experience_level: self.experience_level,
+            experience_progress: self.experience_progress,
+            experience_total: self.experience_total,
+            enchantment_seed: self.enchantment_seed,
+            score: self.score,
+            seen_credits: self.seen_credits,
+            root_vehicle: self.root_vehicle,
+            respawn_config: self.respawn_config,
+            ender_pearls: self.ender_pearls,
+            ender_items: self.ender_items,
+            warden_spawn_tracker: self.warden_spawn_tracker,
+            post_effects: Vec::new(),
+            raid_omen_position: None,
+            entered_nether_position: None,
+        }
+    }
+}
+
 impl PlayerDataFile {
     fn from_persistent(data: &PersistentPlayerData) -> io::Result<Self> {
         let mut inventory = Vec::with_capacity(data.inventory.len());
@@ -371,15 +665,28 @@ impl PlayerDataFile {
                     item_nbt: item_to_nbt_bytes(&slot.item).unwrap_or_default(),
                 })
                 .collect(),
+            warden_spawn_tracker: WardenSpawnTrackerFile {
+                ticks_since_last_warning: data.warden_spawn_tracker.ticks_since_last_warning,
+                warning_level: data.warden_spawn_tracker.warning_level,
+                cooldown_ticks: data.warden_spawn_tracker.cooldown_ticks,
+            },
+            post_effects: data.post_effects.iter().map(ToString::to_string).collect(),
+            raid_omen_position: data.raid_omen_position,
+            entered_nether_position: data.entered_nether_position,
         })
     }
 
     fn into_persistent(self) -> io::Result<PersistentPlayerData> {
-        if self.data_version != PLAYER_DATA_VERSION {
+        // Older payload versions are forward-compatible: every bump so far only
+        // added fields whose vanilla default is the "player never did this"
+        // value, so reading them as the current shape is lossless. A payload
+        // from a *newer* build is rejected instead of silently dropping fields
+        // this binary cannot represent.
+        if self.data_version > PLAYER_DATA_VERSION {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 format!(
-                    "unsupported player data payload version {}",
+                    "unsupported player data payload version {} (this build writes {PLAYER_DATA_VERSION})",
                     self.data_version
                 ),
             ));
@@ -458,6 +765,18 @@ impl PlayerDataFile {
             },
             stats: Vec::new(),
             advancements: Vec::new(),
+            warden_spawn_tracker: super::player_data::PersistentWardenSpawnTracker {
+                ticks_since_last_warning: self.warden_spawn_tracker.ticks_since_last_warning,
+                warning_level: self.warden_spawn_tracker.warning_level,
+                cooldown_ticks: self.warden_spawn_tracker.cooldown_ticks,
+            },
+            raid_omen_position: self.raid_omen_position,
+            entered_nether_position: self.entered_nether_position,
+            post_effects: self
+                .post_effects
+                .iter()
+                .filter_map(|id| id.parse::<Identifier>().ok())
+                .collect(),
         })
     }
 }
@@ -511,7 +830,7 @@ fn item_from_nbt_bytes(bytes: &[u8]) -> io::Result<ItemStack> {
             format!("failed to parse item NBT: {e}"),
         )
     })?;
-    let compound = simdnbt::borrow::NbtCompound::from(&nbt);
+    let compound = BorrowedNbtCompoundView::from(&nbt);
     ItemStack::from_borrowed_compound(&compound)
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "invalid item stack data"))
 }
@@ -525,9 +844,47 @@ fn encode_player_file(file: &PlayerDataFile) -> io::Result<Vec<u8>> {
 }
 
 fn decode_player_file(bytes: &[u8]) -> io::Result<PlayerDataFile> {
-    let payload = decode_file(PLAYER_MAGIC, PLAYER_STORAGE_VERSION, bytes)?;
-    wincode::deserialize(&payload)
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))
+    let version = read_file_version(PLAYER_MAGIC, bytes)?;
+    match version {
+        PLAYER_STORAGE_VERSION => {
+            let payload = decode_file(PLAYER_MAGIC, PLAYER_STORAGE_VERSION, bytes)?;
+            wincode::deserialize(&payload)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))
+        }
+        13 => {
+            let payload = decode_file(PLAYER_MAGIC, 13, bytes)?;
+            let old: PlayerDataFileV13 = wincode::deserialize(&payload)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))?;
+            Ok(old.into_current())
+        }
+        12 => {
+            let payload = decode_file(PLAYER_MAGIC, 12, bytes)?;
+            let old: PlayerDataFileV12 = wincode::deserialize(&payload)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))?;
+            Ok(old.into_current())
+        }
+        11 => {
+            // Saves written before `post_effects` existed: the payload is a
+            // strict prefix of the current layout.
+            let payload = decode_file(PLAYER_MAGIC, 11, bytes)?;
+            let old: PlayerDataFileV11 = wincode::deserialize(&payload)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))?;
+            Ok(old.into_current())
+        }
+        10 => {
+            // Saves written before the warden spawn tracker existed. The layout
+            // is a strict prefix of the current one, so the same decoder can
+            // read it and the migration only fills the new field.
+            let payload = decode_file(PLAYER_MAGIC, 10, bytes)?;
+            let old: PlayerDataFileV10 = wincode::deserialize(&payload)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))?;
+            Ok(old.into_current())
+        }
+        other => Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("unsupported player data storage version {other}"),
+        )),
+    }
 }
 
 fn encode_global_file(file: &GlobalPlayerDataFile) -> io::Result<Vec<u8>> {
@@ -542,6 +899,26 @@ fn decode_global_file(bytes: &[u8]) -> io::Result<GlobalPlayerDataFile> {
     let payload = decode_file(GLOBAL_MAGIC, GLOBAL_STORAGE_VERSION, bytes)?;
     wincode::deserialize(&payload)
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))
+}
+
+/// Reads the layout version of a stored file, validating its magic first.
+///
+/// Separate from [`decode_file`] so a caller can pick a decoder for the layout
+/// it finds instead of rejecting everything that is not the current version.
+fn read_file_version(expected_magic: [u8; 4], bytes: &[u8]) -> io::Result<u16> {
+    if bytes.len() < 6 {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "player data file is too short",
+        ));
+    }
+    if bytes[0..4] != expected_magic {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "invalid player data magic",
+        ));
+    }
+    Ok(u16::from_le_bytes([bytes[4], bytes[5]]))
 }
 
 fn encode_file(
@@ -576,8 +953,11 @@ fn decode_file(
             "invalid player data magic",
         ));
     }
-    let version = u16::from_le_bytes([bytes[4], bytes[5]]);
-    if version != expected_version {
+    let version = read_file_version(expected_magic, bytes)?;
+    let readable = version == expected_version
+        || (expected_magic == PLAYER_MAGIC
+            && (OLDEST_READABLE_PLAYER_STORAGE_VERSION..=expected_version).contains(&version));
+    if !readable {
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,
             format!("unsupported player data storage version {version}"),

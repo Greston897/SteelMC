@@ -317,7 +317,7 @@ mod tests {
         );
 
         let singleton: RegistryHolderSet<Item> =
-            RegistryHolderSet::Direct(vec![&vanilla_items::STICK]);
+            RegistryHolderSet::Direct(vec![&*vanilla_items::STICK]);
         assert_eq!(
             singleton.clone().to_nbt_tag(),
             NbtTag::String("minecraft:stick".into())
@@ -331,7 +331,7 @@ mod tests {
         );
 
         let direct: RegistryHolderSet<Item> =
-            RegistryHolderSet::Direct(vec![&vanilla_items::STICK, &vanilla_items::DIAMOND]);
+            RegistryHolderSet::Direct(vec![&*vanilla_items::STICK, &*vanilla_items::DIAMOND]);
         assert_eq!(
             with_borrowed_tag(
                 direct.clone().to_nbt_tag(),
@@ -358,7 +358,7 @@ mod tests {
 
         for holder_set in [
             RegistryHolderSet::<Item>::Tag(ItemTag::WOOL),
-            RegistryHolderSet::Direct(vec![&vanilla_items::STICK, &vanilla_items::DIAMOND]),
+            RegistryHolderSet::Direct(vec![&*vanilla_items::STICK, &*vanilla_items::DIAMOND]),
             RegistryHolderSet::Direct(Vec::new()),
         ] {
             let mut bytes = Vec::new();
@@ -411,13 +411,13 @@ mod tests {
         init_vanilla_registry();
 
         let tag = RegistryHolderSet::<Item>::Tag(ItemTag::WOOL);
-        assert!(tag.contains(&vanilla_items::WHITE_WOOL));
-        assert!(!tag.contains(&vanilla_items::STICK));
+        assert!(tag.contains(&*vanilla_items::WHITE_WOOL));
+        assert!(!tag.contains(&*vanilla_items::STICK));
 
         let direct: RegistryHolderSet<Item> =
-            RegistryHolderSet::Direct(vec![&vanilla_items::STICK]);
-        assert!(direct.contains(&vanilla_items::STICK));
-        assert!(!direct.contains(&vanilla_items::DIAMOND));
+            RegistryHolderSet::Direct(vec![&*vanilla_items::STICK]);
+        assert!(direct.contains(&*vanilla_items::STICK));
+        assert!(!direct.contains(&*vanilla_items::DIAMOND));
     }
 
     #[test]

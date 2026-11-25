@@ -213,7 +213,11 @@ impl FurnaceContainer {
 
                     if is_lit {
                         self.cooking_timer += 1;
-                        if self.cooking_timer == self.cooking_total_time {
+                        // Vanilla compares with `>=`, not `==`: `cooking_total_time`
+                        // is lowered when the input changes to a faster recipe
+                        // mid-cook, so an equality test can step over the target and
+                        // leave the furnace cooking forever without completing.
+                        if self.cooking_timer >= self.cooking_total_time {
                             self.cooking_timer = 0;
                             self.cooking_total_time =
                                 self.kind.cooking_time(recipe.data().cooking_time);

@@ -56,6 +56,49 @@ impl WriteTo for DataComponentPatch {
     }
 }
 
+impl DataComponentPatch {
+    /// Encodes the set entries of this patch as a vanilla
+    /// `DataComponentExactPredicate` (`TypedDataComponent.STREAM_CODEC` list).
+    ///
+    /// Used by `ItemCost.STREAM_CODEC` in `ClientboundMerchantOffersPacket`:
+    /// a `VarInt` count of expected components followed by each
+    /// `(DataComponentType VarInt id, value)` pair, with no removed-id tail.
+    pub fn write_exact_predicate(&self, writer: &mut impl Write) -> Result<()> {
+        use crate::{REGISTRY, RegistryExt};
+
+        let added: Vec<(&Identifier, &ComponentData)> = self
+            .entries
+            .iter()
+            .filter_map(|(key, entry)| match entry {
+                ComponentPatchEntry::Set(data) => Some((key, data)),
+                ComponentPatchEntry::Removed => None,
+            })
+            .collect();
+
+        let count = i32::try_from(added.len())
+            .map_err(|_| std::io::Error::other("Too many predicate data components"))?;
+        VarInt(count).write(writer)?;
+
+        let mut buf = Vec::new();
+        for (key, data) in added {
+            let id = REGISTRY
+                .data_components
+                .id_from_key(key)
+                .ok_or_else(|| std::io::Error::other(format!("Unknown component key: {key:?}")))?;
+            let entry = REGISTRY
+                .data_components
+                .by_id(id)
+                .ok_or_else(|| std::io::Error::other(format!("No entry for component id: {id}")))?;
+            VarInt(id as i32).write(writer)?;
+            buf.clear();
+            entry.write_network(data, &mut buf)?;
+            writer.write_all(&buf)?;
+        }
+
+        Ok(())
+    }
+}
+
 impl ReadFrom for DataComponentPatch {
     fn read(data: &mut Cursor<&[u8]>) -> Result<Self> {
         use crate::{REGISTRY, RegistryExt};
@@ -63,7 +106,7 @@ impl ReadFrom for DataComponentPatch {
         let added_count = read_component_count(data, "added")?;
         let removed_count = read_component_count(data, "removed")?;
 
-        log::info!("Reading DataComponentPatch: added={added_count}, removed={removed_count}");
+        log::trace!("Reading DataComponentPatch: added={added_count}, removed={removed_count}");
 
         let mut patch = Self::new();
 

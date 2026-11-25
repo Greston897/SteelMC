@@ -14,6 +14,7 @@ mod blocks;
 mod candle_cakes;
 mod common;
 mod entities;
+mod flammable;
 mod items;
 mod skull_type;
 mod waxables;
@@ -56,6 +57,10 @@ pub fn main() {
     write_if_changed(
         format!("{behavior_out_dir}/weathering.rs"),
         weathering::build(),
+    );
+    write_if_changed(
+        format!("{behavior_out_dir}/flammable.rs"),
+        flammable::build(),
     );
     write_if_changed(
         format!("{entity_out_dir}/entities.rs"),

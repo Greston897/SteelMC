@@ -410,6 +410,21 @@ impl<'source> CommandSource<'source> {
         self.inner.entity()
     }
 
+    /// Returns the vanilla sender name used in chat prefixes.
+    ///
+    /// Vanilla `CommandSourceStack.getTextName`: the player's profile name, or
+    /// the console/server labels for non-player senders.
+    #[must_use]
+    pub fn source_name(self) -> String {
+        if let Some(player) = self.player() {
+            return player.gameprofile.name().to_owned();
+        }
+        if self.entity().is_some() {
+            return "Server".to_owned();
+        }
+        "Server".to_owned()
+    }
+
     /// Returns the current execution world.
     #[must_use]
     pub const fn world(self) -> &'source Arc<World> {

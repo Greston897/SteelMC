@@ -13,19 +13,24 @@
 //!
 //! # Usage
 //!
-//! ```ignore
+//! ```rust
+//! use std::sync::Weak;
 //! use steel_core::block_entity::{init_block_entities, BLOCK_ENTITIES};
-//!
-//! // After registry is frozen, call once at startup:
+//! use steel_registry::{init_vanilla_registry, vanilla_blocks, vanilla_block_entity_types};
+//! use steel_utils::BlockPos;
+//! init_vanilla_registry();
 //! init_block_entities();
-//!
-//! // Create a block entity:
-//! let entity = BLOCK_ENTITIES.create(block_entity_type, pos, state);
+//! let entity = BLOCK_ENTITIES.create(
+//!     &vanilla_block_entity_types::CHEST, Weak::new(), BlockPos::new(0, 64, 0),
+//!     vanilla_blocks::CHEST.default_state(),
+//! );
+//! assert!(entity.is_some());
 //! ```
 
 pub(crate) mod block_state_nbt;
 mod components;
 pub mod entities;
+pub mod randomizable_container;
 mod registry;
 mod storage;
 
@@ -216,12 +221,14 @@ impl BlockEntityBase {
     }
 
     #[must_use]
-    const fn pos(&self) -> BlockPos {
+    /// Returns the world position of this block entity.
+    pub const fn pos(&self) -> BlockPos {
         self.pos
     }
 
     #[must_use]
-    fn block_state(&self) -> BlockStateId {
+    /// Returns the current block state stored on this block entity.
+    pub fn block_state(&self) -> BlockStateId {
         self.lifecycle.lock().block_state
     }
 
@@ -284,7 +291,8 @@ impl BlockEntityBase {
     }
 
     #[must_use]
-    fn level(&self) -> Option<Arc<World>> {
+    /// Upgrades and returns the world containing this block entity, if alive.
+    pub fn level(&self) -> Option<Arc<World>> {
         self.level.upgrade()
     }
 
@@ -541,6 +549,14 @@ pub trait BlockEntity: ErasedType + Send + Sync {
     fn container_ref(&self) -> Option<ContainerRef> {
         None
     }
+
+    /// Vanilla `RandomizableContainer.unpackLootTable`: rolls a pending loot
+    /// table into the container.
+    ///
+    /// Vanilla calls this from `getItem`, `setItem` and `isEmpty`, so a hopper
+    /// pulling from an untouched structure chest sees the rolled contents. Every
+    /// path that hands a container out therefore unpacks first.
+    fn unpack_loot_table(&self) {}
 
     /// Returns this entity's fixed game-event listener, if it provides one.
     ///

@@ -73,6 +73,14 @@ fn sample_player_file(data_version: i32) -> PlayerDataFile {
         respawn_config: None,
         ender_pearls: Vec::new(),
         ender_items: Vec::new(),
+        warden_spawn_tracker: WardenSpawnTrackerFile {
+            ticks_since_last_warning: 12,
+            warning_level: 2,
+            cooldown_ticks: 40,
+        },
+        post_effects: vec!["minecraft:invert".to_owned(), "minecraft:blur".to_owned()],
+        raid_omen_position: Some([-31, 64, 128]),
+        entered_nether_position: Some([-1024.25, 72.0, 391.5]),
     }
 }
 
@@ -437,6 +445,144 @@ fn known_player_cache_persists_vanillas_mru_limit() {
     assert!(decoded.by_uuid(Uuid::from_u128(1_000)).is_none());
 }
 
+/// Builds the version 10 payload for the same player the roundtrip test uses.
+fn sample_player_file_v10(current: &PlayerDataFile) -> PlayerDataFileV10 {
+    PlayerDataFileV10 {
+        data_version: 7,
+        pos: current.pos,
+        motion: current.motion,
+        rotation: current.rotation,
+        on_ground: current.on_ground,
+        fall_flying: current.fall_flying,
+        remaining_fire_ticks: current.remaining_fire_ticks,
+        ticks_frozen: current.ticks_frozen,
+        is_in_powder_snow: current.is_in_powder_snow,
+        was_in_powder_snow: current.was_in_powder_snow,
+        has_visual_fire: current.has_visual_fire,
+        health: current.health,
+        game_mode: current.game_mode,
+        prev_game_mode: current.prev_game_mode,
+        abilities: AbilitiesFile {
+            invulnerable: current.abilities.invulnerable,
+            flying: current.abilities.flying,
+            may_fly: current.abilities.may_fly,
+            instabuild: current.abilities.instabuild,
+            may_build: current.abilities.may_build,
+            flying_speed: current.abilities.flying_speed,
+            walking_speed: current.abilities.walking_speed,
+        },
+        inventory: Vec::new(),
+        selected_slot: current.selected_slot,
+        world: current.world.clone(),
+        food_level: current.food_level,
+        food_saturation_level: current.food_saturation_level,
+        food_exhaustion_level: current.food_exhaustion_level,
+        food_tick_timer: current.food_tick_timer,
+        experience_level: current.experience_level,
+        experience_progress: current.experience_progress,
+        experience_total: current.experience_total,
+        enchantment_seed: current.enchantment_seed,
+        score: current.score,
+        seen_credits: current.seen_credits,
+        root_vehicle: None,
+        respawn_config: None,
+        ender_pearls: Vec::new(),
+        ender_items: Vec::new(),
+    }
+}
+
+#[test]
+fn a_version_10_player_file_still_loads() {
+    // The warden spawn tracker was added in version 11. A save written before
+    // it must not be rejected: the missing tracker gets vanilla defaults.
+    let current = sample_player_file(PLAYER_DATA_VERSION);
+    let old = sample_player_file_v10(&current);
+    let encoded = encode_file(PLAYER_MAGIC, 10, wincode::serialize(&old))
+        .expect("version 10 player file should encode");
+
+    let decoded = decode_player_file(&encoded).expect("version 10 player file should decode");
+    assert_eq!(decoded.world, current.world);
+    assert_eq!(decoded.experience_level, current.experience_level);
+    assert_eq!(decoded.warden_spawn_tracker.warning_level, 0);
+    assert_eq!(decoded.warden_spawn_tracker.cooldown_ticks, 0);
+    assert_eq!(decoded.warden_spawn_tracker.ticks_since_last_warning, 0);
+}
+
+#[test]
+fn a_version_11_player_file_still_loads() {
+    // `post_effects` was appended in version 12. A save written before it must
+    // decode as an empty list, which is vanilla's "no screen effect" default.
+    let current = sample_player_file(PLAYER_DATA_VERSION);
+    let old = PlayerDataFileV11 {
+        data_version: 11,
+        pos: current.pos,
+        motion: current.motion,
+        rotation: current.rotation,
+        on_ground: current.on_ground,
+        fall_flying: current.fall_flying,
+        remaining_fire_ticks: current.remaining_fire_ticks,
+        ticks_frozen: current.ticks_frozen,
+        is_in_powder_snow: current.is_in_powder_snow,
+        was_in_powder_snow: current.was_in_powder_snow,
+        has_visual_fire: current.has_visual_fire,
+        health: current.health,
+        game_mode: current.game_mode,
+        prev_game_mode: current.prev_game_mode,
+        abilities: current.abilities,
+        inventory: current.inventory,
+        selected_slot: current.selected_slot,
+        world: current.world,
+        food_level: current.food_level,
+        food_saturation_level: current.food_saturation_level,
+        food_exhaustion_level: current.food_exhaustion_level,
+        food_tick_timer: current.food_tick_timer,
+        experience_level: current.experience_level,
+        experience_progress: current.experience_progress,
+        experience_total: current.experience_total,
+        enchantment_seed: current.enchantment_seed,
+        score: current.score,
+        seen_credits: current.seen_credits,
+        root_vehicle: current.root_vehicle,
+        respawn_config: current.respawn_config,
+        ender_pearls: current.ender_pearls,
+        ender_items: current.ender_items,
+        warden_spawn_tracker: current.warden_spawn_tracker,
+    };
+    let encoded = encode_file(PLAYER_MAGIC, 11, wincode::serialize(&old))
+        .expect("version 11 player file should encode");
+
+    let decoded = decode_player_file(&encoded).expect("version 11 player file should decode");
+    assert_eq!(decoded.post_effects, [] as [String; 0]);
+    assert_eq!(decoded.warden_spawn_tracker.warning_level, 2);
+}
+
+#[test]
+fn an_unknown_player_storage_version_is_rejected() {
+    let current = sample_player_file(PLAYER_DATA_VERSION);
+    let encoded = encode_file(PLAYER_MAGIC, 3, wincode::serialize(&current))
+        .expect("player file should encode");
+    let error = decode_player_file(&encoded).expect_err("version 3 must not be read");
+    assert!(
+        error
+            .to_string()
+            .contains("unsupported player data storage version")
+    );
+}
+
+#[test]
+fn a_newer_payload_data_version_is_rejected() {
+    // A save from a future build must not be silently downgraded.
+    let future = sample_player_file(PLAYER_DATA_VERSION + 1);
+    let error = future
+        .into_persistent()
+        .expect_err("a newer payload version must be rejected");
+    assert!(
+        error
+            .to_string()
+            .contains("unsupported player data payload version")
+    );
+}
+
 #[test]
 fn player_file_roundtrip_preserves_domain_world_data() {
     let file = sample_player_file(PLAYER_DATA_VERSION);
@@ -448,6 +594,11 @@ fn player_file_roundtrip_preserves_domain_world_data() {
         u16::from_le_bytes([encoded[4], encoded[5]]),
         PLAYER_STORAGE_VERSION
     );
+    assert_eq!(decoded.raid_omen_position, Some([-31, 64, 128]));
+    assert_eq!(
+        decoded.entered_nether_position,
+        Some([-1024.25, 72.0, 391.5])
+    );
     assert_eq!(decoded.world, "lobby:void");
     assert_eq!(decoded.game_mode, 2);
     assert_eq!(decoded.selected_slot, 4);
@@ -457,6 +608,28 @@ fn player_file_roundtrip_preserves_domain_world_data() {
     assert_eq!(decoded.enchantment_seed, 1234);
     assert_eq!(decoded.score, 9);
     assert!(decoded.seen_credits);
+    assert_eq!(decoded.warden_spawn_tracker.warning_level, 2);
+    assert_eq!(decoded.warden_spawn_tracker.cooldown_ticks, 40);
+    assert_eq!(decoded.warden_spawn_tracker.ticks_since_last_warning, 12);
+    assert_eq!(
+        decoded.post_effects,
+        ["minecraft:invert".to_owned(), "minecraft:blur".to_owned()]
+    );
+    let persistent = decoded
+        .into_persistent()
+        .expect("player file should convert to persistent data");
+    assert_eq!(persistent.raid_omen_position, Some([-31, 64, 128]));
+    assert_eq!(
+        persistent.entered_nether_position,
+        Some([-1024.25, 72.0, 391.5])
+    );
+    assert_eq!(
+        persistent.post_effects,
+        [
+            Identifier::vanilla_static("invert"),
+            Identifier::vanilla_static("blur")
+        ]
+    );
 }
 
 #[test]
@@ -640,11 +813,11 @@ fn player_file_roundtrip_preserves_respawn_config() {
 
 #[test]
 fn stale_player_payload_version_is_rejected() {
-    let file = sample_player_file(PLAYER_DATA_VERSION - 1);
+    let file = sample_player_file(PLAYER_DATA_VERSION + 1);
 
     let error = file
         .into_persistent()
-        .expect_err("stale payload should fail");
+        .expect_err("newer unsupported payload version should fail");
 
     assert_eq!(error.kind(), io::ErrorKind::InvalidData);
 }
@@ -660,7 +833,7 @@ fn player_stats_file_roundtrips() {
     assert_eq!(stats.len(), 5);
 
     stats.push(PersistentStat {
-        stat: vanilla_stat_types::ITEM_PICKED_UP.get(&vanilla_items::DIAMOND),
+        stat: vanilla_stat_types::ITEM_PICKED_UP.get(&*vanilla_items::DIAMOND),
         count: 934,
     });
     stats.push(PersistentStat {
@@ -691,11 +864,11 @@ fn duplicate_stat_fails_conversion() {
 
     let stats = vec![
         PersistentStat {
-            stat: vanilla_stat_types::ITEM_PICKED_UP.get(&vanilla_items::DIAMOND),
+            stat: vanilla_stat_types::ITEM_PICKED_UP.get(&*vanilla_items::DIAMOND),
             count: 123,
         },
         PersistentStat {
-            stat: vanilla_stat_types::ITEM_PICKED_UP.get(&vanilla_items::DIAMOND),
+            stat: vanilla_stat_types::ITEM_PICKED_UP.get(&*vanilla_items::DIAMOND),
             count: 456,
         },
     ];
@@ -882,4 +1055,71 @@ async fn in_memory_permission_subjects_round_trip() {
             .expect("permission subjects should load"),
         subjects
     );
+}
+
+#[test]
+fn version_12_player_save_migrates_without_inventing_raid_origin() {
+    let current = sample_player_file(10);
+    let old = PlayerDataFileV12 {
+        data_version: current.data_version,
+        pos: current.pos,
+        motion: current.motion,
+        rotation: current.rotation,
+        on_ground: current.on_ground,
+        fall_flying: current.fall_flying,
+        remaining_fire_ticks: current.remaining_fire_ticks,
+        ticks_frozen: current.ticks_frozen,
+        is_in_powder_snow: current.is_in_powder_snow,
+        was_in_powder_snow: current.was_in_powder_snow,
+        has_visual_fire: current.has_visual_fire,
+        health: current.health,
+        game_mode: current.game_mode,
+        prev_game_mode: current.prev_game_mode,
+        abilities: current.abilities,
+        inventory: current.inventory,
+        selected_slot: current.selected_slot,
+        world: current.world,
+        food_level: current.food_level,
+        food_saturation_level: current.food_saturation_level,
+        food_exhaustion_level: current.food_exhaustion_level,
+        food_tick_timer: current.food_tick_timer,
+        experience_level: current.experience_level,
+        experience_progress: current.experience_progress,
+        experience_total: current.experience_total,
+        enchantment_seed: current.enchantment_seed,
+        score: current.score,
+        seen_credits: current.seen_credits,
+        root_vehicle: current.root_vehicle,
+        respawn_config: current.respawn_config,
+        ender_pearls: current.ender_pearls,
+        ender_items: current.ender_items,
+        warden_spawn_tracker: current.warden_spawn_tracker,
+        post_effects: current.post_effects,
+    };
+    let bytes = encode_file(PLAYER_MAGIC, 12, wincode::serialize(&old))
+        .expect("the player data should serialize");
+    let decoded = decode_player_file(&bytes).expect("the player file should decode");
+    assert!(decoded.raid_omen_position.is_none());
+    assert!(decoded.entered_nether_position.is_none());
+    assert_eq!(decoded.post_effects.len(), 2);
+
+    let old_v13 = PlayerDataFileV13 {
+        base: old,
+        raid_omen_position: Some([-31, 64, 128]),
+    };
+    let old_payload = wincode::serialize(&old_v13).expect("version 13 payload");
+    let mut new_without_entry = sample_player_file(10);
+    new_without_entry.entered_nether_position = None;
+    let mut expected_current = old_payload;
+    expected_current.extend(wincode::serialize(&None::<[f64; 3]>).expect("absent entry"));
+    assert_eq!(
+        wincode::serialize(&new_without_entry).expect("current payload"),
+        expected_current
+    );
+    let bytes = encode_file(PLAYER_MAGIC, 13, wincode::serialize(&old_v13))
+        .expect("version 13 player data should serialize");
+    let decoded = decode_player_file(&bytes).expect("version 13 player data should decode");
+    assert_eq!(decoded.raid_omen_position, Some([-31, 64, 128]));
+    assert!(decoded.entered_nether_position.is_none());
+    assert_eq!(decoded.post_effects.len(), 2);
 }

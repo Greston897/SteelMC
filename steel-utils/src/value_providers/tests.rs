@@ -1,8 +1,3 @@
-#![expect(
-    clippy::unwrap_used,
-    reason = "test assertions: unwrap panics on parse failures"
-)]
-
 use super::*;
 use crate::random::{Random, legacy_random::LegacyRandom};
 

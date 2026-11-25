@@ -185,7 +185,8 @@ fn read_from_struct(s: syn::DataStruct, name: Ident, attrs: &[syn::Attribute]) -
                 #[automatically_derived]
                 impl steel_utils::serial::ReadFrom for #name {
                     fn read(data: &mut std::io::Cursor<&[u8]>) -> std::io::Result<Self>{
-                        use steel_utils::serial::PrefixedRead;
+                        #[allow(clippy::allow_attributes, unused_imports, reason = "generated serial trait import may be unused on empty or custom-encoded types")]
+                        use steel_utils::serial::{PrefixedRead as _, ReadFrom as _};
 
                         #(#readers)*
 
@@ -213,7 +214,8 @@ fn read_from_struct(s: syn::DataStruct, name: Ident, attrs: &[syn::Attribute]) -
                 #[automatically_derived]
                 impl steel_utils::serial::ReadFrom for #name {
                     fn read(data: &mut std::io::Cursor<&[u8]>) -> std::io::Result<Self> {
-                        use steel_utils::serial::PrefixedRead;
+                        #[allow(clippy::allow_attributes, unused_imports, reason = "generated serial trait import may be unused on empty or custom-encoded types")]
+                        use steel_utils::serial::{PrefixedRead as _, ReadFrom as _};
 
                         Ok(Self(#read_code))
                     }
@@ -358,6 +360,8 @@ fn read_from_enum(e: syn::DataEnum, name: Ident, attrs: Vec<syn::Attribute>) -> 
         #[automatically_derived]
         impl steel_utils::serial::ReadFrom for #name {
             fn read(data: &mut std::io::Cursor<&[u8]>) -> std::io::Result<Self> {
+                #[allow(clippy::allow_attributes, unused_imports, reason = "generated serial trait import may be unused on empty or custom-encoded types")]
+                use steel_utils::serial::ReadFrom as _;
                 Ok(match { #read_discriminant } {
                     #(#readers)*
                     _ => {

@@ -1,12 +1,4 @@
 //! Item attribute modifier component.
-#![cfg_attr(
-    test,
-    expect(
-        clippy::unwrap_used,
-        reason = "attribute modifier tests build in-memory byte buffers with infallible writes"
-    )
-)]
-
 use std::io::{Cursor, Result, Write};
 
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};

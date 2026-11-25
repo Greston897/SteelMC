@@ -1,0 +1,48 @@
+name: Generate vanilla source
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/vanilla-source.yml'
+      - 'update-minecraft-src.sh'
+
+permissions:
+  contents: write
+
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Generate the project-required vanilla sources
+        shell: bash
+        run: |
+          set -o pipefail
+          ./update-minecraft-src.sh 2>&1 | tee /tmp/vanilla-source.log
+      - name: Record source version and package
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d minecraft-src/minecraft/src/net/minecraft
+          git -C minecraft-src/minecraft log -1 --format='%H %s' | tee -a /tmp/vanilla-source.log
+          tar --exclude=.git -czf /tmp/minecraft-src.tar.gz minecraft-src
+          sha256sum /tmp/minecraft-src.tar.gz | tee -a /tmp/vanilla-source.log
+      - name: Publish generation log
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .ci/report.py 'Generated vanilla source' /tmp/vanilla-source.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minecraft-src-26.3
+          path: |
+            /tmp/minecraft-src.tar.gz
+            /tmp/vanilla-source.log
+          if-no-files-found: warn

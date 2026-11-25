@@ -100,8 +100,12 @@ impl ToNbtTag for &Timeline {
             compound.insert("period_ticks", pt);
         }
 
+        // Vanilla `Timeline.NETWORK_CODEC` runs `filterSyncableTracks`: only
+        // `.syncable()` environment attributes may be sent to the client.
         let mut tracks_compound = NbtCompound::new();
-        for track in self.tracks {
+        for track in self.tracks.iter().filter(|track| {
+            crate::environment_attribute::is_syncable_environment_attribute(track.name)
+        }) {
             let mut tc = NbtCompound::new();
             if let Some(ease) = &track.ease {
                 match ease {

@@ -1,0 +1,250 @@
+{
+  "commit": "321f24349cc997e94fdd58083fe4fe0e38fa4da3",
+  "run": 44643601081,
+  "check_run": 135980531693,
+  "result": "success",
+  "scope": "observed Rust cases from completed workspace run; not vanilla parity",
+  "totals": {
+    "passed": 4802,
+    "failed": 0,
+    "ignored": 7
+  },
+  "rows": [
+    {
+      "area": "Инфраструктура",
+      "files": 50,
+      "loc": 23645,
+      "static_test_functions": 211,
+      "passed": 211,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Мир и тики",
+      "files": 60,
+      "loc": 28109,
+      "static_test_functions": 223,
+      "passed": 224,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Чанки и свет",
+      "files": 59,
+      "loc": 30572,
+      "static_test_functions": 267,
+      "passed": 267,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Хранение и миграции",
+      "files": 21,
+      "loc": 9439,
+      "static_test_functions": 68,
+      "passed": 68,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Worldgen",
+      "files": 185,
+      "loc": 62911,
+      "static_test_functions": 192,
+      "passed": 191,
+      "failed": 0,
+      "ignored": 1
+    },
+    {
+      "area": "Блоки",
+      "files": 250,
+      "loc": 55324,
+      "static_test_functions": 355,
+      "passed": 355,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Предметы",
+      "files": 66,
+      "loc": 12294,
+      "static_test_functions": 108,
+      "passed": 108,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Block entities",
+      "files": 54,
+      "loc": 19533,
+      "static_test_functions": 140,
+      "passed": 140,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Сущности и AI",
+      "files": 359,
+      "loc": 128973,
+      "static_test_functions": 1229,
+      "passed": 1229,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "  Мирные мобы (внутри AI)",
+      "files": 64,
+      "loc": 22836,
+      "static_test_functions": 179,
+      "passed": 179,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "  Враждебные мобы (внутри AI)",
+      "files": 44,
+      "loc": 14906,
+      "static_test_functions": 44,
+      "passed": 44,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "  Нейтральные мобы (внутри AI)",
+      "files": 2,
+      "loc": 397,
+      "static_test_functions": 3,
+      "passed": 3,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "  Боссы (внутри AI)",
+      "files": 7,
+      "loc": 4680,
+      "static_test_functions": 31,
+      "passed": 31,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "  Транспорт (внутри AI)",
+      "files": 18,
+      "loc": 5770,
+      "static_test_functions": 45,
+      "passed": 45,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "  Снаряды (внутри AI)",
+      "files": 19,
+      "loc": 7101,
+      "static_test_functions": 60,
+      "passed": 60,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "  Рейды (внутри мира)",
+      "files": 1,
+      "loc": 1568,
+      "static_test_functions": 24,
+      "passed": 24,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Игрок и соединение",
+      "files": 73,
+      "loc": 35218,
+      "static_test_functions": 349,
+      "passed": 349,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Инвентарь и меню",
+      "files": 55,
+      "loc": 16657,
+      "static_test_functions": 133,
+      "passed": 133,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Команды и права",
+      "files": 163,
+      "loc": 51528,
+      "static_test_functions": 427,
+      "passed": 427,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Физика, жидкости, порталы",
+      "files": 22,
+      "loc": 7268,
+      "static_test_functions": 83,
+      "passed": 83,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Loot и зачарования",
+      "files": 5,
+      "loc": 1968,
+      "static_test_functions": 19,
+      "passed": 19,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Протокол",
+      "files": 232,
+      "loc": 13185,
+      "static_test_functions": 125,
+      "passed": 125,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Реестры и кодеки",
+      "files": 307,
+      "loc": 94739,
+      "static_test_functions": 438,
+      "passed": 437,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Вход и сессии",
+      "files": 10,
+      "loc": 2464,
+      "static_test_functions": 22,
+      "passed": 22,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Утилиты и математика",
+      "files": 80,
+      "loc": 19852,
+      "static_test_functions": 279,
+      "passed": 279,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "area": "Flint adapter",
+      "files": 6,
+      "loc": 1468,
+      "static_test_functions": 12,
+      "passed": 10,
+      "failed": 0,
+      "ignored": 2
+    }
+  ],
+  "provenance": "GitHub check annotations: Subsystem observed counts; Observed Rust test outcomes; run conclusion success",
+  "limit": "Rows with inside labels overlap parent rows. Full per-test names are in the Actions artifact, not reconstructed here."
+}

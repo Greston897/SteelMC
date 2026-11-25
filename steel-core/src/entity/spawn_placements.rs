@@ -14,6 +14,26 @@ use crate::world::World;
 pub(crate) struct SpawnPlacements;
 
 impl SpawnPlacements {
+    /// Vanilla `SpawnPlacements.checkSpawnRules` for the natural-spawn path.
+    ///
+    /// Same predicate as the spawner path but with the `NATURAL` reason, so
+    /// light and difficulty requirements are enforced (`Monster.checkMonsterSpawnRules`
+    /// consults them, spawner reasons skip the light test in vanilla).
+    pub(crate) fn check_natural_spawn_rules(
+        entity_type: EntityTypeRef,
+        world: &World,
+        pos: BlockPos,
+        random: &mut dyn Rng,
+    ) -> bool {
+        if !entity_type.allowed_in_peaceful && world.difficulty() == Difficulty::Peaceful {
+            return false;
+        }
+
+        ENTITIES
+            .spawn_rule(entity_type)
+            .is_none_or(|rule| rule(entity_type, world, EntitySpawnReason::Natural, pos, random))
+    }
+
     /// Checks the vanilla placement predicate used by normal mob spawners.
     pub(crate) fn check_spawner_spawn_rules(
         entity_type: EntityTypeRef,

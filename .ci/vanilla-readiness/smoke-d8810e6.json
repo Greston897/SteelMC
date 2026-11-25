@@ -1,0 +1,409 @@
+{
+  "schema": 1,
+  "kind": "historical_ci_results",
+  "steel_commit": "d8810e66bc078e2d78df043ab802a64cac878d77",
+  "run_url": "https://github.com/Greston897/SteelMC/actions/runs/45082985134",
+  "run_conclusion": "success",
+  "origin": "results.json опубликованные в комментариях к коммиту; три job workflow, включая compare, завершились success",
+  "reports": {
+    "vanilla-26.3": {
+      "scope": "real server; TCP status, RCON, disk-world restart; no real players",
+      "engine": "vanilla-26.3",
+      "complete_vanilla_parity": false,
+      "results": [
+        {
+          "name": "boot_real_server",
+          "passed": true,
+          "seconds": 9.07
+        },
+        {
+          "name": "tcp_status_and_ping_without_players",
+          "passed": true,
+          "seconds": 0.089
+        },
+        {
+          "name": "rcon_rejects_wrong_password",
+          "passed": true,
+          "seconds": 0.002
+        },
+        {
+          "name": "forceload_loads_chunk_without_players",
+          "passed": true,
+          "seconds": 0.813
+        },
+        {
+          "name": "setblock_and_execute_read_world",
+          "passed": true,
+          "seconds": 0.002
+        },
+        {
+          "name": "clone_copies_live_block",
+          "passed": true,
+          "seconds": 0.001
+        },
+        {
+          "name": "item_replace_and_container_predicate",
+          "passed": true,
+          "seconds": 0.003
+        },
+        {
+          "name": "redstone_neighbor_update_lights_lamp",
+          "passed": true,
+          "seconds": 0.001
+        },
+        {
+          "name": "scheduled_tick_unlights_lamp",
+          "passed": true,
+          "seconds": 0.201
+        },
+        {
+          "name": "hopper_moves_items_on_server_ticks_without_players",
+          "passed": true,
+          "seconds": 0.202
+        },
+        {
+          "name": "container_wildcard_matches",
+          "passed": true,
+          "seconds": 0.002
+        },
+        {
+          "name": "container_negative_predicate",
+          "passed": true,
+          "seconds": 0.0
+        },
+        {
+          "name": "falling_sand_lands_on_solid_block",
+          "passed": true,
+          "seconds": 0.804
+        },
+        {
+          "name": "piston_extends_and_pushes",
+          "passed": true,
+          "seconds": 0.202
+        },
+        {
+          "name": "piston_head_created",
+          "passed": true,
+          "seconds": 0.0
+        },
+        {
+          "name": "piston_retracts",
+          "passed": true,
+          "seconds": 0.201
+        },
+        {
+          "name": "normal_piston_does_not_pull",
+          "passed": true,
+          "seconds": 0.0
+        },
+        {
+          "name": "furnace_smelts_on_real_ticks",
+          "passed": true,
+          "seconds": 10.052
+        },
+        {
+          "name": "powered_hopper_is_disabled",
+          "passed": true,
+          "seconds": 0.0
+        },
+        {
+          "name": "powered_hopper_does_not_transfer_over_ticks",
+          "passed": true,
+          "seconds": 1.011
+        },
+        {
+          "name": "locked_hopper_retains_source",
+          "passed": true,
+          "seconds": 0.0
+        },
+        {
+          "name": "unpowered_hopper_resumes_transfer",
+          "passed": true,
+          "seconds": 0.202
+        },
+        {
+          "name": "comparator_reads_filled_container",
+          "passed": true,
+          "seconds": 0.201
+        },
+        {
+          "name": "inventory_write_updates_comparator",
+          "passed": true,
+          "seconds": 0.402
+        },
+        {
+          "name": "comparator_relights_after_item_write",
+          "passed": true,
+          "seconds": 0.201
+        },
+        {
+          "name": "summoned_entity_is_queryable_without_players",
+          "passed": true,
+          "seconds": 0.002
+        },
+        {
+          "name": "live_damage_changes_pig_health_to_six",
+          "passed": true,
+          "seconds": 0.001
+        },
+        {
+          "name": "instant_health_restores_live_entity",
+          "passed": true,
+          "seconds": 0.203
+        },
+        {
+          "name": "dead_entity_is_not_selectable",
+          "passed": true,
+          "seconds": 0.0
+        },
+        {
+          "name": "graceful_stop_saves_world",
+          "passed": true,
+          "seconds": 0.918
+        },
+        {
+          "name": "restart_same_disk_world",
+          "passed": true,
+          "seconds": 8.214
+        },
+        {
+          "name": "scoreboard_survives_restart",
+          "passed": true,
+          "seconds": 0.003
+        },
+        {
+          "name": "chunk_blocks_survive_restart",
+          "passed": true,
+          "seconds": 0.004
+        },
+        {
+          "name": "container_items_survive_restart",
+          "passed": true,
+          "seconds": 0.007
+        },
+        {
+          "name": "transferred_items_survive_restart",
+          "passed": true,
+          "seconds": 0.001
+        },
+        {
+          "name": "furnace_output_survives_restart",
+          "passed": true,
+          "seconds": 0.0
+        },
+        {
+          "name": "falling_block_result_survives_restart",
+          "passed": true,
+          "seconds": 0.0
+        },
+        {
+          "name": "second_clean_shutdown",
+          "passed": true,
+          "seconds": 0.517
+        }
+      ]
+    },
+    "steel": {
+      "scope": "real server; TCP status, RCON, disk-world restart; no real players",
+      "engine": "steel",
+      "complete_vanilla_parity": false,
+      "results": [
+        {
+          "name": "boot_real_server",
+          "passed": true,
+          "seconds": 1.56
+        },
+        {
+          "name": "tcp_status_and_ping_without_players",
+          "passed": true,
+          "seconds": 0.004
+        },
+        {
+          "name": "rcon_rejects_wrong_password",
+          "passed": true,
+          "seconds": 0.0
+        },
+        {
+          "name": "forceload_loads_chunk_without_players",
+          "passed": true,
+          "seconds": 0.345
+        },
+        {
+          "name": "setblock_and_execute_read_world",
+          "passed": true,
+          "seconds": 0.096
+        },
+        {
+          "name": "clone_copies_live_block",
+          "passed": true,
+          "seconds": 0.096
+        },
+        {
+          "name": "item_replace_and_container_predicate",
+          "passed": true,
+          "seconds": 0.098
+        },
+        {
+          "name": "redstone_neighbor_update_lights_lamp",
+          "passed": true,
+          "seconds": 0.096
+        },
+        {
+          "name": "scheduled_tick_unlights_lamp",
+          "passed": true,
+          "seconds": 0.346
+        },
+        {
+          "name": "hopper_moves_items_on_server_ticks_without_players",
+          "passed": true,
+          "seconds": 0.098
+        },
+        {
+          "name": "container_wildcard_matches",
+          "passed": true,
+          "seconds": 0.098
+        },
+        {
+          "name": "container_negative_predicate",
+          "passed": true,
+          "seconds": 0.1
+        },
+        {
+          "name": "falling_sand_lands_on_solid_block",
+          "passed": true,
+          "seconds": 0.846
+        },
+        {
+          "name": "piston_extends_and_pushes",
+          "passed": true,
+          "seconds": 0.347
+        },
+        {
+          "name": "piston_head_created",
+          "passed": true,
+          "seconds": 0.099
+        },
+        {
+          "name": "piston_retracts",
+          "passed": true,
+          "seconds": 0.345
+        },
+        {
+          "name": "normal_piston_does_not_pull",
+          "passed": true,
+          "seconds": 0.1
+        },
+        {
+          "name": "furnace_smelts_on_real_ticks",
+          "passed": true,
+          "seconds": 10.095
+        },
+        {
+          "name": "powered_hopper_is_disabled",
+          "passed": true,
+          "seconds": 0.096
+        },
+        {
+          "name": "powered_hopper_does_not_transfer_over_ticks",
+          "passed": true,
+          "seconds": 1.096
+        },
+        {
+          "name": "locked_hopper_retains_source",
+          "passed": true,
+          "seconds": 0.1
+        },
+        {
+          "name": "unpowered_hopper_resumes_transfer",
+          "passed": true,
+          "seconds": 0.096
+        },
+        {
+          "name": "comparator_reads_filled_container",
+          "passed": true,
+          "seconds": 0.096
+        },
+        {
+          "name": "inventory_write_updates_comparator",
+          "passed": true,
+          "seconds": 0.346
+        },
+        {
+          "name": "comparator_relights_after_item_write",
+          "passed": true,
+          "seconds": 0.096
+        },
+        {
+          "name": "summoned_entity_is_queryable_without_players",
+          "passed": true,
+          "seconds": 0.095
+        },
+        {
+          "name": "live_damage_changes_pig_health_to_six",
+          "passed": true,
+          "seconds": 0.099
+        },
+        {
+          "name": "instant_health_restores_live_entity",
+          "passed": true,
+          "seconds": 0.2
+        },
+        {
+          "name": "dead_entity_is_not_selectable",
+          "passed": true,
+          "seconds": 0.095
+        },
+        {
+          "name": "graceful_stop_saves_world",
+          "passed": true,
+          "seconds": 1.093
+        },
+        {
+          "name": "restart_same_disk_world",
+          "passed": true,
+          "seconds": 0.575
+        },
+        {
+          "name": "scoreboard_survives_restart",
+          "passed": true,
+          "seconds": 0.1
+        },
+        {
+          "name": "chunk_blocks_survive_restart",
+          "passed": true,
+          "seconds": 0.1
+        },
+        {
+          "name": "container_items_survive_restart",
+          "passed": true,
+          "seconds": 0.099
+        },
+        {
+          "name": "transferred_items_survive_restart",
+          "passed": true,
+          "seconds": 0.101
+        },
+        {
+          "name": "furnace_output_survives_restart",
+          "passed": true,
+          "seconds": 0.099
+        },
+        {
+          "name": "falling_block_result_survives_restart",
+          "passed": true,
+          "seconds": 0.101
+        },
+        {
+          "name": "second_clean_shutdown",
+          "passed": true,
+          "seconds": 1.078
+        }
+      ]
+    }
+  },
+  "inventory_sha256": "f624baa9d9fa2c83bed6d69eb5c2ec10f2431a0c05b88e58c82cd4f2fb536a2d",
+  "source_links": [
+    "https://github.com/Greston897/SteelMC/commit/d8810e66bc078e2d78df043ab802a64cac878d77#commitcomment-211335383",
+    "https://github.com/Greston897/SteelMC/commit/d8810e66bc078e2d78df043ab802a64cac878d77#commitcomment-211335796"
+  ]
+}

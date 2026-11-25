@@ -318,6 +318,22 @@ impl World {
         Some((player_data, residence_token))
     }
 
+    /// Registers a test-framework player through the normal join path.
+    ///
+    /// Keeps player indexes, entity ownership and callbacks consistent for
+    /// adapters that invoke real item interactions without a network login.
+    #[cfg(feature = "test-framework")]
+    #[must_use]
+    pub fn add_test_player(self: &Arc<Self>, player: Arc<Player>) -> bool {
+        self.add_player(player, ResetReason::InitialJoin)
+    }
+
+    /// Removes a test-framework player through the normal synchronous exit path.
+    #[cfg(feature = "test-framework")]
+    pub fn remove_test_player(self: &Arc<Self>, player: &Arc<Player>) {
+        self.remove_player_for_world_change(player);
+    }
+
     /// Adds a player to the world.
     ///
     /// On `InitialJoin`, sends full tab list + entity spawn synchronization to/from all

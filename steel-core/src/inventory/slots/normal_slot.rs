@@ -30,6 +30,16 @@ impl NormalSlot {
         self.backing().0.clone()
     }
 
+    /// Returns `true` when the backing slot already holds an item.
+    ///
+    /// Used by slots whose vanilla `mayPlace` includes a `!hasItem()` guard,
+    /// which cannot be expressed through the stack-only placement predicate.
+    #[must_use]
+    pub fn has_item_unguarded(&self) -> bool {
+        let (container, index) = self.backing();
+        !container.lock().get_item(index).is_empty()
+    }
+
     fn backing(&self) -> (&ContainerRef, usize) {
         let Some(backing) = self.storage.physical_backing() else {
             unreachable!("NormalSlot always has physical storage");

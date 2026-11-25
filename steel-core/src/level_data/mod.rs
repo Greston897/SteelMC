@@ -25,6 +25,7 @@ use crate::world::{MAX_SIZE, clock::WorldClockManager};
 
 mod game_time;
 pub use game_time::{GameTime, GameTimeSource};
+use std::fs::read_to_string;
 
 /// Persistent world border data stored with Steel level data.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -66,6 +67,11 @@ impl Default for WorldBorderData {
     }
 }
 
+/// Current data format version for world level data.
+/// Bumped whenever the serialized structure of `LevelData` or any saved-data
+/// entry changes in a non-backward-compatible way.
+pub const DATA_VERSION: u32 = 1;
+
 /// Persistent level data that gets saved to disk.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LevelData {
@@ -103,6 +109,47 @@ pub struct LevelData {
     /// Generator settings this persisted world was created with.
     #[serde(default)]
     pub generation: Option<WorldGenerationSettings>,
+    /// Vanilla `DataPackConfig`: the data-pack selection persisted with the
+    /// primary level data (`level.dat`'s `Data.DataPacks`).
+    #[serde(default, skip_serializing_if = "DataPackSelection::is_default")]
+    pub data_packs: DataPackSelection,
+    /// Data format version of this world's saved data. Used to detect old
+    /// worlds that need migration before they can be loaded safely.
+    #[serde(default)]
+    pub data_version: u32,
+}
+
+/// The always-present baked data pack, vanilla's `MinecraftServer.VANILLA_BRAND`.
+pub const VANILLA_PACK: &str = "vanilla";
+
+/// Vanilla `DataPackConfig`: pack ids that are enabled and pack ids that are
+/// explicitly disabled. Vanilla writes both lists into the primary world's
+/// `level.dat`; Steel keeps them with the primary world's `level.toml`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DataPackSelection {
+    /// Selected pack ids in selection order.
+    #[serde(default)]
+    pub enabled: Vec<String>,
+    /// Discovered packs that must not be enabled automatically.
+    #[serde(default)]
+    pub disabled: Vec<String>,
+}
+
+impl Default for DataPackSelection {
+    fn default() -> Self {
+        Self {
+            enabled: vec![VANILLA_PACK.to_owned()],
+            disabled: Vec::new(),
+        }
+    }
+}
+
+impl DataPackSelection {
+    /// Whether this is vanilla's `DataPackConfig.DEFAULT`.
+    #[must_use]
+    pub fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
 }
 
 /// Persisted generator metadata used to reject incompatible config changes.
@@ -164,7 +211,7 @@ fn generation_config_string(config: &toml::Value) -> String {
 }
 
 /// Spawn point data.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SpawnPoint {
     /// X coordinate.
     pub x: i32,
@@ -315,6 +362,8 @@ impl LevelData {
             game_rules_values: GameRuleValues::new(&REGISTRY.game_rules),
             initialized: false,
             generation: None,
+            data_packs: DataPackSelection::default(),
+            data_version: DATA_VERSION,
         }
     }
 
@@ -395,6 +444,12 @@ impl LevelData {
     }
 }
 
+/// Parsed game rules ready to apply under the level-data lock.
+pub(crate) struct PreparedGameRules {
+    serialized: FxHashMap<String, serde_json::Value>,
+    values: GameRuleValues,
+}
+
 /// Manages level data persistence for a world.
 pub struct LevelDataManager {
     /// Path to the level.toml file.
@@ -439,6 +494,12 @@ impl LevelDataManager {
                         format!("Invalid {}: {e}", path.display()),
                     )
                 })?;
+                // Run old-world migrations when the saved data predates the
+                // current data format version.
+                if loaded.data_version < DATA_VERSION {
+                    let version = loaded.data_version;
+                    migrate_level_data(&mut loaded, version)?;
+                }
                 if matches!(&source, GameTimeSource::Primary) && loaded.game_time.is_none() {
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidData,
@@ -544,19 +605,21 @@ impl LevelDataManager {
         self.dirty = true;
     }
 
-    /// Saves the level data to disk if it has been modified.
-    pub async fn save(&mut self) -> io::Result<()> {
+    /// Serializes the level data and returns the file to write, if any.
+    ///
+    /// The split from [`Self::save`] matters for two reasons: the write must not
+    /// hold the world's `parking_lot` guard across an `await` (that guard is not
+    /// `Send`, so the whole save future would stop being `Send`), and the
+    /// serialized bytes are the only thing the I/O actually needs.
+    pub fn prepare_save(&mut self) -> io::Result<Option<(PathBuf, String)>> {
         if !self.dirty {
-            return Ok(());
+            return Ok(None);
         }
 
-        let Some(world_path) = &self.path else {
+        let Some(world_path) = self.path.clone() else {
             self.dirty = false;
-            return Ok(());
+            return Ok(None);
         };
-        if let Some(parent) = world_path.parent() {
-            fs::create_dir_all(parent).await?;
-        }
 
         self.data.game_time = self.primary_game_time.as_ref().map(|clock| clock.ticks());
 
@@ -565,11 +628,58 @@ impl LevelDataManager {
 
         let content = toml::to_string_pretty(&self.data)
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-        fs::write(world_path, content).await?;
         self.dirty = false;
+        Ok(Some((world_path, content)))
+    }
+
+    /// Saves the level data to disk if it has been modified.
+    pub async fn save(&mut self) -> io::Result<()> {
+        let Some((world_path, content)) = self.prepare_save()? else {
+            return Ok(());
+        };
+        if let Some(parent) = world_path.parent() {
+            fs::create_dir_all(parent).await?;
+        }
+        fs::write(&world_path, content).await?;
 
         log::debug!("Saved level data to {}", world_path.display());
         Ok(())
+    }
+
+    /// Returns the persistent file path for preparing a game-rule reload.
+    pub(crate) fn game_rules_path(&self) -> Option<&Path> {
+        self.path.as_deref()
+    }
+
+    /// Reads and prepares game rules without holding a world lock.
+    pub(crate) fn prepare_game_rules(path: &Path) -> io::Result<Option<PreparedGameRules>> {
+        let content = match read_to_string(path) {
+            Ok(content) => content,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+            Err(error) => return Err(error),
+        };
+        let table: toml::Table =
+            toml::from_str(&content).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        let mut loaded: LevelData = table
+            .try_into()
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        loaded.load_game_rules();
+        Ok(Some(PreparedGameRules {
+            serialized: loaded.game_rules,
+            values: loaded.game_rules_values,
+        }))
+    }
+
+    /// Applies prepared rules and returns the number of changed serialized values.
+    pub(crate) fn apply_game_rules(&mut self, rules: PreparedGameRules) -> usize {
+        let changed = rules
+            .serialized
+            .iter()
+            .filter(|(name, value)| self.data.game_rules.get(*name) != Some(value))
+            .count();
+        self.data.game_rules = rules.serialized;
+        self.data.game_rules_values = rules.values;
+        changed
     }
 
     /// Gets the seed.
@@ -873,6 +983,56 @@ mod tests {
     }
 
     #[test]
+    fn prepared_game_rules_do_not_mutate_live_data_until_applied() {
+        init_vanilla_registry();
+        let dir = temp_level_data_dir("prepared-game-rules");
+        let path = dir.join("level.toml");
+        let mut disk = LevelData::new_with_seed(9);
+        assert!(
+            disk.game_rules_values
+                .set(&KEEP_INVENTORY, true, &REGISTRY.game_rules)
+        );
+        disk.save_game_rules();
+        std_fs::write(&path, toml::to_string(&disk).expect("serialize level data"))
+            .expect("write level data");
+        let mut live = LevelData::new_with_seed(1);
+        live.save_game_rules();
+        let mut manager = LevelDataManager {
+            path: Some(path.clone()),
+            data: live,
+            dirty: false,
+            primary_game_time: None,
+            game_time: Arc::new(GameTime::new(0)),
+        };
+        let rules = LevelDataManager::prepare_game_rules(&path)
+            .expect("parse game rules")
+            .expect("existing file");
+        assert!(
+            !manager
+                .data
+                .game_rules_values
+                .get(&KEEP_INVENTORY, &REGISTRY.game_rules)
+        );
+        std_fs::write(&path, "not valid toml = [").expect("write malformed data");
+        assert!(LevelDataManager::prepare_game_rules(&path).is_err());
+        assert!(
+            !manager
+                .data
+                .game_rules_values
+                .get(&KEEP_INVENTORY, &REGISTRY.game_rules)
+        );
+        assert_eq!(manager.apply_game_rules(rules), 1);
+        assert!(
+            manager
+                .data
+                .game_rules_values
+                .get(&KEEP_INVENTORY, &REGISTRY.game_rules)
+        );
+        assert_eq!(manager.seed(), 1);
+        let _ = std_fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn level_data_round_trips_typed_game_rules_with_untagged_toml_values() {
         init_vanilla_registry();
         let mut data = LevelData::new_with_seed(1);
@@ -906,6 +1066,42 @@ mod tests {
             9
         );
     }
+}
+
+/// Migrates `LevelData` from an older `data_version` to `DATA_VERSION`.
+///
+/// Each migration step handles a single version boundary. Steps are applied
+/// in order until the data reaches `DATA_VERSION`. Unknown version gaps are
+/// rejected rather than guessed at.
+#[expect(clippy::unnecessary_trailing_comma, reason = "fmt")]
+fn migrate_level_data(data: &mut LevelData, from_version: u32) -> io::Result<()> {
+    let mut version = from_version;
+    while version < DATA_VERSION {
+        match version {
+            0 => migrate_v0_to_v1(data)?,
+            _ => {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("no migration path from data version {version} to {DATA_VERSION}",),
+                ));
+            }
+        }
+        version += 1;
+    }
+    data.data_version = DATA_VERSION;
+    Ok(())
+}
+
+/// Migration from data version 0 to 1: initial data format.
+///
+/// Version 0 worlds have no `data_version` field at all (it deserializes to
+/// 0 via `#[serde(default)]`). This step marks them as migrated to version 1.
+#[expect(clippy::missing_const_for_fn, reason = "io Result not const")]
+#[expect(clippy::unnecessary_wraps, reason = "migration api")]
+fn migrate_v0_to_v1(_data: &mut LevelData) -> io::Result<()> {
+    // Version 1 is the initial data format; no field changes required.
+    // Future migrations would transform fields here.
+    Ok(())
 }
 
 #[cfg(test)]

@@ -37,4 +37,8 @@ disallowed-methods = [
     { path = "text_components::translation::TranslatedMessage::new", reason = "New TranslatedMessages should only be use in generated code. Use steel_utils::translations::GeneratedTranslation::msg().into() instead." },
 ]
 
+# Test code is allowed to panic when its fixtures are missing; the panic
+# message is what the CI failure capture reads.
+allow-unwrap-in-tests = true
+
 avoid-breaking-exported-api = false

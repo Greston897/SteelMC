@@ -1,0 +1,134 @@
+name: Live Server Smoke
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-server-smoke-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  live-server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [steel, vanilla]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: vanilla-evidence-optimized-no-lto
+          cache-on-failure: true
+      - name: Check wire harness and readiness accounting
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          python3 -m unittest discover -s .ci -p 'test_*.py' -v
+          python3 -m unittest discover -s .ci/vanilla_features -p 'test_*.py' -v
+      - uses: actions/setup-java@v4
+        if: matrix.engine == 'vanilla'
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Fetch verified official vanilla 26.3
+        if: matrix.engine == 'vanilla'
+        run: python3 .ci/download_vanilla_server.py
+      - name: Build actual server executable
+        if: matrix.engine == 'steel'
+        run: cargo build -p steel --profile evidence
+      - name: Boot, exercise TCP and RCON, save, restart and verify disk state
+        timeout-minutes: 12
+        run: |
+          if [ "${{ matrix.engine }}" = vanilla ]; then
+            ENGINE_ARGS="--vanilla-jar $GITHUB_WORKSPACE/server.jar"
+          else
+            ENGINE_ARGS="--binary target/evidence/steel"
+          fi
+          python3 .ci/live_server_smoke.py $ENGINE_ARGS \
+            --workdir "$RUNNER_TEMP/live-server-world" \
+            --output "$RUNNER_TEMP/live-server-evidence"
+      - name: Surface runtime failures
+        if: failure()
+        run: |
+          python3 - <<'PYERROR'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'live-server-evidence'
+          path = root / 'results.json'
+          def annotate(text):
+              text = text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print('::error title=Real server smoke::' + text)
+          if path.exists():
+              for result in json.loads(path.read_text())['results']:
+                  if not result['passed']:
+                      annotate(result['name'] + ': ' + result.get('error', 'failed'))
+          commands = root / 'commands.json'
+          if commands.exists():
+              entries = json.loads(commands.read_text())
+              annotate('last command responses: ' + json.dumps(entries[-20:]))
+          for log in root.glob('server-*.log'):
+              annotate(log.name + '\n' + '\n'.join(log.read_text(errors='replace').splitlines()[-35:]))
+          PYERROR
+      - name: Publish recoverable runtime diagnostics
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 .ci/report.py "Live server ${{ matrix.engine }} — conditions" \
+            "$RUNNER_TEMP/live-server-evidence/results.json" \
+            "$RUNNER_TEMP/live-server-evidence/commands.json"
+          for log in "$RUNNER_TEMP/live-server-evidence"/server-*.log; do
+            [ -f "$log" ] || continue
+            python3 .ci/report.py "Live server ${{ matrix.engine }} — $(basename "$log")" "$log"
+          done
+      - name: Publish runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-server-evidence-${{ matrix.engine }}
+          path: ${{ runner.temp }}/live-server-evidence
+          if-no-files-found: warn
+      - name: Summarize real-server checks
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP']) / 'live-server-evidence/results.json'
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
+              out.write('## Real Steel process, no real players\n\n')
+              out.write('Not a measurement of complete Minecraft parity.\n\n')
+              if not path.exists():
+                  out.write('No runtime results: build/startup did not reach the harness.\n')
+              else:
+                  for result in json.loads(path.read_text())['results']:
+                      out.write(f"- {'PASS' if result['passed'] else 'FAIL'}: {result['name']}\n")
+          PY
+
+  compare:
+    needs: live-server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: live-server-evidence-steel
+          path: /tmp/steel-evidence
+      - uses: actions/download-artifact@v4
+        with:
+          name: live-server-evidence-vanilla
+          path: /tmp/vanilla-evidence
+      - name: Require matching complete scenario inventories and successful conditions
+        run: |
+          set -o pipefail
+          python3 .ci/compare_live_servers.py \
+            /tmp/steel-evidence/results.json /tmp/vanilla-evidence/results.json \
+            | tee /tmp/comparison.json
+          cat /tmp/comparison.json >> "$GITHUB_STEP_SUMMARY"

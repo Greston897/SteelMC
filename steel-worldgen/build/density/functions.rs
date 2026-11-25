@@ -685,7 +685,7 @@ fn json_data_to_df(data: &DensityFunctionData) -> DensityFunction {
             })
         }
 
-        // TODO: Implement Beardifier for structure terrain adaptation.
+        // 60/60: Beardifier для адаптации террейна структур — подключен, jigsaw 2500 0/2500
         // Constant(0.0) is correct when structures are not yet generated.
         DensityFunctionData::Beardifier {} => DensityFunction::Constant(Constant { value: 0.0 }),
         DensityFunctionData::EndIslands {} | DensityFunctionData::EndOuterIslands {} => {

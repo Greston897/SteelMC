@@ -199,7 +199,7 @@ mod tests {
         assert!(!wooden.is_valid_repair_item(&ItemStack::new(&vanilla_items::DIAMOND)));
 
         let direct = Repairable::new(RegistryHolderSet::Direct(vec![
-            &vanilla_items::PHANTOM_MEMBRANE,
+            &*vanilla_items::PHANTOM_MEMBRANE,
         ]));
         assert!(direct.is_valid_repair_item(&ItemStack::new(&vanilla_items::PHANTOM_MEMBRANE)));
         assert!(!direct.is_valid_repair_item(&ItemStack::new(&vanilla_items::BREEZE_ROD)));

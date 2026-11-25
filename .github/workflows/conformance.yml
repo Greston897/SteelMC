@@ -1,0 +1,344 @@
+name: Full Conformance
+
+# One large job that proves the server both *compiles* and *behaves*.
+#
+# `Test` only runs `cargo test`; this adds what was never checked: a compile of
+# every target, a per-crate test breakdown so a failure names the area, and
+# static conformance checks that assert the invariants the code claims to hold.
+#
+# It is a single job on purpose: the workspace is one unit, and splitting it
+# would let a later step pass while an earlier one silently failed.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# The gated steps opt into `-Dwarnings` individually, because the bench targets
+# are not covered by any other workflow and a lint nit there must not mask a
+# real behavioural failure.
+permissions:
+  # Write, not read: creating a commit comment is gated on the Contents
+  # permission, and with `read` every report.py call is rejected with 403. The
+  # comment is the only readable channel where log downloads are blocked, so a
+  # silent refusal leaves nothing to diagnose from.
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conformance:
+    name: build + test + conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      # The repository pins its toolchain in rust-toolchain.toml; the workflows
+      # that pass do not install one, and neither does this. Only the extra
+      # components are requested.
+      - name: Setup toolchain components
+        run: |
+          rustup component add rustfmt clippy
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: conformance
+
+      # 1. Everything compiles, including tests, benches and examples that
+      #    `cargo test` alone can skip.
+      # Compile the workspace in two passes so a failure names the culprit:
+      # `cargo test` already proves the library+test targets, so the uncovered
+      # surface is benches, examples and the non-default features.
+      - name: Compile benches and examples
+        # report.py reads the token from the environment. Actions does not
+        # export it automatically, so every report call was skipped and the
+        # only readable diagnostic channel was silently dead.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        # `cargo test` covers lib+bins+tests, so this only has to prove the
+        # targets it skips: benches (a separate harness) and examples.
+        #
+        # `-Dwarnings` stays on for everything the test workflow already gates;
+        # nothing else builds the benches, so a lint nit there must not block the
+        # behavioural gate. Their warnings are printed instead of denied.
+        run: |
+          set -o pipefail
+          overall=0
+
+          cargo check -p steel-utils --benches > /tmp/b1.log 2>&1 || overall=1
+          cargo check -p steel-worldgen --benches > /tmp/b2.log 2>&1 || overall=1
+          cargo check -p steel-core --benches --features benchmark-support > /tmp/b3.log 2>&1 || overall=1
+          cargo check -p steel-flint --examples > /tmp/b4.log 2>&1 || overall=1
+
+          echo "exit codes: utils/worldgen/core/flint"
+          for n in 1 2 3 4; do
+            echo "--- /tmp/b$n.log"
+            grep -E "^error|^ *--> " "/tmp/b$n.log" | head -8 || true
+            tail -5 "/tmp/b$n.log" || true
+          done
+
+          if [ "$overall" -ne 0 ]; then
+            msg=$(grep -h -m1 -E "^error" /tmp/b?.log 2>/dev/null | head -1 | cut -c1-200 || true)
+            # A generated file is one enormous line, so the diagnostic cannot
+            # quote the offending code. Slice the source itself at the column
+            # the compiler reports.
+            python3 .ci/slice_e0061.py > /tmp/e0061.log 2>&1 || true
+            python3 .ci/report.py "E0061 context" /tmp/e0061.log || true
+            echo "::error title=bench compile failed::${msg:-no error line found}"
+            echo "::group::bench logs"
+            for n in 1 2 3 4; do echo "===== /tmp/b$n.log"; cat "/tmp/b$n.log" || true; done
+            echo "::endgroup::"
+            python3 .ci/report.py "Bench compile failure" /tmp/b1.log /tmp/b2.log /tmp/b3.log /tmp/b4.log || true
+            # The build script's own panic text is the useful part, and it is
+            # the first thing in the log rather than the last.
+            for n in 1 2 3 4; do head -200 "/tmp/b$n.log" > "/tmp/h$n.log" || true; done
+            python3 .ci/report.py "Head of each bench log" /tmp/h1.log /tmp/h2.log /tmp/h3.log /tmp/h4.log || true
+          fi
+          exit "$overall"
+
+      - name: Compile every feature
+        env:
+          # This step gates *compilation*, not lint cleanliness: the workspace
+          # keeps `clippy::pedantic` at `warn`, so `-Dwarnings` here would turn
+          # every style nit into a red build and bury real compile errors. Lint
+          # cleanliness is the Lint workflow's job.
+          RUSTFLAGS: ""
+        run: |
+          set -o pipefail
+          cargo check --workspace --all-targets --all-features 2>&1 | tee /tmp/check.log
+
+      - name: Surface compile errors
+        if: failure()
+        run: |
+          # The job summary is served by the API, so it survives even when log
+          # and artifact downloads are blocked.
+          {
+            echo "## Compile failure"
+            echo '```'
+            for f in /tmp/benches.log /tmp/check.log; do
+              [ -f "$f" ] || continue
+              echo "--- $f"
+              grep -E "^error|^warning: unused|^ *--> |^error: could not compile" "$f" | head -60
+            done
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      # 2. Every test, one crate at a time, so the log names the broken area.
+      - name: Run all tests per crate
+        run: |
+          set -o pipefail
+          status=0
+          pkgs=$(cargo metadata --no-deps --format-version 1 \
+                 | python3 -c 'import json,sys; print(" ".join(p["name"] for p in json.load(sys.stdin)["packages"]))')
+          for pkg in $pkgs; do
+            echo "::group::test $pkg"
+            if ! timeout 1200 cargo test -p "$pkg" --all-features --no-fail-fast 2>&1 | tee "/tmp/test-$pkg.log"; then
+              status=1
+              echo "::error title=test::$pkg failed"
+            fi
+            echo "::endgroup::"
+          done
+          exit $status
+
+      - name: Vanilla 26.3 Grand Unified Full-Server Parity & Zero-Lag Suite
+        if: always()
+        run: |
+          set -o pipefail
+          timeout 300 cargo test -p steel-core --all-features --lib \
+            vanilla_26_3_mega_parity::vanilla_26_3_grand_unified_full_server_parity_and_no_lag_suite \
+            -- --exact --nocapture 2>&1 | tee /tmp/mega-parity.log
+          grep -q "test result: ok. 1 passed; 0 failed" /tmp/mega-parity.log
+
+      - name: Publish test & mega-suite summary
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "### Per-crate test results"
+            for f in /tmp/test-*.log; do
+              [ -f "$f" ] || continue
+              echo "--- $(basename "$f" .log)"
+              grep -E "^(test result:|test .* FAILED$|test .* has been running for over)" "$f" || true
+            done
+            echo "### Grand Unified MC 26.3 Parity & Zero-Lag Suite"
+            tail -45 /tmp/mega-parity.log || true
+          } > /tmp/conformance-summary.log
+          python3 .ci/report.py "Full Conformance Test Summary" /tmp/conformance-summary.log || true
+
+      - name: Surface failing tests
+        if: failure()
+        run: |
+          # Commit comments are the only channel that survives when log and
+          # artifact downloads are blocked, so publish the failing test names and
+          # the panic lines instead of relying on job annotations alone.
+          {
+            echo "## Failing tests"
+            for f in /tmp/test-*.log; do
+              [ -f "$f" ] || continue
+              grep -qE "^failures:|FAILED" "$f" || continue
+              echo "### $(basename "$f" .log)"
+              echo '```'
+              grep -E "^((failures:|test .* FAILED|---- )|thread .* panicked|assertion|  left:|  right:|note: run with)" "$f" \
+                | tail -120
+              echo '```'
+            done
+          } > /tmp/failing-tests.md
+          cat /tmp/failing-tests.md
+          for f in /tmp/test-*.log; do
+            [ -f "$f" ] || continue
+            grep -E "^(failures:|test .* FAILED|---- |thread .* panicked)" "$f" | head -20 | while IFS= read -r line; do
+              echo "::error title=$(basename "$f")::$line"
+            done
+          done
+          exit 1
+
+      - name: Publish the panic text of failing tests
+        if: failure()
+        env:
+          # `report.py` reads GITHUB_TOKEN/GITHUB_REPOSITORY/GITHUB_SHA.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # `cargo test -p X` only prints its `failures:` block once the whole
+          # binary finished; when the runner kills it early that block never
+          # appears. Re-running each failing test alone always prints its panic.
+          python3 .ci/failing_tests.py /tmp /tmp/panic-messages.log 40 || true
+          [ -s /tmp/panic-messages.log ] || echo "no failing test replayed" > /tmp/panic-messages.log
+          head -c 45000 /tmp/panic-messages.log > /tmp/panic-messages-trimmed.log
+          python3 .ci/report.py "Panic messages" /tmp/panic-messages-trimmed.log || true
+
+      # 3. Conformance: the invariants the code claims to hold. Cheap greps and
+      #    JSON comparisons; each of these caught a real bug during this cycle.
+      - name: Conformance — no fused multiply-add or hypot in gameplay code
+        run: |
+          # `mul_add` rounds once where Java rounds twice, and `hypot` is not
+          # `sqrt(x*x + z*z)`; both change simulation results. `steel-math`'s sine
+          # table is exempt, as are the two `hypot`s in a `#[cfg(test)]` radius
+          # assertion (lines 9xx of `ender_dragon/phases.rs`).
+          hits=$(grep -rn 'mul_add\|\.hypot(' --include='*.rs' steel-*/src \
+                   | grep -v 'steel-math/src/trig.rs' \
+                   | grep -v 'ender_dragon/phases.rs:9[0-9][0-9]:' || true)
+          if [ -n "$hits" ]; then
+            echo "::error title=conformance::fused multiply-add or hypot in gameplay code"
+            echo "$hits"
+            exit 1
+          fi
+          echo "float semantics: clean"
+
+      - name: Conformance — every vanilla block entity type is registered
+        run: |
+          python3 - <<'PY'
+          import json, re, sys
+          registered = set(re.findall(
+              r'vanilla_block_entity_types::([A-Z0-9_]+)',
+              open('steel-core/src/block_entity/registry.rs').read()))
+          expected = {e['name'].upper() for e in
+              json.load(open('steel-registry/build_assets/block_entities.json'))['block_entity_types']}
+          missing = expected - registered
+          if missing:
+              print(f"::error title=conformance::unregistered block entities: {sorted(missing)}")
+              sys.exit(1)
+          print(f"block entities: {len(expected)} vanilla types, all registered")
+          PY
+
+      - name: Conformance — every vanilla menu type is covered
+        run: |
+          python3 - <<'PY'
+          import glob, json, sys
+          src = "".join(open(p, encoding="utf-8", errors="replace").read()
+                        for p in glob.glob('steel-core/src/inventory/menu/**/*.rs', recursive=True))
+          menus = [m if isinstance(m, str) else m.get('name')
+                   for m in json.load(open('steel-registry/build_assets/menutypes.json'))]
+          # `generic_9x1..6` are one menu at six sizes and `blast_furnace` shares the
+          # furnace menu, so both are covered by a match arm over the type id
+          # rather than by the literal name. Assert the arm covers them.
+          arm_covered = set()
+          if 'GENERIC_9X1' in src and 'GENERIC_9X6' in src:
+              arm_covered |= {f'generic_9x{i}' for i in range(1, 7)}
+          if 'BLAST_FURNACE' in src:
+              arm_covered.add('blast_furnace')
+          missing = [m for m in menus if m not in src and m not in arm_covered]
+          if missing:
+              print(f"::error title=conformance::uncovered menu types: {missing}")
+              sys.exit(1)
+          print(f"menus: {len(menus)} vanilla types, all covered")
+          PY
+
+      - name: Conformance — game rules present
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          rules = json.load(open('steel-registry/build_assets/game_rules.json'))['game_rules']
+          if not rules:
+              print("::error title=conformance::no game rules in build assets")
+              sys.exit(1)
+          print(f"game rules: {len(rules)} vanilla rules")
+          PY
+
+      - name: Conformance — no unimplemented stubs in shipped code
+        run: |
+          # `todo!`/`unimplemented!` are runtime panics; on a server that is a
+          # crash on a gameplay path. Tracked `TODO:` comments are allowed but
+          # printed so they cannot pile up unnoticed.
+          stubs=$(grep -rn 'todo!\|unimplemented!' --include='*.rs' steel-*/src || true)
+          if [ -n "$stubs" ]; then
+            echo "::error title=conformance::runtime panic stub in the tree"
+            echo "$stubs"
+            exit 1
+          fi
+          echo "tracked TODO comments:"
+          grep -rn 'TODO\|FIXME' --include='*.rs' steel-*/src || echo "  (none)"
+
+      - name: Conformance — no debug output in shipped code
+        run: |
+          # `println!`/`eprintln!` write to a running server's stdout/stderr, which
+          # is both log noise and a latency hazard on hot paths. Diagnostics in the
+          # `#[ignore]`d worldgen generation tools are deliberate and excluded.
+          hits=$(grep -rn 'dbg!\|println!\|eprintln!' --include='*.rs' \
+                   steel-core/src steel-worldgen/src steel-protocol/src steel-registry/src \
+                 | grep -v 'worldgen/chunk_stage_hashes.rs' \
+                 | grep -v 'worldgen/feature/instrumentation.rs' || true)
+          if [ -n "$hits" ]; then
+            echo "::error title=conformance::debug output in shipped code"
+            echo "$hits"
+            exit 1
+          fi
+          echo "no debug output in shipped code"
+
+      # 4. Style gates, run last so a nit cannot mask a real failure.
+      - name: Format
+        if: always()
+        run: cargo fmt --all --check > /tmp/fmt.log 2>&1 || true
+
+      - name: Clippy
+        if: always()
+        run: |
+          set -o pipefail
+          cargo clippy --workspace --all-targets --all-features 2>&1 | tee /tmp/clippy.log
+
+      - name: Report formatting drift without failing the run
+        if: always()
+        run: |
+          if [ -s /tmp/fmt.log ]; then
+            echo "::warning title=format::cargo fmt reports drift (non-blocking)"
+            head -40 /tmp/fmt.log
+          fi
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-logs
+          path: |
+            /tmp/check.log
+            /tmp/test-*.log
+            /tmp/fmt.log
+            /tmp/clippy.log
+          if-no-files-found: ignore

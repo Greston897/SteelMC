@@ -6,6 +6,7 @@ use crate::player::Player;
 use crate::world::World;
 use glam::DVec3;
 use parking_lot::MutexGuard;
+use simdnbt::borrow::NbtTag as BorrowedNbtTag;
 use simdnbt::owned::{NbtCompound, NbtTag};
 use simdnbt::{FromNbtTag, ToNbtTag};
 use std::sync::Arc;
@@ -14,6 +15,7 @@ use steel_macros::entity_behavior;
 use steel_registry::blocks::behavior::PushReaction;
 use steel_registry::entity_data::EntityPose;
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::vanilla_entity_data::InteractionEntityData;
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtNumeric as _;
@@ -156,7 +158,9 @@ impl Entity for InteractionEntity {
                 player: player.uuid(),
                 timestamp: world.game_time(),
             });
-            // TODO: Trigger PLAYER_HURT_ENTITY advancement criterion trigger
+            // Vanilla `Interaction.hurtServer` fires `player_hurt_entity` on the
+            // attacking player.
+            player.trigger_advancement(&vanilla_criteria_triggers::PLAYER_HURT_ENTITY);
         }
         !self.entity_data.lock().response.get()
     }
@@ -294,7 +298,7 @@ impl PlayerAction {
 }
 
 impl FromNbtTag for PlayerAction {
-    fn from_nbt_tag(tag: simdnbt::borrow::NbtTag) -> Option<Self> {
+    fn from_nbt_tag(tag: BorrowedNbtTag) -> Option<Self> {
         let compound = tag.compound()?;
         Some(Self {
             player: Uuid::from_int_array(&compound.int_array(TAG_PLAYER)?)?,

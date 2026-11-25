@@ -436,6 +436,30 @@ fn is_stable_vanilla_air(state: BlockStateId) -> bool {
 }
 
 impl Sections {
+    /// Serializes only the biome containers of every section.
+    ///
+    /// This is the payload of the `chunks_biomes` packet: vanilla's
+    /// `ChunkSerializer.writeChunkBiomes` writes one `PackedArray` per section
+    /// and nothing else, which is why the packet is so much smaller than a full
+    /// chunk. Block states, block entities and heightmaps are deliberately
+    /// absent — the client already has them.
+    ///
+    /// # Panics
+    /// Panics if writing the biome palettes into memory fails, which cannot
+    /// happen for a `Vec` writer.
+    #[must_use]
+    pub fn encode_biomes(&self) -> Vec<u8> {
+        let mut cursor = Cursor::new(Vec::new());
+        for section in &self.sections {
+            section
+                .read()
+                .biomes
+                .write(&mut cursor)
+                .expect("writing biomes into memory cannot fail");
+        }
+        cursor.into_inner()
+    }
+
     /// Creates a new `Sections` from a box of owned `ChunkSection`s.
     #[must_use]
     pub fn from_owned(sections: Box<[ChunkSection]>) -> Self {

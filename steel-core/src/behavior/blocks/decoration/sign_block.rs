@@ -33,6 +33,7 @@ use crate::behavior::context::{BlockHitResult, BlockPlaceContext, InteractionRes
 use crate::behavior::{ITEM_BEHAVIORS, InventoryAccess, PlacementSource};
 use crate::block_entity::{BlockEntity, BlockEntityTicker, entities::SignBlockEntity};
 use crate::entity::Entity;
+use crate::fluid::FluidStateExt as _;
 use crate::player::Player;
 use crate::world::{LevelReader, ScheduledTickAccess, World, game_event::GameEventContext};
 
@@ -148,7 +149,9 @@ fn can_wall_sign_survive(
 fn can_ceiling_hanging_sign_survive(world: &(impl LevelReader + ?Sized), pos: BlockPos) -> bool {
     let above_pos = BlockPos::new(pos.x(), pos.y() + 1, pos.z());
     let above_state = world.get_block_state(above_pos);
-    world.is_face_sturdy_for(above_state, above_pos, Direction::Down, SupportType::Center)
+    let path = &above_state.get_block().key.path;
+    (path.ends_with("_hanging_sign") && !path.ends_with("_wall_hanging_sign"))
+        || world.is_face_sturdy_for(above_state, above_pos, Direction::Down, SupportType::Center)
 }
 
 /// Checks if a wall hanging sign can attach to a neighboring block.
@@ -380,7 +383,19 @@ impl BlockBehavior for StandingSignBlock {
         // Vanilla: RotationSegment.convertToSegment(context.getRotation() + 180.0F)
         let rotation = convert_to_rotation_segment(context.rotation() + DEGREE_180);
 
-        Some(self.block.default_state().set_value(ROTATION_16, rotation))
+        Some(
+            self.block
+                .default_state()
+                .set_value(ROTATION_16, rotation)
+                .set_value(
+                    &BlockStateProperties::WATERLOGGED,
+                    context
+                        .world
+                        .get_block_state(context.place_pos())
+                        .get_fluid_state()
+                        .is_water(),
+                ),
+        )
     }
 
     fn new_block_entity(
@@ -495,7 +510,15 @@ impl BlockBehavior for WallSignBlock {
                 return Some(
                     self.block
                         .default_state()
-                        .set_value(HORIZONTAL_FACING, facing),
+                        .set_value(HORIZONTAL_FACING, facing)
+                        .set_value(
+                            &BlockStateProperties::WATERLOGGED,
+                            context
+                                .world
+                                .get_block_state(context.place_pos())
+                                .get_fluid_state()
+                                .is_water(),
+                        ),
                 );
             }
         }
@@ -656,7 +679,15 @@ impl BlockBehavior for CeilingHangingSignBlock {
             self.block
                 .default_state()
                 .set_value(ROTATION_16, rotation)
-                .set_value(ATTACHED, attached_to_middle),
+                .set_value(ATTACHED, attached_to_middle)
+                .set_value(
+                    &BlockStateProperties::WATERLOGGED,
+                    context
+                        .world
+                        .get_block_state(context.place_pos())
+                        .get_fluid_state()
+                        .is_water(),
+                ),
         )
     }
 
@@ -688,9 +719,16 @@ impl BlockBehavior for CeilingHangingSignBlock {
         pos: BlockPos,
         player: &Player,
         _hand: InteractionHand,
-        _hit_result: &BlockHitResult,
+        hit_result: &BlockHitResult,
         inv: &mut InventoryAccess,
     ) -> InteractionResult {
+        // A hanging sign item used on the underside must reach the item
+        // placement path instead of opening the existing sign's editor.
+        if hit_result.direction == Direction::Down
+            && inv.with_item(|stack| stack.item().key.path.ends_with("_hanging_sign"))
+        {
+            return InteractionResult::Pass;
+        }
         try_apply_sign_item(state, world, pos, player, inv)
     }
 
@@ -754,20 +792,12 @@ impl BlockBehavior for WallHangingSignBlock {
         state: BlockStateId,
         world: &dyn ScheduledTickAccess,
         pos: BlockPos,
-        direction: Direction,
+        _direction: Direction,
         _neighbor_pos: BlockPos,
         _neighbor_state: BlockStateId,
     ) -> BlockStateId {
-        // Wall hanging signs break when blocks on the perpendicular axis are removed
-        // and they can no longer survive
-        if let Some(facing) = state.try_get_value(HORIZONTAL_FACING) {
-            // Check if the change is on the perpendicular axis (clockwise/counterclockwise)
-            if direction.axis() == facing.rotate_y_clockwise().axis()
-                && !can_wall_hanging_sign_survive(world, pos, facing)
-            {
-                return REGISTRY.blocks.get_default_state_id(&vanilla_blocks::AIR);
-            }
-        }
+        // Side support is required when placing the sign, but vanilla wall
+        // hanging signs do not break when that support is subsequently removed.
         schedule_water_tick_if_waterlogged(state, world, pos);
         state
     }
@@ -790,7 +820,15 @@ impl BlockBehavior for WallHangingSignBlock {
                 return Some(
                     self.block
                         .default_state()
-                        .set_value(HORIZONTAL_FACING, facing),
+                        .set_value(HORIZONTAL_FACING, facing)
+                        .set_value(
+                            &BlockStateProperties::WATERLOGGED,
+                            context
+                                .world
+                                .get_block_state(context.place_pos())
+                                .get_fluid_state()
+                                .is_water(),
+                        ),
                 );
             }
         }
@@ -868,6 +906,7 @@ mod tests {
     use text_components::TextComponent;
 
     use super::*;
+    use crate::behavior::BLOCK_BEHAVIORS;
     use crate::behavior::init_behaviors;
     use crate::block_entity::entities::SignText;
     use crate::test_support::{
@@ -875,6 +914,105 @@ mod tests {
     };
 
     const WATERLOGGED: &BoolProperty = &BlockStateProperties::WATERLOGGED;
+
+    #[test]
+    fn all_sign_placements_preserve_source_and_flowing_water() {
+        use crate::behavior::PlacementOrientation;
+        use glam::DVec3;
+        init_vanilla_registry();
+        init_behaviors();
+        for block in [
+            &vanilla_blocks::OAK_SIGN,
+            &vanilla_blocks::OAK_WALL_SIGN,
+            &vanilla_blocks::OAK_HANGING_SIGN,
+            &vanilla_blocks::OAK_WALL_HANGING_SIGN,
+        ] {
+            for water_level in [None, Some(0), Some(3)] {
+                let fixture = fresh_test_world("sign_water_placement");
+                let world = &fixture.world;
+                let pos = BlockPos::new(8, 64, 8);
+                insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+                for direction in [
+                    Direction::Down,
+                    Direction::Up,
+                    Direction::North,
+                    Direction::South,
+                    Direction::East,
+                    Direction::West,
+                ] {
+                    world.set_block(
+                        pos.relative(direction),
+                        vanilla_blocks::STONE.default_state(),
+                        UpdateFlags::UPDATE_ALL,
+                    );
+                }
+                if let Some(level) = water_level {
+                    world.set_block(
+                        pos,
+                        vanilla_blocks::WATER
+                            .default_state()
+                            .set_value(&BlockStateProperties::LEVEL, level),
+                        UpdateFlags::UPDATE_ALL,
+                    );
+                }
+                let mut stack = ItemStack::new(&vanilla_items::OAK_SIGN);
+                let source = PlacementSource::direct(
+                    None,
+                    InteractionHand::MainHand,
+                    &mut stack,
+                    PlacementOrientation::Directional {
+                        direction: Direction::North,
+                    },
+                    false,
+                );
+                let hit = BlockHitResult {
+                    block_pos: pos,
+                    direction: Direction::Up,
+                    location: DVec3::new(8.5, 64.5, 8.5),
+                    miss: false,
+                    inside: false,
+                    world_border_hit: false,
+                };
+                let context = BlockPlaceContext::new(world, source, &hit);
+                assert_eq!(context.place_pos(), pos);
+                let behavior = BLOCK_BEHAVIORS.get_behavior(block);
+                let placed = behavior
+                    .get_state_for_placement(&context)
+                    .expect("supported sign placement");
+                assert_eq!(
+                    placed.get_value(WATERLOGGED),
+                    water_level.is_some(),
+                    "{} water={water_level:?}",
+                    block.key
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn wall_hanging_sign_survives_losing_side_support() {
+        init_vanilla_registry();
+        let pos = BlockPos::new(0, 64, 0);
+        let sign = WallHangingSignBlock::new(&vanilla_blocks::OAK_WALL_HANGING_SIGN);
+        let state = vanilla_blocks::OAK_WALL_HANGING_SIGN
+            .default_state()
+            .set_value(HORIZONTAL_FACING, Direction::North)
+            .set_value(WATERLOGGED, true);
+        let level = TestLevel::default();
+
+        assert_eq!(
+            sign.update_shape(
+                state,
+                &level,
+                pos,
+                Direction::East,
+                pos.relative(Direction::East),
+                vanilla_blocks::AIR.default_state(),
+            ),
+            state
+        );
+        assert!(level.scheduled_water_tick());
+    }
 
     #[test]
     fn standing_sign_only_schedules_water_when_support_survives() {

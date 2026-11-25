@@ -1,3 +1,4 @@
+use std::sync::{Arc, Weak};
 use steel_macros::block_behavior;
 use steel_math::{DEGREE_180, convert_to_rotation_segment};
 use steel_registry::REGISTRY;
@@ -8,7 +9,10 @@ use steel_registry::blocks::{BlockRef, block_state_ext::BlockStateExt};
 use steel_registry::vanilla_blocks;
 use steel_utils::{BlockPos, BlockStateId};
 
+use crate::behavior::block::BlockEntityCreation;
 use crate::behavior::{BlockBehavior, BlockPlaceContext};
+use crate::block_entity::entities::BannerBlockEntity;
+use crate::world::World;
 use crate::world::{LevelReader, ScheduledTickAccess};
 
 const FACING: &EnumProperty<Direction> = &BlockStateProperties::HORIZONTAL_FACING;
@@ -59,6 +63,18 @@ impl BlockBehavior for BannerBlock {
             convert_to_rotation_segment(context.rotation() + DEGREE_180),
         ))
     }
+
+    /// Vanilla `BannerBlock.newBlockEntity`: every banner owns a block entity to
+    /// keep its pattern layers, so the block must create one or the patterns are
+    /// lost as soon as the chunk is saved.
+    fn new_block_entity(
+        &self,
+        level: Weak<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> BlockEntityCreation {
+        BlockEntityCreation::Created(Arc::new(BannerBlockEntity::new(level, pos, state)))
+    }
 }
 
 /// Shared behavior for wall banner blocks
@@ -78,6 +94,18 @@ impl WallBannerBlock {
 impl BlockBehavior for WallBannerBlock {
     fn is_possible_to_respawn_in_this(&self, _state: BlockStateId) -> bool {
         true
+    }
+
+    /// Vanilla `BannerBlock.newBlockEntity`: every banner owns a block entity to
+    /// keep its pattern layers, so the block must create one or the patterns are
+    /// lost as soon as the chunk is saved.
+    fn new_block_entity(
+        &self,
+        level: Weak<World>,
+        pos: BlockPos,
+        state: BlockStateId,
+    ) -> BlockEntityCreation {
+        BlockEntityCreation::Created(Arc::new(BannerBlockEntity::new(level, pos, state)))
     }
 
     fn can_survive(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {

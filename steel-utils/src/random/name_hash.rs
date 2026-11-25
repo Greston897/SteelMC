@@ -2,8 +2,10 @@
 ///
 /// Holds an MD5 digest (for Xoroshiro) and a Java `String.hashCode()` (for Legacy).
 /// All fields are computed at compile time when used with `const` bindings:
-/// ```ignore
+/// ```rust
+/// use steel_utils::random::name_hash::NameHash;
 /// const OFFSET: NameHash = NameHash::new("minecraft:offset");
+/// assert_eq!(OFFSET.md5, [577895406318539652, 4557074653038767061]);
 /// ```
 #[derive(Clone, Copy)]
 pub struct NameHash {

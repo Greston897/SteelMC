@@ -44,7 +44,8 @@ use crate::world::World;
 const BOARDING_COOLDOWN: i32 = 60;
 const PISTON_MOVEMENT_LIMIT: f64 = 0.51;
 const PISTON_ZERO_MOVEMENT_EPSILON: f64 = 1.0e-7;
-const PISTON_APPLIED_MOVEMENT_EPSILON: f64 = 1.0e-5;
+// Vanilla widens a float literal here, rather than using a double literal.
+const PISTON_APPLIED_MOVEMENT_EPSILON: f64 = 1.0e-5_f32 as f64;
 const STUCK_SPEED_MULTIPLIER_EPSILON: f64 = 1.0e-7;
 const MOVEMENT_TRACE_LIMIT: usize = 100;
 const MOVEMENT_TRACE_POSITION_EPSILON_SQ: f64 = 9.999_999_4e-11;
@@ -371,7 +372,7 @@ impl EntityBaseState {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```text
 /// pub struct MyEntity {
 ///     base: EntityBase,
 ///     // Entity-specific fields...

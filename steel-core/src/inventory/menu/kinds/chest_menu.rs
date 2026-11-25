@@ -5,9 +5,13 @@
 //! - Slots `rows * 9` to `rows * 9 + 26`: Main inventory (27)
 //! - Slots `rows * 9 + 27` to `rows * 9 + 35`: Hotbar (9)
 
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::menu_type::MenuTypeRef;
 use steel_registry::vanilla_menu_types;
+use steel_utils::Downcast as _;
 
+use crate::block_entity::entities::{BarrelBlockEntity, ChestBlockEntity};
+use crate::entity::Entity as _;
 use crate::inventory::prelude::*;
 use crate::player::player_inventory::PlayerInventory;
 
@@ -64,6 +68,72 @@ pub(crate) fn chest_with_kind(
     builder.build(kind)
 }
 
+/// Builds a double chest: two 27-slot halves shown as one six-row menu.
+///
+/// Vanilla composes the two halves into a single `CompoundContainer`; Steel has
+/// no such wrapper, so the menu claims both containers in one section each. The
+/// slot indices still run `0..54` in the packet, which is what the client needs:
+/// the first section covers the top three rows and the second the bottom three.
+#[must_use]
+pub fn double_chest(
+    inventory: Shared<PlayerInventory>,
+    container_id: u8,
+    first: ContainerRef,
+    second: ContainerRef,
+) -> Menu {
+    let mut builder = MenuBuilder::new(menu_type_for_rows(6), container_id);
+    let top = builder.section(&first, 27);
+    let bottom = builder.section(&second, 27);
+    let player = builder.player_inventory(&inventory);
+
+    builder.route([top, bottom], player.all(), FillDirection::Backward);
+    builder.route(player.all(), [top, bottom], FillDirection::Forward);
+
+    builder.build(DoubleChestKind {
+        first: first.clone(),
+        second,
+    })
+}
+
+/// Per-menu double-chest state: both halves for the validity check.
+pub struct DoubleChestKind {
+    /// First half.
+    first: ContainerRef,
+    /// Second half.
+    second: ContainerRef,
+}
+
+// SAFETY: This Steel-owned key uniquely identifies the concrete menu kind
+// within the process.
+unsafe impl steel_utils::DowncastType for DoubleChestKind {
+    const TYPE_KEY: steel_utils::DowncastTypeKey =
+        steel_utils::DowncastTypeKey::new("steel:menu/double_chest");
+}
+
+impl MenuKind for DoubleChestKind {
+    fn on_open(
+        &mut self,
+        _behavior: &mut MenuBehavior,
+        guard: &mut ContainerLockGuard,
+        player: &Player,
+    ) {
+        guard.run_unlocked(|| {
+            change_openers(&self.first, player, true);
+            change_openers(&self.second, player, true);
+        });
+    }
+
+    fn still_valid(&self, _behavior: &MenuBehavior, player: &Player) -> bool {
+        self.first.still_valid(player) && self.second.still_valid(player)
+    }
+
+    fn removed(&mut self, _behavior: &mut MenuBehavior, player: &Player) {
+        // Vanilla counts viewers on each half of a double chest separately.
+        change_openers(&self.first, player, false);
+        change_openers(&self.second, player, false);
+    }
+}
+
 /// Menu type for a chest of `rows` rows.
 ///
 /// # Panics
@@ -95,9 +165,68 @@ unsafe impl steel_utils::DowncastType for ChestKind {
 }
 
 impl MenuKind for ChestKind {
+    fn on_open(
+        &mut self,
+        _behavior: &mut MenuBehavior,
+        guard: &mut ContainerLockGuard,
+        player: &Player,
+    ) {
+        guard.run_unlocked(|| {
+            change_openers(&self.container, player, true);
+        });
+    }
+
     /// Returns true if the backing container is still valid for the player.
     fn still_valid(&self, _behavior: &MenuBehavior, player: &Player) -> bool {
         self.container.still_valid(player)
+    }
+
+    fn removed(&mut self, _behavior: &mut MenuBehavior, player: &Player) {
+        // Vanilla `ChestBlock` decrements the opener count when the menu closes,
+        // which drops the `open` state and the comparator signal back to zero.
+        change_openers(&self.container, player, false);
+    }
+}
+
+/// Updates the viewer count of the chest or barrel owning `container`.
+///
+/// The owner handle on [`ContainerRef`] is the block entity base, which does not
+/// expose its counter, so the block entity is looked up through the world at the
+/// base's position instead.
+fn change_openers(container: &ContainerRef, player: &Player, opening: bool) {
+    if player.is_spectator() {
+        return;
+    }
+    let Some(world) = container.level() else {
+        return;
+    };
+    let Some(pos) = container.owner_pos() else {
+        return;
+    };
+    let Some(block_entity) = world.get_block_entity(pos) else {
+        return;
+    };
+    // A menu may outlive block replacement at the same position. Never alter
+    // the new block entity's count when closing the old inventory's menu.
+    if block_entity
+        .container_ref()
+        .is_none_or(|current| current.container_id() != container.container_id())
+    {
+        return;
+    }
+    let counter = if let Some(chest) = block_entity.downcast_ref::<ChestBlockEntity>() {
+        chest.openers_counter()
+    } else if let Some(barrel) = block_entity.downcast_ref::<BarrelBlockEntity>() {
+        barrel.openers_counter()
+    } else {
+        return;
+    };
+    let state = world.get_block_state(pos);
+    if opening {
+        counter.register_interaction_range(player.block_interaction_range());
+        counter.increment_openers_with_source(&world, pos, state, state.get_block(), Some(player));
+    } else {
+        counter.decrement_openers_with_source(&world, pos, state, state.get_block(), Some(player));
     }
 }
 

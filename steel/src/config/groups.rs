@@ -55,6 +55,22 @@ impl PermissionGroupStore for FilePermissionGroupStore {
                 })
         })
     }
+
+    /// Re-reads `groups.toml` for `/reload`.
+    ///
+    /// Reuses `load_or_create_groups`, so a reload of a since-deleted file
+    /// recreates the vanilla default instead of failing, and a broken file is
+    /// rejected before the manager swaps anything in.
+    fn load_groups(
+        &self,
+    ) -> BoxFuture<'static, Result<Option<PermissionGroupsConfig>, PermissionGroupStoreError>> {
+        let path = self.path.clone();
+        Box::pin(async move {
+            load_or_create_groups(&path)
+                .map(Some)
+                .map_err(PermissionGroupStoreError::new)
+        })
+    }
 }
 
 fn serialize_groups_config(config: &PermissionGroupsConfig) -> Result<String, TomlSerializeError> {

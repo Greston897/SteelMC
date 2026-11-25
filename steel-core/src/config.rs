@@ -12,12 +12,16 @@ use std::{
 };
 pub use steel_protocol::packet_traits::CompressionInfo;
 use steel_protocol::packets::config::{CServerLinks, Link, ServerLinksType};
+use steel_protocol::packets::game::CResourcePackPush;
 use steel_registry::vanilla_dimension_types;
 use steel_utils::Identifier;
 use steel_utils::codec::Or;
+use steel_utils::threading::available_worker_threads;
+use steel_utils::threading::effective_cores;
 use steel_utils::types::{Difficulty, GameType};
 use text_components::TextComponent;
 use toml::map::Map;
+use uuid::Uuid;
 
 use crate::chunk_saver::registry::WorldStorageRegistry;
 use crate::worldgen::registry::{ValidatedWorldGeneratorConfig, WorldGeneratorRegistry};
@@ -82,20 +86,63 @@ pub struct RuntimeConfig {
     pub favicon: String,
     /// Whether to enforce secure chat.
     pub enforce_secure_chat: bool,
+    /// Whether `defaultgamemode` forces the new mode onto every online player
+    /// (vanilla `force-gamemode`).
+    pub force_gamemode: bool,
     /// Vanilla chat spam threshold window in seconds
     pub chat_spam_threshold_seconds: i32,
     /// Vanilla command spam threshold window in seconds
     pub command_spam_threshold_seconds: i32,
+    /// Vanilla `server.properties` `rate-limit`: the maximum number of inbound
+    /// packets per second one connection may send before it is disconnected.
+    ///
+    /// `0` disables the limit, which is vanilla's default. Steel always keeps a
+    /// slightly higher hard ceiling per connection so an unconfigured server is
+    /// still protected from a single flooding client.
+    pub rate_limit: i32,
     /// The compression settings for the server.
     pub compression: Option<CompressionInfo>,
     /// All settings and configurations for server links.
     pub server_links: Option<ServerLinks>,
+    /// The resource pack every joining client is asked to download.
+    ///
+    /// Vanilla `server.properties` `resource-pack*`: absent means no pack.
+    pub resource_pack: Option<ResourcePackConfig>,
+    /// Number of CPU cores this server is allowed to use.
+    ///
+    /// This is the *effective* count: the smaller of the OS affinity mask and
+    /// any cgroup CPU quota (Pterodactyl `--cpus=6`, Docker `--cpus`, a
+    /// Kubernetes `cpu` limit). Pools that are not configured explicitly are
+    /// sized from it, so a container never spawns threads for cores it will
+    /// never be scheduled on.
+    pub cores: usize,
     /// Optional count of persistent inter-tick gameplay packet workers.
     pub packet_workers: Option<usize>,
     /// Optional worker count for the Rayon chunk generation pool.
     pub chunk_generation_threads: Option<usize>,
     /// Optional worker count for the Rayon chunk encoding pool.
     pub chunk_encoding_threads: Option<usize>,
+    /// Remote-console settings; disabled unless a password is configured.
+    pub rcon: RconConfig,
+}
+
+/// Vanilla `server.properties` RCON settings.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RconConfig {
+    /// TCP port the RCON listener binds; unused when `password` is empty.
+    pub port: u16,
+    /// Shared secret every client must authenticate with. Empty disables RCON.
+    pub password: String,
+}
+
+impl Default for RconConfig {
+    /// Vanilla `server.properties` defaults `rcon.port` to 25575.
+    fn default() -> Self {
+        Self {
+            port: 25575,
+            password: String::new(),
+        }
+    }
 }
 
 impl Default for RuntimeConfig {
@@ -117,18 +164,96 @@ impl Default for RuntimeConfig {
             use_favicon: true,
             favicon: "config/favicon.png".to_owned(),
             enforce_secure_chat: false,
+            force_gamemode: false,
             chat_spam_threshold_seconds: DEFAULT_SPAM_THRESHOLD_SECONDS,
             command_spam_threshold_seconds: DEFAULT_SPAM_THRESHOLD_SECONDS,
+            // Vanilla `server.properties` default: `rate-limit=0`, unlimited.
+            rate_limit: 0,
             compression: Some(CompressionInfo::default()),
             server_links: None,
+            resource_pack: None,
+            // Auto-detected, not a hard `1`: a default-constructed config (tests,
+            // embedders, `steel-flint`) must size its pools for the container's
+            // real core budget, the same way the packaged `cores = 0` does. A
+            // literal `1` silently pinned every derived pool to a single thread.
+            cores: available_worker_threads(),
             packet_workers: None,
             chunk_generation_threads: None,
             chunk_encoding_threads: None,
+            rcon: RconConfig::default(),
         }
     }
 }
 
 impl RuntimeConfig {
+    /// Caps the configured core budget to what this container may actually use.
+    ///
+    /// The configured value is an upper bound, never a promotion: a server told
+    /// to use 16 cores inside a Pterodactyl container limited to 600% CPU sizes
+    /// its pools for 6, while a 4-core configuration on a 64-core host still
+    /// uses only 4. `0` means "whatever the container allows".
+    ///
+    /// Every pool size in the server is derived from `cores`, so clamping here
+    /// keeps one place responsible for it instead of relying on each
+    /// constructor to remember.
+    pub fn clamp_cores_to_available(&mut self, available: usize) {
+        self.cores = effective_cores(Some(self.cores), available);
+    }
+
+    /// Minimum view distance the server accepts from a client.
+    ///
+    /// Vanilla never sends fewer than two chunks, because a one-chunk view
+    /// leaves the client unable to render a full chunk column.
+    pub const MIN_VIEW_DISTANCE: u8 = 2;
+
+    /// Clamps a client-requested view distance to the server's configured range.
+    ///
+    /// This is the single place both the configuration-state handler and the
+    /// play-state client-information handler apply the bound, so the two can
+    /// never disagree about the effective distance.
+    #[must_use]
+    pub const fn clamp_view_distance(&self, requested: u8) -> u8 {
+        // Both bounds are lifted to the floor first: a config that asks for one
+        // chunk still yields a usable distance instead of propagating the value.
+        let requested = if requested < Self::MIN_VIEW_DISTANCE {
+            Self::MIN_VIEW_DISTANCE
+        } else {
+            requested
+        };
+        let ceiling = if self.view_distance < Self::MIN_VIEW_DISTANCE {
+            Self::MIN_VIEW_DISTANCE
+        } else {
+            self.view_distance
+        };
+        if requested > ceiling {
+            ceiling
+        } else {
+            requested
+        }
+    }
+
+    /// Builds the `CResourcePackPush` packet from config, if a pack is configured.
+    ///
+    /// Vanilla `ServerResourcePackConfigurationTask.start` sends exactly one
+    /// `ClientboundResourcePackPushPacket` with the server's pack, so this
+    /// mirrors that: one packet, no batching.
+    #[must_use]
+    pub fn resource_pack_push_packet(&self) -> Option<CResourcePackPush> {
+        let pack = self.resource_pack.as_ref()?;
+        if pack.url.trim().is_empty() {
+            return None;
+        }
+        Some(CResourcePackPush {
+            // Vanilla derives the id from the URL the same way, so a changed
+            // URL looks like a different pack to the client.
+            id: Uuid::new_v3(&Uuid::NAMESPACE_URL, pack.url.as_bytes()),
+            url: pack.url.clone(),
+            hash: pack.hash.clone().unwrap_or_default(),
+            required: pack.required,
+            prompt: pack.prompt.clone(),
+        })
+    }
+
     /// Builds the `CServerLinks` packet from config, if server links are enabled.
     #[must_use]
     pub fn server_links_packet(&self) -> Option<CServerLinks> {
@@ -175,6 +300,20 @@ pub struct ConfigLink {
     pub label: ConfigLabel,
     /// The URL for this link
     pub url: String,
+}
+
+/// Vanilla `server.properties` `resource-pack*` settings.
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(default, deny_unknown_fields)]
+pub struct ResourcePackConfig {
+    /// Download URL of the pack zip.
+    pub url: String,
+    /// Lowercase hex SHA-1 of the zip; empty means the client does not verify it.
+    pub hash: Option<String>,
+    /// Vanilla `resource-pack-required`: declining the pack disconnects.
+    pub required: bool,
+    /// Vanilla `resource-pack-prompt`: the text shown in the download prompt.
+    pub prompt: Option<TextComponent>,
 }
 
 /// Server links configuration.
@@ -848,6 +987,90 @@ mod tests {
     use super::*;
     use std::env::temp_dir;
     use steel_registry::init_vanilla_registry;
+    use steel_utils::threading::available_worker_threads;
+
+    #[test]
+    fn a_container_quota_caps_the_configured_core_count() {
+        // The operator asks for 16 cores, Pterodactyl gives 600% (= 6 cores).
+        let mut config = RuntimeConfig {
+            cores: 16,
+            ..RuntimeConfig::default()
+        };
+        config.clamp_cores_to_available(6);
+        assert_eq!(config.cores, 6, "the container quota wins over the config");
+    }
+
+    #[test]
+    fn a_core_config_below_the_quota_is_kept() {
+        // A 4-core configuration on a 64-core host must stay at 4 cores: the
+        // setting is a budget, not a request to use everything available.
+        let mut config = RuntimeConfig {
+            cores: 4,
+            ..RuntimeConfig::default()
+        };
+        config.clamp_cores_to_available(64);
+        assert_eq!(config.cores, 4);
+    }
+
+    #[test]
+    fn a_zero_core_config_detects_the_container_limit() {
+        let mut config = RuntimeConfig {
+            cores: 0,
+            ..RuntimeConfig::default()
+        };
+        config.clamp_cores_to_available(6);
+        assert_eq!(config.cores, 6, "0 means the container decides");
+    }
+
+    /// The operator's rule, stated directly: when the container allows at least
+    /// as many cores as the config asks for, the config value is used as-is;
+    /// when the container allows fewer, the count is reduced to the container.
+    #[test]
+    fn the_effective_core_count_is_min_of_config_and_container() {
+        for configured in [1usize, 2, 4, 8, 16, 64] {
+            for available in [1usize, 2, 3, 6, 16, 64, 128] {
+                let mut config = RuntimeConfig {
+                    cores: configured,
+                    ..RuntimeConfig::default()
+                };
+                config.clamp_cores_to_available(available);
+                assert_eq!(
+                    config.cores,
+                    configured.min(available),
+                    "listed {configured} cores, container allows {available}"
+                );
+            }
+        }
+    }
+
+    /// A default-constructed config must not pin the pools to a single thread.
+    #[test]
+    fn the_default_core_count_follows_detection() {
+        assert_eq!(
+            RuntimeConfig::default().cores,
+            available_worker_threads().max(1)
+        );
+    }
+
+    #[test]
+    fn an_equally_sized_config_is_unchanged() {
+        let mut config = RuntimeConfig {
+            cores: 6,
+            ..RuntimeConfig::default()
+        };
+        config.clamp_cores_to_available(6);
+        assert_eq!(config.cores, 6);
+    }
+
+    #[test]
+    fn a_report_of_zero_available_cores_still_yields_one() {
+        let mut config = RuntimeConfig {
+            cores: 8,
+            ..RuntimeConfig::default()
+        };
+        config.clamp_cores_to_available(0);
+        assert_eq!(config.cores, 1, "a server must never size zero pools");
+    }
 
     #[test]
     fn online_mode_requires_the_authenticated_encryption_flow() {
@@ -1315,5 +1538,87 @@ default = true
             validate_relative_path("region", "storage.config.path"),
             Ok(())
         );
+    }
+
+    #[test]
+    fn view_distance_clamp_lifts_the_floor_on_both_sides() {
+        let mut config = RuntimeConfig {
+            view_distance: 10,
+            ..RuntimeConfig::default()
+        };
+        assert_eq!(config.clamp_view_distance(0), 2);
+        assert_eq!(config.clamp_view_distance(1), 2);
+        assert_eq!(config.clamp_view_distance(2), 2);
+        assert_eq!(config.clamp_view_distance(7), 7);
+        assert_eq!(config.clamp_view_distance(32), 10);
+
+        // A server configured below vanilla's floor still yields a usable value.
+        config.view_distance = 1;
+        assert_eq!(config.clamp_view_distance(1), 2);
+        assert_eq!(config.clamp_view_distance(8), 2);
+    }
+}
+
+#[cfg(test)]
+mod resource_pack_tests {
+    use super::*;
+    use steel_protocol::packets::game::MAX_RESOURCE_PACK_HASH_LENGTH;
+
+    fn config_with_pack(pack: ResourcePackConfig) -> RuntimeConfig {
+        RuntimeConfig {
+            resource_pack: Some(pack),
+            ..RuntimeConfig::default()
+        }
+    }
+
+    #[test]
+    fn no_pack_means_no_packet() {
+        assert!(
+            RuntimeConfig::default()
+                .resource_pack_push_packet()
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn an_empty_url_is_treated_as_unconfigured() {
+        let config = config_with_pack(ResourcePackConfig {
+            url: "   ".to_owned(),
+            ..ResourcePackConfig::default()
+        });
+        assert!(config.resource_pack_push_packet().is_none());
+    }
+
+    #[test]
+    fn the_push_packet_carries_the_configured_fields() {
+        let config = config_with_pack(ResourcePackConfig {
+            url: "https://example.com/pack.zip".to_owned(),
+            hash: Some("0000000000000000000000000000000000000000".to_owned()),
+            required: true,
+            prompt: None,
+        });
+
+        let packet = config
+            .resource_pack_push_packet()
+            .expect("configured pack produces a packet");
+        assert_eq!(packet.url, "https://example.com/pack.zip");
+        assert!(packet.required);
+        assert_eq!(packet.hash.len(), MAX_RESOURCE_PACK_HASH_LENGTH);
+        // Vanilla treats the URL as the pack's identity.
+        assert_eq!(
+            packet.id,
+            Uuid::new_v3(&Uuid::NAMESPACE_URL, b"https://example.com/pack.zip")
+        );
+    }
+
+    #[test]
+    fn a_missing_hash_is_sent_empty() {
+        let config = config_with_pack(ResourcePackConfig {
+            url: "https://example.com/pack.zip".to_owned(),
+            ..ResourcePackConfig::default()
+        });
+        let packet = config.resource_pack_push_packet().expect("packet");
+        assert_eq!(packet.hash, "");
+        assert!(!packet.required);
     }
 }

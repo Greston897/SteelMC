@@ -1,6 +1,7 @@
 //! Typed, plugin-extensible recipe registries and vanilla recipe data.
 
 mod crafting;
+mod display;
 mod ingredient;
 mod properties;
 mod registry;
@@ -14,6 +15,7 @@ pub use crafting::{
     MapExtendingRecipe, MapRecipeData, PositionedCraftingInput, RepairItemRecipe, ShapedRecipe,
     ShapelessRecipe, ShieldDecorationRecipe, TransmuteRecipe,
 };
+pub use display::display_for_recipe;
 pub use ingredient::Ingredient;
 pub use properties::{
     CookingBookCategory, CraftingBookCategory, PlacementInfo, RecipeBookCategory,

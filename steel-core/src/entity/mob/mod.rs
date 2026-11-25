@@ -3,10 +3,14 @@
 mod pathfinder;
 
 use crate::entity::leash::{LeashData, Leashable};
+use crate::player::advancement::predicate::TriggerContext;
+use crate::world::raid::is_raider_type;
 pub use pathfinder::PathfinderMob;
 use pathfinder::tick_path_navigation_target;
 #[cfg(test)]
 use pathfinder::{find_ground_path_target_surface, path_end_node_can_reach_target};
+use steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_ENTITY;
+use steel_registry::vanilla_criteria_triggers::THROWN_ITEM_PICKED_UP_BY_PLAYER;
 
 use std::sync::Arc;
 
@@ -19,7 +23,9 @@ use steel_protocol::packets::game::CTakeItemEntity;
 use steel_registry::attribute::AttributeRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::data_components::components::ItemEnchantments;
-use steel_registry::data_components::vanilla_components::CUSTOM_NAME;
+use steel_registry::data_components::vanilla_components::{
+    ATTACK_RANGE, CUSTOM_NAME, USE_REMAINDER,
+};
 use steel_registry::enchantment_effect::EnchantmentEffectComponent;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
@@ -28,9 +34,9 @@ use steel_registry::loot_table::LootTableRef;
 use steel_registry::sound_event::SoundEventRef;
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::{
-    REGISTRY, RegistryExt, TaggedRegistryExt, vanilla_attributes, vanilla_damage_types,
-    vanilla_entities, vanilla_entity_type_tags::EntityTypeTag, vanilla_game_events,
-    vanilla_game_rules, vanilla_items,
+    REGISTRY, TaggedRegistryExt, vanilla_attributes, vanilla_damage_types, vanilla_entities,
+    vanilla_entity_type_tags::EntityTypeTag, vanilla_game_events, vanilla_game_rules,
+    vanilla_items,
 };
 use steel_utils::locks::SyncMutex;
 use steel_utils::nbt::NbtNumeric as _;
@@ -56,8 +62,8 @@ use crate::entity::conversion::{AfterConversion, convert_to as convert_mob};
 use crate::entity::damage::DamageSource;
 use crate::entity::entities::objects::items::ItemEntity;
 use crate::entity::{
-    ConversionParams, Entity, EntitySpawnReason, LivingEntity, LivingTravelInput, RemovalReason,
-    SharedEntity, SpawnGroupData, WeakEntity, aabb_contains_any_liquid,
+    ConversionParams, ENTITIES, Entity, EntitySpawnReason, LivingEntity, LivingTravelInput,
+    RemovalReason, SharedEntity, SpawnGroupData, WeakEntity, aabb_contains_any_liquid,
 };
 use crate::inventory::equipment::EquipmentSlot;
 use crate::physics::MoveResult;
@@ -176,6 +182,8 @@ pub struct MobBase {
     navigation: SyncMutex<PathNavigation>,
     pathfinding_malus: SyncMutex<PathfindingMalus>,
     persistence_required: SyncMutex<bool>,
+    can_join_raid: SyncMutex<bool>,
+    saved_raid: SyncMutex<Option<(i32, i32, bool)>>,
     can_pick_up_loot: SyncMutex<bool>,
     drop_chances: SyncMutex<DropChances>,
     home_restriction: SyncMutex<MobHomeRestriction>,
@@ -212,6 +220,8 @@ impl MobBase {
             navigation: SyncMutex::new(PathNavigation::new()),
             pathfinding_malus: SyncMutex::new(PathfindingMalus::new()),
             persistence_required: SyncMutex::new(false),
+            can_join_raid: SyncMutex::new(false),
+            saved_raid: SyncMutex::new(None),
             can_pick_up_loot: SyncMutex::new(false),
             drop_chances: SyncMutex::new(DropChances::DEFAULT),
             home_restriction: SyncMutex::new(MobHomeRestriction::none()),
@@ -359,9 +369,35 @@ pub trait Mob: LivingEntity + Leashable {
 
     fn set_mob_flags(&self, flags: i8);
 
-    /// Returns whether the entity-specific spawn predicate accepts this spawn.
-    fn check_spawn_rules(&self, _world: &Arc<World>, _reason: EntitySpawnReason) -> bool {
-        true
+    /// Vanilla `Mob.checkSpawnRules`.
+    ///
+    /// Vanilla dispatches to the type's registered `SpawnPlacements` predicate
+    /// (`Monster.checkMonsterSpawnRules`, `Animal.checkAnimalSpawnRules`, …).
+    /// Steel stores that predicate as the type's `SpawnRule`, so the default
+    /// implementation runs it; types with a genuinely unconditional predicate
+    /// (or no registered rule) accept the spawn.
+    fn check_spawn_rules(&self, world: &Arc<World>, reason: EntitySpawnReason) -> bool {
+        let entity = self.as_entity_event_source();
+        let entity_type = entity.entity_type();
+        let Some(registry) = ENTITIES.get() else {
+            return true;
+        };
+        let Some(rule) = registry.spawn_rule(entity_type) else {
+            return true;
+        };
+        let mut random = rand::rng();
+        let position = entity.position();
+        rule(
+            entity_type,
+            world,
+            reason,
+            BlockPos::new(
+                position.x.floor() as i32,
+                position.y.floor() as i32,
+                position.z.floor() as i32,
+            ),
+            &mut random,
+        )
     }
 
     /// Sets the vanilla baby state. Vanilla `Mob.setBaby` is a no-op; ageable
@@ -486,8 +522,25 @@ pub trait Mob: LivingEntity + Leashable {
     }
 
     /// Runs the shared living-entity base tick, then mob-specific per-tick behavior.
+    ///
+    /// `checkDespawn` is *not* called here: Steel's `EntityManager::tick_entities`
+    /// runs `Entity::check_despawn` for every ticking entity before this, which is
+    /// where vanilla's `ServerLevel.tickNonPassenger` sits relative to `Mob.tick`.
+    /// Calling it here as well would roll the 1-in-800 far-away check twice per
+    /// tick and halve the effective despawn period.
     fn base_tick_mob(&self) {
         self.base_tick_living_entity();
+        // Reattach saved membership even when NoAI disables serverAiStep.
+        let has_saved_raid = self.mob_base().saved_raid.lock().is_some();
+        if has_saved_raid
+            && let Some(world) = self.level()
+            && let Some(entity) = world.get_entity_by_uuid(&self.uuid())
+        {
+            let saved = self.mob_base().saved_raid.lock().take();
+            if let Some((id, wave, leader)) = saved {
+                world.raids.restore_raider(&entity, id, wave, leader);
+            }
+        }
         self.mob_base_tick();
     }
 
@@ -516,9 +569,15 @@ pub trait Mob: LivingEntity + Leashable {
     fn finalize_spawn_mob_base(
         &self,
         _world: &Arc<World>,
-        _spawn_reason: EntitySpawnReason,
+        spawn_reason: EntitySpawnReason,
         group_data: Option<SpawnGroupData>,
     ) -> Option<SpawnGroupData> {
+        if is_raider_type(self.entity_type()) {
+            self.set_can_join_raid(
+                self.entity_type() != &vanilla_entities::WITCH
+                    || spawn_reason != EntitySpawnReason::Natural,
+            );
+        }
         let needs_random_spawn_bonus = !self
             .attributes()
             .lock()
@@ -690,19 +749,64 @@ pub trait Mob: LivingEntity + Leashable {
         !self.is_vehicle()
     }
 
-    /// Consumes one of the player's held item after this mob uses it in an interaction.
+    /// Consumes one of the player's held item after this mob uses it in an
+    /// interaction, converting it to the vanilla `use_remainder` result.
     fn use_player_item(&self, player: &Player, hand: InteractionHand) {
-        player.inventory.lock().shrink_item_in_hand(hand, 1);
-        // TODO: Apply USE_REMAINDER components once item use-remainder support exists.
+        let mut produced = None;
+        {
+            let mut inventory = player.inventory.lock();
+            let original = inventory
+                .get_item_in_hand(hand)
+                .copy_with_count(inventory.get_item_in_hand(hand).count());
+            inventory.shrink_item_in_hand(hand, 1);
+            let mut used = inventory
+                .get_item_in_hand(hand)
+                .copy_with_count(inventory.get_item_in_hand(hand).count());
+            if let Some(remainder) = original.get(USE_REMAINDER)
+                && let Some(extra) = remainder.convert_into_remainder(
+                    &mut used,
+                    original.count(),
+                    player.has_infinite_materials(),
+                )
+            {
+                produced = Some(extra);
+            }
+            // `convert_into_remainder` may have swapped the emptied stack for
+            // the remainder.
+            *inventory.get_item_in_hand_mut(hand) = used;
+        }
+        if let Some(extra) = produced {
+            player.handle_extra_items_created_on_use(extra);
+        }
     }
 
     fn remove_when_far_away(&self, dist_sqr: f64) -> bool {
+        if is_raider_type(self.entity_type())
+            && self
+                .level()
+                .is_some_and(|world| world.raids.contains_raider(self.uuid()))
+        {
+            return false;
+        }
         self.as_animal()
             .is_none_or(|animal| animal.remove_when_far_away_animal(dist_sqr))
     }
 
     fn requires_custom_persistence(&self) -> bool {
         self.is_passenger() || self.is_leashed()
+    }
+
+    /// Updates `Raider.IS_CELEBRATING` on raider implementations.
+    fn set_raid_celebrating(&self, _celebrating: bool) {}
+
+    /// Vanilla Raider.CanJoinRaid; natural witches are excluded at spawn time.
+    fn can_join_raid(&self) -> bool {
+        *self.mob_base().can_join_raid.lock()
+    }
+
+    /// Updates the persisted vanilla `CanJoinRaid` flag.
+    fn set_can_join_raid(&self, eligible: bool) {
+        *self.mob_base().can_join_raid.lock() = eligible;
     }
 
     fn is_persistence_required(&self) -> bool {
@@ -731,11 +835,48 @@ pub trait Mob: LivingEntity + Leashable {
         self.mob_base().drop_chances().lock().by_equipment(slot)
     }
 
+    /// Vanilla `EnchantmentHelper.processEquipmentDropChance`: the item's
+    /// `equipment_drops` enchantment effects adjust the base drop chance, but
+    /// only for effects whose requirements match the killing blow.
+    fn equipment_drop_chance_with_enchantments(
+        &self,
+        slot: EquipmentSlot,
+        context: &EnchantmentDamageContext<'_>,
+    ) -> f32 {
+        let base = self.equipment_drop_chance(slot);
+        let mut stack = None;
+        self.with_equipment_slot(slot, &mut |item| {
+            stack = Some(item.clone());
+        });
+        let Some(stack) = stack else {
+            return base;
+        };
+        enchantment_helper::process_equipment_drop_chance(&stack, context, base).clamp(0.0, 1.0)
+    }
+
     fn set_equipment_drop_chance(&self, slot: EquipmentSlot, chance: f32) {
         self.mob_base()
             .drop_chances()
             .lock()
             .set_equipment_chance(slot, chance);
+    }
+
+    /// Vanilla `Mob.dropPreservedEquipment`: drops every equipped stack whose
+    /// drop chance was set to "preserve" (mobs that convert instead of dying).
+    ///
+    /// Returns nothing here because Steel has no caller that needs the set of
+    /// slots a predicate vetoed; every preserved stack is dropped.
+    fn drop_preserved_equipment(&self) {
+        for slot in EquipmentSlot::ALL {
+            if !self.is_equipment_drop_preserved(slot) {
+                continue;
+            }
+            let item_stack = self.living_base().equipment().lock().take(slot);
+            if item_stack.is_empty() {
+                continue;
+            }
+            self.spawn_at_location(item_stack, 0.0);
+        }
     }
 
     fn is_equipment_drop_preserved(&self, slot: EquipmentSlot) -> bool {
@@ -780,9 +921,23 @@ pub trait Mob: LivingEntity + Leashable {
         }
 
         let count = equipped.count();
-        // TODO(advancements): vanilla calls LivingEntity.onItemPickup here, before
-        // the take packet, which fires the THROWN_ITEM_PICKED_UP_BY_ENTITY criterion.
-        // Add that once Steel has the advancement-criteria foundation.
+        // Vanilla `LivingEntity.onItemPickup` runs before the take packet and fires
+        // the `thrown_item_picked_up_by_entity` criterion on the picking entity,
+        // which for a player is the advancement owner.
+        if let Some(player) = self.as_player() {
+            let context = TriggerContext::item(&equipped.item().key).with_item_stack(&equipped);
+            player.trigger_advancement_with_context(&THROWN_ITEM_PICKED_UP_BY_ENTITY, &context);
+            // Vanilla `ItemEntity.playerTouch` additionally fires
+            // `thrown_item_picked_up_by_player` when the thrown item's owner is
+            // the picking player, which is how `husbandry/throw_trident` and
+            // `adventure/throw_and_retrieve` complete.
+            if item_entity
+                .get_owner()
+                .is_some_and(|owner| owner == player.gameprofile.id())
+            {
+                player.trigger_advancement_with_context(&THROWN_ITEM_PICKED_UP_BY_PLAYER, &context);
+            }
+        }
         let chunk_pos = ChunkPos::from_entity_pos(item_entity.position());
         world.broadcast_to_nearby(
             chunk_pos,
@@ -1050,13 +1205,16 @@ pub trait Mob: LivingEntity + Leashable {
         }
     }
 
-    fn drop_custom_death_loot_mob(&self, _source: &DamageSource, killed_by_player: bool) {
+    fn drop_custom_death_loot_mob(&self, source: &DamageSource, killed_by_player: bool) {
         if self.level().is_none() {
             return;
         }
+        let enchantment_context =
+            EnchantmentDamageContext::from_damage_source(self.entity_type(), source);
 
         for slot in EquipmentSlot::ALL {
-            let drop_chance = self.equipment_drop_chance(slot);
+            let drop_chance =
+                self.equipment_drop_chance_with_enchantments(slot, &enchantment_context);
             let preserve = self.is_equipment_drop_preserved(slot);
             if !can_attempt_equipment_drop(drop_chance, preserve, killed_by_player) {
                 continue;
@@ -1073,8 +1231,6 @@ pub trait Mob: LivingEntity + Leashable {
                 continue;
             }
 
-            // TODO: Apply EquipmentDrops enchantment value effects once damage
-            // sources can resolve their living attacker context.
             let random_roll = rand::random::<f32>();
             if random_roll >= drop_chance {
                 continue;
@@ -1105,6 +1261,18 @@ pub trait Mob: LivingEntity + Leashable {
 
     fn save_mob(&self, nbt: &mut NbtCompound) {
         self.save_equipment(nbt);
+        if is_raider_type(self.entity_type()) {
+            nbt.insert("CanJoinRaid", i8::from(self.can_join_raid()));
+            let membership = self
+                .level()
+                .and_then(|world| world.raids.member_save_data(self.uuid()))
+                .or(*self.mob_base().saved_raid.lock());
+            if let Some((id, wave, leader)) = membership {
+                nbt.insert("RaidId", id);
+                nbt.insert("Wave", wave);
+                nbt.insert("PatrolLeader", i8::from(leader));
+            }
+        }
         nbt.insert("CanPickUpLoot", i8::from(self.can_pick_up_loot()));
         nbt.insert(
             "PersistenceRequired",
@@ -1143,6 +1311,18 @@ pub trait Mob: LivingEntity + Leashable {
 
     fn load_mob(&self, nbt: BorrowedNbtCompoundView<'_, '_>) {
         self.load_equipment(nbt);
+        self.set_can_join_raid(
+            nbt.byte_value("CanJoinRaid")
+                .is_some_and(|value| value != 0),
+        );
+        *self.mob_base().saved_raid.lock() = nbt.int_value("RaidId").map(|id| {
+            (
+                id,
+                nbt.int_value("Wave").unwrap_or(0),
+                nbt.byte_value("PatrolLeader")
+                    .is_some_and(|value| value != 0),
+            )
+        });
         self.set_can_pick_up_loot(
             nbt.byte_value("CanPickUpLoot")
                 .is_some_and(|value| value != 0),
@@ -1487,10 +1667,28 @@ pub trait Mob: LivingEntity + Leashable {
     fn play_attack_sound(&self) {}
 
     /// Returns whether `target` is within this mob's melee attack range.
+    ///
+    /// Vanilla `Mob.isWithinMeleeAttackRange` reads the held item's
+    /// `attack_range` component and scales it by the component's `mob_factor`
+    /// (mobs reach 0.5x the player reach by default).
     fn is_within_melee_attack_range(&self, target: &dyn LivingEntity) -> bool {
-        // TODO: Use the held item's ATTACK_RANGE component once it has typed component data.
-        let max_range = default_attack_reach();
-        let min_range = 0.0;
+        let mut held = None;
+        self.with_equipment_slot(EquipmentSlot::MainHand, &mut |item| {
+            held = Some(item.clone());
+        });
+        let (max_range, min_range) = held
+            .as_ref()
+            .and_then(|item| item.get(ATTACK_RANGE))
+            .map_or_else(
+                || (default_attack_reach(), 0.0),
+                |range| {
+                    let factor = f64::from(range.mob_factor);
+                    (
+                        f64::from(range.max_reach) * factor,
+                        f64::from(range.min_reach) * factor,
+                    )
+                },
+            );
         let target_hitbox = target.bounding_box();
         self.attack_bounding_box(max_range)
             .intersects(target_hitbox)
@@ -1573,8 +1771,43 @@ pub trait Mob: LivingEntity + Leashable {
         ));
     }
 
-    fn mob_server_ai_step(&self, entity: &SharedEntity) {
+    /// Raider.updateNoActionTime advances twice as fast; fighting a player or
+    /// iron golem in an active raid resets inactivity before the increment.
+    fn update_mob_no_action_time(&self) {
+        let raider = is_raider_type(self.entity_type());
+        if raider
+            && self.can_join_raid()
+            && self.target().is_some_and(|target| {
+                target.as_player().is_some()
+                    || target.entity_type() == &vanilla_entities::IRON_GOLEM
+            })
+            && self
+                .level()
+                .is_some_and(|world| world.raids.contains_raider(self.uuid()))
+        {
+            self.set_no_action_time(0);
+        }
         self.increment_no_action_time();
+        if raider {
+            self.increment_no_action_time();
+        }
+    }
+
+    fn mob_server_ai_step(&self, entity: &SharedEntity) {
+        let saved_raid = self.mob_base().saved_raid.lock().take();
+        if let Some((id, wave, leader)) = saved_raid
+            && let Some(world) = self.level()
+        {
+            world.raids.restore_raider(entity, id, wave, leader);
+        }
+        if is_raider_type(self.entity_type())
+            && self.can_join_raid()
+            && let Some(world) = self.level()
+            && world.game_time() % 20 == 0
+        {
+            world.raids.try_join_raider(entity);
+        }
+        self.update_mob_no_action_time();
         self.mob_base().sensing().lock().tick();
         if self.tick_count() % 5 == 0 {
             self.update_control_flags();
@@ -1762,21 +1995,24 @@ pub trait Mob: LivingEntity + Leashable {
         let mut strafe_forward = forward;
         let mut strafe_right = right;
 
-        let mut distance = strafe_forward
-            .mul_add(strafe_forward, strafe_right * strafe_right)
-            .sqrt();
+        // Vanilla `Mth.sqrt(xa * xa + za * za)`: `f32` squares summed left to
+        // right, not a fused multiply-add.
+        let mut distance = (strafe_forward * strafe_forward + strafe_right * strafe_right).sqrt();
         if distance < 1.0 {
             distance = 1.0;
         }
         distance = speed / distance;
         let xa = strafe_forward * distance;
         let za = strafe_right * distance;
-        let yaw_radians = self.rotation().0 * DEG_TO_RAD;
+        // Vanilla widens the *`f32`* yaw to `double` for `Mth.sin`/`Mth.cos`
+        // (`Mth.sin((float)deg * (PI / 180))`), so the angle must be computed in
+        // `f32` first — a `f64` angle can land in a different sine-table slot.
+        let yaw_radians = f64::from(self.rotation().0 * DEG_TO_RAD);
         let sin = trig::sin(yaw_radians);
         let cos = trig::cos(yaw_radians);
-        let dx = xa.mul_add(cos, -(za * sin));
-        let dz = za.mul_add(cos, xa * sin);
-        if !self.is_strafe_walkable(dx, dz) {
+        let dx = f64::from(xa * cos - za * sin);
+        let dz = f64::from(za * cos + xa * sin);
+        if !self.is_strafe_walkable(dx as f32, dz as f32) {
             strafe_forward = 1.0;
             strafe_right = 0.0;
         }
@@ -1829,7 +2065,7 @@ pub trait Mob: LivingEntity + Leashable {
             let xd = wanted_position.x - position.x;
             let yd = wanted_position.y - self.get_eye_y();
             let zd = wanted_position.z - position.z;
-            let horizontal = xd.hypot(zd);
+            let horizontal = (xd * xd + zd * zd).sqrt();
             if horizontal.abs() > 1.0e-5 || yd.abs() > 1.0e-5 {
                 let target_pitch = -(yd.atan2(horizontal)) as f32 * RAD_TO_DEG;
                 rotation.1 =
@@ -1885,7 +2121,7 @@ pub trait Mob: LivingEntity + Leashable {
     fn tick_body_rotation_control(&self) {
         let moving = {
             let delta = self.position() - self.old_position();
-            delta.x.mul_add(delta.x, delta.z * delta.z) > BODY_ROTATION_MOVING_DISTANCE_SQR
+            delta.x * delta.x + delta.z * delta.z > BODY_ROTATION_MOVING_DISTANCE_SQR
         };
         let carrying_mob_passenger = self
             .first_passenger()
@@ -1992,7 +2228,7 @@ pub fn block_pos_distance_sqr(a: BlockPos, b: BlockPos) -> f64 {
     let dx = f64::from(a.x() - b.x());
     let dy = f64::from(a.y() - b.y());
     let dz = f64::from(a.z() - b.z());
-    dx.mul_add(dx, dy.mul_add(dy, dz * dz))
+    dx * dx + dy * dy + dz * dz
 }
 
 pub fn block_center_distance_sqr(pos: BlockPos, target: DVec3) -> f64 {

@@ -85,6 +85,13 @@ impl MobEffectInstance {
         }
     }
 
+    /// A non-ambient, visible instance with an icon and an explicit duration —
+    /// what vanilla builds when a mob applies an effect from a hit.
+    #[must_use]
+    pub const fn simple(effect: MobEffectRef, duration: i32, amplifier: i32) -> Self {
+        Self::with_duration(effect, duration, amplifier)
+    }
+
     /// Sets whether this effect is ambient.
     #[must_use]
     pub const fn with_ambient(mut self, ambient: bool) -> Self {
@@ -654,6 +661,20 @@ struct LivingEntityState {
     last_climbable_pos: Option<BlockPos>,
     discard_friction: bool,
     jumping: bool,
+    /// Vanilla `CombatTracker.inCombat`: the entity is in combat and its
+    /// `onEnterCombat` hook has fired.
+    in_combat: bool,
+    /// Vanilla `CombatTracker.takingDamage`: damage arrived since the last reset.
+    taking_damage: bool,
+    /// Vanilla `CombatTracker.lastDamageTime`, in entity ticks.
+    combat_last_damage_time: i32,
+    /// Vanilla `CombatTracker.combatStartTime`, in entity ticks.
+    combat_start_time: i32,
+    /// Vanilla `CombatTracker.combatEndTime`, in entity ticks.
+    combat_end_time: i32,
+    /// Vanilla `AbstractHorse.playerJumpPendingScale`: the charge the rider
+    /// released, applied on the mount's next grounded `tickRidden`.
+    jump_pending_scale: f32,
     travel_input: LivingTravelInput,
     rotation: LivingRotationState,
     swing: LivingSwingState,
@@ -691,6 +712,12 @@ impl LivingEntityState {
             last_climbable_pos: None,
             discard_friction: false,
             jumping: false,
+            in_combat: false,
+            taking_damage: false,
+            combat_last_damage_time: 0,
+            combat_start_time: 0,
+            combat_end_time: 0,
+            jump_pending_scale: 0.0,
             travel_input: LivingTravelInput::ZERO,
             rotation: LivingRotationState::new(),
             swing: LivingSwingState::new(),
@@ -707,6 +734,29 @@ impl LivingEntityState {
         self.last_hurt = 0.0;
         self.absorption_amount = 0.0;
         self.skip_drop_experience = false;
+    }
+}
+
+/// How [`LivingEntityBase::add_mob_effect`] changed the active-effect map.
+///
+/// Steel-specific: vanilla `LivingEntity.addEffect` branches inline on insert
+/// versus `MobEffectInstance.update`, while Steel splits the map update from the
+/// behavior dispatch, so the branch taken is returned to drive `on_effect_added`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MobEffectAddResult {
+    /// The effect was not active and has been inserted.
+    Added,
+    /// An already active instance was upgraded or extended.
+    Updated,
+    /// An already active instance was kept as is.
+    Unchanged,
+}
+
+impl MobEffectAddResult {
+    /// Returns whether the active-effect map changed.
+    #[must_use]
+    pub const fn changed(self) -> bool {
+        !matches!(self, Self::Unchanged)
     }
 }
 
@@ -1010,6 +1060,30 @@ impl LivingEntityBase {
         self.state.lock().no_action_time += 1;
     }
 
+    /// Refreshes transient item attribute modifiers for every equipment slot.
+    ///
+    /// Vanilla re-runs the location-based enchantment effects on the whole
+    /// entity (spectator transitions, respawns), which is equivalent to
+    /// refreshing each slot's modifiers.
+    pub fn refresh_all_equipment_attribute_modifiers(&self) {
+        for slot in EquipmentSlot::ALL {
+            let item_stack = self.equipment.lock().get_ref(slot).clone();
+            self.refresh_equipment_attribute_modifiers(slot, &item_stack);
+        }
+    }
+
+    /// Drops every transient item attribute modifier, mirroring vanilla
+    /// `ServerPlayer.setGameMode(Spectator)` emptying the effect map.
+    pub fn clear_equipment_attribute_modifiers(&self) {
+        let mut attributes = self.attributes.lock();
+        let mut installed_modifiers = self.equipment_attribute_modifiers.lock();
+        for slot_modifiers in installed_modifiers.iter_mut() {
+            for key in slot_modifiers.drain(..) {
+                attributes.remove_modifier(key.attribute, &key.id);
+            }
+        }
+    }
+
     /// Refreshes transient item attribute modifiers for an equipment slot.
     pub fn refresh_equipment_attribute_modifiers(
         &self,
@@ -1081,7 +1155,10 @@ impl LivingEntityBase {
     }
 
     /// Adds or updates active vanilla mob-effect state.
-    pub fn add_mob_effect(&self, effect: MobEffectInstance) -> bool {
+    ///
+    /// Returns how the active-effect map changed, so the caller can fire the
+    /// vanilla `on_effect_added` sound only for a genuinely new effect.
+    pub fn add_mob_effect(&self, effect: MobEffectInstance) -> MobEffectAddResult {
         let effect_key = effect.effect;
         let mut existing_effect = None;
         let mut changed_effect = None;
@@ -1104,7 +1181,7 @@ impl LivingEntityBase {
                 effect,
                 blend_for_self: true,
             });
-            return true;
+            return MobEffectAddResult::Added;
         }
 
         if let Some(effect) = changed_effect {
@@ -1114,10 +1191,10 @@ impl LivingEntityBase {
                 effect,
                 blend_for_self: false,
             });
-            return true;
+            return MobEffectAddResult::Updated;
         }
 
-        false
+        MobEffectAddResult::Unchanged
     }
 
     /// Sets active vanilla mob-effect state.
@@ -1467,6 +1544,69 @@ impl LivingEntityBase {
         self.state.lock().jumping = jumping;
     }
 
+    /// Vanilla `CombatTracker.recordDamage` bookkeeping.
+    ///
+    /// Returns `true` when this call moved the entity into combat, which is
+    /// exactly when vanilla fires `LivingEntity.onEnterCombat`.
+    pub fn record_combat_damage(&self, tick_count: i32, enters_combat: bool, alive: bool) -> bool {
+        let mut state = self.state.lock();
+        state.combat_last_damage_time = tick_count;
+        state.taking_damage = true;
+        if !state.in_combat && alive && enters_combat {
+            state.in_combat = true;
+            state.combat_start_time = tick_count;
+            state.combat_end_time = tick_count;
+            return true;
+        }
+        false
+    }
+
+    /// Vanilla `CombatTracker.recheckStatus`.
+    ///
+    /// Returns `true` when combat was left, which is when vanilla fires
+    /// `LivingEntity.onLeaveCombat`. `combat_duration` receives
+    /// `CombatTracker.getCombatDuration` for the leave packet.
+    pub fn recheck_combat_status(&self, tick_count: i32, alive: bool) -> Option<i32> {
+        let mut state = self.state.lock();
+        if !state.taking_damage {
+            return None;
+        }
+        let reset = if state.in_combat { 300 } else { 100 };
+        if alive && tick_count - state.combat_last_damage_time <= reset {
+            return None;
+        }
+        let was_in_combat = state.in_combat;
+        state.taking_damage = false;
+        state.in_combat = false;
+        state.combat_end_time = tick_count;
+        if !was_in_combat {
+            return None;
+        }
+        Some(if state.in_combat {
+            tick_count - state.combat_start_time
+        } else {
+            state.combat_end_time - state.combat_start_time
+        })
+    }
+
+    /// Returns whether vanilla's combat tracker currently has this entity in combat.
+    #[must_use]
+    pub fn is_in_combat(&self) -> bool {
+        self.state.lock().in_combat
+    }
+
+    /// Returns vanilla `playerJumpPendingScale`, the jump charge a rider has
+    /// released and that the mount still has to apply.
+    #[must_use]
+    pub fn jump_pending_scale(&self) -> f32 {
+        self.state.lock().jump_pending_scale
+    }
+
+    /// Sets vanilla `playerJumpPendingScale`.
+    pub fn set_jump_pending_scale(&self, scale: f32) {
+        self.state.lock().jump_pending_scale = scale;
+    }
+
     /// Returns vanilla living travel input.
     #[must_use]
     pub fn travel_input(&self) -> LivingTravelInput {
@@ -1554,6 +1694,11 @@ impl LivingEntityBase {
     #[must_use]
     pub fn hurt_time(&self) -> i32 {
         self.state.lock().hurt_time
+    }
+
+    /// Sets the hurt-flash counter, used when copying state between entities.
+    pub fn set_hurt_time(&self, hurt_time: i32) {
+        self.state.lock().hurt_time = hurt_time;
     }
 
     /// Returns the current hurt duration

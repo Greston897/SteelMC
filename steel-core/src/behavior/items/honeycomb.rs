@@ -1,6 +1,7 @@
 use steel_macros::item_behavior;
 use steel_protocol::packets::game::SoundSource;
 use steel_registry::item_stack::ItemStack;
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::{
     REGISTRY, blocks::block_state_ext::BlockStateExt, level_events,
     sound_events::ITEM_HONEYCOMB_WAX_ON, vanilla_game_events,
@@ -17,7 +18,7 @@ use crate::{
         entities::{SignBlockEntity, SignText},
     },
     entity::Entity,
-    player::Player,
+    player::{Player, advancement::predicate::TriggerContext},
     world::{World, game_event::GameEventContext},
 };
 
@@ -34,8 +35,13 @@ impl ItemBehavior for HoneycombItem {
         // Try block waxing first
         let old_block_state = context.world.get_block_state(pos);
         if let Some(waxed_block) = get_waxed_from_normal_variant(old_block_state.get_block()) {
+            // Vanilla fires before consuming the honeycomb or changing the block.
+            let stack = context.inv.with_item(|item| item.clone());
+            context.player.trigger_advancement_with_context(
+                &vanilla_criteria_triggers::ITEM_USED_ON_BLOCK,
+                &TriggerContext::block_at(context.world, pos).with_item_stack(&stack),
+            );
             context.inv.with_item(ItemStack::shrink_one);
-            // TODO: trigger CriteriaTriggers.ITEM_USED_ON_BLOCK advancement
             let waxed_state = REGISTRY
                 .blocks
                 .copy_matching_properties(old_block_state, waxed_block);

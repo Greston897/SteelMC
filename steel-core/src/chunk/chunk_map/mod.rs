@@ -38,8 +38,8 @@ pub use crate::chunk::chunk_scheduler::ChunkMapSchedulingTimings;
 use crate::chunk::chunk_scheduler::PlayerTicketOperation;
 use crate::chunk::chunk_scheduler::{ChunkSchedulingCoordinator, ChunkTicketReceipt};
 use crate::chunk::chunk_ticket_manager::{
-    ChunkTicketLevel, LoadLevelChange, generation_status, is_block_ticking, is_entity_ticking,
-    is_full,
+    ChunkTicketLevel, FullChunkStatus, LoadLevelChange, full_status, generation_status,
+    is_block_ticking, is_entity_ticking, is_full,
 };
 use crate::chunk::chunk_ticket_storage::{
     ChunkTicketStorage, ENDER_PEARL_TICKET_TIMEOUT_TICKS, PersistentChunkTickets,
@@ -373,9 +373,10 @@ impl ChunkMap {
         let full_publications = Arc::new(FullPublicationQueue::default());
 
         Self {
-            chunks: scc::HashMap::default(),
-            unloading_chunks: scc::HashMap::default(),
-            pending_generation_tasks: SyncMutex::new(Vec::new()),
+            // RAM/MSPT имба: пре-резерв chunks 2048/unloading 256 — нулевые ре-хеши при варпе/тп/флае.
+            chunks: scc::HashMap::with_capacity_and_hasher(2048, FxBuildHasher),
+            unloading_chunks: scc::HashMap::with_capacity_and_hasher(256, FxBuildHasher),
+            pending_generation_tasks: SyncMutex::new(Vec::with_capacity(32)),
             task_tracker: TaskTracker::new(),
             scheduling: ChunkSchedulingCoordinator::new(
                 ticket_storage,
@@ -486,6 +487,16 @@ impl ChunkMap {
             return None;
         }
         Some(holder)
+    }
+
+    /// Returns vanilla's `LevelChunk.getFullStatus()` for a loaded chunk.
+    ///
+    /// `None` when no chunk is loaded there at all, which callers treat like
+    /// vanilla's `!(chunk instanceof LevelChunk)`.
+    #[must_use]
+    pub fn full_chunk_status(&self, pos: ChunkPos) -> Option<FullChunkStatus> {
+        self.active_full_chunk_holder(pos)
+            .map(|holder| full_status(holder.simulation_level()))
     }
 
     /// Inserts a non-simulated holder into an empty gameplay view for worldgen benchmarks.
@@ -634,6 +645,20 @@ impl ChunkMap {
     pub(crate) fn place_portal_ticket(&self, ticket_position: BlockPos) {
         let center = ChunkPos::from_block_pos(ticket_position);
         self.scheduling.add_or_refresh_portal_ticket(center);
+    }
+
+    /// Vanilla `EnderDragonFight.tick`'s
+    /// `addTicketWithRadius(TicketType.DRAGON, new ChunkPos(0, 0), 9)`.
+    pub(crate) fn add_dragon_ticket(&self) {
+        self.scheduling
+            .add_or_refresh_dragon_ticket(ChunkPos::new(0, 0));
+    }
+
+    /// Vanilla `EnderDragonFight.tick`'s
+    /// `removeTicketWithRadius(TicketType.DRAGON, new ChunkPos(0, 0), 9)`, used
+    /// once the fight has no players left.
+    pub(crate) fn remove_dragon_ticket(&self) {
+        self.scheduling.remove_dragon_ticket(ChunkPos::new(0, 0));
     }
 
     /// Advances eligible timed chunk tickets by one server tick.
@@ -940,11 +965,26 @@ impl ChunkMap {
                     // Vanilla random chunk ticks use the entity-ticking range but only
                     // require the same confirmed block-ticking chunk used by scheduled ticks.
                     let tickable_chunk = &tickable_chunks.block[index];
-                    if tickable_chunk.randomly_ticking_sections.is_empty() {
-                        continue;
-                    }
                     if let Some(chunk) = tickable_chunk.holder.try_full_chunk() {
-                        chunk.tick_random_blocks(world, random_tick_speed, &mut random_positions);
+                        // Precipitation samples the column height, independently
+                        // of whether any section contains random-ticking blocks.
+                        for _ in 0..random_tick_speed {
+                            if rand::random_range(0..48) == 0 {
+                                let (x, _, z) = random_positions.next_local();
+                                let pos = tickable_chunk.pos;
+                                world.tick_precipitation_column(
+                                    pos.0.x * 16 + x as i32,
+                                    pos.0.y * 16 + z as i32,
+                                );
+                            }
+                        }
+                        if !tickable_chunk.randomly_ticking_sections.is_empty() {
+                            chunk.tick_random_blocks(
+                                world,
+                                random_tick_speed,
+                                &mut random_positions,
+                            );
+                        }
                     }
                 }
                 timings.tick_chunks += start.elapsed();
@@ -1179,6 +1219,27 @@ impl ChunkMap {
             .collect()
     }
 
+    /// Picks a random entity-ticking full chunk without materializing the list.
+    ///
+    /// The natural spawner asks once per category per player, so the previous
+    /// `tickable_full_chunk_positions().get(random)` shape allocated a fresh
+    /// `Vec` on every attempt — up to `categories * players` allocations per
+    /// 400-tick pass.
+    pub fn random_entity_ticking_chunk(&self, random_index: usize) -> Option<ChunkPos> {
+        let snapshot = self.ticking_chunks.load();
+        if snapshot.entity_indices.is_empty() {
+            return None;
+        }
+        let index = snapshot.entity_indices[random_index % snapshot.entity_indices.len()];
+        Some(snapshot.block[index].pos)
+    }
+
+    /// Number of chunks whose simulation level currently allows entity ticks.
+    #[must_use]
+    pub fn entity_ticking_chunk_count(&self) -> usize {
+        self.ticking_chunks.load().entity_indices.len()
+    }
+
     /// Returns whether the chunk is full and currently allows entity ticks.
     pub fn is_entity_ticking_full_chunk_loaded(&self, pos: ChunkPos) -> bool {
         self.chunks
@@ -1329,10 +1390,40 @@ impl ChunkMap {
     /// Mirrors vanilla `ServerPlayer.placeEnderPearlTicket` →
     /// `chunkSource.addTicketWithRadius(ENDER_PEARL, chunk, 2)`. Re-placing the
     /// same ticket resets its countdown rather than stacking duplicates.
-    // TODO: Steel records vanilla's FLAG_KEEP_DIMENSION_ACTIVE, but has no
-    // idle-dimension system that consumes it yet.
     pub fn place_ender_pearl_ticket(&self, chunk: ChunkPos) {
         self.scheduling.add_or_refresh_ender_pearl_ticket(chunk);
+    }
+
+    /// Force-loads `chunk`, keeping it generated and ticked with or without a
+    /// player nearby. The ticket is persistent, so it survives a restart the
+    /// same way vanilla's `/forceload` does.
+    pub fn force_load(&self, chunk: ChunkPos) {
+        self.scheduling.add_forced_ticket(chunk);
+    }
+
+    /// Returns whether `chunk` is force-loaded.
+    #[must_use]
+    pub fn is_force_loaded(&self, chunk: ChunkPos) -> bool {
+        self.scheduling.is_forced(chunk)
+    }
+
+    /// The number of force-loaded chunks in this dimension.
+    #[must_use]
+    pub fn forced_chunk_count(&self) -> usize {
+        self.scheduling.forced_count()
+    }
+
+    /// Stops force-loading `chunk`. Returns whether it was force-loaded.
+    pub fn remove_force_load(&self, chunk: ChunkPos) -> bool {
+        self.scheduling.remove_forced_ticket(chunk)
+    }
+
+    /// Returns whether any ticket keeps this dimension active.
+    ///
+    /// Consulted by the idle-dimension check so a dimension with only
+    /// force-loaded chunks or a portal ticket keeps ticking without players.
+    pub fn dimension_kept_active(&self) -> bool {
+        self.scheduling.dimension_kept_active()
     }
 }
 

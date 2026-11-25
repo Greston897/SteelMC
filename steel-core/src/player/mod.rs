@@ -20,7 +20,10 @@ mod permissions;
 pub mod player_data;
 pub mod player_data_storage;
 pub mod player_inventory;
+mod post_effects;
 mod profile;
+pub mod recipe_book;
+pub mod recipe_placement;
 mod session;
 mod sleep;
 mod sleep_state;
@@ -29,7 +32,23 @@ pub mod stats_counter;
 mod tick_state;
 mod title;
 
+use crate::block_entity::BlockEntity as _;
+use crate::block_entity::entities::CommandBlockBlockEntity;
+use crate::block_entity::entities::CommandBlockMode;
+use crate::block_entity::entities::CommandBlockMode::Auto;
+use crate::block_entity::entities::CommandBlockMode::Redstone;
+use crate::block_entity::entities::CommandBlockMode::Sequence;
+use crate::block_entity::entities::JigsawBlockEntity;
+use crate::block_entity::entities::StructureBlockEntity;
+use crate::block_entity::entities::TestBlockEntity;
+use crate::block_entity::entities::TestInstanceBlockEntity;
+use crate::block_entity::entities::WardenSpawnTracker;
+use crate::entity::create_wither_rose;
+use crate::entity::entities::CommandBlockMinecartEntity;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::player::player_inventory::Prediction;
+use crate::player::recipe_placement::{PlacementOutcome, PostPlaceAction};
+use crate::scoreboard::ScoreHolder;
 pub use abilities::{Abilities, DEFAULT_FLYING_SPEED};
 use chat::ChatState;
 pub use chat::{LastSeen, LastSeenMessagesValidator, MessageCache};
@@ -44,9 +63,11 @@ use item_cooldowns::ItemCooldowns;
 use lifecycle::PlayerLifecycleState;
 pub use lifecycle::PlayerRespawnConfig;
 pub(crate) use lifecycle::ResetReason;
+pub(crate) use lifecycle::resolve_personal_respawn_for_world_change;
 pub use movement::PlayerInput;
 use movement::{MovementState, TeleportState};
 use permissions::PlayerPermissionState;
+pub use post_effects::PlayerPostEffects;
 pub(crate) use profile::{GAME_PROFILE_CACHE_LIMIT, KnownPlayerNameLookup, lookup_online_profile};
 pub use profile::{
     GameProfile, KnownPlayer, KnownPlayers, ProfileLookupError, is_valid_player_name, offline_uuid,
@@ -55,33 +76,70 @@ pub use session::PlayerSession;
 pub(crate) use session::PlayerSessionId;
 use simdnbt::owned::{NbtCompound, NbtList, NbtTag};
 use sleep_state::PlayerSleepState;
+use std::io::Cursor;
 use std::ptr;
+use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, LazyLock, Weak};
 use std::time::{Duration, Instant};
 use steel_math::RAD_TO_DEG_F64;
+use steel_protocol::packets::game::CCookieRequest;
+use steel_protocol::packets::game::CCustomChatCompletions;
+use steel_protocol::packets::game::CGameTestHighlightPos;
+use steel_protocol::packets::game::CPing;
+use steel_protocol::packets::game::CStartConfiguration;
+use steel_protocol::packets::game::CStoreCookie;
+use steel_protocol::packets::game::CustomChatCompletionAction;
+use steel_protocol::packets::game::SCookieResponse;
+use steel_protocol::packets::game::SCustomClickAction;
 use steel_protocol::packets::game::{
-    CEntityEvent, CHurtAnimation, CPlayerCombatKill, CPlayerLookAt, CRespawn,
-    CSetDefaultSpawnPosition, CSetHealth, CSetHeldSlot, CSetPassengers, ClientCommandAction,
-    LookAtAnchor, RelativeMovement, SoundSource,
+    CEntityEvent, CHurtAnimation, CPlaceGhostRecipe, CPlayerCombatEnd, CPlayerCombatEnter,
+    CPlayerCombatKill, CPlayerLookAt, CPlayerRotation, CRespawn, CSetChunkCacheRadius,
+    CSetDefaultSpawnPosition, CSetHealth, CSetHeldSlot, CSetPassengers, CSetSimulationDistance,
+    CTagQuery, ClientCommandAction, LookAtAnchor, RelativeMovement, SBlockEntityTagQuery,
+    SDebugSubscriptionRequest, SEntityTagQuery, SJigsawGenerate, SLockDifficulty, SPlaceRecipe,
+    SRecipeBookChangeSettings, SRecipeBookSeenRecipe, SSetCommandBlock, SSetCommandMinecart,
+    SSetGameRule, SSetJigsawBlock, SSetStructureBlock, SSetTestBlock, STeleportToEntity,
+    STestInstanceBlockAction, SoundSource,
 };
 use steel_protocol::packets::game::{CLevelEvent, CSetEntityData, CSetExperience};
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::blocks::properties::TestBlockMode;
 use steel_registry::entity_data::{EntityPose, HumanoidArm, ParticleList};
 use steel_registry::entity_type::{EntityDimensions, EntityTypeRef};
 use steel_registry::game_rules::GameRuleRef;
+use steel_registry::recipe::display_for_recipe;
+use steel_registry::slot_display::RecipeDisplay::CraftingShaped;
+use steel_registry::slot_display::RecipeDisplay::CraftingShapeless;
+use steel_registry::slot_display::RecipeDisplay::Furnace;
 use steel_registry::sound_event::SoundEventRef;
+use steel_registry::stat::custom::CustomStatRef;
 use steel_registry::vanilla_block_tags::BlockTag;
+use steel_registry::vanilla_criteria_triggers::KILL_MOB_NEAR_SCULK_CATALYST;
+use steel_registry::vanilla_criteria_triggers::LEVITATION;
+use steel_registry::vanilla_criteria_triggers::PLAYER_KILLED_ENTITY;
+use steel_registry::vanilla_criteria_triggers::RECIPE_CRAFTED;
+use steel_registry::vanilla_criteria_triggers::RECIPE_UNLOCKED;
+use steel_registry::vanilla_criteria_triggers::RIDE_ENTITY_IN_LAVA;
+use steel_registry::vanilla_criteria_triggers::USING_ITEM;
 use steel_registry::vanilla_entity_data::PlayerEntityData;
+use steel_registry::vanilla_game_rules::COMMAND_BLOCKS_WORK;
 use steel_registry::vanilla_game_rules::{
     DROWNING_DAMAGE, FALL_DAMAGE, FIRE_DAMAGE, FREEZE_DAMAGE, IMMEDIATE_RESPAWN, KEEP_INVENTORY,
     SHOW_DEATH_MESSAGES,
 };
 use steel_registry::{
-    level_events, sound_events, vanilla_attributes, vanilla_custom_stats, vanilla_damage_type_tags,
-    vanilla_entities, vanilla_game_events,
+    REGISTRY, level_events, sound_events, vanilla_attributes, vanilla_blocks, vanilla_custom_stats,
+    vanilla_damage_type_tags, vanilla_entities, vanilla_game_events, vanilla_mob_effects,
 };
-use steel_utils::{entity_events::EntityStatus, locks::Shared, translations};
+use steel_utils::geometry::WorldAabb;
+use steel_utils::serial::OptionalNbt;
+use steel_utils::serial::ReadFrom;
+use steel_utils::translations_registry::TRANSLATIONS;
+use steel_utils::types::UpdateFlags;
+use steel_utils::{
+    Downcast as _, Identifier, entity_events::EntityStatus, locks::Shared, translations,
+};
 use tick_state::PlayerTickState;
 use uuid::Uuid;
 
@@ -139,16 +197,14 @@ use steel_registry::vanilla_damage_types;
 
 use steel_protocol::packets::{
     common::SCustomPayload,
-    game::{CContainerClose, CGameEvent, CSystemChat, GameEventType},
+    game::{CContainerClose, CGameEvent, GameEventType},
 };
 use steel_registry::RegistryEntry;
 use steel_registry::damage_type::DeathMessageType;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::ItemRef;
 use steel_registry::stat::vanilla_stat_types;
-use steel_utils::{
-    BlockPos, BlockStateId, ChunkPos, DowncastType, DowncastTypeKey, Identifier, UuidExt as _,
-};
+use steel_utils::{BlockPos, BlockStateId, ChunkPos, DowncastType, DowncastTypeKey, UuidExt as _};
 
 use crate::inventory::container::Container;
 
@@ -165,6 +221,7 @@ static INTENTIONAL_GAME_DESIGN_STYLE: LazyLock<Interactivity> = LazyLock::new(||
     ..Interactivity::new()
 });
 
+use crate::behavior::items::filled_map;
 use crate::chunk::player_chunk_view::PlayerChunkView;
 use crate::entity::entities::objects::projectiles::FishingHookEntity;
 use crate::inventory::ender_chest::{PlayerEnderChestContainer, SyncPlayerEnderChest};
@@ -198,6 +255,10 @@ pub struct Player {
 
     /// Client lifecycle flags.
     lifecycle: SyncMutex<PlayerLifecycleState>,
+    /// Position captured when bad omen becomes raid omen.
+    pub(crate) raid_omen_position: SyncMutex<Option<BlockPos>>,
+    /// Overworld position at the last successful entry to the Nether.
+    pub(crate) entered_nether_position: SyncMutex<Option<DVec3>>,
 
     /// Movement tracking state
     pub(crate) movement: SyncMutex<MovementState>,
@@ -209,6 +270,17 @@ pub struct Player {
     pub last_chunk_pos: SyncMutex<ChunkPos>,
     /// The last chunk tracking view of the player.
     pub last_tracking_view: SyncMutex<Option<PlayerChunkView>>,
+    /// Whether the chunk map currently skips this player's chunk ticket.
+    ///
+    /// Vanilla `ChunkMap` keeps the per-player `skippedPlayer` flag; it is set
+    /// by `spectatorsGenerateChunks` together with the spectator game mode and
+    /// decides whether the player loads terrain around itself.
+    pub skip_player: AtomicBool,
+    /// Entity the player's camera is attached to, if any.
+    ///
+    /// Vanilla `ServerPlayer.camera`/`setCamera`; a spectator's `set_camera`
+    /// stores the target here so later packets and teardown can restore it.
+    camera_entity: SyncMutex<Option<SharedEntity>>,
     /// The client's settings/information (language, view distance, chat visibility, etc.).
     /// Updated when the client sends `SClientInformation` during config or play phase.
     client_information: SyncMutex<ClientInformation>,
@@ -250,6 +322,9 @@ pub struct Player {
     /// Persisted personal bed or respawn-anchor target.
     respawn_config: SyncMutex<Option<PlayerRespawnConfig>>,
 
+    /// Recipes this player has unlocked and the state of their recipe book tabs.
+    pub recipe_book: SyncMutex<recipe_book::ServerRecipeBook>,
+
     /// Player abilities (flight, invulnerability, build permissions, speeds, etc.)
     pub abilities: SyncMutex<Abilities>,
 
@@ -272,8 +347,31 @@ pub struct Player {
     /// Assigned groups, direct overrides, and the effective permission set.
     permissions: SyncMutex<PlayerPermissionState>,
 
+    /// Vanilla `ServerPlayer.requestedDebugSubscriptions`: the raw set the client
+    /// asked for. [`Self::debug_subscriptions`] filters it by permission.
+    requested_debug_subscriptions: SyncMutex<Vec<i32>>,
+
+    /// Cookie keys requested by the server (`CCookieRequest`) awaiting a single
+    /// client `SCookieResponse`, plus the latest verified cookie values received.
+    cookie_state: SyncMutex<CookieState>,
+
+    /// Whether the server has sent `CStartConfiguration` and is awaiting the
+    /// client's `SConfigurationAcknowledged` packet.
+    awaiting_configuration_ack: AtomicBool,
+
+    /// Most recent ping transaction id echoed by the client via `SPong`.
+    last_pong_id: SyncMutex<Option<i32>>,
+
+    /// Most recent `SCustomClickAction` identifier sent by a custom dialog button.
+    last_custom_click_action: SyncMutex<Option<Identifier>>,
+
     /// Whether the player has completed the vanilla End credits flow.
     seen_credits: SyncMutex<bool>,
+
+    /// Vanilla `ServerPlayer.postEffects`: the ordered set of `post_effect`
+    /// registry ids the client applies to the whole screen, plus the dirty flag
+    /// that makes the play tick push them.
+    post_effects: SyncMutex<PlayerPostEffects>,
 
     /// Vanilla `ServerPlayer.wonGame`; transient while the End credits screen is open.
     won_game: SyncMutex<bool>,
@@ -293,12 +391,63 @@ pub struct Player {
 
     /// The counter keeping track of this player's statistics.
     stats: SyncMutex<StatsCounter>,
+    /// Vanilla `ServerPlayer.wardenSpawnTracker`: the per-player warning state
+    /// the sculk shrieker climbs before a warden emerges.
+    warden_spawn_tracker: SyncMutex<WardenSpawnTracker>,
 
     /// The last action time of this player.
     last_action_time: SyncMutex<Instant>,
 
     /// Manage the advancements of the player
     pub advancements: SyncMutex<PlayerAdvancement>,
+
+    /// Remaining ticks of an active riptide spin attack, plus the enchantment
+    /// level that scales its knockback. Vanilla `LivingEntity.autoSpinAttackTicks`.
+    riptide: SyncMutex<Option<RiptideSpin>>,
+
+    /// Where and when the current levitation started, for the `levitation`
+    /// advancement trigger. Vanilla `LevitationMobEffect` keeps the same pair in
+    /// `startLevitation`.
+    levitation_start: SyncMutex<Option<(glam::DVec3, i32)>>,
+}
+
+/// The cookie keys the server asked for, plus the payloads the client answered
+/// with.
+type CookieState = (
+    rustc_hash::FxHashSet<Identifier>,
+    rustc_hash::FxHashMap<Identifier, ReceivedCookie>,
+);
+
+/// The answer the client gave to a cookie request.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ReceivedCookie {
+    /// The client sent the cookie payload.
+    Value(Vec<u8>),
+    /// The client answered without a payload.
+    Empty,
+}
+
+/// Vanilla `LivingEntity` spin-attack activation ticks (`startAutoSpinAttack(20, ...)`).
+pub const RIPTIDE_ACTIVATION_TICKS: i32 = 20;
+
+/// Base damage of a riptide spin attack (`TridentItem.doHurtTarget` passes `8.0f`).
+pub const RIPTIDE_SPIN_ATTACK_DAMAGE: f32 = 8.0;
+
+/// Horizontal push applied to the first entity a spin attack sweeps into.
+///
+/// Vanilla `Player.causeExtraKnockback` with the plain `0.4` base knockback of an
+/// attack that carries no knockback enchantment.
+pub const SPIN_ATTACK_KNOCKBACK: f64 = 0.4;
+
+/// State of an in-progress riptide spin attack.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct RiptideSpin {
+    /// Ticks of spin attack left; vanilla starts at 20 per activation.
+    pub remaining_ticks: i32,
+    /// Riptide level, which scales the launch speed and the sweep reach.
+    pub level: i32,
+    /// Damage a swept entity takes; `autoSpinAttackDmg` in vanilla.
+    pub damage: f32,
 }
 
 // SAFETY: This key is owned by Steel and uniquely identifies `Player`.
@@ -343,7 +492,80 @@ impl PlayerResidenceState {
     }
 }
 
+/// Vanilla `TestBlockMode` wire ordinal (`ByIdMap` maps unknown ids to `START`).
+const fn test_mode_from_ordinal(ordinal: i32) -> TestBlockMode {
+    match ordinal {
+        1 => TestBlockMode::Log,
+        2 => TestBlockMode::Fail,
+        3 => TestBlockMode::Accept,
+        _ => TestBlockMode::Start,
+    }
+}
+
+/// Vanilla `StructureBlockEntity.UpdateType.SAVE_AREA` ordinal.
+///
+/// The enum is `UPDATE_DATA(0)`, `SAVE_AREA(1)`, `LOAD_AREA(2)`,
+/// `SCAN_AREA(3)`; `UPDATE_DATA` needs no action because the fields above are
+/// the whole of it.
+const STATUS_UPDATE_SAVE_AREA: i32 = 1;
+/// Vanilla `StructureBlockEntity.UpdateType.LOAD_AREA` ordinal.
+const STATUS_UPDATE_LOAD_AREA: i32 = 2;
+/// Vanilla `StructureBlockEntity.UpdateType.SCAN_AREA` ordinal.
+const STATUS_UPDATE_SCAN_AREA: i32 = 3;
+
 impl Player {
+    /// Fires the `recipe_crafted` trigger for a recipe this player just used.
+    ///
+    /// Vanilla carries the crafted stack in the predicate; Steel only knows the
+    /// recipe key, so every `recipe_crafted` criterion of that recipe progresses.
+    /// Fires `recipe_unlocked`, mirroring vanilla `ServerPlayer.awardRecipes`.
+    pub fn trigger_recipe_unlocked(&self, recipe: &Identifier) -> usize {
+        self.trigger_advancement_with_context(&RECIPE_UNLOCKED, &TriggerContext::recipe(recipe))
+    }
+
+    /// Fires the `recipe_crafted` advancement criterion for `recipe`.
+    pub fn trigger_recipe_crafted(&self, recipe: &Identifier) -> usize {
+        let _ = recipe;
+        self.trigger_advancement(&RECIPE_CRAFTED)
+    }
+
+    /// Returns the entity this player's camera is attached to.
+    #[must_use]
+    pub fn camera_entity(&self) -> Option<SharedEntity> {
+        self.camera_entity.lock().clone()
+    }
+
+    /// Attaches the player's camera to `entity`, or restores the player's own
+    /// camera when `None`.
+    ///
+    /// Vanilla `ServerPlayer.setCamera`; callers are responsible for sending the
+    /// matching `SetCamera` packet.
+    pub fn set_camera_entity(&self, entity: Option<SharedEntity>) {
+        *self.camera_entity.lock() = entity;
+    }
+
+    /// Fires an advancement trigger for this player, granting every matching
+    /// criterion. Mirrors vanilla's `CriteriaTriggers` dispatch.
+    pub fn trigger_advancement(&self, trigger: &Identifier) -> usize {
+        self.advancements.lock().trigger(self, trigger)
+    }
+
+    /// Fires a trigger together with the event that caused it.
+    ///
+    /// Criteria carry vanilla `conditions` objects; passing the event lets
+    /// [`crate::player::advancement::predicate::matches`] decide which
+    /// advancements actually apply instead of granting every criterion with a
+    /// matching trigger id.
+    pub fn trigger_advancement_with_context(
+        &self,
+        trigger: &Identifier,
+        context: &TriggerContext,
+    ) -> usize {
+        self.advancements
+            .lock()
+            .trigger_with_context(self, trigger, context)
+    }
+
     const USING_ITEM_FLAG: i8 = 1;
     const OFF_HAND_ACTIVE_ITEM_FLAG: i8 = 1 << 1;
 
@@ -482,6 +704,13 @@ impl Player {
         let Some(user) = LivingEntityRef::new(entity) else {
             panic!("active item use requires a living entity");
         };
+        // Vanilla `Item.use` fires `using_item` once per tick while the item is
+        // held in use, which is how `adventure/salvage_sherd`-style criteria see
+        // sustained use.
+        self.trigger_advancement_with_context(
+            &USING_ITEM,
+            &TriggerContext::item(&item.item().key).with_item_stack(&item),
+        );
         behavior.on_use_tick(&world, user, &mut item, active.remaining_ticks());
 
         if self.active_item_use_hand() != Some(hand) {
@@ -501,6 +730,135 @@ impl Player {
         }
 
         self.inventory.lock().set_item_in_hand(hand, item);
+    }
+
+    /// Vanilla `LivingEntity.isAutoSpinAttack()`.
+    #[must_use]
+    pub fn is_auto_spin_attack(&self) -> bool {
+        self.riptide.lock().is_some()
+    }
+
+    /// Vanilla `Player.autoSpinAttackDmg`: the base damage an active spin uses
+    /// instead of the `ATTACK_DAMAGE` attribute, or `None` outside a spin.
+    #[must_use]
+    pub fn riptide_spin_damage(&self) -> Option<f32> {
+        self.riptide.lock().map(|spin| spin.damage)
+    }
+
+    /// Vanilla `EnchantmentHelper.getTridentSpinAttackStrength`.
+    ///
+    /// Riptide contributes `1.5 + 0.75 * (level - 1)` through the
+    /// `minecraft:trident_spin_attack_strength` effect (`minecraft:add` of a
+    /// `minecraft:linear` value) in `data/minecraft/enchantment/riptide.json`.
+    /// The enchantment cannot stack, so only one level ever applies.
+    #[must_use]
+    #[expect(
+        clippy::unused_self,
+        reason = "public API mirrors the vanilla signature"
+    )]
+    pub fn trident_spin_attack_strength(&self, riptide_level: i32) -> f32 {
+        if riptide_level <= 0 {
+            return 0.0;
+        }
+        1.5 + 0.75 * (riptide_level - 1) as f32
+    }
+
+    /// Vanilla `LivingEntity.startAutoSpinAttack(20, 8.0f, stack)`.
+    ///
+    /// The launch impulse is applied by `TridentItem` *before* this call, exactly
+    /// as vanilla orders it.
+    pub fn start_auto_spin_attack(&self, level: i32) {
+        *self.riptide.lock() = Some(RiptideSpin {
+            remaining_ticks: RIPTIDE_ACTIVATION_TICKS,
+            level: level.max(1),
+            damage: RIPTIDE_SPIN_ATTACK_DAMAGE,
+        });
+        self.sync_pose_from_state();
+    }
+
+    /// Vanilla `LivingEntity.livingEntityTick`: one tick of the spin attack.
+    ///
+    /// Vanilla only decrements `autoSpinAttackTicks` and runs
+    /// `checkAutoSpinAttack`; it never re-applies a launch impulse, so neither
+    /// does this.
+    pub(crate) fn tick_riptide(&self) {
+        if self.riptide.lock().is_none() {
+            return;
+        }
+        // Decrement first, then test contacts: vanilla's order.
+        if let Some(spin) = self.riptide.lock().as_mut() {
+            spin.remaining_ticks -= 1;
+        }
+
+        self.check_auto_spin_attack();
+
+        let finished = self
+            .riptide
+            .lock()
+            .as_ref()
+            .is_none_or(|spin| spin.remaining_ticks <= 0);
+        if finished {
+            self.riptide.lock().take();
+            self.sync_pose_from_state();
+        }
+    }
+
+    /// Vanilla `LivingEntity.checkAutoSpinAttack`.
+    ///
+    /// The sweep box is the union of the bounding box before and after movement;
+    /// the first living entity inside it ends the attack after taking the hit,
+    /// and a horizontal block collision also ends it.
+    fn check_auto_spin_attack(&self) {
+        // Vanilla unions the box captured before travel with the current one, so
+        // the sweep also catches entities the player moved past this tick.
+        let current = self.bounding_box();
+        let previous = current.translate(self.old_position() - self.position());
+        let sweep = WorldAabb::encapsulating(&previous, &current);
+
+        let mut swept = None;
+        for target in self.get_world().get_entities_in_aabb(&sweep) {
+            if target.id() == self.id() || !target.is_living_entity() {
+                continue;
+            }
+            swept = Some(target);
+            break;
+        }
+
+        if let Some(target) = swept {
+            // Vanilla `Player.doAutoAttackOnTouch` → `attack`, which uses
+            // `autoSpinAttackDmg` and the spin-attack item stack as the weapon.
+            // `attack` needs the world's own `Arc<Player>`, so resolve it by UUID
+            // instead of fabricating a second allocation.
+            if let Some(arc) = self
+                .level()
+                .and_then(|world| world.players.get_by_uuid(&self.base().uuid()))
+            {
+                let _ = arc.attack(&target);
+            }
+            if let Some(spin) = self.riptide.lock().as_mut() {
+                spin.remaining_ticks = 0;
+            }
+            // Vanilla: `setDeltaMovement(getDeltaMovement().scale(-0.2))`.
+            self.set_velocity(self.velocity() * -0.2);
+            self.mark_velocity_sync();
+        } else if self.horizontal_collision()
+            && let Some(spin) = self.riptide.lock().as_mut()
+        {
+            spin.remaining_ticks = 0;
+        }
+    }
+
+    /// Stops an active spin attack and restores the normal pose.
+    pub fn stop_auto_spin_attack(&self) {
+        if self.riptide.lock().take().is_some() {
+            self.sync_pose_from_state();
+        }
+    }
+
+    /// Recomputes the synced pose, including the riptide spin pose.
+    fn sync_pose_from_state(&self) {
+        let pose = self.get_desired_pose();
+        self.set_pose(pose);
     }
 
     /// Returns the player's configured main arm.
@@ -561,7 +919,14 @@ impl Player {
 
     /// Changes the current game mode and records the old current mode as previous.
     fn change_game_mode_state(&self, game_mode: GameType) -> bool {
-        self.game_modes.lock().change_current(game_mode)
+        let was_spectator = self.game_modes.lock().current() == GameType::Spectator;
+        let changed = self.game_modes.lock().change_current(game_mode);
+        // Vanilla `ServerPlayer.setGameMode` drops a spectator camera when the
+        // player leaves spectator mode.
+        if changed && was_spectator && game_mode != GameType::Spectator {
+            self.set_camera_entity(None);
+        }
+        changed
     }
 
     /// Creates a new player.
@@ -605,6 +970,8 @@ impl Player {
                 world_ref,
             ),
             lifecycle: SyncMutex::new(PlayerLifecycleState::default()),
+            raid_omen_position: SyncMutex::new(None),
+            entered_nether_position: SyncMutex::new(None),
             movement: SyncMutex::new(MovementState::new()),
             entity_data: SyncMutex::new({
                 let mut data = PlayerEntityData::new();
@@ -614,6 +981,8 @@ impl Player {
             }),
             last_chunk_pos: SyncMutex::new(ChunkPos::new(0, 0)),
             last_tracking_view: SyncMutex::new(None),
+            skip_player: AtomicBool::new(false),
+            camera_entity: SyncMutex::new(None),
             client_information: SyncMutex::new(client_information),
             game_modes: SyncMutex::new(PlayerGameModeState::new(GameType::Survival)),
             inventory: Arc::clone(&inventory),
@@ -624,10 +993,12 @@ impl Player {
             open_menu: SyncMutex::new(player_inventory::OpenMenuState::new()),
             container_counter: SyncMutex::new(ContainerCounter::new()),
             teleport_state: SyncMutex::new(TeleportState::new()),
+            levitation_start: SyncMutex::new(None),
             item_cooldowns: SyncMutex::new(ItemCooldowns::default()),
             tick_state: SyncMutex::new(PlayerTickState::new()),
             sleep_state: SyncMutex::new(PlayerSleepState::new()),
             respawn_config: SyncMutex::new(None),
+            recipe_book: SyncMutex::new(recipe_book::ServerRecipeBook::new()),
             abilities: SyncMutex::new(Abilities::default()),
             block_breaking: SyncMutex::new(BlockBreakingManager::new()),
             living_base,
@@ -635,15 +1006,26 @@ impl Player {
             health_sync: SyncMutex::new(HealthSyncState::new()),
             experience: SyncMutex::new(Experience::default()),
             permissions: SyncMutex::new(PlayerPermissionState::default()),
+            requested_debug_subscriptions: SyncMutex::new(Vec::new()),
+            cookie_state: SyncMutex::new((
+                rustc_hash::FxHashSet::default(),
+                rustc_hash::FxHashMap::default(),
+            )),
+            awaiting_configuration_ack: AtomicBool::new(false),
+            last_pong_id: SyncMutex::new(None),
+            last_custom_click_action: SyncMutex::new(None),
             seen_credits: SyncMutex::new(false),
+            post_effects: SyncMutex::new(PlayerPostEffects::new_pending()),
             won_game: SyncMutex::new(false),
             chunk_send_epoch: SyncMutex::new(0),
             residence: SyncMutex::new(PlayerResidenceState::new()),
             ender_pearls: SyncMutex::new(Vec::new()),
             fishing: SyncMutex::new(None),
             stats: SyncMutex::new(StatsCounter::new()),
+            warden_spawn_tracker: SyncMutex::new(WardenSpawnTracker::new()),
             last_action_time: SyncMutex::new(Instant::now()),
-            advancements: SyncMutex::new(PlayerAdvancement::default()), // TODO save the advancement
+            advancements: SyncMutex::new(PlayerAdvancement::default()),
+            riptide: SyncMutex::new(None),
         }
     }
 
@@ -723,6 +1105,78 @@ impl Player {
         }
     }
 
+    /// Returns the value of a custom statistic for this player.
+    ///
+    /// Vanilla `ServerPlayer.getStats().getValue(Stats.CUSTOM.get(...))`.
+    #[must_use]
+    pub fn custom_stat(&self, stat: CustomStatRef) -> i32 {
+        self.stats
+            .lock()
+            .stats
+            .get(&vanilla_stat_types::CUSTOM.get(stat))
+            .map_or(0, |(count, _)| *count)
+    }
+
+    /// Returns a clone of the player's warden spawn tracker.
+    ///
+    /// Vanilla keeps `WardenSpawnTracker` on the `ServerPlayer` and mutates it
+    /// through the optional; the shrieker reads, bumps and copies it.
+    #[must_use]
+    /// Vanilla `ServerPlayer.addPostEffect`; returns whether the list changed.
+    pub fn add_post_effect(&self, effect: Identifier) -> bool {
+        self.post_effects.lock().add(effect)
+    }
+
+    /// Vanilla `ServerPlayer.removePostEffect`.
+    pub fn remove_post_effect(&self, effect: &Identifier) -> bool {
+        self.post_effects.lock().remove(effect)
+    }
+
+    /// Vanilla `ServerPlayer.clearPostEffects`.
+    pub fn clear_post_effects(&self) -> bool {
+        self.post_effects.lock().clear()
+    }
+
+    /// Vanilla `ServerPlayer.getPostEffects`.
+    #[must_use]
+    /// Returns the ordered list of screen post-effect identifiers active on this player.
+    pub fn post_effects(&self) -> Vec<Identifier> {
+        self.post_effects.lock().effects().to_vec()
+    }
+
+    /// Replaces the list, used when a saved player is restored.
+    pub fn replace_post_effects(&self, effects: Vec<Identifier>) {
+        self.post_effects.lock().replace(effects);
+    }
+
+    /// Pushes the list when it changed since the last push.
+    ///
+    /// Vanilla does this at the end of `ServerPlayer.tick` and again from
+    /// `PlayerList.placeNewPlayer`, which is why a fresh player always receives
+    /// one packet.
+    pub(crate) fn flush_post_effects(&self) {
+        let packet = self.post_effects.lock().take_update();
+        if let Some(packet) = packet {
+            self.send_packet(packet);
+        }
+    }
+
+    /// Returns a copy of this player's current Warden warning tracker (`getWardenSpawnTracker`).
+    #[must_use]
+    pub fn warden_spawn_tracker(&self) -> WardenSpawnTracker {
+        *self.warden_spawn_tracker.lock()
+    }
+
+    /// Replaces the player's tracker, as vanilla `copyData` does.
+    pub fn set_warden_spawn_tracker(&self, tracker: WardenSpawnTracker) {
+        *self.warden_spawn_tracker.lock() = tracker;
+    }
+
+    /// Vanilla `WardenSpawnTracker.tick`, called from the player tick.
+    pub fn tick_warden_spawn_tracker(&self) {
+        self.warden_spawn_tracker.lock().tick();
+    }
+
     /// Ticks to award stats that are awarded based on ticks.
     fn tick_stats(&self) {
         // These stats are expressed in ticks.
@@ -756,6 +1210,40 @@ impl Player {
                 1,
             );
         }
+    }
+
+    /// Vanilla `LevitationMobEffect.applyEffectTick`: while levitation is active the
+    /// effect remembers where it started and fires the `levitation` trigger with
+    /// the distance traveled and the effect duration so far.
+    fn tick_levitation_trigger(&self) {
+        let Some(_effect) = self.mob_effect(vanilla_mob_effects::LEVITATION) else {
+            *self.levitation_start.lock() = None;
+            return;
+        };
+        let position = self.position();
+        let mut start = self.levitation_start.lock();
+        let (start_position, start_tick) = *start.get_or_insert((position, self.tick_count()));
+        let distance = position.distance(start_position);
+        let duration = self.tick_count().saturating_sub(start_tick);
+        drop(start);
+        let mut context = TriggerContext::nether_travel(distance);
+        context.duration = Some(duration);
+        self.trigger_advancement_with_context(&LEVITATION, &context);
+    }
+
+    /// Vanilla `Entity.baseTick`: a player riding a vehicle while submerged in
+    /// lava fires `ride_entity_in_lava` for the vehicle's type.
+    fn tick_ride_entity_in_lava_trigger(&self) {
+        if !self.is_passenger() || !self.is_in_lava() {
+            return;
+        }
+        let Some(vehicle) = self.vehicle() else {
+            return;
+        };
+        self.trigger_advancement_with_context(
+            &RIDE_ENTITY_IN_LAVA,
+            &TriggerContext::entity(&vehicle.entity_type().key),
+        );
     }
 
     /// Immediately flushes dirty player entity data to tracking players and self.
@@ -792,9 +1280,835 @@ impl Player {
             .set_base_glowing_flag(self.has_glowing_tag() || display.glowing);
     }
 
-    /// Handles a custom payload packet.
-    #[expect(clippy::unused_self, reason = "this is an api function")]
-    pub fn handle_custom_payload(&self, _packet: SCustomPayload) {}
+    /// Vanilla `ServerPlayer.die` dummy objective: `deathCount` on this domain's
+    /// scoreboard, created on demand and incremented by one.
+    fn increment_death_count_objective(&self, world: &Arc<World>) {
+        self.increment_dummy_objective(world, "deathCount");
+    }
+
+    /// Vanilla `ServerPlayer.awardKillScore` dummy objective: `playerKillCount`.
+    /// Returns whether `self` and `other` belong to the same scoreboard team.
+    ///
+    /// Vanilla asks the scoreboard for both holder teams; unteamed holders are
+    /// never teammates, matching `PlayerTeam == null` checks.
+    fn is_on_same_team_as(&self, world: &Arc<World>, other: &dyn Entity) -> bool {
+        let Some(server) = self.try_server() else {
+            return false;
+        };
+        let Some(scoreboard) = server.scoreboards.get(world.domain()) else {
+            return false;
+        };
+        let Some(other) = other.as_player() else {
+            return false;
+        };
+        let own = ScoreHolder::new(self.scoreboard_name());
+        let theirs = ScoreHolder::new(other.scoreboard_name());
+        let own_team = scoreboard.holder_team_name(&own);
+        let other_team = scoreboard.holder_team_name(&theirs);
+        own_team.is_some() && own_team == other_team
+    }
+
+    fn increment_player_kill_count_objective(&self) {
+        let world = self.get_world();
+        self.increment_dummy_objective(&world, "playerKillCount");
+    }
+
+    /// Increments one vanilla dummy scoreboard objective for this player,
+    /// creating the objective when a server-side scoreboard exists for the
+    /// domain. Missing scoreboards are ignored, like vanilla when the objective
+    /// is not registered.
+    fn increment_dummy_objective(&self, world: &Arc<World>, objective_name: &str) {
+        let Some(server) = self.try_server() else {
+            return;
+        };
+        let Some(scoreboard) = server.scoreboards.get(world.domain()) else {
+            return;
+        };
+        let objective = scoreboard
+            .objective(objective_name)
+            .or_else(|| scoreboard.add_objective(objective_name).ok());
+        let Some(objective) = objective else {
+            return;
+        };
+        let holder = ScoreHolder::new(self.scoreboard_name());
+        let current = scoreboard.score(&holder, &objective).unwrap_or(0);
+        let _ = scoreboard.set_score(&holder, &objective, current.saturating_add(1));
+    }
+
+    /// Handles a custom payload packet (`minecraft:brand` length-prefixed UTF-8).
+    #[expect(clippy::unused_self, reason = "player API method")]
+    pub fn handle_custom_payload(&self, packet: SCustomPayload) {
+        if packet.identifier == Identifier::vanilla_static("brand") {
+            let mut cursor = Cursor::new(packet.payload.0.as_slice());
+            if let Ok(brand) = <String as ReadFrom>::read(&mut cursor)
+                && brand.len() <= 128
+            {
+                log::debug!("Player reported client brand: {brand}");
+            }
+        }
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetGameRule`: applies each
+    /// operator-submitted game rule update, ignoring unauthorized callers,
+    /// unknown rule keys, and malformed values.
+    pub fn handle_set_game_rule(&self, packet: SSetGameRule) {
+        use steel_registry::game_rules::{GameRuleType, GameRuleValue};
+
+        if !self.is_operator() {
+            log::warn!(
+                "Player {} tried to set game rule without permission",
+                self.gameprofile.name()
+            );
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        for entry in packet.entries {
+            let Some(rule) = REGISTRY.game_rules.by_key(&entry.key) else {
+                continue;
+            };
+            let value = match rule.value_type() {
+                GameRuleType::Bool => match entry.value.as_str() {
+                    "true" => GameRuleValue::new(true),
+                    "false" => GameRuleValue::new(false),
+                    _ => continue,
+                },
+                GameRuleType::Int => match entry.value.parse::<i32>() {
+                    Ok(value)
+                        if value >= rule.min_value().unwrap_or(i32::MIN)
+                            && value <= rule.max_value().unwrap_or(i32::MAX) =>
+                    {
+                        GameRuleValue::new(value)
+                    }
+                    _ => continue,
+                },
+            };
+            world.set_erased_game_rule(rule, value);
+        }
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetCommandBlock`: stores the
+    /// command the operator typed into the block.
+    ///
+    /// Vanilla only accepts the packet from a creative-level-two operator and
+    /// only when the block at the position really is a command block; the packet
+    /// carries the mode and the three flags, not the power state.
+    pub fn handle_set_command_block(&self, packet: SSetCommandBlock) {
+        use steel_registry::blocks::properties::BlockStateProperties;
+        use steel_registry::vanilla_blocks;
+
+        if !self.is_operator() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(block_entity) = world.get_block_entity(packet.pos) else {
+            return;
+        };
+        let Some(command_block) = block_entity
+            .downcast_ref::<CommandBlockBlockEntity>()
+            .cloned()
+        else {
+            return;
+        };
+
+        // Vanilla switches the block family to match the requested mode and
+        // keeps the facing, then rewrites the block in place.
+        let old_mode = command_block.mode();
+        let current_state = world.get_block_state(packet.pos);
+        let facing: steel_utils::Direction = current_state.get_value(&BlockStateProperties::FACING);
+        let new_mode = CommandBlockMode::from_packet_ordinal(packet.mode);
+        let base_block = match new_mode {
+            Sequence => &vanilla_blocks::CHAIN_COMMAND_BLOCK,
+            Auto => &vanilla_blocks::REPEATING_COMMAND_BLOCK,
+            Redstone => &vanilla_blocks::COMMAND_BLOCK,
+        };
+        let conditional = packet.flags & 2 != 0;
+        let new_state = base_block
+            .default_state()
+            .set_value(&BlockStateProperties::FACING, facing)
+            .set_value(&BlockStateProperties::CONDITIONAL, conditional);
+        if new_state != current_state {
+            // Flag 2 = update clients only, exactly like vanilla.
+            world.set_block(packet.pos, new_state, UpdateFlags::UPDATE_CLIENTS);
+        }
+
+        command_block.set_command(packet.command.clone());
+        command_block.set_track_output(packet.flags & 1 != 0);
+        command_block.set_automatic_and_schedule(packet.flags & 4 != 0, &world);
+        if old_mode != new_mode {
+            command_block.on_mode_switch(old_mode, &world);
+        }
+
+        // Vanilla answers with `advMode.setCommand.success` (or `.disabled` when
+        // command blocks are switched off) once the command is not empty.
+        if !packet.command.trim().is_empty() {
+            let works = world.get_game_rule(&COMMAND_BLOCKS_WORK);
+            // `advMode.setCommand.success` / `.disabled`, both take the command.
+            let message = if works {
+                translations::ADV_MODE_SET_COMMAND_SUCCESS.message([packet.command.clone()])
+            } else {
+                translations::ADV_MODE_SET_COMMAND_DISABLED.message([packet.command.clone()])
+            };
+            self.send_message(&message.component());
+        }
+
+        // Vanilla calls `BaseCommandBlock.onUpdated`, which sends the block
+        // entity data to every viewer.
+        world.broadcast_block_entity_if_needed(packet.pos);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetCommandMinecart`.
+    ///
+    /// Only a game master may edit a command minecart; the cart itself keeps the
+    /// command, the output tracking and (when tracking is turned off) drops the
+    /// last output. A non-empty command is acknowledged with
+    /// `advMode.setCommand.success` or `.disabled`.
+    pub fn handle_set_command_minecart(&self, packet: SSetCommandMinecart) {
+        if !self.is_operator() {
+            self.send_message(&translations::ADV_MODE_NOT_ALLOWED.msg().component());
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(entity) = world.get_entity_by_id(packet.entity_id) else {
+            return;
+        };
+        let Some(minecart) = entity.downcast_ref::<CommandBlockMinecartEntity>() else {
+            return;
+        };
+
+        minecart.set_command(packet.command.clone());
+        minecart.set_track_output(packet.track_output);
+        if !packet.track_output {
+            minecart.set_last_output(TextComponent::plain(""));
+        }
+
+        let enabled = world.get_game_rule(&COMMAND_BLOCKS_WORK);
+        if !packet.command.trim().is_empty() {
+            let message = if enabled {
+                translations::ADV_MODE_SET_COMMAND_SUCCESS.message([packet.command])
+            } else {
+                translations::ADV_MODE_SET_COMMAND_DISABLED.message([packet.command])
+            };
+            self.send_message(&message.component());
+        }
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetStructureBlock`: a game
+    /// master updates every field of the structure block editor.
+    ///
+    /// The block entity stores all of it and mirrors the mode into the block
+    /// state. Vanilla then runs the requested update type (`SAVE_AREA`,
+    /// `LOAD_AREA`, `SCAN_AREA`) and reports success or failure; Steel has no
+    /// runtime structure manager, so the update types that need one answer with
+    /// vanilla's `structure_block.` failure keys instead of doing nothing.
+    pub fn handle_set_structure_block(&self, packet: SSetStructureBlock) {
+        use steel_registry::blocks::properties::StructureMode;
+
+        if !self.has_game_master_permissions() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(block_entity) = world.get_block_entity(packet.pos) else {
+            return;
+        };
+        let Some(structure) = block_entity.downcast_ref::<StructureBlockEntity>() else {
+            return;
+        };
+
+        let mode = StructureMode::from_ordinal(packet.mode);
+        structure.set_mode(mode);
+        structure.set_structure_name(&packet.name);
+        structure.set_structure_pos(packet.offset());
+        structure.set_structure_size(packet.size());
+        structure.set_mirror(packet.mirror);
+        structure.set_rotation(packet.rotation);
+        structure.set_metadata(&packet.metadata);
+        structure.set_ignore_entities(packet.ignore_entities());
+        structure.set_strict(packet.strict());
+        structure.set_show_air(packet.show_air());
+        structure.set_show_bounding_box(packet.show_bounding_box());
+        structure.set_integrity(packet.integrity_clamped());
+        structure.set_seed(packet.seed);
+        structure.set_changed();
+
+        // Vanilla answers every update type with a chat message. Steel has no
+        // runtime structure manager (`ServerLevel.getStructureManager`), so the
+        // three area operations cannot run; each one reports the vanilla key it
+        // would report on failure, which keeps the client's chat identical to a
+        // vanilla world where the structure is missing.
+        let name = structure.structure_name();
+        if !structure.has_structure_name() {
+            self.send_message(
+                &translations::STRUCTURE_BLOCK_INVALID_STRUCTURE_NAME
+                    .message([packet.name])
+                    .component(),
+            );
+            return;
+        }
+        match packet.update_type {
+            // `StructureBlockEntity.saveStructure` returns `false` without a
+            // structure manager.
+            STATUS_UPDATE_SAVE_AREA => {
+                log::warn!(
+                    "structure block at {:?} cannot save '{name}': Steel has no structure manager",
+                    packet.pos
+                );
+                self.send_message(
+                    &translations::STRUCTURE_BLOCK_SAVE_FAILURE
+                        .message([name])
+                        .component(),
+                );
+            }
+            // `StructureBlockEntity.isStructureLoadable` is `false` without a
+            // structure manager, which is vanilla's `load_not_found` branch.
+            STATUS_UPDATE_LOAD_AREA => {
+                log::warn!(
+                    "structure block at {:?} cannot load '{name}': Steel has no structure manager",
+                    packet.pos
+                );
+                self.send_message(
+                    &translations::STRUCTURE_BLOCK_LOAD_NOT_FOUND
+                        .message([name])
+                        .component(),
+                );
+            }
+            // `StructureBlockEntity.detectSize` needs to walk every corner block
+            // entity within 80 blocks; Steel does not expose a block-entity box
+            // query, so the scan reports vanilla's failure branch.
+            STATUS_UPDATE_SCAN_AREA => {
+                log::warn!(
+                    "structure block at {:?} cannot scan '{name}': Steel has no block-entity box query",
+                    packet.pos
+                );
+                self.send_message(&translations::STRUCTURE_BLOCK_SIZE_FAILURE.msg().component());
+            }
+            // `UPDATE_DATA` (0) and unknown ordinals only store the fields,
+            // which happened above.
+            _ => {}
+        }
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handlePlaceRecipe`.
+    ///
+    /// The server alone decides what moves: `resetLastActionTime`, then the
+    /// container-id gate, the menu validity check, the recipe-book membership
+    /// check, and finally the menu's own `handlePlacement`. A ghost recipe is
+    /// echoed back so the client can draw the outline.
+    pub fn handle_place_recipe(&self, packet: SPlaceRecipe) {
+        self.reset_last_action_time();
+        if self.is_spectator() {
+            return;
+        }
+
+        let mut open_menu = self.open_menu.lock();
+        let mut menu = open_menu.take_menu();
+        drop(open_menu);
+
+        let container_id;
+        let outcome = match menu.as_mut() {
+            Some(active) => {
+                container_id = i32::from(active.container_id());
+                if container_id != packet.container_id {
+                    None
+                } else if !active.still_valid(self) {
+                    log::debug!(
+                        "Player {} interacted with invalid menu",
+                        self.gameprofile.name()
+                    );
+                    None
+                } else {
+                    self.place_recipe_into(active, &packet)
+                }
+            }
+            None if packet.container_id == 0 => {
+                container_id = 0;
+                let mut inventory_menu = self.inventory_menu.lock();
+                self.place_recipe_into(&mut inventory_menu, &packet)
+            }
+            None => return,
+        };
+
+        if let Some(active) = menu {
+            self.open_menu.lock().put_menu(active);
+        }
+
+        // Vanilla answers `PLACE_GHOST_RECIPE` with the full display of the
+        // recipe it could not place, not with the id the client sent.
+        if let Some(outcome) = outcome
+            && outcome.action == PostPlaceAction::PlaceGhostRecipe
+        {
+            self.send_packet(CPlaceGhostRecipe {
+                container_id,
+                display: outcome.display,
+            });
+        }
+    }
+
+    /// The per-menu half of [`Self::handle_place_recipe`], with the menu taken
+    /// out of the open-menu slot.
+    fn place_recipe_into(
+        &self,
+        menu: &mut Menu,
+        packet: &SPlaceRecipe,
+    ) -> Option<PlacementOutcome> {
+        use crate::player::recipe_placement::PlacementRequest;
+        use steel_registry::REGISTRY;
+
+        // Vanilla `getRecipeFromDisplay` + `getRecipeBook().contains`.
+        let key = self.recipe_book.lock().recipe_at(packet.recipe)?.clone();
+        let recipe = REGISTRY.recipes.by_key(&key)?;
+
+        let properties = recipe.data().properties()?;
+        let placement = properties.placement.as_ref()?;
+        if placement.is_impossible_to_place() {
+            log::debug!(
+                "Player {} tried to place impossible recipe {key}",
+                self.gameprofile.name()
+            );
+            return None;
+        }
+
+        let display = display_for_recipe(recipe)?;
+        let recipe_size = match &display {
+            CraftingShaped { width, height, .. } => (
+                usize::try_from(*width).unwrap_or(0),
+                usize::try_from(*height).unwrap_or(0),
+            ),
+            CraftingShapeless { ingredients, .. } => (ingredients.len(), 1),
+            Furnace { .. } => (1, 1),
+            _ => return None,
+        };
+
+        let request = PlacementRequest {
+            recipe_key: &key,
+            placement,
+            recipe_size,
+            use_max_items: packet.make_all,
+            // Vanilla `handlePlaceRecipe` passes `player.isCreative()`.
+            allow_dropping_items_to_clear: self.has_infinite_materials(),
+        };
+
+        let mut guard = menu.behavior().lock_all_containers();
+        let action = menu.handle_placement(&mut guard, self, request);
+        drop(guard);
+        Some(PlacementOutcome {
+            action: action?,
+            display,
+        })
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleTestInstanceBlockAction`.
+    ///
+    /// Only a game master reaches the block entity. Actions other than `INIT`
+    /// and `QUERY` store the client payload and then run the requested action;
+    /// the read-only pair answers with a status packet instead.
+    pub fn handle_test_instance_block_action(&self, packet: STestInstanceBlockAction) {
+        use steel_protocol::packets::game::{CTestInstanceBlockStatus, TestInstanceBlockAction};
+
+        if !self.has_game_master_permissions() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(block_entity) = world.get_block_entity(packet.pos) else {
+            return;
+        };
+        let Some(test_instance) = block_entity.downcast_ref::<TestInstanceBlockEntity>() else {
+            return;
+        };
+
+        if !packet.action.is_read_only() {
+            test_instance.set(packet.data);
+            match packet.action {
+                TestInstanceBlockAction::Reset
+                | TestInstanceBlockAction::Save
+                | TestInstanceBlockAction::Export
+                | TestInstanceBlockAction::Run => {
+                    // The game-test framework owns these operations; Steel has no
+                    // `TestInstanceBlockEntity.resetTest/saveTest/exportTest/runTest`
+                    // equivalent yet, so the payload is stored and the action is
+                    // reported instead of being silently dropped.
+                    log::warn!(
+                        "test instance block action {:?} at {:?} is not implemented",
+                        packet.action,
+                        packet.pos
+                    );
+                }
+                TestInstanceBlockAction::Init
+                | TestInstanceBlockAction::Query
+                | TestInstanceBlockAction::Set => {}
+            }
+            // Vanilla `sendBlockUpdated(pos, Blocks.AIR.defaultBlockState(), state, 3)`.
+            world.send_block_updated(packet.pos);
+            return;
+        }
+
+        let status = match packet.data.test {
+            // Vanilla renders `GameTestInstance.describe()`; when no data-pack
+            // test instance table entry is present, emit the test identifier.
+            Some(ref test) => TextComponent::plain(test.to_string()),
+            None => TextComponent::translated(TranslatedMessage {
+                key: "test_instance.description.no_test".into(),
+                fallback: Some("No test".into()),
+                args: None,
+            }),
+        };
+        let size = if packet.action == TestInstanceBlockAction::Query {
+            test_instance.structure_size()
+        } else {
+            None
+        };
+        self.send_packet(CTestInstanceBlockStatus { status, size });
+        if matches!(
+            packet.action,
+            TestInstanceBlockAction::Query | TestInstanceBlockAction::Run
+        ) {
+            self.send_packet(CGameTestHighlightPos {
+                absolute_pos: packet.pos,
+                relative_pos: BlockPos::new(0, 0, 0),
+            });
+        }
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleDebugSubscriptionRequest`
+    /// → `ServerPlayer.requestDebugSubscriptions`.
+    ///
+    /// The set is stored verbatim; [`Self::debug_subscriptions`] applies the
+    /// permission filter, exactly like vanilla's `ServerPlayer`.
+    pub fn handle_debug_subscription_request(&self, packet: SDebugSubscriptionRequest) {
+        *self.requested_debug_subscriptions.lock() = packet.subscriptions;
+    }
+
+    /// Vanilla `ServerPlayer.debugSubscriptions`: an operator sees the set it
+    /// asked for, everyone else sees nothing.
+    #[must_use]
+    pub fn debug_subscriptions(&self) -> Vec<i32> {
+        if !self.is_operator() {
+            return Vec::new();
+        }
+        self.requested_debug_subscriptions.lock().clone()
+    }
+
+    /// Fast allocation-free check for whether this operator subscribed to `subscription_id`.
+    #[must_use]
+    pub fn has_debug_subscription(&self, subscription_id: i32) -> bool {
+        self.is_operator()
+            && self
+                .requested_debug_subscriptions
+                .lock()
+                .contains(&subscription_id)
+    }
+
+    /// Instructs the client to persist a cookie up to vanilla's 5 KiB cap
+    /// (`ClientboundStoreCookiePacket`). Returns `false` if `payload` exceeds 5,120 bytes.
+    pub fn store_cookie(&self, key: Identifier, payload: Vec<u8>) -> bool {
+        if payload.len() > 5_120 {
+            return false;
+        }
+        self.send_packet(CStoreCookie { key, payload });
+        true
+    }
+
+    /// Requests a previously stored cookie from the client (`ClientboundCookieRequestPacket`).
+    pub fn request_cookie(&self, key: Identifier) {
+        self.cookie_state.lock().0.insert(key.clone());
+        self.send_packet(CCookieRequest { key });
+    }
+
+    /// Vanilla `ServerCommonPacketListenerImpl.handleCookieResponse`: accepts a cookie
+    /// reply if and only if the server previously requested that key; disconnects on
+    /// unsolicited responses.
+    pub fn handle_cookie_response(&self, packet: SCookieResponse) {
+        let accepted = {
+            let mut state = self.cookie_state.lock();
+            if state.0.remove(&packet.key) {
+                state.1.insert(
+                    packet.key,
+                    match packet.payload {
+                        Some(payload) => ReceivedCookie::Value(payload),
+                        None => ReceivedCookie::Empty,
+                    },
+                );
+                true
+            } else {
+                false
+            }
+        };
+        if !accepted {
+            self.disconnect(translations::MULTIPLAYER_DISCONNECT_UNEXPECTED_QUERY_RESPONSE.msg());
+        }
+    }
+
+    /// Returns the most recent validated cookie value returned by the client for `key`.
+    #[must_use]
+    pub fn received_cookie(&self, key: &Identifier) -> Option<ReceivedCookie> {
+        self.cookie_state.lock().1.get(key).cloned()
+    }
+
+    /// Initiates a Play → Configuration phase switch (`ClientboundStartConfigurationPacket`).
+    pub fn start_configuration(&self) {
+        self.awaiting_configuration_ack
+            .store(true, Ordering::Release);
+        self.send_packet(CStartConfiguration {});
+    }
+
+    /// Returns `true` if `CStartConfiguration` was sent and not yet acknowledged.
+    #[must_use]
+    pub fn is_awaiting_configuration(&self) -> bool {
+        self.awaiting_configuration_ack.load(Ordering::Acquire)
+    }
+
+    /// Handles `ServerboundConfigurationAcknowledgedPacket`.
+    pub fn handle_configuration_acknowledged(&self) {
+        if !self
+            .awaiting_configuration_ack
+            .swap(false, Ordering::AcqRel)
+        {
+            log::debug!(
+                "Player {} sent unexpected SConfigurationAcknowledged",
+                self.gameprofile.name()
+            );
+        }
+    }
+
+    /// Sends a Play-state ping transaction (`ClientboundPingPacket`).
+    pub fn send_ping(&self, id: i32) {
+        self.send_packet(CPing { id });
+    }
+
+    /// Records the client's `ServerboundPongPacket` transaction id.
+    pub fn handle_pong(&self, id: i32) {
+        *self.last_pong_id.lock() = Some(id);
+    }
+
+    /// Returns the most recent ping transaction id echoed by `SPong`.
+    #[must_use]
+    pub fn last_pong_id(&self) -> Option<i32> {
+        *self.last_pong_id.lock()
+    }
+
+    /// Sends custom chat tab-completion entries to this player
+    /// (`ClientboundCustomChatCompletionsPacket`).
+    pub fn send_custom_chat_completions(
+        &self,
+        action: CustomChatCompletionAction,
+        entries: Vec<String>,
+    ) {
+        self.send_packet(CCustomChatCompletions { action, entries });
+    }
+
+    /// Handles `ServerboundCustomClickActionPacket` (vanilla `MinecraftServer.handleCustomClickAction`).
+    pub fn handle_custom_click_action(&self, packet: SCustomClickAction) {
+        log::debug!(
+            "Player {} triggered custom click action {}",
+            self.gameprofile.name(),
+            packet.id
+        );
+        *self.last_custom_click_action.lock() = Some(packet.id);
+    }
+
+    /// Returns the identifier of the latest custom click action sent by this player.
+    #[must_use]
+    pub fn last_custom_click_action(&self) -> Option<Identifier> {
+        self.last_custom_click_action.lock().clone()
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetJigsawBlock`.
+    ///
+    /// A game master rewrites every jigsaw field; the block entity keeps them in
+    /// NBT so the editor state survives a save/load.
+    pub fn handle_set_jigsaw_block(&self, packet: SSetJigsawBlock) {
+        if !self.has_game_master_permissions() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(block_entity) = world.get_block_entity(packet.pos) else {
+            return;
+        };
+        let Some(jigsaw) = block_entity.downcast_ref::<JigsawBlockEntity>() else {
+            return;
+        };
+        jigsaw.set_name(packet.name);
+        jigsaw.set_target(packet.target);
+        jigsaw.set_pool(packet.pool);
+        jigsaw.set_final_state(packet.final_state);
+        jigsaw.set_joint_name(&packet.joint);
+        jigsaw.set_placement_priority(packet.placement_priority);
+        jigsaw.set_selection_priority(packet.selection_priority);
+        block_entity.set_changed();
+        // Vanilla `sendBlockUpdated(pos, state, state, 3)`.
+        world.send_block_updated(packet.pos);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleJigsawGenerate`.
+    ///
+    /// Generating a structure from a jigsaw block needs the runtime structure
+    /// manager, which Steel does not have: world generation places bundled
+    /// templates instead of generating from placed jigsaw blocks.
+    pub fn handle_jigsaw_generate(&self, packet: SJigsawGenerate) {
+        if !self.has_game_master_permissions() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(block_entity) = world.get_block_entity(packet.pos) else {
+            return;
+        };
+        if block_entity.downcast_ref::<JigsawBlockEntity>().is_none() {
+            return;
+        }
+        log::warn!(
+            "jigsaw generation requested at {:?} (levels {}, keep jigsaws {}) but Steel has no runtime structure generator; the request was skipped",
+            packet.pos,
+            packet.levels,
+            packet.keep_jigsaws
+        );
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleSetTestBlock`.
+    ///
+    /// The test blocks only exist for the game-test framework; Steel keeps the
+    /// vanilla gate (game master plus a real test block entity) so a rogue
+    /// client cannot write into arbitrary block entities.
+    pub fn handle_set_test_block(&self, packet: SSetTestBlock) {
+        if !self.has_game_master_permissions() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(block_entity) = world.get_block_entity(packet.pos) else {
+            return;
+        };
+        let Some(test_block) = block_entity.downcast_ref::<TestBlockEntity>() else {
+            return;
+        };
+        test_block.set_mode(test_mode_from_ordinal(packet.mode));
+        test_block.set_message(packet.message);
+        test_block.set_changed();
+        // Vanilla `sendBlockUpdated(pos, initialState, testBlock.getBlockState(), 3)`.
+        world.send_block_updated(packet.pos);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleTeleportToEntityPacket`.
+    ///
+    /// Only a spectator may use it, and only to reach an entity that is actually
+    /// present. Vanilla searches every level; Steel looks in this player's own
+    /// level, which is the only one whose entities can be reached without a
+    /// cross-world teleport that would need an asynchronous chunk load.
+    pub fn handle_teleport_to_entity(&self, packet: STeleportToEntity) {
+        if !self.is_spectator() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let Some(target) = world.get_entity_by_uuid(&packet.target) else {
+            return;
+        };
+        let position = target.position();
+        let (yaw, pitch) = target.rotation();
+        self.teleport(position, yaw, pitch).ok();
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleBlockEntityTagQuery`.
+    ///
+    /// A game master asks for the block entity's tags; the answer is the NBT
+    /// produced by `saveWithoutMetadata` (or a `null` tag when the block entity
+    /// is gone), echoed with the request's transaction id.
+    pub fn handle_block_entity_tag_query(&self, packet: SBlockEntityTagQuery) {
+        if !self.is_operator() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let tag = world
+            .get_block_entity(packet.pos)
+            .map(|block_entity| block_entity.save_without_metadata());
+        self.send_packet(CTagQuery {
+            transaction_id: packet.transaction_id,
+            tag: OptionalNbt(tag),
+        });
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleEntityTagQuery`.
+    pub fn handle_entity_tag_query(&self, packet: SEntityTagQuery) {
+        if !self.is_operator() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        let tag = world.get_entity_by_id(packet.entity_id).map(|entity| {
+            // Vanilla `Entity.saveWithoutMetadata`: the type-specific NBT
+            // with the entity `id` but without the world position metadata.
+            let mut nbt = entity.nbt_for_data_compare();
+            nbt.insert("id", entity.entity_type().key.to_string());
+            nbt
+        });
+        self.send_packet(CTagQuery {
+            transaction_id: packet.transaction_id,
+            tag: OptionalNbt(tag),
+        });
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleLockDifficulty`.
+    ///
+    /// Only a game master (or the singleplayer owner, which Steel approximates
+    /// with the operator check) may lock or unlock the difficulty.
+    pub fn handle_lock_difficulty(&self, packet: SLockDifficulty) {
+        if !self.is_operator() {
+            return;
+        }
+        let Some(world) = Entity::level(self) else {
+            return;
+        };
+        // Vanilla locks the difficulty for the whole server; Steel keeps one
+        // level data per world, so the world the player stands in is the one
+        // that changes and broadcasts `CChangeDifficulty`.
+        world.set_difficulty_locked(packet.locked);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleRecipeBookChangeSettingsPacket`:
+    /// stores the tab state and echoes it to other listeners, exactly as the
+    /// server does for every tab change.
+    pub fn handle_recipe_book_change_settings(&self, packet: SRecipeBookChangeSettings) {
+        let Some(book_type) = recipe_book::RecipeBookType::from_ordinal(packet.book_type) else {
+            return;
+        };
+        {
+            let mut book = self.recipe_book.lock();
+            book.set_settings(
+                book_type,
+                recipe_book::BookTypeSettings {
+                    open: packet.open,
+                    filtering: packet.filtering,
+                },
+            );
+        }
+        let settings = self.recipe_book.lock().settings_packet();
+        self.send_packet(settings);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleRecipeBookSeenRecipePacket`:
+    /// clears the "new" highlight badge for the viewed `RecipeDisplayId`.
+    pub fn handle_recipe_book_seen_recipe(&self, packet: SRecipeBookSeenRecipe) {
+        self.recipe_book
+            .lock()
+            .remove_highlight_by_display(packet.recipe);
+    }
 
     /// Handles the end of a client tick.
     pub fn handle_client_tick_end(&self) {
@@ -817,7 +2131,12 @@ impl Player {
             }
         }
 
-        // TODO: reset player noActionTime and remove shoulder entities.
+        // Vanilla `Player.hurtServer` clears the idle timer so mobs stop
+        // treating a freshly damaged player as inactive.
+        self.set_no_action_time(0);
+        // Vanilla also drops both shoulder entities here; Steel has no
+        // shoulder-riding entities (parrots) yet, so there is nothing to
+        // detach.
         if self.get_health() <= 0.0 {
             return false;
         }
@@ -881,7 +2200,35 @@ impl Player {
             );
         }
 
-        // TODO: combat tracker (getCombatTracker().recordDamage)
+        // Vanilla `CombatTracker.recordDamage` keeps the last damage source so
+        // the death message and `getLastDamageSource` see it. Steel records into
+        // the shared `DamageHistory` instead of a per-player tracker.
+        if let Some(server) = self.try_server() {
+            let world = self.get_world();
+            let clock = world.level_data.read().game_time_handle();
+            server.damage_history.record(self.base(), source, &clock);
+        }
+
+        // Vanilla `CombatTracker.recordDamage` keeps the combat state that the
+        // `PlayerCombatEnter/End` packets mirror on the client. The player has
+        // its own tick count, so the bookkeeping uses it instead of the shared
+        // entity-tick helper. Vanilla's `shouldEnterCombat` is
+        // `source.getEntity() instanceof LivingEntity`.
+        {
+            let tick_count = self.tick_count();
+            self.tick_combat_status(tick_count);
+            let enters_combat = source
+                .causing_entity()
+                .is_some_and(|causer| causer.as_living_entity().is_some());
+            if self.living_base().record_combat_damage(
+                tick_count,
+                enters_combat,
+                !self.is_dead_or_dying(),
+            ) {
+                self.on_enter_combat();
+            }
+        }
+
         if damage != 0.0 {
             self.cause_food_exhaustion(source.damage_type.exhaustion);
             self.set_health(self.get_health() - damage);
@@ -917,13 +2264,19 @@ impl Player {
                 .component()
             }
             DeathMessageType::Default | DeathMessageType::FallVariants => {
-                // TODO: use CombatTracker for killer name items and fall variants
+                // Vanilla `DamageSource.getLocalizedDeathMessage`: the message
+                // gets the victim plus, when a living entity caused the damage,
+                // that entity's display name.
+                let mut args = vec![TextComponent::plain(self.gameprofile.name().to_owned())];
+                if let Some(killer) = source.causing_entity()
+                    && killer.as_living_entity().is_some()
+                {
+                    args.push(killer.display_name());
+                }
                 TranslatedMessage {
                     key: death_key.into(),
                     fallback: None,
-                    args: Some(Box::new([TextComponent::plain(
-                        self.gameprofile.name().to_owned(),
-                    )])),
+                    args: Some(args.into_boxed_slice()),
                 }
                 .component()
             }
@@ -973,12 +2326,16 @@ impl Player {
             },
         });
 
-        // TODO: team death message visibility (ALWAYS / HIDE_FOR_OTHER_TEAMS / HIDE_FOR_OWN_TEAM)
-        if show_death_messages {
-            world.broadcast_system_chat(CSystemChat {
-                content: death_message,
-                overlay: false,
-            });
+        if show_death_messages && let Some(server) = self.try_server() {
+            // Vanilla routes death messages through `PlayerTeam.sendMessage`, so a
+            // team's `death_message_visibility` decides who receives them.
+            let holder = ScoreHolder::new(self.scoreboard_name());
+            let team = server
+                .scoreboards
+                .get(world.domain())
+                .and_then(|scoreboard| scoreboard.holder_team_name(&holder));
+
+            server.broadcast_team_message(&death_message, team.as_deref(), None);
         }
 
         if !world.get_game_rule(&KEEP_INVENTORY) && self.game_mode() != GameType::Spectator {
@@ -993,11 +2350,13 @@ impl Player {
             }
         }
 
-        // TODO: Increment DEATH_COUNT objective criterion
-        if let Some(killer) = get_kill_credit(self, world.as_ref()) {
+        // Vanilla `ServerPlayer.die` → `awardStat(Stats.DEATHS)` and the
+        // `deathCount` dummy scoreboard objective.
+        self.increment_death_count_objective(&world);
+        if let Some(killer) = get_kill_credit(self, &world) {
             self.award_stat(&vanilla_stat_types::ENTITY_KILLED_BY, killer.entity_type());
             killer.award_kill_score(self, source);
-            // TODO: Create wither rose
+            create_wither_rose(self, source);
         }
 
         self.award_custom_stat(&vanilla_custom_stats::DEATHS);
@@ -1006,6 +2365,9 @@ impl Player {
 
         self.clear_fire();
         self.set_ticks_frozen(0);
+        // Vanilla `ServerPlayer.die` ends with `getCombatTracker().recheckStatus()`
+        // so the death always closes out combat before the respawn screen shows.
+        self.recheck_combat_status();
 
         if world.get_game_rule(&IMMEDIATE_RESPAWN) {
             self.respawn();
@@ -1028,11 +2390,10 @@ impl Player {
         self.world.load_full()
     }
 
-    /// Returns the server this player belongs to.
-    pub(crate) fn server(&self) -> Arc<Server> {
-        self.server
-            .upgrade()
-            .expect("player must not outlive server")
+    /// Returns the server this player belongs to, if still attached.
+    #[must_use]
+    pub(crate) fn try_server(&self) -> Option<Arc<Server>> {
+        self.server.upgrade()
     }
 
     /// Returns the identity of the player's current continuous domain stay.
@@ -1246,6 +2607,13 @@ impl Player {
             NbtTag::Byte(i8::from(self.has_seen_credits())),
         );
         nbt.insert("Dimension", self.get_world().key.to_string());
+        let entered_nether_position = *self.entered_nether_position.lock();
+        if let Some(position) = entered_nether_position {
+            nbt.insert(
+                "entered_nether_pos",
+                NbtList::Double(position.to_array().to_vec()),
+            );
+        }
 
         if let Some(vehicle) = self.vehicle()
             && let Some(root_vehicle) = self.root_vehicle()
@@ -1393,6 +2761,18 @@ impl Entity for Player {
 
     fn plain_text_name(&self) -> String {
         self.gameprofile.name().to_owned()
+    }
+
+    fn force_set_rotation(&self, yaw: f32, relative_yaw: bool, pitch: f32, relative_pitch: bool) {
+        self.default_force_set_rotation(yaw, relative_yaw, pitch, relative_pitch);
+        // Vanilla `ServerPlayer.forceSetRotation` also pushes the new values so
+        // the client does not snap back on its next movement packet.
+        self.send_packet(CPlayerRotation {
+            yaw,
+            relative_yaw,
+            pitch,
+            relative_pitch,
+        });
     }
 
     fn look_at(&self, from_anchor: EntityAnchor, target: DVec3) {
@@ -1562,7 +2942,9 @@ impl Entity for Player {
             self.default_make_stuck_in_block(state, speed_multiplier);
         }
 
-        // TODO: Reset current impulse context once vehicle/player impulse contexts exist.
+        // Vanilla `Player.makeStuckInBlock` clears the impulse context so the
+        // following movement ticks are exempt from the stuck-in-block speed cap.
+        self.reset_current_impulse_context();
     }
 
     fn can_be_hit_by_projectile(&self) -> bool {
@@ -1752,22 +3134,66 @@ impl Entity for Player {
         entity: &dyn LivingEntity,
         _source: &DamageSource,
     ) -> bool {
-        log::debug!("1");
         self.award_stat(&vanilla_stat_types::ENTITY_KILLED, entity.entity_type());
         true
     }
 
     fn award_kill_score(&self, victim: &dyn Entity, _killing_blow: &DamageSource) {
         if self.id() != victim.id() {
-            // TODO: Trigger advancement criteria.
-            // TODO: Increment the score of some objectives of this player.
+            // Vanilla `ServerPlayer.awardKillScore` → `playerKillCount` objective.
+            if victim.as_player().is_some() {
+                self.increment_player_kill_count_objective();
+            }
             self.award_custom_stat(if victim.as_player().is_some() {
                 &vanilla_custom_stats::PLAYER_KILLS
             } else {
                 &vanilla_custom_stats::MOB_KILLS
             });
-            // TODO: Handle team kill
+            // Vanilla `ServerPlayer.awardKillScore` fires
+            // `CriteriaTriggers.PLAYER_KILLED_ENTITY`, which the `kill_a_mob` and
+            // `monster_hunter` advancements listen for.
+            self.trigger_advancement_with_context(
+                &PLAYER_KILLED_ENTITY,
+                &TriggerContext::entity(&victim.entity_type().key),
+            );
+            // Vanilla `ServerPlayer.awardKillScore` fires
+            // `CriteriaTriggers.KILL_MOB_NEAR_SCULK_CATALYST` when the victim is
+            // a mob killed within eight blocks of a sculk catalyst.
+            if victim.as_player().is_none()
+                && let Some(world) = self.level()
+            {
+                let victim_pos = victim.block_position();
+                let near_catalyst = BlockPos::between_closed(
+                    victim_pos.offset(-8, -8, -8),
+                    victim_pos.offset(8, 8, 8),
+                )
+                .any(|pos| {
+                    world.get_block_state(pos).get_block() == &vanilla_blocks::SCULK_CATALYST
+                });
+                if near_catalyst {
+                    self.trigger_advancement_with_context(
+                        &KILL_MOB_NEAR_SCULK_CATALYST,
+                        &TriggerContext::entity(&victim.entity_type().key),
+                    );
+                }
+            }
+            // Vanilla `ServerPlayer.awardKillScore` also bumps `teamKillCount`
+            // when killer and victim share a team.
+            let world = self.get_world();
+            if self.is_on_same_team_as(&world, victim) {
+                self.increment_dummy_objective(&world, "teamKillCount");
+            }
         }
+    }
+
+    /// Vanilla `ServerPlayer.tickCount` is the player's own counter, not the
+    /// shared `EntityBase` one; the combat tracker compares damage times against
+    /// it, so the trait default must be overridden here.
+    ///
+    /// Fully qualified on purpose: a bare `self.tick_count()` would resolve back
+    /// to this very method and recurse forever.
+    fn tick_count(&self) -> i32 {
+        Player::tick_count(self)
     }
 }
 
@@ -1783,6 +3209,20 @@ impl LivingEntity for Player {
         Some(&self.entity_data)
     }
 
+    /// Vanilla `ServerPlayer.onEnterCombat`: tell the client combat started, so
+    /// its combat music and the "in combat" HUD agree with the server.
+    fn on_enter_combat(&self) {
+        self.send_packet(CPlayerCombatEnter {});
+    }
+
+    /// Vanilla `ServerPlayer.onLeaveCombat`: send the duration the tracker
+    /// measured, which the client fades the combat state out over.
+    fn on_leave_combat(&self, combat_duration: i32) {
+        self.send_packet(CPlayerCombatEnd {
+            combat_time: combat_duration,
+        });
+    }
+
     fn indicate_damage(&self, xd: f64, zd: f64) {
         let (y_rot, _) = self.rotation();
         let hurt_dir = zd.atan2(xd) * RAD_TO_DEG_F64 - f64::from(y_rot);
@@ -1792,8 +3232,14 @@ impl LivingEntity for Player {
         });
     }
 
+    #[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
     fn tick_living_entity(&self, entity: &SharedEntity) {
         self.advance_tick();
+        // Vanilla `ServerPlayer.tick` runs `this.getCombatTracker().recheckStatus()`
+        // through the living tick; the player has its own tick count, so the
+        // shared hook is fed here.
+        self.tick_combat_status(self.tick_count());
+        self.tick_riptide();
         self.tick_item_cooldowns();
         self.tick_attack_strength();
         self.tick_throttlers();
@@ -1829,7 +3275,12 @@ impl LivingEntity for Player {
 
         self.default_tick();
         self.detect_equipment_updates();
-        self.ai_step(entity);
+        // Vanilla `ServerPlayer.doTick` keeps ticking a dead player's connection,
+        // but steering and AI only run for a live entity. Running `ai_step` on a
+        // removed player would move a corpse and corrupt its last position.
+        if !self.is_removed() {
+            self.ai_step(entity);
+        }
 
         // Vanilla snaps the player back to firstGood after ServerPlayer.doTick().
         if let Err(error) = self.try_set_position(tick_position) {
@@ -1845,7 +3296,11 @@ impl LivingEntity for Player {
         self.living_base.decrement_invulnerable_time();
         self.tick_mob_effects();
         self.tick_active_item_use(entity);
-        // TODO: Tick stats even when the player has been dead for more than 20 ticks.
+        // Vanilla `ServerPlayer.tick` ticks the warden spawn tracker every tick:
+        // the warning level decays after twelve thousand quiet ticks.
+        self.tick_warden_spawn_tracker();
+        // Vanilla `Player.tick` runs the stat tick before the death branch, so
+        // `play_time` keeps counting while dead.
         self.tick_stats();
 
         if self.get_health() <= 0.0 {
@@ -1855,7 +3310,25 @@ impl LivingEntity for Player {
             self.block_breaking.lock().tick(self, &world);
 
             self.update_player_attributes();
-            self.advancements.lock().flush_dirty(self, true);
+            // Vanilla `Player.tick` calls `advancements.tick()`, which re-runs the
+            // registered `location` predicates against the player's new position.
+            let location_context = {
+                let position = self.position();
+                let mut context = TriggerContext::at(&world, position);
+                context.player_sneaking = Some(self.is_discrete());
+                context
+            };
+            {
+                let mut advancements = self.advancements.lock();
+                advancements.trigger_location(self, &location_context);
+                advancements.trigger_tick(self, &location_context);
+                advancements.flush_dirty(self, true);
+            }
+            // Vanilla `ServerPlayer.tick`: the post-effect push follows the
+            // advancement flush and only runs for a live player.
+            self.flush_post_effects();
+            self.tick_levitation_trigger();
+            self.tick_ride_entity_in_lava_trigger();
             self.living_base.refresh_speed_from_attributes();
             self.tick_food_data();
 
@@ -1949,19 +3422,6 @@ impl LivingEntity for Player {
         }
 
         !self.has_client_loaded()
-    }
-
-    fn hurt_armor(&self, source: &DamageSource, damage: f32) {
-        self.do_hurt_equipment(
-            source,
-            damage,
-            &[
-                EquipmentSlot::Feet,
-                EquipmentSlot::Legs,
-                EquipmentSlot::Chest,
-                EquipmentSlot::Head,
-            ],
-        );
     }
 
     fn actually_hurt(&self, world: &World, source: &DamageSource, amount: f32) {
@@ -2082,8 +3542,9 @@ impl LivingEntity for Player {
             self.inventory.lock().set_changed();
         }
 
+        // `on_equip_item` runs the vanilla attribute refresh, the equip sound
+        // and the `GameEvent.EQUIP` dispatch.
         self.on_equip_item(slot, &ItemStack::empty(), &equipped);
-        // TODO: Emit EQUIP game event once game-event dispatch is implemented.
         InteractionResult::Success
     }
 
@@ -2143,6 +3604,9 @@ impl LivingEntity for Player {
     fn ai_step(&self, entity: &SharedEntity) -> Option<MoveResult> {
         self.tick_regeneration();
         InventoryTickContext::tick_player_inventory(&self.get_world(), self);
+        // Vanilla `ServerPlayerEntity.playerTick` sends map updates for every
+        // carried map, independently of the per-item color update.
+        filled_map::send_map_packets(self);
         if self.is_flying() && !self.is_passenger() {
             self.reset_fall_distance();
         }
@@ -2216,16 +3680,38 @@ impl LivingEntity for Player {
 }
 
 impl TextResolutor for Player {
-    fn resolve_content(&self, _resolvable: &Resolvable) -> TextComponent {
-        TextComponent::new()
+    /// Vanilla resolves entity and score content against the viewer. The
+    /// player is the only entity reachable here, so a selector resolves to its
+    /// own display name and a score resolves for its own scoreboard holder.
+    fn resolve_content(&self, resolvable: &Resolvable) -> TextComponent {
+        match resolvable {
+            Resolvable::Entity { .. } => self.display_name(),
+            Resolvable::Scoreboard { objective, .. } => {
+                let holder = ScoreHolder::new(self.scoreboard_name());
+                let world = self.get_world();
+                let score = self.try_server().and_then(|server| {
+                    let scoreboard = server.scoreboards.get(world.domain())?;
+                    let objective = scoreboard.objective(objective)?;
+                    scoreboard.score(&holder, &objective)
+                });
+                TextComponent::plain(score.unwrap_or(0).to_string())
+            }
+            // NBT content needs a live entity NBT snapshot, which the player
+            // has no viewer-scoped copy of.
+            Resolvable::NBT { .. } => TextComponent::new(),
+        }
     }
 
+    /// Vanilla resolves `custom` content from the client's registered custom
+    /// text data; the server has no client-side copy, so nothing resolves.
     fn resolve_custom(&self, _data: &CustomData) -> Option<TextComponent> {
         None
     }
 
-    fn translate(&self, _key: &str) -> Option<String> {
-        None
+    /// Vanilla `TranslatableContents.resolve` for a server-side view: the
+    /// English translation table.
+    fn translate(&self, key: &str) -> Option<String> {
+        TRANSLATIONS.get(key).map(|value| (*value).to_owned())
     }
 }
 

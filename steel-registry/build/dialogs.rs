@@ -81,7 +81,7 @@ pub(crate) fn build() -> TokenStream {
     let mut stream = TokenStream::new();
 
     stream.extend(quote! {
-        use crate::dialog::{Dialog, DialogVariant, DialogRegistry, ExitAction};
+        use crate::dialog::{Dialog, DialogAfterAction, DialogVariant, DialogRegistry, ExitAction};
         use steel_utils::Identifier;
         use text_components::{TextComponent, translation::TranslatedMessage};
     });
@@ -106,12 +106,19 @@ pub(crate) fn build() -> TokenStream {
                 stream.extend(quote! {
                     pub static #dialog_ident: Dialog = Dialog {
                         key: #key,
-                        button_width: #button_width,
-                        columns: #columns,
-                        exit_action: #exit_action,
+                        body: Vec::new(),
+                        inputs: Vec::new(),
+                        can_close_with_escape: true,
+                        pause: true,
+                        after_action: DialogAfterAction::Close,
                         external_title: #external_title,
                         title: #title,
-                        variant: DialogVariant::DialogList { dialogs: #dialogs_ref },
+                        variant: DialogVariant::DialogList {
+                            dialogs: #dialogs_ref,
+                            exit_action: #exit_action,
+                            columns: #columns,
+                            button_width: #button_width,
+                        },
                     };
                 });
             }
@@ -125,12 +132,18 @@ pub(crate) fn build() -> TokenStream {
                 stream.extend(quote! {
                     pub static #dialog_ident: Dialog = Dialog {
                         key: #key,
-                        button_width: #button_width,
-                        columns: #columns,
-                        exit_action: #exit_action,
+                        body: Vec::new(),
+                        inputs: Vec::new(),
+                        can_close_with_escape: true,
+                        pause: true,
+                        after_action: DialogAfterAction::Close,
                         external_title: #external_title,
                         title: #title,
-                        variant: DialogVariant::ServerLinks,
+                        variant: DialogVariant::ServerLinks {
+                            exit_action: #exit_action,
+                            columns: #columns,
+                            button_width: #button_width,
+                        },
                     };
                 });
             }

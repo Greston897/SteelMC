@@ -118,7 +118,7 @@ impl BlockBehavior for PumpkinBlock {
             &GameEventContext::new(Some(player), None),
         );
 
-        player.award_stat(&vanilla_stat_types::ITEM_USED, &vanilla_items::SHEARS);
+        player.award_stat(&vanilla_stat_types::ITEM_USED, &*vanilla_items::SHEARS);
 
         InteractionResult::Success
     }

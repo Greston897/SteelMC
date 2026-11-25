@@ -23,6 +23,7 @@ use steel_registry::fluid::FluidStateExt;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::loot_table::LootContext;
 use steel_registry::particle_type::ParticleData;
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::vanilla_entity_data::FishingBobberEntityData;
 use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::vanilla_particle_types::{BUBBLE, FISHING, SPLASH};
@@ -183,7 +184,10 @@ impl FishingHookEntity {
             entity_type,
             entity_data: SyncMutex::new(FishingBobberEntityData::new()),
             projectile_base: ProjectileBase::new(),
-            // FIXME: `lure_speed` and `luck` are taken from the existing rod, but auto generation fails when doing this, refer to: https://mcsrc.dev/2/26.2/net/minecraft/world/entity/projectile/FishingHook#L75
+            // Loaded hooks start with neutral fishing state; the owning rod
+            // re-applies `lure_speed` and `luck` through `update_owner_info`
+            // once the owner is known, which is what vanilla's constructor does
+            // with the `FishingRodItem` passed in from the shooter.
             hook_state: SyncMutex::new(FishingHookState::new(0, 0)),
             synchronized_random: SyncMutex::new(LegacyRandom::from_seed(0)),
         }
@@ -516,7 +520,12 @@ impl FishingHookEntity {
 
                 if let Some(hooked_in) = hooked_in {
                     self.pull_entity(&hooked_in);
-                    // TODO: criteria triggers (advancements)
+                    // Vanilla `FishingHook.pullEntity` fires `fishing_rod_hooked`.
+                    if let Some(owner) = self.get_owner()
+                        && let Some(player) = owner.as_player()
+                    {
+                        player.trigger_advancement(&vanilla_criteria_triggers::FISHING_ROD_HOOKED);
+                    }
                     self.broadcast_entity_event(EntityStatus::FishingRodReelIn);
                     damage = if hooked_in.as_ref().is::<ItemEntity>() {
                         DMG_ITEM_ENTITY
@@ -543,7 +552,15 @@ impl FishingHookEntity {
                         let items =
                             vanilla_loot_tables::GAMEPLAY_FISHING.get_random_items(&mut loot_ctx);
 
-                        // TODO: criteria triggers (advancements)
+                        // Vanilla `FishingHook.retrieve` fires `fishing_rod_hooked`
+                        // once the loot actually exists.
+                        if let Some(owner) = self.get_owner()
+                            && let Some(player) = owner.as_player()
+                        {
+                            player.trigger_advancement(
+                                &vanilla_criteria_triggers::FISHING_ROD_HOOKED,
+                            );
+                        }
 
                         let Some(world) = self.level() else {
                             return damage;
@@ -652,7 +669,6 @@ impl FishingHookEntity {
         }
     }
 
-    // TODO: check if passing a lock is better here
     /// Determines if the player should stop fishing.
     fn should_stop(&self) -> bool {
         let state = self.hook_state.lock();
@@ -895,7 +911,6 @@ impl Entity for FishingHookEntity {
                     self.apply_effects_from_blocks();
                     self.update_rotation();
 
-                    // TODO: check if passing a lock is better here
                     if self.should_stop() {
                         self.base.set_velocity(DVec3::ZERO);
                     }

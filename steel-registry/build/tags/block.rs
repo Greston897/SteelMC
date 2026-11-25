@@ -28,7 +28,12 @@ fn read_all_fabric_tags(tag_file: &str) -> FxHashMap<String, Vec<String>> {
 pub(crate) fn build() -> TokenStream {
     let tag_dir = "../steel-utils/build_assets/builtin_datapacks/minecraft/tags/block";
     println!("cargo:rerun-if-changed={tag_dir}");
-    let mut all_tags = common::read_all_tags(tag_dir);
+    // Vanilla tags the code references but the extracted datapack snapshot is
+    // not guaranteed to carry (`build_assets/vanilla_tags` mirrors
+    // `data/minecraft/tags/block`). Loaded first so the extracted snapshot wins
+    // on name collisions.
+    let mut all_tags = common::read_all_tags("build_assets/vanilla_tags/block");
+    all_tags.extend(common::read_all_tags(tag_dir));
     all_tags.extend(read_all_fabric_tags("build_assets/tags.json"));
 
     let sorted_tags = common::resolve_all_tags(&all_tags);

@@ -99,7 +99,7 @@ impl BlockBehavior for CactusBlock {
         // Block above must not be liquid
         let above = world.get_block_state(pos.above());
 
-        !above.has_fluid()
+        !above.get_block().config.liquid
     }
 
     fn get_state_for_placement(&self, context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
@@ -210,5 +210,33 @@ impl BlockBehavior for CactusBlock {
         _computation_type: PathComputationType,
     ) -> bool {
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_support::TestLevel;
+    use steel_registry::init_vanilla_registry;
+
+    #[test]
+    fn cactus_rejects_liquid_above_but_not_waterlogged_blocks() {
+        init_vanilla_registry();
+        let pos = BlockPos::ZERO;
+        let state = vanilla_blocks::CACTUS.default_state();
+        let behavior = CactusBlock::new(&vanilla_blocks::CACTUS);
+        let base =
+            || TestLevel::default().with_block(pos.below(), vanilla_blocks::SAND.default_state());
+
+        assert!(behavior.can_survive(state, &base(), pos));
+        assert!(!behavior.can_survive(
+            state,
+            &base().with_block(pos.above(), vanilla_blocks::WATER.default_state()),
+            pos,
+        ));
+        let waterlogged = vanilla_blocks::OAK_SLAB
+            .default_state()
+            .set_value(&BlockStateProperties::WATERLOGGED, true);
+        assert!(behavior.can_survive(state, &base().with_block(pos.above(), waterlogged), pos,));
     }
 }

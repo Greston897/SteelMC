@@ -14,6 +14,7 @@ use super::{
     Player, PlayerRespawnConfig, abilities::Abilities, experience::Experience, food_data::FoodData,
     player_inventory::PlayerInventory,
 };
+use crate::entity::WardenSpawnTracker;
 use crate::player::stats_counter::StatState;
 use crate::{
     chunk_saver::{ChunkStorage, PersistentEntity},
@@ -26,7 +27,10 @@ use crate::{
 
 /// Current data version for player saves.
 /// Increment when making breaking changes to the format.
-pub const PLAYER_DATA_VERSION: i32 = 7;
+///
+/// Older payloads default missing player state to its initial value. Version 11
+/// adds the saved Overworld entry point for Nether travel.
+pub const PLAYER_DATA_VERSION: i32 = 11;
 
 /// Persistent player data saved by Steel's storage backend.
 ///
@@ -135,6 +139,28 @@ pub struct PersistentPlayerData {
 
     /// Persisted advancement progress keyed by advancement identifier.
     pub advancements: Vec<(Identifier, AdvancementProgress)>,
+
+    /// Vanilla `warden_spawn_tracker` (warning level, cooldown, quiet ticks).
+    pub warden_spawn_tracker: PersistentWardenSpawnTracker,
+
+    /// Vanilla `post_effects`: the ordered list of screen effects the client
+    /// applies, stored as registry ids.
+    pub post_effects: Vec<Identifier>,
+    /// Vanilla pending raid origin, independent of subsequent player movement.
+    pub raid_omen_position: Option<[i32; 3]>,
+    /// Overworld position captured when entering the Nether.
+    pub entered_nether_position: Option<[f64; 3]>,
+}
+
+/// Vanilla `WardenSpawnTracker` saved with the player.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct PersistentWardenSpawnTracker {
+    /// Vanilla `ticks_since_last_warning`.
+    pub ticks_since_last_warning: i32,
+    /// Vanilla `warning_level`.
+    pub warning_level: i32,
+    /// Vanilla `cooldown_ticks`.
+    pub cooldown_ticks: i32,
 }
 
 /// A vanilla `RootVehicle` tree persisted with player data.
@@ -198,6 +224,7 @@ pub struct PersistentStat {
 impl PersistentPlayerData {
     /// Extracts persistent data from a live player.
     #[must_use]
+    #[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
     pub fn from_player(player: &Player) -> Self {
         let pos = player.position();
         let (yaw, pitch) = player.rotation();
@@ -249,6 +276,7 @@ impl PersistentPlayerData {
         let ender_pearls = Self::ender_pearls_from_player(player);
         let stats = Self::stats_from_player(player);
         let advancements = player.advancements.lock().persisted_progress();
+        let post_effects = player.post_effects();
 
         Self {
             pos: [pos.x, pos.y, pos.z],
@@ -296,6 +324,20 @@ impl PersistentPlayerData {
             ender_items,
             stats,
             advancements,
+            warden_spawn_tracker: {
+                let tracker = player.warden_spawn_tracker();
+                PersistentWardenSpawnTracker {
+                    ticks_since_last_warning: tracker.ticks_since_last_warning(),
+                    warning_level: tracker.warning_level(),
+                    cooldown_ticks: tracker.cooldown_ticks(),
+                }
+            },
+            post_effects,
+            raid_omen_position: player.raid_omen_position.lock().map(|pos| pos.0.to_array()),
+            entered_nether_position: player
+                .entered_nether_position
+                .lock()
+                .map(|pos| pos.to_array()),
         }
     }
 
@@ -362,6 +404,7 @@ impl Player {
         *self.ender_chest_inventory.lock() = PlayerEnderChestContainer::new();
         *self.food_data.lock() = FoodData::new();
         self.stats.lock().reset();
+        self.set_warden_spawn_tracker(WardenSpawnTracker::new());
         *self.advancements.lock() = PlayerAdvancement::default();
 
         let mut experience = Experience::default();
@@ -370,6 +413,11 @@ impl Player {
 
         self.set_score(0);
         self.set_seen_credits(false);
+        // A first visit has no saved render state, so the empty list is the
+        // vanilla default and still has to reach the client.
+        self.replace_post_effects(Vec::new());
+        *self.raid_omen_position.lock() = None;
+        *self.entered_nether_position.lock() = None;
     }
 }
 
@@ -527,6 +575,12 @@ impl PersistentPlayerData {
         }
         player.set_score(self.score);
         player.set_seen_credits(self.seen_credits);
+        player.replace_post_effects(self.post_effects.clone());
+        *player.raid_omen_position.lock() = self
+            .raid_omen_position
+            .map(|pos| steel_utils::BlockPos(glam::IVec3::from_array(pos)));
+        *player.entered_nether_position.lock() =
+            self.entered_nether_position.map(DVec3::from_array);
 
         // Statistics
         {
@@ -542,6 +596,12 @@ impl PersistentPlayerData {
                 stats.stats.insert(*stat, (*count, StatState::Dirty));
             }
         }
+
+        player.set_warden_spawn_tracker(WardenSpawnTracker::with_state(
+            self.warden_spawn_tracker.ticks_since_last_warning,
+            self.warden_spawn_tracker.warning_level,
+            self.warden_spawn_tracker.cooldown_ticks,
+        ));
 
         player
             .advancements

@@ -1,6 +1,13 @@
 //! Furnace, blast-furnace, and smoker menus.
 
 use crate::player::player_inventory::Prediction;
+use crate::player::player_inventory::Prediction::Predicted;
+use crate::player::recipe_placement::PlacementRequest;
+use crate::player::recipe_placement::PostPlaceAction;
+use crate::player::recipe_placement::StackedItemContents;
+use crate::player::recipe_placement::apply_inventory_take;
+use crate::player::recipe_placement::plan_placement;
+use crate::player::recipe_placement::single_item_matches;
 use std::array::from_fn;
 
 use steel_registry::recipe::SingleItemRecipeInput;
@@ -105,6 +112,79 @@ impl MenuKind for FurnaceMenuKind {
         self.container.still_valid(player)
     }
 
+    /// Vanilla `AbstractFurnaceMenu.fillCraftSlotsStackedContents`: only the
+    /// input slot (0) is part of the placement snapshot.
+    fn fill_craft_slots_stacked_contents(
+        &self,
+        _behavior: &MenuBehavior,
+        guard: &ContainerLockGuard,
+        contents: &mut StackedItemContents,
+    ) -> bool {
+        let Some(container) = guard.get(self.container.container_id()) else {
+            return false;
+        };
+        contents.account_stack(container.get_item(0));
+        true
+    }
+
+    /// Vanilla `AbstractFurnaceMenu.handlePlacement`: the grid is the single
+    /// input slot, and clearing the grid also empties the fuel slot (2).
+    fn handle_placement(
+        &mut self,
+        _behavior: &mut MenuBehavior,
+        guard: &mut ContainerLockGuard,
+        player: &Player,
+        request: PlacementRequest<'_>,
+    ) -> Option<PostPlaceAction> {
+        let container = guard.get(self.container.container_id())?;
+        let grid = vec![container.get_item(0).clone()];
+        // Vanilla `AbstractFurnaceMenu.handlePlacement` clears the input *and*
+        // the fuel slot, so a placed recipe never sits on a running burn.
+        let slots_to_clear = [container.get_item(0).clone(), container.get_item(2).clone()];
+        let matches = single_item_matches(container.get_item(0), request.placement);
+        let inv_id = ContainerId::from_arc(&player.inventory);
+        let inventory: Vec<ItemStack> = guard
+            .get_typed::<PlayerInventory>(inv_id)?
+            .get_items()
+            .to_vec();
+        let plan = plan_placement(
+            &inventory,
+            1,
+            1,
+            &grid,
+            request.placement,
+            request.recipe_size,
+            matches,
+            request.use_max_items,
+            request.allow_dropping_items_to_clear,
+            // Vanilla `inputGridSlots` is `{slot 0}`; the *cleared* set is
+            // `{slot 0, slot 2}` and `clearGrid` returns both to the player. The
+            // extra slot is handed to `apply_plan` through `inventory_give`, so
+            // the plan carries it and nothing is dropped.
+            &slots_to_clear[1..],
+            |contents| {
+                // Vanilla `AbstractFurnaceBlockEntity.fillStackedContents`
+                // accounts every slot, fuel included.
+                for stack in &grid {
+                    contents.account_stack(stack);
+                }
+            },
+        );
+
+        for stack in plan.inventory_give {
+            player.add_item_or_drop_with_guard(guard, stack, Predicted);
+        }
+        apply_inventory_take(guard, player, &plan.inventory_take);
+        if let Some(container) = guard.get_mut(self.container.container_id()) {
+            container.set_item(0, plan.grid[0].clone());
+            if plan.clear_applied {
+                container.set_item(2, ItemStack::empty());
+            }
+            container.set_changed();
+        }
+        Some(plan.action)
+    }
+
     fn on_open(
         &mut self,
         behavior: &mut MenuBehavior,
@@ -204,6 +284,10 @@ impl MenuKind for FurnaceMenuKind {
         if remaining.count() == clicked.count() {
             return Some(ItemStack::empty());
         }
+        // Vanilla `AbstractContainerMenu.doClick` reports the moved amount to the
+        // slot, which is how the furnace result counts a shift-clicked craft.
+        let taken = clicked.copy_with_count(clicked.count - remaining.count);
+        behavior.slots()[slot_index].on_quick_craft(&taken, player);
         if let Some(remainder) = behavior.slots()[slot_index].on_take(guard, &remaining, player) {
             player.add_item_or_drop_with_guard(guard, remainder, Prediction::Predicted);
         }
@@ -228,8 +312,8 @@ mod tests {
         init_vanilla_registry();
 
         for (kind, item) in [
-            (FurnaceKind::Furnace, &vanilla_items::FURNACE),
-            (FurnaceKind::Smoker, &vanilla_items::RAW_IRON),
+            (FurnaceKind::Furnace, &*vanilla_items::FURNACE),
+            (FurnaceKind::Smoker, &*vanilla_items::RAW_IRON),
         ] {
             let stack = ItemStack::new(item);
             assert!(

@@ -1,4 +1,7 @@
 use super::*;
+use crate::player::advancement::predicate::TriggerContext;
+use steel_registry::vanilla_criteria_triggers::CHANGED_DIMENSION;
+use steel_registry::vanilla_criteria_triggers::NETHER_TRAVEL;
 
 impl Player {
     fn apply_post_teleport_transition(&self, post_transition: &TeleportPostTransition) {
@@ -69,7 +72,7 @@ impl Player {
             }
             self.reset_flying_ticks();
         } else {
-            self.reset(new_world, ResetReason::WorldChange);
+            self.reset(Arc::clone(&new_world), ResetReason::WorldChange);
             if !self.spawn_with_velocity_packet(
                 position,
                 rotation,
@@ -81,6 +84,37 @@ impl Player {
                 teleport_transition.relatives,
             ) {
                 return false;
+            }
+            // Advancement rewards must observe the destination, and failed
+            // admission must neither save an entry point nor grant a criterion.
+            let source_dimension = &current_world.key;
+            let target_dimension = &new_world.key;
+            let overworld = Identifier::vanilla_static("overworld");
+            let nether = Identifier::vanilla_static("the_nether");
+            let entry_position = {
+                let mut entered = self.entered_nether_position.lock();
+                if source_dimension == &overworld && target_dimension == &nether {
+                    *entered = Some(current_position);
+                }
+                let route = if source_dimension == &nether && target_dimension == &overworld {
+                    *entered
+                } else {
+                    None
+                };
+                if target_dimension != &nether {
+                    *entered = None;
+                }
+                route
+            };
+            self.trigger_advancement_with_context(
+                &CHANGED_DIMENSION,
+                &TriggerContext::dimension(source_dimension, target_dimension),
+            );
+            if let Some(entry_position) = entry_position {
+                self.trigger_advancement_with_context(
+                    &NETHER_TRAVEL,
+                    &TriggerContext::nether_route(entry_position, position),
+                );
             }
             // Vanilla: PlayerList.sendAllPlayerInfo -> inventoryMenu.sendAllDataToRemote
             self.send_inventory_to_remote();

@@ -6,12 +6,13 @@ use steel_registry::REGISTRY;
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::feature::{ConfiguredFeature, ConfiguredFeatureKind};
 use steel_utils::random::worldgen_random::WorldgenRandom;
-use steel_utils::{BlockPos, BlockStateId, Identifier};
+use steel_utils::{BlockPos, BlockStateId, Direction, Identifier};
 
 use crate::behavior::block::BlockBehavior;
 use crate::behavior::blocks::vegetation::bonemealable::Bonemealable;
+use crate::behavior::blocks::vegetation::vegetation_block::survival_update_shape;
 use crate::behavior::context::BlockPlaceContext;
-use crate::world::{LevelReader, World};
+use crate::world::{LevelReader, ScheduledTickAccess, World};
 use crate::worldgen::feature::FeatureDecorationRunner;
 
 use super::{BlockRef, default_surviving_state, survives_on_tag};
@@ -49,6 +50,18 @@ impl NetherFungusBlock {
 }
 
 impl BlockBehavior for NetherFungusBlock {
+    fn update_shape(
+        &self,
+        state: BlockStateId,
+        world: &dyn ScheduledTickAccess,
+        pos: BlockPos,
+        _direction: Direction,
+        _neighbor_pos: BlockPos,
+        _neighbor_state: BlockStateId,
+    ) -> BlockStateId {
+        survival_update_shape(self, state, world, pos)
+    }
+
     fn can_survive(&self, _state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
         survives_on_tag(world, pos, &self.support_blocks)
     }
@@ -157,6 +170,50 @@ mod tests {
             &vanilla_configured_features::CRIMSON_FUNGUS_PLANTED,
             BlockTag::SUPPORTS_CRIMSON_FUNGUS,
         )
+    }
+
+    #[test]
+    fn fungus_breaks_when_its_support_is_removed() {
+        init_vanilla_registry();
+        let pos = BlockPos::ZERO;
+        for (behavior, state, support) in [
+            (
+                crimson_fungus(),
+                vanilla_blocks::CRIMSON_FUNGUS.default_state(),
+                &vanilla_blocks::CRIMSON_NYLIUM,
+            ),
+            (
+                warped_fungus(),
+                vanilla_blocks::WARPED_FUNGUS.default_state(),
+                &vanilla_blocks::WARPED_NYLIUM,
+            ),
+        ] {
+            let supported = TestLevel::default().with_block(pos.below(), support.default_state());
+            assert_eq!(
+                behavior.update_shape(
+                    state,
+                    &supported,
+                    pos,
+                    Direction::Down,
+                    pos.below(),
+                    support.default_state()
+                ),
+                state
+            );
+            let unsupported = TestLevel::default();
+            assert!(
+                behavior
+                    .update_shape(
+                        state,
+                        &unsupported,
+                        pos,
+                        Direction::Down,
+                        pos.below(),
+                        vanilla_blocks::AIR.default_state()
+                    )
+                    .is_air()
+            );
+        }
     }
 
     #[test]

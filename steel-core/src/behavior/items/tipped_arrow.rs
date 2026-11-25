@@ -13,8 +13,10 @@ use super::dynamic_name::potion_name;
 
 /// Tipped-arrow behavior providing Vanilla's potion-content-dependent name and
 /// poison default instance.
-// TODO: Implement inherited ArrowItem projectile and dispenser behavior once
-// ProjectileItem dispatch exists.
+///
+/// The item has no `use_item` in vanilla (`ArrowItem` is not usable); firing comes
+/// from bows, and dispensing is handled by the dispenser block behavior, which
+/// maps this item to `ArrowEntity` with its potion contents preserved.
 #[item_behavior]
 pub struct TippedArrowItem;
 

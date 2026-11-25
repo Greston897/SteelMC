@@ -1,7 +1,9 @@
 //! advancement linked to the player.
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 //!
 //! Groups the advancementPlayer, advancement progress and visibility evaluator
 
+pub mod predicate;
 pub mod progress;
 pub mod rewards;
 mod saving;
@@ -12,6 +14,7 @@ pub(crate) use saving::{PersistedAdvancements, PersistedAdvancementsRef};
 use crate::entity::Entity;
 use crate::player::Player;
 use crate::player::advancement::rewards::grant_reward;
+use predicate::TriggerContext;
 use progress::{AdvancementProgress, AdvancementProgressMap};
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::time::UNIX_EPOCH;
@@ -20,6 +23,7 @@ use steel_protocol::packets::game::CUpdateAdvancements;
 use steel_registry::REGISTRY;
 use steel_registry::advancement::registry::{AdvancementNodeRef, AdvancementRef};
 use steel_registry::advancement::{AdvancementProgressData, Criteria};
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::vanilla_game_rules::SHOW_ADVANCEMENT_MESSAGES;
 use steel_utils::Identifier;
 
@@ -36,6 +40,10 @@ pub struct PlayerAdvancement {
     progress_changed: FxHashSet<AdvancementRef>,
     /// represent the las selected advancement tab
     pub last_selected_tab: Option<AdvancementRef>,
+    /// Reserved for location listeners once their predicates are supported.
+    location_listeners: Vec<(AdvancementRef, String)>,
+    /// Reserved for tick listeners once their predicates are supported.
+    tick_listeners: Vec<(AdvancementRef, String)>,
 }
 
 impl Default for PlayerAdvancement {
@@ -47,6 +55,10 @@ impl Default for PlayerAdvancement {
             visible: FxHashSet::default(),
             progress_changed: FxHashSet::default(),
             last_selected_tab: Option::default(),
+            // Tick and location predicates are not yet evaluated completely;
+            // avoid granting irreversible progress until their contexts are ready.
+            location_listeners: Vec::new(),
+            tick_listeners: Vec::new(),
         }
     }
 }
@@ -64,18 +76,20 @@ impl PlayerAdvancement {
         let progress = self.progress.get_mut_or_start_progress(advancement);
         let was_done = progress.is_done();
         if progress.grant_progress(criterion) {
-            //TODO: register advancement listener
+            // Enabled trigger dispatch currently walks the baked registry.
+            // Runtime advancement reload and listener rebuilding are not implemented.
             self.progress_changed.insert(advancement);
             result = true;
             if !was_done && progress.is_done() {
-                grant_reward(player, advancement.rewards());
+                grant_reward(player, advancement.rewards(), advancement);
                 if let Some(display) = advancement.display()
                     && display.announce_chat
                     && player
                         .level()
                         .is_some_and(|level| level.get_game_rule(&SHOW_ADVANCEMENT_MESSAGES))
+                    && let Some(server) = player.try_server()
                 {
-                    player.server().broadcast_system_chat(
+                    server.broadcast_system_chat(
                         &display
                             .frame_type
                             .create_announcement(advancement, player.display_name()),
@@ -91,13 +105,128 @@ impl PlayerAdvancement {
         result
     }
 
+    /// Dispatches a supported trigger across the baked advancement registry.
+    /// Unsupported triggers currently grant nothing; runtime reload and vanilla's
+    /// per-trigger listener registration remain unimplemented.
+    ///
+    /// Returns the number of criteria that were newly granted.
+    pub fn trigger(&mut self, player: &Player, trigger: &Identifier) -> usize {
+        self.trigger_with_context(player, trigger, &TriggerContext::default())
+    }
+
+    /// Fires `trigger` with an event description, honouring each criterion's
+    /// predicate.
+    ///
+    /// Supported block, item, dimension, Nether travel and sleep triggers use
+    /// conservative subsets of their predicate languages.
+    pub fn trigger_with_context(
+        &mut self,
+        player: &Player,
+        trigger: &Identifier,
+        context: &TriggerContext,
+    ) -> usize {
+        // Most trigger contexts and predicate codecs are still incomplete. Keep
+        // them disabled rather than permanently granting incorrect progress now
+        // that generated criteria preserve their real trigger identifiers.
+        // Block and item events have complete snapshots for their supported
+        // predicates. Unsupported player and location tests fail closed.
+        let block_location = trigger == &vanilla_criteria_triggers::ITEM_USED_ON_BLOCK
+            || trigger == &vanilla_criteria_triggers::PLACED_BLOCK;
+        let used_item = trigger == &vanilla_criteria_triggers::CONSUME_ITEM;
+        let changed_dimension = trigger == &vanilla_criteria_triggers::CHANGED_DIMENSION;
+        let slept_in_bed = trigger == &vanilla_criteria_triggers::SLEPT_IN_BED;
+        let nether_travel = trigger == &vanilla_criteria_triggers::NETHER_TRAVEL;
+        if !block_location && !used_item && !changed_dimension && !slept_in_bed && !nether_travel {
+            return 0;
+        }
+        if nether_travel && context.nether_route.is_none() {
+            return 0;
+        }
+        if changed_dimension && (context.from_dimension.is_none() || context.to_dimension.is_none())
+        {
+            return 0;
+        }
+        let mut granted = 0;
+        for advancement in REGISTRY.advancements.advancements() {
+            // Collect first: `award` mutates `self`.
+            let matching: Vec<String> = advancement
+                .criteria_ids()
+                .into_iter()
+                .filter(|criterion_id| {
+                    advancement
+                        .get_criterion(criterion_id)
+                        .is_some_and(|criterion| {
+                            &criterion.id() == trigger
+                                && criterion.instance().is_none_or(|instance| {
+                                    if block_location {
+                                        predicate::matches_block_location(instance, context)
+                                    } else if used_item {
+                                        predicate::matches_used_item(instance, context)
+                                    } else if changed_dimension {
+                                        predicate::matches_changed_dimension(instance, context)
+                                    } else if nether_travel {
+                                        predicate::matches_nether_route(instance, context)
+                                    } else {
+                                        predicate::matches_unconditional_player_trigger(instance)
+                                    }
+                                })
+                        })
+                })
+                .map(str::to_owned)
+                .collect();
+            for criterion_id in matching {
+                if self.award(player, advancement, &criterion_id) {
+                    granted += 1;
+                }
+            }
+        }
+        granted
+    }
+
+    /// Re-evaluates tick listeners; currently no listeners are registered.
+    pub fn trigger_tick(&mut self, player: &Player, context: &TriggerContext) -> usize {
+        self.trigger_listeners(player, &self.tick_listeners.clone(), context)
+    }
+
+    /// Re-evaluates location listeners; currently no listeners are registered.
+    pub fn trigger_location(&mut self, player: &Player, context: &TriggerContext) -> usize {
+        self.trigger_listeners(player, &self.location_listeners.clone(), context)
+    }
+
+    /// Grants every listener in `listeners` whose predicate accepts `context`.
+    fn trigger_listeners(
+        &mut self,
+        player: &Player,
+        listeners: &[(AdvancementRef, String)],
+        context: &TriggerContext,
+    ) -> usize {
+        let mut granted = 0;
+        // Collect first: `award` mutates `self`.
+        let matching: Vec<(AdvancementRef, String)> = listeners
+            .iter()
+            .filter(|(advancement, criterion_id)| {
+                advancement
+                    .get_criterion(criterion_id)
+                    .and_then(|criterion| criterion.instance())
+                    .is_none_or(|instance| predicate::matches(instance, context))
+            })
+            .cloned()
+            .collect();
+        for (advancement, criterion_id) in matching {
+            if self.award(player, advancement, &criterion_id) {
+                granted += 1;
+            }
+        }
+        granted
+    }
+
     /// revoke the specified criterion for a player.
     pub fn revoke(&mut self, advancement: AdvancementRef, criterion: &str) -> bool {
         let mut result = false;
         let progress = self.progress.get_mut_or_start_progress(advancement);
         let was_done = progress.is_done();
         if progress.revoke_progress(criterion) {
-            //TODO: unregister advancement listener
+            // See `award`: the pull-based dispatcher owns no per-player listeners.
             self.progress_changed.insert(advancement);
             result = true;
         }

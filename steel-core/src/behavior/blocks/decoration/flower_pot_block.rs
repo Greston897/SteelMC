@@ -1,8 +1,8 @@
 //! `FlowerPotBlock` behavior (`net.minecraft.world.level.block.FlowerPotBlock`).
 //!
-//! TODO: Potted open/closed eyeblossoms do not transform at day/night yet.
-//! Vanilla reads `EnvironmentAttributes.EYEBLOSSOM_OPEN`, which Steel lacks
-//! (the same gap documented on `EyeblossomBlock`).
+//! Potted eyeblossoms follow the same day/night swap as the flowers themselves:
+//! vanilla reads `EnvironmentAttributes.EYEBLOSSOM_OPEN` on the potted block and
+//! replaces the pot content, which Steel does through `random_tick`.
 
 use crate::player::player_inventory::Prediction;
 use std::sync::{Arc, LazyLock};
@@ -63,6 +63,31 @@ impl FlowerPotBlock {
 impl BlockBehavior for FlowerPotBlock {
     fn get_state_for_placement(&self, _context: &BlockPlaceContext<'_>) -> Option<BlockStateId> {
         Some(self.block.default_state())
+    }
+
+    fn random_tick(&self, _state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+        // Vanilla `FlowerPotBlock.tick`: a potted eyeblossom swaps with the
+        // environment's open/closed attribute, keeping the pot itself.
+        let (potted, target) = if self.potted == &vanilla_blocks::POTTED_OPEN_EYEBLOSSOM {
+            (
+                &vanilla_blocks::POTTED_OPEN_EYEBLOSSOM,
+                &vanilla_blocks::POTTED_CLOSED_EYEBLOSSOM,
+            )
+        } else if self.potted == &vanilla_blocks::POTTED_CLOSED_EYEBLOSSOM {
+            (
+                &vanilla_blocks::POTTED_CLOSED_EYEBLOSSOM,
+                &vanilla_blocks::POTTED_OPEN_EYEBLOSSOM,
+            )
+        } else {
+            return;
+        };
+        let should_be_open =
+            world.environment_attribute("minecraft:gameplay/eyeblossom_open", 0.0) >= 0.5;
+        let is_open = potted == &vanilla_blocks::POTTED_OPEN_EYEBLOSSOM;
+        if should_be_open == is_open {
+            return;
+        }
+        world.set_block(pos, target.default_state(), UpdateFlags::UPDATE_ALL);
     }
 
     fn use_item_on(

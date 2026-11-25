@@ -27,6 +27,28 @@ impl PermissionGroupStore for CapturingStore {
     }
 }
 
+/// Store whose reload hands back a config fixed at construction time.
+#[derive(Debug)]
+struct ReloadingStore {
+    next: Arc<SyncMutex<Option<PermissionGroupsConfig>>>,
+}
+
+impl PermissionGroupStore for ReloadingStore {
+    fn save_groups(
+        &self,
+        _config: PermissionGroupsConfig,
+    ) -> BoxFuture<'static, Result<(), PermissionGroupStoreError>> {
+        Box::pin(async { Ok(()) })
+    }
+
+    fn load_groups(
+        &self,
+    ) -> BoxFuture<'static, Result<Option<PermissionGroupsConfig>, PermissionGroupStoreError>> {
+        let next = Arc::clone(&self.next);
+        Box::pin(async move { Ok(next.lock().clone()) })
+    }
+}
+
 #[derive(Debug)]
 struct FailingStore;
 
@@ -70,6 +92,45 @@ async fn manager_persists_before_publishing_replacement() {
     assert_eq!(result, Ok(()));
     assert!(manager.contains_group("builder"));
     assert_eq!(&*saved.lock(), &[config]);
+}
+
+#[tokio::test]
+async fn reload_from_store_swaps_in_the_file_contents() {
+    let next = Arc::new(SyncMutex::new(Some(config_with_builder())));
+    let manager = manager(Some(Arc::new(ReloadingStore {
+        next: Arc::clone(&next),
+    })));
+    assert!(!manager.contains_group("builder"));
+
+    assert_eq!(manager.reload_from_store().await, Ok(true));
+    assert!(manager.contains_group("builder"));
+
+    // A store with nothing new leaves the live config alone but reports success.
+    *next.lock() = None;
+    assert_eq!(manager.reload_from_store().await, Ok(false));
+    assert!(manager.contains_group("builder"));
+}
+
+#[tokio::test]
+async fn reload_from_store_keeps_state_when_the_file_is_invalid() {
+    let mut invalid = PermissionGroupsConfig::default();
+    invalid.groups.remove("op");
+    let manager = manager(Some(Arc::new(ReloadingStore {
+        next: Arc::new(SyncMutex::new(Some(invalid))),
+    })));
+
+    let result = manager.reload_from_store().await;
+    assert!(matches!(
+        result,
+        Err(PermissionGroupManagerError::Config(_))
+    ));
+    assert!(manager.contains_group("op"));
+}
+
+#[tokio::test]
+async fn manager_without_a_store_cannot_reload() {
+    let manager = manager(None);
+    assert_eq!(manager.reload_from_store().await, Ok(false));
 }
 
 #[tokio::test]

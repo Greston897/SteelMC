@@ -423,3 +423,47 @@ fn errors_match_vanilla_alternative_selection_and_cursors() {
         TextComponent::from(&translations::SNBT_PARSER_INVALID_STRING_CONTENTS)
     );
 }
+
+#[test]
+fn nested_compounds_filter_past_the_depth_ceiling() {
+    // Adversarial SNBT: each level opens a compound, so the parser recurses once
+    // per `{`. Without the ceiling this overflows the stack instead of erroring.
+    let depth = super::parser::MAX_SNBT_DEPTH + 8;
+    let mut input = String::new();
+    for _ in 0..depth {
+        input.push_str("{\"a\":");
+    }
+    input.push('1');
+    for _ in 0..depth {
+        input.push('}');
+    }
+
+    let Err(error) = parse_snbt_argument(&input) else {
+        panic!("deep nesting must be rejected");
+    };
+    assert_eq!(error.kind(), &SnbtErrorKind::TooDeep);
+}
+
+#[test]
+fn nested_lists_filter_past_the_depth_ceiling() {
+    let depth = super::parser::MAX_SNBT_DEPTH + 8;
+    let mut input = String::new();
+    for _ in 0..depth {
+        input.push('[');
+    }
+    input.push('1');
+    for _ in 0..depth {
+        input.push(']');
+    }
+
+    let Err(error) = parse_snbt_argument(&input) else {
+        panic!("deep nesting must be rejected");
+    };
+    assert_eq!(error.kind(), &SnbtErrorKind::TooDeep);
+}
+
+#[test]
+fn ordinary_nesting_still_parses() {
+    let compound = compound_tag("{\"a\":{\"b\":[1,2,{\"c\":3}]}}");
+    assert!(compound.contains("a"));
+}

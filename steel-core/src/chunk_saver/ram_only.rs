@@ -14,8 +14,9 @@ use super::{ChunkStorage, LoadedChunk, PreparedChunkSave};
 /// - It has chunk generation which can be disabled with `EmptyChunkGen`
 /// - It will save all the data so perfectly for minigames
 ///
-/// TODO:
-/// Will later have the option to load a world from storage and clone it for easy world handling
+/// Loading a world from another storage backend and cloning it for easy world
+/// handling is not wired yet; this storage only serves generated or in-memory
+/// worlds.
 pub struct RamOnlyStorage {
     /// This saves every chunk, and it saves the changes in the world to make it possible to run the server fully in memory
     saved_chunks: AsyncRwLock<FxHashMap<ChunkPos, SimpleRAMChunk>>,

@@ -6,7 +6,9 @@ use glam::DVec3;
 use steel_utils::{ChunkPos, WorldAabb};
 
 use super::EntityMoveError;
+use crate::entity::LivingEntity;
 use crate::world::World;
+use crate::world::raid::is_raider_type;
 
 /// Reasons an entity can be removed from the world.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -280,6 +282,18 @@ impl EntityLevelCallback for EntityChunkCallback {
             .entity_manager()
             .remove_live_entity(self.entity_id, reason);
         if let Some(entity) = entity {
+            if matches!(
+                reason,
+                RemovalReason::Discarded | RemovalReason::ChangedWorld
+            ) && is_raider_type(entity.entity_type())
+            {
+                world.raids.raider_left_world(
+                    entity.uuid(),
+                    entity
+                        .as_living_entity()
+                        .map_or(0.0, LivingEntity::get_health),
+                );
+            }
             world.mark_chunk_dirty(ChunkPos::from_entity_pos(entity.position()));
         }
 

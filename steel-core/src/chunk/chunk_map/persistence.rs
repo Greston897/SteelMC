@@ -105,6 +105,11 @@ impl ChunkMap {
                 Err(e) => {
                     tracing::error!("Error saving chunk: {e}");
                     Self::mark_chunk_dirty_for_save_retry(chunk_holder);
+                    // An unload-triggered save has no caller to report to, so the
+                    // operators get vanilla's low-disk toast here instead.
+                    if let Some(server) = world.server() {
+                        server.send_low_disk_space_warning(&e);
+                    }
                 }
             }
         }
@@ -228,7 +233,7 @@ impl ChunkMap {
 
         // Collect all chunks from both maps
         let all_chunks: Vec<Arc<ChunkHolder>> = {
-            let mut chunks = Vec::new();
+            let mut chunks = Vec::with_capacity(self.chunks.len());
             self.chunks.iter_sync(|_, holder| {
                 chunks.push(Arc::clone(holder));
                 true
@@ -240,6 +245,7 @@ impl ChunkMap {
             chunks
         };
         let mut covered_chunk_positions = FxHashSet::default();
+        let mut first_error: Option<io::Error> = None;
 
         tracing::info!(chunk_count = all_chunks.len(), "Saving chunks");
 
@@ -298,6 +304,10 @@ impl ChunkMap {
                 Err(e) => {
                     tracing::error!(chunk = ?holder.get_pos(), "Failed to save chunk: {e}");
                     Self::mark_chunk_dirty_for_save_retry(holder);
+                    // Vanilla `ChunkMap.saveAllChunks` collects the first
+                    // exception and rethrows it after the loop; reporting the
+                    // count as success hid a full disk from `/save-all`.
+                    first_error.get_or_insert(e);
                 }
             }
         }
@@ -338,6 +348,12 @@ impl ChunkMap {
             "Chunk save complete"
         );
 
-        Ok(saved_count)
+        // The successful chunks stay saved; the first failure is reported so the
+        // caller can warn operators that the disk is full (vanilla
+        // `MinecraftServer.reportChunkSaveFailure` -> `sendLowDiskSpaceWarning`).
+        match first_error {
+            Some(error) => Err(error),
+            None => Ok(saved_count),
+        }
     }
 }

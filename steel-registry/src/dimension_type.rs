@@ -67,7 +67,9 @@ pub struct BackgroundMusic {
 #[derive(Debug)]
 pub struct DimensionType {
     pub key: Identifier,
-    pub fixed_time: Option<i64>,
+    /// Vanilla MC 26.3 `has_fixed_time` — the only fixed-time state in
+    /// `DimensionType.createDirectCodec`; 26.3 has no `fixed_time` value.
+    pub has_fixed_time: bool,
     pub has_skylight: bool,
     pub has_ceiling: bool,
     pub coordinate_scale: f64,
@@ -98,15 +100,17 @@ pub struct DimensionType {
     pub fog_end_distance: Option<f32>,
     pub default_dripstone_particle: Option<&'static str>,
 
-    // Attributes: gameplay
-    pub respawn_anchor_works: bool,
-    pub can_start_raid: bool,
-    pub fast_lava: bool,
-    pub piglins_zombify: bool,
+    // Attributes: gameplay. `None` means the dimension JSON omits the entry
+    // from its `attributes` map, so the vanilla attribute default applies and
+    // neither codec emits the key (DFU encodes only present map entries).
+    pub respawn_anchor_works: Option<bool>,
+    pub can_start_raid: Option<bool>,
+    pub fast_lava: Option<bool>,
+    pub piglins_zombify: Option<bool>,
     pub sky_light_level: Option<f32>,
-    pub snow_golem_melts: bool,
-    pub water_evaporates: bool,
-    pub nether_portal_spawns_piglin: bool,
+    pub snow_golem_melts: Option<bool>,
+    pub water_evaporates: Option<bool>,
+    pub nether_portal_spawns_piglin: Option<bool>,
     pub bed_rule: BedRule,
     pub straw_bed_rule: BedRule,
 
@@ -116,8 +120,30 @@ pub struct DimensionType {
 }
 
 impl DimensionType {
+    /// Returns a boolean `minecraft:gameplay/...` environment attribute as the
+    /// dimension type declares it, mirroring vanilla `EnvironmentAttributeMap`.
+    ///
+    /// Unknown attributes and attributes the dimension leaves at their default are
+    /// reported as `None`, so callers fall back to the vanilla default.
     #[must_use]
-    pub fn get_teleportation_scale(last_dimension_type: &Self, new_dimension_type: &Self) -> f64 {
+    pub const fn gameplay_attribute_bool(&self, key: &str) -> Option<bool> {
+        match key.as_bytes() {
+            b"minecraft:gameplay/nether_portal_spawns_piglin" => self.nether_portal_spawns_piglin,
+            b"minecraft:gameplay/piglins_zombify" => self.piglins_zombify,
+            b"minecraft:gameplay/can_start_raid" => self.can_start_raid,
+            b"minecraft:gameplay/respawn_anchor_works" => self.respawn_anchor_works,
+            b"minecraft:gameplay/snow_golem_melts" => self.snow_golem_melts,
+            b"minecraft:gameplay/water_evaporates" => self.water_evaporates,
+            b"minecraft:gameplay/fast_lava" => self.fast_lava,
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub const fn get_teleportation_scale(
+        last_dimension_type: &Self,
+        new_dimension_type: &Self,
+    ) -> f64 {
         last_dimension_type.coordinate_scale / new_dimension_type.coordinate_scale
     }
 }
@@ -133,36 +159,37 @@ pub enum MonsterSpawnLightLevel {
     },
 }
 
-impl ToNbtTag for &DimensionType {
-    fn to_nbt_tag(self) -> NbtTag {
+impl DimensionType {
+    /// Vanilla MC 26.3 `DimensionType.NETWORK_CODEC`: emits `has_fixed_time`
+    /// (26.3 has no `fixed_time` value) and strictly `.syncable()`
+    /// environment attributes. Server-only gameplay attributes
+    /// (`can_start_raid`, `bed_rule`, `straw_bed_rule`,
+    /// `respawn_anchor_works`, `nether_portal_spawns_piglin`,
+    /// `snow_golem_melts`, ...) are withheld — a vanilla client rejects them.
+    #[must_use]
+    pub fn to_network_nbt(&self) -> NbtTag {
         use simdnbt::owned::{NbtCompound, NbtTag};
         let mut compound = NbtCompound::new();
 
-        // Top-level fields
-        if let Some(fixed_time) = self.fixed_time {
-            compound.insert("fixed_time", fixed_time);
+        // Exact `DimensionType.createDirectCodec` field order:
+        // has_fixed_time?, has_skylight, has_ceiling,
+        // has_ender_dragon_fight, coordinate_scale, min_y, height,
+        // logical_height, infiniburn, ambient_light,
+        // monster_spawn_light_level, monster_spawn_block_light_limit,
+        // skybox?, cardinal_light?, attributes?, timelines?, default_clock?
+        // DFU `optionalFieldOf` omits defaulted values on encode.
+        if self.has_fixed_time {
+            compound.insert("has_fixed_time", true);
         }
         compound.insert("has_skylight", self.has_skylight);
         compound.insert("has_ceiling", self.has_ceiling);
+        compound.insert("has_ender_dragon_fight", self.has_ender_dragon_fight);
         compound.insert("coordinate_scale", self.coordinate_scale);
         compound.insert("min_y", self.min_y);
         compound.insert("height", self.height);
         compound.insert("logical_height", self.logical_height);
         compound.insert("infiniburn", self.infiniburn);
         compound.insert("ambient_light", self.ambient_light);
-        compound.insert("has_ender_dragon_fight", self.has_ender_dragon_fight);
-        if let Some(clock) = self.default_clock {
-            compound.insert("default_clock", clock.key.to_string().as_str());
-        }
-        if let Some(timelines) = self.timelines {
-            compound.insert("timelines", timelines);
-        }
-        if let Some(skybox) = self.skybox {
-            compound.insert("skybox", skybox);
-        }
-        if let Some(cardinal_light) = self.cardinal_light {
-            compound.insert("cardinal_light", cardinal_light);
-        }
         compound.insert(
             "monster_spawn_light_level",
             match &self.monster_spawn_light_level {
@@ -184,6 +211,12 @@ impl ToNbtTag for &DimensionType {
             "monster_spawn_block_light_limit",
             self.monster_spawn_block_light_limit,
         );
+        if let Some(skybox) = self.skybox {
+            compound.insert("skybox", skybox);
+        }
+        if let Some(cardinal_light) = self.cardinal_light {
+            compound.insert("cardinal_light", cardinal_light);
+        }
 
         // Attributes compound
         let mut attributes = NbtCompound::new();
@@ -225,71 +258,20 @@ impl ToNbtTag for &DimensionType {
             );
         }
 
-        // Gameplay attributes
-        attributes.insert(
-            "minecraft:gameplay/respawn_anchor_works",
-            self.respawn_anchor_works,
-        );
-        attributes.insert("minecraft:gameplay/can_start_raid", self.can_start_raid);
-        if self.fast_lava {
-            attributes.insert("minecraft:gameplay/fast_lava", self.fast_lava);
+        // Gameplay attributes (network: syncable-only). Vanilla
+        // `NETWORK_CODEC` keeps every syncable entry present in the map —
+        // even default-equal ones — so presence, not value, gates emission.
+        if let Some(fast_lava) = self.fast_lava {
+            attributes.insert("minecraft:gameplay/fast_lava", fast_lava);
         }
-        if !self.piglins_zombify {
-            attributes.insert("minecraft:gameplay/piglins_zombify", self.piglins_zombify);
+        if let Some(piglins_zombify) = self.piglins_zombify {
+            attributes.insert("minecraft:gameplay/piglins_zombify", piglins_zombify);
         }
         if let Some(sky_light_level) = self.sky_light_level {
             attributes.insert("minecraft:gameplay/sky_light_level", sky_light_level);
         }
-        if self.snow_golem_melts {
-            attributes.insert("minecraft:gameplay/snow_golem_melts", self.snow_golem_melts);
-        }
-        if self.water_evaporates {
-            attributes.insert("minecraft:gameplay/water_evaporates", self.water_evaporates);
-        }
-        if self.nether_portal_spawns_piglin {
-            attributes.insert(
-                "minecraft:gameplay/nether_portal_spawns_piglin",
-                self.nether_portal_spawns_piglin,
-            );
-        }
-
-        // Bed rule
-        {
-            let mut bed_rule = NbtCompound::new();
-            bed_rule.insert("can_set_spawn", self.bed_rule.can_set_spawn);
-            bed_rule.insert("can_sleep", self.bed_rule.can_sleep);
-            if self.bed_rule.destroy_on_use {
-                bed_rule.insert("destroy_on_use", self.bed_rule.destroy_on_use);
-            }
-            if self.bed_rule.destroy_on_leave {
-                bed_rule.insert("destroy_on_leave", self.bed_rule.destroy_on_leave);
-            }
-            if let Some(key) = self.bed_rule.error_message_key {
-                let mut msg = NbtCompound::new();
-                msg.insert("translate", key);
-                bed_rule.insert("error_message", NbtTag::Compound(msg));
-            }
-            attributes.insert("minecraft:gameplay/bed_rule", NbtTag::Compound(bed_rule));
-        }
-        {
-            let mut bed_rule = NbtCompound::new();
-            bed_rule.insert("can_set_spawn", self.straw_bed_rule.can_set_spawn);
-            bed_rule.insert("can_sleep", self.straw_bed_rule.can_sleep);
-            if self.straw_bed_rule.destroy_on_use {
-                bed_rule.insert("destroy_on_use", self.straw_bed_rule.destroy_on_use);
-            }
-            if self.straw_bed_rule.destroy_on_leave {
-                bed_rule.insert("destroy_on_leave", self.straw_bed_rule.destroy_on_leave);
-            }
-            if let Some(key) = self.straw_bed_rule.error_message_key {
-                let mut msg = NbtCompound::new();
-                msg.insert("translate", key);
-                bed_rule.insert("error_message", NbtTag::Compound(msg));
-            }
-            attributes.insert(
-                "minecraft:gameplay/straw_bed_rule",
-                NbtTag::Compound(bed_rule),
-            );
+        if let Some(water_evaporates) = self.water_evaporates {
+            attributes.insert("minecraft:gameplay/water_evaporates", water_evaporates);
         }
 
         // Audio attributes
@@ -341,8 +323,85 @@ impl ToNbtTag for &DimensionType {
         if !attributes.is_empty() {
             compound.insert("attributes", NbtTag::Compound(attributes));
         }
+        if let Some(timelines) = self.timelines {
+            compound.insert("timelines", timelines);
+        }
+        if let Some(clock) = self.default_clock {
+            compound.insert("default_clock", clock.key.to_string().as_str());
+        }
 
         NbtTag::Compound(compound)
+    }
+
+    /// Full direct codec: network form plus all server-only gameplay
+    /// attributes (`bed_rule`, `straw_bed_rule`, `can_start_raid`,
+    /// `respawn_anchor_works`, `nether_portal_spawns_piglin`,
+    /// `snow_golem_melts`). Vanilla `DIRECT_CODEC` shares the network field
+    /// order and encodes every map entry present in the dimension JSON.
+    #[must_use]
+    pub fn to_direct_nbt_tag(&self) -> NbtTag {
+        use simdnbt::owned::{NbtCompound, NbtTag};
+        let NbtTag::Compound(mut compound) = self.to_network_nbt() else {
+            unreachable!("dimension type network NBT is always a compound");
+        };
+        let mut server_attributes = NbtCompound::new();
+        if let Some(respawn_anchor_works) = self.respawn_anchor_works {
+            server_attributes.insert(
+                "minecraft:gameplay/respawn_anchor_works",
+                respawn_anchor_works,
+            );
+        }
+        if let Some(can_start_raid) = self.can_start_raid {
+            server_attributes.insert("minecraft:gameplay/can_start_raid", can_start_raid);
+        }
+        if let Some(snow_golem_melts) = self.snow_golem_melts {
+            server_attributes.insert("minecraft:gameplay/snow_golem_melts", snow_golem_melts);
+        }
+        if let Some(nether_portal_spawns_piglin) = self.nether_portal_spawns_piglin {
+            server_attributes.insert(
+                "minecraft:gameplay/nether_portal_spawns_piglin",
+                nether_portal_spawns_piglin,
+            );
+        }
+        for (key, rule) in [
+            ("minecraft:gameplay/bed_rule", &self.bed_rule),
+            ("minecraft:gameplay/straw_bed_rule", &self.straw_bed_rule),
+        ] {
+            // Vanilla `BedRule.CODEC` order: can_sleep, can_set_spawn,
+            // destroy_on_use?, destroy_on_leave?, error_message?.
+            let mut bed_rule = NbtCompound::new();
+            bed_rule.insert("can_sleep", rule.can_sleep);
+            bed_rule.insert("can_set_spawn", rule.can_set_spawn);
+            if rule.destroy_on_use {
+                bed_rule.insert("destroy_on_use", rule.destroy_on_use);
+            }
+            if rule.destroy_on_leave {
+                bed_rule.insert("destroy_on_leave", rule.destroy_on_leave);
+            }
+            if let Some(key) = rule.error_message_key {
+                let mut msg = NbtCompound::new();
+                msg.insert("translate", key);
+                bed_rule.insert("error_message", NbtTag::Compound(msg));
+            }
+            server_attributes.insert(key, NbtTag::Compound(bed_rule));
+        }
+        // Merge server-only attributes into the existing `attributes` compound.
+        let mut merged = match compound.take("attributes") {
+            Some(NbtTag::Compound(existing)) => existing,
+            _ => NbtCompound::new(),
+        };
+        for (key, value) in server_attributes.iter() {
+            let key_str = key.to_str();
+            merged.insert(key_str.as_ref(), value.clone());
+        }
+        compound.insert("attributes", NbtTag::Compound(merged));
+        NbtTag::Compound(compound)
+    }
+}
+
+impl ToNbtTag for &DimensionType {
+    fn to_nbt_tag(self) -> NbtTag {
+        self.to_network_nbt()
     }
 }
 

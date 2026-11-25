@@ -40,6 +40,9 @@ pub enum ExplosionInteraction {
     Mob,
     /// A TNT explosion governed by `tnt_explosion_drop_decay`.
     Tnt,
+    /// A wind-charge burst: blocks are not destroyed, only "triggered" — the
+    /// vanilla `GameEvent`-driven activation (buttons, levers, doors).
+    Trigger,
 }
 
 /// How an explosion interacts with blocks after its affected positions are calculated.
@@ -51,12 +54,20 @@ pub enum BlockInteraction {
     Destroy,
     /// Destroy affected blocks with the explosion radius in their loot context.
     DestroyWithDecay,
+    /// Trigger affected blocks instead of destroying them.
+    Trigger,
 }
 
 impl BlockInteraction {
     /// Returns Vanilla's default block-like-entity interaction flag.
     #[must_use]
     pub const fn should_affect_blocklike_entities(self) -> bool {
+        matches!(self, Self::Destroy | Self::DestroyWithDecay)
+    }
+
+    /// Returns whether affected blocks are destroyed rather than triggered.
+    #[must_use]
+    pub const fn destroys_blocks(self) -> bool {
         matches!(self, Self::Destroy | Self::DestroyWithDecay)
     }
 }
@@ -494,10 +505,10 @@ impl World {
         }
     }
 
-    // TODO: Add trigger branch with windcharges
     fn resolve_block_interaction(&self, interaction: ExplosionInteraction) -> BlockInteraction {
         match interaction {
             ExplosionInteraction::None => BlockInteraction::Keep,
+            ExplosionInteraction::Trigger => BlockInteraction::Trigger,
             ExplosionInteraction::Block => self.destroy_interaction(&BLOCK_EXPLOSION_DROP_DECAY),
             ExplosionInteraction::Mob => {
                 if self.get_game_rule(&MOB_GRIEFING) {

@@ -35,7 +35,9 @@ const LINGERING_THROW: ThrowParams = ThrowParams {
 
 /// Splash-potion behavior providing Vanilla's potion-content-dependent name
 /// and the water default instance inherited from `PotionItem`.
-// TODO: Implement the `ProjectileItem` dispenser dispatch.
+///
+/// Dispenser dispatch is handled by the dispenser block behavior, which maps this
+/// item to `SplashPotionEntity` in `dispense_projectile`.
 #[item_behavior]
 pub struct SplashPotionItem;
 
@@ -68,7 +70,9 @@ impl ItemBehavior for SplashPotionItem {
 
 /// Lingering-potion behavior providing Vanilla's potion-content-dependent name
 /// and the water default instance inherited from `PotionItem`.
-// TODO: Implement the `ProjectileItem` dispenser dispatch.
+///
+/// Dispenser dispatch is handled by the dispenser block behavior, which maps this
+/// item to `LingeringPotionEntity` in `dispense_projectile`.
 #[item_behavior]
 pub struct LingeringPotionItem;
 

@@ -1,4 +1,5 @@
 //! Biome decoration runner for the `FEATURES` chunk stage.
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 //!
 //! Vanilla treats biome decoration as one ordered pass over structure pieces and placed
 //! features. This module builds the same per-step placed-feature ordering up front and
@@ -19,6 +20,10 @@ mod state;
 mod weather;
 
 pub(crate) use features::no_nested_features;
+pub(crate) use features::{
+    place_end_gateway_in_world, place_end_podium_in_world, rebuild_spike_crystal_in_world,
+    rebuild_spike_in_world,
+};
 pub(crate) use runner::FeatureDecorationRunner;
 
 #[cfg(test)]

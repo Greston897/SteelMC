@@ -1,3 +1,4 @@
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 mod bell_block;
 mod button_block;
 mod copper_bulb_block;

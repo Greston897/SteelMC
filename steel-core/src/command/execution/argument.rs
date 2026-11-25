@@ -1,12 +1,15 @@
 use std::{fmt, sync::Arc};
 
+use simdnbt::owned::NbtCompound;
+
 use super::{
     BiomeOrTag, BlockInput, BlockPredicate, CommandArgumentSource, Coordinates, IntRange,
     ItemPredicate, ScoreHolderArgument, StructureOrTagKey, WorldArgument,
     biome::{parse_biome_or_tag, suggest_biomes},
     block::{parse_block_input, parse_block_predicate, suggest_block_inputs, suggest_blocks},
     coordinates::{
-        parse_block_pos, parse_rotation, parse_vec2, parse_vec3, suggest_coordinates, suggest_vec2,
+        parse_block_pos, parse_column_pos, parse_rotation, parse_vec2, parse_vec3,
+        suggest_coordinates, suggest_vec2,
     },
     item::{parse_item_stack, suggest_item_stack},
     item_predicate::{parse_item_predicate, suggest_item_predicate},
@@ -46,7 +49,7 @@ use steel_registry::{
 use steel_utils::translations::ADVANCEMENT_ADVANCEMENT_NOT_FOUND;
 use steel_utils::{
     Downcast as _, DowncastType, DowncastTypeKey, ErasedType, Identifier,
-    nbt::{NbtPath, parse_snbt_argument},
+    nbt::{NbtPath, parse_snbt_argument, parse_snbt_compound_argument},
     translations,
     types::GameType,
 };
@@ -180,6 +183,19 @@ impl SteelArgumentType {
 
     pub(crate) fn block_pos() -> Self {
         Self::new(BlockPosParser)
+    }
+
+    pub(crate) fn item_slots() -> Self {
+        Self::new(ItemSlotsParser)
+    }
+
+    pub(crate) fn column_pos() -> Self {
+        Self::new(ColumnPosParser)
+    }
+
+    /// Parses a plain namespaced identifier, as vanilla does for registry keys.
+    pub(crate) fn identifier() -> Self {
+        Self::new(IdentifierParser)
     }
 
     pub(crate) fn vec3(center_integers: bool) -> Self {
@@ -326,6 +342,11 @@ impl SteelArgumentType {
 
     pub(crate) fn summonable_entity() -> Self {
         Self::new(SummonableEntityParser)
+    }
+
+    /// A greedy SNBT compound, matching vanilla `minecraft:nbt_compound_tag`.
+    pub(crate) fn compound() -> Self {
+        Self::new(CompoundParser)
     }
 
     pub(crate) fn enchantment() -> Self {
@@ -556,6 +577,10 @@ argument_value_wrapper!(
 );
 argument_value_wrapper!(NbtPathValue(NbtPath), "steel:command/value/nbt_path");
 argument_value_wrapper!(
+    CompoundValue(NbtCompound),
+    "steel:command/value/nbt_compound"
+);
+argument_value_wrapper!(
     IdentifierValue(Identifier),
     "steel:command/value/identifier"
 );
@@ -708,6 +733,30 @@ impl SteelArgumentParser for Vec3Parser {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct ColumnPosParser;
+impl_downcast_type!(ColumnPosParser, "steel:command/parser/column_pos");
+impl SteelArgumentParser for ColumnPosParser {
+    type Value = Coordinates;
+    fn parse(
+        &self,
+        reader: &mut StringReader<'_>,
+        _source: &dyn CommandArgumentSource,
+    ) -> Result<Self::Value, CommandSyntaxError> {
+        parse_column_pos(reader)
+    }
+    fn list_suggestions(
+        &self,
+        _context: &dyn SteelArgumentSuggestionContext,
+        builder: &mut SuggestionsBuilder<'_>,
+    ) {
+        suggest_vec2(builder, parse_column_pos);
+    }
+    fn protocol_argument(&self) -> (ProtocolArgumentType, Option<ProtocolSuggestionType>) {
+        (ProtocolArgumentType::ColumnPos, None)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct Vec2Parser {
     center_integers: bool,
 }
@@ -781,6 +830,25 @@ unit_argument_parser!(
         suggest_entity_anchors(builder);
     },
     protocol(ProtocolArgumentType::EntityAnchor, None)
+);
+
+// Brigadier word() intentionally excludes '*'. Slot selectors are a custom
+// Minecraft argument, so read the complete token rather than loosening word().
+unit_argument_parser!(
+    ItemSlotsParser,
+    "steel:command/parser/item_slots",
+    PrimitiveArgumentValue,
+    parse | reader,
+    _source | {
+        let token = reader.read_unquoted_token();
+        if token.is_empty() {
+            return Err(CommandSyntaxError::dynamic("Expected item slot selector"));
+        }
+        Ok(PrimitiveArgumentValue::String(token.into()))
+    },
+    suggest | _context,
+    _builder | {},
+    protocol(ProtocolArgumentType::ItemSlots, None)
 );
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1049,6 +1117,18 @@ unit_argument_parser!(
     )
 );
 unit_argument_parser!(
+    CompoundParser,
+    "steel:command/parser/compound",
+    CompoundValue,
+    parse | reader,
+    _source | { parse_compound_argument(reader).map(CompoundValue) },
+    suggest | _context,
+    builder | {
+        let _ = builder;
+    },
+    protocol(ProtocolArgumentType::Nbt, None)
+);
+unit_argument_parser!(
     SummonableEntityParser,
     "steel:command/parser/summonable_entity",
     EntityTypeValue,
@@ -1201,6 +1281,19 @@ unit_argument_parser!(
     suggest | _context,
     _builder | {},
     protocol(ProtocolArgumentType::NbtPath, None)
+);
+unit_argument_parser!(
+    IdentifierParser,
+    "steel:command/parser/identifier",
+    IdentifierValue,
+    parse | reader,
+    _source | { parse_identifier(reader).map(IdentifierValue) },
+    suggest | _context,
+    _builder | {},
+    protocol(
+        ProtocolArgumentType::ResourceLocation,
+        Some(ProtocolSuggestionType::AskServer),
+    )
 );
 unit_argument_parser!(
     StorageKeyParser,
@@ -1519,6 +1612,27 @@ fn suggest_game_modes(builder: &mut SuggestionsBuilder<'_>) {
             builder.suggest(name);
         }
     }
+}
+
+fn parse_compound_argument(
+    reader: &mut StringReader<'_>,
+) -> Result<NbtCompound, CommandSyntaxError> {
+    // Vanilla reads the whole remaining input as one SNBT compound, so a command
+    // can pass `{CustomName:'"Bob"',NoGravity:1b}` without quoting.
+    let parsed = parse_snbt_compound_argument(reader.remaining());
+    let (nbt, consumed) = match parsed {
+        Ok(value) => value,
+        Err(error) => {
+            if !reader.advance_bytes(error.cursor()) {
+                return Err(component_snbt_error(reader, "Invalid SNBT cursor"));
+            }
+            return Err(component_snbt_error(reader, error.component()));
+        }
+    };
+    if !reader.advance_bytes(consumed) {
+        return Err(component_snbt_error(reader, "Invalid SNBT cursor"));
+    }
+    Ok(nbt)
 }
 
 fn parse_summonable_entity(

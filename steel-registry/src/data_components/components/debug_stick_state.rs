@@ -70,6 +70,30 @@ impl DebugStickState {
         self.properties.values()
     }
 
+    /// Returns the property name this debug stick remembers for `block`.
+    ///
+    /// A stick only ever stores a handful of blocks, so the linear scan avoids
+    /// allocating the string key on this hot path.
+    #[must_use]
+    pub fn get(&self, block: BlockRef) -> Option<&'static str> {
+        self.properties
+            .values()
+            .find(|property| property.block.key == block.key)
+            .map(|property| property.property)
+    }
+
+    /// Returns a copy of this state with `block` mapped to `property`
+    /// (vanilla `DebugStickStateComponent#with`).
+    #[must_use]
+    pub fn with(&self, block: BlockRef, property: &'static str) -> Self {
+        let mut properties = self.properties.clone();
+        properties.insert(
+            block.key.to_string(),
+            DebugStickProperty { block, property },
+        );
+        Self { properties }
+    }
+
     fn to_nbt_tag_ref(&self) -> NbtTag {
         let mut compound = NbtCompound::new();
         for property in self.properties.values() {

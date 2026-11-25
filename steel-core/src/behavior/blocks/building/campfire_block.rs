@@ -7,8 +7,10 @@ use steel_registry::blocks::properties::{
 };
 use steel_registry::blocks::{BlockRef, block_state_ext::BlockStateExt as _};
 use steel_registry::fluid::FluidState;
+use steel_registry::level_events::SOUND_EXTINGUISH_FIRE;
 use steel_registry::recipe::{SingleItemRecipeInput, vanilla_recipe_types};
 use steel_registry::vanilla_damage_types;
+use steel_registry::vanilla_item_tags::ItemTag;
 use steel_registry::{
     REGISTRY, sound_events, vanilla_block_entity_types, vanilla_block_tags::BlockTag,
     vanilla_blocks, vanilla_custom_stats, vanilla_fluids, vanilla_game_events,
@@ -19,6 +21,8 @@ use steel_utils::{
 };
 
 use crate::behavior::block::schedule_water_tick_if_waterlogged;
+use crate::inventory::equipment::EquipmentSlot::MainHand;
+use crate::inventory::equipment::EquipmentSlot::OffHand;
 use crate::player::Player;
 use crate::{
     behavior::{
@@ -27,7 +31,10 @@ use crate::{
         context::BlockHitResult,
     },
     block_entity::{BLOCK_ENTITIES, BlockEntityTicker, entities::CampfireBlockEntity},
-    entity::{Entity, InsideBlockEffectCollector, damage::DamageSource, projectile::Projectile},
+    entity::{
+        Entity, InsideBlockEffectCollector, LivingEntity as _, damage::DamageSource,
+        projectile::Projectile,
+    },
     world::{
         ClipHitResult, LevelAccessor, ScheduledTickAccess, World, game_event::GameEventContext,
     },
@@ -126,11 +133,11 @@ impl BlockBehavior for CampfireBlock {
 
     fn use_item_on(
         &self,
-        _state: BlockStateId,
+        state: BlockStateId,
         world: &Arc<World>,
         pos: BlockPos,
         player: &Player,
-        _hand: InteractionHand,
+        hand: InteractionHand,
         _hit_result: &BlockHitResult,
         inv: &mut InventoryAccess,
     ) -> InteractionResult {
@@ -144,6 +151,29 @@ impl BlockBehavior for CampfireBlock {
                 .is_some()
         });
         if !accepted {
+            // In 26.3 dousing moved from ShovelItem to this block's item-use
+            // path and is driven by the DOUSES_CAMPFIRES item tag.
+            if state.get_value(LIT)
+                && inv.with_item(|stack| stack.item().has_tag(&ItemTag::DOUSES_CAMPFIRES))
+            {
+                world.level_event(SOUND_EXTINGUISH_FIRE, pos, 0, None);
+                Self::douse(Some(player), world, pos);
+                world.set_block(pos, state.set_value(LIT, false), UpdateFlags::UPDATE_ALL);
+                let broken = inv.with_item(|stack| {
+                    let item = stack.item();
+                    stack
+                        .hurt_and_break(1, player.has_infinite_materials())
+                        .then_some(item)
+                });
+                if let Some(item) = broken {
+                    let slot = match hand {
+                        InteractionHand::MainHand => MainHand,
+                        InteractionHand::OffHand => OffHand,
+                    };
+                    player.on_equipped_item_broken(item, slot);
+                }
+                return InteractionResult::Success;
+            }
             return InteractionResult::TryEmptyHandInteraction;
         }
 

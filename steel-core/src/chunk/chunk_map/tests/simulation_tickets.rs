@@ -3,6 +3,7 @@ use crate::chunk::chunk_ticket_storage::PORTAL_TICKET_RADIUS;
 use crate::entity::damage::DamageHistory;
 use crate::level_data::{GameTimeSource, WorldGenerationSettings};
 use crate::world::{WorldConfig, WorldStorageConfig};
+use std::sync::OnceLock;
 use std::{
     env::temp_dir,
     fs,
@@ -87,6 +88,7 @@ fn restored_portal_ticket_initializes_both_levels_in_the_first_source_phase() {
             &OVERWORLD,
             TEST_WORLD_SEED,
             WorldConfig {
+                server: OnceLock::new(),
                 damage_history: Arc::clone(&damage_history),
                 game_time_source: GameTimeSource::Primary,
                 storage: WorldStorageConfig::RamOnly,

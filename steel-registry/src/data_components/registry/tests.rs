@@ -278,9 +278,9 @@ fn common_defaults_and_extracted_item_overrides_match_vanilla() {
     assert!(!ItemStack::new(&vanilla_items::STONE).is_enchantable());
 
     for (item, variant) in [
-        (&vanilla_items::EGG, &vanilla_chicken_variants::TEMPERATE),
-        (&vanilla_items::BLUE_EGG, &vanilla_chicken_variants::COLD),
-        (&vanilla_items::BROWN_EGG, &vanilla_chicken_variants::WARM),
+        (&*vanilla_items::EGG, &vanilla_chicken_variants::TEMPERATE),
+        (&*vanilla_items::BLUE_EGG, &vanilla_chicken_variants::COLD),
+        (&*vanilla_items::BROWN_EGG, &vanilla_chicken_variants::WARM),
     ] {
         assert!(
             ItemStack::new(item)
@@ -314,22 +314,22 @@ fn common_defaults_and_extracted_item_overrides_match_vanilla() {
     );
 
     for (item, color) in [
-        (&vanilla_items::WHITE_DYE, crate::DyeColor::White),
-        (&vanilla_items::ORANGE_DYE, crate::DyeColor::Orange),
-        (&vanilla_items::MAGENTA_DYE, crate::DyeColor::Magenta),
-        (&vanilla_items::LIGHT_BLUE_DYE, crate::DyeColor::LightBlue),
-        (&vanilla_items::YELLOW_DYE, crate::DyeColor::Yellow),
-        (&vanilla_items::LIME_DYE, crate::DyeColor::Lime),
-        (&vanilla_items::PINK_DYE, crate::DyeColor::Pink),
-        (&vanilla_items::GRAY_DYE, crate::DyeColor::Gray),
-        (&vanilla_items::LIGHT_GRAY_DYE, crate::DyeColor::LightGray),
-        (&vanilla_items::CYAN_DYE, crate::DyeColor::Cyan),
-        (&vanilla_items::PURPLE_DYE, crate::DyeColor::Purple),
-        (&vanilla_items::BLUE_DYE, crate::DyeColor::Blue),
-        (&vanilla_items::BROWN_DYE, crate::DyeColor::Brown),
-        (&vanilla_items::GREEN_DYE, crate::DyeColor::Green),
-        (&vanilla_items::RED_DYE, crate::DyeColor::Red),
-        (&vanilla_items::BLACK_DYE, crate::DyeColor::Black),
+        (&*vanilla_items::WHITE_DYE, crate::DyeColor::White),
+        (&*vanilla_items::ORANGE_DYE, crate::DyeColor::Orange),
+        (&*vanilla_items::MAGENTA_DYE, crate::DyeColor::Magenta),
+        (&*vanilla_items::LIGHT_BLUE_DYE, crate::DyeColor::LightBlue),
+        (&*vanilla_items::YELLOW_DYE, crate::DyeColor::Yellow),
+        (&*vanilla_items::LIME_DYE, crate::DyeColor::Lime),
+        (&*vanilla_items::PINK_DYE, crate::DyeColor::Pink),
+        (&*vanilla_items::GRAY_DYE, crate::DyeColor::Gray),
+        (&*vanilla_items::LIGHT_GRAY_DYE, crate::DyeColor::LightGray),
+        (&*vanilla_items::CYAN_DYE, crate::DyeColor::Cyan),
+        (&*vanilla_items::PURPLE_DYE, crate::DyeColor::Purple),
+        (&*vanilla_items::BLUE_DYE, crate::DyeColor::Blue),
+        (&*vanilla_items::BROWN_DYE, crate::DyeColor::Brown),
+        (&*vanilla_items::GREEN_DYE, crate::DyeColor::Green),
+        (&*vanilla_items::RED_DYE, crate::DyeColor::Red),
+        (&*vanilla_items::BLACK_DYE, crate::DyeColor::Black),
     ] {
         assert_eq!(ItemStack::new(item).get(DYE), Some(&color), "{}", item.key);
     }

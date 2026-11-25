@@ -1,6 +1,8 @@
 use rustc_hash::FxHashMap;
 use steel_utils::Identifier;
 
+use crate::RegistryTags;
+
 #[derive(Debug, Clone)]
 pub struct GameEvent {
     pub key: Identifier,
@@ -12,10 +14,13 @@ pub type GameEventRef = &'static GameEvent;
 pub struct GameEventRegistry {
     game_events_by_id: Vec<GameEventRef>,
     game_events_by_key: FxHashMap<Identifier, usize>,
+    tags: RegistryTags,
     allows_registering: bool,
 }
 
-// TODO: GameEventListenerRegistry per Chunk Section
+// Listener storage is per chunk section and therefore lives in the game layer:
+// see `steel_core::world::game_event::listener`. This registry only holds the
+// static `GameEvent` definitions.
 
 impl GameEventRegistry {
     #[must_use]
@@ -23,6 +28,7 @@ impl GameEventRegistry {
         Self {
             game_events_by_id: Vec::new(),
             game_events_by_key: FxHashMap::default(),
+            tags: RegistryTags::default(),
             allows_registering: true,
         }
     }
@@ -43,3 +49,4 @@ crate::impl_registry!(
     game_events_by_key,
     game_events
 );
+crate::impl_tagged_registry!(GameEventRegistry, game_events_by_key, "game_event");

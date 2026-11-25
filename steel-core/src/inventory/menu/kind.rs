@@ -7,6 +7,9 @@ use steel_utils::{BlockPos, ErasedType};
 
 use crate::inventory::container::DEFAULT_DISTANCE_BUFFER;
 use crate::inventory::menu::behavior::MenuBehavior;
+use crate::player::recipe_placement::PlacementRequest;
+use crate::player::recipe_placement::PostPlaceAction;
+use crate::player::recipe_placement::StackedItemContents;
 use crate::world::World;
 use crate::{inventory::lock::ContainerLockGuard, player::Player};
 
@@ -57,6 +60,17 @@ pub trait MenuKind: ErasedType + Send + Sync {
         _guard: &mut ContainerLockGuard,
         _player: &Player,
     ) {
+    }
+
+    /// Applies a merchant trade selection. Returns false for menus that are not
+    /// merchant screens, which is what vanilla's `instanceof` check does.
+    fn select_trade(
+        &mut self,
+        _behavior: &mut MenuBehavior,
+        _index: i32,
+        _player: &Player,
+    ) -> bool {
+        false
     }
 
     /// Runs once per tick per viewer while open, before changes are synced.
@@ -129,6 +143,35 @@ pub trait MenuKind: ErasedType + Send + Sync {
         _slot_index: usize,
         _player: &Player,
     ) -> Option<ItemStack> {
+        None
+    }
+
+    /// Vanilla `RecipeBookMenu.fillCraftSlotsStackedContents`: counts what the
+    /// menu's own input slots already hold, so a recipe the player cannot fully
+    /// source from the inventory is still placeable.
+    ///
+    /// Returns `false` for menus that are not recipe-book menus.
+    fn fill_craft_slots_stacked_contents(
+        &self,
+        _behavior: &MenuBehavior,
+        _guard: &ContainerLockGuard,
+        _contents: &mut StackedItemContents,
+    ) -> bool {
+        false
+    }
+
+    /// Vanilla `RecipeBookMenu.handlePlacement`: fills this menu's input slots
+    /// from the player's inventory for one recipe.
+    ///
+    /// Returns `None` for menus that are not recipe-book menus, which is what
+    /// vanilla's `instanceof RecipeBookMenu` check does.
+    fn handle_placement(
+        &mut self,
+        _behavior: &mut MenuBehavior,
+        _guard: &mut ContainerLockGuard,
+        _player: &Player,
+        _request: PlacementRequest<'_>,
+    ) -> Option<PostPlaceAction> {
         None
     }
 }

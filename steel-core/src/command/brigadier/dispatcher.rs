@@ -168,6 +168,30 @@ where
         self.node(id).map(|node| node.children.as_slice())
     }
 
+    /// The literal names registered directly under the root, sorted.
+    ///
+    /// This is what `/help` lists: every top-level command, without their
+    /// children.
+    pub(crate) fn command_names(&self) -> Vec<String> {
+        let mut names: Vec<String> = self
+            .children(self.root())
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|&id| {
+                let node = self.node(id)?;
+                // Only literals are commands; the root never holds arguments.
+                if node.kind() == NodeKind::Literal {
+                    Some(node.name().to_owned())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        names.sort();
+        names.dedup();
+        names
+    }
+
     /// Returns the number of allocated nodes, including the root.
     pub(crate) const fn node_count(&self) -> usize {
         self.nodes.len()

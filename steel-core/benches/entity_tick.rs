@@ -13,7 +13,7 @@ fn tick_entities(c: &mut Criterion) {
         group.throughput(Throughput::Elements(count as u64));
         group.bench_with_input(BenchmarkId::from_parameter(count), &count, |b, &count| {
             let manager = manager_with_entities(count);
-            b.iter(|| black_box(manager.tick_entities(0, true)));
+            b.iter(|| black_box(manager.tick_entities(0, true, false, 0)));
         });
     }
 

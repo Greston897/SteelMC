@@ -17,6 +17,7 @@ use steel_protocol::packets::game::{
     AttributeSnapshot, CDamageEvent, CEntityEvent, CSwingAnimation, CTeleportEntity,
     EquipmentSlotItem, RelativeMovement, SoundSource,
 };
+use steel_registry::RegistryEntry;
 use steel_registry::blocks::{
     behavior::PushReaction, block_state_ext::BlockStateExt as _, properties::BlockStateProperties,
     shapes::is_shape_full_block,
@@ -38,9 +39,11 @@ use steel_registry::loot_table::{
 };
 use steel_registry::mob_effect::MobEffectRef;
 use steel_registry::particle_type::{BlockParticleOption, ParticleData};
-use steel_registry::sound_event::SoundEventRef;
+use steel_registry::sound_event::{SoundEventHolder, SoundEventRef};
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_blocks;
+use steel_registry::vanilla_criteria_triggers::ENTER_BLOCK;
+use steel_registry::vanilla_criteria_triggers::STARTED_RIDING;
 use steel_registry::vanilla_entities;
 use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
 use steel_registry::vanilla_game_rules::{MAX_ENTITY_CRAMMING, MOB_DROPS};
@@ -49,7 +52,6 @@ use steel_registry::{
     REGISTRY, TaggedRegistryExt, sound_events, vanilla_damage_type_tags, vanilla_damage_types,
     vanilla_game_events, vanilla_particle_types,
 };
-use steel_registry::{RegistryEntry, RegistryExt};
 use steel_registry::{vanilla_attributes, vanilla_fluid_tags, vanilla_items, vanilla_mob_effects};
 use steel_utils::entity_events::EntityStatus;
 use steel_utils::locks::SyncMutex;
@@ -76,6 +78,7 @@ use crate::physics::{
     COLLISION_EPSILON, CollisionWorld, EntityPhysicsState, MoveResult, MoverType,
     WorldCollisionProvider, move_entity as resolve_entity_movement,
 };
+use crate::player::advancement::predicate::TriggerContext;
 use crate::world::game_event::GameEventContext;
 use crate::world::{ClipBlockShape, ClipFluid, Explosion, LevelReader, World};
 use crate::{enchantment_helper, entity::damage::DamageSource, player::Player};
@@ -201,8 +204,12 @@ pub(crate) const fn select_swimming_state(
     }
 }
 
+/// Vanilla `Vec3.horizontalDistance()`: `sqrt(x*x + z*z)`.
+///
+/// `f64::hypot` is more accurate than the naive form and rounds differently, so
+/// it cannot be used where the result must match Java bit-for-bit.
 fn horizontal_distance(vector: DVec3) -> f64 {
-    vector.x.hypot(vector.z)
+    (vector.x * vector.x + vector.z * vector.z).sqrt()
 }
 
 const fn world_aabb_center(aabb: WorldAabb) -> DVec3 {
@@ -543,6 +550,16 @@ fn apply_block_effect_segment(
             }
 
             if inside_block {
+                // Vanilla `Entity.checkInsideBlocks` fires `enter_block` for a player
+                // entity that ends up inside a non-air block, which is the only way
+                // `story/enter_the_end`-style data packs observe block occupancy.
+                if let Some(player) = entity.as_player() {
+                    player.trigger_advancement_with_context(
+                        &ENTER_BLOCK,
+                        &TriggerContext::block(&state.get_block().key, None)
+                            .with_block_state(state),
+                    );
+                }
                 let moved_far = from.distance_squared(to) > 0.999_990_000_000_252_6_f64.powi(2);
                 let is_precise = moved_far || aabb.intersects_block(pos);
                 effect_collector.advance_step(iteration);
@@ -747,6 +764,7 @@ pub mod attribute;
 mod base;
 mod block_attached_entity;
 mod block_effects;
+pub(crate) mod bucketable;
 mod callback;
 mod combat_rules;
 pub mod consume_effect;
@@ -769,7 +787,7 @@ mod identity;
 mod inside_block_effects;
 mod item_based_steering;
 mod item_frame;
-mod leash;
+pub(crate) mod leash;
 mod living_base;
 mod living_entity;
 mod living_reference;
@@ -777,19 +795,28 @@ mod manager;
 mod mob;
 pub mod mob_effect;
 mod monster;
+pub mod mount;
 mod movement_sync;
 mod potion_contents;
 pub mod projectile;
 pub(crate) mod pushing;
+mod ranged_attack;
 mod reference;
 mod registry;
 pub(crate) mod selector;
-mod spawn;
-mod spawn_placements;
+pub(crate) mod warden_spawn_tracker;
+pub use warden_spawn_tracker::WardenSpawnTracker;
+pub(crate) mod natural_spawner;
+pub(crate) mod patrol_spawner;
+pub(crate) mod phantom_spawner;
+pub(crate) mod spawn;
+pub(crate) mod spawn_placements;
+pub(crate) mod spawn_util;
 mod storage;
 mod synced_data;
 mod ticking;
 mod tracker;
+pub mod villager_trades;
 
 use crate::portal::{
     PortalKind, PortalProcessResult, PortalProcessor, PortalTicketTarget, TeleportPostAction,
@@ -825,10 +852,11 @@ pub use item_frame::ItemFrame;
 pub use living_base::{
     ActiveItemUseState, ActiveMobEffect, DEATH_DURATION, DEFAULT_SWING_DURATION,
     HURT_DURATION_TICKS, LivingEntityBase, LivingRotationState, LivingSwingState,
-    LivingTravelInput, MobEffectInstance, MobEffectSyncChange, MobEffectSyncPacket,
-    sync_dirty_mob_effects,
+    LivingTravelInput, MobEffectAddResult, MobEffectInstance, MobEffectSyncChange,
+    MobEffectSyncPacket, sync_dirty_mob_effects,
 };
 pub use living_entity::LivingEntity;
+pub use living_entity::create_wither_rose;
 pub(crate) use manager::EntityCollisionCandidates;
 #[cfg(feature = "benchmark-support")]
 pub use manager::benchmark_support as entity_manager_benchmark_support;
@@ -850,7 +878,8 @@ pub use projectile::{
     AbstractThrownPotion, EntityHitResult, Projectile, ProjectileBase, ProjectileDeflection,
     ProjectileEventSource, ProjectileHit, SPLASH_HORIZONTAL_REACH, SPLASH_RANGE_SQ,
     SPLASH_VERTICAL_REACH, ThrowableItemProjectile, ThrowableProjectile, ViewVectorHitResult,
-    compute_margin, get_hit_result_on_view_vector, spawn_throwable_item_projectile,
+    compute_margin, get_hit_result_on_view_vector, spawn_projectile_from_rotation,
+    spawn_throwable_item_projectile,
 };
 pub use pushing::{DefaultEntityPush, EntityPushSnapshot};
 pub use reference::EntityReference;
@@ -954,7 +983,17 @@ pub(crate) fn start_riding_entities(
     {
         mob.drop_leash();
     }
-    // TODO: Emit ENTITY_MOUNT game event and riding advancement trigger once those foundations exist.
+    // Vanilla `Entity.startRiding` dispatches `GameEvent.ENTITY_MOUNT` from the
+    // passenger so sculk sensors see the boarding.
+    passenger.game_event(&vanilla_game_events::ENTITY_MOUNT);
+    // Vanilla `Entity.startRiding` fires `started_riding` on a player passenger,
+    // which gates `adventure/ride_a_boat_with_a_goat` and friends.
+    if let Some(player) = passenger.as_player() {
+        player.trigger_advancement_with_context(
+            &STARTED_RIDING,
+            &TriggerContext::entity(&entity_to_ride.entity_type().key),
+        );
+    }
     true
 }
 
@@ -1377,7 +1416,6 @@ fn remove_after_changing_dimensions(entity: &dyn Entity) {
 ///
 /// Locks the entity's equipment (a player's inventory), so callers must not already hold it.
 pub(crate) fn living_loot_equipment<E: LivingEntity + ?Sized>(entity: &E) -> EntityEquipmentSlots {
-    // TODO: Read live equipment once loot contexts can do so safely.
     entity.living_base().equipment().lock().snapshot()
 }
 
@@ -1389,6 +1427,18 @@ pub(crate) fn loot_equipment(entity: &dyn Entity) -> Option<EntityEquipmentSlots
 pub(crate) fn entity_loot_ref<'a>(
     entity: &'a dyn Entity,
     equipment: Option<&'a EntityEquipmentSlots>,
+) -> EntityRef<'a> {
+    entity_loot_ref_with_name(entity, equipment, None)
+}
+
+/// [`entity_loot_ref`] variant that attaches a custom-name snapshot.
+///
+/// Vanilla's loot context carries the entity's custom name, which `copy_name`
+/// reads for the `this` source.
+pub(crate) fn entity_loot_ref_with_name<'a>(
+    entity: &'a dyn Entity,
+    equipment: Option<&'a EntityEquipmentSlots>,
+    custom_name: Option<String>,
 ) -> EntityRef<'a> {
     let living_entity = entity.as_living_entity();
     let sheep = living_entity.and_then(LivingEntity::sheep_loot_state);
@@ -1402,11 +1452,14 @@ pub(crate) fn entity_loot_ref<'a>(
             is_baby: living_entity.is_some_and(LivingEntity::is_baby),
         },
         equipment: equipment.map(EntityEquipmentRef::new),
-        // TODO: Include custom name once loot contexts can snapshot entity data.
-        custom_name: None,
+        custom_name,
         sheep_color: sheep.map(|(color, _)| color),
         sheep_sheared: sheep.map(|(_, sheared)| sheared),
         chicken_variant: living_entity.and_then(LivingEntity::chicken_loot_variant),
+        // Scoreboard holder names need an entity display-name snapshot.
+        holder_name: None,
+        // Only players carry a profile; vanilla `fill_player_head` needs it.
+        profile: entity.as_player().map(|player| &player.gameprofile),
     }
 }
 

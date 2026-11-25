@@ -23,6 +23,31 @@ impl World {
         self.dimension_type == &vanilla_dimension_types::THE_END
     }
 
+    /// Vanilla `DimensionType.infiniburn()`: whether fire sitting on this
+    /// block burns forever instead of ageing out.
+    ///
+    /// Dimension types store a block tag reference such as
+    /// `#minecraft:infiniburn_nether`; the three vanilla tags are mapped to
+    /// their generated identifiers so no identifier is built at runtime.
+    #[must_use]
+    pub fn is_infiniburn(&self, state: steel_utils::BlockStateId) -> bool {
+        use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+        use steel_registry::vanilla_block_tags::BlockTag;
+
+        let tag = self
+            .dimension_type
+            .infiniburn
+            .trim_start_matches('#')
+            .trim_start_matches("minecraft:");
+        let identifier = match tag {
+            "infiniburn_overworld" => BlockTag::INFINIBURN_OVERWORLD,
+            "infiniburn_nether" => BlockTag::INFINIBURN_NETHER,
+            "infiniburn_end" => BlockTag::INFINIBURN_END,
+            _ => return false,
+        };
+        state.get_block().has_tag(&identifier)
+    }
+
     /// Returns vanilla level difficulty.
     pub fn difficulty(&self) -> Difficulty {
         self.level_data.read().data().difficulty
@@ -34,6 +59,17 @@ impl World {
             let mut level_data = self.level_data.write();
             level_data.data_mut().difficulty = difficulty;
             level_data.data().difficulty_locked
+        };
+        self.broadcast_to_all(CChangeDifficulty { difficulty, locked });
+    }
+
+    /// Vanilla `ServerLevel.setDifficultyLocked` / `MinecraftServer.setDifficultyLocked`:
+    /// locks the difficulty and tells every player about the new flag.
+    pub fn set_difficulty_locked(&self, locked: bool) {
+        let difficulty = {
+            let mut level_data = self.level_data.write();
+            level_data.data_mut().difficulty_locked = locked;
+            level_data.data().difficulty
         };
         self.broadcast_to_all(CChangeDifficulty { difficulty, locked });
     }

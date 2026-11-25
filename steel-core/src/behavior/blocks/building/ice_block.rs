@@ -38,7 +38,7 @@ impl IceBlock {
 
     /// Melts the ice block at the given position.
     pub fn melt(_state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
-        if world.dimension_type.water_evaporates {
+        if world.dimension_type.water_evaporates.unwrap_or(false) {
             world.set_block(
                 pos,
                 vanilla_blocks::AIR.default_state(),
@@ -81,7 +81,7 @@ impl BlockBehavior for IceBlock {
         tool: &ItemStack,
     ) {
         if !Self::prevents_ice_melting(tool) {
-            if world.dimension_type.water_evaporates {
+            if world.dimension_type.water_evaporates.unwrap_or(false) {
                 world.set_block(
                     pos,
                     vanilla_blocks::AIR.default_state(),

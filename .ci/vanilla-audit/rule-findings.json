@@ -1,0 +1,267 @@
+{
+  "schema": 1,
+  "vanilla_revision": "74720c2890f22942b72d7d84958eff1b3f72b95b",
+  "scope": "Selected concrete rule discrepancies only; not all mechanics and not a completed file audit",
+  "rules": [
+    {
+      "id": "AZ-01",
+      "subsystem": "Блоки",
+      "vanilla_path": "net/minecraft/world/level/block/AzaleaBlock.java",
+      "vanilla_method": "isValidBonemealTarget",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/azalea_block.rs",
+      "finding": "Отсутствовало подключение Bonemealable у обеих азалий",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "AZ-02",
+      "subsystem": "Блоки",
+      "vanilla_path": "net/minecraft/world/level/block/AzaleaBlock.java",
+      "vanilla_method": "isValidBonemealTarget",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/azalea_block.rs",
+      "finding": "Жидкость над азалией должна запрещать костную муку",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "AZ-03",
+      "subsystem": "Блоки",
+      "vanilla_path": "net/minecraft/world/level/block/AzaleaBlock.java",
+      "vanilla_method": "isValidBonemealTarget",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/azalea_block.rs",
+      "finding": "Проверка min-height+2 относительно build height",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "AZ-04",
+      "subsystem": "Блоки",
+      "vanilla_path": "net/minecraft/world/level/block/AzaleaBlock.java",
+      "vanilla_method": "isBonemealSuccess",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/azalea_block.rs",
+      "finding": "Успех костной муки 45%, float расширяется до double",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "SP-01",
+      "subsystem": "Блоки",
+      "vanilla_path": "net/minecraft/world/level/block/SaplingBlock.java",
+      "vanilla_method": "advanceTree",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/sapling_block.rs",
+      "finding": "Первая стадия роста должна менять STAGE, не выращивать дерево",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "SP-02",
+      "subsystem": "Блоки",
+      "vanilla_path": "net/minecraft/world/level/block/SaplingBlock.java",
+      "vanilla_method": "randomTick",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/sapling_block.rs",
+      "finding": "Освещение проверяется над саженцем",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "SP-03",
+      "subsystem": "Блоки",
+      "vanilla_path": "net/minecraft/world/level/block/SaplingBlock.java",
+      "vanilla_method": "isBonemealSuccess",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/sapling_block.rs",
+      "finding": "Вместо безусловного успеха костной муки — 45%",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "SP-04",
+      "subsystem": "Блоки",
+      "vanilla_path": "net/minecraft/world/level/block/SaplingBlock.java",
+      "vanilla_method": "isValidBonemealTarget",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/sapling_block.rs",
+      "finding": "Учитывать минимальную высоту дерева и build height",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "SP-05",
+      "subsystem": "Блоки",
+      "vanilla_path": "net/minecraft/world/level/block/SaplingBlock.java",
+      "vanilla_method": "advanceTree",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/sapling_block.rs",
+      "finding": "Scheduled tick не должен повышать STAGE",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "SP-06",
+      "subsystem": "Блоки",
+      "vanilla_path": "net/minecraft/world/level/block/VegetationBlock.java",
+      "vanilla_method": "updateShape",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/sapling_block.rs",
+      "finding": "У саженца отсутствовал унаследованный survival updateShape",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "TR-01",
+      "subsystem": "Worldgen",
+      "vanilla_path": "net/minecraft/world/level/block/grower/TreeGrower.java",
+      "vanilla_method": "getConfiguredFeature",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/sapling_block.rs",
+      "finding": "Весовой выбор primary деревьев вместо универсального float 10%",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "TR-02",
+      "subsystem": "Worldgen",
+      "vanilla_path": "net/minecraft/world/level/block/grower/TreeGrower.java",
+      "vanilla_method": "hasFlowers",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/sapling_block.rs",
+      "finding": "Выбирать flower variants при цветах в области 5x3x5",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "TR-03",
+      "subsystem": "Worldgen",
+      "vanilla_path": "net/minecraft/world/level/block/grower/TreeGrower.java",
+      "vanilla_method": "growTree",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/sapling_block.rs",
+      "finding": "Выбор mega feature и поиск четырёх возможных квадратов 2x2",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "TR-04",
+      "subsystem": "Worldgen",
+      "vanilla_path": "net/minecraft/world/level/block/grower/TreeGrower.java",
+      "vanilla_method": "canGrow",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/sapling_block.rs",
+      "finding": "Mega-only дереву требуется 2x2 для bonemeal target",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "TR-05",
+      "subsystem": "Worldgen",
+      "vanilla_path": "net/minecraft/world/level/block/grower/TreeGrower.java",
+      "vanilla_method": "resetSaplings",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/sapling_block.rs",
+      "finding": "Восстанавливать все исходные состояния при неудачной mega-генерации",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "TR-06",
+      "subsystem": "Worldgen",
+      "vanilla_path": "net/minecraft/world/level/block/grower/TreeGrower.java",
+      "vanilla_method": "removeSapling",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/sapling_block.rs",
+      "finding": "При удалении саженца сохранять его fluid legacy block и vanilla flags",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "MG-01",
+      "subsystem": "Блоки",
+      "vanilla_path": "net/minecraft/world/level/block/MangrovePropaguleBlock.java",
+      "vanilla_method": "updateShape",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/mangrove_propagule_block.rs",
+      "finding": "Проверка выживания не ограничивается направлением UP",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "MG-02",
+      "subsystem": "Блоки",
+      "vanilla_path": "net/minecraft/world/level/block/MangrovePropaguleBlock.java",
+      "vanilla_method": "isBonemealSuccess",
+      "steel_path": "steel-core/src/behavior/blocks/vegetation/mangrove_propagule_block.rs",
+      "finding": "Сравнение расширенного float с double 0.45",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "PH-01",
+      "subsystem": "Физика",
+      "vanilla_path": "net/minecraft/world/entity/Entity.java",
+      "vanilla_method": "move",
+      "steel_path": "steel-core/src/physics/entity_move.rs",
+      "finding": "Не отбрасывать малое ненулевое перемещение по per-axis cutoff",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "PH-02",
+      "subsystem": "Физика",
+      "vanilla_path": "net/minecraft/world/entity/Entity.java",
+      "vanilla_method": "limitPistonMovement",
+      "steel_path": "steel-core/src/entity/base/mod.rs",
+      "finding": "Порог остатка поршня: widened float 1e-5f, не double literal",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "SY-01",
+      "subsystem": "Синхронизация",
+      "vanilla_path": "net/minecraft/server/level/ServerEntity.java",
+      "vanilla_method": "sendChanges",
+      "steel_path": "steel-core/src/entity/movement_sync.rs",
+      "finding": "AbstractArrow всегда position+rotation на обработанном интервале",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "SY-02",
+      "subsystem": "Синхронизация",
+      "vanilla_path": "net/minecraft/server/level/ServerEntity.java",
+      "vanilla_method": "sendChanges",
+      "steel_path": "steel-core/src/entity/movement_sync.rs",
+      "finding": "Точный double-порог позиции 7.62939453125E-6",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "SY-03",
+      "subsystem": "Синхронизация",
+      "vanilla_path": "net/minecraft/server/level/ServerEntity.java",
+      "vanilla_method": "createMovePacket",
+      "steel_path": "steel-core/src/entity/movement_sync.rs",
+      "finding": "Overflow fallback не сбрасывает teleportDelay",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "PR-01",
+      "subsystem": "Протокол",
+      "vanilla_path": "net/minecraft/network/protocol/game/VecDeltaCodec.java",
+      "vanilla_method": "encode",
+      "steel_path": "steel-protocol/src/packets/game/c_move_entity.rs",
+      "finding": "Math.round: значение непосредственно ниже half tie не округлять вверх",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "CH-01",
+      "subsystem": "Чанки",
+      "vanilla_path": "net/minecraft/server/network/PlayerChunkSender.java",
+      "vanilla_method": "onChunkBatchReceivedByClient",
+      "steel_path": "steel-core/src/player/chunk_sender.rs",
+      "finding": "Ограничения ACK-rate vanilla 0.01..64 вместо 0.1..500",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    },
+    {
+      "id": "SL-01",
+      "subsystem": "Блоки",
+      "vanilla_path": "net/minecraft/world/level/block/SlabBlock.java",
+      "vanilla_method": "canBeReplaced",
+      "steel_path": "steel-core/src/behavior/blocks/building/slab_block.rs",
+      "finding": "Отсутствовало разрешение объединения плит по грани/высоте; добавлено для SlabBlock и WeatheringCopperSlabBlock",
+      "status": "IMPLEMENTED_AWAITING_RUST_EXECUTION",
+      "parity_verified": false
+    }
+  ]
+}

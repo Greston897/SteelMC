@@ -35,6 +35,28 @@ impl Default for LastSeenMessagesValidator {
 }
 
 impl LastSeenMessagesValidator {
+    /// CRC-8 (polynomial 0x07) over every byte of the acknowledged signatures.
+    ///
+    /// Vanilla uses the same polynomial for `LastSeenMessages.Update.checksum`,
+    /// which lets the client prove it acknowledged exactly the signatures the
+    /// server sent.
+    fn signature_checksum(signatures: &[Box<[u8]>]) -> u8 {
+        let mut crc = 0u8;
+        for signature in signatures {
+            for byte in signature.iter().copied() {
+                crc ^= byte;
+                for _ in 0..8 {
+                    crc = if crc & 0x80 != 0 {
+                        (crc << 1) ^ 0x07
+                    } else {
+                        crc << 1
+                    };
+                }
+            }
+        }
+        crc
+    }
+
     /// Creates a new validator
     #[must_use]
     pub fn new() -> Self {
@@ -160,12 +182,61 @@ impl LastSeenMessagesValidator {
             acknowledged_signatures.len()
         );
 
-        // TODO: Verify checksum if needed (checksum == 0 means skip validation)
+        // Vanilla `LastSeenMessagesValidator.applyUpdate`: `checksum == 0` means
+        // the client sent no checksum, otherwise it must equal the CRC of the
+        // acknowledged signature bytes. The CRC is computed over the concatenated
+        // signatures in acknowledgement order.
         if checksum != 0 {
-            // For now, we skip checksum validation
-            // In a full implementation, compute checksum of acknowledged_signatures and compare
+            let computed = Self::signature_checksum(&acknowledged_signatures);
+            if computed != checksum {
+                return Err(format!(
+                    "Checksum mismatch: expected {computed}, got {checksum}"
+                ));
+            }
         }
 
         Ok(acknowledged_signatures)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::LastSeenMessagesValidator;
+
+    fn signature(bytes: &[u8]) -> Box<[u8]> {
+        bytes.to_vec().into_boxed_slice()
+    }
+
+    #[test]
+    fn checksum_is_a_crc8_over_the_signature_bytes() {
+        // CRC-8/ATM with polynomial 0x07 over 0x01, 0x02, 0x03.
+        let signatures = [signature(&[0x01, 0x02, 0x03])];
+        assert_eq!(
+            LastSeenMessagesValidator::signature_checksum(&signatures),
+            0x48
+        );
+    }
+
+    #[test]
+    fn checksum_is_order_sensitive_and_covers_every_byte() {
+        let forward = LastSeenMessagesValidator::signature_checksum(&[signature(&[0xaa])]);
+        let trailing_zero =
+            LastSeenMessagesValidator::signature_checksum(&[signature(&[0xaa, 0x00])]);
+        assert_ne!(forward, trailing_zero);
+
+        let two = LastSeenMessagesValidator::signature_checksum(&[
+            signature(&[0xaa]),
+            signature(&[0xbb]),
+        ]);
+        let swapped = LastSeenMessagesValidator::signature_checksum(&[
+            signature(&[0xbb]),
+            signature(&[0xaa]),
+        ]);
+        assert_ne!(two, swapped);
+    }
+
+    #[test]
+    fn empty_acknowledgements_checksum_to_zero() {
+        assert_eq!(LastSeenMessagesValidator::signature_checksum(&[]), 0);
     }
 }

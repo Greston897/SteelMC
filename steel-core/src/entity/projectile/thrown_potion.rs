@@ -10,11 +10,12 @@ use steel_registry::potion::Potion;
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_potion_tags::PotionTag;
 use steel_registry::{level_events, vanilla_damage_types};
-use steel_utils::{BlockPos, BlockStateId, Direction, types::UpdateFlags};
+use steel_utils::{BlockPos, BlockStateId, Direction, Downcast as _, types::UpdateFlags};
 
 use crate::behavior::MOB_EFFECT_BEHAVIORS;
 use crate::behavior::blocks::{CampfireBlock, CandleBlock};
 use crate::entity::damage::DamageSource;
+use crate::entity::entities::AxolotlEntity;
 use crate::entity::projectile::ThrowableItemProjectile;
 use crate::entity::{LivingEntity, ProjectileHit, RemovalReason, SharedEntity};
 use crate::world::ClipHitResult;
@@ -102,9 +103,8 @@ pub trait AbstractThrownPotion: ThrowableItemProjectile {
     {
         let hurts_water_sensitive = contents.is_in_tag(&PotionTag::HURTS_WATER_SENSITIVE_ENTITIES);
         let extinguishes = contents.is_in_tag(&PotionTag::EXTINGUISHES_ENTITIES);
-        // TODO: rehydrate nearby Axolotl entities for `REHYDRATES_AXOLOTLS` once
-        // Axolotl is implemented.
-        if !hurts_water_sensitive && !extinguishes {
+        let rehydrates_axolotls = contents.is_in_tag(&PotionTag::REHYDRATES_AXOLOTLS);
+        if !hurts_water_sensitive && !extinguishes && !rehydrates_axolotls {
             return;
         }
 
@@ -118,6 +118,16 @@ pub trait AbstractThrownPotion: ThrowableItemProjectile {
         for entity in world.get_entities_in_aabb(&aabb) {
             if entity.as_living_entity().is_none() {
                 continue;
+            }
+            // Vanilla `Axolotl.rehydrate` runs for every axolotl in range before
+            // the water-sensitivity filter.
+            if rehydrates_axolotls
+                && potion_pos.distance_squared(entity.position()) < SPLASH_RANGE_SQ
+                && let Some(axolotl) = entity
+                    .as_entity_event_source()
+                    .downcast_ref::<AxolotlEntity>()
+            {
+                axolotl.rehydrate();
             }
             let sensitive_to_water = entity.entity_type().flags.is_sensitive_to_water;
             if !sensitive_to_water && !entity.is_on_fire() {

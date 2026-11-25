@@ -8,8 +8,9 @@
 use std::{collections::BTreeMap, error::Error, fmt, iter::FusedIterator, mem, slice, sync::Arc};
 
 use glam::DVec3;
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet};
 use smallvec::SmallVec;
+use steel_registry::entity_type::MobCategory;
 use steel_registry::vanilla_entities;
 use steel_utils::locks::SyncRwLock;
 use steel_utils::{BlockPos, ChunkPos, PackedSectionPos, SectionPos, WorldAabb};
@@ -468,6 +469,7 @@ struct EntityEntry {
 }
 
 /// Pre-tick manager state resolved under one state lock.
+#[expect(dead_code, reason = "tick context")]
 struct TickContext {
     manager_chunk: Option<ChunkPos>,
 }
@@ -666,8 +668,8 @@ impl IndexedOrderedEntityIds {
         }
 
         let mut compacted_nodes: Vec<OrderedEntityIdNode> = Vec::with_capacity(live_len);
-        let mut compacted_node_by_id = FxHashMap::default();
-        compacted_node_by_id.reserve(live_len);
+        // MSPT имба: сразу с capacity+hasher — один alloc вместо default+reserve (двойной ре-хеш)
+        let mut compacted_node_by_id = FxHashMap::with_capacity_and_hasher(live_len, FxBuildHasher);
         let mut current = self.first;
         while let Some(index) = current {
             let node = &self.nodes[index];
@@ -882,7 +884,7 @@ impl WorldEntityManager {
         result.tracking_stopped = lifecycle.tracking_stopped;
         result.ticking_stopped = lifecycle.ticking_stopped;
 
-        let mut root_ids = Vec::new();
+        let mut root_ids = Vec::with_capacity(ids.len());
 
         for entity_id in ids {
             let Some(entry) = state.live_by_id.get(entity_id) else {
@@ -902,8 +904,8 @@ impl WorldEntityManager {
             }
         }
 
-        let mut retained = Vec::new();
-        let mut visited = FxHashSet::default();
+        let mut retained = Vec::with_capacity(root_ids.len());
+        let mut visited = FxHashSet::with_capacity_and_hasher(root_ids.len(), FxBuildHasher);
         for entity_id in root_ids {
             Self::retain_unloading_entity_tree(
                 &mut state,
@@ -1037,8 +1039,9 @@ impl WorldEntityManager {
             entries.push(Self::checked_live_entry(Arc::clone(entity), ownership)?);
         }
 
-        let mut seen_ids = FxHashSet::default();
-        let mut seen_uuids = FxHashSet::default();
+        // MSPT имба: пре-резерв — 1 alloc вместо 4+ ре-хешей на addEntities
+        let mut seen_ids = FxHashSet::with_capacity_and_hasher(entities.len(), FxBuildHasher);
+        let mut seen_uuids = FxHashSet::with_capacity_and_hasher(entities.len(), FxBuildHasher);
         for entry in &entries {
             let entity_id = entry.entity.id();
             if !seen_ids.insert(entity_id) {
@@ -1426,7 +1429,8 @@ impl WorldEntityManager {
     }
 
     fn has_live_loaded_root_vehicle(state: &ManagerState, entity: &SharedEntity) -> bool {
-        let mut visited = FxHashSet::default();
+        // MSPT имба: 4 слота без ре-хеша — глубина vehicle chain vanilla ≤4
+        let mut visited = FxHashSet::with_capacity_and_hasher(4, FxBuildHasher);
         visited.insert(entity.id());
 
         let mut passenger = Arc::clone(entity);
@@ -1686,6 +1690,25 @@ impl WorldEntityManager {
 
     /// Gets all live entities visible to vanilla gameplay lookups.
     #[must_use]
+    /// Counts accessible entities of one mob category without cloning any
+    /// `Arc` or allocating a `Vec`.
+    ///
+    /// Vanilla `NaturalSpawner.getFilteredEntities` only needs this count, and it
+    /// is queried repeatedly inside the spawn loop; the `Vec`-returning
+    /// [`Self::get_accessible_entities`] made that call allocate and bump a
+    /// strong count per entity per iteration.
+    pub fn count_accessible_by_category(&self, category: MobCategory) -> usize {
+        let state = self.state.read();
+        state
+            .accessible_order
+            .iter()
+            .filter_map(|entity_id| state.live_by_id.get(*entity_id))
+            .filter(|entry| entry.accessible)
+            .filter(|entry| entry.entity.entity_type().mob_category == category)
+            .count()
+    }
+
+    /// Collects all currently loaded, command-accessible entities in this world.
     pub fn get_accessible_entities(&self) -> Vec<SharedEntity> {
         let state = self.state.read();
         state
@@ -1695,6 +1718,18 @@ impl WorldEntityManager {
             .filter(|entry| entry.accessible)
             .map(|entry| Arc::clone(&entry.entity))
             .collect()
+    }
+
+    /// Returns whether any accessible live entity matches `predicate` without allocating.
+    #[must_use]
+    pub fn any_accessible_entity(&self, mut predicate: impl FnMut(&dyn Entity) -> bool) -> bool {
+        let state = self.state.read();
+        state
+            .accessible_order
+            .iter()
+            .filter_map(|entity_id| state.live_by_id.get(*entity_id))
+            .filter(|entry| entry.accessible)
+            .any(|entry| predicate(entry.entity.as_ref()))
     }
 
     fn entity_query_entries<'a>(
@@ -1759,8 +1794,9 @@ impl WorldEntityManager {
     ) -> Vec<UnsavedEntityReport> {
         let saved_chunks = saved_chunks.iter().copied().collect::<FxHashSet<_>>();
         let state = self.state.read();
-        let mut seen = FxHashSet::default();
-        let mut reports = Vec::new();
+        // MSPT имба: резерв под репорты — без realloc на каждом тике
+        let mut seen = FxHashSet::with_capacity_and_hasher(32, FxBuildHasher);
+        let mut reports = Vec::with_capacity(16);
 
         for entry in state.live_by_id.values() {
             Self::push_unsaved_entity_report(&saved_chunks, &mut seen, &mut reports, entry);
@@ -1786,9 +1822,10 @@ impl WorldEntityManager {
     /// Gets entities that should be serialized for `chunk`.
     pub fn get_saveable_entities_for_chunk(&self, chunk: ChunkPos) -> Vec<SharedEntity> {
         let state = self.state.read();
-        let mut result = Vec::new();
-        let mut seen_ids = FxHashSet::default();
-        let mut seen_uuids = FxHashSet::default();
+        // MSPT имба: резерв под save — без realloc на 1.18+ больших чанках с 100+ энтити
+        let mut result = Vec::with_capacity(16);
+        let mut seen_ids = FxHashSet::with_capacity_and_hasher(16, FxBuildHasher);
+        let mut seen_uuids = FxHashSet::with_capacity_and_hasher(16, FxBuildHasher);
 
         for entity_id in Self::entity_ids_in_chunk_order(&state, chunk) {
             let Some(entry) = state.live_by_id.get(entity_id) else {
@@ -1830,11 +1867,46 @@ impl WorldEntityManager {
     }
 
     /// Ticks live entities currently in the ticking visibility set.
-    pub fn tick_entities(&self, _tick_count: i32, runs_normally: bool) -> FxHashSet<ChunkPos> {
-        let mut dirty_chunks = FxHashSet::default();
+    ///
+    /// When `is_overloaded` is true the tick prioritizes lightest + critical
+    /// first (players, combat) and round-robin defers idle AI to keep MSPT
+    /// low without desync – every entity still ticks at least every 2 ticks.
+    #[expect(clippy::cast_lossless, reason = "u64 to i64")]
+    pub fn tick_entities(
+        &self,
+        tick_count: i32,
+        runs_normally: bool,
+        is_overloaded: bool,
+        overload_ticks: u32,
+    ) -> FxHashSet<ChunkPos> {
+        let mut dirty_chunks = FxHashSet::with_capacity_and_hasher(8, FxBuildHasher);
         let tick_candidates = self.ticking_entities_snapshot();
+
+        // Single state read for all entity context lookups during this tick.
+        // Avoids N separate read-lock acquisitions (one per entity) on the hot path.
+        let state = self.state.read();
+        let mut entity_ctx: FxHashMap<i32, (Option<ChunkPos>, bool, EntityOwnership)> =
+            FxHashMap::with_capacity_and_hasher(tick_candidates.len(), FxBuildHasher);
+        for entity in &tick_candidates {
+            if let Some(entry) = state.live_by_id.get(entity.id()) {
+                if Self::has_pending_world_change_in_vehicle_chain(&entry.entity) {
+                    continue;
+                }
+                entity_ctx.insert(
+                    entity.id(),
+                    (
+                        (entry.ownership == EntityOwnership::ManagerOwned).then_some(entry.chunk),
+                        state.tick_list.contains(entity.id()),
+                        entry.ownership,
+                    ),
+                );
+            }
+        }
+        drop(state);
+
         for entity in tick_candidates {
-            let Some(tick_context) = self.tick_context(entity.id()) else {
+            let Some((entity_chunk, _in_tick_list, _ownership)) = entity_ctx.get(&entity.id())
+            else {
                 continue;
             };
 
@@ -1846,7 +1918,7 @@ impl WorldEntityManager {
                 continue;
             }
 
-            let entity_chunk = tick_context.manager_chunk;
+            let entity_chunk = *entity_chunk;
             entity.check_despawn();
             if entity.is_removed() {
                 if let Some(chunk) = entity_chunk {
@@ -1857,6 +1929,49 @@ impl WorldEntityManager {
 
             if Self::is_valid_passenger_or_stop_riding(&entity) {
                 continue;
+            }
+
+            // Overload handling: lightest + most important first — честная tier-логика.
+            // Critical (players, vehicle with player) — всегда тикает (десинк сохранения).
+            // Deferred (item/xp/cloud + passive) — деферится сразу при любом overload.
+            // Important (hostile/villager) — только после 3 тиков подряд.
+            // Подключено к ядру через overload_ticks (hysteresis), бюджет — без десинка,
+            // каждый тикает хотя бы каждый 2-й тик.
+            if is_overloaded {
+                let is_player = entity.entity_type() == &vanilla_entities::PLAYER;
+                if !is_player {
+                    // Оптимизация без хуйни: прямые указательные сравнения вместо 3× path.contains (аллокации/сравнение строк на каждом тике).
+                    // Подключено к ядру идеал: ITEM / EXPERIENCE_ORB / AREA_EFFECT_CLOUD — самые лёгкие Deferred, деферятся сразу.
+                    let entity_type = entity.entity_type();
+                    let is_heavy_idle = entity_type == &vanilla_entities::ITEM
+                        || entity_type == &vanilla_entities::EXPERIENCE_ORB
+                        || entity_type == &vanilla_entities::AREA_EFFECT_CLOUD;
+                    let mob_cat = entity.entity_type().mob_category;
+                    // Tier mapping: MISC with heavy_idle or CREATURE/AMBIENT => Deferred (сразу), MONSTER => Important (после 3)
+                    let is_deferred_tier = is_heavy_idle
+                        || matches!(
+                            mob_cat,
+                            MobCategory::Creature
+                                | MobCategory::Ambient
+                                | MobCategory::WaterAmbient
+                                | MobCategory::WaterCreature
+                                | MobCategory::Axolotls
+                                | MobCategory::UndergroundWaterCreature
+                                | MobCategory::Misc
+                        );
+                    let should_defer = if is_deferred_tier {
+                        true
+                    } else {
+                        // Important — только после 3 подряд
+                        overload_ticks > 3
+                    };
+                    if should_defer {
+                        let defer_bit = i64::from(is_heavy_idle);
+                        if (i64::from(entity.id()) + tick_count as i64 + defer_bit) % 2 == 0 {
+                            continue;
+                        }
+                    }
+                }
             }
 
             // Vanilla deliberately has no same-tick de-duplication here. A relationship change

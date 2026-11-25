@@ -1,11 +1,14 @@
 use std::sync::Arc;
 
+use simdnbt::borrow::NbtCompound as BorrowedNbtCompoundView;
+
 use super::*;
 use crate::entity::clamp_loaded_entity_position;
 
 impl ChunkStorage {
     pub(super) fn entities_to_persistent(entities: &[SharedEntity]) -> Vec<PersistentEntity> {
-        let mut visited = FxHashSet::default();
+        // MSPT имба: резерв под энтити чанка — 0 realloc на сейве
+        let mut visited = FxHashSet::with_capacity_and_hasher(16, rustc_hash::FxBuildHasher);
         entities
             .iter()
             .filter(|entity| !entity.is_passenger())
@@ -16,14 +19,14 @@ impl ChunkStorage {
     }
 
     pub(crate) fn entity_tree_to_persistent(entity: &SharedEntity) -> Option<PersistentEntity> {
-        let mut visited = FxHashSet::default();
+        let mut visited = FxHashSet::with_capacity_and_hasher(4, rustc_hash::FxBuildHasher);
         Self::entity_to_persistent(entity, &mut visited, EntityPersistenceMode::ChunkSave)
     }
 
     pub(crate) fn entity_to_dimension_transition_persistent(
         entity: &SharedEntity,
     ) -> Option<PersistentEntity> {
-        let mut visited = FxHashSet::default();
+        let mut visited = FxHashSet::with_capacity_and_hasher(4, rustc_hash::FxBuildHasher);
         Self::entity_to_persistent(
             entity,
             &mut visited,
@@ -58,7 +61,7 @@ impl ChunkStorage {
             );
             return None;
         };
-        let root = simdnbt::borrow::NbtCompound::from(&root);
+        let root = BorrowedNbtCompoundView::from(&root);
         let tag = root.get("CustomName")?;
         let custom_name = TextComponent::from_nbt(&tag.to_owned());
         if custom_name.is_none() {
@@ -93,7 +96,7 @@ impl ChunkStorage {
             );
             return NbtCompound::new();
         };
-        simdnbt::borrow::NbtCompound::from(&compound).to_owned()
+        BorrowedNbtCompoundView::from(&compound).to_owned()
     }
 
     pub(super) fn save_data_from_persistent(

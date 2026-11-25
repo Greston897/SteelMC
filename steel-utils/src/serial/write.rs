@@ -142,6 +142,22 @@ impl WriteTo for TextComponent {
     }
 }
 
+impl WriteTo for String {
+    /// Writes a `VarInt`-length-prefixed UTF-8 string, vanilla's
+    /// `FriendlyByteBuf.writeUtf`.
+    fn write(&self, writer: &mut impl Write) -> Result<()> {
+        self.as_str().write_prefixed::<VarInt>(writer)
+    }
+}
+
+impl WriteTo for str {
+    /// Writes a `VarInt`-length-prefixed UTF-8 string, vanilla's
+    /// `FriendlyByteBuf.writeUtf`.
+    fn write(&self, writer: &mut impl Write) -> Result<()> {
+        self.write_prefixed::<VarInt>(writer)
+    }
+}
+
 impl WriteTo for Uuid {
     fn write(&self, writer: &mut impl Write) -> Result<()> {
         let (most_significant_bits, least_significant_bits) = self.as_u64_pair();

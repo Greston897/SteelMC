@@ -9,7 +9,10 @@ use steel_registry::{
 use steel_utils::{BlockPos, BlockStateId, types::UpdateFlags};
 
 use crate::{
-    behavior::{BlockBehavior, BlockPlaceContext, blocks::vegetation::bonemealable::Bonemealable},
+    behavior::{
+        BlockBehavior, BlockPlaceContext,
+        blocks::vegetation::bonemealable::{BonemealAction, Bonemealable},
+    },
     world::{LevelReader, World},
 };
 
@@ -37,6 +40,12 @@ impl BlockBehavior for RootedDirtBlock {
     }
 }
 impl Bonemealable for RootedDirtBlock {
+    /// Vanilla `RootedDirtBlock.getParticlePos`: growth (hanging roots) appears
+    /// underneath the clicked block, so the burst follows it.
+    fn particle_pos(&self, _action: BonemealAction, pos: BlockPos) -> BlockPos {
+        pos.below()
+    }
+
     fn is_valid_bonemeal_target(
         &self,
         _state: BlockStateId,

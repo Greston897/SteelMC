@@ -12,15 +12,22 @@ use steel_protocol::packets::common::{
 };
 use steel_protocol::packets::game::{
     CBundleDelimiter, CCommandSuggestions, ClientCommandAction, PlayerAction, PlayerCommandAction,
-    SAcceptTeleportation, SAttack, SChangeDifficulty, SChangeGameMode, SChat, SChatAck,
-    SChatCommand, SChatSessionUpdate, SChunkBatchReceived, SClientCommand, SClientTickEnd,
-    SCommandSuggestion, SContainerButtonClick, SContainerClick, SContainerClose,
-    SContainerSlotStateChanged, SInteract, SMovePlayer, SMovePlayerPos, SMovePlayerPosRot,
-    SMovePlayerRot, SMovePlayerStatusOnly, SMoveVehicle, SPickItemFromBlock, SPlayerAbilities,
-    SPlayerAction, SPlayerCommand, SPlayerInput, SPlayerLoad, SPunch, SRenameItem,
-    SSeenAdvancement, SSetBeacon, SSetCarriedItem, SSetCreativeModeSlot, SSignUpdate,
-    SSpectatorAction, SUseItem, SUseItemOn,
+    ResourcePackAction, SAcceptTeleportation, SAttack, SBlockEntityTagQuery, SBundleItemSelected,
+    SChangeDifficulty, SChangeGameMode, SChat, SChatAck, SChatCommand, SChatCommandSigned,
+    SChatSessionUpdate, SChunkBatchReceived, SClientCommand, SClientTickEnd, SCommandSuggestion,
+    SConfigurationAcknowledged, SContainerButtonClick, SContainerClick, SContainerClose,
+    SContainerSlotStateChanged, SCookieResponse, SCustomClickAction, SDebugSubscriptionRequest,
+    SEditBook, SEntityTagQuery, SInteract, SJigsawGenerate, SLockDifficulty, SMovePlayer,
+    SMovePlayerPos, SMovePlayerPosRot, SMovePlayerRot, SMovePlayerStatusOnly, SMoveVehicle,
+    SPaddleBoat, SPickItemFromBlock, SPickItemFromEntity, SPlaceRecipe, SPlayerAbilities,
+    SPlayerAction, SPlayerCommand, SPlayerInput, SPlayerLoad, SPong, SPunch,
+    SRecipeBookChangeSettings, SRecipeBookSeenRecipe, SRenameItem, SResourcePack, SSeenAdvancement,
+    SSelectTrade, SSetBeacon, SSetCarriedItem, SSetCommandBlock, SSetCommandMinecart,
+    SSetCreativeModeSlot, SSetGameRule, SSetJigsawBlock, SSetStructureBlock, SSetTestBlock,
+    SSignUpdate, SSpectatorAction, STeleportToEntity, STestInstanceBlockAction, SUseItem,
+    SUseItemOn,
 };
+use steel_utils::translations_registry::TRANSLATIONS;
 
 use crate::command::{handle_client_request, sender::CommandSender};
 use steel_protocol::utils::{ConnectionProtocol, PacketError, RawPacket};
@@ -30,6 +37,7 @@ use steel_utils::translations;
 use text_components::content::Resolvable;
 use text_components::custom::CustomData;
 use text_components::resolving::TextResolutor;
+use text_components::translation::TranslatedMessage;
 use text_components::{Modifier, TextComponent, format::Color};
 use tokio::io::{AsyncRead, AsyncWrite, BufReader, BufWriter};
 use tokio::select;
@@ -38,6 +46,7 @@ use tokio::time::timeout;
 use tokio_util::sync::CancellationToken;
 
 use crate::player::connection::NetworkConnection;
+use crate::player::connection::packet_budget::{PacketBudget, ViolationBudget};
 use crate::player::{Player, PlayerSession};
 use crate::server::Server;
 
@@ -52,6 +61,12 @@ pub type JavaNetworkWriter =
     Arc<AsyncMutex<Option<TCPNetworkEncoder<BufWriter<JavaTransportWrite>>>>>;
 
 const DISCONNECT_FLUSH_TIMEOUT: Duration = Duration::from_secs(1);
+/// Size of the write buffer in front of the socket.
+///
+/// Matches the login-side transport: a batch of chunk packets must fit without
+/// the buffer flushing on its own mid-batch.
+#[cfg(test)]
+const OUTBOUND_BUFFER_BYTES: usize = 64 * 1024;
 
 /// Outbound packet queue message for Java connections.
 pub enum OutboundPacket {
@@ -86,8 +101,8 @@ enum ScheduledPlayPacketKind {
     CustomPayload(SCustomPayload),
     Chat(Box<SChat>),
     ChatAck(SChatAck),
-    ChatSessionUpdate(SChatSessionUpdate),
-    ClientInformation(SClientInformation),
+    ChatSessionUpdate(Box<SChatSessionUpdate>),
+    ClientInformation(Box<SClientInformation>),
     ClientTickEnd,
     MovePlayer(SMovePlayer),
     MoveVehicle(SMoveVehicle),
@@ -95,11 +110,13 @@ enum ScheduledPlayPacketKind {
     ChatCommand(SChatCommand),
     CommandSuggestion(SCommandSuggestion),
     ContainerButtonClick(SContainerButtonClick),
-    ContainerClick(SContainerClick),
+    ContainerClick(Box<SContainerClick>),
     ContainerClose(SContainerClose),
     ContainerSlotStateChanged(SContainerSlotStateChanged),
-    SetCreativeModeSlot(SSetCreativeModeSlot),
+    EditBook(Box<SEditBook>),
+    SetCreativeModeSlot(Box<SSetCreativeModeSlot>),
     PlayerInput(SPlayerInput),
+    PaddleBoat(SPaddleBoat),
     PlayerCommand(SPlayerCommand),
     PlayerAbilities(SPlayerAbilities),
     RenameItem(SRenameItem),
@@ -110,12 +127,37 @@ enum ScheduledPlayPacketKind {
     Punch(SPunch),
     PlayerAction(SPlayerAction),
     PickItemFromBlock(SPickItemFromBlock),
-    SignUpdate(SSignUpdate),
+    SignUpdate(Box<SSignUpdate>),
     SpectatorAction(SSpectatorAction),
     ClientCommand(SClientCommand),
     ChangeGameMode(SChangeGameMode),
     ChangeDifficulty(SChangeDifficulty),
     UpdateSelectedTab(SSeenAdvancement),
+    BlockEntityTagQuery(SBlockEntityTagQuery),
+    BundleItemSelected(SBundleItemSelected),
+    ChatCommandSigned(Box<SChatCommandSigned>),
+    ConfigurationAcknowledged(SConfigurationAcknowledged),
+    CookieResponse(SCookieResponse),
+    DebugSubscriptionRequest(SDebugSubscriptionRequest),
+    EntityTagQuery(SEntityTagQuery),
+    JigsawGenerate(SJigsawGenerate),
+    LockDifficulty(SLockDifficulty),
+    PickItemFromEntity(SPickItemFromEntity),
+    PlaceRecipe(SPlaceRecipe),
+    Pong(SPong),
+    RecipeBookChangeSettings(SRecipeBookChangeSettings),
+    RecipeBookSeenRecipe(SRecipeBookSeenRecipe),
+    ResourcePack(SResourcePack),
+    SelectTrade(SSelectTrade),
+    SetCommandBlock(Box<SSetCommandBlock>),
+    SetCommandMinecart(Box<SSetCommandMinecart>),
+    SetGameRule(SSetGameRule),
+    SetJigsawBlock(Box<SSetJigsawBlock>),
+    SetStructureBlock(Box<SSetStructureBlock>),
+    SetTestBlock(Box<SSetTestBlock>),
+    TeleportToEntity(STeleportToEntity),
+    TestInstanceBlockAction(Box<STestInstanceBlockAction>),
+    CustomClickAction(Box<SCustomClickAction>),
 }
 
 enum ImmediatePlayPacket {
@@ -173,18 +215,24 @@ impl ScheduledPlayPacket {
             | ScheduledPlayPacketKind::ContainerClose(_)
             | ScheduledPlayPacketKind::SetCreativeModeSlot(_)
             | ScheduledPlayPacketKind::PlayerInput(_)
+            | ScheduledPlayPacketKind::PaddleBoat(_)
             | ScheduledPlayPacketKind::PlayerAbilities(_)
             | ScheduledPlayPacketKind::SetCarriedItem(_)
             | ScheduledPlayPacketKind::Punch(_)
             | ScheduledPlayPacketKind::PickItemFromBlock(_)
-            | ScheduledPlayPacketKind::ClientCommand(_) => ScheduledPacketExecution::PlayerLocal,
+            | ScheduledPlayPacketKind::ClientCommand(_)
+            // Recipe book toggles only touch player-owned state.
+            | ScheduledPlayPacketKind::RecipeBookChangeSettings(_)
+            | ScheduledPlayPacketKind::RecipeBookSeenRecipe(_) => {
+                ScheduledPacketExecution::PlayerLocal
+            }
             ScheduledPlayPacketKind::PlayerCommand(packet) => match packet.action {
                 PlayerCommandAction::StartSprinting
                 | PlayerCommandAction::StopSprinting
                 | PlayerCommandAction::StartFallFlying => ScheduledPacketExecution::PlayerLocal,
                 PlayerCommandAction::LeaveBed => ScheduledPacketExecution::Serialized,
-                // These handlers are not implemented, so their eventual vehicle transaction
-                // cannot yet be audited against concurrently player-local work.
+                // Vehicle jump charge and mount-inventory open span both rider and vehicle state,
+                // so keep them exclusive against concurrent player-local work.
                 PlayerCommandAction::StartRidingJump
                 | PlayerCommandAction::StopRidingJump
                 | PlayerCommandAction::OpenVehicleInventory => ScheduledPacketExecution::Exclusive,
@@ -213,12 +261,14 @@ impl ScheduledPlayPacket {
             | ScheduledPlayPacketKind::MoveVehicle(_)
             | ScheduledPlayPacketKind::ContainerClick(_)
             | ScheduledPlayPacketKind::RenameItem(_)
+            | ScheduledPlayPacketKind::EditBook(_)
             | ScheduledPlayPacketKind::UseItemOn(_)
             | ScheduledPlayPacketKind::UseItem(_)
             | ScheduledPlayPacketKind::SignUpdate(_)
             | ScheduledPlayPacketKind::SpectatorAction(_)
             | ScheduledPlayPacketKind::ChangeGameMode(_)
             | ScheduledPlayPacketKind::ChangeDifficulty(_)
+            | ScheduledPlayPacketKind::SetGameRule(_)
             | ScheduledPlayPacketKind::UpdateSelectedTab(_) => ScheduledPacketExecution::Serialized,
             // Combat spans source and target state, custom payloads have no constrained resource
             // contract, and the unimplemented menu handlers have no auditable transaction yet.
@@ -227,9 +277,29 @@ impl ScheduledPlayPacket {
             | ScheduledPlayPacketKind::CustomPayload(_)
             | ScheduledPlayPacketKind::ContainerButtonClick(_)
             | ScheduledPlayPacketKind::SetBeacon(_)
-            | ScheduledPlayPacketKind::ContainerSlotStateChanged(_) => {
-                ScheduledPacketExecution::Exclusive
-            }
+            | ScheduledPlayPacketKind::ContainerSlotStateChanged(_)
+            | ScheduledPlayPacketKind::BlockEntityTagQuery(_)
+            | ScheduledPlayPacketKind::BundleItemSelected(_)
+            | ScheduledPlayPacketKind::ChatCommandSigned(_)
+            | ScheduledPlayPacketKind::ConfigurationAcknowledged(_)
+            | ScheduledPlayPacketKind::CookieResponse(_)
+            | ScheduledPlayPacketKind::DebugSubscriptionRequest(_)
+            | ScheduledPlayPacketKind::EntityTagQuery(_)
+            | ScheduledPlayPacketKind::JigsawGenerate(_)
+            | ScheduledPlayPacketKind::LockDifficulty(_)
+            | ScheduledPlayPacketKind::PickItemFromEntity(_)
+            | ScheduledPlayPacketKind::PlaceRecipe(_)
+            | ScheduledPlayPacketKind::Pong(_)
+            | ScheduledPlayPacketKind::ResourcePack(_)
+            | ScheduledPlayPacketKind::SelectTrade(_)
+            | ScheduledPlayPacketKind::SetCommandBlock(_)
+            | ScheduledPlayPacketKind::SetCommandMinecart(_)
+            | ScheduledPlayPacketKind::SetJigsawBlock(_)
+            | ScheduledPlayPacketKind::SetStructureBlock(_)
+            | ScheduledPlayPacketKind::SetTestBlock(_)
+            | ScheduledPlayPacketKind::TeleportToEntity(_)
+            | ScheduledPlayPacketKind::TestInstanceBlockAction(_)
+            | ScheduledPlayPacketKind::CustomClickAction(_) => ScheduledPacketExecution::Exclusive,
         }
     }
 
@@ -269,10 +339,10 @@ impl ScheduledPlayPacket {
             }
             ScheduledPlayPacketKind::ChatAck(packet) => player.handle_chat_ack(packet),
             ScheduledPlayPacketKind::ChatSessionUpdate(packet) => {
-                player.handle_chat_session_update(packet);
+                player.handle_chat_session_update(*packet);
             }
             ScheduledPlayPacketKind::ClientInformation(packet) => {
-                player.handle_client_information(packet);
+                player.handle_client_information(*packet);
             }
             ScheduledPlayPacketKind::ClientTickEnd => player.handle_client_tick_end(),
             ScheduledPlayPacketKind::MovePlayer(packet) => player.handle_move_player(packet),
@@ -309,7 +379,7 @@ impl ScheduledPlayPacket {
                 player.handle_set_beacon_packet(packet);
             }
             ScheduledPlayPacketKind::ContainerClick(packet) => {
-                player.handle_container_click(packet);
+                player.handle_container_click(*packet);
             }
             ScheduledPlayPacketKind::ContainerClose(packet) => {
                 player.handle_container_close(packet);
@@ -318,9 +388,10 @@ impl ScheduledPlayPacket {
                 player.handle_container_slot_state_changed(packet);
             }
             ScheduledPlayPacketKind::SetCreativeModeSlot(packet) => {
-                player.handle_set_creative_mode_slot(packet);
+                player.handle_set_creative_mode_slot(*packet);
             }
             ScheduledPlayPacketKind::PlayerInput(packet) => player.handle_player_input(packet),
+            ScheduledPlayPacketKind::PaddleBoat(packet) => player.handle_paddle_boat(packet),
             ScheduledPlayPacketKind::PlayerCommand(packet) => {
                 player.handle_player_command(packet);
             }
@@ -328,6 +399,7 @@ impl ScheduledPlayPacket {
                 player.handle_player_abilities(packet);
             }
             ScheduledPlayPacketKind::RenameItem(packet) => player.handle_rename_item(packet),
+            ScheduledPlayPacketKind::EditBook(packet) => player.handle_edit_book(*packet),
             ScheduledPlayPacketKind::UseItemOn(packet) => player.handle_use_item_on(packet),
             ScheduledPlayPacketKind::UseItem(packet) => player.handle_use_item(packet),
             ScheduledPlayPacketKind::SetCarriedItem(packet) => {
@@ -340,7 +412,7 @@ impl ScheduledPlayPacket {
             ScheduledPlayPacketKind::PickItemFromBlock(packet) => {
                 player.handle_pick_item_from_block(packet);
             }
-            ScheduledPlayPacketKind::SignUpdate(packet) => player.handle_sign_update(packet),
+            ScheduledPlayPacketKind::SignUpdate(packet) => player.handle_sign_update(*packet),
             ScheduledPlayPacketKind::SpectatorAction(packet) => {
                 player.handle_spectator_action(packet);
             }
@@ -355,6 +427,116 @@ impl ScheduledPlayPacket {
             }
             ScheduledPlayPacketKind::UpdateSelectedTab(packet) => {
                 player.handle_seen_advancement(packet);
+            }
+            ScheduledPlayPacketKind::BlockEntityTagQuery(packet) => {
+                player.handle_block_entity_tag_query(packet);
+            }
+            ScheduledPlayPacketKind::BundleItemSelected(packet) => {
+                player.handle_bundle_item_selected(packet);
+            }
+            ScheduledPlayPacketKind::ChatCommandSigned(packet) => {
+                // Vanilla `handleChatCommand` runs signed and unsigned commands
+                // through the same dispatcher; the signature chain only feeds
+                // chat reporting, which Steel does not model. The command text is
+                // identical, so it is executed here the same way.
+                player.reset_last_action_time();
+                if server
+                    .submit_command(CommandSender::Player(Arc::clone(&player)), packet.command)
+                    .is_err()
+                {
+                    player.send_message(
+                        &TextComponent::const_plain("Command queue is full").color(Color::Red),
+                    );
+                }
+                player.detect_command_rate_spam();
+            }
+            ScheduledPlayPacketKind::ConfigurationAcknowledged(_packet) => {
+                player.handle_configuration_acknowledged();
+            }
+            ScheduledPlayPacketKind::CookieResponse(packet) => {
+                player.handle_cookie_response(packet);
+            }
+            ScheduledPlayPacketKind::DebugSubscriptionRequest(packet) => {
+                player.handle_debug_subscription_request(packet);
+            }
+            ScheduledPlayPacketKind::EntityTagQuery(packet) => {
+                player.handle_entity_tag_query(packet);
+            }
+            ScheduledPlayPacketKind::JigsawGenerate(packet) => {
+                player.handle_jigsaw_generate(packet);
+            }
+            ScheduledPlayPacketKind::LockDifficulty(packet) => {
+                player.handle_lock_difficulty(packet);
+            }
+            ScheduledPlayPacketKind::PickItemFromEntity(packet) => {
+                player.handle_pick_item_from_entity(packet);
+            }
+            ScheduledPlayPacketKind::PlaceRecipe(packet) => {
+                player.handle_place_recipe(packet);
+            }
+            ScheduledPlayPacketKind::Pong(packet) => {
+                player.handle_pong(packet.id);
+            }
+            ScheduledPlayPacketKind::RecipeBookChangeSettings(packet) => {
+                player.handle_recipe_book_change_settings(packet);
+            }
+            ScheduledPlayPacketKind::RecipeBookSeenRecipe(packet) => {
+                player.handle_recipe_book_seen_recipe(packet);
+            }
+            ScheduledPlayPacketKind::ResourcePack(packet) => {
+                // Vanilla `ServerCommonPacketListenerImpl.handleResourcePackResponse`
+                // only reacts to `DECLINED` when the server requires a pack.
+                let declined = packet.decoded_action() == Some(ResourcePackAction::Declined);
+                let required = player
+                    .try_server()
+                    .and_then(|server| {
+                        server
+                            .config
+                            .resource_pack
+                            .as_ref()
+                            .map(|pack| pack.required)
+                    })
+                    .unwrap_or(false);
+                if declined && required {
+                    log::info!(
+                        "Disconnecting {} due to resource pack {} rejection",
+                        player.gameprofile.name(),
+                        packet.id
+                    );
+                    player.disconnect(TextComponent::translated(TranslatedMessage {
+                        key: "multiplayer.requiredTexturePrompt.disconnect".into(),
+                        fallback: None,
+                        args: None,
+                    }));
+                }
+            }
+            ScheduledPlayPacketKind::SelectTrade(packet) => {
+                player.handle_select_trade(packet);
+            }
+            ScheduledPlayPacketKind::SetCommandBlock(packet) => {
+                player.handle_set_command_block(*packet);
+            }
+            ScheduledPlayPacketKind::SetCommandMinecart(packet) => {
+                player.handle_set_command_minecart(*packet);
+            }
+            ScheduledPlayPacketKind::SetGameRule(packet) => player.handle_set_game_rule(packet),
+            ScheduledPlayPacketKind::SetJigsawBlock(packet) => {
+                player.handle_set_jigsaw_block(*packet);
+            }
+            ScheduledPlayPacketKind::SetStructureBlock(packet) => {
+                player.handle_set_structure_block(*packet);
+            }
+            ScheduledPlayPacketKind::SetTestBlock(packet) => {
+                player.handle_set_test_block(*packet);
+            }
+            ScheduledPlayPacketKind::TeleportToEntity(packet) => {
+                player.handle_teleport_to_entity(packet);
+            }
+            ScheduledPlayPacketKind::TestInstanceBlockAction(packet) => {
+                player.handle_test_instance_block_action(*packet);
+            }
+            ScheduledPlayPacketKind::CustomClickAction(packet) => {
+                player.handle_custom_click_action(*packet);
             }
         }
     }
@@ -707,13 +889,13 @@ impl JavaConnection {
                 data,
             )?))),
             play::S_CHAT_SESSION_UPDATE => scheduled(ScheduledPlayPacketKind::ChatSessionUpdate(
-                SChatSessionUpdate::read_packet(data)?,
+                Box::new(SChatSessionUpdate::read_packet(data)?),
             )),
             play::S_CHAT_ACK => scheduled(ScheduledPlayPacketKind::ChatAck(SChatAck::read_packet(
                 data,
             )?)),
             play::S_CLIENT_INFORMATION => scheduled(ScheduledPlayPacketKind::ClientInformation(
-                SClientInformation::read_packet(data)?,
+                Box::new(SClientInformation::read_packet(data)?),
             )),
             play::S_CLIENT_TICK_END => {
                 let _ = SClientTickEnd::read_packet(data)?;
@@ -756,26 +938,35 @@ impl JavaConnection {
                 ))
             }
             play::S_CONTAINER_CLICK => scheduled(ScheduledPlayPacketKind::ContainerClick(
-                SContainerClick::read_packet(data)?,
+                Box::new(SContainerClick::read_packet(data)?),
             )),
             play::S_CONTAINER_CLOSE => scheduled(ScheduledPlayPacketKind::ContainerClose(
                 SContainerClose::read_packet(data)?,
+            )),
+            play::S_COOKIE_RESPONSE => scheduled(ScheduledPlayPacketKind::CookieResponse(
+                SCookieResponse::read_packet(data)?,
             )),
             play::S_CONTAINER_SLOT_STATE_CHANGED => {
                 scheduled(ScheduledPlayPacketKind::ContainerSlotStateChanged(
                     SContainerSlotStateChanged::read_packet(data)?,
                 ))
             }
+            play::S_EDIT_BOOK => scheduled(ScheduledPlayPacketKind::EditBook(Box::new(
+                SEditBook::read_packet(data)?,
+            ))),
             play::S_SET_CREATIVE_MODE_SLOT => {
-                scheduled(ScheduledPlayPacketKind::SetCreativeModeSlot(
+                scheduled(ScheduledPlayPacketKind::SetCreativeModeSlot(Box::new(
                     SSetCreativeModeSlot::read_packet(data)?,
-                ))
+                )))
             }
             play::S_SET_BEACON => scheduled(ScheduledPlayPacketKind::SetBeacon(
                 SSetBeacon::read_packet(data)?,
             )),
             play::S_PLAYER_INPUT => scheduled(ScheduledPlayPacketKind::PlayerInput(
                 SPlayerInput::read_packet(data)?,
+            )),
+            play::S_PADDLE_BOAT => scheduled(ScheduledPlayPacketKind::PaddleBoat(
+                SPaddleBoat::read_packet(data)?,
             )),
             play::S_PLAYER_COMMAND => scheduled(ScheduledPlayPacketKind::PlayerCommand(
                 SPlayerCommand::read_packet(data)?,
@@ -802,9 +993,9 @@ impl JavaConnection {
             play::S_PICK_ITEM_FROM_BLOCK => scheduled(ScheduledPlayPacketKind::PickItemFromBlock(
                 SPickItemFromBlock::read_packet(data)?,
             )),
-            play::S_SIGN_UPDATE => scheduled(ScheduledPlayPacketKind::SignUpdate(
+            play::S_SIGN_UPDATE => scheduled(ScheduledPlayPacketKind::SignUpdate(Box::new(
                 SSignUpdate::read_packet(data)?,
-            )),
+            ))),
             play::S_SPECTATOR_ACTION => scheduled(ScheduledPlayPacketKind::SpectatorAction(
                 SSpectatorAction::read_packet(data)?,
             )),
@@ -822,6 +1013,90 @@ impl JavaConnection {
             )),
             play::S_SEEN_ADVANCEMENTS => scheduled(ScheduledPlayPacketKind::UpdateSelectedTab(
                 SSeenAdvancement::read_packet(data)?,
+            )),
+            play::S_BLOCK_ENTITY_TAG_QUERY => {
+                scheduled(ScheduledPlayPacketKind::BlockEntityTagQuery(
+                    SBlockEntityTagQuery::read_packet(data)?,
+                ))
+            }
+            play::S_BUNDLE_ITEM_SELECTED => scheduled(ScheduledPlayPacketKind::BundleItemSelected(
+                SBundleItemSelected::read_packet(data)?,
+            )),
+            play::S_CHAT_COMMAND_SIGNED => scheduled(ScheduledPlayPacketKind::ChatCommandSigned(
+                Box::new(SChatCommandSigned::read_packet(data)?),
+            )),
+            play::S_CONFIGURATION_ACKNOWLEDGED => {
+                scheduled(ScheduledPlayPacketKind::ConfigurationAcknowledged(
+                    SConfigurationAcknowledged::read_packet(data)?,
+                ))
+            }
+            play::S_DEBUG_SUBSCRIPTION_REQUEST => {
+                scheduled(ScheduledPlayPacketKind::DebugSubscriptionRequest(
+                    SDebugSubscriptionRequest::read_packet(data)?,
+                ))
+            }
+            play::S_ENTITY_TAG_QUERY => scheduled(ScheduledPlayPacketKind::EntityTagQuery(
+                SEntityTagQuery::read_packet(data)?,
+            )),
+            play::S_JIGSAW_GENERATE => scheduled(ScheduledPlayPacketKind::JigsawGenerate(
+                SJigsawGenerate::read_packet(data)?,
+            )),
+            play::S_LOCK_DIFFICULTY => scheduled(ScheduledPlayPacketKind::LockDifficulty(
+                SLockDifficulty::read_packet(data)?,
+            )),
+            play::S_PICK_ITEM_FROM_ENTITY => {
+                scheduled(ScheduledPlayPacketKind::PickItemFromEntity(
+                    SPickItemFromEntity::read_packet(data)?,
+                ))
+            }
+            play::S_PLACE_RECIPE => scheduled(ScheduledPlayPacketKind::PlaceRecipe(
+                SPlaceRecipe::read_packet(data)?,
+            )),
+            play::S_PONG => scheduled(ScheduledPlayPacketKind::Pong(SPong::read_packet(data)?)),
+            play::S_RECIPE_BOOK_CHANGE_SETTINGS => {
+                scheduled(ScheduledPlayPacketKind::RecipeBookChangeSettings(
+                    SRecipeBookChangeSettings::read_packet(data)?,
+                ))
+            }
+            play::S_RECIPE_BOOK_SEEN_RECIPE => {
+                scheduled(ScheduledPlayPacketKind::RecipeBookSeenRecipe(
+                    SRecipeBookSeenRecipe::read_packet(data)?,
+                ))
+            }
+            play::S_RESOURCE_PACK => scheduled(ScheduledPlayPacketKind::ResourcePack(
+                SResourcePack::read_packet(data)?,
+            )),
+            play::S_SELECT_TRADE => scheduled(ScheduledPlayPacketKind::SelectTrade(
+                SSelectTrade::read_packet(data)?,
+            )),
+            play::S_SET_COMMAND_BLOCK => scheduled(ScheduledPlayPacketKind::SetCommandBlock(
+                Box::new(SSetCommandBlock::read_packet(data)?),
+            )),
+            play::S_SET_COMMAND_MINECART => scheduled(ScheduledPlayPacketKind::SetCommandMinecart(
+                Box::new(SSetCommandMinecart::read_packet(data)?),
+            )),
+            play::S_SET_GAME_RULE => scheduled(ScheduledPlayPacketKind::SetGameRule(
+                SSetGameRule::read_packet(data)?,
+            )),
+            play::S_SET_JIGSAW_BLOCK => scheduled(ScheduledPlayPacketKind::SetJigsawBlock(
+                Box::new(SSetJigsawBlock::read_packet(data)?),
+            )),
+            play::S_SET_STRUCTURE_BLOCK => scheduled(ScheduledPlayPacketKind::SetStructureBlock(
+                Box::new(SSetStructureBlock::read_packet(data)?),
+            )),
+            play::S_SET_TEST_BLOCK => scheduled(ScheduledPlayPacketKind::SetTestBlock(Box::new(
+                SSetTestBlock::read_packet(data)?,
+            ))),
+            play::S_TELEPORT_TO_ENTITY => scheduled(ScheduledPlayPacketKind::TeleportToEntity(
+                STeleportToEntity::read_packet(data)?,
+            )),
+            play::S_TEST_INSTANCE_BLOCK_ACTION => {
+                scheduled(ScheduledPlayPacketKind::TestInstanceBlockAction(Box::new(
+                    STestInstanceBlockAction::read_packet(data)?,
+                )))
+            }
+            play::S_CUSTOM_CLICK_ACTION => scheduled(ScheduledPlayPacketKind::CustomClickAction(
+                Box::new(SCustomClickAction::read_packet(data)?),
             )),
             id => DecodedPlayPacket::Immediate(ImmediatePlayPacket::Unknown(id)),
         })
@@ -844,7 +1119,17 @@ impl JavaConnection {
     }
 
     /// Listens for packets from the client.
+    ///
+    /// Every inbound packet passes through a [`PacketBudget`] first, so a client
+    /// that floods the server — millions of book edits, container clicks, or
+    /// oversized custom payloads — is throttled and then disconnected instead of
+    /// queuing unbounded work on the game loop. Malformed packets go through a
+    /// [`ViolationBudget`]: a couple of transient failures are tolerated, but a
+    /// peer that keeps sending garbage is closed, exactly like vanilla's
+    /// `DecoderException` path.
     pub async fn listener(&self, mut reader: JavaNetworkReader, server: Arc<Server>) {
+        let mut budget = PacketBudget::with_packet_limit(server.config.rate_limit);
+        let mut violations = ViolationBudget::default();
         loop {
             select! {
                 () = self.wait_for_close() => {
@@ -853,17 +1138,43 @@ impl JavaConnection {
                 packet = reader.get_raw_packet() => {
                     match packet {
                         Ok(packet) => {
+                            let payload_bytes = packet.payload().len();
+                            let admission = budget.admit(payload_bytes);
+                            if !admission.is_allowed() {
+                                // The packet is discarded before decoding: no
+                                // allocation, no dispatch, no game-loop work.
+                                if admission.exceeds_drop_threshold() {
+                                    log::warn!(
+                                        "Closing connection {} for exceeding the inbound packet budget",
+                                        self.id
+                                    );
+                                    self.close();
+                                    break;
+                                }
+                                continue;
+                            }
+
                             if let Some(player) = self.session.current_player()
                                 && let Err(err) = self.process_packet(packet, player, &server) {
                                 log::warn!(
-                                    "Failed to get packet from client {}: {err}",
+                                    "Rejected packet from client {}: {err}",
                                     self.id
                                 );
+                                if violations.record() {
+                                    log::warn!(
+                                        "Closing connection {} after {} malformed packets",
+                                        self.id,
+                                        violations.count()
+                                    );
+                                    self.close();
+                                    break;
+                                }
                             }
                         }
                         Err(err) => {
                             log::debug!("Failed to get raw packet from client {}: {err}", self.id);
                             self.close();
+                            break;
                         }
                     }
                 }
@@ -937,16 +1248,23 @@ impl JavaConnection {
 }
 
 impl TextResolutor for JavaConnection {
+    /// Connection-level text has no player scope yet (the connection exists
+    /// before a player is attached), so content that needs a viewer resolves to
+    /// an empty component.
     fn resolve_content(&self, _resolvable: &Resolvable) -> TextComponent {
         TextComponent::new()
     }
 
+    /// Vanilla resolves `custom` content from the client's registered custom
+    /// text data, which the server never receives.
     fn resolve_custom(&self, _data: &CustomData) -> Option<TextComponent> {
         None
     }
 
-    fn translate(&self, _key: &str) -> Option<String> {
-        None
+    /// Uses the English translation table, like a server-side view of a
+    /// translatable component.
+    fn translate(&self, key: &str) -> Option<String> {
+        TRANSLATIONS.get(key).map(|value| (*value).to_owned())
     }
 }
 
@@ -1167,7 +1485,7 @@ mod tests {
         };
 
         assert_eq!(
-            execution(ScheduledPlayPacketKind::ContainerClick(click)),
+            execution(ScheduledPlayPacketKind::ContainerClick(Box::new(click))),
             ScheduledPacketExecution::Serialized
         );
         assert_eq!(
@@ -1177,12 +1495,12 @@ mod tests {
             ScheduledPacketExecution::PlayerLocal
         );
         assert_eq!(
-            execution(ScheduledPlayPacketKind::SetCreativeModeSlot(
+            execution(ScheduledPlayPacketKind::SetCreativeModeSlot(Box::new(
                 SSetCreativeModeSlot {
                     slot_num: 1,
                     item_stack: ItemStack::empty(),
                 },
-            )),
+            ))),
             ScheduledPacketExecution::PlayerLocal
         );
     }
@@ -1314,18 +1632,18 @@ mod tests {
             ScheduledPacketExecution::PlayerLocal
         );
         assert_eq!(
-            execution(ScheduledPlayPacketKind::ChatSessionUpdate(
+            execution(ScheduledPlayPacketKind::ChatSessionUpdate(Box::new(
                 SChatSessionUpdate {
                     session_id: Uuid::nil(),
                     expires_at: 0,
                     public_key: Vec::new(),
                     key_signature: Vec::new(),
                 },
-            )),
+            ))),
             ScheduledPacketExecution::PlayerLocal
         );
         assert_eq!(
-            execution(ScheduledPlayPacketKind::ClientInformation(
+            execution(ScheduledPlayPacketKind::ClientInformation(Box::new(
                 SClientInformation {
                     language: "en_us".to_owned(),
                     view_distance: 8,
@@ -1337,7 +1655,7 @@ mod tests {
                     allows_listing: true,
                     particle_status: ParticleStatus::All,
                 },
-            )),
+            ))),
             ScheduledPacketExecution::PlayerLocal
         );
         assert_eq!(
@@ -1356,12 +1674,26 @@ mod tests {
             ScheduledPacketExecution::PlayerLocal
         );
         assert_eq!(
-            execution(ScheduledPlayPacketKind::SignUpdate(SSignUpdate {
+            execution(ScheduledPlayPacketKind::SignUpdate(Box::new(SSignUpdate {
                 pos: BlockPos::new(0, 64, 0),
                 lines: array::from_fn(|_| String::new()),
                 slot: SignTextSlot::Front,
+            }))),
+            ScheduledPacketExecution::Serialized
+        );
+        assert_eq!(
+            execution(ScheduledPlayPacketKind::SetGameRule(SSetGameRule {
+                entries: Vec::new(),
             })),
             ScheduledPacketExecution::Serialized
+        );
+        // Oversized cold admin/UI packets are boxed so every queued hot-path packet
+        // (MovePlayer, ClientTickEnd, PlayerInput, Attack, Interact, UseItemOn)
+        // stays compact and avoids multi-cache-line copies in PacketProcessor.
+        assert!(
+            size_of::<ScheduledPlayPacket>() <= 96,
+            "ScheduledPlayPacket bloated to {} bytes; box cold oversized variants",
+            size_of::<ScheduledPlayPacket>(),
         );
         assert_eq!(
             execution(ScheduledPlayPacketKind::Punch(SPunch {})),
@@ -1410,7 +1742,7 @@ mod tests {
         let (server_end, mut client_end) = duplex(1024);
         let transport: JavaTransportWrite = Box::new(server_end);
         let network_writer: JavaNetworkWriter = Arc::new(AsyncMutex::new(Some(
-            TCPNetworkEncoder::new(BufWriter::new(transport)),
+            TCPNetworkEncoder::new(BufWriter::with_capacity(OUTBOUND_BUFFER_BYTES, transport)),
         )));
         let (outgoing_packets, outgoing_receiver) = mpsc::unbounded_channel();
         let cancel_token = CancellationToken::new();

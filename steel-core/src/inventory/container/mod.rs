@@ -111,6 +111,17 @@ pub trait Container: ErasedType + Send + Sync {
     }
 
     /// Marks this container as changed (dirty) for saving/syncing.
+    ///
+    /// Vanilla puts this on `Container` because every vanilla container *is* a
+    /// block entity (or a minecart) that owns its own `setChanged`. In Steel the
+    /// storage and its owner are separate objects, so implementations of the
+    /// storage are deliberately empty and the owning `BlockEntityBase` is the
+    /// one that marks the block dirty.
+    ///
+    /// Callers that mutate a storage through a [`crate::inventory::lock::ContainerRef`]
+    /// must report the change with
+    /// [`crate::inventory::lock::ContainerRef::mark_changed`] (or
+    /// `ContainerLockGuard::set_changed`), never with this method.
     fn set_changed(&mut self);
 
     /// Returns true if the specified item can be placed in the specified slot.

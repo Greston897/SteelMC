@@ -1,0 +1,83 @@
+name: Features block diagnostic
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.ci/vanilla_features/**'
+      - '.github/workflows/features-diagnostic.yml'
+      - 'steel-core/src/worldgen/feature/features/monster_room.rs'
+      - 'steel-core/src/worldgen/feature/placed.rs'
+      - 'steel-registry/src/blocks/block_state_ext.rs'
+permissions:
+  contents: write
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Test reference trust gate
+        run: python3 .ci/vanilla_features/test_validate.py
+      - name: Capture independent vanilla blocks for mismatching clusters
+        shell: bash
+        run: |
+          set -euo pipefail
+          exec > >(tee /tmp/reference.log) 2>&1
+          mkdir /tmp/feature-reference
+          cp .ci/vanilla_features/* /tmp/feature-reference/
+          cp steel-core/test_assets/chunk_stage_hashes.json /tmp/feature-reference/fixture.json
+          cd /tmp/feature-reference
+          python3 prepare.py
+          javac ReferenceAgent.java
+          printf 'Premain-Class: ReferenceAgent\n\n' > MANIFEST.MF
+          jar cfm reference-agent.jar MANIFEST.MF ./*.class
+          printf 'eula=true\n' > eula.txt
+          printf 'level-seed=13579\nonline-mode=false\nview-distance=2\nsimulation-distance=2\nspawn-protection=0\n' > server.properties
+          timeout --kill-after=30s 1800 java -Xmx4G -Dsteel.featuretrace=true -javaagent:reference-agent.jar=/tmp/feature-reference/reference-agent.jar -jar server.jar nogui 2>&1 | tee /tmp/vanilla-server.log
+          python3 validate.py
+          grep 'FEATURE_TRACE' /tmp/vanilla-server.log > /tmp/feature-trace.log || true
+          grep -q 'FEATURE_TRACE_HOOK_OK' /tmp/feature-trace.log
+          ! grep -q 'FEATURE_TRACE_ERROR' /tmp/feature-trace.log
+          # Only a capture matching ALL existing failing-chunk goldens is trusted.
+          cp reference.bin.gz "$GITHUB_WORKSPACE/steel-core/test_assets/chunk_stage_overworld_features_blocks.bin.gz"
+      - name: Publish trusted feature trace before compiling
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .ci/report.py "Features diagnostic — trusted trace" /tmp/feature-trace.log
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: vanilla-evidence-optimized-no-lto
+      - name: Compile exact Steel test binary once
+        env:
+          CARGO_BUILD_JOBS: 2
+        run: python3 .ci/compile_test_binary.py steel-core /tmp/core-test-binary
+      - name: Report block-level mismatches without replacing goldens
+        env:
+          STEEL_HASH_DEBUG_DIMENSION: minecraft:overworld
+          STEEL_HASH_DEBUG_STAGE: minecraft:features
+          STEEL_FEATURE_NOISE_TRACE: '1'
+        run: |
+          set -o pipefail
+          binary=$(cat /tmp/core-test-binary)
+          timeout --kill-after=15s 300s "$binary" worldgen::chunk_stage_hashes::chunk_stage_hashes --exact --ignored --nocapture 2>&1 | tee /tmp/features-diagnostic.log
+      - name: Publish diagnostics even on failure
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          grep -E 'STEEL_FEATURE_(NOISE|COUNT)' /tmp/features-diagnostic.log > /tmp/steel-noise-trace.log || true
+          python3 .ci/report.py "Features diagnostic — Steel noise" /tmp/steel-noise-trace.log
+          python3 .ci/report.py "Features diagnostic — vanilla blocks" /tmp/reference.log /tmp/feature-trace.log /tmp/features-diagnostic.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: features-block-reference
+          path: |
+            /tmp/reference.log
+            /tmp/features-diagnostic.log
+            /tmp/feature-reference/reference.bin.gz
+            /tmp/feature-reference/source.json

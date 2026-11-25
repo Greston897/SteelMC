@@ -549,6 +549,9 @@ fn insertion_rejects_an_entity_owned_by_another_chunk() {
             .set_block_state(local_pos, chest, UpdateFlags::UPDATE_NONE)
             .is_some()
     );
+    let local_entity = chunk
+        .get_block_entity(local_pos)
+        .expect("local chest entity is created on placement");
     let foreign: SharedBlockEntity = Arc::new(UnimplementedBlockEntity::new(
         &vanilla_block_entity_types::CHEST,
         Weak::new(),
@@ -557,7 +560,11 @@ fn insertion_rejects_an_entity_owned_by_another_chunk() {
     ));
 
     assert!(!chunk.add_and_register_block_entity(foreign));
-    assert!(chunk.get_block_entity(local_pos).is_none());
+    assert!(
+        chunk
+            .get_block_entity(local_pos)
+            .is_some_and(|current| Arc::ptr_eq(&current, &local_entity))
+    );
     assert!(chunk.get_block_entity(foreign_pos).is_none());
 }
 
@@ -606,6 +613,8 @@ fn stale_no_entity_promotion_cannot_consume_a_replacement_marker() {
         chunk.set_block_state(pos, chest, UpdateFlags::UPDATE_NONE),
         Some(moving_piston)
     );
+    assert!(chunk.remove_block_entity(pos));
+    chunk.set_pending_block_entity(pos);
     assert_eq!(chunk.pending_block_entity_positions(), [pos]);
 
     assert!(matches!(

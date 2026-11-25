@@ -25,8 +25,11 @@ pub enum ChickenModelType {
     Cold,
 }
 
-impl ToNbtTag for &ChickenVariant {
-    fn to_nbt_tag(self) -> NbtTag {
+impl ChickenVariant {
+    /// Vanilla `ChickenVariant.NETWORK_CODEC` — syncable fields only
+    /// (`spawn_conditions` is server-only and never sent to the client).
+    #[must_use]
+    pub fn to_network_nbt(&self) -> NbtTag {
         use simdnbt::owned::{NbtCompound, NbtTag};
         let mut compound = NbtCompound::new();
         compound.insert("asset_id", self.asset_id.clone());
@@ -38,8 +41,24 @@ impl ToNbtTag for &ChickenVariant {
                 ChickenModelType::Cold => "cold",
             },
         );
+        NbtTag::Compound(compound)
+    }
+
+    /// Full direct codec including server-only `spawn_conditions`.
+    #[must_use]
+    pub fn to_direct_nbt_tag(&self) -> NbtTag {
+        use simdnbt::owned::NbtTag;
+        let NbtTag::Compound(mut compound) = self.to_network_nbt() else {
+            unreachable!("chicken variant network NBT is always a compound");
+        };
         insert_spawn_conditions(&mut compound, self.spawn_conditions);
         NbtTag::Compound(compound)
+    }
+}
+
+impl ToNbtTag for &ChickenVariant {
+    fn to_nbt_tag(self) -> NbtTag {
+        self.to_network_nbt()
     }
 }
 

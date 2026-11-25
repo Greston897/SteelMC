@@ -35,19 +35,19 @@ use steel_utils::types::InteractionHand;
 use steel_utils::{BlockPos, BlockStateId, Downcast as _, DowncastType, DowncastTypeKey};
 use uuid::Uuid;
 
+use super::cow::CowEntity;
 use crate::behavior::InteractionResult;
 use crate::entity::ai::goal::{
     BreedGoal, FloatGoal, FollowParentGoal, LookAtPlayerGoal, PanicGoal, RandomLookAroundGoal,
     TemptGoal, WaterAvoidingRandomStrollGoal,
 };
+use crate::entity::conversion::{ConversionParams, convert_to};
 use crate::entity::damage::DamageSource;
-use crate::entity::entities::CowEntity;
 use crate::entity::living_entity::shearing_loot_items_with_rng;
 use crate::entity::{
     AgeableMob, AgeableMobBase, Animal, AnimalBase, DefaultEntityPush, Entity, EntityBase,
     EntityBaseLoad, EntityPose, EntitySpawnReason, EntitySyncedData, LivingEntity,
-    LivingEntityBase, Mob, MobBase, PathfinderMob, RemovalReason, SharedEntity, SpawnGroupData,
-    SpawnRule, next_entity_id,
+    LivingEntityBase, Mob, MobBase, PathfinderMob, SharedEntity, SpawnGroupData, SpawnRule,
 };
 use crate::physics::MoveResult;
 use crate::player::Player;
@@ -206,7 +206,8 @@ impl MushroomCowEntity {
 
     /// Handles a lightning strike hitting the mooshroom.
     pub fn thunder_hit(&self, lightning_uuid: Uuid) {
-        // TODO: Route server-side LightningBolt hits here once that shared entity and dispatch exist.
+        // Reached from `LightningBoltEntity::hit_entities`, which dispatches before
+        // applying lightning damage.
         let mut last_uuid = self.last_lightning_bolt_uuid.lock();
         if last_uuid.as_ref() == Some(&lightning_uuid) {
             return;
@@ -241,30 +242,18 @@ impl MushroomCowEntity {
             self.spawn_shearing_drop(&drop);
         }
 
-        // TODO: Replace these local transfers with the shared conversion state transfer API.
-        let cow = Arc::new(CowEntity::new(
+        // Vanilla `Mooshroom.shear` calls `convertTo(EntityType.COW, false)`,
+        // which carries name, effects, age and position across. The explosion
+        // particle is the only extra.
+        let converted = convert_to(
+            self,
             &vanilla_entities::COW,
-            next_entity_id(),
-            self.position(),
-            Arc::downgrade(world),
-        ));
-        cow.set_rotation(self.rotation());
-        if let Some(custom_name) = self.custom_name() {
-            cow.set_custom_name(Some(custom_name));
+            ConversionParams::single(false, false),
+            None,
+        );
+        if converted.is_none() {
+            return;
         }
-        cow.set_custom_name_visible(self.is_custom_name_visible());
-        cow.set_invulnerable(self.is_invulnerable());
-        if self.is_no_ai() {
-            cow.set_no_ai(true);
-        }
-        cow.set_age(self.get_age());
-        cow.set_age_locked(self.is_age_locked());
-        for effect in self.active_mob_effects() {
-            cow.add_mob_effect(effect);
-        }
-
-        let _ = world.try_add_entity(cow);
-        self.set_removed(RemovalReason::Discarded);
         world.send_particles(
             ParticleData::simple(&vanilla_particle_types::EXPLOSION),
             self.position() + DVec3::Y * (self.bounding_box().height() * 0.5),

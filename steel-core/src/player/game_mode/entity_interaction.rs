@@ -5,26 +5,27 @@ use super::{
     DamageType, ENTITY_INTERACTION_RANGE_BUFFER, EnchantmentDamageContext,
     EnchantmentPostAttackContext, Entity, EntityTypeRef, GameType, ITEM_BEHAVIORS, InteractionHand,
     InteractionResult, InventoryAccess, ItemStack, LivingEntity, PiercingWeapon, Player, SAttack,
-    SInteract, SharedEntity, SoundEventHolder, SoundEventRef, TextComponent, TranslatedMessage,
-    World, WorldAabb, enchantment_helper, piercing_ray_hit_t, vanilla_attributes,
-    vanilla_damage_types, vanilla_entities,
+    SInteract, SharedEntity, SoundEventHolder, TextComponent, TranslatedMessage, World, WorldAabb,
+    enchantment_helper, piercing_ray_hit_t, vanilla_attributes, vanilla_damage_types,
+    vanilla_entities,
 };
 
+use crate::entity::EntityReference;
+use crate::entity::ProjectileDeflection::AimDeflect;
+use crate::player::advancement::predicate::TriggerContext;
 use crate::player::food_data::food_constants;
 use std::ops::Add;
 use steel_math::trig;
 use steel_registry::particle_type::ParticleData;
-use steel_registry::{vanilla_custom_stats, vanilla_particle_types};
+use steel_registry::vanilla_criteria_triggers::PLAYER_INTERACTED_WITH_ENTITY;
+use steel_registry::vanilla_criteria_triggers::SPEAR_MOBS;
+use steel_registry::vanilla_entity_type_tags::EntityTypeTag;
+use steel_registry::vanilla_mob_effects::BLINDNESS;
+use steel_registry::{
+    sound_events, vanilla_custom_stats, vanilla_game_rules, vanilla_item_tags,
+    vanilla_particle_types,
+};
 
-const fn sound_holder_ref(holder: &SoundEventHolder) -> Option<SoundEventRef> {
-    match holder {
-        SoundEventHolder::Registry(sound) => Some(*sound),
-        SoundEventHolder::Direct { .. } => {
-            // TODO: Support direct sound holders when entity sound playback can send them.
-            None
-        }
-    }
-}
 impl Player {
     fn invalid_entity_attacked_message() -> TextComponent {
         TranslatedMessage {
@@ -378,14 +379,35 @@ impl Player {
         true
     }
 
+    /// Vanilla `Player.crit(Entity)`: sends `CRIT` particles around the victim's
+    /// centre to every player in the nearby radius.
+    fn crit_particles(&self, entity: &dyn Entity) {
+        let world = self.get_world();
+        let position = entity.position();
+        let height = entity.bounding_box().height();
+        world.send_particles(
+            ParticleData::simple(&vanilla_particle_types::CRIT),
+            DVec3::new(position.x, position.y + height * 0.5, position.z),
+            5,
+            DVec3::new(0.2, 0.2, 0.2),
+            0.0,
+        );
+    }
+
     fn play_sound_holder(&self, holder: Option<&SoundEventHolder>) {
-        let Some(sound) = holder.and_then(sound_holder_ref) else {
+        let Some(holder) = holder else {
             return;
         };
-        self.play_sound(sound, 1.0, 1.0);
+        Entity::play_sound_holder(self, holder, 1.0, 1.0);
     }
 
     fn cannot_attack(self: &Arc<Self>, entity: &dyn Entity) -> bool {
+        // Vanilla `Player.attack` refuses to hurt another player when the `pvp`
+        // game rule is off; mobs stay attackable either way.
+        if entity.as_player().is_some() && !self.get_world().get_game_rule(&vanilla_game_rules::PVP)
+        {
+            return true;
+        }
         !entity.attackable()
             || entity.skip_attack_interaction(&(Arc::clone(self) as Arc<dyn Entity>))
     }
@@ -394,6 +416,7 @@ impl Player {
     ///
     /// Returns `true` if the target accepted damage.
     #[must_use]
+    #[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
     pub fn attack(self: &Arc<Self>, target: &SharedEntity) -> bool {
         let entity = target.as_ref();
         if self.cannot_attack(entity) {
@@ -413,6 +436,9 @@ impl Player {
                 attributes.required_value(vanilla_attributes::ATTACK_KNOCKBACK),
             )
         };
+        // Vanilla `Player.attack`: while a riptide spin is active the base damage
+        // is `autoSpinAttackDmg` (8.0) rather than the ATTACK_DAMAGE attribute.
+        let attack_damage = self.riptide_spin_damage().unwrap_or(attack_damage);
         let attack_strength_delay = Self::attack_strength_delay_from_speed(attack_speed);
         let attack_strength_scale =
             self.attack_strength_scale_for_delay(0.5, attack_strength_delay);
@@ -427,14 +453,34 @@ impl Player {
             enchantment_helper::modify_damage(&attacking_item, &enchantment_context, attack_damage);
         let magic_boost = attack_strength_scale * (enchanted_damage - attack_damage);
         let mut base_damage = attack_damage * Self::base_damage_scale_factor(attack_strength_scale);
-        base_damage += ITEM_BEHAVIORS
-            .get_behavior(attacking_item.item())
-            .get_attack_damage_bonus(self.as_ref(), entity, base_damage, &damage_source);
-        let total_damage = base_damage + magic_boost;
         let full_strength_attack = attack_strength_scale > 0.9;
         let knockback_attack = self.is_sprinting() && full_strength_attack;
         self.reset_attack_strength_ticker();
 
+        // Vanilla performs attack deflection before testing damage or applying
+        // crit/sweep, and transfers projectile ownership to the deflector.
+        if {
+            use steel_registry::TaggedRegistryExt as _;
+            steel_registry::REGISTRY.entity_types.is_in_tag(
+                entity.entity_type(),
+                &EntityTypeTag::REDIRECTABLE_PROJECTILE,
+            )
+        } && let Some(projectile) = entity.as_projectile()
+            && projectile.deflect(
+                AimDeflect,
+                Some(self.as_ref()),
+                Some(EntityReference::from_uuid(self.uuid())),
+                true,
+            )
+        {
+            self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_NODAMAGE, 1.0, 1.0);
+            return true;
+        }
+
+        base_damage += ITEM_BEHAVIORS
+            .get_behavior(attacking_item.item())
+            .get_attack_damage_bonus(self.as_ref(), entity, base_damage, &damage_source);
+        let total_damage = base_damage + magic_boost;
         if total_damage <= 0.0 {
             return false;
         }
@@ -443,12 +489,42 @@ impl Player {
             .as_living_entity()
             .map_or(0.0, LivingEntity::get_health);
 
-        // TODO: Apply crits, sweep attacks, and sounds.
+        // Vanilla `Player.attack`: critical hit when falling, not on ground,
+        // not climbing/liquid, no passenger, and not sprinting.
+        let critical = full_strength_attack
+            && entity.is_living_entity()
+            && !self.has_mob_effect(BLINDNESS)
+            && self.fall_distance() > 0.0
+            && !self.on_ground()
+            && !self.on_climbable()
+            && !self.is_in_water()
+            && !self.is_passenger()
+            && !self.is_sprinting();
+        let damage = if critical {
+            base_damage * 1.5 + magic_boost
+        } else {
+            total_damage
+        };
+
+        if knockback_attack {
+            self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_KNOCKBACK, 1.0, 1.0);
+        }
+        let movement = self.known_movement();
+        let can_sweep = full_strength_attack
+            && !critical
+            && !knockback_attack
+            && self.on_ground()
+            && movement.x * movement.x + movement.z * movement.z
+                < (f64::from(self.get_speed()) * 2.5).powi(2)
+            && attacking_item
+                .item()
+                .has_tag(&vanilla_item_tags::ItemTag::SWORDS);
+
         let old_movement = entity.velocity();
         let Some(target_world) = entity.level() else {
             return false;
         };
-        let was_hurt = entity.hurt(&target_world, &damage_source, total_damage);
+        let was_hurt = entity.hurt(&target_world, &damage_source, damage);
         if was_hurt {
             self.set_last_hurt_mob(Some(target));
             let sprint_knockback = if knockback_attack { 0.5 } else { 0.0 };
@@ -458,14 +534,127 @@ impl Player {
                     + sprint_knockback,
                 old_movement,
             );
+            // Sweep reads the attacking item's attributes before post-hit
+            // durability/enchantment effects can break or replace the weapon.
+            if can_sweep {
+                self.do_sweep_attack(target, base_damage, attack_strength_scale, &attacking_item);
+            }
             self.item_attack_interaction(target, &damage_source, true);
+            // Vanilla `SpearMobsTrigger` (`spear_mobs`): a spear hit on a mob
+            // counts, whether or not it kills. The `count` condition counts hits,
+            // so the trigger fires on every spear attack.
+            if attacking_item
+                .item()
+                .has_tag(&vanilla_item_tags::ItemTag::SPEARS)
+            {
+                self.trigger_advancement_with_context(
+                    &SPEAR_MOBS,
+                    &TriggerContext::entity(&entity.entity_type().key),
+                );
+            }
             self.damage_stats_and_hearts(entity, old_entity_living_health);
             self.cause_food_exhaustion(food_constants::EXHAUSTION_ATTACK);
+            if critical {
+                // Vanilla: `this.crit(entity)` spawns the critical-hit particles
+                // around the victim for every nearby player.
+                self.crit_particles(entity);
+            }
+        }
+
+        if !was_hurt {
+            // Vanilla plays `entity.player.attack.nodamage` when the hit lands
+            // but deals no damage (invulnerable, blocked by shield, ...).
+            self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_NODAMAGE, 1.0, 1.0);
+        }
+
+        if was_hurt && !can_sweep {
+            if critical {
+                self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_CRIT, 1.0, 1.0);
+            } else {
+                self.play_sound(
+                    if full_strength_attack {
+                        &sound_events::ENTITY_PLAYER_ATTACK_STRONG
+                    } else {
+                        &sound_events::ENTITY_PLAYER_ATTACK_WEAK
+                    },
+                    1.0,
+                    1.0,
+                );
+            }
         }
 
         let world = self.get_world();
         enchantment_helper::do_post_piercing_attack_effects(&world, self.as_ref());
         was_hurt
+    }
+
+    /// Vanilla 26.3 Player.doSweepAttack: target-centred box, fixed reach,
+    /// attribute-based damage, no enchantment-dependent radius or forward arc.
+    fn do_sweep_attack(
+        self: &Arc<Self>,
+        target: &SharedEntity,
+        base_damage: f32,
+        attack_strength_scale: f32,
+        attacking_item: &ItemStack,
+    ) {
+        let ratio = self
+            .attributes()
+            .lock()
+            .required_value(vanilla_attributes::SWEEPING_DAMAGE_RATIO) as f32;
+        let sweep_damage = 1.0 + ratio * base_damage;
+        let world = self.get_world();
+        let search_box = target.bounding_box().inflate_xyz(1.0, 0.25, 1.0);
+        let damage_source = self.attack_damage_source(attacking_item);
+        self.play_sound(&sound_events::ENTITY_PLAYER_ATTACK_SWEEP, 1.0, 1.0);
+        let yaw = self.rotation().0.to_radians();
+        let yaw_sin = trig::sin(yaw);
+        let yaw_cos = trig::cos(yaw);
+        for other in world.entity_manager().get_entities_in_aabb(&search_box) {
+            let entity = other.as_ref();
+            if entity.id() == target.id()
+                || entity.id() == self.id()
+                || !entity.is_living_entity()
+                || self.is_allied_to(entity)
+                || entity.is_marker_armor_stand()
+                || self.position().distance_squared(entity.position()) >= 9.0
+            {
+                continue;
+            }
+            let context = EnchantmentDamageContext::new(
+                entity.entity_type(),
+                Some(self.entity_type()),
+                Some(self.entity_type()),
+                &damage_source,
+            );
+            let damage = enchantment_helper::modify_damage(attacking_item, &context, sweep_damage)
+                * attack_strength_scale;
+            if entity.hurt(&world, &damage_source, damage) {
+                if let Some(living) = entity.as_living_entity() {
+                    living.knockback(0.4, f64::from(yaw_sin), -f64::from(yaw_cos));
+                }
+                let context = EnchantmentPostAttackContext::new(&other, &damage_source);
+                enchantment_helper::do_post_attack_effects_with_item_source(
+                    &world,
+                    entity,
+                    attacking_item,
+                    &context,
+                );
+            }
+        }
+        let position = self.position();
+        let dx = -f64::from(yaw_sin);
+        let dz = f64::from(yaw_cos);
+        world.send_particles(
+            ParticleData::simple(&vanilla_particle_types::SWEEP_ATTACK),
+            DVec3::new(
+                position.x + dx,
+                position.y + f64::from(self.base().dimensions().height) * 0.5,
+                position.z + dz,
+            ),
+            0,
+            DVec3::new(dx, 0.0, dz),
+            0.0,
+        );
     }
 
     fn item_attack_interaction(
@@ -530,8 +719,11 @@ impl Player {
         location: DVec3,
     ) -> InteractionResult {
         if self.is_spectator() {
-            // TODO: Open entity menu providers in spectator once that foundation exists.
-            return InteractionResult::Pass;
+            // Vanilla lets a spectator open entity menus (villager trades,
+            // horse inventory and the like) while suppressing every other
+            // interaction. Entities without a menu pass, so the caller falls
+            // through to its ordinary spectator handling.
+            return entity.open_menu_for(self);
         }
 
         let inventory_access = InventoryAccess::new(Arc::clone(&self.inventory), hand);
@@ -692,10 +884,25 @@ impl Player {
             return;
         }
 
+        let hand_item = {
+            let inventory = self.inventory.lock();
+            inventory.get_item_in_hand(packet.hand).clone()
+        };
+        let target_type = target.entity_type().key.clone();
         let animation = self.interact_animation(packet.hand);
         let result = self.interact_on(target.as_ref(), packet.hand, packet.location);
+        // Vanilla `ServerPlayerGameMode.interact` fires `player_interacted_with_entity`
+        // for a successful interaction, carrying both the entity and the held item.
+        if result.consumes_action() {
+            let context = TriggerContext::entity(&target_type).with_item_stack(&hand_item);
+            self.trigger_advancement_with_context(&PLAYER_INTERACTED_WITH_ENTITY, &context);
+        }
         self.swing_after_interaction(packet.hand, animation, result);
         self.broadcast_inventory_changes();
+    }
+
+    fn damage_indicator_count(actual_damage: f32) -> Option<i32> {
+        (actual_damage > 2.0).then_some((actual_damage * 0.5) as i32)
     }
 
     /// Awards stats and sends particles when an entity gets attacked by this player.
@@ -711,7 +918,9 @@ impl Player {
                 (actual_damage * 10.0).round() as i32,
             );
 
-            let count = (actual_damage * 0.5).round() as i32;
+            let Some(count) = Self::damage_indicator_count(actual_damage) else {
+                return;
+            };
             let offset = DVec3::new(
                 0.0,
                 f64::from(entity.base().dimensions().height * PARTICLES_PER_HEALTH),
@@ -725,5 +934,20 @@ impl Player {
                 PARTICLE_SPEED,
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod combat_visual_tests {
+    use super::Player;
+
+    #[test]
+    fn damage_indicators_use_vanilla_threshold_and_truncate_not_round() {
+        for damage in [-1.0, 0.0, 1.0, 2.0] {
+            assert_eq!(Player::damage_indicator_count(damage), None);
+        }
+        assert_eq!(Player::damage_indicator_count(2.01), Some(1));
+        assert_eq!(Player::damage_indicator_count(3.99), Some(1));
+        assert_eq!(Player::damage_indicator_count(4.0), Some(2));
     }
 }

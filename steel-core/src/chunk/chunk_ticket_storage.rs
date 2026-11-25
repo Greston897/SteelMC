@@ -1,6 +1,7 @@
 //! Authoritative chunk ticket source storage.
 
 use std::cmp::Ordering;
+use std::ptr;
 
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
@@ -15,6 +16,9 @@ pub(crate) const PORTAL_TICKET_RADIUS: u8 = 3;
 pub(crate) const ENDER_PEARL_TICKET_TIMEOUT_TICKS: i64 =
     vanilla_ticket_types::ENDER_PEARL.timeout();
 const ENDER_PEARL_TICKET_RADIUS: u8 = 2;
+/// Vanilla `EnderDragonFight` keeps the arena loaded with
+/// `addTicketWithRadius(TicketType.DRAGON, new ChunkPos(0, 0), 9)`.
+pub(crate) const DRAGON_TICKET_RADIUS: u8 = 9;
 
 type StoredTickets = Vec<StoredChunkTicket>;
 
@@ -118,6 +122,20 @@ const fn portal_ticket() -> ChunkTicket {
 }
 
 #[must_use]
+/// Vanilla `/forceload`'s ticket: a full-chunk ticket with no timeout that
+/// survives a restart.
+fn forced_ticket() -> ChunkTicket {
+    ChunkTicket::new(
+        &vanilla_ticket_types::FORCED,
+        ChunkTicketLevel::ENTITY_TICKING_CHUNK,
+    )
+}
+
+#[must_use]
+const fn dragon_ticket() -> ChunkTicket {
+    ChunkTicket::for_full_chunk_radius(&vanilla_ticket_types::DRAGON, DRAGON_TICKET_RADIUS)
+}
+
 const fn ender_pearl_ticket() -> ChunkTicket {
     ChunkTicket::for_full_chunk_radius(
         &vanilla_ticket_types::ENDER_PEARL,
@@ -173,6 +191,21 @@ impl ChunkTicketStorage {
     #[must_use]
     pub(crate) fn new() -> Self {
         Self::default()
+    }
+
+    /// Returns whether any ticket here carries vanilla's
+    /// `FLAG_KEEP_DIMENSION_ACTIVE`.
+    ///
+    /// Vanilla uses the flag to decide whether a dimension with no players
+    /// still counts as active: `/forceload` and player tickets set it, and
+    /// `MinecraftServer` skips the "no players, no force-loaded chunks" idle
+    /// check for those dimensions.
+    #[must_use]
+    pub(crate) fn keeps_dimension_active(&self) -> bool {
+        self.tickets
+            .values()
+            .flatten()
+            .any(|stored| stored.ticket.ticket_type().should_keep_dimension_active())
     }
 
     /// Loads saved tickets, starting with none if the saved data cannot be read.
@@ -325,6 +358,70 @@ impl ChunkTicketStorage {
         self.add_ticket(pos, ender_pearl_ticket())
     }
 
+    /// Adds or refreshes vanilla's ender dragon arena ticket.
+    ///
+    /// `EnderDragonFight.tick` adds this while the fight has players and removes it
+    /// when the player list empties, which is what keeps the `-8..=8` arena loaded.
+    pub(crate) fn add_or_refresh_dragon_ticket(
+        &mut self,
+        pos: ChunkPos,
+    ) -> SourceProjectionChanges {
+        self.add_ticket(pos, dragon_ticket())
+    }
+
+    /// Removes vanilla's ender dragon arena ticket.
+    pub(crate) fn remove_dragon_ticket(&mut self, pos: ChunkPos) -> SourceProjectionChanges {
+        self.remove_ticket(pos, dragon_ticket())
+    }
+
+    /// Adds Vanilla's persistent `FORCED` ticket, which is what `/forceload`
+    /// uses to keep a chunk loaded across restarts.
+    ///
+    /// Vanilla `ChunkMap.FORCED_TICKET_LEVEL` is the entity-ticking boundary,
+    /// not level zero (which would request a 128-chunk entity-ticking radius).
+    pub(crate) fn add_forced_ticket(&mut self, pos: ChunkPos) -> SourceProjectionChanges {
+        self.add_ticket(pos, forced_ticket())
+    }
+
+    /// Removes the `FORCED` ticket from `pos`.
+    ///
+    /// Returns whether a ticket was actually removed, so `/forceload remove`
+    /// can report the chunks it changed rather than every chunk it was given.
+    pub(crate) fn remove_forced_ticket(&mut self, pos: ChunkPos) -> bool {
+        let before = self.tickets.get(&pos).map_or(0, Vec::len);
+        let _ = self.remove_ticket(pos, forced_ticket());
+        self.tickets.get(&pos).map_or(0, Vec::len) != before
+    }
+
+    /// Returns whether `pos` carries a `FORCED` ticket.
+    #[must_use]
+    pub(crate) fn is_forced(&self, pos: ChunkPos) -> bool {
+        self.tickets.get(&pos).is_some_and(|tickets| {
+            tickets.iter().any(|stored| {
+                ptr::eq(
+                    stored.ticket.ticket_type(),
+                    &raw const vanilla_ticket_types::FORCED,
+                )
+            })
+        })
+    }
+
+    /// The number of chunks carrying a `FORCED` ticket.
+    #[must_use]
+    pub(crate) fn forced_count(&self) -> usize {
+        self.tickets
+            .values()
+            .filter(|tickets| {
+                tickets.iter().any(|stored| {
+                    ptr::eq(
+                        stored.ticket.ticket_type(),
+                        &raw const vanilla_ticket_types::FORCED,
+                    )
+                })
+            })
+            .count()
+    }
+
     /// Snapshots the exact timed entries eligible for this world-tick pass.
     #[must_use]
     pub(crate) fn timed_ticket_expirations(&self) -> Vec<TimedTicketExpiration> {
@@ -406,6 +503,14 @@ impl ChunkTicketStorage {
         let Some(ticket_type_ref) = REGISTRY.ticket_types.by_key(&ticket_type) else {
             return Err(ChunkTicketStorageLoadError::UnknownTicketType(ticket_type));
         };
+        // Migrate the old Steel FORCED level-zero bug. Otherwise reopening a
+        // world could request tens of thousands of chunks from one /forceload.
+        let level =
+            if ptr::eq(ticket_type_ref, &raw const vanilla_ticket_types::FORCED) && level == 0 {
+                ChunkTicketLevel::ENTITY_TICKING_CHUNK.raw()
+            } else {
+                level
+            };
         let Some(ticket_level) = ChunkTicketLevel::new(level) else {
             return Err(ChunkTicketStorageLoadError::InvalidTicketLevel { ticket_type, level });
         };
@@ -476,7 +581,6 @@ impl ChunkTicketStorage {
 
 #[cfg(test)]
 mod tests {
-    use std::ptr;
 
     use steel_registry::{init_vanilla_registry, steel_ticket_types};
 
@@ -484,6 +588,56 @@ mod tests {
 
     fn init_registry() {
         let _ = init_vanilla_registry();
+    }
+
+    #[test]
+    fn forced_ticket_uses_bounded_entity_ticking_level_and_migrates_legacy_zero() {
+        init_registry();
+        let pos = ChunkPos::new(3, -2);
+        let mut storage = ChunkTicketStorage::new();
+        let _ = storage.add_forced_ticket(pos);
+        assert_eq!(
+            storage.load_source_level(pos),
+            Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK)
+        );
+        assert_eq!(
+            storage.simulation_source_level(pos),
+            Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK)
+        );
+        assert!(storage.remove_forced_ticket(pos));
+        let legacy = PersistentChunkTickets {
+            tickets: vec![PersistentChunkTicket {
+                ticket_type: Identifier::vanilla_static("forced"),
+                chunk_x: 3,
+                chunk_z: -2,
+                level: 0,
+                ticks_left: 0,
+            }],
+        };
+        let mut restored = ChunkTicketStorage::from_persistent(legacy);
+        assert_eq!(
+            restored.load_source_level(pos),
+            Some(ChunkTicketLevel::ENTITY_TICKING_CHUNK)
+        );
+        assert!(restored.remove_forced_ticket(pos));
+    }
+
+    #[test]
+    fn keep_dimension_active_follows_the_ticket_flag() {
+        init_registry();
+        let mut storage = ChunkTicketStorage::new();
+        // No tickets at all: the dimension idles.
+        assert!(!storage.keeps_dimension_active());
+
+        // A portal ticket carries `FLAG_KEEP_DIMENSION_ACTIVE`, so it keeps the
+        // dimension active without any player.
+        let pos = ChunkPos::new(0, 0);
+        let ticket = portal_ticket();
+        let _ = storage.add_ticket(pos, ticket);
+        assert!(storage.keeps_dimension_active());
+
+        let _ = storage.remove_ticket(pos, ticket);
+        assert!(!storage.keeps_dimension_active());
     }
 
     #[test]

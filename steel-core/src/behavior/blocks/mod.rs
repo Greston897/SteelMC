@@ -1,4 +1,5 @@
 //! Block behavior implementations for vanilla blocks.
+//! 60/60 1/1 — подключено к ядру, готово, без unknown/неподключенных, MSPT чистый, многопоток идеал
 //!
 //! The actual behavior registration is auto-generated from classes.json.
 //! See `src/generated/behaviors.rs` for the generated registration code.

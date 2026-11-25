@@ -171,6 +171,16 @@ pub(crate) fn build() -> TokenStream {
             ];
         });
 
+        // Vanilla `MobEffect.withSoundOnAdded`. Only the three omen effects
+        // register a sound, and it is set in `MobEffects` rather than in the
+        // extracted data, so the mapping lives here.
+        let sound_on_added = match effect.name.as_str() {
+            "bad_omen" => quote! { Some(&sound_events::EVENT_MOB_EFFECT_BAD_OMEN) },
+            "trial_omen" => quote! { Some(&sound_events::EVENT_MOB_EFFECT_TRIAL_OMEN) },
+            "raid_omen" => quote! { Some(&sound_events::EVENT_MOB_EFFECT_RAID_OMEN) },
+            _ => quote! { None },
+        };
+
         constants.extend(quote! {
             pub static #ident: &MobEffect = &MobEffect {
                 key: Identifier::vanilla_static(#key),
@@ -178,6 +188,7 @@ pub(crate) fn build() -> TokenStream {
                 color: RgbColor::new(#color),
                 particle: #particle,
                 attribute_modifiers: #modifiers_ident,
+                sound_on_added: #sound_on_added,
             };
         });
 
@@ -192,7 +203,7 @@ pub(crate) fn build() -> TokenStream {
             MobEffect, MobEffectAttributeModifier, MobEffectCategory, MobEffectParticle,
             MobEffectRegistry,
         };
-        use crate::{vanilla_attributes, vanilla_particle_types};
+        use crate::{sound_events, vanilla_attributes, vanilla_particle_types};
         use steel_utils::{ArgbColor, Identifier, RgbColor};
 
         #modifier_constants

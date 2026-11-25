@@ -1,0 +1,642 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://flint.dev/schemas/test-spec.json",
+  "title": "Flint Test Specification",
+  "description": "Schema for Flint test specification files (.json) used by the test framework",
+  "type": "object",
+  "required": ["name", "timeline"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "flintVersion": {
+      "type": "string",
+      "description": "Minimum Flint implementation version required to run this test. Tests are skipped if the implementation's supported version is lower."
+    },
+    "name": {
+      "type": "string",
+      "description": "Name of the test"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of what the test verifies"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Tags for categorizing and filtering tests"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Names of tests that must pass before this test can run"
+    },
+    "minecraftIds": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Minecraft version IDs this test targets"
+    },
+    "setup": {
+      "$ref": "#/$defs/SetupSpec",
+      "description": "Setup configuration including cleanup region and player configuration"
+    },
+    "timeline": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/TimelineEntry" },
+      "description": "Sequence of actions to perform during the test"
+    },
+    "breakpoints": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0 },
+      "default": [],
+      "description": "Tick numbers at which to pause execution for debugging"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "Coordinate": {
+      "type": "array",
+      "items": { "type": "integer" },
+      "minItems": 3,
+      "maxItems": 3,
+      "description": "A 3D coordinate [x, y, z]"
+    },
+    "NumericCoordinate": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 3,
+      "maxItems": 3,
+      "description": "A 3D coordinate [x, y, z] that may include fractional entity positions"
+    },
+    "Region": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Coordinate" },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "A region defined by two coordinates [[minX, minY, minZ], [maxX, maxY, maxZ]]"
+    },
+    "SetupSpec": {
+      "type": "object",
+      "properties": {
+        "cleanup": {
+          "$ref": "#/$defs/CleanupSpec",
+          "description": "Cleanup region configuration"
+        },
+        "player": {
+          "$ref": "#/$defs/PlayerConfig",
+          "description": "Player configuration for initial inventory and hotbar"
+        },
+        "world": {
+          "$ref": "#/$defs/WorldConfig",
+          "description": "World time, weather, and gamerules shared by compatible parallel tests"
+        }
+      },
+      "additionalProperties": false
+    },
+    "WorldConfig": {
+      "type": "object",
+      "properties": {
+        "time": {
+          "type": "string",
+          "default": "minecraft:day",
+          "description": "Value passed to Minecraft's time set command"
+        },
+        "weather": {
+          "type": "string",
+          "enum": ["clear", "rain", "thunder"],
+          "default": "clear",
+          "description": "Weather state passed to Minecraft's weather command"
+        },
+        "gamerules": {
+          "type": "object",
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "boolean" },
+              { "type": "integer" },
+              { "type": "string" }
+            ]
+          },
+          "default": {
+            "minecraft:spawn_mobs": false,
+            "minecraft:advance_time": false,
+            "minecraft:advance_weather": false
+          },
+          "description": "Gamerule names and values applied before the test batch"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CleanupSpec": {
+      "type": "object",
+      "required": ["region"],
+      "properties": {
+        "region": {
+          "$ref": "#/$defs/Region",
+          "description": "The region to clear before and after the test"
+        }
+      },
+      "additionalProperties": false
+    },
+    "GameMode": {
+      "type": "string",
+      "enum": ["Survival", "Creative", "Adventure", "Spectator"],
+      "description": "Player game mode"
+    },
+    "PlayerSlot": {
+      "type": "string",
+      "enum": [
+        "hotbar1", "hotbar2", "hotbar3", "hotbar4", "hotbar5",
+        "hotbar6", "hotbar7", "hotbar8", "hotbar9",
+        "off_hand",
+        "helmet", "chestplate", "leggings", "boots"
+      ],
+      "description": "Player inventory slot identifier"
+    },
+    "SlotConfig": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Item identifier, e.g., 'minecraft:honeycomb'"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64,
+          "default": 1,
+          "description": "Stack count"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PlayerConfig": {
+      "type": "object",
+      "properties": {
+        "inventory": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/SlotConfig" },
+          "propertyNames": { "$ref": "#/$defs/PlayerSlot" },
+          "default": {},
+          "description": "Initial inventory state (slot name -> item config)"
+        },
+        "selected_hotbar": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9,
+          "default": 1,
+          "description": "Initially selected hotbar slot (1-9)"
+        },
+        "game_mode": {
+          "$ref": "#/$defs/GameMode",
+          "default": "Creative",
+          "description": "The gametype of the player, defaults to creative"
+        },
+        "gamemode": {
+          "$ref": "#/$defs/GameMode",
+          "default": "Creative",
+          "description": "Legacy alias for game_mode"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TickSpec": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "description": "A single tick number"
+        },
+        {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 },
+          "minItems": 1,
+          "description": "Multiple tick numbers at which to execute the action"
+        }
+      ],
+      "description": "Tick specification - either a single tick or array of ticks"
+    },
+    "Block": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Block identifier, e.g., 'minecraft:lever'"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Block state properties as a nested object"
+        },
+        "nbt": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Block-entity NBT. Assertion keys may be data paths such as Items[0].id"
+        }
+      },
+      "additionalProperties": true,
+      "description": "Block specification with optional state properties and block-entity NBT"
+    },
+    "BlockFace": {
+      "type": "string",
+      "enum": ["top", "bottom", "north", "south", "east", "west"],
+      "description": "Face of a block"
+    },
+    "BlockPlacement": {
+      "type": "object",
+      "required": ["pos", "block"],
+      "properties": {
+        "pos": {
+          "$ref": "#/$defs/Coordinate",
+          "description": "Position to place the block"
+        },
+        "block": {
+          "$ref": "#/$defs/Block",
+          "description": "Block to place"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Item": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Item identifier, e.g., 'minecraft:honeycomb'"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64,
+          "default": 1,
+          "description": "Stack count"
+        }
+      },
+      "additionalProperties": { "type": "string" },
+      "description": "Item with optional data fields (flattened)"
+    },
+    "InventoryCheck": {
+      "type": "object",
+      "required": ["slot"],
+      "properties": {
+        "slot": {
+          "$ref": "#/$defs/PlayerSlot",
+          "description": "Inventory slot to check"
+        },
+        "is": {
+          "oneOf": [
+            { "$ref": "#/$defs/Item" },
+            { "type": "string", "enum": ["None", "empty"], "description": "Explicit empty slot marker" }
+          ],
+          "description": "Expected item in the slot, or 'None'/'empty' for an empty slot"
+        }
+      },
+      "additionalProperties": false
+    },
+    "BlockCheck": {
+      "type": "object",
+      "required": ["pos", "is"],
+      "properties": {
+        "pos": {
+          "$ref": "#/$defs/Coordinate",
+          "description": "Position to check"
+        },
+        "is": {
+          "oneOf": [
+            { "$ref": "#/$defs/Block" },
+            {
+              "type": "array",
+              "items": { "$ref": "#/$defs/Block" },
+              "minItems": 1,
+              "description": "Multiple acceptable blocks (assertion passes if any matches)"
+            }
+          ],
+          "description": "Expected block(s) at the position — a single block or an array of blocks (any match passes)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TimeCheck": {
+      "type": "object",
+      "required": ["time"],
+      "properties": {
+        "time": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 23999,
+          "description": "Expected position in the minecraft:day timeline"
+        }
+      },
+      "additionalProperties": false
+    },
+    "EntityCheck": {
+      "type": "object",
+      "anyOf": [
+        { "required": ["entity_alias"] },
+        { "required": ["is"] }
+      ],
+      "properties": {
+        "entity_alias": {
+          "type": "string",
+          "description": "Test-local entity alias. Use aliases created by summon, or implementation-defined aliases."
+        },
+        "is": {
+          "type": "string",
+          "description": "Optional expected entity type, e.g. 'minecraft:item'"
+        },
+        "exists": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the entity is expected to exist"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optional exact number of matching entities"
+        },
+        "pos": {
+          "$ref": "#/$defs/NumericCoordinate",
+          "description": "Optional expected entity position"
+        },
+        "position_tolerance": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Allowed distance from expected position"
+        },
+        "rot": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Optional expected entity rotation [yaw, pitch]"
+        },
+        "rotation_tolerance": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Allowed absolute delta for each rotation component"
+        }
+      },
+      "additionalProperties": true
+    },
+    "EntityNbt": {
+      "type": "object",
+      "description": "Structured entity NBT fields. Values may be strings, numbers, booleans, arrays, or objects.",
+      "additionalProperties": true
+    },
+    "TimelineEntry": {
+      "type": "object",
+      "required": ["at", "do"],
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/TickSpec",
+          "description": "Tick(s) at which to execute this action"
+        },
+        "do": {
+          "type": "string",
+          "enum": ["place", "place_each", "fill", "remove", "summon", "assert", "tp", "interact", "set_slot", "select_hotbar"],
+          "description": "Type of action to perform"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "do": { "const": "place" } },
+            "required": ["do"]
+          },
+          "then": {
+            "properties": {
+              "at": true,
+              "do": true,
+              "pos": {
+                "$ref": "#/$defs/Coordinate",
+                "description": "Position to place the block"
+              },
+              "block": {
+                "$ref": "#/$defs/Block",
+                "description": "Block to place"
+              }
+            },
+            "required": ["pos", "block"],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": { "do": { "const": "place_each" } },
+            "required": ["do"]
+          },
+          "then": {
+            "properties": {
+              "at": true,
+              "do": true,
+              "blocks": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/BlockPlacement" },
+                "description": "List of blocks to place"
+              }
+            },
+            "required": ["blocks"],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": { "do": { "const": "fill" } },
+            "required": ["do"]
+          },
+          "then": {
+            "properties": {
+              "at": true,
+              "do": true,
+              "region": {
+                "$ref": "#/$defs/Region",
+                "description": "Region to fill"
+              },
+              "with": {
+                "$ref": "#/$defs/Block",
+                "description": "Block to fill the region with"
+              }
+            },
+            "required": ["region", "with"],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": { "do": { "const": "remove" } },
+            "required": ["do"]
+          },
+          "then": {
+            "properties": {
+              "at": true,
+              "do": true,
+              "pos": {
+                "$ref": "#/$defs/Coordinate",
+                "description": "Position of the block to remove"
+              }
+            },
+            "required": ["pos"],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": { "do": { "const": "summon" } },
+            "required": ["do"]
+          },
+          "then": {
+            "properties": {
+              "at": true,
+              "do": true,
+              "entity_alias": {
+                "type": "string",
+                "description": "Test-local alias assigned to the summoned entity"
+              },
+              "entity_type": {
+                "type": "string",
+                "description": "Minecraft entity type to summon, e.g. 'minecraft:item'"
+              },
+              "pos": {
+                "$ref": "#/$defs/NumericCoordinate",
+                "description": "Summon position [x, y, z]"
+              },
+              "nbt": {
+                "$ref": "#/$defs/EntityNbt",
+                "description": "Optional entity NBT. Implementations may inject alias metadata."
+              }
+            },
+            "required": ["entity_alias", "entity_type", "pos"],
+            "additionalProperties": true
+          }
+        },
+        {
+          "if": {
+            "properties": { "do": { "const": "assert" } },
+            "required": ["do"]
+          },
+          "then": {
+            "properties": {
+              "at": true,
+              "do": true,
+              "checks": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    { "$ref": "#/$defs/BlockCheck" },
+                    { "$ref": "#/$defs/InventoryCheck" },
+                    { "$ref": "#/$defs/TimeCheck" },
+                    { "$ref": "#/$defs/EntityCheck" }
+                  ]
+                },
+                "description": "List of checks to perform"
+              }
+            },
+            "required": ["checks"],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": { "do": { "const": "tp" } },
+            "required": ["do"]
+          },
+          "then": {
+            "properties": {
+              "at": true,
+              "do": true,
+              "entity_alias": {
+                "type": "string",
+                "description": "Entity alias to teleport. Use 'player' for the backing player."
+              },
+              "pos": {
+                "$ref": "#/$defs/NumericCoordinate",
+                "description": "Destination [x, y, z]"
+              },
+              "rot": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "Optional rotation [yaw, pitch]"
+              }
+            },
+            "required": ["entity_alias", "pos"],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": { "do": { "const": "interact" } },
+            "required": ["do"]
+          },
+          "then": {
+            "properties": {
+              "at": true,
+              "do": true,
+              "item": {
+                "type": "string",
+                "description": "Item to use (optional, uses player's active item if not specified)"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": { "do": { "const": "set_slot" } },
+            "required": ["do"]
+          },
+          "then": {
+            "properties": {
+              "at": true,
+              "do": true,
+              "slot": {
+                "$ref": "#/$defs/PlayerSlot",
+                "description": "Inventory slot to set"
+              },
+              "item": {
+                "type": "string",
+                "description": "Item to put in the slot (omit to clear)"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 64,
+                "default": 1,
+                "description": "Stack count"
+              }
+            },
+            "required": ["slot"],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": { "do": { "const": "select_hotbar" } },
+            "required": ["do"]
+          },
+          "then": {
+            "properties": {
+              "at": true,
+              "do": true,
+              "slot": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9,
+                "description": "Hotbar slot to select (1-9)"
+              }
+            },
+            "required": ["slot"],
+            "additionalProperties": false
+          }
+        }
+      ]
+    }
+  }
+}

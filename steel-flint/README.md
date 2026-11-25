@@ -83,6 +83,7 @@ FLINT_TAGS=redstone,walls cargo test --lib
 | `FLINT_TAGS` | — | Filter tests by comma-separated tags |
 | `TEST_PATH` | `./test` | Path to test files directory |
 | `FLINT_VIZ_URL` | `http://localhost:7878` | Base URL used when printing flint-viz links for failures; overrides TOML |
+| `FLINT_PARALLELISM` | `1` | Number of independent fixture worlds run concurrently (clamped to 1–8); results remain in input order. CI uses 2. |
 
 You can set these in a `.env` file. `flint.toml` supports persistent test filtering:
 

@@ -1,6 +1,6 @@
 use steel_macros::{ReadFrom, WriteTo};
 
-#[derive(Clone, Debug, WriteTo, ReadFrom)]
+#[derive(Clone, Debug, PartialEq, Eq, WriteTo, ReadFrom)]
 pub struct KnownPack {
     #[write(as = Prefixed(VarInt))]
     #[read(as = Prefixed(VarInt))]

@@ -3,8 +3,8 @@
 //! This module handles fluid mechanics: spreading, flowing, waterlogging.
 //! Based on vanilla Minecraft's `FlowingFluid` system.
 //!
-//! ### TODOs
-//! - TODO: Lava random tick fire spread.
+//! Lava ignites flammable neighbours from its random tick
+//! (`LavaFluid::random_tick`), gated on the fire-spread game rule.
 pub mod collision;
 pub mod conversion;
 pub mod flowing_fluid;

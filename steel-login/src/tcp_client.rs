@@ -26,10 +26,11 @@ use steel_protocol::{
     packet_traits::{ClientPacket, CompressionInfo, EncodedPacket, ServerPacket},
     packet_writer::TCPNetworkEncoder,
     packets::{
-        common::{CDisconnect, SClientInformation, SCustomPayload, SPingRequest},
-        config::SSelectKnownPacks,
+        common::{CDisconnect, SClientInformation, SCustomPayload, SKeepAlive, SPingRequest},
+        config::{SAcceptCodeOfConduct, SSelectKnownPacks},
+        game::{SCustomClickAction, SPong, SResourcePack},
         handshake::{ClientIntent, SClientIntention},
-        login::{CLoginDisconnect, SHello, SKey},
+        login::{CLoginDisconnect, SCookieResponse, SCustomQueryAnswer, SHello, SKey},
     },
     utils::{ConnectionProtocol, PacketError, RawPacket},
 };
@@ -62,6 +63,19 @@ use crate::pre_play_state::{PacketSequenceError, PrePlayPacket, PrePlayState};
 
 const MAX_TICKS_BEFORE_LOGIN: u64 = 600;
 const DISCONNECT_FLUSH_TIMEOUT: Duration = Duration::from_secs(1);
+/// Upper bound on packets written per flush.
+///
+/// The outgoing queue is unbounded, so a full re-send of the view distance could
+/// otherwise build a batch longer than the socket buffers and delay the flush
+/// that the following packets need. Vanilla drains its channel per tick; this
+/// keeps the same "one write per burst" behavior with a bounded batch.
+const MAX_OUTBOUND_BATCH: usize = 256;
+/// Size of the write buffer in front of the socket.
+///
+/// The default 8 KiB buffer flushes mid-batch as soon as a chunk packet does not
+/// fit, which defeats batching for exactly the bursts that need it. 64 KiB holds
+/// a typical multi-chunk send without splitting it into extra syscalls.
+const OUTBOUND_BUFFER_BYTES: usize = 64 * 1024;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct LoginDeadline {
@@ -291,7 +305,7 @@ impl JavaTcpClient {
 
             outgoing_queue,
             network_writer: Arc::new(AsyncMutex::new(Some(TCPNetworkEncoder::new(
-                BufWriter::new(write),
+                BufWriter::with_capacity(OUTBOUND_BUFFER_BYTES, write),
             )))),
             compression: Arc::new(AtomicCell::new(None)),
             server,
@@ -340,6 +354,11 @@ impl JavaTcpClient {
         }
     }
 
+    /// Writes one packet and flushes it immediately.
+    ///
+    /// Used for single urgent packets such as a disconnect; the normal send path
+    /// goes through [`Self::write_network_packet_batch`] so a burst leaves as one
+    /// TCP segment.
     async fn write_network_packet(
         network_writer: &JavaNetworkWriter,
         packet: &EncodedPacket,
@@ -350,6 +369,35 @@ impl JavaTcpClient {
         };
         // Cancellation or failure drops the encoder instead of reusing a partial encrypted write.
         match writer.write_packet(packet).await {
+            Ok(()) => {
+                *network_writer = Some(writer);
+                Ok(())
+            }
+            Err(error) => Err(error),
+        }
+    }
+
+    /// Writes a batch of packets back to back and flushes once.
+    ///
+    /// Vanilla buffers every packet of a tick in the connection's channel and
+    /// flushes at the tick boundary, which keeps a chunk burst or a scoreboard
+    /// update from turning into hundreds of tiny writes with `TCP_NODELAY` set.
+    async fn write_network_packet_batch(
+        network_writer: &JavaNetworkWriter,
+        packets: &[EncodedPacket],
+    ) -> Result<(), PacketError> {
+        let mut network_writer = network_writer.lock().await;
+        let Some(mut writer) = network_writer.take() else {
+            return Err(PacketError::ConnectionClosed);
+        };
+        let written = async {
+            for packet in packets {
+                writer.write_packet_buffered(packet).await?;
+            }
+            writer.flush().await
+        }
+        .await;
+        match written {
             Ok(()) => {
                 *network_writer = Some(writer);
                 Ok(())
@@ -377,6 +425,7 @@ impl JavaTcpClient {
 
     /// Starts a task that will send packets to the client from the outgoing packet queue.
     /// This task will run until the client is closed or the cancellation token is cancelled.
+    #[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
     pub fn start_outgoing_packet_task(
         self: &Arc<Self>,
         mut sender_recv: UnboundedReceiver<OutboundPacket>,
@@ -411,7 +460,28 @@ impl JavaTcpClient {
                                 break;
                             }
 
-                            let write_result = Self::write_network_packet(&network_writer, &packet);
+                            // Batch everything already queued into one write and
+                            // one flush, the way vanilla drains its connection
+                            // channel per tick. The queue is unbounded, so the
+                            // batch is capped: a full view re-send must not delay
+                            // the flush the following packets wait for.
+                            let mut batch = vec![packet];
+                            // A disconnect found while draining is written on its
+                            // own after the batch, then the connection closes.
+                            let mut queued_disconnect = None;
+                            while batch.len() < MAX_OUTBOUND_BATCH {
+                                match sender_recv.try_recv() {
+                                    Ok(OutboundPacket::Packet(packet)) => batch.push(packet),
+                                    Ok(OutboundPacket::Disconnect(packet)) => {
+                                        queued_disconnect = Some(packet);
+                                        break;
+                                    }
+                                    Err(_) => break,
+                                }
+                            }
+
+                            let write_result =
+                                Self::write_network_packet_batch(&network_writer, &batch);
                             select! {
                                 biased;
                                 () = cancel_token.cancelled() => {
@@ -424,6 +494,18 @@ impl JavaTcpClient {
                                         cancel_token.cancel();
                                     }
                                 }
+                            }
+
+                            if let Some(disconnect) = queued_disconnect {
+                                if let Err(err) =
+                                    Self::write_network_packet(&network_writer, &disconnect).await
+                                {
+                                    log::warn!(
+                                        "Failed to send disconnect packet to client {id}: {err}"
+                                    );
+                                }
+                                cancel_token.cancel();
+                                break;
                             }
                         } else {
                             cancel_token.cancel();
@@ -770,6 +852,21 @@ impl JavaTcpClient {
                 }
                 Ok(self.handle_key(SKey::read_packet(data)?).await)
             }
+            login_packets::S_CUSTOM_QUERY_ANSWER => {
+                // Validate frame structure; unrecognized plugin login replies disconnect
+                // in vanilla `ServerLoginPacketListenerImpl.handleCustomQueryPacket` unless ignored.
+                let answer = SCustomQueryAnswer::read_packet(data)?;
+                log::debug!(
+                    "Ignoring login custom query answer (transaction {})",
+                    answer.transaction_id
+                );
+                Ok(ConnectionAction::none())
+            }
+            login_packets::S_COOKIE_RESPONSE => {
+                let cookie = SCookieResponse::read_packet(data)?;
+                log::debug!("Ignoring login cookie response for {}", cookie.key);
+                Ok(ConnectionAction::none())
+            }
             login_packets::S_LOGIN_ACKNOWLEDGED => {
                 if let Err(error) = self.expect_pre_play_packet(PrePlayPacket::LoginAcknowledged) {
                     return Ok(self.reject_unexpected_packet(error).await);
@@ -797,11 +894,41 @@ impl JavaTcpClient {
                     .await;
                 Ok(ConnectionAction::none())
             }
+            config::S_KEEP_ALIVE => {
+                let _keep_alive = SKeepAlive::read_packet(data)?;
+                Ok(ConnectionAction::none())
+            }
+            config::S_PONG => {
+                let _pong = SPong::read_packet(data)?;
+                Ok(ConnectionAction::none())
+            }
+            config::S_COOKIE_RESPONSE => {
+                let cookie = SCookieResponse::read_packet(data)?;
+                log::debug!("Ignoring config cookie response for {}", cookie.key);
+                Ok(ConnectionAction::none())
+            }
+            config::S_CUSTOM_CLICK_ACTION => {
+                let action = SCustomClickAction::read_packet(data)?;
+                log::debug!("Received config custom click action: {}", action.id);
+                Ok(ConnectionAction::none())
+            }
+            config::S_ACCEPT_CODE_OF_CONDUCT => {
+                let _accepted = SAcceptCodeOfConduct::read_packet(data)?;
+                self.handle_accept_code_of_conduct().await;
+                Ok(ConnectionAction::none())
+            }
             config::S_SELECT_KNOWN_PACKS => {
                 if let Err(error) = self.expect_pre_play_packet(PrePlayPacket::SelectKnownPacks) {
                     return Ok(self.reject_unexpected_packet(error).await);
                 }
                 self.handle_select_known_packs(SSelectKnownPacks::read_packet(data)?)
+                    .await;
+                Ok(ConnectionAction::none())
+            }
+            config::S_RESOURCE_PACK => {
+                // Vanilla `ServerCommonPacketListenerImpl.handleResourcePackResponse`:
+                // only a declined required pack has an effect.
+                self.handle_resource_pack_response(SResourcePack::read_packet(data)?)
                     .await;
                 Ok(ConnectionAction::none())
             }

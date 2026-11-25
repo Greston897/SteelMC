@@ -10,14 +10,28 @@ pub struct Weather {
     pub previous_thunder_level: f32,
 }
 
+use crate::world::game_event::GameEventContext;
+use std::sync::Arc;
+
 use super::{
     ADVANCE_WEATHER, BiomeRef, BlockPos, CGameEvent, ChunkGenerator, ChunkPos, GameEventType,
     HeightmapType, LazyLock, LegacyRandom, LightLayer, PerlinSimplexNoise, REGISTRY, RandomSource,
-    RegistryEntry, RegistryExt, TemperatureModifier, World, environment, fuzzed_biome_at_block,
-    obfuscate_biome_seed, vanilla_dimension_types,
+    RegistryEntry, RegistryExt, TemperatureModifier, UpdateFlags, World, environment,
+    fuzzed_biome_at_block, obfuscate_biome_seed, vanilla_blocks, vanilla_dimension_types,
 };
 
+use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::blocks::properties::BlockStateProperties;
+use steel_registry::vanilla_game_events::BLOCK_CHANGE;
+use steel_registry::vanilla_game_rules::MAX_SNOW_ACCUMULATION_HEIGHT;
+
 use crate::chunk::light::MAX_LIGHT_LEVEL;
+use crate::fluid::state::get_fluid_state_from_block;
+use steel_registry::fluid::FluidStateExt as _;
+
+/// Vanilla `Biome.Precipitation.SNOW` threshold: below this temperature
+/// precipitation falls as snow instead of rain.
+const SNOW_TEMPERATURE: f32 = 0.15;
 
 static BIOME_TEMPERATURE_NOISE: LazyLock<PerlinSimplexNoise> = LazyLock::new(|| {
     let mut random = RandomSource::Legacy(LegacyRandom::from_seed(1234));
@@ -267,6 +281,30 @@ impl World {
         environment::monsters_burn(self.dimension_type, level_data.world_clocks())
     }
 
+    /// Whether the vanilla `INCREASED_FIRE_BURNOUT` environment attribute is
+    /// enabled.
+    ///
+    /// Vanilla `FireBlock.tick` shortens the burn-out window by 50 ticks and
+    /// halves the fire spread odds while it holds.
+    #[must_use]
+    pub fn increased_fire_burnout(&self) -> bool {
+        let level_data = self.level_data.read();
+        environment::increased_fire_burnout(self.dimension_type, level_data.world_clocks())
+    }
+
+    /// Returns one `minecraft:gameplay/...` environment attribute sampled off
+    /// this dimension's timelines, like vanilla `EnvironmentAttributeSystem`.
+    #[must_use]
+    pub fn environment_attribute(&self, attribute: &str, default: f32) -> f32 {
+        let level_data = self.level_data.read();
+        environment::apply_timeline_float_attribute(
+            default,
+            self.dimension_type,
+            level_data.world_clocks(),
+            attribute,
+        )
+    }
+
     /// Returns sky-layer light after the current sky darkening is subtracted.
     ///
     /// Mirrors vanilla `LevelReader.getEffectiveSkyBrightness` without allowing
@@ -282,13 +320,13 @@ impl World {
     /// Returns whether it is currently bright enough outside for daytime
     /// mob behavior (dimensions with a fixed time are never "bright").
     pub fn is_bright_outside(&self) -> bool {
-        self.dimension_type.fixed_time.is_none() && self.sky_darkening() < 4
+        !self.dimension_type.has_fixed_time && self.sky_darkening() < 4
     }
 
     /// Returns whether it is currently dark enough outside for hostile mobs
     /// to spawn in daylight (dimensions with a fixed time are never "dark").
     pub fn is_dark_outside(&self) -> bool {
-        self.dimension_type.fixed_time.is_none() && !self.is_bright_outside()
+        !self.dimension_type.has_fixed_time && !self.is_bright_outside()
     }
 
     /// Checks whether the world can have weather.
@@ -303,8 +341,165 @@ impl World {
         self.light_value_at(LightLayer::Sky, pos) >= MAX_LIGHT_LEVEL
     }
 
+    /// Per-column precipitation pass, sampled separately from block random ticks.
+    pub(crate) fn tick_precipitation_column(self: &Arc<Self>, x: i32, z: i32) {
+        if !self.can_have_weather() {
+            return;
+        }
+        let Some(y) = self.height_at(HeightmapType::MotionBlocking, x, z) else {
+            return;
+        };
+        let top = BlockPos::new(x, y, z);
+        let pos = top.below();
+        let Some(biome) = self.biome_at(top) else {
+            return;
+        };
+        self.try_freeze_precipitation_water(pos, biome);
+        if !self.is_raining() {
+            return;
+        }
+        self.try_accumulate_snow(top);
+        if !biome.has_precipitation {
+            return;
+        }
+        let snow = self.biome_temperature(biome, pos) < SNOW_TEMPERATURE;
+        self.try_fill_cauldron_from_precipitation(pos, snow, rand::random::<f32>());
+    }
+
+    /// Vanilla Biome.shouldFreeze: cold water with block light below ten at
+    /// an exposed edge. Freezing is sampled even when it is not raining.
+    pub(super) fn try_freeze_precipitation_water(self: &Arc<Self>, pos: BlockPos, biome: BiomeRef) {
+        if self.is_outside_build_height(pos.y())
+            || self.biome_temperature(biome, pos) >= SNOW_TEMPERATURE
+            || self.light_value_at(LightLayer::Block, pos) >= 10
+        {
+            return;
+        }
+        if self.get_block_state(pos).get_block() != &vanilla_blocks::WATER {
+            return;
+        }
+        let is_water = |pos| get_fluid_state_from_block(self.get_block_state(pos)).is_water();
+        if is_water(pos.west())
+            && is_water(pos.east())
+            && is_water(pos.north())
+            && is_water(pos.south())
+        {
+            return;
+        }
+        self.set_block(
+            pos,
+            vanilla_blocks::ICE.default_state(),
+            UpdateFlags::UPDATE_ALL,
+        );
+    }
+
+    /// Applies vanilla's rain/snow probability and matching-fluid restriction.
+    pub(crate) fn try_fill_cauldron_from_precipitation(
+        self: &Arc<Self>,
+        pos: BlockPos,
+        snow: bool,
+        roll: f32,
+    ) {
+        if roll >= if snow { 0.1 } else { 0.05 } {
+            return;
+        }
+        let state = self.get_block_state(pos);
+        let block = state.get_block();
+        let target = if snow {
+            &vanilla_blocks::POWDER_SNOW_CAULDRON
+        } else {
+            &vanilla_blocks::WATER_CAULDRON
+        };
+        let next = if block == &vanilla_blocks::CAULDRON {
+            target.default_state()
+        } else if block == target && state.get_value(&BlockStateProperties::LEVEL_CAULDRON) < 3 {
+            state.set_value(
+                &BlockStateProperties::LEVEL_CAULDRON,
+                state.get_value(&BlockStateProperties::LEVEL_CAULDRON) + 1,
+            )
+        } else {
+            return;
+        };
+        self.set_block(pos, next, UpdateFlags::UPDATE_ALL);
+        self.game_event(
+            &BLOCK_CHANGE,
+            pos,
+            &GameEventContext::new(
+                None,
+                if block == &vanilla_blocks::CAULDRON {
+                    None
+                } else {
+                    Some(next)
+                },
+            ),
+        );
+    }
+
     /// Requires full sky light and an unobstructed motion-blocking heightmap.
     /// The light check excludes water; the heightmap excludes glass roofs.
+    /// Vanilla `SnowAndFreezeFeature.place`: accumulates snow during snowfall.
+    ///
+    /// Called from the per-chunk precipitation pass at the motion-blocking height.
+    ///
+    /// The layer count is capped by `maxSnowAccumulationHeight`; a value of `0`
+    /// disables accumulation entirely (a layer that is already there is left
+    /// alone), and `8` allows a full block of snow.
+    pub(crate) fn try_accumulate_snow(self: &Arc<Self>, pos: BlockPos) {
+        if !self.can_have_weather() || !self.is_raining() {
+            return;
+        }
+        if self.get_game_rule(&MAX_SNOW_ACCUMULATION_HEIGHT) <= 0 {
+            return;
+        }
+        if !self.can_see_sky_for_precipitation(pos) {
+            return;
+        }
+        // Vanilla requires snowfall: cold enough that the biome precipitates as
+        // snow rather than rain.
+        let Some(biome) = self.biome_at(pos) else {
+            return;
+        };
+        if !biome.has_precipitation || self.biome_temperature(biome, pos) >= SNOW_TEMPERATURE {
+            return;
+        }
+
+        let limit = u8::try_from(
+            self.get_game_rule(&MAX_SNOW_ACCUMULATION_HEIGHT)
+                .clamp(0, 8),
+        )
+        .unwrap_or(8);
+        let state = self.get_block_state(pos);
+        let below_pos = pos.below();
+        let below = self.get_block_state(below_pos);
+
+        if state.is_air() {
+            // A snow layer needs a block underneath that can hold it; vanilla
+            // only places it on a full solid top face.
+            if below.is_air() || !below.is_solid() {
+                return;
+            }
+            self.set_block(
+                pos,
+                vanilla_blocks::SNOW.default_state(),
+                UpdateFlags::UPDATE_ALL,
+            );
+            return;
+        }
+
+        if state.get_block() != &vanilla_blocks::SNOW {
+            return;
+        }
+        let layers = state.get_value(&BlockStateProperties::LAYERS);
+        if layers >= limit {
+            return;
+        }
+        self.set_block(
+            pos,
+            state.set_value(&BlockStateProperties::LAYERS, layers + 1),
+            UpdateFlags::UPDATE_ALL,
+        );
+    }
+
     pub(super) fn can_see_sky_for_precipitation(&self, pos: BlockPos) -> bool {
         if !self.can_see_sky(pos) {
             return false;
@@ -331,7 +526,11 @@ impl World {
         REGISTRY.biomes.by_id(usize::from(biome_id))
     }
 
-    pub(super) fn noise_biome_id(&self, quart_x: i32, quart_y: i32, quart_z: i32) -> Option<u16> {
+    /// Reads one biome cell of a loaded chunk (vanilla `Level.getNoiseBiome`).
+    ///
+    /// Exposed to the crate because the natural spawner resolves the biome of a
+    /// spawn anchor the same way `Level.getBiome` does.
+    pub(crate) fn noise_biome_id(&self, quart_x: i32, quart_y: i32, quart_z: i32) -> Option<u16> {
         let chunk_pos = ChunkPos::new(quart_x >> 2, quart_z >> 2);
         let local_quart_x = (quart_x & 3) as usize;
         let local_quart_z = (quart_z & 3) as usize;

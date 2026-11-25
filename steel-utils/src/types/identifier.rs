@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize, de::Error as _};
+use simdnbt::borrow::NbtTag as BorrowedNbtTag;
 use simdnbt::owned::NbtTag;
 use std::cmp::Ordering;
 use std::{
@@ -219,7 +220,7 @@ impl simdnbt::ToNbtTag for Identifier {
 }
 
 impl simdnbt::FromNbtTag for Identifier {
-    fn from_nbt_tag(tag: simdnbt::borrow::NbtTag) -> Option<Self> {
+    fn from_nbt_tag(tag: BorrowedNbtTag) -> Option<Self> {
         let s = tag.string()?.to_str();
         s.parse().ok()
     }

@@ -84,7 +84,7 @@ fn tick_entities_skips_external_entities() {
             .is_ok()
     );
 
-    let dirty_chunks = manager.tick_entities(12, true);
+    let dirty_chunks = manager.tick_entities(12, true, false, 0);
 
     assert!(dirty_chunks.contains(&chunk));
     assert_eq!(manager_owned.tick_count(), 1);
@@ -104,7 +104,7 @@ fn tick_entities_ticks_external_always_ticking_entities_without_dirtying_chunks(
     assert_eq!(changes.tracking_started.len(), 1);
     assert_eq!(changes.ticking_started.len(), 1);
 
-    let dirty_chunks = manager.tick_entities(0, true);
+    let dirty_chunks = manager.tick_entities(0, true, false, 0);
 
     assert!(dirty_chunks.is_empty());
     assert_eq!(entity.tick_count(), 1);
@@ -158,12 +158,12 @@ fn tick_entities_uses_start_of_tick_snapshot_for_added_entities() {
             .is_ok()
     );
 
-    manager.tick_entities(0, true);
+    manager.tick_entities(0, true, false, 0);
 
     assert_eq!(adder.tick_count(), 1);
     assert_eq!(late_entity.tick_count(), 0);
 
-    manager.tick_entities(1, true);
+    manager.tick_entities(1, true, false, 0);
 
     assert_eq!(adder.tick_count(), 2);
     assert_eq!(late_entity.tick_count(), 1);
@@ -185,7 +185,7 @@ fn tick_entities_checks_despawn_for_ticking_entities() {
             .is_ok()
     );
 
-    let dirty_chunks = manager.tick_entities(0, true);
+    let dirty_chunks = manager.tick_entities(0, true, false, 0);
 
     assert!(entity.is_removed());
     assert!(dirty_chunks.contains(&non_tickable_chunk));
@@ -208,7 +208,7 @@ fn tick_entities_skips_despawn_for_tracked_non_ticking_entities() {
     assert_eq!(changes.tracking_started.len(), 1);
     assert!(changes.ticking_started.is_empty());
 
-    let dirty_chunks = manager.tick_entities(0, true);
+    let dirty_chunks = manager.tick_entities(0, true, false, 0);
 
     assert!(dirty_chunks.is_empty());
     assert!(!entity.is_removed());
@@ -230,13 +230,13 @@ fn tick_entities_skips_pending_world_change_entities() {
         panic!("fresh entity should accept a pending world change");
     };
 
-    let dirty_chunks = manager.tick_entities(0, true);
+    let dirty_chunks = manager.tick_entities(0, true, false, 0);
 
     assert!(dirty_chunks.is_empty());
     assert_eq!(entity.tick_count(), 0);
 
     assert!(entity.finish_pending_world_change(pending_token));
-    let dirty_chunks = manager.tick_entities(1, true);
+    let dirty_chunks = manager.tick_entities(1, true, false, 0);
 
     assert!(dirty_chunks.contains(&chunk));
     assert_eq!(entity.tick_count(), 1);
@@ -268,13 +268,13 @@ fn tick_entities_skips_passengers_of_pending_world_change_vehicles_before_despaw
         panic!("fresh vehicle should accept a pending world change");
     };
 
-    let dirty_chunks = manager.tick_entities(0, true);
+    let dirty_chunks = manager.tick_entities(0, true, false, 0);
 
     assert!(dirty_chunks.is_empty());
     assert!(!passenger.is_removed());
 
     assert!(vehicle.finish_pending_world_change(pending_token));
-    let dirty_chunks = manager.tick_entities(1, true);
+    let dirty_chunks = manager.tick_entities(1, true, false, 0);
 
     assert!(dirty_chunks.contains(&passenger_chunk));
     assert!(passenger.is_removed());
@@ -302,7 +302,7 @@ fn tick_entities_skips_frozen_entities_and_despawn_checks() {
             .is_ok()
     );
 
-    let dirty_chunks = manager.tick_entities(0, false);
+    let dirty_chunks = manager.tick_entities(0, false, false, 0);
 
     assert!(dirty_chunks.is_empty());
     assert_eq!(ticked.tick_count(), 0);
@@ -334,7 +334,7 @@ fn tick_entities_ticks_player_passenger_vehicle_while_frozen() {
             .is_ok()
     );
 
-    let dirty_chunks = manager.tick_entities(0, false);
+    let dirty_chunks = manager.tick_entities(0, false, false, 0);
 
     assert!(dirty_chunks.contains(&chunk));
     assert_eq!(vehicle.tick_count(), 1);
@@ -366,7 +366,7 @@ fn passenger_detached_during_ride_tick_ticks_again_at_later_root_slot() {
             .is_ok()
     );
 
-    manager.tick_entities(0, true);
+    manager.tick_entities(0, true, false, 0);
 
     assert_eq!(
         *events.lock(),
@@ -401,10 +401,98 @@ fn stable_passenger_tree_ticks_once_in_vehicle_depth_first_order() {
             .is_ok()
     );
 
-    manager.tick_entities(0, true);
+    manager.tick_entities(0, true, false, 0);
 
     assert_eq!(*events.lock(), vec![(1, "tick"), (2, "ride_tick")]);
     assert_eq!(vehicle.tick_count(), 1);
     assert_eq!(passenger.tick_count(), 1);
     assert!(passenger.is_passenger());
+}
+
+#[test]
+fn tick_entities_overload_tier_respects_count() {
+    // Честный tier-тест: Deferred (item) деферится сразу, Important (zombie) только после 3.
+    let manager = WorldEntityManager::new();
+    let chunk = ChunkPos::new(0, 0);
+    load_chunk(&manager, chunk);
+
+    // Item — Deferred tier (MISC + heavy_idle)
+    let item = ManagerTestEntity::shared_with_type(
+        1,
+        Uuid::from_u128(101),
+        DVec3::new(1.0, 64.0, 1.0),
+        &vanilla_entities::ITEM,
+    );
+    // Zombie — Important tier (MONSTER)
+    let zombie = ManagerTestEntity::shared_with_type(
+        2,
+        Uuid::from_u128(102),
+        DVec3::new(2.0, 64.0, 1.0),
+        &vanilla_entities::ZOMBIE,
+    );
+    assert!(
+        manager
+            .add_live_entity(Arc::clone(&item), EntityOwnership::ManagerOwned)
+            .is_ok()
+    );
+    assert!(
+        manager
+            .add_live_entity(Arc::clone(&zombie), EntityOwnership::ManagerOwned)
+            .is_ok()
+    );
+
+    // Лёгкая перегрузка 1..3 — только Deferred должен пропускать каждый 2-й тик
+    // tick 0: item (1+0+1)%2==0 -> skip, zombie -> tick
+    // tick 1: item (1+1+1)%2==1 -> tick, zombie -> tick
+    // Итого за 2 тика: item 1, zombie 2
+    manager.tick_entities(0, true, true, 1);
+    manager.tick_entities(1, true, true, 2);
+    assert_eq!(
+        item.tick_count(),
+        1,
+        "item Deferred должен дефериться уже при 1"
+    );
+    assert_eq!(
+        zombie.tick_count(),
+        2,
+        "zombie Important не должен дефериться при 1..3"
+    );
+
+    // Сброс для чистоты — новая пара менеджеров проще, но проверим severe:
+    let manager2 = WorldEntityManager::new();
+    load_chunk(&manager2, chunk);
+    let item2 = ManagerTestEntity::shared_with_type(
+        1,
+        Uuid::from_u128(201),
+        DVec3::new(1.0, 64.0, 1.0),
+        &vanilla_entities::ITEM,
+    );
+    let zombie2 = ManagerTestEntity::shared_with_type(
+        2,
+        Uuid::from_u128(202),
+        DVec3::new(2.0, 64.0, 1.0),
+        &vanilla_entities::ZOMBIE,
+    );
+    assert!(
+        manager2
+            .add_live_entity(Arc::clone(&item2), EntityOwnership::ManagerOwned)
+            .is_ok()
+    );
+    assert!(
+        manager2
+            .add_live_entity(Arc::clone(&zombie2), EntityOwnership::ManagerOwned)
+            .is_ok()
+    );
+    // Тяжёлая перегрузка >3 — и Important тоже деферится
+    // tick 0: item skip (1+0+1==0), zombie skip (2+0==0) -> оба skip
+    // tick 1: item tick (1+1+1==1), zombie tick (2+1==1) -> оба tick
+    // Итого за 2 тика: каждый по 1
+    manager2.tick_entities(0, true, true, 4);
+    manager2.tick_entities(1, true, true, 4);
+    assert_eq!(item2.tick_count(), 1, "item и при severe 1");
+    assert_eq!(
+        zombie2.tick_count(),
+        1,
+        "zombie при severe должен дефериться"
+    );
 }

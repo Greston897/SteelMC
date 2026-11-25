@@ -166,8 +166,9 @@ impl Player {
     }
 
     /// Determines the desired pose based on current player state.
-    /// Priority: `Sleeping` > `Swimming` > `FallFlying` > `Sneaking` > `Standing`
-    // TODO: Add SpinAttack pose (requires riptide trident)
+    ///
+    /// Priority: `Sleeping` > `Swimming` > `FallFlying` > `SpinAttack` >
+    /// `Sneaking` > `Standing`, matching vanilla `Player.getDesiredPose`.
     pub(super) fn get_desired_pose(&self) -> EntityPose {
         if self.is_sleeping() {
             EntityPose::Sleeping
@@ -175,6 +176,8 @@ impl Player {
             EntityPose::Swimming
         } else if self.is_fall_flying() {
             EntityPose::FallFlying
+        } else if self.is_auto_spin_attack() {
+            EntityPose::SpinAttack
         } else if self.is_crouching() && !self.is_flying() {
             EntityPose::Sneaking
         } else {
@@ -183,7 +186,7 @@ impl Player {
     }
 
     /// Updates the player's pose in entity data based on current state.
-    pub(super) fn update_pose(&self) {
+    pub fn update_pose(&self) {
         if !self.can_player_fit_within_blocks_and_entities_when(EntityPose::Swimming) {
             return;
         }

@@ -20,6 +20,7 @@ use steel_utils::nbt::NbtValueInput as _;
 use steel_utils::{Downcast as _, DowncastType, DowncastTypeKey};
 use uuid::Uuid;
 
+use crate::behavior::ITEM_BEHAVIORS;
 use crate::entity::damage::DamageSource;
 use crate::entity::{
     DEFAULT_AIR_DRAG, DefaultEntityPush, Entity, EntityBase, EntityBaseLoad, EntityBaseState,
@@ -532,6 +533,13 @@ impl Entity for ItemEntity {
         false
     }
 
+    /// Items inside blocks (e.g. cactus) must still receive block-contact
+    /// effects even when `no_physics` is set from being stuck in a block.
+    /// Vanilla items take cactus/lava damage while inside those blocks.
+    fn is_affected_by_blocks(&self) -> bool {
+        !self.is_removed()
+    }
+
     fn as_default_entity_push(&self) -> Option<&dyn DefaultEntityPush> {
         Some(self)
     }
@@ -719,7 +727,9 @@ impl Entity for ItemEntity {
     }
 
     fn hurt(&self, world: &World, source: &DamageSource, amount: f32) -> bool {
-        // TODO: Check isInvulnerableToBase once the shared non-living entity hook is ported.
+        if self.is_invulnerable_to_base(source) {
+            return false;
+        }
         if !world.get_game_rule(&MOB_GRIEFING)
             && source
                 .causing_entity()
@@ -736,7 +746,12 @@ impl Entity for ItemEntity {
             state.health
         };
         if new_health <= 0 {
-            // TODO: Call item.onDestroyed() when implemented
+            // Vanilla `ItemEntity.hurt`: the stack gets a last callback before
+            // the entity is discarded, which is how bundles spill contents.
+            let stack = self.get_item();
+            ITEM_BEHAVIORS
+                .get_behavior(stack.item())
+                .on_item_entity_destroyed(self);
             self.set_removed(RemovalReason::Killed);
         }
         true
@@ -898,6 +913,50 @@ mod tests {
 
         assert!(item.fluid_contact().water_height() > 0.0);
         assert!(item.needs_velocity_sync());
+    }
+
+    #[test]
+    fn item_stuck_check_uses_its_entity_collision_context() {
+        use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+        use steel_registry::blocks::properties::BlockStateProperties;
+
+        init_vanilla_registry();
+        init_behaviors();
+        let fixture = fresh_test_world("item_stuck_collision_context");
+        let world = &fixture.world;
+        insert_ready_full_chunk(world, ChunkPos::new(0, 0));
+        let pos = BlockPos::new(8, 64, 8);
+        let scaffolding = vanilla_blocks::SCAFFOLDING
+            .default_state()
+            .set_value(&BlockStateProperties::STABILITY_DISTANCE, 0)
+            .set_value(&BlockStateProperties::BOTTOM, false);
+        assert!(world.set_block(pos, scaffolding, UpdateFlags::UPDATE_NONE));
+        let item = ItemEntity::with_item(
+            &vanilla_entities::ITEM,
+            1,
+            DVec3::new(8.5, 64.85, 8.5),
+            ItemStack::new(&vanilla_items::STONE),
+            Arc::downgrade(world),
+        );
+        item.set_velocity(DVec3::ZERO);
+
+        item.update_no_physics_from_current_collision();
+        assert!(
+            !item.no_physics(),
+            "an item inside scaffolding is not above its top"
+        );
+        assert_eq!(item.velocity(), DVec3::ZERO);
+
+        assert!(world.set_block(
+            pos,
+            vanilla_blocks::STONE.default_state(),
+            UpdateFlags::UPDATE_NONE
+        ));
+        item.update_no_physics_from_current_collision();
+        assert!(
+            item.no_physics(),
+            "an item embedded in stone still needs to escape"
+        );
     }
 
     #[test]

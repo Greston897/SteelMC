@@ -9,8 +9,8 @@ use std::slice;
 use std::sync::Arc;
 
 use steel_registry::{
-    REGISTRY, RegistryEntry, TaggedRegistryExt, item_stack::ItemStack, mob_effect::MobEffectRef,
-    sound_events, vanilla_blocks, vanilla_item_tags, vanilla_menu_types,
+    RegistryEntry, item_stack::ItemStack, mob_effect::MobEffectRef, sound_events, vanilla_blocks,
+    vanilla_item_tags, vanilla_menu_types,
 };
 use steel_utils::{BlockPos, locks::SyncMutex};
 
@@ -74,10 +74,9 @@ pub fn beacon(
         &payment_ref,
         1,
         SectionKind::restricted(|_, stack| {
-            REGISTRY.items.is_in_tag(
-                stack.item(),
-                &vanilla_item_tags::ItemTag::BEACON_PAYMENT_ITEMS,
-            )
+            stack
+                .item()
+                .has_tag(&vanilla_item_tags::ItemTag::BEACON_PAYMENT_ITEMS)
         }),
     );
     let player = builder.player_inventory(&inventory);

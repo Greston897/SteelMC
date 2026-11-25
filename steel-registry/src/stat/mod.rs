@@ -90,6 +90,38 @@ impl Stat {
     }
 }
 
+/// Statistic criterion prefixes accepted by `/scoreboard objectives add`.
+///
+/// Vanilla `StatisticCriteria` builds one criterion per `<type>:<value>` pair,
+/// so a criterion is a statistic exactly when its left half is a stat type key.
+/// Everything else (`dummy`, `trigger`, team/health/… criteria) is not a stat.
+///
+/// The spelling is `minecraft.<type>:<namespace>.<value>`, matching
+/// [`Display`] for [`Stat`] and therefore the identifier Steel stores on the
+/// objective.
+const STATISTIC_CRITERIA_PREFIXES: [&str; 8] = [
+    "minecraft.mined:",
+    "minecraft.crafted:",
+    "minecraft.used:",
+    "minecraft.broken:",
+    "minecraft.picked_up:",
+    "minecraft.dropped:",
+    "minecraft.killed:",
+    "minecraft.killed_by:",
+];
+
+/// Whether `criterion` names a statistic, the only criteria with a data source
+/// on the server.
+#[must_use]
+pub fn is_statistic_criterion(criterion: &str) -> bool {
+    if criterion.starts_with("minecraft.custom:") {
+        return true;
+    }
+    STATISTIC_CRITERIA_PREFIXES
+        .iter()
+        .any(|prefix| criterion.starts_with(prefix) && criterion.len() > prefix.len())
+}
+
 impl Display for Stat {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let stat_type_identifier = self.stat_type_entry.key();
@@ -187,9 +219,9 @@ mod tests {
         init_vanilla_registry();
 
         // Test if stat creation succeeds or fails appropriately.
-        let stat = vanilla_stat_types::ITEM_USED.get(&vanilla_items::DIAMOND);
+        let stat = vanilla_stat_types::ITEM_USED.get(&*vanilla_items::DIAMOND);
         let should_panic = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            UNREGISTERED_STAT_TYPE.get(&vanilla_items::DIAMOND)
+            UNREGISTERED_STAT_TYPE.get(&*vanilla_items::DIAMOND)
         }));
         assert!(
             should_panic.is_err(),

@@ -1,0 +1,1426 @@
+{
+  "schema": 1,
+  "target": "Minecraft Java 26.3 server",
+  "global_readiness_percent": null,
+  "global_reason": "No complete, non-overlapping inventory of vanilla server behavior exists here.",
+  "revision": {
+    "head": "812c59707e8fe260fec1bc0ea9deb947e3f5522e",
+    "dirty": true
+  },
+  "smoke": {
+    "scope": "38 выбранных проверок запуска, RCON, мира и рестарта; без реальных клиентов; это не перечень всех возможностей vanilla",
+    "source_commit": "d8810e66bc078e2d78df043ab802a64cac878d77",
+    "evidence_commit": "812c59707e8fe260fec1bc0ea9deb947e3f5522e",
+    "run_url": "https://github.com/Greston897/SteelMC/actions/runs/45093319882",
+    "run_conclusion": "success",
+    "ci_verification": "metadata_verified",
+    "current": false,
+    "total": 38,
+    "counts": {
+      "matched_assertions": 38,
+      "steel_failed": 0,
+      "invalid_reference": 0,
+      "unknown": 0
+    },
+    "matched_percent_of_inventory": 100.0,
+    "cases": [
+      {
+        "id": "boot_real_server",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "tcp_status_and_ping_without_players",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "rcon_rejects_wrong_password",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "forceload_loads_chunk_without_players",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "setblock_and_execute_read_world",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "clone_copies_live_block",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "item_replace_and_container_predicate",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "redstone_neighbor_update_lights_lamp",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "scheduled_tick_unlights_lamp",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "hopper_moves_items_on_server_ticks_without_players",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "container_wildcard_matches",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "container_negative_predicate",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "falling_sand_lands_on_solid_block",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "piston_extends_and_pushes",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "piston_head_created",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "piston_retracts",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "normal_piston_does_not_pull",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "furnace_smelts_on_real_ticks",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "powered_hopper_is_disabled",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "powered_hopper_does_not_transfer_over_ticks",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "locked_hopper_retains_source",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "unpowered_hopper_resumes_transfer",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "comparator_reads_filled_container",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "inventory_write_updates_comparator",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "comparator_relights_after_item_write",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "summoned_entity_is_queryable_without_players",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "live_damage_changes_pig_health_to_six",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "instant_health_restores_live_entity",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "dead_entity_is_not_selectable",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "graceful_stop_saves_world",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "restart_same_disk_world",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "scoreboard_survives_restart",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "chunk_blocks_survive_restart",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "container_items_survive_restart",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "transferred_items_survive_restart",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "furnace_output_survives_restart",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "falling_block_result_survives_restart",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      },
+      {
+        "id": "second_clean_shutdown",
+        "status": "matched_assertions",
+        "vanilla_passed": true,
+        "steel_passed": true
+      }
+    ]
+  },
+  "manual": {
+    "scope": "Ручные сценарии, не полный и не независимый перечень всех vanilla-механик",
+    "total": 107,
+    "counts": {
+      "matched_assertions": 0,
+      "steel_failed": 0,
+      "invalid_reference": 0,
+      "unknown": 107
+    },
+    "by_area": {
+      "AI": {
+        "total": 24,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 24
+        }
+      },
+      "Worldgen": {
+        "total": 3,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 3
+        }
+      },
+      "Блоки": {
+        "total": 14,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 14
+        }
+      },
+      "Бой": {
+        "total": 6,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 6
+        }
+      },
+      "Боссы": {
+        "total": 2,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 2
+        }
+      },
+      "Данные": {
+        "total": 4,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 4
+        }
+      },
+      "Инвентарь": {
+        "total": 4,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 4
+        }
+      },
+      "Инфраструктура": {
+        "total": 5,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 5
+        }
+      },
+      "Команды": {
+        "total": 4,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 4
+        }
+      },
+      "Мир": {
+        "total": 4,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 4
+        }
+      },
+      "Предметы": {
+        "total": 8,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 8
+        }
+      },
+      "Протокол": {
+        "total": 7,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 7
+        }
+      },
+      "Редстоун": {
+        "total": 6,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 6
+        }
+      },
+      "Рейды": {
+        "total": 8,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 8
+        }
+      },
+      "Физика": {
+        "total": 4,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 4
+        }
+      },
+      "Чанки": {
+        "total": 4,
+        "counts": {
+          "matched_assertions": 0,
+          "steel_failed": 0,
+          "invalid_reference": 0,
+          "unknown": 4
+        }
+      }
+    },
+    "matched_percent_of_inventory": 0.0,
+    "evidence_commit": null,
+    "run_url": null,
+    "ci_verification": "not_checked",
+    "current": false,
+    "cases": [
+      {
+        "id": "SYS01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Инфраструктура",
+        "mechanic": "Чистый запуск"
+      },
+      {
+        "id": "SYS02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Инфраструктура",
+        "mechanic": "Ошибочный конфиг"
+      },
+      {
+        "id": "SYS03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Инфраструктура",
+        "mechanic": "Права оператора"
+      },
+      {
+        "id": "SYS04",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Инфраструктура",
+        "mechanic": "RCON"
+      },
+      {
+        "id": "SYS05",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Инфраструктура",
+        "mechanic": "Остановка во время записи"
+      },
+      {
+        "id": "NET01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Протокол",
+        "mechanic": "Вход и отказ сессии"
+      },
+      {
+        "id": "NET02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Протокол",
+        "mechanic": "Configuration и реестры"
+      },
+      {
+        "id": "NET03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Протокол",
+        "mechanic": "Resource pack"
+      },
+      {
+        "id": "NET04",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Протокол",
+        "mechanic": "Чат и подписи"
+      },
+      {
+        "id": "NET05",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Протокол",
+        "mechanic": "Tracking сущностей"
+      },
+      {
+        "id": "NET06",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Протокол",
+        "mechanic": "Предсказание блоков"
+      },
+      {
+        "id": "NET07",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Протокол",
+        "mechanic": "Интерфейсы"
+      },
+      {
+        "id": "WRL01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Мир",
+        "mechanic": "День, часы и сон"
+      },
+      {
+        "id": "WRL02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Мир",
+        "mechanic": "Дождь, снег, замерзание"
+      },
+      {
+        "id": "WRL03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Мир",
+        "mechanic": "Границы мира"
+      },
+      {
+        "id": "WRL04",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Мир",
+        "mechanic": "Scheduled ticks"
+      },
+      {
+        "id": "CHK01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Чанки",
+        "mechanic": "Tickets и simulation distance"
+      },
+      {
+        "id": "CHK02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Чанки",
+        "mechanic": "Свет через границу"
+      },
+      {
+        "id": "CHK03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Чанки",
+        "mechanic": "Сохранение block entities"
+      },
+      {
+        "id": "CHK04",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Чанки",
+        "mechanic": "Импорт старого мира"
+      },
+      {
+        "id": "GEN01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Worldgen",
+        "mechanic": "Рельеф и биомы"
+      },
+      {
+        "id": "GEN02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Worldgen",
+        "mechanic": "Структуры"
+      },
+      {
+        "id": "GEN03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Worldgen",
+        "mechanic": "Features и декорация"
+      },
+      {
+        "id": "PHY01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Физика",
+        "mechanic": "Перемещение и столкновения"
+      },
+      {
+        "id": "PHY02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Физика",
+        "mechanic": "Вода, плавание и пузырьки"
+      },
+      {
+        "id": "PHY03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Физика",
+        "mechanic": "Elytra и riptide"
+      },
+      {
+        "id": "PHY04",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Физика",
+        "mechanic": "Порталы и respawn"
+      },
+      {
+        "id": "INV01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Инвентарь",
+        "mechanic": "Клики и перенос"
+      },
+      {
+        "id": "INV02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Инвентарь",
+        "mechanic": "Крафт и книга рецептов"
+      },
+      {
+        "id": "INV03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Инвентарь",
+        "mechanic": "Смерть и keepInventory"
+      },
+      {
+        "id": "INV04",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Инвентарь",
+        "mechanic": "Bundle и вложенные компоненты"
+      },
+      {
+        "id": "COM01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Бой",
+        "mechanic": "Ближний бой"
+      },
+      {
+        "id": "COM02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Бой",
+        "mechanic": "Щит и топор"
+      },
+      {
+        "id": "COM03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Бой",
+        "mechanic": "Броня, эффекты и тотем"
+      },
+      {
+        "id": "COM04",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Бой",
+        "mechanic": "Снаряды и атрибуция"
+      },
+      {
+        "id": "COM05",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Бой",
+        "mechanic": "Зелья и облако"
+      },
+      {
+        "id": "COM06",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Бой",
+        "mechanic": "Голод и регенерация"
+      },
+      {
+        "id": "RED01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Редстоун",
+        "mechanic": "Пыль и соседние обновления"
+      },
+      {
+        "id": "RED02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Редстоун",
+        "mechanic": "Повторитель и компаратор"
+      },
+      {
+        "id": "RED03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Редстоун",
+        "mechanic": "Поршни"
+      },
+      {
+        "id": "RED04",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Редстоун",
+        "mechanic": "Observer и квазисвязность"
+      },
+      {
+        "id": "RED05",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Редстоун",
+        "mechanic": "Рельсы и транспорт"
+      },
+      {
+        "id": "RED06",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Редстоун",
+        "mechanic": "Скалк и вибрации"
+      },
+      {
+        "id": "BLK01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Блоки",
+        "mechanic": "Печь, blast furnace, smoker"
+      },
+      {
+        "id": "BLK02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Блоки",
+        "mechanic": "Воронка и dropper"
+      },
+      {
+        "id": "BLK03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Блоки",
+        "mechanic": "Dispenser"
+      },
+      {
+        "id": "BLK04",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Блоки",
+        "mechanic": "Crafter"
+      },
+      {
+        "id": "BLK05",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Блоки",
+        "mechanic": "Brewing stand"
+      },
+      {
+        "id": "BLK06",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Блоки",
+        "mechanic": "Anvil и enchanting"
+      },
+      {
+        "id": "BLK07",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Блоки",
+        "mechanic": "Beacon и conduit"
+      },
+      {
+        "id": "BLK08",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Блоки",
+        "mechanic": "Книги, таблички, lectern"
+      },
+      {
+        "id": "BLK09",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Блоки",
+        "mechanic": "Jukebox и note block"
+      },
+      {
+        "id": "BLK10",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Блоки",
+        "mechanic": "Улей и пчёлы"
+      },
+      {
+        "id": "BLK11",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Блоки",
+        "mechanic": "Растения и bonemeal"
+      },
+      {
+        "id": "BLK12",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Блоки",
+        "mechanic": "Waterlogging и соседние состояния"
+      },
+      {
+        "id": "BLK13",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Блоки",
+        "mechanic": "Огонь, лёд и снег"
+      },
+      {
+        "id": "BLK14",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Блоки",
+        "mechanic": "Trial spawner и vault"
+      },
+      {
+        "id": "MOB01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Выбор цели и поиск пути"
+      },
+      {
+        "id": "MOB02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Размножение и приручение"
+      },
+      {
+        "id": "MOB03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Житель и торговля"
+      },
+      {
+        "id": "MOB04",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Зомбификация и лечение жителя"
+      },
+      {
+        "id": "MOB05",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Враждебные стрелки"
+      },
+      {
+        "id": "MOB06",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Взрывающиеся мобы"
+      },
+      {
+        "id": "MOB07",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Piglin и бартер"
+      },
+      {
+        "id": "MOB08",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Enderman и shulker"
+      },
+      {
+        "id": "MOB09",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Warden и creaking"
+      },
+      {
+        "id": "MOB10",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Водные мобы"
+      },
+      {
+        "id": "MOB11",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Лошади и транспортные животные"
+      },
+      {
+        "id": "MOB12",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Подбор и обработка предметов"
+      },
+      {
+        "id": "RAID01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Рейды",
+        "mechanic": "Omen и центр рейда"
+      },
+      {
+        "id": "RAID02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Рейды",
+        "mechanic": "Полные волны"
+      },
+      {
+        "id": "RAID03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Рейды",
+        "mechanic": "Спавн и horn"
+      },
+      {
+        "id": "RAID04",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Рейды",
+        "mechanic": "Сторонние участники и уход"
+      },
+      {
+        "id": "RAID05",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Рейды",
+        "mechanic": "Смена капитана"
+      },
+      {
+        "id": "RAID06",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Рейды",
+        "mechanic": "Сохранение участников"
+      },
+      {
+        "id": "RAID07",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Рейды",
+        "mechanic": "Победа, поражение и герой"
+      },
+      {
+        "id": "RAID08",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Рейды",
+        "mechanic": "Специальные goals"
+      },
+      {
+        "id": "BOSS01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Боссы",
+        "mechanic": "Wither: создание и бой"
+      },
+      {
+        "id": "BOSS02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Боссы",
+        "mechanic": "Ender dragon"
+      },
+      {
+        "id": "CMD01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Команды",
+        "mechanic": "Селекторы и execute"
+      },
+      {
+        "id": "CMD02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Команды",
+        "mechanic": "Data и item"
+      },
+      {
+        "id": "CMD03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Команды",
+        "mechanic": "Scoreboard и teams"
+      },
+      {
+        "id": "CMD04",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Команды",
+        "mechanic": "Functions и schedule"
+      },
+      {
+        "id": "DATA01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Данные",
+        "mechanic": "Runtime datapacks"
+      },
+      {
+        "id": "DATA02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Данные",
+        "mechanic": "Loot и зачарования"
+      },
+      {
+        "id": "DATA03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Данные",
+        "mechanic": "Advancements и статистика"
+      },
+      {
+        "id": "DATA04",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Данные",
+        "mechanic": "Карты и explorer maps"
+      },
+      {
+        "id": "ITEM01",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Предметы",
+        "mechanic": "Рыбалка"
+      },
+      {
+        "id": "ITEM02",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Предметы",
+        "mechanic": "Археология и кисть"
+      },
+      {
+        "id": "ITEM03",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Предметы",
+        "mechanic": "Поводок и name tag"
+      },
+      {
+        "id": "ITEM04",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Предметы",
+        "mechanic": "Shears, axe, shovel и hoe"
+      },
+      {
+        "id": "ITEM05",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Предметы",
+        "mechanic": "Mace и wind charge"
+      },
+      {
+        "id": "ITEM06",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Предметы",
+        "mechanic": "Ender pearl и eye of ender"
+      },
+      {
+        "id": "ITEM07",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Предметы",
+        "mechanic": "Пиротехника"
+      },
+      {
+        "id": "ITEM08",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "Предметы",
+        "mechanic": "Вёдра и бутылки"
+      },
+      {
+        "id": "MOB13",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Кошки, оцелоты и волки"
+      },
+      {
+        "id": "MOB14",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Овцы, коровы, mooshroom и chickens"
+      },
+      {
+        "id": "MOB15",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Goat, armadillo и sniffer"
+      },
+      {
+        "id": "MOB16",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Frog, slime и magma cube"
+      },
+      {
+        "id": "MOB17",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Panda, parrot и rabbit"
+      },
+      {
+        "id": "MOB18",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Turtle и яйца"
+      },
+      {
+        "id": "MOB19",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Fish schooling и pufferfish"
+      },
+      {
+        "id": "MOB20",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Llama и trader llama"
+      },
+      {
+        "id": "MOB21",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Sulfur cube"
+      },
+      {
+        "id": "MOB22",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Camel husk и undead horses"
+      },
+      {
+        "id": "MOB23",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Blaze, breeze и snow/iron golems"
+      },
+      {
+        "id": "MOB24",
+        "status": "unknown",
+        "vanilla_passed": null,
+        "steel_passed": null,
+        "area": "AI",
+        "mechanic": "Vex, evoker и illusioner"
+      }
+    ]
+  },
+  "advancement_source_inventory": {
+    "total": 58,
+    "gate_enabled": [
+      "slept_in_bed",
+      "changed_dimension",
+      "placed_block",
+      "consume_item",
+      "nether_travel",
+      "item_used_on_block"
+    ],
+    "gate_not_enabled": [
+      "impossible",
+      "player_killed_entity",
+      "entity_killed_player",
+      "enter_block",
+      "inventory_changed",
+      "recipe_unlocked",
+      "player_hurt_entity",
+      "entity_hurt_player",
+      "enchanted_item",
+      "filled_bucket",
+      "brewed_potion",
+      "construct_beacon",
+      "used_ender_eye",
+      "summoned_entity",
+      "bred_animals",
+      "location",
+      "cured_zombie_villager",
+      "villager_trade",
+      "item_durability_changed",
+      "levitation",
+      "tick",
+      "tame_animal",
+      "effects_changed",
+      "used_totem",
+      "fishing_rod_hooked",
+      "channeled_lightning",
+      "shot_crossbow",
+      "spear_mobs",
+      "killed_by_arrow",
+      "hero_of_the_village",
+      "voluntary_exile",
+      "slide_down_block",
+      "bee_nest_destroyed",
+      "target_hit",
+      "default_block_use",
+      "any_block_use",
+      "player_generates_container_loot",
+      "thrown_item_picked_up_by_entity",
+      "thrown_item_picked_up_by_player",
+      "player_interacted_with_entity",
+      "player_sheared_equipment",
+      "started_riding",
+      "lightning_strike",
+      "using_item",
+      "fall_from_height",
+      "ride_entity_in_lava",
+      "kill_mob_near_sculk_catalyst",
+      "allay_drop_item_on_block",
+      "avoid_vibration",
+      "recipe_crafted",
+      "crafter_recipe_crafted",
+      "fall_after_explosion"
+    ],
+    "vanilla_source_hash_verified": true,
+    "vanilla_source_sha256": "df23e839c3d458cb89a6e8a7c2cc4ad35357f898c2d59928145b8ad7c8d2bf82",
+    "source_run": "https://github.com/Greston897/SteelMC/actions/runs/44926675892",
+    "steel_source_sha256": "532b8b05439339351ffa971c1c1397f85e183139704f9c6349c162728db722fd"
+  },
+  "datapack_live": {
+    "scope": "directory function packs via RCON; no game client",
+    "total": 5,
+    "counts": {
+      "matched_assertions": 2,
+      "steel_failed": 1,
+      "invalid_reference": 0,
+      "blocked_reference": 0,
+      "blocked_steel": 2
+    },
+    "cases": [
+      {
+        "name": "startup_directory_function",
+        "result": "matched_assertions",
+        "steel": {
+          "name": "startup_directory_function",
+          "status": "passed"
+        },
+        "vanilla": {
+          "name": "startup_directory_function",
+          "status": "passed"
+        }
+      },
+      {
+        "name": "reload_modified_function",
+        "result": "matched_assertions",
+        "steel": {
+          "name": "reload_modified_function",
+          "status": "passed"
+        },
+        "vanilla": {
+          "name": "reload_modified_function",
+          "status": "passed"
+        }
+      },
+      {
+        "name": "disable_stops_function",
+        "result": "steel_failed",
+        "steel": {
+          "name": "disable_stops_function",
+          "status": "failed",
+          "reason": "disabled pack function continued running; last score='probe has 202 [ci]'"
+        },
+        "vanilla": {
+          "name": "disable_stops_function",
+          "status": "passed"
+        }
+      },
+      {
+        "name": "enable_restores_function",
+        "result": "blocked_steel",
+        "steel": {
+          "name": "enable_restores_function",
+          "status": "blocked",
+          "reason": "prerequisite not passed"
+        },
+        "vanilla": {
+          "name": "enable_restores_function",
+          "status": "passed"
+        }
+      },
+      {
+        "name": "disabled_selection_survives_restart",
+        "result": "blocked_steel",
+        "steel": {
+          "name": "disabled_selection_survives_restart",
+          "status": "blocked",
+          "reason": "prerequisite not passed"
+        },
+        "vanilla": {
+          "name": "disabled_selection_survives_restart",
+          "status": "passed"
+        }
+      }
+    ],
+    "evidence_commit": "ba05896e9be39d886c73777df1e653b65de772e0",
+    "run_url": "https://github.com/Greston897/SteelMC/actions/runs/45090490433",
+    "run_conclusion": "failure",
+    "ci_verification": "metadata_verified",
+    "same_clean_revision": false
+  }
+}

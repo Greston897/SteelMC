@@ -3,8 +3,11 @@ use crate::{
     behavior::BLOCK_BEHAVIORS, fluid::state::get_fluid_state_from_block, world::LevelReader,
 };
 use glam::IVec3;
+use std::ptr::eq;
 use steel_registry::{
-    Registry, blocks::block_state_ext::BlockStateExt as _, feature::BlockPredicate,
+    Registry,
+    blocks::block_state_ext::BlockStateExt as _,
+    feature::{BiomeHolderSet, BlockHolderSet, BlockPredicate, FluidHolderSet},
 };
 use steel_utils::BlockPos;
 
@@ -32,12 +35,32 @@ impl BlockStateProviderEvaluator {
             }
             BlockPredicate::MatchingBlocks { blocks, offset } => {
                 let state = level.get_block_state(Self::offset(origin, offset));
-                blocks.0.contains(&state.get_block())
+                let block = state.get_block();
+                match blocks {
+                    BlockHolderSet::Tag(tag) => block.has_tag(tag),
+                    BlockHolderSet::Entries(entries) => entries.contains(&block),
+                }
             }
             BlockPredicate::MatchingFluids { fluids, offset } => {
                 let state = level.get_block_state(Self::offset(origin, offset));
                 let fluid_state = get_fluid_state_from_block(state);
-                fluids.0.contains(&fluid_state.fluid_id)
+                match fluids {
+                    FluidHolderSet::Tag(tag) => fluid_state.fluid_id.has_tag(tag),
+                    FluidHolderSet::Entries(entries) => entries.contains(&fluid_state.fluid_id),
+                }
+            }
+            BlockPredicate::MatchingBiomes { biomes } => {
+                let Some(biome) = level.biome_at(origin) else {
+                    return false;
+                };
+                match biomes {
+                    BiomeHolderSet::Tag(tag) => biome.has_tag(tag),
+                    // Registry entries are unique statics, so identity
+                    // comparison is exact.
+                    BiomeHolderSet::Entries(entries) => {
+                        entries.iter().any(|entry| eq(*entry, biome))
+                    }
+                }
             }
             BlockPredicate::Solid { offset } => level
                 .get_block_state(Self::offset(origin, offset))
@@ -60,6 +83,9 @@ impl BlockStateProviderEvaluator {
                 let position = Self::offset(origin, offset);
                 !level.is_outside_build_height(position.y())
             }
+            // Vanilla `UnobstructedPredicate.test` ignores its offset and
+            // tests the origin position.
+            BlockPredicate::Unobstructed { .. } => level.is_unobstructed(origin),
             BlockPredicate::HeightRange {
                 min_inclusive,
                 max_inclusive,

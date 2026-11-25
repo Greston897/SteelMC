@@ -645,9 +645,9 @@ mod tests {
         assert!(Consumable::new(0.0, ItemUseAnimation::Eat, sound(), true, Vec::new()).is_ok());
 
         for invalid in [0.0, -0.0, f32::INFINITY, f32::NEG_INFINITY, f32::NAN] {
-            assert!(TeleportRandomlyConsumeEffect::new(invalid).is_err());
+            assert!(TeleportRandomlyConsumeEffect::new(invalid, true).is_err());
         }
-        assert!(TeleportRandomlyConsumeEffect::new(f32::MAX).is_ok());
+        assert!(TeleportRandomlyConsumeEffect::new(f32::MAX, true).is_ok());
 
         for invalid in [-0.0, 1.1, f32::INFINITY, f32::NEG_INFINITY, f32::NAN] {
             assert!(ApplyStatusEffectsConsumeEffect::new(Vec::new(), invalid).is_err());

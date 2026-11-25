@@ -65,8 +65,8 @@ impl ItemBehavior for MinecartItem {
             Some(context.player),
         ) {
             Ok(cart) => cart,
-            // TODO: Place chest, furnace, TNT, hopper, spawner and command block minecarts once
-            // their entities implement `AbstractMinecart`.
+            // A variant whose entity has no factory cannot be placed; every vanilla
+            // minecart type is registered, so this only guards modded types.
             Err(CreateMinecartError::Unsupported) => return InteractionResult::Pass,
             Err(CreateMinecartError::Spawn(error)) => {
                 log::warn!(
@@ -219,7 +219,7 @@ mod tests {
     }
 
     fn minecart_use_count(player: &Player) -> i32 {
-        let target = vanilla_stat_types::ITEM_USED.get(&vanilla_items::MINECART);
+        let target = vanilla_stat_types::ITEM_USED.get(&*vanilla_items::MINECART);
 
         player
             .stats()
@@ -290,40 +290,39 @@ mod tests {
     }
 
     #[test]
-    fn unimplemented_minecart_variants_pass_without_consumption_or_spawning() {
+    fn all_minecart_variants_place_consume_and_spawn_on_rails() {
         init_globals();
 
+        // Every vanilla `AbstractMinecart` item variant consumes 1 item and spawns on the rail.
         for item in [
-            &vanilla_items::CHEST_MINECART,
-            &vanilla_items::FURNACE_MINECART,
-            &vanilla_items::TNT_MINECART,
-            &vanilla_items::HOPPER_MINECART,
-            &vanilla_items::COMMAND_BLOCK_MINECART,
+            &*vanilla_items::CHEST_MINECART,
+            &*vanilla_items::FURNACE_MINECART,
+            &*vanilla_items::TNT_MINECART,
+            &*vanilla_items::HOPPER_MINECART,
+            &*vanilla_items::COMMAND_BLOCK_MINECART,
         ] {
             let fixture = create_fixture(
-                "minecart_item_unimplemented_variant",
+                "minecart_item_implemented_variant",
                 BlockPos::new(8, 64, 8),
                 &vanilla_blocks::RAIL,
                 Some(RailShape::NorthSouth),
                 GameType::Survival,
             );
             let stack = ItemStack::new(item);
-            prepare_hand(&fixture.player, InteractionHand::MainHand, stack.clone());
+            prepare_hand(&fixture.player, InteractionHand::MainHand, stack);
 
             assert_eq!(
                 use_cart(&fixture, InteractionHand::MainHand),
-                InteractionResult::Pass,
+                InteractionResult::Success,
                 "{}",
                 item.key
             );
-            assert_eq!(
-                held_stack(&fixture.player, InteractionHand::MainHand),
-                stack
-            );
+            assert!(held_stack(&fixture.player, InteractionHand::MainHand).is_empty());
             let player_id = fixture.player.id();
-            assert!(
-                entities_near(&fixture, |entity| entity.id() != player_id).is_empty(),
-                "{} should not spawn an entity",
+            assert_eq!(
+                entities_near(&fixture, |entity| entity.id() != player_id).len(),
+                1,
+                "{} should spawn its minecart entity",
                 item.key
             );
         }

@@ -187,6 +187,66 @@ impl FeatureDecorationRunner {
         }
     }
 
+    /// Runs the vanilla flat-world decoration with only the lake features.
+    ///
+    /// Vanilla `FlatLevelGeneratorSettings.adjustGenerationSettings` keeps the
+    /// `LAKES` step but replaces the feature list with `FLAT_ALLOWS`, which for
+    /// the default (non-custom) flat preset is just `lake_water` and
+    /// `lake_lava`. Running the ordinary step machinery with those two features
+    /// keeps the seeding identical to vanilla instead of inventing a bespoke
+    /// placement path.
+    pub(crate) fn decorate_lakes_only(
+        &self,
+        region: &mut WorldGenRegion<'_>,
+        registry: &Registry,
+        seed: i64,
+        biome_zoom_seed: i64,
+    ) {
+        let center = region.center();
+        let origin = BlockPos::new(center.0.x * 16, region.min_y(), center.0.y * 16);
+
+        let mut random = WorldgenRandom::from_seed(0);
+        let decoration_seed = random.set_decoration_seed(seed, origin.x(), origin.z());
+
+        for step in 0..DECORATION_STEP_COUNT.max(self.sorter.step_count()) {
+            let Some(step_features) = self.sorter.step(step) else {
+                continue;
+            };
+            let mut has_lake_feature = false;
+            for index in 0..step_features.len() {
+                let Some(feature) = step_features.feature(index) else {
+                    continue;
+                };
+                if is_flat_lake_feature(&feature.key) {
+                    has_lake_feature = true;
+                    break;
+                }
+            }
+            if !has_lake_feature {
+                continue;
+            }
+            Self::place_structures_for_step(
+                region,
+                registry,
+                decoration_seed,
+                &mut random,
+                step,
+                biome_zoom_seed,
+            );
+            Self::place_features_for_step(
+                region,
+                registry,
+                decoration_seed,
+                &mut random,
+                origin,
+                step,
+                step_features,
+                &[],
+                biome_zoom_seed,
+            );
+        }
+    }
+
     pub(super) fn collect_possible_biome_ids(&self, region: &WorldGenRegion<'_>) -> Vec<usize> {
         let center = region.center();
         let mut seen = vec![false; self.source_biome_lookup.len()];
@@ -401,4 +461,9 @@ impl FeatureDecorationRunner {
             );
         }
     }
+}
+
+/// Vanilla `FlatLevelGeneratorSettings` lake features.
+fn is_flat_lake_feature(key: &Identifier) -> bool {
+    key.path == "lake_water" || key.path == "lake_lava"
 }

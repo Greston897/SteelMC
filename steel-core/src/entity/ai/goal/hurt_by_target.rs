@@ -1,4 +1,4 @@
-use steel_registry::vanilla_game_rules::UNIVERSAL_ANGER;
+use steel_registry::vanilla_game_rules::{FORGIVE_DEAD_PLAYERS, UNIVERSAL_ANGER};
 use steel_utils::{DowncastTypeKey, WorldAabb};
 
 use super::selector::{Goal, GoalControls};
@@ -52,6 +52,29 @@ impl HurtByTargetGoal {
         self
     }
 
+    /// Vanilla `ForgiveDeadPlayersGoal.canContinueToUse`: an angry neutral mob
+    /// drops its grudge once the targeted player dies.
+    ///
+    /// With `forgive_dead_players` off (the rule is on by default) the anger
+    /// outlives the death, so the mob keeps aiming at the corpse until the body
+    /// is removed — that is vanilla's "the grudge stays" behaviour.
+    fn forgives_dead_player(&self, mob: &dyn PathfinderMob) -> bool {
+        let Some(target) = mob.target().or_else(|| self.target_goal.target_mob()) else {
+            return false;
+        };
+        if target.as_player().is_none() {
+            return false;
+        }
+        let Some(living) = target.as_living_entity() else {
+            return false;
+        };
+        if !living.is_dead_or_dying() {
+            return false;
+        }
+        mob.level()
+            .is_some_and(|world| world.get_game_rule(&FORGIVE_DEAD_PLAYERS))
+    }
+
     fn alert_others(&self, mob: &dyn PathfinderMob, hurt_by_mob: &SharedEntity) {
         let Some(world) = mob.level() else {
             return;
@@ -85,8 +108,14 @@ impl HurtByTargetGoal {
                 return false;
             };
 
-            //TODO tamable animal owner check is required here
-            other.target().is_none() && !other.is_allied_to(hurt_by_mob.as_ref())
+            // Vanilla `HurtByTargetGoal.canAttack`: a tamed animal never turns
+            // on its own owner.
+            let owned_by_attacker = hurt_by_mob
+                .as_living_entity()
+                .is_some_and(|attacker| other.is_tame_owned_by(attacker));
+            !owned_by_attacker
+                && other.target().is_none()
+                && !other.is_allied_to(hurt_by_mob.as_ref())
         }) {
             if let Some(other) = entity.as_mob() {
                 let _ = other.set_target(Some(hurt_by_mob));
@@ -135,6 +164,9 @@ impl Goal for HurtByTargetGoal {
     }
 
     fn can_continue_to_use(&mut self, mob: &dyn PathfinderMob) -> bool {
+        if self.forgives_dead_player(mob) {
+            return false;
+        }
         self.target_goal.can_continue_to_use(mob)
     }
 

@@ -8,6 +8,9 @@ env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-Dwarnings"
 
+permissions:
+  contents: write
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -26,8 +29,48 @@ jobs:
       - name: Spell Check
         uses: crate-ci/typos@v1.48.0
 
-      - name: Format
-        run: cargo fmt --all --check
-
       - name: Clippy
-        run: cargo clippy -r --workspace --all-targets --all-features
+        if: always()
+        run: |
+          set -o pipefail
+          cargo clippy -r --workspace --all-targets --all-features 2>&1 | tee /tmp/clippy.log
+
+      - name: Format
+        if: always()
+        run: |
+          set -o pipefail
+          cargo fmt --all --check 2>&1 | tee /tmp/fmt.log
+
+      - name: Surface lint failures
+        if: failure()
+        run: |
+          for f in /tmp/fmt.log /tmp/clippy.log; do
+            [ -f "$f" ] || continue
+            grep -E "^(Diff in|error)" "$f" | head -40 | while IFS= read -r line; do
+              echo "::error title=lint::$line"
+            done
+          done
+          exit 1
+
+      - name: Preserve complete lint diagnostics
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PYTHON'
+          import base64, hashlib, json, os, pathlib, urllib.request, zlib
+          logs = {name: pathlib.Path('/tmp/' + name + '.log').read_text(errors='replace')
+                  for name in ('fmt', 'clippy') if pathlib.Path('/tmp/' + name + '.log').exists()}
+          raw = json.dumps(logs, ensure_ascii=False).encode()
+          digest = hashlib.sha256(raw).hexdigest()
+          encoded = base64.b64encode(zlib.compress(raw, 9)).decode()
+          chunks = [encoded[i:i + 44000] for i in range(0, len(encoded), 44000)]
+          for i, chunk in enumerate(chunks, 1):
+              body = f'LINT_DIAGNOSTICS_V1 {digest} {i}/{len(chunks)}\n{chunk}'
+              request = urllib.request.Request(
+                  f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/commits/{os.environ['GITHUB_SHA']}/comments",
+                  data=json.dumps({'body': body}).encode(),
+                  headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Content-Type': 'application/json'})
+              with urllib.request.urlopen(request) as response:
+                  response.read()
+          PYTHON

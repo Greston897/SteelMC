@@ -11,17 +11,19 @@ use steel_math::wrap_degrees;
 use steel_protocol::packets::game::{
     CBlockChangedAck, CBlockUpdate, CChangeDifficulty, CGameEvent, COpenSignEditor,
     CPlayerInfoUpdate, CSetCamera, CSetEntityMotion, CSetHeldSlot, GameEventType, PlayerAction,
-    SAttack, SInteract, SPickItemFromBlock, SPlayerAction, SSignUpdate, SSpectatorAction, SUseItem,
-    SUseItemOn,
+    SAttack, SBundleItemSelected, SInteract, SPickItemFromBlock, SPickItemFromEntity,
+    SPlayerAction, SSignUpdate, SSpectatorAction, SUseItem, SUseItemOn,
 };
 use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::Direction;
 use steel_registry::damage_type::DamageType;
-use steel_registry::data_components::components::PiercingWeapon;
+use steel_registry::data_components::CustomData;
+use steel_registry::data_components::components::{BlockEntityData, PiercingWeapon};
+use steel_registry::data_components::vanilla_components;
 use steel_registry::data_components::vanilla_components::SwingAnimation;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
-use steel_registry::sound_event::{SoundEventHolder, SoundEventRef};
+use steel_registry::sound_event::SoundEventHolder;
 use steel_registry::{REGISTRY, vanilla_attributes, vanilla_damage_types, vanilla_entities};
 use steel_utils::types::{Difficulty, GameType, InteractionHand, SignTextSlot};
 use steel_utils::{BlockPos, Downcast as _, Identifier, WorldAabb};

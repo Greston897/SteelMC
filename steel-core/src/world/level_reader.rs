@@ -4,6 +4,7 @@
 //! `canSurvive` should depend on the world-reading surface, not on the concrete
 //! `World` type. `World` and `WorldGenRegion` both implement this trait.
 
+use steel_registry::biome::BiomeRef;
 use steel_registry::blocks::BlockRef;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::blocks::properties::Direction;
@@ -88,6 +89,20 @@ pub trait LevelReader {
     /// Returns the dimension's sea level.
     fn sea_level(&self) -> i32;
 
+    /// Returns the biome at a block position when this level surface tracks
+    /// biomes (used by the `matching_biomes` block predicate).
+    fn biome_at(&self, _pos: BlockPos) -> Option<BiomeRef> {
+        None
+    }
+
+    /// Vanilla `Level.isUnobstructed`: no entity or collision blocks the
+    /// block space at a position (used by the `unobstructed` block
+    /// predicate). Level surfaces without collision tracking report open
+    /// space, matching vanilla worldgen where no entities exist yet.
+    fn is_unobstructed(&self, _pos: BlockPos) -> bool {
+        true
+    }
+
     /// Returns the exclusive maximum build height.
     fn max_y_exclusive(&self) -> i32 {
         self.min_y() + self.height()
@@ -112,7 +127,10 @@ pub trait LevelReader {
     fn light_level_dependent_magic_value(&self, pos: BlockPos) -> f32 {
         let value = f32::from(self.max_local_raw_brightness(pos, self.sky_darkening()))
             / f32::from(MAX_LIGHT_LEVEL);
-        let curved_value = value / value.mul_add(-3.0, 4.0);
+        // Vanilla `v / (4.0f - 3.0f * v)` then
+        // `Mth.lerp(ambient, curved, 1.0f) = curved + ambient * (1.0 - curved)`.
+        // Both products are separately rounded, so no fused multiply-add.
+        let curved_value = value / (4.0 - 3.0 * value);
         curved_value + self.ambient_light() * (1.0 - curved_value)
     }
 

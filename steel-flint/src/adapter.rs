@@ -315,6 +315,94 @@ mod tests {
     use super::*;
     use crate::{TestLoader, TestRunner};
     use std::sync::Arc;
+    use std::time::Instant;
+
+    fn configured_parallelism() -> usize {
+        var("FLINT_PARALLELISM")
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(1)
+            .clamp(1, 8)
+    }
+
+    fn shard_paths(mut paths: Vec<PathBuf>, index: usize, count: usize) -> Vec<PathBuf> {
+        assert!(count > 0 && index < count, "invalid Flint shard");
+        paths.sort();
+        paths
+            .into_iter()
+            .enumerate()
+            .filter_map(|(i, path)| (i % count == index).then_some(path))
+            .collect()
+    }
+
+    fn configured_shard(paths: Vec<PathBuf>) -> Vec<PathBuf> {
+        let index = var("FLINT_SHARD_INDEX")
+            .ok()
+            .map(|s| s.parse::<usize>().expect("shard index"));
+        let count = var("FLINT_SHARD_COUNT")
+            .ok()
+            .map(|s| s.parse::<usize>().expect("shard count"));
+        match (index, count) {
+            (None, None) => paths,
+            (Some(index), Some(count)) => shard_paths(paths, index, count),
+            _ => panic!("both Flint shard variables must be specified"),
+        }
+    }
+
+    #[test]
+    fn parallel_flint_worlds_are_isolated_and_results_keep_input_order() {
+        crate::init();
+        let specs: Vec<_> = ["stone", "dirt", "sand", "glass"]
+            .iter()
+            .enumerate()
+            .map(|(index, block)| {
+                let id = format!("minecraft:{block}");
+                let spec = serde_json::from_value(serde_json::json!({
+                    "name": format!("parallel-{index}"),
+                    "timeline": [
+                        {"at": 0, "do": "place", "pos": [0, -1, 0], "block": {"id": "minecraft:stone"}},
+                        {"at": 0, "do": "place", "pos": [0, 0, 0], "block": {"id": id}},
+                        {"at": 1, "do": "assert", "checks": [{"pos": [0, 0, 0], "is": {"id": id}}]}
+                    ]
+                }))
+                .expect("fixture spec");
+                flint_core::TestSpecLoadResult::Loaded(spec)
+            })
+            .collect();
+        let runner = TestRunner::new(Arc::new(SteelAdapter));
+        let sequential = runner.run_tests(&specs);
+        let parallel = runner.run_tests_parallel(&specs, 2);
+        assert_eq!(sequential.failed_tests, 0);
+        assert_eq!(parallel.failed_tests, 0);
+        let names = |summary: &TestSummary| {
+            summary
+                .results
+                .iter()
+                .map(|result| result.test_name.clone())
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(names(&sequential), names(&parallel));
+    }
+
+    #[test]
+    fn shards_cover_each_fixture_once_without_overlap() {
+        let paths: Vec<PathBuf> = (0..1012)
+            .map(|i| PathBuf::from(format!("test-{i}")))
+            .collect();
+        let mut covered = Vec::new();
+        for index in 0..32 {
+            let shard = shard_paths(paths.clone(), index, 32);
+            assert!(
+                !shard.is_empty(),
+                "every shard must cover at least one path"
+            );
+            covered.extend(shard);
+        }
+        covered.sort();
+        let mut expected = paths;
+        expected.sort();
+        assert_eq!(covered, expected);
+    }
 
     #[test]
     #[ignore = "needs FlintBenchmark tests (TEST_PATH); run with --ignored"]
@@ -326,12 +414,23 @@ mod tests {
         let loader = TestLoader::new(&cfg.test_path(), true)
             .unwrap_or_else(|e| panic!("error while loading test files: {e}"));
         let paths = collect_filtered_paths(&loader, &cfg);
+        let paths = configured_shard(paths);
         let specs = loader
             .load_specs(&paths, false)
             .unwrap_or_else(|e| panic!("error while loading test specs: {e}"));
 
+        assert!(
+            !specs.is_empty(),
+            "Flint must execute at least one vanilla fixture"
+        );
         let runner = TestRunner::new(Arc::new(SteelAdapter));
-        let summary = runner.run_tests(&specs);
+        let workers = configured_parallelism();
+        let started = Instant::now();
+        let summary = runner.run_tests_parallel(&specs, workers);
+        println!(
+            "Flint wall time with {workers} worker(s): {:.3}s",
+            started.elapsed().as_secs_f64()
+        );
         summary.print_concise_summary();
         save_summary(&summary).unwrap_or_else(|e| panic!("failed to save flint summary: {e}"));
         print_failure_urls(&specs, &paths, &summary, &cfg);
@@ -364,12 +463,23 @@ mod tests {
 
         println!("Found {} test(s) to run", paths.len());
 
+        let paths = configured_shard(paths);
         let specs = loader
             .load_specs(&paths, false)
             .unwrap_or_else(|e| panic!("error while loading test specs: {e}"));
 
+        assert!(
+            !specs.is_empty(),
+            "Flint must execute at least one vanilla fixture"
+        );
         let runner = TestRunner::new(Arc::new(SteelAdapter));
-        let summary = runner.run_tests(&specs);
+        let workers = configured_parallelism();
+        let started = Instant::now();
+        let summary = runner.run_tests_parallel(&specs, workers);
+        println!(
+            "Flint wall time with {workers} worker(s): {:.3}s",
+            started.elapsed().as_secs_f64()
+        );
         summary.print_concise_summary();
         save_summary(&summary).unwrap_or_else(|e| panic!("failed to save flint summary: {e}"));
         print_failure_urls(&specs, &paths, &summary, &cfg);

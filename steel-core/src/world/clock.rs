@@ -1,5 +1,7 @@
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "test-framework")]
+use steel_registry::vanilla_world_clocks::OVERWORLD;
 use steel_registry::{REGISTRY, world_clock::WorldClockRef};
 use steel_utils::Identifier;
 use thiserror::Error;
@@ -224,7 +226,7 @@ impl World {
     }
 
     /// Returns the total ticks of one clock in this world.
-    pub(crate) fn clock_total_ticks(&self, clock: WorldClockRef) -> Option<i64> {
+    pub fn clock_total_ticks(&self, clock: WorldClockRef) -> Option<i64> {
         self.level_data.read().world_clocks().total_ticks(clock)
     }
 
@@ -241,6 +243,39 @@ impl World {
     /// Broadcasts all clock states to players in this world.
     pub(crate) fn broadcast_time_sync(&self) {
         self.broadcast_to_all(self.time_sync_packet());
+    }
+
+    /// Configures a disposable integration-test world using production clock
+    /// markers and weather transitions. Not part of the production server API.
+    #[cfg(feature = "test-framework")]
+    pub fn configure_test_environment(
+        &self,
+        time: &str,
+        raining: bool,
+        thundering: bool,
+    ) -> Result<(), String> {
+        let clock = &OVERWORLD;
+        if let Ok(ticks) = time.parse::<i64>() {
+            if ticks < 0 {
+                return Err(format!("negative test time: {time}"));
+            }
+            self.set_clock_total_ticks(clock, ticks)
+                .ok_or("missing overworld clock")?;
+        } else {
+            let marker: Identifier = time
+                .parse()
+                .map_err(|error| format!("invalid time marker {time}: {error}"))?;
+            if self.move_clock_to_time_marker(clock, &marker) != Some(true) {
+                return Err(format!("unknown time marker: {time}"));
+            }
+        }
+        self.set_weather_parameters(
+            if raining { 0 } else { 1_000_000 },
+            1_000_000,
+            raining,
+            thundering,
+        );
+        Ok(())
     }
 
     pub(crate) fn set_clock_total_ticks(
@@ -290,7 +325,14 @@ impl World {
     }
 
     /// Advances this world's clocks and periodically synchronizes the shared game time.
+    ///
+    /// A dimension with no players idles unless one of its tickets carries
+    /// vanilla's `FLAG_KEEP_DIMENSION_ACTIVE` (a force-loaded chunk or a portal
+    /// ticket), so `MinecraftServer.tickChildren` skips its time step.
     pub(super) fn tick_time(&self) {
+        if self.players.is_empty() && !self.is_kept_active() {
+            return;
+        }
         let game_time = {
             let mut lock = self.level_data.write();
             let advance_time = self.advance_time_with_guard(&lock);

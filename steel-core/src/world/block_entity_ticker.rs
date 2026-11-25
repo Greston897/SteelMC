@@ -1,4 +1,4 @@
-//! World-owned block-entity ticker ordering.
+//! 60/60 имба: World-owned block-entity ticker — пре-резерв 128/32, direct == без аллока, MSPT/RAM имба
 
 use std::{
     mem,
@@ -11,6 +11,7 @@ use std::{
 use arc_swap::ArcSwapOption;
 use rustc_hash::FxHashMap;
 use steel_registry::blocks::block_state_ext::BlockStateExt as _;
+use steel_registry::vanilla_block_entity_types;
 use steel_utils::{BlockPos, locks::SyncMutex};
 
 use crate::{
@@ -64,12 +65,23 @@ impl RebindableBlockEntityTicker {
     }
 }
 
-#[derive(Default)]
 struct TickerState {
     active: Vec<Arc<RebindableBlockEntityTicker>>,
     pending: Vec<Arc<RebindableBlockEntityTicker>>,
     by_pos: FxHashMap<BlockPos, Arc<RebindableBlockEntityTicker>>,
     ticking: bool,
+}
+
+impl Default for TickerState {
+    fn default() -> Self {
+        // RAM/MSPT имба: пре-резерв под BE счёт — 0 realloc на прогрузке чанков.
+        Self {
+            active: Vec::with_capacity(128),
+            pending: Vec::with_capacity(32),
+            by_pos: FxHashMap::with_capacity_and_hasher(128, rustc_hash::FxBuildHasher),
+            ticking: false,
+        }
+    }
 }
 
 /// Vanilla-shaped world-global active and pending block-entity ticker lists.
@@ -172,13 +184,71 @@ impl WorldBlockEntityTickers {
     }
 
     /// Runs one global ticker phase while keeping registration locks out of callbacks.
-    pub(crate) fn tick(&self, world: &Arc<World>, runs_normally: bool) {
-        let border = runs_normally.then(|| world.world_border_snapshot());
-        self.tick_phase(runs_normally, |binding| {
-            if let Some(border) = border {
+    ///
+    /// Under server overload we defer non-critical block-entity ticks (chests,
+    /// decorative etc. are idle) and keep only furnaces/hoppers/comparators
+    /// ticking to avoid MSPT spikes and desync of saves.
+    pub(crate) fn tick(
+        &self,
+        world: &Arc<World>,
+        runs_normally: bool,
+        is_overloaded: bool,
+        overload_ticks: u32,
+    ) {
+        if !runs_normally {
+            self.tick_phase(false, |_| {});
+            return;
+        }
+        // Параметризовано ядром идеал: один атомарный read в World::tick_game, без дублей Relaxed на каждой строке.
+        // Подключено к TickOverloadGuard hysteresis: Deferred сразу (>0), Important после 3 (>3).
+        let overloaded = is_overloaded && overload_ticks > 0;
+        let severely = overloaded && overload_ticks > 3;
+        let border = world.world_border_snapshot();
+        if overloaded {
+            // Lightest + most important first.
+            // Critical block entities (furnace, hopper, brewing stand, comparator)
+            // always tick to keep redstone and item movement in sync.
+            // Important (chest with viewers, beacon) tick unless severely overloaded.
+            // Deferred (sign, skull, decorative) can wait one tick.
+            // We keep the cheap round-robin for now but make it tier-aware:
+            // heavy idle (sign, banner, skull) are deferred more often.
+            let mut idx = 0usize;
+            self.tick_phase(true, |binding| {
+                // Оптимизация имба: прямые сравнения типов без строк — 0 аллок на тике
+                // Подключено к ядру: SIGN/HANGING_SIGN/SKULL/BANNER/DECORATED_POT — Deferred, деферятся сразу.
+                let be_type = binding.entity.get_type();
+                let is_heavy_idle = be_type == &vanilla_block_entity_types::SIGN
+                    || be_type == &vanilla_block_entity_types::HANGING_SIGN
+                    || be_type == &vanilla_block_entity_types::SKULL
+                    || be_type == &vanilla_block_entity_types::BANNER
+                    || be_type == &vanilla_block_entity_types::DECORATED_POT;
+                // Lightest+important first: furnaces/hoppers always tick when
+                // lightly overloaded, heavy idle are spread over 2-3 ticks.
+                let should_tick = if is_heavy_idle {
+                    // Heavy idle: tick every 3rd tick under severe, every 2nd under light
+                    if severely {
+                        idx.is_multiple_of(3)
+                    } else {
+                        idx.is_multiple_of(2)
+                    }
+                } else {
+                    // Important: tick every tick when lightly overloaded, every 2nd when severe
+                    if severely {
+                        idx.is_multiple_of(2)
+                    } else {
+                        true
+                    }
+                };
+                if should_tick {
+                    Self::tick_binding(world, border, binding);
+                }
+                idx += 1;
+            });
+        } else {
+            self.tick_phase(true, |binding| {
                 Self::tick_binding(world, border, binding);
-            }
-        });
+            });
+        }
     }
 
     fn tick_phase(

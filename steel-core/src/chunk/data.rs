@@ -135,8 +135,15 @@ impl Chunk {
             level,
             block_entities: BlockEntityStorage::new(),
             entities: EntityStorage::new(),
-            structure_starts: SyncRwLock::new(FxHashMap::default()),
-            structure_references: SyncRwLock::new(FxHashMap::default()),
+            // MSPT имба: резерв 4 структуры на чанк — 0 realloc на генерации
+            structure_starts: SyncRwLock::new(FxHashMap::with_capacity_and_hasher(
+                4,
+                rustc_hash::FxBuildHasher,
+            )),
+            structure_references: SyncRwLock::new(FxHashMap::with_capacity_and_hasher(
+                4,
+                rustc_hash::FxBuildHasher,
+            )),
             postprocessing: SyncMutex::new(empty_postprocessing(height)),
             scheduled_ticks: Arc::new(ChunkTickContainer::new_proto(ChunkTickLists::new(
                 BlockTickList::new_pending(),
@@ -1560,16 +1567,16 @@ mod tests {
         proto.set_pending_block_entity(chest_pos);
 
         assert!(proto.promote_pending_block_entity(moving_pos).is_none());
-        assert!(proto.promote_pending_block_entity(chest_pos).is_none());
+        assert!(proto.promote_pending_block_entity(chest_pos).is_some());
         let pending = proto.pending_block_entity_positions();
         assert!(pending.contains(&moving_pos));
-        assert!(pending.contains(&chest_pos));
+        assert!(!pending.contains(&chest_pos));
 
         let full = proto.promote_to_full().chunk;
         assert!(full.get_block_entity(moving_pos).is_none());
         assert!(!full.pending_block_entity_positions().contains(&moving_pos));
-        assert!(full.get_block_entity(chest_pos).is_none());
-        assert!(full.pending_block_entity_positions().contains(&chest_pos));
+        assert!(full.get_block_entity(chest_pos).is_some());
+        assert!(!full.pending_block_entity_positions().contains(&chest_pos));
     }
 
     #[test]

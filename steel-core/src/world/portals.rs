@@ -1,4 +1,6 @@
 use super::*;
+use crate::worldgen::feature::place_end_gateway_in_world;
+use steel_registry::feature::EndGatewayConfiguration;
 
 pub(super) fn portal_candidate_distance_sqr(candidate: BlockPos, center: BlockPos) -> i64 {
     let dx = i64::from(candidate.x()) - i64::from(center.x());
@@ -505,45 +507,30 @@ impl World {
         true
     }
 
-    /// Mirrors vanilla `EndGatewayFeature.place` for runtime End gateway creation.
+    /// Vanilla `EndGatewayFeature.place` for runtime End gateway creation.
+    ///
+    /// Delegates to the worldgen feature so a gateway created here and one created
+    /// by worldgen are byte-identical, then stores the teleport exit on the block
+    /// entity the feature left behind.
     pub(crate) fn create_end_gateway_portal(
         self: &Arc<Self>,
         origin: BlockPos,
         exit: BlockPos,
         exact: bool,
     ) -> bool {
-        for dy in -2_i32..=2 {
-            for dx in -1..=1 {
-                for dz in -1..=1 {
-                    let same_x = dx == 0;
-                    let same_y = dy == 0;
-                    let same_z = dz == 0;
-                    let end = dy.abs() == 2;
-                    let state = if same_x && same_y && same_z {
-                        vanilla_blocks::END_GATEWAY.default_state()
-                    } else if same_y {
-                        vanilla_blocks::AIR.default_state()
-                    } else if (end && same_x && same_z) || ((same_x || same_z) && !end) {
-                        vanilla_blocks::BEDROCK.default_state()
-                    } else {
-                        vanilla_blocks::AIR.default_state()
-                    };
+        place_end_gateway_in_world(
+            self,
+            origin,
+            &EndGatewayConfiguration {
+                exit: Some(glam::IVec3::new(exit.x(), exit.y(), exit.z())),
+                exact,
+            },
+        );
 
-                    if !self.set_block(origin.offset(dx, dy, dz), state, UpdateFlags::UPDATE_ALL) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        let Some(block_entity) = self.get_block_entity(origin) else {
-            return false;
-        };
-        let Some(gateway) = block_entity.downcast_ref::<EndGatewayBlockEntity>() else {
-            return false;
-        };
-        gateway.set_exit_position(exit, exact);
-        true
+        self.get_block_entity(origin).is_some_and(|be| {
+            be.downcast_ref::<EndGatewayBlockEntity>()
+                .is_some_and(|gateway| gateway.exit_portal() == Some(exit))
+        })
     }
 
     pub(super) fn clear_nether_portal_fallback_box(

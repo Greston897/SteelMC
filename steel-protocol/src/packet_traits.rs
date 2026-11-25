@@ -209,6 +209,18 @@ impl EncodedPacket {
         Self::from_data(buf, compression)
     }
 
+    /// Wraps an already-encoded payload (packet ID plus body) into a transport
+    /// frame without compression.
+    ///
+    /// Used by tests that need to exercise the framing layer with arbitrary
+    /// bytes instead of a real packet type.
+    #[cfg(test)]
+    pub(crate) fn from_raw_data(packet_data: &[u8]) -> Self {
+        let mut buf = FrontVec::capacity(VarInt::MAX_SIZE, packet_data.len());
+        buf.extend_from_slice(packet_data);
+        Self::from_data_uncompressed(buf).expect("test payload fits in one packet")
+    }
+
     fn write_vec<P: ClientPacket>(
         packet: P,
         protocol: ConnectionProtocol,

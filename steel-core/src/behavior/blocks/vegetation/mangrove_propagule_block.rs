@@ -6,22 +6,17 @@ use steel_registry::blocks::block_state_ext::BlockStateExt;
 use steel_registry::blocks::properties::{
     BlockStateProperties, BoolProperty, Direction, IntProperty,
 };
-use steel_registry::feature::ConfiguredFeatureKind;
 use steel_registry::vanilla_block_tags::BlockTag;
-use steel_registry::{REGISTRY, vanilla_blocks, vanilla_configured_features};
-use steel_utils::random::worldgen_random::WorldgenRandom;
+use steel_registry::vanilla_blocks;
 use steel_utils::types::UpdateFlags;
 use steel_utils::{BlockPos, BlockStateId};
-use steel_worldgen::biomes::obfuscate_biome_seed;
 
 use crate::behavior::block::{BlockBehavior, schedule_water_tick_if_waterlogged};
 use crate::behavior::blocks::vegetation::bonemealable::Bonemealable;
 use crate::behavior::context::BlockPlaceContext;
 use crate::world::{LevelAccessor, LevelReader, ScheduledTickAccess, World};
-use crate::worldgen::feature::FeatureDecorationRunner;
-use crate::worldgen::feature::no_nested_features;
 
-use super::BlockRef;
+use super::{BlockRef, sapling_block::SaplingBlock, vegetation_block::survival_update_shape};
 
 /// Mangrove propagule block behavior.
 #[block_behavior]
@@ -35,8 +30,7 @@ const STAGE: &IntProperty = &BlockStateProperties::STAGE;
 const WATERLOGGED: &BoolProperty = &BlockStateProperties::WATERLOGGED;
 const MAX_AGE: u8 = 4;
 const RANDOM_GROWTH_BOUND: u32 = 7;
-const BONEMEAL_SUCCESS_CHANCE: f32 = 0.45;
-const TALL_MANGROVE_CHANCE: f32 = 0.85;
+const BONEMEAL_SUCCESS_CHANCE: f64 = 0.45;
 
 impl MangrovePropaguleBlock {
     /// Creates a new mangrove propagule block behavior.
@@ -72,46 +66,21 @@ impl MangrovePropaguleBlock {
         state: BlockStateId,
         rng: &mut dyn Rng,
     ) -> bool {
-        let feature = if rng.random::<f32>() < TALL_MANGROVE_CHANCE {
-            &*vanilla_configured_features::TALL_MANGROVE
-        } else {
-            &*vanilla_configured_features::MANGROVE
-        };
-        let ConfiguredFeatureKind::Tree(config) = &feature.kind else {
-            return false;
-        };
-        let replacement = if state.get_value(WATERLOGGED) {
-            vanilla_blocks::WATER.default_state()
-        } else {
-            vanilla_blocks::AIR.default_state()
-        };
-        world.set_block(pos, replacement, UpdateFlags::UPDATE_NONE);
-
-        let mut worldgen_random = WorldgenRandom::from_seed(rng.random());
-        let mut level = Arc::clone(world);
-        let placed = FeatureDecorationRunner::place_tree_feature(
-            &mut level,
-            &REGISTRY,
-            &mut worldgen_random,
-            config,
-            pos,
-            obfuscate_biome_seed(world.seed()),
-            no_nested_features,
-        );
-
-        if placed {
-            if world.get_block_state(pos) == replacement {
-                world.send_block_updated(pos);
-            }
-        } else {
-            world.set_block(pos, state, UpdateFlags::UPDATE_NONE);
-        }
-        placed
+        SaplingBlock::new(
+            &vanilla_blocks::MANGROVE_PROPAGULE,
+            "mangrove",
+            Some("mangrove"),
+        )
+        .grow_tree(world, pos, state, rng)
     }
 
     fn advance_tree(world: &Arc<World>, pos: BlockPos, state: BlockStateId, rng: &mut dyn Rng) {
         if state.get_value(STAGE) == 0 {
-            world.set_block(pos, state.set_value(STAGE, 1), UpdateFlags::UPDATE_NONE);
+            world.set_block(
+                pos,
+                state.set_value(STAGE, 1),
+                UpdateFlags::UPDATE_INVISIBLE | UpdateFlags::UPDATE_SKIP_BLOCK_ENTITY_SIDEEFFECTS,
+            );
         } else {
             Self::grow_tree(world, pos, state, rng);
         }
@@ -146,7 +115,7 @@ impl BlockBehavior for MangrovePropaguleBlock {
             return vanilla_blocks::AIR.default_state();
         }
 
-        state
+        survival_update_shape(self, state, world, pos)
     }
 
     fn can_survive(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
@@ -207,7 +176,7 @@ impl Bonemealable for MangrovePropaguleBlock {
             return state.get_value(AGE) < MAX_AGE;
         }
 
-        rng.random::<f32>() < BONEMEAL_SUCCESS_CHANCE
+        f64::from(rng.random::<f32>()) < BONEMEAL_SUCCESS_CHANCE
     }
 
     fn perform_bonemeal(
@@ -466,6 +435,20 @@ mod tests {
             BlockPos::ZERO.north(),
             vanilla_blocks::AIR.default_state(),
         );
-        assert_eq!(side_update, state);
+        // VegetationBlock.updateShape checks survival for every direction.
+        assert!(side_update.is_air());
+        let supported = TestLevel::default()
+            .with_block(BlockPos::ZERO.below(), vanilla_blocks::DIRT.default_state());
+        assert_eq!(
+            behavior.update_shape(
+                state,
+                &supported,
+                BlockPos::ZERO,
+                Direction::Down,
+                BlockPos::ZERO.below(),
+                vanilla_blocks::DIRT.default_state()
+            ),
+            state
+        );
     }
 }

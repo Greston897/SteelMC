@@ -4,6 +4,7 @@
 //! checking whether it can survive when it reaches the maximum value.
 //! They are also bound to a position, and cannot move.
 
+use crate::entity::Explosion;
 use crate::entity::damage::DamageSource;
 use crate::entity::mob::block_pos_distance_sqr;
 use crate::entity::{BorrowedNbtCompoundView, EntityMoveError, SharedEntity};
@@ -213,5 +214,31 @@ pub trait BlockAttachedEntity: Entity {
         Ok(())
     }
 
-    // TODO: Add a default implementation for `thunderHit` and `ignoreExplosion`
+    /// Reacts to a lightning strike, mirroring vanilla `Entity.thunderHit`.
+    ///
+    /// Vanilla's `HangingEntity` overrides this to drop its item and remove
+    /// itself; the default here does the same, which is what every block-attached
+    /// entity in Steel (item frames, paintings, leash knots) expects.
+    #[expect(
+        dead_code,
+        reason = "vanilla BlockAttachedEntity default override hook"
+    )]
+    fn thunder_hit_block_attached_entity(self: Arc<Self>, _lightning_uuid: uuid::Uuid) {
+        // Vanilla `HangingEntity.thunderHit` drops the item and removes itself.
+        self.drop_item(None);
+        self.set_removed(RemovalReason::Killed);
+    }
+
+    /// Whether this entity survives an explosion, matching vanilla
+    /// `Entity.ignoreExplosion`.
+    ///
+    /// Vanilla's `HangingEntity` returns `true` for explosions that would not
+    /// destroy the supporting block, so frames are not blasted off walls at range.
+    #[expect(
+        dead_code,
+        reason = "vanilla BlockAttachedEntity default override hook"
+    )]
+    fn ignore_explosion_block_attached_entity(&self, _explosion: &dyn Explosion) -> bool {
+        true
+    }
 }

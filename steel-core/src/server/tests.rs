@@ -30,9 +30,10 @@ use steel_registry::{
     init_vanilla_registry, stat::vanilla_stat_types, vanilla_blocks, vanilla_custom_stats,
     vanilla_dimension_types, vanilla_entities, vanilla_game_rules::RESPAWN_RADIUS, vanilla_items,
 };
-use steel_utils::{BlockPos, ChunkPos, UuidExt as _, translations, types::UpdateFlags};
+use steel_utils::{BlockPos, ChunkPos, Identifier, UuidExt as _, translations, types::UpdateFlags};
 use steel_utils::{codec::VarInt, serial::ReadFrom, text::DisplayResolutor};
 use text_components::TextComponent;
+use tokio::sync::mpsc::unbounded_channel;
 use tokio::{
     fs,
     net::TcpListener,
@@ -47,8 +48,9 @@ use crate::command::execution::{
     CommandArgumentSource, CommandExecutionContext, CommandPermissionSource, CommandResultCallback,
     CommandSource, ExecutionCommandSource, ExecutionStop, parse_entity_selector_text,
 };
+use crate::command::sender::RconOutput;
 use crate::command::sender::{CommandExecutionOwner, CommandSender};
-use crate::config::{ResolvedDomainConfig, RuntimeConfig, WorldsConfig};
+use crate::config::{RconConfig, ResolvedDomainConfig, RuntimeConfig, WorldsConfig};
 
 use crate::entity::damage::DamageSource;
 use crate::entity::{
@@ -178,6 +180,7 @@ fn test_runtime_config_with_max_players(max_players: u32) -> Arc<RuntimeConfig> 
         packet_workers: Some(1),
         chunk_generation_threads: Some(1),
         chunk_encoding_threads: Some(1),
+        rcon: RconConfig::default(),
         ..RuntimeConfig::default()
     })
 }
@@ -1581,7 +1584,10 @@ fn command_world_scope_survives_entity_transforms() {
 
         let console_source = CommandSource::new(CommandSender::Console, Arc::clone(&server));
         assert!(console_source.with_world(Arc::clone(beta)).is_ok());
-        let rcon_source = CommandSource::new(CommandSender::Rcon, Arc::clone(&server));
+        let rcon_source = CommandSource::new(
+            CommandSender::Rcon(RconOutput::new(unbounded_channel().0)),
+            Arc::clone(&server),
+        );
         assert!(rcon_source.with_world(Arc::clone(beta)).is_ok());
 
         drop((
@@ -1813,7 +1819,8 @@ fn command_gameplay_availability_tracks_exact_domain_residence() {
             };
             let owner = match request {
                 CommandRequest::Execute { owner, .. }
-                | CommandRequest::Suggestions { owner, .. } => owner,
+                | CommandRequest::Suggestions { owner, .. }
+                | CommandRequest::Background { owner, .. } => owner,
             };
             assert!(
                 !owner.is_current(&server),
@@ -3703,6 +3710,9 @@ fn death_respawn_replaces_the_live_player_incarnation() {
             .with_direct_entity(old_entity);
         old_player.record_last_damage_source(&source);
 
+        // Vanilla `ServerPlayer.restoreFrom` keeps the post-effect list across a
+        // respawn, so the replacement must inherit it.
+        let _ = old_player.add_post_effect(Identifier::vanilla_static("invert"));
         let requested_chunks_per_tick = 2;
         assert_ne!(
             send_test_chunk_batch(&server, &old_player, world),
@@ -3827,6 +3837,7 @@ fn end_credits_respawn_replaces_the_detached_player_incarnation() {
         };
         let leave_game_before_credits = leave_game_count(&old_player);
 
+        let _ = old_player.add_post_effect(Identifier::vanilla_static("invert"));
         let requested_chunks_per_tick = 2;
         assert_ne!(
             send_test_chunk_batch(&server, &old_player, source_world),
@@ -3868,6 +3879,10 @@ fn end_credits_respawn_replaces_the_detached_player_incarnation() {
             1
         );
         assert!(replacement.has_seen_credits());
+        assert_eq!(
+            replacement.post_effects(),
+            [Identifier::vanilla_static("invert")]
+        );
         assert!(replacement.last_damage_source().is_none());
         assert!(old_player.last_damage_source().is_some());
         assert!(Arc::ptr_eq(

@@ -1,0 +1,61 @@
+"""Index every observed Rust test outcome by crate/module; never infer parity.
+
+Input is the unmodified `cargo test --workspace --verbose` log. This report
+supplements the cargo exit code; it cannot turn a failed build into a pass.
+"""
+import argparse
+import collections
+import json
+from pathlib import Path
+import re
+
+ANSI = re.compile(r'\x1b\[[0-9;]*m')
+BINARY = re.compile(r'(?:[/\\]|^)([a-zA-Z0-9_]+)-[0-9a-fA-F]+(?:\.exe)?(?=[\s`\)\']|$)')
+PLAIN_WORKSPACE_BINARY = re.compile(r'''[/\\](steel(?:_[a-z0-9]+)*)(?:\.exe)?(?=[\s`)'"]|$)''')
+TEST = re.compile(r'^test (.+?) \.\.\. (ok|FAILED|ignored)(?:,.*)?$')
+
+
+def summarize(text):
+    crate = 'unknown'
+    tests = []
+    groups = collections.defaultdict(collections.Counter)
+    for raw in text.splitlines():
+        line = ANSI.sub('', raw).strip()
+        if re.search(r'\bRunning\b', line):
+            match = BINARY.search(line) or PLAIN_WORKSPACE_BINARY.search(line)
+            if match:
+                crate = match[1]
+        elif line.startswith('Doc-tests '):
+            crate = line.removeprefix('Doc-tests ').strip() + ':doctest'
+        match = TEST.fullmatch(line)
+        if match is None:
+            continue
+        name, status = match.groups()
+        status = {'ok': 'passed', 'FAILED': 'failed', 'ignored': 'ignored'}[status]
+        module = name.split('::', 1)[0] if '::' in name else '(root or doctest)'
+        tests.append({'crate': crate, 'name': name, 'status': status})
+        groups[crate + '/' + module][status] += 1
+    if not tests:
+        raise ValueError('No individual test results found; compilation/runner may have failed')
+    return {'scope': 'observed automated Rust tests; no human players required',
+            'complete_vanilla_parity': False,
+            'totals': dict(collections.Counter(row['status'] for row in tests)),
+            'groups': dict(sorted(groups.items())), 'tests': tests}
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('log', type=Path)
+    parser.add_argument('output', type=Path)
+    args = parser.parse_args()
+    text = args.log.read_text(errors='replace')
+    report = summarize(text)
+    headers = [ANSI.sub('', line).strip() for line in text.splitlines()
+               if re.search(r'\bRunning\b', ANSI.sub('', line))]
+    print('::notice title=Rust runner provenance headers::' + json.dumps([header[-1200:] for header in headers[-16:]]))
+    args.output.write_text(json.dumps(report, indent=2) + '\n')
+    summary = {'totals': report['totals'], 'groups': report['groups']}
+    print(json.dumps(summary, indent=2))
+    # Annotations remain accessible through api.github.com even when the log
+    # storage host is unreachable. Counts are outcomes, never parity scores.
+    print('::notice title=Observed Rust test outcomes::' + json.dumps(summary))

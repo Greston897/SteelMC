@@ -13,18 +13,36 @@ pub struct ZombieNautilusVariant {
     pub spawn_conditions: &'static [SpawnConditionEntry],
 }
 
-impl ToNbtTag for &ZombieNautilusVariant {
-    fn to_nbt_tag(self) -> NbtTag {
-        use simdnbt::owned::{NbtCompound, NbtTag};
+impl ZombieNautilusVariant {
+    /// Vanilla `ZombieNautilusVariant.NETWORK_CODEC` — no `baby_asset_id`,
+    /// and `spawn_conditions` is server-only.
+    #[must_use]
+    pub fn to_network_nbt(&self) -> NbtTag {
+        use simdnbt::owned::NbtCompound;
         let mut compound = NbtCompound::new();
         let asset_id = self.asset_id.to_string();
         compound.insert("asset_id", asset_id.as_str());
-        compound.insert("baby_asset_id", asset_id.as_str());
         if let Some(model) = self.model {
             compound.insert("model", model);
         }
+        NbtTag::Compound(compound)
+    }
+
+    /// Full direct codec including server-only `spawn_conditions`.
+    #[must_use]
+    pub fn to_direct_nbt_tag(&self) -> NbtTag {
+        use simdnbt::owned::NbtTag;
+        let NbtTag::Compound(mut compound) = self.to_network_nbt() else {
+            unreachable!("zombie nautilus variant network NBT is always a compound");
+        };
         insert_spawn_conditions(&mut compound, self.spawn_conditions);
         NbtTag::Compound(compound)
+    }
+}
+
+impl ToNbtTag for &ZombieNautilusVariant {
+    fn to_nbt_tag(self) -> NbtTag {
+        self.to_network_nbt()
     }
 }
 

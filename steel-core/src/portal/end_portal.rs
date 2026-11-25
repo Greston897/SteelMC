@@ -81,12 +81,12 @@ pub(crate) fn calculate_entity_return_transition(
     }
 }
 
-/// Calculates the currently supported End -> respawn-world transition for players.
+/// Calculates the End -> respawn-world transition for players.
 ///
-/// Vanilla delegates to `ServerPlayer.findRespawnPositionAndUseSpawnBlock`.
-///
-/// TODO(respawn): replace this with the vanilla personal bed/anchor respawn path once Steel has
-/// that player respawn foundation. This currently covers only the default respawn branch.
+/// The personal bed or respawn-anchor position is resolved earlier, in
+/// `EndPortalTeleportJob::returning_player` (vanilla
+/// `ServerPlayer.findRespawnPositionAndUseSpawnBlock`), which is why this only
+/// builds the transition for an already-chosen spawn point.
 #[must_use]
 pub(crate) fn calculate_player_return_transition(
     target_world: &Arc<World>,

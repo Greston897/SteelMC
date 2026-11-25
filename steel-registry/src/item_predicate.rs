@@ -770,7 +770,9 @@ impl ItemPredicate {
         &self.components
     }
 
-    pub(crate) fn from_owned_nbt(tag: &NbtTag) -> Option<Self> {
+    /// Decodes an item predicate from its persistent NBT representation.
+    #[must_use]
+    pub fn from_owned_nbt(tag: &NbtTag) -> Option<Self> {
         let compound = tag.compound()?;
         Some(Self::new(
             decode_optional(compound, "items", RegistryHolderSet::from_owned_nbt)?,

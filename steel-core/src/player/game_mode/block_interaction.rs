@@ -1,4 +1,6 @@
 use super::{block_breaking::BlockBreakAction, *};
+use crate::player::advancement::predicate::TriggerContext;
+use steel_registry::vanilla_criteria_triggers::ANY_BLOCK_USE;
 
 impl Player {
     /// Sends block update packets for a position and its neighbor.
@@ -79,6 +81,13 @@ impl Player {
 
         let animation = self.interact_animation(packet.hand);
         let result = use_item_on(self, &world, packet.hand, &packet.block_hit);
+        if result.consumes_action() && result != InteractionResult::Fail {
+            let stack = self.inventory.lock().get_item_in_hand(packet.hand).clone();
+            self.trigger_advancement_with_context(
+                &ANY_BLOCK_USE,
+                &TriggerContext::block_at(&world, pos).with_item_stack(&stack),
+            );
+        }
         self.swing_after_interaction(packet.hand, animation, result);
 
         self.send_block_updates(pos, direction);
@@ -198,6 +207,11 @@ impl Player {
         let behavior = block_behaviors.get_behavior(block);
 
         let block_entity = world.get_block_entity(packet.pos);
+        // Saved before the block entity is handed to the behavior, which may
+        // consume the shared handle.
+        let picked_data = block_entity
+            .as_ref()
+            .map(|block_entity| (block_entity.get_type(), block_entity.save_custom_only()));
 
         let include_data = self.has_infinite_materials() && packet.include_data;
 
@@ -211,7 +225,19 @@ impl Player {
             return;
         }
 
-        // TODO: If include_data, copy the block entity data into the picked item stack.
+        // Vanilla `ServerGameMode.handlePickItemFromBlock`: with data included
+        // (`hasInfiniteMaterials` + the request flag) the block entity's saved
+        // NBT becomes the item's `block_entity_data` component.
+        let mut item_stack = item_stack;
+        if include_data
+            && let Some((block_entity_type, nbt)) = picked_data
+            && let Some(data) = CustomData::try_from_compound(nbt)
+        {
+            item_stack.set(
+                vanilla_components::BLOCK_ENTITY_DATA,
+                BlockEntityData::new(block_entity_type, data),
+            );
+        }
 
         let mut inventory = self.inventory.lock();
 
@@ -236,6 +262,76 @@ impl Player {
                     return;
                 }
             }
+        }
+
+        self.send_packet(CSetHeldSlot {
+            slot: i32::from(inventory.get_selected_slot()),
+        });
+
+        drop(inventory);
+        self.inventory_menu
+            .lock()
+            .behavior_mut()
+            .broadcast_changes(&self.connection);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handleBundleItemSelectedPacket`:
+    /// remembers which item is selected inside the bundle in that slot.
+    pub fn handle_bundle_item_selected(&self, packet: SBundleItemSelected) {
+        let Ok(slot_id) = usize::try_from(packet.slot_id) else {
+            return;
+        };
+        let menu = self.inventory_menu.lock();
+        let Some(slot) = menu.behavior().slots().get(slot_id) else {
+            return;
+        };
+        slot.set_selected_bundle_item_index(packet.selected_item_index);
+    }
+
+    /// Vanilla `ServerGamePacketListenerImpl.handlePickItemFromEntity`: a middle
+    /// click on an entity picks the stack its `pick_result` reports, provided the
+    /// entity is inside the player's interaction range plus three blocks.
+    pub fn handle_pick_item_from_entity(&self, packet: SPickItemFromEntity) {
+        let world = self.get_world();
+        let Some(entity) = world.get_entity_by_id(packet.entity_id) else {
+            return;
+        };
+        // Vanilla `isWithinEntityInteractionRange(entity, 3.0)`.
+        if !self.is_within_entity_interaction_range_with_buffer(entity.bounding_box(), 3.0) {
+            return;
+        }
+        let Some(item_stack) = entity.pick_result() else {
+            return;
+        };
+        if item_stack.is_empty() {
+            return;
+        }
+        self.pick_item_stack(item_stack);
+    }
+
+    /// Copy of vanilla `ServerGamePacketListenerImpl.tryPickItem`'s inventory
+    /// side: select a matching hotbar slot, move a matching item into the hotbar,
+    /// or (in creative) add a fresh stack.
+    fn pick_item_stack(&self, item_stack: ItemStack) {
+        let mut inventory = self.inventory.lock();
+
+        if let Some(slot_with_item) =
+            inventory.find_slot_matching_item_with_same_components(&item_stack)
+        {
+            if PlayerInventory::is_hotbar_slot(slot_with_item) {
+                inventory.set_selected_slot(slot_with_item);
+            } else {
+                let slot = inventory.get_suitable_hotbar_slot();
+                inventory.set_selected_slot(slot);
+                inventory.pick_slot(slot_with_item);
+            }
+        } else {
+            if !self.has_infinite_materials() {
+                return;
+            }
+            let slot = inventory.get_suitable_hotbar_slot();
+            inventory.set_selected_slot(slot);
+            inventory.add_and_pick_item(item_stack);
         }
 
         self.send_packet(CSetHeldSlot {

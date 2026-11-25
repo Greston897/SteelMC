@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::world::Explosion;
 use steel_macros::block_behavior;
 use steel_registry::{
     blocks::{
@@ -28,8 +29,6 @@ use crate::{
 };
 
 /// Behavior for Candle Cakes
-/// TODO:
-/// - [ ] onExplosion
 #[block_behavior]
 pub struct CandleCakeBlock {
     block: BlockRef,
@@ -135,6 +134,21 @@ impl BlockBehavior for CandleCakeBlock {
             return;
         };
         world.set_block(hit.block_pos, lit_state, UpdateFlags::UPDATE_ALL_IMMEDIATE);
+    }
+
+    /// Vanilla `CandleCakeBlock.onExplosionHit`: an explosion only blows out the
+    /// candle, leaving the cake standing.
+    fn on_explosion_hit(
+        &self,
+        state: BlockStateId,
+        world: &Arc<World>,
+        pos: BlockPos,
+        _explosion: &dyn Explosion,
+        _on_hit: &mut dyn FnMut(ItemStack, BlockPos),
+    ) {
+        if state.get_value(LIT) {
+            CandleBlock::extinguish(None, state, world, pos);
+        }
     }
 
     fn get_clone_item_stack(

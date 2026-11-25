@@ -9,6 +9,7 @@ pub struct OpenDoorGoal {
     door_interact: DoorInteractGoal,
     close_door: bool,
     forget_time: i32,
+    raid_only: bool,
 }
 
 impl OpenDoorGoal {
@@ -18,6 +19,16 @@ impl OpenDoorGoal {
             door_interact: DoorInteractGoal::new(),
             close_door: close_door_after,
             forget_time: 0,
+            raid_only: false,
+        }
+    }
+    /// AbstractIllager.RaiderOpenDoorGoal only runs while attached to a raid.
+    pub(crate) const fn for_raid() -> Self {
+        Self {
+            door_interact: DoorInteractGoal::new(),
+            close_door: false,
+            forget_time: 0,
+            raid_only: true,
         }
     }
 }
@@ -28,7 +39,11 @@ impl Goal for OpenDoorGoal {
     }
 
     fn can_use(&mut self, mob: &dyn PathfinderMob) -> bool {
-        self.door_interact.can_use(mob)
+        (!self.raid_only
+            || mob
+                .level()
+                .is_some_and(|world| world.raids.contains_raider(mob.uuid())))
+            && self.door_interact.can_use(mob)
     }
 
     fn can_continue_to_use(&mut self, _mob: &dyn PathfinderMob) -> bool {
@@ -41,7 +56,9 @@ impl Goal for OpenDoorGoal {
     }
 
     fn stop(&mut self, mob: &dyn PathfinderMob) {
-        self.door_interact.set_open(mob, false);
+        if self.close_door {
+            self.door_interact.set_open(mob, false);
+        }
     }
 
     fn requires_update_every_tick(&self) -> bool {

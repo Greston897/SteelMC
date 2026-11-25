@@ -10,6 +10,7 @@ use steel_registry::blocks::block_state_ext::BlockStateExt as _;
 use steel_registry::entity_type::EntityTypeRef;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::vanilla_block_tags::BlockTag;
+use steel_registry::vanilla_criteria_triggers;
 use steel_registry::vanilla_game_rules::MOB_DROPS;
 use steel_registry::{vanilla_blocks, vanilla_entities};
 use steel_utils::entity_events::EntityStatus;
@@ -169,6 +170,22 @@ pub trait Animal: AgeableMob {
         false
     }
 
+    /// Called when `player` feeds `item_stack` to this animal, before the
+    /// breeding and ageing branches run.
+    ///
+    /// Vanilla species override `mobInteract` for side effects that happen on
+    /// every successful feeding. `Fox.mobInteract` is the common case: feeding
+    /// sweet berries makes the fox trust the player.
+    fn on_fed(&self, _player: &Player, _item_stack: &ItemStack) {}
+
+    /// Returns whether this animal can breed at all. Vanilla overrides
+    /// `Animal.canBreed` to `false` for parrots, mules, skeleton/zombie horses,
+    /// camel husks, happy ghasts and sulfur cubes, which still *eat* their food
+    /// but never enter love mode.
+    fn can_breed(&self) -> bool {
+        true
+    }
+
     /// Returns the base breeding experience reward: 1 to 3, randomly.
     fn base_experience_reward_animal(&self) -> i32 {
         1 + rand::random_range(0..3)
@@ -240,8 +257,13 @@ pub trait Animal: AgeableMob {
             return self.mob_interact_ageable(player, hand);
         }
 
+        // Vanilla `Animal.mobInteract` lets a species react to being fed before
+        // the generic breeding path. `Fox.mobInteract` uses this to trust the
+        // player, which is what changes its behaviour towards them afterwards.
+        self.on_fed(player, &item_stack);
+
         let age = self.get_age();
-        if age == 0 && self.can_fall_in_love() {
+        if age == 0 && self.can_breed() && self.can_fall_in_love() {
             Mob::use_player_item(self, player, hand);
             self.set_in_love(Some(player));
             self.play_eating_sound();
@@ -310,7 +332,21 @@ pub trait Animal: AgeableMob {
             .or_else(|| partner.love_cause_uuid())
             .is_some()
         {
-            // TODO: Award the animals-bred stat and advancement once those foundations exist.
+            // Vanilla `Animal.spawnChildFromBreeding` awards `animals_bred` and fires
+            // `bred_animals` for the player whose love cause started the breeding.
+            // The love cause is the initiating player; resolve it through the
+            // player index so the `Arc<Player>` is available for the trigger.
+            let breeder = self
+                .love_cause_uuid()
+                .or_else(|| partner.love_cause_uuid())
+                .and_then(|uuid| self.level()?.get_entity_by_uuid(&uuid))
+                .and_then(|entity| {
+                    let world = self.level()?;
+                    world.players.get_by_entity_id(entity.as_ref().id())
+                });
+            if let Some(breeder) = breeder {
+                breeder.trigger_advancement(&vanilla_criteria_triggers::BRED_ANIMALS);
+            }
         }
 
         self.set_age(PARENT_AGE_AFTER_BREEDING);

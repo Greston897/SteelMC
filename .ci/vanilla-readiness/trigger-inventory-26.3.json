@@ -1,0 +1,242 @@
+{
+  "schema": 1,
+  "version": "26.3",
+  "source": "minecraft-src/minecraft/src/net/minecraft/advancements/triggers/CriteriaTriggers.java",
+  "source_sha256": "df23e839c3d458cb89a6e8a7c2cc4ad35357f898c2d59928145b8ad7c8d2bf82",
+  "source_archive_blob": "de444ab9346fef3b08bc31ef1ac8674345ef17bb",
+  "source_generation_run": "https://github.com/Greston897/SteelMC/actions/runs/44926675892",
+  "registrations": [
+    {
+      "constant": "IMPOSSIBLE",
+      "id": "impossible"
+    },
+    {
+      "constant": "PLAYER_KILLED_ENTITY",
+      "id": "player_killed_entity"
+    },
+    {
+      "constant": "ENTITY_KILLED_PLAYER",
+      "id": "entity_killed_player"
+    },
+    {
+      "constant": "ENTER_BLOCK",
+      "id": "enter_block"
+    },
+    {
+      "constant": "INVENTORY_CHANGED",
+      "id": "inventory_changed"
+    },
+    {
+      "constant": "RECIPE_UNLOCKED",
+      "id": "recipe_unlocked"
+    },
+    {
+      "constant": "PLAYER_HURT_ENTITY",
+      "id": "player_hurt_entity"
+    },
+    {
+      "constant": "ENTITY_HURT_PLAYER",
+      "id": "entity_hurt_player"
+    },
+    {
+      "constant": "ENCHANTED_ITEM",
+      "id": "enchanted_item"
+    },
+    {
+      "constant": "FILLED_BUCKET",
+      "id": "filled_bucket"
+    },
+    {
+      "constant": "BREWED_POTION",
+      "id": "brewed_potion"
+    },
+    {
+      "constant": "CONSTRUCT_BEACON",
+      "id": "construct_beacon"
+    },
+    {
+      "constant": "USED_ENDER_EYE",
+      "id": "used_ender_eye"
+    },
+    {
+      "constant": "SUMMONED_ENTITY",
+      "id": "summoned_entity"
+    },
+    {
+      "constant": "BRED_ANIMALS",
+      "id": "bred_animals"
+    },
+    {
+      "constant": "LOCATION",
+      "id": "location"
+    },
+    {
+      "constant": "SLEPT_IN_BED",
+      "id": "slept_in_bed"
+    },
+    {
+      "constant": "CURED_ZOMBIE_VILLAGER",
+      "id": "cured_zombie_villager"
+    },
+    {
+      "constant": "TRADE",
+      "id": "villager_trade"
+    },
+    {
+      "constant": "ITEM_DURABILITY_CHANGED",
+      "id": "item_durability_changed"
+    },
+    {
+      "constant": "LEVITATION",
+      "id": "levitation"
+    },
+    {
+      "constant": "CHANGED_DIMENSION",
+      "id": "changed_dimension"
+    },
+    {
+      "constant": "TICK",
+      "id": "tick"
+    },
+    {
+      "constant": "TAME_ANIMAL",
+      "id": "tame_animal"
+    },
+    {
+      "constant": "PLACED_BLOCK",
+      "id": "placed_block"
+    },
+    {
+      "constant": "CONSUME_ITEM",
+      "id": "consume_item"
+    },
+    {
+      "constant": "EFFECTS_CHANGED",
+      "id": "effects_changed"
+    },
+    {
+      "constant": "USED_TOTEM",
+      "id": "used_totem"
+    },
+    {
+      "constant": "NETHER_TRAVEL",
+      "id": "nether_travel"
+    },
+    {
+      "constant": "FISHING_ROD_HOOKED",
+      "id": "fishing_rod_hooked"
+    },
+    {
+      "constant": "CHANNELED_LIGHTNING",
+      "id": "channeled_lightning"
+    },
+    {
+      "constant": "SHOT_CROSSBOW",
+      "id": "shot_crossbow"
+    },
+    {
+      "constant": "SPEAR_MOBS_TRIGGER",
+      "id": "spear_mobs"
+    },
+    {
+      "constant": "KILLED_BY_ARROW",
+      "id": "killed_by_arrow"
+    },
+    {
+      "constant": "RAID_WIN",
+      "id": "hero_of_the_village"
+    },
+    {
+      "constant": "RAID_OMEN",
+      "id": "voluntary_exile"
+    },
+    {
+      "constant": "HONEY_BLOCK_SLIDE",
+      "id": "slide_down_block"
+    },
+    {
+      "constant": "BEE_NEST_DESTROYED",
+      "id": "bee_nest_destroyed"
+    },
+    {
+      "constant": "TARGET_BLOCK_HIT",
+      "id": "target_hit"
+    },
+    {
+      "constant": "ITEM_USED_ON_BLOCK",
+      "id": "item_used_on_block"
+    },
+    {
+      "constant": "DEFAULT_BLOCK_USE",
+      "id": "default_block_use"
+    },
+    {
+      "constant": "ANY_BLOCK_USE",
+      "id": "any_block_use"
+    },
+    {
+      "constant": "GENERATE_LOOT",
+      "id": "player_generates_container_loot"
+    },
+    {
+      "constant": "THROWN_ITEM_PICKED_UP_BY_ENTITY",
+      "id": "thrown_item_picked_up_by_entity"
+    },
+    {
+      "constant": "THROWN_ITEM_PICKED_UP_BY_PLAYER",
+      "id": "thrown_item_picked_up_by_player"
+    },
+    {
+      "constant": "PLAYER_INTERACTED_WITH_ENTITY",
+      "id": "player_interacted_with_entity"
+    },
+    {
+      "constant": "PLAYER_SHEARED_EQUIPMENT",
+      "id": "player_sheared_equipment"
+    },
+    {
+      "constant": "START_RIDING_TRIGGER",
+      "id": "started_riding"
+    },
+    {
+      "constant": "LIGHTNING_STRIKE",
+      "id": "lightning_strike"
+    },
+    {
+      "constant": "USING_ITEM",
+      "id": "using_item"
+    },
+    {
+      "constant": "FALL_FROM_HEIGHT",
+      "id": "fall_from_height"
+    },
+    {
+      "constant": "RIDE_ENTITY_IN_LAVA_TRIGGER",
+      "id": "ride_entity_in_lava"
+    },
+    {
+      "constant": "KILL_MOB_NEAR_SCULK_CATALYST",
+      "id": "kill_mob_near_sculk_catalyst"
+    },
+    {
+      "constant": "ALLAY_DROP_ITEM_ON_BLOCK",
+      "id": "allay_drop_item_on_block"
+    },
+    {
+      "constant": "AVOID_VIBRATION",
+      "id": "avoid_vibration"
+    },
+    {
+      "constant": "RECIPE_CRAFTED",
+      "id": "recipe_crafted"
+    },
+    {
+      "constant": "CRAFTER_RECIPE_CRAFTED",
+      "id": "crafter_recipe_crafted"
+    },
+    {
+      "constant": "FALL_AFTER_EXPLOSION",
+      "id": "fall_after_explosion"
+    }
+  ]
+}

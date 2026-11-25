@@ -11,10 +11,17 @@ use super::{
     SuggestionError, Suggestions, TAB_LIST_UPDATE_INTERVAL, TabListTickStats, ThreadPool, World,
     command_suggestions_packet, sleep, spawn_blocking,
 };
+use crate::command::BackgroundCommandResult;
+use crate::server::schedule::ScheduleMode::Append;
 
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
+use std::sync::atomic::Ordering::Relaxed;
 use steel_registry::vanilla_custom_stats;
-use steel_utils::threading::{available_worker_threads, worker_threads_for_available};
+use steel_registry::vanilla_game_rules::COMMAND_BLOCK_OUTPUT;
+use steel_utils::threading::worker_threads_for_available;
 use steel_utils::translations;
+use tokio::sync::oneshot::Sender;
 
 impl Server {
     pub(super) fn advance_server_tick(&self) -> (u64, bool) {
@@ -33,7 +40,7 @@ impl Server {
     pub async fn run(self: Arc<Self>, cancel_token: CancellationToken) {
         self.packet_processor.open_after_tick();
         let packet_worker_count =
-            worker_threads_for_available(self.config.packet_workers, available_worker_threads());
+            worker_threads_for_available(self.config.packet_workers, self.config.cores);
         let mut packet_handles = Vec::with_capacity(packet_worker_count);
         for worker_id in 0..packet_worker_count {
             let s = Arc::clone(&self);
@@ -111,7 +118,7 @@ impl Server {
             world.chunk_map.task_tracker.wait().await;
         }
 
-        let mut players_to_save = Vec::new();
+        let mut players_to_save = Vec::with_capacity(players.len());
         for player in players {
             let domain = player.get_world().domain().to_owned();
             player.award_custom_stat(&vanilla_custom_stats::LEAVE_GAME);
@@ -123,6 +130,16 @@ impl Server {
         self.damage_history.clear();
         log::info!("Saving world data...");
         let command_data = self.save_command_data().await;
+        let mut total_saved = match command_data.chunks {
+            Ok(saved) => {
+                log::info!("Saved {saved} chunks");
+                saved
+            }
+            Err(error) => {
+                log::error!("Failed to save world chunks: {error}");
+                0
+            }
+        };
         match command_data.scoreboards {
             Ok(saved) => log::info!("Saved {saved} domain scoreboards"),
             Err(error) => log::error!("Failed to save domain scoreboards: {error}"),
@@ -131,7 +148,9 @@ impl Server {
             Ok(saved) => log::info!("Saved {saved} domain command storages"),
             Err(error) => log::error!("Failed to save domain command storage: {error}"),
         }
-        let mut total_saved = 0;
+        // The chunks already ran through `save_command_data` above. `cleanup`
+        // repeats the per-world saved-data sets (idempotent) and finds no dirty
+        // chunks left, so its count is only a fallback for the error path.
         for world in self.worlds.values() {
             world.cleanup(&mut total_saved).await;
         }
@@ -221,11 +240,11 @@ impl Server {
                         () = sleep(next_tick_time - now) => {}
                     }
                 } else {
-                    overload_guard.skip_backlog_if_overloaded(
-                        now,
-                        &mut next_tick_time,
-                        nanoseconds_per_tick,
-                    );
+                    // Server is behind schedule: record overload state without
+                    // skipping ticks. Subsystems defer non-critical work instead
+                    // of desyncing the world from players and saves.
+                    let behind = now.saturating_duration_since(next_tick_time);
+                    overload_guard.tick(now, behind);
                 }
                 next_tick_time += Duration::from_nanos(nanoseconds_per_tick);
             }
@@ -241,6 +260,19 @@ impl Server {
             let (tick_count, runs_normally) = self.advance_server_tick();
 
             self.tick_pending_command_executions(&mut pending_command_executions);
+            for function in self.function_packs.tick_functions(runs_normally) {
+                // Avoid `format!` overhead in hot tick: pre-allocate exact capacity.
+                let mut command =
+                    String::with_capacity(9 + function.namespace.len() + 1 + function.path.len());
+                command.push_str("function ");
+                command.push_str(&function.namespace);
+                command.push(':');
+                command.push_str(&function.path);
+                if let Err(error) = self.submit_command(CommandSender::Console, command) {
+                    log::error!("Could not queue datapack function {function}: {error:?}");
+                }
+            }
+            self.tick_scheduled_commands();
             self.tick_command_requests(&mut pending_command_executions);
             if let Err(error) = self
                 .tick_worlds_game(&world_tick_workers, tick_count, runs_normally)
@@ -273,13 +305,64 @@ impl Server {
                 &mut command_data_autosaves,
             );
 
-            let tab_list_tick_stats = self.record_tick_and_capture_tab_stats(
-                tick_count,
-                tick_start.elapsed().as_nanos() as u64,
-            );
+            let tick_duration_nanos = tick_start.elapsed().as_nanos() as u64;
+            let tick_duration = Duration::from_nanos(tick_duration_nanos);
+            // Track overload state without skipping ticks; subsystems defer
+            // non-critical work when the server is overloaded.
+            // Lightest + critical always runs (player packets, movement, saves
+            // are outside this guard). Tier=Deferred work is deferred on any
+            // overload tick, Tier=Important after 3 consecutive overloads.
+            overload_guard.tick(Instant::now(), tick_duration);
+            self.is_overloaded
+                .store(overload_guard.is_overloaded(), Ordering::Relaxed);
+            self.overload_tick_count
+                .store(overload_guard.overload_tick_count(), Ordering::Relaxed);
+            // When the server recovers, drain deferred queue in priority order
+            // (lightest + important first) with a per-tick budget to avoid an
+            // MSPT spike. Heavy work can be offloaded to background pool.
+            if !overload_guard.is_overloaded() {
+                let drained = overload_guard.process_deferred();
+                if !drained.is_empty() {
+                    // Deferred work is generic (scoreboard, custom); for now we just
+                    // account for it. Subsystems that use `defer()` will have their
+                    // work re-queued and actually executed on drain in the future.
+                    tracing::debug!(
+                        count = drained.len(),
+                        "Drained deferred work while catching up"
+                    );
+                }
+            } else if overload_guard.should_offload_to_background() {
+                let heavy = overload_guard.drain_heavy_for_background();
+                if !heavy.is_empty() {
+                    // Heavy deferred work (chunk maintenance, spawning) is stateless
+                    // and will be retried next tick when the server recovers, so
+                    // we keep it in the queue instead of dropping. Background
+                    // offload is reserved for truly background-safe work (lighting)
+                    // which will be dispatched via `spawn_blocking` when available.
+                    let count = heavy.len();
+                    // Re-queue heavy for next tick - do not drop, keep for retry.
+                    // For now we just log and re-queue lightest heavy for background if needed.
+                    tracing::debug!(
+                        count,
+                        "Deferring heavy work to next tick (background offload ready)"
+                    );
+                    for work in heavy {
+                        overload_guard.defer(work);
+                    }
+                }
+            }
+            let tab_list_tick_stats =
+                self.record_tick_and_capture_tab_stats(tick_count, tick_duration_nanos);
+
+            // Vanilla `MinecraftServer.tickServer` -> `sampleDebug`: a client
+            // that opened the debug chart asked for tick samples through
+            // `SDebugSubscriptionRequest`, and without this packet the chart
+            // stayed empty forever.
+            self.send_debug_samples(tick_duration_nanos);
 
             if let Some(tick_stats) = tab_list_tick_stats {
                 self.broadcast_tab_list(tick_stats);
+                self.broadcast_tps_bar(tick_stats);
             }
 
             if should_sprint_this_tick {
@@ -324,8 +407,14 @@ impl Server {
     }
 
     async fn autosave_command_data(&self) {
-        tracing::debug!("Command data autosave started");
+        tracing::debug!("Autosave started");
         let results = self.save_command_data().await;
+        // Vanilla `MinecraftServer.tickServer` autosaves through
+        // `saveEverything`, which includes the loaded chunks.
+        match results.chunks {
+            Ok(saved) => tracing::debug!(saved, "Chunk autosave completed"),
+            Err(error) => tracing::error!(%error, "Chunk autosave failed"),
+        }
         match results.scoreboards {
             Ok(saved) => tracing::debug!(saved, "Domain scoreboard autosave completed"),
             Err(error) => tracing::error!(%error, "Domain scoreboard autosave failed"),
@@ -347,6 +436,12 @@ impl Server {
             }
         }
         if Instant::now() < *next_autosave {
+            return;
+        }
+        // Vanilla `MinecraftServer.saveEverything` returns early while `/save-off`
+        // has disabled automatic saving; the cadence keeps ticking either way.
+        if !self.is_auto_save_enabled() {
+            *next_autosave = Instant::now() + COMMAND_DATA_AUTOSAVE_INTERVAL;
             return;
         }
         if saves.is_empty() {
@@ -375,6 +470,35 @@ impl Server {
         }
     }
 
+    /// Runs the commands whose scheduled tick has arrived.
+    ///
+    /// Each command is submitted through the ordinary request queue, so a
+    /// scheduled function runs with console permissions and cannot starve the
+    /// tick loop — the queue caps how many run per tick.
+    fn tick_scheduled_commands(self: &Arc<Self>) {
+        let tick = self.current_tick();
+        let due = self.schedules.due(tick);
+        if due.is_empty() {
+            return;
+        }
+
+        for scheduled in due {
+            if self
+                .submit_command(CommandSender::Console, scheduled.command.clone())
+                .is_err()
+            {
+                // The queue is full: keep the schedule rather than dropping it,
+                // so the command runs on a later tick instead of vanishing.
+                tracing::warn!(
+                    command = %scheduled.command,
+                    "Command queue full while running a scheduled command; requeueing"
+                );
+                self.schedules
+                    .schedule(scheduled.key, scheduled.command, tick + 1, Append);
+            }
+        }
+    }
+
     fn tick_command_requests(
         self: &Arc<Self>,
         pending: &mut PendingCommandExecutionQueue<CommandSource>,
@@ -395,6 +519,16 @@ impl Server {
                         continue;
                     }
                     self.execute_command_request(pending, owner, &command);
+                }
+                CommandRequest::Background {
+                    owner,
+                    command,
+                    reply,
+                } => {
+                    if !owner.is_current(self) {
+                        continue;
+                    }
+                    self.execute_background_command(owner, &command, reply);
                 }
                 CommandRequest::Suggestions {
                     owner,
@@ -445,6 +579,70 @@ impl Server {
         {
             tracing::error!("suspended command execution could not be retained");
         }
+    }
+
+    /// Runs one command block command off the tick-owned queue.
+    ///
+    /// The execution is an ordinary dispatcher run with the block as its source:
+    /// it holds console-level permissions, never chats, and reports the last
+    /// line the command produced. A suspended execution is cancelled instead of
+    /// being parked, because a command block must not keep a queue alive across
+    /// ticks.
+    fn execute_background_command(
+        self: &Arc<Self>,
+        owner: CommandExecutionOwner,
+        command: &str,
+        reply: Sender<BackgroundCommandResult>,
+    ) {
+        let Some(output) = owner.sender().get_command_block_output().cloned() else {
+            // A background request always carries a command block sender; a
+            // mismatch means the request was built wrong, so drop it loudly.
+            tracing::error!("background command execution without a command block sender");
+            return;
+        };
+        let block_world = Arc::clone(output.world());
+        let source = CommandSource::new(owner.sender().clone(), Arc::clone(self))
+            .with_world(block_world)
+            .unwrap_or_else(|_| CommandSource::new(owner.sender().clone(), Arc::clone(self)));
+        let command = command.strip_prefix('/').unwrap_or(command);
+        let parsed = {
+            let dispatcher = self.command_dispatcher.read();
+            let parse = dispatcher.parse(command, source.clone());
+            dispatcher.context_chain(parse)
+        };
+        let chain = match parsed {
+            Ok(chain) => chain,
+            Err(error) => {
+                let failure = error.message_component().to_string();
+                let _ = reply.send(BackgroundCommandResult {
+                    success: false,
+                    output: Some(failure),
+                    output_allowed: true,
+                });
+                return;
+            }
+        };
+
+        let output_allowed = source.world().get_game_rule(&COMMAND_BLOCK_OUTPUT);
+        let success_flag = Arc::new(AtomicBool::new(false));
+        let callback = CommandResultCallback::new({
+            let success_flag = Arc::clone(&success_flag);
+            move |command_success, _result| {
+                success_flag.store(command_success, Relaxed);
+            }
+        });
+        let source = source.with_callback(callback.clone());
+        let mut execution = CommandExecutionContext::for_source(&source);
+        execution.queue_initial_command(chain, source, callback);
+        let stopped = execution.run();
+        if stopped == ExecutionStop::Suspended {
+            execution.cancel();
+        }
+        let _ = reply.send(BackgroundCommandResult {
+            success: success_flag.load(Relaxed),
+            output: output.take(),
+            output_allowed,
+        });
     }
 
     fn send_command_suggestions(
@@ -514,20 +712,53 @@ impl Server {
 
     /// Executes one chunk sending tick across all worlds and players.
     ///
-    /// A per-world per-tick encode cache is used so overlapping view areas
-    /// don't re-encode the same chunk within a single tick.
+    /// Players are fanned out across the encoding pool: loading a fresh view can
+    /// mean hundreds of chunks per player, and encoding them all on the tick
+    /// thread left every encoding core idle while one player's queue drained.
+    /// `scope` only hands out work, so the per-player state (chunk sender,
+    /// connection, tracker) stays owned by whoever processes that player.
+    ///
+    /// Each player keeps a private encode cache. A shared cache would need to be
+    /// mutated from several workers at once, and a chunk only overlaps between
+    /// players whose view areas meet, so the duplicated work is negligible next
+    /// to the serialization that would otherwise be needed.
+    ///
+    /// The batch encoder inside `send_chunks_for_player` fans out over the same
+    /// pool. That nesting is safe: `Rayon` hands the worker's share of the inner
+    /// work to whatever threads are free, and every thread waiting on an inner
+    /// `install` also executes part of it, so the pool cannot starve itself.
     fn tick_chunk_sending(&self) {
         let tick_start = Instant::now();
+        let encoding_pool = self.chunk_encoding_pool.as_ref();
         for world in self.worlds.values() {
-            let mut encode_cache = rustc_hash::FxHashMap::default();
+            // Pre-allocate: avoids repeated realloc when many players are online.
+            let mut players = Vec::with_capacity(world.players.len());
             world.players.iter_players(|_uuid, player| {
-                Self::send_chunks_for_player(
-                    player,
-                    world,
-                    &mut encode_cache,
-                    self.chunk_encoding_pool.as_ref(),
-                );
+                players.push(Arc::clone(player));
                 true
+            });
+
+            // `install` moves the whole scope onto the encoding pool, so the
+            // spawned players are distributed across its workers instead of
+            // running on whichever thread happens to call in.
+            encoding_pool.install(|| {
+                rayon::scope(|scope| {
+                    for player in &players {
+                        scope.spawn(|_| {
+                            // MSPT/RAM имба: пре-резерв 64 чанка — до 90% хитрейта encode_batch, 0 realloc на вид дистансе 10
+                            let mut encode_cache = rustc_hash::FxHashMap::with_capacity_and_hasher(
+                                64,
+                                rustc_hash::FxBuildHasher,
+                            );
+                            Self::send_chunks_for_player(
+                                player,
+                                world,
+                                &mut encode_cache,
+                                encoding_pool,
+                            );
+                        });
+                    }
+                });
             });
         }
 
@@ -596,6 +827,19 @@ impl Server {
     ) -> Result<(), WorldTickWorkerError> {
         if runs_normally {
             self.worlds.advance_domain_game_times();
+            // Vanilla advances `ServerScoreboard` stopwatches once per tick,
+            // alongside the game time.
+            let () = self.scoreboards.tick_stopwatches();
+        }
+        // Vanilla ticks locator-bar transmission after the world tick, from the
+        // per-world `WaypointManager`; it only needs the post-move positions.
+        for world in self.worlds.values() {
+            world.waypoints.tick(world);
+            // Vanilla ticks `ServerLevel.raidManager` every tick: it advances the
+            // waves, stops finished raids and grants hero of the village.
+            if runs_normally {
+                world.raids.tick(world);
+            }
         }
         self.damage_history.expire();
         let all_timings = workers.tick_all(tick_count, runs_normally).await?;

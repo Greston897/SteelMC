@@ -64,6 +64,20 @@ impl ChunkPos {
         Self(IVec2::new(x, y))
     }
 
+    /// Vanilla `ChunkPos.x`: the chunk's x coordinate.
+    #[must_use]
+    #[inline]
+    pub const fn x(self) -> i32 {
+        self.0.x
+    }
+
+    /// Vanilla `ChunkPos.z`: the chunk's z coordinate.
+    #[must_use]
+    #[inline]
+    pub const fn z(self) -> i32 {
+        self.0.y
+    }
+
     /// Creates a `ChunkPos` from a world block position.
     #[must_use]
     pub const fn from_block_pos(pos: BlockPos) -> Self {
@@ -437,6 +451,17 @@ impl BlockPos {
             f64::from(self.0.y),
             f64::from(self.0.z) + 0.5,
         )
+    }
+
+    /// Vanilla `Vec3i.distToCenterSqr(double, double, double)`: the squared
+    /// distance from the block's *center* (corner plus half a block) to `position`.
+    ///
+    /// Note this is not `BlockPos` as a point: a block at `x = 5` whose center is
+    /// targeted measures from `5.5`.
+    #[must_use]
+    pub fn dist_to_center_sqr(&self, position: DVec3) -> f64 {
+        let (x, y, z) = self.get_center();
+        DVec3::new(x, y, z).distance_squared(position)
     }
 
     /// Returns whether this block's center is closer than `distance` to `position`.

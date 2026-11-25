@@ -185,10 +185,7 @@ impl Server {
     async fn prepare_default_spawn(world: &Arc<World>) -> Result<PreparedSpawn, String> {
         let (spawn, spawn_pos) = {
             let level_data = world.level_data.read();
-            (
-                level_data.data().spawn.clone(),
-                level_data.data().spawn_pos(),
-            )
+            (level_data.data().spawn, level_data.data().spawn_pos())
         };
         let position = world
             .find_adjusted_shared_spawn_pos(spawn_pos, world.default_gamemode())
@@ -259,6 +256,22 @@ impl Server {
                 apply_default_spawn(player, &state.world, *spawn);
             }
         }
+    }
+
+    /// Applies vanilla `force-gamemode` on join and respawn.
+    ///
+    /// `MinecraftServer.getForcedGameType` returns the level's default game type
+    /// when the option is enabled (spectator in hardcore worlds), and
+    /// `PlayerList.placeNewPlayer`/`respawn` assign it after the saved game type
+    /// has been restored. Dimension changes deliberately keep the current mode.
+    pub(crate) fn apply_forced_game_mode(player: &Arc<Player>, world: &Arc<World>) {
+        let Some(server) = world.server() else {
+            return;
+        };
+        if !server.config.force_gamemode {
+            return;
+        }
+        player.set_game_mode(world.default_gamemode());
     }
 
     pub(super) fn prepare_domain_restores(

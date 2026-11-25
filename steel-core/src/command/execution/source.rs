@@ -293,7 +293,7 @@ impl CommandSource {
                 world.key.clone(),
                 server.command_permission_snapshot(player.gameprofile.id()),
             ),
-            CommandSender::Console | CommandSender::Rcon => {
+            CommandSender::Console | CommandSender::Rcon(_) | CommandSender::CommandBlock(_) => {
                 CommandAuthorizationContext::unrestricted(world.key.clone())
             }
         };
@@ -325,6 +325,30 @@ impl CommandSource {
 
     pub(crate) const fn player(&self) -> Option<&Arc<Player>> {
         self.player.as_ref()
+    }
+
+    /// Vanilla `CommandSourceStack.getTextName`: the player's profile name, or
+    /// `Server` / `Rcon` for the non-player senders.
+    pub(crate) fn source_name(&self) -> String {
+        match &self.sender {
+            CommandSender::Player(player) => player.gameprofile.name().to_owned(),
+            CommandSender::Console => "Server".to_owned(),
+            CommandSender::Rcon(_) => "Rcon".to_owned(),
+            CommandSender::CommandBlock(_) => "CommandBlock".to_owned(),
+        }
+    }
+
+    /// Vanilla `CommandSourceStack.getDisplayName`: the clickable player name
+    /// for a player source, and the bare name (`Server`, `Rcon`, …) otherwise.
+    ///
+    /// `disguised_chat` sends the sender as a component, so a player needs the
+    /// full `display_name()` (click/hover events included) rather than plain
+    /// text — that is what makes the name clickable in the client chat.
+    pub(crate) fn display_name_component(&self) -> TextComponent {
+        self.player.as_ref().map_or_else(
+            || TextComponent::plain(self.source_name()),
+            |p| p.display_name(),
+        )
     }
 
     pub(crate) const fn entity(&self) -> Option<&SharedEntity> {
@@ -409,7 +433,7 @@ impl CommandSource {
 
     pub(crate) fn facing_position(&self, target: DVec3) -> Self {
         let delta = target - self.anchor_position();
-        let horizontal = delta.x.hypot(delta.z);
+        let horizontal = (delta.x * delta.x + delta.z * delta.z).sqrt();
         let pitch = -delta.y.atan2(horizontal).to_degrees() as f32;
         let yaw = delta.z.atan2(delta.x).to_degrees() as f32 - DEGREE_90;
         self.with_rotation((yaw, pitch))
@@ -428,10 +452,7 @@ impl CommandSource {
         self.position
     }
 
-    #[expect(
-        dead_code,
-        reason = "silent command-source derivation is retained for future vanilla command paths"
-    )]
+    /// Derive the silent source used by function bodies without losing context.
     pub(crate) fn with_suppressed_output(&self) -> Self {
         let mut source = self.clone();
         source.silent = true;
@@ -462,6 +483,14 @@ impl CommandSource {
             return;
         }
 
+        // Vanilla `CommandBlockEntity` runs with suppressed output, so the block
+        // records the message but never prints it to a chat, and `sendGameMessage`
+        // is false for it as well.
+        if let CommandSender::CommandBlock(output) = &self.sender {
+            output.set(message.to_string());
+            return;
+        }
+
         let accepts_success = self
             .sender
             .get_player()
@@ -475,9 +504,16 @@ impl CommandSource {
     }
 
     pub(crate) fn send_failure(&self, message: TextComponent) {
-        if !self.silent {
-            self.sender.send_message(&message.color(Color::Red));
+        if self.silent {
+            return;
         }
+        // Vanilla stores the failure line as the block's last output and stays
+        // quiet, instead of printing it anywhere.
+        if let CommandSender::CommandBlock(output) = &self.sender {
+            output.set(message.to_string());
+            return;
+        }
+        self.sender.send_message(&message.color(Color::Red));
     }
 
     fn sequence_limit(&self) -> usize {
@@ -512,8 +548,10 @@ impl CommandSource {
             }
         }
 
-        if !matches!(self.sender, CommandSender::Console)
-            && self.world.get_game_rule(&LOG_ADMIN_COMMANDS)
+        if !matches!(
+            self.sender,
+            CommandSender::Console | CommandSender::CommandBlock(_)
+        ) && self.world.get_game_rule(&LOG_ADMIN_COMMANDS)
         {
             CommandSender::Console.send_message(&broadcast);
         }

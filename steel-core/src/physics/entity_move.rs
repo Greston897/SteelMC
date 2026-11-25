@@ -14,7 +14,8 @@ use crate::physics::{
 };
 use steel_utils::axis::Axis;
 
-const ZERO_MOVEMENT_EPSILON: f64 = 1.0e-7;
+#[cfg(test)]
+const ZERO_MOVEMENT_TEST_EPSILON: f64 = 1.0e-7;
 const EDGE_STEP: f64 = 0.05;
 const EDGE_COLLISION_EPSILON: f64 = 1.0e-7;
 const STEP_HEIGHT_COLLISION_EPSILON: f64 = 1.0e-5;
@@ -88,11 +89,10 @@ pub(crate) fn move_entity(
     mover_type: MoverType,
     world: &(impl CollisionWorld + ?Sized),
 ) -> MoveResult {
-    // Early exit for zero movement
-    if delta.x.abs() < ZERO_MOVEMENT_EPSILON
-        && delta.y.abs() < ZERO_MOVEMENT_EPSILON
-        && delta.z.abs() < ZERO_MOVEMENT_EPSILON
-    {
+    // Vanilla does not discard tiny nonzero motion. In particular the
+    // squared-length threshold in Entity.move controls position application,
+    // not an unconditional per-axis cutoff before collision resolution.
+    if delta == DVec3::ZERO {
         return MoveResult {
             final_position: state.position(),
             actual_movement: DVec3::new(0.0, 0.0, 0.0),
@@ -709,6 +709,17 @@ mod tests {
     }
 
     #[test]
+    fn tiny_nonzero_motion_is_not_discarded_in_empty_space() {
+        let state = player_state(DVec3::new(0.0, 10.0, 0.0));
+        let world = MockWorld { has_floor: false };
+        for movement in [DVec3::new(5.0e-8, 0.0, 0.0), DVec3::new(0.0, -5.0e-8, 0.0)] {
+            let result = move_entity(&state, movement, MoverType::SelfMovement, &world);
+            assert_eq!(result.actual_movement, movement);
+            assert_eq!(result.final_position, state.position() + movement);
+        }
+    }
+
+    #[test]
     fn test_move_entity_no_collision_in_air() {
         let state = player_state(DVec3::new(0.0, 10.0, 0.0));
 
@@ -789,7 +800,7 @@ mod tests {
             "sneak edge should trim movement instead of fully allowing or fully blocking it: {:?}",
             result.actual_movement
         );
-        assert!(result.actual_movement.y.abs() < ZERO_MOVEMENT_EPSILON);
+        assert!(result.actual_movement.y.abs() < ZERO_MOVEMENT_TEST_EPSILON);
     }
 
     #[test]
@@ -897,7 +908,7 @@ mod tests {
             "step-up should preserve horizontal movement: {:?}",
             result.actual_movement
         );
-        assert!((result.actual_movement.y - 0.5).abs() < ZERO_MOVEMENT_EPSILON);
+        assert!((result.actual_movement.y - 0.5).abs() < ZERO_MOVEMENT_TEST_EPSILON);
     }
 
     #[test]
@@ -923,7 +934,7 @@ mod tests {
             "movement should stay clipped by the tall obstacle: {:?}",
             result.actual_movement
         );
-        assert!(result.actual_movement.y.abs() < ZERO_MOVEMENT_EPSILON);
+        assert!(result.actual_movement.y.abs() < ZERO_MOVEMENT_TEST_EPSILON);
         assert!(result.horizontal_collision);
     }
 

@@ -81,7 +81,9 @@ pub(crate) fn convert_to(
         return None;
     }
     let world = from.level()?;
-    // TODO: Check feature flags once supported cause currently only checks difficulty
+    // Vanilla `EntityType.create` gates on the difficulty's `isAllowedInPeaceful`
+    // flag; feature/experiment flags do not exist in Steel yet, so difficulty is
+    // the whole check.
     if !entity_type.allowed_in_peaceful && world.difficulty() == Difficulty::Peaceful {
         return None;
     }
@@ -165,7 +167,12 @@ fn convert_single(from: &dyn Mob, to: &dyn Mob, to_arc: &SharedEntity, params: C
 
     // Vanilla copies only the timer, not the remembered player.
     to.set_last_hurt_by_player_memory_time(from.last_hurt_by_player_memory_time());
-    // TODO: Copy vanilla `hurtTime` once Steel supports the hurt-flash counter.
+    // Vanilla `Mob.convertTo` copies the hurt-flash counter as well.
+    if let (Some(from_living), Some(to_living)) = (from.as_living_entity(), to.as_living_entity()) {
+        to_living
+            .living_base()
+            .set_hurt_time(from_living.living_base().hurt_time());
+    }
 
     to.set_y_body_rot(from.y_body_rot());
     to.set_on_ground(from.on_ground());
@@ -209,6 +216,7 @@ fn convert_common(from: &dyn Mob, to: &dyn Mob, params: ConversionParams) {
         (from.as_ageable_mob(), to.as_ageable_mob())
     {
         converted_ageable.set_age(old_ageable.get_age());
+        converted_ageable.set_age_locked(old_ageable.is_age_locked());
         converted_ageable.set_forced_age(old_ageable.forced_age());
         converted_ageable.set_forced_age_timer(old_ageable.forced_age_timer());
     }
@@ -527,14 +535,14 @@ mod tests {
             .downcast_ref::<PigEntity>()
             .expect("pig is concrete")
             .convert_to(
-                &vanilla_entities::ZOMBIE,
+                &vanilla_entities::PLAYER,
                 ConversionParams::single(true, true),
                 None,
             );
 
         assert!(
             converted.is_none(),
-            "no zombie factory is registered, so conversion cannot happen"
+            "no ender dragon factory is registered, so conversion cannot happen"
         );
         assert!(
             !pig.is_removed(),
@@ -559,7 +567,7 @@ mod tests {
             .downcast_ref::<PigEntity>()
             .expect("pig is concrete")
             .convert_to(
-                &vanilla_entities::ZOMBIE,
+                &vanilla_entities::PLAYER,
                 ConversionParams::single(true, true),
                 None,
             );
@@ -593,7 +601,7 @@ mod tests {
             .downcast_ref::<PigEntity>()
             .expect("pig is concrete")
             .convert_to(
-                &vanilla_entities::ZOMBIE,
+                &vanilla_entities::PLAYER,
                 ConversionParams::single(true, true),
                 None,
             );
@@ -628,7 +636,7 @@ mod tests {
             .downcast_ref::<PigEntity>()
             .expect("pig is concrete")
             .convert_to(
-                &vanilla_entities::ZOMBIE,
+                &vanilla_entities::PLAYER,
                 ConversionParams::single(true, true),
                 None,
             );

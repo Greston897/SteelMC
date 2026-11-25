@@ -44,6 +44,10 @@ impl TargetGoalBase {
         self.target_mob = target_mob;
     }
 
+    pub(super) fn target_mob(&self) -> Option<SharedEntity> {
+        self.target_mob.clone()
+    }
+
     pub(super) fn can_continue_to_use(&mut self, mob: &dyn PathfinderMob) -> bool {
         let Some(target) = mob.target().or_else(|| self.target_mob.clone()) else {
             return false;

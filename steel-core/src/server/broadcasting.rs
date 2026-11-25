@@ -4,6 +4,21 @@ use super::{
     TabListTickStats, TextComponent, Uuid, client_permission_event, command_tree_packet,
     translations,
 };
+use std::borrow::Cow;
+
+use crate::scoreboard::ScoreHolder;
+use crate::scoreboard::Scoreboard;
+use steel_protocol::packets::game::CCodeOfConduct;
+use steel_protocol::packets::game::CCustomChatCompletions;
+use steel_protocol::packets::game::CCustomReportDetails;
+use steel_protocol::packets::game::CDeleteChat;
+use steel_protocol::packets::game::CustomChatCompletionAction;
+use steel_protocol::packets::game::PackedMessageSignature;
+use steel_protocol::packets::game::ReportDetail;
+use steel_protocol::packets::game::{CDisguisedChat, ChatTypeBound};
+use steel_registry::RegistryEntry as _;
+use steel_registry::chat_type::{ChatStyle, ChatTypeDecoration, ChatTypeRef};
+use text_components::translation::TranslatedMessage;
 
 impl Server {
     /// Logs and broadcasts a system chat message to online players.
@@ -15,6 +30,123 @@ impl Server {
             }
             true
         });
+    }
+
+    /// Vanilla `PlayerList.broadcastChatMessage` for a decorated chat type.
+    ///
+    /// `/say`, `/me` and friends reach the client as `disguised_chat`, not as a
+    /// system message: the packet carries the chat type so the *client* applies
+    /// the decoration (translation key, parameters, style) and so the client can
+    /// honour its own chat-visibility setting. Rendering the decoration on the
+    /// server and pushing `system_chat` bypasses both, which is why `/say` used
+    /// to survive "commands only" chat visibility.
+    ///
+    /// Vanilla also logs the decorated line, so the server log keeps showing the
+    /// readable form.
+    pub fn broadcast_decorated_chat(
+        &self,
+        chat_type: ChatTypeRef,
+        content: &TextComponent,
+        sender_name: TextComponent,
+        target_name: Option<TextComponent>,
+    ) {
+        log::info!(
+            "{}",
+            decorated_chat_component(chat_type, &sender_name, target_name.as_ref(), content)
+                .to_plain(&DisplayResolutor)
+        );
+
+        let packet = CDisguisedChat {
+            message: content.clone(),
+            chat_type: ChatTypeBound {
+                registry_id: chat_type.id() as i32,
+                sender_name,
+                target_name,
+            },
+        };
+        self.online_players.iter_players(|_, player| {
+            player.send_packet(packet.clone());
+            true
+        });
+    }
+
+    /// Sends one decorated chat line to an explicit set of players.
+    ///
+    /// Vanilla `PlayerList.broadcastChatMessage(message, filter, recipients)`
+    /// counterpart: used by `/msg`, where the incoming and outgoing variants of
+    /// the same message go to disjoint audiences.
+    #[expect(
+        clippy::unused_self,
+        reason = "the helper mirrors the vanilla signature"
+    )]
+    pub fn broadcast_decorated_chat_to(
+        &self,
+        chat_type: ChatTypeRef,
+        content: &TextComponent,
+        sender_name: TextComponent,
+        target_name: Option<TextComponent>,
+        recipients: &[Arc<Player>],
+    ) {
+        let packet = CDisguisedChat {
+            message: content.clone(),
+            chat_type: ChatTypeBound {
+                registry_id: chat_type.id() as i32,
+                sender_name,
+                target_name,
+            },
+        };
+        for player in recipients {
+            player.send_packet(packet.clone());
+        }
+    }
+
+    /// Logs and broadcasts a system chat message, honouring a team's
+    /// `death_message_visibility` when the message belongs to a team.
+    ///
+    /// Players on the emitting team see it according to that team's visibility,
+    /// matching vanilla `PlayerTeam.sendMessage`. When `team` is `None` the call
+    /// degrades to a normal broadcast.
+    pub fn broadcast_team_message(
+        &self,
+        message: &TextComponent,
+        team: Option<&str>,
+        excluded_player: Option<Uuid>,
+    ) {
+        log::info!("{}", message.to_plain(&DisplayResolutor));
+
+        let Some(team) = team else {
+            self.broadcast_system_chat(message, excluded_player);
+            return;
+        };
+
+        self.online_players.iter_players(|uuid, player| {
+            if Some(*uuid) == excluded_player {
+                return true;
+            }
+            let world = player.get_world();
+            let can_see = self
+                .scoreboards
+                .get(world.domain())
+                .is_none_or(|scoreboard| {
+                    scoreboard
+                        .can_see_team_message(&ScoreHolder::new(player.scoreboard_name()), team)
+                });
+            if can_see {
+                player.send_packet(CSystemChat::new(message, false, player));
+            }
+            true
+        });
+    }
+
+    /// Returns the objective bound to each display slot of a domain's scoreboard.
+    ///
+    /// Used when a player joins so the sidebar and tab-list numbers appear
+    /// without waiting for the next mutation.
+    #[must_use]
+    pub fn scoreboard_display_slots(&self, domain: &str) -> Vec<(i32, String)> {
+        self.scoreboards
+            .get(domain)
+            .map_or_default(Scoreboard::display_slots)
     }
 
     /// Builds the tab list header/footer with recent and five-second tick statistics.
@@ -160,7 +292,9 @@ impl Server {
             event: client_permission_event(player, &world),
         });
 
-        let server = player.server();
+        let Some(server) = player.try_server() else {
+            return;
+        };
         if !Arc::ptr_eq(&server, self) {
             tracing::error!(
                 player = %player.gameprofile.name(),
@@ -196,4 +330,144 @@ impl Server {
             ),
         }
     }
+
+    /// Configures or clears the MC 26.3 server code of conduct text shown to
+    /// joining players during Configuration (`ClientboundCodeOfConductPacket`).
+    pub fn set_code_of_conduct(&self, text: Option<String>) {
+        *self.code_of_conduct.lock() = text.filter(|s| !s.is_empty());
+    }
+
+    /// Builds a `CCodeOfConduct` packet if a non-empty code of conduct is active.
+    #[must_use]
+    pub fn code_of_conduct_packet(&self) -> Option<CCodeOfConduct> {
+        self.code_of_conduct
+            .lock()
+            .clone()
+            .map(|code_of_conduct| CCodeOfConduct { code_of_conduct })
+    }
+
+    /// Replaces the custom report details attached to client crash/abuse reports
+    /// (`ClientboundCustomReportDetailsPacket`) and pushes the update to online players.
+    pub fn set_custom_report_details(&self, details: Vec<ReportDetail>) {
+        self.custom_report_details.lock().clone_from(&details);
+        self.broadcast_to_online(CCustomReportDetails { details });
+    }
+
+    /// Builds a `CCustomReportDetails` packet if custom report details are registered.
+    #[must_use]
+    pub fn custom_report_details_packet(&self) -> Option<CCustomReportDetails> {
+        let details = self.custom_report_details.lock().clone();
+        (!details.is_empty()).then_some(CCustomReportDetails { details })
+    }
+
+    /// Vanilla `PlayerList.deleteMessage`: instructs all connected clients to
+    /// hide/delete a previously seen signed chat message (`ClientboundDeleteChatPacket`).
+    pub fn delete_signed_chat(&self, message_signature: PackedMessageSignature) {
+        self.broadcast_to_online(CDeleteChat { message_signature });
+    }
+
+    /// Pushes custom chat tab-completion suggestions to all online players
+    /// (`ClientboundCustomChatCompletionsPacket`).
+    pub fn broadcast_custom_chat_completions(
+        &self,
+        action: CustomChatCompletionAction,
+        entries: Vec<String>,
+    ) {
+        self.broadcast_to_online(CCustomChatCompletions { action, entries });
+    }
+}
+
+/// Splits a vanilla `ChatTypeDecoration` key into an `en_us` format string.
+///
+/// Vanilla builds the decorated line from the translation key and its
+/// parameters; the server copy is only used for the log line, because the
+/// *client* renders `disguised_chat` itself.
+fn decoration_args(
+    dec: &ChatTypeDecoration,
+    sender: &TextComponent,
+    target: Option<&TextComponent>,
+    content: &TextComponent,
+) -> Vec<TextComponent> {
+    dec.parameters
+        .iter()
+        .map(|name| match *name {
+            "sender" => sender.clone(),
+            "target" => target.cloned().unwrap_or_default(),
+            "content" => content.clone(),
+            other => TextComponent::plain(other.to_string()),
+        })
+        .collect()
+}
+
+/// Vanilla `ChatTypeDecoration.decorate`: resolves the decoration against the
+/// bound sender/target/content and applies the decoration's style.
+///
+/// Only the server-side log line and non-player command feedback need this;
+/// players receive the raw `disguised_chat` and let their own client decorate.
+pub fn decorated_chat_component(
+    chat_type: ChatTypeRef,
+    sender: &TextComponent,
+    target: Option<&TextComponent>,
+    content: &TextComponent,
+) -> TextComponent {
+    let dec = &chat_type.chat;
+
+    let component = TextComponent::translated(TranslatedMessage {
+        key: Cow::Borrowed(dec.translation_key),
+        fallback: None,
+        args: Some(decoration_args(dec, sender, target, content).into_boxed_slice()),
+    });
+
+    apply_chat_style(component, dec.style.as_ref())
+}
+
+/// Applies a vanilla `ChatStyle` to a component, leaving unset flags alone.
+fn apply_chat_style(mut component: TextComponent, style: Option<&ChatStyle>) -> TextComponent {
+    let Some(style) = style else {
+        return component;
+    };
+    if let Some(color) = style.color
+        && let Some(color) = parse_chat_color(color)
+    {
+        component = component.color(color);
+    }
+    if let Some(bold) = style.bold {
+        component = component.bold(bold);
+    }
+    if let Some(italic) = style.italic {
+        component = component.italic(italic);
+    }
+    if let Some(underlined) = style.underlined {
+        component = component.underlined(underlined);
+    }
+    if let Some(strikethrough) = style.strikethrough {
+        component = component.strikethrough(strikethrough);
+    }
+    if let Some(obfuscated) = style.obfuscated {
+        component = component.obfuscated(obfuscated);
+    }
+    component
+}
+
+/// Maps a data-pack colour name (`red`, `#ff0000`) to [`Color`].
+fn parse_chat_color(name: &str) -> Option<Color> {
+    Some(match name {
+        "aqua" => Color::Aqua,
+        "black" => Color::Black,
+        "blue" => Color::Blue,
+        "dark_aqua" => Color::DarkAqua,
+        "dark_blue" => Color::DarkBlue,
+        "dark_gray" => Color::DarkGray,
+        "dark_green" => Color::DarkGreen,
+        "dark_purple" => Color::DarkPurple,
+        "dark_red" => Color::DarkRed,
+        "gold" => Color::Gold,
+        "gray" => Color::Gray,
+        "green" => Color::Green,
+        "light_purple" => Color::LightPurple,
+        "red" => Color::Red,
+        "white" => Color::White,
+        "yellow" => Color::Yellow,
+        _ => Color::from_hex(name)?,
+    })
 }

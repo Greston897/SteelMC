@@ -1,0 +1,151 @@
+name: Vanilla Evidence
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vanilla-evidence-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  evidence:
+    name: ${{ matrix.area }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        area: [biomes, structures, chunk-stages, flint-all, api-doctests, registry-sync-tags]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        if: matrix.area == 'flint-all'
+        with:
+          repository: FlintTestMC/FlintBenchmark
+          ref: caa22dbbbfff3d1b9766939834a308c335f7a989
+          path: FlintBenchmark
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: vanilla-evidence-optimized-no-lto
+      - name: Reproduce independent vanilla tag fixture
+        if: matrix.area == 'registry-sync-tags'
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 https://codeload.github.com/misode/mcmeta/tar.gz/538b2b167248c648b2198f2c0d56eced10dfc0cf -o /tmp/mcmeta.tar.gz
+          mkdir -p /tmp/mcmeta
+          tar xzf /tmp/mcmeta.tar.gz -C /tmp/mcmeta
+          python3 .ci/build_vanilla_tag_fixture.py /tmp/mcmeta/mcmeta-538b2b167248c648b2198f2c0d56eced10dfc0cf/data/minecraft > /tmp/vanilla-tags.json
+          cmp steel-core/test_assets/26_3_synced_tags.json /tmp/vanilla-tags.json
+      - name: Run real checks (failures are blocking)
+        env:
+          AREA: ${{ matrix.area }}
+          TEST_PATH: ${{ github.workspace }}/FlintBenchmark/tests
+          FLINT_IMPLEMENTED_ONLY: 'false'
+          RUST_BACKTRACE: '1'
+          CARGO_TERM_COLOR: never
+          CARGO_BUILD_JOBS: 2
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$AREA" in
+            biomes)
+              cargo test --profile evidence -p steel-core --test biome_hashes -- --ignored --nocapture --test-threads=1 2>&1 | tee /tmp/evidence.log
+              ;;
+            structures)
+              cargo test --profile evidence -p steel-core --test structure_starts -- --ignored --nocapture --test-threads=1 2>&1 | tee /tmp/evidence.log
+              ;;
+            chunk-stages)
+              python3 .ci/compile_test_binary.py steel-core /tmp/core-test-binary 2>&1 | tee /tmp/evidence.log
+              binary=$(cat /tmp/core-test-binary)
+              status=0
+              : > /tmp/chunk-summary.log
+              for dimension in overworld the_nether the_end; do
+                for stage in terrain features light; do
+                  log="/tmp/chunk-$dimension-$stage.log"
+                  if STEEL_HASH_DEBUG_DIMENSION="minecraft:$dimension" STEEL_HASH_DEBUG_STAGE="minecraft:$stage" timeout --kill-after=15s 240s "$binary" worldgen::chunk_stage_hashes::chunk_stage_hashes --exact --ignored --nocapture > "$log" 2>&1; then
+                    echo "$dimension/$stage: PASS" >> /tmp/chunk-summary.log
+                  else
+                    code=$?
+                    echo "$dimension/$stage: FAIL exit=$code" >> /tmp/chunk-summary.log
+                    status=1
+                  fi
+                  cat "$log" >> /tmp/evidence.log
+                  grep -E 'chunks do not match|expected .*, got ' "$log" >> /tmp/chunk-summary.log || true
+                done
+              done
+              cat /tmp/chunk-summary.log | tee -a /tmp/evidence.log
+              test "$status" -eq 0
+              ;;
+            flint-all)
+              test -d "$TEST_PATH"
+              python3 .ci/compile_test_binary.py steel-flint /tmp/flint-test-binary 2>&1 | tee /tmp/evidence.log
+              binary=$(cat /tmp/flint-test-binary)
+              status=0
+              : > /tmp/flint-summary.log
+              # A fresh process per shard bounds the legacy test world's
+              # retained resources; every spec belongs to exactly one shard.
+              for shard in $(seq 0 31); do
+                echo "=== Flint shard $shard/32 ===" | tee -a /tmp/evidence.log
+                if (cd steel-flint && FLINT_SHARD_INDEX="$shard" FLINT_SHARD_COUNT=32 timeout --kill-after=15s 120s "$binary" --ignored --nocapture --test-threads=1) > "/tmp/flint-$shard.log" 2>&1; then
+                  echo "Flint shard $shard: PASS" | tee -a /tmp/evidence.log /tmp/flint-summary.log
+                else
+                  code=$?
+                  echo "Flint shard $shard: FAIL exit=$code" | tee -a /tmp/evidence.log /tmp/flint-summary.log
+                  status=1
+                fi
+                cat "/tmp/flint-$shard.log" >> /tmp/evidence.log
+                grep -E '^[0-9]+ passed, [0-9]+ failed|^\[[^]]+\]Open in flint-viz:' "/tmp/flint-$shard.log" | sed -E 's/(Open in flint-viz:).*/\1 [see full shard log]/' >> /tmp/flint-summary.log || true
+              done
+              cat /tmp/flint-summary.log | tee -a /tmp/evidence.log
+              test "$status" -eq 0
+              ;;
+            api-doctests)
+              # All nine formerly ignored public API examples are runnable.
+              # Four internal implementation sketches are explicitly text,
+              # not tests, and are never counted as behavioral evidence.
+              python3 - <<'PYDOC'
+          from pathlib import Path
+          ignored = [str(p) for p in Path('.').glob('steel-*/src/**/*.rs') if '```ignore' in p.read_text()]
+          assert not ignored, f'Unverified ignored documentation: {ignored}'
+          PYDOC
+              timeout --kill-after=30s 900s cargo test --profile evidence --workspace --doc --no-fail-fast -- --nocapture --test-threads=1 2>&1 | tee /tmp/evidence.log
+              ;;
+            registry-sync-tags)
+              cargo test --profile evidence -p steel-core --lib server::registry_cache::tests:: -- --nocapture 2>&1 | tee /tmp/evidence.log
+              ;;
+            *) exit 2 ;;
+          esac
+          # A typo in the filter must never produce a green zero-test run.
+          python3 - <<'PY'
+          import os, re
+          text = open('/tmp/evidence.log').read()
+          results = [tuple(map(int, m)) for m in re.findall(r'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;', text)]
+          expected = {'biomes': 3, 'structures': 1, 'chunk-stages': 9, 'flint-all': 64, 'api-doctests': 20, 'registry-sync-tags': 2}[os.environ['AREA']]
+          assert sum(r[0] for r in results) >= expected, (os.environ['AREA'], results)
+          assert all(r[1] == 0 for r in results), results
+          PY
+      - name: Publish evidence even on failure
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          AREA: ${{ matrix.area }}
+        run: |
+          python3 .ci/report.py "Vanilla Evidence — $AREA" /tmp/evidence.log
+          if [ -f /tmp/evidence.log ]; then
+            grep -E '^(test result:|test .*FAILED|error|failures:)' /tmp/evidence.log >> "$GITHUB_STEP_SUMMARY" || true
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vanilla-evidence-${{ matrix.area }}
+          path: |
+            /tmp/evidence.log
+            steel-flint/log/
+            /tmp/flint-*.log
+            /tmp/chunk-*.log

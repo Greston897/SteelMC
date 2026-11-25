@@ -1,10 +1,12 @@
-use steel_protocol::packets::game::CommonPlayerSpawnInfo;
+use crate::server::local_respawn_data_for_world;
+use steel_protocol::packets::game::{CServerData, CommonPlayerSpawnInfo};
+use text_components::TextComponent;
 
 use super::{
-    Arc, BlockBreakingManager, CContainerClose, CGameEvent, CRespawn, CSetDefaultSpawnPosition,
-    CSetHeldSlot, CSetPassengers, DVec3, Entity, GameEventType, MenuRemovalStatus,
-    MobEffectSyncChange, MobEffectSyncPacket, Player, RegistryEntry, RelativeMovement, ResetReason,
-    World,
+    Arc, BlockBreakingManager, CContainerClose, CGameEvent, CRespawn, CSetChunkCacheRadius,
+    CSetDefaultSpawnPosition, CSetHeldSlot, CSetPassengers, CSetSimulationDistance, DVec3, Entity,
+    GameEventType, MenuRemovalStatus, MobEffectSyncChange, MobEffectSyncPacket, Player,
+    RegistryEntry, RelativeMovement, ResetReason, World,
 };
 
 impl Player {
@@ -269,10 +271,14 @@ impl Player {
         self.reset_flying_ticks();
         self.send_spawn_state_packets(&world);
         self.reset_sent_info();
-        if resend_player_context {
-            self.server().resend_player_context(self);
+        if resend_player_context && let Some(server) = self.try_server() {
+            server.resend_player_context(self);
         }
         self.send_active_effects_for_self();
+        // Vanilla `PlayerList.respawn`/`placeNewPlayer` push the post-effect
+        // list right after the active effects, so the client never keeps a
+        // pipeline from the previous life.
+        self.flush_post_effects();
         world
     }
 
@@ -284,7 +290,53 @@ impl Player {
         self.send_time_sync(world);
         self.send_packet(world.initialize_border_packet());
         self.send_default_spawn_position(world);
+        self.send_view_distances(world);
+        self.send_server_data();
         self.send_weather_sync(world);
+        self.send_recipe_book();
+    }
+
+    /// Sends the play-phase server identity packet.
+    ///
+    /// Vanilla `PlayerList.sendPlayerPermissionLevel`/`sendLevelInfo` precedes
+    /// this, and `ClientboundServerDataPacket` is what fills the F3 screen MOTD
+    /// and the server icon. The icon field is raw PNG bytes; the status-list
+    /// `data:image/png;base64,` prefix used by pings is *not* part of it.
+    fn send_server_data(&self) {
+        let Some(server) = self.try_server() else {
+            return;
+        };
+        let motd = TextComponent::plain(server.config.motd.clone());
+        let icon = server.cached_favicon_png().map(|bytes| bytes.to_vec());
+        self.send_packet(CServerData { motd, icon });
+    }
+
+    /// Sends the player's recipe book.
+    ///
+    /// Vanilla sends the whole book right after the spawn packets: the displays
+    /// replace whatever the client had, and `update_recipes` fills the lookup
+    /// tables, without which the stonecutter and furnace menus stay empty.
+    fn send_recipe_book(&self) {
+        let packets = self.recipe_book.lock().join_packets();
+        self.send_packet(packets.settings);
+        self.send_packet(packets.add);
+        self.send_packet(packets.update);
+    }
+
+    /// Sends the server's view and simulation distances.
+    ///
+    /// Vanilla `PlayerList.sendLevelInfo` sends both packets immediately after
+    /// the default spawn position and before `LEVEL_CHUNKS_LOAD_START`. Without
+    /// them the client keeps its own defaults (a radius the server never
+    /// intended), so chunk loading and entity/simulation ranges disagree with
+    /// what the server actually ticks and tracks.
+    fn send_view_distances(&self, world: &World) {
+        self.send_packet(CSetChunkCacheRadius {
+            radius: i32::from(world.view_distance),
+        });
+        self.send_packet(CSetSimulationDistance {
+            distance: i32::from(world.simulation_distance),
+        });
     }
 
     fn send_time_sync(&self, world: &World) {
@@ -292,23 +344,25 @@ impl Player {
     }
 
     fn send_default_spawn_position(&self, world: &World) {
-        if let Some(server) = self.server.upgrade() {
+        let respawn_data = if let Some(server) = self.server.upgrade() {
             match server.respawn_data_for_domain(world.domain()) {
-                Ok(respawn_data) => {
-                    self.send_packet(CSetDefaultSpawnPosition {
-                        global_pos: respawn_data.global_pos,
-                        yaw: respawn_data.yaw,
-                        pitch: respawn_data.pitch,
-                    });
-                }
+                Ok(respawn_data) => respawn_data,
                 Err(error) => {
                     log::error!(
                         "Failed to send default spawn position to player {}: {error}",
                         self.gameprofile.name()
                     );
+                    return;
                 }
             }
-        }
+        } else {
+            local_respawn_data_for_world(world)
+        };
+        self.send_packet(CSetDefaultSpawnPosition {
+            global_pos: respawn_data.global_pos,
+            yaw: respawn_data.yaw,
+            pitch: respawn_data.pitch,
+        });
     }
 
     fn send_weather_sync(&self, world: &World) {

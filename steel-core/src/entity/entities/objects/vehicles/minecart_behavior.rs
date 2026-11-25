@@ -10,6 +10,7 @@ use steel_registry::blocks::properties::{
 use steel_registry::vanilla_block_tags::BlockTag;
 use steel_registry::vanilla_blocks;
 use steel_registry::vanilla_entities;
+use steel_registry::vanilla_game_rules::MAX_MINECART_SPEED;
 use steel_utils::{BlockPos, Direction};
 
 use super::abstract_minecart::{AbstractMinecart, rail_exits};
@@ -26,6 +27,9 @@ const SLIDE_SPEED: f64 = 0.007_812_5;
 const WATER_SLIDE_SPEED: f64 = SLIDE_SPEED * 0.2;
 const MAX_SPEED_IN_WATER: f64 = 0.2;
 const MAX_SPEED_ON_LAND: f64 = 0.4;
+/// Floor so a `maxMinecartSpeed` of `0` still lets a cart creep along instead of
+/// freezing: vanilla applies the rule as a clamp on an already-moving cart.
+const MIN_SPEED_FLOOR: f64 = 0.02;
 const ABSOLUTE_MAX_SPEED: f64 = 0.4;
 const MAX_RAIL_ALIGNMENT_VELOCITY: f64 = 2.0;
 const POWERED_RAIL_ACCEL: f64 = 0.06;
@@ -100,12 +104,20 @@ impl MinecartBehavior {
         )
     }
 
-    pub(crate) fn max_speed(minecart: &dyn AbstractMinecart, _world: &World) -> f64 {
-        if minecart.is_in_water() {
+    /// Vanilla `AbstractMinecart.maxSpeed` clamps the driven speed to the
+    /// `maxMinecartSpeed` game rule (default `8`, in blocks per second).
+    ///
+    /// Vanilla compares the *horizontal speed in blocks per second* against the
+    /// rule, while the track code works in per-tick movement, so the rule is
+    /// converted once here (`rule / 20`) to stay in the same units.
+    pub(crate) fn max_speed(minecart: &dyn AbstractMinecart, world: &World) -> f64 {
+        let vanilla_cap = f64::from(world.get_game_rule(&MAX_MINECART_SPEED)) / 20.0;
+        let base = if minecart.is_in_water() {
             MAX_SPEED_IN_WATER
         } else {
             MAX_SPEED_ON_LAND
-        }
+        };
+        base.min(vanilla_cap.max(MIN_SPEED_FLOOR))
     }
 
     pub(crate) fn slowdown_factor(minecart: &dyn AbstractMinecart) -> f64 {

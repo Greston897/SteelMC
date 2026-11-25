@@ -3,20 +3,24 @@ use super::{
     InteractionResult, InventoryAccess, LivingEntity, Player, REGISTRY, SUseItem, UseOnContext,
     World, adventure_mode, wrap_degrees,
 };
+use crate::behavior::UseItemContext;
+use crate::player::advancement::predicate::TriggerContext;
 use steel_registry::data_components::vanilla_components::USE_REMAINDER;
 use steel_registry::stat::vanilla_stat_types;
+use steel_registry::vanilla_criteria_triggers::{DEFAULT_BLOCK_USE, ITEM_USED_ON_BLOCK};
 
 /// Handles using an item on a block.
 ///
 /// This implements the logic from Java's `ServerPlayerGameMode.useItemOn()`.
 ///
 /// # Flow
-/// 1. Spectator mode: Only allow opening menus (currently returns Pass)
+/// 1. Spectator mode: Only allow opening container menus
 /// 2. Check if block interaction should be suppressed (sneaking + holding items)
 /// 3. If not suppressed: Call block's `use_item_on` method
 /// 4. If block returns `TryEmptyHandInteraction` and main hand: Call block's `use_without_item`
 /// 5. If item not empty: Call item behavior's `use_on` for placement
 /// 6. Handle creative mode infinite materials
+#[expect(clippy::too_many_lines, reason = "splitting would hurt readability")]
 pub fn use_item_on(
     player: &Arc<Player>,
     world: &Arc<World>,
@@ -26,10 +30,26 @@ pub fn use_item_on(
     let pos = hit_result.block_pos;
     let state = world.get_block_state(pos);
 
-    // Spectator mode: can only open menus
-    // TODO: Implement menu providers for blocks like chests
+    // Vanilla `ServerPlayerGameMode.useItemOn`: in spectator mode the only
+    // permitted block interaction is opening a container menu. Unlike survival,
+    // the hand-held item is ignored and no block-use logic runs.
     if player.game_mode() == GameType::Spectator {
-        return InteractionResult::Pass;
+        let Some(block) = REGISTRY.blocks.by_state_id(state) else {
+            return InteractionResult::Pass;
+        };
+        let behavior = BLOCK_BEHAVIORS.get_behavior(block);
+        if !behavior.allows_spectator_menu(state, world, pos) {
+            return InteractionResult::Pass;
+        }
+        let mut inventory_access = InventoryAccess::new(Arc::clone(&player.inventory), hand);
+        return behavior.use_without_item(
+            state,
+            world,
+            pos,
+            player,
+            hit_result,
+            &mut inventory_access,
+        );
     }
 
     // Check if block interaction should be suppressed (sneaking + holding items in either hand)
@@ -40,6 +60,10 @@ pub fn use_item_on(
     };
 
     let suppress_block_use = player.is_secondary_use_active() && have_something;
+    // ServerPlayerGameMode keeps a copy from before block or item interaction.
+    let inventory_access = InventoryAccess::new(Arc::clone(&player.inventory), hand);
+    let (is_empty, original_count, item_ref, stack_before_use) =
+        inventory_access.with_item(|item| (item.is_empty(), item.count, item.item, item.clone()));
 
     // Get behavior registries
     let block_behaviors = &*BLOCK_BEHAVIORS;
@@ -66,6 +90,12 @@ pub fn use_item_on(
         );
 
         if block_result.consumes_action() {
+            if block_result != InteractionResult::Fail {
+                player.trigger_advancement_with_context(
+                    &ITEM_USED_ON_BLOCK,
+                    &TriggerContext::block_at(world, pos).with_item_stack(&stack_before_use),
+                );
+            }
             return block_result;
         }
 
@@ -82,14 +112,16 @@ pub fn use_item_on(
             );
 
             if empty_result.consumes_action() {
+                if empty_result != InteractionResult::Fail {
+                    player.trigger_advancement_with_context(
+                        &DEFAULT_BLOCK_USE,
+                        &TriggerContext::block_at(world, pos),
+                    );
+                }
                 return empty_result;
             }
         }
     }
-
-    let inventory_access = InventoryAccess::new(Arc::clone(&player.inventory), hand);
-    let (is_empty, original_count, item_ref, stack_before_use) =
-        inventory_access.with_item(|item| (item.is_empty(), item.count, item.item, item.clone()));
 
     if !is_empty {
         if player.is_item_on_cooldown(&stack_before_use) {
@@ -137,6 +169,12 @@ pub fn use_item_on(
             context.inv.with_item(|item| item.count = original_count);
         }
 
+        if result.consumes_action() && result != InteractionResult::Fail {
+            player.trigger_advancement_with_context(
+                &ITEM_USED_ON_BLOCK,
+                &TriggerContext::block_at(world, pos).with_item_stack(&stack_before_use),
+            );
+        }
         return result;
     }
 
@@ -169,12 +207,7 @@ pub fn use_item(
             return InteractionResult::Pass;
         }
 
-        let mut context = crate::behavior::UseItemContext::new(
-            player,
-            hand,
-            world,
-            Arc::clone(&player.inventory),
-        );
+        let mut context = UseItemContext::new(player, hand, world, Arc::clone(&player.inventory));
 
         // Get behavior registries
         let item_behaviors = &*ITEM_BEHAVIORS;

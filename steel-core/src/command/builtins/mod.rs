@@ -1,46 +1,84 @@
 //! Steel-owned built-in command declarations.
 
 pub mod advancement;
+mod attribute;
+mod ban;
+mod banip;
+mod bossbar;
 mod clear;
+mod clone;
 mod damage;
+mod data;
+mod datapack;
 mod defaultgamemode;
+mod dialog;
 mod difficulty;
 mod domain;
+mod effect;
 mod enchant;
 mod execute;
 mod experience;
 mod fill;
+mod fillbiome;
 mod fly;
+mod forceload;
+mod function;
 pub(crate) mod gamemode;
 mod gamerule;
 mod give;
+mod help;
 mod invsee;
+mod item;
+mod kick;
 mod kill;
 mod list;
 mod locate;
+mod loot;
+mod msg;
 mod operator;
+mod particle;
 mod perms;
 mod playsound;
 mod position;
+mod posteffect;
+mod random;
+mod recipe;
+mod reload;
 mod return_command;
+mod ride;
+mod rotate;
+mod save;
+mod say;
+mod schedule;
+mod scoreboard;
 mod seed;
+mod serverpack;
 mod setblock;
 mod setidletimeout;
 mod setworldspawn;
 mod spawnpoint;
+mod spectate;
+mod spreadplayers;
 mod stop;
 mod stopsound;
+mod stopwatch;
 mod summon;
 mod swing;
 mod tag;
+mod team;
+mod teammsg;
 mod teleport;
 mod tellraw;
 mod tick;
 mod time;
 mod title;
+mod tpsbar;
 mod transfer;
+mod trigger;
 mod version;
+mod waypoint;
 mod weather;
+mod whitelist;
 mod worldborder;
 
 pub(crate) use difficulty::player_can_change_difficulty;
@@ -73,46 +111,91 @@ pub(crate) fn create_registered_dispatcher(
     builder.declare_permission(perms::GROUP_ALL_PERMISSION)?;
     builder.declare_permission(perms::METADATA_PERMISSION)?;
     builder.register(advancement::registration())?;
+    builder.register(attribute::registration())?;
+    builder.register(ban::ban_registration())?;
+    builder.register(ban::pardon_registration())?;
+    builder.register(ban::banlist_registration())?;
+    builder.register(banip::banip_registration())?;
+    builder.register(banip::pardonip_registration())?;
+    builder.register(bossbar::registration())?;
     builder.register(clear::registration())?;
+    builder.register(clone::registration())?;
     builder.register(operator::deop_registration())?;
     builder.register(damage::registration())?;
+    builder.register(data::registration())?;
+    builder.register(datapack::registration())?;
     builder.register(defaultgamemode::registration())?;
+    builder.register(dialog::registration())?;
+    builder.register(reload::registration())?;
     builder.register(difficulty::registration())?;
+    builder.register(effect::registration())?;
     builder.register(domain::registration())?;
     builder.register(enchant::registration())?;
     builder.register(execute::registration())?;
     builder.register(experience::registration())?;
     builder.register(fill::registration())?;
+    builder.register(fillbiome::registration())?;
     builder.register(fly::registration())?;
     builder.register(gamemode::registration()?)?;
     builder.register(gamerule::registration())?;
     builder.register(give::registration())?;
+    builder.register(kick::registration())?;
     builder.register(kill::registration())?;
     builder.register(list::registration())?;
     builder.register(locate::registration())?;
+    builder.register(loot::registration())?;
+    builder.register(msg::registration())?;
     builder.register(operator::op_registration())?;
+    builder.register(particle::registration())?;
     builder.register(perms::registration())?;
     builder.register(playsound::registration())?;
+    builder.register(posteffect::registration())?;
+    builder.register(random::registration())?;
+    builder.register(recipe::registration())?;
     builder.register(return_command::registration())?;
+    builder.register(ride::registration())?;
+    builder.register(rotate::registration())?;
+    builder.register(save::registration())?;
+    builder.register(save::save_off_registration())?;
+    builder.register(save::save_on_registration())?;
+    builder.register(say::say_registration())?;
+    builder.register(say::me_registration())?;
+    builder.register(scoreboard::registration())?;
+    builder.register(forceload::registration())?;
+    builder.register(help::registration())?;
+    builder.register(function::registration())?;
+    builder.register(schedule::registration())?;
+    builder.register(spectate::registration())?;
     builder.register(seed::registration())?;
+    builder.register(serverpack::serverpack_registration())?;
+    builder.register(serverpack::fetchprofile_registration())?;
     builder.register(setblock::registration())?;
     builder.register(spawnpoint::registration())?;
+    builder.register(spreadplayers::registration())?;
     builder.register(setidletimeout::registration())?;
     builder.register(setworldspawn::registration())?;
     builder.register(stop::registration())?;
+    builder.register(stopwatch::registration())?;
     builder.register(stopsound::registration())?;
     builder.register(summon::registration())?;
     builder.register(swing::registration())?;
     builder.register(tag::registration())?;
+    builder.register(team::registration())?;
+    builder.register(teammsg::registration())?;
     builder.register(teleport::registration())?;
     builder.register(tellraw::registration())?;
+    builder.register(trigger::registration())?;
     builder.register(tick::registration())?;
     builder.register(time::registration())?;
     builder.register(title::registration())?;
+    builder.register(tpsbar::registration())?;
     builder.register(version::registration())?;
+    builder.register(waypoint::registration())?;
     builder.register(weather::registration())?;
+    builder.register(whitelist::registration())?;
     builder.register(worldborder::registration())?;
     builder.register(invsee::registration()?)?;
+    builder.register(item::registration())?;
     builder.register(transfer::registration())?;
     builder.extend(extension_commands.into_inner())?;
     builder.build_with_permissions()
@@ -144,7 +227,7 @@ mod tests {
         let Some(roots) = dispatcher.children(dispatcher.root()) else {
             panic!("dispatcher root should exist");
         };
-        let names = roots
+        let mut names = roots
             .iter()
             .map(|root| {
                 let Some(root) = dispatcher.node(*root) else {
@@ -153,54 +236,107 @@ mod tests {
                 root.name()
             })
             .collect::<Vec<_>>();
+        names.sort_unstable();
 
+        // Sorted, so the assertion pins the command surface rather than the
+        // order the registrations happen to run in.
         assert_eq!(
             names,
             [
                 "advancement",
+                "attribute",
+                "ban",
+                "ban-ip",
+                "banip",
+                "banlist",
+                "bossbar",
                 "clear",
-                "deop",
+                "clone",
                 "damage",
+                "data",
+                "datapack",
                 "defaultgamemode",
+                "deop",
+                "dialog",
                 "difficulty",
                 "domain",
+                "effect",
                 "enchant",
                 "execute",
                 "experience",
-                "xp",
+                "fetchprofile",
                 "fill",
+                "fillbiome",
                 "fly",
+                "forceload",
+                "function",
                 "gamemode",
                 "gamerule",
                 "give",
+                "help",
+                "invsee",
+                "item",
+                "kick",
                 "kill",
                 "list",
                 "locate",
+                "loot",
+                "me",
+                "msg",
                 "op",
+                "pardon",
+                "pardon-ip",
+                "pardonip",
+                "particle",
                 "perms",
                 "playsound",
+                "posteffect",
+                "random",
+                "recipe",
+                "reload",
                 "return",
+                "ride",
+                "rotate",
+                "save-all",
+                "save-off",
+                "save-on",
+                "say",
+                "schedule",
+                "scoreboard",
                 "seed",
+                "serverpack",
                 "setblock",
-                "spawnpoint",
                 "setidletimeout",
                 "setworldspawn",
+                "spawnpoint",
+                "spectate",
+                "spreadplayers",
                 "stop",
                 "stopsound",
+                "stopwatch",
                 "summon",
                 "swing",
                 "tag",
+                "team",
+                "teammsg",
                 "teleport",
-                "tp",
+                "tell",
                 "tellraw",
                 "tick",
                 "time",
                 "title",
+                "tm",
+                "tp",
+                "tpsbar",
+                "transfer",
+                "trigger",
                 "version",
+                "w",
+                "waypoint",
                 "weather",
+                "whitelist",
                 "worldborder",
-                "invsee",
-                "transfer"
+                "xp",
             ]
         );
 

@@ -28,7 +28,7 @@ const MIN_DELTA: i64 = i16::MIN as i64;
 ///
 /// The client replays each step in order, `ticks` apart, to interpolate sub-tick
 /// movement instead of sliding straight to the end position.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, WriteTo)]
 pub struct DeltaStep {
     /// Delta X from the previous step.
     pub dx: PackedEntityDelta,
@@ -231,12 +231,15 @@ pub const fn to_angle_byte(degrees: f32) -> i8 {
 #[inline]
 #[must_use]
 pub const fn encode_position(value: f64) -> i64 {
-    // Java Math.round() rounds half towards positive infinity:
-    //   Math.round(0.5) = 1, Math.round(-0.5) = 0
-    // Rust round() rounds half away from zero:
-    //   (0.5).round() = 1, (-0.5).round() = -1
-    // To match Java, use floor(x + 0.5) which always rounds half-up.
-    (value * TRUNCATION_STEPS + 0.5).floor() as i64
+    // Adding 0.5 before floor is not exact: the double immediately below
+    // 0.5 rounds up to 1.0 during that addition. Java Math.round keeps it 0.
+    let scaled = value * TRUNCATION_STEPS;
+    let lower = scaled.floor();
+    if scaled - lower >= 0.5 {
+        (lower + 1.0) as i64
+    } else {
+        lower as i64
+    }
 }
 
 /// Calculates the delta for entity movement.
@@ -253,6 +256,19 @@ mod tests {
     use steel_utils::serial::WriteTo as _;
 
     use super::*;
+
+    #[test]
+    fn position_rounding_preserves_values_immediately_below_half() {
+        let below_half = f64::from_bits(0.5_f64.to_bits() - 1);
+        assert_eq!(encode_position(below_half / TRUNCATION_STEPS), 0);
+        assert_eq!(encode_position(0.5 / TRUNCATION_STEPS), 1);
+        assert_eq!(encode_position(-0.5 / TRUNCATION_STEPS), 0);
+        let below_negative_half = -f64::from_bits(0.5_f64.to_bits() + 1);
+        assert_eq!(encode_position(below_negative_half / TRUNCATION_STEPS), -1);
+        assert_eq!(encode_position(f64::NAN), 0);
+        assert_eq!(encode_position(f64::INFINITY), i64::MAX);
+        assert_eq!(encode_position(f64::NEG_INFINITY), i64::MIN);
+    }
 
     // `entityId` VarInt, `properties` VarInt (on-ground flag in bit 0, step count in the
     // upper bits), then the delta: three big-endian shorts for a linear delta.

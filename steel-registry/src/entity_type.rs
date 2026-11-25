@@ -3,7 +3,7 @@ use rustc_hash::FxHashMap;
 use steel_math::trig;
 use steel_utils::{DowncastType, DowncastTypeKey, Identifier};
 
-use crate::{RegistryTags, blocks::behavior::PushReaction};
+use crate::{RegistryTags, TaggedRegistryExt, blocks::behavior::PushReaction};
 
 const DEFAULT_EYE_HEIGHT_FACTOR: f32 = 0.85;
 
@@ -38,6 +38,25 @@ impl MobCategory {
     #[must_use]
     pub const fn no_despawn_distance(self) -> i32 {
         32
+    }
+
+    /// The category's data-pack key, i.e. how `Biome.spawners` names it.
+    ///
+    /// Vanilla `MobCategory.getName()` lowercases the enum name and matches the
+    /// keys in the biome JSON (`monster`, `creature`, `underground_water_creature`,
+    /// …); the biome registry uses exactly those keys.
+    #[must_use]
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Monster => "monster",
+            Self::Creature => "creature",
+            Self::Ambient => "ambient",
+            Self::Axolotls => "axolotls",
+            Self::UndergroundWaterCreature => "underground_water_creature",
+            Self::WaterCreature => "water_creature",
+            Self::WaterAmbient => "water_ambient",
+            Self::Misc => "misc",
+        }
     }
 }
 
@@ -173,9 +192,9 @@ fn rotate_attachment_point(point: DVec3, yaw_degrees: f32) -> DVec3 {
     let cos = f64::from(trig::cos(radians));
     let sin = f64::from(trig::sin(radians));
     DVec3::new(
-        point.x.mul_add(cos, point.z * sin),
+        point.x * cos + point.z * sin,
         point.y,
-        point.z.mul_add(cos, -(point.x * sin)),
+        point.z * cos - point.x * sin,
     )
 }
 
@@ -286,6 +305,12 @@ pub struct EntityType {
     pub mob_category: MobCategory,
     /// Whether this entity is immune to fire damage.
     pub fire_immune: bool,
+    /// Block tag this entity ignores when scanning floor blocks for danger.
+    ///
+    /// Vanilla 26.3 `EntityType.immune_to`. Striders use `#strider_warm_blocks`,
+    /// hoglins `#hoglin_repellents` is separate; the common case is a mob that may
+    /// stand on a block other mobs treat as harmful.
+    pub immune_to: Option<Identifier>,
     /// Whether this entity can be summoned via commands.
     pub summonable: bool,
     /// Whether this entity type is allowed to exist in Peaceful difficulty.
@@ -306,10 +331,16 @@ pub struct EntityType {
     pub is_projectile: bool,
     /// Whether vanilla class hierarchy makes this entity an `AbstractArrow`.
     pub is_abstract_arrow: bool,
+    /// Whether this type descends from vanilla `AbstractHurtingProjectile`
+    /// (fireballs, wither skull, dragon fireball, wind charges).
+    pub is_abstract_hurting_projectile: bool,
     /// Whether vanilla class hierarchy makes this entity an `AbstractHorse`.
     pub is_abstract_horse: bool,
     /// Whether vanilla class hierarchy makes this entity an `AbstractNautilus`.
     pub is_abstract_nautilus: bool,
+    /// Whether this type descends from vanilla `Zombie` (zombie, husk, drowned,
+    /// zombie villager, zombified piglin, ...). Villagers avoid these.
+    pub is_zombie: bool,
 
     /// Behavioral flags for collision and interaction.
     pub flags: EntityFlags,
@@ -320,6 +351,18 @@ pub struct EntityType {
 }
 
 pub type EntityTypeRef = &'static EntityType;
+
+impl EntityType {
+    /// Returns `true` if this entity type is tagged with the given tag.
+    ///
+    /// Mirrors `Block::has_tag`: the check goes through the global registry so
+    /// data-pack tags (`#minecraft:zombies`, `#minecraft:sensitive_to_smite`, …)
+    /// resolve against whatever the last reload registered.
+    #[must_use]
+    pub fn has_tag(&'static self, tag: &Identifier) -> bool {
+        crate::REGISTRY.entity_types.is_in_tag(self, tag)
+    }
+}
 
 pub struct EntityTypeRegistry {
     types_by_id: Vec<EntityTypeRef>,
@@ -494,5 +537,15 @@ mod tests {
         assert!(vanilla_entities::SPECTRAL_ARROW.is_abstract_arrow);
         assert!(vanilla_entities::TRIDENT.is_abstract_arrow);
         assert!(!vanilla_entities::ENDER_PEARL.is_abstract_arrow);
+
+        // `AbstractHurtingProjectile` drives the initial projectile-power packet.
+        // `LargeFireball` is `minecraft:fireball` in the registry.
+        assert!(vanilla_entities::FIREBALL.is_abstract_hurting_projectile);
+        assert!(vanilla_entities::SMALL_FIREBALL.is_abstract_hurting_projectile);
+        assert!(vanilla_entities::WITHER_SKULL.is_abstract_hurting_projectile);
+        assert!(vanilla_entities::DRAGON_FIREBALL.is_abstract_hurting_projectile);
+        assert!(vanilla_entities::WIND_CHARGE.is_abstract_hurting_projectile);
+        assert!(!vanilla_entities::ARROW.is_abstract_hurting_projectile);
+        assert!(!vanilla_entities::SNOWBALL.is_abstract_hurting_projectile);
     }
 }

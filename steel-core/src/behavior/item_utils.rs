@@ -1,8 +1,10 @@
 //! Helpers shared by item behavior implementations.
 
+use crate::behavior::InventoryAccess;
 use crate::player::player_inventory::Prediction;
 use steel_registry::item_stack::ItemStack;
 use steel_registry::items::item::BlockHitResult;
+use steel_utils::types::InteractionHand;
 
 use crate::behavior::UseItemContext;
 use crate::inventory::lock::ContainerId;
@@ -33,15 +35,31 @@ pub(crate) fn create_filled_result(
     result_stack: ItemStack,
     limit_creative_stack_size: bool,
 ) {
-    let player = context.player;
-    let overflow = context.inv.with_guard(|guard| {
+    create_filled_result_for_hand(
+        context.player,
+        &context.inv,
+        context.hand,
+        result_stack,
+        limit_creative_stack_size,
+    );
+}
+
+/// The same filled-result transaction for block interactions such as cauldrons.
+pub(crate) fn create_filled_result_for_hand(
+    player: &Player,
+    inventory: &InventoryAccess,
+    hand: InteractionHand,
+    result_stack: ItemStack,
+    limit_creative_stack_size: bool,
+) {
+    let overflow = inventory.with_guard(|guard| {
         let inv_id = ContainerId::from_arc(&player.inventory);
         let Some(inv) = guard.get_typed_mut::<PlayerInventory>(inv_id) else {
             return result_stack;
         };
 
         inv.apply_filled_result(
-            context.hand,
+            hand,
             result_stack,
             player.has_infinite_materials(),
             limit_creative_stack_size,

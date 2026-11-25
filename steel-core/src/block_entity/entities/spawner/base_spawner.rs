@@ -1,5 +1,6 @@
 //! Shared spawn-cycle state and ticking used by spawner block entities.
 
+use crate::world::game_event::GameEventContext;
 use std::mem;
 use std::sync::Arc;
 
@@ -91,9 +92,12 @@ struct SpawnerState {
 }
 
 #[derive(Debug, Default)]
-pub(super) struct SpawnerTickResult {
-    pub(super) state_changed: bool,
-    pub(super) next_spawn_data_changed: bool,
+/// State dirty flags produced by a single spawner server tick.
+pub struct SpawnerTickResult {
+    /// Whether persistent spawner fields changed.
+    pub state_changed: bool,
+    /// Whether the client-visible next spawn entry changed.
+    pub next_spawn_data_changed: bool,
 }
 
 impl Default for SpawnerState {
@@ -164,7 +168,15 @@ impl BaseSpawner {
 
     /// Loads the vanilla spawner fields from NBT.
     pub fn load(&self, nbt: &BorrowedNbtCompound<'_>) {
-        let nbt: NbtCompoundView<'_, '_> = nbt.into();
+        let view: NbtCompoundView<'_, '_> = nbt.into();
+        self.load_view(&view);
+    }
+
+    /// Loads the vanilla spawner fields from an already-borrowed compound view.
+    ///
+    /// Callers that hold a typed [`NbtCompoundView`] rather than the erased
+    /// `BaseNbtCompound` reborrow before reaching this entry point.
+    pub fn load_view(&self, nbt: &NbtCompoundView<'_, '_>) {
         let mut state = self.state.lock();
         state.spawn_delay = nbt
             .get("Delay")
@@ -355,7 +367,7 @@ impl BaseSpawner {
         clippy::too_many_lines,
         reason = "The order of this method mirrors vanilla BaseSpawner.serverTick."
     )]
-    pub(super) fn server_tick(&self, world: &Arc<World>, pos: BlockPos) -> SpawnerTickResult {
+    pub(crate) fn server_tick(&self, world: &Arc<World>, pos: BlockPos) -> SpawnerTickResult {
         let center = DVec3::from(pos.get_center());
         let config = self.config();
         let Some(_) =
@@ -494,7 +506,7 @@ impl BaseSpawner {
             world.game_event(
                 &vanilla_game_events::ENTITY_PLACE,
                 spawn_block_pos,
-                &crate::world::game_event::GameEventContext::new(Some(entity.as_ref()), None),
+                &GameEventContext::new(Some(entity.as_ref()), None),
             );
             if entity.as_mob().is_some() {
                 entity.broadcast_entity_event(EntityStatus::SilverfishMergeAnim);

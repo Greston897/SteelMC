@@ -9,8 +9,11 @@ use super::{
 
 use crate::entity::entities::FallingBlockEntity;
 
+/// Outcome of picking up a fluid or block into a bucket.
 pub struct PickupResult {
+    /// Resulting filled bucket item.
     pub filled_bucket: ItemStack,
+    /// Optional pickup sound event.
     pub sound: Option<SoundEventRef>,
 }
 
@@ -33,6 +36,15 @@ impl BlockEntityCreation {
     #[must_use]
     pub fn from_registered_factory(entity: Option<SharedBlockEntity>) -> Self {
         entity.map_or(Self::Unimplemented, Self::Created)
+    }
+
+    /// Returns the created entity without consuming the result.
+    #[must_use]
+    pub fn created(&self) -> Option<&SharedBlockEntity> {
+        match self {
+            Self::Created(entity) => Some(entity),
+            Self::NoEntity | Self::Unimplemented => None,
+        }
     }
 
     /// Returns the created entity, if the factory produced one.
