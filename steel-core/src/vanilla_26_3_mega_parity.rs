@@ -2800,7 +2800,7 @@ fn place_and_assert(world: &Arc<World>, pos: BlockPos, block_id: &str) {
                 let np = BlockPos::new(pos.x() + dx, pos.y() + dy, pos.z() + dz);
                 // Avoid excessive work: only clear non-air to reduce updates.
                 if !world.get_block_state(np).is_air() {
-                    world.set_block(np, air.clone(), UpdateFlags::UPDATE_ALL);
+                    world.set_block(np, air, UpdateFlags::UPDATE_ALL);
                 }
             }
         }
