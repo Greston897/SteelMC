@@ -360,10 +360,7 @@ pub trait ItemBehavior: Send + Sync {
         None
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
-    fn can_apply_to_sign(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
-        false
-    }
+
 
     #[expect(unused_variables, reason = "default trait implementation")]
     fn can_destroy_block(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
@@ -510,16 +507,7 @@ pub trait ItemBehavior: Send + Sync {
     #[expect(unused_variables, reason = "default trait implementation")]
     fn shoot(&self, stack: &ItemStack, world: &Arc<World>, pos: BlockPos) {}
 
-    #[expect(unused_variables, reason = "default trait implementation")]
-    fn try_apply_to_sign(
-        &self,
-        stack: &mut ItemStack,
-        world: &Arc<World>,
-        pos: BlockPos,
-        player: &Player,
-    ) -> bool {
-        false
-    }
+
 
     #[expect(unused_variables, reason = "default trait implementation")]
     fn update_placement_context(&self, stack: &ItemStack) -> Option<ItemStack> {

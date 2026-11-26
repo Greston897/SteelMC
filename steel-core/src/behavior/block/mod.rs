@@ -1661,15 +1661,7 @@ pub trait BlockBehavior: Send + Sync {
         None
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
-    fn get_bonemeal_age_increase(
-        &self,
-        state: BlockStateId,
-        world: &dyn LevelReader,
-        pos: BlockPos,
-    ) -> i32 {
-        0
-    }
+
 
     #[expect(unused_variables, reason = "default trait implementation")]
     fn get_columns(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
@@ -1751,15 +1743,7 @@ pub trait BlockBehavior: Send + Sync {
         None
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
-    fn get_fall_damage_source(
-        &self,
-        state: BlockStateId,
-        world: &dyn LevelReader,
-        pos: BlockPos,
-    ) -> i32 {
-        0
-    }
+
 
     #[expect(unused_variables, reason = "default trait implementation")]
     fn get_fluid_state(&self, state: BlockStateId) -> FluidState {
@@ -1982,15 +1966,7 @@ pub trait BlockBehavior: Send + Sync {
         None
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
-    fn get_state_for_age(
-        &self,
-        state: BlockStateId,
-        world: &dyn LevelReader,
-        pos: BlockPos,
-    ) -> Option<BlockStateId> {
-        None
-    }
+
 
     #[expect(unused_variables, reason = "default trait implementation")]
     fn get_suspicious_effects(
@@ -2020,15 +1996,7 @@ pub trait BlockBehavior: Send + Sync {
         false
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
-    fn is_bonemeal_success(
-        &self,
-        state: BlockStateId,
-        world: &dyn LevelReader,
-        pos: BlockPos,
-    ) -> bool {
-        false
-    }
+
 
     #[expect(unused_variables, reason = "default trait implementation")]
     fn is_collision_shape_full_block(
@@ -2075,34 +2043,21 @@ pub trait BlockBehavior: Send + Sync {
         false
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
-    fn is_valid_bonemeal_target(
-        &self,
-        state: BlockStateId,
-        world: &dyn LevelReader,
-        pos: BlockPos,
-    ) -> bool {
-        false
-    }
+
 
     #[expect(unused_variables, reason = "default trait implementation")]
     fn is_waxed(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
         false
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
-    fn may_place_on(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
-        false
-    }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
-    fn on_broken_after_fall(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
+
 
     #[expect(unused_variables, reason = "default trait implementation")]
     fn on_discharged(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
 
-    #[expect(unused_variables, reason = "default trait implementation")]
-    fn on_land(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
 
     #[expect(unused_variables, reason = "default trait implementation")]
     fn open_container(
@@ -2115,8 +2070,7 @@ pub trait BlockBehavior: Send + Sync {
         false
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
-    fn perform_bonemeal(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
+
 
     #[expect(unused_variables, reason = "default trait implementation")]
     fn random_orientation(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
