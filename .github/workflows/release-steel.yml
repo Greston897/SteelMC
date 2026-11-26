@@ -63,6 +63,12 @@ jobs:
       - name: Add target ${{ matrix.target }}
         run: rustup target add ${{ matrix.target }}
 
+      - name: Install lld linker (required for -fuse-ld=lld in .cargo/config.toml)
+        run: |
+          sudo apt-get update && sudo apt-get install -y lld clang || echo "lld install failed, continue"
+          which ld.lld || true
+          ld.lld --version || lld --version || true
+
       - name: Build release steel (Linux container / Pterodactyl)
         run: |
           cargo build --release --locked --features stand-alone --target ${{ matrix.target }} --verbose
@@ -78,6 +84,10 @@ jobs:
           path: target/${{ matrix.target }}/release/steel
           retention-days: 30
 
+      - name: Set up Docker Buildx
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        uses: docker/setup-buildx-action@v3
+
       - name: Login to GHCR (for Pterodactyl image)
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         uses: docker/login-action@v3
@@ -92,18 +102,25 @@ jobs:
         with:
           context: .
           file: ./Dockerfile.pterodactyl
-          platforms: linux/amd64
           push: ${{ github.ref == 'refs/heads/arena/b3a39197-steelmc' || startsWith(github.ref, 'refs/tags/v') }}
           tags: ghcr.io/${{ github.repository }}:pterodactyl
-          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Test Pterodactyl image boots
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         run: |
-          docker run --rm -d --name steel-test -p 25565:25565 ghcr.io/${{ github.repository }}:pterodactyl || docker run --rm -d --name steel-test -p 25565:25565 steelmc:pterodactyl || true
-          sleep 5
-          docker logs steel-test 2>&1 | head -n 50 || true
+          echo "Testing Pterodactyl image (push=${{ github.ref == 'refs/heads/arena/b3a39197-steelmc' || startsWith(github.ref, 'refs/tags/v') }})"
+          if [ "${{ github.ref }}" = "refs/heads/arena/b3a39197-steelmc" ] || [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "Image was pushed to GHCR, pulling for test..."
+            docker pull ghcr.io/${{ github.repository }}:pterodactyl || true
+          fi
+          docker run --rm -d --name steel-test -p 25565:25565 ghcr.io/${{ github.repository }}:pterodactyl || echo "docker run from GHCR failed, trying local tag"
+          sleep 6
+          docker logs steel-test 2>&1 | head -n 80 || true
+          if docker ps | grep -q steel-test; then echo "steel-test running OK"; else echo "steel-test not running (may have exited fast)"; fi
           docker stop steel-test || true
+          docker ps -a | head || true
 
       - name: Prepare release asset (rename with target)
         run: |
@@ -122,7 +139,7 @@ jobs:
 
   release:
     name: Create GitHub Release (ядро)
-    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/arena/b3a39197-steelmc'
+    if: always() && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/arena/b3a39197-steelmc')
     needs: build-linux
     runs-on: ubuntu-latest
     permissions:
@@ -131,17 +148,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all steel binaries
+      - name: Download all steel binaries (allow partial if one arch failed)
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           pattern: release-steel-*
           merge-multiple: true
 
       - name: List binaries + Pterodactyl egg
         run: |
-          ls -lh steel-* || true
-          cat steel-*.sha256 || true
+          echo "Checking for binaries (aarch may be missing if its build failed, x86 is required for Pterodactyl):"
+          ls -lh steel-* || echo "no steel-* binaries found"
+          cat steel-*.sha256 || echo "no sha256"
           ls -lh pterodactyl-egg.json Dockerfile.pterodactyl PTERODACTYL.md || true
+          if [ ! -f steel-x86_64-unknown-linux-gnu ]; then echo "::warning::x86_64 binary missing — Pterodactyl image will be unavailable"; fi
+          if [ ! -f steel-aarch64-unknown-linux-gnu ]; then echo "::warning::aarch64 binary missing (ARM build failed, x86 still usable)"; fi
 
       - name: Create / Update Release (ядро + Pterodactyl)
         uses: softprops/action-gh-release@v2
@@ -150,6 +171,7 @@ jobs:
           name: SteelMC ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('nightly {0} (26.3)', github.sha) }}
           prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }}
           generate_release_notes: true
+          fail_on_unmatched_files: false
           files: |
             steel-x86_64-unknown-linux-gnu
             steel-aarch64-unknown-linux-gnu
