@@ -7,6 +7,8 @@ LABEL authors="junkydeveloper"
 
 WORKDIR /steel
 COPY . .
+# Устанавливаем lld для .cargo/config.toml (-fuse-ld=lld), иначе линковка падает
+RUN apt-get update && apt-get install -y --no-install-recommends lld clang && rm -rf /var/lib/apt/lists/*
 # stand-alone = минимальные зависимости, без jaeger/dhat, с mimalloc
 # locked = воспроизводимая сборка по Cargo.lock
 RUN cargo build --release --locked --features stand-alone

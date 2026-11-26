@@ -84,6 +84,21 @@ jobs:
           path: target/${{ matrix.target }}/release/steel
           retention-days: 30
 
+      - name: Prepare release asset (rename with target)
+        run: |
+          cp target/${{ matrix.target }}/release/steel steel-${{ matrix.target }} || cp target/release/steel steel-${{ matrix.target }}
+          ls -lh steel-${{ matrix.target }}
+          sha256sum steel-${{ matrix.target }} | tee steel-${{ matrix.target }}.sha256
+
+      - name: Upload release-ready artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-steel-${{ matrix.target }}
+          path: |
+            steel-${{ matrix.target }}
+            steel-${{ matrix.target }}.sha256
+          retention-days: 90
+
       - name: Set up Docker Buildx
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         uses: docker/setup-buildx-action@v3
@@ -121,21 +136,6 @@ jobs:
           if docker ps | grep -q steel-test; then echo "steel-test running OK"; else echo "steel-test not running (may have exited fast)"; fi
           docker stop steel-test || true
           docker ps -a | head || true
-
-      - name: Prepare release asset (rename with target)
-        run: |
-          cp target/${{ matrix.target }}/release/steel steel-${{ matrix.target }} || cp target/release/steel steel-${{ matrix.target }}
-          ls -lh steel-${{ matrix.target }}
-          sha256sum steel-${{ matrix.target }} | tee steel-${{ matrix.target }}.sha256
-
-      - name: Upload release-ready artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-steel-${{ matrix.target }}
-          path: |
-            steel-${{ matrix.target }}
-            steel-${{ matrix.target }}.sha256
-          retention-days: 90
 
   release:
     name: Create GitHub Release (ядро)
