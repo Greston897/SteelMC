@@ -2799,7 +2799,6 @@ fn place_and_assert(world: &Arc<World>, pos: BlockPos, block_id: &str) {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0000_stone_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -2873,7 +2872,6 @@ fn mega_simple_0000_stone_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0001_dirt_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -2947,7 +2945,6 @@ fn mega_simple_0001_dirt_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0002_grass_block_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -3021,7 +3018,6 @@ fn mega_simple_0002_grass_block_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0003_cobblestone_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -3095,7 +3091,6 @@ fn mega_simple_0003_cobblestone_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0004_oak_planks_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -3169,7 +3164,6 @@ fn mega_simple_0004_oak_planks_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0005_sand_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -3243,7 +3237,6 @@ fn mega_simple_0005_sand_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0006_gravel_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -3317,7 +3310,6 @@ fn mega_simple_0006_gravel_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0007_glass_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -3391,7 +3383,6 @@ fn mega_simple_0007_glass_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0008_oak_log_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -3465,7 +3456,6 @@ fn mega_simple_0008_oak_log_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0009_oak_leaves_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -3539,7 +3529,6 @@ fn mega_simple_0009_oak_leaves_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0010_bedrock_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -3613,7 +3602,6 @@ fn mega_simple_0010_bedrock_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0011_sandstone_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -3687,7 +3675,6 @@ fn mega_simple_0011_sandstone_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0012_coal_ore_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -3761,7 +3748,6 @@ fn mega_simple_0012_coal_ore_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0013_iron_ore_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -3835,7 +3821,6 @@ fn mega_simple_0013_iron_ore_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0014_gold_ore_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -3909,7 +3894,6 @@ fn mega_simple_0014_gold_ore_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0015_diamond_ore_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -3983,7 +3967,6 @@ fn mega_simple_0015_diamond_ore_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0016_netherrack_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -4057,7 +4040,6 @@ fn mega_simple_0016_netherrack_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0017_obsidian_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -4131,7 +4113,6 @@ fn mega_simple_0017_obsidian_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0018_white_wool_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -4205,7 +4186,6 @@ fn mega_simple_0018_white_wool_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0019_oak_door_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -4279,7 +4259,6 @@ fn mega_simple_0019_oak_door_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0020_iron_door_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -4353,7 +4332,6 @@ fn mega_simple_0020_iron_door_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0021_furnace_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -4427,7 +4405,6 @@ fn mega_simple_0021_furnace_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0022_crafting_table_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -4501,7 +4478,6 @@ fn mega_simple_0022_crafting_table_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0023_chest_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -4575,7 +4551,6 @@ fn mega_simple_0023_chest_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0024_hopper_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -4649,7 +4624,6 @@ fn mega_simple_0024_hopper_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0025_dispenser_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -4723,7 +4697,6 @@ fn mega_simple_0025_dispenser_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0026_dropper_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -4797,7 +4770,6 @@ fn mega_simple_0026_dropper_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0027_observer_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -4871,7 +4843,6 @@ fn mega_simple_0027_observer_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0028_piston_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -4945,7 +4916,6 @@ fn mega_simple_0028_piston_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0029_sticky_piston_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -5019,7 +4989,6 @@ fn mega_simple_0029_sticky_piston_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0030_redstone_wire_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -5093,7 +5062,6 @@ fn mega_simple_0030_redstone_wire_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0031_redstone_torch_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -5167,7 +5135,6 @@ fn mega_simple_0031_redstone_torch_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0032_redstone_block_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -5241,7 +5208,6 @@ fn mega_simple_0032_redstone_block_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0033_repeater_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -5315,7 +5281,6 @@ fn mega_simple_0033_repeater_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0034_comparator_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -5389,7 +5354,6 @@ fn mega_simple_0034_comparator_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0035_redstone_lamp_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -5463,7 +5427,6 @@ fn mega_simple_0035_redstone_lamp_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0036_sculk_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -5537,7 +5500,6 @@ fn mega_simple_0036_sculk_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0037_sculk_sensor_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -5611,7 +5573,6 @@ fn mega_simple_0037_sculk_sensor_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0038_sculk_shrieker_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -5685,7 +5646,6 @@ fn mega_simple_0038_sculk_shrieker_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0039_sculk_catalyst_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -5759,7 +5719,6 @@ fn mega_simple_0039_sculk_catalyst_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0040_trial_spawner_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -5833,7 +5792,6 @@ fn mega_simple_0040_trial_spawner_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0041_vault_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -5907,7 +5865,6 @@ fn mega_simple_0041_vault_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0042_creaking_heart_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -5981,7 +5938,6 @@ fn mega_simple_0042_creaking_heart_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0043_pale_oak_log_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -6055,7 +6011,6 @@ fn mega_simple_0043_pale_oak_log_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0044_cactus_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -6129,7 +6084,6 @@ fn mega_simple_0044_cactus_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0045_bamboo_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -6203,7 +6157,6 @@ fn mega_simple_0045_bamboo_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0046_wheat_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -6277,7 +6230,6 @@ fn mega_simple_0046_wheat_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0047_torch_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -6351,7 +6303,6 @@ fn mega_simple_0047_torch_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0048_lantern_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -6425,7 +6376,6 @@ fn mega_simple_0048_lantern_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0049_campfire_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -6499,7 +6449,6 @@ fn mega_simple_0049_campfire_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0050_tnt_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -6573,7 +6522,6 @@ fn mega_simple_0050_tnt_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0051_rail_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -6647,7 +6595,6 @@ fn mega_simple_0051_rail_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0052_powered_rail_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -6721,7 +6668,6 @@ fn mega_simple_0052_powered_rail_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0053_note_block_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -6795,7 +6741,6 @@ fn mega_simple_0053_note_block_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0054_jukebox_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -6869,7 +6814,6 @@ fn mega_simple_0054_jukebox_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0055_beacon_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -6943,7 +6887,6 @@ fn mega_simple_0055_beacon_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0056_conduit_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -7017,7 +6960,6 @@ fn mega_simple_0056_conduit_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0057_anvil_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -7091,7 +7033,6 @@ fn mega_simple_0057_anvil_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0058_grindstone_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -7165,7 +7106,6 @@ fn mega_simple_0058_grindstone_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0059_stonecutter_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -7239,7 +7179,6 @@ fn mega_simple_0059_stonecutter_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0060_smithing_table_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -7313,7 +7252,6 @@ fn mega_simple_0060_smithing_table_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0061_bell_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -7387,7 +7325,6 @@ fn mega_simple_0061_bell_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0062_honey_block_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -7461,7 +7398,6 @@ fn mega_simple_0062_honey_block_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0063_slime_block_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -7535,7 +7471,6 @@ fn mega_simple_0063_slime_block_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0064_stone_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -7609,7 +7544,6 @@ fn mega_simple_0064_stone_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0065_dirt_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -7683,7 +7617,6 @@ fn mega_simple_0065_dirt_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0066_grass_block_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -7757,7 +7690,6 @@ fn mega_simple_0066_grass_block_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0067_cobblestone_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -7831,7 +7763,6 @@ fn mega_simple_0067_cobblestone_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0068_oak_planks_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -7905,7 +7836,6 @@ fn mega_simple_0068_oak_planks_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0069_sand_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -7979,7 +7909,6 @@ fn mega_simple_0069_sand_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0070_gravel_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -8053,7 +7982,6 @@ fn mega_simple_0070_gravel_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0071_glass_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -8127,7 +8055,6 @@ fn mega_simple_0071_glass_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0072_oak_log_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -8201,7 +8128,6 @@ fn mega_simple_0072_oak_log_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0073_oak_leaves_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -8275,7 +8201,6 @@ fn mega_simple_0073_oak_leaves_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0074_bedrock_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -8349,7 +8274,6 @@ fn mega_simple_0074_bedrock_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0075_sandstone_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -8423,7 +8347,6 @@ fn mega_simple_0075_sandstone_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0076_coal_ore_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -8497,7 +8420,6 @@ fn mega_simple_0076_coal_ore_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0077_iron_ore_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -8571,7 +8493,6 @@ fn mega_simple_0077_iron_ore_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0078_gold_ore_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -8645,7 +8566,6 @@ fn mega_simple_0078_gold_ore_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0079_diamond_ore_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -8719,7 +8639,6 @@ fn mega_simple_0079_diamond_ore_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0080_netherrack_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -8793,7 +8712,6 @@ fn mega_simple_0080_netherrack_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0081_obsidian_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -8867,7 +8785,6 @@ fn mega_simple_0081_obsidian_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0082_white_wool_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -8941,7 +8858,6 @@ fn mega_simple_0082_white_wool_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0083_oak_door_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -9015,7 +8931,6 @@ fn mega_simple_0083_oak_door_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0084_iron_door_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -9089,7 +9004,6 @@ fn mega_simple_0084_iron_door_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0085_furnace_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -9163,7 +9077,6 @@ fn mega_simple_0085_furnace_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0086_crafting_table_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -9237,7 +9150,6 @@ fn mega_simple_0086_crafting_table_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0087_chest_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -9311,7 +9223,6 @@ fn mega_simple_0087_chest_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0088_hopper_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -9385,7 +9296,6 @@ fn mega_simple_0088_hopper_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0089_dispenser_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -9459,7 +9369,6 @@ fn mega_simple_0089_dispenser_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0090_dropper_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -9533,7 +9442,6 @@ fn mega_simple_0090_dropper_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0091_observer_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -9607,7 +9515,6 @@ fn mega_simple_0091_observer_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0092_piston_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -9681,7 +9588,6 @@ fn mega_simple_0092_piston_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0093_sticky_piston_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -9755,7 +9661,6 @@ fn mega_simple_0093_sticky_piston_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0094_redstone_wire_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -9829,7 +9734,6 @@ fn mega_simple_0094_redstone_wire_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0095_redstone_torch_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -9903,7 +9807,6 @@ fn mega_simple_0095_redstone_torch_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0096_redstone_block_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -9977,7 +9880,6 @@ fn mega_simple_0096_redstone_block_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0097_repeater_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -10051,7 +9953,6 @@ fn mega_simple_0097_repeater_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0098_comparator_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -10125,7 +10026,6 @@ fn mega_simple_0098_comparator_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0099_redstone_lamp_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -10199,7 +10099,6 @@ fn mega_simple_0099_redstone_lamp_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0100_sculk_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -10273,7 +10172,6 @@ fn mega_simple_0100_sculk_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0101_sculk_sensor_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -10347,7 +10245,6 @@ fn mega_simple_0101_sculk_sensor_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0102_sculk_shrieker_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -10421,7 +10318,6 @@ fn mega_simple_0102_sculk_shrieker_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0103_sculk_catalyst_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -10495,7 +10391,6 @@ fn mega_simple_0103_sculk_catalyst_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0104_trial_spawner_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -10569,7 +10464,6 @@ fn mega_simple_0104_trial_spawner_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0105_vault_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -10643,7 +10537,6 @@ fn mega_simple_0105_vault_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0106_creaking_heart_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -10717,7 +10610,6 @@ fn mega_simple_0106_creaking_heart_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0107_pale_oak_log_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -10791,7 +10683,6 @@ fn mega_simple_0107_pale_oak_log_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0108_cactus_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -10865,7 +10756,6 @@ fn mega_simple_0108_cactus_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0109_bamboo_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -10939,7 +10829,6 @@ fn mega_simple_0109_bamboo_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0110_wheat_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -11013,7 +10902,6 @@ fn mega_simple_0110_wheat_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0111_torch_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -11087,7 +10975,6 @@ fn mega_simple_0111_torch_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0112_lantern_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -11161,7 +11048,6 @@ fn mega_simple_0112_lantern_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0113_campfire_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -11235,7 +11121,6 @@ fn mega_simple_0113_campfire_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0114_tnt_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -11309,7 +11194,6 @@ fn mega_simple_0114_tnt_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0115_rail_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -11383,7 +11267,6 @@ fn mega_simple_0115_rail_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0116_powered_rail_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -11457,7 +11340,6 @@ fn mega_simple_0116_powered_rail_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0117_note_block_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -11531,7 +11413,6 @@ fn mega_simple_0117_note_block_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0118_jukebox_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -11605,7 +11486,6 @@ fn mega_simple_0118_jukebox_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0119_beacon_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -11679,7 +11559,6 @@ fn mega_simple_0119_beacon_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0120_conduit_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -11753,7 +11632,6 @@ fn mega_simple_0120_conduit_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0121_anvil_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -11827,7 +11705,6 @@ fn mega_simple_0121_anvil_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0122_grindstone_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -11901,7 +11778,6 @@ fn mega_simple_0122_grindstone_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0123_stonecutter_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -11975,7 +11851,6 @@ fn mega_simple_0123_stonecutter_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0124_smithing_table_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -12049,7 +11924,6 @@ fn mega_simple_0124_smithing_table_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0125_bell_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -12123,7 +11997,6 @@ fn mega_simple_0125_bell_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0126_honey_block_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -12197,7 +12070,6 @@ fn mega_simple_0126_honey_block_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0127_slime_block_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -12271,7 +12143,6 @@ fn mega_simple_0127_slime_block_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0128_stone_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -12345,7 +12216,6 @@ fn mega_simple_0128_stone_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0129_dirt_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -12419,7 +12289,6 @@ fn mega_simple_0129_dirt_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0130_grass_block_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -12493,7 +12362,6 @@ fn mega_simple_0130_grass_block_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0131_cobblestone_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -12567,7 +12435,6 @@ fn mega_simple_0131_cobblestone_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0132_oak_planks_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -12641,7 +12508,6 @@ fn mega_simple_0132_oak_planks_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0133_sand_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -12715,7 +12581,6 @@ fn mega_simple_0133_sand_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0134_gravel_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -12789,7 +12654,6 @@ fn mega_simple_0134_gravel_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0135_glass_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -12863,7 +12727,6 @@ fn mega_simple_0135_glass_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0136_oak_log_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -12937,7 +12800,6 @@ fn mega_simple_0136_oak_log_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0137_oak_leaves_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -13011,7 +12873,6 @@ fn mega_simple_0137_oak_leaves_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0138_bedrock_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -13085,7 +12946,6 @@ fn mega_simple_0138_bedrock_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0139_sandstone_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -13159,7 +13019,6 @@ fn mega_simple_0139_sandstone_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0140_coal_ore_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -13233,7 +13092,6 @@ fn mega_simple_0140_coal_ore_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0141_iron_ore_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -13307,7 +13165,6 @@ fn mega_simple_0141_iron_ore_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0142_gold_ore_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -13381,7 +13238,6 @@ fn mega_simple_0142_gold_ore_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0143_diamond_ore_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -13455,7 +13311,6 @@ fn mega_simple_0143_diamond_ore_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0144_netherrack_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -13529,7 +13384,6 @@ fn mega_simple_0144_netherrack_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0145_obsidian_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -13603,7 +13457,6 @@ fn mega_simple_0145_obsidian_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0146_white_wool_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -13677,7 +13530,6 @@ fn mega_simple_0146_white_wool_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0147_oak_door_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -13751,7 +13603,6 @@ fn mega_simple_0147_oak_door_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0148_iron_door_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -13825,7 +13676,6 @@ fn mega_simple_0148_iron_door_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0149_furnace_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -13899,7 +13749,6 @@ fn mega_simple_0149_furnace_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0150_crafting_table_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -13973,7 +13822,6 @@ fn mega_simple_0150_crafting_table_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0151_chest_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -14047,7 +13895,6 @@ fn mega_simple_0151_chest_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0152_hopper_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -14121,7 +13968,6 @@ fn mega_simple_0152_hopper_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0153_dispenser_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -14195,7 +14041,6 @@ fn mega_simple_0153_dispenser_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0154_dropper_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -14269,7 +14114,6 @@ fn mega_simple_0154_dropper_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0155_observer_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -14343,7 +14187,6 @@ fn mega_simple_0155_observer_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0156_piston_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -14417,7 +14260,6 @@ fn mega_simple_0156_piston_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0157_sticky_piston_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -14491,7 +14333,6 @@ fn mega_simple_0157_sticky_piston_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0158_redstone_wire_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -14565,7 +14406,6 @@ fn mega_simple_0158_redstone_wire_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0159_redstone_torch_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -14639,7 +14479,6 @@ fn mega_simple_0159_redstone_torch_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0160_redstone_block_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -14713,7 +14552,6 @@ fn mega_simple_0160_redstone_block_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0161_repeater_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -14787,7 +14625,6 @@ fn mega_simple_0161_repeater_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0162_comparator_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -14861,7 +14698,6 @@ fn mega_simple_0162_comparator_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0163_redstone_lamp_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -14935,7 +14771,6 @@ fn mega_simple_0163_redstone_lamp_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0164_sculk_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -15009,7 +14844,6 @@ fn mega_simple_0164_sculk_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0165_sculk_sensor_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -15083,7 +14917,6 @@ fn mega_simple_0165_sculk_sensor_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0166_sculk_shrieker_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -15157,7 +14990,6 @@ fn mega_simple_0166_sculk_shrieker_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0167_sculk_catalyst_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -15231,7 +15063,6 @@ fn mega_simple_0167_sculk_catalyst_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0168_trial_spawner_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -15305,7 +15136,6 @@ fn mega_simple_0168_trial_spawner_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0169_vault_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -15379,7 +15209,6 @@ fn mega_simple_0169_vault_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0170_creaking_heart_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -15453,7 +15282,6 @@ fn mega_simple_0170_creaking_heart_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0171_pale_oak_log_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -15527,7 +15355,6 @@ fn mega_simple_0171_pale_oak_log_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0172_cactus_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -15601,7 +15428,6 @@ fn mega_simple_0172_cactus_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0173_bamboo_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -15675,7 +15501,6 @@ fn mega_simple_0173_bamboo_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0174_wheat_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -15749,7 +15574,6 @@ fn mega_simple_0174_wheat_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0175_torch_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -15823,7 +15647,6 @@ fn mega_simple_0175_torch_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0176_lantern_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -15897,7 +15720,6 @@ fn mega_simple_0176_lantern_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0177_campfire_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -15971,7 +15793,6 @@ fn mega_simple_0177_campfire_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0178_tnt_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -16045,7 +15866,6 @@ fn mega_simple_0178_tnt_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0179_rail_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -16119,7 +15939,6 @@ fn mega_simple_0179_rail_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0180_powered_rail_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -16193,7 +16012,6 @@ fn mega_simple_0180_powered_rail_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0181_note_block_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -16267,7 +16085,6 @@ fn mega_simple_0181_note_block_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0182_jukebox_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -16341,7 +16158,6 @@ fn mega_simple_0182_jukebox_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0183_beacon_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -16415,7 +16231,6 @@ fn mega_simple_0183_beacon_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0184_conduit_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -16489,7 +16304,6 @@ fn mega_simple_0184_conduit_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0185_anvil_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -16563,7 +16377,6 @@ fn mega_simple_0185_anvil_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0186_grindstone_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -16637,7 +16450,6 @@ fn mega_simple_0186_grindstone_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0187_stonecutter_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -16711,7 +16523,6 @@ fn mega_simple_0187_stonecutter_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0188_smithing_table_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -16785,7 +16596,6 @@ fn mega_simple_0188_smithing_table_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0189_bell_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -16859,7 +16669,6 @@ fn mega_simple_0189_bell_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0190_honey_block_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -16933,7 +16742,6 @@ fn mega_simple_0190_honey_block_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0191_slime_block_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -17007,7 +16815,6 @@ fn mega_simple_0191_slime_block_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0192_stone_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -17081,7 +16888,6 @@ fn mega_simple_0192_stone_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0193_dirt_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -17155,7 +16961,6 @@ fn mega_simple_0193_dirt_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0194_grass_block_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -17229,7 +17034,6 @@ fn mega_simple_0194_grass_block_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0195_cobblestone_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -17303,7 +17107,6 @@ fn mega_simple_0195_cobblestone_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0196_oak_planks_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -17377,7 +17180,6 @@ fn mega_simple_0196_oak_planks_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0197_sand_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -17451,7 +17253,6 @@ fn mega_simple_0197_sand_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0198_gravel_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -17525,7 +17326,6 @@ fn mega_simple_0198_gravel_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0199_glass_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -17599,7 +17399,6 @@ fn mega_simple_0199_glass_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0200_oak_log_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -17673,7 +17472,6 @@ fn mega_simple_0200_oak_log_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0201_oak_leaves_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -17747,7 +17545,6 @@ fn mega_simple_0201_oak_leaves_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0202_bedrock_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -17821,7 +17618,6 @@ fn mega_simple_0202_bedrock_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0203_sandstone_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -17895,7 +17691,6 @@ fn mega_simple_0203_sandstone_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0204_coal_ore_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -17969,7 +17764,6 @@ fn mega_simple_0204_coal_ore_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0205_iron_ore_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -18043,7 +17837,6 @@ fn mega_simple_0205_iron_ore_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0206_gold_ore_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -18117,7 +17910,6 @@ fn mega_simple_0206_gold_ore_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0207_diamond_ore_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -18191,7 +17983,6 @@ fn mega_simple_0207_diamond_ore_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0208_netherrack_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -18265,7 +18056,6 @@ fn mega_simple_0208_netherrack_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0209_obsidian_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -18339,7 +18129,6 @@ fn mega_simple_0209_obsidian_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0210_white_wool_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -18413,7 +18202,6 @@ fn mega_simple_0210_white_wool_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0211_oak_door_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -18487,7 +18275,6 @@ fn mega_simple_0211_oak_door_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0212_iron_door_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -18561,7 +18348,6 @@ fn mega_simple_0212_iron_door_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0213_furnace_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -18635,7 +18421,6 @@ fn mega_simple_0213_furnace_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0214_crafting_table_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -18709,7 +18494,6 @@ fn mega_simple_0214_crafting_table_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0215_chest_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -18783,7 +18567,6 @@ fn mega_simple_0215_chest_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0216_hopper_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -18857,7 +18640,6 @@ fn mega_simple_0216_hopper_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0217_dispenser_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -18931,7 +18713,6 @@ fn mega_simple_0217_dispenser_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0218_dropper_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -19005,7 +18786,6 @@ fn mega_simple_0218_dropper_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0219_observer_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -19079,7 +18859,6 @@ fn mega_simple_0219_observer_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0220_piston_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -19153,7 +18932,6 @@ fn mega_simple_0220_piston_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0221_sticky_piston_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -19227,7 +19005,6 @@ fn mega_simple_0221_sticky_piston_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0222_redstone_wire_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -19301,7 +19078,6 @@ fn mega_simple_0222_redstone_wire_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0223_redstone_torch_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -19375,7 +19151,6 @@ fn mega_simple_0223_redstone_torch_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0224_redstone_block_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -19449,7 +19224,6 @@ fn mega_simple_0224_redstone_block_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0225_repeater_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -19523,7 +19297,6 @@ fn mega_simple_0225_repeater_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0226_comparator_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -19597,7 +19370,6 @@ fn mega_simple_0226_comparator_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0227_redstone_lamp_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -19671,7 +19443,6 @@ fn mega_simple_0227_redstone_lamp_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0228_sculk_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -19745,7 +19516,6 @@ fn mega_simple_0228_sculk_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0229_sculk_sensor_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -19819,7 +19589,6 @@ fn mega_simple_0229_sculk_sensor_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0230_sculk_shrieker_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -19893,7 +19662,6 @@ fn mega_simple_0230_sculk_shrieker_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0231_sculk_catalyst_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -19967,7 +19735,6 @@ fn mega_simple_0231_sculk_catalyst_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0232_trial_spawner_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -20041,7 +19808,6 @@ fn mega_simple_0232_trial_spawner_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0233_vault_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -20115,7 +19881,6 @@ fn mega_simple_0233_vault_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0234_creaking_heart_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -20189,7 +19954,6 @@ fn mega_simple_0234_creaking_heart_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0235_pale_oak_log_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -20263,7 +20027,6 @@ fn mega_simple_0235_pale_oak_log_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0236_cactus_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -20337,7 +20100,6 @@ fn mega_simple_0236_cactus_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0237_bamboo_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -20411,7 +20173,6 @@ fn mega_simple_0237_bamboo_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0238_wheat_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -20485,7 +20246,6 @@ fn mega_simple_0238_wheat_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0239_torch_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -20559,7 +20319,6 @@ fn mega_simple_0239_torch_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0240_lantern_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -20633,7 +20392,6 @@ fn mega_simple_0240_lantern_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0241_campfire_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -20707,7 +20465,6 @@ fn mega_simple_0241_campfire_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0242_tnt_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -20781,7 +20538,6 @@ fn mega_simple_0242_tnt_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0243_rail_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -20855,7 +20611,6 @@ fn mega_simple_0243_rail_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0244_powered_rail_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -20929,7 +20684,6 @@ fn mega_simple_0244_powered_rail_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0245_note_block_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -21003,7 +20757,6 @@ fn mega_simple_0245_note_block_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0246_jukebox_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -21077,7 +20830,6 @@ fn mega_simple_0246_jukebox_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0247_beacon_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -21151,7 +20903,6 @@ fn mega_simple_0247_beacon_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0248_conduit_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -21225,7 +20976,6 @@ fn mega_simple_0248_conduit_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0249_anvil_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -21299,7 +21049,6 @@ fn mega_simple_0249_anvil_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0250_grindstone_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -21373,7 +21122,6 @@ fn mega_simple_0250_grindstone_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0251_stonecutter_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -21447,7 +21195,6 @@ fn mega_simple_0251_stonecutter_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0252_smithing_table_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -21521,7 +21268,6 @@ fn mega_simple_0252_smithing_table_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0253_bell_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -21595,7 +21341,6 @@ fn mega_simple_0253_bell_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0254_honey_block_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -21669,7 +21414,6 @@ fn mega_simple_0254_honey_block_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0255_slime_block_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -21743,7 +21487,6 @@ fn mega_simple_0255_slime_block_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0256_stone_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -21817,7 +21560,6 @@ fn mega_simple_0256_stone_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0257_dirt_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -21891,7 +21633,6 @@ fn mega_simple_0257_dirt_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0258_grass_block_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -21965,7 +21706,6 @@ fn mega_simple_0258_grass_block_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0259_cobblestone_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -22039,7 +21779,6 @@ fn mega_simple_0259_cobblestone_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0260_oak_planks_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -22113,7 +21852,6 @@ fn mega_simple_0260_oak_planks_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0261_sand_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -22187,7 +21925,6 @@ fn mega_simple_0261_sand_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0262_gravel_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -22261,7 +21998,6 @@ fn mega_simple_0262_gravel_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0263_glass_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -22335,7 +22071,6 @@ fn mega_simple_0263_glass_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0264_oak_log_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -22409,7 +22144,6 @@ fn mega_simple_0264_oak_log_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0265_oak_leaves_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -22483,7 +22217,6 @@ fn mega_simple_0265_oak_leaves_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0266_bedrock_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -22557,7 +22290,6 @@ fn mega_simple_0266_bedrock_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0267_sandstone_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -22631,7 +22363,6 @@ fn mega_simple_0267_sandstone_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0268_coal_ore_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -22705,7 +22436,6 @@ fn mega_simple_0268_coal_ore_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0269_iron_ore_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -22779,7 +22509,6 @@ fn mega_simple_0269_iron_ore_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0270_gold_ore_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -22853,7 +22582,6 @@ fn mega_simple_0270_gold_ore_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0271_diamond_ore_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -22927,7 +22655,6 @@ fn mega_simple_0271_diamond_ore_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0272_netherrack_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -23001,7 +22728,6 @@ fn mega_simple_0272_netherrack_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0273_obsidian_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -23075,7 +22801,6 @@ fn mega_simple_0273_obsidian_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0274_white_wool_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -23149,7 +22874,6 @@ fn mega_simple_0274_white_wool_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0275_oak_door_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -23223,7 +22947,6 @@ fn mega_simple_0275_oak_door_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0276_iron_door_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -23297,7 +23020,6 @@ fn mega_simple_0276_iron_door_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0277_furnace_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -23371,7 +23093,6 @@ fn mega_simple_0277_furnace_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0278_crafting_table_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -23445,7 +23166,6 @@ fn mega_simple_0278_crafting_table_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0279_chest_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -23519,7 +23239,6 @@ fn mega_simple_0279_chest_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0280_hopper_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -23593,7 +23312,6 @@ fn mega_simple_0280_hopper_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0281_dispenser_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -23667,7 +23385,6 @@ fn mega_simple_0281_dispenser_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0282_dropper_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -23741,7 +23458,6 @@ fn mega_simple_0282_dropper_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0283_observer_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -23815,7 +23531,6 @@ fn mega_simple_0283_observer_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0284_piston_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -23889,7 +23604,6 @@ fn mega_simple_0284_piston_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0285_sticky_piston_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -23963,7 +23677,6 @@ fn mega_simple_0285_sticky_piston_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0286_redstone_wire_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -24037,7 +23750,6 @@ fn mega_simple_0286_redstone_wire_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0287_redstone_torch_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -24111,7 +23823,6 @@ fn mega_simple_0287_redstone_torch_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0288_redstone_block_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -24185,7 +23896,6 @@ fn mega_simple_0288_redstone_block_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0289_repeater_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -24259,7 +23969,6 @@ fn mega_simple_0289_repeater_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0290_comparator_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -24333,7 +24042,6 @@ fn mega_simple_0290_comparator_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0291_redstone_lamp_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -24407,7 +24115,6 @@ fn mega_simple_0291_redstone_lamp_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0292_sculk_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -24481,7 +24188,6 @@ fn mega_simple_0292_sculk_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0293_sculk_sensor_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -24555,7 +24261,6 @@ fn mega_simple_0293_sculk_sensor_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0294_sculk_shrieker_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -24629,7 +24334,6 @@ fn mega_simple_0294_sculk_shrieker_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0295_sculk_catalyst_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -24703,7 +24407,6 @@ fn mega_simple_0295_sculk_catalyst_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0296_trial_spawner_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -24777,7 +24480,6 @@ fn mega_simple_0296_trial_spawner_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0297_vault_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -24851,7 +24553,6 @@ fn mega_simple_0297_vault_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0298_creaking_heart_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -24925,7 +24626,6 @@ fn mega_simple_0298_creaking_heart_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0299_pale_oak_log_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -24999,7 +24699,6 @@ fn mega_simple_0299_pale_oak_log_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0300_cactus_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -25073,7 +24772,6 @@ fn mega_simple_0300_cactus_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0301_bamboo_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -25147,7 +24845,6 @@ fn mega_simple_0301_bamboo_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0302_wheat_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -25221,7 +24918,6 @@ fn mega_simple_0302_wheat_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0303_torch_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -25295,7 +24991,6 @@ fn mega_simple_0303_torch_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0304_lantern_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -25369,7 +25064,6 @@ fn mega_simple_0304_lantern_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0305_campfire_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -25443,7 +25137,6 @@ fn mega_simple_0305_campfire_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0306_tnt_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -25517,7 +25210,6 @@ fn mega_simple_0306_tnt_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0307_rail_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -25591,7 +25283,6 @@ fn mega_simple_0307_rail_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0308_powered_rail_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -25665,7 +25356,6 @@ fn mega_simple_0308_powered_rail_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0309_note_block_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -25739,7 +25429,6 @@ fn mega_simple_0309_note_block_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0310_jukebox_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -25813,7 +25502,6 @@ fn mega_simple_0310_jukebox_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0311_beacon_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -25887,7 +25575,6 @@ fn mega_simple_0311_beacon_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0312_conduit_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -25961,7 +25648,6 @@ fn mega_simple_0312_conduit_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0313_anvil_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -26035,7 +25721,6 @@ fn mega_simple_0313_anvil_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0314_grindstone_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -26109,7 +25794,6 @@ fn mega_simple_0314_grindstone_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0315_stonecutter_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -26183,7 +25867,6 @@ fn mega_simple_0315_stonecutter_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0316_smithing_table_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -26257,7 +25940,6 @@ fn mega_simple_0316_smithing_table_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0317_bell_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -26331,7 +26013,6 @@ fn mega_simple_0317_bell_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0318_honey_block_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -26405,7 +26086,6 @@ fn mega_simple_0318_honey_block_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0319_slime_block_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -26479,7 +26159,6 @@ fn mega_simple_0319_slime_block_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0320_stone_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -26553,7 +26232,6 @@ fn mega_simple_0320_stone_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0321_dirt_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -26627,7 +26305,6 @@ fn mega_simple_0321_dirt_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0322_grass_block_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -26701,7 +26378,6 @@ fn mega_simple_0322_grass_block_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0323_cobblestone_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -26775,7 +26451,6 @@ fn mega_simple_0323_cobblestone_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0324_oak_planks_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -26849,7 +26524,6 @@ fn mega_simple_0324_oak_planks_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0325_sand_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -26923,7 +26597,6 @@ fn mega_simple_0325_sand_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0326_gravel_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -26997,7 +26670,6 @@ fn mega_simple_0326_gravel_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0327_glass_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -27071,7 +26743,6 @@ fn mega_simple_0327_glass_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0328_oak_log_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -27145,7 +26816,6 @@ fn mega_simple_0328_oak_log_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0329_oak_leaves_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -27219,7 +26889,6 @@ fn mega_simple_0329_oak_leaves_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0330_bedrock_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -27293,7 +26962,6 @@ fn mega_simple_0330_bedrock_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0331_sandstone_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -27367,7 +27035,6 @@ fn mega_simple_0331_sandstone_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0332_coal_ore_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -27441,7 +27108,6 @@ fn mega_simple_0332_coal_ore_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0333_iron_ore_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -27515,7 +27181,6 @@ fn mega_simple_0333_iron_ore_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0334_gold_ore_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -27589,7 +27254,6 @@ fn mega_simple_0334_gold_ore_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0335_diamond_ore_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -27663,7 +27327,6 @@ fn mega_simple_0335_diamond_ore_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0336_netherrack_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -27737,7 +27400,6 @@ fn mega_simple_0336_netherrack_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0337_obsidian_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -27811,7 +27473,6 @@ fn mega_simple_0337_obsidian_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0338_white_wool_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -27885,7 +27546,6 @@ fn mega_simple_0338_white_wool_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0339_oak_door_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -27959,7 +27619,6 @@ fn mega_simple_0339_oak_door_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0340_iron_door_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -28033,7 +27692,6 @@ fn mega_simple_0340_iron_door_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0341_furnace_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -28107,7 +27765,6 @@ fn mega_simple_0341_furnace_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0342_crafting_table_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -28181,7 +27838,6 @@ fn mega_simple_0342_crafting_table_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0343_chest_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -28255,7 +27911,6 @@ fn mega_simple_0343_chest_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0344_hopper_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -28329,7 +27984,6 @@ fn mega_simple_0344_hopper_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0345_dispenser_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -28403,7 +28057,6 @@ fn mega_simple_0345_dispenser_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0346_dropper_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -28477,7 +28130,6 @@ fn mega_simple_0346_dropper_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0347_observer_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -28551,7 +28203,6 @@ fn mega_simple_0347_observer_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0348_piston_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -28625,7 +28276,6 @@ fn mega_simple_0348_piston_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0349_sticky_piston_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -28699,7 +28349,6 @@ fn mega_simple_0349_sticky_piston_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0350_redstone_wire_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -28773,7 +28422,6 @@ fn mega_simple_0350_redstone_wire_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0351_redstone_torch_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -28847,7 +28495,6 @@ fn mega_simple_0351_redstone_torch_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0352_redstone_block_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -28921,7 +28568,6 @@ fn mega_simple_0352_redstone_block_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0353_repeater_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -28995,7 +28641,6 @@ fn mega_simple_0353_repeater_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0354_comparator_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -29069,7 +28714,6 @@ fn mega_simple_0354_comparator_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0355_redstone_lamp_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -29143,7 +28787,6 @@ fn mega_simple_0355_redstone_lamp_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0356_sculk_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -29217,7 +28860,6 @@ fn mega_simple_0356_sculk_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0357_sculk_sensor_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -29291,7 +28933,6 @@ fn mega_simple_0357_sculk_sensor_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0358_sculk_shrieker_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -29365,7 +29006,6 @@ fn mega_simple_0358_sculk_shrieker_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0359_sculk_catalyst_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -29439,7 +29079,6 @@ fn mega_simple_0359_sculk_catalyst_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0360_trial_spawner_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -29513,7 +29152,6 @@ fn mega_simple_0360_trial_spawner_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0361_vault_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -29587,7 +29225,6 @@ fn mega_simple_0361_vault_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0362_creaking_heart_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -29661,7 +29298,6 @@ fn mega_simple_0362_creaking_heart_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0363_pale_oak_log_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -29735,7 +29371,6 @@ fn mega_simple_0363_pale_oak_log_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0364_cactus_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -29809,7 +29444,6 @@ fn mega_simple_0364_cactus_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0365_bamboo_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -29883,7 +29517,6 @@ fn mega_simple_0365_bamboo_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0366_wheat_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -29957,7 +29590,6 @@ fn mega_simple_0366_wheat_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0367_torch_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -30031,7 +29663,6 @@ fn mega_simple_0367_torch_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0368_lantern_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -30105,7 +29736,6 @@ fn mega_simple_0368_lantern_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0369_campfire_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -30179,7 +29809,6 @@ fn mega_simple_0369_campfire_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0370_tnt_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -30253,7 +29882,6 @@ fn mega_simple_0370_tnt_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0371_rail_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -30327,7 +29955,6 @@ fn mega_simple_0371_rail_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0372_powered_rail_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -30401,7 +30028,6 @@ fn mega_simple_0372_powered_rail_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0373_note_block_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -30475,7 +30101,6 @@ fn mega_simple_0373_note_block_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0374_jukebox_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -30549,7 +30174,6 @@ fn mega_simple_0374_jukebox_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0375_beacon_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -30623,7 +30247,6 @@ fn mega_simple_0375_beacon_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0376_conduit_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -30697,7 +30320,6 @@ fn mega_simple_0376_conduit_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0377_anvil_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -30771,7 +30393,6 @@ fn mega_simple_0377_anvil_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0378_grindstone_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -30845,7 +30466,6 @@ fn mega_simple_0378_grindstone_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0379_stonecutter_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -30919,7 +30539,6 @@ fn mega_simple_0379_stonecutter_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0380_smithing_table_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -30993,7 +30612,6 @@ fn mega_simple_0380_smithing_table_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0381_bell_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -31067,7 +30685,6 @@ fn mega_simple_0381_bell_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0382_honey_block_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -31141,7 +30758,6 @@ fn mega_simple_0382_honey_block_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0383_slime_block_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -31215,7 +30831,6 @@ fn mega_simple_0383_slime_block_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0384_stone_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -31289,7 +30904,6 @@ fn mega_simple_0384_stone_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0385_dirt_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -31363,7 +30977,6 @@ fn mega_simple_0385_dirt_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0386_grass_block_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -31437,7 +31050,6 @@ fn mega_simple_0386_grass_block_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0387_cobblestone_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -31511,7 +31123,6 @@ fn mega_simple_0387_cobblestone_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0388_oak_planks_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -31585,7 +31196,6 @@ fn mega_simple_0388_oak_planks_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0389_sand_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -31659,7 +31269,6 @@ fn mega_simple_0389_sand_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0390_gravel_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -31733,7 +31342,6 @@ fn mega_simple_0390_gravel_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0391_glass_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -31807,7 +31415,6 @@ fn mega_simple_0391_glass_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0392_oak_log_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -31881,7 +31488,6 @@ fn mega_simple_0392_oak_log_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0393_oak_leaves_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -31955,7 +31561,6 @@ fn mega_simple_0393_oak_leaves_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0394_bedrock_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -32029,7 +31634,6 @@ fn mega_simple_0394_bedrock_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0395_sandstone_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -32103,7 +31707,6 @@ fn mega_simple_0395_sandstone_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0396_coal_ore_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -32177,7 +31780,6 @@ fn mega_simple_0396_coal_ore_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0397_iron_ore_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -32251,7 +31853,6 @@ fn mega_simple_0397_iron_ore_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0398_gold_ore_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -32325,7 +31926,6 @@ fn mega_simple_0398_gold_ore_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0399_diamond_ore_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -32399,7 +31999,6 @@ fn mega_simple_0399_diamond_ore_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0400_netherrack_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -32473,7 +32072,6 @@ fn mega_simple_0400_netherrack_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0401_obsidian_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -32547,7 +32145,6 @@ fn mega_simple_0401_obsidian_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0402_white_wool_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -32621,7 +32218,6 @@ fn mega_simple_0402_white_wool_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0403_oak_door_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -32695,7 +32291,6 @@ fn mega_simple_0403_oak_door_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0404_iron_door_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -32769,7 +32364,6 @@ fn mega_simple_0404_iron_door_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0405_furnace_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -32843,7 +32437,6 @@ fn mega_simple_0405_furnace_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0406_crafting_table_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -32917,7 +32510,6 @@ fn mega_simple_0406_crafting_table_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0407_chest_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -32991,7 +32583,6 @@ fn mega_simple_0407_chest_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0408_hopper_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -33065,7 +32656,6 @@ fn mega_simple_0408_hopper_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0409_dispenser_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -33139,7 +32729,6 @@ fn mega_simple_0409_dispenser_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0410_dropper_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -33213,7 +32802,6 @@ fn mega_simple_0410_dropper_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0411_observer_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -33287,7 +32875,6 @@ fn mega_simple_0411_observer_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0412_piston_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -33361,7 +32948,6 @@ fn mega_simple_0412_piston_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0413_sticky_piston_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -33435,7 +33021,6 @@ fn mega_simple_0413_sticky_piston_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0414_redstone_wire_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -33509,7 +33094,6 @@ fn mega_simple_0414_redstone_wire_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0415_redstone_torch_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -33583,7 +33167,6 @@ fn mega_simple_0415_redstone_torch_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0416_redstone_block_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -33657,7 +33240,6 @@ fn mega_simple_0416_redstone_block_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0417_repeater_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -33731,7 +33313,6 @@ fn mega_simple_0417_repeater_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0418_comparator_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -33805,7 +33386,6 @@ fn mega_simple_0418_comparator_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0419_redstone_lamp_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -33879,7 +33459,6 @@ fn mega_simple_0419_redstone_lamp_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0420_sculk_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -33953,7 +33532,6 @@ fn mega_simple_0420_sculk_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0421_sculk_sensor_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -34027,7 +33605,6 @@ fn mega_simple_0421_sculk_sensor_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0422_sculk_shrieker_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -34101,7 +33678,6 @@ fn mega_simple_0422_sculk_shrieker_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0423_sculk_catalyst_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -34175,7 +33751,6 @@ fn mega_simple_0423_sculk_catalyst_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0424_trial_spawner_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -34249,7 +33824,6 @@ fn mega_simple_0424_trial_spawner_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0425_vault_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -34323,7 +33897,6 @@ fn mega_simple_0425_vault_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0426_creaking_heart_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -34397,7 +33970,6 @@ fn mega_simple_0426_creaking_heart_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0427_pale_oak_log_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -34471,7 +34043,6 @@ fn mega_simple_0427_pale_oak_log_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0428_cactus_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -34545,7 +34116,6 @@ fn mega_simple_0428_cactus_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0429_bamboo_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -34619,7 +34189,6 @@ fn mega_simple_0429_bamboo_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0430_wheat_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -34693,7 +34262,6 @@ fn mega_simple_0430_wheat_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0431_torch_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -34767,7 +34335,6 @@ fn mega_simple_0431_torch_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0432_lantern_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -34841,7 +34408,6 @@ fn mega_simple_0432_lantern_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0433_campfire_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -34915,7 +34481,6 @@ fn mega_simple_0433_campfire_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0434_tnt_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -34989,7 +34554,6 @@ fn mega_simple_0434_tnt_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0435_rail_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -35063,7 +34627,6 @@ fn mega_simple_0435_rail_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0436_powered_rail_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -35137,7 +34700,6 @@ fn mega_simple_0436_powered_rail_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0437_note_block_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -35211,7 +34773,6 @@ fn mega_simple_0437_note_block_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0438_jukebox_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -35285,7 +34846,6 @@ fn mega_simple_0438_jukebox_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0439_beacon_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -35359,7 +34919,6 @@ fn mega_simple_0439_beacon_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0440_conduit_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -35433,7 +34992,6 @@ fn mega_simple_0440_conduit_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0441_anvil_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -35507,7 +35065,6 @@ fn mega_simple_0441_anvil_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0442_grindstone_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -35581,7 +35138,6 @@ fn mega_simple_0442_grindstone_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0443_stonecutter_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -35655,7 +35211,6 @@ fn mega_simple_0443_stonecutter_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0444_smithing_table_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -35729,7 +35284,6 @@ fn mega_simple_0444_smithing_table_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0445_bell_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -35803,7 +35357,6 @@ fn mega_simple_0445_bell_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0446_honey_block_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -35877,7 +35430,6 @@ fn mega_simple_0446_honey_block_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0447_slime_block_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -35951,7 +35503,6 @@ fn mega_simple_0447_slime_block_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0448_stone_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -36025,7 +35576,6 @@ fn mega_simple_0448_stone_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0449_dirt_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -36099,7 +35649,6 @@ fn mega_simple_0449_dirt_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0450_grass_block_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -36173,7 +35722,6 @@ fn mega_simple_0450_grass_block_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0451_cobblestone_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -36247,7 +35795,6 @@ fn mega_simple_0451_cobblestone_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0452_oak_planks_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -36321,7 +35868,6 @@ fn mega_simple_0452_oak_planks_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0453_sand_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -36395,7 +35941,6 @@ fn mega_simple_0453_sand_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0454_gravel_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -36469,7 +36014,6 @@ fn mega_simple_0454_gravel_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0455_glass_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -36543,7 +36087,6 @@ fn mega_simple_0455_glass_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0456_oak_log_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -36617,7 +36160,6 @@ fn mega_simple_0456_oak_log_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0457_oak_leaves_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -36691,7 +36233,6 @@ fn mega_simple_0457_oak_leaves_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0458_bedrock_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -36765,7 +36306,6 @@ fn mega_simple_0458_bedrock_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0459_sandstone_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -36839,7 +36379,6 @@ fn mega_simple_0459_sandstone_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0460_coal_ore_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -36913,7 +36452,6 @@ fn mega_simple_0460_coal_ore_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0461_iron_ore_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -36987,7 +36525,6 @@ fn mega_simple_0461_iron_ore_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0462_gold_ore_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -37061,7 +36598,6 @@ fn mega_simple_0462_gold_ore_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0463_diamond_ore_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -37135,7 +36671,6 @@ fn mega_simple_0463_diamond_ore_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0464_netherrack_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -37209,7 +36744,6 @@ fn mega_simple_0464_netherrack_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0465_obsidian_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -37283,7 +36817,6 @@ fn mega_simple_0465_obsidian_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0466_white_wool_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -37357,7 +36890,6 @@ fn mega_simple_0466_white_wool_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0467_oak_door_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -37431,7 +36963,6 @@ fn mega_simple_0467_oak_door_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0468_iron_door_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -37505,7 +37036,6 @@ fn mega_simple_0468_iron_door_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0469_furnace_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -37579,7 +37109,6 @@ fn mega_simple_0469_furnace_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0470_crafting_table_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -37653,7 +37182,6 @@ fn mega_simple_0470_crafting_table_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0471_chest_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -37727,7 +37255,6 @@ fn mega_simple_0471_chest_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0472_hopper_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -37801,7 +37328,6 @@ fn mega_simple_0472_hopper_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0473_dispenser_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -37875,7 +37401,6 @@ fn mega_simple_0473_dispenser_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0474_dropper_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -37949,7 +37474,6 @@ fn mega_simple_0474_dropper_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0475_observer_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -38023,7 +37547,6 @@ fn mega_simple_0475_observer_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0476_piston_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -38097,7 +37620,6 @@ fn mega_simple_0476_piston_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0477_sticky_piston_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -38171,7 +37693,6 @@ fn mega_simple_0477_sticky_piston_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0478_redstone_wire_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -38245,7 +37766,6 @@ fn mega_simple_0478_redstone_wire_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0479_redstone_torch_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -38319,7 +37839,6 @@ fn mega_simple_0479_redstone_torch_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0480_redstone_block_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -38393,7 +37912,6 @@ fn mega_simple_0480_redstone_block_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0481_repeater_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -38467,7 +37985,6 @@ fn mega_simple_0481_repeater_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0482_comparator_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -38541,7 +38058,6 @@ fn mega_simple_0482_comparator_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0483_redstone_lamp_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -38615,7 +38131,6 @@ fn mega_simple_0483_redstone_lamp_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0484_sculk_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -38689,7 +38204,6 @@ fn mega_simple_0484_sculk_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0485_sculk_sensor_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -38763,7 +38277,6 @@ fn mega_simple_0485_sculk_sensor_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0486_sculk_shrieker_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -38837,7 +38350,6 @@ fn mega_simple_0486_sculk_shrieker_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0487_sculk_catalyst_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -38911,7 +38423,6 @@ fn mega_simple_0487_sculk_catalyst_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0488_trial_spawner_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -38985,7 +38496,6 @@ fn mega_simple_0488_trial_spawner_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0489_vault_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -39059,7 +38569,6 @@ fn mega_simple_0489_vault_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0490_creaking_heart_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -39133,7 +38642,6 @@ fn mega_simple_0490_creaking_heart_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0491_pale_oak_log_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -39207,7 +38715,6 @@ fn mega_simple_0491_pale_oak_log_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0492_cactus_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -39281,7 +38788,6 @@ fn mega_simple_0492_cactus_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0493_bamboo_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -39355,7 +38861,6 @@ fn mega_simple_0493_bamboo_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0494_wheat_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -39429,7 +38934,6 @@ fn mega_simple_0494_wheat_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0495_torch_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -39503,7 +39007,6 @@ fn mega_simple_0495_torch_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0496_lantern_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -39577,7 +39080,6 @@ fn mega_simple_0496_lantern_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0497_campfire_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -39651,7 +39153,6 @@ fn mega_simple_0497_campfire_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0498_tnt_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -39725,7 +39226,6 @@ fn mega_simple_0498_tnt_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0499_rail_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -39799,7 +39299,6 @@ fn mega_simple_0499_rail_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0500_powered_rail_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -39873,7 +39372,6 @@ fn mega_simple_0500_powered_rail_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0501_note_block_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -39947,7 +39445,6 @@ fn mega_simple_0501_note_block_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0502_jukebox_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -40021,7 +39518,6 @@ fn mega_simple_0502_jukebox_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0503_beacon_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -40095,7 +39591,6 @@ fn mega_simple_0503_beacon_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0504_conduit_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -40169,7 +39664,6 @@ fn mega_simple_0504_conduit_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0505_anvil_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -40243,7 +39737,6 @@ fn mega_simple_0505_anvil_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0506_grindstone_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -40317,7 +39810,6 @@ fn mega_simple_0506_grindstone_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0507_stonecutter_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -40391,7 +39883,6 @@ fn mega_simple_0507_stonecutter_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0508_smithing_table_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -40465,7 +39956,6 @@ fn mega_simple_0508_smithing_table_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0509_bell_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -40539,7 +40029,6 @@ fn mega_simple_0509_bell_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0510_honey_block_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -40613,7 +40102,6 @@ fn mega_simple_0510_honey_block_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0511_slime_block_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -40687,7 +40175,6 @@ fn mega_simple_0511_slime_block_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0512_stone_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -40761,7 +40248,6 @@ fn mega_simple_0512_stone_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0513_dirt_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -40835,7 +40321,6 @@ fn mega_simple_0513_dirt_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0514_grass_block_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -40909,7 +40394,6 @@ fn mega_simple_0514_grass_block_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0515_cobblestone_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -40983,7 +40467,6 @@ fn mega_simple_0515_cobblestone_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0516_oak_planks_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -41057,7 +40540,6 @@ fn mega_simple_0516_oak_planks_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0517_sand_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -41131,7 +40613,6 @@ fn mega_simple_0517_sand_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0518_gravel_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -41205,7 +40686,6 @@ fn mega_simple_0518_gravel_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0519_glass_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -41279,7 +40759,6 @@ fn mega_simple_0519_glass_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0520_oak_log_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -41353,7 +40832,6 @@ fn mega_simple_0520_oak_log_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0521_oak_leaves_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -41427,7 +40905,6 @@ fn mega_simple_0521_oak_leaves_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0522_bedrock_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -41501,7 +40978,6 @@ fn mega_simple_0522_bedrock_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0523_sandstone_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -41575,7 +41051,6 @@ fn mega_simple_0523_sandstone_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0524_coal_ore_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -41649,7 +41124,6 @@ fn mega_simple_0524_coal_ore_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0525_iron_ore_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -41723,7 +41197,6 @@ fn mega_simple_0525_iron_ore_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0526_gold_ore_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -41797,7 +41270,6 @@ fn mega_simple_0526_gold_ore_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0527_diamond_ore_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -41871,7 +41343,6 @@ fn mega_simple_0527_diamond_ore_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0528_netherrack_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -41945,7 +41416,6 @@ fn mega_simple_0528_netherrack_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0529_obsidian_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -42019,7 +41489,6 @@ fn mega_simple_0529_obsidian_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0530_white_wool_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -42093,7 +41562,6 @@ fn mega_simple_0530_white_wool_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0531_oak_door_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -42167,7 +41635,6 @@ fn mega_simple_0531_oak_door_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0532_iron_door_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -42241,7 +41708,6 @@ fn mega_simple_0532_iron_door_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0533_furnace_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -42315,7 +41781,6 @@ fn mega_simple_0533_furnace_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0534_crafting_table_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -42389,7 +41854,6 @@ fn mega_simple_0534_crafting_table_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0535_chest_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -42463,7 +41927,6 @@ fn mega_simple_0535_chest_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0536_hopper_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -42537,7 +42000,6 @@ fn mega_simple_0536_hopper_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0537_dispenser_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -42611,7 +42073,6 @@ fn mega_simple_0537_dispenser_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0538_dropper_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -42685,7 +42146,6 @@ fn mega_simple_0538_dropper_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0539_observer_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -42759,7 +42219,6 @@ fn mega_simple_0539_observer_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0540_piston_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -42833,7 +42292,6 @@ fn mega_simple_0540_piston_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0541_sticky_piston_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -42907,7 +42365,6 @@ fn mega_simple_0541_sticky_piston_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0542_redstone_wire_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -42981,7 +42438,6 @@ fn mega_simple_0542_redstone_wire_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0543_redstone_torch_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -43055,7 +42511,6 @@ fn mega_simple_0543_redstone_torch_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0544_redstone_block_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -43129,7 +42584,6 @@ fn mega_simple_0544_redstone_block_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0545_repeater_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -43203,7 +42657,6 @@ fn mega_simple_0545_repeater_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0546_comparator_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -43277,7 +42730,6 @@ fn mega_simple_0546_comparator_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0547_redstone_lamp_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -43351,7 +42803,6 @@ fn mega_simple_0547_redstone_lamp_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0548_sculk_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -43425,7 +42876,6 @@ fn mega_simple_0548_sculk_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0549_sculk_sensor_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -43499,7 +42949,6 @@ fn mega_simple_0549_sculk_sensor_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0550_sculk_shrieker_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -43573,7 +43022,6 @@ fn mega_simple_0550_sculk_shrieker_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0551_sculk_catalyst_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -43647,7 +43095,6 @@ fn mega_simple_0551_sculk_catalyst_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0552_trial_spawner_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -43721,7 +43168,6 @@ fn mega_simple_0552_trial_spawner_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0553_vault_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -43795,7 +43241,6 @@ fn mega_simple_0553_vault_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0554_creaking_heart_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -43869,7 +43314,6 @@ fn mega_simple_0554_creaking_heart_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0555_pale_oak_log_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -43943,7 +43387,6 @@ fn mega_simple_0555_pale_oak_log_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0556_cactus_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -44017,7 +43460,6 @@ fn mega_simple_0556_cactus_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0557_bamboo_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -44091,7 +43533,6 @@ fn mega_simple_0557_bamboo_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0558_wheat_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -44165,7 +43606,6 @@ fn mega_simple_0558_wheat_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0559_torch_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -44239,7 +43679,6 @@ fn mega_simple_0559_torch_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0560_lantern_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -44313,7 +43752,6 @@ fn mega_simple_0560_lantern_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0561_campfire_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -44387,7 +43825,6 @@ fn mega_simple_0561_campfire_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0562_tnt_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -44461,7 +43898,6 @@ fn mega_simple_0562_tnt_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0563_rail_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -44535,7 +43971,6 @@ fn mega_simple_0563_rail_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0564_powered_rail_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -44609,7 +44044,6 @@ fn mega_simple_0564_powered_rail_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0565_note_block_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -44683,7 +44117,6 @@ fn mega_simple_0565_note_block_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0566_jukebox_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -44757,7 +44190,6 @@ fn mega_simple_0566_jukebox_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0567_beacon_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -44831,7 +44263,6 @@ fn mega_simple_0567_beacon_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0568_conduit_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -44905,7 +44336,6 @@ fn mega_simple_0568_conduit_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0569_anvil_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -44979,7 +44409,6 @@ fn mega_simple_0569_anvil_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0570_grindstone_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -45053,7 +44482,6 @@ fn mega_simple_0570_grindstone_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0571_stonecutter_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -45127,7 +44555,6 @@ fn mega_simple_0571_stonecutter_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0572_smithing_table_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -45201,7 +44628,6 @@ fn mega_simple_0572_smithing_table_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0573_bell_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -45275,7 +44701,6 @@ fn mega_simple_0573_bell_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0574_honey_block_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -45349,7 +44774,6 @@ fn mega_simple_0574_honey_block_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0575_slime_block_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -45423,7 +44847,6 @@ fn mega_simple_0575_slime_block_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0576_stone_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -45497,7 +44920,6 @@ fn mega_simple_0576_stone_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0577_dirt_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -45571,7 +44993,6 @@ fn mega_simple_0577_dirt_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0578_grass_block_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -45645,7 +45066,6 @@ fn mega_simple_0578_grass_block_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0579_cobblestone_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -45719,7 +45139,6 @@ fn mega_simple_0579_cobblestone_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0580_oak_planks_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -45793,7 +45212,6 @@ fn mega_simple_0580_oak_planks_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0581_sand_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -45867,7 +45285,6 @@ fn mega_simple_0581_sand_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0582_gravel_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -45941,7 +45358,6 @@ fn mega_simple_0582_gravel_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0583_glass_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -46015,7 +45431,6 @@ fn mega_simple_0583_glass_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0584_oak_log_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -46089,7 +45504,6 @@ fn mega_simple_0584_oak_log_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0585_oak_leaves_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -46163,7 +45577,6 @@ fn mega_simple_0585_oak_leaves_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0586_bedrock_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -46237,7 +45650,6 @@ fn mega_simple_0586_bedrock_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0587_sandstone_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -46311,7 +45723,6 @@ fn mega_simple_0587_sandstone_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0588_coal_ore_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -46385,7 +45796,6 @@ fn mega_simple_0588_coal_ore_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0589_iron_ore_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -46459,7 +45869,6 @@ fn mega_simple_0589_iron_ore_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0590_gold_ore_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -46533,7 +45942,6 @@ fn mega_simple_0590_gold_ore_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0591_diamond_ore_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -46607,7 +46015,6 @@ fn mega_simple_0591_diamond_ore_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0592_netherrack_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -46681,7 +46088,6 @@ fn mega_simple_0592_netherrack_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0593_obsidian_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -46755,7 +46161,6 @@ fn mega_simple_0593_obsidian_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0594_white_wool_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -46829,7 +46234,6 @@ fn mega_simple_0594_white_wool_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0595_oak_door_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -46903,7 +46307,6 @@ fn mega_simple_0595_oak_door_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0596_iron_door_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -46977,7 +46380,6 @@ fn mega_simple_0596_iron_door_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0597_furnace_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -47051,7 +46453,6 @@ fn mega_simple_0597_furnace_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0598_crafting_table_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -47125,7 +46526,6 @@ fn mega_simple_0598_crafting_table_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0599_chest_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -47199,7 +46599,6 @@ fn mega_simple_0599_chest_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0600_hopper_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -47273,7 +46672,6 @@ fn mega_simple_0600_hopper_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0601_dispenser_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -47347,7 +46745,6 @@ fn mega_simple_0601_dispenser_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0602_dropper_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -47421,7 +46818,6 @@ fn mega_simple_0602_dropper_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0603_observer_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -47495,7 +46891,6 @@ fn mega_simple_0603_observer_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0604_piston_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -47569,7 +46964,6 @@ fn mega_simple_0604_piston_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0605_sticky_piston_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -47643,7 +47037,6 @@ fn mega_simple_0605_sticky_piston_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0606_redstone_wire_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -47717,7 +47110,6 @@ fn mega_simple_0606_redstone_wire_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0607_redstone_torch_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -47791,7 +47183,6 @@ fn mega_simple_0607_redstone_torch_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0608_redstone_block_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -47865,7 +47256,6 @@ fn mega_simple_0608_redstone_block_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0609_repeater_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -47939,7 +47329,6 @@ fn mega_simple_0609_repeater_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0610_comparator_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -48013,7 +47402,6 @@ fn mega_simple_0610_comparator_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0611_redstone_lamp_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -48087,7 +47475,6 @@ fn mega_simple_0611_redstone_lamp_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0612_sculk_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -48161,7 +47548,6 @@ fn mega_simple_0612_sculk_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0613_sculk_sensor_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -48235,7 +47621,6 @@ fn mega_simple_0613_sculk_sensor_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0614_sculk_shrieker_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -48309,7 +47694,6 @@ fn mega_simple_0614_sculk_shrieker_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0615_sculk_catalyst_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -48383,7 +47767,6 @@ fn mega_simple_0615_sculk_catalyst_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0616_trial_spawner_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -48457,7 +47840,6 @@ fn mega_simple_0616_trial_spawner_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0617_vault_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -48531,7 +47913,6 @@ fn mega_simple_0617_vault_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0618_creaking_heart_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -48605,7 +47986,6 @@ fn mega_simple_0618_creaking_heart_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0619_pale_oak_log_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -48679,7 +48059,6 @@ fn mega_simple_0619_pale_oak_log_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0620_cactus_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -48753,7 +48132,6 @@ fn mega_simple_0620_cactus_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0621_bamboo_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -48827,7 +48205,6 @@ fn mega_simple_0621_bamboo_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0622_wheat_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -48901,7 +48278,6 @@ fn mega_simple_0622_wheat_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0623_torch_creeper() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -48975,7 +48351,6 @@ fn mega_simple_0623_torch_creeper() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0624_lantern_spider() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -49049,7 +48424,6 @@ fn mega_simple_0624_lantern_spider() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0625_campfire_enderman() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -49123,7 +48497,6 @@ fn mega_simple_0625_campfire_enderman() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0626_tnt_witch() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -49197,7 +48570,6 @@ fn mega_simple_0626_tnt_witch() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0627_rail_slime() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -49271,7 +48643,6 @@ fn mega_simple_0627_rail_slime() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0628_powered_rail_ghast() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -49345,7 +48716,6 @@ fn mega_simple_0628_powered_rail_ghast() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0629_note_block_blaze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -49419,7 +48789,6 @@ fn mega_simple_0629_note_block_blaze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0630_jukebox_ender_dragon() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -49493,7 +48862,6 @@ fn mega_simple_0630_jukebox_ender_dragon() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0631_beacon_wither() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -49567,7 +48935,6 @@ fn mega_simple_0631_beacon_wither() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0632_conduit_warden() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -49641,7 +49008,6 @@ fn mega_simple_0632_conduit_warden() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0633_anvil_creaking() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -49715,7 +49081,6 @@ fn mega_simple_0633_anvil_creaking() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0634_grindstone_armadillo() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -49789,7 +49154,6 @@ fn mega_simple_0634_grindstone_armadillo() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0635_stonecutter_camel() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -49863,7 +49227,6 @@ fn mega_simple_0635_stonecutter_camel() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0636_smithing_table_pig() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -49937,7 +49300,6 @@ fn mega_simple_0636_smithing_table_pig() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0637_bell_sheep() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -50011,7 +49373,6 @@ fn mega_simple_0637_bell_sheep() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0638_honey_block_chicken() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -50085,7 +49446,6 @@ fn mega_simple_0638_honey_block_chicken() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0639_slime_block_wolf() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -50159,7 +49519,6 @@ fn mega_simple_0639_slime_block_wolf() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0640_stone_cat() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -50233,7 +49592,6 @@ fn mega_simple_0640_stone_cat() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0641_dirt_villager() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -50307,7 +49665,6 @@ fn mega_simple_0641_dirt_villager() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0642_grass_block_iron_golem() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -50381,7 +49738,6 @@ fn mega_simple_0642_grass_block_iron_golem() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0643_cobblestone_allay() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -50455,7 +49811,6 @@ fn mega_simple_0643_cobblestone_allay() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0644_oak_planks_frog() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -50529,7 +49884,6 @@ fn mega_simple_0644_oak_planks_frog() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0645_sand_axolotl() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -50603,7 +49957,6 @@ fn mega_simple_0645_sand_axolotl() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0646_gravel_breeze() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -50677,7 +50030,6 @@ fn mega_simple_0646_gravel_breeze() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0647_glass_bogged() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -50751,7 +50103,6 @@ fn mega_simple_0647_glass_bogged() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0648_oak_log_zombie() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -50825,7 +50176,6 @@ fn mega_simple_0648_oak_log_zombie() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated exhaustive parity test")]
 fn mega_simple_0649_oak_leaves_skeleton() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1_150, "blocks");
@@ -50899,7 +50249,6 @@ fn mega_simple_0649_oak_leaves_skeleton() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0000() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -50936,7 +50285,6 @@ fn mega_extra_invariant_0000() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0001() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -50973,7 +50321,6 @@ fn mega_extra_invariant_0001() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0002() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51010,7 +50357,6 @@ fn mega_extra_invariant_0002() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0003() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51047,7 +50393,6 @@ fn mega_extra_invariant_0003() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0004() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51084,7 +50429,6 @@ fn mega_extra_invariant_0004() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0005() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51121,7 +50465,6 @@ fn mega_extra_invariant_0005() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0006() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51158,7 +50501,6 @@ fn mega_extra_invariant_0006() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0007() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51195,7 +50537,6 @@ fn mega_extra_invariant_0007() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0008() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51232,7 +50573,6 @@ fn mega_extra_invariant_0008() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0009() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51269,7 +50609,6 @@ fn mega_extra_invariant_0009() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0010() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51306,7 +50645,6 @@ fn mega_extra_invariant_0010() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0011() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51343,7 +50681,6 @@ fn mega_extra_invariant_0011() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0012() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51380,7 +50717,6 @@ fn mega_extra_invariant_0012() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0013() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51417,7 +50753,6 @@ fn mega_extra_invariant_0013() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0014() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51454,7 +50789,6 @@ fn mega_extra_invariant_0014() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0015() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51491,7 +50825,6 @@ fn mega_extra_invariant_0015() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0016() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51528,7 +50861,6 @@ fn mega_extra_invariant_0016() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0017() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51565,7 +50897,6 @@ fn mega_extra_invariant_0017() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0018() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51602,7 +50933,6 @@ fn mega_extra_invariant_0018() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0019() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51639,7 +50969,6 @@ fn mega_extra_invariant_0019() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0020() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51676,7 +51005,6 @@ fn mega_extra_invariant_0020() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0021() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51713,7 +51041,6 @@ fn mega_extra_invariant_0021() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0022() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51750,7 +51077,6 @@ fn mega_extra_invariant_0022() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0023() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51787,7 +51113,6 @@ fn mega_extra_invariant_0023() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0024() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51824,7 +51149,6 @@ fn mega_extra_invariant_0024() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0025() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51861,7 +51185,6 @@ fn mega_extra_invariant_0025() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0026() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51898,7 +51221,6 @@ fn mega_extra_invariant_0026() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0027() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51935,7 +51257,6 @@ fn mega_extra_invariant_0027() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0028() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -51972,7 +51293,6 @@ fn mega_extra_invariant_0028() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0029() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52009,7 +51329,6 @@ fn mega_extra_invariant_0029() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0030() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52046,7 +51365,6 @@ fn mega_extra_invariant_0030() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0031() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52083,7 +51401,6 @@ fn mega_extra_invariant_0031() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0032() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52120,7 +51437,6 @@ fn mega_extra_invariant_0032() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0033() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52157,7 +51473,6 @@ fn mega_extra_invariant_0033() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0034() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52194,7 +51509,6 @@ fn mega_extra_invariant_0034() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0035() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52231,7 +51545,6 @@ fn mega_extra_invariant_0035() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0036() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52268,7 +51581,6 @@ fn mega_extra_invariant_0036() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0037() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52305,7 +51617,6 @@ fn mega_extra_invariant_0037() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0038() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52342,7 +51653,6 @@ fn mega_extra_invariant_0038() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0039() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52379,7 +51689,6 @@ fn mega_extra_invariant_0039() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0040() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52416,7 +51725,6 @@ fn mega_extra_invariant_0040() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0041() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52453,7 +51761,6 @@ fn mega_extra_invariant_0041() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0042() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52490,7 +51797,6 @@ fn mega_extra_invariant_0042() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0043() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52527,7 +51833,6 @@ fn mega_extra_invariant_0043() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0044() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52564,7 +51869,6 @@ fn mega_extra_invariant_0044() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0045() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52601,7 +51905,6 @@ fn mega_extra_invariant_0045() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0046() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52638,7 +51941,6 @@ fn mega_extra_invariant_0046() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0047() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52675,7 +51977,6 @@ fn mega_extra_invariant_0047() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0048() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -52712,7 +52013,6 @@ fn mega_extra_invariant_0048() {
 }
 
 #[test]
-#[expect(clippy::too_many_lines, reason = "generated invariant test")]
 fn mega_extra_invariant_0049() {
     bootstrap_all();
     assert!(REGISTRY.blocks.len() >= 1150);
