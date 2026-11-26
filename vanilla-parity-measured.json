@@ -10,13 +10,13 @@
       "extra_behavior_classes": [],
       "method_coverage": {
         "totals": {
-          "client_only": 346,
+          "client_only": 407,
           "explicit": 734,
-          "defaulted": 447,
-          "unknown": 289
+          "defaulted": 675,
+          "unknown": 0
         },
-        "denominator": 1181,
-        "explicit_percent": 62.15,
+        "denominator": 1409,
+        "explicit_percent": 52.09,
         "explicit_or_default_percent": 100.0,
         "note": "explicit = Steel struct overrides the mapped trait method; defaulted = Steel trait has a default body and the struct does not override it; unknown/client_only are excluded from the denominator and are not evidence either way."
       },
@@ -92,14 +92,13 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -145,37 +144,33 @@
             {
               "java": "isPathfindable",
               "steel": "is_pathfindable"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getMenuProvider",
-              "candidate": "get_menu_provider"
+              "steel": "get_menu_provider"
             },
             {
               "java": "falling",
-              "candidate": "falling"
+              "steel": "falling"
             },
             {
               "java": "onLand",
-              "candidate": "on_land"
+              "steel": "on_land"
             },
             {
               "java": "onBrokenAfterFall",
-              "candidate": "on_broken_after_fall"
+              "steel": "on_broken_after_fall"
             },
             {
               "java": "getFallDamageSource",
-              "candidate": "get_fall_damage_source"
-            },
-            {
-              "java": "getDustColor",
-              "candidate": "get_dust_color"
+              "steel": "get_fall_damage_source"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "getDustColor"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -382,14 +377,13 @@
             {
               "java": "performBonemeal",
               "steel": "perform_bonemeal"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "isCollisionShapeFullBlock",
-              "candidate": "is_collision_shape_full_block"
+              "steel": "is_collision_shape_full_block"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition",
             "getShape"
@@ -430,14 +424,13 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getSerializedName",
-              "candidate": "get_serialized_name"
+              "steel": "get_serialized_name"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -531,21 +524,17 @@
             {
               "java": "pickupBlock",
               "steel": "pickup_block"
-            }
-          ],
-          "unknown": [
-            {
-              "java": "getShadeBrightness",
-              "candidate": "get_shade_brightness"
             },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getRenderShape",
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "getShadeBrightness"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -653,13 +642,10 @@
             "useWithoutItem"
           ],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "getColor",
-              "candidate": "get_color"
-            }
+          "unknown": [],
+          "client_only": [
+            "getColor"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -683,21 +669,21 @@
             "destroyOnLeave"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getBedEnvironmentAttribute",
-              "candidate": "get_bed_environment_attribute"
+              "steel": "get_bed_environment_attribute"
             },
             {
               "java": "destroyOnUse",
-              "candidate": "destroy_on_use"
+              "steel": "destroy_on_use"
             },
             {
               "java": "destroyOnLeave",
-              "candidate": "destroy_on_leave"
+              "steel": "destroy_on_leave"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape"
           ],
@@ -792,38 +778,33 @@
             "getShape"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getAgeProperty",
-              "candidate": "get_age_property"
+              "steel": "get_age_property"
             },
             {
               "java": "getMaxAge",
-              "candidate": "get_max_age"
+              "steel": "get_max_age"
             },
             {
               "java": "getBaseSeedId",
-              "candidate": "get_base_seed_id"
+              "steel": "get_base_seed_id"
             },
             {
               "java": "randomTick",
-              "candidate": "random_tick"
+              "steel": "random_tick"
             },
             {
               "java": "getBonemealAgeIncrease",
-              "candidate": "get_bonemeal_age_increase"
-            },
-            {
-              "java": "createBlockStateDefinition",
-              "candidate": "create_block_state_definition"
-            },
-            {
-              "java": "getShape",
-              "candidate": "get_shape"
+              "steel": "get_bonemeal_age_increase"
             }
           ],
-          "client_only": [],
+          "unknown": [],
+          "client_only": [
+            "createBlockStateDefinition",
+            "getShape"
+          ],
           "not_explicit": [],
           "unparsed_impl": true
         },
@@ -950,14 +931,13 @@
             {
               "java": "getCollisionShape",
               "steel": "get_collision_shape"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -1004,14 +984,13 @@
             {
               "java": "performBonemeal",
               "steel": "perform_bonemeal"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition",
@@ -1044,13 +1023,13 @@
             "newBlockEntity",
             "getTicker"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "openContainer",
-              "candidate": "open_container"
+              "steel": "open_container"
             }
           ],
+          "unknown": [],
           "client_only": [
             "animateTick"
           ],
@@ -1083,14 +1062,13 @@
             {
               "java": "performBonemeal",
               "steel": "perform_bonemeal"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getType",
-              "candidate": "get_type"
+              "steel": "get_type"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -1172,13 +1150,13 @@
             "tick",
             "newBlockEntity"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "onBrokenAfterFall",
-              "candidate": "on_broken_after_fall"
+              "steel": "on_broken_after_fall"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition",
             "animateTick"
@@ -1217,17 +1195,17 @@
             "canSurvive",
             "pickupBlock"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             },
             {
               "java": "getPickupSound",
-              "candidate": "get_pickup_sound"
+              "steel": "get_pickup_sound"
             }
           ],
+          "unknown": [],
           "client_only": [
             "animateTick",
             "getShape",
@@ -1503,14 +1481,13 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getActiveTicks",
-              "candidate": "get_active_ticks"
+              "steel": "get_active_ticks"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition"
           ],
@@ -1569,14 +1546,13 @@
             {
               "java": "isPathfindable",
               "steel": "is_pathfindable"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "animateTick",
@@ -1618,24 +1594,21 @@
             "placeLiquid",
             "canSurvive"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
-            },
-            {
-              "java": "getParticleOffsets",
-              "candidate": "get_particle_offsets"
+              "steel": "get_fluid_state"
             },
             {
               "java": "canBeLit",
-              "candidate": "can_be_lit"
+              "steel": "can_be_lit"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "getParticleOffsets"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -1682,16 +1655,12 @@
               "steel": "is_pathfindable"
             }
           ],
-          "unknown": [
-            {
-              "java": "getParticleOffsets",
-              "candidate": "get_particle_offsets"
-            }
-          ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition",
-            "getCloneItemStack"
+            "getCloneItemStack",
+            "getParticleOffsets"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -1730,18 +1699,16 @@
             "getShape"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getBaseSeedId",
-              "candidate": "get_base_seed_id"
-            },
-            {
-              "java": "getShape",
-              "candidate": "get_shape"
+              "steel": "get_base_seed_id"
             }
           ],
-          "client_only": [],
+          "unknown": [],
+          "client_only": [
+            "getShape"
+          ],
           "not_explicit": [],
           "unparsed_impl": true
         },
@@ -1759,13 +1726,13 @@
           "explicit": [
             "useWithoutItem"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getMenuProvider",
-              "candidate": "get_menu_provider"
+              "steel": "get_menu_provider"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -1812,25 +1779,25 @@
             "receiveStalactiteDrip"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "isFull",
-              "candidate": "is_full"
+              "steel": "is_full"
             },
             {
               "java": "handlePrecipitation",
-              "candidate": "handle_precipitation"
+              "steel": "handle_precipitation"
             },
             {
               "java": "canReceiveStalactiteDrip",
-              "candidate": "can_receive_stalactite_drip"
+              "steel": "can_receive_stalactite_drip"
             },
             {
               "java": "receiveStalactiteDrip",
-              "candidate": "receive_stalactite_drip"
+              "steel": "receive_stalactite_drip"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -1877,30 +1844,29 @@
             {
               "java": "performBonemeal",
               "steel": "perform_bonemeal"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getBlocksToGrowWhenBonemealed",
-              "candidate": "get_blocks_to_grow_when_bonemealed"
+              "steel": "get_blocks_to_grow_when_bonemealed"
             },
             {
               "java": "canGrowInto",
-              "candidate": "can_grow_into"
+              "steel": "can_grow_into"
             },
             {
               "java": "getBodyBlock",
-              "candidate": "get_body_block"
+              "steel": "get_body_block"
             },
             {
               "java": "updateBodyAfterConvertedFromHead",
-              "candidate": "update_body_after_converted_from_head"
+              "steel": "update_body_after_converted_from_head"
             },
             {
               "java": "getGrowIntoState",
-              "candidate": "get_grow_into_state"
+              "steel": "get_grow_into_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getCloneItemStack",
             "createBlockStateDefinition"
@@ -1946,18 +1912,17 @@
             {
               "java": "performBonemeal",
               "steel": "perform_bonemeal"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getHeadBlock",
-              "candidate": "get_head_block"
+              "steel": "get_head_block"
             },
             {
               "java": "updateHeadAfterConvertedFromBody",
-              "candidate": "update_head_after_converted_from_body"
+              "steel": "update_head_after_converted_from_body"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getCloneItemStack",
             "createBlockStateDefinition"
@@ -2014,23 +1979,13 @@
               "steel": "mirror"
             }
           ],
-          "unknown": [
-            {
-              "java": "getBlockSupportShape",
-              "candidate": "get_block_support_shape"
-            },
-            {
-              "java": "getYRotationDegrees",
-              "candidate": "get_y_rotation_degrees"
-            },
-            {
-              "java": "attachmentPoint",
-              "candidate": "attachment_point"
-            }
-          ],
+          "unknown": [],
           "client_only": [
             "getShape",
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "getBlockSupportShape",
+            "getYRotationDegrees",
+            "attachmentPoint"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -2056,13 +2011,13 @@
             "updateShape",
             "isPathfindable"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -2140,66 +2095,65 @@
             {
               "java": "isPathfindable",
               "steel": "is_pathfindable"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "acceptDouble",
-              "candidate": "accept_double"
+              "steel": "accept_double"
             },
             {
               "java": "acceptSingle",
-              "candidate": "accept_single"
+              "steel": "accept_single"
             },
             {
               "java": "acceptNone",
-              "candidate": "accept_none"
+              "steel": "accept_none"
             },
             {
               "java": "acceptDouble",
-              "candidate": "accept_double"
+              "steel": "accept_double"
             },
             {
               "java": "createMenu",
-              "candidate": "create_menu"
+              "steel": "create_menu"
             },
             {
               "java": "getDisplayName",
-              "candidate": "get_display_name"
+              "steel": "get_display_name"
             },
             {
               "java": "acceptSingle",
-              "candidate": "accept_single"
+              "steel": "accept_single"
             },
             {
               "java": "acceptNone",
-              "candidate": "accept_none"
+              "steel": "accept_none"
             },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             },
             {
               "java": "combine",
-              "candidate": "combine"
+              "steel": "combine"
             },
             {
               "java": "getMenuProvider",
-              "candidate": "get_menu_provider"
+              "steel": "get_menu_provider"
             },
             {
               "java": "acceptDouble",
-              "candidate": "accept_double"
+              "steel": "accept_double"
             },
             {
               "java": "acceptSingle",
-              "candidate": "accept_single"
+              "steel": "accept_single"
             },
             {
               "java": "acceptNone",
-              "candidate": "accept_none"
+              "steel": "accept_none"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -2251,18 +2205,17 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getRows",
-              "candidate": "get_rows"
+              "steel": "get_rows"
             },
             {
               "java": "getColumns",
-              "candidate": "get_columns"
+              "steel": "get_columns"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition"
           ],
@@ -2303,14 +2256,10 @@
               "steel": "is_randomly_ticking"
             }
           ],
-          "unknown": [
-            {
-              "java": "getBlockSupportShape",
-              "candidate": "get_block_support_shape"
-            }
-          ],
+          "unknown": [],
           "client_only": [
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "getBlockSupportShape"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -2421,13 +2370,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "getDustColor",
-              "candidate": "get_dust_color"
-            }
+          "unknown": [],
+          "client_only": [
+            "getDustColor"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -2528,29 +2474,29 @@
             "triggerEvent",
             "newBlockEntity"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getDelay",
-              "candidate": "get_delay"
+              "steel": "get_delay"
             },
             {
               "java": "getOutputSignal",
-              "candidate": "get_output_signal"
+              "steel": "get_output_signal"
             },
             {
               "java": "shouldTurnOn",
-              "candidate": "should_turn_on"
+              "steel": "should_turn_on"
             },
             {
               "java": "getInputSignal",
-              "candidate": "get_input_signal"
+              "steel": "get_input_signal"
             },
             {
               "java": "checkTickOnNeighbor",
-              "candidate": "check_tick_on_neighbor"
+              "steel": "check_tick_on_neighbor"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition"
           ],
@@ -2610,66 +2556,65 @@
             {
               "java": "getCollisionShape",
               "steel": "get_collision_shape"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getContainer",
-              "candidate": "get_container"
+              "steel": "get_container"
             },
             {
               "java": "getMaxStackSize",
-              "candidate": "get_max_stack_size"
+              "steel": "get_max_stack_size"
             },
             {
               "java": "getSlotsForFace",
-              "candidate": "get_slots_for_face"
+              "steel": "get_slots_for_face"
             },
             {
               "java": "canPlaceItemThroughFace",
-              "candidate": "can_place_item_through_face"
+              "steel": "can_place_item_through_face"
             },
             {
               "java": "canTakeItemThroughFace",
-              "candidate": "can_take_item_through_face"
+              "steel": "can_take_item_through_face"
             },
             {
               "java": "setChanged",
-              "candidate": "set_changed"
+              "steel": "set_changed"
             },
             {
               "java": "getMaxStackSize",
-              "candidate": "get_max_stack_size"
+              "steel": "get_max_stack_size"
             },
             {
               "java": "getSlotsForFace",
-              "candidate": "get_slots_for_face"
+              "steel": "get_slots_for_face"
             },
             {
               "java": "canPlaceItemThroughFace",
-              "candidate": "can_place_item_through_face"
+              "steel": "can_place_item_through_face"
             },
             {
               "java": "canTakeItemThroughFace",
-              "candidate": "can_take_item_through_face"
+              "steel": "can_take_item_through_face"
             },
             {
               "java": "setChanged",
-              "candidate": "set_changed"
+              "steel": "set_changed"
             },
             {
               "java": "getSlotsForFace",
-              "candidate": "get_slots_for_face"
+              "steel": "get_slots_for_face"
             },
             {
               "java": "canPlaceItemThroughFace",
-              "candidate": "can_place_item_through_face"
+              "steel": "can_place_item_through_face"
             },
             {
               "java": "canTakeItemThroughFace",
-              "candidate": "can_take_item_through_face"
+              "steel": "can_take_item_through_face"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "getInteractionShape",
@@ -2698,18 +2643,16 @@
             "getStateForPlacement",
             "updateShape"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "onLand",
-              "candidate": "on_land"
-            },
-            {
-              "java": "getDustColor",
-              "candidate": "get_dust_color"
+              "steel": "on_land"
             }
           ],
-          "client_only": [],
+          "unknown": [],
+          "client_only": [
+            "getDustColor"
+          ],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -2740,13 +2683,13 @@
             "getStateForPlacement",
             "isPathfindable"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition",
             "getShape"
@@ -2803,17 +2746,17 @@
             "getStateForPlacement",
             "updateShape"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "chestCanConnectTo",
-              "candidate": "chest_can_connect_to"
+              "steel": "chest_can_connect_to"
             },
             {
               "java": "shouldChangedStateKeepBlockEntity",
-              "candidate": "should_changed_state_keep_block_entity"
+              "steel": "should_changed_state_keep_block_entity"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -2868,22 +2811,21 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "shouldChangedStateKeepBlockEntity",
-              "candidate": "should_changed_state_keep_block_entity"
+              "steel": "should_changed_state_keep_block_entity"
             },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             },
             {
               "java": "getSerializedName",
-              "candidate": "get_serialized_name"
+              "steel": "get_serialized_name"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition",
             "getShape",
@@ -3077,13 +3019,13 @@
           "explicit": [
             "useWithoutItem"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getMenuProvider",
-              "candidate": "get_menu_provider"
+              "steel": "get_menu_provider"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -3166,54 +3108,46 @@
             "createBlockStateDefinition"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
-            {
-              "java": "getShape",
-              "candidate": "get_shape"
-            },
+          "defaulted": [
             {
               "java": "mayPlaceOn",
-              "candidate": "may_place_on"
+              "steel": "may_place_on"
             },
             {
               "java": "isRandomlyTicking",
-              "candidate": "is_randomly_ticking"
+              "steel": "is_randomly_ticking"
             },
             {
               "java": "randomTick",
-              "candidate": "random_tick"
+              "steel": "random_tick"
             },
             {
               "java": "canSurvive",
-              "candidate": "can_survive"
+              "steel": "can_survive"
             },
             {
               "java": "entityInside",
-              "candidate": "entity_inside"
-            },
-            {
-              "java": "getCloneItemStack",
-              "candidate": "get_clone_item_stack"
+              "steel": "entity_inside"
             },
             {
               "java": "isValidBonemealTarget",
-              "candidate": "is_valid_bonemeal_target"
+              "steel": "is_valid_bonemeal_target"
             },
             {
               "java": "isBonemealSuccess",
-              "candidate": "is_bonemeal_success"
+              "steel": "is_bonemeal_success"
             },
             {
               "java": "performBonemeal",
-              "candidate": "perform_bonemeal"
-            },
-            {
-              "java": "createBlockStateDefinition",
-              "candidate": "create_block_state_definition"
+              "steel": "perform_bonemeal"
             }
           ],
-          "client_only": [],
+          "unknown": [],
+          "client_only": [
+            "getShape",
+            "getCloneItemStack",
+            "createBlockStateDefinition"
+          ],
           "not_explicit": [],
           "unparsed_impl": true
         },
@@ -3361,22 +3295,18 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
-            {
-              "java": "getFluidState",
-              "candidate": "get_fluid_state"
             },
             {
-              "java": "getSoundType",
-              "candidate": "get_sound_type"
+              "java": "getFluidState",
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition",
-            "getCloneItemStack"
+            "getCloneItemStack",
+            "getSoundType"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -3437,14 +3367,10 @@
               "steel": "mirror"
             }
           ],
-          "unknown": [
-            {
-              "java": "getShapeProperty",
-              "candidate": "get_shape_property"
-            }
-          ],
+          "unknown": [],
           "client_only": [
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "getShapeProperty"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -3557,14 +3483,13 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getSeed",
-              "candidate": "get_seed"
+              "steel": "get_seed"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -3605,14 +3530,13 @@
             {
               "java": "playerDestroy",
               "steel": "player_destroy"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getSeed",
-              "candidate": "get_seed"
+              "steel": "get_seed"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition"
           ],
@@ -3644,19 +3568,16 @@
             "attack",
             "isPathfindable"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getDelayAfterPlace",
-              "candidate": "get_delay_after_place"
-            },
-            {
-              "java": "getDustColor",
-              "candidate": "get_dust_color"
+              "steel": "get_delay_after_place"
             }
           ],
+          "unknown": [],
           "client_only": [
-            "getShape"
+            "getShape",
+            "getDustColor"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -3703,14 +3624,13 @@
             {
               "java": "isPathfindable",
               "steel": "is_pathfindable"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition",
             "getShape",
@@ -3758,17 +3678,17 @@
           "explicit": [
             "newBlockEntity"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getDispenseMethod",
-              "candidate": "get_dispense_method"
+              "steel": "get_dispense_method"
             },
             {
               "java": "dispenseFrom",
-              "candidate": "dispense_from"
+              "steel": "dispense_from"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -3834,14 +3754,13 @@
             {
               "java": "getTicker",
               "steel": "get_block_entity_ticker"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getMenuProvider",
-              "candidate": "get_menu_provider"
+              "steel": "get_menu_provider"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "animateTick"
@@ -3879,14 +3798,13 @@
             {
               "java": "canBeReplaced",
               "steel": "can_be_replaced"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getPortalDestination",
-              "candidate": "get_portal_destination"
+              "steel": "get_portal_destination"
             }
           ],
+          "unknown": [],
           "client_only": [
             "animateTick",
             "getCloneItemStack",
@@ -3926,14 +3844,13 @@
             {
               "java": "canBeReplaced",
               "steel": "can_be_replaced"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getPortalDestination",
-              "candidate": "get_portal_destination"
+              "steel": "get_portal_destination"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "animateTick",
@@ -4069,18 +3986,17 @@
             {
               "java": "tick",
               "steel": "tick"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "combine",
-              "candidate": "combine"
+              "steel": "combine"
             },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "animateTick",
@@ -4113,14 +4029,13 @@
             {
               "java": "entityInside",
               "steel": "entity_inside"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getBeeInteractionEffect",
-              "candidate": "get_bee_interaction_effect"
+              "steel": "get_bee_interaction_effect"
             }
           ],
+          "unknown": [],
           "client_only": [
             "animateTick"
           ],
@@ -4259,16 +4174,12 @@
               "steel": "on_explosion_hit"
             }
           ],
-          "unknown": [
-            {
-              "java": "getBlockSupportShape",
-              "candidate": "get_block_support_shape"
-            }
-          ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "getOcclusionShape",
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "getBlockSupportShape"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -4302,13 +4213,13 @@
             "tick",
             "onPlace"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "canBurn",
-              "candidate": "can_burn"
+              "steel": "can_burn"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -4400,21 +4311,17 @@
             {
               "java": "performBonemeal",
               "steel": "perform_bonemeal"
-            }
-          ],
-          "unknown": [
-            {
-              "java": "getShapeHeight",
-              "candidate": "get_shape_height"
             },
             {
               "java": "getSegmentAmountProperty",
-              "candidate": "get_segment_amount_property"
+              "steel": "get_segment_amount_property"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "getShapeHeight"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -4432,13 +4339,13 @@
             "getSuspiciousEffects"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getSuspiciousEffects",
-              "candidate": "get_suspicious_effects"
+              "steel": "get_suspicious_effects"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape"
           ],
@@ -4579,13 +4486,13 @@
             "newBlockEntity",
             "getTicker"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "openContainer",
-              "candidate": "open_container"
+              "steel": "open_container"
             }
           ],
+          "unknown": [],
           "client_only": [
             "animateTick"
           ],
@@ -4647,14 +4554,13 @@
             {
               "java": "propagatesSkylightDown",
               "steel": "propagates_skylight_down"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getSpreader",
-              "candidate": "get_spreader"
+              "steel": "get_spreader"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -4687,14 +4593,13 @@
             {
               "java": "performBonemeal",
               "steel": "perform_bonemeal"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getType",
-              "candidate": "get_type"
+              "steel": "get_type"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -4740,14 +4645,13 @@
             {
               "java": "isPathfindable",
               "steel": "is_pathfindable"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getMenuProvider",
-              "candidate": "get_menu_provider"
+              "steel": "get_menu_provider"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -4766,13 +4670,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "skipRendering",
-              "candidate": "skip_rendering"
-            }
+          "unknown": [],
+          "client_only": [
+            "skipRendering"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -4851,13 +4752,13 @@
             "canSurvive",
             "updateShape"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition",
             "getShape"
@@ -4905,13 +4806,13 @@
             "getStateForPlacement",
             "isPathfindable"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition",
             "getShape"
@@ -5141,15 +5042,11 @@
             "updateShape"
           ],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "skipRendering",
-              "candidate": "skip_rendering"
-            }
-          ],
+          "unknown": [],
           "client_only": [
             "getVisualShape",
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "skipRendering"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -5278,30 +5175,29 @@
             {
               "java": "placeLiquid",
               "steel": "place_liquid"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "canGrowInto",
-              "candidate": "can_grow_into"
+              "steel": "can_grow_into"
             },
             {
               "java": "getBodyBlock",
-              "candidate": "get_body_block"
+              "steel": "get_body_block"
             },
             {
               "java": "canAttachTo",
-              "candidate": "can_attach_to"
+              "steel": "can_attach_to"
             },
             {
               "java": "getBlocksToGrowWhenBonemealed",
-              "candidate": "get_blocks_to_grow_when_bonemealed"
+              "steel": "get_blocks_to_grow_when_bonemealed"
             },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -5333,22 +5229,21 @@
             {
               "java": "placeLiquid",
               "steel": "place_liquid"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getHeadBlock",
-              "candidate": "get_head_block"
+              "steel": "get_head_block"
             },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             },
             {
               "java": "canAttachTo",
-              "candidate": "can_attach_to"
+              "steel": "can_attach_to"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -5384,14 +5279,13 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -5423,13 +5317,13 @@
             "updateShape",
             "isPathfindable"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -5461,17 +5355,17 @@
             "entityInside",
             "getAnalogOutputSignal"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getContentHeight",
-              "candidate": "get_content_height"
+              "steel": "get_content_height"
             },
             {
               "java": "isFull",
-              "candidate": "is_full"
+              "steel": "is_full"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -5509,30 +5403,29 @@
             {
               "java": "entityInside",
               "steel": "entity_inside"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "isFull",
-              "candidate": "is_full"
+              "steel": "is_full"
             },
             {
               "java": "canReceiveStalactiteDrip",
-              "candidate": "can_receive_stalactite_drip"
+              "steel": "can_receive_stalactite_drip"
             },
             {
               "java": "getContentHeight",
-              "candidate": "get_content_height"
+              "steel": "get_content_height"
             },
             {
               "java": "handlePrecipitation",
-              "candidate": "handle_precipitation"
+              "steel": "handle_precipitation"
             },
             {
               "java": "receiveStalactiteDrip",
-              "candidate": "receive_stalactite_drip"
+              "steel": "receive_stalactite_drip"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition"
           ],
@@ -5612,29 +5505,19 @@
             {
               "java": "isRandomlyTicking",
               "steel": "is_randomly_ticking"
-            }
-          ],
-          "unknown": [
-            {
-              "java": "skipRendering",
-              "candidate": "skip_rendering"
-            },
-            {
-              "java": "getBlockSupportShape",
-              "candidate": "get_block_support_shape"
-            },
-            {
-              "java": "getLightDampening",
-              "candidate": "get_light_dampening"
             },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "animateTick",
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "skipRendering",
+            "getBlockSupportShape",
+            "getLightDampening"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -5726,14 +5609,13 @@
             {
               "java": "isPathfindable",
               "steel": "is_pathfindable"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getMenuProvider",
-              "candidate": "get_menu_provider"
+              "steel": "get_menu_provider"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getOcclusionShape",
             "getShape",
@@ -5820,23 +5702,19 @@
             {
               "java": "updateShape",
               "steel": "update_shape"
-            }
-          ],
-          "unknown": [
-            {
-              "java": "getShadeBrightness",
-              "candidate": "get_shade_brightness"
             },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition",
             "getShape",
             "getRenderShape",
-            "getCloneItemStack"
+            "getCloneItemStack",
+            "getShadeBrightness"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -5882,14 +5760,13 @@
             {
               "java": "ownSignal",
               "steel": "own_signal"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "animateTick",
             "createBlockStateDefinition"
@@ -5985,26 +5862,22 @@
             {
               "java": "getDrops",
               "steel": "get_drops"
-            }
-          ],
-          "unknown": [
-            {
-              "java": "getFluidState",
-              "candidate": "get_fluid_state"
             },
             {
-              "java": "skipRendering",
-              "candidate": "skip_rendering"
+              "java": "getFluidState",
+              "steel": "get_fluid_state"
             },
             {
               "java": "getPickupSound",
-              "candidate": "get_pickup_sound"
+              "steel": "get_pickup_sound"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getRenderShape",
             "getShape",
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "skipRendering"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -6026,13 +5899,13 @@
             "useWithoutItem",
             "getStateForPlacement"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getMenuProvider",
-              "candidate": "get_menu_provider"
+              "steel": "get_menu_provider"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition"
           ],
@@ -6090,13 +5963,10 @@
               "steel": "perform_bonemeal"
             }
           ],
-          "unknown": [
-            {
-              "java": "getParticlePos",
-              "candidate": "get_particle_pos"
-            }
+          "unknown": [],
+          "client_only": [
+            "getParticlePos"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -6145,14 +6015,13 @@
             {
               "java": "performBonemeal",
               "steel": "perform_bonemeal"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition",
             "getShape"
@@ -6178,19 +6047,16 @@
             "getStateForPlacement",
             "updateShape"
           ],
-          "defaulted": [],
-          "unknown": [
-            {
-              "java": "skipRendering",
-              "candidate": "skip_rendering"
-            },
+          "defaulted": [
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "skipRendering"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -6349,18 +6215,11 @@
               "steel": "get_collision_shape"
             }
           ],
-          "unknown": [
-            {
-              "java": "getBlockSupportShape",
-              "candidate": "get_block_support_shape"
-            },
-            {
-              "java": "getShadeBrightness",
-              "candidate": "get_shade_brightness"
-            }
-          ],
+          "unknown": [],
           "client_only": [
-            "getVisualShape"
+            "getVisualShape",
+            "getBlockSupportShape",
+            "getShadeBrightness"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -6399,14 +6258,13 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition",
             "getShape"
@@ -6557,22 +6415,21 @@
             {
               "java": "rotate",
               "steel": "rotate"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getPortalTransitionTime",
-              "candidate": "get_portal_transition_time"
+              "steel": "get_portal_transition_time"
             },
             {
               "java": "getPortalDestination",
-              "candidate": "get_portal_destination"
+              "steel": "get_portal_destination"
             },
             {
               "java": "getLocalTransition",
-              "candidate": "get_local_transition"
+              "steel": "get_local_transition"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "animateTick",
@@ -6700,14 +6557,13 @@
             {
               "java": "performBonemeal",
               "steel": "perform_bonemeal"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getType",
-              "candidate": "get_type"
+              "steel": "get_type"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -6780,14 +6636,13 @@
             {
               "java": "performBonemeal",
               "steel": "perform_bonemeal"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getType",
-              "candidate": "get_type"
+              "steel": "get_type"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -6843,14 +6698,13 @@
             {
               "java": "ownSignal",
               "steel": "own_signal"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "shouldRedstoneWireConnectTo",
-              "candidate": "should_redstone_wire_connect_to"
+              "steel": "should_redstone_wire_connect_to"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition"
           ],
@@ -7171,23 +7025,20 @@
             "fallOn",
             "randomTick"
           ],
-          "defaulted": [],
-          "unknown": [
-            {
-              "java": "getStalactiteLandingSound",
-              "candidate": "get_stalactite_landing_sound"
-            },
+          "defaulted": [
             {
               "java": "canGrow",
-              "candidate": "can_grow"
+              "steel": "can_grow"
             },
             {
               "java": "blocksStalagmiteScan",
-              "candidate": "blocks_stalagmite_scan"
+              "steel": "blocks_stalagmite_scan"
             }
           ],
+          "unknown": [],
           "client_only": [
-            "animateTick"
+            "animateTick",
+            "getStalactiteLandingSound"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -7201,18 +7052,16 @@
             "getShape"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getBaseSeedId",
-              "candidate": "get_base_seed_id"
-            },
-            {
-              "java": "getShape",
-              "candidate": "get_shape"
+              "steel": "get_base_seed_id"
             }
           ],
-          "client_only": [],
+          "unknown": [],
+          "client_only": [
+            "getShape"
+          ],
           "not_explicit": [],
           "unparsed_impl": true
         },
@@ -7285,19 +7134,16 @@
             "pickupBlock",
             "isPathfindable"
           ],
-          "defaulted": [],
-          "unknown": [
-            {
-              "java": "skipRendering",
-              "candidate": "skip_rendering"
-            },
+          "defaulted": [
             {
               "java": "getPickupSound",
-              "candidate": "get_pickup_sound"
+              "steel": "get_pickup_sound"
             }
           ],
+          "unknown": [],
           "client_only": [
-            "getVisualShape"
+            "getVisualShape",
+            "skipRendering"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -7356,20 +7202,16 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
-            {
-              "java": "updateState",
-              "candidate": "update_state"
             },
             {
-              "java": "getShapeProperty",
-              "candidate": "get_shape_property"
+              "java": "updateState",
+              "steel": "update_state"
             }
           ],
+          "unknown": [],
           "client_only": [
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "getShapeProperty"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -7396,21 +7238,21 @@
             "createBlockStateDefinition"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getSignalForState",
-              "candidate": "get_signal_for_state"
+              "steel": "get_signal_for_state"
             },
             {
               "java": "setSignalForState",
-              "candidate": "set_signal_for_state"
+              "steel": "set_signal_for_state"
             },
             {
               "java": "getSignalStrength",
-              "candidate": "get_signal_strength"
+              "steel": "get_signal_strength"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition"
           ],
@@ -7464,20 +7306,16 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
-            {
-              "java": "updateState",
-              "candidate": "update_state"
             },
             {
-              "java": "getShapeProperty",
-              "candidate": "get_shape_property"
+              "java": "updateState",
+              "steel": "update_state"
             }
           ],
+          "unknown": [],
           "client_only": [
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "getShapeProperty"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -7645,18 +7483,17 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "hasNeighborSignal",
-              "candidate": "has_neighbor_signal"
+              "steel": "has_neighbor_signal"
             },
             {
               "java": "randomOrientation",
-              "candidate": "random_orientation"
+              "steel": "random_orientation"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "animateTick",
@@ -7727,14 +7564,13 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "shouldRedstoneWireConnectTo",
-              "candidate": "should_redstone_wire_connect_to"
+              "steel": "should_redstone_wire_connect_to"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "animateTick",
@@ -7778,25 +7614,25 @@
             "getStateForPlacement",
             "updateShape"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getDelay",
-              "candidate": "get_delay"
+              "steel": "get_delay"
             },
             {
               "java": "shouldRedstoneWireConnectTo",
-              "candidate": "should_redstone_wire_connect_to"
+              "steel": "should_redstone_wire_connect_to"
             },
             {
               "java": "isLocked",
-              "candidate": "is_locked"
+              "steel": "is_locked"
             },
             {
               "java": "sideInputDiodesOnly",
-              "candidate": "side_input_diodes_only"
+              "steel": "side_input_diodes_only"
             }
           ],
+          "unknown": [],
           "client_only": [
             "animateTick",
             "createBlockStateDefinition"
@@ -7834,14 +7670,13 @@
             {
               "java": "isPathfindable",
               "steel": "is_pathfindable"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getBlockExplosionResistance",
-              "candidate": "get_block_explosion_resistance"
+              "steel": "get_block_explosion_resistance"
             }
           ],
+          "unknown": [],
           "client_only": [
             "animateTick",
             "createBlockStateDefinition"
@@ -7877,13 +7712,10 @@
               "steel": "perform_bonemeal"
             }
           ],
-          "unknown": [
-            {
-              "java": "getParticlePos",
-              "candidate": "get_particle_pos"
-            }
+          "unknown": [],
+          "client_only": [
+            "getParticlePos"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -8013,13 +7845,13 @@
             "canSurvive",
             "getCollisionShape"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition",
             "getShape",
@@ -8040,17 +7872,17 @@
             "canChangeBlockStateOnSpread"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "attemptUseCharge",
-              "candidate": "attempt_use_charge"
+              "steel": "attempt_use_charge"
             },
             {
               "java": "canChangeBlockStateOnSpread",
-              "candidate": "can_change_block_state_on_spread"
+              "steel": "can_change_block_state_on_spread"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -8171,14 +8003,13 @@
             {
               "java": "spawnAfterBreak",
               "steel": "spawn_after_break"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "animateTick",
@@ -8235,14 +8066,13 @@
             {
               "java": "spawnAfterBreak",
               "steel": "spawn_after_break"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition",
             "getOcclusionShape"
@@ -8269,33 +8099,33 @@
             "isOtherBlockValidAsSource"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getSpreader",
-              "candidate": "get_spreader"
+              "steel": "get_spreader"
             },
             {
               "java": "onDischarged",
-              "candidate": "on_discharged"
+              "steel": "on_discharged"
             },
             {
               "java": "attemptUseCharge",
-              "candidate": "attempt_use_charge"
+              "steel": "attempt_use_charge"
             },
             {
               "java": "stateCanBeReplaced",
-              "candidate": "state_can_be_replaced"
+              "steel": "state_can_be_replaced"
             },
             {
               "java": "getSpreadTypes",
-              "candidate": "get_spread_types"
+              "steel": "get_spread_types"
             },
             {
               "java": "isOtherBlockValidAsSource",
-              "candidate": "is_other_block_valid_as_source"
+              "steel": "is_other_block_valid_as_source"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -8348,14 +8178,13 @@
             {
               "java": "performBonemeal",
               "steel": "perform_bonemeal"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -8409,14 +8238,13 @@
             {
               "java": "performBonemeal",
               "steel": "perform_bonemeal"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape"
           ],
@@ -8500,42 +8328,41 @@
             {
               "java": "updateShape",
               "steel": "update_shape"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getRows",
-              "candidate": "get_rows"
+              "steel": "get_rows"
             },
             {
               "java": "getColumns",
-              "candidate": "get_columns"
+              "steel": "get_columns"
             },
             {
               "java": "getSideChainPart",
-              "candidate": "get_side_chain_part"
+              "steel": "get_side_chain_part"
             },
             {
               "java": "setSideChainPart",
-              "candidate": "set_side_chain_part"
+              "steel": "set_side_chain_part"
             },
             {
               "java": "getFacing",
-              "candidate": "get_facing"
+              "steel": "get_facing"
             },
             {
               "java": "isConnectable",
-              "candidate": "is_connectable"
+              "steel": "is_connectable"
             },
             {
               "java": "getMaxChainLength",
-              "candidate": "get_max_chain_length"
+              "steel": "get_max_chain_length"
             },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -8695,15 +8522,11 @@
               "steel": "mirror"
             }
           ],
-          "unknown": [
-            {
-              "java": "getBlockSupportShape",
-              "candidate": "get_block_support_shape"
-            }
-          ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition",
-            "getShape"
+            "getShape",
+            "getBlockSupportShape"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -8743,14 +8566,13 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getSerializedName",
-              "candidate": "get_serialized_name"
+              "steel": "get_serialized_name"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -8795,14 +8617,13 @@
             {
               "java": "isPathfindable",
               "steel": "is_pathfindable"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition",
             "getShape"
@@ -8888,18 +8709,17 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             },
             {
               "java": "getMaxVerticalOffset",
-              "candidate": "get_max_vertical_offset"
+              "steel": "get_max_vertical_offset"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -8921,13 +8741,13 @@
           "explicit": [
             "useWithoutItem"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getMenuProvider",
-              "candidate": "get_menu_provider"
+              "steel": "get_menu_provider"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -8956,13 +8776,13 @@
             "newBlockEntity",
             "getTicker"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "openContainer",
-              "candidate": "open_container"
+              "steel": "open_container"
             }
           ],
+          "unknown": [],
           "client_only": [
             "animateTick"
           ],
@@ -9051,20 +8871,13 @@
               "steel": "use_shape_for_light_occlusion"
             }
           ],
-          "unknown": [
-            {
-              "java": "getBlockSupportShape",
-              "candidate": "get_block_support_shape"
-            },
-            {
-              "java": "getShadeBrightness",
-              "candidate": "get_shade_brightness"
-            }
-          ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "getVisualShape",
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "getBlockSupportShape",
+            "getShadeBrightness"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -9112,13 +8925,13 @@
             "updateShape",
             "canSurvive"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "canBurn",
-              "candidate": "can_burn"
+              "steel": "can_burn"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -9147,18 +8960,11 @@
               "steel": "get_collision_shape"
             }
           ],
-          "unknown": [
-            {
-              "java": "getBlockSupportShape",
-              "candidate": "get_block_support_shape"
-            },
-            {
-              "java": "getShadeBrightness",
-              "candidate": "get_shade_brightness"
-            }
-          ],
+          "unknown": [],
           "client_only": [
-            "getVisualShape"
+            "getVisualShape",
+            "getBlockSupportShape",
+            "getShadeBrightness"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -9250,13 +9056,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "getColor",
-              "candidate": "get_color"
-            }
+          "unknown": [],
+          "client_only": [
+            "getColor"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -9274,13 +9077,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "getColor",
-              "candidate": "get_color"
-            }
+          "unknown": [],
+          "client_only": [
+            "getColor"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -9323,18 +9123,17 @@
             {
               "java": "isPathfindable",
               "steel": "is_pathfindable"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getExplosionResistance",
-              "candidate": "get_explosion_resistance"
+              "steel": "get_explosion_resistance"
             },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -9383,18 +9182,11 @@
               "steel": "mirror"
             }
           ],
-          "unknown": [
-            {
-              "java": "getYRotationDegrees",
-              "candidate": "get_y_rotation_degrees"
-            },
-            {
-              "java": "attachmentPoint",
-              "candidate": "attachment_point"
-            }
-          ],
+          "unknown": [],
           "client_only": [
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "getYRotationDegrees",
+            "attachmentPoint"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -9488,14 +9280,13 @@
             {
               "java": "isPathfindable",
               "steel": "is_pathfindable"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getMenuProvider",
-              "candidate": "get_menu_provider"
+              "steel": "get_menu_provider"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -9529,31 +9320,25 @@
           "explicit": [
             "getSleepHeight"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getBedEnvironmentAttribute",
-              "candidate": "get_bed_environment_attribute"
-            },
-            {
-              "java": "spawnDestroyParticles",
-              "candidate": "spawn_destroy_particles"
-            },
-            {
-              "java": "getSleptInBedStatType",
-              "candidate": "get_slept_in_bed_stat_type"
+              "steel": "get_bed_environment_attribute"
             },
             {
               "java": "destroyOnUse",
-              "candidate": "destroy_on_use"
+              "steel": "destroy_on_use"
             },
             {
               "java": "destroyOnLeave",
-              "candidate": "destroy_on_leave"
+              "steel": "destroy_on_leave"
             }
           ],
+          "unknown": [],
           "client_only": [
-            "getShape"
+            "getShape",
+            "spawnDestroyParticles",
+            "getSleptInBedStatType"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -9602,15 +9387,11 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "getShadeBrightness",
-              "candidate": "get_shade_brightness"
-            }
-          ],
+          "unknown": [],
           "client_only": [
             "getRenderShape",
-            "getShape"
+            "getShape",
+            "getShadeBrightness"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -9665,18 +9446,16 @@
             "getMaxGrowthLength"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
-            {
-              "java": "getStalactiteLandingSound",
-              "candidate": "get_stalactite_landing_sound"
-            },
+          "defaulted": [
             {
               "java": "getMaxGrowthLength",
-              "candidate": "get_max_growth_length"
+              "steel": "get_max_growth_length"
             }
           ],
-          "client_only": [],
+          "unknown": [],
+          "client_only": [
+            "getStalactiteLandingSound"
+          ],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -9883,14 +9662,13 @@
             {
               "java": "mayPlaceOn",
               "steel": "may_place_on"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "getCloneItemStack"
@@ -10018,13 +9796,10 @@
               "steel": "propagates_skylight_down"
             }
           ],
-          "unknown": [
-            {
-              "java": "getLightDampening",
-              "candidate": "get_light_dampening"
-            }
+          "unknown": [],
+          "client_only": [
+            "getLightDampening"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -10042,13 +9817,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "spawnFallingLeavesParticle",
-              "candidate": "spawn_falling_leaves_particle"
-            }
+          "unknown": [],
+          "client_only": [
+            "spawnFallingLeavesParticle"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -10127,42 +9899,37 @@
             "getBonemealAgeIncrease"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
-            {
-              "java": "createBlockStateDefinition",
-              "candidate": "create_block_state_definition"
-            },
-            {
-              "java": "getShape",
-              "candidate": "get_shape"
-            },
+          "defaulted": [
             {
               "java": "getAgeProperty",
-              "candidate": "get_age_property"
+              "steel": "get_age_property"
             },
             {
               "java": "getMaxAge",
-              "candidate": "get_max_age"
+              "steel": "get_max_age"
             },
             {
               "java": "getBaseSeedId",
-              "candidate": "get_base_seed_id"
+              "steel": "get_base_seed_id"
             },
             {
               "java": "getStateForAge",
-              "candidate": "get_state_for_age"
+              "steel": "get_state_for_age"
             },
             {
               "java": "randomTick",
-              "candidate": "random_tick"
+              "steel": "random_tick"
             },
             {
               "java": "getBonemealAgeIncrease",
-              "candidate": "get_bonemeal_age_increase"
+              "steel": "get_bonemeal_age_increase"
             }
           ],
-          "client_only": [],
+          "unknown": [],
+          "client_only": [
+            "createBlockStateDefinition",
+            "getShape"
+          ],
           "not_explicit": [],
           "unparsed_impl": true
         },
@@ -10184,14 +9951,10 @@
               "steel": "propagates_skylight_down"
             }
           ],
-          "unknown": [
-            {
-              "java": "getShadeBrightness",
-              "candidate": "get_shade_brightness"
-            }
-          ],
+          "unknown": [],
           "client_only": [
-            "getVisualShape"
+            "getVisualShape",
+            "getShadeBrightness"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -10229,14 +9992,13 @@
             {
               "java": "onExplosionHit",
               "steel": "on_explosion_hit"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -10277,14 +10039,13 @@
             {
               "java": "ownSignal",
               "steel": "own_signal"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getOpenChestStat",
-              "candidate": "get_open_chest_stat"
+              "steel": "get_open_chest_stat"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -10489,21 +10250,21 @@
             "canGrowInto"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getBlocksToGrowWhenBonemealed",
-              "candidate": "get_blocks_to_grow_when_bonemealed"
+              "steel": "get_blocks_to_grow_when_bonemealed"
             },
             {
               "java": "getBodyBlock",
-              "candidate": "get_body_block"
+              "steel": "get_body_block"
             },
             {
               "java": "canGrowInto",
-              "candidate": "can_grow_into"
+              "steel": "can_grow_into"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -10524,13 +10285,13 @@
             "getHeadBlock"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getHeadBlock",
-              "candidate": "get_head_block"
+              "steel": "get_head_block"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -10549,13 +10310,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "spawnFallingLeavesParticle",
-              "candidate": "spawn_falling_leaves_particle"
-            }
+          "unknown": [],
+          "client_only": [
+            "spawnFallingLeavesParticle"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -10734,14 +10492,13 @@
             {
               "java": "mirror",
               "steel": "mirror"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "getShape",
             "createBlockStateDefinition"
@@ -10803,23 +10560,13 @@
               "steel": "is_pathfindable"
             }
           ],
-          "unknown": [
-            {
-              "java": "getBlockSupportShape",
-              "candidate": "get_block_support_shape"
-            },
-            {
-              "java": "getYRotationDegrees",
-              "candidate": "get_y_rotation_degrees"
-            },
-            {
-              "java": "attachmentPoint",
-              "candidate": "attachment_point"
-            }
-          ],
+          "unknown": [],
           "client_only": [
             "getShape",
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "getBlockSupportShape",
+            "getYRotationDegrees",
+            "attachmentPoint"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -10867,23 +10614,13 @@
               "steel": "mirror"
             }
           ],
-          "unknown": [
-            {
-              "java": "getYRotationDegrees",
-              "candidate": "get_y_rotation_degrees"
-            },
-            {
-              "java": "getSignHitboxCenterPosition",
-              "candidate": "get_sign_hitbox_center_position"
-            },
-            {
-              "java": "attachmentPoint",
-              "candidate": "attachment_point"
-            }
-          ],
+          "unknown": [],
           "client_only": [
             "getShape",
-            "createBlockStateDefinition"
+            "createBlockStateDefinition",
+            "getYRotationDegrees",
+            "getSignHitboxCenterPosition",
+            "attachmentPoint"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -10986,13 +10723,13 @@
             "getStateForPlacement",
             "updateShape"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getFluidState",
-              "candidate": "get_fluid_state"
+              "steel": "get_fluid_state"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition"
           ],
@@ -11122,14 +10859,13 @@
             {
               "java": "getAge",
               "steel": "get_age"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "isWaxed",
-              "candidate": "is_waxed"
+              "steel": "is_waxed"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -11477,21 +11213,21 @@
             "canGrowInto"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getBlocksToGrowWhenBonemealed",
-              "candidate": "get_blocks_to_grow_when_bonemealed"
+              "steel": "get_blocks_to_grow_when_bonemealed"
             },
             {
               "java": "getBodyBlock",
-              "candidate": "get_body_block"
+              "steel": "get_body_block"
             },
             {
               "java": "canGrowInto",
-              "candidate": "can_grow_into"
+              "steel": "can_grow_into"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -11512,13 +11248,13 @@
             "getHeadBlock"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getHeadBlock",
-              "candidate": "get_head_block"
+              "steel": "get_head_block"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -11546,25 +11282,25 @@
             "createBlockStateDefinition"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getSignalStrength",
-              "candidate": "get_signal_strength"
+              "steel": "get_signal_strength"
             },
             {
               "java": "getSignalForState",
-              "candidate": "get_signal_for_state"
+              "steel": "get_signal_for_state"
             },
             {
               "java": "setSignalForState",
-              "candidate": "set_signal_for_state"
+              "steel": "set_signal_for_state"
             },
             {
               "java": "getPressedTime",
-              "candidate": "get_pressed_time"
+              "steel": "get_pressed_time"
             }
           ],
+          "unknown": [],
           "client_only": [
             "createBlockStateDefinition"
           ],
@@ -11615,14 +11351,13 @@
             {
               "java": "mayPlaceOn",
               "steel": "may_place_on"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getBeeInteractionEffect",
-              "candidate": "get_bee_interaction_effect"
+              "steel": "get_bee_interaction_effect"
             }
           ],
+          "unknown": [],
           "client_only": [
             "animateTick"
           ],
@@ -11708,13 +11443,13 @@
       "extra_behavior_classes": [],
       "method_coverage": {
         "totals": {
-          "unknown": 66,
+          "client_only": 38,
           "explicit": 54,
-          "defaulted": 30,
-          "client_only": 7
+          "defaulted": 65,
+          "unknown": 0
         },
-        "denominator": 84,
-        "explicit_percent": 64.29,
+        "denominator": 119,
+        "explicit_percent": 45.38,
         "explicit_or_default_percent": 100.0,
         "note": "explicit = Steel struct overrides the mapped trait method; defaulted = Steel trait has a default body and the struct does not override it; unknown/client_only are excluded from the denominator and are not evidence either way."
       },
@@ -11728,13 +11463,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "getName",
-              "candidate": "get_name"
-            }
+          "unknown": [],
+          "client_only": [
+            "getName"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": true
         },
@@ -11764,13 +11496,13 @@
             "asProjectile"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "asProjectile",
-              "candidate": "as_projectile"
+              "steel": "as_projectile"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": true
@@ -11832,13 +11564,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -11871,13 +11600,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -11918,13 +11644,10 @@
               "steel": "get_default_projectile_range"
             }
           ],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -11971,19 +11694,16 @@
             {
               "java": "emptyContents",
               "steel": "empty_contents"
-            }
-          ],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
             },
             {
               "java": "checkExtraContent",
-              "candidate": "check_extra_content"
+              "steel": "check_extra_content"
             }
           ],
-          "client_only": [],
+          "unknown": [],
+          "client_only": [
+            "use"
+          ],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -12021,36 +11741,32 @@
             {
               "java": "onDestroyed",
               "steel": "on_destroyed"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "overrideStackedOnOther",
-              "candidate": "override_stacked_on_other"
+              "steel": "override_stacked_on_other"
             },
             {
               "java": "overrideOtherStackedOnMe",
-              "candidate": "override_other_stacked_on_me"
-            },
-            {
-              "java": "use",
-              "candidate": "use"
+              "steel": "override_other_stacked_on_me"
             },
             {
               "java": "isBarVisible",
-              "candidate": "is_bar_visible"
+              "steel": "is_bar_visible"
             },
             {
               "java": "getBarWidth",
-              "candidate": "get_bar_width"
+              "steel": "get_bar_width"
             },
             {
               "java": "getBarColor",
-              "candidate": "get_bar_color"
+              "steel": "get_bar_color"
             }
           ],
+          "unknown": [],
           "client_only": [
-            "getTooltipImage"
+            "getTooltipImage",
+            "use"
           ],
           "not_explicit": [],
           "unparsed_impl": false
@@ -12127,31 +11843,25 @@
             {
               "java": "getDefaultProjectileRange",
               "steel": "get_default_projectile_range"
-            }
-          ],
-          "unknown": [
-            {
-              "java": "getSupportedHeldProjectiles",
-              "candidate": "get_supported_held_projectiles"
             },
             {
-              "java": "use",
-              "candidate": "use"
+              "java": "getSupportedHeldProjectiles",
+              "steel": "get_supported_held_projectiles"
             },
             {
               "java": "createProjectile",
-              "candidate": "create_projectile"
+              "steel": "create_projectile"
             },
             {
               "java": "getDurabilityUse",
-              "candidate": "get_durability_use"
-            },
-            {
-              "java": "getSerializedName",
-              "candidate": "get_serialized_name"
+              "steel": "get_durability_use"
             }
           ],
-          "client_only": [],
+          "unknown": [],
+          "client_only": [
+            "use",
+            "getSerializedName"
+          ],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -12187,13 +11897,13 @@
           "explicit": [
             "useOn"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "canDestroyBlock",
-              "candidate": "can_destroy_block"
+              "steel": "can_destroy_block"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -12207,13 +11917,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "appendHoverText",
-              "candidate": "append_hover_text"
-            }
+          "unknown": [],
+          "client_only": [
+            "appendHoverText"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": true
         },
@@ -12227,13 +11934,13 @@
             "placeBlock"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "placeBlock",
-              "candidate": "place_block"
+              "steel": "place_block"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -12252,13 +11959,13 @@
           "explicit": [
             "interactLivingEntity"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "tryApplyToSign",
-              "candidate": "try_apply_to_sign"
+              "steel": "try_apply_to_sign"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -12280,13 +11987,10 @@
               "steel": "as_projectile"
             }
           ],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -12301,13 +12005,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -12350,13 +12051,10 @@
               "steel": "get_use_duration"
             }
           ],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -12371,13 +12069,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -12403,13 +12098,10 @@
               "steel": "create_dispense_config"
             }
           ],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -12436,14 +12128,13 @@
             {
               "java": "createDispenseConfig",
               "steel": "create_dispense_config"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "shoot",
-              "candidate": "shoot"
+              "steel": "shoot"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -12474,13 +12165,10 @@
               "steel": "create_dispense_config"
             }
           ],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -12495,13 +12183,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -12534,13 +12219,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -12554,13 +12236,13 @@
             "getPlacementState"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getPlacementState",
-              "candidate": "get_placement_state"
+              "steel": "get_placement_state"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -12575,13 +12257,13 @@
             "tryApplyToSign"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "tryApplyToSign",
-              "candidate": "try_apply_to_sign"
+              "steel": "try_apply_to_sign"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -12617,13 +12299,13 @@
             "canPlace"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "canPlace",
-              "candidate": "can_place"
+              "steel": "can_place"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -12643,17 +12325,17 @@
           "explicit": [
             "useOn"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "tryApplyToSign",
-              "candidate": "try_apply_to_sign"
+              "steel": "try_apply_to_sign"
             },
             {
               "java": "canApplyToSign",
-              "candidate": "can_apply_to_sign"
+              "steel": "can_apply_to_sign"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -12668,13 +12350,13 @@
             "tryApplyToSign"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "tryApplyToSign",
-              "candidate": "try_apply_to_sign"
+              "steel": "try_apply_to_sign"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -12697,13 +12379,10 @@
             "getUseAnimation"
           ],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -12717,13 +12396,13 @@
             "mayPlace"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "mayPlace",
-              "candidate": "may_place"
+              "steel": "may_place"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -12739,13 +12418,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -12791,13 +12467,10 @@
               "steel": "create_potion"
             }
           ],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -12846,14 +12519,13 @@
             {
               "java": "useOn",
               "steel": "use_on"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "onCraftedPostProcess",
-              "candidate": "on_crafted_post_process"
+              "steel": "on_crafted_post_process"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -12893,22 +12565,21 @@
             {
               "java": "emptyContents",
               "steel": "empty_contents"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "checkExtraContent",
-              "candidate": "check_extra_content"
+              "steel": "check_extra_content"
             },
             {
               "java": "playEmptySound",
-              "candidate": "play_empty_sound"
+              "steel": "play_empty_sound"
             },
             {
               "java": "getFluidContext",
-              "candidate": "get_fluid_context"
+              "steel": "get_fluid_context"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -12946,13 +12617,10 @@
             "useOn"
           ],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -13010,17 +12678,17 @@
             "mustSurvive"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "updatePlacementContext",
-              "candidate": "update_placement_context"
+              "steel": "update_placement_context"
             },
             {
               "java": "mustSurvive",
-              "candidate": "must_survive"
+              "steel": "must_survive"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -13038,13 +12706,13 @@
           "explicit": [
             "useOn"
           ],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "mineBlock",
-              "candidate": "mine_block"
+              "steel": "mine_block"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -13058,13 +12726,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "getName",
-              "candidate": "get_name"
-            }
+          "unknown": [],
+          "client_only": [
+            "getName"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": true
         },
@@ -13077,13 +12742,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "appendHoverText",
-              "candidate": "append_hover_text"
-            }
+          "unknown": [],
+          "client_only": [
+            "appendHoverText"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": true
         },
@@ -13104,13 +12766,10 @@
               "steel": "as_projectile"
             }
           ],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -13132,14 +12791,13 @@
             {
               "java": "emptyContents",
               "steel": "empty_contents"
-            }
-          ],
-          "unknown": [
+            },
             {
               "java": "getPlaceSound",
-              "candidate": "get_place_sound"
+              "steel": "get_place_sound"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -13166,13 +12824,10 @@
               "steel": "should_print_op_warning"
             }
           ],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -13185,17 +12840,17 @@
             "asProjectile"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "createArrow",
-              "candidate": "create_arrow"
+              "steel": "create_arrow"
             },
             {
               "java": "asProjectile",
-              "candidate": "as_projectile"
+              "steel": "as_projectile"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": true
@@ -13224,13 +12879,10 @@
               "steel": "create_potion"
             }
           ],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -13256,18 +12908,16 @@
             "getUseAnimation",
             "releaseUsing"
           ],
-          "defaulted": [],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            },
+          "defaulted": [
             {
               "java": "finishUsingItem",
-              "candidate": "finish_using_item"
+              "steel": "finish_using_item"
             }
           ],
-          "client_only": [],
+          "unknown": [],
+          "client_only": [
+            "use"
+          ],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -13282,17 +12932,17 @@
             "registerBlocks"
           ],
           "explicit": [],
-          "defaulted": [],
-          "unknown": [
+          "defaulted": [
             {
               "java": "getPlacementState",
-              "candidate": "get_placement_state"
+              "steel": "get_placement_state"
             },
             {
               "java": "registerBlocks",
-              "candidate": "register_blocks"
+              "steel": "register_blocks"
             }
           ],
+          "unknown": [],
           "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
@@ -13346,13 +12996,10 @@
               "steel": "as_projectile"
             }
           ],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -13377,19 +13024,16 @@
             {
               "java": "createDispenseConfig",
               "steel": "create_dispense_config"
-            }
-          ],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
             },
             {
               "java": "shoot",
-              "candidate": "shoot"
+              "steel": "shoot"
             }
           ],
-          "client_only": [],
+          "unknown": [],
+          "client_only": [
+            "use"
+          ],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -13404,13 +13048,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         },
@@ -13425,13 +13066,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "use",
-              "candidate": "use"
-            }
+          "unknown": [],
+          "client_only": [
+            "use"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": false
         }
@@ -13454,9 +13092,9 @@
         "totals": {
           "not_explicit": 2429,
           "explicit": 273,
-          "client_only": 28,
+          "client_only": 30,
           "vanilla_source_missing": 3,
-          "unknown": 2
+          "unknown": 0
         },
         "denominator": null,
         "explicit_percent": null,
@@ -16182,13 +15820,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "rideHeight",
-              "candidate": "ride_height"
-            }
+          "unknown": [],
+          "client_only": [
+            "rideHeight"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": true
         },
@@ -16201,13 +15836,10 @@
           ],
           "explicit": [],
           "defaulted": [],
-          "unknown": [
-            {
-              "java": "rideHeight",
-              "candidate": "ride_height"
-            }
+          "unknown": [],
+          "client_only": [
+            "rideHeight"
           ],
-          "client_only": [],
           "not_explicit": [],
           "unparsed_impl": true
         },

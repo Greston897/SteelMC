@@ -353,7 +353,146 @@ pub trait ItemBehavior: Send + Sync {
     }
 
     /// Returns the capability used by sign block interactions.
-    fn as_sign_applicator(&self) -> Option<&dyn SignApplicator> {
+    // === 28 server-relevant item overrides previously unknown — теперь дефолты ===
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn as_projectile(&self, stack: &ItemStack) -> Option<ItemStack> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn can_apply_to_sign(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn can_destroy_block(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn can_place(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn check_extra_content(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn create_arrow(&self, stack: &ItemStack) -> Option<ItemStack> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn create_projectile(&self, stack: &ItemStack) -> Option<ItemStack> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn finish_using_item(&self, stack: &mut ItemStack, world: &Arc<World>, user: &dyn LivingEntity) -> ItemStack {
+        stack.clone()
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_bar_color(&self, stack: &ItemStack) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_bar_width(&self, stack: &ItemStack) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_durability_use(&self, stack: &ItemStack) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_fluid_context(&self, stack: &ItemStack) -> Option<ItemStack> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_place_sound(&self, stack: &ItemStack) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_placement_state(&self, stack: &ItemStack) -> Option<ItemStack> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_supported_held_projectiles(&self, stack: &ItemStack) -> Option<ItemStack> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn is_bar_visible(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn may_place(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn mine_block(&self, stack: &mut ItemStack, world: &Arc<World>, pos: BlockPos, player: &Player) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn must_survive(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn on_crafted_post_process(&self, stack: &mut ItemStack, world: &Arc<World>, pos: BlockPos, player: &Player) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn override_other_stacked_on_me(&self, stack: &ItemStack) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn override_stacked_on_other(&self, stack: &ItemStack) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn place_block(&self, stack: &mut ItemStack, world: &Arc<World>, pos: BlockPos, player: &Player) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn play_empty_sound(&self, stack: &mut ItemStack, world: &Arc<World>, pos: BlockPos, player: &Player) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn register_blocks(&self) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn shoot(&self, stack: &ItemStack, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn try_apply_to_sign(&self, stack: &mut ItemStack, world: &Arc<World>, pos: BlockPos, player: &Player) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn update_placement_context(&self, stack: &ItemStack) -> Option<ItemStack> {
+        None
+    }
+
+        fn as_sign_applicator(&self) -> Option<&dyn SignApplicator> {
         None
     }
 }

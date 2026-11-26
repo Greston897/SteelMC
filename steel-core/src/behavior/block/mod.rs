@@ -1461,7 +1461,487 @@ pub trait BlockBehavior: Send + Sync {
     ///
     /// Vanilla gates this on the item class, but shulker boxes share
     /// `BlockItem`, so the rule lives on the block instead.
-    fn fits_inside_container_items(&self) -> bool {
+    // === 100 server-relevant vanilla overrides previously unknown — теперь дефолты (триаж unknown) ===
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn accept_double(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn accept_none(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn accept_single(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn attempt_use_charge(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn blocks_stalagmite_scan(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn can_attach_to(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn can_be_lit(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn can_burn(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn can_change_block_state_on_spread(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn can_grow(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn can_grow_into(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn can_place_item_through_face(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos, face: Direction) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn can_receive_stalactite_drip(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn can_take_item_through_face(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos, face: Direction) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn check_tick_on_neighbor(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn chest_can_connect_to(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn combine(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn create_menu(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos, player: &Player) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn destroy_on_leave(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn destroy_on_use(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn dispense_from(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn falling(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_active_ticks(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_age_property(&self) -> Option<&'static str> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_base_seed_id(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_bed_environment_attribute(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_bee_interaction_effect(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Option<BlockStateId> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_block_explosion_resistance(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_blocks_to_grow_when_bonemealed(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Vec<BlockStateId> {
+        Vec::new()
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_body_block(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Option<BlockStateId> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_bonemeal_age_increase(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_columns(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_container(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Option<String> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_content_height(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_delay(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_delay_after_place(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_dispense_method(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_display_name(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Option<String> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_explosion_resistance(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_facing(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Option<BlockStateId> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_fall_damage_source(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_fluid_state(&self, state: BlockStateId) -> FluidState {
+        state.get_fluid_state()
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_grow_into_state(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Option<BlockStateId> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_head_block(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Option<BlockStateId> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_input_signal(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_local_transition(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_max_age(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_max_chain_length(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_max_growth_length(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_max_stack_size(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_max_vertical_offset(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_menu_provider(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_open_chest_stat(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_output_signal(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_pickup_sound(&self, state: BlockStateId) -> Option<SoundEventRef> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_portal_destination(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Option<BlockStateId> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_portal_transition_time(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_pressed_time(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_rows(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_seed(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Option<BlockStateId> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_segment_amount_property(&self) -> Option<&'static str> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_side_chain_part(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Option<BlockStateId> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_signal_for_state(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_signal_strength(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_slots_for_face(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos, face: Direction) -> Vec<i32> {
+        Vec::new()
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_spread_types(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Vec<BlockStateId> {
+        Vec::new()
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_spreader(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Option<BlockStateId> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_state_for_age(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Option<BlockStateId> {
+        None
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_suspicious_effects(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> Vec<BlockStateId> {
+        Vec::new()
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn get_type(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
+        0
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn handle_precipitation(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn has_neighbor_signal(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn is_bonemeal_success(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn is_collision_shape_full_block(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn is_connectable(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn is_full(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn is_locked(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn is_other_block_valid_as_source(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn is_randomly_ticking(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn is_valid_bonemeal_target(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn is_waxed(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn may_place_on(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn on_broken_after_fall(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn on_discharged(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn on_land(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn open_container(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos, player: &Player) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn perform_bonemeal(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn random_orientation(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn receive_stalactite_drip(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn set_changed(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn set_side_chain_part(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn set_signal_for_state(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn should_changed_state_keep_block_entity(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn should_redstone_wire_connect_to(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn should_turn_on(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn side_input_diodes_only(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn state_can_be_replaced(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
+        false
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn update_body_after_converted_from_head(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn update_head_after_converted_from_body(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+    #[expect(unused_variables, reason = "default trait implementation")]
+    fn update_state(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {
+    }
+
+        fn fits_inside_container_items(&self) -> bool {
         true
     }
 }
