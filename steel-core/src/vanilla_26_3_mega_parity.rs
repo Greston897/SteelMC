@@ -80573,7 +80573,7 @@ fn mega_huge_invariant_0000() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -80650,7 +80650,7 @@ fn mega_huge_invariant_0001() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -80727,7 +80727,7 @@ fn mega_huge_invariant_0002() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -80804,7 +80804,7 @@ fn mega_huge_invariant_0003() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -80881,7 +80881,7 @@ fn mega_huge_invariant_0004() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -80958,7 +80958,7 @@ fn mega_huge_invariant_0005() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -81035,7 +81035,7 @@ fn mega_huge_invariant_0006() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -81112,7 +81112,7 @@ fn mega_huge_invariant_0007() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -81189,7 +81189,7 @@ fn mega_huge_invariant_0008() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -81266,7 +81266,7 @@ fn mega_huge_invariant_0009() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -81343,7 +81343,7 @@ fn mega_huge_invariant_0010() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -81420,7 +81420,7 @@ fn mega_huge_invariant_0011() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -81497,7 +81497,7 @@ fn mega_huge_invariant_0012() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -81574,7 +81574,7 @@ fn mega_huge_invariant_0013() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -81651,7 +81651,7 @@ fn mega_huge_invariant_0014() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -81728,7 +81728,7 @@ fn mega_huge_invariant_0015() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -81805,7 +81805,7 @@ fn mega_huge_invariant_0016() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -81882,7 +81882,7 @@ fn mega_huge_invariant_0017() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -81959,7 +81959,7 @@ fn mega_huge_invariant_0018() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -82036,7 +82036,7 @@ fn mega_huge_invariant_0019() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -82113,7 +82113,7 @@ fn mega_huge_invariant_0020() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -82190,7 +82190,7 @@ fn mega_huge_invariant_0021() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -82267,7 +82267,7 @@ fn mega_huge_invariant_0022() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -82344,7 +82344,7 @@ fn mega_huge_invariant_0023() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -82421,7 +82421,7 @@ fn mega_huge_invariant_0024() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -82498,7 +82498,7 @@ fn mega_huge_invariant_0025() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -82575,7 +82575,7 @@ fn mega_huge_invariant_0026() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -82652,7 +82652,7 @@ fn mega_huge_invariant_0027() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -82729,7 +82729,7 @@ fn mega_huge_invariant_0028() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -82806,7 +82806,7 @@ fn mega_huge_invariant_0029() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -82883,7 +82883,7 @@ fn mega_huge_invariant_0030() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -82960,7 +82960,7 @@ fn mega_huge_invariant_0031() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -83037,7 +83037,7 @@ fn mega_huge_invariant_0032() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -83114,7 +83114,7 @@ fn mega_huge_invariant_0033() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -83191,7 +83191,7 @@ fn mega_huge_invariant_0034() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -83268,7 +83268,7 @@ fn mega_huge_invariant_0035() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -83345,7 +83345,7 @@ fn mega_huge_invariant_0036() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -83422,7 +83422,7 @@ fn mega_huge_invariant_0037() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -83499,7 +83499,7 @@ fn mega_huge_invariant_0038() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -83576,7 +83576,7 @@ fn mega_huge_invariant_0039() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -83653,7 +83653,7 @@ fn mega_huge_invariant_0040() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -83730,7 +83730,7 @@ fn mega_huge_invariant_0041() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -83807,7 +83807,7 @@ fn mega_huge_invariant_0042() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -83884,7 +83884,7 @@ fn mega_huge_invariant_0043() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -83961,7 +83961,7 @@ fn mega_huge_invariant_0044() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -84038,7 +84038,7 @@ fn mega_huge_invariant_0045() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -84115,7 +84115,7 @@ fn mega_huge_invariant_0046() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -84192,7 +84192,7 @@ fn mega_huge_invariant_0047() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -84269,7 +84269,7 @@ fn mega_huge_invariant_0048() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -84346,7 +84346,7 @@ fn mega_huge_invariant_0049() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -84423,7 +84423,7 @@ fn mega_huge_invariant_0050() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -84500,7 +84500,7 @@ fn mega_huge_invariant_0051() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -84577,7 +84577,7 @@ fn mega_huge_invariant_0052() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -84654,7 +84654,7 @@ fn mega_huge_invariant_0053() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -84731,7 +84731,7 @@ fn mega_huge_invariant_0054() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -84808,7 +84808,7 @@ fn mega_huge_invariant_0055() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -84885,7 +84885,7 @@ fn mega_huge_invariant_0056() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -84962,7 +84962,7 @@ fn mega_huge_invariant_0057() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -85039,7 +85039,7 @@ fn mega_huge_invariant_0058() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -85116,7 +85116,7 @@ fn mega_huge_invariant_0059() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -85193,7 +85193,7 @@ fn mega_huge_invariant_0060() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -85270,7 +85270,7 @@ fn mega_huge_invariant_0061() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -85347,7 +85347,7 @@ fn mega_huge_invariant_0062() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -85424,7 +85424,7 @@ fn mega_huge_invariant_0063() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -85501,7 +85501,7 @@ fn mega_huge_invariant_0064() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -85578,7 +85578,7 @@ fn mega_huge_invariant_0065() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -85655,7 +85655,7 @@ fn mega_huge_invariant_0066() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -85732,7 +85732,7 @@ fn mega_huge_invariant_0067() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -85809,7 +85809,7 @@ fn mega_huge_invariant_0068() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -85886,7 +85886,7 @@ fn mega_huge_invariant_0069() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -85963,7 +85963,7 @@ fn mega_huge_invariant_0070() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -86040,7 +86040,7 @@ fn mega_huge_invariant_0071() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -86117,7 +86117,7 @@ fn mega_huge_invariant_0072() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -86194,7 +86194,7 @@ fn mega_huge_invariant_0073() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -86271,7 +86271,7 @@ fn mega_huge_invariant_0074() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -86348,7 +86348,7 @@ fn mega_huge_invariant_0075() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -86425,7 +86425,7 @@ fn mega_huge_invariant_0076() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -86502,7 +86502,7 @@ fn mega_huge_invariant_0077() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -86579,7 +86579,7 @@ fn mega_huge_invariant_0078() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
@@ -86656,7 +86656,7 @@ fn mega_huge_invariant_0079() {
         world.waypoints.tick(&world);
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
-    assert!(freq >= 1 && freq <= 15);
+    assert!((1..=15).contains(&freq));
     let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
