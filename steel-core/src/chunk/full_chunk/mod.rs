@@ -139,7 +139,7 @@ pub(crate) struct BlockRandomPositionGenerator {
 }
 
 impl BlockRandomPositionGenerator {
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub(crate) fn from_runtime_rng() -> Self {
         Self::from_seed(rand::random())
     }

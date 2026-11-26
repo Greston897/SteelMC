@@ -2797,7 +2797,7 @@ fn place_and_assert(world: &Arc<World>, pos: BlockPos, block_id: &str) {
                 if dx == 0 && dy == 0 && dz == 0 {
                     continue;
                 }
-                let np = BlockPos::new(pos.x + dx, pos.y + dy, pos.z + dz);
+                let np = BlockPos::new(pos.x() + dx, pos.y() + dy, pos.z() + dz);
                 // Avoid excessive work: only clear non-air to reduce updates.
                 if !world.get_block_state(np).is_air() {
                     world.set_block(np, air.clone(), UpdateFlags::UPDATE_ALL);
@@ -2815,8 +2815,8 @@ fn place_and_assert(world: &Arc<World>, pos: BlockPos, block_id: &str) {
     // Fluids and powders may transform on contact (lava+water->obsidian, concrete powder+water->concrete).
     // After isolation they should stay, but allow known vanilla conversions to avoid false positives.
     if got.get_block().key != block.key {
-        let got_path = got.get_block().key.path.as_str();
-        let want_path = block.key.path.as_str();
+        let got_path = &*got.get_block().key.path;
+        let want_path = &*block.key.path;
         // lava -> obsidian/cobblestone/stone due to nearby water (even after isolation, scheduled ticks may convert)
         if want_path == "lava"
             && (got_path == "obsidian" || got_path == "cobblestone" || got_path == "stone")
