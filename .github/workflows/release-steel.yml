@@ -195,7 +195,7 @@ jobs:
 
             - Сборка в Actions: `cargo build --release --locked --features stand-alone` (nightly-2026-10-14, `aarch64` + `x86_64`, `mimalloc`, проверка `lint`/`fmt`/`test`/`60/60`/`vanilla parity 0 missing` — зелёные)
             - Linux контейнер: `ghcr.io/${{ github.repository }}:nightly` (`Dockerfile` `FROM scratch`, 10 МБ) и `ghcr.io/${{ github.repository }}:pterodactyl` (`Dockerfile.pterodactyl` `debian:bookworm-slim`+`tini`+user `container`)
-            - Pterodactyl 2026 (ноябрь): импортируйте `pterodactyl-egg.json` Egg v2 (`startup ./steel`, `done Started Steel Server`, `stop stop`, порт 25565) — Stop/Restart/Start как vanilla: `stop` -> save_and_shutdown -> `Server stopped` -> exit 0, SIGTERM via `tini` также graceful, `Started Steel Server` в логах = аналог `Done!`, env `SERVER_PORT`/`MAX_PLAYERS`/`VIEW_DISTANCE` переопределяют `config.toml`
+            - Pterodactyl 2026 (ноябрь): импортируйте `pterodactyl-egg.json` Egg v2 (`startup ./steel`, `done Started Steel Server`, `stop stop`, порт 25565) — Stop/Restart/Start как vanilla: `stop` -> save_and_shutdown -> `Server stopped` -> exit 0, SIGTERM via `tini` также graceful, `Started Steel Server` в логах = аналог `Done!`, env `SERVER_PORT`/`MAX_PLAYERS`/`VIEW_DISTANCE`/`SIMULATION_DISTANCE` переопределяют `config.toml` (валидация после)
             - Бинари: `steel-x86_64-unknown-linux-gnu` (x64), `steel-aarch64-unknown-linux-gnu` (ARM64), `.sha256` — готовы для загрузки в Panel
 
             ### Pterodactyl Panel 2026 — куда что вписывать (пошагово, интерфейс ноябрь 2026)
@@ -213,9 +213,10 @@ jobs:
             - Нажмите **Create Server**
 
             **3. Переменные (Servers → ваш сервер → Startup):**
-            - `Server Port` = `25565` (не редактируется, совпадает с Allocation)
-            - `Max Players` = `20` → пишет в `config.toml [server] max_players`
-            - `View Distance` = `10` → `[server] view_distance` (1-32, до 128 при `allow_extended_view_distance=true`)
+            - `Server Port` = `25565` (не редактируется, совпадает с Allocation, Steel читает `SERVER_PORT` env → переопределяет `config.toml`)
+            - `Max Players` = `20` → `MAX_PLAYERS` env → `[server] max_players`
+            - `View Distance` = `10` → `VIEW_DISTANCE` env → `[server] view_distance` (1-32, до 128 при `allow_extended_view_distance=true`)
+            - `Simulation Distance` = `10` → `SIMULATION_DISTANCE` env → `[server] simulation_distance` (или `config.toml` если не задано)
             - `Memory Limit` = `1024` (информативно)
             - `Steel Args` = `` (доп. аргументы `./steel`, например `--help`)
             - **Startup Command** уже `./steel` (из Egg), не менять

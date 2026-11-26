@@ -8,7 +8,7 @@
 
 1. **Admin → Nests → Import Egg** → загрузить `pterodactyl-egg.json` из корня репозитория
 2. Создать сервер → Nest `Minecraft` → Egg `SteelMC (26.3)` → Docker Image `ghcr.io/steel-foundation/steelmc:nightly` (или `ghcr.io/steel-foundation/steelmc:pterodactyl` после сборки `Dockerfile.pterodactyl`)
-3. **Startup** команда: `./steel`  (egg уже настроен, `done` триггер `Done! For help, type "help"`, стоп-команда `stop`)
+3. **Startup** команда: `./steel`  (egg уже настроен, `done` триггер `Started Steel Server` — Steel логирует при готовности, аналог vanilla `Done! For help, type "help"`, стоп-команда `stop` → `save_and_shutdown` → `Server stopped` → exit 0, SIGTERM via `tini` также graceful)
 4. Выделить порт `25565` (TCP), RAM `1024+` МБ, `2+` vCPU. `SERVER_PORT` уже `25565`
 5. **Запустить**. Первый запуск создаст `config.toml`, `world/`, `config/`, `saves/`, `logs/`
 
@@ -116,13 +116,13 @@ cargo test --workspace --all-targets  # 4945 passed, 7 ignored (headless + vanil
 
 ## Конфигурация для Pterodactyl
 
-- **Порт**: `config.toml` `[server] server_port = 25565` должен совпадать с `SERVER_PORT` в egg (25565)
+- **Порт**: `config.toml` `[server] server_port = 25565` должен совпадать с `SERVER_PORT` в egg (25565) — Steel читает `SERVER_PORT`/`MAX_PLAYERS`/`VIEW_DISTANCE`/`SIMULATION_DISTANCE` из env и переопределяет `config.toml` без правки файла (валидирует после; дефолты `25565/20/10/10` если env не задан)
 - **Volumes** (Panel → Mounts):
   - `/home/container/config` → настройки (`config.toml`, `worlds.toml`, `groups.toml`)
   - `/home/container/saves` → миры
   - `/home/container/logs` → логи (`.logs/`)
-- **Startup Probe**: `Done! For help` в логах = сервер готов
-- **Stop**: `stop` через RCON/STDIN (tini пробрасывает SIGTERM)
+- **Startup Probe**: `Started Steel Server` в логах = сервер готов (аналог `Done!` у vanilla) → Panel показывает `Running`; `startup.done` в `pterodactyl-egg.json` = `Started Steel Server`
+- **Stop/Restart/Start как vanilla**: `stop` в консоли → `cancel_token.cancel()` → `save_and_shutdown` (чанки/игроки `Saved X chunks`) → `Server stopped` → exit 0 → `Offline`; `Restart` = Stop+Start (перечитывает `config.toml`); `SIGTERM` от панели через `tini` делает тоже graceful
 - **Ресурсы**: Steel на Rust ест меньше Java — 1 ГБ RAM хватает на 20 игроков при `view_distance=10`; для 100+ игроков `with_capacity` уже зарезервирован (ChunkMap 2048, PlayerArea 1024, EntityTracker 1024, encode_cache 64)
 
 ## Частые проблемы Pterodactyl
