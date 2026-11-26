@@ -22,6 +22,7 @@ use steel_registry::{
     REGISTRY, RegistryEntry, RegistryExt, sound_events, vanilla_game_events, vanilla_mob_effects,
 };
 use steel_utils::types::{InteractionHand, SignTextSlot};
+use steel_utils::BlockPos;
 use text_components::TextComponent;
 
 use crate::behavior::items::{DefaultItemBehavior, SpawnEggItem, block_transformer};
