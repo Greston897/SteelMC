@@ -52747,4 +52747,3 @@ fn mega_extra_invariant_0049() {
     bootstrap_all();
     assert_eq!(CURRENT_MC_PROTOCOL, 777);
 }
-
