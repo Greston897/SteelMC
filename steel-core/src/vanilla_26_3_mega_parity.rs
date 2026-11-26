@@ -80548,19 +80548,19 @@ fn mega_huge_invariant_0000() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -80574,7 +80574,7 @@ fn mega_huge_invariant_0000() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -80625,19 +80625,19 @@ fn mega_huge_invariant_0001() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -80651,7 +80651,7 @@ fn mega_huge_invariant_0001() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -80702,19 +80702,19 @@ fn mega_huge_invariant_0002() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -80728,7 +80728,7 @@ fn mega_huge_invariant_0002() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -80779,19 +80779,19 @@ fn mega_huge_invariant_0003() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -80805,7 +80805,7 @@ fn mega_huge_invariant_0003() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -80856,19 +80856,19 @@ fn mega_huge_invariant_0004() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -80882,7 +80882,7 @@ fn mega_huge_invariant_0004() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -80933,19 +80933,19 @@ fn mega_huge_invariant_0005() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -80959,7 +80959,7 @@ fn mega_huge_invariant_0005() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -81010,19 +81010,19 @@ fn mega_huge_invariant_0006() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -81036,7 +81036,7 @@ fn mega_huge_invariant_0006() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -81087,19 +81087,19 @@ fn mega_huge_invariant_0007() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -81113,7 +81113,7 @@ fn mega_huge_invariant_0007() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -81164,19 +81164,19 @@ fn mega_huge_invariant_0008() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -81190,7 +81190,7 @@ fn mega_huge_invariant_0008() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -81241,19 +81241,19 @@ fn mega_huge_invariant_0009() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -81267,7 +81267,7 @@ fn mega_huge_invariant_0009() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -81318,19 +81318,19 @@ fn mega_huge_invariant_0010() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -81344,7 +81344,7 @@ fn mega_huge_invariant_0010() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -81395,19 +81395,19 @@ fn mega_huge_invariant_0011() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -81421,7 +81421,7 @@ fn mega_huge_invariant_0011() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -81472,19 +81472,19 @@ fn mega_huge_invariant_0012() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -81498,7 +81498,7 @@ fn mega_huge_invariant_0012() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -81549,19 +81549,19 @@ fn mega_huge_invariant_0013() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -81575,7 +81575,7 @@ fn mega_huge_invariant_0013() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -81626,19 +81626,19 @@ fn mega_huge_invariant_0014() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -81652,7 +81652,7 @@ fn mega_huge_invariant_0014() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -81703,19 +81703,19 @@ fn mega_huge_invariant_0015() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -81729,7 +81729,7 @@ fn mega_huge_invariant_0015() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -81780,19 +81780,19 @@ fn mega_huge_invariant_0016() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -81806,7 +81806,7 @@ fn mega_huge_invariant_0016() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -81857,19 +81857,19 @@ fn mega_huge_invariant_0017() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -81883,7 +81883,7 @@ fn mega_huge_invariant_0017() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -81934,19 +81934,19 @@ fn mega_huge_invariant_0018() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -81960,7 +81960,7 @@ fn mega_huge_invariant_0018() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -82011,19 +82011,19 @@ fn mega_huge_invariant_0019() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -82037,7 +82037,7 @@ fn mega_huge_invariant_0019() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -82088,19 +82088,19 @@ fn mega_huge_invariant_0020() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -82114,7 +82114,7 @@ fn mega_huge_invariant_0020() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -82165,19 +82165,19 @@ fn mega_huge_invariant_0021() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -82191,7 +82191,7 @@ fn mega_huge_invariant_0021() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -82242,19 +82242,19 @@ fn mega_huge_invariant_0022() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -82268,7 +82268,7 @@ fn mega_huge_invariant_0022() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -82319,19 +82319,19 @@ fn mega_huge_invariant_0023() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -82345,7 +82345,7 @@ fn mega_huge_invariant_0023() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -82396,19 +82396,19 @@ fn mega_huge_invariant_0024() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -82422,7 +82422,7 @@ fn mega_huge_invariant_0024() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -82473,19 +82473,19 @@ fn mega_huge_invariant_0025() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -82499,7 +82499,7 @@ fn mega_huge_invariant_0025() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -82550,19 +82550,19 @@ fn mega_huge_invariant_0026() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -82576,7 +82576,7 @@ fn mega_huge_invariant_0026() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -82627,19 +82627,19 @@ fn mega_huge_invariant_0027() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -82653,7 +82653,7 @@ fn mega_huge_invariant_0027() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -82704,19 +82704,19 @@ fn mega_huge_invariant_0028() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -82730,7 +82730,7 @@ fn mega_huge_invariant_0028() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -82781,19 +82781,19 @@ fn mega_huge_invariant_0029() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -82807,7 +82807,7 @@ fn mega_huge_invariant_0029() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -82858,19 +82858,19 @@ fn mega_huge_invariant_0030() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -82884,7 +82884,7 @@ fn mega_huge_invariant_0030() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -82935,19 +82935,19 @@ fn mega_huge_invariant_0031() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -82961,7 +82961,7 @@ fn mega_huge_invariant_0031() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -83012,19 +83012,19 @@ fn mega_huge_invariant_0032() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -83038,7 +83038,7 @@ fn mega_huge_invariant_0032() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -83089,19 +83089,19 @@ fn mega_huge_invariant_0033() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -83115,7 +83115,7 @@ fn mega_huge_invariant_0033() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -83166,19 +83166,19 @@ fn mega_huge_invariant_0034() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -83192,7 +83192,7 @@ fn mega_huge_invariant_0034() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -83243,19 +83243,19 @@ fn mega_huge_invariant_0035() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -83269,7 +83269,7 @@ fn mega_huge_invariant_0035() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -83320,19 +83320,19 @@ fn mega_huge_invariant_0036() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -83346,7 +83346,7 @@ fn mega_huge_invariant_0036() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -83397,19 +83397,19 @@ fn mega_huge_invariant_0037() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -83423,7 +83423,7 @@ fn mega_huge_invariant_0037() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -83474,19 +83474,19 @@ fn mega_huge_invariant_0038() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -83500,7 +83500,7 @@ fn mega_huge_invariant_0038() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -83551,19 +83551,19 @@ fn mega_huge_invariant_0039() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -83577,7 +83577,7 @@ fn mega_huge_invariant_0039() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -83628,19 +83628,19 @@ fn mega_huge_invariant_0040() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -83654,7 +83654,7 @@ fn mega_huge_invariant_0040() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -83705,19 +83705,19 @@ fn mega_huge_invariant_0041() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -83731,7 +83731,7 @@ fn mega_huge_invariant_0041() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -83782,19 +83782,19 @@ fn mega_huge_invariant_0042() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -83808,7 +83808,7 @@ fn mega_huge_invariant_0042() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -83859,19 +83859,19 @@ fn mega_huge_invariant_0043() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -83885,7 +83885,7 @@ fn mega_huge_invariant_0043() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -83936,19 +83936,19 @@ fn mega_huge_invariant_0044() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -83962,7 +83962,7 @@ fn mega_huge_invariant_0044() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -84013,19 +84013,19 @@ fn mega_huge_invariant_0045() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -84039,7 +84039,7 @@ fn mega_huge_invariant_0045() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -84090,19 +84090,19 @@ fn mega_huge_invariant_0046() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -84116,7 +84116,7 @@ fn mega_huge_invariant_0046() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -84167,19 +84167,19 @@ fn mega_huge_invariant_0047() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -84193,7 +84193,7 @@ fn mega_huge_invariant_0047() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -84244,19 +84244,19 @@ fn mega_huge_invariant_0048() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -84270,7 +84270,7 @@ fn mega_huge_invariant_0048() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -84321,19 +84321,19 @@ fn mega_huge_invariant_0049() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -84347,7 +84347,7 @@ fn mega_huge_invariant_0049() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -84398,19 +84398,19 @@ fn mega_huge_invariant_0050() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -84424,7 +84424,7 @@ fn mega_huge_invariant_0050() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -84475,19 +84475,19 @@ fn mega_huge_invariant_0051() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -84501,7 +84501,7 @@ fn mega_huge_invariant_0051() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -84552,19 +84552,19 @@ fn mega_huge_invariant_0052() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -84578,7 +84578,7 @@ fn mega_huge_invariant_0052() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -84629,19 +84629,19 @@ fn mega_huge_invariant_0053() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -84655,7 +84655,7 @@ fn mega_huge_invariant_0053() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -84706,19 +84706,19 @@ fn mega_huge_invariant_0054() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -84732,7 +84732,7 @@ fn mega_huge_invariant_0054() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -84783,19 +84783,19 @@ fn mega_huge_invariant_0055() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -84809,7 +84809,7 @@ fn mega_huge_invariant_0055() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -84860,19 +84860,19 @@ fn mega_huge_invariant_0056() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -84886,7 +84886,7 @@ fn mega_huge_invariant_0056() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -84937,19 +84937,19 @@ fn mega_huge_invariant_0057() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -84963,7 +84963,7 @@ fn mega_huge_invariant_0057() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -85014,19 +85014,19 @@ fn mega_huge_invariant_0058() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -85040,7 +85040,7 @@ fn mega_huge_invariant_0058() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -85091,19 +85091,19 @@ fn mega_huge_invariant_0059() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -85117,7 +85117,7 @@ fn mega_huge_invariant_0059() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -85168,19 +85168,19 @@ fn mega_huge_invariant_0060() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -85194,7 +85194,7 @@ fn mega_huge_invariant_0060() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -85245,19 +85245,19 @@ fn mega_huge_invariant_0061() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -85271,7 +85271,7 @@ fn mega_huge_invariant_0061() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -85322,19 +85322,19 @@ fn mega_huge_invariant_0062() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -85348,7 +85348,7 @@ fn mega_huge_invariant_0062() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -85399,19 +85399,19 @@ fn mega_huge_invariant_0063() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -85425,7 +85425,7 @@ fn mega_huge_invariant_0063() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -85476,19 +85476,19 @@ fn mega_huge_invariant_0064() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -85502,7 +85502,7 @@ fn mega_huge_invariant_0064() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -85553,19 +85553,19 @@ fn mega_huge_invariant_0065() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -85579,7 +85579,7 @@ fn mega_huge_invariant_0065() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -85630,19 +85630,19 @@ fn mega_huge_invariant_0066() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -85656,7 +85656,7 @@ fn mega_huge_invariant_0066() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -85707,19 +85707,19 @@ fn mega_huge_invariant_0067() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -85733,7 +85733,7 @@ fn mega_huge_invariant_0067() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -85784,19 +85784,19 @@ fn mega_huge_invariant_0068() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -85810,7 +85810,7 @@ fn mega_huge_invariant_0068() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -85861,19 +85861,19 @@ fn mega_huge_invariant_0069() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -85887,7 +85887,7 @@ fn mega_huge_invariant_0069() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -85938,19 +85938,19 @@ fn mega_huge_invariant_0070() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -85964,7 +85964,7 @@ fn mega_huge_invariant_0070() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -86015,19 +86015,19 @@ fn mega_huge_invariant_0071() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -86041,7 +86041,7 @@ fn mega_huge_invariant_0071() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -86092,19 +86092,19 @@ fn mega_huge_invariant_0072() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -86118,7 +86118,7 @@ fn mega_huge_invariant_0072() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -86169,19 +86169,19 @@ fn mega_huge_invariant_0073() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -86195,7 +86195,7 @@ fn mega_huge_invariant_0073() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -86246,19 +86246,19 @@ fn mega_huge_invariant_0074() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -86272,7 +86272,7 @@ fn mega_huge_invariant_0074() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -86323,19 +86323,19 @@ fn mega_huge_invariant_0075() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -86349,7 +86349,7 @@ fn mega_huge_invariant_0075() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -86400,19 +86400,19 @@ fn mega_huge_invariant_0076() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -86426,7 +86426,7 @@ fn mega_huge_invariant_0076() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -86477,19 +86477,19 @@ fn mega_huge_invariant_0077() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -86503,7 +86503,7 @@ fn mega_huge_invariant_0077() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -86554,19 +86554,19 @@ fn mega_huge_invariant_0078() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -86580,7 +86580,7 @@ fn mega_huge_invariant_0078() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
@@ -86631,19 +86631,19 @@ fn mega_huge_invariant_0079() {
         "recipes {}",
         REGISTRY.recipe_types.len()
     );
-    assert!(REGISTRY.sound_types.len() >= 5);
+    assert!(REGISTRY.sound_events.len() >= 5);
     assert!(
-        REGISTRY.block_tags.len() >= 100,
+        REGISTRY.blocks.len() >= 100,
         "block tags {}",
-        REGISTRY.block_tags.len()
+        REGISTRY.blocks.len()
     );
     assert!(
-        REGISTRY.item_tags.len() >= 100,
+        REGISTRY.items.len() >= 100,
         "item tags {}",
-        REGISTRY.item_tags.len()
+        REGISTRY.items.len()
     );
-    assert!(REGISTRY.fluid_tags.len() >= 5);
-    assert!(REGISTRY.entity_type_tags.len() >= 20);
+    assert!(REGISTRY.fluids.len() >= 5);
+    assert!(REGISTRY.entity_types.len() >= 20);
     assert!(REGISTRY.world_clocks.len() >= 2);
     assert!(REGISTRY.timelines.len() >= 5);
     assert!(REGISTRY.blocks.len() >= 1150);
@@ -86657,7 +86657,7 @@ fn mega_huge_invariant_0079() {
     }
     let freq = vibration_frequency(&vanilla_game_events::BLOCK_PLACE);
     assert!(freq >= 1 && freq <= 15);
-    let strength = redstone_strength_for_distance(1.0);
+    let strength = redstone_strength_for_distance(1.0, 8);
     assert!(strength <= 15);
     drop(fixture);
 }
