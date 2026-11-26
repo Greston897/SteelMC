@@ -150,7 +150,7 @@ jobs:
 
   release:
     name: Create GitHub Release (ядро)
-    if: always() && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/arena/b3a39197-steelmc')
+    if: always() && startsWith(github.ref, 'refs/tags/v')
     needs: build-linux
     runs-on: ubuntu-latest
     permissions:
@@ -195,7 +195,7 @@ jobs:
 
             - Сборка в Actions: `cargo build --release --locked --features stand-alone` (nightly-2026-10-14, `aarch64` + `x86_64`, `mimalloc`, проверка `lint`/`fmt`/`test`/`60/60`/`vanilla parity 0 missing` — зелёные)
             - Linux контейнер: `ghcr.io/${{ github.repository }}:nightly` (`Dockerfile` `FROM scratch`, 10 МБ) и `ghcr.io/${{ github.repository }}:pterodactyl` (`Dockerfile.pterodactyl` `debian:bookworm-slim`+`tini`+user `container`)
-            - Pterodactyl 2026 (ноябрь): импортируйте `pterodactyl-egg.json` Egg v2 (`startup ./steel`, `done Done! For help, type "help"`, `stop stop`, порт 25565)
+            - Pterodactyl 2026 (ноябрь): импортируйте `pterodactyl-egg.json` Egg v2 (`startup ./steel`, `done Started Steel Server`, `stop stop`, порт 25565) — Stop/Restart/Start как vanilla: `stop` -> save_and_shutdown -> `Server stopped` -> exit 0, SIGTERM via `tini` также graceful, `Started Steel Server` в логах = аналог `Done!`, env `SERVER_PORT`/`MAX_PLAYERS`/`VIEW_DISTANCE` переопределяют `config.toml`
             - Бинари: `steel-x86_64-unknown-linux-gnu` (x64), `steel-aarch64-unknown-linux-gnu` (ARM64), `.sha256` — готовы для загрузки в Panel
 
             ### Pterodactyl Panel 2026 — куда что вписывать (пошагово, интерфейс ноябрь 2026)
@@ -224,7 +224,7 @@ jobs:
             - **Servers → ваш сервер → Files** → если загружаете свой `steel` бинарь: `Upload` → `steel-x86_64-unknown-linux-gnu` → переименуйте в `steel` → ПКМ → `Permissions` → `755` (`chmod +x`)
             - Иначе Docker сам возьмёт `ghcr.io/...:pterodactyl` (в нём уже `/home/container/steel`)
             - **Console** → **Install** (если первый раз) → скрипт поставит `ca-certificates` + создаст `config.toml` из `package-content` если пусто
-            - **Console** → **Power → Start** → ждите `Done! For help, type "help"` → `Server marked as running` → подключайтесь `IP:25565`
+            - **Console** → **Power → Start** → ждите `Started Steel Server` (аналог `Done!` у vanilla) → `Server marked as running` → подключайтесь `IP:25565` — Stop = `stop` в консоли -> `Saving world data...` -> `Server stopped` -> exit, Restart = Stop+Start, SIGTERM от панели также graceful via `tini`
 
             **5. Конфиг (Files → config.toml):**
             ```toml
