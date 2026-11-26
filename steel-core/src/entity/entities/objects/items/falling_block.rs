@@ -508,19 +508,16 @@ impl Entity for FallingBlockEntity {
         }
 
         let block_state = self.block_state();
-        if block_state.get_block().has_tag(&BlockTag::ANVIL)
-            && damage > 0.0
-            && {
-                // Deterministic anvil damage: hash position + fall distance to avoid flaky Flint tests
-                // (original used rand::random 5%+5%*fall_distance). Keeps ~same probability but deterministic.
-                let pos = self.block_position();
-                let hash = (pos.x() as i32).wrapping_mul(73856093)
-                    ^ (pos.y() as i32).wrapping_mul(19349663)
-                    ^ (pos.z() as i32).wrapping_mul(83492791)
-                    ^ (fall_distance as i32).wrapping_mul(0x9E377Bu32 as i32);
-                ((hash as u32) % 100) < (5 + fall_distance as u32 * 5)
-            }
-        {
+        if block_state.get_block().has_tag(&BlockTag::ANVIL) && damage > 0.0 && {
+            // Deterministic anvil damage: hash position + fall distance to avoid flaky Flint tests
+            // (original used rand::random 5%+5%*fall_distance). Keeps ~same probability but deterministic.
+            let pos = self.block_position();
+            let hash = (pos.x() as i32).wrapping_mul(73856093)
+                ^ (pos.y() as i32).wrapping_mul(19349663)
+                ^ (pos.z() as i32).wrapping_mul(83492791)
+                ^ (fall_distance as i32).wrapping_mul(0x9E377Bu32 as i32);
+            ((hash as u32) % 100) < (5 + fall_distance as u32 * 5)
+        } {
             let mut state = self.state.lock();
             if let Some(damaged) = AnvilBlock::damage(state.block_state) {
                 state.block_state = damaged;
