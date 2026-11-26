@@ -14,8 +14,7 @@ pub use server::{ServerConfig, ThreadConfig};
 
 use std::{
     collections::BTreeMap,
-    env,
-    fs,
+    env, fs,
     path::{Path, PathBuf},
     sync::Arc,
 };
