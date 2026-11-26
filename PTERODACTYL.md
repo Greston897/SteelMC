@@ -9,7 +9,7 @@
 1. **Admin → Nests → Import Egg** → загрузить `pterodactyl-egg.json` из корня репозитория
 2. Создать сервер → Nest `Minecraft` → Egg `SteelMC (26.3)` → Docker Image `ghcr.io/steel-foundation/steelmc:nightly` (или `ghcr.io/steel-foundation/steelmc:pterodactyl` после сборки `Dockerfile.pterodactyl`)
 3. **Startup** команда: `./steel`  (egg уже настроен, `done` триггер `Started Steel Server` — Steel логирует при готовности, аналог vanilla `Done! For help, type "help"`, стоп-команда `stop` → `save_and_shutdown` → `Server stopped` → exit 0, SIGTERM via `tini` также graceful)
-4. Выделить порт `25565` (TCP), RAM `1024+` МБ, `2+` vCPU. `SERVER_PORT` уже `25565`
+4. Выделить порт `25565` (TCP), RAM `1024+` МБ, `2+` vCPU. Порт теперь только в `Files → config.toml` → `[server] server_port` (должен совпадать с Allocation панели)
 5. **Запустить**. Первый запуск создаст `config.toml`, `world/`, `config/`, `saves/`, `logs/`
 
 ### Вариант B — Кастомный Docker Image (scratch vs pterodactyl)
@@ -116,7 +116,7 @@ cargo test --workspace --all-targets  # 4945 passed, 7 ignored (headless + vanil
 
 ## Конфигурация для Pterodactyl
 
-- **Порт**: `config.toml` `[server] server_port = 25565` должен совпадать с `SERVER_PORT` в egg (25565) — Steel читает `SERVER_PORT`/`MAX_PLAYERS`/`VIEW_DISTANCE`/`SIMULATION_DISTANCE` из env и переопределяет `config.toml` без правки файла (валидирует после; дефолты `25565/20/10/10` если env не задан)
+- **Порт/игроки/дистанции — ТОЛЬКО `config.toml`**: `Files → config.toml` → `[server] server_port=25565 max_players=20 view_distance=10 simulation_distance=10` (порт должен совпадать с Allocation `25565` панели). `Startup` в панели пустой — env `SERVER_PORT`/`MAX_PLAYERS` больше не используются (но в коде оставлены как fallback если вдруг заданы)
 - **Volumes** (Panel → Mounts):
   - `/home/container/config` → настройки (`config.toml`, `worlds.toml`, `groups.toml`)
   - `/home/container/saves` → миры
@@ -129,7 +129,7 @@ cargo test --workspace --all-targets  # 4945 passed, 7 ignored (headless + vanil
 
 - `scratch` образ не работает в Panel → используйте `Dockerfile.pterodactyl` (есть shell/tini/user)
 - `ca-certificates` отсутствуют → `online_mode=true` не сможет проверить Mojang → в pterodactyl-образе уже установлен `ca-certificates`
-- Порт не отвечает → проверьте что `server_port` в `config.toml` = `SERVER_PORT` env и что Panel пробросил `25565:25565`
+- Порт не отвечает → проверьте что `server_port` в `Files → config.toml` = Allocation панели `25565` и что Panel пробросил `25565:25565`
 - `permission denied` → `chmod +x /home/container/steel` в инсталляции
 
 ## Ссылки

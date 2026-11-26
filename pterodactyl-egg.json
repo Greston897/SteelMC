@@ -1,5 +1,5 @@
 {
-  "_comment": "Pterodactyl Egg for SteelMC 26.3 - Rust implementation. Импортируйте через Admin -> Nests -> Import Egg. Stop/Restart: отправляет 'stop' -> save_and_shutdown (аналог vanilla), SIGTERM via tini также graceful. Startup done='Started Steel Server' (Steel логирует это при готовности, аналог vanilla 'Done!')",
+  "_comment": "Pterodactyl Egg for SteelMC 26.3 - Rust implementation. Импортируйте через Admin -> Nests -> Import Egg. Все настройки ТОЛЬКО в config.toml (Files → config.toml), Startup пустой. Stop/Restart: 'stop' -> save_and_shutdown, SIGTERM via tini graceful. Startup done='Started Steel Server'",
   "meta": {
     "version": "PTDL_v2",
     "update_url": null
@@ -38,56 +38,5 @@
       "entrypoint": "bash"
     }
   },
-  "variables": [
-    {
-      "name": "Server Port",
-      "description": "Порт сервера (внутри контейнера). Pterodactyl пробросит его наружу. Должен совпадать с server_port в config.toml",
-      "env_variable": "SERVER_PORT",
-      "default_value": "25565",
-      "user_viewable": true,
-      "user_editable": false,
-      "rules": "required|integer|between:1,65535",
-      "field_type": "text"
-    },
-    {
-      "name": "Max Players",
-      "description": "Максимум игроков (переопределяет max_players в config.toml если задано через env)",
-      "env_variable": "MAX_PLAYERS",
-      "default_value": "20",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|integer|between:1,1000",
-      "field_type": "text"
-    },
-    {
-      "name": "View Distance",
-      "description": "Дальность прорисовки чанков (1-32, до 128 при allow_extended_view_distance)",
-      "env_variable": "VIEW_DISTANCE",
-      "default_value": "10",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|integer|between:2,128",
-      "field_type": "text"
-    },
-    {
-      "name": "Memory Limit",
-      "description": "Лимит RAM для контейнера (информативно, Steel на Rust использует меньше RAM чем Java; mimalloc)",
-      "env_variable": "STEEL_MEMORY",
-      "default_value": "1024",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|integer|between:512,65535",
-      "field_type": "text"
-    },
-    {
-      "name": "Steel Args",
-      "description": "Дополнительные аргументы для ./steel (например --help)",
-      "env_variable": "STEEL_ARGS",
-      "default_value": "",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "string|max:512",
-      "field_type": "text"
-    }
-  ]
+  "variables": []
 }
