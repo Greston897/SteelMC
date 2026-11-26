@@ -143,7 +143,7 @@ impl BlockRandomPositionGenerator {
         Self::from_seed(rand::random())
     }
 
-    const fn from_seed(value: i32) -> Self {
+    pub(crate) const fn from_seed(value: i32) -> Self {
         Self { value }
     }
 
