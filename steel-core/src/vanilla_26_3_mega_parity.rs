@@ -17278,7 +17278,7 @@ fn mega_mob_0000_zombie() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("zombie").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "zombie")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("zombie"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity zombie present or 161 total");
     // armadillo roll-up specific
     if "zombie" == "armadillo" {
@@ -17302,7 +17302,7 @@ fn mega_mob_0001_skeleton() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("skeleton").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "skeleton")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("skeleton"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity skeleton present or 161 total");
     // armadillo roll-up specific
     if "skeleton" == "armadillo" {
@@ -17326,7 +17326,7 @@ fn mega_mob_0002_creeper() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("creeper").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "creeper")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("creeper"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity creeper present or 161 total");
     // armadillo roll-up specific
     if "creeper" == "armadillo" {
@@ -17350,7 +17350,7 @@ fn mega_mob_0003_spider() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("spider").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "spider")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("spider"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity spider present or 161 total");
     // armadillo roll-up specific
     if "spider" == "armadillo" {
@@ -17374,7 +17374,7 @@ fn mega_mob_0004_enderman() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("enderman").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "enderman")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("enderman"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity enderman present or 161 total");
     // armadillo roll-up specific
     if "enderman" == "armadillo" {
@@ -17398,7 +17398,7 @@ fn mega_mob_0005_witch() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("witch").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "witch")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("witch"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity witch present or 161 total");
     // armadillo roll-up specific
     if "witch" == "armadillo" {
@@ -17422,7 +17422,7 @@ fn mega_mob_0006_slime() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("slime").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "slime")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("slime"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity slime present or 161 total");
     // armadillo roll-up specific
     if "slime" == "armadillo" {
@@ -17446,7 +17446,7 @@ fn mega_mob_0007_ghast() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("ghast").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "ghast")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("ghast"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity ghast present or 161 total");
     // armadillo roll-up specific
     if "ghast" == "armadillo" {
@@ -17470,7 +17470,7 @@ fn mega_mob_0008_blaze() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("blaze").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "blaze")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("blaze"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity blaze present or 161 total");
     // armadillo roll-up specific
     if "blaze" == "armadillo" {
@@ -17494,7 +17494,7 @@ fn mega_mob_0009_ender_dragon() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("ender_dragon").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "ender_dragon")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("ender_dragon"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity ender_dragon present or 161 total");
     // armadillo roll-up specific
     if "ender_dragon" == "armadillo" {
@@ -17518,7 +17518,7 @@ fn mega_mob_0010_wither() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("wither").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "wither")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("wither"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity wither present or 161 total");
     // armadillo roll-up specific
     if "wither" == "armadillo" {
@@ -17542,7 +17542,7 @@ fn mega_mob_0011_warden() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("warden").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "warden")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("warden"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity warden present or 161 total");
     // armadillo roll-up specific
     if "warden" == "armadillo" {
@@ -17566,7 +17566,7 @@ fn mega_mob_0012_creaking() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("creaking").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "creaking")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("creaking"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity creaking present or 161 total");
     // armadillo roll-up specific
     if "creaking" == "armadillo" {
@@ -17590,7 +17590,7 @@ fn mega_mob_0013_armadillo() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("armadillo").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "armadillo")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("armadillo"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity armadillo present or 161 total");
     // armadillo roll-up specific
     if "armadillo" == "armadillo" {
@@ -17614,7 +17614,7 @@ fn mega_mob_0014_camel() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("camel").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "camel")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("camel"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity camel present or 161 total");
     // armadillo roll-up specific
     if "camel" == "armadillo" {
@@ -17638,7 +17638,7 @@ fn mega_mob_0015_camel_husk() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("camel_husk").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "camel_husk")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("camel_husk"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity camel_husk present or 161 total");
     // armadillo roll-up specific
     if "camel_husk" == "armadillo" {
@@ -17662,7 +17662,7 @@ fn mega_mob_0016_happy_ghast() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("happy_ghast").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "happy_ghast")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("happy_ghast"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity happy_ghast present or 161 total");
     // armadillo roll-up specific
     if "happy_ghast" == "armadillo" {
@@ -17686,7 +17686,7 @@ fn mega_mob_0017_nautilus() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("nautilus").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "nautilus")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("nautilus"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity nautilus present or 161 total");
     // armadillo roll-up specific
     if "nautilus" == "armadillo" {
@@ -17710,7 +17710,7 @@ fn mega_mob_0018_sulfur_cube() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("sulfur_cube").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "sulfur_cube")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("sulfur_cube"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity sulfur_cube present or 161 total");
     // armadillo roll-up specific
     if "sulfur_cube" == "armadillo" {
@@ -17734,7 +17734,7 @@ fn mega_mob_0019_mushroom_cow() {
     // entity registry must contain it or be handled elsewhere
     let ident = Identifier::new("mushroom_cow").unwrap();
     let full = if ident.to_string().contains(':') { ident } else { Identifier::new(&format!("minecraft:{}", "mushroom_cow")).unwrap() };
-    let exists = REGISTRY.entity_types.get(&full).is_some() .contains("mushroom_cow"));
+    let exists = REGISTRY.entity_types.get(&full).is_some();
     assert!(exists || REGISTRY.entity_types.len()==161, "entity mushroom_cow present or 161 total");
     // armadillo roll-up specific
     if "mushroom_cow" == "armadillo" {
