@@ -14,6 +14,7 @@ pub use server::{ServerConfig, ThreadConfig};
 
 use std::{
     collections::BTreeMap,
+    env,
     fs,
     path::{Path, PathBuf},
     sync::Arc,
@@ -125,25 +126,25 @@ pub fn load_or_create(path: &Path) -> Result<SteelConfig, String> {
     }
 
     // Pterodactyl / Docker env overrides — позволяют панели переопределять порт и лимиты без правки config.toml
-    if let Ok(val) = std::env::var("SERVER_PORT") {
-        if let Ok(port) = val.parse::<u16>() {
-            config.server.server_port = port;
-        }
+    if let Ok(val) = env::var("SERVER_PORT")
+        && let Ok(port) = val.parse::<u16>()
+    {
+        config.server.server_port = port;
     }
-    if let Ok(val) = std::env::var("MAX_PLAYERS") {
-        if let Ok(v) = val.parse::<u32>() {
-            config.server.max_players = v;
-        }
+    if let Ok(val) = env::var("MAX_PLAYERS")
+        && let Ok(v) = val.parse::<u32>()
+    {
+        config.server.max_players = v;
     }
-    if let Ok(val) = std::env::var("VIEW_DISTANCE") {
-        if let Ok(v) = val.parse::<u8>() {
-            config.server.view_distance = v;
-        }
+    if let Ok(val) = env::var("VIEW_DISTANCE")
+        && let Ok(v) = val.parse::<u8>()
+    {
+        config.server.view_distance = v;
     }
-    if let Ok(val) = std::env::var("SIMULATION_DISTANCE") {
-        if let Ok(v) = val.parse::<u8>() {
-            config.server.simulation_distance = v;
-        }
+    if let Ok(val) = env::var("SIMULATION_DISTANCE")
+        && let Ok(v) = val.parse::<u8>()
+    {
+        config.server.simulation_distance = v;
     }
     validate(&config.server)
         .map_err(|e| format!("failed to validate config (after env overrides): {e}"))?;
