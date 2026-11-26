@@ -512,10 +512,10 @@ impl Entity for FallingBlockEntity {
             // Deterministic anvil damage: hash position + fall distance to avoid flaky Flint tests
             // (original used rand::random 5%+5%*fall_distance). Keeps ~same probability but deterministic.
             let pos = self.block_position();
-            let hash = (pos.x() as i32).wrapping_mul(73856093)
-                ^ (pos.y() as i32).wrapping_mul(19349663)
-                ^ (pos.z() as i32).wrapping_mul(83492791)
-                ^ (fall_distance as i32).wrapping_mul(0x9E377Bu32 as i32);
+            let hash = pos.x().wrapping_mul(73_856_093)
+                ^ pos.y().wrapping_mul(19_349_663)
+                ^ pos.z().wrapping_mul(83_492_791)
+                ^ fall_distance.wrapping_mul(0x9E37_79B9_u32 as i32);
             ((hash as u32) % 100) < (5 + fall_distance as u32 * 5)
         } {
             let mut state = self.state.lock();
