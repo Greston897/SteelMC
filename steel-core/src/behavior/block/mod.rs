@@ -1,6 +1,10 @@
 //! Block behavior trait and registry.
 
-#![allow(missing_docs, clippy::allow_attributes, clippy::allow_attributes_without_reason)]
+#![allow(
+    missing_docs,
+    clippy::allow_attributes,
+    clippy::allow_attributes_without_reason
+)]
 
 use std::sync::{Arc, Weak};
 
