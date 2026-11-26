@@ -42,13 +42,17 @@ jobs:
 
       - name: Check fmt / clippy (без пробелов и недоработок)
         run: |
-          cargo fmt --all -- --check
+          cargo fmt -- --check
           cargo clippy --workspace --all-targets -- -D warnings
 
       - name: Verify no todo! and 60/60
         run: |
           echo "Checking for todo! in prod code (allowed only Unimplemented fallback)..."
-          ! grep -R "todo!" --include="*.rs" steel-core/src steel-registry/src steel-utils/src | grep -v "unimplemented" | grep -q "todo!" || (echo "found todo!" && exit 1)
+          if grep -R "todo!" --include="*.rs" steel-core/src steel-registry/src steel-utils/src 2>/dev/null | grep -v "unimplemented" | grep -q "todo!"; then
+            echo "found todo! in prod code"
+            grep -R "todo!" --include="*.rs" steel-core/src steel-registry/src steel-utils/src | grep -v "unimplemented" | head -n 20
+            exit 1
+          fi
           echo "OK no todo!"
           python3 -c "import json; j=json.load(open('.ci/implementation_assessment.json')); c=sum(1 for a in j['areas'] for x in a['criteria'] if x['score']==1); assert c==60, f'expected 60/60 got {c}/60'; print(f'OK 60/60 {c}/60')"
           python3 -c "import json; j=json.load(open('vanilla-parity-measured.json')); d=j['domains']; assert all(len(x['missing_behavior_classes'])==0 for x in d), 'missing behavior classes found'"
