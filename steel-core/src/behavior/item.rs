@@ -355,37 +355,37 @@ pub trait ItemBehavior: Send + Sync {
 
     /// Returns the capability used by sign block interactions.
     // === 28 server-relevant item overrides previously unknown — теперь дефолты ===
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn as_projectile(&self, stack: &ItemStack) -> Option<ItemStack> {
         None
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn can_destroy_block(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
         false
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn can_place(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
         false
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn check_extra_content(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
         false
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn create_arrow(&self, stack: &ItemStack) -> Option<ItemStack> {
         None
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn create_projectile(&self, stack: &ItemStack) -> Option<ItemStack> {
         None
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn finish_using_item(
         &self,
         stack: &mut ItemStack,
@@ -395,52 +395,52 @@ pub trait ItemBehavior: Send + Sync {
         stack.clone()
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn get_bar_color(&self, stack: &ItemStack) -> i32 {
         0
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn get_bar_width(&self, stack: &ItemStack) -> i32 {
         0
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn get_durability_use(&self, stack: &ItemStack) -> i32 {
         0
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn get_fluid_context(&self, stack: &ItemStack) -> Option<ItemStack> {
         None
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn get_place_sound(&self, stack: &ItemStack) -> i32 {
         0
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn get_placement_state(&self, stack: &ItemStack) -> Option<ItemStack> {
         None
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn get_supported_held_projectiles(&self, stack: &ItemStack) -> Option<ItemStack> {
         None
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn is_bar_visible(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
         false
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn may_place(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
         false
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn mine_block(
         &self,
         stack: &mut ItemStack,
@@ -451,12 +451,12 @@ pub trait ItemBehavior: Send + Sync {
         false
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn must_survive(&self, stack: &ItemStack, world: &World, pos: BlockPos) -> bool {
         false
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn on_crafted_post_process(
         &self,
         stack: &mut ItemStack,
@@ -467,17 +467,17 @@ pub trait ItemBehavior: Send + Sync {
         false
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn override_other_stacked_on_me(&self, stack: &ItemStack) -> i32 {
         0
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn override_stacked_on_other(&self, stack: &ItemStack) -> i32 {
         0
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn place_block(
         &self,
         stack: &mut ItemStack,
@@ -488,7 +488,7 @@ pub trait ItemBehavior: Send + Sync {
         false
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn play_empty_sound(
         &self,
         stack: &mut ItemStack,
@@ -499,13 +499,13 @@ pub trait ItemBehavior: Send + Sync {
         false
     }
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn register_blocks(&self) {}
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn shoot(&self, stack: &ItemStack, world: &Arc<World>, pos: BlockPos) {}
 
-    #[expect(unused_variables, reason = "default trait implementation")]
+    #[allow(missing_docs, unused_variables)]
     fn update_placement_context(&self, stack: &ItemStack) -> Option<ItemStack> {
         None
     }
