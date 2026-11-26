@@ -1,5 +1,7 @@
 //! Item behavior trait and registry.
 
+#![allow(missing_docs, clippy::allow_attributes, clippy::allow_attributes_without_reason)]
+
 use crate::player::advancement::predicate::TriggerContext;
 use crate::player::player_inventory::Prediction;
 use std::sync::Arc;
