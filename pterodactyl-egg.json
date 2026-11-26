@@ -1,5 +1,5 @@
 {
-  "_comment": "Pterodactyl Egg for SteelMC 26.3 - Rust implementation. Импортируйте через Admin -> Nests -> Import Egg",
+  "_comment": "Pterodactyl Egg for SteelMC 26.3 - Rust implementation. Импортируйте через Admin -> Nests -> Import Egg. Stop/Restart: отправляет 'stop' -> save_and_shutdown (аналог vanilla), SIGTERM via tini также graceful. Startup done='Started Steel Server' (Steel логирует это при готовности, аналог vanilla 'Done!')",
   "meta": {
     "version": "PTDL_v2",
     "update_url": null
@@ -9,17 +9,25 @@
   "author": "junkydeveloper@steel-foundation",
   "description": "SteelMC — лёгкий Rust сервер Minecraft 26.3. Чистый код, низкая RAM/MSPT (FxBuildHasher, with_capacity, is_multiple_of, bounded очереди MAX16/8), без todo!/unimplemented!. Поддержка Pterodactyl, Docker, Linux контейнер. Сборка: cargo build --release --locked --features stand-alone -> target/release/steel.",
   "features": null,
-  "tags": ["minecraft", "java", "rust", "vanilla", "26.3"],
+  "tags": [
+    "minecraft",
+    "java",
+    "rust",
+    "vanilla",
+    "26.3"
+  ],
   "file_denylist": [],
   "docker_images": {
-    "ghcr.io/steel-foundation/steelmc:nightly": "ghcr.io/steel-foundation/steelmc:nightly",
+    "ghcr.io/greston897/steelmc:pterodactyl": "ghcr.io/greston897/steelmc:pterodactyl",
+    "ghcr.io/Greston897/SteelMC:pterodactyl": "ghcr.io/Greston897/SteelMC:pterodactyl",
     "ghcr.io/steel-foundation/steelmc:pterodactyl": "ghcr.io/steel-foundation/steelmc:pterodactyl",
+    "ghcr.io/steel-foundation/steelmc:nightly": "ghcr.io/steel-foundation/steelmc:nightly",
     "ghcr.io/pterodactyl/yolks:debian": "ghcr.io/pterodactyl/yolks:debian"
   },
   "startup": "./steel",
   "config": {
     "files": "{}",
-    "startup": "{\n    \"done\": \"Done! For help, type \\\"help\\\"\"\n}",
+    "startup": "{\n    \"done\": \"Started Steel Server\"\n}",
     "logs": "{}",
     "stop": "stop"
   },
