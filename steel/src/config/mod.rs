@@ -145,7 +145,8 @@ pub fn load_or_create(path: &Path) -> Result<SteelConfig, String> {
             config.server.simulation_distance = v;
         }
     }
-    validate(&config.server).map_err(|e| format!("failed to validate config (after env overrides): {e}"))?;
+    validate(&config.server)
+        .map_err(|e| format!("failed to validate config (after env overrides): {e}"))?;
 
     Ok(config)
 }
