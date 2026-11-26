@@ -139,7 +139,10 @@ pub(crate) struct BlockRandomPositionGenerator {
 }
 
 impl BlockRandomPositionGenerator {
-    #[expect(dead_code, reason = "from_seed is used via chunk_map, from_runtime_rng kept for future")]
+    #[expect(
+        dead_code,
+        reason = "from_seed is used via chunk_map, from_runtime_rng kept for future"
+    )]
     pub(crate) fn from_runtime_rng() -> Self {
         Self::from_seed(rand::random())
     }
