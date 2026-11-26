@@ -1661,8 +1661,6 @@ pub trait BlockBehavior: Send + Sync {
         None
     }
 
-
-
     #[expect(unused_variables, reason = "default trait implementation")]
     fn get_columns(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> i32 {
         0
@@ -1742,8 +1740,6 @@ pub trait BlockBehavior: Send + Sync {
     ) -> Option<BlockStateId> {
         None
     }
-
-
 
     #[expect(unused_variables, reason = "default trait implementation")]
     fn get_fluid_state(&self, state: BlockStateId) -> FluidState {
@@ -1966,8 +1962,6 @@ pub trait BlockBehavior: Send + Sync {
         None
     }
 
-
-
     #[expect(unused_variables, reason = "default trait implementation")]
     fn get_suspicious_effects(
         &self,
@@ -1995,8 +1989,6 @@ pub trait BlockBehavior: Send + Sync {
     ) -> bool {
         false
     }
-
-
 
     #[expect(unused_variables, reason = "default trait implementation")]
     fn is_collision_shape_full_block(
@@ -2043,21 +2035,13 @@ pub trait BlockBehavior: Send + Sync {
         false
     }
 
-
-
     #[expect(unused_variables, reason = "default trait implementation")]
     fn is_waxed(&self, state: BlockStateId, world: &dyn LevelReader, pos: BlockPos) -> bool {
         false
     }
 
-
-
-
-
     #[expect(unused_variables, reason = "default trait implementation")]
     fn on_discharged(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
-
-
 
     #[expect(unused_variables, reason = "default trait implementation")]
     fn open_container(
@@ -2069,8 +2053,6 @@ pub trait BlockBehavior: Send + Sync {
     ) -> bool {
         false
     }
-
-
 
     #[expect(unused_variables, reason = "default trait implementation")]
     fn random_orientation(&self, state: BlockStateId, world: &Arc<World>, pos: BlockPos) {}
