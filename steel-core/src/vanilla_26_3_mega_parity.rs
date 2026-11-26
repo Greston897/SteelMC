@@ -86670,7 +86670,7 @@ fn mega_comprehensive_all_blocks_items_entities_loop() {
     for (id, block) in REGISTRY.blocks.iter() {
         let state = block.default_state();
         let got = state.get_block();
-        assert_eq!(got.key, block.key, "block key mismatch for {}", id);
+        assert_eq!(got.key, block.key, "block key mismatch for {id}");
         let pos = BlockPos::new(
             (placed % 16) as i32,
             64 + ((placed / 16) % 8) as i32,
@@ -86686,7 +86686,7 @@ fn mega_comprehensive_all_blocks_items_entities_loop() {
     let mut item_checked = 0usize;
     for (id, item) in REGISTRY.items.iter() {
         let got = REGISTRY.items.by_key(&item.key).expect("item by_key");
-        assert_eq!(got.key, item.key, "item {}", id);
+        assert_eq!(got.key, item.key, "item {id}");
         let _ibeh = ITEM_BEHAVIORS.get_behavior(item);
         item_checked += 1;
         if item_checked > 200 {
@@ -86695,7 +86695,7 @@ fn mega_comprehensive_all_blocks_items_entities_loop() {
     }
     let mut ent_checked = 0usize;
     for (id, et) in REGISTRY.entity_types.iter() {
-        assert!(!et.key.path.is_empty(), "entity {}", id);
+        assert!(!et.key.path.is_empty(), "entity {id}");
         ent_checked += 1;
         if ent_checked > 50 {
             break;
