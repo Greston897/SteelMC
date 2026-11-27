@@ -35,6 +35,8 @@ pub mod server;
 pub(crate) mod test_support;
 #[cfg(test)]
 mod vanilla_26_3_mega_parity;
+#[cfg(test)]
+mod mega_30k_ultra_coverage;
 pub mod world;
 pub mod worldgen;
 
